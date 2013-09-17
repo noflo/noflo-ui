@@ -19,7 +19,6 @@ class IframeRuntime extends Base
   send: (protocol, command, payload) ->
     w = @getFrameWindow()
     if not w or w.location.href is 'about:blank'
-      console.log 'IGNORE', command
       return
     w.postMessage
       protocol: protocol
