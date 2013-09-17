@@ -8,6 +8,15 @@ class BaseRuntime
     @connect 'component'
     @prepareComponents()
 
+  libraryUpdater: _.debounce ->
+      @dataflow.plugins.library.update
+        exclude: [
+          "base"
+          "base-resizable"
+          "dataflow-subgraph"
+        ]
+    , 100
+
   getComponentInstance: (name, attributes) ->
     return null unless @types[name]
     type = @types[name]
@@ -59,12 +68,8 @@ class BaseRuntime
         outputs: definition.outPorts
 
       # Update Dataflow library with this component
-      @dataflow.plugins.library.update
-        exclude: [
-          "base"
-          "base-resizable"
-          "dataflow-subgraph"
-        ]
+      do @libraryUpdater
+
     else
       # Update the definition
       type = @types[definition.name].Model
