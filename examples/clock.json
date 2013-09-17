@@ -1,6 +1,14 @@
 {
   "properties": {
-    "name": "NoFlo"
+    "name": "NoFlo",
+    "environment": {
+      "runtime": "html",
+      "preview": {
+        "src": "examples/clock.html",
+        "width": 300,
+        "height": 300
+      }
+    }
   },
   "exports": [],
   "processes": {

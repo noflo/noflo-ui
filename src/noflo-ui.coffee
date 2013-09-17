@@ -9,11 +9,16 @@ runtimes =
   iframe: require './runtimes/iframe'
 
 exports.start = (container, graphDefinition) ->
-  dataflow = new Dataflow
-    appendTo: container
-
   noflo.graph.loadJSON graphDefinition, (graph) ->
     graph.baseDir = '/noflo-ui'
+
     # TODO: Check the runtime definition of the graph
-    runtime = new runtimes['iframe'] dataflow, graph, document.querySelector('.preview')
-    dataflow.plugins.noflo.registerGraph graph, runtime
+    require './plugins/preview-iframe'
+    
+    dataflow = new Dataflow
+      appendTo: container
+
+    dataflow.plugins['preview-iframe'].setContents graph.properties.environment.preview, ->
+      runtime = new runtimes['iframe'] dataflow, graph, dataflow.plugins['preview-iframe'].getElement()
+
+      dataflow.plugins.noflo.registerGraph graph, runtime

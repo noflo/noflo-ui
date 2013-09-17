@@ -2,7 +2,7 @@ Base = require './base'
 
 class IframeRuntime extends Base
   constructor: (dataflow, graph, iframe) ->
-    @window = iframe.contentWindow
+    @iframe = iframe
     @origin = window.location.origin
     super dataflow, graph
 
@@ -13,12 +13,19 @@ class IframeRuntime extends Base
   sendComponent: (command, payload) ->
     @send 'component', command, payload
 
+  getFrameWindow: ->
+    @iframe.contentWindow
+
   send: (protocol, command, payload) ->
-    @window.postMessage
+    w = @getFrameWindow()
+    if not w or w.location.href is 'about:blank'
+      console.log 'IGNORE', command
+      return
+    w.postMessage
       protocol: protocol
       command: command
       payload: payload
-    , @window.location.href
+    , w.location.href
 
   connect: (protocol) ->
     window.addEventListener 'message', @onMessage, false

@@ -15,6 +15,17 @@ class NoFloPlugin
     callback = if callback then callback else ->
     @prepareGraph graph, dfGraph, runtime, callback
 
+    runtime.iframe.onload = =>
+      runtime.sendGraph 'graph',
+        baseDir: graph.baseDir
+      for node in graph.nodes
+        @addNodeRuntime node, runtime
+      for edge in graph.edges
+        @addEdgeRuntime edge, runtime
+      for iip in graph.initializers
+        @addInitialRuntime iip, runtime
+      runtime.sendNetwork 'start'
+
   registerSubgraph: (graph, runtime, callback) ->
     dfGraph = new Graph.Model
       dataflow: @dataflow
@@ -31,7 +42,10 @@ class NoFloPlugin
     # Provide a runtime reference
     nofloGraph.runtime = runtime
 
+    # Load components from iframe
     runtime.loadComponents nofloGraph.baseDir
+
+    # Prepare NoFlo runtime
     runtime.sendGraph 'graph',
       baseDir: nofloGraph.baseDir
 
@@ -44,7 +58,6 @@ class NoFloPlugin
     for iip in nofloGraph.initializers
       @addInitial iip, dataflowGraph
 
-    runtime.sendNetwork 'start'
 
   subscribeDataflowEvents: (graph) ->
     graph.on 'change', (dfGraph) =>
@@ -145,16 +158,11 @@ class NoFloPlugin
   addNode: (node, graph) ->
     return unless node
 
-    # Register to runtime
-    runtime = graph.nofloGraph.runtime
-    runtime.sendGraph 'addnode',
-      id: node.id
-      component: node.component
-      metadata: node.metadata
+    @addNodeRuntime node, graph.nofloGraph.runtime
 
     unless node.dataflowNode
       # Load the component
-      dfNode = runtime.getComponentInstance node.component,
+      dfNode = graph.nofloGraph.runtime.getComponentInstance node.component,
         id: node.id
         label: node.id
         x: ( if node.metadata.x? then node.metadata.x else 300 )
@@ -167,14 +175,16 @@ class NoFloPlugin
 
     graph.nodes.add dfNode
 
+  addNodeRuntime: (node, runtime) ->
+    runtime.sendGraph 'addnode',
+      id: node.id
+      component: node.component
+      metadata: node.metadata
+
   addEdge: (edge, graph) ->
     return unless edge
 
-    # Register to runtime
-    runtime = graph.nofloGraph.runtime
-    runtime.sendGraph 'addedge',
-      from: edge.from
-      to: edge.to
+    @addEdgeRuntime edge, graph.nofloGraph.runtime
 
     unless edge.dataflowEdge
       Edge = @dataflow.module 'edge'
@@ -193,18 +203,25 @@ class NoFloPlugin
     # Add to Graph
     graph.edges.add dfEdge
 
+  addEdgeRuntime: (edge, runtime) ->
+    runtime.sendGraph 'addedge',
+      from: edge.from
+      to: edge.to
+
   addInitial: (iip, graph) ->
     return unless iip
 
-    runtime = graph.nofloGraph.runtime
-    runtime.sendGraph 'addinitial',
-      from: iip.from
-      to: iip.to
+    @addInitialRuntime iip, graph.nofloGraph.runtime
     node = graph.nodes.get iip.to.node
     if node
       port = node.inputs.get iip.to.port
       if port
         node.setState iip.to.port, iip.from.data
+
+  addInitialRuntime: (iip, runtime) ->
+    runtime.sendGraph 'addinitial',
+      from: iip.from
+      to: iip.to
 
 plugin = Dataflow::plugin 'noflo'
 Dataflow::plugins.noflo = new NoFloPlugin
