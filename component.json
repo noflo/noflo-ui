@@ -1,0 +1,40 @@
+{
+  "name": "noflo-ui",
+  "description": "NoFlo Development Environment",
+  "author": "Henri Bergius <henri.bergius@iki.fi>",
+  "repo": "noflo/noflo-ui",
+  "version": "0.1.0",
+  "keywords": [
+    "fbp",
+    "noflo",
+    "graph",
+    "visual",
+    "dataflow"
+  ],
+  "dependencies": {
+    "meemoo/dataflow": "*",
+    "noflo/noflo": "*",
+    "noflo/noflo-runtime-iframe": "*",
+    "noflo/noflo-core": "*",
+    "noflo/noflo-flow": "*",
+    "noflo/noflo-objects": "*",
+    "noflo/noflo-strings": "*",
+    "noflo/noflo-dom": "*",
+    "noflo/noflo-css": "*",
+    "noflo/noflo-interaction": "*",
+    "noflo/noflo-physics": "*",
+    "noflo/noflo-math": "*",
+    "d4tocchini/noflo-draggabilly": "*",
+    "noflo/noflo-css": "*"
+  },
+  "main": "src/noflo-ui.coffee",
+  "scripts": [
+    "src/noflo-ui.coffee",
+    "src/plugins/noflo.coffee",
+    "src/runtimes/base.coffee",
+    "src/runtimes/iframe.coffee"
+  ],
+  "json": [
+    "component.json"
+  ]
+}

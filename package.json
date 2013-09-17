@@ -1,0 +1,36 @@
+{
+  "name": "noflo-ui",
+  "description": "NoFlo Development Environment",
+  "version": "0.1.0",
+  "author": {
+    "name": "Henri Bergius",
+    "email": "henri.bergius@iki.fi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/noflo/noflo-ui.git"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "undefined/blob/master/LICENSE-MIT"
+    }
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-coffee": "~0.6.6",
+    "grunt-coffeelint": "~0.0.6",
+    "chai": "~1.5.0",
+    "mocha": "~1.9.0",
+    "grunt-mocha-phantomjs": "~0.2.2",
+    "grunt-component-build": "~0.2.7",
+    "grunt-contrib-uglify": "~0.2.0",
+    "grunt-contrib-watch": "~0.3.1",
+    "component-json": "~0.1.4",
+    "grunt-combine": "~0.8.3",
+    "grunt-component": "~0.1.2"
+  },
+  "keywords": []
+}

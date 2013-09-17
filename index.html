@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <title>NoFlo Development environment</title>
+
+    <!-- Dataflow Libraries -->
+    <script src="./browser/meemoo-dataflow/libs/jquery.js"></script>
+    <script src="./browser/meemoo-dataflow/libs/jquery-ui.js"></script>
+    <script src="./browser/meemoo-dataflow/libs/jquery.ui.touch-punch.js"></script>
+    <script src="./browser/meemoo-dataflow/libs/underscore.js"></script>
+    <script src="./browser/meemoo-dataflow/libs/backbone.js"></script>
+    <script src="./browser/meemoo-dataflow/libs/hammer.min.js"></script>
+
+    <!-- Dataflow -->
+    <script src="./browser/noflo-ui.js"></script>
+
+    <!-- Dataflow Style -->
+    <link rel="stylesheet" href="./browser/meemoo-dataflow/build/default/dataflow.min.css">
+
+    <style>
+      body {
+        background-color: hsl(230,10%,85%);
+      }
+      
+      #noflo-ui {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1;
+      }
+
+      .preview {
+        width: 300px;
+        height: 300px;
+        background-color: hsla(220,10%,90%, 0.75);
+        border: 1px hsl(220,10%,95%) solid;
+        box-shadow:           
+          inset 0 1px 4px hsla(220,20%,20%,.4);
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        overflow: hidden;
+        z-index: 2;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="noflo-ui"></div>
+    <iframe src="examples/clock.html" class="preview"></iframe>
+
+    <script>
+    window.onload = function () {
+      var ui = require('/noflo-ui');
+      // Load graph JSON
+      $.getJSON('examples/clock.json', function (graphDefinition) {
+        ui.start('#noflo-ui', graphDefinition);
+      });
+    };
+    </script>
+  </body>
+</html>
