@@ -10,6 +10,7 @@ class PreviewIframe
       name: ''
       menu: @$iframe
       icon: 'play'
+      pinned: true
 
   getElement: ->
     @$iframe[0]
