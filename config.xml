@@ -21,4 +21,6 @@
     <preference name="permissions" value="none"/>
     <!-- Once we have the server we want to know the connection state -->
     <feature name="http://api.phonegap.com/1.0/network"/>
+    <!-- Disable menu bar on Android -->
+    <preference name="android-minSdkVersion" value="11" />
 </widget>
