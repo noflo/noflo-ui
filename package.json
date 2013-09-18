@@ -16,8 +16,7 @@
       "url": "undefined/blob/master/LICENSE-MIT"
     }
   ],
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-coffee": "~0.6.6",
@@ -30,7 +29,9 @@
     "grunt-contrib-watch": "~0.3.1",
     "component-json": "~0.1.4",
     "grunt-combine": "~0.8.3",
-    "grunt-component": "~0.1.2"
+    "grunt-component": "~0.1.2",
+    "grunt-contrib-compress": "~0.5.2",
+    "grunt-phonegap-build": "0.0.8"
   },
   "scripts": {
     "test": "grunt test"
