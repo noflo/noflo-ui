@@ -50,6 +50,56 @@ module.exports = ->
         files:
           './browser/noflo-ui.min.js': ['./browser/noflo-ui.js']
 
+    compress:
+      app:
+        options:
+          archive: 'noflo.zip'
+        files: [
+          src: ['browser/meemoo-dataflow/libs/*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['browser/meemoo-dataflow/fonts/*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['browser/meemoo-dataflow/build/default/*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['browser/noflo-noflo-runtime-iframe/runtime/network.js']
+          expand: true
+          dest: '/'
+        ,
+          src: ['browser/noflo-ui.js']
+          expand: true
+          dest: '/'
+        ,
+          src: ['index.html']
+          expand: true
+          dest: '/'
+        ,
+          src: ['config.xml']
+          expand: true
+          dest: '/'
+        ,
+          src: ['examples/*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['examples/images/*']
+          expand: true
+          dest: '/'
+        ]
+
+    "phonegap-build":
+      app:
+        options:
+          archive: 'noflo.zip'
+          appId: process.env.PHONEGAP_APP_ID
+          user:
+            token: process.env.PHONEGAP_TOKEN
+
     # Automated recompilation and testing when developing
     watch:
       files: ['spec/*.coffee', 'src/*.coffee', 'src/**/*.coffee']
@@ -73,27 +123,17 @@ module.exports = ->
   @loadNpmTasks 'grunt-combine'
   @loadNpmTasks 'grunt-contrib-uglify'
 
+  # Grunt plugins used for mobile app building
+  @loadNpmTasks 'grunt-contrib-compress'
+  @loadNpmTasks 'grunt-phonegap-build'
+
   # Grunt plugins used for testing
   @loadNpmTasks 'grunt-contrib-watch'
   @loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-coffeelint'
 
   # Our local tasks
-  @registerTask 'build', 'Build NoFlo for the chosen target platform', (target = 'all') =>
-    @task.run 'coffee'
-    if target is 'all' or target is 'browser'
-      @task.run 'component'
-      @task.run 'component_build'
-      @task.run 'combine'
-      @task.run 'uglify'
-
-  @registerTask 'test', 'Build NoFlo and run automated tests', (target = 'all') =>
-    @task.run 'coffeelint'
-    @task.run 'coffee'
-    if target is 'all' or target is 'browser'
-      @task.run 'component'
-      @task.run 'component_build'
-      @task.run 'combine'
-      @task.run 'mocha_phantomjs'
-
+  @registerTask 'build', ['component', 'component_build', 'combine', 'uglify']
+  @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
+  @registerTask 'app', ['build', 'compress', 'phonegap-build']
   @registerTask 'default', ['test']
