@@ -155,6 +155,22 @@ class NoFloPlugin
         from: iip.from
         to: iip.to
 
+    # Pass network events to edge inspector
+    runtime.listenNetwork (command, payload) ->
+      eventEdge = null
+      for edge in graph.edges
+        if edge.to.node is payload.to.node and edge.to.port is payload.to.port
+          unless payload.from
+            eventEdge = edge
+            continue
+          if edge.from.node is payload.from.node and edge.from.port is payload.from.port
+            eventEdge = edge
+      return unless eventEdge
+      eventEdge.dataflowEdge.get('log').add
+        type: command
+        group: payload.group
+        data: payload.data
+
   addNode: (node, graph) ->
     return unless node
 

@@ -3,6 +3,7 @@ class BaseRuntime
     @components = {}
     @types = {}
     @instances = {}
+    @networkListeners = []
     @connect 'graph'
     @connect 'network'
     @connect 'component'
@@ -101,12 +102,25 @@ class BaseRuntime
           id: port.id
           type: port.type
 
+  listenNetwork: (callback) ->
+    @networkListeners.push callback
+
+  sendNetworkEvent: (command, payload) ->
+    for callback in @networkListeners
+      callback command, payload
+
   recvComponent: (command, payload) ->
     switch command
       when 'component' then @registerComponent payload
 
   recvGraph: ->
-  recvNetwork: ->
+
+  recvNetwork: (command, payload) ->
+    switch command
+      when 'start' then return
+      when 'stop' then return
+      else
+        @sendNetworkEvent command, payload
 
   connect: (protocol) ->
   sendGraph: (command, payload) ->
