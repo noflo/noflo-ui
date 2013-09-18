@@ -32,5 +32,8 @@
     "grunt-combine": "~0.8.3",
     "grunt-component": "~0.1.2"
   },
+  "scripts": {
+    "test": "grunt test"
+  },
   "keywords": []
 }
