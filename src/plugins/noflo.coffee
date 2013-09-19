@@ -16,7 +16,7 @@ class NoFloPlugin
     @prepareGraph graph, dfGraph, runtime, callback
 
     runtime.iframe.onload = =>
-      runtime.sendGraph 'graph',
+      runtime.sendGraph 'clear',
         baseDir: graph.baseDir
       for node in graph.nodes
         @addNodeRuntime node, runtime
@@ -46,7 +46,7 @@ class NoFloPlugin
     runtime.loadComponents nofloGraph.baseDir
 
     # Prepare NoFlo runtime
-    runtime.sendGraph 'graph',
+    runtime.sendGraph 'clear',
       baseDir: nofloGraph.baseDir
 
     @subscribeDataflowEvents dataflowGraph
