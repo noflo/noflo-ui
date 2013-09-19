@@ -37,13 +37,16 @@
   <body>
     <div id="noflo-ui"></div>
     <script type="application/fbp">
-      'examples/clock.json' -> URL GetJson(ajax/Get)
-      GetJson() OUT -> IN ParseJson(strings/ParseJson)
-      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
-      ParseJson() OUT -> IN LoadGraph()
+      # 'examples/clock.json' -> URL GetJson(ajax/Get)
+      # GetJson() OUT -> IN ParseJson(strings/ParseJson)
+      # '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
+      # ParseJson() OUT -> IN LoadGraph()
       '#noflo-ui' -> CONTAINER LoadDataflow(ui/Dataflow)
-      'iframe' -> PREVIEW LoadDataflow()
-      LoadGraph() OUT -> GRAPH LoadDataflow()
+      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/CreateGraph)
+      'Hello' -> NAME LoadGraph()
+      LoadGraph() OUT -> GRAPH Determine(ui/DetermineRuntime)
+      Determine() RUNTIME -> PREVIEW LoadDataflow()
+      Determine() GRAPH -> GRAPH LoadDataflow()
       LoadDataflow() DATAFLOW -> IN Drop(core/Drop)
     </script>
     <script>

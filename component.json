@@ -20,7 +20,9 @@
   },
   "noflo": {
     "components": {
+      "CreateGraph": "components/CreateGraph.coffee",
       "LoadGraph": "components/LoadGraph.coffee",
+      "DetermineRuntime": "components/DetermineRuntime.coffee",
       "Dataflow": "components/Dataflow.coffee"
     }
   },
@@ -31,7 +33,9 @@
     "src/plugins/preview-iframe.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
+    "components/CreateGraph.coffee",
     "components/LoadGraph.coffee",
+    "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee"
   ],
   "json": [
