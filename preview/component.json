@@ -7,17 +7,19 @@
   "dependencies": {
     "noflo/noflo": "*",
     "noflo/noflo-runtime-iframe": "*",
+    "noflo/noflo-ajax": "*",
     "noflo/noflo-core": "*",
-    "noflo/noflo-flow": "*",
-    "noflo/noflo-objects": "*",
-    "noflo/noflo-strings": "*",
-    "noflo/noflo-dom": "*",
     "noflo/noflo-css": "*",
+    "noflo/noflo-dom": "*",
+    "noflo/noflo-flow": "*",
     "noflo/noflo-interaction": "*",
-    "noflo/noflo-physics": "*",
+    "noflo/noflo-localstorage": "*",
     "noflo/noflo-math": "*",
-    "d4tocchini/noflo-draggabilly": "*",
-    "noflo/noflo-css": "*"
+    "noflo/noflo-objects": "*",
+    "noflo/noflo-physics": "*",
+    "noflo/noflo-routers": "*",
+    "noflo/noflo-strings": "*",
+    "d4tocchini/noflo-draggabilly": "*"
   },
   "json": [
     "component.json"
