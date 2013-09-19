@@ -13,15 +13,26 @@
   ],
   "dependencies": {
     "meemoo/dataflow": "*",
-    "noflo/noflo": "*"
+    "noflo/noflo": "*",
+    "noflo/noflo-strings": "*",
+    "noflo/noflo-ajax": "*",
+    "noflo/noflo-core": "*"
   },
-  "main": "src/noflo-ui.js",
+  "noflo": {
+    "components": {
+      "LoadGraph": "components/LoadGraph.coffee",
+      "Dataflow": "components/Dataflow.coffee"
+    }
+  },
+  "main": "index.js",
   "scripts": [
-    "src/noflo-ui.coffee",
+    "index.js",
     "src/plugins/noflo.coffee",
     "src/plugins/preview-iframe.coffee",
     "src/runtimes/base.coffee",
-    "src/runtimes/iframe.coffee"
+    "src/runtimes/iframe.coffee",
+    "components/LoadGraph.coffee",
+    "components/Dataflow.coffee"
   ],
   "json": [
     "component.json"

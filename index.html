@@ -35,15 +35,26 @@
     </style>
   </head>
   <body>
-
     <div id="noflo-ui"></div>
-
+    <script type="application/fbp">
+      'examples/clock.json' -> URL GetJson(ajax/Get)
+      GetJson() OUT -> IN ParseJson(strings/ParseJson)
+      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
+      ParseJson() OUT -> IN LoadGraph()
+      '#noflo-ui' -> CONTAINER LoadDataflow(ui/Dataflow)
+      'iframe' -> PREVIEW LoadDataflow()
+      LoadGraph() OUT -> GRAPH LoadDataflow()
+      LoadDataflow() DATAFLOW -> IN Drop(core/Drop)
+    </script>
     <script>
     window.onload = function () {
-      var ui = require('/noflo-ui');
-      // Load graph JSON
-      $.getJSON('examples/clock.json', function (graphDefinition) {
-        ui.start('#noflo-ui', graphDefinition);
+      var noflo = require('noflo');
+      var loader = new noflo.ComponentLoader('/noflo-ui');
+      var fbp = document.querySelector('script[type="application/fbp"]');
+      var fbpString = fbp.innerText.trim();
+      noflo.graph.loadFBP(fbpString, function (graph) {
+        graph.baseDir = '/noflo-ui';
+        noflo.createNetwork(graph);
       });
     };
     </script>

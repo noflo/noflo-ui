@@ -1,8 +1,8 @@
 Base = require './base'
 
 class IframeRuntime extends Base
-  constructor: (dataflow, graph, iframe) ->
-    @iframe = iframe
+  constructor: (dataflow, graph) ->
+    @iframe = dataflow.plugins['preview-iframe'].getElement()
     @origin = window.location.origin
     super dataflow, graph
 
