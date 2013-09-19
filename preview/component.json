@@ -1,0 +1,25 @@
+{
+  "name": "noflo-ui-preview",
+  "description": "NoFlo runtime environment for client-side previews",
+  "author": "Henri Bergius <henri.bergius@iki.fi>",
+  "repo": "noflo/noflo-ui",
+  "keywords": [],
+  "dependencies": {
+    "noflo/noflo": "*",
+    "noflo/noflo-runtime-iframe": "*",
+    "noflo/noflo-core": "*",
+    "noflo/noflo-flow": "*",
+    "noflo/noflo-objects": "*",
+    "noflo/noflo-strings": "*",
+    "noflo/noflo-dom": "*",
+    "noflo/noflo-css": "*",
+    "noflo/noflo-interaction": "*",
+    "noflo/noflo-physics": "*",
+    "noflo/noflo-math": "*",
+    "d4tocchini/noflo-draggabilly": "*",
+    "noflo/noflo-css": "*"
+  },
+  "json": [
+    "component.json"
+  ]
+}

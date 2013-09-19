@@ -19,28 +19,27 @@ module.exports = ->
       install:
         options:
           action: 'install'
-    component_build:
-      'noflo-ui':
-        output: './browser/'
-        config: './component.json'
-        scripts: true
-        styles: false
-        plugins: ['coffee']
-        configure: (builder) ->
-          # Enable Component plugins
-          json = require 'component-json'
-          builder.use json()
-
-    # Fix broken Component aliases, as mentioned in
-    # https://github.com/anthonyshort/component-coffee/issues/3
-    combine:
-      browser:
-        input: 'browser/noflo-ui.js'
-        output: 'browser/noflo-ui.js'
-        tokens: [
-          token: '.coffee'
-          string: '.js'
-        ]
+      build:
+        options:
+          action: 'build'
+          args:
+            use: 'component-json,component-coffee'
+            out: 'browser'
+            name: 'noflo-ui'
+            copy: true
+      preview_install:
+        options:
+          action: 'install'
+          cwd: 'preview'
+      preview_build:
+        options:
+          action: 'build'
+          cwd: 'preview'
+          args:
+            use: 'component-json,component-coffee'
+            out: 'browser'
+            name: 'noflo-ui-preview'
+            copy: true
 
     # JavaScript minification for the browser
     uglify:
@@ -49,6 +48,9 @@ module.exports = ->
       noflo:
         files:
           './browser/noflo-ui.min.js': ['./browser/noflo-ui.js']
+      preview:
+        files:
+          './preview/browser/noflo-ui-preview.min.js': ['./preview/browser/noflo-ui-preview.js']
 
     compress:
       app:
@@ -119,8 +121,6 @@ module.exports = ->
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-component'
-  @loadNpmTasks 'grunt-component-build'
-  @loadNpmTasks 'grunt-combine'
   @loadNpmTasks 'grunt-contrib-uglify'
 
   # Grunt plugins used for mobile app building
@@ -133,7 +133,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-coffeelint'
 
   # Our local tasks
-  @registerTask 'build', ['component', 'component_build', 'combine', 'uglify']
+  @registerTask 'build', ['component', 'uglify']
   @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'app', ['build', 'compress', 'phonegap-build']
   @registerTask 'default', ['test']

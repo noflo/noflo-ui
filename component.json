@@ -13,21 +13,9 @@
   ],
   "dependencies": {
     "meemoo/dataflow": "*",
-    "noflo/noflo": "*",
-    "noflo/noflo-runtime-iframe": "*",
-    "noflo/noflo-core": "*",
-    "noflo/noflo-flow": "*",
-    "noflo/noflo-objects": "*",
-    "noflo/noflo-strings": "*",
-    "noflo/noflo-dom": "*",
-    "noflo/noflo-css": "*",
-    "noflo/noflo-interaction": "*",
-    "noflo/noflo-physics": "*",
-    "noflo/noflo-math": "*",
-    "d4tocchini/noflo-draggabilly": "*",
-    "noflo/noflo-css": "*"
+    "noflo/noflo": "*"
   },
-  "main": "src/noflo-ui.coffee",
+  "main": "src/noflo-ui.js",
   "scripts": [
     "src/noflo-ui.coffee",
     "src/plugins/noflo.coffee",

@@ -10,7 +10,7 @@ runtimes =
 
 exports.start = (container, graphDefinition) ->
   noflo.graph.loadJSON graphDefinition, (graph) ->
-    graph.baseDir = '/noflo-ui'
+    graph.baseDir = '/noflo-ui-preview'
 
     # TODO: Check the runtime definition of the graph
     require './plugins/preview-iframe'
