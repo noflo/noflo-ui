@@ -15,31 +15,17 @@ module.exports = ->
         ext: '.js'
 
     # Browser version building
-    component:
-      install:
-        options:
-          action: 'install'
-      build:
-        options:
-          action: 'build'
-          args:
-            use: 'component-json,component-coffee'
-            out: 'browser'
-            name: 'noflo-ui'
-            copy: true
+    exec:
+      main_install:
+        command: './node_modules/.bin/component install'
+      main_build:
+        command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui -c'
       preview_install:
-        options:
-          action: 'install'
-          cwd: 'preview'
+        command: './node_modules/.bin/component install'
+        cwd: 'preview'
       preview_build:
-        options:
-          action: 'build'
-          cwd: 'preview'
-          args:
-            use: 'component-json,component-coffee'
-            out: 'browser'
-            name: 'noflo-ui-preview'
-            copy: true
+        command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
+        cwd: 'preview'
 
     # JavaScript minification for the browser
     uglify:
@@ -120,7 +106,7 @@ module.exports = ->
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'
-  @loadNpmTasks 'grunt-component'
+  @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
 
   # Grunt plugins used for mobile app building
@@ -133,7 +119,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-coffeelint'
 
   # Our local tasks
-  @registerTask 'build', ['component', 'uglify']
+  @registerTask 'build', ['exec', 'uglify']
   @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'app', ['build', 'compress', 'phonegap-build']
   @registerTask 'default', ['test']
