@@ -1,0 +1,117 @@
+{
+  "properties": {
+    "environment": {
+      "runtime": "html"
+    },
+    "name": "Hello"
+  },
+  "exports": [
+    {
+      "private": "gettemplate.selector",
+      "public": "template"
+    },
+    {
+      "private": "gettarget.selector",
+      "public": "target"
+    },
+    {
+      "private": "executetemplate.in",
+      "public": "data"
+    },
+    {
+      "private": "writetemplate.container",
+      "public": "out"
+    }
+  ],
+  "processes": {
+    "GetTemplate": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 200,
+        "y": 200
+      }
+    },
+    "ReadTemplate": {
+      "component": "dom/ReadHtml",
+      "metadata": {
+        "x": 455,
+        "y": 200
+      }
+    },
+    "ExecuteTemplate": {
+      "component": "strings/StringTemplate",
+      "metadata": {
+        "x": 718,
+        "y": 198
+      }
+    },
+    "WriteTemplate": {
+      "component": "dom/WriteHtml",
+      "metadata": {
+        "x": 998,
+        "y": 196
+      }
+    },
+    "GetTarget": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 199,
+        "y": 349
+      }
+    }
+  },
+  "connections": [
+    {
+      "src": {
+        "process": "GetTemplate",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "ReadTemplate",
+        "port": "container"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "ReadTemplate",
+        "port": "html"
+      },
+      "tgt": {
+        "process": "ExecuteTemplate",
+        "port": "template"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "ExecuteTemplate",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "WriteTemplate",
+        "port": "html"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetTarget",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "WriteTemplate",
+        "port": "container"
+      },
+      "metadata": {
+        "route": 0
+      }
+    }
+  ]
+}
