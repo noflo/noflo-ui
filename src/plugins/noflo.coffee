@@ -87,9 +87,11 @@ class NoFloPlugin
     unless node.nofloNode
       # Ensure IDs are strings
       id = node.id + ''
-      node.nofloNode = graph.nofloGraph.addNode id, node.type,
-        x: node.get 'x'
-        y: node.get 'y'
+      node.nofloNode = graph.nofloGraph.getNode id
+      unless node.nofloNode
+        node.nofloNode = graph.nofloGraph.addNode id, node.type,
+          x: node.get 'x'
+          y: node.get 'y'
 
     node.on 'change:label', (node, newName) ->
       oldName = node.nofloNode.id
