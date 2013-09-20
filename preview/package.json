@@ -5,5 +5,8 @@
   "dependencies": {
     "component-json": "~0.1.4",
     "component-coffee": "~0.1.4"
+  },
+  "devDependencies": {
+    "component": "~0.17.6"
   }
 }
