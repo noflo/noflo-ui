@@ -16,12 +16,14 @@
     "noflo/noflo": "*",
     "noflo/noflo-strings": "*",
     "noflo/noflo-ajax": "*",
+    "noflo/noflo-localstorage": "*",
     "noflo/noflo-core": "*"
   },
   "noflo": {
     "components": {
       "CreateGraph": "components/CreateGraph.coffee",
       "LoadGraph": "components/LoadGraph.coffee",
+      "ListenGraph": "components/ListenGraph.coffee",
       "DetermineRuntime": "components/DetermineRuntime.coffee",
       "Dataflow": "components/Dataflow.coffee"
     }
@@ -35,6 +37,7 @@
     "src/runtimes/iframe.coffee",
     "components/CreateGraph.coffee",
     "components/LoadGraph.coffee",
+    "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee"
   ],

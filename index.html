@@ -37,17 +37,43 @@
   <body>
     <div id="noflo-ui"></div>
     <script type="application/fbp">
-      # 'examples/clock.json' -> URL GetJson(ajax/Get)
-      # GetJson() OUT -> IN ParseJson(strings/ParseJson)
-      # '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
-      # ParseJson() OUT -> IN LoadGraph()
+      # The DOM element where the UI will be run
       '#noflo-ui' -> CONTAINER LoadDataflow(ui/Dataflow)
-      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/CreateGraph)
-      'Hello' -> NAME LoadGraph()
-      LoadGraph() OUT -> GRAPH Determine(ui/DetermineRuntime)
+
+      # Basedir for loading components
+      '/noflo-ui-preview' -> BASEDIR CreateGraph(ui/CreateGraph)
+      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
+
+      # Name for new graphs
+      'Hello' -> DATA StartNew(core/Kick)
+
+      # Try loading from localStorage
+      'noflo-ui' -> KEY LoadStored(localstorage/GetItem)
+      LoadStored() ITEM -> IN ParseJson(strings/ParseJson)
+      ParseJson() OUT -> IN LoadGraph()
+
+      # If there is nothing in localStorage, then create new
+      LoadStored() ERROR -> IN StartNew()
+      StartNew() OUT -> NAME CreateGraph()
+
+      # Merge the flows of new graph and opened one
+      CreateGraph() OUT -> IN OpenGraph(core/Merge)
+      LoadGraph() OUT -> IN OpenGraph(core/Merge)
+
+      # Determine runtime and start UI
+      OpenGraph() OUT -> GRAPH Determine(ui/DetermineRuntime)
       Determine() RUNTIME -> PREVIEW LoadDataflow()
       Determine() GRAPH -> GRAPH LoadDataflow()
       LoadDataflow() DATAFLOW -> IN Drop(core/Drop)
+
+      # Listen to changes and save to localStorage
+      'noflo-ui' -> DATA SendKey(core/Kick)
+      SendKey() OUT -> KEY Store(localstorage/SetItem)
+      LoadDataflow() GRAPH -> GRAPH Listen(ui/ListenGraph)
+      Listen() CHANGED -> IN SplitChanged(core/Split)
+      SplitChanged() OUT -> IN SendKey()
+      SplitChanged() OUT -> IN ToJson(strings/Jsonify)
+      ToJson() OUT -> VALUE Store()
     </script>
     <script>
     window.onload = function () {
