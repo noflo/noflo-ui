@@ -55,10 +55,6 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['browser/noflo-noflo-runtime-iframe/runtime/network.js']
-          expand: true
-          dest: '/'
-        ,
           src: ['browser/noflo-ui.js']
           expand: true
           dest: '/'
@@ -68,6 +64,18 @@ module.exports = ->
           dest: '/'
         ,
           src: ['config.xml']
+          expand: true
+          dest: '/'
+        ,
+          src: ['preview/browser/noflo-noflo-runtime-iframe/runtime/network.js']
+          expand: true
+          dest: '/'
+        ,
+          src: ['preview/browser/noflo-ui-preview.js']
+          expand: true
+          dest: '/'
+        ,
+          src: ['preview/iframe.html']
           expand: true
           dest: '/'
         ,
