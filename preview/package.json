@@ -2,11 +2,10 @@
   "name": "noflo-ui-preview",
   "description": "Preview environment of the NoFlo Development Environment",
   "version": "0.1.0",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "component-json": "~0.1.4",
     "component-coffee": "~0.1.4"
-  },
-  "devDependencies": {
     "component": "~0.17.6"
   }
 }
