@@ -67,6 +67,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
+          src: ['css/*']
+          expand: true
+          dest: '/'
+        ,
           src: ['preview/browser/noflo-noflo-runtime-iframe/runtime/network.js']
           expand: true
           dest: '/'

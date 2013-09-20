@@ -43,5 +43,8 @@
   ],
   "json": [
     "component.json"
+  ],
+  "files": [
+    "css/noflo-ui.css"
   ]
 }
