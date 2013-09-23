@@ -19,6 +19,7 @@
     "noflo/noflo-localstorage": "*",
     "noflo/noflo-interaction": "*",
     "noflo/noflo-objects": "*",
+    "noflo/noflo-groups": "*",
     "noflo/noflo-dom": "*",
     "noflo/noflo-core": "*"
   },

@@ -43,8 +43,14 @@
         <h1>NoFlo Development Environment</h1>
         <h2>Sketches</h2>
         <a href="#new">Create new</a>
+        <ul id="sketches"></ul>
+
         <h2>Examples</h2>
+        <ul id="examples"></ul>
       </div>
+    </script>
+    <script type="text/template" id="main-graph-element">
+      <a href="#graph/<%- name %>"><%- name %></a>
     </script>
     <div id="noflo-ui"></div>
     <script type="application/fbp">
@@ -60,7 +66,36 @@
       SplitUiContainer OUT -> TARGET WriteMain
       Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
       PrepareMain OUT -> DATA WriteMain
-      WriteMain OUT -> IN DropMain(core/Drop)
+      'noflo-ui' -> STRING GraphListKey(strings/SendString)
+      WriteMain OUT -> IN MainIsReady(core/Split)
+      MainIsReady OUT -> IN GraphListKey
+
+      # Read graphs from storage and write to DOM
+      '#main-graph-element' -> SELECTOR GraphItemTemplate(dom/GetElement)
+      GraphItemTemplate ELEMENT -> CONTAINER ReadGraphItemTemplate(dom/ReadHtml)
+      ReadGraphItemTemplate HTML -> TEMPLATE WriteGraphElement(strings/StringTemplate)
+      GraphListKey OUT -> KEY GetGraphList(localstorage/GetItem)
+      ',' -> DELIMITER SplitGraphList(strings/SplitStr)
+      GetGraphList ITEM -> IN SplitGraphList
+      'li' -> STRING CreateGraphItem(strings/SendString)
+      SplitGraphList OUT -> IN SplitGraphItem(core/Split)
+      CreateGraphItem OUT -> TAGNAME CreateGraphElement(dom/CreateElement)
+      CreateGraphElement ELEMENT -> IN SplitGraphElement(core/Split)
+      'name' -> PROPERTY SetGraphName(objects/SetPropertyValue)
+      SplitGraphItem OUT -> IN CreateGraphItem
+      SplitGraphItem OUT -> VALUE SetGraphName
+      SplitGraphItem OUT -> START CreateGraphObject(objects/CreateObject)
+      CreateGraphObject OUT -> IN SetGraphName
+      SetGraphName OUT -> IN WriteGraphElement
+
+      '#sketches' -> STRING HoldGraphContainer(strings/SendString)
+      HoldGraphContainer OUT -> SELECTOR GetGraphContainer(dom/GetElement)
+      MainIsReady OUT -> IN HoldGraphContainer
+      GetGraphContainer ELEMENT -> PARENT AppendGraph(dom/AppendChild)
+      SplitGraphElement OUT -> CONTAINER WriteGraph(dom/WriteHtml)
+      WriteGraphElement OUT -> HTML WriteGraph(dom/WriteHtml)
+      WriteGraph CONTAINER -> CHILD AppendGraph
+
 
       # ## New graph view
       SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
@@ -90,16 +125,26 @@
       SplitNewJson OUT -> IN SendNewKey
       SplitNewJson OUT -> VALUE StoreNew
 
+      # Update list of graphs
+      'noflo-ui' -> STRING HoldGraphListKey(strings/SendString)
+      ',' -> DELIMITER CompileList(strings/CompileString)
+      GetGraphListForNew(localstorage/GetItem) ITEM -> DATA HoldList(core/Kick)
+      SplitName OUT -> IN HoldGraphListKey
+      SplitName OUT -> IN HoldList OUT -> IN SplitList(core/Split)
+      SplitName OUT -> DATA HoldName(core/Kick) OUT -> IN CompileList
+      SplitList OUT -> IN HoldName
+      SplitList OUT -> IN RemoveGrp(groups/RemoveGroups) OUT -> IN CompileList
+      HoldGraphListKey OUT -> KEY GetGraphListForNew(localstorage/GetItem)
+      'noflo-ui' -> KEY UpdateGraphList(localstorage/SetItem)
+      CompileList OUT -> VALUE UpdateGraphList
+
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)
       '/' -> DELIMITER CreateGraphUri(strings/CompileString)
       SplitNewJson OUT -> IN PrepareGraphUri
-      #SplitName OUT -> STRING PrepareGraphName(strings/SendString)
-      # SplitNewJson OUT -> IN PrepareGraphName
       PrepareGraphUri OUT -> IN CreateGraphUri
       SplitName OUT -> IN CreateGraphUri
-      #PrepareGraphName OUT -> IN CreateGraphUri
-      CreateGraphUri OUT -> IN ShowUrl(core/Output) OUT -> HASH Navigate(interaction/SetHash)
+      CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
 
       # ## Graph loading
       Router GRAPH -> IN SplitGraphName(core/Split)
@@ -169,7 +214,6 @@
       '' -> DATA MissedRoute(core/Kick)
       Router MISSED -> IN MissedRoute
       MissedRoute OUT -> HASH Navigate
-
     </script>
     <script>
     window.onload = function () {
