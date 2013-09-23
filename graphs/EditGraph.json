@@ -1,0 +1,172 @@
+{
+  "processes": {
+    "DataflowElement": {
+      "component": "ui/WriteTemplate"
+    },
+    "LoadDataflowElement": {
+      "component": "core/Kick"
+    },
+    "DataflowData": {
+      "component": "objects/CreateObject"
+    },
+    "LoadDataflow": {
+      "component": "ui/Dataflow"
+    },
+    "DomReady": {
+      "component": "core/Split"
+    },
+    "OpenGraph": {
+      "component": "core/Merge"
+    },
+    "Determine": {
+      "component": "ui/DetermineRuntime"
+    },
+    "Drop": {
+      "component": "core/Drop"
+    },
+    "Listen": {
+      "component": "ui/ListenGraph"
+    },
+    "SplitChanged": {
+      "component": "core/Split"
+    }
+  },
+  "connections": [
+    {
+      "data": "#dataflow-template",
+      "tgt": {
+        "process": "DataflowElement",
+        "port": "template"
+      }
+    },
+    {
+      "data": ".dataflow",
+      "tgt": {
+        "process": "LoadDataflowElement",
+        "port": "data"
+      }
+    },
+    {
+      "src": {
+        "process": "DataflowData",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "DataflowElement",
+        "port": "data"
+      }
+    },
+    {
+      "src": {
+        "process": "LoadDataflowElement",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "LoadDataflow",
+        "port": "container"
+      }
+    },
+    {
+      "src": {
+        "process": "DomReady",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "LoadDataflowElement",
+        "port": "in"
+      }
+    },
+    {
+      "src": {
+        "process": "DataflowElement",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "DomReady",
+        "port": "in"
+      }
+    },
+    {
+      "src": {
+        "process": "OpenGraph",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "Determine",
+        "port": "graph"
+      }
+    },
+    {
+      "src": {
+        "process": "Determine",
+        "port": "runtime"
+      },
+      "tgt": {
+        "process": "LoadDataflow",
+        "port": "preview"
+      }
+    },
+    {
+      "src": {
+        "process": "Determine",
+        "port": "graph"
+      },
+      "tgt": {
+        "process": "LoadDataflow",
+        "port": "graph"
+      }
+    },
+    {
+      "src": {
+        "process": "LoadDataflow",
+        "port": "dataflow"
+      },
+      "tgt": {
+        "process": "Drop",
+        "port": "in"
+      }
+    },
+    {
+      "src": {
+        "process": "LoadDataflow",
+        "port": "graph"
+      },
+      "tgt": {
+        "process": "Listen",
+        "port": "graph"
+      }
+    },
+    {
+      "src": {
+        "process": "Listen",
+        "port": "changed"
+      },
+      "tgt": {
+        "process": "SplitChanged",
+        "port": "in"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "private": "dataflowelement.target",
+      "public": "container"
+    },
+    {
+      "private": "dataflowdata.start",
+      "public": "writetemplate"
+    },
+    {
+      "private": "domready.out",
+      "public": "domready"
+    },
+    {
+      "private": "opengraph.in",
+      "public": "graph"
+    },
+    {
+      "private": "splitchanged.out",
+      "public": "changed"
+    }
+  ]
+}

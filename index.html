@@ -26,53 +26,95 @@
     <script type="text/template" id="dataflow-template">
       <div class="dataflow"></div>
     </script>
+    <script type="text/template" id="main-template">
+      <div class="noflo-ui-main">
+        <h1>NoFlo Development Environment</h1>
+        <h2>Sketches</h2>
+        <h2>Examples</h2>
+      </div>
+    </script>
     <div id="noflo-ui"></div>
     <script type="application/fbp">
-      # The DOM element where the UI will be run
-      '#dataflow-template' -> TEMPLATE DataflowElement(ui/WriteTemplate)
-      '.dataflow' -> DATA LoadDataflowElement(core/Kick)
-      '#noflo-ui' -> TARGET DataflowElement()
       # Basedir for loading components
-      '/noflo-ui-preview' -> BASEDIR CreateGraph(ui/CreateGraph)
-      '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
+      '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
 
-      'noflo-ui' -> DATA StartLoading(core/Kick)
-      '' -> START DataflowData(objects/CreateObject) OUT -> DATA DataflowElement()
-      LoadDataflowElement() OUT -> CONTAINER LoadDataflow(ui/Dataflow)
-      DomReady() OUT -> IN LoadDataflowElement()
-      DataflowElement() OUT -> IN DomReady(core/Split)
+      # The DOM element where the UI will be run
+      '#noflo-ui' -> IN SplitUiContainer(core/Split)
 
-      # Name for new graphs
-      'Hello' -> DATA StartNew(core/Kick)
+      # ## Main view
+      # Main view listing user's projects and examples
+      '#main-template' -> TEMPLATE WriteMain(ui/WriteTemplate)
+      SplitUiContainer OUT -> TARGET WriteMain
+      Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
+      PrepareMain OUT -> DATA WriteMain
+      WriteMain OUT -> IN DropMain(core/Drop)
+
+      # ## Graph loading
+      Router GRAPH -> IN SplitGraphName(core/Split)
+      SplitGraphName OUT -> DATA StartLoading(core/Kick)
+      SplitBaseDir OUT -> BASEDIR LoadGraph(ui/LoadGraph)
+
+      # Prepare Dataflow in DOM
+      SplitUiContainer OUT -> DATA LoadGraphDataflow(core/Kick)
+      SplitGraphName OUT -> IN LoadGraphDataflow
+      LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/EditGraph)
 
       # Try loading from localStorage
-      DomReady() OUT -> IN StartLoading()
-      StartLoading() OUT -> KEY LoadStored(localstorage/GetItem)
-      LoadStored() ITEM -> IN ParseJson(strings/ParseJson)
-      ParseJson() OUT -> IN LoadGraph()
+      EditGraph DOMREADY -> IN StartLoading
+      StartLoading OUT -> KEY LoadStored(localstorage/GetItem)
+      LoadStored ITEM -> IN ParseJson(strings/ParseJson)
+      ParseJson OUT -> IN LoadGraph
+      LoadGraph OUT -> GRAPH EditGraph
 
-      # If there is nothing in localStorage, then create new
-      LoadStored() ERROR -> IN StartNew()
-      StartNew() OUT -> NAME CreateGraph()
-
-      # Merge the flows of new graph and opened one
-      CreateGraph() OUT -> IN OpenGraph(core/Merge)
-      LoadGraph() OUT -> IN OpenGraph(core/Merge)
-
-      # Determine runtime and start UI
-      OpenGraph() OUT -> GRAPH Determine(ui/DetermineRuntime)
-      Determine() RUNTIME -> PREVIEW LoadDataflow()
-      Determine() GRAPH -> GRAPH LoadDataflow()
-      LoadDataflow() DATAFLOW -> IN Drop(core/Drop)
+      # If graph can't be found redirect to main
+      '' -> DATA GoToMain(core/Kick)
+      LoadStored ERROR -> IN GoToMain
+      GoToMain OUT -> HASH Navigate(interaction/SetHash)
 
       # Listen to changes and save to localStorage
-      'noflo-ui' -> DATA SendKey(core/Kick)
-      SendKey() OUT -> KEY Store(localstorage/SetItem)
-      LoadDataflow() GRAPH -> GRAPH Listen(ui/ListenGraph)
-      Listen() CHANGED -> IN SplitChanged(core/Split)
-      SplitChanged() OUT -> IN SendKey()
-      SplitChanged() OUT -> IN ToJson(strings/Jsonify)
-      ToJson() OUT -> VALUE Store()
+      SplitGraphName OUT -> DATA SendKey(core/Kick)
+      SendKey OUT -> KEY Store(localstorage/SetItem)
+      EditGraph CHANGED -> IN SplitChanged(core/Split)
+      SplitChanged OUT -> IN SendKey()
+      SplitChanged OUT -> IN ToJson(strings/Jsonify)
+      ToJson OUT -> VALUE Store
+      
+      # Example gist loading
+      Router EXAMPLE -> IN SplitGist(core/Split)
+      'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
+      '/' -> DELIMITER CreateUrl(strings/CompileString)
+      SplitGist OUT -> IN GistPrefix
+      GistPrefix OUT -> IN CreateUrl
+      SplitGist OUT -> IN CreateUrl
+      CreateUrl OUT -> URL GetGist(ajax/GetJsonP)
+      'data' -> KEY GetData(objects/GetObjectKey)
+      'files' -> KEY GetFiles(objects/GetObjectKey)
+      'noflo.json' -> KEY GetFile(objects/GetObjectKey)
+      'content' -> KEY GetFileContent(objects/GetObjectKey)
+      GetGist OUT -> IN GetData
+      GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
+      GetFileContent OUT -> IN ParseExample(strings/ParseJson)
+      SplitBaseDir OUT -> BASEDIR LoadExample(ui/LoadGraph)
+
+      # Prepare Dataflow in DOM
+      SplitUiContainer OUT -> DATA LoadExampleDataflow(core/Kick)
+      SplitGist OUT -> IN LoadExampleDataflow
+      LoadExampleDataflow OUT -> CONTAINER EditExample(ui/EditGraph)
+      SplitGist OUT -> WRITETEMPLATE EditExample
+      ParseExample OUT -> IN LoadExample
+      LoadExample OUT -> GRAPH EditExample
+
+      # Routing
+      '' -> START ListenHash(interaction/ListenHash)
+      ListenHash INITIAL -> IN MergeUrl(core/Merge)
+      ListenHash CHANGE -> IN ShowHash(core/Output) OUT -> IN MergeUrl
+      MergeUrl OUT -> URL Router
+
+      # Invalid route handling
+      '' -> DATA MissedRoute(core/Kick)
+      Router MISSED -> IN MissedRoute
+      MissedRoute OUT -> HASH Navigate
+
     </script>
     <script>
     window.onload = function () {

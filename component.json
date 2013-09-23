@@ -17,6 +17,7 @@
     "noflo/noflo-strings": "*",
     "noflo/noflo-ajax": "*",
     "noflo/noflo-localstorage": "*",
+    "noflo/noflo-interaction": "*",
     "noflo/noflo-objects": "*",
     "noflo/noflo-dom": "*",
     "noflo/noflo-core": "*"
@@ -27,9 +28,11 @@
       "LoadGraph": "components/LoadGraph.coffee",
       "ListenGraph": "components/ListenGraph.coffee",
       "DetermineRuntime": "components/DetermineRuntime.coffee",
-      "Dataflow": "components/Dataflow.coffee"
+      "Dataflow": "components/Dataflow.coffee",
+      "Router": "components/Router.coffee"
     },
     "graphs": {
+      "EditGraph": "graphs/EditGraph.json",
       "WriteTemplate": "graphs/WriteTemplate.json"
     }
   },
@@ -44,10 +47,12 @@
     "components/LoadGraph.coffee",
     "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
-    "components/Dataflow.coffee"
+    "components/Dataflow.coffee",
+    "components/Router.coffee"
   ],
   "json": [
     "component.json",
+    "graphs/EditGraph.json",
     "graphs/WriteTemplate.json"
   ],
   "files": [
