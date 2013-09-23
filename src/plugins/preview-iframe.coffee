@@ -15,14 +15,21 @@ class PreviewIframe
   getElement: ->
     @$iframe[0]
 
-  setContents: (preview, callback) ->
+  preparePreview: (preview, callback) ->
     preview = @normalizePreview preview
     @$iframe.attr('src', preview.src)
     @$iframe.css
       width: preview.width
       height: preview.height
     loaded = _.once callback
-    @$iframe.load loaded
+    @$iframe.load =>
+      @setContents preview
+      loaded()
+
+  setContents: (preview) ->
+    return unless preview.content
+    body = @$iframe[0].contentDocument.querySelector 'body'
+    body.innerHTML = preview.content
 
   normalizePreview: (preview) ->
     unless preview

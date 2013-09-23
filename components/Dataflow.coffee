@@ -37,7 +37,7 @@ class DataflowComponent extends noflo.AsyncComponent
     dataflow = new Dataflow
       appendTo: @container
 
-    dataflow.plugins[preview].setContents env.preview, =>
+    dataflow.plugins[preview].preparePreview env.preview, =>
       # Load runtime
       rt = @loadRuntime()
       runtime = new rt dataflow, graph
