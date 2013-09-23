@@ -36,17 +36,16 @@
       '/noflo-ui-preview' -> BASEDIR CreateGraph(ui/CreateGraph)
       '/noflo-ui-preview' -> BASEDIR LoadGraph(ui/LoadGraph)
 
+      'noflo-ui' -> DATA StartLoading(core/Kick)
       '' -> START DataflowData(objects/CreateObject) OUT -> DATA DataflowElement()
       LoadDataflowElement() OUT -> CONTAINER LoadDataflow(ui/Dataflow)
       DomReady() OUT -> IN LoadDataflowElement()
       DataflowElement() OUT -> IN DomReady(core/Split)
 
-
       # Name for new graphs
       'Hello' -> DATA StartNew(core/Kick)
 
       # Try loading from localStorage
-      'noflo-ui' -> DATA StartLoading(core/Kick)
       DomReady() OUT -> IN StartLoading()
       StartLoading() OUT -> KEY LoadStored(localstorage/GetItem)
       LoadStored() ITEM -> IN ParseJson(strings/ParseJson)
