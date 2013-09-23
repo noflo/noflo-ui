@@ -4,6 +4,7 @@ class BaseRuntime
     @types = {}
     @instances = {}
     @networkListeners = []
+    @resetListeners = []
     @connect 'graph'
     @connect 'network'
     @connect 'component'
@@ -101,6 +102,13 @@ class BaseRuntime
           parentNode: instance
           id: port.id
           type: port.type
+
+  listenReset: (callback) ->
+    @resetListeners.push callback
+
+  sendResetEvent: ->
+    for callback in @resetListeners
+      do callback
 
   listenNetwork: (callback) ->
     @networkListeners.push callback

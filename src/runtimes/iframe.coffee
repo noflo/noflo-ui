@@ -4,6 +4,11 @@ class IframeRuntime extends Base
   constructor: (dataflow, graph) ->
     @iframe = dataflow.plugins['preview-iframe'].getElement()
     @origin = window.location.origin
+
+    @iframe.addEventListener 'load', =>
+      @sendResetEvent()
+    , false
+
     super dataflow, graph
 
   sendGraph: (command, payload) ->

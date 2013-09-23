@@ -15,7 +15,7 @@ class NoFloPlugin
     callback = if callback then callback else ->
     @prepareGraph graph, dfGraph, runtime, callback
 
-    runtime.iframe.onload = =>
+    runtime.listenReset =>
       runtime.sendGraph 'clear',
         baseDir: graph.baseDir
       for node in graph.nodes
@@ -42,7 +42,7 @@ class NoFloPlugin
     # Provide a runtime reference
     nofloGraph.runtime = runtime
 
-    # Load components from iframe
+    # Load components from runtime
     runtime.loadComponents nofloGraph.baseDir
 
     # Prepare NoFlo runtime
