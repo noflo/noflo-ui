@@ -10,3 +10,10 @@ body {
   right: 0;
   z-index: 1;
 }
+
+#preview-iframe {
+  display: none;
+}
+.dataflow-card #preview-iframe {
+  display: block;
+}

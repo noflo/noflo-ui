@@ -3,7 +3,7 @@
 class PreviewIframe
   initialize: (dataflow) ->
     @$iframe = $('<iframe id="preview-iframe"></iframe>')
-    $('body').append(@$iframe)
+    $(dataflow.el).append(@$iframe)
     
     dataflow.addPlugin
       id: 'preview'
