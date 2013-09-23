@@ -102,7 +102,15 @@ module.exports = ->
 
     # Automated recompilation and testing when developing
     watch:
-      files: ['spec/*.coffee', 'src/*.coffee', 'src/**/*.coffee']
+      files: [
+        'spec/*.coffee'
+        'src/*.coffee'
+        'src/**/*.coffee'
+        'components/*.coffee'
+        'graphs/*.json'
+        'src/**/*.coffee'
+        'component.json'
+      ]
       tasks: ['test']
 
     # BDD tests on browser
