@@ -6,6 +6,7 @@ class Router extends noflo.Component
       url: new noflo.Port 'string'
     @outPorts =
       main: new noflo.Port 'string'
+      new: new noflo.Port 'string'
       graph: new noflo.Port 'string'
       example: new noflo.Port 'string'
       missed: new noflo.Port 'string'
@@ -14,6 +15,11 @@ class Router extends noflo.Component
       if url is ''
         @outPorts.main.send url
         @outPorts.main.disconnect()
+        return
+
+      if url is 'new'
+        @outPorts.new.send url
+        @outPorts.new.disconnect()
         return
 
       if url.substr(0, 6) is 'graph/'

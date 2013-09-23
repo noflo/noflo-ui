@@ -26,10 +26,23 @@
     <script type="text/template" id="dataflow-template">
       <div class="dataflow"></div>
     </script>
+    <script type="text/template" id="new-template">
+      <div class="noflo-ui-new">
+        <h1>Create new sketch</h2>
+        <form>
+          <label>
+            Graph name
+            <input type="text" id="name" placeholder="MyCoolGraph">
+          </label>
+          <button id="create">Create</button>
+        </form>
+      </div>
+    </script>
     <script type="text/template" id="main-template">
       <div class="noflo-ui-main">
         <h1>NoFlo Development Environment</h1>
         <h2>Sketches</h2>
+        <a href="#new">Create new</a>
         <h2>Examples</h2>
       </div>
     </script>
@@ -49,6 +62,45 @@
       PrepareMain OUT -> DATA WriteMain
       WriteMain OUT -> IN DropMain(core/Drop)
 
+      # ## New graph view
+      SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
+      '#new-template' -> TEMPLATE WriteNew(ui/WriteTemplate)
+      SplitUiContainer OUT -> TARGET WriteNew
+      Router(ui/Router) NEW -> START PrepareNew(objects/CreateObject)
+      PrepareNew OUT -> DATA WriteNew
+      '#create' -> DATA CreateButtonId(core/Kick)
+      '#name' -> DATA NameInputId(core/Kick)
+      WriteNew OUT -> IN SplitNew(core/Split)
+      SplitNew OUT -> IN CreateButtonId
+      CreateButtonId OUT -> SELECTOR GetCreateButton(dom/GetElement)
+      GetCreateButton ELEMENT -> ELEMENT ListenClick(interaction/ListenMouse)
+      SplitNew OUT -> IN NameInputId
+      NameInputId OUT -> SELECTOR GetNameInput(dom/GetElement)
+      GetNameInput ELEMENT -> DATA HoldInput(core/Kick)
+      HoldInput OUT -> IN GetName(objects/GetObjectKey)
+      'value' -> KEY GetName
+      ListenClick CLICK -> IN HoldInput
+
+      # Create graph and save
+      GetName OUT -> IN SplitName(core/Split) OUT -> NAME CreateGraph
+      CreateGraph OUT -> IN NewToJson(strings/Jsonify)
+      SplitName OUT -> DATA SendNewKey(core/Kick)
+      SendNewKey OUT -> KEY StoreNew(localstorage/SetItem)
+      NewToJson OUT -> IN SplitNewJson(core/Split)
+      SplitNewJson OUT -> IN SendNewKey
+      SplitNewJson OUT -> VALUE StoreNew
+
+      # Redirect to graph
+      'graph' -> STRING PrepareGraphUri(strings/SendString)
+      '/' -> DELIMITER CreateGraphUri(strings/CompileString)
+      SplitNewJson OUT -> IN PrepareGraphUri
+      #SplitName OUT -> STRING PrepareGraphName(strings/SendString)
+      # SplitNewJson OUT -> IN PrepareGraphName
+      PrepareGraphUri OUT -> IN CreateGraphUri
+      SplitName OUT -> IN CreateGraphUri
+      #PrepareGraphName OUT -> IN CreateGraphUri
+      CreateGraphUri OUT -> IN ShowUrl(core/Output) OUT -> HASH Navigate(interaction/SetHash)
+
       # ## Graph loading
       Router GRAPH -> IN SplitGraphName(core/Split)
       SplitGraphName OUT -> DATA StartLoading(core/Kick)
@@ -57,6 +109,7 @@
       # Prepare Dataflow in DOM
       SplitUiContainer OUT -> DATA LoadGraphDataflow(core/Kick)
       SplitGraphName OUT -> IN LoadGraphDataflow
+      SplitGraphName OUT -> WRITETEMPLATE EditGraph
       LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/EditGraph)
 
       # Try loading from localStorage
@@ -68,7 +121,8 @@
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)
-      LoadStored ERROR -> IN GoToMain
+      LoadStored ERROR -> IN Errors(core/Merge)
+      Errors OUT -> IN GoToMain
       GoToMain OUT -> HASH Navigate(interaction/SetHash)
 
       # Listen to changes and save to localStorage
@@ -93,6 +147,7 @@
       'content' -> KEY GetFileContent(objects/GetObjectKey)
       GetGist OUT -> IN GetData
       GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
+      GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
       SplitBaseDir OUT -> BASEDIR LoadExample(ui/LoadGraph)
 
@@ -107,7 +162,7 @@
       # Routing
       '' -> START ListenHash(interaction/ListenHash)
       ListenHash INITIAL -> IN MergeUrl(core/Merge)
-      ListenHash CHANGE -> IN ShowHash(core/Output) OUT -> IN MergeUrl
+      ListenHash CHANGE -> IN MergeUrl
       MergeUrl OUT -> URL Router
 
       # Invalid route handling
