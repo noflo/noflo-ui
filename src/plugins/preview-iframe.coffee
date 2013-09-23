@@ -22,9 +22,7 @@ class PreviewIframe
       width: preview.width
       height: preview.height
     loaded = _.once callback
-    @$iframe.load =>
-      @setContents preview
-      loaded()
+    @$iframe.load loaded
 
   setContents: (preview) ->
     return unless preview.content

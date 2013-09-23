@@ -2,10 +2,12 @@ Base = require './base'
 
 class IframeRuntime extends Base
   constructor: (dataflow, graph) ->
-    @iframe = dataflow.plugins['preview-iframe'].getElement()
+    @preview = dataflow.plugins['preview-iframe']
+    @iframe = @preview.getElement()
     @origin = window.location.origin
 
     @iframe.addEventListener 'load', =>
+      @preview.setContents graph.properties.environment
       @sendResetEvent()
     , false
 
