@@ -8,13 +8,6 @@ class WebSocketRuntime extends Base
     @buffer = []
     super dataflow, graph
 
-  sendGraph: (command, payload) ->
-    @send 'graph', command, payload
-  sendNetwork: (command, payload) ->
-    @send 'graph', command, payload
-  sendGraph: (command, payload) ->
-    @send 'graph', command, payload
-
   connect: (protocol) ->
     return if @connection or @connecting
     @connection = new WebSocket @getUrl(), @protocol
