@@ -53,6 +53,10 @@ If you prefer, you can also start a watcher process that will do a rebuild whene
 
 In addition to this project, the other repository of interest is the [dataflow](https://github.com/meemoo/dataflow) graph editor widget used for editing flows.
 
+### Adding components
+
+The HTML runtime of NoFlo utilizes a custom [Component.io](http://component.io/) build of NoFlo that includes most of the common NoFlo [component libraries](http://noflojs.org/library/) that work with the browser. If you need to add new libraries, edit the `preview/component.json` file and rebuild.
+
 ### Supporting other FBP systems
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs. Instead, it is utilizing the [FBP Network Protocol](https://github.com/noflo/noflo/issues/107) which enables it to talk to any compatible FBP system.
