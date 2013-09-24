@@ -109,7 +109,7 @@ module.exports = ->
         'graphs/*.json'
         'component.json'
       ]
-      tasks: ['exec:main_build']
+      tasks: ['coffeelint','exec:main_build']
 
 
     # BDD tests on browser
@@ -121,7 +121,17 @@ module.exports = ->
 
     # Coding standards
     coffeelint:
-      components: ['components/*.coffee']
+      # noflo:
+      options:
+        max_line_length:
+          level: "ignore"
+      files: [
+        'Gruntfile.coffee'
+        'src/*.coffee'
+        'src/**/*.coffee'
+        'components/*.coffee'
+      ]
+
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'

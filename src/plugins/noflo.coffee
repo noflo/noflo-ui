@@ -90,8 +90,8 @@ class NoFloPlugin
     randomString = (num) ->
       unless num?
         num = 60466176 # 36^5
-      num = Math.floor( Math.random() * num );
-      return num.toString(36);
+      num = Math.floor( Math.random() * num )
+      return num.toString(36)
 
     unless node.nofloNode?
       # Ensure IDs are unique strings
@@ -101,7 +101,7 @@ class NoFloPlugin
         id = node.type + '_' + randomString()
       node.set("nofloId", id)
       # Sync label
-      label = node.get("label");
+      label = node.get("label")
       unless label?
         label = node.type
       nofloNode = graph.nofloGraph.addNode id, node.type,

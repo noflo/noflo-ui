@@ -11,13 +11,13 @@ class BaseRuntime
     @prepareComponents()
 
   libraryUpdater: _.debounce ->
-      @dataflow.plugins.library.update
-        exclude: [
-          "base"
-          "base-resizable"
-          "dataflow-subgraph"
-        ]
-    , 100
+    @dataflow.plugins.library.update
+      exclude: [
+        "base"
+        "base-resizable"
+        "dataflow-subgraph"
+      ]
+  , 100
 
   getComponentInstance: (name, attributes) ->
     return null unless @types[name]
