@@ -70,7 +70,7 @@
       SplitUiContainer OUT -> TARGET WriteMain
       Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
       PrepareMain OUT -> DATA WriteMain
-      'noflo-ui' -> STRING GraphListKey(strings/SendString)
+      'noflo-ui-graphs' -> STRING GraphListKey(strings/SendString)
       WriteMain OUT -> IN MainIsReady(core/Split)
       MainIsReady OUT -> IN GraphListKey
 
@@ -129,7 +129,7 @@
       SplitNewJson OUT -> VALUE StoreNew
 
       # Update list of graphs
-      'noflo-ui' -> STRING HoldGraphListKey(strings/SendString)
+      'noflo-ui-graphs' -> STRING HoldGraphListKey(strings/SendString)
       ',' -> DELIMITER CompileList(strings/CompileString)
       GetGraphListForNew(localstorage/GetItem) ITEM -> DATA HoldList(core/Kick)
       SplitName OUT -> IN HoldGraphListKey
@@ -138,7 +138,7 @@
       SplitList OUT -> IN HoldName
       SplitList OUT -> IN RemoveGrp(groups/RemoveGroups) OUT -> IN CompileList
       HoldGraphListKey OUT -> KEY GetGraphListForNew(localstorage/GetItem)
-      'noflo-ui' -> KEY UpdateGraphList(localstorage/SetItem)
+      'noflo-ui-graphs' -> KEY UpdateGraphList(localstorage/SetItem)
       CompileList OUT -> VALUE UpdateGraphList
 
       # Redirect to graph
