@@ -54,11 +54,11 @@
     "graphs/WriteTemplate.json"
   ],
   "json": [
+    "graphs/EditGraph.json",
+    "graphs/WriteTemplate.json",
     "component.json"
   ],
   "files": [
-    "css/noflo-ui.css",
-    "graphs/EditGraph.json",
-    "graphs/WriteTemplate.json"
+    "css/noflo-ui.css"
   ]
 }
