@@ -23,4 +23,6 @@
     <feature name="http://api.phonegap.com/1.0/network"/>
     <!-- Disable menu bar on Android -->
     <preference name="android-minSdkVersion" value="11" />
+    <!-- Platforms to build for -->
+    <gap:platform name="android" />
 </widget>
