@@ -54,6 +54,10 @@
     </script>
     <div id="noflo-ui"></div>
     <script type="application/fbp">
+      # List of examples to ship
+      # TODO: Read these from external source
+      '6608098=Clock' -> DATA ExamplesList(core/Kick)
+
       # Basedir for loading components
       '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
 
@@ -95,7 +99,6 @@
       SplitGraphElement OUT -> CONTAINER WriteGraph(dom/WriteHtml)
       WriteGraphElement OUT -> HTML WriteGraph(dom/WriteHtml)
       WriteGraph CONTAINER -> CHILD AppendGraph
-
 
       # ## New graph view
       SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
