@@ -13,13 +13,6 @@ class IframeRuntime extends Base
 
     super dataflow, graph
 
-  sendGraph: (command, payload) ->
-    @send 'graph', command, payload
-  sendNetwork: (command, payload) ->
-    @send 'network', command, payload
-  sendComponent: (command, payload) ->
-    @send 'component', command, payload
-
   getFrameWindow: ->
     @iframe.contentWindow
 

@@ -42,21 +42,29 @@
     "index.js",
     "src/plugins/noflo.coffee",
     "src/plugins/preview-iframe.coffee",
+    "src/plugins/preview-websocket.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
+    "src/runtimes/websocket.coffee",
     "components/CreateGraph.coffee",
     "components/LoadGraph.coffee",
     "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee",
-    "components/Router.coffee"
-  ],
-  "json": [
-    "component.json",
+    "components/Router.coffee",
     "graphs/EditGraph.json",
     "graphs/WriteTemplate.json"
   ],
+  "json": [
+    "graphs/EditGraph.json",
+    "graphs/WriteTemplate.json",
+    "component.json"
+  ],
   "files": [
-    "css/noflo-ui.css"
+    "css/noflo-ui.css",
+    "preview/iframe.html",
+    "preview/package.json",
+    "preview/component.json",
+    "index.html"
   ]
 }
