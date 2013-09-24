@@ -49,7 +49,7 @@
     "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee",
-    "components/Router.coffee",
+    "components/Router.coffee"
   ],
   "json": [
     "graphs/EditGraph.json",
