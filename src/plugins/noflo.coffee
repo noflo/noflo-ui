@@ -10,6 +10,8 @@ class NoFloPlugin
     @dataflow.plugins.source.listeners false
     @dataflow.plugins.log.listeners false
 
+    window.df = @dataflow
+
   registerGraph: (graph, runtime, callback) ->
     dfGraph = @dataflow.loadGraph {}
     callback = if callback then callback else ->
@@ -84,18 +86,44 @@ class NoFloPlugin
         graph.nofloGraph.removeEdge edge.from.node, edge.from.port, edge.to.node, edge.to.port
 
   subscribeDataflowNode: (node, graph) ->
-    unless node.nofloNode
-      # Ensure IDs are strings
-      id = node.id + ''
-      node.nofloNode = graph.nofloGraph.getNode id
-      unless node.nofloNode
-        node.nofloNode = graph.nofloGraph.addNode id, node.type,
-          x: node.get 'x'
-          y: node.get 'y'
+
+    randomString = (num) ->
+      unless num?
+        num = 60466176 # 36^5
+      num = Math.floor( Math.random() * num );
+      return num.toString(36);
+
+    unless node.nofloNode?
+      # Ensure IDs are unique strings
+      # id = node.id+""
+      id = node.type + '_' + randomString()
+      while graph.nofloGraph.getNode(id)?
+        id = node.type + '_' + randomString()
+      node.set("nofloId", id)
+      # Sync label
+      label = node.get("label");
+      unless label?
+        label = node.type
+      nofloNode = graph.nofloGraph.addNode id, node.type,
+        x: node.get 'x'
+        y: node.get 'y'
+        label: label
+
+      # Reference one another
+      node.nofloNode = nofloNode
+      nofloNode.dataflowNode = node
+
 
     node.on 'change:label', (node, newName) ->
+      # Change label
+      node.nofloNode.metadata.label = newName
+      # Change id
       oldName = node.nofloNode.id
-      graph.nofloGraph.renameNode oldName, newName + ''
+      # Ensure unique
+      newId = newName + '_' + randomString()
+      while graph.nofloGraph.getNode(newId)?
+        newId = newName + '_' + randomString()
+      graph.nofloGraph.renameNode oldName, newId
     node.on 'change:x change:y', ->
       node.nofloNode.metadata.x = node.get 'x'
       node.nofloNode.metadata.y = node.get 'y'
@@ -177,20 +205,23 @@ class NoFloPlugin
   addNode: (node, graph) ->
     return unless node
 
+    return if node.dataflowNode?
+
+    return if graph.nodes.findWhere({nofloId: node.id})?
+
     @addNodeRuntime node, graph.nofloGraph.runtime
 
-    unless node.dataflowNode
-      # Load the component
-      dfNode = graph.nofloGraph.runtime.getComponentInstance node.component,
-        id: node.id
-        label: node.id
-        x: ( if node.metadata.x? then node.metadata.x else 300 )
-        y: ( if node.metadata.y? then node.metadata.y else 300 )
-        parentGraph: graph
+    # Load the component
+    dfNode = graph.nofloGraph.runtime.getComponentInstance node.component,
+      id: node.id
+      label: ( if node.metadata.label? then node.metadata.label else node.id )
+      x: ( if node.metadata.x? then node.metadata.x else 500 )
+      y: ( if node.metadata.y? then node.metadata.y else 300 )
+      parentGraph: graph
 
-      # Reference one another
-      node.dataflowNode = dfNode
-      node.nofloNode = node
+    # Reference one another
+    node.dataflowNode = dfNode
+    dfNode.nofloNode = node
 
     graph.nodes.add dfNode
 
@@ -213,7 +244,7 @@ class NoFloPlugin
         parentGraph: graph
         source: edge.from
         target: edge.to
-        route: if edge.metadata.route then edge.metadata.route else 0
+        route: if edge.metadata.route? then edge.metadata.route else 0
 
       # Reference one another
       dfEdge.nofloEdge = edge
