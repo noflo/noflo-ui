@@ -23,8 +23,9 @@ class DetermineRuntime extends noflo.Component
     graph
 
   determineRuntime: (graph) ->
-    switch graph.properties.enviroment
+    switch graph.properties.environment.runtime
       when 'html' then return 'iframe'
+      when 'websocket' then return 'websocket'
       else return 'iframe'
 
 exports.getComponent = -> new DetermineRuntime

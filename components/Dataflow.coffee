@@ -4,7 +4,6 @@ Dataflow = require('/meemoo-dataflow').Dataflow
 # Load NoFlo connector plugin
 nofloPlugin = require '../src/plugins/noflo'
 
-
 class DataflowComponent extends noflo.AsyncComponent
   constructor: ->
     @preview = 'iframe'

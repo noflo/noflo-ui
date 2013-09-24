@@ -131,8 +131,12 @@ class BaseRuntime
         @sendNetworkEvent command, payload
 
   connect: (protocol) ->
+
   sendGraph: (command, payload) ->
+    @send 'graph', command, payload
   sendNetwork: (command, payload) ->
+    @send 'network', command, payload
   sendComponent: (command, payload) ->
+    @send 'component', command, payload
 
 module.exports = BaseRuntime
