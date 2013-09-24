@@ -50,8 +50,6 @@
     "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee",
     "components/Router.coffee",
-    "graphs/EditGraph.json",
-    "graphs/WriteTemplate.json"
   ],
   "json": [
     "graphs/EditGraph.json",
@@ -59,6 +57,10 @@
     "component.json"
   ],
   "files": [
-    "css/noflo-ui.css"
+    "css/noflo-ui.css",
+    "preview/iframe.html",
+    "preview/package.json",
+    "preview/component.json",
+    "index.html"
   ]
 }
