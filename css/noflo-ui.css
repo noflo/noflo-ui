@@ -1,5 +1,7 @@
 body {
-  background-color: hsl(230,10%,85%);
+  background-color: #2a2b31;
+  color: #ffffff;
+  font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 #noflo-ui {
@@ -11,9 +13,45 @@ body {
   z-index: 1;
 }
 
+.noflo-ui-main {
+  padding: 1em;
+}
+
+.noflo-ui-main .btn {
+  padding: 0.5em;
+  margin: 0.5em;
+  background-color: #c0c0c0;
+  color: #000000;
+  border-radius: 2px;
+}
+
+.noflo-ui-main ul {
+  margin-top: 1em;
+  margin-left: 0px;
+  list-style: none;
+}
+
+.noflo-ui-main ul li a {
+  float: left;
+  margin: 6px;
+  background-color: #000000;
+  color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  width: 60px;
+  height: 20px;
+}
+
+.noflo-ui-main h2 {
+  clear: left;
+  margin-top: 1em;
+}
+
 #preview-iframe {
   display: none;
 }
 .dataflow-card #preview-iframe {
   display: block;
 }
+
+
