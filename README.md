@@ -22,12 +22,16 @@ In addition to graphs developed by users, the NoFlo UI is able to load and run e
 
 The examples should also provide the necessary information for running the example inside the `environment` key of the graph propeties: 
 
-* `runtime`: `html` for client-side flows, `nodejs` for Node.js server-side flows
+* `runtime`: `html` for client-side flows, `websocket` for Node.js server-side flows
 * `content`: optional HTML contents to insert into the UIs preview card
 * `width`: optional width of the preview card in pixels
 * `height`: optional height of the preview card in pixels
 
 Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you can also [run it](http://noflo.github.io/noflo-ui/#example/6608098)).
+
+### Managing server-side flows
+
+In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-ui-server](https://github.com/noflo/noflo-ui-server).
 
 ### Mobile app
 
