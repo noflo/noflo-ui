@@ -13,6 +13,7 @@
   ],
   "dependencies": {
     "meemoo/dataflow": "*",
+    "component/emitter": "*",
     "noflo/noflo": "*",
     "noflo/noflo-strings": "*",
     "noflo/noflo-ajax": "*",
@@ -41,8 +42,7 @@
   "scripts": [
     "index.js",
     "src/plugins/noflo.coffee",
-    "src/plugins/preview-iframe.coffee",
-    "src/plugins/preview-websocket.coffee",
+    "src/plugins/preview.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",

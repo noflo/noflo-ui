@@ -8,19 +8,34 @@ class WebSocketRuntime extends Base
     @buffer = []
     super dataflow, graph
 
-  connect: (protocol) ->
+  getType: -> 'websocket'
+
+  connect: (preview) ->
     return if @connection or @connecting
-    @connection = new WebSocket @getUrl(), @protocol
+    @address = @getUrl()
+    @connection = new WebSocket @address, @protocol
     @connection.addEventListener 'open', =>
       @connecting = false
+      @emit 'status',
+        state: 'online'
+        label: 'connected'
+      @emit 'connected'
       @flush()
     , false
     @connection.addEventListener 'message', @handleMessage, false
     @connection.addEventListener 'error', @handleError, false
     @connection.addEventListener 'close', =>
       @connection = null
+      @emit 'status',
+        state: 'offline'
+        label: 'disconnected'
+      @emit 'disconnected'
     , false
     @connecting = true
+
+  disconnect: (protocol) ->
+    return unless @connection
+    @connection.close()
 
   send: (protocol, command, payload) ->
     if @connecting
@@ -35,10 +50,6 @@ class WebSocketRuntime extends Base
       protocol: protocol
       command: command
       payload: payload
-
-  disconnect: (protocol) ->
-    return unless @connection
-    @connection.close()
 
   getUrl: ->
     return "ws://#{location.hostname}:3569"

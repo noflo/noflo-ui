@@ -29,17 +29,18 @@ class DataflowComponent extends noflo.AsyncComponent
       return
 
     # Load preview plugin
-    preview = "preview-#{@preview}"
     env = graph.properties.environment
-    require "../src/plugins/#{preview}"
+    require "../src/plugins/preview"
 
+    # Load a Dataflow instance
     dataflow = new Dataflow
       appendTo: @container
 
-    dataflow.plugins[preview].preparePreview env.preview, =>
-      # Load runtime
-      rt = @loadRuntime()
-      runtime = new rt dataflow, graph
+    # Load runtime and pass to preview plugin
+    rt = @loadRuntime()
+    runtime = new rt dataflow, graph
+    dataflow.plugins.preview.setRuntime runtime
+    dataflow.plugins.preview.preparePreview env, =>
 
       # Register graph with Dataflow
       dataflow.plugins.noflo.registerGraph graph, runtime

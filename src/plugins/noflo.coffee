@@ -17,7 +17,11 @@ class NoFloPlugin
     callback = if callback then callback else ->
     @prepareGraph graph, dfGraph, runtime, callback
 
-    runtime.listenReset =>
+    # Load components immediately
+    runtime.loadComponents graph.baseDir
+
+    # When we reconnect we should clear and update the graph
+    runtime.on 'connected', =>
       runtime.sendGraph 'clear',
         baseDir: graph.baseDir
       for node in graph.nodes
@@ -26,7 +30,6 @@ class NoFloPlugin
         @addEdgeRuntime edge, runtime
       for iip in graph.initializers
         @addInitialRuntime iip, runtime
-      runtime.sendNetwork 'start'
 
   registerSubgraph: (graph, runtime, callback) ->
     dfGraph = new Graph.Model
@@ -43,9 +46,6 @@ class NoFloPlugin
 
     # Provide a runtime reference
     nofloGraph.runtime = runtime
-
-    # Load components from runtime
-    runtime.loadComponents nofloGraph.baseDir
 
     # Prepare NoFlo runtime
     runtime.sendGraph 'clear',
@@ -184,7 +184,8 @@ class NoFloPlugin
         to: iip.to
 
     # Pass network events to edge inspector
-    runtime.listenNetwork (command, payload) ->
+    runtime.on 'network', ({command, payload}) ->
+      return unless payload.to or payload.from
       eventEdge = null
       for edge in graph.edges
         if edge.to.node is payload.to.node and edge.to.port is payload.to.port

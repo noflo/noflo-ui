@@ -1,14 +1,31 @@
-class BaseRuntime
+EventEmitter = require 'emitter'
+
+class BaseRuntime extends EventEmitter
   constructor: (@dataflow, @graph) ->
     @components = {}
     @types = {}
     @instances = {}
-    @networkListeners = []
-    @resetListeners = []
-    @connect 'graph'
-    @connect 'network'
-    @connect 'component'
     @prepareComponents()
+    @address = null
+
+  getType: -> ''
+  getAddress: -> @address
+
+  # Connect to the target runtime environment (iframe URL, WebSocket address)
+  connect: (target) ->
+
+  disconnect: ->
+
+  # Start a NoFlo Network
+  start: ->
+    @sendNetwork 'start'
+
+  # Stop a NoFlo network
+  stop: ->
+    @sendNetwork 'stop'
+
+  # Get a DOM element rendered by the runtime for preview purposes
+  getElement: ->
 
   libraryUpdater: _.debounce ->
     @dataflow.plugins.library.update
@@ -110,34 +127,29 @@ class BaseRuntime
           id: port.id
           type: port.type
 
-  listenReset: (callback) ->
-    @resetListeners.push callback
-
-  sendResetEvent: ->
-    for callback in @resetListeners
-      do callback
-
-  listenNetwork: (callback) ->
-    @networkListeners.push callback
-
-  sendNetworkEvent: (command, payload) ->
-    for callback in @networkListeners
-      callback command, payload
-
   recvComponent: (command, payload) ->
     switch command
       when 'component' then @registerComponent payload
 
-  recvGraph: ->
+  recvGraph: (command, payload) ->
+    @emit 'graph',
+      command: command
+      payload: payload
 
   recvNetwork: (command, payload) ->
     switch command
-      when 'start' then return
-      when 'stop' then return
+      when 'started'
+        @emit 'status',
+          state: 'online'
+          label: 'running'
+      when 'stopped'
+        @emit 'status',
+          state: 'online'
+          label: 'stopped'
       else
-        @sendNetworkEvent command, payload
-
-  connect: (protocol) ->
+        @emit 'network',
+          command: command
+          payload: payload
 
   sendGraph: (command, payload) ->
     @send 'graph', command, payload

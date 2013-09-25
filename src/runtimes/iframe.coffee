@@ -2,22 +2,74 @@ Base = require './base'
 
 class IframeRuntime extends Base
   constructor: (dataflow, graph) ->
-    @preview = dataflow.plugins['preview-iframe']
-    @iframe = @preview.getElement()
+    # Prepare the iframe and listen to its state
+    @iframe = @prepareIframe dataflow.el
     @origin = window.location.origin
-
-    @iframe.addEventListener 'load', =>
-      @preview.setContents graph.properties.environment
-      @sendResetEvent()
-    , false
 
     super dataflow, graph
 
-  getFrameWindow: ->
-    @iframe.contentWindow
+  getType: -> 'iframe'
+
+  prepareIframe: (parent) ->
+    iframe = document.createElement 'iframe'
+    parent.appendChild iframe
+    iframe
+
+  connect: (preview) ->
+    @iframe.addEventListener 'load', @onLoaded, false
+
+    # Let the UI know we're connecting
+    @emit 'status',
+      state: 'pending'
+      label: 'connecting'
+
+    # Normalize the preview setup
+    preview = @normalizePreview preview
+
+    # Set the source to the iframe so that it can load
+    @iframe.setAttribute 'src', preview.src
+    @address = preview.src
+
+    # Update iframe contents as needed
+    if preview.content
+      @once 'connected', =>
+        body = @iframe.contentDocument.querySelector 'body'
+        body.innerHTML = preview.content
+
+    # Start listening for messages from the iframe
+    window.addEventListener 'message', @onMessage, false
+
+  normalizePreview: (preview) ->
+    unless preview
+      preview = {}
+    unless preview.src
+      preview.src = './preview/iframe.html'
+    unless preview.width
+      preview.width = 300
+    unless preview.height
+      preview.height = 300
+    preview
+
+  disconnect: (protocol) ->
+    @iframe.removeEventListener 'load', @onLoaded, false
+
+    # Stop listening to messages
+    window.removeEventListener 'message', @onMessage, false
+    @emit 'status',
+      state: 'offline'
+      label: 'disconnected'
+
+  # Called every time the iframe has loaded successfully
+  onLoaded: =>
+    @emit 'status',
+      state: 'online'
+      label: 'connected'
+    @emit 'connected'
+
+  getElement: -> @iframe
 
   send: (protocol, command, payload) ->
-    w = @getFrameWindow()
+    w = @iframe.contentWindow
     if not w or w.location.href is 'about:blank'
       return
     w.postMessage
@@ -25,12 +77,6 @@ class IframeRuntime extends Base
       command: command
       payload: payload
     , w.location.href
-
-  connect: (protocol) ->
-    window.addEventListener 'message', @onMessage, false
-
-  disconnect: (protocol) ->
-    window.removeEventListener 'message', @onMessage, false
 
   onMessage: (message) =>
     switch message.data.protocol
