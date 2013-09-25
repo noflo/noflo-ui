@@ -84,6 +84,9 @@ class BaseRuntime
       # Update instances we already have
       if @instances[definition.name]
         @instances[definition.name].forEach @updateInstancePorts
+      # Update the description
+      if definition.description
+        @types[definition.name].description = definition.description
 
   updateInstancePorts: (instance) =>
     for port in @components[instance.type].inPorts
