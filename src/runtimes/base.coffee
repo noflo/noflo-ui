@@ -16,6 +16,8 @@ class BaseRuntime
           "base"
           "base-resizable"
           "dataflow-subgraph"
+          "Graph"
+          "ReadDocument"
         ]
     , 100
 
