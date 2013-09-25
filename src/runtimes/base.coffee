@@ -12,14 +12,14 @@ class BaseRuntime
 
   libraryUpdater: _.debounce ->
       @dataflow.plugins.library.update
-        exclude: [
-          "base"
-          "base-resizable"
-          "dataflow-subgraph"
-          "Graph"
-          "ReadDocument"
-        ]
+        exclude: @excludeUnavailable()
     , 100
+
+  excludeUnavailable: ->
+    exclude = []
+    for name, component of @dataflow.nodes
+      exclude.push name unless @components[name]
+    exclude
 
   getComponentInstance: (name, attributes) ->
     return null unless @types[name]
@@ -70,6 +70,8 @@ class BaseRuntime
           defaults
         inputs: definition.inPorts
         outputs: definition.outPorts
+      if definition.description
+        @types[definition.name].description = definition.description
 
       # Update Dataflow library with this component
       do @libraryUpdater
