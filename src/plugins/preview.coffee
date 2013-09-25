@@ -9,6 +9,7 @@ class NoFloPreview
       <div class=\"toolbar\">
         <button class=\"start btn\"><i class=\"icon-play\"></i></button>
         <button class=\"stop btn\"><i class=\"icon-stop\"></i></button>
+        <button class=\"connect btn\"><i class=\"icon-refresh\"></i></button>
         <span class=\"status\"></span>
         <span class=\"uptime\"></span>
       </div>
@@ -19,6 +20,7 @@ class NoFloPreview
     @$preview = @$connector.find '.preview'
     @$startButton = @$connector.find '.start'
     @$stopButton = @$connector.find '.stop'
+    @$connButton = @$connector.find '.connect'
 
     dataflow.addPlugin
       id: 'preview'
@@ -31,7 +33,9 @@ class NoFloPreview
       @runtime.start()
     @$stopButton.click =>
       @runtime.stop()
+    @$startButton.hide()
     @$stopButton.hide()
+    @$connButton.hide()
 
   setRuntime: (@runtime) ->
     #@$preview.append @runtime.getElement()
@@ -58,9 +62,18 @@ class NoFloPreview
 
   preparePreview: (preview, callback) ->
     @runtime.connect preview
+    @$connButton.click =>
+      @preparePreview preview, ->
+
     @runtime.once 'connected', =>
       @$connector.find('h2 span').html @runtime.getAddress()
+      @$connButton.hide()
+      @$startButton.show()
       callback()
+    @runtime.once 'disconnected', =>
+      @$connButton.show()
+      @$startButton.hide()
+      @$stopButton.hide()
 
 plugin = Dataflow::plugin 'preview'
 Dataflow::plugins['preview'] = new NoFloPreview
