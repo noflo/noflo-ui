@@ -11,9 +11,9 @@ class BaseRuntime
     @prepareComponents()
 
   libraryUpdater: _.debounce ->
-      @dataflow.plugins.library.update
-        exclude: @excludeUnavailable()
-    , 100
+    @dataflow.plugins.library.update
+      exclude: @excludeUnavailable()
+  , 100
 
   excludeUnavailable: ->
     exclude = []

@@ -103,15 +103,14 @@ module.exports = ->
     # Automated recompilation and testing when developing
     watch:
       files: [
-        'spec/*.coffee'
         'src/*.coffee'
         'src/**/*.coffee'
         'components/*.coffee'
         'graphs/*.json'
-        'src/**/*.coffee'
         'component.json'
       ]
-      tasks: ['test']
+      tasks: ['coffeelint','exec:main_build']
+
 
     # BDD tests on browser
     mocha_phantomjs:
@@ -122,7 +121,17 @@ module.exports = ->
 
     # Coding standards
     coffeelint:
-      components: ['components/*.coffee']
+      # noflo:
+      options:
+        max_line_length:
+          level: "ignore"
+      files: [
+        'Gruntfile.coffee'
+        'src/*.coffee'
+        'src/**/*.coffee'
+        'components/*.coffee'
+      ]
+
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'
