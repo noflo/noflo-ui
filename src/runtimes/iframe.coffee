@@ -1,19 +1,18 @@
 Base = require './base'
 
 class IframeRuntime extends Base
-  constructor: (dataflow, graph) ->
+  constructor: (graph) ->
     # Prepare the iframe and listen to its state
-    @iframe = @prepareIframe dataflow.el
     @origin = window.location.origin
 
-    super dataflow, graph
+    super graph
 
   getType: -> 'iframe'
 
-  prepareIframe: (parent) ->
-    iframe = document.createElement 'iframe'
-    parent.appendChild iframe
-    iframe
+  setParentElement: (parent) ->
+    @iframe = document.createElement 'iframe'
+    parent.appendChild @iframe
+    @iframe
 
   connect: (preview) ->
     @iframe.addEventListener 'load', @onLoaded, false

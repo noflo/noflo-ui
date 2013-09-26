@@ -1,62 +1,68 @@
 noflo = require 'noflo'
 Dataflow = require('/meemoo-dataflow').Dataflow
 
-# Load NoFlo connector plugin
-nofloPlugin = require '../src/plugins/noflo'
+# Load NoFlo library plugin
+require '../src/plugins/nofloLibrary'
+# Load NoFlo Graph sync plugin
+require '../src/plugins/nofloGraph'
+# Load NoFlo preview plugin
+require '../src/plugins/preview'
 
-class DataflowComponent extends noflo.AsyncComponent
+class DataflowComponent extends noflo.Component
   constructor: ->
-    @preview = 'iframe'
+    @graph = null
     @container = null
+    @runtime = null
+
     @inPorts =
       graph: new noflo.Port 'object'
       container: new noflo.Port 'object'
-      preview: new noflo.Port 'string'
+      runtime: new noflo.Port 'object'
     @outPorts =
       dataflow: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
       graph: new noflo.Port 'object'
       error: new noflo.Port 'object'
 
+    @inPorts.graph.on 'data', (@graph) =>
+      do @loadDataflow
     @inPorts.container.on 'data', (@container) =>
-    @inPorts.preview.on 'data', (@preview) =>
+      do @loadDataflow
+    @inPorts.runtime.on 'data', (@runtime) =>
+      do @loadDataflow
 
-    super 'graph', 'dataflow'
-
-  doAsync: (graph, done) ->
-    unless @container
-      done new Error 'Dataflow needs a containing DOM element'
-      return
-
-    # Load preview plugin
-    env = graph.properties.environment
-    require "../src/plugins/preview"
+  loadDataflow: ->
+    return unless @graph and @container and @runtime
 
     # Load a Dataflow instance
     dataflow = new Dataflow
       appendTo: @container
 
+    # Pass necessary information to the runtime
+    @runtime.setParentElement dataflow.el
+
     # Load runtime and pass to preview plugin
-    rt = @loadRuntime()
-    runtime = new rt dataflow, graph
-    dataflow.plugins.preview.setRuntime runtime
-    dataflow.plugins.preview.preparePreview env, =>
+    dataflow.plugins.preview.setRuntime @runtime
+    dataflow.plugins.preview.preparePreview @graph.properties.environment
 
-      # Register graph with Dataflow
-      dataflow.plugins.noflo.registerGraph graph, runtime
+    # Register components with Dataflow
+    dataflow.plugins.nofloLibrary.registerGraph @graph, @runtime
+    # Register graph with Dataflow
+    dataflow.plugins.nofloGraph.registerGraph @graph, @runtime
 
-      if @outPorts.dataflow.isAttached()
-        @outPorts.dataflow.send dataflow
-        @outPorts.dataflow.disconnect()
-      if @outPorts.runtime.isAttached()
-        @outPorts.runtime.send dataflow
-        @outPorts.runtime.disconnect()
-      if @outPorts.graph.isAttached()
-        @outPorts.graph.send graph
-        @outPorts.graph.disconnect()
-      done()
+    # Pass data onwards
+    if @outPorts.dataflow.isAttached()
+      @outPorts.dataflow.send dataflow
+      @outPorts.dataflow.disconnect()
+    if @outPorts.runtime.isAttached()
+      @outPorts.runtime.send @runtime
+      @outPorts.runtime.disconnect()
+    if @outPorts.graph.isAttached()
+      @outPorts.graph.send @graph
+      @outPorts.graph.disconnect()
 
-  loadRuntime: ->
-    return require "../src/runtimes/#{@preview}"
+    # Reset state
+    @graph = null
+    @runtime = null
 
 exports.getComponent = -> new DataflowComponent

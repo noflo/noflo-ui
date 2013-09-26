@@ -21,6 +21,9 @@
     "Determine": {
       "component": "ui/DetermineRuntime"
     },
+    "LoadRuntime": {
+      "component": "ui/LoadRuntime"
+    },
     "Drop": {
       "component": "core/Drop"
     },
@@ -102,13 +105,33 @@
         "port": "runtime"
       },
       "tgt": {
-        "process": "LoadDataflow",
-        "port": "preview"
+        "process": "LoadRuntime",
+        "port": "runtime"
       }
     },
     {
       "src": {
         "process": "Determine",
+        "port": "graph"
+      },
+      "tgt": {
+        "process": "LoadRuntime",
+        "port": "graph"
+      }
+    },
+    {
+      "src": {
+        "process": "LoadRuntime",
+        "port": "runtime"
+      },
+      "tgt": {
+        "process": "LoadDataflow",
+        "port": "runtime"
+      }
+    },
+    {
+      "src": {
+        "process": "LoadRuntime",
         "port": "graph"
       },
       "tgt": {

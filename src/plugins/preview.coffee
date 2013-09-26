@@ -2,8 +2,6 @@
 
 class NoFloPreview
   initialize: (dataflow) ->
-    @preview = null
-
     @$connector = $ "<div class=\"noflo-ui-preview\">
       <h2><i></i> <span>WebSocket</span></h2>
       <div class=\"toolbar\">
@@ -29,14 +27,15 @@ class NoFloPreview
       icon: 'play-circle'
       pinned: true
 
+    @$startButton.hide()
+    @$stopButton.hide()
+    @$connButton.hide()
+
     @$startButton.click =>
       dataflow.plugins.notification.requestPermission()
       @runtime.start()
     @$stopButton.click =>
       @runtime.stop()
-    @$startButton.hide()
-    @$stopButton.hide()
-    @$connButton.hide()
 
     @dataflow = dataflow
 
@@ -66,7 +65,7 @@ class NoFloPreview
         @$stopButton.hide()
         @$startButton.show()
 
-  preparePreview: (preview, callback) ->
+  preparePreview: (preview) ->
     @runtime.connect preview
     @$connButton.click =>
       @preparePreview preview, ->
@@ -79,8 +78,6 @@ class NoFloPreview
 
       # Show the preview card automatically
       @dataflow.showPlugin 'preview'
-
-      callback()
 
     @runtime.once 'disconnected', =>
       @dataflow.plugins.notification.notify 'noflo.png', 'Error', 'Connection to NoFlo runtime was lost'

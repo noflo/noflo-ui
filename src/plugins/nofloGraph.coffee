@@ -1,24 +1,20 @@
+# Dataflow plugin for synchronizing a NoFlo graph with a Dataflow
+# graph
 {Dataflow} = require '/meemoo-dataflow'
 Graph = Dataflow::module 'graph'
 
-class NoFloPlugin
+class NoFloGraphPlugin
   constructor: ->
     @dataflow = null
 
   initialize: (@dataflow) ->
     # Modify behavior of other Dataflow plugins
     @dataflow.plugins.source.listeners false
-    @dataflow.plugins.log.listeners false
 
-    window.df = @dataflow
-
-  registerGraph: (graph, runtime, callback) ->
+  registerGraph: (graph, runtime) ->
     dfGraph = @dataflow.loadGraph {}
     callback = if callback then callback else ->
-    @prepareGraph graph, dfGraph, runtime, callback
-
-    # Load components immediately
-    runtime.loadComponents graph.baseDir
+    @prepareGraph graph, dfGraph, runtime
 
     # When we reconnect we should clear and update the graph
     runtime.on 'connected', =>
@@ -31,37 +27,30 @@ class NoFloPlugin
       for iip in graph.initializers
         @addInitialRuntime iip, runtime
 
-  registerSubgraph: (graph, runtime, callback) ->
+  registerSubgraph: (graph, runtime) ->
     dfGraph = new Graph.Model
       dataflow: @dataflow
     callback = if callback then callback else ->
-    @prepareGraph graph, dfGraph, runtime, callback
+    @prepareGraph graph, dfGraph, runtime
 
-  prepareGraph: (nofloGraph, dataflowGraph, runtime, callback) ->
+  prepareGraph: (nofloGraph, dataflowGraph, runtime) ->
     # Provide a reference to the NoFlo graph
     dataflowGraph.nofloGraph = nofloGraph
 
     # Provide a backreference to the Dataflow graph
     nofloGraph.dataflowGraph = dataflowGraph
 
-    # Provide a runtime reference
-    nofloGraph.runtime = runtime
-
-    # Prepare NoFlo runtime
-    runtime.sendGraph 'clear',
-      baseDir: nofloGraph.baseDir
-
     @subscribeDataflowEvents dataflowGraph
     @subscribeNoFloEvents nofloGraph, runtime
     for node in nofloGraph.nodes
-      @addNode node, dataflowGraph
+      @addNodeDataflow node, dataflowGraph
     for edge in nofloGraph.edges
-      @addEdge edge, dataflowGraph
+      @addEdgeDataflow edge, dataflowGraph
     for iip in nofloGraph.initializers
-      @addInitial iip, dataflowGraph
-
+      @addInitialDataflow iip, dataflowGraph
 
   subscribeDataflowEvents: (graph) ->
+    # Update Dataflow source plugin with latest graph JSON
     graph.on 'change', (dfGraph) =>
       json = JSON.stringify graph.nofloGraph.toJSON(), null, 2
       @dataflow.plugins.source.show json
@@ -155,7 +144,8 @@ class NoFloPlugin
 
   subscribeNoFloEvents: (graph, runtime) ->
     graph.on 'addNode', (nfNode) =>
-      @addNode nfNode, graph.dataflowGraph
+      @addNodeDataflow nfNode, graph.dataflowGraph
+      @addNodeRuntime nfNode, runtime
       @dataflow.plugins.log.add 'node added: ' + nfNode.id
     graph.on 'removeNode', (nfNode) =>
       if nfNode.dataflowNode?
@@ -164,7 +154,8 @@ class NoFloPlugin
       runtime.sendGraph 'removenode',
         id: nfNode.id
     graph.on 'addEdge', (nfEdge) =>
-      @addEdge nfEdge, graph.dataflowGraph
+      @addEdgeDataflow nfEdge, graph.dataflowGraph
+      @addEdgeRuntime nfEdge, runtime
       @dataflow.plugins.log.add 'edge added.'
     graph.on 'removeEdge', (nfEdge) =>
       if nfEdge.from.node? and nfEdge.to.node?
@@ -175,7 +166,8 @@ class NoFloPlugin
         from: nfEdge.from
         to: nfEdge.to
     graph.on 'addInitial', (iip) =>
-      @addInitial iip, graph.dataflowGraph
+      @addInitialDataflow iip, graph.dataflowGraph
+      @addInitialRuntime iip, runtime
       @dataflow.plugins.log.add 'IIP added: ' + JSON.stringify(iip)
     graph.on 'removeInitial', (iip) =>
       @dataflow.plugins.log.add 'IIP removed: ' + JSON.stringify(iip)
@@ -204,7 +196,7 @@ class NoFloPlugin
         group: payload.group
         data: payload.data
 
-  addNode: (nfNode, dfGraph) ->
+  addNodeDataflow: (nfNode, dfGraph) ->
     return unless nfNode
 
     return if nfNode.dataflowNode?
@@ -212,10 +204,8 @@ class NoFloPlugin
     #HACK to not add twice
     return if dfGraph.nodes.findWhere({nofloId: nfNode.id})?
 
-    @addNodeRuntime nfNode, dfGraph.nofloGraph.runtime
-
     # Load the component
-    dfNode = dfGraph.nofloGraph.runtime.getComponentInstance nfNode.component,
+    dfNode = @dataflow.plugins.nofloLibrary.getInstance nfNode.component,
       id: nfNode.id
       label: ( if nfNode.metadata.label? then nfNode.metadata.label else nfNode.id )
       x: ( if nfNode.metadata.x? then nfNode.metadata.x else 500 )
@@ -234,23 +224,21 @@ class NoFloPlugin
       component: node.component
       metadata: node.metadata
 
-  edgeToId: (edge) ->
-    if edge.dataflowEdge
-      return edge.dataflowEdge.id
-    source = "#{edge.from.node} #{edge.from.port.toUpperCase()}"
-    destination = "#{edge.to.port.toUpperCase()} #{edge.to.node}"
-    "#{source} -> #{destination}"
-
-  addEdge: (nfEdge, dfGraph) ->
+  addEdgeDataflow: (nfEdge, dfGraph) ->
     return unless nfEdge
 
-    @addEdgeRuntime nfEdge, dfGraph.nofloGraph.runtime
+    edgeToId = (edge) ->
+      if edge.dataflowEdge
+        return edge.dataflowEdge.id
+      source = "#{edge.from.node} #{edge.from.port.toUpperCase()}"
+      destination = "#{edge.to.port.toUpperCase()} #{edge.to.node}"
+      "#{source} -> #{destination}"
 
     unless nfEdge.dataflowEdge
       Edge = @dataflow.module 'edge'
       nfEdge.metadata = {} unless nfEdge.metadata
       dfEdge = new Edge.Model
-        id: @edgeToId nfEdge
+        id: edgeToId nfEdge
         parentGraph: dfGraph
         source: nfEdge.from
         target: nfEdge.to
@@ -268,10 +256,8 @@ class NoFloPlugin
       from: edge.from
       to: edge.to
 
-  addInitial: (iip, graph) ->
+  addInitialDataflow: (iip, graph) ->
     return unless iip
-
-    @addInitialRuntime iip, graph.nofloGraph.runtime
     node = graph.nodes.get iip.to.node
     if node
       port = node.inputs.get iip.to.port
@@ -283,5 +269,5 @@ class NoFloPlugin
       from: iip.from
       to: iip.to
 
-plugin = Dataflow::plugin 'noflo'
-Dataflow::plugins.noflo = new NoFloPlugin
+plugin = Dataflow::plugin 'nofloGraph'
+Dataflow::plugins.nofloGraph = new NoFloGraphPlugin

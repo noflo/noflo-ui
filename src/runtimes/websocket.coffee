@@ -1,12 +1,12 @@
 Base = require './base'
 
 class WebSocketRuntime extends Base
-  constructor: (dataflow, graph) ->
+  constructor: (graph) ->
     @connecting = false
     @connection = null
     @protocol = 'noflo'
     @buffer = []
-    super dataflow, graph
+    super graph
 
   getType: -> 'websocket'
 
