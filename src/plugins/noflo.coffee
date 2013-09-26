@@ -230,6 +230,13 @@ class NoFloPlugin
       component: node.component
       metadata: node.metadata
 
+  edgeToId: (edge) ->
+    if edge.dataflowEdge
+      return edge.dataflowEdge.id
+    source = "#{edge.from.node} #{edge.from.port.toUpperCase()}"
+    destination = "#{edge.to.port.toUpperCase()} #{edge.to.node}"
+    "#{source} -> #{destination}"
+
   addEdge: (nfEdge, dfGraph) ->
     return unless nfEdge
 
@@ -239,7 +246,7 @@ class NoFloPlugin
       Edge = @dataflow.module 'edge'
       nfEdge.metadata = {} unless nfEdge.metadata
       dfEdge = new Edge.Model
-        id: nfEdge.from.node + ":" + nfEdge.from.port + "::" + nfEdge.to.node + ":" + nfEdge.to.port
+        id: @edgeToId nfEdge
         parentGraph: dfGraph
         source: nfEdge.from
         target: nfEdge.to
