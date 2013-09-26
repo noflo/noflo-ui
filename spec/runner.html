@@ -12,11 +12,22 @@
   </head>
   <body>
     <div id="mocha"></div>
-    <div id="fixtures"></div>
+    <div id="fixtures">
+      <div class="dataflow-graph-test"></div>
+    </div>
+    <!-- Dataflow Dependencies -->
+    <script src="../browser/meemoo-dataflow/libs/jquery.js"></script>
+    <script src="../browser/meemoo-dataflow/libs/jquery-ui.js"></script>
+    <script src="../browser/meemoo-dataflow/libs/jquery.ui.touch-punch.js"></script>
+    <script src="../browser/meemoo-dataflow/libs/underscore.js"></script>
+    <script src="../browser/meemoo-dataflow/libs/backbone.js"></script>
+    <script src="../browser/meemoo-dataflow/libs/hammer.min.js"></script>
+
     <script src="../browser/noflo-ui.js"></script>
     <script src="http://chaijs.com/chai.js"></script>
     <script src="../node_modules/mocha/mocha.js"></script>
     <script>mocha.setup('bdd');</script>
+    <script src="./nofloGraph.js"></script>
     <script>
       if (window.mochaPhantomJS) {
         mochaPhantomJS.run();

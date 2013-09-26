@@ -108,8 +108,9 @@ module.exports = ->
         'components/*.coffee'
         'graphs/*.json'
         'component.json'
+        'spec/*.coffee'
       ]
-      tasks: ['coffeelint','exec:main_build']
+      tasks: ['test']
 
 
     # BDD tests on browser
@@ -130,6 +131,7 @@ module.exports = ->
         'src/*.coffee'
         'src/**/*.coffee'
         'components/*.coffee'
+        'spec/*.coffee'
       ]
 
 
@@ -148,7 +150,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-coffeelint'
 
   # Our local tasks
-  @registerTask 'build', ['exec', 'uglify']
+  @registerTask 'build', ['exec']
   @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'app', ['build', 'compress', 'phonegap-build']
   @registerTask 'default', ['test']

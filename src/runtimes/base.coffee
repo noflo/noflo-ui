@@ -58,4 +58,6 @@ class BaseRuntime extends EventEmitter
   sendComponent: (command, payload) ->
     @send 'component', command, payload
 
+  send: (protocol, command, payload) ->
+
 module.exports = BaseRuntime
