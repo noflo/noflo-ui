@@ -149,31 +149,28 @@ class NoFloGraphPlugin
     graph.on 'addNode', (nfNode) =>
       @addNodeDataflow nfNode, graph.dataflowGraph
       @addNodeRuntime nfNode, runtime
-      @dataflow.plugins.log.add 'node added: ' + nfNode.id
     graph.on 'removeNode', (nfNode) =>
       if nfNode.dataflowNode?
         nfNode.dataflowNode.remove()
-      @dataflow.plugins.log.add 'node removed: ' + nfNode.id
+      @dataflow.plugins.uog.add 'node removed: ' + nfNode.id
       runtime.sendGraph 'removenode',
         id: nfNode.id
     graph.on 'addEdge', (nfEdge) =>
       @addEdgeDataflow nfEdge, graph.dataflowGraph
       @addEdgeRuntime nfEdge, runtime
-      @dataflow.plugins.log.add 'edge added.'
     graph.on 'removeEdge', (nfEdge) =>
       if nfEdge.from.node? and nfEdge.to.node?
         if nfEdge.dataflowEdge?
           nfEdge.dataflowEdge.remove()
-      @dataflow.plugins.log.add 'edge removed.'
       runtime.sendGraph 'removeedge',
         from: nfEdge.from
         to: nfEdge.to
     graph.on 'addInitial', (iip) =>
       @addInitialDataflow iip, graph.dataflowGraph
       @addInitialRuntime iip, runtime
-      @dataflow.plugins.log.add 'IIP added: ' + JSON.stringify(iip)
+      @dataflow.plugins.log.add "IIP added to #{iip.to.node} #{iip.to.port.toUpperCase()}"
     graph.on 'removeInitial', (iip) =>
-      @dataflow.plugins.log.add 'IIP removed: ' + JSON.stringify(iip)
+      @dataflow.plugins.log.add "IIP removed from #{iip.to.node} #{iip.to.port.toUpperCase()}"
       runtime.sendGraph 'removeinitial',
         from: iip.from
         to: iip.to
