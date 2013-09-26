@@ -41,7 +41,6 @@ describe 'Dataflow graph to NoFlo graph', ->
   describe 'adding a node to the Dataflow graph', ->
     it 'should be now in the Dataflow graph nodes list', ->
       dataflowNode = new dataflow.nodes.base.Model
-        label: 'test'
         parentGraph: dataflowGraph
       dataflowGraph.nodes.add dataflowNode
       chai.expect(dataflowGraph.nodes.length).to.equal 1
@@ -56,3 +55,18 @@ describe 'Dataflow graph to NoFlo graph', ->
       chai.expect(dataflowNode.nofloNode).to.equal nofloNode
     it 'the NoFlo node should contain a reference to the Dataflow node', ->
       chai.expect(nofloNode.dataflowNode).to.equal dataflowNode
+    it 'both nodes should have the same component', ->
+      chai.expect(nofloNode.component).to.equal dataflowNode.type
+    describe 'the NoFlo node', ->
+      it 'should have a generated ID', ->
+        chai.expect(nofloNode.id).not.to.be.empty
+      it 'the ID should be generated based on the type', ->
+        chai.expect(nofloNode.id.substr(0, dataflowNode.type.length + 1)).to.equal "#{dataflowNode.type}_"
+      it 'should have the ID stored to the Dataflow node', ->
+        chai.expect(dataflowNode.get('nofloId')).to.equal nofloNode.id
+      it 'should contain metadata', ->
+        chai.expect(nofloNode.metadata).to.be.a 'object'
+        chai.expect(nofloNode.metadata).not.to.be.empty
+      it 'the label should be the same as the type', ->
+        chai.expect(nofloNode.metadata.label).to.be.a 'string'
+        chai.expect(nofloNode.metadata.label).to.equal dataflowNode.type
