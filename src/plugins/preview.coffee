@@ -2,6 +2,7 @@
 
 class NoFloPreview
   initialize: (dataflow) ->
+    @runtime = null
     @$connector = $ "<div class=\"noflo-ui-preview\">
       <h2><i></i> <span>WebSocket</span></h2>
       <div class=\"toolbar\">
@@ -43,14 +44,20 @@ class NoFloPreview
     # Move the preview element of the runtime to the plugin card
     @$preview.append @runtime.getElement()
 
-  setRuntime: (@runtime) ->
-    switch @runtime.getType()
+  setPreview: (preview, runtime) ->
+    @setRuntime runtime
+    @preparePreview preview, runtime
+
+  setRuntime: (runtime) ->
+    @runtime = runtime
+    switch runtime.getType()
       when 'iframe'
         @$connector.find('h2 i').addClass 'icon-globe'
       else
         @$connector.find('h2 i').addClass 'icon-cloud'
 
-    @runtime.on 'status', (status) =>
+    runtime.on 'status', (status) =>
+      return unless runtime is @runtime
       @$status.removeClass 'online'
       @$status.removeClass 'offline'
       @$status.removeClass 'pending'
@@ -65,12 +72,14 @@ class NoFloPreview
         @$stopButton.hide()
         @$startButton.show()
 
-  preparePreview: (preview) ->
-    @runtime.connect preview
+  preparePreview: (preview, runtime) ->
+    runtime.connect preview
     @$connButton.click =>
-      @preparePreview preview, ->
+      return unless runtime is @runtime
+      @preparePreview preview, runtime
 
-    @runtime.once 'connected', =>
+    runtime.once 'connected', =>
+      return unless runtime is @runtime
       # Update preview card contents
       @$connector.find('h2 span').html @runtime.getAddress()
       @$connButton.hide()
@@ -79,7 +88,8 @@ class NoFloPreview
       # Show the preview card automatically
       @dataflow.showPlugin 'preview'
 
-    @runtime.once 'disconnected', =>
+    runtime.once 'disconnected', =>
+      return unless runtime is @runtime
       @dataflow.plugins.notification.notify 'noflo.png', 'Error', 'Connection to NoFlo runtime was lost'
       @$connButton.show()
       @$startButton.hide()

@@ -42,8 +42,8 @@ class DataflowComponent extends noflo.Component
     @runtime.setParentElement dataflow.el
 
     # Load runtime and pass to preview plugin
-    dataflow.plugins.preview.setRuntime @runtime
-    dataflow.plugins.preview.preparePreview @graph.properties.environment
+    env = @graph.properties.environment
+    dataflow.plugins.preview.setPreview env, @runtime
 
     # Register components with Dataflow
     dataflow.plugins.nofloLibrary.registerGraph @graph, @runtime

@@ -5,21 +5,25 @@
 class NoFloLibraryPlugin
   constructor: ->
     @dataflow = null
+
+  initialize: (@dataflow) ->
+    @runtime = null
     @components = {}
     @types = {}
     @instances = {}
 
-  initialize: (@dataflow) ->
-
   registerGraph: (graph, runtime) ->
     # Initialize library from graph
     @prepareComponents graph
+    @runtime = runtime
 
     runtime.on 'component', (message) =>
+      return unless runtime is @runtime
       @registerComponent message.payload
 
     # Load components once we have a connection
-    runtime.on 'connected', ->
+    runtime.on 'connected', =>
+      return unless runtime is @runtime
       runtime.sendComponent 'list', graph.baseDir
 
   excludeUnavailable: ->

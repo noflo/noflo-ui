@@ -10,14 +10,17 @@ class NoFloGraphPlugin
   initialize: (@dataflow) ->
     # Modify behavior of other Dataflow plugins
     @dataflow.plugins.source.listeners false
+    @runtime = null
 
   registerGraph: (graph, runtime) ->
     dfGraph = @dataflow.loadGraph {}
+    @runtime = runtime
     callback = if callback then callback else ->
     @prepareGraph graph, dfGraph, runtime
 
     # When we reconnect we should clear and update the graph
     runtime.on 'connected', =>
+      return unless runtime is @runtime
       runtime.sendGraph 'clear',
         baseDir: graph.baseDir
       for node in graph.nodes
@@ -177,6 +180,7 @@ class NoFloGraphPlugin
 
     # Pass network events to edge inspector
     runtime.on 'network', ({command, payload}) =>
+      return unless runtime is @runtime
       if command is 'error'
         @dataflow.plugins.notification.notify 'noflo.png', 'Error', payload.message
         return
