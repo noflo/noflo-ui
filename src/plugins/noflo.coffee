@@ -184,7 +184,11 @@ class NoFloPlugin
         to: iip.to
 
     # Pass network events to edge inspector
-    runtime.on 'network', ({command, payload}) ->
+    runtime.on 'network', ({command, payload}) =>
+      if command is 'error'
+        @dataflow.plugins.notification.notify 'noflo.png', 'Error', payload.message
+        return
+
       return unless payload.to or payload.from
       eventEdge = null
       for edge in graph.edges

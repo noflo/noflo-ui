@@ -30,12 +30,15 @@ class NoFloPreview
       pinned: true
 
     @$startButton.click =>
+      dataflow.plugins.notification.requestPermission()
       @runtime.start()
     @$stopButton.click =>
       @runtime.stop()
     @$startButton.hide()
     @$stopButton.hide()
     @$connButton.hide()
+
+    @dataflow = dataflow
 
   setRuntime: (@runtime) ->
     #@$preview.append @runtime.getElement()
@@ -71,6 +74,7 @@ class NoFloPreview
       @$startButton.show()
       callback()
     @runtime.once 'disconnected', =>
+      @dataflow.plugins.notification.notify 'noflo.png', 'Error', 'Connection to NoFlo runtime was lost'
       @$connButton.show()
       @$startButton.hide()
       @$stopButton.hide()
