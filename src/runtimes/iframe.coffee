@@ -28,11 +28,19 @@ class IframeRuntime extends Base
 
     # Set the source to the iframe so that it can load
     @iframe.setAttribute 'src', preview.src
+
+    # Set an ID for targeting purposes
+    @iframe.id = 'preview-iframe'
+
+    # Set dimensions
+    @iframe.style.width = "#{preview.width}px"
+    @iframe.style.height = "#{preview.height}px"
+
     @address = preview.src
 
     # Update iframe contents as needed
     if preview.content
-      @once 'connected', =>
+      @on 'connected', =>
         body = @iframe.contentDocument.querySelector 'body'
         body.innerHTML = preview.content
 

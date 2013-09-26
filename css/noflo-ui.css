@@ -49,9 +49,32 @@ body {
 
 #preview-iframe {
   display: none;
+  border: none;
 }
 .dataflow-card #preview-iframe {
   display: block;
 }
 
+.dataflow-card .noflo-ui-preview {
+  overflow: hidden;
+}
 
+.dataflow-card .noflo-ui-preview h2 {
+  margin: 0px;
+  padding: 4px 4px;
+  font-size: 18px;
+}
+
+.dataflow-card .noflo-ui-preview .toolbar .online {
+  color: #7ee67e;
+}
+
+.dataflow-card .noflo-ui-preview .toolbar .offline {
+  color: #e67e7e;
+}
+
+.dataflow-card .noflo-ui-preview .toolbar button {
+  color: #3e8bc5;
+  background-color: transparent;
+  border: none;
+}
