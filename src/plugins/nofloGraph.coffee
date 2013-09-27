@@ -105,7 +105,6 @@ class NoFloGraphPlugin
       node.nofloNode = nofloNode
       nofloNode.dataflowNode = node
 
-
     node.on 'change:label', (node, newName) ->
       # Change label
       node.nofloNode.metadata.label = newName
@@ -139,24 +138,32 @@ class NoFloGraphPlugin
 
   subscribeDataflowEdge: (edge, graph) ->
     unless edge.nofloEdge
-      edge.nofloEdge = graph.nofloGraph.addEdge edge.source.parentNode.nofloNode.id, edge.source.id, edge.target.parentNode.nofloNode.id, edge.target.id,
+      nofloEdge = graph.nofloGraph.addEdge edge.source.parentNode.nofloNode.id, edge.source.id, edge.target.parentNode.nofloNode.id, edge.target.id,
         route: edge.get 'route'
+
+      # Reference one another
+      edge.nofloEdge = nofloEdge
+      nofloEdge.dataflowEdge = edge
 
     edge.on 'change:route', ->
       edge.nofloEdge.metadata.route = edge.get 'route'
 
   subscribeNoFloEvents: (graph, runtime) ->
     graph.on 'addNode', (nfNode) =>
-      @addNodeDataflow nfNode, graph.dataflowGraph
-      @addNodeRuntime nfNode, runtime
+      setTimeout =>
+        @addNodeDataflow nfNode, graph.dataflowGraph
+        @addNodeRuntime nfNode, runtime
+      , 0
     graph.on 'removeNode', (nfNode) =>
       if nfNode.dataflowNode?
         nfNode.dataflowNode.remove()
       runtime.sendGraph 'removenode',
         id: nfNode.id
     graph.on 'addEdge', (nfEdge) =>
-      @addEdgeDataflow nfEdge, graph.dataflowGraph
-      @addEdgeRuntime nfEdge, runtime
+      setTimeout =>
+        @addEdgeDataflow nfEdge, graph.dataflowGraph
+        @addEdgeRuntime nfEdge, runtime
+      , 0
     graph.on 'removeEdge', (nfEdge) =>
       if nfEdge.from.node? and nfEdge.to.node?
         if nfEdge.dataflowEdge?
@@ -198,11 +205,7 @@ class NoFloGraphPlugin
 
   addNodeDataflow: (nfNode, dfGraph) ->
     return unless nfNode
-
-    return if nfNode.dataflowNode?
-
-    #HACK to not add twice
-    return if dfGraph.nodes.findWhere({nofloId: nfNode.id})?
+    return if nfNode.dataflowNode
 
     # Load the component
     dfNode = @dataflow.plugins.nofloLibrary.getInstance nfNode.component,
@@ -226,6 +229,7 @@ class NoFloGraphPlugin
 
   addEdgeDataflow: (nfEdge, dfGraph) ->
     return unless nfEdge
+    return if nfEdge.dataflowEdge
 
     edgeToId = (edge) ->
       if edge.dataflowEdge
@@ -234,22 +238,21 @@ class NoFloGraphPlugin
       destination = "#{edge.to.port.toUpperCase()} #{edge.to.node}"
       "#{source} -> #{destination}"
 
-    unless nfEdge.dataflowEdge
-      Edge = @dataflow.module 'edge'
-      nfEdge.metadata = {} unless nfEdge.metadata
-      dfEdge = new Edge.Model
-        id: edgeToId nfEdge
-        parentGraph: dfGraph
-        source: nfEdge.from
-        target: nfEdge.to
-        route: ( if nfEdge.metadata.route? then nfEdge.metadata.route else 0 )
+    Edge = @dataflow.module 'edge'
+    nfEdge.metadata = {} unless nfEdge.metadata
+    dfEdge = new Edge.Model
+      id: edgeToId nfEdge
+      parentGraph: dfGraph
+      source: nfEdge.from
+      target: nfEdge.to
+      route: ( if nfEdge.metadata.route? then nfEdge.metadata.route else 0 )
 
-      # Reference one another
-      dfEdge.nofloEdge = nfEdge
-      nfEdge.dataflowEdge = dfEdge
+    # Reference one another
+    dfEdge.nofloEdge = nfEdge
+    nfEdge.dataflowEdge = dfEdge
 
-      # Add to Graph
-      dfGraph.edges.add dfEdge
+    # Add to Graph
+    dfGraph.edges.add dfEdge
 
   addEdgeRuntime: (edge, runtime) ->
     runtime.sendGraph 'addedge',
