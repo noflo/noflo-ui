@@ -18,6 +18,7 @@
     "noflo/noflo-objects": "*",
     "noflo/noflo-physics": "*",
     "noflo/noflo-strings": "*",
+    "noflo/noflo-websocket": "*",
     "d4tocchini/noflo-draggabilly": "*"
   },
   "json": [

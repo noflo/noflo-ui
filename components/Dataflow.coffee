@@ -5,6 +5,8 @@ Dataflow = require('/meemoo-dataflow').Dataflow
 require '../src/plugins/nofloLibrary'
 # Load NoFlo Graph sync plugin
 require '../src/plugins/nofloGraph'
+# Load NoFlo settings plugin
+require '../src/plugins/nofloSettings'
 # Load NoFlo preview plugin
 require '../src/plugins/preview'
 
@@ -49,6 +51,8 @@ class DataflowComponent extends noflo.Component
     dataflow.plugins.nofloLibrary.registerGraph @graph, @runtime
     # Register graph with Dataflow
     dataflow.plugins.nofloGraph.registerGraph @graph, @runtime
+    # Register graph for settings editor
+    dataflow.plugins.nofloSettings.registerGraph @graph, @runtime
 
     # Pass data onwards
     if @outPorts.dataflow.isAttached()

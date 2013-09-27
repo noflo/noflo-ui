@@ -44,6 +44,7 @@
     "index.js",
     "src/plugins/nofloLibrary.coffee",
     "src/plugins/nofloGraph.coffee",
+    "src/plugins/nofloSettings.coffee",
     "src/plugins/preview.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
