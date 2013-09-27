@@ -18,6 +18,7 @@ class ListenGraph extends noflo.Component
     graph.on 'removeEdge', => @sendGraph graph
     graph.on 'addInitial', => @sendGraph graph
     graph.on 'removeInitial', => @sendGraph graph
+    graph.on 'changed', => @sendGraph graph
 
   sendGraph: (graph) ->
     @outPorts.changed.send graph

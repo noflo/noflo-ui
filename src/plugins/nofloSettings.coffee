@@ -33,7 +33,7 @@ class NoFloSettingsPlugin
     $form = $ "<form>
       <label>
         Preview iframe
-        <input class='src' type='url'>
+        <input class='src' type='text'>
       </label>
       <label>
         HTML contents
@@ -61,11 +61,13 @@ class NoFloSettingsPlugin
     $width.val graph.properties.environment.width
     $height.val graph.properties.environment.height
 
-    $update.click ->
+    $update.click (event) ->
+      event.preventDefault()
       graph.properties.environment.src = $src.val()
       graph.properties.environment.content = $content.val()
       graph.properties.environment.height = $height.val()
       graph.properties.environment.width = $width.val()
+      graph.emit 'changed'
 
     @$settings.append $form
 
