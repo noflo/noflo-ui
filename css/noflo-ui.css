@@ -49,6 +49,7 @@ body {
 
 #preview-iframe {
   display: none;
+  outline: 1px solid #2a2b31;
   border: none;
 }
 .dataflow-card #preview-iframe {
