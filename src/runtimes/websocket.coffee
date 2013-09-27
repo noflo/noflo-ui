@@ -12,7 +12,11 @@ class WebSocketRuntime extends Base
 
   connect: (preview) ->
     return if @connection or @connecting
-    @address = @getUrl()
+
+    # Normalize the preview setup
+    preview = @normalizePreview preview
+
+    @address = preview.wsUrl
     @connection = new WebSocket @address, @protocol
     @connection.addEventListener 'open', =>
       @connecting = false
@@ -51,9 +55,13 @@ class WebSocketRuntime extends Base
       command: command
       payload: payload
 
-  getUrl: ->
-    return "ws://#{location.hostname}:3569"
-    "ws://#{location.hostname}:#{location.port}"
+  normalizePreview: (preview) ->
+    unless preview
+      preview = {}
+    unless preview.wsUrl
+      # preview.wsUrl = "ws://#{location.hostname}:#{location.port}"
+      preview.wsUrl = "ws://#{location.hostname}:3569"
+    preview
 
   handleError: (error) =>
     @connection = null

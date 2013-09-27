@@ -28,6 +28,24 @@ class NoFloSettingsPlugin
         @renderClientForm graph
 
   renderServerForm: (graph) ->
+    $form = $ "<form>
+      <label>
+        WebSocket URL
+        <input class='wsUrl' type='url'>
+      </label>
+      <div class='toolbar'>
+        <button class='update'>Update</button>
+      </div>
+     </form>"
+    $wsUrl = $form.find '.wsUrl'
+    $update = $form.find '.update'
+    $wsUrl.val graph.properties.environment.wsUrl
+    $update.click (event) ->
+      event.preventDefault()
+      graph.properties.environment.wsUrl = $wsUrl.val()
+      graph.emit 'changed'
+
+    @$settings.append $form
 
   renderClientForm: (graph) ->
     $form = $ "<form>
