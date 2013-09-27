@@ -10,6 +10,7 @@ class NoFloGraphPlugin
   initialize: (@dataflow) ->
     # Modify behavior of other Dataflow plugins
     @dataflow.plugins.source.listeners false
+    @dataflow.plugins.source.allowUpdate false
     @runtime = null
 
   registerGraph: (graph, runtime) ->

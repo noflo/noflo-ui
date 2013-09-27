@@ -207,6 +207,7 @@
       SplitGist OUT -> WRITETEMPLATE EditExample
       ParseExample OUT -> IN LoadExample
       LoadExample OUT -> GRAPH EditExample
+      EditExample CHANGED -> IN DropChangedExample(core/Drop)
 
       # Routing
       '' -> START ListenHash(interaction/ListenHash)
