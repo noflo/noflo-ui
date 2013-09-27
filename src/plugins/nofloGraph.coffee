@@ -152,7 +152,6 @@ class NoFloGraphPlugin
     graph.on 'removeNode', (nfNode) =>
       if nfNode.dataflowNode?
         nfNode.dataflowNode.remove()
-      @dataflow.plugins.uog.add 'node removed: ' + nfNode.id
       runtime.sendGraph 'removenode',
         id: nfNode.id
     graph.on 'addEdge', (nfEdge) =>
