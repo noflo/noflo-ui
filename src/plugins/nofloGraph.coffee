@@ -135,7 +135,10 @@ class NoFloGraphPlugin
         if iip.to.node is node.nofloNode.id and iip.to.port is port
           metadata = iip.metadata
           graph.nofloGraph.removeInitial node.nofloNode.id, port
+      # Transmit bang to the NoFlo runtime
       graph.nofloGraph.addInitial true, node.nofloNode.id, port, metadata
+      # Don't save bang IIP to the graph (#9)
+      graph.nofloGraph.removeInitial node.nofloNode.id, port
 
   subscribeDataflowEdge: (edge, graph) ->
     unless edge.nofloEdge
