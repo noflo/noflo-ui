@@ -47,7 +47,9 @@ class NoFloSettingsPlugin
         Preview height
         <input class='height' type='number'>
       </label>
-      <button class='update'>Update</button>
+      <div class='toolbar'>
+        <button class='update'>Update</button>
+      </div>
      </form>"
 
     $src = $form.find '.src'
