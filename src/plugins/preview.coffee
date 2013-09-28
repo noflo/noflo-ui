@@ -25,7 +25,7 @@ class NoFloPreview
       id: 'preview'
       name: ''
       menu: @$connector
-      icon: 'play-circle'
+      icon: 'eye-open'
       pinned: true
 
     @$startButton.hide()

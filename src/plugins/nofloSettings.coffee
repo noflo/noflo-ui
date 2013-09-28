@@ -15,7 +15,7 @@ class NoFloSettingsPlugin
       id: 'settings'
       name: ''
       menu: @$settings
-      icon: 'th-list'
+      icon: 'cog'
       pinned: false
 
   registerGraph: (graph, runtime) ->
