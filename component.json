@@ -69,6 +69,7 @@
     "preview/iframe.html",
     "preview/package.json",
     "preview/component.json",
-    "index.html"
+    "index.html",
+    "favicon.ico"
   ]
 }
