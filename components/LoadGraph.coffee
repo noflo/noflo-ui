@@ -15,7 +15,10 @@ class LoadGraph extends noflo.AsyncComponent
 
   doAsync: (graphDefinition, done) ->
     noflo.graph.loadJSON graphDefinition, (graph) =>
-      graph.baseDir = @basedir
+      if graph.properties.environment and graph.properties.environment.baseDir
+        graph.baseDir = graph.properties.environment.baseDir
+      else
+        graph.baseDir = @basedir
       @outPorts.out.send graph
       @outPorts.out.disconnect()
       done()
