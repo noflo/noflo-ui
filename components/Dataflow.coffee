@@ -1,14 +1,4 @@
 noflo = require 'noflo'
-Dataflow = require('/meemoo-dataflow').Dataflow
-
-# Load NoFlo library plugin
-require '../src/plugins/nofloLibrary'
-# Load NoFlo Graph sync plugin
-require '../src/plugins/nofloGraph'
-# Load NoFlo settings plugin
-require '../src/plugins/nofloSettings'
-# Load NoFlo preview plugin
-require '../src/plugins/preview'
 
 class DataflowComponent extends noflo.Component
   constructor: ->
@@ -35,6 +25,17 @@ class DataflowComponent extends noflo.Component
 
   loadDataflow: ->
     return unless @graph and @container and @runtime
+    Dataflow = require('/meemoo-dataflow').Dataflow
+
+    # Load NoFlo library plugin
+    require '../src/plugins/nofloLibrary'
+    # Load NoFlo Graph sync plugin
+    require '../src/plugins/nofloGraph'
+    # Load NoFlo settings plugin
+    require '../src/plugins/nofloSettings'
+    # Load NoFlo preview plugin
+    require '../src/plugins/preview'
+
 
     # Load a Dataflow instance
     dataflow = new Dataflow
