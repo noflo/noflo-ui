@@ -59,8 +59,9 @@ class WebSocketRuntime extends Base
     unless preview
       preview = {}
     unless preview.wsUrl
-      # preview.wsUrl = "ws://#{location.hostname}:#{location.port}"
-      preview.wsUrl = "ws://#{location.hostname}:3569"
+      hostname = if location.hostname then location.hostname else "localhost"
+      # preview.wsUrl = if "ws://#{location.hostname}:#{location.port}"
+      preview.wsUrl = "ws://#{hostname}:3569"
     preview
 
   handleError: (error) =>
