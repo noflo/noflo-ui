@@ -18,14 +18,21 @@ class NoFloSettingsPlugin
       icon: 'cog'
       pinned: false
 
+    @dataflow = dataflow
+
   registerGraph: (graph, runtime) ->
     @$settings.html()
     return unless graph.properties.environment.runtime
     switch graph.properties.environment.runtime
       when 'websocket'
-        @renderServerForm graph
+        formCb = @renderServerForm graph
       else
-        @renderClientForm graph
+        formCb = @renderClientForm graph
+    exportsCb = @renderExportsForm graph
+    @renderSave graph, ->
+      exportsCb()
+      formCb()
+      graph.emit 'changed'
 
   renderServerForm: (graph) ->
     $form = $ "<form>
@@ -33,19 +40,12 @@ class NoFloSettingsPlugin
         WebSocket URL
         <input class='wsUrl' type='url'>
       </label>
-      <div class='toolbar'>
-        <button class='update'>Update</button>
-      </div>
      </form>"
     $wsUrl = $form.find '.wsUrl'
-    $update = $form.find '.update'
     $wsUrl.val graph.properties.environment.wsUrl
-    $update.click (event) ->
-      event.preventDefault()
-      graph.properties.environment.wsUrl = $wsUrl.val()
-      graph.emit 'changed'
-
     @$settings.append $form
+    return ->
+      graph.properties.environment.wsUrl = $wsUrl.val()
 
   renderClientForm: (graph) ->
     $form = $ "<form>
@@ -65,31 +65,74 @@ class NoFloSettingsPlugin
         Preview height
         <input class='height' type='number'>
       </label>
-      <div class='toolbar'>
-        <button class='update'>Update</button>
-      </div>
      </form>"
-
     $src = $form.find '.src'
     $content = $form.find '.content'
     $width = $form.find '.width'
     $height = $form.find '.height'
-    $update = $form.find '.update'
 
     $src.val graph.properties.environment.src
     $content.val graph.properties.environment.content
     $width.val graph.properties.environment.width
     $height.val graph.properties.environment.height
 
-    $update.click (event) ->
-      event.preventDefault()
+    @$settings.append $form
+
+    return ->
       graph.properties.environment.src = $src.val()
       graph.properties.environment.content = $content.val()
       graph.properties.environment.height = $height.val()
       graph.properties.environment.width = $width.val()
-      graph.emit 'changed'
 
-    @$settings.append $form
+  renderExportsForm: (graph) ->
+    $exports = $ "<div><h2>Exported ports</h2>
+      <form class='exports'></form></div>"
+    $form = $exports.find '.exports'
+    exportTemplate = "
+    <label>Public
+      <input type='text' name='public' value='<%- public %>'>
+    </label>
+    <label>Private
+      <input type='text' name='private' value='<%- private %>'>
+    </label>
+    "
+
+    # Render existing
+    for exported in graph.exports
+      $el = $ '<div class="export"></div>'
+      $el.html _.template exportTemplate, exported
+      $form.append $el
+
+    # Always one empty
+    $el = $ '<div class="export"></div>'
+    $el.html _.template exportTemplate,
+      public: ''
+      private: ''
+    $form.append $el
+
+    @$settings.append $exports
+
+    return ->
+      graph.exports = []
+      $form.find('div.export').each ->
+        pub = $(@).find('input[name="public"]').val()
+        priv = $(@).find('input[name="private"]').val()
+        if pub and priv
+          graph.exports.push
+            public: pub
+            private: priv
+
+  renderSave: (graph, callback) ->
+    $save = $ "
+      <div class='toolbar'>
+        <button class='update'>Update</button>
+      </div>
+      "
+    @$settings.append $save
+    $update = $save.find '.update'
+    $update.click (event) ->
+      event.preventDefault()
+      callback()
 
 plugin = Dataflow::plugin 'nofloSettings'
 Dataflow::plugins.nofloSettings = new NoFloSettingsPlugin

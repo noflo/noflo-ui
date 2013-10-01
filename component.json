@@ -22,7 +22,8 @@
     "noflo/noflo-objects": "*",
     "noflo/noflo-groups": "*",
     "noflo/noflo-dom": "*",
-    "noflo/noflo-core": "*"
+    "noflo/noflo-core": "*",
+    "noflo/noflo-runtime-iframe": "*"
   },
   "noflo": {
     "components": {
