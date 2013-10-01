@@ -70,6 +70,7 @@
     "preview/package.json",
     "preview/component.json",
     "index.html",
-    "favicon.ico"
+    "favicon.ico",
+    "noflo.png"
   ]
 }
