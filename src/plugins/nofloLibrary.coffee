@@ -37,22 +37,29 @@ class NoFloLibraryPlugin
   prepareComponents: (graph) ->
     components = {}
     graph.nodes.forEach (node) =>
-      components[node.component] =
-        name: node.component
-        description: ''
-        inPorts: []
-        outPorts: []
+      unless components[node.component]
+        components[node.component] =
+          name: node.component
+          description: ''
+          inPorts: []
+          outPorts: []
       graph.edges.forEach (edge) ->
         if edge.from.node is node.id
+          for outport in components[node.component].outPorts
+            return if outport.id is edge.from.port
           components[node.component].outPorts.push
             id: edge.from.port
             type: 'all'
         if edge.to.node is node.id
+          for inport in components[node.component].inPorts
+            return if inport.id is edge.to.port
           components[node.component].inPorts.push
             id: edge.to.port
             type: 'all'
       graph.initializers.forEach (iip) ->
         if iip.to.node is node.id
+          for inport in components[node.component].inPorts
+            return if inport.id is iip.to.port
           components[node.component].inPorts.push
             id: iip.to.port
             type: 'all'
