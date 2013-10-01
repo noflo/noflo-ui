@@ -93,21 +93,37 @@ class NoFloSettingsPlugin
       <input type='text' name='public' value='<%- public %>'>
     </label>
     <label>Private
-      <input type='text' name='private' value='<%- private %>'>
+      <select name='privateNode'>
+        <%= nodeList %>
+      </select>
+      <input type='text' name='privatePort' value='<%- privatePort %>'>
     </label>
     "
+
+    getNodeList = ->
+      nodeOpts = []
+      for node in graph.nodes
+        nodeOpts.push "<option value='#{node.id}'>#{node.metadata.label}</option>"
+      nodeOpts.join ''
 
     # Render existing
     for exported in graph.exports
       $el = $ '<div class="export"></div>'
+      privateParts = exported.private.split '.'
+      exported.privateNode = privateParts[0]
+      exported.privatePort = privateParts[1]
+      exported.nodeList = getNodeList()
       $el.html _.template exportTemplate, exported
+      $el.find("option[value=\"#{privateParts[0]}\"]").attr 'selected', 'selected'
       $form.append $el
 
     # Always one empty
     $el = $ '<div class="export"></div>'
     $el.html _.template exportTemplate,
       public: ''
-      private: ''
+      privateNode: ''
+      privatePort: ''
+      nodeList: getNodeList()
     $form.append $el
 
     @$settings.append $exports
@@ -116,11 +132,12 @@ class NoFloSettingsPlugin
       graph.exports = []
       $form.find('div.export').each ->
         pub = $(@).find('input[name="public"]').val()
-        priv = $(@).find('input[name="private"]').val()
-        if pub and priv
+        privateNode = $(@).find('option:selected').val()
+        privatePort = $(@).find('input[name="privatePort"]').val()
+        if pub and privateNode and privatePort
           graph.exports.push
             public: pub
-            private: priv
+            private: "#{privateNode}.#{privatePort}"
 
   renderSave: (graph, callback) ->
     $save = $ "

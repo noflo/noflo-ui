@@ -158,6 +158,9 @@ class NoFloGraphPlugin
       graph.nofloGraph.emit 'changed'
 
   subscribeNoFloEvents: (graph, runtime) ->
+    graph.on 'changed', =>
+      json = JSON.stringify graph.toJSON(), null, 2
+      @dataflow.plugins.source.show json
     graph.on 'addNode', (nfNode) =>
       setTimeout =>
         @addNodeDataflow nfNode, graph.dataflowGraph
