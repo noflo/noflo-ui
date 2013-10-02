@@ -19,8 +19,14 @@ class LoadGraph extends noflo.AsyncComponent
         graph.baseDir = graph.properties.environment.baseDir
       else
         graph.baseDir = @basedir
-      @outPorts.out.send graph
+      @outPorts.out.send @normalizeGraph graph
       @outPorts.out.disconnect()
       done()
+
+  normalizeGraph: (graph) ->
+    unless graph.properties.environment
+      graph.properties.environment =
+        runtime: 'html'
+    graph
 
 exports.getComponent = -> new LoadGraph

@@ -1,0 +1,433 @@
+{
+  "properties": {
+    "environment": {
+      "baseDir": "/noflo-ui",
+      "runtime": "html",
+      "src": "./preview/iframe-noflo-ui.html",
+      "width": "300",
+      "height": "300",
+      "content": ""
+    },
+    "name": "SaveProject"
+  },
+  "exports": [
+    {
+      "private": "newproject_zc9i4.in",
+      "public": "newproject"
+    },
+    {
+      "private": "listkey_4a0sp.in",
+      "public": "listkey"
+    },
+    {
+      "private": "setlist_vnf10.item",
+      "public": "done"
+    }
+  ],
+  "processes": {
+    "NewProject_zc9i4": {
+      "component": "core/Repeat",
+      "metadata": {
+        "x": 527.8333333333334,
+        "y": 62,
+        "label": "NewProject"
+      }
+    },
+    "GetId_cmys6": {
+      "component": "objects/GetObjectKey",
+      "metadata": {
+        "x": 767.8333333333334,
+        "y": 66,
+        "label": "GetId"
+      }
+    },
+    "ToJson_mjcoz": {
+      "component": "strings/Jsonify",
+      "metadata": {
+        "x": 1089.8333333333335,
+        "y": 151,
+        "label": "ToJson"
+      }
+    },
+    "SplitId_l6557": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 1087.8333333333335,
+        "y": -99,
+        "label": "SplitId"
+      }
+    },
+    "SaveProject_h7gsp": {
+      "component": "localstorage/SetItem",
+      "metadata": {
+        "x": 1350.8333333333335,
+        "y": 72,
+        "label": "SaveProject"
+      }
+    },
+    "SendId_j1as0": {
+      "component": "core/Kick",
+      "metadata": {
+        "x": 1578.8333333333335,
+        "y": 18,
+        "label": "SendId"
+      }
+    },
+    "HoldListKey_z8h78": {
+      "component": "strings/SendString",
+      "metadata": {
+        "x": 2012.8333333333335,
+        "y": -112,
+        "label": "HoldListKey"
+      }
+    },
+    "CompileList_6pcsb": {
+      "component": "strings/CompileString",
+      "metadata": {
+        "x": 2702.8333333333335,
+        "y": 4,
+        "label": "CompileList"
+      }
+    },
+    "GetList_k02vl": {
+      "component": "localstorage/GetItem",
+      "metadata": {
+        "x": 2215.8333333333335,
+        "y": -111,
+        "label": "GetList"
+      }
+    },
+    "ListKey_4a0sp": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 1376.8333333333335,
+        "y": -307,
+        "label": "ListKey"
+      }
+    },
+    "SetList_vnf10": {
+      "component": "localstorage/SetItem",
+      "metadata": {
+        "x": 3376.8333333333335,
+        "y": -235,
+        "label": "SetList"
+      }
+    },
+    "SplitIdAfterSave_6znz7": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 1793.8333333333335,
+        "y": 25,
+        "label": "SplitIdAfterSave"
+      }
+    },
+    "RemoveGroups_m7vcj": {
+      "component": "groups/RemoveGroups",
+      "metadata": {
+        "x": 2468,
+        "y": 38,
+        "label": "RemoveGroups"
+      }
+    },
+    "RemoveGroups_6elq": {
+      "component": "groups/RemoveGroups",
+      "metadata": {
+        "x": 2466,
+        "y": -88,
+        "label": "RemoveGroups"
+      }
+    },
+    "HoldListKey_60og8": {
+      "component": "strings/SendString",
+      "metadata": {
+        "x": 3134,
+        "y": -238.5,
+        "label": "HoldListKey"
+      }
+    },
+    "SplitList_o4bc3": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 2922,
+        "y": 18.5,
+        "label": "SplitList"
+      }
+    }
+  },
+  "connections": [
+    {
+      "src": {
+        "process": "NewProject_zc9i4",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetId_cmys6",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 8
+      }
+    },
+    {
+      "src": {
+        "process": "GetId_cmys6",
+        "port": "object"
+      },
+      "tgt": {
+        "process": "ToJson_mjcoz",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 8
+      }
+    },
+    {
+      "src": {
+        "process": "GetId_cmys6",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SplitId_l6557",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "SplitId_l6557",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SendId_j1as0",
+        "port": "data"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "SaveProject_h7gsp",
+        "port": "item"
+      },
+      "tgt": {
+        "process": "SendId_j1as0",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitId_l6557",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SaveProject_h7gsp",
+        "port": "key"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "ToJson_mjcoz",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SaveProject_h7gsp",
+        "port": "value"
+      },
+      "metadata": {
+        "route": 8
+      }
+    },
+    {
+      "src": {
+        "process": "ListKey_4a0sp",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldListKey_z8h78",
+        "port": "string"
+      },
+      "metadata": {
+        "route": 5
+      }
+    },
+    {
+      "src": {
+        "process": "SendId_j1as0",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SplitIdAfterSave_6znz7",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "SplitIdAfterSave_6znz7",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldListKey_z8h78",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "HoldListKey_z8h78",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetList_k02vl",
+        "port": "key"
+      },
+      "metadata": {
+        "route": 5
+      }
+    },
+    {
+      "src": {
+        "process": "SplitIdAfterSave_6znz7",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "RemoveGroups_m7vcj",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "GetList_k02vl",
+        "port": "item"
+      },
+      "tgt": {
+        "process": "RemoveGroups_6elq",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 1
+      }
+    },
+    {
+      "src": {
+        "process": "RemoveGroups_6elq",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "CompileList_6pcsb",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 1
+      }
+    },
+    {
+      "src": {
+        "process": "RemoveGroups_m7vcj",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "CompileList_6pcsb",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "ListKey_4a0sp",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldListKey_60og8",
+        "port": "string"
+      },
+      "metadata": {
+        "route": 5
+      }
+    },
+    {
+      "src": {
+        "process": "HoldListKey_60og8",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetList_vnf10",
+        "port": "key"
+      },
+      "metadata": {
+        "route": 5
+      }
+    },
+    {
+      "src": {
+        "process": "SplitList_o4bc3",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetList_vnf10",
+        "port": "value"
+      },
+      "metadata": {
+        "route": 1
+      }
+    },
+    {
+      "src": {
+        "process": "CompileList_6pcsb",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SplitList_o4bc3",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 1
+      }
+    },
+    {
+      "src": {
+        "process": "SplitList_o4bc3",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldListKey_60og8",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "data": "id",
+      "tgt": {
+        "process": "GetId_cmys6",
+        "port": "key"
+      }
+    },
+    {
+      "data": ",",
+      "tgt": {
+        "process": "CompileList_6pcsb",
+        "port": "delimiter"
+      }
+    }
+  ]
+}

@@ -100,10 +100,13 @@ class NoFloSettingsPlugin
     </label>
     "
 
-    getNodeList = ->
+    getNodeList = (selectedNode) ->
       nodeOpts = []
       for node in graph.nodes
-        nodeOpts.push "<option value='#{node.id}'>#{node.metadata.label}</option>"
+        selected = ''
+        if node.id.toLowerCase() is selectedNode
+          selected = ' selected="selected"'
+        nodeOpts.push "<option value='#{node.id}'#{selected}>#{node.metadata.label}</option>"
       nodeOpts.join ''
 
     # Render existing
@@ -112,9 +115,8 @@ class NoFloSettingsPlugin
       privateParts = exported.private.split '.'
       exported.privateNode = privateParts[0]
       exported.privatePort = privateParts[1]
-      exported.nodeList = getNodeList()
+      exported.nodeList = getNodeList exported.privateNode
       $el.html _.template exportTemplate, exported
-      $el.find("option[value=\"#{privateParts[0]}\"]").attr 'selected', 'selected'
       $form.append $el
 
     # Always one empty

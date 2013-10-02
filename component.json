@@ -28,6 +28,7 @@
   "noflo": {
     "components": {
       "CreateGraph": "components/CreateGraph.coffee",
+      "GenerateId": "components/GenerateId.coffee",
       "LoadGraph": "components/LoadGraph.coffee",
       "LoadRuntime": "components/LoadRuntime.coffee",
       "ListenGraph": "components/ListenGraph.coffee",
@@ -36,6 +37,8 @@
       "Router": "components/Router.coffee"
     },
     "graphs": {
+      "CreateProjectView": "graphs/CreateProjectView.json",
+      "SaveProject": "graphs/SaveProject.json",
       "EditGraph": "graphs/EditGraph.json",
       "WriteTemplate": "graphs/WriteTemplate.json"
     }
@@ -51,16 +54,21 @@
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",
     "components/CreateGraph.coffee",
+    "components/GenerateId.coffee",
     "components/LoadGraph.coffee",
     "components/LoadRuntime.coffee",
     "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
     "components/Dataflow.coffee",
     "components/Router.coffee",
+    "graphs/CreateProjectView.json",
+    "graphs/SaveProject.json",
     "graphs/EditGraph.json",
     "graphs/WriteTemplate.json"
   ],
   "json": [
+    "graphs/CreateProjectView.json",
+    "graphs/SaveProject.json",
     "graphs/EditGraph.json",
     "graphs/WriteTemplate.json",
     "component.json"
