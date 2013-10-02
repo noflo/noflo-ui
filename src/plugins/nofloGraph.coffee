@@ -210,10 +210,11 @@ class NoFloGraphPlugin
           if edge.from.node is payload.from.node and edge.from.port is payload.from.port
             eventEdge = edge
       return unless eventEdge
-      eventEdge.dataflowEdge.get('log').add
-        type: command
-        group: payload.group
-        data: payload.data
+      if payload.data?
+        eventEdge.dataflowEdge.get('log').push
+          type: command
+          group: payload.group
+          data: payload.data
 
   addNodeDataflow: (nfNode, dfGraph) ->
     return unless nfNode
