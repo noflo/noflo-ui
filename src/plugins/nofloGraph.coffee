@@ -131,6 +131,7 @@ class NoFloGraphPlugin
           return if iip.from.data is value
           metadata = iip.metadata
           graph.nofloGraph.removeInitial node.nofloNode.id, port
+      return if value is undefined
       graph.nofloGraph.addInitial value, node.nofloNode.id, port, metadata
     node.on 'bang', (port) ->
       for iip in graph.nofloGraph.initializers
