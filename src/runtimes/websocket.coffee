@@ -10,6 +10,18 @@ class WebSocketRuntime extends Base
 
   getType: -> 'websocket'
 
+  getElement: ->
+    console = document.createElement 'pre'
+
+    @on 'network', (message) ->
+      return unless message.command is 'output'
+      console.innerHTML = "#{console.innerHTML}#{message.payload.message}\n"
+      console.scrollTop = console.scrollHeight
+    @on 'disconnected', ->
+      console.innerHTML = ''
+
+    console
+
   connect: (preview) ->
     return if @connection or @connecting
 
