@@ -19,7 +19,12 @@ class NoFloLibraryPlugin
 
     runtime.on 'component', (message) =>
       return unless runtime is @runtime
-      @registerComponent message.payload
+      component = message.payload
+      for port in component.inPorts
+        port.multiple = if port.array then true else false
+      for port in component.outPorts
+        port.multiple = if port.array then true else false
+      @registerComponent component
 
     # Load components once we have a connection
     runtime.on 'connected', =>
