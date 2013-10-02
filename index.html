@@ -239,7 +239,7 @@
     window.onload = function () {
       var noflo = require('noflo');
       var fbp = document.querySelector('script[type="application/fbp"]');
-      var fbpString = fbp.innerText.trim();
+      var fbpString = (fbp.innerText || fbp.textContent).trim();
       noflo.graph.loadFBP(fbpString, function (graph) {
         graph.baseDir = '/noflo-ui';
         noflo.createNetwork(graph);
