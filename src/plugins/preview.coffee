@@ -24,6 +24,7 @@ class NoFloPreview
     dataflow.addPlugin
       id: 'preview'
       name: ''
+      label: 'preview'
       menu: @$connector
       icon: 'eye-open'
       pinned: true

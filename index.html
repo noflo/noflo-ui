@@ -35,6 +35,13 @@
             Graph name
             <input type="text" id="name" placeholder="MyCoolGraph">
           </label>
+          <label>
+            Type
+            <select name="type">
+              <option value="html">Browser</option>
+              <option value="websocket">Node.js</option>
+            </select>
+          </label>
           <button id="create">Create</button>
         </form>
       </div>
@@ -119,6 +126,14 @@
       HoldInput OUT -> IN GetName(objects/GetObjectKey)
       'value' -> KEY GetName
       ListenClick CLICK -> IN HoldInput
+
+      # ## New project view
+      '#new-template' -> TEMPLATE NewProjectView(ui/CreateProjectView)
+      SplitUiContainer OUT -> CONTAINER NewProjectView
+      Router(ui/Router) NEWPROJECT -> IN NewProjectView
+      'noflo-ui-projects' -> LISTKEY SaveProject(ui/SaveProject)
+      NewProjectView PROJECT -> NEWPROJECT SaveProject
+      SaveProject DONE -> IN ShowSaved(core/Output)
 
       # Create graph and save
       GetName OUT -> IN SplitName(core/Split) OUT -> NAME CreateGraph

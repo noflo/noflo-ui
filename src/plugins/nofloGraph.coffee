@@ -145,6 +145,13 @@ class NoFloGraphPlugin
       graph.nofloGraph.removeInitial node.nofloNode.id, port
 
   subscribeDataflowEdge: (edge, graph) ->
+    # Ensure there is no IIP left behind when we make a connection to the port
+    for iip in graph.nofloGraph.initializers
+      continue unless iip
+      if iip.to.node is edge.target.parentNode.nofloNode.id and iip.to.port is edge.target.id
+        graph.nofloGraph.removeInitial edge.target.parentNode.nofloNode.id, edge.target.id
+
+    # Create edge as needed
     unless edge.nofloEdge
       nofloEdge = graph.nofloGraph.addEdge edge.source.parentNode.nofloNode.id, edge.source.id, edge.target.parentNode.nofloNode.id, edge.target.id,
         route: edge.get 'route'

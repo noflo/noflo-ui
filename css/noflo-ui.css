@@ -80,6 +80,15 @@ body {
   border: none;
 }
 
+.dataflow-card .noflo-ui-preview .preview pre {
+  max-height: 300px;
+  color: #7ee67e;
+  font-size: 10px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  font-family: monospace;
+}
+
 .dataflow-node-inspector-inputs label.connected {
   display: none;
 }

@@ -1,0 +1,655 @@
+{
+  "properties": {
+    "environment": {
+      "baseDir": "/noflo-ui",
+      "runtime": "html",
+      "src": "./preview/iframe-noflo-ui.html",
+      "width": "300",
+      "height": "300",
+      "content": ""
+    },
+    "name": "CreateProject"
+  },
+  "exports": [
+    {
+      "private": "template_ylkgg.in",
+      "public": "template"
+    },
+    {
+      "private": "container_1cz66.in",
+      "public": "container"
+    },
+    {
+      "private": "createempty_xiwbj.start",
+      "public": "in"
+    },
+    {
+      "private": "settype_jpzb0.out",
+      "public": "project"
+    }
+  ],
+  "processes": {
+    "Container_1cz66": {
+      "component": "core/Repeat",
+      "metadata": {
+        "x": 364,
+        "y": 338,
+        "label": "Container"
+      }
+    },
+    "CreateEmpty_xiwbj": {
+      "component": "objects/CreateObject",
+      "metadata": {
+        "x": 364,
+        "y": 252,
+        "label": "CreateEmpty"
+      }
+    },
+    "WriteView_y26g1": {
+      "component": "dom/WriteHtml",
+      "metadata": {
+        "x": 1220,
+        "y": 225,
+        "label": "WriteView"
+      }
+    },
+    "Template_ylkgg": {
+      "component": "core/Repeat",
+      "metadata": {
+        "x": 365,
+        "y": 151,
+        "label": "Template"
+      }
+    },
+    "GetTemplate_9srhi": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 570,
+        "y": 151,
+        "label": "GetTemplate"
+      }
+    },
+    "ReadTemplate_hg2zg": {
+      "component": "dom/ReadHtml",
+      "metadata": {
+        "x": 772,
+        "y": 156,
+        "label": "ReadTemplate"
+      }
+    },
+    "RunTemplate_ca5em": {
+      "component": "strings/StringTemplate",
+      "metadata": {
+        "x": 1002,
+        "y": 154,
+        "label": "RunTemplate"
+      }
+    },
+    "CreateButtonSelector_c662o": {
+      "component": "core/Kick",
+      "metadata": {
+        "x": 649,
+        "y": 540,
+        "label": "CreateButtonSelector"
+      }
+    },
+    "NameInputSelector_6aef": {
+      "component": "core/Kick",
+      "metadata": {
+        "x": 648,
+        "y": 654,
+        "label": "NameInputSelector"
+      }
+    },
+    "SplitView_kcwt4": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 431,
+        "y": 600,
+        "label": "SplitView"
+      }
+    },
+    "GetCreateButton_xrbbu": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 899,
+        "y": 541,
+        "label": "GetCreateButton"
+      }
+    },
+    "ListenClick_ivbl1": {
+      "component": "interaction/ListenMouse",
+      "metadata": {
+        "x": 1127,
+        "y": 535,
+        "label": "ListenClick"
+      }
+    },
+    "GetNameInput_nfcu8": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 901,
+        "y": 653,
+        "label": "GetNameInput"
+      }
+    },
+    "HoldInput_yp3n7": {
+      "component": "core/Kick",
+      "metadata": {
+        "x": 1554,
+        "y": 582,
+        "label": "HoldInput"
+      }
+    },
+    "GetName_lbbg": {
+      "component": "objects/GetObjectKey",
+      "metadata": {
+        "x": 1971,
+        "y": 583,
+        "label": "GetName"
+      }
+    },
+    "GetTypeOption_dj2ez": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 1762,
+        "y": 723,
+        "label": "GetTypeOption"
+      }
+    },
+    "SplitClick_t18pg": {
+      "component": "core/Split",
+      "metadata": {
+        "x": 1332,
+        "y": 540,
+        "label": "SplitClick"
+      }
+    },
+    "HoldOptionSelector_et5sq": {
+      "component": "core/Kick",
+      "metadata": {
+        "x": 1556,
+        "y": 724,
+        "label": "HoldOptionSelector"
+      }
+    },
+    "GetType_el1zd": {
+      "component": "objects/GetObjectKey",
+      "metadata": {
+        "x": 1971,
+        "y": 723,
+        "label": "GetType"
+      }
+    },
+    "SetName_6uy92": {
+      "component": "objects/SetPropertyValue",
+      "metadata": {
+        "x": 2421,
+        "y": 588,
+        "label": "SetName"
+      }
+    },
+    "SetType_jpzb0": {
+      "component": "objects/SetPropertyValue",
+      "metadata": {
+        "x": 2636,
+        "y": 719,
+        "label": "SetType"
+      }
+    },
+    "CreateProject_cmyn": {
+      "component": "objects/CreateObject",
+      "metadata": {
+        "x": 1967,
+        "y": 374,
+        "label": "CreateProject"
+      }
+    },
+    "GetContainer_eivet": {
+      "component": "dom/GetElement",
+      "metadata": {
+        "x": 572,
+        "y": 320,
+        "label": "GetContainer"
+      }
+    },
+    "ui/GenerateId_yp50h": {
+      "component": "ui/GenerateId",
+      "metadata": {
+        "x": 1969,
+        "y": 472,
+        "label": "ui/GenerateId"
+      }
+    },
+    "objects/SetPropertyValue_q280l": {
+      "component": "objects/SetPropertyValue",
+      "metadata": {
+        "x": 2222,
+        "y": 451,
+        "label": "objects/SetPropertyValue"
+      }
+    }
+  },
+  "connections": [
+    {
+      "src": {
+        "process": "Template_ylkgg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetTemplate_9srhi",
+        "port": "selector"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetTemplate_9srhi",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "ReadTemplate_hg2zg",
+        "port": "container"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "ReadTemplate_hg2zg",
+        "port": "html"
+      },
+      "tgt": {
+        "process": "RunTemplate_ca5em",
+        "port": "template"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "CreateEmpty_xiwbj",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "RunTemplate_ca5em",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "RunTemplate_ca5em",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "WriteView_y26g1",
+        "port": "html"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "WriteView_y26g1",
+        "port": "container"
+      },
+      "tgt": {
+        "process": "SplitView_kcwt4",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitView_kcwt4",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "CreateButtonSelector_c662o",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitView_kcwt4",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "NameInputSelector_6aef",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "CreateButtonSelector_c662o",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetCreateButton_xrbbu",
+        "port": "selector"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetCreateButton_xrbbu",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "ListenClick_ivbl1",
+        "port": "element"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "NameInputSelector_6aef",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetNameInput_nfcu8",
+        "port": "selector"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetNameInput_nfcu8",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "HoldInput_yp3n7",
+        "port": "data"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "HoldInput_yp3n7",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetName_lbbg",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "ListenClick_ivbl1",
+        "port": "click"
+      },
+      "tgt": {
+        "process": "SplitClick_t18pg",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitClick_t18pg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldInput_yp3n7",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitClick_t18pg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "HoldOptionSelector_et5sq",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "HoldOptionSelector_et5sq",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetTypeOption_dj2ez",
+        "port": "selector"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetTypeOption_dj2ez",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "GetType_el1zd",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetName_lbbg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetName_6uy92",
+        "port": "value"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetType_el1zd",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetType_jpzb0",
+        "port": "value"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SetName_6uy92",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetType_jpzb0",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "GetContainer_eivet",
+        "port": "element"
+      },
+      "tgt": {
+        "process": "WriteView_y26g1",
+        "port": "container"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "Container_1cz66",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "GetContainer_eivet",
+        "port": "selector"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitClick_t18pg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "ui/GenerateId_yp50h",
+        "port": "start"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "SplitClick_t18pg",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "CreateProject_cmyn",
+        "port": "start"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "ui/GenerateId_yp50h",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "objects/SetPropertyValue_q280l",
+        "port": "value"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "CreateProject_cmyn",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "objects/SetPropertyValue_q280l",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "src": {
+        "process": "objects/SetPropertyValue_q280l",
+        "port": "out"
+      },
+      "tgt": {
+        "process": "SetName_6uy92",
+        "port": "in"
+      },
+      "metadata": {
+        "route": 0
+      }
+    },
+    {
+      "data": "#name",
+      "tgt": {
+        "process": "NameInputSelector_6aef",
+        "port": "data"
+      }
+    },
+    {
+      "data": "#create",
+      "tgt": {
+        "process": "CreateButtonSelector_c662o",
+        "port": "data"
+      }
+    },
+    {
+      "data": "value",
+      "tgt": {
+        "process": "GetName_lbbg",
+        "port": "key"
+      }
+    },
+    {
+      "data": "option:checked",
+      "tgt": {
+        "process": "HoldOptionSelector_et5sq",
+        "port": "data"
+      }
+    },
+    {
+      "data": "value",
+      "tgt": {
+        "process": "GetType_el1zd",
+        "port": "key"
+      }
+    },
+    {
+      "data": "name",
+      "tgt": {
+        "process": "SetName_6uy92",
+        "port": "property"
+      }
+    },
+    {
+      "data": "type",
+      "tgt": {
+        "process": "SetType_jpzb0",
+        "port": "property"
+      }
+    },
+    {
+      "data": "id",
+      "tgt": {
+        "process": "objects/SetPropertyValue_q280l",
+        "port": "property"
+      }
+    }
+  ]
+}
