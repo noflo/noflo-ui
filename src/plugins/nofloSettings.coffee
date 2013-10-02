@@ -14,6 +14,7 @@ class NoFloSettingsPlugin
     dataflow.addPlugin
       id: 'settings'
       name: ''
+      label: 'settings'
       menu: @$settings
       icon: 'cog'
       pinned: false
