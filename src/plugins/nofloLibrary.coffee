@@ -102,8 +102,13 @@ class NoFloLibraryPlugin
       # Update the description
       if definition.description
         @types[definition.name].description = definition.description
+      # Update the icon
+      if definition.icon
+        @types[definition.name].icon = definition.icon
 
   updateInstancePorts: (instance) =>
+    if @components[instance.type].icon
+      instance.set 'icon', @components[instance.type].icon
     for port in @components[instance.type].inPorts
       instancePort = instance.inputs.get port.id
       if instancePort
