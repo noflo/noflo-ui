@@ -27,6 +27,12 @@
     <link rel="stylesheet" href="./css/noflo-ui.css">
   </head>
   <body>
+    <section id="context"></section>
+    <section id="label"></section>
+    <section id="runtime"></section>
+    <section id="workspace"></section>
+    <section id="fixed"></section>
+    <section id="navigator"></section>
     <script type="text/template" id="dataflow-template">
       <div class="dataflow"></div>
     </script>
@@ -72,13 +78,14 @@
       # Basedir for loading components
       '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
 
-      # The DOM element where the UI will be run
-      '#noflo-ui' -> IN SplitUiContainer(core/Split)
+      # The DOM elements where the UI will be run
+      '#workspace' -> IN SplitWorkspaceContainer(core/Split)
+      '#navigator' -> IN SplitNavigatorContainer(core/Split)
 
       # ## Main view
       # Main view listing user's projects and examples
       '#main-template' -> TEMPLATE WriteMain(ui/WriteTemplate)
-      SplitUiContainer OUT -> TARGET WriteMain
+      SplitNavigatorContainer OUT -> TARGET WriteMain
       Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
       PrepareMain OUT -> DATA WriteMain
       'noflo-ui-graphs' -> STRING GraphListKey(strings/SendString)
@@ -114,7 +121,7 @@
       # ## New graph view
       SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
       '#new-template' -> TEMPLATE WriteNew(ui/WriteTemplate)
-      SplitUiContainer OUT -> TARGET WriteNew
+      SplitNavigatorContainer OUT -> TARGET WriteNew
       Router(ui/Router) NEW -> START PrepareNew(objects/CreateObject)
       PrepareNew OUT -> DATA WriteNew
       '#create' -> DATA CreateButtonId(core/Kick)
@@ -132,7 +139,7 @@
 
       # ## New project view
       '#new-template' -> TEMPLATE NewProjectView(ui/CreateProjectView)
-      SplitUiContainer OUT -> CONTAINER NewProjectView
+      SplitNavigatorContainer OUT -> CONTAINER NewProjectView
       Router(ui/Router) NEWPROJECT -> IN NewProjectView
       'noflo-ui-projects' -> LISTKEY SaveProject(ui/SaveProject)
       NewProjectView PROJECT -> NEWPROJECT SaveProject
@@ -174,7 +181,7 @@
       SplitBaseDir OUT -> BASEDIR LoadGraph(ui/LoadGraph)
 
       # Prepare Dataflow in DOM
-      SplitUiContainer OUT -> DATA LoadGraphDataflow(core/Kick)
+      SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)
       SplitGraphName OUT -> IN LoadGraphDataflow
       SplitGraphName OUT -> WRITETEMPLATE EditGraph
       LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/EditGraph)
@@ -219,7 +226,7 @@
       SplitBaseDir OUT -> BASEDIR LoadExample(ui/LoadGraph)
 
       # Prepare Dataflow in DOM
-      SplitUiContainer OUT -> DATA LoadExampleDataflow(core/Kick)
+      SplitWorkspaceContainer OUT -> DATA LoadExampleDataflow(core/Kick)
       SplitGist OUT -> IN LoadExampleDataflow
       LoadExampleDataflow OUT -> CONTAINER EditExample(ui/EditGraph)
       SplitGist OUT -> WRITETEMPLATE EditExample

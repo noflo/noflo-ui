@@ -4,13 +4,23 @@ body {
   font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-#noflo-ui {
+#workspace {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1;
+}
+
+#navigator {
+  width: 80%;
+  height: 80%;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  margin-left: -40%;
+  z-index: 200;
 }
 
 .noflo-ui-main {
