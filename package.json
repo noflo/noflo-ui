@@ -32,7 +32,8 @@
     "component-json": "~0.1.4",
     "component-coffee": "~0.1.4",
     "grunt-exec": "~0.4.2",
-    "component": "~0.17.6"
+    "component": "~0.17.6",
+    "bower": "~1.2.7"
   },
   "scripts": {
     "postinstall": "cd preview && npm install && cd ..",
