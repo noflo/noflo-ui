@@ -68,6 +68,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
+          src: ['bower_components/*']
+          expand: true
+          dest: '/'
+        ,
           src: ['index.html']
           expand: true
           dest: '/'
