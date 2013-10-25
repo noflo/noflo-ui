@@ -6,16 +6,11 @@
     <title>NoFlo Development Environment</title>
     <link rel="shortcut icon" href="favicon.ico" />
 
-    <!-- Dataflow Dependencies -->
-    <script src="./browser/meemoo-dataflow/libs/jquery.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/jquery-ui.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/jquery.ui.touch-punch.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/underscore.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/backbone.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/hammer.min.js"></script>
-
-    <!-- Polyfills -->
-    <script src="http://www.polymer-project.org/polymer-all/PointerEvents/pointerevents.js"></script>
+    <script src="bower_components/polymer/polymer.min.js"></script>
+    <script src="bower_components/gss/browser/gss.js"></script>
+    <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
+    <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
     <script src="./browser/noflo-ui.js"></script>
@@ -27,6 +22,13 @@
     <link rel="stylesheet" href="./css/noflo-ui.css">
   </head>
   <body>
+    <style type="text/gss">
+      /* Ensure nodes are square and of touchable size */
+      [zoom] == 1;
+      [node-width] == 58 * [zoom];
+      /* Center process label */
+      .the-graph-process-label[left] == [node-width]/2 - .the-graph-process-label[intrinsic-width]/2;
+    </style>
     <section id="context"></section>
     <section id="label"></section>
     <section id="runtime"></section>
@@ -70,6 +72,9 @@
       <a href="#graph/<%- name %>"><%- name %></a>
     </script>
     <div id="noflo-ui"></div>
+    <script type="text/javascript">
+      GSS.worker = 'bower_components/gss/browser/gss-solver.min.js'
+    </script>
     <script type="application/fbp">
       # List of examples to ship
       # TODO: Read these from external source
@@ -177,21 +182,17 @@
 
       # ## Graph loading
       Router GRAPH -> IN SplitGraphName(core/Split)
-      SplitGraphName OUT -> DATA StartLoading(core/Kick)
-      SplitBaseDir OUT -> BASEDIR LoadGraph(ui/LoadGraph)
 
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)
       SplitGraphName OUT -> IN LoadGraphDataflow
-      SplitGraphName OUT -> WRITETEMPLATE EditGraph
-      LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/EditGraph)
+      LoadGraphDataflow OUT -> SELECTOR GetDataflowContainer(dom/GetElement)
+      GetDataflowContainer ELEMENT -> CONTAINER EditGraph(ui/LoadGraphEditor)
 
       # Try loading from localStorage
-      EditGraph DOMREADY -> IN StartLoading
-      StartLoading OUT -> KEY LoadStored(localstorage/GetItem)
+      SplitGraphName OUT -> KEY LoadStored(localstorage/GetItem)
       LoadStored ITEM -> IN ParseJson(strings/ParseJson)
-      ParseJson OUT -> IN LoadGraph
-      LoadGraph OUT -> GRAPH EditGraph
+      ParseJson OUT -> GRAPH EditGraph
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)
@@ -202,7 +203,7 @@
       # Listen to changes and save to localStorage
       SplitGraphName OUT -> DATA SendKey(core/Kick)
       SendKey OUT -> KEY Store(localstorage/SetItem)
-      EditGraph CHANGED -> IN SplitChanged(core/Split)
+      #EditGraph CHANGED -> IN SplitChanged(core/Split)
       SplitChanged OUT -> IN SendKey()
       SplitChanged OUT -> IN ToJson(strings/Jsonify)
       ToJson OUT -> VALUE Store
