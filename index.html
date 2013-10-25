@@ -7,7 +7,7 @@
     <link rel="shortcut icon" href="favicon.ico" />
 
     <script src="bower_components/polymer/polymer.min.js"></script>
-    <script src="bower_components/gss/browser/gss.js"></script>
+    <!--<script src="bower_components/gss/browser/gss.js"></script>-->
     <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="./css/noflo-ui.css">
   </head>
   <body>
+    <!--
     <style type="text/gss">
       /* Ensure nodes are square and of touchable size */
       [zoom] == 1;
@@ -29,6 +30,7 @@
       /* Center process label */
       .the-graph-process-label[left] == [node-width]/2 - .the-graph-process-label[intrinsic-width]/2;
     </style>
+    -->
     <section id="context"></section>
     <section id="label"></section>
     <section id="runtime"></section>
@@ -72,9 +74,11 @@
       <a href="#graph/<%- name %>"><%- name %></a>
     </script>
     <div id="noflo-ui"></div>
+    <!--
     <script type="text/javascript">
       GSS.worker = 'bower_components/gss/browser/gss-solver.min.js'
     </script>
+    -->
     <script type="application/fbp">
       # List of examples to ship
       # TODO: Read these from external source
@@ -193,6 +197,11 @@
       SplitGraphName OUT -> KEY LoadStored(localstorage/GetItem)
       LoadStored ITEM -> IN ParseJson(strings/ParseJson)
       ParseJson OUT -> GRAPH EditGraph
+      EditGraph GRAPH -> GRAPH Determine(ui/DetermineRuntime)
+      Determine GRAPH -> GRAPH LoadRuntime(ui/LoadRuntime)
+      Determine RUNTIME -> RUNTIME LoadRuntime
+      EditGraph EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+      LoadRuntime RUNTIME -> RUNTIME ConnectRuntime
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)

@@ -27,6 +27,7 @@
   },
   "noflo": {
     "components": {
+      "ConnectRuntime": "components/ConnectRuntime.coffee",
       "CreateGraph": "components/CreateGraph.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "LoadGraph": "components/LoadGraph.coffee",
@@ -54,6 +55,7 @@
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",
+    "components/ConnectRuntime.coffee",
     "components/CreateGraph.coffee",
     "components/GenerateId.coffee",
     "components/LoadGraph.coffee",

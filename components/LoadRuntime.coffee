@@ -21,10 +21,12 @@ class LoadRuntime extends noflo.Component
     return unless @graph and @runtime
     Runtime = require "../src/runtimes/#{@runtime}"
     runtime = new Runtime @graph
-    @outPorts.runtime.send runtime
-    @outPorts.runtime.disconnect()
-    @outPorts.graph.send @graph
-    @outPorts.graph.disconnect()
+    if @outPorts.runtime.isAttached()
+      @outPorts.runtime.send runtime
+      @outPorts.runtime.disconnect()
+    if @outPorts.graph.isAttached()
+      @outPorts.graph.send @graph
+      @outPorts.graph.disconnect()
 
     # Reset state
     @graph = null
