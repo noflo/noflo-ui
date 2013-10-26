@@ -37,7 +37,7 @@
           </label>
           <label>
             Type
-            <select name="type">
+            <select name="type" id="runtime">
               <option value="html">Browser</option>
               <option value="websocket">Node.js</option>
             </select>
@@ -125,7 +125,17 @@
       GetNameInput ELEMENT -> DATA HoldInput(core/Kick)
       HoldInput OUT -> IN GetName(objects/GetObjectKey)
       'value' -> KEY GetName
-      ListenClick CLICK -> IN HoldInput
+
+      '#runtime' -> DATA RuntimeInputId(core/Kick)
+      SplitNew OUT -> IN RuntimeInputId
+      RuntimeInputId OUT -> SELECTOR GetRuntimeSelect(dom/GetElement)
+      GetRuntimeSelect ELEMENT -> DATA HoldRuntime(core/Kick)
+      HoldRuntime OUT -> IN GetRuntime(objects/GetObjectKey)
+      'value' -> KEY GetRuntime
+
+      ListenClick CLICK -> IN SplitClick(core/Split)
+      SplitClick OUT -> IN HoldRuntime
+      SplitClick OUT -> IN HoldInput
 
       # ## New project view
       '#new-template' -> TEMPLATE NewProjectView(ui/CreateProjectView)
@@ -136,7 +146,9 @@
       SaveProject DONE -> IN ShowSaved(core/Output)
 
       # Create graph and save
+      GetRuntime OUT -> RUNTIME CreateGraph
       GetName OUT -> IN SplitName(core/Split) OUT -> NAME CreateGraph
+
       CreateGraph OUT -> IN NewToJson(strings/Jsonify)
       SplitName OUT -> DATA SendNewKey(core/Kick)
       SendNewKey OUT -> KEY StoreNew(localstorage/SetItem)
