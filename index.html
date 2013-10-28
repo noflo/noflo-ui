@@ -9,6 +9,7 @@
     <script src="bower_components/polymer/polymer.min.js"></script>
     <!--<script src="bower_components/gss/browser/gss.js"></script>-->
     <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
+    <link rel="import" href="bower_components/the-panel/the-panel/the-panel.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
@@ -31,12 +32,17 @@
       .the-graph-process-label[left] == [node-width]/2 - .the-graph-process-label[intrinsic-width]/2;
     </style>
     -->
-    <section id="context"></section>
-    <section id="label"></section>
-    <section id="runtime"></section>
-    <section id="workspace"></section>
-    <section id="fixed"></section>
-    <section id="navigator"></section>
+    <the-panel id="context" edge="left">
+      <header></header>
+      <main></main>
+      <footer></footer>
+    </the-panel>
+    <main id="workspace"></main>
+    <the-panel id="fixed" edge="right">
+      <header></header>
+      <main></main>
+      <footer></footer>
+    </the-panel>
     <script type="text/template" id="dataflow-template">
       <div class="dataflow"></div>
     </script>

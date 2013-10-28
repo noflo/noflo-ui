@@ -2,6 +2,14 @@ body {
   background-color: #2a2b31;
   color: #ffffff;
   font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+the-panel {
+  background-color: rgb(29, 29, 29);
+  border: 1px rgb(71, 71, 71) solid;
+  z-index: 2;
 }
 
 #workspace {
