@@ -12,7 +12,6 @@
     "dataflow"
   ],
   "dependencies": {
-    "meemoo/dataflow": "*",
     "component/emitter": "*",
     "noflo/noflo": "*",
     "noflo/noflo-strings": "*",
