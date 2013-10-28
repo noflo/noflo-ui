@@ -19,6 +19,8 @@
   "dependencies": {
     "polymer": "~0.0.20131010",
     "the-behavior": "*",
-    "the-graph": "*"
+    "the-graph": "*",
+    "the-panel": "*",
+    "the-card": "*"
   }
 }
