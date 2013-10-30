@@ -3,14 +3,27 @@ class GraphPreview
     @contextPanel = document.getElementById 'context'
     @fixedPanel = document.getElementById 'fixed'
     @runtime = null
+    @icon = 'cloud'
+    @status =
+      label: 'offline'
+      state: 'offline'
+      connected: false
+    @running = false
+    @stopped = true
 
-  getMenuButtons: ->
-    [
-      id: 'preview'
-      label: 'show preview'
-      icon: 'eye-open'
-      action: @showCard
-    ]
+  template: """
+  <template bind>
+    <div class="status">{{ status.label }} <span class="{{ status.state }}"><i class="icon-{{ icon }}"></i></span></div>
+    <div class="runcontrol">
+      <template bind if="{{ running }}">
+        running <button class="stop"><i class="icon-pause"></i></button>
+      </template>
+      <template bind if="{{ stopped }}">
+        stopped <button class="start"><i class="icon-play"></i></button>
+      </template>
+    </div>
+  </template>
+  """
 
   showCard: (container) =>
     return if @contextPanel.querySelector '#runtimePreview'
@@ -22,64 +35,53 @@ class GraphPreview
     container.appendChild card
 
   registerRuntime: (@runtime) ->
+    @controls = document.getElementById 'runtime'
+    @controls.innerHTML = @template
+    template = @controls.getElementsByTagName('template')[0]
+    template.model = @
 
+    setTimeout =>
+      @controls.getElementsByClassName('runcontrol')[0].addEventListener 'click', (event) =>
+        event.preventDefault()
+        clickedButton = event.target
+        if clickedButton.nodeName isnt 'BUTTON'
+          clickedButton = clickedButton.parentNode
+        return if clickedButton.nodeName isnt 'BUTTON'
+        do @runtime[clickedButton.className]
+
+      , false
+    , 1
+
+    switch @runtime.getType()
+      when 'iframe'
+        @icon = 'globe'
+      else
+        @icon = 'cloud'
+
+    @runtime.on 'status', (status) =>
+      @status.label = status.label
+      @status.state = status.state
+      if status.state is 'online'
+        @status.connected = true
+      else
+        @status.connected = false
+      if status.label is 'running'
+        @running = true
+        @stopped = false
+      if status.label is 'stopped'
+        @running = false
+        @stopped = true
+
+    @runtime.once 'connected', =>
+      @showCard @contextPanel.getMain()
+
+    @runtime.once 'disconnected', =>
+      # TODO: Hide card?
+    
   register: (instance) ->
     @graph = instance
 
   unregister: (instance) ->
     @graph = null
-
-  ###
-  setPreview: (preview, runtime) ->
-    @setRuntime runtime
-    @preparePreview preview, runtime
-
-  setRuntime: (runtime) ->
-    @runtime = runtime
-    switch runtime.getType()
-      when 'iframe'
-        @$connector.find('h2 i').addClass 'icon-globe'
-      else
-        @$connector.find('h2 i').addClass 'icon-cloud'
-
-    runtime.on 'status', (status) =>
-      return unless runtime is @runtime
-      @$status.removeClass 'online'
-      @$status.removeClass 'offline'
-      @$status.removeClass 'pending'
-      @$status.addClass status.state
-
-      @$status.html status.label
-
-      if status.label is 'running'
-        @$startButton.hide()
-        @$stopButton.show()
-      if status.label is 'stopped'
-        @$stopButton.hide()
-        @$startButton.show()
-
-  preparePreview: (preview, runtime) ->
-    runtime.connect preview
-    @$connButton.click =>
-      return unless runtime is @runtime
-      @preparePreview preview, runtime
-
-    runtime.once 'connected', =>
-      return unless runtime is @runtime
-      # Update preview card contents
-      @$connector.find('h2 span').html @runtime.getAddress()
-      @$connButton.hide()
-      @$startButton.show()
-
-      # Show the preview card automatically
-      @dataflow.showPlugin 'preview'
-
-    runtime.once 'disconnected', =>
-      return unless runtime is @runtime
-      @dataflow.plugins.notification.notify 'noflo.png', 'Error', 'Connection to NoFlo runtime was lost'
-      @$connButton.show()
-      @$startButton.hide()
-      @$stopButton.hide()
-  ###
 
 module.exports = GraphPreview

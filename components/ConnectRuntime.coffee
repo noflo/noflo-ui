@@ -20,9 +20,35 @@ class ConnectRuntime extends noflo.Component
       continue unless plugin.registerRuntime
       plugin.registerRuntime runtime
 
-    runtime.on 'connected', ->
+    runtime.once 'connected', ->
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
+    runtime.on 'connected', =>
+      runtime.sendGraph 'clear',
+        baseDir: 'noflo-ui-preview'
+      graph = editor.toJSON()
+      for name, definition of graph.processes
+        runtime.sendGraph 'addnode',
+          id: name
+          component: definition.component
+          metadata: definition.metadata
+      for edge in graph.connections
+        if edge.src
+          runtime.sendGraph 'addedge',
+            from:
+              node: edge.src.process
+              port: edge.src.port
+            to:
+              node: edge.tgt.process
+              port: edge.tgt.port
+          continue
+        runtime.sendGraph 'addinitial',
+          from:
+            data: edge.data
+          to:
+            node: edge.tgt.process
+            port: edge.tgt.port
+
     runtime.on 'component', (message) ->
       definition =
         name: message.payload.name

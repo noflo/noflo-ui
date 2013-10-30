@@ -7,7 +7,7 @@ body {
 }
 
 the-panel {
-  background-color: rgb(29, 29, 29);
+  background-color: hsla(0, 0%, 11%, 1);
   border: 1px rgb(71, 71, 71) solid;
   z-index: 2;
 }
@@ -54,11 +54,30 @@ the-panel the-card ul li {
 }
 
 #mainmenu {
+  background-color: hsla(0, 0%, 11%, 0.9);
   position: fixed;
   left: 0;
   top: 0;
   color: white;
   z-index: 3;
+  width: 200px;
+  font-size: 22px;
+}
+
+#mainmenu button {
+  width: 50%;
+  text-align: center;
+  padding: 6px;
+}
+
+#runtime {
+  background-color: hsla(0, 0%, 11%, 0.8);
+  position: fixed;
+  right: 0;
+  top: 0;
+  color: white;
+  z-index: 3;
+  width: 200px;
 }
 
 #workspace {
@@ -117,7 +136,6 @@ the-panel the-card ul li {
 
 #preview-iframe {
   display: none;
-  outline: 1px solid #2a2b31;
   border: none;
 }
 the-card #preview-iframe {
