@@ -7,19 +7,23 @@ class GraphPreview
     @status =
       label: 'offline'
       state: 'offline'
-      connected: false
-    @running = false
-    @stopped = true
+      online: false
+    @execution =
+      label: 'stopped'
+      running: false
+      stopped: true
 
   template: """
   <template bind>
     <div class="status">{{ status.label }} <span class="{{ status.state }}"><i class="icon-{{ icon }}"></i></span></div>
     <div class="runcontrol">
-      <template bind if="{{ running }}">
-        running <button class="stop"><i class="icon-pause"></i></button>
-      </template>
-      <template bind if="{{ stopped }}">
-        stopped <button class="start"><i class="icon-play"></i></button>
+      <template bind if="{{ status.online }}">
+        <template bind if="{{ execution.running }}">
+          {{ execution.label }} <button class="stop"><i class="icon-pause"></i></button>
+        </template>
+        <template bind if="{{ execution.stopped }}">
+          {{ execution.label }} <button class="start"><i class="icon-play"></i></button>
+        </template>
       </template>
     </div>
   </template>
@@ -58,19 +62,19 @@ class GraphPreview
       else
         @icon = 'cloud'
 
+    # Connection status
     @runtime.on 'status', (status) =>
+      @status.online = status.online
       @status.label = status.label
-      @status.state = status.state
-      if status.state is 'online'
-        @status.connected = true
+    # Running status
+    @runtime.on 'execution', (status) =>
+      if status.running
+        @execution.running = true
+        @execution.stopped = false
       else
-        @status.connected = false
-      if status.label is 'running'
-        @running = true
-        @stopped = false
-      if status.label is 'stopped'
-        @running = false
-        @stopped = true
+        @execution.running = false
+        @execution.stopped = true
+      @execution.label = status.label
 
     @runtime.once 'connected', =>
       @showCard @contextPanel.getMain()

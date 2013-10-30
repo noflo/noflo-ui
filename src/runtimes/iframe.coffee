@@ -19,7 +19,7 @@ class IframeRuntime extends Base
 
     # Let the UI know we're connecting
     @emit 'status',
-      state: 'pending'
+      online: false
       label: 'connecting'
 
     # Normalize the preview setup
@@ -63,13 +63,13 @@ class IframeRuntime extends Base
     # Stop listening to messages
     window.removeEventListener 'message', @onMessage, false
     @emit 'status',
-      state: 'offline'
+      online: false
       label: 'disconnected'
 
   # Called every time the iframe has loaded successfully
   onLoaded: =>
     @emit 'status',
-      state: 'online'
+      online: true
       label: 'connected'
     @emit 'connected'
 

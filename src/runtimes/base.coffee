@@ -39,12 +39,12 @@ class BaseRuntime extends EventEmitter
   recvNetwork: (command, payload) ->
     switch command
       when 'started'
-        @emit 'status',
-          state: 'online'
+        @emit 'execution',
+          running: true
           label: 'running'
       when 'stopped'
-        @emit 'status',
-          state: 'online'
+        @emit 'execution',
+          running: false
           label: 'stopped'
       else
         @emit 'network',

@@ -33,7 +33,7 @@ class WebSocketRuntime extends Base
     @connection.addEventListener 'open', =>
       @connecting = false
       @emit 'status',
-        state: 'online'
+        online: true
         label: 'connected'
       @emit 'connected'
       @flush()
@@ -43,7 +43,7 @@ class WebSocketRuntime extends Base
     @connection.addEventListener 'close', =>
       @connection = null
       @emit 'status',
-        state: 'offline'
+        online: false
         label: 'disconnected'
       @emit 'disconnected'
     , false
