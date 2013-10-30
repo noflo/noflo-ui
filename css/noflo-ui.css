@@ -12,6 +12,54 @@ the-panel {
   z-index: 2;
 }
 
+the-panel the-card {
+  display: block;
+  margin-bottom: 5px;
+  border-bottom: 1px rgb(71, 71, 71) solid;
+}
+
+the-panel the-card button,
+#mainmenu button {
+  padding: 3px;
+  background-color: transparent;
+  border: none;
+  color: white;
+}
+
+the-panel the-card h1 {
+  margin: 0px;
+  font-size: 12pt;
+}
+
+the-panel the-card ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+the-panel the-card textarea {
+  width: 100%;
+  min-height: 100px;
+  max-height: 260px;
+}
+
+the-panel the-card ul li {
+  display: inline;
+  margin: 2px 0px;
+}
+
+#context {
+  padding-top: 30px;
+}
+
+#mainmenu {
+  position: fixed;
+  left: 0;
+  top: 0;
+  color: white;
+  z-index: 3;
+}
+
 #workspace {
   position: absolute;
   top: 0;

@@ -24,6 +24,8 @@ class LoadGraphEditor extends noflo.Component
     editor.graph = @graph
     @container.appendChild editor
 
+    @loadPlugins editor
+
     if @outPorts.editor.isAttached()
       @outPorts.editor.send editor
       @outPorts.editor.disconnect()
@@ -34,5 +36,14 @@ class LoadGraphEditor extends noflo.Component
     # Reset state
     @graph = null
     @runtime = null
+
+  loadPlugins: (editor) ->
+    plugins = [
+      'source'
+      'menu'
+    ]
+    plugins.forEach (name) ->
+      Plugin = require "../src/plugins/#{name}"
+      editor.addPlugin name, new Plugin
 
 exports.getComponent = -> new LoadGraphEditor

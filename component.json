@@ -51,6 +51,8 @@
     "src/plugins/nofloGraph.coffee",
     "src/plugins/nofloSettings.coffee",
     "src/plugins/preview.coffee",
+    "src/plugins/source.coffee",
+    "src/plugins/menu.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",
