@@ -20,10 +20,9 @@ class ConnectRuntime extends noflo.Component
       continue unless plugin.registerRuntime
       plugin.registerRuntime runtime
 
-    runtime.once 'connected', ->
+    runtime.on 'connected', =>
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
-    runtime.on 'connected', =>
       runtime.sendGraph 'clear',
         baseDir: 'noflo-ui-preview'
       graph = editor.toJSON()
