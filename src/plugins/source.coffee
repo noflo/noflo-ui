@@ -11,9 +11,9 @@ class GraphSource
     @graph = null
 
   showCard: (container) =>
-    return if container.querySelector '#show-card'
+    return if container.querySelector '#viewSource'
     card = document.createElement 'the-card'
-    card.setAttribute 'id', 'view-source'
+    card.setAttribute 'id', 'viewSource'
     card.innerHTML = """
     <h1>Graph source</h1>
     <textarea></textarea>

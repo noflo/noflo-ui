@@ -30,6 +30,7 @@ class GraphMenu
       for button in @buttons
         continue unless button.id is buttonId
         button.action container
+      card.parentNode.removeChild card
     , false
 
     container.appendChild card
