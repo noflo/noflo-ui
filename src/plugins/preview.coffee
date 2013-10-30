@@ -15,7 +15,7 @@ class GraphPreview
 
   template: """
   <template bind>
-    <div class="status">{{ status.label }} <span class="{{ status.state }}"><i class="icon-{{ icon }}"></i></span></div>
+    <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="icon-{{ icon }}"></i></span></div>
     <div class="runcontrol">
       <template bind if="{{ status.online }}">
         <template bind if="{{ execution.running }}">
@@ -65,6 +65,10 @@ class GraphPreview
     # Connection status
     @runtime.on 'status', (status) =>
       @status.online = status.online
+      if status.online
+        @status.state = 'online'
+      else
+        @status.state = 'offline'
       @status.label = status.label
     # Running status
     @runtime.on 'execution', (status) =>

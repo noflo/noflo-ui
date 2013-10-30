@@ -20,7 +20,8 @@ the-panel the-card {
 }
 
 the-panel the-card button,
-#mainmenu button {
+#mainmenu button,
+#runtime button {
   padding: 3px;
   background-color: transparent;
   border: none;
@@ -75,9 +76,20 @@ the-panel the-card ul li {
   position: fixed;
   right: 0;
   top: 0;
-  color: white;
+  color: rgb(71, 71, 71);
+  padding: 6px;
   z-index: 3;
   width: 200px;
+}
+#runtime button {
+  color: rgb(71, 71, 71);
+}
+
+#runtime .online {
+  color: #01d159;
+}
+#runtime .offline {
+  color: #e70215;
 }
 
 #workspace {
