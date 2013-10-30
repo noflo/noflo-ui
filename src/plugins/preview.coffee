@@ -1,50 +1,35 @@
-{Dataflow} = require '/meemoo-dataflow'
-
-class NoFloPreview
-  initialize: (dataflow) ->
+class GraphPreview
+  constructor: ->
+    @contextPanel = document.getElementById 'context'
+    @fixedPanel = document.getElementById 'fixed'
     @runtime = null
-    @$connector = $ "<div class=\"noflo-ui-preview\">
-      <h2><i></i> <span>WebSocket</span></h2>
-      <div class=\"toolbar\">
-        <button class=\"start btn\"><i class=\"icon-play\"></i></button>
-        <button class=\"stop btn\"><i class=\"icon-stop\"></i></button>
-        <button class=\"connect btn\"><i class=\"icon-refresh\"></i></button>
-        <span class=\"status\"></span>
-        <span class=\"uptime\"></span>
-      </div>
-      <div class=\"preview\"></div>
-    </div>"
 
-    @$status = @$connector.find '.status'
-    @$preview = @$connector.find '.preview'
-    @$startButton = @$connector.find '.start'
-    @$stopButton = @$connector.find '.stop'
-    @$connButton = @$connector.find '.connect'
-
-    dataflow.addPlugin
+  getMenuButtons: ->
+    [
       id: 'preview'
-      name: ''
-      label: 'preview'
-      menu: @$connector
+      label: 'show preview'
       icon: 'eye-open'
-      pinned: true
+      action: @showCard
+    ]
 
-    @$startButton.hide()
-    @$stopButton.hide()
-    @$connButton.hide()
-
-    @$startButton.click =>
-      dataflow.plugins.notification.requestPermission()
-      @runtime.start()
-    @$stopButton.click =>
-      @runtime.stop()
-
-    @dataflow = dataflow
-
-  onShow: =>
+  showCard: (container) =>
+    return if @contextPanel.querySelector '#runtimePreview'
+    return if @fixedPanel.querySelector '#runtimePreview'
+    card = document.createElement 'the-card'
+    card.setAttribute 'id', 'runtimePreview'
     # Move the preview element of the runtime to the plugin card
-    @$preview.append @runtime.getElement()
+    card.appendChild @runtime.getElement()
+    container.appendChild card
 
+  registerRuntime: (@runtime) ->
+
+  register: (instance) ->
+    @graph = instance
+
+  unregister: (instance) ->
+    @graph = null
+
+  ###
   setPreview: (preview, runtime) ->
     @setRuntime runtime
     @preparePreview preview, runtime
@@ -95,6 +80,6 @@ class NoFloPreview
       @$connButton.show()
       @$startButton.hide()
       @$stopButton.hide()
+  ###
 
-plugin = Dataflow::plugin 'preview'
-Dataflow::plugins['preview'] = new NoFloPreview
+module.exports = GraphPreview

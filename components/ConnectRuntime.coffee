@@ -16,6 +16,10 @@ class ConnectRuntime extends noflo.Component
 
   connect: (editor, runtime) ->
     return unless editor and runtime
+    for name, plugin of editor.plugins
+      continue unless plugin.registerRuntime
+      plugin.registerRuntime runtime
+
     runtime.on 'connected', ->
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
@@ -38,6 +42,6 @@ class ConnectRuntime extends noflo.Component
           array: port.array
       editor.registerComponent definition
     runtime.setParentElement editor.parentNode
-    runtime.connect editor.graph.properties.preview
+    runtime.connect editor.graph.properties.environment
 
 exports.getComponent = -> new ConnectRuntime

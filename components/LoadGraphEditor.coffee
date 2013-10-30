@@ -39,6 +39,7 @@ class LoadGraphEditor extends noflo.Component
 
   loadPlugins: (editor) ->
     plugins = [
+      'preview'
       'source'
       'menu'
     ]

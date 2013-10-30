@@ -15,6 +15,7 @@ the-panel {
 the-panel the-card {
   display: block;
   margin-bottom: 5px;
+  padding-bottom: 5px;
   border-bottom: 1px rgb(71, 71, 71) solid;
 }
 
@@ -119,7 +120,7 @@ the-panel the-card ul li {
   outline: 1px solid #2a2b31;
   border: none;
 }
-.dataflow-card #preview-iframe {
+the-card #preview-iframe {
   display: block;
 }
 
