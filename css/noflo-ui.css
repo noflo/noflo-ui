@@ -17,6 +17,10 @@ the-panel the-card {
   margin-bottom: 5px;
   padding-bottom: 5px;
   border-bottom: 1px rgb(71, 71, 71) solid;
+  width: 300px;
+  max-height: 300px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 the-panel the-card button,
@@ -48,6 +52,20 @@ the-panel the-card textarea {
 the-panel the-card ul li {
   display: inline;
   margin: 2px 0px;
+}
+
+the-panel the-card ul.components li {
+  display: block;
+  clear: right;
+  margin-bottom: 5px;
+}
+
+the-panel the-card ul.components li h2 {
+  font-size: 10pt;
+  margin: 0px;
+}
+the-panel the-card ul.components li .icon {
+  float: right;
 }
 
 #context {

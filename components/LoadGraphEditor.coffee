@@ -41,6 +41,7 @@ class LoadGraphEditor extends noflo.Component
     plugins = [
       'preview'
       'source'
+      'library'
       'menu'
     ]
     plugins.forEach (name) ->
