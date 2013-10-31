@@ -47,9 +47,6 @@
   "main": "index.js",
   "scripts": [
     "index.js",
-    "src/plugins/nofloLibrary.coffee",
-    "src/plugins/nofloGraph.coffee",
-    "src/plugins/nofloSettings.coffee",
     "src/plugins/preview.coffee",
     "src/plugins/source.coffee",
     "src/plugins/menu.coffee",

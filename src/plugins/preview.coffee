@@ -51,7 +51,15 @@ class GraphPreview
         if clickedButton.nodeName isnt 'BUTTON'
           clickedButton = clickedButton.parentNode
         return if clickedButton.nodeName isnt 'BUTTON'
-        do @runtime[clickedButton.className]
+        if clickedButton.className is 'start'
+          if @contextPanel.querySelector '#runtimePreview'
+            do @runtime.start
+            return
+          @showCard @contextPanel.getMain()
+          @runtime.once 'connected', =>
+            do @runtime.start
+          return
+        do @runtime.stop
 
       , false
     , 1
@@ -81,7 +89,6 @@ class GraphPreview
       @execution.label = status.label
 
     @runtime.once 'connected', =>
-      @showCard @contextPanel.getMain()
 
     @runtime.once 'disconnected', =>
       # TODO: Hide card?
