@@ -20,6 +20,7 @@ class LoadGraphEditor extends noflo.Component
   loadEditor: ->
     return unless @graph and @container
 
+    @container.innerHTML = ''
     editor = document.createElement 'the-graph-editor'
     editor.graph = @graph
     @container.appendChild editor

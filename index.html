@@ -11,6 +11,7 @@
     <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
     <link rel="import" href="bower_components/the-panel/the-panel/the-panel.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <link rel="import" href="elements/noflo-main.html">
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -96,93 +97,23 @@
       '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
 
       # The DOM elements where the UI will be run
-      '#workspace' -> IN SplitWorkspaceContainer(core/Split)
-      '#workspace' -> IN SplitNavigatorContainer(core/Split)
+      '#workspace' -> SELECTOR GetWorkspaceContainer(dom/GetElement)
+      GetWorkspaceContainer ELEMENT -> IN SplitWorkspaceContainer(core/Split)
 
       # ## Main view
       # Main view listing user's projects and examples
-      '#main-template' -> TEMPLATE WriteMain(ui/WriteTemplate)
-      SplitNavigatorContainer OUT -> TARGET WriteMain
-      Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
-      PrepareMain OUT -> DATA WriteMain
+      SplitWorkspaceContainer OUT -> DATA MainContainer(core/Kick)
+      Router(ui/Router) MAIN -> IN MainContainer
+      MainContainer OUT -> CONTAINER LoadMain(ui/LoadMain)
       'noflo-ui-graphs' -> STRING GraphListKey(strings/SendString)
-      WriteMain OUT -> IN MainIsReady(core/Split)
+      LoadMain ELEMENT -> IN MainIsReady(core/Split)
       MainIsReady OUT -> IN GraphListKey
 
       # Read graphs from storage and write to DOM
-      '#main-graph-element' -> SELECTOR GraphItemTemplate(dom/GetElement)
-      GraphItemTemplate ELEMENT -> CONTAINER ReadGraphItemTemplate(dom/ReadHtml)
-      ReadGraphItemTemplate HTML -> TEMPLATE WriteGraphElement(strings/StringTemplate)
       GraphListKey OUT -> KEY GetGraphList(localstorage/GetItem)
       ',' -> DELIMITER SplitGraphList(strings/SplitStr)
       GetGraphList ITEM -> IN SplitGraphList
-      'li' -> STRING CreateGraphItem(strings/SendString)
-      SplitGraphList OUT -> IN SplitGraphItem(core/Split)
-      CreateGraphItem OUT -> TAGNAME CreateGraphElement(dom/CreateElement)
-      CreateGraphElement ELEMENT -> IN SplitGraphElement(core/Split)
-      'name' -> PROPERTY SetGraphName(objects/SetPropertyValue)
-      SplitGraphItem OUT -> IN CreateGraphItem
-      SplitGraphItem OUT -> VALUE SetGraphName
-      SplitGraphItem OUT -> START CreateGraphObject(objects/CreateObject)
-      CreateGraphObject OUT -> IN SetGraphName
-      SetGraphName OUT -> IN WriteGraphElement
-
-      '#sketches' -> STRING HoldGraphContainer(strings/SendString)
-      HoldGraphContainer OUT -> SELECTOR GetGraphContainer(dom/GetElement)
-      MainIsReady OUT -> IN HoldGraphContainer
-      GetGraphContainer ELEMENT -> PARENT AppendGraph(dom/AppendChild)
-      SplitGraphElement OUT -> CONTAINER WriteGraph(dom/WriteHtml)
-      WriteGraphElement OUT -> HTML WriteGraph(dom/WriteHtml)
-      WriteGraph CONTAINER -> CHILD AppendGraph
-
-      # ## New graph view
-      SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
-      '#new-template' -> TEMPLATE WriteNew(ui/WriteTemplate)
-      SplitNavigatorContainer OUT -> TARGET WriteNew
-      Router(ui/Router) NEW -> START PrepareNew(objects/CreateObject)
-      PrepareNew OUT -> DATA WriteNew
-      '#create' -> DATA CreateButtonId(core/Kick)
-      '#name' -> DATA NameInputId(core/Kick)
-      WriteNew OUT -> IN SplitNew(core/Split)
-      SplitNew OUT -> IN CreateButtonId
-      CreateButtonId OUT -> SELECTOR GetCreateButton(dom/GetElement)
-      GetCreateButton ELEMENT -> ELEMENT ListenClick(interaction/ListenMouse)
-      SplitNew OUT -> IN NameInputId
-      NameInputId OUT -> SELECTOR GetNameInput(dom/GetElement)
-      GetNameInput ELEMENT -> DATA HoldInput(core/Kick)
-      HoldInput OUT -> IN GetName(objects/GetObjectKey)
-      'value' -> KEY GetName
-      ListenClick CLICK -> IN HoldInput
-
-      # ## New project view
-      '#new-template' -> TEMPLATE NewProjectView(ui/CreateProjectView)
-      SplitNavigatorContainer OUT -> CONTAINER NewProjectView
-      Router(ui/Router) NEWPROJECT -> IN NewProjectView
-      'noflo-ui-projects' -> LISTKEY SaveProject(ui/SaveProject)
-      NewProjectView PROJECT -> NEWPROJECT SaveProject
-      SaveProject DONE -> IN ShowSaved(core/Output)
-
-      # Create graph and save
-      GetName OUT -> IN SplitName(core/Split) OUT -> NAME CreateGraph
-      CreateGraph OUT -> IN NewToJson(strings/Jsonify)
-      SplitName OUT -> DATA SendNewKey(core/Kick)
-      SendNewKey OUT -> KEY StoreNew(localstorage/SetItem)
-      NewToJson OUT -> IN SplitNewJson(core/Split)
-      SplitNewJson OUT -> IN SendNewKey
-      SplitNewJson OUT -> VALUE StoreNew
-
-      # Update list of graphs
-      'noflo-ui-graphs' -> STRING HoldGraphListKey(strings/SendString)
-      ',' -> DELIMITER CompileList(strings/CompileString)
-      GetGraphListForNew(localstorage/GetItem) ITEM -> DATA HoldList(core/Kick)
-      SplitName OUT -> IN HoldGraphListKey
-      SplitName OUT -> IN HoldList OUT -> IN SplitList(core/Split)
-      SplitName OUT -> DATA HoldName(core/Kick) OUT -> IN CompileList
-      SplitList OUT -> IN HoldName
-      SplitList OUT -> IN RemoveGrp(groups/RemoveGroups) OUT -> IN CompileList
-      HoldGraphListKey OUT -> KEY GetGraphListForNew(localstorage/GetItem)
-      'noflo-ui-graphs' -> KEY UpdateGraphList(localstorage/SetItem)
-      CompileList OUT -> VALUE UpdateGraphList
+      SplitGraphList OUT -> SKETCH LoadMain
 
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)
@@ -198,8 +129,7 @@
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)
       SplitGraphName OUT -> IN LoadGraphDataflow
-      LoadGraphDataflow OUT -> SELECTOR GetDataflowContainer(dom/GetElement)
-      GetDataflowContainer ELEMENT -> CONTAINER EditGraph(ui/LoadGraphEditor)
+      LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/LoadGraphEditor)
 
       # Try loading from localStorage
       SplitGraphName OUT -> KEY LoadStored(localstorage/GetItem)
@@ -246,11 +176,13 @@
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadExampleDataflow(core/Kick)
       SplitGist OUT -> IN LoadExampleDataflow
-      LoadExampleDataflow OUT -> CONTAINER EditExample(ui/EditGraph)
-      SplitGist OUT -> WRITETEMPLATE EditExample
-      ParseExample OUT -> IN LoadExample
-      LoadExample OUT -> GRAPH EditExample
-      EditExample CHANGED -> IN DropChangedExample(core/Drop)
+      LoadExampleDataflow OUT -> CONTAINER EditExample(ui/LoadGraphEditor)
+      ParseExample OUT -> GRAPH EditExample
+      EditExample GRAPH -> GRAPH DetermineExample(ui/DetermineRuntime)
+      DetermineExample GRAPH -> GRAPH LoadExampleRuntime(ui/LoadRuntime)
+      DetermineExample RUNTIME -> RUNTIME LoadExampleRuntime
+      EditExample EDITOR -> EDITOR ConnectExampleRuntime(ui/ConnectRuntime)
+      LoadExampleRuntime RUNTIME -> RUNTIME ConnectExampleRuntime
 
       # Routing
       '' -> START ListenHash(interaction/ListenHash)
@@ -264,7 +196,7 @@
       MissedRoute OUT -> HASH Navigate
     </script>
     <script>
-    window.onload = function () {
+    window.addEventListener('WebComponentsReady', function() { 
       var noflo = require('noflo');
       var fbp = document.querySelector('script[type="application/fbp"]');
       var fbpString = (fbp.innerText || fbp.textContent).trim();
@@ -272,7 +204,7 @@
         graph.baseDir = '/noflo-ui';
         noflo.createNetwork(graph);
       });
-    };
+    });
     </script>
   </body>
 </html>

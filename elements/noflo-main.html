@@ -1,0 +1,32 @@
+<polymer-element name="noflo-main">
+  <template>
+    <section id="sketches">
+      <h2>Sketches</h2>
+      <button on-click="{{ newSketch }}">New sketch</button>
+      <ul>
+        <template repeat="{{ sketch in sketches }}">
+        <li><a href="#graph/{{ sketch }}">{{ sketch }}</a></li>
+        </template>
+      </ul>
+    </section>
+    <section id="examples">
+      <h2>Examples</h2>
+      <ul>
+        <template repeat="{{ examples }}">
+        <li><a href="#example/{{ id }}">{{ name }}</a></li>
+        </template>
+      </ul>
+    </section>
+  </template>
+  <script>
+    Polymer('noflo-main', {
+      projects: [],
+      examples: [],
+      sketches: [],
+      newSketch: function (event) {
+        event.preventDefault();
+        console.log('foo!');
+      }
+    });
+  </script>
+</polymer-element>
