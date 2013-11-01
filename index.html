@@ -46,43 +46,6 @@
       <main></main>
       <footer></footer>
     </the-panel>
-    <script type="text/template" id="dataflow-template">
-      <div class="dataflow"></div>
-    </script>
-    <script type="text/template" id="new-template">
-      <div class="noflo-ui-new">
-        <h1>Create new sketch</h2>
-        <form>
-          <label>
-            Graph name
-            <input type="text" id="name" placeholder="MyCoolGraph">
-          </label>
-          <label>
-            Type
-            <select name="type">
-              <option value="html">Browser</option>
-              <option value="websocket">Node.js</option>
-            </select>
-          </label>
-          <button id="create">Create</button>
-        </form>
-      </div>
-    </script>
-    <script type="text/template" id="main-template">
-      <div class="noflo-ui-main">
-        <h1>NoFlo Development Environment</h1>
-        <h2>Sketches</h2>
-        <a href="#new" class="btn">Create new</a>
-        <ul id="sketches"></ul>
-
-        <h2>Examples</h2>
-        <ul id="examples"></ul>
-      </div>
-    </script>
-    <script type="text/template" id="main-graph-element">
-      <a href="#graph/<%- name %>"><%- name %></a>
-    </script>
-    <div id="noflo-ui"></div>
     <!--
     <script type="text/javascript">
       GSS.worker = 'bower_components/gss/browser/gss-solver.min.js'
@@ -114,6 +77,9 @@
       ',' -> DELIMITER SplitGraphList(strings/SplitStr)
       GetGraphList ITEM -> IN SplitGraphList
       SplitGraphList OUT -> SKETCH LoadMain
+
+      # Save newly created graphs into localStorage
+      LoadMain NEWSKETCH -> IN Show(core/Output)
 
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)

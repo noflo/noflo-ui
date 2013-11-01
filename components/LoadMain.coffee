@@ -10,6 +10,7 @@ class LoadMain extends noflo.Component
       example: new noflo.Port 'object'
     @outPorts =
       element: new noflo.Port 'object'
+      newsketch: new noflo.Port 'object'
 
     @inPorts.container.on 'data', (container) =>
       container.innerHTML = ''
@@ -18,6 +19,10 @@ class LoadMain extends noflo.Component
       if @outPorts.element.isAttached()
         @outPorts.element.send @element
         @outPorts.element.disconnect()
+      if @outPorts.newsketch.isAttached()
+        @element.addEventListener 'newsketch', (sketch) =>
+          @outPorts.newsketch.send sketch.detail
+          @outPorts.newsketch.disconnect()
 
     @inPorts.project.on 'data', (data) =>
       @element.projects.push data

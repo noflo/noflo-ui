@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-new-graph.html">
 <polymer-element name="noflo-main">
   <template>
     <section id="sketches">
@@ -25,7 +26,11 @@
       sketches: [],
       newSketch: function (event) {
         event.preventDefault();
-        console.log('foo!');
+        var dialog = document.createElement('noflo-new-graph');
+        this.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          this.fire('newsketch', event.detail);
+        }.bind(this));
       }
     });
   </script>

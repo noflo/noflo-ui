@@ -1,0 +1,42 @@
+<polymer-element name="noflo-new-graph">
+  <template>
+    <h1>Create new sketch</h1>
+    <form>
+      <label>
+        Graph name
+        <input type="text" value="{{ name }}" placeholder="MyCoolGraph" required>
+      </label>
+      <label>
+        Type
+        <select name="type" value="{{ type }}">
+          <option value="html">Browser</option>
+          <option value="websocket">Node.js</option>
+        </select>
+      </label>
+      <button on-click="{{ send }}">Create</button>
+      <a on-click="{{ close }}">Cancel</a>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-new-graph', {
+      name: '',
+      type: 'html',
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.fire('new', {
+          name: this.name,
+          type: this.type
+        });
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>
