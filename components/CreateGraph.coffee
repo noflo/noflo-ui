@@ -2,20 +2,17 @@ noflo = require 'noflo'
 
 class CreateGraph extends noflo.Component
   constructor: ->
-    @baseDir = ''
     @inPorts =
-      name: new noflo.Port 'string'
-      basedir: new noflo.Port 'string'
+      details: new noflo.Port 'string'
     @outPorts =
       out: new noflo.Port 'object'
 
-    @inPorts.name.on 'data', (name) =>
-      graph = new noflo.Graph name
-      graph.baseDir = @baseDir
+    @inPorts.details.on 'data', (details) =>
+      graph = new noflo.Graph details.name
+      graph.properties.environment =
+        runtime: details.type
       @outPorts.out.send graph
-    @inPorts.name.on 'disconnect', =>
+    @inPorts.details.on 'disconnect', =>
       @outPorts.out.disconnect()
-
-    @inPorts.basedir.on 'data', (@baseDir) =>
 
 exports.getComponent = -> new CreateGraph

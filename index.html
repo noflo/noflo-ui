@@ -79,7 +79,13 @@
       SplitGraphList OUT -> SKETCH LoadMain
 
       # Save newly created graphs into localStorage
-      LoadMain NEWSKETCH -> IN Show(core/Output)
+      'name' -> KEY GetGraphName(objects/GetObjectKey)
+      LoadMain NEWSKETCH -> IN GetGraphName OBJECT -> DETAILS CreateGraph(ui/CreateGraph)
+      'noflo-ui-graphs' -> LIST AddToGraphs(localstorage/ListAdd)
+      GetGraphName OUT -> KEY AddToGraphs
+      AddToGraphs KEY -> KEY SaveNew(localstorage/SetItem)
+      CreateGraph OUT -> IN NewToJson(strings/Jsonify)
+      NewToJson OUT -> VALUE SaveNew
 
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)
