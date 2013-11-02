@@ -17,7 +17,7 @@
     "spec"
   ],
   "dependencies": {
-    "polymer": "~0.0.20131010",
+    "polymer": ">=0.0.20131025",
     "the-behavior": "*",
     "the-graph": "*",
     "the-panel": "*",
