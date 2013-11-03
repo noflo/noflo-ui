@@ -12,6 +12,7 @@
     "noflo/noflo-css": "*",
     "noflo/noflo-dom": "*",
     "noflo/noflo-flow": "*",
+    "noflo/noflo-gestures": "*",
     "noflo/noflo-interaction": "*",
     "noflo/noflo-localstorage": "*",
     "noflo/noflo-math": "*",
