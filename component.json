@@ -22,6 +22,7 @@
     "noflo/noflo-groups": "*",
     "noflo/noflo-dom": "*",
     "noflo/noflo-core": "*",
+    "noflo/noflo-polymer": "*",
     "noflo/noflo-runtime-iframe": "*"
   },
   "noflo": {

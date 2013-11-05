@@ -11,7 +11,9 @@
     <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
     <link rel="import" href="bower_components/the-panel/the-panel/the-panel.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-main.html">
+    <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -67,7 +69,9 @@
       # Main view listing user's projects and examples
       SplitWorkspaceContainer OUT -> DATA MainContainer(core/Kick)
       Router(ui/Router) MAIN -> IN MainContainer
-      MainContainer OUT -> CONTAINER LoadMain(ui/LoadMain)
+      'noflo-main' -> TAGNAME CreateMain(dom/CreateElement)
+      MainContainer OUT -> CONTAINER CreateMain
+      CreateMain ELEMENT -> ELEMENT LoadMain(polymer/noflo-main)
       'noflo-ui-graphs' -> STRING GraphListKey(strings/SendString)
       LoadMain ELEMENT -> IN MainIsReady(core/Split)
       MainIsReady OUT -> IN GraphListKey
@@ -76,7 +80,7 @@
       GraphListKey OUT -> KEY GetGraphList(localstorage/GetItem)
       ',' -> DELIMITER SplitGraphList(strings/SplitStr)
       GetGraphList ITEM -> IN SplitGraphList
-      SplitGraphList OUT -> SKETCH LoadMain
+      SplitGraphList OUT -> SKETCHES LoadMain
 
       # Save newly created graphs into localStorage
       'name' -> KEY GetGraphName(objects/GetObjectKey)
