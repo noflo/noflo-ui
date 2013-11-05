@@ -23,6 +23,11 @@ class LoadGraphEditor extends noflo.Component
     @container.innerHTML = ''
     editor = document.createElement 'the-graph-editor'
     editor.graph = @graph
+
+    @setSize editor
+    window.addEventListener 'resize', =>
+      @setSize editor
+
     @container.appendChild editor
 
     @loadPlugins editor
@@ -48,5 +53,9 @@ class LoadGraphEditor extends noflo.Component
     plugins.forEach (name) ->
       Plugin = require "../src/plugins/#{name}"
       editor.addPlugin name, new Plugin
+
+  setSize: (editor) ->
+    editor.width = window.innerWidth
+    editor.height = window.innerHeight
 
 exports.getComponent = -> new LoadGraphEditor
