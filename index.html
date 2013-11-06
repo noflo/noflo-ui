@@ -12,6 +12,8 @@
     <link rel="import" href="bower_components/the-panel/the-panel/the-panel.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
+    <link rel="import" href="elements/noflo-context.html">
+    <noflo-polymer name="noflo-context" inports="project maingraph subgraphs component" outports="project maingraph subgraphs component"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
@@ -35,6 +37,7 @@
       .the-graph-process-label[left] == [node-width]/2 - .the-graph-process-label[intrinsic-width]/2;
     </style>
     -->
+    <noflo-context></noflo-context>
     <section id="mainmenu"></section>
     <section id="runtime"></section>
     <the-panel id="context" edge="left" size="300">
@@ -61,9 +64,19 @@
       # Basedir for loading components
       '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
 
+      # NoFlo context
+      'noflo-context' -> SELECTOR GetContext(dom/GetElement)
+      GetContext ELEMENT -> ELEMENT Context(polymer/noflo-context)
+
       # The DOM elements where the UI will be run
       '#workspace' -> SELECTOR GetWorkspaceContainer(dom/GetElement)
       GetWorkspaceContainer ELEMENT -> IN SplitWorkspaceContainer(core/Split)
+
+      # Workspace clearing on route changes
+      '' -> DATA DoClearWorkspace(core/Kick)
+      Router(ui/Router) ROUTE -> IN DoClearWorkspace
+      SplitWorkspaceContainer OUT -> CONTAINER ClearWorkspace(dom/WriteHtml)
+      DoClearWorkspace OUT -> HTML ClearWorkspace
 
       # ## Main view
       # Main view listing user's projects and examples
@@ -100,7 +113,8 @@
       CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
 
       # ## Graph loading
-      Router GRAPH -> IN SplitGraphName(core/Split)
+      Router GRAPH -> MAINGRAPH Context
+      Context MAINGRAPH -> IN DiscGraphName(core/DisconnectAfterPacket) OUT -> IN SplitGraphName(core/Split)
 
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)

@@ -5,6 +5,7 @@ class Router extends noflo.Component
     @inPorts =
       url: new noflo.Port 'string'
     @outPorts =
+      route: new noflo.Port 'bang'
       main: new noflo.Port 'string'
       new: new noflo.Port 'string'
       newproject: new noflo.Port 'string'
@@ -13,6 +14,10 @@ class Router extends noflo.Component
       missed: new noflo.Port 'string'
 
     @inPorts.url.on 'data', (url) =>
+      if @outPorts.route.isAttached()
+        @outPorts.route.send true
+        @outPorts.route.disconnect()
+
       if url is ''
         @outPorts.main.send url
         @outPorts.main.disconnect()

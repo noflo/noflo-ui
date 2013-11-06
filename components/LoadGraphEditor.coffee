@@ -22,13 +22,13 @@ class LoadGraphEditor extends noflo.Component
 
     @container.innerHTML = ''
     editor = document.createElement 'the-graph-editor'
+    @container.appendChild editor
     editor.graph = @graph
 
     @setSize editor
     window.addEventListener 'resize', =>
       @setSize editor
 
-    @container.appendChild editor
 
     @loadPlugins editor
 
