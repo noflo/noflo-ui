@@ -106,7 +106,8 @@
       # Load local sketches
       GraphKey OUT -> KEY LoadSketches(local/LoadList)
       LoadMain READY -> LOAD LoadSketches
-      LoadSketches ITEMS -> SKETCHES LoadMain
+      LoadSketches ITEMS -> KEY LoadSketch(local/LoadItem) OUT -> SKETCHES LoadMain
+      LoadSketch ERROR -> IN DropErrors(core/Drop)
 
       # Load local projects
       ProjectKey OUT -> KEY LoadProjects(local/LoadList)

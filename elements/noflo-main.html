@@ -7,7 +7,8 @@
       <button on-click="{{ newSketch }}">New sketch</button>
       <ul>
         <template repeat="{{ sketch in sketches }}">
-        <li><a href="#graph/{{ sketch }}">{{ sketch }}</a></li>
+        <li><the-graph-thumb graphjson="{{ sketch }}" width="200" height="120"></the-graph-thumb>
+        <a href="#graph/{{ sketch.properties.name }}">{{ sketch.properties.name }}</a></li>
         </template>
       </ul>
     </section>

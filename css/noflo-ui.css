@@ -68,6 +68,31 @@ the-panel the-card ul.components li .icon {
   float: right;
 }
 
+noflo-main section {
+  clear: left;
+}
+noflo-main ul {
+  padding: 0px;
+  margin: 0px;
+  list-style: none;
+}
+noflo-main ul li {
+  padding: 1em;
+  float: left;
+  text-align: center;
+  background-color: rgb(71, 71, 71);
+  border-radius: 6px;
+  margin-right: 1em;
+  margin-bottom: 1em;
+}
+noflo-main ul li the-graph-thumb {
+  display: block;
+}
+noflo-main ul li a {
+  color: black;
+  text-decoration: none;
+}
+
 #context {
   padding-top: 30px;
 }
@@ -142,6 +167,7 @@ noflo-new-project {
   z-index: 200;
   display: none;
 }
+
 
 .noflo-ui-main {
   padding: 1em;
