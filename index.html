@@ -57,6 +57,12 @@
       SplitName OUT -> DATA HoldName(core/Kick)
       Save ITEM -> IN HoldName
     </script>
+    <script type="application/fbp" id="LoadItem">
+      EXPORT=LOADSTORED.KEY:KEY
+      EXPORT=PARSE.OUT:OUT
+      EXPORT=LOADSTORED.ERROR:ERROR
+      LoadStored(localstorage/GetItem) ITEM -> IN Parse(strings/ParseJson)
+    </script>
     <script type="application/fbp" id="MainView">
       EXPORT=CONTAINER.DATA:CONTAINER
       EXPORT=CONTAINER.IN:LOAD
@@ -134,9 +140,8 @@
       LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/LoadGraphEditor)
 
       # Try loading from localStorage
-      SplitGraphName OUT -> KEY LoadStored(localstorage/GetItem)
-      LoadStored ITEM -> IN ParseJson(strings/ParseJson)
-      ParseJson OUT -> GRAPH EditGraph
+      SplitGraphName OUT -> KEY LoadStored(local/LoadItem)
+      LoadStored OUT -> GRAPH EditGraph
       EditGraph GRAPH -> GRAPH Determine(ui/DetermineRuntime)
       Determine GRAPH -> GRAPH LoadRuntime(ui/LoadRuntime)
       Determine RUNTIME -> RUNTIME LoadRuntime
