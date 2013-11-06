@@ -1,21 +1,17 @@
-<polymer-element name="noflo-context" attributes="project graph subgraphs component">
+<polymer-element name="noflo-context" attributes="project graphs component">
   <script>
     Polymer('noflo-context', {
       project: '',
-      maingraph: '',
-      subgraphs: [],
+      graphs: [],
       component: '',
       enteredView: function () {
-        this.graphObserver = new ArrayObserver(this.subgraphs, this.graphsModified.bind(this));
+        this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
       },
       projectChanged: function () {
         this.fire('project', this.project);
       },
-      maingraphChanged: function () {
-        this.fire('maingraph', this.maingraph);
-      },
       graphsModified: function () {
-        this.fire('subgraphs', this.graphs);
+        this.fire('graphs', this.graphs);
       },
       componentChanged: function () {
         this.fire('component', this.component);

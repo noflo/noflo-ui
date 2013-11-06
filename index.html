@@ -12,9 +12,11 @@
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project maingraph subgraphs component" outports="project maingraph subgraphs component"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component" outports="project graphs component"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
+    <link rel="import" href="elements/noflo-runtime.html">
+    <noflo-polymer name="noflo-runtime" inports="graphs" outports="runtime"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -25,6 +27,7 @@
   </head>
   <body>
     <noflo-context></noflo-context>
+    <noflo-runtime></noflo-runtime>
     <section id="mainmenu"></section>
     <section id="runtime"></section>
     <the-panel id="context" edge="left" size="300">
@@ -88,6 +91,11 @@
       'noflo-context' -> SELECTOR GetContext(dom/GetElement)
       GetContext ELEMENT -> ELEMENT Context(polymer/noflo-context)
 
+      # Runtime handling
+      'noflo-runtime' -> SELECTOR GetRuntime(dom/GetElement)
+      GetRuntime ELEMENT -> ELEMENT Runtime(polymer/noflo-runtime)
+      Context GRAPHS -> GRAPHS Runtime
+
       # The DOM elements where the UI will be run
       '#workspace' -> SELECTOR GetWorkspaceContainer(dom/GetElement)
       GetWorkspaceContainer ELEMENT -> IN SplitWorkspaceContainer(core/Split)
@@ -132,8 +140,7 @@
       CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
 
       # ## Graph loading
-      Router GRAPH -> MAINGRAPH Context
-      Context MAINGRAPH -> IN DiscGraphName(core/DisconnectAfterPacket) OUT -> IN SplitGraphName(core/Split)
+      Router GRAPH -> IN SplitGraphName(core/Split)
 
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)
@@ -143,11 +150,9 @@
       # Try loading from localStorage
       SplitGraphName OUT -> KEY LoadStored(local/LoadItem)
       LoadStored OUT -> GRAPH EditGraph
-      EditGraph GRAPH -> GRAPH Determine(ui/DetermineRuntime)
-      Determine GRAPH -> GRAPH LoadRuntime(ui/LoadRuntime)
-      Determine RUNTIME -> RUNTIME LoadRuntime
+      EditGraph GRAPH -> GRAPHS Context
       EditGraph EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
-      LoadRuntime RUNTIME -> RUNTIME ConnectRuntime
+      Runtime RUNTIME -> RUNTIME ConnectRuntime
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)

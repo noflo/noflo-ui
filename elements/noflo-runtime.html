@@ -1,0 +1,35 @@
+<polymer-element name="noflo-runtime" attributes="graphs">
+  <script>
+    Polymer('noflo-runtime', {
+      currentGraph: null,
+      graphs: null,
+      runtime: null,
+      graphsChanged: function () {
+        if (!this.graphs || this.graphs.length === 0) {
+          this.currentGraph = null;
+          return;
+        }
+        // Use the top-level graph as the runtime main graph
+        this.currentGraph = this.graphs[this.graphs.length - 1];
+      },
+      currentGraphChanged: function () {
+        var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
+        this.runtime = new runtime(this.currentGraph);
+        this.fire('runtime', this.runtime);
+      },
+      determineRuntime: function () {
+        if (!this.currentGraph.properties.environment) {
+          return 'iframe';
+        }
+        switch (this.currentGraph.properties.environment.runtime) {
+          case 'html':
+            return 'iframe';
+          case 'websocket':
+            return 'websocket';
+          default:
+            return 'iframe';
+        }
+      }
+    });
+  </script>
+</polymer-element>
