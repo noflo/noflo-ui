@@ -89,7 +89,8 @@ the-panel the-card ul.components li .icon {
   padding: 6px;
 }
 
-noflo-new-graph {
+noflo-new-graph,
+noflo-new-project {
   background-color: hsla(0, 0%, 11%, 1);
   display: block;
   position: fixed;

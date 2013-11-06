@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-new-graph.html">
+<link rel="import" href="noflo-new-project.html">
 <polymer-element name="noflo-main" attributes="projects sketches examples">
   <template>
     <section id="sketches">
@@ -7,6 +8,15 @@
       <ul>
         <template repeat="{{ sketch in sketches }}">
         <li><a href="#graph/{{ sketch }}">{{ sketch }}</a></li>
+        </template>
+      </ul>
+    </section>
+    <section id="projects">
+      <h2>Projects</h2>
+      <button on-click="{{ newProject }}">New project</button>
+      <ul>
+        <template repeat="{{ project in projects }}">
+        <li><a href="#project/{{ project }}">{{ project }}</a></li>
         </template>
       </ul>
     </section>
@@ -30,6 +40,14 @@
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.fire('newsketch', event.detail);
+        }.bind(this));
+      },
+      newProject: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-new-project');
+        this.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          this.fire('newproject', event.detail);
         }.bind(this));
       }
     });

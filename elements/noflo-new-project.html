@@ -1,0 +1,36 @@
+<polymer-element name="noflo-new-project">
+  <template>
+    <h1>Create new project</h1>
+    <form>
+      <label>
+        Project name
+        <input type="text" value="{{ name }}" placeholder="my-project" required>
+      </label>
+      <button on-click="{{ send }}">Create</button>
+      <a on-click="{{ close }}">Cancel</a>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-new-project', {
+      name: '',
+      type: 'html',
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.fire('new', {
+          name: this.name,
+          graphs: [],
+          components: []
+        });
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>
