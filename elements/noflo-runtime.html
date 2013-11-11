@@ -1,5 +1,6 @@
 <polymer-element name="noflo-runtime" attributes="graphs">
   <template>
+    <template if="{{ currentGraph }}">
     <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="icon-{{ icon }}"></i></span></div>
     <div class="runcontrol">
       <template if="{{ status.online }}">
@@ -11,6 +12,7 @@
         </template>
       </template>
     </div>
+  </template>
   </template>
   <script>
     Polymer('noflo-runtime', {
