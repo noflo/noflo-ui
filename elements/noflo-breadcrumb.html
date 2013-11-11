@@ -1,0 +1,16 @@
+<polymer-element name="noflo-breadcrumb" attributes="project graphs">
+  <template>
+    <h2 id="project">{{ project }}</h2>
+    <ul id="graphs">
+      <template repeat="{{ graph in graphs }}">
+      <li>{{ graph.properties.name }}</li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-breadcrumb', {
+      project: '',
+      graphs: []
+    });
+  </script>
+</polymer-element>

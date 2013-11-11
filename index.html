@@ -17,6 +17,8 @@
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs" outports="runtime"></noflo-polymer>
+    <link rel="import" href="elements/noflo-breadcrumb.html">
+    <noflo-polymer name="noflo-breadcrumb" inports="project graphs" outports=""></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -28,8 +30,8 @@
   <body>
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
+    <noflo-breadcrumb></noflo-breadcrumb>
     <section id="mainmenu"></section>
-    <section id="runtime"></section>
     <the-panel id="context" edge="left" size="300">
       <header></header>
       <main></main>
@@ -95,6 +97,12 @@
       'noflo-runtime' -> SELECTOR GetRuntime(dom/GetElement)
       GetRuntime ELEMENT -> ELEMENT Runtime(polymer/noflo-runtime)
       Context GRAPHS -> GRAPHS Runtime
+
+      # Breadcrumb handling
+      'noflo-breadcrumb' -> SELECTOR GetBreadcrumb(dom/GetElement)
+      GetBreadcrumb ELEMENT -> ELEMENT Breadcrumb(polymer/noflo-breadcrumb)
+      Context GRAPHS -> GRAPHS Breadcrumb
+      Context PROJECT -> PROJECT Breadcrumb
 
       # The DOM elements where the UI will be run
       '#workspace' -> SELECTOR GetWorkspaceContainer(dom/GetElement)

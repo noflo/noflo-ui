@@ -25,7 +25,7 @@ the-panel the-card {
 
 the-panel the-card button,
 #mainmenu button,
-#runtime button {
+noflo-runtime button {
   padding: 3px;
   background-color: transparent;
   border: none;
@@ -127,7 +127,7 @@ noflo-new-project {
   z-index: 2;
 }
 
-#runtime {
+noflo-runtime {
   background-color: hsla(0, 0%, 11%, 0.8);
   position: fixed;
   right: 0;
@@ -137,14 +137,14 @@ noflo-new-project {
   z-index: 3;
   width: 200px;
 }
-#runtime button {
+noflo-runtime button {
   color: rgb(71, 71, 71);
 }
 
-#runtime .online {
+noflo-runtime .online {
   color: #01d159;
 }
-#runtime .offline {
+noflo-runtime .offline {
   color: #e70215;
 }
 

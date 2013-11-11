@@ -30,7 +30,7 @@ class LoadGraphEditor extends noflo.Component
       @setSize editor
 
 
-    @loadPlugins editor
+    #@loadPlugins editor
 
     if @outPorts.editor.isAttached()
       @outPorts.editor.send editor

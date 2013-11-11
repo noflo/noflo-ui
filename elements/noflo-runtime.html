@@ -1,9 +1,34 @@
 <polymer-element name="noflo-runtime" attributes="graphs">
+  <template>
+    <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="icon-{{ icon }}"></i></span></div>
+    <div class="runcontrol">
+      <template if="{{ status.online }}">
+        <template if="{{ execution.running }}">
+          {{ execution.label }} <button class="stop" on-click="{{ stop }}"><i class="icon-pause"></i></button>
+        </template>
+        <template if="{{ execution.stopped }}">
+          {{ execution.label }} <button class="start" on-click="{{ start }}"><i class="icon-play"></i></button>
+        </template>
+      </template>
+    </div>
+  </template>
   <script>
     Polymer('noflo-runtime', {
       currentGraph: null,
       graphs: null,
       runtime: null,
+      icon: 'cloud',
+      status: {
+        label: 'offline',
+        state: 'offline',
+        online: false
+      },
+      execution: {
+        label: 'stopped',
+        running: false,
+        stopped: true
+      },
+      card: null,
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
           this.currentGraph = null;
@@ -15,7 +40,37 @@
       currentGraphChanged: function () {
         var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
         this.runtime = new runtime(this.currentGraph);
+        this.subscribeRuntime();
+        switch (this.runtime.getType()) {
+          case 'iframe':
+            this.icon = 'globe';
+            break;
+          default:
+            this.icon = 'cloud';
+            break;
+        }
         this.fire('runtime', this.runtime);
+      },
+      subscribeRuntime: function () {
+        this.runtime.on('status', function (status) {
+          this.status.online = status.online;
+          if (status.online) {
+            this.status.state = 'online';
+          } else {
+            this.status.state = 'offline';
+          }
+          this.status.label = status.label;
+        }.bind(this));
+        this.runtime.on('execution', function (status) {
+          if (status.running) {
+            this.execution.running = true;
+            this.execution.stopped = false;
+          } else {
+            this.execution.running = false;
+            this.execution.stopped = true;
+          }
+          this.execution.label = status.label;
+        }.bind(this));
       },
       determineRuntime: function () {
         if (!this.currentGraph.properties.environment) {
@@ -29,6 +84,32 @@
           default:
             return 'iframe';
         }
+      },
+      start: function (event) {
+        event.preventDefault();
+        if (this.card) {
+          this.runtime.start();
+          return;
+        }
+        this.showCard();
+        this.runtime.once('connected', function () {
+          this.runtime.start();
+        }.bind(this));
+      },
+      stop: function (event) {
+        event.preventDefault();
+        this.runtime.stop();
+      },
+      showCard: function () {
+        if (this.card) {
+          return;
+        }
+        var contextPanel = document.getElementById('context');
+        this.card = document.createElement('the-card');
+        this.card.setAttribute('id', 'runtimePreview');
+        // Move the preview element of the runtime into the card
+        this.card.appendChild(this.runtime.getElement());
+        contextPanel.getMain().appendChild(this.card);
       }
     });
   </script>
