@@ -1,17 +1,53 @@
-<polymer-element name="noflo-context" attributes="project graphs component">
+<polymer-element name="noflo-context" attributes="project graphs component node edge">
   <script>
     Polymer('noflo-context', {
       project: '',
       graphs: [],
+      nodes: [],
+      edges: [],
+      node: null,
+      edge: null,
       component: '',
       enteredView: function () {
         this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
+        this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
+        this.edgeObserver = new ArrayObserver(this.edges, this.edgesModified.bind(this));
+      },
+      nodeChanged: function () {
+        if (!this.node) {
+          return;
+        }
+        if (this.nodes.indexOf(this.node) !== -1) {
+          this.nodes.splice(this.nodes.indexOf(this.node), 1);
+          this.node = null;
+          return;
+        }
+        this.nodes.push(this.node);
+        this.node = null;
+      },
+      edgeChanged: function () {
+        if (!this.edge) {
+          return;
+        }
+        if (this.edges.indexOf(this.edge) !== -1) {
+          this.edges.splice(this.edges.indexOf(this.edge), 1);
+          this.edge = null;
+          return;
+        }
+        this.edges.push(this.edge);
+        this.edge = null;
       },
       projectChanged: function () {
         this.fire('project', this.project);
       },
       graphsModified: function () {
         this.fire('graphs', this.graphs);
+      },
+      nodesModified: function () {
+        this.fire('nodes', this.nodes);
+      },
+      edgesModified: function () {
+        this.fire('edges', this.edges);
       },
       componentChanged: function () {
         this.fire('component', this.component);

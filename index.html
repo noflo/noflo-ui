@@ -10,9 +10,10 @@
     <link rel="import" href="bower_components/the-behavior/the-behaviors/the-behaviors.html">
     <link rel="import" href="bower_components/the-panel/the-panel/the-panel.html">
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component" outports="project graphs component"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge" outports="project graphs component nodes edges"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -161,6 +162,11 @@
       EditGraph GRAPH -> GRAPHS Context
       EditGraph EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
       Runtime RUNTIME -> RUNTIME ConnectRuntime
+      ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
+
+      # Context updates
+      GraphEditor NODECLICK -> NODE Context
+      GraphEditor EDGECLICK -> EDGE Context
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)
@@ -171,7 +177,7 @@
       # Listen to changes and save to localStorage
       SplitGraphName OUT -> DATA SendKey(core/Kick)
       SendKey OUT -> KEY Store(localstorage/SetItem)
-      #EditGraph CHANGED -> IN SplitChanged(core/Split)
+      GraphEditor CHANGED -> IN SplitChanged(core/Split)
       SplitChanged OUT -> IN SendKey()
       SplitChanged OUT -> IN ToJson(strings/Jsonify)
       ToJson OUT -> VALUE Store

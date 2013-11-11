@@ -7,10 +7,14 @@ class ConnectRuntime extends noflo.Component
     @inPorts =
       editor: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
-    @outPorts = {}
+    @outPorts =
+      editor: new noflo.Port 'object'
 
     @inPorts.editor.on 'data', (@editor) =>
       @connect @editor, @runtime
+      if @outPorts.editor.isAttached()
+        @outPorts.editor.send @editor
+        @outPorts.editor.disconnect()
     @inPorts.runtime.on 'data', (@runtime) =>
       @connect @editor, @runtime
 
