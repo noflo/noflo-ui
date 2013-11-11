@@ -1,3 +1,6 @@
+<link rel="import" href="noflo-node-menu.html">
+<link rel="import" href="noflo-edge-menu.html">
+<link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge">
   <script>
     Polymer('noflo-context', {
@@ -12,6 +15,7 @@
         this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
         this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
         this.edgeObserver = new ArrayObserver(this.edges, this.edgesModified.bind(this));
+        this.contextBar = document.getElementById('context');
       },
       nodeChanged: function () {
         if (!this.node) {
@@ -45,9 +49,53 @@
       },
       nodesModified: function () {
         this.fire('nodes', this.nodes);
+        if (this.nodes.length) {
+          this.showNodeCards();
+        } else {
+          this.hideNodeCards();
+        }
+      },
+      showNodeCards: function () {
+        if (this.nodeMenu) {
+          return;
+        }
+        var menu = document.createElement('noflo-node-menu');
+        menu.nodes = this.nodes;
+        this.nodeMenu = document.createElement('the-card');
+        this.nodeMenu.appendChild(menu);
+        this.contextBar.getMain().appendChild(this.nodeMenu);
+      },
+      hideNodeCards: function () {
+        if (!this.nodeMenu) {
+          return;
+        }
+        this.nodeMenu.parentNode.removeChild(this.nodeMenu);
+        this.nodeMenu = null;
       },
       edgesModified: function () {
         this.fire('edges', this.edges);
+        if (this.edges.length) {
+          this.showEdgeCards();
+        } else {
+          this.hideEdgeCards();
+        }
+      },
+      showEdgeCards: function () {
+        if (this.edgeMenu) {
+          return;
+        }
+        var menu = document.createElement('noflo-edge-menu');
+        menu.edges = this.edges;
+        this.edgeMenu = document.createElement('the-card');
+        this.edgeMenu.appendChild(menu);
+        this.contextBar.getMain().appendChild(this.edgeMenu);
+      },
+      hideEdgeCards: function () {
+        if (!this.edgeMenu) {
+          return;
+        }
+        this.edgeMenu.parentNode.removeChild(this.edgeMenu);
+        this.edgeMenu = null;
       },
       componentChanged: function () {
         this.fire('component', this.component);

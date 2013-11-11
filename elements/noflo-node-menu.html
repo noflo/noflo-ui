@@ -1,0 +1,20 @@
+<polymer-element name="noflo-node-menu" attributes="nodes">
+  <template>
+    <h1>{{ nodes.length}} nodes selected</h1>
+    <ul class="toolbar">
+      <li><button on-click="{{ remove }}"><i class="icon-trash"></i></button></li>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-node-menu', {
+      nodes: [],
+      remove: function (event) {
+        event.preventDefault();
+        while(this.nodes.length) {
+          var node = this.nodes.pop();
+          node.parentNode.removeChild(node);
+        }
+      }
+    });
+  </script>
+</polymer-element>
