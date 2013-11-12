@@ -1,14 +1,39 @@
 <polymer-element name="noflo-edge-menu" attributes="edges">
+  <style>
+    .routes button {
+      width: 20px;
+      height: 20px;
+    }
+    .routes button.route0 { background-color: #fff; }
+    .routes button.route1 { background-color: hsl(0, 100%, 60%); }
+    .routes button.route2 { background-color: hsl(30, 100%, 60%); }
+    .routes button.route3 { background-color: hsl(60, 100%, 60%); }
+    .routes button.route4 { background-color: hsl(90, 100%, 60%); }
+    .routes button.route5 { background-color: hsl(120, 100%, 60%); }
+    .routes button.route6 { background-color: hsl(150, 100%, 60%); }
+    .routes button.route7 { background-color: hsl(180, 100%, 60%); }
+    .routes button.route8 { background-color: hsl(210, 100%, 60%); }
+    .routes button.route9 { background-color: hsl(240, 100%, 60%); }
+    .routes button.route10 { background-color: hsl(270, 100%, 60%); }
+    .routes button.route11 { background-color: hsl(300, 100%, 60%); }
+    .routes button.route12 { background-color: hsl(330, 100%, 60%); }
+  </style>
   <template>
     <h1>{{ edges.length}} edges selected</h1>
     <ul class="toolbar">
       <li><button on-click="{{ clear }}"><i class="icon-ok"></i></button></li>
       <li><button on-click="{{ remove }}"><i class="icon-trash"></i></button></li>
     </ul>
+    <ul class="routes">
+      <template repeat="{{ route in routes }}">
+        <li><button name="{{ route }}" class="route{{ route }}" on-click="{{ setRoute }}"></button></li>
+      </template>
+    </ul>
   </template>
   <script>
     Polymer('noflo-edge-menu', {
       edges: [],
+      routes: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12],
       clear: function (event) {
         event.preventDefault();
         var edge;
@@ -25,6 +50,13 @@
             edge.parentNode.removeChild(edge);
           }
         }
+      },
+      setRoute: function (event, detail, sender) {
+        event.preventDefault();
+        var route = sender.getAttribute('name');
+        this.edges.forEach(function (edge) {
+          edge.route = route;
+        });
       }
     });
   </script>
