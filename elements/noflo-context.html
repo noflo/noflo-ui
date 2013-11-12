@@ -37,12 +37,12 @@
         }
         if (this.edges.indexOf(this.edge) !== -1) {
           this.edges.splice(this.edges.indexOf(this.edge), 1);
-          this.edge.classList.remove('selected');
+          this.edge.pathTouch.classList.remove('selected');
           this.edge = null;
           return;
         }
         this.edges.push(this.edge);
-        this.edge.classList.add('selected');
+        this.edge.pathTouch.classList.add('selected');
         this.edge = null;
       },
       projectChanged: function () {
