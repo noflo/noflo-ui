@@ -95,7 +95,7 @@ class ConnectRuntime extends noflo.Component
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
       @sendGraph runtime, editor
-      @subscribeEditor editor, runtime
+    @subscribeEditor editor, runtime
 
     runtime.on 'component', (message) ->
       definition =
