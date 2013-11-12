@@ -2,12 +2,45 @@
   <template>
     <h1>{{ edges.length}} edges selected</h1>
     <ul class="toolbar">
+      <li><button on-click="{{ clear }}"><i class="icon-ok"></i></button></li>
       <li><button on-click="{{ remove }}"><i class="icon-trash"></i></button></li>
     </ul>
   </template>
   <script>
     Polymer('noflo-edge-menu', {
       edges: [],
+      clear: function (event) {
+        event.preventDefault();
+        var edge;
+        while(this.edges.length) {
+          edge = this.edges.pop();
+          edge.pathTouch.classList.remove('selected');
+        }
+      },
+      remove: function (event) {
+        event.preventDefault();
+        while(this.edges.length) {
+          var edge = this.edges.pop();
+          if (edge.parentNode) {
+            edge.parentNode.removeChild(edge);
+          }
+        }
+      }
+    });
+  </script>
+</polymer-element>
+      remove: function (event) {
+        event.preventDefault();
+        while(this.edges.length) {
+          var edge = this.edges.pop();
+          if (edge.parentNode) {
+            edge.parentNode.removeChild(edge);
+          }
+        }
+      }
+    });
+  </script>
+</polymer-element>
       remove: function (event) {
         event.preventDefault();
         while(this.edges.length) {

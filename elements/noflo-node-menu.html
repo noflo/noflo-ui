@@ -2,12 +2,21 @@
   <template>
     <h1>{{ nodes.length}} nodes selected</h1>
     <ul class="toolbar">
+      <li><button on-click="{{ clear }}"><i class="icon-ok"></i></button></li>
       <li><button on-click="{{ remove }}"><i class="icon-trash"></i></button></li>
     </ul>
   </template>
   <script>
     Polymer('noflo-node-menu', {
       nodes: [],
+      clear: function (event) {
+        event.preventDefault();
+        var node;
+        while(this.nodes.length) {
+          node = this.nodes.pop();
+          node.classList.remove('selected');
+        }
+      },
       remove: function (event) {
         event.preventDefault();
         while(this.nodes.length) {
