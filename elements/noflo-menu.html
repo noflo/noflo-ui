@@ -1,0 +1,14 @@
+<polymer-element name="noflo-menu">
+  <template>
+    <ul class="toolbar">
+      <template repeat="{{ buttons }}">
+        <li><button id="{{ id }}"><i class="icon-{{ icon }}" title="{{ label }}"></i></button></li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-menu', {
+      buttons: []
+    });
+  </script>
+</polymer-element>

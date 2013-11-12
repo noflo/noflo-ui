@@ -1,0 +1,28 @@
+<link rel="import" href="noflo-menu.html">
+<polymer-element name="noflo-search">
+  <template>
+    <input type="search" x-webkit-speech>
+    <button on-click="{{ menu }}"><i class="icon-reorder"></i></button>
+  </template>
+  <script>
+    Polymer('noflo-search', {
+      menuCard: null,
+      enteredView: function () {
+        this.contextBar = document.getElementById('context');
+      },
+      menu: function (event) {
+        event.preventDefault();
+        if (this.menuCard) {
+          this.menuCard.parentNode.removeChild(this.menuCard);
+          this.menuCard = null;
+          return;
+        }
+        var menu = document.createElement('noflo-menu');
+        this.menuCard = document.createElement('the-card');
+        this.menuCard.type = 'noflo-menu';
+        this.menuCard.appendChild(menu);
+        this.menuCard.addTo(this.contextBar.getMain());
+      }
+    });
+  </script>
+</polymer-element>

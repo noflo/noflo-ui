@@ -24,7 +24,7 @@ the-panel the-card {
 }
 
 the-panel the-card button,
-#mainmenu button,
+noflo-search button,
 noflo-runtime button {
   padding: 3px;
   background-color: transparent;
@@ -101,19 +101,24 @@ noflo-main ul li a {
   padding-top: 30px;
 }
 
-#mainmenu {
-  background-color: hsla(0, 0%, 11%, 0.9);
+noflo-search {
+  background-color: hsl(187, 50%, 7%);
   position: fixed;
   left: 0;
   top: 0;
   color: white;
   z-index: 3;
   width: 300px;
+  height: 30px;
   font-size: 22px;
 }
+noflo-search input {
+  background-color: hsl(187, 50%, 7%);
+  border: none;
+  color: white;
+}
 
-#mainmenu button {
-  width: 50%;
+noflo-search button {
   text-align: center;
   padding: 6px;
 }
