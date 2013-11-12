@@ -1,12 +1,17 @@
 <link rel="import" href="noflo-menu.html">
-<polymer-element name="noflo-search">
+<link rel="import" href="noflo-search-results.html">
+<polymer-element name="noflo-search" attributes="buttons results">
   <template>
-    <input type="search" x-webkit-speech>
+    <input value="{{ search }}" type="search" x-webkit-speech>
     <button on-click="{{ menu }}"><i class="icon-reorder"></i></button>
   </template>
   <script>
     Polymer('noflo-search', {
       menuCard: null,
+      resultsCard: null,
+      buttons: [],
+      results: [],
+      search: '',
       enteredView: function () {
         this.contextBar = document.getElementById('context');
       },
@@ -18,10 +23,43 @@
           return;
         }
         var menu = document.createElement('noflo-menu');
+        menu.buttons = this.buttons;
+        if (this.buttons.length === 0) {
+          this.fire('menu', menu);
+        }
         this.menuCard = document.createElement('the-card');
         this.menuCard.type = 'noflo-menu';
         this.menuCard.appendChild(menu);
         this.menuCard.addTo(this.contextBar.getMain());
+      },
+      searchChanged: function () {
+        event.preventDefault();
+        if (this.search === '') {
+          if (this.resultsCard) {
+            this.resultsCard.parentNode.removeChild(this.resultsCard);
+            this.resultsCard = null;
+          }
+          return;
+        }
+        this.results = [];
+        this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
+        this.fire('search', this.search);
+      },
+      resultsModified: function () {
+        if (this.resultsCard || this.search === '') {
+          return;
+        }
+        var results = document.createElement('noflo-search-results');
+        results.results = this.results;
+        results.search = this.search;
+        results.addEventListener('resultclick', function () {
+          this.search = '';
+        }.bind(this));
+
+        this.resultsCard = document.createElement('the-card');
+        this.resultsCard.type = 'noflo-search-results';
+        this.resultsCard.appendChild(results);
+        this.resultsCard.addTo(this.contextBar.getMain());
       }
     });
   </script>

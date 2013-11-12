@@ -13,7 +13,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge" outports="project graphs component nodes edges"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge search" outports="project graphs component nodes edges result"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -21,6 +21,7 @@
     <link rel="import" href="elements/noflo-breadcrumb.html">
     <noflo-polymer name="noflo-breadcrumb" inports="project graphs" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
+    <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -105,6 +106,10 @@
       GetBreadcrumb ELEMENT -> ELEMENT Breadcrumb(polymer/noflo-breadcrumb)
       Context GRAPHS -> GRAPHS Breadcrumb
       Context PROJECT -> PROJECT Breadcrumb
+
+      # NoFlo search
+      'noflo-search' -> SELECTOR GetSearch(dom/GetElement) ELEMENT -> ELEMENT Search(polymer/noflo-search)
+      Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
 
       # The DOM elements where the UI will be run
       '#workspace' -> SELECTOR GetWorkspaceContainer(dom/GetElement)

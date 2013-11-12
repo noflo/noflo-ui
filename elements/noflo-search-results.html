@@ -1,0 +1,29 @@
+<polymer-element name="noflo-search-results" attributes="search">
+  <template>
+    <ul class="results">
+      <template repeat="{{ result, index in results }}">
+        <li data-index="{{ index }}" on-click="{{ clicked }}">
+          <i class="icon-{{ result.icon }}"></i>
+          <h2>{{ result.label }}</h2>
+          <p>{{ result.description }}</p>
+        </li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-search-results', {
+      results: [],
+      search: '',
+      clicked: function (event, details, sender) {
+        event.preventDefault();
+        var index = sender.getAttribute('data-index');
+        var result = this.results[index];
+        if (!result || !result.action) {
+          return;
+        }
+        this.fire('resultclick', result);
+        result.action();
+      }
+    });
+  </script>
+</polymer-element>
