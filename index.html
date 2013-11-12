@@ -191,7 +191,7 @@
       GoToMain OUT -> HASH Navigate(interaction/SetHash)
 
       # Listen to changes and save to localStorage
-      SplitGraphName OUT -> DATA SendKey(core/Kick)
+      SplitGraphName OUT -> STRING SendKey(strings/SendString)
       SendKey OUT -> KEY Store(localstorage/SetItem)
       GraphEditor CHANGED -> IN SplitChanged(core/Split)
       SplitChanged OUT -> IN SendKey()
