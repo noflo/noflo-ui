@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-node-menu.html">
+<link rel="import" href="noflo-node-inspector.html">
 <link rel="import" href="noflo-edge-menu.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge">
@@ -59,22 +60,52 @@
           this.hideNodeCards();
         }
       },
+      nodeInspectors: {},
       showNodeCards: function () {
-        if (this.nodeMenu) {
-          return;
+        if (!this.nodeMenu) {
+          var menu = document.createElement('noflo-node-menu');
+          menu.nodes = this.nodes;
+          this.nodeMenu = document.createElement('the-card');
+          this.nodeMenu.appendChild(menu);
+          this.contextBar.getMain().appendChild(this.nodeMenu);
         }
-        var menu = document.createElement('noflo-node-menu');
-        menu.nodes = this.nodes;
-        this.nodeMenu = document.createElement('the-card');
-        this.nodeMenu.appendChild(menu);
-        this.contextBar.getMain().appendChild(this.nodeMenu);
+
+        this.nodes.forEach(function (node) {
+          var id = node.getAttribute('name');
+          if (this.nodeInspectors[id]) {
+            return;
+          }
+          var inspector = document.createElement('noflo-node-inspector');
+          inspector.node = node;
+          this.nodeInspectors[id] = document.createElement('the-card');
+          this.nodeInspectors[id].appendChild(inspector);
+          this.contextBar.getMain().appendChild(this.nodeInspectors[id]);
+        }.bind(this));
+
+        var found;
+        for (var id in this.nodeInspectors) {
+          found = false;
+          this.nodes.forEach(function (node) {
+            if (node.getAttribute('name') === id) {
+              found = true;
+            }
+          });
+          if (!found) {
+            this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+            delete this.nodeInspectors[id];
+          }
+        }
       },
       hideNodeCards: function () {
-        if (!this.nodeMenu) {
-          return;
+        if (this.nodeMenu) {
+          this.nodeMenu.parentNode.removeChild(this.nodeMenu);
+          this.nodeMenu = null;
         }
-        this.nodeMenu.parentNode.removeChild(this.nodeMenu);
-        this.nodeMenu = null;
+
+        for (var id in this.nodeInspectors) {
+          this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+          delete this.nodeInspectors[id];
+        }
       },
       edgesModified: function () {
         this.fire('edges', this.edges);
