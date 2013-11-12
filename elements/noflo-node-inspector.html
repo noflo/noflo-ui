@@ -14,12 +14,15 @@
             <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="icon-exclamation"></i></button>
           </template>
           <template if="{{ port.type == 'boolean' }}">
-            <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}">
+            <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-blur="{{ updateValue }}">
           </template>
           <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-            <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}">
+            <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
           </template>
           </label>
+          <template if="{{ port.type != 'bang' }}">
+            <button data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="icon-trash"></i></button>
+          </template>
         </li>
       </template>
     </ul>
@@ -28,6 +31,9 @@
     Polymer('noflo-node-inspector', {
       inports: [],
       enteredView: function () {
+        this.updatePorts();
+      },
+      updatePorts: function () {
         this.inports = [];
         this.node.getInports().forEach(function (port) {
           if (port.isConnected()) {
@@ -39,6 +45,25 @@
             value: port.getValue()
           });
         }.bind(this));
+      },
+      updateValue: function (event, detail, sender) {
+        event.preventDefault();
+        if (!sender.value) {
+          return;
+        }
+        var port = this.node.getInportByName(sender.getAttribute('name'));
+        port.setValue(sender.value);
+      },
+      removeValue: function (event, detail, sender) {
+        event.preventDefault();
+        var name = sender.getAttribute('data-port');
+        var port = this.node.getInportByName(name);
+        port.removeValue();
+        this.inports.forEach(function (port) {
+          if (port.name === name) {
+            port.value = null;
+          }
+        });
       },
       sendBang: function (event, detail, sender) {
         event.preventDefault();
