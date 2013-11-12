@@ -50,8 +50,6 @@
   "scripts": [
     "index.js",
     "src/plugins/source.coffee",
-    "src/plugins/menu.coffee",
-    "src/plugins/library.coffee",
     "src/runtimes/base.coffee",
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",
