@@ -1,5 +1,5 @@
 body {
-  background-color: #2a2b31;
+  background-color: hsl(187, 50%, 7%);
   color: #ffffff;
   font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
   margin: 0;
@@ -7,8 +7,7 @@ body {
 }
 
 the-panel {
-  background-color: hsla(0, 0%, 11%, 1);
-  border: 1px rgb(71, 71, 71) solid;
+  background-color: hsl(187, 50%, 7%);
   z-index: 2;
 }
 
@@ -120,7 +119,7 @@ noflo-main ul li a {
 
 noflo-new-graph,
 noflo-new-project {
-  background-color: hsla(0, 0%, 11%, 1);
+  background-color: hsl(187, 50%, 7%);
   display: block;
   position: fixed;
   width: 400px;
@@ -132,7 +131,7 @@ noflo-new-project {
 }
 
 noflo-runtime {
-  background-color: hsla(0, 0%, 11%, 0.8);
+  background-color: hsl(187, 50%, 7%);
   position: fixed;
   right: 0;
   top: 0;
