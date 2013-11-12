@@ -15,6 +15,14 @@
       enteredView: function () {
         this.contextBar = document.getElementById('context');
         this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
+        this.buttons.push({
+          id: 'library',
+          icon: 'plus',
+          label: 'Library',
+          action: function () {
+            this.search = 'show library';
+          }.bind(this)
+        });
       },
       menu: function (event) {
         event.preventDefault();
@@ -49,6 +57,11 @@
       },
       resultsModified: function () {
         if (this.resultsCard || this.search === '') {
+          return;
+        }
+        if (this.results.length === 0 && this.resultsCard) {
+          this.resultsCard.parentNode.removeChild(this.resultsCard);
+          this.resultsCard = null;
           return;
         }
         var results = document.createElement('noflo-search-results');

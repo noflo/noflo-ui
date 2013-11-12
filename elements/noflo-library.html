@@ -3,20 +3,37 @@
     Polymer('noflo-library', {
       search: '',
       graph: null,
+      addNode: function (component) {
+        var num = 60466176; // 36^5
+        num = Math.floor(Math.random() * num);
+        var id = component + '_' + num.toString(36);
+        this.graph.$.graph.nodes.push({
+          name: id,
+          component: component,
+          metadata: {
+            label: component,
+            x: 100,
+            y: 100
+          }
+        });
+      },
       searchChanged: function () {
         if (!this.search) {
           return;
         }
-        for (var component in this.graph.library) {
-          if (component.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
-            continue;
+        Object.keys(this.graph.library).forEach(function (component) {
+          if (this.search !== 'show library' && component.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
+            return;
           }
           this.fire('result', {
             label: component,
             icon: this.graph.library[component].icon,
-            description: this.graph.library[component].description
+            description: this.graph.library[component].description,
+            action: function () {
+              this.addNode(component);
+            }.bind(this)
           });
-        }
+        }.bind(this));
       }
     });
   </script>
