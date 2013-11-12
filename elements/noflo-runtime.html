@@ -108,10 +108,10 @@
         }
         var contextPanel = document.getElementById('context');
         this.card = document.createElement('the-card');
-        this.card.setAttribute('id', 'runtimePreview');
+        this.card.type = 'noflo-runtime-preview';
         // Move the preview element of the runtime into the card
         this.card.appendChild(this.runtime.getElement());
-        contextPanel.getMain().appendChild(this.card);
+        this.card.addTo(contextPanel.getMain());
       }
     });
   </script>
