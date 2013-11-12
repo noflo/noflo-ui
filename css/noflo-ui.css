@@ -36,6 +36,10 @@ the-panel the-card h1 {
   margin: 0px;
   font-size: 12pt;
 }
+the-panel the-card h2 {
+  margin: 0px;
+  font-size: 10pt;
+}
 
 the-panel the-card ul {
   margin: 0px;

@@ -1,12 +1,13 @@
 <polymer-element name="noflo-node-inspector" attributes="node graph">
   <style>
-    label {
+    ul.ports li {
       display: block;
     }
   </style>
   <template>
     <h1>{{ node.label }}</h1>
-    <ul>
+    <h2>{{ node.component }}</h2>
+    <ul class="ports">
       <template repeat="{{ port in inports }}">
         <li>
         <label>{{ port.name }}

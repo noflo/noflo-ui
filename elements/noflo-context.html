@@ -66,8 +66,9 @@
           var menu = document.createElement('noflo-node-menu');
           menu.nodes = this.nodes;
           this.nodeMenu = document.createElement('the-card');
+          this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);
-          this.contextBar.getMain().appendChild(this.nodeMenu);
+          this.nodeMenu.addTo(this.contextBar.getMain());
         }
 
         this.nodes.forEach(function (node) {
@@ -79,8 +80,9 @@
           inspector.node = node;
           inspector.graph = this.graphs[this.graphs.length - 1];
           this.nodeInspectors[id] = document.createElement('the-card');
+          this.nodeInspectors[id].type = 'node-inspector';
           this.nodeInspectors[id].appendChild(inspector);
-          this.contextBar.getMain().appendChild(this.nodeInspectors[id]);
+          this.nodeInspectors[id].addTo(this.contextBar.getMain());
         }.bind(this));
 
         var found;
@@ -123,8 +125,9 @@
         var menu = document.createElement('noflo-edge-menu');
         menu.edges = this.edges;
         this.edgeMenu = document.createElement('the-card');
+        this.edgeMenu.type = 'edge-menu';
         this.edgeMenu.appendChild(menu);
-        this.contextBar.getMain().appendChild(this.edgeMenu);
+        this.edgeMenu.addTo(this.contextBar.getMain());
       },
       hideEdgeCards: function () {
         if (!this.edgeMenu) {
