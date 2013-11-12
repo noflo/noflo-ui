@@ -77,6 +77,7 @@
           }
           var inspector = document.createElement('noflo-node-inspector');
           inspector.node = node;
+          inspector.graph = this.graphs[this.graphs.length - 1];
           this.nodeInspectors[id] = document.createElement('the-card');
           this.nodeInspectors[id].appendChild(inspector);
           this.contextBar.getMain().appendChild(this.nodeInspectors[id]);

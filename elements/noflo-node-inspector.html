@@ -1,9 +1,51 @@
-<polymer-element name="noflo-node-inspector" attributes="node">
+<polymer-element name="noflo-node-inspector" attributes="node graph">
+  <style>
+    label {
+      display: block;
+    }
+  </style>
   <template>
     <h1>{{ node.label }}</h1>
+    <ul>
+      <template repeat="{{ port in inports }}">
+        <li>
+        <label>{{ port.name }}
+          <template if="{{ port.type == 'bang' }}">
+            <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="icon-exclamation"></i></button>
+          </template>
+          <template if="{{ port.type == 'boolean' }}">
+            <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}">
+          </template>
+          <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+            <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}">
+          </template>
+          </label>
+        </li>
+      </template>
+    </ul>
   </template>
   <script>
     Polymer('noflo-node-inspector', {
+      inports: [],
+      enteredView: function () {
+        this.inports = [];
+        this.node.getInports().forEach(function (port) {
+          if (port.isConnected()) {
+            return;
+          }
+          this.inports.push({
+            name: port.name,
+            type: port.type,
+            value: port.getValue()
+          });
+        }.bind(this));
+      },
+      sendBang: function (event, detail, sender) {
+        event.preventDefault();
+        var name = sender.getAttribute('name');
+
+        console.log('BANG', this.node.getAttribute('name'), name);
+      }
     });
   </script>
 </polymer-element>
