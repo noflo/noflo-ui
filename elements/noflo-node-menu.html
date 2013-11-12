@@ -12,7 +12,9 @@
         event.preventDefault();
         while(this.nodes.length) {
           var node = this.nodes.pop();
-          node.parentNode.removeChild(node);
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
         }
       }
     });

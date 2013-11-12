@@ -12,7 +12,9 @@
         event.preventDefault();
         while(this.edges.length) {
           var edge = this.edges.pop();
-          edge.parentNode.removeChild(edge);
+          if (edge.parentNode) {
+            edge.parentNode.removeChild(edge);
+          }
         }
       }
     });
