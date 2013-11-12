@@ -22,6 +22,8 @@
     <noflo-polymer name="noflo-breadcrumb" inports="project graphs" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
+    <link rel="import" href="elements/noflo-library.html">
+    <noflo-polymer name="noflo-library" inports="graph search" outports="result"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -35,6 +37,7 @@
     <noflo-runtime></noflo-runtime>
     <noflo-breadcrumb></noflo-breadcrumb>
     <noflo-search></noflo-search>
+    <noflo-library></noflo-library>
     <the-panel id="context" edge="left" size="300">
       <header></header>
       <main></main>
@@ -109,6 +112,12 @@
 
       # NoFlo search
       'noflo-search' -> SELECTOR GetSearch(dom/GetElement) ELEMENT -> ELEMENT Search(polymer/noflo-search)
+
+      # NoFlo component library
+      'noflo-library' -> SELECTOR GetLibrary(dom/GetElement) ELEMENT -> ELEMENT Library(polymer/noflo-library)
+      Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
+
+      # Context searching
       Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
 
       # The DOM elements where the UI will be run
@@ -167,6 +176,7 @@
       LoadStored OUT -> GRAPH EditGraph
       EditGraph GRAPH -> GRAPHS Context
       EditGraph EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+      EditGraph EDITOR -> GRAPH Library
       Runtime RUNTIME -> RUNTIME ConnectRuntime
       ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
 

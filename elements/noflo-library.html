@@ -1,0 +1,23 @@
+<polymer-element name="noflo-library" attributes="graph search">
+  <script>
+    Polymer('noflo-library', {
+      search: '',
+      graph: null,
+      searchChanged: function () {
+        if (!this.search) {
+          return;
+        }
+        for (var component in this.graph.library) {
+          if (component.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
+            continue;
+          }
+          this.fire('result', {
+            label: component,
+            icon: this.graph.library[component].icon,
+            description: this.graph.library[component].description
+          });
+        }
+      }
+    });
+  </script>
+</polymer-element>

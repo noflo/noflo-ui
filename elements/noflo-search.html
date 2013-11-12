@@ -14,6 +14,7 @@
       search: '',
       enteredView: function () {
         this.contextBar = document.getElementById('context');
+        this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
       },
       menu: function (event) {
         event.preventDefault();
@@ -41,8 +42,9 @@
           }
           return;
         }
-        this.results = [];
-        this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
+        while (this.results.length) {
+          this.results.pop();
+        }
         this.fire('search', this.search);
       },
       resultsModified: function () {

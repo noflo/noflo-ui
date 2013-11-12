@@ -10,7 +10,7 @@ class LoadGraphEditor extends noflo.Component
       container: new noflo.Port 'object'
     @outPorts =
       graph: new noflo.Port 'object'
-      editor: new noflo.Port 'object'
+      editor: new noflo.ArrayPort 'object'
 
     @inPorts.graph.on 'data', (@graph) =>
       do @loadEditor
