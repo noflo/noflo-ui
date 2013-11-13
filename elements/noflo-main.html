@@ -19,7 +19,10 @@
       <button on-click="{{ newProject }}">New project</button>
       <ul>
         <template repeat="{{ project in projects }}">
-        <li><a href="#project/{{ project.id }}">{{ project.name }}</a></li>
+          <li on-click="{{ openProject }}" data-id="{{ project.id }}">
+            <h2>{{ project.name }}</h2>
+            <p>{{ project.graphs.length }} graphs and {{ project.components.length }} components</p>
+          </li>
         </template>
       </ul>
     </section>
@@ -40,6 +43,10 @@
       openSketch: function (event, details, sender) {
         event.preventDefault();
         window.location.hash = '#graph/' + sender.getAttribute('data-id');
+      },
+      openProject: function (event, details, sender) {
+        event.preventDefault();
+        window.location.hash = '#project/' + sender.getAttribute('data-id');
       },
       newSketch: function (event) {
         event.preventDefault();
