@@ -1,7 +1,17 @@
+@font-face {
+  font-family: "SourceCodePro";
+  src: url("SourceCodePro-Regular.otf.woff") format('woff');
+}
+@font-face {
+  font-family: "SourceCodePro";
+  src: url("SourceCodePro-Bold.otf.woff") format('woff');
+  font-weight: bold;
+}
+
 body {
   background-color: hsl(187, 50%, 7%);
   color: #ffffff;
-  font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   margin: 0;
   padding: 0;
 }
