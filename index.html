@@ -57,11 +57,11 @@
     </script>
     <script type="application/fbp" id="SaveItem">
       EXPORT=ADD.LIST:KEY
-      EXPORT=GETNAME.IN:OBJECT
+      EXPORT=SPLITITEM.IN:OBJECT
       EXPORT=HOLDNAME.OUT:STORED
-      'name' -> KEY GetName(objects/GetObjectKey)
-      GetName OBJECT -> IN ToJson(strings/Jsonify)
-      GetName OUT -> IN SplitName(core/Split)
+      SplitItem(core/Split) OUT -> START CreateId(ui/GenerateId)
+      SplitItem OUT -> IN ToJson(strings/Jsonify)
+      CreateId OUT -> IN SplitName(core/Split)
       SplitName OUT -> KEY Add(localstorage/ListAdd)
       Add KEY -> KEY Save(localstorage/SetItem)
       ToJson OUT -> VALUE Save
@@ -160,6 +160,7 @@
       # Save newly created projects into localStorage
       ProjectKey OUT -> KEY SaveProject(local/SaveItem)
       LoadMain NEWPROJECT -> OBJECT SaveProject(local/SaveItem)
+      SaveProject STORED -> IN DropProject(core/Drop)
 
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)
