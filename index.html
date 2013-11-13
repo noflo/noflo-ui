@@ -70,9 +70,14 @@
     </script>
     <script type="application/fbp" id="LoadItem">
       EXPORT=LOADSTORED.KEY:KEY
-      EXPORT=PARSE.OUT:OUT
+      EXPORT=SETID.OUT:OUT
       EXPORT=LOADSTORED.ERROR:ERROR
-      LoadStored(localstorage/GetItem) ITEM -> IN Parse(strings/ParseJson)
+      LoadStored(localstorage/GetItem) ITEM -> IN GetId(groups/ReadGroup)
+      'id' -> PROPERTY SetId
+      GetId GROUP -> IN SplitId(core/Split) OUT -> VALUE SetId(objects/SetPropertyValue)
+      GetId OUT -> STRING HoldItem(strings/SendString) OUT -> IN Parse(strings/ParseJson)
+      SplitId OUT -> IN HoldItem
+      Parse OUT -> IN SetId
     </script>
     <script type="application/fbp" id="MainView">
       EXPORT=CONTAINER.DATA:CONTAINER
@@ -144,7 +149,8 @@
       # Load local projects
       ProjectKey OUT -> KEY LoadProjects(local/LoadList)
       LoadMain READY -> LOAD LoadProjects
-      LoadProjects ITEMS -> PROJECTS LoadMain
+      LoadProjects ITEMS -> KEY LoadProject(local/LoadItem) OUT -> PROJECTS LoadMain
+      LoadProject ERROR -> IN DropErrors(core/Drop)
 
       # Save newly created graphs into localStorage
       LoadMain NEWSKETCH -> DETAILS CreateGraph(ui/CreateGraph)
