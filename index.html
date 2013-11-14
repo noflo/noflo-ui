@@ -79,6 +79,37 @@
       SplitId OUT -> IN HoldItem
       Parse OUT -> IN SetId
     </script>
+    <script type="application/fbp" id="GraphEditor">
+      EXPORT=LOADEDITOR.CONTAINER:CONTAINER
+      EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
+      EXPORT=MERGEGRAPH.IN:CURRENTGRAPH
+      EXPORT=SPLITGRAPH.OUT:CURRENTGRAPH
+      EXPORT=LOADEDITOR.EDITOR:EDITOR
+      EXPORT=GRAPHEDITOR.NODECLICK:NODECLICK
+      EXPORT=GRAPHEDITOR.EDGECLICK:EDGECLICK
+      EXPORT=GRAPHEDITOR.CHANGED:CHANGED
+      MergeGraph(core/Merge) OUT -> IN SplitGraph(core/Split) OUT -> GRAPH LoadEditor(ui/LoadGraphEditor)
+      LoadEditor EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+      ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
+    </script>
+    <script type="application/fbp" id="LoadGist">
+      EXPORT=SPLITGIST.IN:ID
+      EXPORT=PARSE.OUT:OUT
+      'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
+      '/' -> DELIMITER CreateUrl(strings/CompileString)
+      SplitGist(core/Split) OUT -> IN GistPrefix
+      GistPrefix OUT -> IN CreateUrl
+      SplitGist OUT -> IN CreateUrl
+      CreateUrl OUT -> URL GetGist(ajax/GetJsonP)
+      'data' -> KEY GetData(objects/GetObjectKey)
+      'files' -> KEY GetFiles(objects/GetObjectKey)
+      'noflo.json' -> KEY GetFile(objects/GetObjectKey)
+      'content' -> KEY GetFileContent(objects/GetObjectKey)
+      GetGist OUT -> IN GetData
+      GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
+      GetFiles MISSED -> IN Errors
+      GetFileContent OUT -> IN Parse(strings/ParseJson)
+    </script>
     <script type="application/fbp" id="MainView">
       EXPORT=CONTAINER.DATA:CONTAINER
       EXPORT=CONTAINER.IN:LOAD
@@ -171,23 +202,18 @@
       # ## Graph loading
       Router GRAPH -> IN SplitGraphName(core/Split)
 
-      # Prepare Dataflow in DOM
-      SplitWorkspaceContainer OUT -> DATA LoadGraphDataflow(core/Kick)
-      SplitGraphName OUT -> IN LoadGraphDataflow
-      LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/LoadGraphEditor)
+      # Prepare the-graph in DOM
+      SplitWorkspaceContainer OUT -> CONTAINER EditGraph(local/GraphEditor)
+      # Context binding
+      EditGraph CURRENTGRAPH -> GRAPHS Context
+      EditGraph EDITOR -> GRAPH Library
+      EditGraph NODECLICK -> NODE Context
+      EditGraph EDGECLICK -> EDGE Context
+      Runtime RUNTIME -> RUNTIME EditGraph
 
       # Try loading from localStorage
       SplitGraphName OUT -> KEY LoadStored(local/LoadItem)
-      LoadStored OUT -> GRAPH EditGraph
-      EditGraph GRAPH -> GRAPHS Context
-      EditGraph EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
-      EditGraph EDITOR -> GRAPH Library
-      Runtime RUNTIME -> RUNTIME ConnectRuntime
-      ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
-
-      # Context updates
-      GraphEditor NODECLICK -> NODE Context
-      GraphEditor EDGECLICK -> EDGE Context
+      LoadStored OUT -> CURRENTGRAPH EditGraph
 
       # If graph can't be found redirect to main
       '' -> DATA GoToMain(core/Kick)
@@ -203,33 +229,19 @@
       SplitChanged OUT -> IN ToJson(strings/Jsonify)
       ToJson OUT -> VALUE Store
       
-      # Example gist loading
-      Router EXAMPLE -> IN SplitGist(core/Split)
-      'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
-      '/' -> DELIMITER CreateUrl(strings/CompileString)
-      SplitGist OUT -> IN GistPrefix
-      GistPrefix OUT -> IN CreateUrl
-      SplitGist OUT -> IN CreateUrl
-      CreateUrl OUT -> URL GetGist(ajax/GetJsonP)
-      'data' -> KEY GetData(objects/GetObjectKey)
-      'files' -> KEY GetFiles(objects/GetObjectKey)
-      'noflo.json' -> KEY GetFile(objects/GetObjectKey)
-      'content' -> KEY GetFileContent(objects/GetObjectKey)
-      GetGist OUT -> IN GetData
-      GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
-      GetFiles MISSED -> IN Errors
-      GetFileContent OUT -> IN ParseExample(strings/ParseJson)
+      # Prepare the-graph in DOM
+      SplitWorkspaceContainer OUT -> CONTAINER EditExample(local/GraphEditor)
+      # Context binding
+      EditExample CURRENTGRAPH -> GRAPHS Context
+      EditExample EDITOR -> GRAPH Library
+      EditExample NODECLICK -> NODE Context
+      EditExample EDGECLICK -> EDGE Context
+      Runtime RUNTIME -> RUNTIME EditExample
 
-      # Prepare Dataflow in DOM
-      SplitWorkspaceContainer OUT -> DATA LoadExampleDataflow(core/Kick)
-      SplitGist OUT -> IN LoadExampleDataflow
-      LoadExampleDataflow OUT -> CONTAINER EditExample(ui/LoadGraphEditor)
-      ParseExample OUT -> GRAPH EditExample
-      EditExample GRAPH -> GRAPH DetermineExample(ui/DetermineRuntime)
-      DetermineExample GRAPH -> GRAPH LoadExampleRuntime(ui/LoadRuntime)
-      DetermineExample RUNTIME -> RUNTIME LoadExampleRuntime
-      EditExample EDITOR -> EDITOR ConnectExampleRuntime(ui/ConnectRuntime)
-      LoadExampleRuntime RUNTIME -> RUNTIME ConnectExampleRuntime
+      # Example gist loading
+      Router EXAMPLE -> ID LoadGist(local/LoadGist)
+      LoadGist OUT -> CURRENTGRAPH EditExample
+      EditExample CHANGED -> IN DropChanged(core/Drop)
 
       # Routing
       '' -> START ListenHash(interaction/ListenHash)
