@@ -68,6 +68,26 @@
       SplitName OUT -> DATA HoldName(core/Kick)
       Save ITEM -> IN HoldName
     </script>
+    <script type="application/fbp" id="PrepareProject">
+      EXPORT=GETTYPE.IN:PROJECT
+      EXPORT=SETMAIN.OUT:PROJECT
+      # Prepare and store a 'main graph'
+      'type' -> KEY GetType(objects/GetObjectKey)
+      GetType OUT -> IN SplitType(core/Split)
+      'type' -> PROPERTY SetType(objects/SetPropertyValue)
+      SplitType OUT -> VALUE SetType
+      SplitType OUT -> START GenerateId(ui/GenerateId) OUT -> IN SplitId(core/Split)
+      SplitType OUT -> START CreateDetails(objects/CreateObject)
+      CreateDetails OUT -> IN SetType OUT -> DETAILS CreateGraph(ui/CreateGraph)
+      SplitId OUT -> KEY StoreGraph(localstorage/SetItem)
+      CreateGraph OUT -> IN ToJson(strings/Jsonify) OUT -> VALUE StoreGraph
+      'main' -> PROPERTY SetMain(objects/SetPropertyValue)
+      SplitId OUT -> VALUE SetMain
+      'graphs' -> KEY GetGraphs(objects/GetObjectKey)
+      GetType OBJECT -> IN GetGraphs OBJECT -> IN SetMain
+      GetGraphs OUT -> TO AddGraph(ui/AppendTo)
+      SplitId OUT -> APPEND AddGraph
+    </script>
     <script type="application/fbp" id="SaveItem">
       EXPORT=GETID.IN:ITEM
       'id' -> KEY GetId(objects/GetObjectKey)
@@ -129,6 +149,7 @@
       CreateMain ELEMENT -> ELEMENT LoadMain(polymer/noflo-main)
       LoadMain ELEMENT -> IN MainIsReady(core/Split)
 
+      # Load examples
       'examples.json' -> STRING ExampleUrl(strings/SendString)
       MainIsReady OUT -> IN ExampleUrl
       ExampleUrl OUT -> URL GetExamples(ajax/Get)
@@ -201,7 +222,7 @@
 
       # Save newly created projects into localStorage
       ProjectKey OUT -> KEY SaveProject(local/CreateItem)
-      LoadMain NEWPROJECT -> OBJECT SaveProject(local/CreateItem)
+      LoadMain NEWPROJECT -> PROJECT PrepareProject(local/PrepareProject) PROJECT -> OBJECT SaveProject(local/CreateItem)
       SaveProject STORED -> IN DropProject(core/Drop)
 
       # Redirect to graph

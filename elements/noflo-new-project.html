@@ -6,6 +6,13 @@
         Project name
         <input type="text" value="{{ name }}" placeholder="my-project" required>
       </label>
+      <label>
+        Primary Type
+        <select name="type" value="{{ type }}">
+          <option value="html">Browser</option>
+          <option value="websocket">Node.js</option>
+        </select>
+      </label>
       <button on-click="{{ send }}">Create</button>
       <a on-click="{{ close }}">Cancel</a>
     </form>
@@ -20,7 +27,9 @@
         }
         this.fire('new', {
           name: this.name,
-          graphs: [],
+          type: this.type,
+          graphs: [
+          ],
           components: []
         });
         this.close();
