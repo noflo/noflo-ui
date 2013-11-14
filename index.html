@@ -38,7 +38,7 @@
     <noflo-breadcrumb></noflo-breadcrumb>
     <noflo-search></noflo-search>
     <noflo-library></noflo-library>
-    <the-panel id="context" edge="left" size="300">
+    <the-panel id="context" edge="left" size="280">
       <header></header>
       <main></main>
       <footer></footer>
@@ -93,8 +93,6 @@
       LoadMain ELEMENT -> IN MainIsReady(core/Split)
     </script>
     <script type="application/fbp" id="main">
-      # Basedir for loading components
-      '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
       # Key for stored sketches
       'noflo-ui-graphs' -> IN GraphKey(core/Split)
       # Key for stored projects
@@ -221,7 +219,6 @@
       GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
-      SplitBaseDir OUT -> BASEDIR LoadExample(ui/LoadGraph)
 
       # Prepare Dataflow in DOM
       SplitWorkspaceContainer OUT -> DATA LoadExampleDataflow(core/Kick)

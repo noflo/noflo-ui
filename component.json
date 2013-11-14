@@ -30,20 +30,10 @@
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "CreateGraph": "components/CreateGraph.coffee",
       "GenerateId": "components/GenerateId.coffee",
-      "LoadGraph": "components/LoadGraph.coffee",
       "LoadGraphEditor": "components/LoadGraphEditor.coffee",
-      "LoadMain": "components/LoadMain.coffee",
       "LoadRuntime": "components/LoadRuntime.coffee",
-      "ListenGraph": "components/ListenGraph.coffee",
       "DetermineRuntime": "components/DetermineRuntime.coffee",
-      "Dataflow": "components/Dataflow.coffee",
       "Router": "components/Router.coffee"
-    },
-    "graphs": {
-      "CreateProjectView": "graphs/CreateProjectView.json",
-      "SaveProject": "graphs/SaveProject.json",
-      "EditGraph": "graphs/EditGraph.json",
-      "WriteTemplate": "graphs/WriteTemplate.json"
     }
   },
   "main": "index.js",
@@ -56,24 +46,12 @@
     "components/ConnectRuntime.coffee",
     "components/CreateGraph.coffee",
     "components/GenerateId.coffee",
-    "components/LoadGraph.coffee",
     "components/LoadGraphEditor.coffee",
-    "components/LoadMain.coffee",
     "components/LoadRuntime.coffee",
-    "components/ListenGraph.coffee",
     "components/DetermineRuntime.coffee",
-    "components/Dataflow.coffee",
-    "components/Router.coffee",
-    "graphs/CreateProjectView.json",
-    "graphs/SaveProject.json",
-    "graphs/EditGraph.json",
-    "graphs/WriteTemplate.json"
+    "components/Router.coffee"
   ],
   "json": [
-    "graphs/CreateProjectView.json",
-    "graphs/SaveProject.json",
-    "graphs/EditGraph.json",
-    "graphs/WriteTemplate.json",
     "component.json"
   ],
   "files": [
