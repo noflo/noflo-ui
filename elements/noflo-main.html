@@ -2,19 +2,6 @@
 <link rel="import" href="noflo-new-project.html">
 <polymer-element name="noflo-main" attributes="projects sketches examples">
   <template>
-    <section id="sketches">
-      <h2>Sketches</h2>
-      <p>{{ sketches.length }} projects</p>
-      <button on-click="{{ newSketch }}">New sketch</button>
-      <ul>
-        <template repeat="{{ sketch in sketches }}">
-          <li on-click="{{ openSketch }}" data-id="{{ sketch.id }}">
-            <the-graph-thumb graphjson="{{ sketch }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ sketch.properties.name }}</h2>
-          </li>
-        </template>
-      </ul>
-    </section>
     <section id="projects">
       <h2>Projects</h2>
       <p>{{ projects.length }} projects</p>
@@ -24,6 +11,19 @@
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">
             <h2>{{ project.name }}</h2>
             <p>{{ project.graphs.length }} graphs and {{ project.components.length }} components</p>
+          </li>
+        </template>
+      </ul>
+    </section>
+    <section id="sketches">
+      <h2>Sketches</h2>
+      <p>{{ sketches.length }} projects</p>
+      <button on-click="{{ newSketch }}">New sketch</button>
+      <ul>
+        <template repeat="{{ sketch in sketches }}">
+          <li on-click="{{ openSketch }}" data-id="{{ sketch.id }}">
+            <the-graph-thumb graphjson="{{ sketch }}" width="200" height="120"></the-graph-thumb>
+            <h2>{{ sketch.properties.name }}</h2>
           </li>
         </template>
       </ul>
