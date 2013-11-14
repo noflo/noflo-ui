@@ -11,6 +11,7 @@ class Router extends noflo.Component
       graph: new noflo.Port 'string'
       example: new noflo.Port 'string'
       missed: new noflo.Port 'string'
+      clear: new noflo.Port 'boolean'
 
     @inPorts.url.on 'data', (url) =>
       if @outPorts.route.isAttached()
@@ -18,6 +19,8 @@ class Router extends noflo.Component
         @outPorts.route.disconnect()
 
       if url is ''
+        @outPorts.clear.send true
+        @outPorts.clear.disconnect()
         @outPorts.main.send url
         @outPorts.main.disconnect()
         return

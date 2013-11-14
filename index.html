@@ -13,7 +13,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge search" outports="project graphs currentgraph component nodes edges result"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge search clear" outports="project graphs currentgraph component nodes edges result"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -201,6 +201,7 @@
       # ## Main view
       # Main view listing user's projects and examples
       SplitWorkspaceContainer OUT -> CONTAINER LoadMain(local/MainView)
+      Router CLEAR -> CLEAR Context
       Router(ui/Router) MAIN -> LOAD LoadMain
 
       # Load local sketches

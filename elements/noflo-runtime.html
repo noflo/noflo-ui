@@ -40,6 +40,10 @@
         this.currentGraph = this.graphs[this.graphs.length - 1];
       },
       currentGraphChanged: function () {
+        if (!this.currentGraph) {
+          this.runtime = null;
+          return;
+        }
         var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
         this.runtime = new runtime(this.currentGraph);
         this.subscribeRuntime();

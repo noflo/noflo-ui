@@ -2,7 +2,7 @@
 <link rel="import" href="noflo-node-inspector.html">
 <link rel="import" href="noflo-edge-menu.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
-<polymer-element name="noflo-context" attributes="project graphs component node edge search">
+<polymer-element name="noflo-context" attributes="project graphs component node edge search clear">
   <script>
     Polymer('noflo-context', {
       project: null,
@@ -13,6 +13,7 @@
       node: null,
       edge: null,
       component: '',
+      clear: false,
       enteredView: function () {
         this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
         this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
@@ -141,16 +142,15 @@
       componentChanged: function () {
         this.fire('component', this.component);
       },
-      searchChanged: function () {
-        return;
-        this.fire('result', {
-          icon: 'trash',
-          label: 'Foo',
-          description: 'Hello world!',
-          action: function () {
-            console.log('result Foo clicked');
-          }
-        });
+      clearChanged: function () {
+        if (!this.clear) {
+          return;
+        }
+        this.project = null;
+        this.graphs.splice(0, this.graphs.length);
+        this.nodes.splice(0, this.nodes.length);
+        this.edges.splice(0, this.edges.length);
+        this.clear = false;
       }
     });
   </script>
