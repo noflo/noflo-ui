@@ -37,11 +37,20 @@
           return;
         }
         // Use the top-level graph as the runtime main graph
-        this.currentGraph = this.graphs[this.graphs.length - 1];
+        this.currentGraph = this.graphs[0];
       },
       currentGraphChanged: function () {
-        if (!this.currentGraph) {
+        if (this.runtime) {
+          this.stop();
+          this.execution.running = false;
+          this.execution.stopped = true;
           this.runtime = null;
+        }
+        if (this.card) {
+          this.card.parentNode.removeChild(this.card);
+          this.card = null;
+        }
+        if (!this.currentGraph) {
           return;
         }
         var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
@@ -103,7 +112,9 @@
         }.bind(this));
       },
       stop: function (event) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         this.runtime.stop();
       },
       showCard: function () {
