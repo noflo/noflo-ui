@@ -1,3 +1,12 @@
+/*
+ * Colors:
+ *
+ * Regular background: hsl(187, 45%, 8%)
+ * Workspace background: hsl(189, 47%, 6)
+ * Darker elements: hsl(189, 11%, 26%)
+ * Lighter elements: white
+ * Default grid is 70x70
+ */
 @font-face {
   font-family: "SourceCodePro";
   src: url("SourceCodePro-Regular.otf.woff") format('woff');
@@ -9,7 +18,7 @@
 }
 
 body {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   color: #ffffff;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   margin: 0;
@@ -17,18 +26,20 @@ body {
 }
 
 the-panel {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   z-index: 2;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out;
 }
 
 the-panel the-card {
   display: block;
-  margin-bottom: 5px;
-  padding-bottom: 5px;
+  margin: 0px;
+  padding: 0px;
+  margin-bottom: 7px;
+  padding-bottom: 7px;
   border-bottom: 1px rgb(71, 71, 71) solid;
-  width: 300px;
-  max-height: 300px;
+  width: 280px;
+  max-height: 280px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -108,22 +119,22 @@ noflo-main ul li a {
 }
 
 #context {
-  padding-top: 30px;
+  padding-top: 70px;
 }
 
 noflo-search {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   position: fixed;
   left: 0;
   top: 0;
   color: white;
   z-index: 3;
-  width: 300px;
-  height: 30px;
+  width: 280px;
+  height: 70px;
   font-size: 22px;
 }
 noflo-search input {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   border: none;
   color: white;
 }
@@ -135,7 +146,7 @@ noflo-search button {
 
 noflo-new-graph,
 noflo-new-project {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
   width: 400px;
@@ -146,15 +157,28 @@ noflo-new-project {
   z-index: 2;
 }
 
+noflo-breadcrumb {
+  background-color: hsl(187, 45%, 8%);
+  position: fixed;
+  left: 280px;
+  top: 0;
+  color: rgb(71, 71, 71);
+  padding: 0px;
+  z-index: 3;
+  width: 210px;
+  height: 70px;
+}
+
 noflo-runtime {
-  background-color: hsl(187, 50%, 7%);
+  background-color: hsl(187, 45%, 8%);
   position: fixed;
   right: 0;
   top: 0;
   color: rgb(71, 71, 71);
-  padding: 6px;
+  padding: 0px;
   z-index: 3;
-  width: 200px;
+  width: 210px;
+  height: 70px;
 }
 noflo-runtime button {
   color: rgb(71, 71, 71);

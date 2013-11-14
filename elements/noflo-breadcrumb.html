@@ -1,16 +1,31 @@
 <polymer-element name="noflo-breadcrumb" attributes="project graphs">
+  <style>
+    h1 {
+      font-size: 12pt;
+      margin: 0;
+      color: #fff;
+      font-weight: normal;
+    }
+  </style>
   <template>
-    <h2 id="project">{{ project }}</h2>
-    <ul id="graphs">
-      <template repeat="{{ graph in graphs }}">
-      <li>{{ graph.properties.name }}</li>
-      </template>
-    </ul>
+    <template if="{{ currentGraph }}">
+    <h1>{{ currentGraph.properties.name }}</h1>
+    </template>
+    <h2>{{ project }}</h2>
   </template>
   <script>
     Polymer('noflo-breadcrumb', {
       project: '',
-      graphs: []
+      graphs: null,
+      currentGraph: null,
+      graphsChanged: function () {
+        if (!this.graphs || this.graphs.length === 0) {
+          this.currentGraph = null;
+          return;
+        }
+        // Use the top-level graph as the runtime main graph
+        this.currentGraph = this.graphs[this.graphs.length - 1];
+      }
     });
   </script>
 </polymer-element>
