@@ -128,6 +128,13 @@
       Container(core/Kick) OUT -> CONTAINER CreateMain
       CreateMain ELEMENT -> ELEMENT LoadMain(polymer/noflo-main)
       LoadMain ELEMENT -> IN MainIsReady(core/Split)
+
+      'examples.json' -> STRING ExampleUrl(strings/SendString)
+      MainIsReady OUT -> IN ExampleUrl
+      ExampleUrl OUT -> URL GetExamples(ajax/Get)
+      GetExamples OUT -> IN ParseExamples(strings/ParseJson)
+      'examples' -> KEY GetExampleList(objects/GetObjectKey)
+      ParseExamples OUT -> IN GetExampleList OUT -> EXAMPLES LoadMain
     </script>
     <script type="application/fbp" id="main">
       # Key for stored sketches

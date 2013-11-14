@@ -4,6 +4,7 @@
   <template>
     <section id="sketches">
       <h2>Sketches</h2>
+      <p>{{ sketches.length }} projects</p>
       <button on-click="{{ newSketch }}">New sketch</button>
       <ul>
         <template repeat="{{ sketch in sketches }}">
@@ -16,6 +17,7 @@
     </section>
     <section id="projects">
       <h2>Projects</h2>
+      <p>{{ projects.length }} projects</p>
       <button on-click="{{ newProject }}">New project</button>
       <ul>
         <template repeat="{{ project in projects }}">
@@ -28,6 +30,7 @@
     </section>
     <section id="examples">
       <h2>Examples</h2>
+      <p>{{ examples.length }} projects</p>
       <ul>
         <template repeat="{{ examples }}">
         <li><a href="#example/{{ id }}">{{ name }}</a></li>

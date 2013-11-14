@@ -61,6 +61,7 @@
     "preview/component.json",
     "index.html",
     "favicon.ico",
-    "noflo.png"
+    "noflo.png",
+    "examples.json"
   ]
 }
