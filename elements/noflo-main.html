@@ -49,7 +49,16 @@
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
-        window.location.hash = '#project/' + sender.getAttribute('data-id');
+        var project = null;
+        this.projects.forEach(function (p) {
+          if (p.id === sender.getAttribute('data-id')) {
+            project = p;
+          }
+        });
+        if (!project) {
+          return;
+        }
+        window.location.hash = '#project/' + project.id + '/' + project.main;
       },
       newSketch: function (event) {
         event.preventDefault();

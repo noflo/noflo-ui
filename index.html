@@ -212,8 +212,8 @@
       # Load local projects
       ProjectKey OUT -> KEY LoadProjects(local/LoadList)
       LoadMain READY -> LOAD LoadProjects
-      LoadProjects ITEMS -> KEY LoadProject(local/LoadItem) OUT -> PROJECTS LoadMain
-      LoadProject ERROR -> IN DropErrors(core/Drop)
+      LoadProjects ITEMS -> KEY LoadProjectItem(local/LoadItem) OUT -> PROJECTS LoadMain
+      LoadProjectItem ERROR -> IN DropErrors(core/Drop)
 
       # Save newly created graphs into localStorage
       LoadMain NEWSKETCH -> DETAILS CreateGraph(ui/CreateGraph)
@@ -222,7 +222,8 @@
 
       # Save newly created projects into localStorage
       ProjectKey OUT -> KEY SaveProject(local/CreateItem)
-      LoadMain NEWPROJECT -> PROJECT PrepareProject(local/PrepareProject) PROJECT -> OBJECT SaveProject(local/CreateItem)
+      LoadMain NEWPROJECT -> PROJECT PrepareProject(local/PrepareProject)
+      PrepareProject PROJECT -> OBJECT SaveProject(local/CreateItem)
       SaveProject STORED -> IN DropProject(core/Drop)
 
       # Redirect to graph
@@ -232,6 +233,11 @@
       PrepareGraphUri OUT -> IN CreateGraphUri
       SaveGraph STORED -> IN CreateGraphUri
       CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
+
+      # ## Project loading
+      Router PROJECT -> KEY LoadProject(local/LoadItem)
+      LoadProject OUT -> PROJECT Context
+      LoadProject ERROR -> IN Errors
 
       # ## Graph loading
       Router GRAPH -> KEY LoadStored(local/LoadItem)

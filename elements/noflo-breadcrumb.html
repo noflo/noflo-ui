@@ -11,7 +11,7 @@
     <template if="{{ currentGraph }}">
     <h1>{{ currentGraph.properties.name }}</h1>
     </template>
-    <h2>{{ project }}</h2>
+    <h2>{{ project.name }}</h2>
   </template>
   <script>
     Polymer('noflo-breadcrumb', {
@@ -25,6 +25,9 @@
         }
         // Use the top-level graph as the runtime main graph
         this.currentGraph = this.graphs[this.graphs.length - 1];
+        if (!this.currentGraph.properties.name) {
+          this.currentGraph.properties.name = '';
+        }
       }
     });
   </script>
