@@ -1,13 +1,13 @@
-<polymer-element name="noflo-library" attributes="graph search">
+<polymer-element name="noflo-library" attributes="editor search">
   <script>
     Polymer('noflo-library', {
       search: '',
-      graph: null,
+      editor: null,
       addNode: function (component) {
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);
         var id = component + '_' + num.toString(36);
-        this.graph.$.graph.nodes.push({
+        this.editor.$.graph.nodes.push({
           name: id,
           component: component,
           metadata: {

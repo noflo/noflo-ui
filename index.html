@@ -13,7 +13,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge search" outports="project graphs component nodes edges result"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge search" outports="project graphs currentgraph component nodes edges result"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -23,7 +23,7 @@
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
-    <noflo-polymer name="noflo-library" inports="graph search" outports="result"></noflo-polymer>
+    <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -55,7 +55,7 @@
       EXPORT=GETLIST.ITEMS:ITEMS
       ListKey(strings/SendString) OUT -> KEY GetList(localstorage/ListGet)
     </script>
-    <script type="application/fbp" id="SaveItem">
+    <script type="application/fbp" id="CreateItem">
       EXPORT=ADD.LIST:KEY
       EXPORT=SPLITITEM.IN:OBJECT
       EXPORT=HOLDNAME.OUT:STORED
@@ -67,6 +67,12 @@
       ToJson OUT -> VALUE Save
       SplitName OUT -> DATA HoldName(core/Kick)
       Save ITEM -> IN HoldName
+    </script>
+    <script type="application/fbp" id="SaveItem">
+      EXPORT=GETID.IN:ITEM
+      'id' -> KEY GetId(objects/GetObjectKey)
+      GetId OUT -> KEY Store(localstorage/SetItem)
+      GetId OBJECT -> IN ToJson(strings/Jsonify) OUT -> VALUE Store
     </script>
     <script type="application/fbp" id="LoadItem">
       EXPORT=LOADSTORED.KEY:KEY
@@ -183,12 +189,12 @@
 
       # Save newly created graphs into localStorage
       LoadMain NEWSKETCH -> DETAILS CreateGraph(ui/CreateGraph)
-      GraphKey OUT -> KEY SaveGraph(local/SaveItem)
-      CreateGraph OUT -> OBJECT SaveGraph(local/SaveItem)
+      GraphKey OUT -> KEY SaveGraph(local/CreateItem)
+      CreateGraph OUT -> OBJECT SaveGraph(local/CreateItem)
 
       # Save newly created projects into localStorage
-      ProjectKey OUT -> KEY SaveProject(local/SaveItem)
-      LoadMain NEWPROJECT -> OBJECT SaveProject(local/SaveItem)
+      ProjectKey OUT -> KEY SaveProject(local/CreateItem)
+      LoadMain NEWPROJECT -> OBJECT SaveProject(local/CreateItem)
       SaveProject STORED -> IN DropProject(core/Drop)
 
       # Redirect to graph
@@ -200,48 +206,25 @@
       CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
 
       # ## Graph loading
-      Router GRAPH -> IN SplitGraphName(core/Split)
+      Router GRAPH -> KEY LoadStored(local/LoadItem)
+      LoadStored OUT -> GRAPHS Context
+      LoadStored ERROR -> IN Errors
 
       # Prepare the-graph in DOM
       SplitWorkspaceContainer OUT -> CONTAINER EditGraph(local/GraphEditor)
       # Context binding
-      EditGraph CURRENTGRAPH -> GRAPHS Context
-      EditGraph EDITOR -> GRAPH Library
+      Context CURRENTGRAPH -> CURRENTGRAPH EditGraph
+      Runtime RUNTIME -> RUNTIME EditGraph
       EditGraph NODECLICK -> NODE Context
       EditGraph EDGECLICK -> EDGE Context
-      Runtime RUNTIME -> RUNTIME EditGraph
-
-      # Try loading from localStorage
-      SplitGraphName OUT -> KEY LoadStored(local/LoadItem)
-      LoadStored OUT -> CURRENTGRAPH EditGraph
-
-      # If graph can't be found redirect to main
-      '' -> DATA GoToMain(core/Kick)
-      LoadStored ERROR -> IN Errors(core/Merge)
-      Errors OUT -> IN GoToMain
-      GoToMain OUT -> HASH Navigate(interaction/SetHash)
+      EditGraph EDITOR -> EDITOR Library
 
       # Listen to changes and save to localStorage
-      SplitGraphName OUT -> STRING SendKey(strings/SendString)
-      SendKey OUT -> KEY Store(localstorage/SetItem)
-      GraphEditor CHANGED -> IN SplitChanged(core/Split)
-      SplitChanged OUT -> IN SendKey()
-      SplitChanged OUT -> IN ToJson(strings/Jsonify)
-      ToJson OUT -> VALUE Store
-      
-      # Prepare the-graph in DOM
-      SplitWorkspaceContainer OUT -> CONTAINER EditExample(local/GraphEditor)
-      # Context binding
-      EditExample CURRENTGRAPH -> GRAPHS Context
-      EditExample EDITOR -> GRAPH Library
-      EditExample NODECLICK -> NODE Context
-      EditExample EDGECLICK -> EDGE Context
-      Runtime RUNTIME -> RUNTIME EditExample
+      EditGraph CHANGED -> ITEM Store(local/SaveItem)
 
       # Example gist loading
       Router EXAMPLE -> ID LoadGist(local/LoadGist)
-      LoadGist OUT -> CURRENTGRAPH EditExample
-      EditExample CHANGED -> IN DropChanged(core/Drop)
+      LoadGist OUT -> GRAPHS Context
 
       # Routing
       '' -> START ListenHash(interaction/ListenHash)
@@ -250,9 +233,10 @@
       MergeUrl OUT -> URL Router
 
       # Invalid route handling
-      '' -> DATA MissedRoute(core/Kick)
-      Router MISSED -> IN MissedRoute
-      MissedRoute OUT -> HASH Navigate
+      '' -> DATA GoToMain(core/Kick)
+      Router MISSED -> IN Errors(core/Merge)
+      Errors(core/Merge) OUT -> IN GoToMain
+      GoToMain OUT -> HASH Navigate(interaction/SetHash)
     </script>
     <script>
     window.addEventListener('WebComponentsReady', function() { 
