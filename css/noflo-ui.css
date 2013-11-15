@@ -42,11 +42,9 @@ the-panel#fixed {
 the-panel the-card {
   display: block;
   margin: 0px;
-  padding: 0px;
-  margin-bottom: 7px;
-  padding-bottom: 7px;
+  padding: 8px 8px;
   border-bottom: 1px rgb(71, 71, 71) solid;
-  width: 280px;
+  width: 264px;
   max-height: 280px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -61,6 +59,7 @@ noflo-runtime button {
   background-color: transparent;
   border: none;
   color: white;
+  text-align: center;
 }
 
 the-panel the-card h1 {
@@ -85,22 +84,30 @@ the-panel the-card textarea {
 }
 
 the-panel the-card ul li {
-  display: inline;
-  margin: 2px 0px;
-}
-
-the-panel the-card ul.components li {
   display: block;
-  clear: right;
-  margin-bottom: 5px;
+  clear: left;
+  padding: 0px;
+  margin: 0px;
+  margin-bottom: 8px;
+}
+the-panel the-card ul.toolbar li {
+  display: inline;
+  margin: 0px;
+  margin-right: 8px;
 }
 
-the-panel the-card ul.components li h2 {
+the-panel the-card ul li h2 {
   font-size: 10pt;
   margin: 0px;
 }
-the-panel the-card ul.components li .icon {
-  float: right;
+the-panel the-card ul li i {
+  float: left;
+  margin-right: 8px;
+}
+the-panel the-card ul li p {
+  margin: 0px;
+  padding: 0px;
+  font-size: 8pt;
 }
 
 noflo-main section {
@@ -147,6 +154,8 @@ noflo-search input {
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   border: none;
   padding: 0px;
+  padding-right: 8px;
+  padding-left: 8px;
   color: white;
   width: 245px;
   height: 35px;
@@ -300,3 +309,18 @@ the-graph-map#map {
   width: 210px;
   height: 140px;
 }*/
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  background: hsla(0,0%,0%,.2); 
+  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+}
