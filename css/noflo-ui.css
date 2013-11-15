@@ -30,6 +30,13 @@ the-panel {
   z-index: 2;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out;
 }
+the-panel#context {
+  border-right: 1px solid hsl(189, 11%, 26%);
+}
+the-panel#fixed {
+  border-left: 1px solid hsl(189, 11%, 26%);
+  z-index: 4;
+}
 
 the-panel the-card {
   display: block;
@@ -137,6 +144,8 @@ noflo-search input {
   background-color: hsl(187, 45%, 8%);
   border: none;
   color: white;
+  width: 200px;
+  height: 70px;
 }
 
 noflo-search button {
@@ -177,7 +186,7 @@ noflo-runtime {
   color: rgb(71, 71, 71);
   padding: 0px;
   z-index: 3;
-  width: 210px;
+  width: 280px;
   height: 70px;
 }
 noflo-runtime button {
@@ -200,130 +209,10 @@ noflo-runtime .offline {
   z-index: 1;
 }
 
-#navigator {
-  width: 80%;
-  height: 80%;
-  position: fixed;
-  top: 0;
-  left: 50%;
-  margin-left: -40%;
-  z-index: 200;
-  display: none;
-}
-
-
-.noflo-ui-main {
-  padding: 1em;
-}
-
-.noflo-ui-main .btn {
-  padding: 0.5em;
-  margin: 0.5em;
-  background-color: #c0c0c0;
-  color: #000000;
-  border-radius: 2px;
-}
-
-.noflo-ui-main ul {
-  margin-top: 1em;
-  margin-left: 0px;
-  list-style: none;
-}
-
-.noflo-ui-main ul li a {
-  float: left;
-  margin: 6px;
-  background-color: #000000;
-  color: #ffffff;
-  text-align: center;
-  padding: 20px;
-  width: 60px;
-  height: 20px;
-}
-
-.noflo-ui-main h2 {
-  clear: left;
-  margin-top: 1em;
-}
-
 #preview-iframe {
   display: none;
   border: none;
 }
 the-card #preview-iframe {
   display: block;
-}
-
-.dataflow-card .noflo-ui-preview {
-  overflow: hidden;
-}
-
-.dataflow-card .noflo-ui-preview h2 {
-  margin: 0px;
-  padding: 4px 4px;
-  font-size: 18px;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar .online {
-  color: #7ee67e;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar .offline {
-  color: #e67e7e;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar button {
-  color: #3e8bc5;
-  background-color: transparent;
-  border: none;
-}
-
-.dataflow-card .noflo-ui-preview .preview pre {
-  max-height: 300px;
-  color: #7ee67e;
-  font-size: 10px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  font-family: monospace;
-}
-
-.dataflow-node-inspector-inputs label.connected {
-  display: none;
-}
-
-.noflo-ui-settings {
-  max-height: 300px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-}
-
-.noflo-ui-settings form label,
-.noflo-ui-settings div.toolbar,
-.noflo-ui-settings h2 {
-  display: block;
-  padding: 15px 20px 10px;
-  margin: 0px;
-  border-top: 1px solid hsla(0, 0%, 0%, .1);
-  border-bottom: 1px solid hsl(220, 10%, 16%);
-  background-color: hsla(0, 100%, 0%, 0.1);
-}
-
-.noflo-ui-settings form input,
-.noflo-ui-settings form textarea {
-  width: 100%;
-  color: hsl(220, 10%, 65%);
-  background-color: hsla(240, 7%, 11%, .8);
-  border: 1px solid hsla(0, 0%, 63%, .1);
-  box-shadow: inset 0 1px 3px hsla(0, 0%, 0%, .2);
-}
-.noflo-ui-settings form textarea {
-  height: 12em;
-}
-.noflo-ui-settings form input:focus,
-.noflo-ui-settings form textarea:focus {
-  color: hsl(220, 10%, 85%);
-  background-color: hsl(0, 100%, 50%);
-  box-shadow: 0px 2px 4px hsla(0, 0%, 40%, .1);
-  background-color: hsla(240, 7%, 8%, 1);
-  border: 1px solid hsla(0, 0%, 94%, .1);
 }
