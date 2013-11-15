@@ -200,7 +200,6 @@ noflo-breadcrumb h2 {
 }
 
 noflo-runtime {
-  background-color: hsla(187, 45%, 8%, 0.5);
   position: fixed;
   right: 0;
   top: 0;
