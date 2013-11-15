@@ -1,9 +1,15 @@
 <polymer-element name="noflo-breadcrumb" attributes="project graphs">
   <style>
     h1 {
-      font-size: 12pt;
+      font-size: 17px;
       margin: 0;
       color: #fff;
+      font-weight: normal;
+    }
+    h2 {
+      font-size: 10px;
+      margin: 0;
+      color: hsl(189, 11% 26%);
       font-weight: normal;
     }
   </style>
@@ -11,7 +17,12 @@
     <template if="{{ currentGraph }}">
     <h1>{{ currentGraph.properties.name }}</h1>
     </template>
+    <template if="{{ project }}">
     <h2>{{ project.name }}</h2>
+    </template>
+    <template if="{{ currentGraph && !project }}">
+    <h2>Sketch</h2>
+    </template>
   </template>
   <script>
     Polymer('noflo-breadcrumb', {

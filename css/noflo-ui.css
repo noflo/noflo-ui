@@ -5,7 +5,7 @@
  * Workspace background: hsl(189, 47%, 6)
  * Darker elements: hsl(189, 11%, 26%)
  * Lighter elements: white
- * Default grid is 70x70
+ * Default grid is 35x35
  */
 @font-face {
   font-family: "SourceCodePro";
@@ -28,10 +28,11 @@ body {
 the-panel {
   background-color: hsl(187, 45%, 8%);
   z-index: 2;
-  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out;
+  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
 the-panel#context {
   border-right: 1px solid hsl(189, 11%, 26%);
+  padding-top: 35px;
 }
 the-panel#fixed {
   border-left: 1px solid hsl(189, 11%, 26%);
@@ -54,7 +55,9 @@ the-panel the-card {
 the-panel the-card button,
 noflo-search button,
 noflo-runtime button {
-  padding: 3px;
+  width: 35px;
+  height: 35px;
+  font-size: 10px;
   background-color: transparent;
   border: none;
   color: white;
@@ -125,32 +128,39 @@ noflo-main ul li a {
   text-decoration: none;
 }
 
-#context {
-  padding-top: 70px;
-}
-
 noflo-search {
   background-color: hsl(187, 45%, 8%);
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  border-right: 1px solid hsl(189, 11%, 26%);
   position: fixed;
   left: 0;
   top: 0;
   color: white;
   z-index: 3;
   width: 280px;
-  height: 70px;
-  font-size: 22px;
+  height: 35px;
+  font-size: 10px;
+  white-space: nowrap;
 }
 noflo-search input {
   background-color: hsl(187, 45%, 8%);
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   border: none;
+  padding: 0px;
   color: white;
-  width: 200px;
-  height: 70px;
+  width: 245px;
+  height: 35px;
+  display: inline;
 }
-
 noflo-search button {
-  text-align: center;
-  padding: 6px;
+  border-left: 1px solid hsl(189, 11%, 26%);
+  width: 35px;
+  height: 35px;
+  margin: 0px;
+  margin-left: -5px;
+  padding: 0px;
+  display: inline;
+  display: inline;
 }
 
 noflo-new-graph,
@@ -167,7 +177,6 @@ noflo-new-project {
 }
 
 noflo-breadcrumb {
-  background-color: hsl(187, 45%, 8%);
   position: fixed;
   left: 280px;
   top: 0;
@@ -176,21 +185,58 @@ noflo-breadcrumb {
   z-index: 3;
   width: 210px;
   height: 70px;
+  padding: 35px;
+}
+noflo-breadcrumb h1 {
+  height: 27px;
+  border-top: 1px solid hsl(189, 11%, 26%);
+  padding-top: 8px;
+}
+noflo-breadcrumb h2 {
+  height: 27px;
+  width: 105px;
+  border-top: 1px solid hsl(189, 11%, 26%);
+  padding-top: 8px;
 }
 
 noflo-runtime {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsla(187, 45%, 8%, 0.5);
   position: fixed;
   right: 0;
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
   z-index: 3;
-  width: 280px;
+  width: 210px;
   height: 70px;
+  padding: 35px;
 }
-noflo-runtime button {
+noflo-runtime .status {
+  height: 27px;
+  border-top: 1px solid hsl(189, 11%, 26%);
+  padding-top: 8px;
+}
+noflo-runtime .status .state {
+  position: absolute;
+  border-left: 1px solid hsl(189, 11%, 26%);
+  right: 35px;
+  top: 35px;
+  width: 34px;
+  height: 27px;
+  padding-top: 8px;
+  text-align: center;
+}
+noflo-runtime .runcontrol {
+  padding-top: 8px;
+  border-top: 1px solid hsl(189, 11%, 26%);
+  height: 27px;
+}
+noflo-runtime .runcontrol button {
   color: rgb(71, 71, 71);
+  border-left: 1px solid hsl(189, 11%, 26%);
+  position: absolute;
+  right: 35px;
+  top: 70px;
 }
 
 noflo-runtime .online {
@@ -216,3 +262,42 @@ noflo-runtime .offline {
 the-card #preview-iframe {
   display: block;
 }
+
+#zoomrange {
+  display: none;
+}
+
+#zoom button {
+  width: 35px;
+  height: 35px;
+  font-size: 10px;
+  position: fixed;
+  right: 35px;
+  color: white;
+  background-color: hsl(187, 45%, 8%);
+  border: 1px solid hsl(189, 11%, 26%);
+}
+
+#zoomin {
+  right: 35px;
+  bottom: 255px;
+}
+
+#zoomout {
+  position: fixed;
+  bottom: 210px;
+}
+/*
+the-graph-nav#nav {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+}
+the-graph-map#map {
+  display: block;
+  position: fixed;
+  bottom: 0px;
+  right: 35px;
+  width: 210px;
+  height: 140px;
+}*/
