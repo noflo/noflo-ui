@@ -3,6 +3,42 @@
     ul.ports li {
       display: block;
     }
+    ul.ports li label span {
+      float: left;
+      clear: left;
+      font-size: 8pt;
+      padding-top: 8px;
+      width: 100px;
+      height: 27px;
+      overflow: hidden;
+    }
+    ul.ports li label input {
+      width: 113px;
+      height: 19px;
+      border: none;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      padding: 8px;
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    ul.ports li button {
+      padding: 8px;
+      height: 19px;
+      width: 19px;
+    }
+    ul.ports li label button {
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+      display: block;
+      padding: 8px;
+      height: 19px;
+      width: 19px;
+    }
   </style>
   <template>
     <h1>{{ node.label }}</h1>
@@ -10,7 +46,7 @@
     <ul class="ports">
       <template repeat="{{ port in inports }}">
         <li>
-        <label>{{ port.name }}
+        <label><span>{{ port.name }}</span>
           <template if="{{ port.type == 'bang' }}">
             <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="icon-exclamation"></i></button>
           </template>

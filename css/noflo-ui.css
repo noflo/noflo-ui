@@ -88,12 +88,26 @@ the-panel the-card ul li {
   clear: left;
   padding: 0px;
   margin: 0px;
-  margin-bottom: 8px;
+  margin-bottom: 17px;
 }
 the-panel the-card ul.toolbar li {
   display: inline;
   margin: 0px;
   margin-right: 8px;
+}
+the-panel the-card ul.routes {
+  margin-left: -8px;
+  margin-right: -8px;
+}
+the-panel the-card ul.routes li {
+  display: inline;
+  margin: 0px;
+  width: 23px;
+  height: 23px;
+}
+the-panel the-card ul.routes li button {
+  width: 23px;
+  height: 23px;
 }
 
 the-panel the-card ul li h2 {
@@ -106,6 +120,7 @@ the-panel the-card ul li i {
 }
 the-panel the-card ul li p {
   margin: 0px;
+  margin-top: 8px;
   padding: 0px;
   font-size: 8pt;
 }
