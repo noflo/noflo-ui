@@ -57,7 +57,7 @@
             <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
           </template>
           </label>
-          <template if="{{ port.type != 'bang' }}">
+          <template if="{{ port.type != 'bang' && port.value != undefined }}">
             <button data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="icon-trash"></i></button>
           </template>
         </li>
