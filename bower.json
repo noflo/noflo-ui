@@ -21,6 +21,7 @@
     "the-behavior": "*",
     "the-graph": "*",
     "the-panel": "*",
-    "the-card": "*"
+    "the-card": "*",
+    "font-awesome": "~4.0.3"
   }
 }

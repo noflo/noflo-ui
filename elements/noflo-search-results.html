@@ -3,7 +3,7 @@
     <ul class="results">
       <template repeat="{{ result, index in results }}">
         <li data-index="{{ index }}" on-click="{{ clicked }}">
-          <i class="icon-{{ result.icon }}"></i>
+          <i class="fa fa-{{ result.icon }}"></i>
           <h2>{{ result.label }}</h2>
           <p>{{ result.description }}</p>
         </li>

@@ -21,8 +21,8 @@
   <template>
     <h1>{{ edges.length}} edges selected</h1>
     <ul class="toolbar">
-      <li><button on-click="{{ clear }}"><i class="icon-ok"></i></button></li>
-      <li><button on-click="{{ remove }}"><i class="icon-trash"></i></button></li>
+      <li><button on-click="{{ clear }}"><i class="fa fa-check"></i></button></li>
+      <li><button on-click="{{ remove }}"><i class="fa fa-ban"></i></button></li>
     </ul>
     <ul class="routes">
       <template repeat="{{ route in routes }}">

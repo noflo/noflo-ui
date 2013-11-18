@@ -1,14 +1,14 @@
 <polymer-element name="noflo-runtime" attributes="graphs">
   <template>
     <template if="{{ currentGraph }}">
-    <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="icon-{{ icon }}"></i></span></div>
+    <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="fa fa-{{ icon }}"></i></span></div>
     <div class="runcontrol">
       <template if="{{ status.online }}">
         <template if="{{ execution.running }}">
-          {{ execution.label }} <button class="stop" on-click="{{ stop }}"><i class="icon-pause"></i></button>
+          {{ execution.label }} <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
         </template>
         <template if="{{ execution.stopped }}">
-          {{ execution.label }} <button class="start" on-click="{{ start }}"><i class="icon-play"></i></button>
+          {{ execution.label }} <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
         </template>
       </template>
     </div>

@@ -48,7 +48,7 @@
         <li>
         <label><span>{{ port.name }}</span>
           <template if="{{ port.type == 'bang' }}">
-            <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="icon-exclamation"></i></button>
+            <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bullseye"></i></button>
           </template>
           <template if="{{ port.type == 'boolean' }}">
             <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-blur="{{ updateValue }}">
@@ -58,7 +58,7 @@
           </template>
           </label>
           <template if="{{ port.type != 'bang' && port.value != undefined }}">
-            <button data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="icon-trash"></i></button>
+            <button data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
           </template>
         </li>
       </template>
