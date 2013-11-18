@@ -290,6 +290,18 @@ the-card #preview-iframe {
   display: none;
 }
 
+the-graph-nav the-graph-map {
+  position: fixed;
+  bottom: 0px;
+  left: auto;
+  top: auto;
+  right: 35px;
+  width: 210px;
+  height: 175px;
+  border-top: 1px solid hsl(189, 11%, 26%);
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+}
+
 #zoom button {
   width: 35px;
   height: 35px;
@@ -310,20 +322,6 @@ the-card #preview-iframe {
   position: fixed;
   bottom: 210px;
 }
-/*
-the-graph-nav#nav {
-  position: fixed;
-  bottom: 0px;
-  right: 0px;
-}
-the-graph-map#map {
-  display: block;
-  position: fixed;
-  bottom: 0px;
-  right: 35px;
-  width: 210px;
-  height: 140px;
-}*/
 
 ::-webkit-scrollbar {
   width: 5px;
