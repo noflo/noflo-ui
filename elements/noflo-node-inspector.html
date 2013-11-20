@@ -41,7 +41,7 @@
     }
   </style>
   <template>
-    <h1>{{ node.label }}</h1>
+    <h1 id="label" contenteditable>{{ node.label }}</h1>
     <h2>{{ node.component }}</h2>
     <ul class="ports">
       <template repeat="{{ port in inports }}">
@@ -69,6 +69,10 @@
       inports: [],
       enteredView: function () {
         this.updatePorts();
+        this.$.label.addEventListener('keyup', this.updateLabel.bind(this));
+      },
+      updateLabel: function () {
+        this.node.label = this.$.label.innerText;
       },
       updatePorts: function () {
         this.inports = [];
