@@ -19,9 +19,7 @@
           id: 'library',
           icon: 'plus',
           label: 'Library',
-          action: function () {
-            this.search = 'show library';
-          }.bind(this)
+          search: 'show library'
         });
       },
       menu: function (event) {
@@ -36,6 +34,9 @@
         if (this.buttons.length === 0) {
           this.fire('menu', menu);
         }
+        menu.addEventListener('search', function (event) {
+          this.search = event.detail;
+        }.bind(this));
         this.menuCard = document.createElement('the-card');
         this.menuCard.type = 'noflo-menu';
         this.menuCard.appendChild(menu);

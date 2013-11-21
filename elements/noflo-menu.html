@@ -15,8 +15,12 @@
           if (button.id !== sender.getAttribute('id')) {
             return;
           }
+          if (button.search) {
+            this.fire('search', button.search);
+            return;
+          }
           button.action();
-        });
+        }.bind(this));
       }
     });
   </script>
