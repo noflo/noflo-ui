@@ -89,10 +89,16 @@
       SplitId OUT -> APPEND AddGraph
     </script>
     <script type="application/fbp" id="SaveItem">
-      EXPORT=GETID.IN:ITEM
+      EXPORT=GETGRAPHID.IN:ITEM
+      'graphId' -> KEY GetGraphId(objects/GetObjectKey)
+      GetGraphId OUT -> IN Id(core/Merge)
+      GetGraphId OBJECT -> IN Object(core/Merge)
       'id' -> KEY GetId(objects/GetObjectKey)
-      GetId OUT -> KEY Store(localstorage/SetItem)
-      GetId OBJECT -> IN ToJson(strings/Jsonify) OUT -> VALUE Store
+      GetGraphId MISSED -> IN GetId
+      GetId OUT -> IN Id
+      GetId OBJECT -> IN Object
+      Id OUT -> KEY Store(localstorage/SetItem)
+      Object OUT -> IN ToJson(strings/Jsonify) OUT -> VALUE Store
     </script>
     <script type="application/fbp" id="LoadItem">
       EXPORT=LOADSTORED.KEY:KEY
