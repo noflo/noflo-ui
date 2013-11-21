@@ -15,6 +15,7 @@
           if (button.id !== sender.getAttribute('id')) {
             return;
           }
+          this.fire('click', button.id);
           if (button.search) {
             this.fire('search', button.search);
             return;

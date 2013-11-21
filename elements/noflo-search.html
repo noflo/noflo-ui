@@ -37,6 +37,12 @@
         menu.addEventListener('search', function (event) {
           this.search = event.detail;
         }.bind(this));
+        menu.addEventListener('click', function (event) {
+          if (this.menuCard) {
+            this.menuCard.parentNode.removeChild(this.menuCard);
+            this.menuCard = null;
+          }
+        }.bind(this));
         this.menuCard = document.createElement('the-card');
         this.menuCard.type = 'noflo-menu';
         this.menuCard.appendChild(menu);
