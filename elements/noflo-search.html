@@ -2,7 +2,7 @@
 <link rel="import" href="noflo-search-results.html">
 <polymer-element name="noflo-search" attributes="buttons results">
   <template>
-    <input value="{{ search }}" type="search" x-webkit-speech>
+    <input value="{{ search }}" type="search" placeholder="Search" x-webkit-speech>
     <button on-click="{{ menu }}"><i class="fa fa-bars"></i></button>
   </template>
   <script>
@@ -15,15 +15,10 @@
       enteredView: function () {
         this.contextBar = document.getElementById('context');
         this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
-        this.buttons.push({
-          id: 'library',
-          icon: 'plus',
-          label: 'Library',
-          search: 'show library'
-        });
       },
       menu: function (event) {
         event.preventDefault();
+        this.search = '';
         if (this.menuCard) {
           this.menuCard.parentNode.removeChild(this.menuCard);
           this.menuCard = null;

@@ -23,7 +23,7 @@
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
-    <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
+    <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -190,6 +190,7 @@
       # NoFlo component library
       'noflo-library' -> SELECTOR GetLibrary(dom/GetElement) ELEMENT -> ELEMENT Library(polymer/noflo-library)
       Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
+      Search MENU -> BUTTONS Library BUTTON -> BUTTONS Search
 
       # Context searching
       Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
