@@ -46,7 +46,7 @@
         this.menuCard = document.createElement('the-card');
         this.menuCard.type = 'noflo-menu';
         this.menuCard.appendChild(menu);
-        this.menuCard.addTo(this.contextBar.getMain());
+        this.menuCard.addTo(this.contextBar.getMain(), true);
       },
       searchChanged: function () {
         event.preventDefault();
@@ -81,7 +81,7 @@
         this.resultsCard = document.createElement('the-card');
         this.resultsCard.type = 'noflo-search-results';
         this.resultsCard.appendChild(results);
-        this.resultsCard.addTo(this.contextBar.getMain());
+        this.resultsCard.addTo(this.contextBar.getMain(), true);
       }
     });
   </script>
