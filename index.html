@@ -13,7 +13,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge search clear" outports="project graphs currentgraph component nodes edges result"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge buttons search clear" outports="project graphs currentgraph component nodes edges button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -189,10 +189,13 @@
 
       # NoFlo component library
       'noflo-library' -> SELECTOR GetLibrary(dom/GetElement) ELEMENT -> ELEMENT Library(polymer/noflo-library)
-      Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
-      Search MENU -> BUTTONS Library BUTTON -> BUTTONS Search
 
-      # Context searching
+      # UI main menu
+      Search MENU -> BUTTONS Library BUTTON -> BUTTONS Search
+      Search MENU -> BUTTONS Context BUTTON -> BUTTONS Search
+
+      # UI searching
+      Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
       Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
 
       # The DOM elements where the UI will be run

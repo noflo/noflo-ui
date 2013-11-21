@@ -1,0 +1,17 @@
+<polymer-element name="noflo-graph-inspector" attributes="graph">
+  <template>
+    <h1 on-keyup="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
+    <template if="{{ graph.properties.environment.runtime == 'html' }}">
+    <textarea>
+      {{ graph.properties.environment.content }}
+    </textarea>
+    </template>
+  </template>
+  <script>
+    Polymer('noflo-graph-inspector', {
+      updateName: function (event, detail, sender) {
+        this.graph.properties.name = sender.innerText;
+      }
+    });
+  </script>
+</polymer-element>
