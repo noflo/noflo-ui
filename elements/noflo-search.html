@@ -61,9 +61,11 @@
         if (this.resultsCard || this.search === '') {
           return;
         }
-        if (this.results.length === 0 && this.resultsCard) {
-          this.resultsCard.parentNode.removeChild(this.resultsCard);
-          this.resultsCard = null;
+        if (this.results.length === 0) {
+          if (this.resultsCard) {
+            this.resultsCard.parentNode.removeChild(this.resultsCard);
+            this.resultsCard = null;
+          }
           return;
         }
         var results = document.createElement('noflo-search-results');
