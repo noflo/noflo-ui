@@ -63,6 +63,13 @@ class ConnectRuntime extends noflo.Component
       to:
         node: data.tgt.process
         port: data.tgt.port
+  convertBang: (bang) ->
+    iipData =
+      from:
+        data: true
+      to:
+        node: bang.process
+        port: bang.port
 
   subscribeEditor: (editor, runtime) ->
     editor.addEventListener 'addnode', (node) =>
@@ -87,6 +94,10 @@ class ConnectRuntime extends noflo.Component
     editor.addEventListener 'iip', (iip) =>
       runtime.sendGraph 'removeinitial', @convertInitial iip.detail
       runtime.sendGraph 'addinitial', @convertInitial iip.detail
+    , false
+    editor.addEventListener 'bang', (bang) =>
+      runtime.sendGraph 'removeinitial', @convertBang bang.detail
+      runtime.sendGraph 'addinitial', @convertBang bang.detail
     , false
 
   connect: (editor, runtime) ->

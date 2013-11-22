@@ -108,8 +108,8 @@
       sendBang: function (event, detail, sender) {
         event.preventDefault();
         var name = sender.getAttribute('name');
-
-        console.log('BANG', this.node.getAttribute('name'), name);
+        var port = this.node.getInportByName(name);
+        port.sendBang();
       }
     });
   </script>
