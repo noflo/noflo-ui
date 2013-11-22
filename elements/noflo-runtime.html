@@ -7,7 +7,7 @@
         <template if="{{ execution.running }}">
           {{ execution.label }} <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
         </template>
-        <template if="{{ execution.stopped }}">
+        <template if="{{ execution.running == false }}">
           {{ execution.label }} <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
         </template>
       </template>
@@ -27,8 +27,7 @@
       },
       execution: {
         label: 'stopped',
-        running: false,
-        stopped: true
+        running: false
       },
       card: null,
       graphsChanged: function () {
@@ -79,10 +78,8 @@
         this.runtime.on('execution', function (status) {
           if (status.running) {
             this.execution.running = true;
-            this.execution.stopped = false;
           } else {
             this.execution.running = false;
-            this.execution.stopped = true;
           }
           this.execution.label = status.label;
         }.bind(this));
