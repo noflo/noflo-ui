@@ -4,6 +4,7 @@ class ConnectRuntime extends noflo.Component
   constructor: ->
     @editor = null
     @runtime = null
+    @connected = false
     @inPorts =
       editor: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
@@ -73,29 +74,37 @@ class ConnectRuntime extends noflo.Component
 
   subscribeEditor: (editor, runtime) ->
     editor.addEventListener 'addnode', (node) =>
+      return unless @connected
       runtime.sendGraph 'addnode', @convertNode node.detail
     , false
     editor.addEventListener 'removenode', (node) =>
+      return unless @connected
       runtime.sendGraph 'removenode', @convertNode node.detail
     , false
     editor.addEventListener 'addedge', (edge) =>
+      return unless @connected
       runtime.sendGraph 'addedge', @convertEdge edge.detail
     , false
     editor.addEventListener 'removeedge', (edge) =>
+      return unless @connected
       runtime.sendGraph 'removeedge', @convertEdge edge.detail
     , false
     editor.addEventListener 'addinitial', (iip) =>
+      return unless @connected
       runtime.sendGraph 'addinitial', @convertInitial iip.detail
     , false
     editor.addEventListener 'removeinitial', (iip) =>
+      return unless @connected
       runtime.sendGraph 'removeinitial', @convertInitial iip.detail
     , false
     # IIP value changes need to be propagated as add+remove
     editor.addEventListener 'iip', (iip) =>
+      return unless @connected
       runtime.sendGraph 'removeinitial', @convertInitial iip.detail
       runtime.sendGraph 'addinitial', @convertInitial iip.detail
     , false
     editor.addEventListener 'bang', (bang) =>
+      return unless @connected
       runtime.sendGraph 'removeinitial', @convertBang bang.detail
       runtime.sendGraph 'addinitial', @convertBang bang.detail
     , false
@@ -103,9 +112,12 @@ class ConnectRuntime extends noflo.Component
   connect: (editor, runtime) ->
     return unless editor and runtime
     runtime.on 'connected', =>
+      @connected = true
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
       @sendGraph runtime, editor
+    runtime.on 'disconnected', =>
+      @connected = false
     @subscribeEditor editor, runtime
 
     runtime.on 'component', (message) ->
