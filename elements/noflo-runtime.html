@@ -104,9 +104,13 @@
           return;
         }
         this.showCard();
-        this.runtime.once('connected', function () {
-          this.runtime.start();
-        }.bind(this));
+        if (this.runtime.getType() === 'iframe') {
+          this.runtime.once('connected', function () {
+            this.runtime.start();
+          }.bind(this));
+          return;
+        }
+        this.runtime.start();
       },
       stop: function (event) {
         if (event) {
