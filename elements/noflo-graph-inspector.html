@@ -1,10 +1,29 @@
 <polymer-element name="noflo-graph-inspector" attributes="graph">
+  <style>
+    noflo-graph-inspector label span {
+      display: block;
+      font-size: 8pt;
+      padding-top: 8px;
+    }
+    noflo-graph-inspector textarea {
+      width: 100%;
+      height: 210px;
+      border: none;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      padding: 8px;
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+    }
+  </style>
   <template>
     <h1 on-keyup="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
     <template if="{{ graph.properties.environment.runtime == 'html' }}">
-    <textarea>
-      {{ graph.properties.environment.content }}
-    </textarea>
+    <label>
+      <span>Preview contents</span>
+      <textarea>
+        {{ graph.properties.environment.content }}
+      </textarea>
+    </label>
     </template>
   </template>
   <script>
