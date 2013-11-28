@@ -17,9 +17,9 @@
     "spec"
   ],
   "dependencies": {
-    "polymer": "0.0.20131025",
+    "polymer": "0.0.20131107",
     "the-behavior": "*",
-    "the-graph": "*",
+    "the-graph": "git://github.com/the-grid/the-graph.git#master",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.0.3"
