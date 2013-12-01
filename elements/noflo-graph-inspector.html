@@ -20,7 +20,7 @@
     <template if="{{ graph.properties.environment.runtime == 'html' }}">
     <label>
       <span>Preview contents</span>
-      <textarea>
+      <textarea on-keyup="{{ updateContent }}">
         {{ graph.properties.environment.content }}
       </textarea>
     </label>
@@ -30,6 +30,9 @@
     Polymer('noflo-graph-inspector', {
       updateName: function (event, detail, sender) {
         this.graph.properties.name = sender.innerText;
+      },
+      updateContent: function (event, detail, sender) {
+        this.graph.properties.environment.content = sender.value;
       }
     });
   </script>
