@@ -209,17 +209,19 @@ noflo-main ul {
   list-style: none;
 }
 noflo-main ul li {
-  width: 175px;
-  height: 70px;
+  width: 210px;
+  height: 105px;
   overflow: hidden;
-  padding: 1em;
   float: left;
   text-align: center;
   background-color: hsl(189, 47%, 6%);
   border-radius: 3px;
-  margin-right: 17px;
-  margin-bottom: 17px;
+  margin-right: 35px;
+  margin-bottom: 35px;
   position: relative;
+}
+noflo-main ul li:nth-of-type(3n) {
+  margin-right: 0px;
 }
 noflo-main ul li.add {
   background-color: hsl(187, 45%, 10%);
