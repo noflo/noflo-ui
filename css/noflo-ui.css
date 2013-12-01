@@ -430,7 +430,7 @@ noflo-new-project {
 
 noflo-breadcrumb {
   position: fixed;
-  left: 315px;
+  left: 316px;
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
@@ -438,6 +438,7 @@ noflo-breadcrumb {
   width: 210px;
   height: 70px;
   padding: 35px;
+  background-color: hsla(189, 47%, 6%, .9);
 }
 noflo-breadcrumb h1 {
   height: 27px;
@@ -461,6 +462,7 @@ noflo-runtime {
   width: 210px;
   height: 70px;
   padding: 35px;
+  background-color: hsla(189, 47%, 6%, .9);
 }
 noflo-runtime .status {
   height: 27px;
