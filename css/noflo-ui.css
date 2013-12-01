@@ -38,6 +38,23 @@ the-panel#account {
   border-right: 1px solid hsl(189, 11%, 26%);
   z-index: 4;
 }
+the-panel#account:before {
+  font-family: FontAwesome;
+  content: '\f007';
+  color: hsl(189, 11%, 26%);
+  position: absolute;
+  text-align: center;
+  right: 0px;
+  width: 35px;
+  top: 50%;
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+the-panel#account:not([open]):before {
+  opacity: 1;
+}
 the-panel#account header,
 the-panel#account main {
   display: block;
@@ -94,6 +111,23 @@ the-panel#context {
 the-panel#fixed {
   border-left: 1px solid hsl(189, 11%, 26%);
   z-index: 4;
+}
+the-panel#fixed:before {
+  font-family: FontAwesome;
+  content: '\f0ad';
+  color: hsl(189, 11%, 26%);
+  position: absolute;
+  text-align: center;
+  left: 0px;
+  width: 35px;
+  top: 50%;
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+the-panel#fixed:not([open]):before {
+  opacity: 1;
 }
 
 the-panel the-card {
