@@ -1,6 +1,6 @@
 <polymer-element name="noflo-node-menu" attributes="nodes">
   <template>
-    <h1>{{ nodes.length}} nodes selected</h1>
+    <h1>{{ nodes.length}} <template if="{{ nodes.length > 1 }}">nodes</template><template if="{{ nodes.length == 1 }}">node</template> selected</h1>
     <ul class="toolbar">
       <li><button on-click="{{ clear }}"><i class="fa fa-check"></i></button></li>
       <li><button on-click="{{ remove }}"><i class="fa fa-trash-o"></i></button></li>
