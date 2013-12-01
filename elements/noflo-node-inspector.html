@@ -51,7 +51,7 @@
             <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
           </template>
           <template if="{{ port.type == 'boolean' }}">
-            <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-blur="{{ updateValue }}">
+            <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-change="{{ updateValue }}">
           </template>
           <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
             <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
@@ -91,8 +91,12 @@
         if (!sender.value) {
           return;
         }
+        var value = sender.value;
+        if (sender.type==="checkbox") {
+          value = sender.checked;
+        }
         var port = this.node.getInportByName(sender.getAttribute('name'));
-        port.setValue(sender.value);
+        port.setValue(value);
       },
       removeValue: function (event, detail, sender) {
         event.preventDefault();
