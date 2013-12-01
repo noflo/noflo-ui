@@ -52,7 +52,7 @@
       </header>
       <main>
         <ul>
-          <li><a href="#"><i class="fa fa-cog"></i>Home</a></li>
+          <li><a href="#"><i class="fa fa-home"></i>Home</a></li>
           <li><noflo-account clientid="U5GQAhyPsEvhSjUHK2BtcR0txaHD2THroB4H"></noflo-account></li>
         </ul>
       </main>
@@ -65,9 +65,10 @@
     </the-panel>
     <script type="application/fbp" id="LoadList">
       EXPORT=LISTKEY.STRING:KEY
-      EXPORT=LISTKEY.IN:LOAD
+      EXPORT=MERGESTART.IN:LOAD
       EXPORT=GETLIST.ITEMS:ITEMS
       ListKey(strings/SendString) OUT -> KEY GetList(localstorage/ListGet)
+      MergeStart(core/Merge) OUT -> IN ListKey
     </script>
     <script type="application/fbp" id="CreateItem">
       EXPORT=ADD.LIST:KEY
@@ -252,7 +253,7 @@
       ProjectKey OUT -> KEY SaveProject(local/CreateItem)
       LoadMain NEWPROJECT -> PROJECT PrepareProject(local/PrepareProject)
       PrepareProject PROJECT -> OBJECT SaveProject(local/CreateItem)
-      SaveProject STORED -> IN DropProject(core/Drop)
+      SaveProject STORED -> LOAD LoadProjects
 
       # Redirect to graph
       'graph' -> STRING PrepareGraphUri(strings/SendString)

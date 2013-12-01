@@ -41,7 +41,7 @@ the-panel#account {
 }
 the-panel#account:before {
   font-family: FontAwesome;
-  content: '\f007';
+  content: '\f03a';
   color: hsl(189, 11%, 26%);
   position: absolute;
   text-align: center;
