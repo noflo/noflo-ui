@@ -29,7 +29,7 @@
   <script>
     Polymer('noflo-graph-inspector', {
       updateName: function (event, detail, sender) {
-        this.graph.properties.name = sender.innerText;
+        this.graph.properties.name = sender.textContent;
       }
     });
   </script>
