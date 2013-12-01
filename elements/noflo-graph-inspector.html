@@ -16,11 +16,11 @@
     }
   </style>
   <template>
-    <h1 on-keyup="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
+    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
     <template if="{{ graph.properties.environment.runtime == 'html' }}">
     <label>
       <span>Preview contents</span>
-      <textarea on-keyup="{{ updateContent }}">
+      <textarea on-blur="{{ updateContent }}">
         {{ graph.properties.environment.content }}
       </textarea>
     </label>
