@@ -36,6 +36,7 @@ the-panel {
 }
 the-panel#account {
   border-right: 1px solid hsl(189, 11%, 26%);
+  top: 0px;
   z-index: 4;
 }
 the-panel#account:before {

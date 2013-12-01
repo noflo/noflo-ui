@@ -30,6 +30,7 @@
         running: false
       },
       card: null,
+      wasConnected: false,
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
           this.currentGraph = null;
@@ -70,12 +71,17 @@
           this.status.online = status.online;
           if (status.online) {
             this.status.state = 'online';
+            this.wasConnected = true;
           } else {
             this.status.state = 'offline';
             this.execution = {
               label: 'stopped',
               running: false
             };
+            if (this.wasConnected) {
+              this.notify('Error', 'Connection to NoFlo runtime was lost');
+              this.wasConnected = false;
+            }
             this.hideCard();
           }
           this.status.label = status.label;
@@ -87,6 +93,11 @@
             this.execution.running = false;
           }
           this.execution.label = status.label;
+        }.bind(this));
+        this.runtime.on('network', function (message) {
+          if (message.command === 'error') {
+            this.notify('Error', message.payload.message);
+          }
         }.bind(this));
       },
       determineRuntime: function () {
@@ -104,6 +115,7 @@
       },
       start: function (event) {
         event.preventDefault();
+        this.requestNotificationPermission();
         if (this.card) {
           this.runtime.start();
           return;
@@ -150,6 +162,41 @@
         }
         this.card.parentNode.removeChild(this.card);
         this.card = null;
+      },
+      canNotify: function () {
+        if (!window.webkitNotifications) {
+          return false;
+        }
+        return true;
+      },
+      allowedToNotify: function () {
+        if (!this.canNotify()) {
+          return false;
+        }
+        if (window.webkitNotifications.checkPermission() !== 0) {
+          return false;
+        }
+        return true;
+      },
+      requestNotificationPermission: function () {
+        if (!this.canNotify()) {
+          return;
+        }
+        if (this.allowedToNotify()) {
+          return;
+        }
+        window.webkitNotifications.requestPermission();
+      },
+      notify: function (title, message) {
+        if (!this.allowedToNotify()) {
+          if (!console || !console.log) {
+            return;
+          }
+          console.log(title + ': ' + message);
+          return;
+        }
+        var notification = window.webkitNotifications.createNotification('noflo.png', title, message);
+        notification.show();
       }
     });
   </script>
