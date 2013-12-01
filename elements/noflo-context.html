@@ -55,6 +55,8 @@
       graphsModified: function () {
         this.fire('graphs', this.graphs);
         this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
+        this.search = '';
+        this.searchChanged();
       },
       nodesModified: function () {
         this.fire('nodes', this.nodes);

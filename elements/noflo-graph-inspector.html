@@ -6,8 +6,16 @@
       padding-top: 8px;
     }
     noflo-graph-inspector textarea {
-      width: 100%;
       height: 210px;
+      border: none;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      padding: 8px;
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+    }
+    noflo-graph-inspector input {
+      width: 100%;
+      height: 19px;
       border: none;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
       padding: 8px;
@@ -19,10 +27,20 @@
     <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
     <template if="{{ graph.properties.environment.runtime == 'html' }}">
     <label>
+      <span>Preview address</span>
+      <input type="text" value="{{ graph.properties.environment.src }}">
+    </label>
+    <label>
       <span>Preview contents</span>
       <textarea on-blur="{{ updateContent }}">
         {{ graph.properties.environment.content }}
       </textarea>
+    </label>
+    </template>
+    <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
+    <label>
+      <span>Runtime address</span>
+      <input type="text" value="{{ graph.properties.environment.wsUrl }}">
     </label>
     </template>
   </template>
