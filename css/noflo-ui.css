@@ -25,6 +25,10 @@ body {
   padding: 0;
 }
 
+body.main the-panel,
+body.main noflo-search {
+  display: none;
+}
 the-panel {
   background-color: hsl(187, 45%, 8%);
   z-index: 2;
@@ -178,6 +182,12 @@ the-panel the-card ul li p {
   font-size: 8pt;
 }
 
+noflo-main {
+  background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
+  background-size: 35px 35px;
+  background-position: calc(50% - 17px) 0px;
+  display: block;
+}
 noflo-main section {
   clear: left;
   display: block;
@@ -185,22 +195,82 @@ noflo-main section {
   margin-left: auto;
   margin-right: auto;
 }
+noflo-main section > h2 {
+  font-size: 17px;
+  line-height: 35px;
+  margin-top: 35px;
+  height: 35px;
+  color: white;
+  text-transform: none;
+}
+noflo-main section > h2 small {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
 noflo-main ul {
   padding: 0px;
   margin: 0px;
+  margin-bottom: 35px;
   list-style: none;
 }
 noflo-main ul li {
-  padding: 1em;
+  width: 210px;
+  height: 105px;
+  overflow: hidden;
   float: left;
   text-align: center;
-  background-color: rgb(71, 71, 71);
-  border-radius: 6px;
-  margin-right: 1em;
-  margin-bottom: 1em;
+  background-color: hsl(189, 47%, 6%);
+  border-radius: 3px;
+  margin-right: 35px;
+  margin-bottom: 35px;
+  position: relative;
+}
+noflo-main ul li:nth-of-type(3n) {
+  margin-right: 0px;
+}
+noflo-main ul li.add {
+  background-color: hsl(187, 45%, 10%);
 }
 noflo-main ul li the-graph-thumb {
   display: block;
+  position: absolute;
+  left: 100px;
+  top: -20px;
+}
+noflo-main ul li button {
+  display: block;
+  position: absolute;
+  right: 17px;
+  top: 35px;
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 35px;
+  padding-left: 13px;
+  padding-right: 13px;
+}
+noflo-main ul li h2 {
+  position: absolute;
+  top: 45px;
+  left: 17px;
+  width: 75px;
+  text-transform: none;
+  font-size: 10px;
+  text-align: left;
+}
+noflo-main ul li p {
+  position: absolute;
+  top: 53px;
+  left: 17px;
+  width: 75px;
+  text-transform: uppercase;
+  font-size: 8px;
+  text-align: left;
+  color: hsl(189, 11%, 26%);
 }
 noflo-main ul li a {
   color: black;
