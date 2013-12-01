@@ -4,6 +4,9 @@
       search: '',
       editor: null,
       buttons: function () {
+        if (!this.editor) {
+          return;
+        }
         this.fire('button', {
           id: 'library',
           icon: 'plus',
@@ -27,6 +30,9 @@
       },
       searchChanged: function () {
         if (!this.search) {
+          return;
+        }
+        if (!this.editor) {
           return;
         }
         Object.keys(this.editor.library).forEach(function (component) {

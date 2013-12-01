@@ -30,9 +30,62 @@ the-panel {
   z-index: 2;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
+the-panel#account {
+  border-right: 1px solid hsl(189, 11%, 26%);
+  z-index: 4;
+}
+the-panel#account header,
+the-panel#account main {
+  display: block;
+  margin-left: 35px;
+  margin-right: 35px;
+}
+the-panel#account header h1 {
+  text-align: center;
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  height: 35px;
+  line-height: 35px;
+}
+the-panel#account main ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+the-panel#account main ul li {
+  line-height: 35px;
+  min-height: 35px;
+}
+the-panel#account main ul li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+}
+the-panel#account main ul li a i {
+  float: right;
+  line-height: 35px;
+  color: hsl(189, 11%, 26%);
+  margin-right: 4px;
+}
+the-panel#account main ul li noflo-account img {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 35px;
+  border: 1px solid #01d8e5;
+  float: right;
+}
+the-panel#account main ul li noflo-account h1,
+the-panel#account main ul li noflo-account .toolbar button {
+  display: none;
+}
+the-panel#account main ul li noflo-account .toolbar a {
+  font-size: 16px;
+  line-height: 35px;
+}
 the-panel#context {
   border-right: 1px solid hsl(189, 11%, 26%);
   padding-top: 35px;
+  margin-left: 35px;
 }
 the-panel#fixed {
   border-left: 1px solid hsl(189, 11%, 26%);
@@ -127,6 +180,10 @@ the-panel the-card ul li p {
 
 noflo-main section {
   clear: left;
+  display: block;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 noflo-main ul {
   padding: 0px;
@@ -149,13 +206,73 @@ noflo-main ul li a {
   color: black;
   text-decoration: none;
 }
+noflo-main noflo-account {
+  text-align: center;
+  display: block;
+  background-color: hsl(189, 47%, 6%);
+  margin-top: -35px;
+  padding-top: 35px;
+  padding-bottom: 35px;
+}
+noflo-main noflo-account .avatar {
+  border-radius: 50px;
+  border: 2px solid #01d8e5;
+  display: block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 70px;
+  margin-bottom: 35px;
+  overflow: hidden;
+}
+noflo-main noflo-account .avatar:before {
+  content: '';
+  border: 3px solid hsl(189, 47%, 6%);
+  border-radius: 50px;
+  width: 76px;
+  height: 76px;
+  left: -1px;
+  top: -1px;
+  position: absolute;
+  z-index: 1;
+}
+noflo-main noflo-account .toolbar {
+  margin-top: 35px;
+  padding: 1px;
+  border: 1px solid hsl(189, 11%, 13%);
+  border-radius: 3px;
+  background-color: hsl(187, 45%, 8%);
+  display: inline-block;
+}
+noflo-main noflo-account .toolbar button {
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 35px;
+  padding-left: 35px;
+  padding-right: 35px;
+  margin: 0px;
+}
+noflo-main noflo-account .toolbar a {
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  height: 35px;
+  padding-left: 35px;
+  padding-right: 35px;
+}
 
 noflo-search {
   background-color: hsl(187, 45%, 8%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
   border-right: 1px solid hsl(189, 11%, 26%);
   position: fixed;
-  left: 0;
+  left: 35px;
   top: 0;
   color: white;
   z-index: 3;
@@ -202,7 +319,7 @@ noflo-new-project {
 
 noflo-breadcrumb {
   position: fixed;
-  left: 280px;
+  left: 315px;
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;

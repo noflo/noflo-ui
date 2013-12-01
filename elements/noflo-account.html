@@ -1,0 +1,107 @@
+<polymer-element name="noflo-account" attributes="clientid site gatekeeper">
+  <template>
+    <template if="{{ user }}">
+      <div class="avatar"><img src="{{ user.avatar }}"></div>
+      <h1>{{ user.name }}</h1>
+      <div class="toolbar">
+        <a href="{{ site }}/account">Profile</a>
+        <button on-click="{{ logout }}">Logout</button>
+      </div>
+    </template>
+    <template if="{{ !user }}">
+      <div class="toolbar">
+        <a href="{{ site }}/login/authorize?client_id={{ clientid }}&response_type=code&redirect_uri={{ redirect }}">Login</a>
+      </div>
+    </template>
+  </template>
+  <script>
+    Polymer('noflo-account', {
+      clientid: '',
+      site: 'https://the-grid-account.herokuapp.com',
+      gatekeeper: 'https://noflo-gate.herokuapp.com/authenticate/',
+      redirect: '',
+      user: null,
+      gridToken: '',
+      storage: {
+        grid: 'grid-token',
+        user: 'grid-user'
+      },
+      enteredView: function () {
+        this.redirect = window.location.href;
+        this.checkLogin();
+      },
+      checkLogin: function () {
+        var token = localStorage.getItem(this.storage.grid);
+        if (token) {
+          this.gridToken = token;
+          return;
+        }
+        var code = window.location.href.match(/\?code=(.*)/);
+        if (code && code[1]) {
+          var req = new XMLHttpRequest();
+          req.onreadystatechange = function () {
+            if (req.readyState !== 4) {
+              return;
+            }
+            if (req.status === 200) {
+              var data = JSON.parse(req.responseText);
+              if (data.token) {
+                // Save the access token
+                localStorage.setItem(this.storage.grid, data.token);
+                // Clear old user data
+                localStorage.removeItem(this.storage.user);
+
+                // Clean up URL
+                var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
+                window.location.href = window.location.href.replace(regex, '');
+              }
+            } else {
+              this.clearCache();
+            }
+          }.bind(this);
+          req.open('GET', this.gatekeeper + code[1], true);
+          req.send(null);
+        }
+      },
+      getUser: function (token, refresh) {
+        if (!refresh) {
+          var user = localStorage.getItem(this.storage.user);
+          if (user) {
+            try {
+              this.user = JSON.parse(user);
+              return;
+            } catch (e) {
+              localStorage.removeItem(this.storage.user);
+            }
+          }
+        }
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status === 200) {
+            localStorage.setItem(this.storage.user, req.responseText);
+            this.user = JSON.parse(req.responseText);
+          } else {
+            this.clearCache();
+          }
+        }.bind(this);
+        req.open('GET', this.site + '/api/user');
+        req.setRequestHeader('Authorization', 'Bearer ' + token);
+        req.send(null);
+      },
+      logout: function () {
+        this.user = null;
+        this.clearCache();
+      },
+      clearCache: function () {
+        localStorage.removeItem(this.storage.grid);
+        localStorage.removeItem(this.storage.user);
+      },
+      gridTokenChanged: function () {
+        this.getUser(this.gridToken);
+      }
+    });
+  </script>
+</polymer-element>
