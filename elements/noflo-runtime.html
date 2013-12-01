@@ -40,6 +40,7 @@
         this.currentGraph = this.graphs[0];
       },
       currentGraphChanged: function () {
+        this.wasConnected = false;
         if (this.runtime) {
           this.stop();
           this.execution.running = false;
