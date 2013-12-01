@@ -154,6 +154,9 @@
         this.clear = false;
       },
       buttons: function () {
+        if (this.graphs.length === 0) {
+          return;
+        }
         this.fire('button', {
           id: 'graph-inspector',
           icon: 'gear',

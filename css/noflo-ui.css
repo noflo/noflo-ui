@@ -30,9 +30,14 @@ the-panel {
   z-index: 2;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
+the-panel#account {
+  border-right: 1px solid hsl(189, 11%, 26%);
+  z-index: 4;
+}
 the-panel#context {
   border-right: 1px solid hsl(189, 11%, 26%);
   padding-top: 35px;
+  margin-left: 35px;
 }
 the-panel#fixed {
   border-left: 1px solid hsl(189, 11%, 26%);
@@ -219,7 +224,7 @@ noflo-search {
   border-bottom: 1px solid hsl(189, 11%, 26%);
   border-right: 1px solid hsl(189, 11%, 26%);
   position: fixed;
-  left: 0;
+  left: 35px;
   top: 0;
   color: white;
   z-index: 3;
@@ -266,7 +271,7 @@ noflo-new-project {
 
 noflo-breadcrumb {
   position: fixed;
-  left: 280px;
+  left: 315px;
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
