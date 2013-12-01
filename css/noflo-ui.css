@@ -185,22 +185,69 @@ noflo-main section {
   margin-left: auto;
   margin-right: auto;
 }
+noflo-main section > h2 {
+  font-size: 17px;
+  line-height: 35px;
+  height: 35px;
+  color: white;
+  text-transform: none;
+}
+noflo-main section > h2 small {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
 noflo-main ul {
   padding: 0px;
   margin: 0px;
   list-style: none;
 }
 noflo-main ul li {
+  width: 175px;
+  height: 70px;
+  overflow: hidden;
   padding: 1em;
   float: left;
   text-align: center;
-  background-color: rgb(71, 71, 71);
-  border-radius: 6px;
+  background-color: hsl(189, 47%, 6%);
+  border-radius: 3px;
   margin-right: 1em;
   margin-bottom: 1em;
+  position: relative;
+}
+noflo-main ul li.add {
+  background-color: hsl(187, 45%, 12%);
 }
 noflo-main ul li the-graph-thumb {
   display: block;
+  position: absolute;
+  left: 100px;
+  top: -20px;
+}
+noflo-main ul li button {
+  display: block;
+  position: absolute;
+  right: 17px;
+  top: 35px;
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 35px;
+  padding-left: 13px;
+  padding-right: 13px;
+}
+noflo-main ul li h2 {
+  position: absolute;
+  top: 35px;
+  left: 17px;
+  width: 75px;
+  text-transform: none;
+  font-size: 10px;
+  text-align: left;
+  line-height: 35px;
 }
 noflo-main ul li a {
   color: black;
