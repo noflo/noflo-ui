@@ -182,6 +182,12 @@ the-panel the-card ul li p {
   font-size: 8pt;
 }
 
+noflo-main {
+  background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
+  background-size: 35px 35px;
+  background-position: 0px 35px;
+  display: block;
+}
 noflo-main section {
   clear: left;
   display: block;
