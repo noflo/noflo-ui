@@ -127,6 +127,10 @@ the-panel the-card ul li p {
 
 noflo-main section {
   clear: left;
+  display: block;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 noflo-main ul {
   padding: 0px;
@@ -148,6 +152,66 @@ noflo-main ul li the-graph-thumb {
 noflo-main ul li a {
   color: black;
   text-decoration: none;
+}
+noflo-main noflo-account {
+  text-align: center;
+  display: block;
+  background-color: hsl(189, 47%, 6%);
+  margin-top: -35px;
+  padding-top: 35px;
+  padding-bottom: 35px;
+}
+noflo-main noflo-account .avatar {
+  border-radius: 50px;
+  border: 2px solid #01d8e5;
+  display: block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 70px;
+  margin-bottom: 35px;
+  overflow: hidden;
+}
+noflo-main noflo-account .avatar:before {
+  content: '';
+  border: 3px solid hsl(189, 47%, 6%);
+  border-radius: 50px;
+  width: 76px;
+  height: 76px;
+  left: -1px;
+  top: -1px;
+  position: absolute;
+  z-index: 1;
+}
+noflo-main noflo-account .toolbar {
+  margin-top: 35px;
+  padding: 1px;
+  border: 1px solid hsl(189, 11%, 13%);
+  border-radius: 3px;
+  background-color: hsl(187, 45%, 8%);
+  display: inline-block;
+}
+noflo-main noflo-account .toolbar button {
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 35px;
+  padding-left: 35px;
+  padding-right: 35px;
+  margin: 0px;
+}
+noflo-main noflo-account .toolbar a {
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  height: 35px;
+  padding-left: 35px;
+  padding-right: 35px;
 }
 
 noflo-search {

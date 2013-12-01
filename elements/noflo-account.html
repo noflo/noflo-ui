@@ -1,11 +1,17 @@
 <polymer-element name="noflo-account" attributes="clientid site gatekeeper">
   <template>
-  <template if="{{ user }}">
-      <img src="{{ user.avatar }}">
-      {{ user.name }}
+    <template if="{{ user }}">
+      <div class="avatar"><img src="{{ user.avatar }}"></div>
+      <h1>{{ user.name }}</h1>
+      <div class="toolbar">
+        <a href="{{ site }}/account">Edit profile</a>
+        <button on-click="{{ logout }}">Logout</button>
+      </div>
     </template>
     <template if="{{ !user }}">
-    <a href="{{ site }}/login/authorize?client_id={{ clientid }}&response_type=code&redirect_uri={{ redirect }}">Login</a>
+      <div class="toolbar">
+        <a href="{{ site }}/login/authorize?client_id={{ clientid }}&response_type=code&redirect_uri={{ redirect }}">Login</a>
+      </div>
     </template>
   </template>
   <script>
@@ -50,8 +56,7 @@
                 window.location.href = window.location.href.replace(regex, '');
               }
             } else {
-              // Authentication failed, clear token
-              localStorage.removeItem(this.storage.grid);
+              this.clearCache();
             }
           }.bind(this);
           req.open('GET', this.gatekeeper + code[1], true);
@@ -78,11 +83,21 @@
           if (req.status === 200) {
             localStorage.setItem(this.storage.user, req.responseText);
             this.user = JSON.parse(req.responseText);
+          } else {
+            this.clearCache();
           }
         }.bind(this);
         req.open('GET', this.site + '/api/user');
         req.setRequestHeader('Authorization', 'Bearer ' + token);
         req.send(null);
+      },
+      logout: function () {
+        this.user = null;
+        this.clearCache();
+      },
+      clearCache: function () {
+        localStorage.removeItem(this.storage.grid);
+        localStorage.removeItem(this.storage.user);
       },
       gridTokenChanged: function () {
         this.getUser(this.gridToken);
