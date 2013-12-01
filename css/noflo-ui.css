@@ -188,6 +188,7 @@ noflo-main section {
 noflo-main section > h2 {
   font-size: 17px;
   line-height: 35px;
+  margin-top: 35px;
   height: 35px;
   color: white;
   text-transform: none;
@@ -200,6 +201,7 @@ noflo-main section > h2 small {
 noflo-main ul {
   padding: 0px;
   margin: 0px;
+  margin-bottom: 35px;
   list-style: none;
 }
 noflo-main ul li {
@@ -211,12 +213,12 @@ noflo-main ul li {
   text-align: center;
   background-color: hsl(189, 47%, 6%);
   border-radius: 3px;
-  margin-right: 1em;
-  margin-bottom: 1em;
+  margin-right: 17px;
+  margin-bottom: 17px;
   position: relative;
 }
 noflo-main ul li.add {
-  background-color: hsl(187, 45%, 12%);
+  background-color: hsl(187, 45%, 10%);
 }
 noflo-main ul li the-graph-thumb {
   display: block;
@@ -241,13 +243,22 @@ noflo-main ul li button {
 }
 noflo-main ul li h2 {
   position: absolute;
-  top: 35px;
+  top: 45px;
   left: 17px;
   width: 75px;
   text-transform: none;
   font-size: 10px;
   text-align: left;
-  line-height: 35px;
+}
+noflo-main ul li p {
+  position: absolute;
+  top: 53px;
+  left: 17px;
+  width: 75px;
+  text-transform: uppercase;
+  font-size: 8px;
+  text-align: left;
+  color: hsl(189, 11%, 26%);
 }
 noflo-main ul li a {
   color: black;

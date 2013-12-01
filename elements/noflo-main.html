@@ -14,6 +14,7 @@
         <template repeat="{{ project in projects }}">
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">
             <h2>{{ project.name }}</h2>
+            <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
           </li>
         </template>
       </ul>
@@ -37,7 +38,9 @@
       <h2>Examples <small>{{ examples.length }} projects</small></h2>
       <ul>
         <template repeat="{{ examples }}">
-        <li><a href="#example/{{ id }}">{{ name }}</a></li>
+        <li on-click="{{ openExample }}" data-id="{{ id }}">
+          <h2>{{ name }}</h2>
+        </li>
         </template>
       </ul>
     </section>
@@ -63,6 +66,10 @@
           return;
         }
         window.location.hash = '#project/' + project.id + '/' + project.main;
+      },
+      openExample: function (event, details, sender) {
+        event.preventDefault();
+        window.location.hash = '#example/' + sender.getAttribute('data-id');
       },
       newSketch: function (event) {
         event.preventDefault();
