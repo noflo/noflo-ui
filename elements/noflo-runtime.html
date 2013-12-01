@@ -76,6 +76,7 @@
               label: 'stopped',
               running: false
             };
+            this.hideCard();
           }
           this.status.label = status.label;
         }.bind(this));
@@ -138,6 +139,17 @@
         // Move the preview element of the runtime into the card
         this.card.appendChild(this.runtime.getElement());
         this.card.addTo(contextPanel.getMain());
+      },
+      hideCard: function () {
+        if (!this.card) {
+          return;
+        }
+        var el = this.runtime.getElement();
+        if (el) {
+          this.parentNode.appendChild(el);
+        }
+        this.card.parentNode.removeChild(this.card);
+        this.card = null;
       }
     });
   </script>

@@ -140,6 +140,11 @@ the-panel the-card {
   overflow-x: hidden;
   overflow-y: auto;
 }
+the-panel the-card[type="noflo-runtime-preview"] {
+  padding: 0px;
+  width: 280px;
+  overflow: hidden;
+}
 
 the-panel the-card button,
 noflo-search button,
