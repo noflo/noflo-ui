@@ -47,7 +47,7 @@
   <script>
     Polymer('noflo-graph-inspector', {
       updateName: function (event, detail, sender) {
-        this.graph.properties.name = sender.innerText;
+        this.graph.properties.name = sender.textContent;
       },
       updateContent: function (event, detail, sender) {
         this.graph.properties.environment.content = sender.value;
