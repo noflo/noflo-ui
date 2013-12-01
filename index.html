@@ -24,6 +24,7 @@
     <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
+    <link rel="import" href="elements/noflo-account.html">
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -46,9 +47,15 @@
       <footer></footer>
     </the-panel>
     <the-panel id="account" edge="left" size="315" handle="35" automatic="false">
-      <header></header>
-      <main></main>
-      <footer></footer>
+      <header>
+        <h1>NoFlo</h1>
+      </header>
+      <main>
+        <ul>
+          <li><a href="#"><i class="fa fa-cog"></i>Home</a></li>
+          <li><noflo-account clientid="U5GQAhyPsEvhSjUHK2BtcR0txaHD2THroB4H"></noflo-account></li>
+        </ul>
+      </main>
     </the-panel>
     <main id="workspace"></main>
     <the-panel id="fixed" edge="right" size="280" handle="35" automatic="false">
