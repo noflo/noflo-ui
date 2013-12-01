@@ -35,7 +35,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   </head>
-  <body>
+  <body class="main">
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
     <noflo-breadcrumb></noflo-breadcrumb>
@@ -296,6 +296,17 @@
       Router MISSED -> IN Errors(core/Merge)
       Errors(core/Merge) OUT -> IN GoToMain
       GoToMain OUT -> HASH Navigate(interaction/SetHash)
+
+      # Add or remove the 'main' class from the body
+      'body' -> SELECTOR GetBody(dom/GetElement) ELEMENT -> IN SplitBody(core/Split)
+      SplitBody OUT -> ELEMENT AddClass(dom/AddClass)
+      SplitBody OUT -> ELEMENT RemoveClass(dom/RemoveClass)
+      'main' -> STRING SendAddClass(strings/SendString)
+      SendAddClass OUT -> CLASS AddClass
+      LoadMain READY -> IN SendAddClass
+      'main' -> STRING SendRemoveClass(strings/SendString)
+      SendRemoveClass OUT -> CLASS RemoveClass
+      Router ROUTE -> IN SendRemoveClass
     </script>
     <script>
     window.addEventListener('WebComponentsReady', function() { 

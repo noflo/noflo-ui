@@ -25,6 +25,10 @@ body {
   padding: 0;
 }
 
+body.main the-panel,
+body.main noflo-search {
+  display: none;
+}
 the-panel {
   background-color: hsl(187, 45%, 8%);
   z-index: 2;

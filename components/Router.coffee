@@ -5,7 +5,7 @@ class Router extends noflo.Component
     @inPorts =
       url: new noflo.Port 'string'
     @outPorts =
-      route: new noflo.Port 'bang'
+      route: new noflo.ArrayPort 'bang'
       main: new noflo.Port 'string'
       project: new noflo.Port 'string'
       graph: new noflo.Port 'string'
