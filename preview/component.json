@@ -23,7 +23,8 @@
     "noflo/noflo-routers": "*",
     "noflo/noflo-strings": "*",
     "noflo/noflo-websocket": "*",
-    "d4tocchini/noflo-draggabilly": "*"
+    "d4tocchini/noflo-draggabilly": "*",
+    "forresto/noflo-gum": "*"
   },
   "json": [
     "component.json"
