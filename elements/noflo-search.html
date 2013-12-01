@@ -50,6 +50,7 @@
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
           }
+          this.fire('search', this.search);
           return;
         }
         while (this.results.length) {
