@@ -27,6 +27,7 @@ class WebSocketRuntime extends Base
 
     # Normalize the preview setup
     preview = @normalizePreview preview
+    @preview = preview
 
     @address = preview.wsUrl
     @connection = new WebSocket @address, @protocol
@@ -49,7 +50,7 @@ class WebSocketRuntime extends Base
     , false
     @connecting = true
 
-  disconnect: (protocol) ->
+  disconnect: ->
     return unless @connection
     @connection.close()
 

@@ -12,6 +12,10 @@ class BaseRuntime extends EventEmitter
 
   disconnect: ->
 
+  reconnect: ->
+    @disconnect()
+    @connect @preview
+
   # Start a NoFlo Network
   start: ->
     @sendNetwork 'start'

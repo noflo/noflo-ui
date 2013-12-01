@@ -64,12 +64,11 @@ class IframeRuntime extends Base
       preview.height = 300
     preview
 
-  disconnect: (protocol) ->
+  disconnect: ->
     @iframe.removeEventListener 'load', @onLoaded, false
     if @previewObserver
       @previewObserver.close()
       @previewObserver = null
-      @preview = null
 
     # Stop listening to messages
     window.removeEventListener 'message', @onMessage, false

@@ -1,7 +1,7 @@
 <polymer-element name="noflo-runtime" attributes="graphs">
   <template>
     <template if="{{ currentGraph }}">
-    <div class="status {{ status.state }}">{{ status.label }} <span class="state"><i class="fa fa-{{ icon }}"></i></span></div>
+    <div class="status {{ status.state }}">{{ status.label }} <button on-click="{{ reconnect }}"><i class="fa fa-{{ icon }}"></i></button></div>
     <div class="runcontrol">
       <template if="{{ status.online }}">
         <template if="{{ execution.running }}">
@@ -72,6 +72,10 @@
             this.status.state = 'online';
           } else {
             this.status.state = 'offline';
+            this.execution = {
+              label: 'stopped',
+              running: false
+            };
           }
           this.status.label = status.label;
         }.bind(this));
@@ -117,6 +121,12 @@
           event.preventDefault();
         }
         this.runtime.stop();
+      },
+      reconnect: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.runtime.reconnect();
       },
       showCard: function () {
         if (this.card) {

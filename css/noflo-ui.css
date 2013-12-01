@@ -426,14 +426,12 @@ noflo-runtime .status {
   border-top: 1px solid hsl(189, 11%, 26%);
   padding-top: 8px;
 }
-noflo-runtime .status .state {
+noflo-runtime .status button {
   position: absolute;
   border-left: 1px solid hsl(189, 11%, 26%);
   right: 35px;
   top: 35px;
-  width: 34px;
-  height: 27px;
-  padding-top: 8px;
+  height: 35px;
   text-align: center;
 }
 noflo-runtime .runcontrol {
@@ -449,10 +447,10 @@ noflo-runtime .runcontrol button {
   top: 70px;
 }
 
-noflo-runtime .online {
+noflo-runtime .online, noflo-runtime .online button {
   color: #01d159;
 }
-noflo-runtime .offline {
+noflo-runtime .offline, noflo-runtime .offline button {
   color: #e70215;
 }
 
