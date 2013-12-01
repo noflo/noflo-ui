@@ -35,7 +35,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   </head>
-  <body class="main">
+  <body>
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
     <noflo-breadcrumb></noflo-breadcrumb>
@@ -187,6 +187,9 @@
       'noflo-context' -> SELECTOR GetContext(dom/GetElement)
       GetContext ELEMENT -> ELEMENT Context(polymer/noflo-context)
 
+      # Body for class handling
+      'body' -> SELECTOR GetBody(dom/GetElement) ELEMENT -> IN SplitBody(core/Split)
+
       # Runtime handling
       'noflo-runtime' -> SELECTOR GetRuntime(dom/GetElement)
       GetRuntime ELEMENT -> ELEMENT Runtime(polymer/noflo-runtime)
@@ -298,15 +301,12 @@
       GoToMain OUT -> HASH Navigate(interaction/SetHash)
 
       # Add or remove the 'main' class from the body
-      'body' -> SELECTOR GetBody(dom/GetElement) ELEMENT -> IN SplitBody(core/Split)
-      SplitBody OUT -> ELEMENT AddClass(dom/AddClass)
-      SplitBody OUT -> ELEMENT RemoveClass(dom/RemoveClass)
-      'main' -> STRING SendAddClass(strings/SendString)
-      SendAddClass OUT -> CLASS AddClass
+      SplitBody OUT -> STRING SendRemoveClass(strings/SendString) OUT -> ELEMENT RemoveClass(dom/RemoveClass)
+      SplitBody OUT -> STRING SendAddClass(strings/SendString) OUT -> ELEMENT AddClass(dom/AddClass)
+      'main' -> CLASS RemoveClass
+      'main' -> CLASS AddClass
+      Router ROUTE -> IN Show(Output) OUT -> IN SendRemoveClass
       LoadMain READY -> IN SendAddClass
-      'main' -> STRING SendRemoveClass(strings/SendString)
-      SendRemoveClass OUT -> CLASS RemoveClass
-      Router ROUTE -> IN SendRemoveClass
     </script>
     <script>
     window.addEventListener('WebComponentsReady', function() { 
