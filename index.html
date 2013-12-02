@@ -26,7 +26,7 @@
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs" outports=""></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -170,6 +170,23 @@
       'examples' -> KEY GetExampleList(objects/GetObjectKey)
       ParseExamples OUT -> IN GetExampleList OUT -> EXAMPLES LoadMain
     </script>
+    <script type="application/fbp" id="ProjectPanel">
+      EXPORT=SPLITPROJECT.IN:PROJECT
+      # Project panel handling
+      'noflo-project' -> SELECTOR GetProject(dom/GetElement)
+      GetProject ELEMENT -> ELEMENT Project(polymer/noflo-project)
+      SplitProject(core/Split) OUT -> PROJECT Project
+
+      'graphs' -> KEY GetGraphs(objects/GetObjectKey)
+      GetProjectGraphs MISSED -> IN IgnoreEmptyProjects(core/Drop)
+      SplitProject OUT -> IN GetGraphs OUT -> IN SplitGraphs(objects/SplitArray)
+      SplitGraphs OUT -> KEY LoadGraph(local/LoadItem) OUT -> GRAPHS Project
+
+      'components' -> KEY GetComponents(objects/GetObjectKey)
+      GetComponents MISSED -> IN IgnoreEmptyProjects
+      SplitProject OUT -> IN GetComponents OUT -> IN SplitComponents(objects/SplitArray)
+      SplitComponents OUT -> KEY LoadComponent(local/LoadItem) OUT -> COMPONENTS Project
+    </script>
     <script type="application/fbp" id="main">
       # Key for stored sketches
       'noflo-ui-graphs' -> IN GraphKey(core/Split)
@@ -194,14 +211,7 @@
       Context GRAPHS -> GRAPHS Breadcrumb
       Context PROJECT -> PROJECT Breadcrumb
 
-      # Project panel handling
-      'noflo-project' -> SELECTOR GetProject(dom/GetElement)
-      GetProject ELEMENT -> ELEMENT Project(polymer/noflo-project)
-      Context PROJECT -> PROJECT Project
-      'graphs' -> KEY GetProjectGraphs(objects/GetObjectKey)
-      GetProjectGraphs MISSED -> IN IgnoreEmptyProjects(core/Drop)
-      Context PROJECT -> IN GetProjectGraphs OUT -> IN SplitGraphList(objects/SplitArray)
-      SplitGraphList OUT -> KEY LoadProjectGraph(local/LoadItem) OUT -> GRAPHS Project
+      Context PROJECT -> PROJECT ProjectPanel(local/ProjectPanel)
 
       # NoFlo search
       'noflo-search' -> SELECTOR GetSearch(dom/GetElement) ELEMENT -> ELEMENT Search(polymer/noflo-search)
