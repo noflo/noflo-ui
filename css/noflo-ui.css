@@ -418,16 +418,17 @@ noflo-search button {
 }
 
 noflo-new-graph,
-noflo-new-project {
+noflo-new-project,
+noflo-new-component {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
   width: 400px;
-  top: 50px;
+  top: calc(50% - 50px);
   left: 50%;
   margin-left: -200px;
   outline: solid hsla(0, 0%, 11%, 0.6) 1000px;
-  z-index: 2;
+  z-index: 5;
 }
 
 noflo-breadcrumb {

@@ -1,16 +1,16 @@
-<polymer-element name="noflo-new-graph">
+<polymer-element name="noflo-new-component">
   <template>
-    <h1>Create new graph</h1>
+    <h1>Create new component</h1>
     <form>
       <label>
-        Graph name
-        <input type="text" value="{{ name }}" placeholder="MyCoolGraph" required>
+        Component name
+        <input type="text" value="{{ name }}" placeholder="MyCoolComponent" required>
       </label>
       <label>
-        Type
-        <select name="type" value="{{ type }}">
-          <option value="html">Browser</option>
-          <option value="websocket">Node.js</option>
+        Language
+        <select name="type" value="{{ language }}">
+          <option value="coffeescript">CoffeeScript</option>
+          <option value="javascript">JavaScript</option>
         </select>
       </label>
       <button on-click="{{ send }}">Create</button>
@@ -18,16 +18,16 @@
     </form>
   </template>
   <script>
-    Polymer('noflo-new-graph', {
+    Polymer('noflo-new-component', {
       name: '',
-      type: 'html',
+      language: 'coffeescript',
       send: function (event) {
         if (event) {
           event.preventDefault();
         }
         this.fire('new', {
           name: this.name,
-          type: this.type
+          language: this.language
         });
         this.close();
       },

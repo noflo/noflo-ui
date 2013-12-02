@@ -1,0 +1,150 @@
+<link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
+<link rel="import" href="noflo-account.html">
+<link rel="import" href="noflo-new-graph.html">
+<link rel="import" href="noflo-new-component.html">
+<polymer-element name="noflo-project" attributes="project graphs">
+  <style>
+    noflo-project h2 {
+      font-size: 16px;
+      line-height: 35px;
+      text-transform: none;
+    }
+    noflo-project ul.graphs li {
+      width: 245px;
+      height: 70px;
+      overflow: hidden;
+      float: left;
+      text-align: center;
+      background-color: hsl(189, 47%, 6%);
+      border-radius: 3px;
+      margin-right: 0px;
+      margin-left: 0px;
+      margin-bottom: 5px;
+      position: relative;
+    }
+    noflo-project ul.graphs li.add {
+      background-color: hsl(187, 45%, 10%);
+    }
+    noflo-project ul.graphs li the-graph-thumb {
+      display: block;
+      position: absolute;
+      left: 100px;
+      top: -20px;
+    }
+    noflo-project ul.graphs li i.fa {
+      display: block;
+      position: absolute;
+      right: 17px;
+      top: 17px;
+      font-size: 35px;
+      color: hsl(189, 11%, 26%);
+    }
+    noflo-project ul.graphs li button {
+      display: block;
+      position: absolute;
+      right: 17px;
+      top: 17px;
+      background-color: transparent;
+      color: hsl(189, 11%, 26%);
+      border: 1px solid hsl(189, 11%, 26%);
+      font-size: 13px;
+      border-radius: 3px;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      height: 35px;
+      padding-left: 13px;
+      padding-right: 13px;
+    }
+    noflo-project ul.graphs li h2 {
+      position: absolute;
+      top: 18px;
+      left: 17px;
+      width: 75px;
+      text-transform: none;
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+    }
+  </style>
+  <template>
+    <the-panel id="account" edge="left" size="315" handle="35" automatic="false" open="true">
+      <header>
+        <template if="{{ project }}">
+        <h1>{{ project.name }}</h1>
+        </template>
+        <template if="{{ !project }}">
+        <h1>Sketch</h1>
+        </template>
+      </header>
+      <main>
+        <ul>
+          <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
+          <li><noflo-account clientid="U5GQAhyPsEvhSjUHK2BtcR0txaHD2THroB4H"></noflo-account></li>
+        </ul>
+        <template if="{{ project }}">
+        <h2>Graphs</h2>
+        <ul class="graphs">
+          <li class="add">
+            <h2>New graph</h2>
+            <button on-click="{{ newGraph }}">Create</button>
+          </li>
+          <template repeat="{{ graph in graphs }}">
+          <li on-click="{{ openGraph }}" data-id="{{ graph.id }}">
+            <the-graph-thumb graphjson="{{ graph }}" width="200" height="120"></the-graph-thumb>
+            <h2>{{ graph.properties.name }}</h2>
+          </li>
+          </template>
+        </ul>
+        <h2>Components</h2>
+        <ul class="graphs">
+          <li class="add">
+            <h2>New component</h2>
+            <button on-click="{{ newComponent }}">Create</button>
+          </li>
+          <template repeat="{{ component in components }}">
+          <li on-click="{{ openComponent }}" data-id="{{ component.id }}">
+            <h2>{{ component.name }}</h2>
+            <template if="{{ component.language == 'coffeescript' }}">
+            <i class="fa fa-coffee"></i>
+            </template>
+            <template if="{{ component.language != 'coffeescript' }}">
+            <i class="fa fa-code"></i>
+            </template>
+          </li>
+          </template>
+        </ul>
+        </template>
+      </main>
+    </the-panel>
+  </template>
+  <script>
+    Polymer('noflo-project', {
+      graphs: [],
+      components: [],
+      project: null,
+      newGraph: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-new-graph');
+        this.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          this.fire('newgraph', event.detail);
+        }.bind(this));
+      },
+      newComponent: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-new-component');
+        this.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          this.fire('newcomponent', event.detail);
+        }.bind(this));
+      },
+      openHome: function () {
+        event.preventDefault();
+        window.location.hash = '#';
+      },
+      openGraph: function (event, detail, sender) {
+        event.preventDefault();
+        window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
+      }
+    });
+  </script>
+</polymer-element>
