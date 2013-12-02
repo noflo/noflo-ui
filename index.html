@@ -25,6 +25,8 @@
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
+    <link rel="import" href="elements/noflo-project.html">
+    <noflo-polymer name="noflo-project" inports="project graphs" outports=""></noflo-polymer>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
 
     <!-- NoFlo and NoFlo UI -->
@@ -46,17 +48,7 @@
       <main></main>
       <footer></footer>
     </the-panel>
-    <the-panel id="account" edge="left" size="315" handle="35" automatic="false">
-      <header>
-        <h1>NoFlo</h1>
-      </header>
-      <main>
-        <ul>
-          <li><a href="#"><i class="fa fa-home"></i>Home</a></li>
-          <li><noflo-account clientid="U5GQAhyPsEvhSjUHK2BtcR0txaHD2THroB4H"></noflo-account></li>
-        </ul>
-      </main>
-    </the-panel>
+    <noflo-project></noflo-project>
     <main id="workspace"></main>
     <the-panel id="fixed" edge="right" size="280" handle="35" automatic="false">
       <header></header>
@@ -202,6 +194,15 @@
       Context GRAPHS -> GRAPHS Breadcrumb
       Context PROJECT -> PROJECT Breadcrumb
 
+      # Project panel handling
+      'noflo-project' -> SELECTOR GetProject(dom/GetElement)
+      GetProject ELEMENT -> ELEMENT Project(polymer/noflo-project)
+      Context PROJECT -> PROJECT Project
+      'graphs' -> KEY GetProjectGraphs(objects/GetObjectKey)
+      GetProjectGraphs MISSED -> IN IgnoreEmptyProjects(core/Drop)
+      Context PROJECT -> IN GetProjectGraphs OUT -> IN SplitGraphList(objects/SplitArray)
+      SplitGraphList OUT -> KEY LoadProjectGraph(local/LoadItem) OUT -> GRAPHS Project
+
       # NoFlo search
       'noflo-search' -> SELECTOR GetSearch(dom/GetElement) ELEMENT -> ELEMENT Search(polymer/noflo-search)
 
@@ -241,7 +242,12 @@
       # Load local projects
       ProjectKey OUT -> KEY LoadProjects(local/LoadList)
       LoadMain READY -> LOAD LoadProjects
-      LoadProjects ITEMS -> KEY LoadProjectItem(local/LoadItem) OUT -> PROJECTS LoadMain
+      'main' -> KEY GetMainGraph(objects/GetObjectKey)
+      LoadProjects ITEMS -> KEY LoadProjectItem(local/LoadItem) OUT -> IN GetMainGraph
+      GetMainGraph OUT -> KEY LoadProjectMain(local/LoadItem)
+      'mainGraph' -> PROPERTY SetMainGraph(objects/SetPropertyValue)
+      LoadProjectMain OUT -> VALUE SetMainGraph
+      GetMainGraph OBJECT -> IN SetMainGraph OUT -> PROJECTS LoadMain
       LoadProjectItem ERROR -> IN DropErrors(core/Drop)
 
       # Save newly created graphs into localStorage

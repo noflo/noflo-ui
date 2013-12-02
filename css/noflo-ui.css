@@ -27,7 +27,8 @@ body {
 
 body.main the-panel,
 body.main noflo-search,
-body.main noflo-breadcrumb {
+body.main noflo-breadcrumb,
+body.main noflo-runtime {
   display: none;
 }
 the-panel {
@@ -232,6 +233,7 @@ noflo-main {
 noflo-main section {
   clear: left;
   display: block;
+  width: 60%;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
@@ -251,8 +253,10 @@ noflo-main section > h2 small {
 }
 noflo-main ul {
   padding: 0px;
-  margin: 0px;
+  margin-top: 0px;
   margin-bottom: 35px;
+  margin-left: -17px;
+  margin-right: -18px;
   list-style: none;
 }
 noflo-main ul li {
@@ -263,12 +267,10 @@ noflo-main ul li {
   text-align: center;
   background-color: hsl(189, 47%, 6%);
   border-radius: 3px;
-  margin-right: 35px;
+  margin-right: 18px;
+  margin-left: 17px;
   margin-bottom: 35px;
   position: relative;
-}
-noflo-main ul li:nth-of-type(3n) {
-  margin-right: 0px;
 }
 noflo-main ul li.add {
   background-color: hsl(187, 45%, 10%);
@@ -416,16 +418,17 @@ noflo-search button {
 }
 
 noflo-new-graph,
-noflo-new-project {
+noflo-new-project,
+noflo-new-component {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
   width: 400px;
-  top: 50px;
+  top: calc(50% - 50px);
   left: 50%;
   margin-left: -200px;
   outline: solid hsla(0, 0%, 11%, 0.6) 1000px;
-  z-index: 2;
+  z-index: 5;
 }
 
 noflo-breadcrumb {
