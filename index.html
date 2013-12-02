@@ -241,7 +241,12 @@
       # Load local projects
       ProjectKey OUT -> KEY LoadProjects(local/LoadList)
       LoadMain READY -> LOAD LoadProjects
-      LoadProjects ITEMS -> KEY LoadProjectItem(local/LoadItem) OUT -> PROJECTS LoadMain
+      'main' -> KEY GetMainGraph(objects/GetObjectKey)
+      LoadProjects ITEMS -> KEY LoadProjectItem(local/LoadItem) OUT -> IN GetMainGraph
+      GetMainGraph OUT -> KEY LoadProjectMain(local/LoadItem)
+      'mainGraph' -> PROPERTY SetMainGraph(objects/SetPropertyValue)
+      LoadProjectMain OUT -> VALUE SetMainGraph
+      GetMainGraph OBJECT -> IN SetMainGraph OUT -> PROJECTS LoadMain
       LoadProjectItem ERROR -> IN DropErrors(core/Drop)
 
       # Save newly created graphs into localStorage
