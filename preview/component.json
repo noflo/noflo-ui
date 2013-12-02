@@ -25,7 +25,8 @@
     "noflo/noflo-websocket": "*",
     "noflo/noflo-indexeddb": "*",
     "d4tocchini/noflo-draggabilly": "*",
-    "forresto/noflo-gum": "*"
+    "forresto/noflo-gum": "*",
+    "forresto/noflo-seriously": "*"
   },
   "json": [
     "component.json"

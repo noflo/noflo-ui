@@ -165,6 +165,11 @@ module.exports = ->
   # Our local tasks
   @registerTask 'nuke', ['exec:nuke_main', 'exec:nuke_bower', 'exec:nuke_preview']
   @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build']
+  @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
+  @registerTask 'main_rebuild', ['exec:nuke_main', 'exec:nuke_bower', 'main_build']
+  @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
+  @registerTask 'preview_rebuild', ['exec:nuke_preview', 'preview_build']
+  @registerTask 'rebuild', ['main_rebuild', 'preview_rebuild']
   @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'app', ['build', 'compress', 'phonegap-build']
   @registerTask 'default', ['test']
