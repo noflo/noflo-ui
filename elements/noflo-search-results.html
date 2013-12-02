@@ -1,5 +1,7 @@
-<polymer-element name="noflo-search-results" attributes="search">
+<polymer-element name="noflo-search-results" attributes="search results">
   <template>
+    <h1>Search: {{ search }}</h1>
+    <h2>{{ results.length }} results</h2>
     <ul class="results">
       <template repeat="{{ result, index in results }}">
         <li data-index="{{ index }}" on-click="{{ clicked }}">

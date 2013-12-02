@@ -164,6 +164,7 @@ noflo-runtime button {
 the-panel the-card h1 {
   margin: 0px;
   font-size: 12pt;
+  line-height: 35px;
 }
 the-panel the-card h2 {
   margin: 0px;
