@@ -28,11 +28,12 @@
         }
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
-        graph.project = this.project;
         graph.properties.environment = {
           runtime: this.type
         };
-        this.fire('new', graph.toJSON());
+        var graphData = graph.toJSON();
+        graphData.project = this.project;
+        this.fire('new', graphData);
         this.close();
       },
       close: function () {

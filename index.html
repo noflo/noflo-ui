@@ -129,7 +129,7 @@
       SplitId OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
       GetGraphs RANGE -> RANGE GetComponents(indexeddb/Query)
-      'project' -> DATA HoldComponentIndex OUT -> NAME ProjectComponentIndex(indexeddb/GetIndex)
+      'project' -> DATA HoldComponentIndex(core/Kick) OUT -> NAME ProjectComponentIndex(indexeddb/GetIndex)
       SplitId OUT -> IN HoldComponentIndex
       ComponentStore STORE -> STORE ProjectComponentIndex INDEX -> STORE GetComponents
     </script>
@@ -290,7 +290,7 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
-      Context PROJECT -> IN Show(core/Output) OUT -> PROJECT LoadProjectData(local/LoadProjectData)
+      Context PROJECT -> PROJECT LoadProjectData(local/LoadProjectData)
       LoadProjectData GRAPHS -> GRAPHS Project
       LoadProjectData COMPONENTS -> COMPONENTS Project
 
