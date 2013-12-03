@@ -140,6 +140,7 @@
     <script type="application/fbp" id="StoreGraph">
       EXPORT=MERGE.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUTGRAPH.KEY:KEY
       Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitGraph(core/Split)
       SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -147,13 +148,14 @@
       'graphs' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
       SplitGraph OUT -> IN HoldStore
       SplitStore OUT -> NAME GraphStore(indexeddb/GetStore)
-      Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE Put(indexeddb/Put)
+      Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE PutGraph(indexeddb/Put)
       'project' -> KEY GetProject(objects/GetObjectKey)
-      SplitGraph OUT -> IN GetProject OUT -> IN MergeStorable(core/Merge) OUT -> VALUE Put
+      SplitGraph OUT -> IN GetProject OBJECT -> IN MergeStorable(core/Merge) OUT -> VALUE PutGraph
+      GetProject OUT -> IN DropProject(core/Drop)
       '' -> DATA HoldProject(core/Kick) OUT -> VALUE SetProject(objects/SetPropertyValue)
       SplitGraph OUT -> IN HoldProject
       'project' -> PROPERTY SetProject
-      GetProject MISSED -> IN SetProject OUT -> IN Show(core/Output) OUT -> IN MergeStorable
+      GetProject MISSED -> IN SetProject OUT -> IN MergeStorable
     </script>
     <script type="application/fbp" id="LoadProject">
       EXPORT=HOLDDB.DATA:DB
@@ -168,6 +170,33 @@
       Read TRANSACTION -> TRANSACTION Store STORE -> STORE Get(indexeddb/Get)
       SplitId OUT -> KEY Get
     </script>
+    <script type="application/fbp" id="PrepareProject">
+      EXPORT=GENERATEID.IN:IN
+      EXPORT=STOREGRAPH.DB:DB
+      EXPORT=SETMAIN.OUT:OUT
+      GenerateId(local/GenerateId) OUT -> IN Split(core/Split)
+      'id' -> KEY GetId(objects/GetObjectKey)
+      'project' -> PROPERTY SetProject(objects/SetPropertyValue)
+      GetId OUT -> VALUE SetProject
+      Split OUT -> IN GetId
+      'name' -> KEY GetName(objects/GetObjectKey)
+      'name' -> PROPERTY SetName(objects/SetPropertyValue)
+      GetName OUT -> VALUE SetName
+      Split OUT -> IN GetName
+      'type' -> KEY GetType(objects/GetObjectKey)
+      'type' -> PROPERTY SetType(objects/SetPropertyValue)
+      GetType OUT -> VALUE SetType
+      Split OUT -> IN GetType
+      Split OUT -> START InitializeGraph(objects/CreateObject)
+      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> DETAILS ToGraph(ui/CreateGraph)
+      'toJSON' -> METHOD Convert(objects/CallMethod)
+      ToGraph OUT -> IN Convert OUT -> IN SetProject OUT -> IN GenGraphId(local/GenerateId)
+      GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
+      'main' -> PROPERTY SetMain(objects/SetPropertyValue)
+      StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
+      Split OUT -> DATA HoldProject(core/Kick) OUT -> IN ShowToo(core/Output) OUT -> IN SetMain
+      SplitGraphId OUT -> IN HoldProject
+    </script>
     <script type="application/fbp" id="StoreProject">
       EXPORT=DISC.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
@@ -178,8 +207,8 @@
       'projects' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
       Split OUT -> IN HoldStore
       SplitStore OUT -> NAME Store(indexeddb/GetStore)
-      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
-      Split OUT -> VALUE Put
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE PutProject(indexeddb/Put)
+      Split OUT -> VALUE PutProject
     </script>
     <script type="application/fbp" id="LoadComponent">
       EXPORT=HOLDDB.DATA:DB
@@ -295,7 +324,8 @@
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
       Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
       Storage DB -> DB StoreNewProject(local/StoreProject)
-      Main NEWPROJECT -> IN NewProjectId(local/GenerateId) OUT -> IN Show(core/Output) OUT -> ITEM StoreNewProject
+      Storage DB -> DB PrepareProject(local/PrepareProject)
+      Main NEWPROJECT -> IN PrepareProject OUT -> IN Show(core/Output) OUT -> ITEM StoreNewProject
 
       # Prepare workspace
       '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
