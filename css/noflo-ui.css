@@ -242,7 +242,7 @@ noflo-main section {
   background-size: 35px 35px;
   background-position: calc(50% - 19px) 4px;
   display: block;
-  width: 100%;
+  width: 70%;
   padding-left: 15%;
   padding-right: 15%;
 }
