@@ -229,9 +229,6 @@ the-panel the-card ul li p {
 
 noflo-main {
   background-color: hsl(187, 45%, 8%);
-  background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
-  background-size: 35px 35px;
-  background-position: calc(50% - 19px) 4px;
   display: block;
   z-index: 4;
   position: fixed;
@@ -241,10 +238,13 @@ noflo-main {
   transition: opacity 0.3s ease-in-out;
 }
 noflo-main section {
+  background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
+  background-size: 35px 35px;
+  background-position: calc(50% - 19px) 4px;
   display: block;
-  width: 70%;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  padding-left: 15%;
+  padding-right: 15%;
 }
 noflo-main section > h2 {
   font-size: 17px;
