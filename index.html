@@ -82,23 +82,32 @@
     </script>
     <script type="application/fbp" id="LoadData">
       EXPORT=READ.DB:DB
+      EXPORT=MERGESTART.IN:LOAD
       EXPORT=GETPROJECTS.ITEM:PROJECTS
       EXPORT=GETSKETCHES.ITEM:SKETCHES
-      'readonly' -> MODE Read(indexeddb/BeginTransaction)
-      'projects,graphs' -> STORES Read
+      MergeStart(core/Merge) OUT -> IN SplitStart(core/Split)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
+      SplitStart OUT -> IN HoldMode
+      'projects,graphs' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+      SplitStart OUT -> IN HoldStores
 
       # Read projects list
-      'projects' -> NAME ProjectStore(indexeddb/GetStore)
+      'projects' -> DATA HoldProjectStore(core/Kick) OUT -> NAME ProjectStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldProjectStore
       Read TRANSACTION -> TRANSACTION ProjectStore
-      '' -> ALL GetProjects(indexeddb/Query)
+      '' -> DATA HoldAllProjects(core/Kick) OUT -> ALL GetProjects(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllProjects
       ProjectStore STORE -> STORE GetProjects
 
       # Read graphs that don't belong to a project
-      'graphs' -> NAME GraphStore(indexeddb/GetStore)
+      'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldGraphStore
       ProjectStore TRANSACTION -> TRANSACTION GraphStore
-      '' -> VALUE Sketches(indexeddb/QueryOnly)
+      '' -> DATA HoldNoProject(core/Kick) OUT -> VALUE Sketches(indexeddb/QueryOnly)
+      SplitStart OUT -> IN HoldNoProject
       Sketches RANGE -> RANGE GetSketches(indexeddb/Query)
-      'project' -> NAME ProjectIndex(indexeddb/GetIndex)
+      'project' -> DATA HoldProjectIndex(core/Kick) OUT -> NAME ProjectIndex(indexeddb/GetIndex)
+      SplitStart OUT -> IN HoldProjectIndex
       GraphStore STORE -> STORE ProjectIndex INDEX -> STORE GetSketches
     </script>
     <script type="application/fbp" id="LoadProjectData">
@@ -209,6 +218,7 @@
     <script type="application/fbp" id="StoreProject">
       EXPORT=DISC.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUTPROJECT.KEY:KEY
       Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -235,6 +245,7 @@
     <script type="application/fbp" id="StoreComponent">
       EXPORT=DISC.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUT.KEY:KEY
       Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -328,13 +339,14 @@
       # Prepare the main view
       'noflo-main' -> SELECTOR Main(polymer/noflo-main)
       Storage DB -> DB LoadData(local/LoadData)
+      '' -> LOAD LoadData
       LoadData PROJECTS -> PROJECTS Main
       LoadData SKETCHES -> SKETCHES Main
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
-      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
+      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph KEY -> LOAD LoadData
       Storage DB -> DB StoreNewProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
-      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject KEY -> LOAD LoadData
 
       # Prepare workspace
       '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
