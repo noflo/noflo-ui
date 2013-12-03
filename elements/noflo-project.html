@@ -2,7 +2,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
-<polymer-element name="noflo-project" attributes="project graphs">
+<polymer-element name="noflo-project" attributes="project graphs components">
   <style>
     noflo-project h2 {
       font-size: 16px;
@@ -124,6 +124,7 @@
       newGraph: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-graph');
+        dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.fire('newgraph', event.detail);
@@ -132,6 +133,7 @@
       newComponent: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-component');
+        dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.fire('newcomponent', event.detail);
@@ -139,10 +141,12 @@
       },
       openHome: function () {
         event.preventDefault();
+        this.$.account.open = false;
         window.location.hash = '#';
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
+        this.$.account.open = false;
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
       }
     });

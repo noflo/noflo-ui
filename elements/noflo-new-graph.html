@@ -1,4 +1,4 @@
-<polymer-element name="noflo-new-graph">
+<polymer-element name="noflo-new-graph" attributes="project">
   <template>
     <h1>Create new graph</h1>
     <form>
@@ -20,15 +20,19 @@
   <script>
     Polymer('noflo-new-graph', {
       name: '',
+      project: '',
       type: 'html',
       send: function (event) {
         if (event) {
           event.preventDefault();
         }
-        this.fire('new', {
-          name: this.name,
-          type: this.type
-        });
+        var noflo = require('noflo');
+        var graph = new noflo.Graph(this.name);
+        graph.project = this.project;
+        graph.properties.environment = {
+          runtime: this.type
+        };
+        this.fire('new', graph.toJSON());
         this.close();
       },
       close: function () {

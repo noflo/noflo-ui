@@ -1,4 +1,4 @@
-<polymer-element name="noflo-new-component">
+<polymer-element name="noflo-new-component" attributes="project">
   <template>
     <h1>Create new component</h1>
     <form>
@@ -20,6 +20,7 @@
   <script>
     Polymer('noflo-new-component', {
       name: '',
+      project: '',
       language: 'coffeescript',
       send: function (event) {
         if (event) {
@@ -28,6 +29,7 @@
         this.fire('new', {
           name: this.name,
           language: this.language,
+          project: '',
           code: '',
           tests: ''
         });
