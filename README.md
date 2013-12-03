@@ -66,3 +66,7 @@ The HTML runtime of NoFlo utilizes a custom [Component.io](http://component.io/)
 Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs. Instead, it is utilizing the [FBP Network Protocol](https://github.com/noflo/noflo/issues/107) which enables it to talk to any compatible FBP system.
 
 If you want to integrate the UI with a new environment you need to provide some transport layer (for example, WebSockets) that can talk the protocol, and then implement [runtime access](https://github.com/noflo/noflo-ui/tree/master/src/runtimes) for that in the UI. For showing the state of the runtime you may also want to implement a [dataflow plugin](https://github.com/noflo/noflo-ui/blob/master/src/plugins/preview-iframe.coffee).
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/noflo/noflo-ui/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
