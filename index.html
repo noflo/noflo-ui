@@ -102,26 +102,35 @@
       GraphStore STORE -> STORE ProjectIndex INDEX -> STORE GetSketches
     </script>
     <script type="application/fbp" id="LoadProjectData">
-      EXPORT=READ.DB:DB
+      EXPORT=HOLDDB.DATA:DB
       EXPORT=GETID.IN:PROJECT
       EXPORT=GETGRAPHS.ITEM:GRAPHS
       EXPORT=GETCOMPONENTS.ITEM:COMPONENTS
-      'id' -> KEY GetId(GetObjectKey) OUT -> VALUE InProject(indexeddb/QueryOnly)
-      'readonly' -> MODE Read(indexeddb/BeginTransaction)
-      'graphs,components' -> STORES Read
+      'id' -> KEY GetId(GetObjectKey) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitId(core/Split)
+      GetId MISSED -> IN DropMissed(core/Drop)
+      SplitId OUT -> VALUE InProject(indexeddb/QueryOnly)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
+      SplitId OUT -> IN HoldDb(core/Kick) OUT -> DB Read
+      SplitId OUT -> IN HoldMode
+      'graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+      SplitId OUT -> IN HoldStores
 
       # Read graphs belonging to a project
-      'graphs' -> NAME GraphStore(indexeddb/GetStore)
+      'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
+      SplitId OUT -> IN HoldGraphStore
       Read TRANSACTION -> TRANSACTION GraphStore
       InProject RANGE -> RANGE GetGraphs(indexeddb/Query)
-      'project' -> NAME ProjectGraphIndex(indexeddb/GetIndex)
+      'project' -> DATA HoldGraphIndex(core/Kick) OUT -> NAME ProjectGraphIndex(indexeddb/GetIndex)
+      SplitId OUT -> IN HoldGraphIndex
       GraphStore STORE -> STORE ProjectGraphIndex INDEX -> STORE GetGraphs
 
       # Read components belonging to a project
-      'components' -> NAME ComponentStore(indexeddb/GetStore)
+      'components' -> DATA HoldComponentStore(core/Kick) OUT -> NAME ComponentStore(indexeddb/GetStore)
+      SplitId OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
       GetGraphs RANGE -> RANGE GetComponents(indexeddb/Query)
-      'project' -> NAME ProjectComponentIndex(indexeddb/GetIndex)
+      'project' -> DATA HoldComponentIndex OUT -> NAME ProjectComponentIndex(indexeddb/GetIndex)
+      SplitId OUT -> IN HoldComponentIndex
       ComponentStore STORE -> STORE ProjectComponentIndex INDEX -> STORE GetComponents
     </script>
     <script type="application/fbp" id="LoadGraph">
@@ -194,7 +203,7 @@
       GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
       'main' -> PROPERTY SetMain(objects/SetPropertyValue)
       StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
-      Split OUT -> DATA HoldProject(core/Kick) OUT -> IN ShowToo(core/Output) OUT -> IN SetMain
+      Split OUT -> DATA HoldProject(core/Kick) OUT -> IN SetMain
       SplitGraphId OUT -> IN HoldProject
     </script>
     <script type="application/fbp" id="StoreProject">
@@ -281,7 +290,7 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
-      Context PROJECT -> PROJECT LoadProjectData(local/LoadProjectData)
+      Context PROJECT -> IN Show(core/Output) OUT -> PROJECT LoadProjectData(local/LoadProjectData)
       LoadProjectData GRAPHS -> GRAPHS Project
       LoadProjectData COMPONENTS -> COMPONENTS Project
 
@@ -325,7 +334,7 @@
       Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
       Storage DB -> DB StoreNewProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
-      Main NEWPROJECT -> IN PrepareProject OUT -> IN Show(core/Output) OUT -> ITEM StoreNewProject
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
 
       # Prepare workspace
       '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
@@ -333,6 +342,7 @@
 
       # Prepare the context
       Router(ui/Router) PROJECT -> ID LoadProject(local/LoadProject) PROJECT -> PROJECT Context(local/ProjectContext)
+      Storage DB -> DB LoadProject
       Router ROUTE -> CLEAR Context
       Storage DB -> DB Context
       Storage DB -> DB LoadGraph(local/LoadGraph)
