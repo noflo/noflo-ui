@@ -39,12 +39,12 @@
         }
         if (this.nodes.indexOf(this.node) !== -1) {
           this.nodes.splice(this.nodes.indexOf(this.node), 1);
-          this.node.classList.remove('selected');
+          this.node.selected = false;
           this.node = null;
           return;
         }
         this.nodes.push(this.node);
-        this.node.classList.add('selected');
+        this.node.selected = true;
         this.node = null;
       },
       edgeChanged: function () {
@@ -53,12 +53,12 @@
         }
         if (this.edges.indexOf(this.edge) !== -1) {
           this.edges.splice(this.edges.indexOf(this.edge), 1);
-          this.edge.pathTouch.classList.remove('selected');
+          this.edge.selected = false;
           this.edge = null;
           return;
         }
-        this.edges.push(this.edge);
-        this.edge.pathTouch.classList.add('selected');
+        this.edges.push(this.edge);        
+        this.edge.selected = true;
         this.edge = null;
       },
       projectChanged: function () {
