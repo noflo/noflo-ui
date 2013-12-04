@@ -27,7 +27,7 @@
 }
 
 body {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(187, 45%, 5%);
   color: #ffffff;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   margin: 0;
@@ -440,7 +440,7 @@ noflo-new-component {
 
 noflo-breadcrumb {
   position: fixed;
-  left: 316px;
+  left: 315px;
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
