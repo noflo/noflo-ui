@@ -138,10 +138,14 @@ class ConnectRuntime extends noflo.Component
           type: port.type
           array: port.array
       editor.registerComponent definition
+    edges = {}
     runtime.on 'network', ({command, payload}) ->
       return if command is 'error'
       return unless payload.to and payload.from
-      edge = editor.querySelector "the-graph-edge[source=\"#{payload.from.node}.#{payload.from.port}\"][target=\"#{payload.to.node}.#{payload.to.port}\"]"
+      id = "#{payload.from.node}#{payload.from.port}#{payload.to.node}#{payload.to.port}"
+      unless edges[id]
+        edges[id] = editor.querySelector "the-graph-edge[source=\"#{payload.from.node}.#{payload.from.port}\"][target=\"#{payload.to.node}.#{payload.to.port}\"]"
+      edge = edges[id]
       return unless edge and edge.log
       edge.log.push
         type: command
