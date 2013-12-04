@@ -2,22 +2,26 @@
   <style>
     ul.ports li {
       display: block;
+      position: relative;
     }
     ul.ports li label span {
       float: left;
       clear: left;
       font-size: 8pt;
-      padding-top: 8px;
-      width: 100px;
-      height: 27px;
+      padding-top: 0;
+      width: 87px;
+      line-height: 35px;
       overflow: hidden;
     }
     ul.ports li label input {
-      width: 113px;
-      height: 19px;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      width: 170px;
+      height: 35px;
       border: none;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      padding: 8px;
+      padding: 9px;
       background-color: hsl(184, 50%, 11%);
       color: hsl(184, 40%, 89%);
     }
@@ -36,8 +40,11 @@
       color: hsl(184, 40%, 89%);
       display: block;
       padding: 8px;
-      height: 19px;
-      width: 19px;
+      height: 35px;
+      width: 35px;
+    }
+    ul.ports li label i {
+      margin:0;
     }
     ul.ports li span.route {
       /* TODO: route colors */
@@ -47,6 +54,17 @@
       width: 125px;
       height: 1px;
       padding: 0;
+    }
+    ul.ports .remove-value {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      line-height: 35px;
+      height: 35px;
+      width: 35px;
+      text-align: center;
+      padding: 0px;
+      font-size: 12px;
     }
     ul.ports li span.route1  { background-color: hsl(  0, 100%, 60%); }
     ul.ports li span.route2  { background-color: hsl( 30, 100%, 60%); }
@@ -67,9 +85,9 @@
     <h2>{{ node.component }}</h2>
     <ul class="ports">
       <template repeat="{{ port in inports }}">
-        <li>
+        <li class="route route{{ port.route }}">
         <label><span>{{ port.name }}</span>
-          <template if="{{ port.showInput }}">
+          <!--template if="{{ port.showInput }}"-->
             <template if="{{ port.type == 'bang' }}">
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
             </template>
@@ -81,12 +99,12 @@
             </template>
             </label>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
-              <button data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-trash-o"></i></button>
+              <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
             </template>
-          </template>
+          <!--/template>
           <template if="{{ !port.showInput }}">
             <span class="route route{{ port.route }}"></span>
-          </template>
+          </template-->
         </li>
       </template>
     </ul>
@@ -106,7 +124,7 @@
           this.inports.push({
             name: port.name,
             type: port.type,
-            value: port.getValue(),
+            value: port.getValue(true),
             showInput: (!port.isConnected()),
             route: port.route
           });
