@@ -148,6 +148,11 @@
         event.preventDefault();
         this.$.account.open = false;
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
+      },
+      openComponent: function (event, detail, sender) {
+        event.preventDefault();
+        this.$.account.open = false;
+        window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
       }
     });
   </script>

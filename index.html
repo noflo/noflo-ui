@@ -25,6 +25,8 @@
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
+    <link rel="import" href="elements/noflo-component-editor.html">
+    <noflo-polymer name="noflo-component-editor" inports="component" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -243,10 +245,10 @@
       SplitId OUT -> KEY Get
     </script>
     <script type="application/fbp" id="StoreComponent">
-      EXPORT=DISC.IN:ITEM
+      EXPORT=MERGE.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
       EXPORT=PUT.KEY:KEY
-      Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       Split OUT -> IN HoldMode
@@ -267,9 +269,11 @@
     <script type="application/fbp" id="ProjectContext">
       EXPORT=CONTEXT.PROJECT:PROJECT
       EXPORT=CONTEXT.GRAPHS:GRAPHS
+      EXPORT=CONTEXT.COMPONENT:COMPONENT
       EXPORT=CONTEXT.CLEAR:CLEAR
-      EXPORT=EDITGRAPH.WORKSPACE:WORKSPACE
+      EXPORT=SPLITWORKSPACE.IN:WORKSPACE
       EXPORT=EDITGRAPH.CHANGED:GRAPHCHANGED
+      EXPORT=EDITCOMPONENT.CHANGED:COMPONENTCHANGED
       EXPORT=PROJECT.NEWGRAPH:NEWGRAPH
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
       EXPORT=LOADPROJECTDATA.DB:DB
@@ -307,10 +311,25 @@
 
       # Prepare graph editor
       Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
+      SplitWorkspace(core/Split) OUT -> WORKSPACE EditGraph
       Runtime RUNTIME -> RUNTIME EditGraph
       EditGraph NODECLICK -> NODE Context
       EditGraph EDGECLICK -> EDGE Context
       EditGraph EDITOR -> EDITOR Library
+
+      # Prepare component editor
+      Context COMPONENT -> COMPONENT EditComponent(local/ComponentEditor)
+      SplitWorkspace OUT -> WORKSPACE EditComponent
+    </script>
+    <script type="application/fbp" id="ComponentEditor">
+      EXPORT=SPLITCOMPONENT.IN:COMPONENT
+      EXPORT=CREATEEDITOR.CONTAINER:WORKSPACE
+      EXPORT=EDITOR.CHANGED:CHANGED
+      'noflo-component-editor' -> STRING Send(strings/SendString) OUT -> TAGNAME CreateEditor(dom/CreateElement)
+      CreateEditor ELEMENT -> IN SplitEditor(core/Split) OUT -> ELEMENT Editor(polymer/noflo-component-editor)
+      SplitComponent OUT -> STRING HoldComponent(strings/SendString) OUT -> COMPONENT Editor
+      SplitComponent(core/Split) OUT -> IN Send
+      SplitEditor OUT -> IN HoldComponent
     </script>
     <script type="application/fbp" id="GraphEditor">
       EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
@@ -327,6 +346,7 @@
       'toJSON' -> METHOD Convert(objects/CallMethod)
       GraphEditor CHANGED -> IN Convert
     </script>
+
     <script type="application/fbp" id="ClearWorkspace">
       EXPORT=CLEARWORKSPACE.CONTAINER:WORKSPACE
       EXPORT=DOCLEARWORKSPACE.IN:CLEAR
@@ -359,10 +379,13 @@
       Storage DB -> DB Context
       Storage DB -> DB LoadGraph(local/LoadGraph)
       Router GRAPH -> ID LoadGraph GRAPH -> GRAPHS Context
+      Storage DB -> DB LoadComponent(local/LoadComponent)
+      Router COMPONENT -> ID LoadComponent COMPONENT -> COMPONENT Context
+      Storage DB -> DB StoreComponent(local/StoreComponent)
+      Context COMPONENTCHANGED -> ITEM StoreComponent
       Storage DB -> DB StoreGraph(local/StoreGraph)
       Context GRAPHCHANGED -> ITEM StoreGraph
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
-      Storage DB -> DB StoreComponent(local/StoreComponent)
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
 
       # Show/hide main widget

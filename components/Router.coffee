@@ -9,6 +9,7 @@ class Router extends noflo.Component
       main: new noflo.Port 'string'
       project: new noflo.Port 'string'
       graph: new noflo.Port 'string'
+      component: new noflo.Port 'string'
       example: new noflo.Port 'string'
       missed: new noflo.Port 'string'
 
@@ -27,6 +28,10 @@ class Router extends noflo.Component
         parts = remainder.split '/'
         @outPorts.project.send parts.shift()
         @outPorts.project.disconnect()
+        if parts[0] is 'component' and parts.length is 2
+          @outPorts.component.send parts[1]
+          @outPorts.component.disconnect()
+          return
         for part in parts
           @outPorts.graph.send part
         @outPorts.graph.disconnect()

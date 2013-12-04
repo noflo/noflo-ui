@@ -562,6 +562,34 @@ the-graph-nav the-graph-map {
   bottom: 210px;
 }
 
+noflo-component-editor {
+  display: block;
+  position: absolute;
+  top: 35px;
+  left: 35px;
+  right: 35px;
+  height: calc(100% - 35px);
+}
+.CodeMirror {
+  height: 100%;
+}
+.CodeMirror-scroll {
+  height: 100%;
+}
+noflo-component-editor #code,
+noflo-component-editor #tests {
+  display: block;
+  width: 50%;
+  height: 100%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+noflo-component-editor #tests {
+  left: auto;
+  right: 0px;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
 }

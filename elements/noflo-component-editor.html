@@ -1,0 +1,35 @@
+<polymer-element name="noflo-component-editor" attributes="component">
+  <template>
+    <section id="code"></section> 
+    <section id="tests"></section> 
+  </template>
+  <script src="../bower_components/codemirror/lib/codemirror.js"></script>
+  <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+  <script>
+    Polymer('noflo-component-editor', {
+      component: null,
+      codeEditor: null,
+      testsEditor: null,
+      componentChanged: function () {
+        this.codeEditor = CodeMirror(this.$.code, {
+          lineNumbers: true,
+          value: this.component.code,
+          language: this.component.language
+        });
+        this.codeEditor.on('change', function () {
+          this.component.code = this.codeEditor.getValue();
+          this.fire('changed', this.component);
+        }.bind(this));
+        this.testsEditor = CodeMirror(this.$.tests, {
+          lineNumbers: true,
+          value: this.component.tests,
+          language: this.component.language
+        });
+        this.testsEditor.on('change', function () {
+          this.component.tests = this.testsEditor.getValue();
+          this.fire('changed', this.component);
+        }.bind(this));
+      }
+    });
+  </script>
+</polymer-element>

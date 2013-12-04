@@ -21,6 +21,7 @@
     "the-graph": "git://github.com/the-grid/the-graph.git#master",
     "the-panel": "*",
     "the-card": "*",
-    "font-awesome": "~4.0.3"
+    "font-awesome": "~4.0.3",
+    "codemirror": "~3.20.0"
   }
 }
