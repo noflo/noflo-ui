@@ -579,6 +579,7 @@ noflo-component-editor {
 noflo-component-editor #code,
 noflo-component-editor #tests {
   display: block;
+  background: hsl(186,31%,6%);
   width: 50%;
   height: 100%;
   position: absolute;
@@ -588,6 +589,11 @@ noflo-component-editor #tests {
 noflo-component-editor #tests {
   left: auto;
   right: 0px;
+}
+noflo-component-editor #code h1,
+noflo-component-editor #tests h1 {
+  line-height: 35px;
+  padding-left: 35px;
 }
 
 ::-webkit-scrollbar {
