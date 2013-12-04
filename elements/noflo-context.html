@@ -6,11 +6,7 @@
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge search" lightdom>
   <template>
-    <the-panel id="context" edge="left" size="280">
-      <header></header>
-      <main></main>
-      <footer></footer>
-    </the-panel>
+    <section id="context"></section>
     <the-panel id="fixed" edge="right" size="280" handle="35" automatic="false">
       <header></header>
       <main></main>
@@ -86,7 +82,7 @@
           this.nodeMenu = document.createElement('the-card');
           this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);
-          this.nodeMenu.addTo(this.contextBar.getMain());
+          this.nodeMenu.addTo(this.contextBar);
         }
 
         this.nodes.forEach(function (node) {
@@ -100,7 +96,7 @@
           this.nodeInspectors[id] = document.createElement('the-card');
           this.nodeInspectors[id].type = 'node-inspector';
           this.nodeInspectors[id].appendChild(inspector);
-          this.nodeInspectors[id].addTo(this.contextBar.getMain());
+          this.nodeInspectors[id].addTo(this.contextBar);
         }.bind(this));
 
         var found;
@@ -145,7 +141,7 @@
         this.edgeMenu = document.createElement('the-card');
         this.edgeMenu.type = 'edge-menu';
         this.edgeMenu.appendChild(menu);
-        this.edgeMenu.addTo(this.contextBar.getMain());
+        this.edgeMenu.addTo(this.contextBar);
       },
       hideEdgeCards: function () {
         if (!this.edgeMenu) {
@@ -193,7 +189,7 @@
         this.graphInspector = document.createElement('the-card');
         this.graphInspector.type = 'graph-inspector';
         this.graphInspector.appendChild(inspector);
-        this.graphInspector.addTo(this.contextBar.getMain());
+        this.graphInspector.addTo(this.contextBar);
       }
     });
   </script>

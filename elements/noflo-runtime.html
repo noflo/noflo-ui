@@ -151,7 +151,7 @@
         this.card.type = 'noflo-runtime-preview';
         // Move the preview element of the runtime into the card
         this.card.appendChild(this.runtime.getElement());
-        this.card.addTo(contextPanel.getMain());
+        this.card.addTo(contextPanel);
       },
       hideCard: function () {
         if (!this.card) {

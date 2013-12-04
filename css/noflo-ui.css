@@ -40,7 +40,6 @@ the-panel {
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
 the-panel#account {
-  border-right: 1px solid hsl(189, 11%, 26%);
   top: 0px;
   z-index: 3;
 }
@@ -109,13 +108,14 @@ the-panel#account main ul li noflo-account .toolbar a {
   font-size: 16px;
   line-height: 35px;
 }
-the-panel#context {
-  border-right: 1px solid hsl(189, 11%, 26%);
-  padding-top: 35px;
-  margin-left: 35px;
+#context {
+  position: fixed;
+  left: 35px;
+  top: 35px;
+  width: 245px;
+  z-index: 2;
 }
 the-panel#fixed {
-  border-left: 1px solid hsl(189, 11%, 26%);
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
@@ -135,23 +135,24 @@ the-panel#fixed:not([open]):before {
   opacity: 1;
 }
 
-the-panel the-card {
+the-card {
   display: block;
   margin: 0px;
   padding: 8px 8px;
   border-bottom: 1px rgb(71, 71, 71) solid;
+  background-color: hsl(187, 45%, 5%);
   width: 264px;
   max-height: 280px;
   overflow-x: hidden;
   overflow-y: auto;
 }
-the-panel the-card[type="noflo-runtime-preview"] {
+the-card[type="noflo-runtime-preview"] {
   padding: 0px;
   width: 280px;
   overflow: hidden;
 }
 
-the-panel the-card button,
+the-card button,
 noflo-search button,
 noflo-runtime button {
   width: 35px;
@@ -163,64 +164,64 @@ noflo-runtime button {
   text-align: center;
 }
 
-the-panel the-card h1 {
+the-card h1 {
   margin: 0px;
   font-size: 12pt;
   line-height: 35px;
 }
-the-panel the-card h2 {
+the-card h2 {
   margin: 0px;
   font-size: 10pt;
 }
 
-the-panel the-card ul {
+the-card ul {
   margin: 0px;
   padding: 0px;
   list-style: none;
 }
 
-the-panel the-card textarea {
+the-card textarea {
   width: 100%;
   min-height: 100px;
   max-height: 260px;
 }
 
-the-panel the-card ul li {
+the-card ul li {
   display: block;
   clear: left;
   padding: 0px;
   margin: 0px;
   margin-bottom: 17px;
 }
-the-panel the-card ul.toolbar li {
+the-card ul.toolbar li {
   display: inline;
   margin: 0px;
   margin-right: 8px;
 }
-the-panel the-card ul.routes {
+the-card ul.routes {
   margin-left: -8px;
   margin-right: -8px;
 }
-the-panel the-card ul.routes li {
+the-card ul.routes li {
   display: inline;
   margin: 0px;
   width: 23px;
   height: 23px;
 }
-the-panel the-card ul.routes li button {
+the-card ul.routes li button {
   width: 23px;
   height: 23px;
 }
 
-the-panel the-card ul li h2 {
+the-card ul li h2 {
   font-size: 10pt;
   margin: 0px;
 }
-the-panel the-card ul li i {
+the-card ul li i {
   float: left;
   margin-right: 8px;
 }
-the-panel the-card ul li p {
+the-card ul li p {
   margin: 0px;
   margin-top: 8px;
   padding: 0px;
@@ -389,9 +390,8 @@ noflo-main noflo-account .toolbar a {
 }
 
 noflo-search {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
-  border-right: 1px solid hsl(189, 11%, 26%);
   position: fixed;
   left: 35px;
   top: 0;
@@ -403,7 +403,7 @@ noflo-search {
   white-space: nowrap;
 }
 noflo-search input {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(187, 45%, 5%);
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   border: none;
   padding: 0px;
@@ -415,7 +415,6 @@ noflo-search input {
   display: inline;
 }
 noflo-search button {
-  border-left: 1px solid hsl(189, 11%, 26%);
   width: 35px;
   height: 35px;
   margin: 0px;
@@ -448,9 +447,8 @@ noflo-breadcrumb {
   z-index: 1;
   width: 350px;
   height: 35px;
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
-  border-right: 1px solid hsl(189, 11%, 26%);
 }
 noflo-breadcrumb h1 {
   line-height: 35px;
@@ -475,9 +473,8 @@ noflo-runtime {
   z-index: 1;
   width: 350px;
   height: 35px;
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
-  border-left: 1px solid hsl(189, 11%, 26%);
 }
 noflo-runtime .status {
   line-height: 35px;
