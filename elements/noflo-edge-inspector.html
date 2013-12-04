@@ -5,6 +5,23 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    the-card noflo-edge-inspector h1 .connection {
+      text-transform: uppercase;
+      font-size: smaller;
+    }
+    the-card noflo-edge-inspector h1 .connection.route0 { color: #fff; }
+    the-card noflo-edge-inspector h1 .connection.route1 { color: hsl(0, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route2 { color: hsl(30, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route3 { color: hsl(60, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route4 { color: hsl(90, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route5 { color: hsl(120, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route6 { color: hsl(150, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route7 { color: hsl(180, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route8 { color: hsl(210, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route9 { color: hsl(240, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route10 { color: hsl(270, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route11 { color: hsl(300, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route12 { color: hsl(330, 100%, 60%); }
     the-card noflo-edge-inspector ul#events {
       max-height: 140px;
       overflow-x: hidden;
@@ -45,7 +62,7 @@
     }
   </style>
   <template>
-    <h1>{{ source }} &#10142; {{ target }}</h1>
+  <h1>{{ sourceNode }} <span class="connection route{{ route }}">{{ sourcePort }} &#10142; {{ targetPort }}</span> {{ targetNode }}</h1>
     <ul id="events">
     </ul>
   </template>
@@ -55,8 +72,11 @@
       showlogs: 20,
       edge: null,
       graph: null,
-      source: '',
-      target: '',
+      sourceNode: '',
+      sourcePort: '',
+      targetNode: '',
+      targetPort: '',
+      route: 0,
       frameReq: null,
       leftView: function () {
         if (this.frameReq) {
@@ -66,10 +86,14 @@
       edgeChanged: function () {
         var src = this.edge.getSource();
         var tgt = this.edge.getTarget();
-        var srcNode = this.nodeLabel(src.node);
-        var tgtNode = this.nodeLabel(tgt.node);
-        this.source = srcNode + ' ' + src.port.toUpperCase();
-        this.target = tgt.port.toUpperCase() + ' ' + tgtNode;
+        this.sourceNode = this.nodeLabel(src.node);
+        this.sourcePort = src.port;
+        this.targetNode = this.nodeLabel(tgt.node);
+        this.targetPort = tgt.port;
+        this.route = this.edge.route;
+        this.edge.addEventListener('route', function () {
+          this.route = this.edge.route;
+        }.bind(this));
         this.animate();
       },
       nodeLabel: function (node) {
