@@ -39,7 +39,7 @@
         var edge;
         while(this.edges.length) {
           edge = this.edges.pop();
-          edge.pathTouch.classList.remove('selected');
+          edge.selected = false;
         }
       },
       remove: function (event) {

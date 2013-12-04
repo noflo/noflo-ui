@@ -14,7 +14,7 @@
         var node;
         while(this.nodes.length) {
           node = this.nodes.pop();
-          node.classList.remove('selected');
+          node.selected = false;
         }
       },
       remove: function (event) {
