@@ -446,59 +446,61 @@ noflo-breadcrumb {
   color: rgb(71, 71, 71);
   padding: 0px;
   z-index: 1;
-  width: 210px;
-  height: 70px;
-  padding: 35px;
-  background-color: hsla(189, 47%, 6%, .9);
+  width: 350px;
+  height: 35px;
+  background-color: hsl(187, 45%, 8%);
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  border-right: 1px solid hsl(189, 11%, 26%);
 }
 noflo-breadcrumb h1 {
-  height: 27px;
-  border-top: 1px solid hsl(189, 11%, 26%);
-  padding-top: 8px;
+  line-height: 35px;
+  width: 210px;
+  overflow: hidden;
+  position: absolute;
+  right: 17px;
 }
 noflo-breadcrumb h2 {
-  height: 27px;
+  line-height: 35px;
   width: 105px;
-  border-top: 1px solid hsl(189, 11%, 26%);
-  padding-top: 8px;
+  overflow: hidden;
+  position: absolute;
+  left: 17px;
 }
 
 noflo-runtime {
   position: fixed;
-  right: 0;
+  right: 35px;
   top: 0;
   color: rgb(71, 71, 71);
-  padding: 0px;
   z-index: 1;
-  width: 210px;
-  height: 70px;
-  padding: 35px;
-  background-color: hsla(189, 47%, 6%, .9);
+  width: 350px;
+  height: 35px;
+  background-color: hsl(187, 45%, 8%);
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  border-left: 1px solid hsl(189, 11%, 26%);
 }
 noflo-runtime .status {
-  height: 27px;
-  border-top: 1px solid hsl(189, 11%, 26%);
-  padding-top: 8px;
+  line-height: 35px;
+  position: absolute;
+  left: 17px;
+  width: 158px;
 }
 noflo-runtime .status button {
-  position: absolute;
-  border-left: 1px solid hsl(189, 11%, 26%);
-  right: 35px;
-  top: 35px;
   height: 35px;
+  width: 35px;
   text-align: center;
 }
 noflo-runtime .runcontrol {
-  padding-top: 8px;
-  border-top: 1px solid hsl(189, 11%, 26%);
-  height: 27px;
+  line-height: 35px;
+  position: absolute;
+  right: 17px;
+  width: 158px;
 }
 noflo-runtime .runcontrol button {
+  height: 35px;
+  width: 35px;
+  text-align: center;
   color: rgb(71, 71, 71);
-  border-left: 1px solid hsl(189, 11%, 26%);
-  position: absolute;
-  right: 35px;
-  top: 70px;
 }
 
 noflo-runtime .online, noflo-runtime .online button {
@@ -568,7 +570,7 @@ noflo-component-editor {
   top: 35px;
   left: 35px;
   right: 35px;
-  height: calc(100% - 35px);
+  height: calc(100% - 70px);
 }
 .CodeMirror {
   height: 100%;

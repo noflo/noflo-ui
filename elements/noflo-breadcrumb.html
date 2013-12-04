@@ -1,4 +1,4 @@
-<polymer-element name="noflo-breadcrumb" attributes="project graphs">
+<polymer-element name="noflo-breadcrumb" attributes="project graphs component">
   <style>
     h1 {
       font-size: 17px;
@@ -15,14 +15,17 @@
     }
   </style>
   <template>
-    <template if="{{ currentGraph }}">
-    <h1>{{ currentGraph.properties.name }}</h1>
-    </template>
     <template if="{{ project }}">
     <h2>{{ project.name }}</h2>
     </template>
     <template if="{{ currentGraph && !project }}">
     <h2>Sketch</h2>
+    </template>
+    <template if="{{ currentGraph }}">
+    <h1>{{ currentGraph.properties.name }}</h1>
+    </template>
+    <template if="{{ component }}">
+    <h1>{{ component.name }}</h1>
     </template>
   </template>
   <script>
@@ -30,6 +33,7 @@
       project: '',
       graphs: null,
       currentGraph: null,
+      component: null,
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
           this.currentGraph = null;

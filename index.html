@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-breadcrumb.html">
-    <noflo-polymer name="noflo-breadcrumb" inports="project graphs" outports=""></noflo-polymer>
+    <noflo-polymer name="noflo-breadcrumb" inports="project graphs component" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
@@ -284,9 +284,10 @@
       Context GRAPHS -> GRAPHS Runtime
 
       # Breadcrumb handling
-      'noflo-breadcrumb' -> SELECTOR Breadcrumb(polymer/noflo-runtime)
+      'noflo-breadcrumb' -> SELECTOR Breadcrumb(polymer/noflo-breadcrumb)
       Context GRAPHS -> GRAPHS Breadcrumb
-      #Context PROJECT -> PROJECT Breadcrumb
+      Context COMPONENT -> COMPONENT Breadcrumb
+      Context PROJECT -> PROJECT Breadcrumb
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
