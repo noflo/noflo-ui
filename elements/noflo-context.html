@@ -28,6 +28,20 @@
         this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
         this.edgeObserver = new ArrayObserver(this.edges, this.edgesModified.bind(this));
         this.contextBar = this.$.context;
+        window.addEventListener('keyup', function (e) {
+          if (e.keyCode === 27) {
+            var edge, node;
+            // Clear selections on Esc
+            while (this.edges.length) {
+              edge = this.edges.pop();
+              edge.selected = false;
+            }
+            while (this.nodes.length) {
+              node = this.nodes.pop();
+              node.selected = false;
+            }
+          }
+        }.bind(this));
       },
       nodeChanged: function () {
         if (!this.node) {
