@@ -1,0 +1,95 @@
+<polymer-element name="noflo-edge-inspector" attributes="edge graph showlogs">
+  <style>
+    the-card noflo-edge-inspector h1 {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    the-card noflo-edge-inspector ul#events {
+      max-height: 140px;
+      overflow-x: hidden;
+      overflow-y: scroll;
+    }
+    the-card noflo-edge-inspector ul#events li {
+      font-size: 10px;
+      line-height: 14px;
+      margin-bottom: 0px;
+      color: hsl(185,100%,75%);
+    }
+    the-card noflo-edge-inspector ul#events li.disconnect {
+      border-bottom: 1px solid #ff8080;
+      height: 3px;
+      margin-bottom: 3px;
+    }
+  </style>
+  <template>
+    <h1>{{ source }} &#10142; {{ target }}</h1>
+    <ul id="events">
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-edge-inspector', {
+      lastlog: 0,
+      showlogs: 20,
+      edge: null,
+      graph: null,
+      source: '',
+      target: '',
+      frameReq: null,
+      leftView: function () {
+        if (this.frameReq) {
+          window.cancelAnimationFrame(this.frameReq);
+        }
+      },
+      edgeChanged: function () {
+        var src = this.edge.getSource();
+        var tgt = this.edge.getTarget();
+        var srcNode = this.nodeLabel(src.node);
+        var tgtNode = this.nodeLabel(tgt.node);
+        this.source = srcNode + ' ' + src.port.toUpperCase();
+        this.target = tgt.port.toUpperCase() + ' ' + tgtNode;
+        this.animate();
+      },
+      nodeLabel: function (node) {
+        var extractLibrary = node.split('/');
+        if (extractLibrary.length > 1) {
+          node = extractLibrary[1];
+        }
+        return node.split('_')[0];
+      },
+      animate: function () {
+        this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
+        if (this.edge.log.length <= this.lastlog) {
+          return;
+        }
+        this.renderLogs();
+        this.lastlog = this.edge.log.length;
+      },
+      renderLogs: function () {
+        var first = this.lastlog;
+        var i, item, li;
+        if (this.edge.log.length - this.lastlog > this.showlogs) {
+          first = this.edge.log.length - this.showlogs;
+        }
+        var fragment = document.createDocumentFragment();
+        for (i = first; i < this.edge.log.length; i++) {
+          item = this.edge.log.get(i);
+          if (!item) {
+            continue;
+          }
+          li = document.createElement('li');
+          li.classList.add(item.type);
+          li.innerHTML = (item.group ? item.group + ' ' : '') + item.data;
+          fragment.appendChild(li);
+        }
+        this.$.events.appendChild(fragment);
+        // Scroll to bottom
+        while (this.$.events.childElementCount > this.showlogs) {
+          this.$.events.removeChild(this.$.events.firstChild);
+        }
+        console.log(this.$.events.childElementCount);
+        this.$.events.scrollTop = this.$.events.scrollHeight;
+      }
+    });
+  </script>
+</polymer-element>
