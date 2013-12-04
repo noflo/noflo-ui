@@ -40,7 +40,7 @@ body, button {
 }
 
 the-panel {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsl(190, 30%, 6%);
   z-index: 2;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
@@ -154,6 +154,7 @@ the-card {
   max-height: 280px;
   overflow-x: hidden;
   overflow-y: auto;
+  position: relative;
 }
 the-card[type="noflo-runtime-preview"] {
   padding: 0px;
@@ -161,11 +162,13 @@ the-card[type="noflo-runtime-preview"] {
   overflow: hidden;
 }
 
-html the-card[type="edge-menu"] {
+html the-card-stack[type="edge-menu"] the-card, html the-card-stack[type="node-menu"] the-card {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
 }
-html the-card-stack[type="node-menu"] the-card {
+
+html the-card-stack[type="edge-menu"] the-card h1, html the-card-stack[type="node-menu"] the-card h1 {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
+  font-size:15px;
 }
 
 the-card button,
@@ -181,24 +184,41 @@ noflo-runtime button {
 }
 
 the-card h1 {
-  display: block;
-  float: left;
-  text-shadow: 0 1px hsl(0, 0%, 0%);  
-  text-align: left;
+  font-size: 12px;
+  line-height: 35px;
   margin: 0px;
   margin-bottom: 0px;
-  font-size: 15px;
-  line-height: 35px;
-
+  text-shadow: 0 1px hsl(0, 0%, 0%);  
+  text-align: left;
 }
-the-card h2 {
+
+the-card header h1 {
+  display: block;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 179px;
+  height: 35px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+the-card header h2 {
   line-height: 35px;
-  float: right;
+  width: 80px;
+  height: 35px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   margin: 0px;
-  text-align: center;
+  text-align: right;
   font-size: 10px;
   color: hsla(190, 100%, 80%, 0.8);
   display: block;
+}
+the-card header {
+  height: 35px;
 }
 
 the-card ul {
@@ -220,8 +240,10 @@ the-card ul li {
 }
 the-card ul.toolbar2right {
   width: 170px;
-  float: right;
   display:block;
+  position: absolute;
+  right: 10px;
+  top: 10px;
 }
 the-card ul.toolbar li {
   float: left;
