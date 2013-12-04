@@ -1,0 +1,145 @@
+<polymer-element name="noflo-edge-inspector" attributes="edge graph showlogs">
+  <style>
+    the-card noflo-edge-inspector h1 {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    the-card noflo-edge-inspector h1 .connection {
+      text-transform: uppercase;
+      font-size: smaller;
+    }
+    the-card noflo-edge-inspector h1 .connection.route0 { color: #fff; }
+    the-card noflo-edge-inspector h1 .connection.route1 { color: hsl(0, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route2 { color: hsl(30, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route3 { color: hsl(60, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route4 { color: hsl(90, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route5 { color: hsl(120, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route6 { color: hsl(150, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route7 { color: hsl(180, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route8 { color: hsl(210, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route9 { color: hsl(240, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route10 { color: hsl(270, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route11 { color: hsl(300, 100%, 60%); }
+    the-card noflo-edge-inspector h1 .connection.route12 { color: hsl(330, 100%, 60%); }
+    the-card noflo-edge-inspector ul#events {
+      max-height: 140px;
+      overflow-x: hidden;
+      overflow-y: scroll;
+    }
+    the-card noflo-edge-inspector ul#events li {
+      font-size: 10px;
+      line-height: 14px;
+      margin-bottom: 0px;
+      color: hsl(185,100%,75%);
+    }
+    the-card noflo-edge-inspector ul#events li.begingroup {
+      color: hsl(189, 11%, 26%);
+    }
+    the-card noflo-edge-inspector ul#events li.begingroup:before {
+      display: inline;
+      content: '<';
+    }
+    the-card noflo-edge-inspector ul#events li.begingroup:after {
+      display: inline;
+      content: '>';
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup {
+      color: hsl(189, 11%, 26%);
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup:before {
+      display: inline;
+      content: '</';
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup:after {
+      display: inline;
+      content: '>';
+    }
+    the-card noflo-edge-inspector ul#events li.disconnect {
+      border-bottom: 1px solid #ff8080;
+      height: 3px;
+      margin-bottom: 3px;
+    }
+  </style>
+  <template>
+  <h1>{{ sourceNode }} <span class="connection route{{ route }}">{{ sourcePort }} &#10142; {{ targetPort }}</span> {{ targetNode }}</h1>
+    <ul id="events">
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-edge-inspector', {
+      lastlog: 0,
+      showlogs: 20,
+      edge: null,
+      graph: null,
+      sourceNode: '',
+      sourcePort: '',
+      targetNode: '',
+      targetPort: '',
+      route: 0,
+      frameReq: null,
+      leftView: function () {
+        if (this.frameReq) {
+          window.cancelAnimationFrame(this.frameReq);
+        }
+      },
+      edgeChanged: function () {
+        var src = this.edge.getSource();
+        var tgt = this.edge.getTarget();
+        this.sourceNode = this.nodeLabel(src.node);
+        this.sourcePort = src.port;
+        this.targetNode = this.nodeLabel(tgt.node);
+        this.targetPort = tgt.port;
+        this.route = this.edge.route;
+        this.edge.addEventListener('route', function () {
+          this.route = this.edge.route;
+        }.bind(this));
+        this.animate();
+      },
+      nodeLabel: function (node) {
+        var extractLibrary = node.split('/');
+        if (extractLibrary.length > 1) {
+          node = extractLibrary[1];
+        }
+        return node.split('_')[0];
+      },
+      animate: function () {
+        this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
+        if (this.edge.log.length <= this.lastlog) {
+          return;
+        }
+        this.renderLogs();
+        this.lastlog = this.edge.log.length;
+      },
+      renderLogs: function () {
+        var first = this.lastlog;
+        var i, item, li, content;
+        if (this.edge.log.length - this.lastlog > this.showlogs) {
+          first = this.edge.log.length - this.showlogs;
+        }
+        var fragment = document.createDocumentFragment();
+        for (i = first; i < this.edge.log.length; i++) {
+          item = this.edge.log.get(i);
+          if (!item) {
+            continue;
+          }
+          li = document.createElement('li');
+          li.classList.add(item.type);
+          if (item.group) {
+            content = document.createTextNode(item.group);
+          } else {
+            content = document.createTextNode(item.data);
+          }
+          li.appendChild(content);
+          fragment.appendChild(li);
+        }
+        this.$.events.appendChild(fragment);
+        // Scroll to bottom
+        while (this.$.events.childElementCount > this.showlogs) {
+          this.$.events.removeChild(this.$.events.firstChild);
+        }
+        this.$.events.scrollTop = this.$.events.scrollHeight;
+      }
+    });
+  </script>
+</polymer-element>

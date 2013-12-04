@@ -16,7 +16,9 @@ class ConnectRuntime extends noflo.Component
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
-    @inPorts.runtime.on 'data', (@runtime) =>
+    @inPorts.runtime.on 'data', (runtime) =>
+      @runtime.stop() if @runtime
+      @runtime = runtime
       @connect @editor, @runtime
 
   sendGraph: (runtime, editor) ->
@@ -138,6 +140,20 @@ class ConnectRuntime extends noflo.Component
           type: port.type
           array: port.array
       editor.registerComponent definition
+    edges = {}
+    runtime.on 'network', ({command, payload}) ->
+      return if command is 'error'
+      return unless payload.to and payload.from
+      id = "#{payload.from.node}#{payload.from.port}#{payload.to.node}#{payload.to.port}"
+      unless edges[id]
+        edges[id] = editor.querySelector "the-graph-edge[source=\"#{payload.from.node}.#{payload.from.port}\"][target=\"#{payload.to.node}.#{payload.to.port}\"]"
+      edge = edges[id]
+      return unless edge and edge.log
+      edge.log.push
+        type: command
+        group: if payload.group? then payload.group else ''
+        data: if payload.data? then payload.data else ''
+
     runtime.setParentElement editor.parentNode
     runtime.connect editor.graph.properties.environment
 
