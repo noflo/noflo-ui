@@ -98,6 +98,7 @@
         this.runtime.on('network', function (message) {
           if (message.command === 'error') {
             this.notify('Error', message.payload.message);
+            return;
           }
         }.bind(this));
       },
