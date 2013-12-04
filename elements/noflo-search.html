@@ -56,6 +56,9 @@
         while (this.results.length) {
           this.results.pop();
         }
+        if (this.resultsCard) {
+          this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
+        }
         this.fire('search', this.search);
       },
       resultsModified: function () {

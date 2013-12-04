@@ -3,7 +3,20 @@
 <link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-edge-menu.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
-<polymer-element name="noflo-context" attributes="project graphs component node edge search clear">
+<link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
+<polymer-element name="noflo-context" attributes="project graphs component node edge search" lightdom>
+  <template>
+    <the-panel id="context" edge="left" size="280">
+      <header></header>
+      <main></main>
+      <footer></footer>
+    </the-panel>
+    <the-panel id="fixed" edge="right" size="280" handle="35" automatic="false">
+      <header></header>
+      <main></main>
+      <footer></footer>
+    </the-panel>
+  </template>
   <script>
     Polymer('noflo-context', {
       project: null,
@@ -14,12 +27,11 @@
       node: null,
       edge: null,
       component: '',
-      clear: false,
       enteredView: function () {
         this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
         this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
         this.edgeObserver = new ArrayObserver(this.edges, this.edgesModified.bind(this));
-        this.contextBar = document.getElementById('context');
+        this.contextBar = this.$.context;
       },
       nodeChanged: function () {
         if (!this.node) {
@@ -145,15 +157,11 @@
       componentChanged: function () {
         this.fire('component', this.component);
       },
-      clearChanged: function () {
-        if (!this.clear) {
-          return;
-        }
+      clear: function () {
         this.project = null;
         this.graphs.splice(0, this.graphs.length);
         this.nodes.splice(0, this.nodes.length);
         this.edges.splice(0, this.edges.length);
-        this.clear = false;
       },
       buttons: function () {
         if (this.graphs.length === 0) {

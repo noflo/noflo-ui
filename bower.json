@@ -18,7 +18,6 @@
   ],
   "dependencies": {
     "polymer": "0.0.20131107",
-    "the-behavior": "*",
     "the-graph": "git://github.com/the-grid/the-graph.git#master",
     "the-panel": "*",
     "the-card": "*",

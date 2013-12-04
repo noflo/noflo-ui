@@ -1,7 +1,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
-<polymer-element name="noflo-main" attributes="projects sketches examples">
+<polymer-element name="noflo-main" attributes="open projects sketches examples">
   <template>
     <noflo-account clientid="U5GQAhyPsEvhSjUHK2BtcR0txaHD2THroB4H"></noflo-account>
     <section id="projects">
@@ -48,9 +48,25 @@
   </template>
   <script>
     Polymer('noflo-main', {
+      open: false,
       projects: [],
       examples: [],
       sketches: [],
+      enteredView: function () {
+        this.openChanged();
+      },
+      openChanged: function () {
+        if (String(this.open) === 'true') {
+          this.style.display = 'block';
+          this.style.opacity = 1;
+          return;
+        }
+        this.style.opacity = 0;
+        // TODO: On transition end
+        setTimeout(function () {
+          this.style.display = 'none';
+        }.bind(this), 300);
+      },
       openSketch: function (event, details, sender) {
         event.preventDefault();
         window.location.hash = '#graph/' + sender.getAttribute('data-id');

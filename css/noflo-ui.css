@@ -6,6 +6,15 @@
  * Darker elements: hsl(189, 11%, 26%)
  * Lighter elements: white
  * Default grid is 35x35
+ *
+ * z-indexes:
+ *
+ * Modal dialogs: 5
+ * Main screen: 4
+ * Project panel: 3
+ * Tool & context panels: 2
+ * Workspace chrome: 1
+ * Workspace: 0
  */
 @font-face {
   font-family: "SourceCodePro";
@@ -25,12 +34,6 @@ body {
   padding: 0;
 }
 
-body.main the-panel,
-body.main noflo-search,
-body.main noflo-breadcrumb,
-body.main noflo-runtime {
-  display: none;
-}
 the-panel {
   background-color: hsl(187, 45%, 8%);
   z-index: 2;
@@ -39,7 +42,7 @@ the-panel {
 the-panel#account {
   border-right: 1px solid hsl(189, 11%, 26%);
   top: 0px;
-  z-index: 4;
+  z-index: 3;
 }
 the-panel#account:before {
   font-family: FontAwesome;
@@ -113,7 +116,6 @@ the-panel#context {
 }
 the-panel#fixed {
   border-left: 1px solid hsl(189, 11%, 26%);
-  z-index: 4;
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
@@ -164,6 +166,7 @@ noflo-runtime button {
 the-panel the-card h1 {
   margin: 0px;
   font-size: 12pt;
+  line-height: 35px;
 }
 the-panel the-card h2 {
   margin: 0px;
@@ -225,18 +228,23 @@ the-panel the-card ul li p {
 }
 
 noflo-main {
+  background-color: hsl(187, 45%, 8%);
+  display: block;
+  z-index: 4;
+  position: fixed;
+  overflow-y: scroll;
+  height: 100%;
+  width: 100%;
+  transition: opacity 0.3s ease-in-out;
+}
+noflo-main section {
   background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
   background-size: 35px 35px;
   background-position: calc(50% - 19px) 4px;
   display: block;
-}
-noflo-main section {
-  clear: left;
-  display: block;
-  width: 60%;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 70%;
+  padding-left: 15%;
+  padding-right: 15%;
 }
 noflo-main section > h2 {
   font-size: 17px;
@@ -263,7 +271,7 @@ noflo-main ul li {
   width: 210px;
   height: 105px;
   overflow: hidden;
-  float: left;
+  display: inline-block;
   text-align: center;
   background-color: hsl(189, 47%, 6%);
   border-radius: 3px;
@@ -388,7 +396,7 @@ noflo-search {
   left: 35px;
   top: 0;
   color: white;
-  z-index: 3;
+  z-index: 2;
   width: 280px;
   height: 35px;
   font-size: 10px;
@@ -437,7 +445,7 @@ noflo-breadcrumb {
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
-  z-index: 3;
+  z-index: 1;
   width: 210px;
   height: 70px;
   padding: 35px;
@@ -461,7 +469,7 @@ noflo-runtime {
   top: 0;
   color: rgb(71, 71, 71);
   padding: 0px;
-  z-index: 3;
+  z-index: 1;
   width: 210px;
   height: 70px;
   padding: 35px;
@@ -506,7 +514,7 @@ noflo-runtime .offline, noflo-runtime .offline button {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1;
+  z-index: 0;
 }
 
 #preview-iframe {

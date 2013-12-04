@@ -3,7 +3,7 @@ noflo = require 'noflo'
 class Router extends noflo.Component
   constructor: ->
     @inPorts =
-      url: new noflo.Port 'string'
+      url: new noflo.ArrayPort 'string'
     @outPorts =
       route: new noflo.ArrayPort 'bang'
       main: new noflo.Port 'string'
@@ -11,7 +11,6 @@ class Router extends noflo.Component
       graph: new noflo.Port 'string'
       example: new noflo.Port 'string'
       missed: new noflo.Port 'string'
-      clear: new noflo.Port 'boolean'
 
     @inPorts.url.on 'data', (url) =>
       if @outPorts.route.isAttached()
@@ -19,8 +18,6 @@ class Router extends noflo.Component
         @outPorts.route.disconnect()
 
       if url is ''
-        @outPorts.clear.send true
-        @outPorts.clear.disconnect()
         @outPorts.main.send url
         @outPorts.main.disconnect()
         return
