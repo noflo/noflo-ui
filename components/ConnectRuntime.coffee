@@ -16,7 +16,9 @@ class ConnectRuntime extends noflo.Component
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
-    @inPorts.runtime.on 'data', (@runtime) =>
+    @inPorts.runtime.on 'data', (runtime) =>
+      @runtime.stop() if @runtime
+      @runtime = runtime
       @connect @editor, @runtime
 
   sendGraph: (runtime, editor) ->
