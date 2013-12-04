@@ -16,6 +16,28 @@
       margin-bottom: 0px;
       color: hsl(185,100%,75%);
     }
+    the-card noflo-edge-inspector ul#events li.begingroup {
+      color: hsl(189, 11%, 26%);
+    }
+    the-card noflo-edge-inspector ul#events li.begingroup:before {
+      display: inline;
+      content: '<';
+    }
+    the-card noflo-edge-inspector ul#events li.begingroup:after {
+      display: inline;
+      content: '>';
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup {
+      color: hsl(189, 11%, 26%);
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup:before {
+      display: inline;
+      content: '</';
+    }
+    the-card noflo-edge-inspector ul#events li.endgroup:after {
+      display: inline;
+      content: '>';
+    }
     the-card noflo-edge-inspector ul#events li.disconnect {
       border-bottom: 1px solid #ff8080;
       height: 3px;
@@ -67,7 +89,7 @@
       },
       renderLogs: function () {
         var first = this.lastlog;
-        var i, item, li;
+        var i, item, li, content;
         if (this.edge.log.length - this.lastlog > this.showlogs) {
           first = this.edge.log.length - this.showlogs;
         }
@@ -79,7 +101,12 @@
           }
           li = document.createElement('li');
           li.classList.add(item.type);
-          li.innerHTML = (item.group ? item.group + ' ' : '') + item.data;
+          if (item.group) {
+            content = document.createTextNode(item.group);
+          } else {
+            content = document.createTextNode(item.data);
+          }
+          li.appendChild(content);
           fragment.appendChild(li);
         }
         this.$.events.appendChild(fragment);
