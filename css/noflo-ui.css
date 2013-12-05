@@ -1,3 +1,7 @@
+noflo-breadcrumb {
+  display:none;
+}
+
 body {
   /* iOS don't clash with our hold behavior */
   -webkit-user-select: none;                /* disable cut copy paste */
@@ -126,7 +130,10 @@ the-panel#account main ul li noflo-account .toolbar a {
   position: fixed;
   left: 36px;
   top: 36px;
-  width: calc(72px * 4);
+  width: calc(72px * 4 + 3px);
+  max-height: calc(100% - 72px);
+  overflow-y: scroll;
+  overflow-x: visible;
   z-index: 2;
 }
 the-panel#fixed {
@@ -674,16 +681,18 @@ noflo-component-editor #tests h1 {
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
-}
-::-webkit-scrollbar-track {
-  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
-  -webkit-border-radius: 5px;
-  border-radius: 5px;
+  width: 2px;
 }
 ::-webkit-scrollbar-thumb {
   -webkit-border-radius: 5px;
+  border-radius: 1px;
+  background: hsla(191, 100%, 92%, 0.3);
+  -webkit-box-shadow: inset 0 0 6px hsla(0, 0%, 0%, 0.5);
+}
+
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px hsla(0, 0%, 0%, 0.3);
+  -webkit-border-radius: 5px;
   border-radius: 5px;
-  background: hsla(0,0%,0%,.2); 
-  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+  background-color: hsl(0, 0%, 0%);
 }
