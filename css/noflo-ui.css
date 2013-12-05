@@ -1,3 +1,10 @@
+body {
+  /* iOS don't clash with our hold behavior */
+  -webkit-user-select: none;                /* disable cut copy paste */
+  -webkit-touch-callout: none;              /* disable callout, image save panel */
+  -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
+}
+
 button {
   padding:0;
 }
