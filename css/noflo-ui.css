@@ -22,8 +22,9 @@ input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
   outline:none;
 }
 
+
 h1, h2, h3 {
-font-weight: 100;
+font-weight: normal;
 }
 
 /*
@@ -146,10 +147,14 @@ the-panel#account main ul li noflo-account .toolbar a {
   z-index: 2;
 }
 the-panel#fixed {
+  padding-left: 36px;
+  padding-top: 72px;
+  box-sizing: border-box;
+  z-index: 2;
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
-  content: '\f0ad';
+  content: '\f06e';
   color: hsl(189, 11%, 26%);
   position: absolute;
   text-align: center;
@@ -188,16 +193,21 @@ the-card[type="noflo-runtime-preview"] {
   overflow: hidden;
 }
 
-the-card.fullscreen {
+the-card.maximized {
   background-color: hsla(190, 30%, 6%, 0.95);
   width: calc(100% - 70px);
   height: calc(100% - 36px);
   max-height: none;
   position: fixed;
-  top: 36px;
+  top: 72px;
   left: 36px;
   transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
   z-index: 3;
+  border: none;
+}
+the-card.maximized .the-card-content {
+  width: 100%;
+  height: 100%;
 }
 html the-card-stack .sticky-head {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
@@ -362,12 +372,12 @@ noflo-main ul {
   padding: 0px;
   margin-top: 0px;
   margin-bottom: 36px;
-  margin-left: -17px;
+  margin-left: -18px;
   margin-right: -18px;
   list-style: none;
 }
 noflo-main ul li {
-  width: 210px;
+  width: 216px;
   height: 105px;
   overflow: hidden;
   display: inline-block;
@@ -375,7 +385,7 @@ noflo-main ul li {
   background-color: hsl(189, 47%, 6%);
   border-radius: 3px;
   margin-right: 18px;
-  margin-left: 17px;
+  margin-left: 18px;
   margin-bottom: 36px;
   position: relative;
 }
@@ -391,7 +401,7 @@ noflo-main ul li the-graph-thumb {
 noflo-main ul li button {
   display: block;
   position: absolute;
-  right: 17px;
+  right: 18px;
   top: 36px;
   background-color: transparent;
   color: hsl(189, 11%, 26%);
@@ -405,17 +415,20 @@ noflo-main ul li button {
 }
 noflo-main ul li h2 {
   position: absolute;
-  top: 45px;
-  left: 17px;
+  top: 36px;
+  line-height: 36px;
   width: 75px;
   text-transform: none;
   font-size: 10px;
   text-align: left;
+  left: 18px;
+  padding: 0px;
+  margin: 0px;
 }
 noflo-main ul li p {
   position: absolute;
   top: 53px;
-  left: 17px;
+  left: 18px;
   width: 75px;
   text-transform: uppercase;
   font-size: 8px;
@@ -536,75 +549,6 @@ noflo-new-component {
   z-index: 5;
 }
 
-noflo-breadcrumb {
-  position: fixed;
-  left: 315px;
-  top: 0;
-  color: rgb(71, 71, 71);
-  padding: 0px;
-  z-index: 1;
-  width: calc(100% - 315px);
-  height: 36px;
-  background-color: hsl(187, 45%, 5%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-}
-noflo-breadcrumb h1 {
-  line-height: 36px;
-  width: 210px;
-  overflow: hidden;
-  position: absolute;
-  left: 122px;
-}
-noflo-breadcrumb h2 {
-  line-height: 36px;
-  width: 105px;
-  overflow: hidden;
-  position: absolute;
-  left: 17px;
-}
-
-noflo-runtime {
-  position: fixed;
-  right: 36px;
-  top: 0;
-  color: rgb(71, 71, 71);
-  z-index: 2;
-  width: 350px;
-  height: 36px;
-  background-color: hsl(187, 45%, 5%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-}
-noflo-runtime .status {
-  line-height: 36px;
-  position: absolute;
-  left: 17px;
-  width: 158px;
-}
-noflo-runtime .status button {
-  height: 36px;
-  width: 36px;
-  text-align: center;
-}
-noflo-runtime .runcontrol {
-  line-height: 36px;
-  position: absolute;
-  right: 17px;
-  width: 158px;
-}
-noflo-runtime .runcontrol button {
-  height: 36px;
-  width: 36px;
-  text-align: center;
-  color: rgb(71, 71, 71);
-}
-
-noflo-runtime .online, noflo-runtime .online button {
-  color: #01d159;
-}
-noflo-runtime .offline, noflo-runtime .offline button {
-  color: #e70215;
-}
-
 #workspace {
   position: absolute;
   top: 0;
@@ -631,8 +575,8 @@ the-graph-nav the-graph-map {
   left: auto;
   top: auto;
   right: 36px;
-  width: 210px;
-  height: 175px;
+  width: 216px;
+  height: 180px;
   border-top: 1px solid hsl(189, 11%, 26%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
 }
@@ -655,7 +599,7 @@ the-graph-nav the-graph-map {
 
 #zoomout {
   position: fixed;
-  bottom: 210px;
+  bottom: 216px;
 }
 
 noflo-component-editor {
@@ -690,6 +634,12 @@ noflo-component-editor #code h1,
 noflo-component-editor #tests h1 {
   line-height: 36px;
   padding-left: 36px;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
+noflo-component-editor #code h1 {
+  text-align: right;
 }
 
 ::-webkit-scrollbar {
