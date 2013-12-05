@@ -69,11 +69,6 @@
     }
     
   </style>
-  <div class="the-card-content sticky-head">
-    <header class="search-results-header">
-      <h1><i class="fa fa-search"></i>{{ results.length }} components</h1>
-    </header>
-  </div>
     <ul class="search-results-list">
       <template repeat="{{ result, index in results }}">
         <li class="search-results-item" data-index="{{ index }}" on-click="{{ clicked }}">
