@@ -125,7 +125,7 @@ the-panel#account main ul li noflo-account .toolbar a {
 #context {
   position: fixed;
   left: 36px;
-  top: 36px;
+  top: 72px;
   width: calc(72px * 4);
   z-index: 2;
 }
@@ -478,27 +478,6 @@ noflo-search {
   font-size: 10px;
   white-space: nowrap;
 }
-noflo-search input {
-  background-color: hsl(187, 45%, 5%);
-  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-  border: none;
-  padding: 0px;
-  padding-right: 10px;
-  padding-left: 10px;
-  color: white;
-  width: 245px;
-  height: 36px;
-  display: inline;
-}
-noflo-search button {
-  width: 36px;
-  height: 36px;
-  margin: 0px;
-  margin-left: -5px;
-  padding: 0px;
-  display: inline;
-  display: inline;
-}
 
 noflo-new-graph,
 noflo-new-project,
@@ -512,33 +491,6 @@ noflo-new-component {
   margin-left: -200px;
   outline: solid hsla(0, 0%, 11%, 0.6) 1000px;
   z-index: 5;
-}
-
-noflo-breadcrumb {
-  position: fixed;
-  left: 315px;
-  top: 0;
-  color: rgb(71, 71, 71);
-  padding: 0px;
-  z-index: 1;
-  width: calc(100% - 315px);
-  height: 36px;
-  background-color: hsl(187, 45%, 5%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-}
-noflo-breadcrumb h1 {
-  line-height: 36px;
-  width: 210px;
-  overflow: hidden;
-  position: absolute;
-  left: 122px;
-}
-noflo-breadcrumb h2 {
-  line-height: 36px;
-  width: 105px;
-  overflow: hidden;
-  position: absolute;
-  left: 17px;
 }
 
 noflo-runtime {

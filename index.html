@@ -17,10 +17,8 @@
     <noflo-polymer name="noflo-main" inports="open projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs" outports="runtime"></noflo-polymer>
-    <link rel="import" href="elements/noflo-breadcrumb.html">
-    <noflo-polymer name="noflo-breadcrumb" inports="project graphs component" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
-    <noflo-polymer name="noflo-search" inports="buttons results" outports="menu search"></noflo-polymer>
+    <noflo-polymer name="noflo-search" inports="buttons results project graph component" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
@@ -37,7 +35,6 @@
     <noflo-main></noflo-main>
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
-    <noflo-breadcrumb></noflo-breadcrumb>
     <noflo-search></noflo-search>
     <noflo-library></noflo-library>
     <noflo-project></noflo-project>
@@ -284,14 +281,11 @@
       'noflo-runtime' -> SELECTOR Runtime(polymer/noflo-runtime)
       Context GRAPHS -> GRAPHS Runtime
 
-      # Breadcrumb handling
-      'noflo-breadcrumb' -> SELECTOR Breadcrumb(polymer/noflo-breadcrumb)
-      Context GRAPHS -> GRAPHS Breadcrumb
-      Context COMPONENT -> COMPONENT Breadcrumb
-      Context PROJECT -> PROJECT Breadcrumb
-
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
+      Context CURRENTGRAPH -> GRAPH Search
+      Context COMPONENT -> COMPONENT Search
+      Context PROJECT -> PROJECT Search
 
       # Library handling
       'noflo-library' -> SELECTOR Library(polymer/noflo-library)
