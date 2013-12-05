@@ -1,4 +1,6 @@
-<polymer-element name="noflo-node-inspector" attributes="node graph">
+<link rel="import" href="number-scrubber.html">
+
+<polymer-element name="noflo-node-inspector" attributes="node graph" class="the-card-content">
   <style>
     ul.ports li {
       display: block;
@@ -10,7 +12,7 @@
       font-size: 10px;
       padding-top: 0;
       width: 87px;
-      line-height: 35px;
+      line-height: 36px;
       overflow: hidden;
     }
     
@@ -29,8 +31,8 @@
       color: hsl(184, 40%, 89%);
       display: block;
       padding: 8px;
-      height: 35px;
-      width: 35px;
+      height: 36px;
+      width: 36px;
     }
     ul.ports li label i {
       margin:0;
@@ -48,9 +50,9 @@
       position: absolute;
       top: 0px;
       right: 0px;
-      line-height: 35px;
-      height: 35px;
-      width: 35px;
+      line-height: 36px;
+      height: 36px;
+      width: 36px;
       text-align: center;
       padding: 0px;
       font-size: 12px;
@@ -74,12 +76,12 @@
       -moz-box-sizing: border-box;
       box-sizing: border-box;
       width: 170px;
-      height: 35px;
+      height: 36px;
       border: none;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
       font-size: 10px;
       padding: 9px;
-      padding-left: 35px;
+      padding-left: 36px;
       
     }
     ul.ports li:nth-child(even) input, ul.ports li:nth-child(even) button {
@@ -136,16 +138,17 @@
     ul.ports li.route11:not(.readonly) input, ul.ports li.route11:not(.readonly) button                 {  border-left: 1px solid hsla(300, 100%, 75%,.1); }
     ul.ports li.route12:not(.readonly) input, ul.ports li.route12:not(.readonly) button                 {  border-left: 1px solid hsla(330, 100%, 75%,.1); }
     
+    number-scrubber,
     ul.ports li label span:before {
       display: inline;
-      line-height: 35px;
+      line-height: 36px;
       font-size: 10px;
       float: right;
       position: absolute;
       left: 86px;
       text-transform: uppercase;
       opacity: 0.2;
-      width: 35px;
+      width: 36px;
       text-align: center;      
     }
     
@@ -184,6 +187,12 @@
               <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-change="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+              <template if="{{ port.type == 'number' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
+              <template if="{{ port.type == 'int' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
               <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
             </label>

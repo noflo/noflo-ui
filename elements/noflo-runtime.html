@@ -153,6 +153,7 @@
         this.card.type = 'noflo-runtime-preview';
         // Move the preview element of the runtime into the card
         var preview = document.createElement('noflo-preview');
+        preview.classList.add('the-card-content');
         preview.runtime = this.runtime;
         preview.returnTo = this.parentNode;
         this.card.appendChild(preview);

@@ -1,4 +1,4 @@
-<polymer-element name="noflo-edge-menu" attributes="edges">
+<polymer-element name="noflo-edge-menu" attributes="edges" class="the-card-content sticky-head">
   <style>
     ul.routes {
       margin: 0;
@@ -12,7 +12,7 @@
       float: left;
       margin: 0px;
       width: calc(100% / 12);
-      height: 35px;
+      height: 36px;
     }
     ul.routes li button:hover {
       opacity: 1;
@@ -81,8 +81,8 @@
       <h1>{{ edges.length}} <template if="{{ edges.length > 1 }}">Edges</template><template if="{{ edges.length == 1 }}">Edge</template></h1>    
     </header>
     <ul class="toolbar toolbar2right">
-      <li><button class="blue-button" on-click="{{ clear }}"><i class="fa fa-check"></i>Deselect</button></li>
-      <li><button class="red-button" on-click="{{ remove }}"><i class="fa fa-trash-o"></i>Delete</button></li>
+      <li><button class="blue-button" on-click="{{ clear }}"><!--i class="fa fa-check"  --></i>Deselect</button></li>
+      <li><button class="red-button" on-click="{{ remove }}"><!--i class="fa fa-trash-o"--></i>Delete</button></li>
     </ul>
     <ul class="routes">
       <template repeat="{{ route in routes }}">
