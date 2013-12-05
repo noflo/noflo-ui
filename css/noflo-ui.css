@@ -164,6 +164,7 @@ the-card {
   position: relative;
 }
 the-card.fullscreen {
+  background-color: hsla(190, 30%, 6%, 0.95);
   width: calc(100% - 70px);
   height: calc(100% - 35px);
   max-height: none;
@@ -589,6 +590,8 @@ noflo-runtime .offline, noflo-runtime .offline button {
 #preview-iframe {
   display: none;
   border: none;
+  width: 300px;
+  height: 300px;
 }
 
 #zoomrange {

@@ -7,9 +7,16 @@
       max-height: none;
       overflow: hidden;
     }
+    the-card[type="noflo-runtime-preview"] #preview {
+      text-align: center;
+    }
     the-card[type="noflo-runtime-preview"] #preview-iframe {
       margin-top: 25px;
       display: block;
+    }
+    the-card[type="noflo-runtime-preview"].fullscreen #preview-iframe {
+      width: 100%;
+      min-height: 100%;
     }
   </style>
   <template>
@@ -48,6 +55,7 @@
       },
       maximize: function () {
         this.maximized = true;
+        this
       },
       minimize: function () {
         this.maximized = false;
