@@ -18,13 +18,17 @@
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);
         var id = component + '_' + num.toString(36);
+
+        // TODO fix with pan
+        var pan = this.editor.$.graph._pan;
+
         this.editor.$.graph.nodes.push({
           name: id,
           component: component,
           metadata: {
             label: component,
-            x: 100,
-            y: 100
+            x: -pan.x + 334,
+            y: -pan.y + 100
           }
         });
       },
