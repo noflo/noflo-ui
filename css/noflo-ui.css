@@ -142,6 +142,10 @@ the-panel#account main ul li noflo-account .toolbar a {
   z-index: 2;
 }
 the-panel#fixed {
+  padding-left: 36px;
+  padding-top: 72px;
+  box-sizing: border-box;
+  z-index: 2;
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
@@ -530,48 +534,6 @@ noflo-new-component {
   margin-left: -200px;
   outline: solid hsla(0, 0%, 11%, 0.6) 1000px;
   z-index: 5;
-}
-
-noflo-runtime {
-  position: fixed;
-  right: 36px;
-  top: 0;
-  color: rgb(71, 71, 71);
-  z-index: 2;
-  width: 350px;
-  height: 36px;
-  background-color: hsl(187, 45%, 5%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-}
-noflo-runtime .status {
-  line-height: 36px;
-  position: absolute;
-  left: 18px;
-  width: 158px;
-}
-noflo-runtime .status button {
-  height: 36px;
-  width: 36px;
-  text-align: center;
-}
-noflo-runtime .runcontrol {
-  line-height: 36px;
-  position: absolute;
-  right: 18px;
-  width: 158px;
-}
-noflo-runtime .runcontrol button {
-  height: 36px;
-  width: 36px;
-  text-align: center;
-  color: rgb(71, 71, 71);
-}
-
-noflo-runtime .online, noflo-runtime .online button {
-  color: #01d159;
-}
-noflo-runtime .offline, noflo-runtime .offline button {
-  color: #e70215;
 }
 
 #workspace {
