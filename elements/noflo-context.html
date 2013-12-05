@@ -205,17 +205,6 @@
         this.nodes.splice(0, this.nodes.length);
         this.edges.splice(0, this.edges.length);
       },
-      buttons: function () {
-        if (this.graphs.length === 0) {
-          return;
-        }
-        this.fire('button', {
-          id: 'graph-inspector',
-          icon: 'gear',
-          label: 'Graph settings',
-          search: 'graph settings'
-        });
-      },
       searchChanged: function () {
         if (this.search === 'graph settings') {
           this.showGraphInspector();
