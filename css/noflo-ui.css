@@ -163,12 +163,16 @@ the-card {
   overflow-y: auto;
   position: relative;
 }
-the-card[type="noflo-runtime-preview"] {
-  padding: 0px;
-  width: 280px;
-  overflow: hidden;
+the-card.fullscreen {
+  width: calc(100% - 70px);
+  height: calc(100% - 35px);
+  max-height: none;
+  position: fixed;
+  top: 35px;
+  left: 35px;
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+  z-index: 3;
 }
-
 html the-card-stack[type="edge-menu"] the-card, html the-card-stack[type="node-menu"] the-card {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
 }
@@ -585,9 +589,6 @@ noflo-runtime .offline, noflo-runtime .offline button {
 #preview-iframe {
   display: none;
   border: none;
-}
-the-card #preview-iframe {
-  display: block;
 }
 
 #zoomrange {
