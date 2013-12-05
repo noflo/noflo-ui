@@ -9,6 +9,9 @@ button {
   padding:0;
 }
 
+input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
+  outline:none;
+}
 
 /*
  * Colors:
@@ -17,7 +20,7 @@ button {
  * Workspace background: hsl(189, 47%, 6)
  * Darker elements: hsl(189, 11%, 26%)
  * Lighter elements: white
- * Default grid is 35x35
+ * Default grid is 36x36
  *
  * z-indexes:
  *
@@ -61,7 +64,7 @@ the-panel#account:before {
   position: absolute;
   text-align: center;
   right: 0px;
-  width: 35px;
+  width: 36px;
   top: 50%;
   top: calc(50% - 7px);
   font-size: 17px;
@@ -74,14 +77,14 @@ the-panel#account:not([open]):before {
 the-panel#account header,
 the-panel#account main {
   display: block;
-  margin-left: 35px;
-  margin-right: 35px;
+  margin-left: 36px;
+  margin-right: 36px;
 }
 the-panel#account header h1 {
   text-align: center;
   border-bottom: 1px solid hsl(189, 11%, 26%);
-  height: 35px;
-  line-height: 35px;
+  height: 36px;
+  line-height: 36px;
 }
 the-panel#account main ul {
   margin: 0px;
@@ -89,8 +92,8 @@ the-panel#account main ul {
   list-style: none;
 }
 the-panel#account main ul li {
-  line-height: 35px;
-  min-height: 35px;
+  line-height: 36px;
+  min-height: 36px;
 }
 the-panel#account main ul li a {
   color: white;
@@ -99,7 +102,7 @@ the-panel#account main ul li a {
 }
 the-panel#account main ul li a i {
   float: right;
-  line-height: 35px;
+  line-height: 36px;
   color: hsl(189, 11%, 26%);
   margin-right: 4px;
 }
@@ -107,7 +110,7 @@ the-panel#account main ul li noflo-account img {
   margin-top: 4px;
   width: 20px;
   height: 20px;
-  border-radius: 35px;
+  border-radius: 36px;
   border: 1px solid #01d8e5;
   float: right;
 }
@@ -117,13 +120,13 @@ the-panel#account main ul li noflo-account .toolbar button {
 }
 the-panel#account main ul li noflo-account .toolbar a {
   font-size: 16px;
-  line-height: 35px;
+  line-height: 36px;
 }
 #context {
   position: fixed;
-  left: 35px;
-  top: 35px;
-  width: 245px;
+  left: 36px;
+  top: 36px;
+  width: calc(72px * 4);
   z-index: 2;
 }
 the-panel#fixed {
@@ -135,7 +138,7 @@ the-panel#fixed:before {
   position: absolute;
   text-align: center;
   left: 0px;
-  width: 35px;
+  width: 36px;
   top: 50%;
   top: calc(50% - 7px);
   font-size: 17px;
@@ -146,7 +149,7 @@ the-panel#fixed:not([open]):before {
   opacity: 1;
 }
 
-the-card {
+.the-card-content {
   display: block;
   margin: 0px;
   padding: 10px 10px 10px;
@@ -156,37 +159,43 @@ the-card {
   border-bottom: 1px hsla(190, 100%, 30%, 0.1) solid;
   border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
   background-color: hsla(190, 30%, 6%, 0.95);
-  width: 280px;
-  max-height: 280px;
+  width: calc(72px * 4);
+  max-height: calc(72px * 4);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
 }
+
+the-card[type="noflo-runtime-preview"] {
+  padding: 0px;
+  width: calc(72px * 4);
+  overflow: hidden;
+}
+
 the-card.fullscreen {
   background-color: hsla(190, 30%, 6%, 0.95);
   width: calc(100% - 70px);
-  height: calc(100% - 35px);
+  height: calc(100% - 36px);
   max-height: none;
   position: fixed;
-  top: 35px;
-  left: 35px;
+  top: 36px;
+  left: 36px;
   transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
   z-index: 3;
 }
-html the-card-stack[type="edge-menu"] the-card, html the-card-stack[type="node-menu"] the-card {
+html the-card-stack .sticky-head {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
 }
 
-html the-card-stack[type="edge-menu"] the-card h1, html the-card-stack[type="node-menu"] the-card h1 {
-  background-color: hsla(190, 30%, 9%, 0.98) !important;
+html the-card-stack .sticky-head h1 {
   font-size:15px;
 }
 
 the-card button,
 noflo-search button,
 noflo-runtime button {
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   font-size: 10px;
   background-color: transparent;
   border: none;
@@ -196,7 +205,7 @@ noflo-runtime button {
 
 the-card h1 {
   font-size: 12px;
-  line-height: 35px;
+  line-height: 36px;
   margin: 0px;
   margin-bottom: 0px;
   text-shadow: 0 1px hsl(0, 0%, 0%);  
@@ -208,15 +217,15 @@ the-card header h1 {
   position: absolute;
   top: 10px;
   left: 10px;
-  width: 179px;
-  height: 35px;
+  width: calc(72px * 3 - 1px);
+  height: 36px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 the-card header h2 {
-  line-height: 35px;
-  width: 80px;
-  height: 35px;
+  line-height: 36px;
+  width: 72px;
+  height: 36px;
   overflow: hidden;
   text-overflow: ellipsis;
   position: absolute;
@@ -229,7 +238,7 @@ the-card header h2 {
   display: block;
 }
 the-card header {
-  height: 35px;
+  height: 36px;
 }
 
 the-card ul {
@@ -241,7 +250,7 @@ the-card ul {
 the-card textarea {
   width: 100%;
   min-height: 100px;
-  max-height: 260px;
+  max-height: calc(72px * 4);
 }
 
 the-card ul li {
@@ -260,13 +269,13 @@ the-card ul.toolbar li {
   float: left;
   display: block;
   width: calc(100%/2);  
-  height: 35px;
+  height: 36px;
   text-align: center;
   margin: 0px;
   margin-right: 0px;
 }
 the-card ul.toolbar li * {
-  line-height: 35px;
+  line-height: 36px;
 }
 the-card ul.toolbar li button {
   width:100%;
@@ -284,7 +293,7 @@ the-card ul.toolbar li button {
 
 
 the-card ul li h2 {
-  font-size: 10pt;
+  font-size: 10px;
   margin: 0px;
 }
 the-card ul li i {
@@ -295,7 +304,7 @@ the-card ul li p {
   margin: 0px;
   margin-top: 10px;
   padding: 0px;
-  font-size: 8pt;
+  font-size: 8px;
 }
 
 noflo-main {
@@ -310,7 +319,7 @@ noflo-main {
 }
 noflo-main section {
   background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
-  background-size: 35px 35px;
+  background-size: 36px 36px;
   background-position: calc(50% - 19px) 4px;
   display: block;
   width: 70%;
@@ -319,9 +328,9 @@ noflo-main section {
 }
 noflo-main section > h2 {
   font-size: 17px;
-  line-height: 35px;
-  margin-top: 35px;
-  height: 35px;
+  line-height: 36px;
+  margin-top: 36px;
+  height: 36px;
   color: white;
   text-transform: none;
 }
@@ -333,7 +342,7 @@ noflo-main section > h2 small {
 noflo-main ul {
   padding: 0px;
   margin-top: 0px;
-  margin-bottom: 35px;
+  margin-bottom: 36px;
   margin-left: -17px;
   margin-right: -18px;
   list-style: none;
@@ -348,7 +357,7 @@ noflo-main ul li {
   border-radius: 3px;
   margin-right: 18px;
   margin-left: 17px;
-  margin-bottom: 35px;
+  margin-bottom: 36px;
   position: relative;
 }
 noflo-main ul li.add {
@@ -364,14 +373,14 @@ noflo-main ul li button {
   display: block;
   position: absolute;
   right: 17px;
-  top: 35px;
+  top: 36px;
   background-color: transparent;
   color: hsl(189, 11%, 26%);
   border: 1px solid hsl(189, 11%, 26%);
   font-size: 13px;
   border-radius: 3px;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-  height: 35px;
+  height: 36px;
   padding-left: 13px;
   padding-right: 13px;
 }
@@ -402,9 +411,9 @@ noflo-main noflo-account {
   text-align: center;
   display: block;
   background-color: hsl(189, 47%, 6%);
-  margin-top: -35px;
-  padding-top: 35px;
-  padding-bottom: 35px;
+  margin-top: -36px;
+  padding-top: 36px;
+  padding-bottom: 36px;
 }
 noflo-main noflo-account .avatar {
   border-radius: 50px;
@@ -415,8 +424,8 @@ noflo-main noflo-account .avatar {
   height: 80px;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 70px;
-  margin-bottom: 35px;
+  margin-top: 72px;
+  margin-bottom: 36px;
   overflow: hidden;
 }
 noflo-main noflo-account .avatar:before {
@@ -431,7 +440,7 @@ noflo-main noflo-account .avatar:before {
   z-index: 1;
 }
 noflo-main noflo-account .toolbar {
-  margin-top: 35px;
+  margin-top: 36px;
   padding: 1px;
   border: 1px solid hsl(189, 11%, 13%);
   border-radius: 3px;
@@ -445,30 +454,30 @@ noflo-main noflo-account .toolbar button {
   font-size: 13px;
   border-radius: 3px;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-  height: 35px;
-  padding-left: 35px;
-  padding-right: 35px;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
   margin: 0px;
 }
 noflo-main noflo-account .toolbar a {
   font-size: 13px;
   color: hsl(189, 11%, 26%);
   text-decoration: none;
-  height: 35px;
-  padding-left: 35px;
-  padding-right: 35px;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
 }
 
 noflo-search {
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
   position: fixed;
-  left: 35px;
+  left: 36px;
   top: 0;
   color: white;
   z-index: 2;
-  width: 280px;
-  height: 35px;
+  width: calc(72px * 4);
+  height: 36px;
   font-size: 10px;
   white-space: nowrap;
 }
@@ -481,12 +490,12 @@ noflo-search input {
   padding-left: 10px;
   color: white;
   width: 245px;
-  height: 35px;
+  height: 36px;
   display: inline;
 }
 noflo-search button {
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   margin: 0px;
   margin-left: -5px;
   padding: 0px;
@@ -516,19 +525,19 @@ noflo-breadcrumb {
   padding: 0px;
   z-index: 1;
   width: calc(100% - 315px);
-  height: 35px;
+  height: 36px;
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
 }
 noflo-breadcrumb h1 {
-  line-height: 35px;
+  line-height: 36px;
   width: 210px;
   overflow: hidden;
   position: absolute;
   left: 122px;
 }
 noflo-breadcrumb h2 {
-  line-height: 35px;
+  line-height: 36px;
   width: 105px;
   overflow: hidden;
   position: absolute;
@@ -537,35 +546,35 @@ noflo-breadcrumb h2 {
 
 noflo-runtime {
   position: fixed;
-  right: 35px;
+  right: 36px;
   top: 0;
   color: rgb(71, 71, 71);
   z-index: 2;
   width: 350px;
-  height: 35px;
+  height: 36px;
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
 }
 noflo-runtime .status {
-  line-height: 35px;
+  line-height: 36px;
   position: absolute;
   left: 17px;
   width: 158px;
 }
 noflo-runtime .status button {
-  height: 35px;
-  width: 35px;
+  height: 36px;
+  width: 36px;
   text-align: center;
 }
 noflo-runtime .runcontrol {
-  line-height: 35px;
+  line-height: 36px;
   position: absolute;
   right: 17px;
   width: 158px;
 }
 noflo-runtime .runcontrol button {
-  height: 35px;
-  width: 35px;
+  height: 36px;
+  width: 36px;
   text-align: center;
   color: rgb(71, 71, 71);
 }
@@ -602,7 +611,7 @@ the-graph-nav the-graph-map {
   bottom: 0px;
   left: auto;
   top: auto;
-  right: 35px;
+  right: 36px;
   width: 210px;
   height: 175px;
   border-top: 1px solid hsl(189, 11%, 26%);
@@ -610,18 +619,18 @@ the-graph-nav the-graph-map {
 }
 
 #zoom button {
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   font-size: 10px;
   position: fixed;
-  right: 35px;
+  right: 36px;
   color: white;
   background-color: hsl(187, 45%, 8%);
   border: 1px solid hsl(189, 11%, 26%);
 }
 
 #zoomin {
-  right: 35px;
+  right: 36px;
   bottom: 255px;
 }
 
@@ -633,10 +642,10 @@ the-graph-nav the-graph-map {
 noflo-component-editor {
   display: block;
   position: absolute;
-  top: 35px;
-  left: 35px;
-  right: 35px;
-  height: calc(100% - 70px);
+  top: 36px;
+  left: 36px;
+  right: 36px;
+  height: calc(100% - 72px);
 }
 .CodeMirror {
   height: 100%;
@@ -660,8 +669,8 @@ noflo-component-editor #tests {
 }
 noflo-component-editor #code h1,
 noflo-component-editor #tests h1 {
-  line-height: 35px;
-  padding-left: 35px;
+  line-height: 36px;
+  padding-left: 36px;
 }
 
 ::-webkit-scrollbar {
