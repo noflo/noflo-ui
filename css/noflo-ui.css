@@ -158,11 +158,15 @@ the-card {
   background-color: hsla(190, 30%, 6%, 0.95);
   width: 280px;
   max-height: 280px;
+  transition: max-height 0.3s ease-in-out;
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
 }
-the-card.fullscreen {
+the-card.minimized {
+  max-height: 55px;
+}
+the-card.maximized {
   background-color: hsla(190, 30%, 6%, 0.95);
   width: calc(100% - 70px);
   height: calc(100% - 35px);
