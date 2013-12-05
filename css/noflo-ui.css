@@ -17,6 +17,11 @@ input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
   outline:none;
 }
 
+h1 {
+  font-size: 18px;
+  font-weight: normal;
+}
+
 /*
  * Colors:
  *
@@ -678,6 +683,12 @@ noflo-component-editor #code h1,
 noflo-component-editor #tests h1 {
   line-height: 36px;
   padding-left: 36px;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
+noflo-component-editor #code h1 {
+  text-align: right;
 }
 
 ::-webkit-scrollbar {

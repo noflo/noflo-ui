@@ -6,8 +6,11 @@
   <style>
     noflo-project h2 {
       font-size: 16px;
-      line-height: 35px;
+      line-height: 36px;
       text-transform: none;
+      font-weight: normal;
+      padding: 0px;
+      margin: 0px;
     }
     noflo-project ul.graphs li {
       width: 245px;
@@ -36,7 +39,7 @@
       position: absolute;
       right: 17px;
       top: 17px;
-      font-size: 35px;
+      font-size: 36px;
       color: hsl(189, 11%, 26%);
     }
     noflo-project ul.graphs li button {
@@ -50,7 +53,7 @@
       font-size: 13px;
       border-radius: 3px;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      height: 35px;
+      height: 36px;
       padding-left: 13px;
       padding-right: 13px;
     }
@@ -66,7 +69,7 @@
     }
   </style>
   <template>
-    <the-panel id="account" edge="left" size="315" handle="35" automatic="false">
+    <the-panel id="account" edge="left" size="324" handle="36" automatic="false">
       <header>
         <template if="{{ project }}">
         <h1>{{ project.name }}</h1>
