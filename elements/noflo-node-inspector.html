@@ -1,3 +1,5 @@
+<link rel="import" href="number-scrubber.html">
+
 <polymer-element name="noflo-node-inspector" attributes="node graph">
   <style>
     ul.ports li {
@@ -136,6 +138,7 @@
     ul.ports li.route11:not(.readonly) input, ul.ports li.route11:not(.readonly) button                 {  border-left: 1px solid hsla(300, 100%, 75%,.1); }
     ul.ports li.route12:not(.readonly) input, ul.ports li.route12:not(.readonly) button                 {  border-left: 1px solid hsla(330, 100%, 75%,.1); }
     
+    number-scrubber,
     ul.ports li label span:before {
       display: inline;
       line-height: 35px;
@@ -184,6 +187,9 @@
               <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-change="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+              <template if="{{ port.type == 'number' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
               <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
             </label>
@@ -245,6 +251,10 @@
         var port = this.node.getInportByName(sender.getAttribute('name'));
         port.setValue(value);
       },
+      // scrubValue: function (event, detail, sender) {
+      //   this.updateValue(event, detail, sender);
+      //   console.log( event.detail, (typeof event.detail) );
+      // },
       removeValue: function (event, detail, sender) {
         event.preventDefault();
         var name = sender.getAttribute('data-port');
