@@ -190,6 +190,9 @@
               <template if="{{ port.type == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
+              <template if="{{ port.type == 'int' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
               <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
             </label>
