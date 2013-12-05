@@ -1,8 +1,7 @@
 <polymer-element name="noflo-preview" attributes="runtime maximized">
   <style>
-    the-card[type="noflo-runtime-preview"] {
+    the-card[type="noflo-runtime-preview"] .the-card-content {
       padding: 0px;
-      width: 280px;
       height: 350px;
       max-height: none;
       overflow: hidden;
@@ -14,7 +13,7 @@
       margin-top: 25px;
       display: block;
     }
-    the-card[type="noflo-runtime-preview"].fullscreen #preview-iframe {
+    the-card[type="noflo-runtime-preview"].maximized #preview-iframe {
       width: 100%;
       min-height: 100%;
     }
@@ -48,9 +47,9 @@
       },
       maximizedChanged: function() {
         if (this.maximized) {
-          this.parentNode.classList.add('fullscreen');
+          this.parentNode.classList.add('maximized');
         } else {
-          this.parentNode.classList.remove('fullscreen');
+          this.parentNode.classList.remove('maximized');
         }
       },
       maximize: function () {
