@@ -1,10 +1,82 @@
 <polymer-element name="noflo-search-results" attributes="search results">
   <template>
-    <h1>Search: {{ search }}</h1>
-    <h2>{{ results.length }} results</h2>
-    <ul class="results">
+  <style>
+  
+  noflo-search-results .search-results-header h1 {
+    color: hsla(188, 15%, 60%, 0.8);
+    padding-left: 25px;
+    font-size: 12px !important;
+  }
+  .search-results-header i {
+    padding: 0;
+    margin: 0;
+    line-height: 36px;
+    width: 36px;
+    left: -10px;
+    position: absolute;
+    text-align: center;
+  }
+  
+    .search-results-item, .search-results-list {
+      width: calc(72px * 4);
+    }
+    .search-results-item {
+      -webkit-box-sizing: border-box;
+      -mox-box-sizing: border-box;
+      box-sizing: border-box;
+      min-height: 36px;
+      position: relative;
+      border: 1px solid hsl(0, 0%, 0%);
+      background-color: hsla(187, 31%, 6%, 0.952941);
+    }
+    .search-results-item i {
+      color: hsla(191, 100%, 92%, 0.898039);
+      position: absolute;
+      line-height: 36px;
+      width: 36px;
+      text-align: center;
+      padding: 0;
+      margin: 0;   
+    }
+    .search-results-item h2 {
+      position: absolute;
+      display: block;
+      left: 36px;
+      top: 0px;
+      height: 36px;
+      line-height: 36px;
+      width: calc(100% - 36px);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+    }
+    .search-results-item p {
+      position: relative;
+      display: block;
+      left: 8px;
+      overflow-y: scroll;
+      padding: 0px;
+      margin: 0px;
+      margin-top: 36px;
+      margin-bottom: calc(36px / 3);
+      width: calc(100% - 18px);
+      height: auto;
+      max-height: 36px;
+      line-height: calc(36px / 3);
+      font-size: 10px;
+      color: hsla(188, 15%, 60%, 0.8);
+      text-shadow: hsl(0, 0%, 0%) 0px 1px 1px;
+    }
+    
+  </style>
+  <div class="the-card-content sticky-head">
+    <header class="search-results-header">
+      <h1><i class="fa fa-search"></i>{{ results.length }} components</h1>
+    </header>
+  </div>
+    <ul class="search-results-list">
       <template repeat="{{ result, index in results }}">
-        <li data-index="{{ index }}" on-click="{{ clicked }}">
+        <li class="search-results-item" data-index="{{ index }}" on-click="{{ clicked }}">
           <i class="fa fa-{{ result.icon }}"></i>
           <h2>{{ result.label }}</h2>
           <p>{{ result.description }}</p>
