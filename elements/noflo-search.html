@@ -2,8 +2,10 @@
 <link rel="import" href="noflo-search-results.html">
 <polymer-element name="noflo-search" attributes="buttons results project graph component">
   <style>
+
     noflo-search.overlay #breadcrumb {
       width: calc(72px * 4);
+      display: block;
     }
     noflo-search #breadcrumb {
       position: relative;
@@ -13,15 +15,25 @@
       left: 0px;
       top: 0px;
       z-index: 1;
-      background-color: hsl(187, 45%, 5%);
-      transition: width 0.3s ease-in-out;
+      
+      /*transition: width 0.3s ease-in-out;*/
+      display: none;
+      /*box-sizing: border-box;*/
+
+      background-color: hsla(0, 0%, 0%, 0.98) !important;
+      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+      background-size: calc(100% - 1px);
+      background-position: 0px;
+      border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+      
     }
     noflo-search #breadcrumb i {
       position: absolute;
       line-height: 72px;
-      left: 18px;
-      font-size: 21px;
+      right: 18px;
+      font-size: 15px;
       color: hsl(189, 11%, 26%);
+      
     }
     noflo-search #breadcrumb h2 {
       display: inline-block;
@@ -29,22 +41,21 @@
       margin: 0px;
       padding: 0px;
       box-sizing: border-box;
-      padding-left: 48px;
+      padding-left: 10px;
       color: hsl(189, 11%, 26%);
-      font-size: 10px;
+      font-size: 15px;
       font-weight: normal;
-      text-transform: uppercase;
-      width: 126px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     noflo-search #breadcrumb h2:after {
-      content: ' //';
+      content: '/';
       display: inline;
     }
     noflo-search #breadcrumb h1 {
       display: inline-block;
       line-height: 72px;
+      font-size: 15px;
       margin: 0px;
       padding: 0px;
       overflow: hidden;
@@ -52,22 +63,31 @@
       width: 158px;
       font-weight: normal;
     }
+    noflo-search.overlay #search {
+      display: none;
+    }
     noflo-search #search {
+      display: block;
       position: absolute;
       top: 0px;
       left: 0px;
-      background-color: hsl(187, 45%, 5%);
+      background-color: hsla(190, 30%, 9%, 0.98) !important;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
       border: none;
       padding: 0px;
       padding-right: 18px;
       padding-left: 18px;
       color: white;
-      width: 288px;
+      width: calc(72px * 4 - 36px);
       height: 72px;
-      box-sizing: border-box;
-      font-size: 16px;
+      /*box-sizing: border-box;*/
+      font-size: 12px;
       display: inline;
+      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+      background-size: calc(100% - 1px);
+      background-position: 0px;
+      border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+      border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
     }
   </style>
   <template>
@@ -86,7 +106,7 @@
       <h1>{{ component.name }}</h1>
       </template>
     </div>
-    <input id="search" value="{{ search }}" type="text" placeholder="Search" x-webkit-speech>
+    <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
   </template>
   <script>
     Polymer('noflo-search', {
@@ -110,7 +130,7 @@
       blur: function () {
         this.classList.add('overlay');
       },
-      searchChanged: function () {
+      checkField: function () {
         event.preventDefault();
         if (this.search === '') {
           this.blur();
@@ -121,6 +141,9 @@
           this.fire('search', this.search);
           return;
         }
+      },
+      searchChanged: function () {
+        event.preventDefault();
         while (this.results.length) {
           this.results.pop();
         }

@@ -2,6 +2,11 @@ noflo-breadcrumb {
   display:none;
 }
 
+input::-webkit-input-speech-button {
+
+  margin-right 18px;
+}
+
 body {
   /* iOS don't clash with our hold behavior */
   -webkit-user-select: none;                /* disable cut copy paste */
@@ -15,6 +20,10 @@ button {
 
 input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
   outline:none;
+}
+
+h1, h2, h3 {
+font-weight: 100;
 }
 
 /*
@@ -129,7 +138,7 @@ the-panel#account main ul li noflo-account .toolbar a {
 #context {
   position: fixed;
   left: 36px;
-  top: 36px;
+  top: 72px;
   width: calc(72px * 4 + 3px);
   max-height: calc(100% - 72px);
   overflow-y: scroll;
@@ -192,6 +201,9 @@ the-card.fullscreen {
 }
 html the-card-stack .sticky-head {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
+  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+  background-size: calc(100% - 1px) 100%;
+  background-position: 0px;
 }
 
 html the-card-stack .sticky-head h1 {
