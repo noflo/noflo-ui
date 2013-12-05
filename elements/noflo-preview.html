@@ -28,7 +28,7 @@
       <li><button class="blue-button" on-click="{{ maximize }}"><i class="fa fa-arrows-alt"></i> Maximize</button></li>
       </template>
       <template if="{{ maximized }}">
-      <li><button class="blue-button" on-click="{{ minimize }}"><i class="fa fa-arrow-left"></i> Minimize</button></li>
+      <li><button class="blue-button" on-click="{{ minimize }}"><i class="fa fa-arrow-right"></i> Minimize</button></li>
       </template>
     </ul>
     <div id="preview"></div>
@@ -51,6 +51,7 @@
         } else {
           this.parentNode.classList.remove('maximized');
         }
+        this.fire('maximized', this.maximized);
       },
       maximize: function () {
         this.maximized = true;

@@ -149,7 +149,7 @@ the-panel#fixed {
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
-  content: '\f0ad';
+  content: '\f06e';
   color: hsl(189, 11%, 26%);
   position: absolute;
   text-align: center;
@@ -188,16 +188,21 @@ the-card[type="noflo-runtime-preview"] {
   overflow: hidden;
 }
 
-the-card.fullscreen {
+the-card.maximized {
   background-color: hsla(190, 30%, 6%, 0.95);
   width: calc(100% - 70px);
   height: calc(100% - 36px);
   max-height: none;
   position: fixed;
-  top: 36px;
+  top: 72px;
   left: 36px;
   transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
   z-index: 3;
+  border: none;
+}
+the-card.maximized .the-card-content {
+  width: 100%;
+  height: 100%;
 }
 html the-card-stack .sticky-head {
   background-color: hsla(190, 30%, 9%, 0.98) !important;

@@ -203,6 +203,16 @@
         this.card.appendChild(preview);
         this.card.addTo(this.toolPanel.getMain());
         this.toolPanel.open = true;
+
+        // Handle maximization
+        var originalSize = this.toolPanel.size;
+        preview.addEventListener('maximized', function (e) {
+          if (e.detail) {
+            this.toolPanel.size = window.innerWidth - 36;
+          } else {
+            this.toolPanel.size = originalSize;
+          }
+        }.bind(this));
       },
       hideCard: function () {
         if (!this.card) {
