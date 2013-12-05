@@ -33,10 +33,6 @@ class IframeRuntime extends Base
     # Set an ID for targeting purposes
     @iframe.id = 'preview-iframe'
 
-    # Set dimensions
-    @iframe.style.width = "#{preview.width}px"
-    @iframe.style.height = "#{preview.height}px"
-
     @address = preview.src
 
     # Update iframe contents as needed

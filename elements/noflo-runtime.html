@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-preview.html">
 <polymer-element name="noflo-runtime" attributes="graphs">
   <template>
     <template if="{{ currentGraph }}">
@@ -151,16 +152,16 @@
         this.card = document.createElement('the-card');
         this.card.type = 'noflo-runtime-preview';
         // Move the preview element of the runtime into the card
-        this.card.appendChild(this.runtime.getElement());
+        var preview = document.createElement('noflo-preview');
+        preview.runtime = this.runtime;
+        preview.returnTo = this.parentNode;
+        this.card.appendChild(preview);
         this.card.addTo(contextPanel);
       },
       hideCard: function () {
-        if (!this.card) {
+        if (!this.card || !this.card.parentNode) {
+          this.card = null;
           return;
-        }
-        var el = this.runtime.getElement();
-        if (el) {
-          this.parentNode.appendChild(el);
         }
         this.card.parentNode.removeChild(this.card);
         this.card = null;

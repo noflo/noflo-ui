@@ -1,0 +1,76 @@
+<polymer-element name="noflo-preview" attributes="runtime maximized">
+  <style>
+    the-card[type="noflo-runtime-preview"] {
+      padding: 0px;
+      width: 280px;
+      height: 350px;
+      max-height: none;
+      overflow: hidden;
+    }
+    the-card[type="noflo-runtime-preview"] #preview {
+      text-align: center;
+    }
+    the-card[type="noflo-runtime-preview"] #preview-iframe {
+      margin-top: 25px;
+      display: block;
+    }
+    the-card[type="noflo-runtime-preview"].fullscreen #preview-iframe {
+      width: 100%;
+      min-height: 100%;
+    }
+  </style>
+  <template>
+    <header>
+      <h1>Preview</h1>
+    </header>
+    <ul class="toolbar toolbar2right">
+      <li></li>
+      <template if="{{ !maximized }}">
+      <li><button class="blue-button" on-click="{{ maximize }}"><i class="fa fa-arrows-alt"></i> Maximize</button></li>
+      </template>
+      <template if="{{ maximized }}">
+      <li><button class="blue-button" on-click="{{ minimize }}"><i class="fa fa-arrow-left"></i> Minimize</button></li>
+      </template>
+    </ul>
+    <div id="preview"></div>
+  </template>
+  <script>
+    Polymer('noflo-preview', {
+      runtime: null,
+      returnTo: null,
+      maximized: false,
+      enteredView: function () {
+      },
+      button: function (event, data, sender) {
+        event.preventDefault();
+        var action = sender.getAttribute('data-action');
+        this[action]();
+      },
+      maximizedChanged: function() {
+        if (this.maximized) {
+          this.parentNode.classList.add('fullscreen');
+        } else {
+          this.parentNode.classList.remove('fullscreen');
+        }
+      },
+      maximize: function () {
+        this.maximized = true;
+        this
+      },
+      minimize: function () {
+        this.maximized = false;
+      },
+      runtimeChanged: function () {
+        // Capture runtime container to here
+        this.$.preview.appendChild(this.runtime.getElement());
+      },
+      leftView: function () {
+        if (!this.runtime || !this.returnTo) {
+          return;
+        }
+        // Return runtime element to main container
+        this.returnTo.appendChild(this.runtime.getElement());
+      }
+    });
+  </script>
+</polymer-element>

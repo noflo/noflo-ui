@@ -1,8 +1,15 @@
+body {
+  /* iOS don't clash with our hold behavior */
+  -webkit-user-select: none;                /* disable cut copy paste */
+  -webkit-touch-callout: none;              /* disable callout, image save panel */
+  -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
+}
+
 button {
   padding:0;
 }
 
-input:focus, textarea:focus, button:focus {
+input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
   outline:none;
 }
 
@@ -13,14 +20,14 @@ input:focus, textarea:focus, button:focus {
  * Workspace background: hsl(189, 47%, 6)
  * Darker elements: hsl(189, 11%, 26%)
  * Lighter elements: white
- * Default grid is 35x35
+ * Default grid is 36x36
  *
  * z-indexes:
  *
  * Modal dialogs: 5
  * Main screen: 4
- * Project panel: 3
- * Tool & context panels: 2
+ * Panels: 3
+ * Context cards & runtime controls: 2
  * Workspace chrome: 1
  * Workspace: 0
  */
@@ -44,12 +51,11 @@ body, button {
 
 the-panel {
   background-color: hsl(190, 30%, 6%);
-  z-index: 2;
+  z-index: 3;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
 }
 the-panel#account {
   top: 0px;
-  z-index: 3;
 }
 the-panel#account:before {
   font-family: FontAwesome;
@@ -159,12 +165,24 @@ the-panel#fixed:not([open]):before {
   overflow-y: auto;
   position: relative;
 }
+
 the-card[type="noflo-runtime-preview"] {
   padding: 0px;
   width: calc(72px * 4);
   overflow: hidden;
 }
 
+the-card.fullscreen {
+  background-color: hsla(190, 30%, 6%, 0.95);
+  width: calc(100% - 70px);
+  height: calc(100% - 36px);
+  max-height: none;
+  position: fixed;
+  top: 36px;
+  left: 36px;
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+  z-index: 3;
+}
 html the-card-stack .sticky-head {
   background-color: hsla(190, 30%, 9%, 0.98) !important;
 }
@@ -506,7 +524,7 @@ noflo-breadcrumb {
   color: rgb(71, 71, 71);
   padding: 0px;
   z-index: 1;
-  width: 350px;
+  width: calc(100% - 315px);
   height: 36px;
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
@@ -516,7 +534,7 @@ noflo-breadcrumb h1 {
   width: 210px;
   overflow: hidden;
   position: absolute;
-  right: 17px;
+  left: 122px;
 }
 noflo-breadcrumb h2 {
   line-height: 36px;
@@ -531,7 +549,7 @@ noflo-runtime {
   right: 36px;
   top: 0;
   color: rgb(71, 71, 71);
-  z-index: 1;
+  z-index: 2;
   width: 350px;
   height: 36px;
   background-color: hsl(187, 45%, 5%);
@@ -580,9 +598,8 @@ noflo-runtime .offline, noflo-runtime .offline button {
 #preview-iframe {
   display: none;
   border: none;
-}
-the-card #preview-iframe {
-  display: block;
+  width: 300px;
+  height: 300px;
 }
 
 #zoomrange {
@@ -639,7 +656,7 @@ noflo-component-editor {
 noflo-component-editor #code,
 noflo-component-editor #tests {
   display: block;
-  background: hsl(186,31%,6%);
+  background: hsl(189,47%,4%);
   width: 50%;
   height: 100%;
   position: absolute;
