@@ -24,7 +24,11 @@ input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
 
 
 h1, h2, h3 {
-font-weight: normal;
+  font-weight: normal;
+}
+
+.gpu {
+  -webkit-transform: translateZ(0px);
 }
 
 /*
@@ -55,7 +59,7 @@ font-weight: normal;
   font-weight: bold;
 }
 
-body, button {
+html, body, button {
   background-color: hsl(187, 45%, 5%);
   color: #ffffff;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
@@ -138,6 +142,8 @@ the-panel#account main ul li noflo-account .toolbar a {
 }
 #context {
   position: fixed;
+  -webkit-transform: translateZ(0px);
+  
   left: 36px;
   top: 72px;
   width: calc(72px * 4 + 3px);
@@ -199,6 +205,8 @@ the-card.maximized {
   height: calc(100% - 36px);
   max-height: none;
   position: fixed;
+  -webkit-transform: translateZ(0px);
+  
   top: 72px;
   left: 36px;
   transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
@@ -341,6 +349,8 @@ noflo-main {
   display: block;
   z-index: 4;
   position: fixed;
+  -webkit-transform: translateZ(0px);
+  
   overflow-y: scroll;
   height: 100%;
   width: 100%;
@@ -504,6 +514,8 @@ noflo-search {
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
   position: fixed;
+  -webkit-transform: translateZ(0px);
+  
   left: 36px;
   top: 0;
   color: white;
@@ -542,10 +554,12 @@ noflo-graph-inspector {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
-  width: 400px;
+  -webkit-transform: translateZ(0px);
+  
+  width: calc(72px * 8);
   top: calc(50% - 50px);
   left: 50%;
-  margin-left: -200px;
+  margin-left: calc(-72px * 4);
   outline: solid hsla(0, 0%, 11%, 0.6) 1000px;
   z-index: 5;
 }
@@ -572,14 +586,21 @@ noflo-graph-inspector {
 
 the-graph-nav the-graph-map {
   position: fixed;
+  -webkit-transform: translateZ(0px);
   bottom: 0px;
   left: auto;
   top: auto;
   right: 36px;
   width: 216px;
   height: 180px;
-  border-top: 1px solid hsl(189, 11%, 26%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
+  border-top: 36px solid hsla(0, 0%, 0%, 0.5);
+  border-left: 36px solid hsla(0, 0%, 0%, 0.5);
+  overflow: visible;
+  border-right: 36px solid hsla(0, 0%, 0%, 0.5);
+  background-size: calc(100% - 1px);
+  background-position: 0px;
+  border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+
 }
 
 #zoom button {
@@ -587,20 +608,18 @@ the-graph-nav the-graph-map {
   height: 36px;
   font-size: 10px;
   position: fixed;
+  -webkit-transform: translateZ(0px);
   right: 36px;
-  color: white;
-  background-color: hsl(187, 45%, 8%);
-  border: 1px solid hsl(189, 11%, 26%);
+  color: hsl(190, 100%, 90%);
+  background-color: hsla(187, 85%, 10%, 0.8);
 }
 
 #zoomin {
-  right: 36px;
-  bottom: 255px;
+  bottom: 144px;
 }
 
 #zoomout {
-  position: fixed;
-  bottom: 216px;
+  bottom: 0px;
 }
 
 noflo-component-editor {
