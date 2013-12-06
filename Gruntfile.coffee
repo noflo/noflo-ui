@@ -147,8 +147,8 @@ module.exports = ->
         'spec/*.coffee'
       ]
 
-    inlinelint: 
-      options:       
+    inlinelint:
+      options:
         strict: false,
         newcap: false,
         "globals": { "Polymer": true }

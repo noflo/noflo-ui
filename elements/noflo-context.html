@@ -113,7 +113,7 @@
         }.bind(this));
 
         var found;
-        for (var id in this.nodeInspectors) {
+        Object.keys(this.nodeInspectors).forEach(function (id) {
           found = false;
           this.nodes.forEach(function (node) {
             if (node.getAttribute('name') === id) {
@@ -124,7 +124,7 @@
             this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
             delete this.nodeInspectors[id];
           }
-        }
+        }.bind(this));
       },
       hideNodeCards: function () {
         if (this.nodeMenu) {
@@ -171,7 +171,7 @@
         }.bind(this));
 
         var found;
-        for (var id in this.edgeInspectors) {
+        Object.keys(this.edgeInspectors).forEach(function (id) {
           found = false;
           this.edges.forEach(function (edge) {
             if (edge.pathId === id) {
@@ -182,7 +182,7 @@
             this.edgeInspectors[id].parentNode.removeChild(this.edgeInspectors[id]);
             delete this.edgeInspectors[id];
           }
-        }
+        }.bind(this));
       },
       hideEdgeCards: function () {
         if (this.edgeMenu) {
