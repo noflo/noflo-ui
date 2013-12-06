@@ -15,93 +15,131 @@
     </template>
   </template>
   <script>
-    Polymer('noflo-account', {
-      clientid: '',
-      site: 'https://the-grid-account.herokuapp.com',
-      gatekeeper: 'https://noflo-gate.herokuapp.com/authenticate/',
-      redirect: '',
-      user: null,
-      gridToken: '',
-      storage: {
-        grid: 'grid-token',
-        user: 'grid-user'
-      },
-      enteredView: function () {
-        this.redirect = window.location.href;
-        this.checkLogin();
-      },
-      checkLogin: function () {
-        var token = localStorage.getItem(this.storage.grid);
-        if (token) {
-          this.gridToken = token;
-          return;
+    (function () {
+      var storage = {
+        set: function (key, value, callback) {
+          localStorage.setItem(key, value);
+          callback();
+        },
+        get: function (key, callback) {
+          callback(localStorage.getItem(key));
+        },
+        remove: function (key) {
+          localStorage.removeItem(key);
         }
-        var code = window.location.href.match(/\?code=(.*)/);
-        if (code && code[1]) {
+      };
+      if (chrome && chrome.storage) {
+        // Chrome App, use their storage API
+        storage.set = function (key, value) {
+          chrome.storage.sync.set({key: value});
+        };
+        storage.get = function (key, callback) {
+          chrome.storage.sync.get(key, function (items) {
+            callback(items[key]);
+          });
+        };
+        storage.remove = function (key) {
+          chrome.storage.sync.remove(key);
+        };
+      }
+
+      Polymer('noflo-account', {
+        clientid: '',
+        site: 'https://the-grid-account.herokuapp.com',
+        gatekeeper: 'https://noflo-gate.herokuapp.com/authenticate/',
+        redirect: '',
+        user: null,
+        gridToken: '',
+        storage: {
+          grid: 'grid-token',
+          user: 'grid-user'
+        },
+        enteredView: function () {
+          this.redirect = window.location.href;
+          this.checkLogin();
+        },
+        checkLogin: function () {
+          storage.get(this.storage.grid, function (token) {
+            if (token) {
+              this.gridToken = token;
+              return;
+            }
+            this.remoteLogin();
+          }.bind(this));
+        },
+        remoteLogin: function () {
+          var code = window.location.href.match(/\?code=(.*)/);
+          if (code && code[1]) {
+            var req = new XMLHttpRequest();
+            req.onreadystatechange = function () {
+              if (req.readyState !== 4) {
+                return;
+              }
+              if (req.status === 200) {
+                var data = JSON.parse(req.responseText);
+                if (data.token) {
+                  // Save the access token
+                  storage.set(this.storage.grid, data.token, function () {
+                    // Clear old user data
+                    storage.remove(this.storage.user);
+
+                    // Clean up URL
+                    var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
+                    window.location.href = window.location.href.replace(regex, '');
+                  }.bind(this));
+                }
+              } else {
+                this.clearCache();
+              }
+            }.bind(this);
+            req.open('GET', this.gatekeeper + code[1], true);
+            req.send(null);
+          }
+        },
+        getUser: function (token, refresh) {
+          if (refresh) {
+            this.getRemoteUser(token);
+            return;
+          }
+          storage.get(this.storage.user, function (user) {
+            try {
+              this.user = JSON.parse(user);
+              return;
+            } catch (e) {
+              storage.remove(this.storage.user);
+              this.getRemoteUser(token);
+            }
+          }.bind(this));
+        },
+        getRemoteUser:function (token) {
           var req = new XMLHttpRequest();
           req.onreadystatechange = function () {
             if (req.readyState !== 4) {
               return;
             }
             if (req.status === 200) {
-              var data = JSON.parse(req.responseText);
-              if (data.token) {
-                // Save the access token
-                localStorage.setItem(this.storage.grid, data.token);
-                // Clear old user data
-                localStorage.removeItem(this.storage.user);
-
-                // Clean up URL
-                var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
-                window.location.href = window.location.href.replace(regex, '');
-              }
-            } else {
+              storage.set(this.storage.user, req.responseText);
+              this.user = JSON.parse(req.responseText);
+              } else {
               this.clearCache();
             }
           }.bind(this);
-          req.open('GET', this.gatekeeper + code[1], true);
+          req.open('GET', this.site + '/api/user');
+          req.setRequestHeader('Authorization', 'Bearer ' + token);
           req.send(null);
+        },
+        logout: function () {
+          this.user = null;
+          this.clearCache();
+        },
+        clearCache: function () {
+          storage.remove(this.storage.grid);
+          storage.remove(this.storage.user);
+        },
+        gridTokenChanged: function () {
+          this.getUser(this.gridToken);
         }
-      },
-      getUser: function (token, refresh) {
-        if (!refresh) {
-          var user = localStorage.getItem(this.storage.user);
-          if (user) {
-            try {
-              this.user = JSON.parse(user);
-              return;
-            } catch (e) {
-              localStorage.removeItem(this.storage.user);
-            }
-          }
-        }
-        var req = new XMLHttpRequest();
-        req.onreadystatechange = function () {
-          if (req.readyState !== 4) {
-            return;
-          }
-          if (req.status === 200) {
-            localStorage.setItem(this.storage.user, req.responseText);
-            this.user = JSON.parse(req.responseText);
-          } else {
-            this.clearCache();
-          }
-        }.bind(this);
-        req.open('GET', this.site + '/api/user');
-        req.setRequestHeader('Authorization', 'Bearer ' + token);
-        req.send(null);
-      },
-      logout: function () {
-        this.user = null;
-        this.clearCache();
-      },
-      clearCache: function () {
-        localStorage.removeItem(this.storage.grid);
-        localStorage.removeItem(this.storage.user);
-      },
-      gridTokenChanged: function () {
-        this.getUser(this.gridToken);
-      }
-    });
+      });
+    })();
   </script>
-</polymer-element>
+  </polymer-element>
