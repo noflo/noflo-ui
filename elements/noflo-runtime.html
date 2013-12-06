@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-preview.html">
+<link rel="import" href="noflo-graph-inspector.html">
 <polymer-element name="noflo-runtime" attributes="graphs">
   <style>
     noflo-runtime {
@@ -28,7 +29,14 @@
     noflo-runtime #address h2 {
       position: absolute;
       left: 72px;
+      width: 153px;
       top: 0px;
+    }
+    noflo-runtime #address #graphinspector {
+      position: absolute;
+      right: 0px;
+      top: 0px;
+      color: hsl(189, 11%, 26%);
     }
 
     noflo-runtime #address, noflo-runtime #address button {
@@ -57,6 +65,7 @@
         <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
           <h2>{{ currentGraph.properties.environment.wsUrl }}</h2>
         </template>
+        <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </div>
     <div id="runcontrol">
       <template if="{{ online }}">
@@ -82,6 +91,7 @@
         running: false
       },
       card: null,
+      graphInspector: null,
       toolPanel: null,
       wasConnected: false,
       enteredView: function () {
@@ -106,6 +116,10 @@
         if (this.card) {
           this.card.parentNode.removeChild(this.card);
           this.card = null;
+        }
+        if (this.graphInspector) {
+          this.graphInspector.parentNode.removeChild(this.graphInspector);
+          this.graphInspector = null;
         }
         if (!this.currentGraph) {
           return;
@@ -221,6 +235,14 @@
         var el = this.runtime.getElement();
         this.card.parentNode.removeChild(this.card);
         this.card = null;
+      },
+      showGraphInspector: function () {
+        if (this.graphs.length === 0) {
+          return;
+        }
+        this.graphInspector = document.createElement('noflo-graph-inspector');
+        this.graphInspector.graph = this.currentGraph;
+        this.parentNode.appendChild(this.graphInspector);
       },
       canNotify: function () {
         if (!window.webkitNotifications) {

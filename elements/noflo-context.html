@@ -1,6 +1,5 @@
 <link rel="import" href="noflo-node-menu.html">
 <link rel="import" href="noflo-node-inspector.html">
-<link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-edge-menu.html">
 <link rel="import" href="noflo-edge-inspector.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
@@ -79,7 +78,6 @@
         this.fire('graphs', this.graphs);
         this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
         this.search = '';
-        this.searchChanged();
       },
       nodesModified: function () {
         this.fire('nodes', this.nodes);
@@ -204,27 +202,6 @@
         this.graphs.splice(0, this.graphs.length);
         this.nodes.splice(0, this.nodes.length);
         this.edges.splice(0, this.edges.length);
-      },
-      searchChanged: function () {
-        if (this.search === 'graph settings') {
-          this.showGraphInspector();
-          return;
-        }
-        if (this.graphInspector) {
-          this.graphInspector.parentNode.removeChild(this.graphInspector);
-          this.graphInspector = null;
-        }
-      },
-      showGraphInspector: function () {
-        if (this.graphs.length === 0) {
-          return;
-        }
-        var inspector = document.createElement('noflo-graph-inspector');
-        inspector.graph = this.graphs[this.graphs.length - 1];
-        this.graphInspector = document.createElement('the-card');
-        this.graphInspector.type = 'graph-inspector';
-        this.graphInspector.appendChild(inspector);
-        this.graphInspector.addTo(this.contextBar);
       }
     });
   </script>
