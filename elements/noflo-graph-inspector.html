@@ -13,7 +13,7 @@
       padding: 8px;
       background-color: hsl(184, 50%, 11%);
       color: hsl(184, 40%, 89%);
-      box-sixing: border-box;
+      box-sizing: border-box;
     }
     noflo-graph-inspector input {
       width: 100%;
@@ -23,7 +23,7 @@
       padding: 8px;
       background-color: hsl(184, 50%, 11%);
       color: hsl(184, 40%, 89%);
-      box-sixing: border-box;
+      box-sizing: border-box;
     }
   </style>
   <template>
@@ -35,9 +35,7 @@
     </label>
     <label>
       <span>Preview contents</span>
-      <textarea>
-        {{ graph.properties.environment.content }}
-      </textarea>
+      <textarea id="content" value="{{ graph.properties.environment.content }}"></textarea>
     </label>
     </template>
     <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
@@ -46,17 +44,12 @@
       <input type="text" value="{{ graph.properties.environment.wsUrl }}">
     </label>
     </template>
-    <button on-click="{{ updateContent }}">Create</button>
-    <a on-click="{{ close }}">Cancel</a>
+    <button on-click="{{ close }}">Done</button>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
       updateName: function (event, detail, sender) {
         this.graph.properties.name = sender.textContent;
-      },
-      updateContent: function (event, detail, sender) {
-        this.graph.properties.environment.content = sender.value;
-        this.close();
       },
       close: function () {
         if (!this.parentNode) {

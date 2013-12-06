@@ -17,7 +17,7 @@
 
     noflo-runtime h2 {
       font-size: 14px;
-      width: 189px;
+      width: 216px;
       font-weight: normal;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -29,7 +29,7 @@
     noflo-runtime #address h2 {
       position: absolute;
       left: 72px;
-      width: 153px;
+      width: 180px;
       top: 0px;
     }
     noflo-runtime #address #graphinspector {
@@ -62,7 +62,7 @@
         <template if="{{ currentGraph.properties.environment.runtime == 'html' }}">
           <h2>{{ currentGraph.properties.environment.src }}</h2>
         </template>
-        <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
+        <template if="{{ currentGraph.properties.environment.runtime == 'websocket' }}">
           <h2>{{ currentGraph.properties.environment.wsUrl }}</h2>
         </template>
         <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>

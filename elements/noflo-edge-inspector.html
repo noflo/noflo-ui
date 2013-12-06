@@ -107,6 +107,7 @@
         return node.split('_')[0];
       },
       animate: function () {
+        // TODO top-level animation loop
         this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
         if (this.edge.log.length <= this.lastlog) {
           return;
