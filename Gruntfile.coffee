@@ -75,6 +75,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
+          src: ['app.*']
+          expand: true
+          dest: '/'
+        ,
           src: ['app/*']
           expand: true
           dest: '/'
