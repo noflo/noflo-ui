@@ -1,0 +1,25 @@
+{
+  "name": "NoFlo",
+  "description": "Flow-Based Programming Environment",
+  "version": "0.1",
+  "app": {
+    "background": {
+      "scripts": ["app/background.js"]
+    }
+  },
+  "sandbox": {
+    "pages": [
+      "preview/iframe.html"
+    ]
+  },
+  "permissions": [
+    "https://noflo-gate.herokuapp.com/",
+    "https://api.github.com/",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "icons": {
+    "16": "app/noflo-16.png",
+    "128": "app/noflo-128.png"
+  }
+}

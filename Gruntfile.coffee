@@ -40,6 +40,8 @@ module.exports = ->
       preview_build:
         command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
         cwd: 'preview'
+      vulcanize:
+        command: './node_modules/.bin/vulcanize --csp -o app.html index.html'
 
     # JavaScript minification for the browser
     uglify:
@@ -73,11 +75,11 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['index.html']
+          src: ['app/*']
           expand: true
           dest: '/'
         ,
-          src: ['elements/*']
+          src: ['manifest.json']
           expand: true
           dest: '/'
         ,
@@ -170,7 +172,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['exec:nuke_main', 'exec:nuke_bower', 'exec:nuke_preview', 'exec:nuke_main_built', 'exec:nuke_preview_built']
-  @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build']
+  @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['exec:nuke_main', 'exec:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
