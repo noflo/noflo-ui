@@ -182,7 +182,7 @@
     <ul class="ports">
       <template repeat="{{ port in inports }}">
         <li class="route route{{ port.route }} {{ port.class }} port-type-{{ port.type }}">
-        <label><span>{{ port.name }}</span>
+          <label><span>{{ port.name }}</span>
           <template if="{{ port.showInput }}">
             <template if="{{ port.type == 'bang' }}">
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
@@ -199,7 +199,6 @@
               </template>
               <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
-            </label>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
             </template>
@@ -211,8 +210,8 @@
             <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
               <input type="{{ port.type }}" name="{{ port.name }}" readonly value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
-            </label>
           </template>
+          </label>
         </li>
       </template>
     </ul>
