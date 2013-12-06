@@ -57,15 +57,11 @@ module.exports = ->
         options:
           archive: 'noflo.zip'
         files: [
-          src: ['browser/meemoo-dataflow/libs/*']
+          src: ['browser/noflo-noflo-indexeddb/vendor/*']
           expand: true
           dest: '/'
         ,
-          src: ['browser/meemoo-dataflow/fonts/*']
-          expand: true
-          dest: '/'
-        ,
-          src: ['browser/meemoo-dataflow/build/default/*']
+          src: ['browser/noflo-noflo-polymer/noflo-polymer/*']
           expand: true
           dest: '/'
         ,
@@ -73,11 +69,15 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/*']
+          src: ['bower_components/**']
           expand: true
           dest: '/'
         ,
           src: ['index.html']
+          expand: true
+          dest: '/'
+        ,
+          src: ['elements/*']
           expand: true
           dest: '/'
         ,
@@ -98,14 +98,6 @@ module.exports = ->
           dest: '/'
         ,
           src: ['preview/iframe.html']
-          expand: true
-          dest: '/'
-        ,
-          src: ['examples/*']
-          expand: true
-          dest: '/'
-        ,
-          src: ['examples/images/*']
           expand: true
           dest: '/'
         ]
