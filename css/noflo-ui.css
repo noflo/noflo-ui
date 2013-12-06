@@ -350,6 +350,7 @@ noflo-main {
   display: block;
   z-index: 4;
   position: fixed;
+  top: 0px;
   -webkit-transform: translateZ(0px);
   
   overflow-y: scroll;
