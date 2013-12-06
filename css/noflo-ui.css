@@ -537,7 +537,8 @@ noflo-search button {
 
 noflo-new-graph,
 noflo-new-project,
-noflo-new-component {
+noflo-new-component,
+noflo-graph-inspector {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;

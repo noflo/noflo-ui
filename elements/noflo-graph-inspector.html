@@ -8,10 +8,12 @@
     noflo-graph-inspector textarea {
       height: 210px;
       border: none;
+      width: 100%;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
       padding: 8px;
       background-color: hsl(184, 50%, 11%);
       color: hsl(184, 40%, 89%);
+      box-sixing: border-box;
     }
     noflo-graph-inspector input {
       width: 100%;
@@ -21,6 +23,7 @@
       padding: 8px;
       background-color: hsl(184, 50%, 11%);
       color: hsl(184, 40%, 89%);
+      box-sixing: border-box;
     }
   </style>
   <template>
@@ -32,7 +35,7 @@
     </label>
     <label>
       <span>Preview contents</span>
-      <textarea on-blur="{{ updateContent }}">
+      <textarea>
         {{ graph.properties.environment.content }}
       </textarea>
     </label>
@@ -43,6 +46,8 @@
       <input type="text" value="{{ graph.properties.environment.wsUrl }}">
     </label>
     </template>
+    <button on-click="{{ updateContent }}">Create</button>
+    <a on-click="{{ close }}">Cancel</a>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
@@ -51,6 +56,13 @@
       },
       updateContent: function (event, detail, sender) {
         this.graph.properties.environment.content = sender.value;
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
       }
     });
   </script>
