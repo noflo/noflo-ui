@@ -156,6 +156,7 @@ the-panel#fixed {
   padding-left: 36px;
   padding-top: 72px;
   box-sizing: border-box;
+  top: 0px;
   z-index: 2;
 }
 the-panel#fixed:before {
