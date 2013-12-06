@@ -5,6 +5,7 @@
     ul.ports li {
       display: block;
       position: relative;
+      clear: left;
     }
     ul.ports li label span {
       float: left;
@@ -75,7 +76,7 @@
       -webkit-box-sizing: border-box;
       -moz-box-sizing: border-box;
       box-sizing: border-box;
-      width: 170px;
+      width: 142px;
       height: 36px;
       border: none;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
@@ -152,6 +153,7 @@
       text-align: center;      
     }
     
+    ul.ports li.port-type-color label span:before,
     ul.ports li.port-type-number label span:before,
     ul.ports li.port-type-int label span:before {
       content: '#';
@@ -173,7 +175,9 @@
   <template>
     <header>
       <h1 on-keyup="{{ updateLabel }}" contenteditable>{{ node.label }}</h1>
-      <h2>{{ node.component }}</h2>
+      <template if="{{ node.label != node.component }}">
+        <h2>{{ node.component }}</h2>
+      </template>
     </header>
     <ul class="ports">
       <template repeat="{{ port in inports }}">
