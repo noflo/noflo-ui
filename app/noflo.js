@@ -1,5 +1,4 @@
 window.addEventListener('WebComponentsReady', function() { 
-  console.log('ready to rock');
   var noflo = require('noflo');
   var graphs = {};
   var fbps = Array.prototype.slice.call(document.querySelectorAll('script[type="application/fbp"]'));
