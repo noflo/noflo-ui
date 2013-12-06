@@ -32,7 +32,8 @@
     "component-coffee": "~0.1.4",
     "grunt-exec": "~0.4.2",
     "component": "~0.17.6",
-    "bower": "~1.2.7"
+    "bower": "~1.2.7",
+    "grunt-lint-inline": "~0.3.1"
   },
   "scripts": {
     "postinstall": "cd preview && npm install && cd ..",
