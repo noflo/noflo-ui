@@ -20,7 +20,7 @@
         var id = component + '_' + num.toString(36);
 
         // TODO fix with pan
-        var pan = this.editor.$.graph._pan;
+        var pan = this.editor.$.graph.getPan();
 
         this.editor.$.graph.nodes.push({
           name: id,
