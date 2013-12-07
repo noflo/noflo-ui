@@ -19,7 +19,9 @@
       var storage = {
         set: function (key, value, callback) {
           localStorage.setItem(key, value);
-          callback();
+          if (callback) {
+            callback();
+          }
         },
         get: function (key, callback) {
           callback(localStorage.getItem(key));
@@ -102,13 +104,15 @@
             return;
           }
           storage.get(this.storage.user, function (user) {
-            try {
-              this.user = JSON.parse(user);
-              return;
-            } catch (e) {
-              storage.remove(this.storage.user);
-              this.getRemoteUser(token);
+            if (user) {
+              try {
+                this.user = JSON.parse(user);
+                return;
+              } catch (e) {
+                storage.remove(this.storage.user);
+              }
             }
+            this.getRemoteUser(token);
           }.bind(this));
         },
         getRemoteUser:function (token) {
