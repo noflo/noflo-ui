@@ -18,10 +18,15 @@ module.exports = ->
     exec:
       nuke_main:
         command: 'rm -rf ./components/*/'
+      nuke_main_built:
+        command: 'rm -rf ./browser'
       nuke_bower:
         command: 'rm -rf ./bower_components/*'
       nuke_preview:
         command: 'rm -rf ./components/*/'
+        cwd: 'preview'
+      nuke_preview_built:
+        command: 'rm -rf ./browser'
         cwd: 'preview'
       bower_install:
         command: './node_modules/.bin/bower install'
@@ -35,6 +40,8 @@ module.exports = ->
       preview_build:
         command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
         cwd: 'preview'
+      vulcanize:
+        command: './node_modules/.bin/vulcanize --csp -o app.html index.html'
 
     # JavaScript minification for the browser
     uglify:
@@ -52,15 +59,11 @@ module.exports = ->
         options:
           archive: 'noflo.zip'
         files: [
-          src: ['browser/meemoo-dataflow/libs/*']
+          src: ['browser/noflo-noflo-indexeddb/vendor/*']
           expand: true
           dest: '/'
         ,
-          src: ['browser/meemoo-dataflow/fonts/*']
-          expand: true
-          dest: '/'
-        ,
-          src: ['browser/meemoo-dataflow/build/default/*']
+          src: ['browser/noflo-noflo-polymer/noflo-polymer/*']
           expand: true
           dest: '/'
         ,
@@ -68,11 +71,19 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/*']
+          src: ['bower_components/**']
           expand: true
           dest: '/'
         ,
-          src: ['index.html']
+          src: ['app.*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['app/*']
+          expand: true
+          dest: '/'
+        ,
+          src: ['manifest.json']
           expand: true
           dest: '/'
         ,
@@ -93,14 +104,6 @@ module.exports = ->
           dest: '/'
         ,
           src: ['preview/iframe.html']
-          expand: true
-          dest: '/'
-        ,
-          src: ['examples/*']
-          expand: true
-          dest: '/'
-        ,
-          src: ['examples/images/*']
           expand: true
           dest: '/'
         ]
@@ -147,8 +150,8 @@ module.exports = ->
         'spec/*.coffee'
       ]
 
-    inlinelint: 
-      options:       
+    inlinelint:
+      options:
         strict: false,
         newcap: false,
         "globals": { "Polymer": true }
@@ -172,8 +175,8 @@ module.exports = ->
   @loadNpmTasks 'grunt-lint-inline'
 
   # Our local tasks
-  @registerTask 'nuke', ['exec:nuke_main', 'exec:nuke_bower', 'exec:nuke_preview']
-  @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build']
+  @registerTask 'nuke', ['exec:nuke_main', 'exec:nuke_bower', 'exec:nuke_preview', 'exec:nuke_main_built', 'exec:nuke_preview_built']
+  @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['exec:nuke_main', 'exec:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']

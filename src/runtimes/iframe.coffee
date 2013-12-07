@@ -53,7 +53,7 @@ class IframeRuntime extends Base
     unless preview
       preview = {}
     unless preview.src
-      preview.src = './preview/iframe.html'
+      preview.src = 'preview/iframe.html'
     unless preview.width
       preview.width = 300
     unless preview.height
@@ -83,7 +83,16 @@ class IframeRuntime extends Base
 
   send: (protocol, command, payload) ->
     w = @iframe.contentWindow
-    if not w or w.location.href is 'about:blank'
+    return unless w
+    try
+      return if w.location.href is 'about:blank'
+    catch e
+      # Chrome Apps
+      w.postMessage
+        protocol: protocol
+        command: command
+        payload: payload
+      , '*'
       return
     w.postMessage
       protocol: protocol

@@ -28,6 +28,11 @@ class MigrateLocalStorage extends noflo.Component
     return graph
 
   migrateGraphs: (store) ->
+    try
+      localStorage
+    catch e
+      # No localStorage support, skip
+      return
     graphs = @getGraphs()
     return if graphs.length is 0
     succeeded = 0
