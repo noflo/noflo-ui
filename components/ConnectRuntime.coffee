@@ -123,6 +123,8 @@ class ConnectRuntime extends noflo.Component
     @subscribeEditor editor, runtime
 
     runtime.on 'component', (message) ->
+      if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
+        return
       definition =
         name: message.payload.name
         description: message.payload.description
