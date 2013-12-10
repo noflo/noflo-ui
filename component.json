@@ -30,6 +30,7 @@
     "components": {
       "AppendTo": "components/AppendTo.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
+      "DropExamples": "components/DropExamples.coffee",
       "CreateGraph": "components/CreateGraph.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "LoadGraphEditor": "components/LoadGraphEditor.coffee",
@@ -47,6 +48,7 @@
     "src/runtimes/websocket.coffee",
     "components/AppendTo.coffee",
     "components/ConnectRuntime.coffee",
+    "components/DropExamples.coffee",
     "components/CreateGraph.coffee",
     "components/GenerateId.coffee",
     "components/LoadGraphEditor.coffee",
