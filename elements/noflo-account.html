@@ -30,7 +30,7 @@
           localStorage.removeItem(key);
         }
       };
-      if (chrome && chrome.storage) {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
         // Chrome App, use their storage API
         storage.set = function (key, value) {
           chrome.storage.sync.set({key: value});
