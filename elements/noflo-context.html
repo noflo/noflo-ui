@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-edge-inspector.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
-<polymer-element name="noflo-context" attributes="project graphs component node edge search" lightdom>
+<polymer-element name="noflo-context" attributes="project graphs component node edge search">
   <template>
     <section id="context"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36" automatic="false">
@@ -42,6 +42,9 @@
             }
           }
         }.bind(this));
+      },
+      getpanel: function () {
+        this.fire('toolpanel', this.$.fixed);
       },
       nodeChanged: function () {
         if (!this.node) {

@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-graph-inspector.html">
-<polymer-element name="noflo-runtime" attributes="graphs" class="gpu" lightdom>
+<polymer-element name="noflo-runtime" attributes="graphs" class="gpu">
   <style>
     noflo-runtime {
       position: fixed;
@@ -57,7 +57,7 @@
   </style>
   <template>
     <template if="{{ currentGraph }}">
-      <div id="address" class="{{ online: online }}">
+      <div id="address" class="{{ { online: online } | tokenList }}">
         <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
         <template if="{{ currentGraph.properties.environment.runtime == 'html' }}">
           <h2>{{ currentGraph.properties.environment.src }}</h2>
@@ -92,11 +92,8 @@
       },
       card: null,
       graphInspector: null,
-      toolPanel: null,
+      toolpanel: null,
       wasConnected: false,
-      enteredView: function () {
-        this.toolPanel = document.getElementById('fixed');
-      },
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
           this.currentGraph = null;
@@ -144,7 +141,9 @@
             this.hideCard();
             this.execution.running = false;
             this.execution.label = 'not started';
-            this.toolPanel.open = false;
+            if (this.toolpanel) {
+              this.toolpanel.open = false;
+            }
           }
         }.bind(this));
         this.runtime.on('execution', function (status) {
@@ -204,7 +203,7 @@
         this.runtime.reconnect();
       },
       showCard: function () {
-        if (this.card) {
+        if (this.card || !this.toolpanel) {
           return;
         }
         this.card = document.createElement('the-card');
@@ -215,16 +214,16 @@
         preview.runtime = this.runtime;
         preview.returnTo = this.parentNode;
         this.card.appendChild(preview);
-        this.card.addTo(this.toolPanel.getMain());
-        this.toolPanel.open = true;
+        this.card.addTo(this.toolpanel.getMain());
+        this.toolpanel.open = true;
 
         // Handle maximization
-        var originalSize = this.toolPanel.size;
+        var originalSize = this.toolpanel.size;
         preview.addEventListener('maximized', function (e) {
           if (e.detail) {
-            this.toolPanel.size = window.innerWidth - 36;
+            this.toolpanel.size = window.innerWidth - 36;
           } else {
-            this.toolPanel.size = originalSize;
+            this.toolpanel.size = originalSize;
           }
         }.bind(this));
       },

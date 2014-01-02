@@ -15,11 +15,11 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge buttons search clear" outports="project graphs currentgraph component nodes edges button result"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component nodes edges button result toolpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
-    <noflo-polymer name="noflo-runtime" inports="graphs" outports="runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-runtime" inports="graphs toolpanel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results project graph component" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
@@ -302,6 +302,7 @@
 
       # Runtime handling
       'noflo-runtime' -> SELECTOR Runtime(polymer/noflo-runtime)
+      '' -> GETPANEL Context TOOLPANEL -> TOOLPANEL Runtime
       Context GRAPHS -> GRAPHS Runtime
 
       # Search handling
