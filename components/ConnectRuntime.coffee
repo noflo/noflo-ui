@@ -155,6 +155,9 @@ class ConnectRuntime extends noflo.Component
         type: command
         group: if payload.group? then payload.group else ''
         data: if payload.data? then payload.data else ''
+    runtime.on 'icon', ({id, icon}) ->
+      return unless editor.updateIcon
+      editor.updateIcon id, icon
 
     runtime.setParentElement editor.parentNode
     runtime.connect editor.graph.properties.environment

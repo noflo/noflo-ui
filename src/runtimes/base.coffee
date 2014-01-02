@@ -50,6 +50,8 @@ class BaseRuntime extends EventEmitter
         @emit 'execution',
           running: false
           label: 'stopped'
+      when 'icon'
+        @emit 'icon', payload
       else
         @emit 'network',
           command: command
