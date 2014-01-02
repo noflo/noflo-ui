@@ -92,7 +92,7 @@
       },
       card: null,
       graphInspector: null,
-      toolpanel: null,
+      panel: null,
       wasConnected: false,
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
@@ -141,8 +141,8 @@
             this.hideCard();
             this.execution.running = false;
             this.execution.label = 'not started';
-            if (this.toolpanel) {
-              this.toolpanel.open = false;
+            if (this.panel) {
+              this.panel.open = false;
             }
           }
         }.bind(this));
@@ -203,7 +203,7 @@
         this.runtime.reconnect();
       },
       showCard: function () {
-        if (this.card || !this.toolpanel) {
+        if (this.card || !this.panel) {
           return;
         }
         this.card = document.createElement('the-card');
@@ -214,16 +214,16 @@
         preview.runtime = this.runtime;
         preview.returnTo = this.parentNode;
         this.card.appendChild(preview);
-        this.card.addTo(this.toolpanel.getMain());
-        this.toolpanel.open = true;
+        this.card.addTo(this.panel.getMain());
+        this.panel.open = true;
 
         // Handle maximization
-        var originalSize = this.toolpanel.size;
+        var originalSize = this.panel.size;
         preview.addEventListener('maximized', function (e) {
           if (e.detail) {
-            this.toolpanel.size = window.innerWidth - 36;
+            this.panel.size = window.innerWidth - 36;
           } else {
-            this.toolpanel.size = originalSize;
+            this.panel.size = originalSize;
           }
         }.bind(this));
       },

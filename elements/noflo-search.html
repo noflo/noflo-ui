@@ -118,8 +118,8 @@
       project: null,
       graph: null,
       component: null,
+      panel: null,
       enteredView: function () {
-        this.contextBar = document.getElementById('context');
         this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
         this.blur();
       },
@@ -173,7 +173,7 @@
         this.resultsCard = document.createElement('the-card');
         this.resultsCard.type = 'noflo-search-results';
         this.resultsCard.appendChild(results);
-        this.resultsCard.addTo(this.contextBar, true);
+        this.resultsCard.addTo(this.panel, true);
       }
     });
   </script>

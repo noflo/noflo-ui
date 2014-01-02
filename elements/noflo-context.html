@@ -45,6 +45,7 @@
       },
       getpanel: function () {
         this.fire('toolpanel', this.$.fixed);
+        this.fire('contextpanel', this.$.context);
       },
       nodeChanged: function () {
         if (!this.node) {
