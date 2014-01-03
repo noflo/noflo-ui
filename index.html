@@ -19,7 +19,7 @@
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
-    <noflo-polymer name="noflo-runtime" inports="graphs panel" outports="runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="buttons results project graph component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
@@ -303,6 +303,7 @@
       # Runtime handling
       'noflo-runtime' -> SELECTOR Runtime(polymer/noflo-runtime)
       Context GRAPHS -> GRAPHS Runtime
+      Context EDGES -> EDGES Runtime
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)

@@ -93,6 +93,7 @@
       card: null,
       graphInspector: null,
       panel: null,
+      edges: null,
       wasConnected: false,
       graphsChanged: function () {
         if (!this.graphs || this.graphs.length === 0) {
@@ -101,6 +102,13 @@
         }
         // Use the top-level graph as the runtime main graph
         this.currentGraph = this.graphs[0];
+      },
+      edgesChanged: function () {
+        if (!this.runtime || !this.edges || !this.edges.map) {
+          return;
+        }
+        var edgeData = this.edges.map(function (edge) { return edge.toJSON(); });
+        this.runtime.sendNetwork('edges', edgeData);
       },
       currentGraphChanged: function () {
         this.wasConnected = false;
