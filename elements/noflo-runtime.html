@@ -104,6 +104,9 @@
         this.currentGraph = this.graphs[0];
       },
       edgesChanged: function () {
+        this.sendEdges();
+      },
+      sendEdges: function () {
         if (!this.runtime || !this.edges || !this.edges.map) {
           return;
         }
@@ -157,6 +160,7 @@
         this.runtime.on('execution', function (status) {
           if (status.running) {
             this.execution.running = true;
+            this.sendEdges();
           } else {
             this.execution.running = false;
           }
