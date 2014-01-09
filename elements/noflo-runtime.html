@@ -107,11 +107,14 @@
         this.sendEdges();
       },
       sendEdges: function () {
-        if (!this.runtime || !this.edges || !this.edges.map) {
+        if (!this.runtime || !this.edges || !this.edges.map || !this.currentGraph) {
           return;
         }
         var edgeData = this.edges.map(function (edge) { return edge.toJSON(); });
-        this.runtime.sendNetwork('edges', edgeData);
+        this.runtime.sendNetwork('edges', {
+          edges: edgeData,
+          graph: this.currentGraph.id
+        });
       },
       currentGraphChanged: function () {
         this.wasConnected = false;

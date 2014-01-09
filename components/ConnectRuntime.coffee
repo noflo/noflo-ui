@@ -22,93 +22,102 @@ class ConnectRuntime extends noflo.Component
       @connect @editor, @runtime
 
   sendGraph: (runtime, editor) ->
+    graph = editor.toJSON()
     runtime.sendGraph 'clear',
       baseDir: 'noflo-ui-preview'
-    graph = editor.toJSON()
+      id: graph.id
     for name, definition of graph.processes
       runtime.sendGraph 'addnode',
         id: name
         component: definition.component
         metadata: definition.metadata
+        graph: graph.id
     for edge in graph.connections
       if edge.src
         runtime.sendGraph 'addedge',
-          from:
+          src:
             node: edge.src.process
             port: edge.src.port
-          to:
+          tgt:
             node: edge.tgt.process
             port: edge.tgt.port
+          graph: graph.id
         continue
       runtime.sendGraph 'addinitial',
-        from:
+        src:
           data: edge.data
-        to:
+        tgt:
           node: edge.tgt.process
           port: edge.tgt.port
+        graph: graph.id
 
-  convertNode: (node) ->
-    node.toJSON()
-  convertEdge: (edge) ->
+  convertNode: (id, node) ->
+    data = node.toJSON()
+    data.graph = id
+  convertEdge: (id, edge) ->
     data = edge.toJSON()
     edgeData =
-      from:
+      src:
         node: data.src.process
         port: data.src.port
-      to:
+      tgt:
         node: data.tgt.process
         port: data.tgt.port
-  convertInitial: (iip) ->
+      graph: id
+  convertInitial: (id, iip) ->
     data = iip.toJSON()
     iipData =
-      from:
+      src:
         data: data.data
-      to:
+      tgt:
         node: data.tgt.process
         port: data.tgt.port
-  convertBang: (bang) ->
+      graph: id
+  convertBang: (id, bang) ->
     iipData =
-      from:
+      src:
         data: true
-      to:
+      tgt:
         node: bang.process
         port: bang.port
+      graph: id
 
   subscribeEditor: (editor, runtime) ->
+    id = editor.$.graph.graphId
     editor.addEventListener 'addnode', (node) =>
       return unless @connected
-      runtime.sendGraph 'addnode', @convertNode node.detail
+      runtime.sendGraph 'addnode', @convertNode id, node.detail
     , false
     editor.addEventListener 'removenode', (node) =>
       return unless @connected
-      runtime.sendGraph 'removenode', @convertNode node.detail
+      runtime.sendGraph 'removenode', @convertNode id, node.detail
     , false
     editor.addEventListener 'addedge', (edge) =>
       return unless @connected
-      runtime.sendGraph 'addedge', @convertEdge edge.detail
+      runtime.sendGraph 'addedge', @convertEdge id, edge.detail
     , false
     editor.addEventListener 'removeedge', (edge) =>
       return unless @connected
-      runtime.sendGraph 'removeedge', @convertEdge edge.detail
+      runtime.sendGraph 'removeedge', @convertEdge id, edge.detail
     , false
     editor.addEventListener 'addinitial', (iip) =>
       return unless @connected
-      runtime.sendGraph 'addinitial', @convertInitial iip.detail
+      runtime.sendGraph 'addinitial', @convertInitial id, iip.detail
     , false
     editor.addEventListener 'removeinitial', (iip) =>
       return unless @connected
-      runtime.sendGraph 'removeinitial', @convertInitial iip.detail
+      runtime.sendGraph 'removeinitial', @convertInitial id, iip.detail
     , false
     # IIP value changes need to be propagated as add+remove
     editor.addEventListener 'iip', (iip) =>
       return unless @connected
-      runtime.sendGraph 'removeinitial', @convertInitial iip.detail
-      runtime.sendGraph 'addinitial', @convertInitial iip.detail
+      runtime.sendGraph 'removeinitial', @convertInitial id, iip.detail
+      runtime.sendGraph 'addinitial', @convertInitial id, iip.detail
     , false
     editor.addEventListener 'bang', (bang) =>
       return unless @connected
-      runtime.sendGraph 'removeinitial', @convertBang bang.detail
-      runtime.sendGraph 'addinitial', @convertBang bang.detail
+      runtime.sendGraph 'removeinitial', @convertBang id, bang.detail
+      runtime.sendGraph 'addinitial', @convertBang id, bang.detail
     , false
 
   connect: (editor, runtime) ->
@@ -145,10 +154,10 @@ class ConnectRuntime extends noflo.Component
     edges = {}
     runtime.on 'network', ({command, payload}) ->
       return if command is 'error'
-      return unless payload.to and payload.from
-      id = "#{payload.from.node}#{payload.from.port}#{payload.to.node}#{payload.to.port}"
+      return unless payload.tgt and payload.src
+      id = "#{payload.src.node}#{payload.src.port}#{payload.tgt.node}#{payload.tgt.port}"
       unless edges[id]
-        edges[id] = editor.querySelector "the-graph-edge[source=\"#{payload.from.node}.#{payload.from.port}\"][target=\"#{payload.to.node}.#{payload.to.port}\"]"
+        edges[id] = editor.querySelector "the-graph-edge[source=\"#{payload.src.node}.#{payload.src.port}\"][target=\"#{payload.tgt.node}.#{payload.tgt.port}\"]"
       edge = edges[id]
       return unless edge and edge.log
       edge.log.push
