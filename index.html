@@ -15,7 +15,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component nodes edges button result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects sketches examples" outports="newsketch newproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -340,6 +340,7 @@
       EditGraph NODECLICK -> NODE Context
       EditGraph EDGECLICK -> EDGE Context
       EditGraph EDITOR -> EDITOR Library
+      EditGraph EDITOR -> EDITOR Context
 
       # Prepare component editor
       Context COMPONENT -> COMPONENT EditComponent(local/ComponentEditor)
