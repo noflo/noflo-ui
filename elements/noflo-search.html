@@ -120,7 +120,8 @@
       component: null,
       panel: null,
       enteredView: function () {
-        this.observer = new ArrayObserver(this.results, this.resultsModified.bind(this));
+        this.observer = new ArrayObserver(this.results);
+        this.observer.open(this.resultsModified.bind(this));
         this.blur();
       },
       focus: function () {

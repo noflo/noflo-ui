@@ -11,6 +11,7 @@ window.addEventListener('WebComponentsReady', function() {
       graph.baseDir = '/noflo-ui';
       if (fbpId === 'main') {
         noflo.createNetwork(graph, function (network) {
+          //network.on('data', function (data) { console.log(data); });
           for (var component in graphs) {
             if (component === 'main') {
               continue;

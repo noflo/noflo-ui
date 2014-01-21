@@ -25,9 +25,12 @@
       edge: null,
       component: '',
       enteredView: function () {
-        this.graphObserver = new ArrayObserver(this.graphs, this.graphsModified.bind(this));
-        this.nodeObserver = new ArrayObserver(this.nodes, this.nodesModified.bind(this));
-        this.edgeObserver = new ArrayObserver(this.edges, this.edgesModified.bind(this));
+        this.graphObserver = new ArrayObserver(this.graphs);
+        this.graphObserver.open(this.graphsModified.bind(this));
+        this.nodeObserver = new ArrayObserver(this.nodes);
+        this.nodeObserver.open(this.nodesModified.bind(this));
+        this.edgeObserver = new ArrayObserver(this.edges);
+        this.edgeObserver.open(this.edgesModified.bind(this));
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {
