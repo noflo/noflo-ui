@@ -14,34 +14,35 @@ module.exports = ->
         dest: 'spec'
         ext: '.js'
 
+    # Directory cleaning
+    clean:
+      nuke_main:
+        src: ['components/*/']
+      nuke_main_built:
+        src: ['browser']
+      nuke_bower:
+        src: ['bower_components']
+      nuke_preview:
+        src: ['preview/components']
+      nuke_preview_built:
+        src: ['preview/browser']
+
     # Browser version building
     exec:
-      nuke_main:
-        command: 'rm -rf ./components/*/'
-      nuke_main_built:
-        command: 'rm -rf ./browser'
-      nuke_bower:
-        command: 'rm -rf ./bower_components/*'
-      nuke_preview:
-        command: 'rm -rf ./components/*/'
-        cwd: 'preview'
-      nuke_preview_built:
-        command: 'rm -rf ./browser'
-        cwd: 'preview'
       bower_install:
-        command: './node_modules/.bin/bower install'
+        command: 'node ./node_modules/bower/bin/bower install'
       main_install:
-        command: './node_modules/.bin/component install'
+        command: 'node ./node_modules/component/bin/component install'
       main_build:
-        command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui -c'
+        command: 'node ./node_modules/component/bin/component build -u component-json,component-coffee -o browser -n noflo-ui -c'
       preview_install:
-        command: './node_modules/.bin/component install'
+        command: 'node ./node_modules/component/bin/component install'
         cwd: 'preview'
       preview_build:
-        command: './node_modules/.bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
+        command: 'node ./node_modules/component/bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
         cwd: 'preview'
       vulcanize:
-        command: './node_modules/.bin/vulcanize --csp -o app.html index.html'
+        command: 'node ./node_modules/vulcanize/bin/vulcanize --csp -o app.html index.html'
 
     # JavaScript minification for the browser
     uglify:
@@ -163,6 +164,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
+  @loadNpmTasks 'grunt-contrib-clean'
 
   # Grunt plugins used for mobile app building
   @loadNpmTasks 'grunt-contrib-compress'
@@ -175,12 +177,12 @@ module.exports = ->
   @loadNpmTasks 'grunt-lint-inline'
 
   # Our local tasks
-  @registerTask 'nuke', ['exec:nuke_main', 'exec:nuke_bower', 'exec:nuke_preview', 'exec:nuke_main_built', 'exec:nuke_preview_built']
+  @registerTask 'nuke', ['clean:nuke_main', 'clean:nuke_bower', 'clean:nuke_preview', 'clean:nuke_main_built', 'clean:nuke_preview_built']
   @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
-  @registerTask 'main_rebuild', ['exec:nuke_main', 'exec:nuke_bower', 'main_build']
+  @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
-  @registerTask 'preview_rebuild', ['exec:nuke_preview', 'preview_build']
+  @registerTask 'preview_rebuild', ['clean:nuke_preview', 'preview_build']
   @registerTask 'rebuild', ['main_rebuild', 'preview_rebuild']
   # @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'test', ['coffeelint', 'inlinelint']
