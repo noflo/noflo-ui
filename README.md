@@ -31,7 +31,7 @@ Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you
 
 ### Managing server-side flows
 
-In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-ui-server](https://github.com/noflo/noflo-ui-server). The NoFlo UI Server tool provides a web server that serves a version of the NoFlo UI.
+In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-ui-server](https://github.com/noflo/noflo-ui-server).
 
 ### Mobile app
 
@@ -55,7 +55,12 @@ If you prefer, you can also start a watcher process that will do a rebuild whene
 
     $ grunt watch
 
-In addition to this project, the other repository of interest is the [dataflow](https://github.com/meemoo/dataflow) graph editor widget used for editing flows.
+Serve the UI using a webserver, then open the URL it in a web browser. Example:
+
+    $ npm install simple-server
+    $ ./node_modules/.bin/simple-server .
+
+In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 
 ### Adding components
 
