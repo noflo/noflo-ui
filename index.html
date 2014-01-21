@@ -411,7 +411,7 @@
       Context COMPONENTCHANGED -> ITEM StoreComponent
       Storage DB -> DB StoreGraph(local/StoreGraph)
       'id' -> KEY CheckGraphID(objects/GetObjectKey)
-      Context GRAPHCHANGED -> ITEM StoreGraph
+      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
 
