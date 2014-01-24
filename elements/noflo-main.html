@@ -1,7 +1,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
-<polymer-element name="noflo-main" attributes="open projects sketches examples">
+<polymer-element name="noflo-main" attributes="open projects sketches examples graphs components">
   <template>
     <noflo-account clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
@@ -52,6 +52,8 @@
       projects: [],
       examples: [],
       sketches: [],
+      graphs: [],
+      components: [],
       enteredView: function () {
         this.openChanged();
       },
@@ -103,6 +105,37 @@
         dialog.addEventListener('new', function (event) {
           this.fire('newproject', event.detail);
         }.bind(this));
+      },
+      graphsChanged: function () {
+        while (this.graphs.length) {
+          var graph = this.graphs.shift();
+          this.projects.forEach(function (project) {
+            if (!project.graphs) {
+              project.graphs = [];
+            }
+            if (graph.project !== project.id) {
+              return;
+            }
+            if (graph.id === project.main) {
+              project.mainGraph = graph;
+            }
+            project.graphs.push(graph);
+          });
+        }
+      },
+      componentsChanged: function () {
+        while (this.components.length) {
+          var component = this.components.shift();
+          this.projects.forEach(function (project) {
+            if (!project.components) {
+              project.components = [];
+            }
+            if (component.project !== project.id) {
+              return;
+            }
+            project.components.push(component);
+          });
+        }
       }
     });
   </script>
