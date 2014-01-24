@@ -395,10 +395,10 @@
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
-      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph KEY -> LOAD LoadData
+      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
       Storage DB -> DB StoreNewProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
-      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject KEY -> LOAD LoadData
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
 
       # Prepare workspace
       '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
