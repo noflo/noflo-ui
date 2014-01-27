@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components" outports="newsketch newproject"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -86,14 +86,14 @@
     <script type="application/fbp" id="LoadData">
       EXPORT=READ.DB:DB
       EXPORT=MERGESTART.IN:LOAD
-      EXPORT=SPLITPROJECTS.OUT:PROJECTS
-      EXPORT=GETSKETCHES.ITEM:SKETCHES
-      EXPORT=LOADPROJECTDATA.GRAPHS:GRAPHS
-      EXPORT=LOADPROJECTDATA.COMPONENTS:COMPONENTS
+      EXPORT=GETPROJECTS.ITEM:PROJECTS
+      EXPORT=GETGRAPHS.ITEM:GRAPHS
+      EXPORT=GETCOMPONENTS.ITEM:COMPONENTS
+      EXPORT=READ.COMPLETE:COMPLETE
       MergeStart(core/Merge) OUT -> IN SplitStart(core/Split)
       'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
       SplitStart OUT -> IN HoldMode
-      'projects,graphs' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+      'projects,graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
       SplitStart OUT -> IN HoldStores
 
       # Read projects list
@@ -102,52 +102,23 @@
       Read TRANSACTION -> TRANSACTION ProjectStore
       '' -> DATA HoldAllProjects(core/Kick) OUT -> ALL GetProjects(indexeddb/Query)
       SplitStart OUT -> IN HoldAllProjects
-      ProjectStore STORE -> STORE GetProjects ITEM -> IN SplitProjects(core/Split)
-      Read DB -> DB LoadProjectData(local/LoadProjectData)
-      SplitProjects OUT -> PROJECT LoadProjectData
+      ProjectStore STORE -> STORE GetProjects
 
-      # Read graphs that don't belong to a project
+      # Read graphs list
       'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
       SplitStart OUT -> IN HoldGraphStore
       ProjectStore TRANSACTION -> TRANSACTION GraphStore
-      '' -> DATA HoldNoProject(core/Kick) OUT -> VALUE Sketches(indexeddb/QueryOnly)
-      SplitStart OUT -> IN HoldNoProject
-      Sketches RANGE -> RANGE GetSketches(indexeddb/Query)
-      'project' -> DATA HoldProjectIndex(core/Kick) OUT -> NAME ProjectIndex(indexeddb/GetIndex)
-      SplitStart OUT -> IN HoldProjectIndex
-      GraphStore STORE -> STORE ProjectIndex INDEX -> STORE GetSketches
-    </script>
-    <script type="application/fbp" id="LoadProjectData">
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=GETID.IN:PROJECT
-      EXPORT=GETGRAPHS.ITEM:GRAPHS
-      EXPORT=GETCOMPONENTS.ITEM:COMPONENTS
-      'id' -> KEY GetId(GetObjectKey) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitId(core/Split)
-      GetId MISSED -> IN DropMissed(core/Drop)
-      SplitId OUT -> VALUE InProject(indexeddb/QueryOnly)
-      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
-      SplitId OUT -> IN HoldDb(core/Kick) OUT -> DB Read
-      SplitId OUT -> IN HoldMode
-      'graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
-      SplitId OUT -> IN HoldStores
+      '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllGraphs
+      GraphStore STORE -> STORE GetGraphs
 
-      # Read graphs belonging to a project
-      'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
-      SplitId OUT -> IN HoldGraphStore
-      Read TRANSACTION -> TRANSACTION GraphStore
-      InProject RANGE -> RANGE GetGraphs(indexeddb/Query)
-      'project' -> DATA HoldGraphIndex(core/Kick) OUT -> NAME ProjectGraphIndex(indexeddb/GetIndex)
-      SplitId OUT -> IN HoldGraphIndex
-      GraphStore STORE -> STORE ProjectGraphIndex INDEX -> STORE GetGraphs
-
-      # Read components belonging to a project
+      # Read components list
       'components' -> DATA HoldComponentStore(core/Kick) OUT -> NAME ComponentStore(indexeddb/GetStore)
-      SplitId OUT -> IN HoldComponentStore
+      SplitStart OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
-      GetGraphs RANGE -> RANGE GetComponents(indexeddb/Query)
-      'project' -> DATA HoldComponentIndex(core/Kick) OUT -> NAME ProjectComponentIndex(indexeddb/GetIndex)
-      SplitId OUT -> IN HoldComponentIndex
-      ComponentStore STORE -> STORE ProjectComponentIndex INDEX -> STORE GetComponents
+      '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllComponents
+      ComponentStore STORE -> STORE GetComponents
     </script>
     <script type="application/fbp" id="LoadGraph">
       EXPORT=HOLDDB.DATA:DB
@@ -333,9 +304,6 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
-      Context PROJECT -> PROJECT LoadProjectData(local/LoadProjectData)
-      LoadProjectData GRAPHS -> GRAPHS Project
-      LoadProjectData COMPONENTS -> COMPONENTS Project
 
       # Prepare graph editor
       Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
@@ -391,7 +359,6 @@
       Storage ERROR -> IN ShowErrors(core/Output)
       '' -> LOAD LoadData
       LoadData PROJECTS -> PROJECTS Main
-      LoadData SKETCHES -> SKETCHES Main
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
@@ -405,14 +372,11 @@
       Workspace OUT -> WORKSPACE Context
 
       # Prepare the context
-      Router(ui/Router) PROJECT -> ID LoadProject(local/LoadProject) PROJECT -> PROJECT Context(local/ProjectContext)
-      Storage DB -> DB LoadProject
-      Router ROUTE -> CLEAR Context
-      Storage DB -> DB Context
-      Storage DB -> DB LoadGraph(local/LoadGraph)
-      Router GRAPH -> ID LoadGraph GRAPH -> GRAPHS Context
-      Storage DB -> DB LoadComponent(local/LoadComponent)
-      Router COMPONENT -> ID LoadComponent COMPONENT -> COMPONENT Context
+      Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
+      Router ROUTE -> ROUTE Main
+      Main PROJECT -> PROJECT Context
+      Main GRAPH -> GRAPHS Context
+      Main COMPONENT -> COMPONENT Context
       Storage DB -> DB StoreComponent(local/StoreComponent)
       Context COMPONENTCHANGED -> ITEM StoreComponent
       Storage DB -> DB StoreGraph(local/StoreGraph)
@@ -436,7 +400,7 @@
       Router ROUTE -> CLEAR ClearWorkspace
 
       # Routing
-      Storage DB -> START ListenHash(interaction/ListenHash)
+      LoadData COMPLETE -> START ListenHash(interaction/ListenHash)
       ListenHash INITIAL -> URL Router
       ListenHash CHANGE -> URL Router
     </script>

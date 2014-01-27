@@ -1,5 +1,4 @@
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
-<link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <polymer-element name="noflo-project" attributes="project graphs components">
@@ -81,7 +80,6 @@
       <main>
         <ul>
           <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
-          <li><noflo-account clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account></li>
         </ul>
         <template if="{{ project }}">
         <h2>Graphs</h2>
@@ -90,7 +88,7 @@
             <h2>New graph</h2>
             <button on-click="{{ newGraph }}">Create</button>
           </li>
-          <template repeat="{{ graph in graphs }}">
+          <template repeat="{{ graph in project.graphs }}">
           <li on-click="{{ openGraph }}" data-id="{{ graph.id }}">
             <the-graph-thumb graphjson="{{ graph }}" width="200" height="120"></the-graph-thumb>
             <h2>{{ graph.properties.name }}</h2>
@@ -103,7 +101,7 @@
             <h2>New component</h2>
             <button on-click="{{ newComponent }}">Create</button>
           </li>
-          <template repeat="{{ component in components }}">
+          <template repeat="{{ component in project.components }}">
           <li on-click="{{ openComponent }}" data-id="{{ component.id }}">
             <h2>{{ component.name }}</h2>
             <template if="{{ component.language == 'coffeescript' }}">
@@ -121,8 +119,6 @@
   </template>
   <script>
     Polymer('noflo-project', {
-      graphs: [],
-      components: [],
       project: null,
       newGraph: function (event) {
         event.preventDefault();
@@ -130,6 +126,7 @@
         dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
+          this.project.graphs.push(event.detail);
           this.fire('newgraph', event.detail);
         }.bind(this));
       },
@@ -139,6 +136,7 @@
         dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
+          this.project.components.push(event.detail);
           this.fire('newcomponent', event.detail);
         }.bind(this));
       },

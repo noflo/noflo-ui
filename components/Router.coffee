@@ -24,51 +24,57 @@ class Router extends noflo.Component
           @outPorts.missed.disconnect()
           return
 
-      route = matched.shift()
-      switch route
+      switch matched.route
         when 'main'
           return unless @outPorts.main.isAttached()
           @outPorts.main.send true
           @outPorts.main.disconnect()
           return
-        when 'sketch'
+        when 'sketch', 'graph'
+          if matched.project and @outPorts.project.isAttached()
+            @outPorts.project.send matched.project
+            @outPorts.project.disconnect()
           return unless @outPorts.graph.isAttached()
-          @outPorts.graph.send matched[0]
+          @outPorts.graph.send graph for graph in matched.graphs
           @outPorts.graph.disconnect()
           return
-        when 'graph', 'component'
-          project = matched.shift()
-          if @outPorts.project.isAttached()
-            @outPorts.project.send project
+        when 'component'
+          if matched.project and @outPorts.project.isAttached()
+            @outPorts.project.send matched.project
             @outPorts.project.disconnect()
-          if route is 'graph' and @outPorts.graph.isAttached()
-            for graph in matched
-              @outPorts.graph.send graph
-            @outPorts.graph.disconnect()
-          if route is 'component' and @outPorts.component.isAttached()
-            @outPorts.component.send matched[0]
+          if @outPorts.component.isAttached()
+            @outPorts.component.send matched.component
           return
         when 'example'
           return unless @outPorts.example.isAttached()
-          @outPorts.example.send matched[0]
+          @outPorts.example.send matched.graphs[0]
           @outPorts.example.disconnect()
 
   matchUrl: (url) ->
+    routeData =
+      route: ''
     if url is ''
-      return ['main']
+      routeData.route = 'main'
+      return routeData
     if url.substr(0, 8) is 'project/'
       remainder = url.substr 8
       parts = remainder.split '/'
-      project = parts.shift()
+      routeData.project = parts.shift()
       if parts[0] is 'component' and parts.length is 2
-        return ['component', project, parts[1]]
-      graph = ['graph', project]
-      graph.push part for part in parts
-      return graph
+        routeData.route = 'component'
+        routeData.component = parts[1]
+        return routeData
+      routeData.route = 'graph'
+      routeData.graphs = parts
+      return routeData
     if url.substr(0, 6) is 'graph/'
-      return ['sketch', url.substr(6)]
+      routeData.route = 'sketch'
+      routeData.graphs = [url.substr(6)]
+      return routeData
     if url.substr(0, 8) is 'example/'
-      return ['example', url.substr(8)]
+      routeData.route = 'example'
+      routeData.graphs = [url.substr(8)]
+      return routeData
     return null
 
 exports.getComponent = -> new Router

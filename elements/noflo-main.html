@@ -50,10 +50,8 @@
     Polymer('noflo-main', {
       open: false,
       projects: [],
-      examples: [],
       sketches: [],
-      graphs: [],
-      components: [],
+      examples: [],
       enteredView: function () {
         this.openChanged();
       },
@@ -108,35 +106,69 @@
           this.fire('newproject', event.detail);
         }.bind(this));
       },
-      graphsChanged: function () {
-        while (this.graphs.length) {
-          var graph = this.graphs.shift();
-          this.projects.forEach(function (project) {
-            if (!project.graphs) {
-              project.graphs = [];
-            }
-            if (graph.project !== project.id) {
-              return;
-            }
-            if (graph.id === project.main) {
-              project.mainGraph = graph;
-            }
-            project.graphs.push(graph);
-          });
+      graphs: function (graph) {
+        if (!graph.project) {
+          this.sketches.push(graph);
+          return;
         }
+        this.projects.forEach(function (project) {
+          if (!project.graphs) {
+            project.graphs = [];
+          }
+          if (graph.project !== project.id) {
+            return;
+          }
+          if (graph.id === project.main) {
+            project.mainGraph = graph;
+          }
+          project.graphs.push(graph);
+        });
       },
-      componentsChanged: function () {
-        while (this.components.length) {
-          var component = this.components.shift();
+      components: function (component) {
+        this.projects.forEach(function (project) {
+          if (!project.components) {
+            project.components = [];
+          }
+          if (component.project !== project.id) {
+            return;
+          }
+          project.components.push(component);
+        });
+      },
+      route: function (routeData) {
+        if (routeData.project) {
           this.projects.forEach(function (project) {
-            if (!project.components) {
-              project.components = [];
+            if (project.id === routeData.project) {
+              this.fire('project', project);
+
+              if (routeData.route === 'graph') {
+                while (routeData.graphs.length) {
+                  var graphId = routeData.graphs.shift();
+                  project.graphs.forEach(function (graph) {
+                    if (graph.id === graphId) {
+                      this.fire('graph', graph);
+                    }
+                  }.bind(this));
+                }
+              }
+              if (routeData.route === 'component') {
+                project.components.forEach(function (component) {
+                  if (component.id === routeData.component) {
+                    this.fire('component', component);
+                  }
+                }.bind(this));
+              }
             }
-            if (component.project !== project.id) {
-              return;
+          }.bind(this));
+          return;
+        }
+
+        if (routeData.graphs) {
+          this.sketches.forEach(function (sketch) {
+            if (sketch.id === routeData.graphs[0]) {
+              this.fire('graph', sketch);
             }
-            project.components.push(component);
-          });
+          }.bind(this));
         }
       }
     });
