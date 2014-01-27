@@ -54,6 +54,7 @@ class ConnectRuntime extends noflo.Component
   convertNode: (id, node) ->
     data = node.toJSON()
     data.graph = id
+    return data
   convertEdge: (id, edge) ->
     data = edge.toJSON()
     edgeData =
@@ -82,8 +83,7 @@ class ConnectRuntime extends noflo.Component
         port: bang.port
       graph: id
 
-  subscribeEditor: (editor, runtime) ->
-    id = editor.$.graph.graphId
+  subscribeEditor: (id, editor, runtime) ->
     editor.addEventListener 'addnode', (node) =>
       return unless @connected
       runtime.sendGraph 'addnode', @convertNode id, node.detail
@@ -129,7 +129,8 @@ class ConnectRuntime extends noflo.Component
       @sendGraph runtime, editor
     runtime.on 'disconnected', =>
       @connected = false
-    @subscribeEditor editor, runtime
+    graph = editor.toJSON()
+    @subscribeEditor graph.id, editor, runtime
 
     runtime.on 'component', (message) ->
       if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
