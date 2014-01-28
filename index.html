@@ -15,7 +15,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component nodes edges button result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -270,7 +270,7 @@
       EXPORT=SPLITWORKSPACE.IN:WORKSPACE
       EXPORT=EDITGRAPH.CHANGED:GRAPHCHANGED
       EXPORT=EDITCOMPONENT.CHANGED:COMPONENTCHANGED
-      EXPORT=PROJECT.NEWGRAPH:NEWGRAPH
+      EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
       EXPORT=LOADPROJECTDATA.DB:DB
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
@@ -304,11 +304,14 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
+      Project NEWGRAPH -> IN MergeNewGraph(core/Merge)
+      Context NEWGRAPH -> IN MergeNewGraph
 
       # Prepare graph editor
       Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
       SplitWorkspace(core/Split) OUT -> WORKSPACE EditGraph
       Runtime RUNTIME -> RUNTIME EditGraph
+      Context NEWGRAPH -> NEWGRAPH EditGraph
       Context PROJECT -> STRING HoldProject(strings/SendString) OUT -> PROJECT EditGraph
       Runtime RUNTIME -> IN HoldProject
       EditGraph NODECLICK -> NODE Context
@@ -334,6 +337,7 @@
       EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
       EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
       EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
+      EXPORT=CONNECTRUNTIME.NEWGRAPH:NEWGRAPH
       EXPORT=MERGEGRAPH.IN:CURRENTGRAPH
       EXPORT=SPLITGRAPH.OUT:CURRENTGRAPH
       EXPORT=LOADEDITOR.EDITOR:EDITOR

@@ -105,6 +105,10 @@
           this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);
           this.nodeMenu.addTo(this.contextBar);
+          this.nodeMenu.addEventListener('newgraph', function (event) {
+            this.project.graphs.push(event.detail);
+            this.fire('newgraph', event.detail);
+          }.bind(this));
         }
 
         this.nodes.forEach(function (node) {

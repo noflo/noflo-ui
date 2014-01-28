@@ -8,6 +8,7 @@ class ConnectRuntime extends noflo.Component
     @inPorts =
       editor: new noflo.Port 'object'
       project: new noflo.Port 'object'
+      newgraph: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
     @outPorts =
       editor: new noflo.Port 'object'
@@ -22,6 +23,9 @@ class ConnectRuntime extends noflo.Component
     @inPorts.project.on 'data', (data) =>
       @runtime.on 'connected', =>
         @sendProject @runtime, data
+    @inPorts.newgraph.on 'data', (data) =>
+      console.log 'new graph to RT', data
+      @sendGraph @runtime, data
     @inPorts.runtime.on 'connect', =>
       @runtime = null
     @inPorts.runtime.on 'data', (runtime) =>
@@ -33,6 +37,8 @@ class ConnectRuntime extends noflo.Component
     for component in project.components
       @sendComponent runtime, component
     for graph in project.graphs
+      continue if graph.id is project.main
+      console.log graph
       @sendGraph runtime, graph
 
   sendComponent: (runtime, component) ->
@@ -40,6 +46,7 @@ class ConnectRuntime extends noflo.Component
     runtime.sendComponent 'source', component
 
   sendGraph: (runtime, graph) ->
+    console.log 'send graph', graph.id
     runtime.sendGraph 'clear',
       baseDir: 'noflo-ui-preview'
       id: graph.id

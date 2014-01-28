@@ -91,13 +91,13 @@
               // Edge from outside the new subgraph to a subgraph port
               this.editor.$.graph.edges.push({
                 source: edge.src.process + '.' + edge.src.port,
-                target: graph.id + '.' + edge.tgt.process + '.' + edge.tgt.port
+                target: graph.id + '.' + edge.tgt.process.toLowerCase() + '.' + edge.tgt.port
               });
             }
             if (edge.src && graph.processes[edge.src.process] && !graph.processes[edge.tgt.process]) {
               // Edge from subgraph port to the outside
               this.editor.$.graph.edges.push({
-                source: graph.id + '.' + edge.src.process + '.' + edge.src.port,
+                source: graph.id + '.' + edge.src.process.toLowerCase() + '.' + edge.src.port,
                 target: edge.tgt.process + '.' + edge.tgt.port
               });
             }
