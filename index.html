@@ -309,6 +309,8 @@
       Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
       SplitWorkspace(core/Split) OUT -> WORKSPACE EditGraph
       Runtime RUNTIME -> RUNTIME EditGraph
+      Context PROJECT -> STRING HoldProject(strings/SendString) OUT -> PROJECT EditGraph
+      Runtime RUNTIME -> IN HoldProject
       EditGraph NODECLICK -> NODE Context
       EditGraph EDGECLICK -> EDGE Context
       EditGraph EDITOR -> EDITOR Library
@@ -331,6 +333,7 @@
     <script type="application/fbp" id="GraphEditor">
       EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
       EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
+      EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
       EXPORT=MERGEGRAPH.IN:CURRENTGRAPH
       EXPORT=SPLITGRAPH.OUT:CURRENTGRAPH
       EXPORT=LOADEDITOR.EDITOR:EDITOR

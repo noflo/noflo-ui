@@ -7,6 +7,7 @@ class ConnectRuntime extends noflo.Component
     @connected = false
     @inPorts =
       editor: new noflo.Port 'object'
+      project: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
     @outPorts =
       editor: new noflo.Port 'object'
@@ -18,6 +19,9 @@ class ConnectRuntime extends noflo.Component
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
+    @inPorts.project.on 'data', (data) =>
+      @runtime.on 'connected', =>
+        @sendProject @runtime, data
     @inPorts.runtime.on 'connect', =>
       @runtime = null
     @inPorts.runtime.on 'data', (runtime) =>
@@ -25,8 +29,17 @@ class ConnectRuntime extends noflo.Component
       @runtime = runtime
       @connect @editor, @runtime
 
-  sendGraph: (runtime, editor) ->
-    graph = editor.toJSON()
+  sendProject: (runtime, project) ->
+    for component in project.components
+      @sendComponent runtime, component
+    for graph in project.graphs
+      @sendGraph runtime, graph
+
+  sendComponent: (runtime, component) ->
+    return unless component.code
+    runtime.sendComponent 'source', component
+
+  sendGraph: (runtime, graph) ->
     runtime.sendGraph 'clear',
       baseDir: 'noflo-ui-preview'
       id: graph.id
@@ -130,7 +143,7 @@ class ConnectRuntime extends noflo.Component
       @connected = true
       # TODO: Read basedir from graph?
       runtime.sendComponent 'list', 'noflo-ui-preview'
-      @sendGraph runtime, editor
+      @sendGraph runtime, editor.toJSON()
     runtime.on 'disconnected', =>
       @connected = false
     graph = editor.toJSON()
