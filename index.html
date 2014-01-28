@@ -378,10 +378,12 @@
       Main GRAPH -> GRAPHS Context
       Main COMPONENT -> COMPONENT Context
       Storage DB -> DB StoreComponent(local/StoreComponent)
-      Context COMPONENTCHANGED -> ITEM StoreComponent
+      Context COMPONENTCHANGED -> IN SplitChangedComponent(core/Split) OUT -> ITEM StoreComponent
+      SplitChangedComponent OUT -> COMPONENTS Main
       Storage DB -> DB StoreGraph(local/StoreGraph)
       'id' -> KEY CheckGraphID(objects/GetObjectKey)
-      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
+      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> IN SplitChangedGraph(core/Split) OUT -> ITEM StoreGraph
+      SplitChangedGraph OUT -> GRAPHS Main
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
 

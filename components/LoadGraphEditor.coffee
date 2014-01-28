@@ -24,14 +24,19 @@ class LoadGraphEditor extends noflo.Component
     editor = document.createElement 'the-graph-editor'
     @setSize editor
     @container.appendChild editor
+
+    editorReady = =>
+      @outPorts.editor.send editor
+      @outPorts.editor.disconnect()
+      editor.removeEventListener 'graph', editorReady, false
+    if @outPorts.editor.isAttached()
+      @outPorts.editor.connect()
+      editor.addEventListener 'graph', editorReady, false
     editor.graph = @graph
 
     window.addEventListener 'resize', =>
       @setSize editor
 
-    if @outPorts.editor.isAttached()
-      @outPorts.editor.send editor
-      @outPorts.editor.disconnect()
     if @outPorts.graph.isAttached()
       @outPorts.graph.send @graph
       @outPorts.graph.disconnect()
@@ -39,6 +44,8 @@ class LoadGraphEditor extends noflo.Component
     # Reset state
     @graph = null
     @runtime = null
+
+  subscribeEditorReady: =>
 
   setSize: (editor) ->
     editor.width = window.innerWidth

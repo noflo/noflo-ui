@@ -121,6 +121,12 @@
           if (graph.id === project.main) {
             project.mainGraph = graph;
           }
+          for (var i = 0; i < project.graphs.length; i++) {
+            if (project.graphs[i].id === graph.id) {
+              project.graphs[i] = graph;
+              return;
+            }
+          }
           project.graphs.push(graph);
         });
       },
@@ -131,6 +137,12 @@
           }
           if (component.project !== project.id) {
             return;
+          }
+          for (var i = 0; i < project.components.length; i++) {
+            if (project.components[i].id === component.id) {
+              project.components[i] = component;
+              return;
+            }
           }
           project.components.push(component);
         });
