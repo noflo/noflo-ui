@@ -8,7 +8,7 @@ class GenerateId extends noflo.Component
       out: new noflo.Port 'string'
 
     @inPorts.start.on 'data', (data) =>
-      id = @randomString
+      id = @randomString()
       id = data.id if data.id
       @outPorts.out.send id
       @outPorts.out.disconnect()
