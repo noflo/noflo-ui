@@ -72,7 +72,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/**']
+          src: ['bower_components/**', '!bower_components/**/index.html']
           expand: true
           dest: '/'
         ,
