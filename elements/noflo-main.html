@@ -135,6 +135,9 @@
       },
       components: function (component) {
         this.projects.forEach(function (project) {
+          if (!project.components) {
+            project.components = [];
+          }
           if (component.project !== project.id) {
             return;
           }
