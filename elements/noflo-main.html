@@ -156,11 +156,11 @@
               if (routeData.route === 'graph') {
                 while (routeData.graphs.length) {
                   var graphId = routeData.graphs.shift();
-                  project.graphs.forEach(function (graph) {
-                    if (graph.id === graphId) {
-                      this.fire('graph', graph);
+                  for (var i = 0; i < project.graphs.length; i++) {
+                    if (project.graphs[i].id === graphId) {
+                      this.fire('graph', project.graphs[i]);
                     }
-                  }.bind(this));
+                  }
                 }
               }
               if (routeData.route === 'component') {
