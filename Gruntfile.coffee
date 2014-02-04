@@ -76,9 +76,14 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['app.*']
+          src: ['app.js']
           expand: true
           dest: '/'
+        ,
+          src: ['app.html']
+          expand: true
+          dest: '/'
+          rename: (dest, src) -> 'index.html'
         ,
           src: ['app/*']
           expand: true
