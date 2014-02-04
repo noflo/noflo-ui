@@ -33,11 +33,13 @@ class ConnectRuntime extends noflo.Component
       @connect @editor, @runtime
 
   sendProject: (runtime, project) ->
-    for component in project.components
-      @sendComponent runtime, component
-    for graph in project.graphs
-      continue if graph.id is project.main
-      @sendGraph runtime, graph
+    if project.components
+      for component in project.components
+        @sendComponent runtime, component
+    if project.graphs
+      for graph in project.graphs
+        continue if graph.id is project.main
+        @sendGraph runtime, graph
 
   sendComponent: (runtime, component) ->
     return unless component.code

@@ -115,6 +115,9 @@
           if (!project.graphs) {
             project.graphs = [];
           }
+          if (!project.components) {
+            project.components = [];
+          }
           if (graph.project !== project.id) {
             return;
           }
@@ -132,9 +135,6 @@
       },
       components: function (component) {
         this.projects.forEach(function (project) {
-          if (!project.components) {
-            project.components = [];
-          }
           if (component.project !== project.id) {
             return;
           }
