@@ -1,0 +1,73 @@
+<polymer-element name="number-scrubber" attributes="value min max mod step distance" touch-action="none" on-trackstart="{{onTrackStart}}" on-track="{{onTrack}}" on-trackend="{{onTrackEnd}}">
+  <style>
+    number-scrubber {
+      -webkit-user-select: none;      /* disable cut copy paste */
+      -webkit-touch-callout: none;    /* disable callout, image save panel */
+      user-select: none;
+      touch-callout: none;
+
+      cursor: ew-resize;
+
+      display: inline-block;
+      text-align: center;      
+    }
+  </style>
+  <script>
+    Polymer('number-scrubber', {
+      value: 0,
+      startValue: 0,
+      min: -Infinity,
+      max: Infinity,
+      mod: 0,
+      step: 1,
+      distance: 5,
+      precision: 1000000,
+      onTrackStart: function (event) {
+        this.value = parseFloat(this.value);
+        this.startValue = this.value;
+        document.body.style.cursor = "ew-resize";
+      },
+      onTrack: function (event) {
+        var lastValue = this.value;
+
+        var delta = event.dx;
+
+        if (this.distance > 1) {
+          delta = Math.round( delta / this.distance );
+        }
+        if (this.step !== 1) {
+          if (this.step > 1) {
+            delta = Math.round( delta / this.step ) * this.step;
+          } else if (this.step > 0) {
+            delta *= this.step;
+          }
+        }
+
+        var newValue = this.startValue + delta;
+
+        if (this.mod !== 0) {
+          newValue %= this.mod;
+        }
+        if (isFinite(this.min)) {
+          newValue = Math.max(newValue, this.min);
+        }
+        if (isFinite(this.max)) {
+          newValue = Math.min(newValue, this.max);
+        }
+
+        // Stupid JS numbers
+        if (this.precision > 1) {
+          newValue = Math.round( newValue * this.precision ) / this.precision;
+        }
+
+        if (this.value !== newValue) {
+          this.value = newValue;
+          this.fire("changed", this.value);
+        }
+      },
+      onTrackEnd: function (event) {
+        document.body.style.cursor = "auto";
+      }
+    });
+  </script>
+</polymer-element>

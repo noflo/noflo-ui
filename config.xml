@@ -22,7 +22,7 @@
     <!-- Once we have the server we want to know the connection state -->
     <feature name="http://api.phonegap.com/1.0/network"/>
     <!-- Disable menu bar on Android -->
-    <preference name="android-minSdkVersion" value="11" />
+    <preference name="android-minSdkVersion" value="19" />
     <!-- Platforms to build for -->
     <gap:platform name="android" />
 </widget>

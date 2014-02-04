@@ -4,6 +4,8 @@ class IframeRuntime extends Base
   constructor: (graph) ->
     # Prepare the iframe and listen to its state
     @origin = window.location.origin
+    @preview = null
+    @previewObserver = null
 
     super graph
 
@@ -19,7 +21,7 @@ class IframeRuntime extends Base
 
     # Let the UI know we're connecting
     @emit 'status',
-      state: 'pending'
+      online: false
       label: 'connecting'
 
     # Normalize the preview setup
@@ -31,45 +33,49 @@ class IframeRuntime extends Base
     # Set an ID for targeting purposes
     @iframe.id = 'preview-iframe'
 
-    # Set dimensions
-    @iframe.style.width = "#{preview.width}px"
-    @iframe.style.height = "#{preview.height}px"
-
     @address = preview.src
 
     # Update iframe contents as needed
+    @preview = preview
     if preview.content
-      @on 'connected', =>
-        body = @iframe.contentDocument.querySelector 'body'
-        body.innerHTML = preview.content
+      @on 'connected', @updateIframe
+    # Update it also if the preview contents change
+    @previewObserver = new ObjectObserver preview, @updateIframe
 
     # Start listening for messages from the iframe
     window.addEventListener 'message', @onMessage, false
+
+  updateIframe: =>
+    body = @iframe.contentDocument.querySelector 'body'
+    body.innerHTML = @preview.content
 
   normalizePreview: (preview) ->
     unless preview
       preview = {}
     unless preview.src
-      preview.src = './preview/iframe.html'
+      preview.src = 'preview/iframe.html'
     unless preview.width
       preview.width = 300
     unless preview.height
       preview.height = 300
     preview
 
-  disconnect: (protocol) ->
+  disconnect: ->
     @iframe.removeEventListener 'load', @onLoaded, false
+    if @previewObserver
+      @previewObserver.close()
+      @previewObserver = null
 
     # Stop listening to messages
     window.removeEventListener 'message', @onMessage, false
     @emit 'status',
-      state: 'offline'
+      online: false
       label: 'disconnected'
 
   # Called every time the iframe has loaded successfully
   onLoaded: =>
     @emit 'status',
-      state: 'online'
+      online: true
       label: 'connected'
     @emit 'connected'
 
@@ -77,7 +83,16 @@ class IframeRuntime extends Base
 
   send: (protocol, command, payload) ->
     w = @iframe.contentWindow
-    if not w or w.location.href is 'about:blank'
+    return unless w
+    try
+      return if w.location.href is 'about:blank'
+    catch e
+      # Chrome Apps
+      w.postMessage
+        protocol: protocol
+        command: command
+        payload: payload
+      , '*'
       return
     w.postMessage
       protocol: protocol

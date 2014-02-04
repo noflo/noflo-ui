@@ -3,12 +3,14 @@ noflo = require 'noflo'
 class GenerateId extends noflo.Component
   constructor: ->
     @inPorts =
-      start: new noflo.Port 'bang'
+      start: new noflo.Port 'object'
     @outPorts =
       out: new noflo.Port 'string'
 
-    @inPorts.start.on 'data', =>
-      @outPorts.out.send @randomString()
+    @inPorts.start.on 'data', (data) =>
+      id = @randomString()
+      id = data.id if data.id
+      @outPorts.out.send id
       @outPorts.out.disconnect()
 
   randomString: (num) ->

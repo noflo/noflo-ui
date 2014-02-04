@@ -1,0 +1,114 @@
+<link rel="import" href="noflo-new-graph.html">
+<polymer-element name="noflo-node-menu" attributes="editor nodes" class="sticky-head the-card-content">
+  <template>
+    <header>
+      <h1>{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
+    </header>
+    <ul class="toolbar toolbar2right">
+      <li><button class="blue-button" on-click="{{ clear }}"><!--i class="fa fa-check"></i-->Deselect</button></li>
+      <li><button class="red-button" on-click="{{ remove }}"><!--i class="fa fa-trash-o"></i-->Delete</button></li>
+      <li><button class="blue-button" on-click="{{ subgraph }}">Subgraph</button></li>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-node-menu', {
+      editor: null,
+      nodes: [],
+      clear: function (event) {
+        event.preventDefault();
+        var node;
+        while(this.nodes.length) {
+          node = this.nodes.pop();
+          node.selected = false;
+        }
+      },
+      remove: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        while(this.nodes.length) {
+          var node = this.nodes.pop();
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
+        }
+      },
+      /*
+      group: function (event) {
+        event.preventDefault();
+        this.nodes.forEach(function (node) {
+        });
+      }*/
+      subgraph: function (event) {
+        event.preventDefault();
+        var currentGraph = this.editor.toJSON();
+
+        // Ask user to name the new subgraph
+        var dialog = document.createElement('noflo-new-graph');
+        this.parentNode.parentNode.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          var graph = event.detail;
+          graph.id = graph.properties.name.replace(' ', '_');
+
+          // Associate subgraph with current project
+          graph.project = currentGraph.project;
+
+          // Copy nodes
+          this.nodes.forEach(function (node) {
+            var nodeData = node.toJSON();
+            graph.processes[nodeData.id] = nodeData;
+          });
+
+          // Copy edges between nodes
+          currentGraph.connections.forEach(function (edge) {
+            if (edge.src && graph.processes[edge.src.process] && graph.processes[edge.tgt.process]) {
+              graph.connections.push(edge);
+            }
+            if (!edge.src && graph.processes[edge.tgt.process]) {
+              // Move IIPs to subgraph as well
+              graph.connections.push(edge);
+            }
+          }.bind(this));
+
+          // Emit new subgraph so that it can be stored
+          this.fire('newgraph', graph);
+
+          // Create subgraph node
+          var firstNode = this.nodes[0].toJSON();
+          this.editor.$.graph.nodes.push({
+            name: graph.id,
+            component: graph.id,
+            metadata: {
+              label: graph.properties.name,
+              x: firstNode.metadata.x,
+              y: firstNode.metadata.y
+            }
+          });
+
+          // Reconnect external edges to subgraph node
+          currentGraph.connections.forEach(function (edge) {
+            if (edge.src && !graph.processes[edge.src.process] && graph.processes[edge.tgt.process]) {
+              // Edge from outside the new subgraph to a subgraph port
+              this.editor.$.graph.edges.push({
+                source: edge.src.process + '.' + edge.src.port,
+                target: graph.id + '.' + edge.tgt.process.toLowerCase() + '.' + edge.tgt.port
+              });
+            }
+            if (edge.src && graph.processes[edge.src.process] && !graph.processes[edge.tgt.process]) {
+              // Edge from subgraph port to the outside
+              this.editor.$.graph.edges.push({
+                source: graph.id + '.' + edge.src.process.toLowerCase() + '.' + edge.src.port,
+                target: edge.tgt.process + '.' + edge.tgt.port
+              });
+            }
+          }.bind(this));
+
+          // Remove the selected nodes
+          this.remove();
+
+          console.log(this.editor.toJSON(), graph);
+        }.bind(this));
+      }
+    });
+  </script>
+</polymer-element>

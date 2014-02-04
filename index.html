@@ -6,214 +6,242 @@
     <title>NoFlo Development Environment</title>
     <link rel="shortcut icon" href="favicon.ico" />
 
-    <!-- Dataflow Dependencies -->
-    <script src="./browser/meemoo-dataflow/libs/jquery.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/jquery-ui.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/jquery.ui.touch-punch.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/underscore.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/backbone.js"></script>
-    <script src="./browser/meemoo-dataflow/libs/hammer.min.js"></script>
+    <!-- Polymer deps -->
+    <script src="bower_components/platform/platform.js"></script>
+    <link rel="import" href="bower_components/polymer/polymer.html">
 
-    <!-- NoFlo and NoFlo UI -->
+    <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
+    <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+    <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
+    <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
+    <link rel="import" href="elements/noflo-context.html">
+    <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
+    <link rel="import" href="elements/noflo-main.html">
+    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component"></noflo-polymer>
+    <link rel="import" href="elements/noflo-runtime.html">
+    <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
+    <link rel="import" href="elements/noflo-search.html">
+    <noflo-polymer name="noflo-search" inports="buttons results project graph component panel" outports="menu search"></noflo-polymer>
+    <link rel="import" href="elements/noflo-library.html">
+    <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
+    <link rel="import" href="elements/noflo-account.html">
+    <link rel="import" href="elements/noflo-project.html">
+    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
+    <link rel="import" href="elements/noflo-component-editor.html">
+    <noflo-polymer name="noflo-component-editor" inports="component" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
-
-    <!-- Dataflow Style -->
-    <link rel="stylesheet" href="./browser/meemoo-dataflow/build/default/dataflow.min.css">
-
-    <!-- NoFlo UI Style -->
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   </head>
   <body>
-    <script type="text/template" id="dataflow-template">
-      <div class="dataflow"></div>
+    <noflo-main></noflo-main>
+    <noflo-context></noflo-context>
+    <noflo-runtime></noflo-runtime>
+    <noflo-search></noflo-search>
+    <noflo-library></noflo-library>
+    <noflo-project></noflo-project>
+    <main id="workspace"></main>
+    <script type="application/fbp" id="PrepareStorage">
+      EXPORT=OPEN.NAME:NAME
+      EXPORT=ERRORS.OUT:ERROR
+      EXPORT=SPLITDB.OUT:DB
+      Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
+      '1' -> VERSION Open
+      Open DB -> IN SplitDb(core/Split)
+
+      # Database upgrade setup
+      Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
+
+      # ## Version 1
+
+      # Project storage
+      'projects' -> NAME CreateProjects(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateProjects
+      Upgrade VERSIONS -> DB CreateProjects
+      CreateProjects ERROR -> IN Errors
+
+      # Graph storage
+      'graphs' -> NAME CreateGraphs(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateGraphs
+      CreateProjects DB -> DB CreateGraphs
+      CreateGraphs ERROR -> IN Errors
+      'project' -> NAME GraphProject(indexeddb/CreateIndex)
+      'project' -> KEYPATH GraphProject
+      CreateGraphs STORE -> STORE GraphProject
+      # Migrate old LocalStorage data
+      GraphProject STORE -> GRAPHSTORE Migrate(ui/MigrateLocalStorage)
+      GraphProject ERROR -> IN Errors
+
+      # Component storage
+      'components' -> NAME CreateComponents(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateComponents
+      CreateGraphs DB -> DB CreateComponents
+      CreateComponents ERROR -> IN Errors
+      'project' -> NAME ComponentProject(indexeddb/CreateIndex)
+      'project' -> KEYPATH ComponentProject
+      CreateComponents STORE -> STORE ComponentProject
+      ComponentProject ERROR -> IN Errors
     </script>
-    <script type="text/template" id="new-template">
-      <div class="noflo-ui-new">
-        <h1>Create new sketch</h2>
-        <form>
-          <label>
-            Graph name
-            <input type="text" id="name" placeholder="MyCoolGraph">
-          </label>
-          <label>
-            Type
-            <select name="type" id="runtime">
-              <option value="html">Browser</option>
-              <option value="websocket">Node.js</option>
-            </select>
-          </label>
-          <button id="create">Create</button>
-        </form>
-      </div>
+    <script type="application/fbp" id="LoadData">
+      EXPORT=READ.DB:DB
+      EXPORT=MERGESTART.IN:LOAD
+      EXPORT=GETPROJECTS.ITEM:PROJECTS
+      EXPORT=GETGRAPHS.ITEM:GRAPHS
+      EXPORT=GETCOMPONENTS.ITEM:COMPONENTS
+      EXPORT=READ.COMPLETE:COMPLETE
+      MergeStart(core/Merge) OUT -> IN SplitStart(core/Split)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
+      SplitStart OUT -> IN HoldMode
+      'projects,graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+      SplitStart OUT -> IN HoldStores
+
+      # Read projects list
+      'projects' -> DATA HoldProjectStore(core/Kick) OUT -> NAME ProjectStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldProjectStore
+      Read TRANSACTION -> TRANSACTION ProjectStore
+      '' -> DATA HoldAllProjects(core/Kick) OUT -> ALL GetProjects(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllProjects
+      ProjectStore STORE -> STORE GetProjects
+
+      # Read graphs list
+      'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldGraphStore
+      ProjectStore TRANSACTION -> TRANSACTION GraphStore
+      '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllGraphs
+      GraphStore STORE -> STORE GetGraphs
+
+      # Read components list
+      'components' -> DATA HoldComponentStore(core/Kick) OUT -> NAME ComponentStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldComponentStore
+      GraphStore TRANSACTION -> TRANSACTION ComponentStore
+      '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllComponents
+      ComponentStore STORE -> STORE GetComponents
     </script>
-    <script type="text/template" id="main-template">
-      <div class="noflo-ui-main">
-        <h1>NoFlo Development Environment</h1>
-        <h2>Sketches</h2>
-        <a href="#new" class="btn">Create new</a>
-        <ul id="sketches"></ul>
-
-        <h2>Examples</h2>
-        <ul id="examples"></ul>
-      </div>
+    <script type="application/fbp" id="LoadGraph">
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=SPLITID.IN:ID
+      EXPORT=GET.ITEM:GRAPH
+      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      SplitId OUT -> IN HoldMode
+      'graphs' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      SplitId OUT -> IN HoldStore
+      SplitStore OUT -> NAME GraphStore(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE Get(indexeddb/Get)
+      SplitId OUT -> KEY Get
     </script>
-    <script type="text/template" id="main-graph-element">
-      <a href="#graph/<%- name %>"><%- name %></a>
+    <script type="application/fbp" id="StoreGraph">
+      EXPORT=MERGE.IN:ITEM
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUTGRAPH.KEY:KEY
+      Merge(core/Merge) OUT -> IN DropExamples(ui/DropExamples)
+      DropExamples OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitGraph(core/Split)
+      SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      SplitGraph OUT -> IN HoldMode
+      'graphs' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      SplitGraph OUT -> IN HoldStore
+      SplitStore OUT -> NAME GraphStore(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE PutGraph(indexeddb/Put)
+      'project' -> KEY GetProject(objects/GetObjectKey)
+      SplitGraph OUT -> IN GetProject OBJECT -> IN MergeStorable(core/Merge) OUT -> VALUE PutGraph
+      GetProject OUT -> IN DropProject(core/Drop)
+      '' -> DATA HoldProject(core/Kick) OUT -> VALUE SetProject(objects/SetPropertyValue)
+      SplitGraph OUT -> IN HoldProject
+      'project' -> PROPERTY SetProject
+      GetProject MISSED -> IN SetProject OUT -> IN MergeStorable
     </script>
-    <div id="noflo-ui"></div>
-    <script type="application/fbp">
-      # List of examples to ship
-      # TODO: Read these from external source
-      '6608098=Clock' -> DATA ExamplesList(core/Kick)
-
-      # Basedir for loading components
-      '/noflo-ui-preview' -> IN SplitBaseDir(core/Split)
-
-      # The DOM element where the UI will be run
-      '#noflo-ui' -> IN SplitUiContainer(core/Split)
-
-      # ## Main view
-      # Main view listing user's projects and examples
-      '#main-template' -> TEMPLATE WriteMain(ui/WriteTemplate)
-      SplitUiContainer OUT -> TARGET WriteMain
-      Router(ui/Router) MAIN -> START PrepareMain(objects/CreateObject)
-      PrepareMain OUT -> DATA WriteMain
-      'noflo-ui-graphs' -> STRING GraphListKey(strings/SendString)
-      WriteMain OUT -> IN MainIsReady(core/Split)
-      MainIsReady OUT -> IN GraphListKey
-
-      # Read graphs from storage and write to DOM
-      '#main-graph-element' -> SELECTOR GraphItemTemplate(dom/GetElement)
-      GraphItemTemplate ELEMENT -> CONTAINER ReadGraphItemTemplate(dom/ReadHtml)
-      ReadGraphItemTemplate HTML -> TEMPLATE WriteGraphElement(strings/StringTemplate)
-      GraphListKey OUT -> KEY GetGraphList(localstorage/GetItem)
-      ',' -> DELIMITER SplitGraphList(strings/SplitStr)
-      GetGraphList ITEM -> IN SplitGraphList
-      'li' -> STRING CreateGraphItem(strings/SendString)
-      SplitGraphList OUT -> IN SplitGraphItem(core/Split)
-      CreateGraphItem OUT -> TAGNAME CreateGraphElement(dom/CreateElement)
-      CreateGraphElement ELEMENT -> IN SplitGraphElement(core/Split)
-      'name' -> PROPERTY SetGraphName(objects/SetPropertyValue)
-      SplitGraphItem OUT -> IN CreateGraphItem
-      SplitGraphItem OUT -> VALUE SetGraphName
-      SplitGraphItem OUT -> START CreateGraphObject(objects/CreateObject)
-      CreateGraphObject OUT -> IN SetGraphName
-      SetGraphName OUT -> IN WriteGraphElement
-
-      '#sketches' -> STRING HoldGraphContainer(strings/SendString)
-      HoldGraphContainer OUT -> SELECTOR GetGraphContainer(dom/GetElement)
-      MainIsReady OUT -> IN HoldGraphContainer
-      GetGraphContainer ELEMENT -> PARENT AppendGraph(dom/AppendChild)
-      SplitGraphElement OUT -> CONTAINER WriteGraph(dom/WriteHtml)
-      WriteGraphElement OUT -> HTML WriteGraph(dom/WriteHtml)
-      WriteGraph CONTAINER -> CHILD AppendGraph
-
-      # ## New graph view
-      SplitBaseDir OUT -> BASEDIR CreateGraph(ui/CreateGraph)
-      '#new-template' -> TEMPLATE WriteNew(ui/WriteTemplate)
-      SplitUiContainer OUT -> TARGET WriteNew
-      Router(ui/Router) NEW -> START PrepareNew(objects/CreateObject)
-      PrepareNew OUT -> DATA WriteNew
-      '#create' -> DATA CreateButtonId(core/Kick)
-      '#name' -> DATA NameInputId(core/Kick)
-      WriteNew OUT -> IN SplitNew(core/Split)
-      SplitNew OUT -> IN CreateButtonId
-      CreateButtonId OUT -> SELECTOR GetCreateButton(dom/GetElement)
-      GetCreateButton ELEMENT -> ELEMENT ListenClick(interaction/ListenMouse)
-      SplitNew OUT -> IN NameInputId
-      NameInputId OUT -> SELECTOR GetNameInput(dom/GetElement)
-      GetNameInput ELEMENT -> DATA HoldInput(core/Kick)
-      HoldInput OUT -> IN GetName(objects/GetObjectKey)
-      'value' -> KEY GetName
-
-      '#runtime' -> DATA RuntimeInputId(core/Kick)
-      SplitNew OUT -> IN RuntimeInputId
-      RuntimeInputId OUT -> SELECTOR GetRuntimeSelect(dom/GetElement)
-      GetRuntimeSelect ELEMENT -> DATA HoldRuntime(core/Kick)
-      HoldRuntime OUT -> IN GetRuntime(objects/GetObjectKey)
-      'value' -> KEY GetRuntime
-
-      ListenClick CLICK -> IN SplitClick(core/Split)
-      SplitClick OUT -> IN HoldRuntime
-      SplitClick OUT -> IN HoldInput
-
-      # ## New project view
-      '#new-template' -> TEMPLATE NewProjectView(ui/CreateProjectView)
-      SplitUiContainer OUT -> CONTAINER NewProjectView
-      Router(ui/Router) NEWPROJECT -> IN NewProjectView
-      'noflo-ui-projects' -> LISTKEY SaveProject(ui/SaveProject)
-      NewProjectView PROJECT -> NEWPROJECT SaveProject
-      SaveProject DONE -> IN ShowSaved(core/Output)
-
-      # Create graph and save
-      GetRuntime OUT -> RUNTIME CreateGraph
-      GetName OUT -> IN SplitName(core/Split) OUT -> NAME CreateGraph
-
-      CreateGraph OUT -> IN NewToJson(strings/Jsonify)
-      SplitName OUT -> DATA SendNewKey(core/Kick)
-      SendNewKey OUT -> KEY StoreNew(localstorage/SetItem)
-      NewToJson OUT -> IN SplitNewJson(core/Split)
-      SplitNewJson OUT -> IN SendNewKey
-      SplitNewJson OUT -> VALUE StoreNew
-
-      # Update list of graphs
-      'noflo-ui-graphs' -> STRING HoldGraphListKey(strings/SendString)
-      ',' -> DELIMITER CompileList(strings/CompileString)
-      GetGraphListForNew(localstorage/GetItem) ITEM -> DATA HoldList(core/Kick)
-      SplitName OUT -> IN HoldGraphListKey
-      SplitName OUT -> IN HoldList OUT -> IN SplitList(core/Split)
-      SplitName OUT -> DATA HoldName(core/Kick) OUT -> IN CompileList
-      SplitList OUT -> IN HoldName
-      SplitList OUT -> IN RemoveGrp(groups/RemoveGroups) OUT -> IN CompileList
-      HoldGraphListKey OUT -> KEY GetGraphListForNew(localstorage/GetItem)
-      'noflo-ui-graphs' -> KEY UpdateGraphList(localstorage/SetItem)
-      CompileList OUT -> VALUE UpdateGraphList
-
-      # Redirect to graph
-      'graph' -> STRING PrepareGraphUri(strings/SendString)
-      '/' -> DELIMITER CreateGraphUri(strings/CompileString)
-      SplitNewJson OUT -> IN PrepareGraphUri
-      PrepareGraphUri OUT -> IN CreateGraphUri
-      SplitName OUT -> IN CreateGraphUri
-      CreateGraphUri OUT -> HASH Navigate(interaction/SetHash)
-
-      # ## Graph loading
-      Router GRAPH -> IN SplitGraphName(core/Split)
-      SplitGraphName OUT -> DATA StartLoading(core/Kick)
-      SplitBaseDir OUT -> BASEDIR LoadGraph(ui/LoadGraph)
-
-      # Prepare Dataflow in DOM
-      SplitUiContainer OUT -> DATA LoadGraphDataflow(core/Kick)
-      SplitGraphName OUT -> IN LoadGraphDataflow
-      SplitGraphName OUT -> WRITETEMPLATE EditGraph
-      LoadGraphDataflow OUT -> CONTAINER EditGraph(ui/EditGraph)
-
-      # Try loading from localStorage
-      EditGraph DOMREADY -> IN StartLoading
-      StartLoading OUT -> KEY LoadStored(localstorage/GetItem)
-      LoadStored ITEM -> IN ParseJson(strings/ParseJson)
-      ParseJson OUT -> IN LoadGraph
-      LoadGraph OUT -> GRAPH EditGraph
-
-      # If graph can't be found redirect to main
-      '' -> DATA GoToMain(core/Kick)
-      LoadStored ERROR -> IN Errors(core/Merge)
-      Errors OUT -> IN GoToMain
-      GoToMain OUT -> HASH Navigate(interaction/SetHash)
-
-      # Listen to changes and save to localStorage
-      SplitGraphName OUT -> DATA SendKey(core/Kick)
-      SendKey OUT -> KEY Store(localstorage/SetItem)
-      EditGraph CHANGED -> IN SplitChanged(core/Split)
-      SplitChanged OUT -> IN SendKey()
-      SplitChanged OUT -> IN ToJson(strings/Jsonify)
-      ToJson OUT -> VALUE Store
-      
-      # Example gist loading
-      Router EXAMPLE -> IN SplitGist(core/Split)
+    <script type="application/fbp" id="LoadProject">
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=SPLITID.IN:ID
+      EXPORT=GET.ITEM:PROJECT
+      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      SplitId OUT -> IN HoldMode
+      'projects' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      SplitId OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Get(indexeddb/Get)
+      SplitId OUT -> KEY Get
+    </script>
+    <script type="application/fbp" id="PrepareProject">
+      EXPORT=GENERATEID.IN:IN
+      EXPORT=STOREGRAPH.DB:DB
+      EXPORT=SETMAIN.OUT:OUT
+      GenerateId(local/GenerateId) OUT -> IN Split(core/Split)
+      'id' -> KEY GetId(objects/GetObjectKey)
+      'project' -> PROPERTY SetProject(objects/SetPropertyValue)
+      GetId OUT -> VALUE SetProject
+      Split OUT -> IN GetId
+      'name' -> KEY GetName(objects/GetObjectKey)
+      'name' -> PROPERTY SetName(objects/SetPropertyValue)
+      GetName OUT -> VALUE SetName
+      Split OUT -> IN GetName
+      'type' -> KEY GetType(objects/GetObjectKey)
+      'type' -> PROPERTY SetType(objects/SetPropertyValue)
+      GetType OUT -> VALUE SetType
+      Split OUT -> IN GetType
+      Split OUT -> START InitializeGraph(objects/CreateObject)
+      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> DETAILS ToGraph(ui/CreateGraph)
+      'toJSON' -> METHOD Convert(objects/CallMethod)
+      ToGraph OUT -> IN Convert OUT -> IN SetProject OUT -> IN GenGraphId(local/GenerateId)
+      GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
+      'main' -> PROPERTY SetMain(objects/SetPropertyValue)
+      StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
+      Split OUT -> DATA HoldProject(core/Kick) OUT -> IN SetMain
+      SplitGraphId OUT -> IN HoldProject
+    </script>
+    <script type="application/fbp" id="StoreProject">
+      EXPORT=DISC.IN:ITEM
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUTPROJECT.KEY:KEY
+      Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      Split OUT -> IN HoldMode
+      'projects' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      Split OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE PutProject(indexeddb/Put)
+      Split OUT -> VALUE PutProject
+    </script>
+    <script type="application/fbp" id="LoadComponent">
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=SPLITID.IN:ID
+      EXPORT=GET.ITEM:COMPONENT
+      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      SplitId OUT -> IN HoldMode
+      'components' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      SplitId OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Get(indexeddb/Get)
+      SplitId OUT -> KEY Get
+    </script>
+    <script type="application/fbp" id="StoreComponent">
+      EXPORT=MERGE.IN:ITEM
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUT.KEY:KEY
+      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      Split OUT -> IN HoldMode
+      'components' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      Split OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
+      Split OUT -> VALUE Put
+    </script>
+    <script type="application/fbp" id="LoadExample">
+      EXPORT=SPLITGIST.IN:GIST
+      EXPORT=PARSEEXAMPLE.OUT:GRAPH
+      EXPORT=ERRORS.OUT:ERROR
       'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
       '/' -> DELIMITER CreateUrl(strings/CompileString)
-      SplitGist OUT -> IN GistPrefix
+      SplitGist(core/Split) OUT -> IN GistPrefix
       GistPrefix OUT -> IN CreateUrl
       SplitGist OUT -> IN CreateUrl
       CreateUrl OUT -> URL GetGist(ajax/GetJsonP)
@@ -225,38 +253,166 @@
       GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
-      SplitBaseDir OUT -> BASEDIR LoadExample(ui/LoadGraph)
+    </script>
+    <script type="application/fbp" id="GenerateId">
+      EXPORT=SPLITITEM.IN:IN
+      EXPORT=SETID.OUT:OUT
+      'id' -> PROPERTY SetId(objects/SetPropertyValue)
+      SplitItem(core/Split) OUT -> START Generate(ui/GenerateId)
+      Generate OUT -> VALUE SetId
+      SplitItem OUT -> IN SetId
+    </script>
+    <script type="application/fbp" id="ProjectContext">
+      EXPORT=CONTEXT.PROJECT:PROJECT
+      EXPORT=CONTEXT.GRAPHS:GRAPHS
+      EXPORT=CONTEXT.COMPONENT:COMPONENT
+      EXPORT=CONTEXT.CLEAR:CLEAR
+      EXPORT=SPLITWORKSPACE.IN:WORKSPACE
+      EXPORT=EDITGRAPH.CHANGED:GRAPHCHANGED
+      EXPORT=EDITCOMPONENT.CHANGED:COMPONENTCHANGED
+      EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
+      EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
+      EXPORT=LOADPROJECTDATA.DB:DB
+      'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
-      # Prepare Dataflow in DOM
-      SplitUiContainer OUT -> DATA LoadExampleDataflow(core/Kick)
-      SplitGist OUT -> IN LoadExampleDataflow
-      LoadExampleDataflow OUT -> CONTAINER EditExample(ui/EditGraph)
-      SplitGist OUT -> WRITETEMPLATE EditExample
-      ParseExample OUT -> IN LoadExample
-      LoadExample OUT -> GRAPH EditExample
-      EditExample CHANGED -> IN DropChangedExample(core/Drop)
+      # Runtime handling
+      'noflo-runtime' -> SELECTOR Runtime(polymer/noflo-runtime)
+      Context GRAPHS -> GRAPHS Runtime
+      Context EDGES -> EDGES Runtime
+
+      # Search handling
+      'noflo-search' -> SELECTOR Search(polymer/noflo-search)
+      Context CURRENTGRAPH -> GRAPH Search
+      Context COMPONENT -> COMPONENT Search
+      Context PROJECT -> PROJECT Search
+
+      # Panel handling
+      '' -> GETPANEL Context TOOLPANEL -> PANEL Runtime
+      Context CONTEXTPANEL -> PANEL Search
+
+      # Library handling
+      'noflo-library' -> SELECTOR Library(polymer/noflo-library)
+
+      # Main menu
+      Search MENU -> BUTTONS Context BUTTON -> BUTTONS Search
+      Search MENU -> BUTTONS Library BUTTON -> BUTTONS Search
+
+      # UI searching
+      Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
+      Search SEARCH -> SEARCH Context RESULT -> RESULTS Search
+
+      # Project menu
+      'noflo-project' -> SELECTOR Project(polymer/noflo-project)
+      Context PROJECT -> PROJECT Project
+      Project NEWGRAPH -> IN MergeNewGraph(core/Merge)
+      Context NEWGRAPH -> IN MergeNewGraph
+
+      # Prepare graph editor
+      Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
+      SplitWorkspace(core/Split) OUT -> WORKSPACE EditGraph
+      Runtime RUNTIME -> RUNTIME EditGraph
+      Context NEWGRAPH -> NEWGRAPH EditGraph
+      Context PROJECT -> STRING HoldProject(strings/SendString) OUT -> PROJECT EditGraph
+      Runtime RUNTIME -> IN HoldProject
+      EditGraph NODECLICK -> NODE Context
+      EditGraph EDGECLICK -> EDGE Context
+      EditGraph EDITOR -> EDITOR Library
+      EditGraph EDITOR -> EDITOR Context
+
+      # Prepare component editor
+      Context COMPONENT -> COMPONENT EditComponent(local/ComponentEditor)
+      SplitWorkspace OUT -> WORKSPACE EditComponent
+    </script>
+    <script type="application/fbp" id="ComponentEditor">
+      EXPORT=SPLITCOMPONENT.IN:COMPONENT
+      EXPORT=CREATEEDITOR.CONTAINER:WORKSPACE
+      EXPORT=EDITOR.CHANGED:CHANGED
+      'noflo-component-editor' -> STRING Send(strings/SendString) OUT -> TAGNAME CreateEditor(dom/CreateElement)
+      CreateEditor ELEMENT -> IN SplitEditor(core/Split) OUT -> ELEMENT Editor(polymer/noflo-component-editor)
+      SplitComponent OUT -> STRING HoldComponent(strings/SendString) OUT -> COMPONENT Editor
+      SplitComponent(core/Split) OUT -> IN Send
+      SplitEditor OUT -> IN HoldComponent
+    </script>
+    <script type="application/fbp" id="GraphEditor">
+      EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
+      EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
+      EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
+      EXPORT=CONNECTRUNTIME.NEWGRAPH:NEWGRAPH
+      EXPORT=MERGEGRAPH.IN:CURRENTGRAPH
+      EXPORT=SPLITGRAPH.OUT:CURRENTGRAPH
+      EXPORT=LOADEDITOR.EDITOR:EDITOR
+      EXPORT=GRAPHEDITOR.NODECLICK:NODECLICK
+      EXPORT=GRAPHEDITOR.EDGECLICK:EDGECLICK
+      EXPORT=CONVERT.OUT:CHANGED
+      MergeGraph(core/Merge) OUT -> IN SplitGraph(core/Split) OUT -> GRAPH LoadEditor(ui/LoadGraphEditor)
+      LoadEditor EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+      ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
+      'toJSON' -> METHOD Convert(objects/CallMethod)
+      GraphEditor CHANGED -> IN Convert
+    </script>
+
+    <script type="application/fbp" id="ClearWorkspace">
+      EXPORT=CLEARWORKSPACE.CONTAINER:WORKSPACE
+      EXPORT=DOCLEARWORKSPACE.IN:CLEAR
+      '' -> DATA DoClearWorkspace(core/Kick)
+      DoClearWorkspace OUT -> HTML ClearWorkspace(dom/WriteHtml)
+    </script>
+    <script type="application/fbp" id="main">
+      'noflo-ui' -> NAME Storage(local/PrepareStorage)
+
+      # Prepare the main view
+      'noflo-main' -> SELECTOR Main(polymer/noflo-main)
+      Storage DB -> DB LoadData(local/LoadData)
+      Storage ERROR -> IN ShowErrors(core/Output)
+      '' -> LOAD LoadData
+      LoadData PROJECTS -> PROJECTS Main
+      LoadData GRAPHS -> GRAPHS Main
+      LoadData COMPONENTS -> COMPONENTS Main
+      Storage DB -> DB StoreNewGraph(local/StoreGraph)
+      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
+      Storage DB -> DB StoreNewProject(local/StoreProject)
+      Storage DB -> DB PrepareProject(local/PrepareProject)
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
+
+      # Prepare workspace
+      '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
+      Workspace OUT -> WORKSPACE Context
+
+      # Prepare the context
+      Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
+      Router ROUTE -> ROUTE Main
+      Main PROJECT -> PROJECT Context
+      Main GRAPH -> GRAPHS Context
+      Main COMPONENT -> COMPONENT Context
+      Storage DB -> DB StoreComponent(local/StoreComponent)
+      Context COMPONENTCHANGED -> IN SplitChangedComponent(core/Split) OUT -> ITEM StoreComponent
+      SplitChangedComponent OUT -> COMPONENTS Main
+      Storage DB -> DB StoreGraph(local/StoreGraph)
+      'id' -> KEY CheckGraphID(objects/GetObjectKey)
+      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> IN SplitChangedGraph(core/Split) OUT -> ITEM StoreGraph
+      SplitChangedGraph OUT -> GRAPHS Main
+      Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
+      Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
+
+      # Example handling
+      Router EXAMPLE -> GIST LoadExample(local/LoadExample)
+      LoadExample GRAPH -> GRAPHS Context
+
+      # Show/hide main widget
+      'true' -> DATA ShowMain(core/Kick) OUT -> OPEN Main
+      'false' -> DATA HideMain(core/Kick) OUT -> OPEN Main
+      Router MAIN -> IN ShowMain
+      Router ROUTE -> IN HideMain
+
+      # Clear workspace on route changes
+      Workspace OUT -> WORKSPACE ClearWorkspace(local/ClearWorkspace)
+      Router ROUTE -> CLEAR ClearWorkspace
 
       # Routing
-      '' -> START ListenHash(interaction/ListenHash)
-      ListenHash INITIAL -> IN MergeUrl(core/Merge)
-      ListenHash CHANGE -> IN MergeUrl
-      MergeUrl OUT -> URL Router
-
-      # Invalid route handling
-      '' -> DATA MissedRoute(core/Kick)
-      Router MISSED -> IN MissedRoute
-      MissedRoute OUT -> HASH Navigate
+      LoadData COMPLETE -> START ListenHash(interaction/ListenHash)
+      ListenHash INITIAL -> URL Router
+      ListenHash CHANGE -> URL Router
     </script>
-    <script>
-    window.onload = function () {
-      var noflo = require('noflo');
-      var fbp = document.querySelector('script[type="application/fbp"]');
-      var fbpString = (fbp.innerText || fbp.textContent).trim();
-      noflo.graph.loadFBP(fbpString, function (graph) {
-        graph.baseDir = '/noflo-ui';
-        noflo.createNetwork(graph);
-      });
-    };
-    </script>
+    <script src="app/noflo.js"></script>
   </body>
 </html>

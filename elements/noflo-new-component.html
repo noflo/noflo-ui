@@ -1,0 +1,46 @@
+<polymer-element name="noflo-new-component" attributes="project">
+  <template>
+    <h1>Create new component</h1>
+    <form>
+      <label>
+        Component name
+        <input type="text" value="{{ name }}" placeholder="MyCoolComponent" required>
+      </label>
+      <label>
+        Language
+        <select name="type" value="{{ language }}">
+          <option value="coffeescript">CoffeeScript</option>
+          <option value="javascript">JavaScript</option>
+        </select>
+      </label>
+      <button on-click="{{ send }}">Create</button>
+      <a on-click="{{ close }}">Cancel</a>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-new-component', {
+      name: '',
+      project: '',
+      language: 'coffeescript',
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.fire('new', {
+          name: this.name,
+          language: this.language,
+          project: this.project,
+          code: '',
+          tests: ''
+        });
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

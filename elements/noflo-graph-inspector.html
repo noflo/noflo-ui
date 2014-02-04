@@ -1,0 +1,62 @@
+<polymer-element name="noflo-graph-inspector" attributes="graph">
+  <style>
+    noflo-graph-inspector label span {
+      display: block;
+      font-size: 8pt;
+      padding-top: 8px;
+    }
+    noflo-graph-inspector textarea {
+      height: 210px;
+      border: none;
+      width: 100%;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      padding: 8px;
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+      box-sizing: border-box;
+    }
+    noflo-graph-inspector input {
+      width: 100%;
+      height: 19px;
+      border: none;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      padding: 8px;
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+      box-sizing: border-box;
+    }
+  </style>
+  <template>
+    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
+    <template if="{{ graph.properties.environment.runtime == 'html' }}">
+    <label>
+      <span>Preview address</span>
+      <input type="text" value="{{ graph.properties.environment.src }}">
+    </label>
+    <label>
+      <span>Preview contents</span>
+      <textarea id="content" value="{{ graph.properties.environment.content }}"></textarea>
+    </label>
+    </template>
+    <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
+    <label>
+      <span>Runtime address</span>
+      <input type="text" value="{{ graph.properties.environment.wsUrl }}">
+    </label>
+    </template>
+    <button on-click="{{ close }}">Done</button>
+  </template>
+  <script>
+    Polymer('noflo-graph-inspector', {
+      updateName: function (event, detail, sender) {
+        this.graph.properties.name = sender.textContent;
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

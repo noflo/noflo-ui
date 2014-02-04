@@ -12,13 +12,19 @@ class BaseRuntime extends EventEmitter
 
   disconnect: ->
 
+  reconnect: ->
+    @disconnect()
+    @connect @preview
+
   # Start a NoFlo Network
   start: ->
-    @sendNetwork 'start'
+    @sendNetwork 'start',
+      graph: @graph.id
 
   # Stop a NoFlo network
   stop: ->
-    @sendNetwork 'stop'
+    @sendNetwork 'stop',
+      graph: @graph.id
 
   # Set the Dataflow parent element
   setParentElement: (parent) ->
@@ -39,13 +45,15 @@ class BaseRuntime extends EventEmitter
   recvNetwork: (command, payload) ->
     switch command
       when 'started'
-        @emit 'status',
-          state: 'online'
+        @emit 'execution',
+          running: true
           label: 'running'
       when 'stopped'
-        @emit 'status',
-          state: 'online'
+        @emit 'execution',
+          running: false
           label: 'stopped'
+      when 'icon'
+        @emit 'icon', payload
       else
         @emit 'network',
           command: command

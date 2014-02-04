@@ -1,0 +1,28 @@
+<polymer-element name="noflo-menu">
+  <template>
+    <ul class="toolbar2right">
+      <template repeat="{{ buttons }}">
+        <li><button on-click="{{ clicked }}" id="{{ id }}"><i class="fa fa-{{ icon }}"></i> {{ label }}</button></li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-menu', {
+      buttons: [],
+      clicked: function (event, detail, sender) {
+        event.preventDefault();
+        this.buttons.forEach(function (button) {
+          if (button.id !== sender.getAttribute('id')) {
+            return;
+          }
+          this.fire('click', button.id);
+          if (button.search) {
+            this.fire('search', button.search);
+            return;
+          }
+          button.action();
+        }.bind(this));
+      }
+    });
+  </script>
+</polymer-element>

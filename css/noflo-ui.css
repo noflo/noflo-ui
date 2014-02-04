@@ -1,131 +1,691 @@
-body {
-  background-color: #2a2b31;
-  color: #ffffff;
-  font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
+noflo-breadcrumb {
+  display:none;
 }
 
-#noflo-ui {
+input::-webkit-input-speech-button {
+
+  margin-right 18px;
+}
+
+body {
+  /* iOS don't clash with our hold behavior */
+  -webkit-user-select: none;                /* disable cut copy paste */
+  -webkit-touch-callout: none;              /* disable callout, image save panel */
+  -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
+}
+
+button {
+  padding:0;
+}
+
+input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
+  outline:none;
+}
+
+/* fucking bullshit... can't change input selection colors in Chrome?
+*::selection {
+  background-color: black;
+  background: black;
+  color:red;
+}
+*/
+
+h1, h2, h3 {
+  font-weight: normal;
+}
+
+.gpu {
+  -webkit-transform: translateZ(0px);
+}
+
+/*
+ * Colors:
+ *
+ * Regular background: hsl(187, 45%, 8%)
+ * Workspace background: hsl(189, 47%, 6)
+ * Darker elements: hsl(189, 11%, 26%)
+ * Lighter elements: white
+ * Default grid is 36x36
+ *
+ * z-indexes:
+ *
+ * Modal dialogs: 5
+ * Main screen: 4
+ * Panels: 3
+ * Context cards & runtime controls: 2
+ * Workspace chrome: 1
+ * Workspace: 0
+ */
+@font-face {
+  font-family: "SourceCodePro";
+  src: url("SourceCodePro-Regular.otf.woff") format('woff');
+}
+@font-face {
+  font-family: "SourceCodePro";
+  src: url("SourceCodePro-Bold.otf.woff") format('woff');
+  font-weight: bold;
+}
+
+html, body, button {
+  background-color: hsl(187, 45%, 5%);
+  color: #ffffff;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+the-panel {
+  background-color: hsl(190, 30%, 6%);
+  z-index: 3;
+  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
+}
+the-panel#account {
+  top: 0px;
+}
+the-panel#account:before {
+  font-family: FontAwesome;
+  content: '\f03a';
+  color: hsl(189, 11%, 26%);
+  position: absolute;
+  text-align: center;
+  right: 0px;
+  width: 36px;
+  top: 50%;
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+the-panel#account:not([open]):before {
+  opacity: 1;
+}
+the-panel#account header,
+the-panel#account main {
+  display: block;
+  margin-left: 36px;
+  margin-right: 36px;
+}
+the-panel#account header h1 {
+  text-align: center;
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  height: 36px;
+  line-height: 36px;
+}
+the-panel#account main ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+the-panel#account main ul li {
+  line-height: 36px;
+  min-height: 36px;
+}
+the-panel#account main ul li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+}
+the-panel#account main ul li a i {
+  float: right;
+  line-height: 36px;
+  color: hsl(189, 11%, 26%);
+  margin-right: 4px;
+}
+the-panel#account main ul li noflo-account img {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 36px;
+  border: 1px solid #01d8e5;
+  float: right;
+}
+the-panel#account main ul li noflo-account h1,
+the-panel#account main ul li noflo-account .toolbar button {
+  display: none;
+}
+the-panel#account main ul li noflo-account .toolbar a {
+  font-size: 16px;
+  line-height: 36px;
+}
+#context {
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  
+  left: 36px;
+  top: 72px;
+  width: calc(72px * 4 + 3px);
+  max-height: calc(100% - 72px);
+  overflow-y: scroll;
+  overflow-x: visible;
+  z-index: 2;
+}
+the-panel#fixed {
+  padding-left: 36px;
+  padding-top: 72px;
+  box-sizing: border-box;
+  top: 0px;
+  z-index: 2;
+}
+the-panel#fixed:before {
+  font-family: FontAwesome;
+  content: '\f06e';
+  color: hsl(189, 11%, 26%);
+  position: absolute;
+  text-align: center;
+  left: 0px;
+  width: 36px;
+  top: 50%;
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+the-panel#fixed:not([open]):before {
+  opacity: 1;
+}
+
+.the-card-content {
+  display: block;
+  margin: 0px;
+  padding: 10px 10px 10px;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  border-bottom: 1px hsla(190, 100%, 30%, 0.1) solid;
+  border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
+  background-color: hsla(190, 30%, 6%, 0.95);
+  width: calc(72px * 4);
+  max-height: calc(72px * 4);
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+}
+
+the-card[type="noflo-runtime-preview"] {
+  padding: 0px;
+  width: calc(72px * 4);
+  overflow: hidden;
+}
+
+the-card.maximized {
+  background-color: hsla(190, 30%, 6%, 0.95);
+  width: calc(100% - 70px);
+  height: calc(100% - 36px);
+  max-height: none;
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  
+  top: 72px;
+  left: 36px;
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+  z-index: 3;
+  border: none;
+}
+the-card.maximized .the-card-content {
+  width: 100%;
+  height: 100%;
+}
+html the-card-stack .sticky-head {
+  background-color: hsla(190, 30%, 9%, 0.98) !important;
+  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+  background-size: calc(100% - 1px) 100%;
+  background-position: 0px;
+}
+
+html the-card-stack .sticky-head h1 {
+  font-size:15px;
+}
+
+the-card button,
+noflo-search button,
+noflo-runtime button {
+  width: 36px;
+  height: 36px;
+  font-size: 10px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  text-align: center;
+}
+
+the-card h1 {
+  font-size: 12px;
+  line-height: 36px;
+  margin: 0px;
+  margin-bottom: 0px;
+  text-shadow: 0 1px hsl(0, 0%, 0%);  
+  text-align: left;
+}
+
+the-card header h1 {
+  display: block;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: calc(72px * 3 - 1px);
+  height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+the-card header h2 {
+  line-height: 36px;
+  width: 72px;
+  height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin: 0px;
+  text-align: right;
+  font-size: 10px;
+  color: hsla(190, 100%, 80%, 0.8);
+  display: block;
+}
+the-card header {
+  height: 36px;
+}
+
+the-card ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+the-card textarea {
+  width: 100%;
+  min-height: 100px;
+  max-height: calc(72px * 4);
+}
+
+the-card ul li {
+  display: block;
+  padding: 0px;
+  margin: 0px;
+}
+the-card ul.toolbar2right {
+  width: 180px;
+  display:block;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+the-card ul.toolbar li {
+  float: left;
+  display: block;
+  width: calc(100%/2);  
+  height: 36px;
+  text-align: center;
+  margin: 0px;
+  margin-right: 0px;
+}
+the-card ul.toolbar li * {
+  line-height: 36px;
+}
+the-card ul.toolbar li button {
+  width:100%;
+  height:100%;
+}
+.red-button {
+  background-color: hsla(0, 100%, 20%, 0.2);
+  color: hsl(0, 100%, 65%);
+}
+.blue-button {
+  background-color: hsla(190, 100%, 20%, 0.2);
+  color: hsl(190, 100%, 65%);
+}
+
+
+
+the-card ul li h2 {
+  font-size: 10px;
+  margin: 0px;
+}
+the-card ul li i {
+  /*display: none !important;*/
+  margin-right: 5px;
+}
+the-card ul li p {
+  margin: 0px;
+  margin-top: 10px;
+  padding: 0px;
+  font-size: 8px;
+}
+
+noflo-main {
+  background-color: hsl(187, 45%, 8%);
+  display: block;
+  z-index: 4;
+  position: fixed;
+  top: 0px;
+  -webkit-transform: translateZ(0px);
+  
+  overflow-y: scroll;
+  height: 100%;
+  width: 100%;
+  transition: opacity 0.3s ease-in-out;
+}
+noflo-main section {
+  background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
+  background-size: 36px 36px;
+  background-position: calc(50% - 19px) 4px;
+  display: block;
+  width: 70%;
+  padding-left: 15%;
+  padding-right: 15%;
+}
+noflo-main section > h2 {
+  font-size: 17px;
+  line-height: 36px;
+  margin-top: 36px;
+  height: 36px;
+  color: white;
+  text-transform: none;
+}
+noflo-main section > h2 small {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
+noflo-main ul {
+  padding: 0px;
+  margin-top: 0px;
+  margin-bottom: 36px;
+  margin-left: -18px;
+  margin-right: -18px;
+  list-style: none;
+}
+noflo-main ul li {
+  width: 216px;
+  height: 105px;
+  overflow: hidden;
+  display: inline-block;
+  text-align: center;
+  background-color: hsl(189, 47%, 6%);
+  border-radius: 3px;
+  margin-right: 18px;
+  margin-left: 18px;
+  margin-bottom: 36px;
+  position: relative;
+}
+noflo-main ul li.add {
+  background-color: hsl(187, 45%, 10%);
+}
+noflo-main ul li the-graph-thumb {
+  display: block;
+  position: absolute;
+  left: 100px;
+  top: -20px;
+}
+noflo-main ul li button {
+  display: block;
+  position: absolute;
+  right: 18px;
+  top: 36px;
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 36px;
+  padding-left: 13px;
+  padding-right: 13px;
+}
+noflo-main ul li h2 {
+  position: absolute;
+  top: 36px;
+  line-height: 36px;
+  width: 75px;
+  text-transform: none;
+  font-size: 10px;
+  text-align: left;
+  left: 18px;
+  padding: 0px;
+  margin: 0px;
+}
+noflo-main ul li p {
+  position: absolute;
+  top: 53px;
+  left: 18px;
+  width: 75px;
+  text-transform: uppercase;
+  font-size: 8px;
+  text-align: left;
+  color: hsl(189, 11%, 26%);
+}
+noflo-main ul li a {
+  color: black;
+  text-decoration: none;
+}
+noflo-main noflo-account {
+  text-align: center;
+  display: block;
+  background-color: hsl(189, 47%, 6%);
+  margin-top: -36px;
+  padding-top: 36px;
+  padding-bottom: 36px;
+}
+noflo-main noflo-account .avatar {
+  border-radius: 50px;
+  border: 2px solid #01d8e5;
+  display: block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 72px;
+  margin-bottom: 36px;
+  overflow: hidden;
+}
+noflo-main noflo-account .avatar:before {
+  content: '';
+  border: 3px solid hsl(189, 47%, 6%);
+  border-radius: 50px;
+  width: 76px;
+  height: 76px;
+  left: -1px;
+  top: -1px;
+  position: absolute;
+  z-index: 1;
+}
+noflo-main noflo-account .toolbar {
+  margin-top: 36px;
+  padding: 1px;
+  border: 1px solid hsl(189, 11%, 13%);
+  border-radius: 3px;
+  background-color: hsl(187, 45%, 8%);
+  display: inline-block;
+}
+noflo-main noflo-account .toolbar button {
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
+  margin: 0px;
+}
+noflo-main noflo-account .toolbar a {
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
+}
+
+noflo-search {
+  background-color: hsl(187, 45%, 5%);
+  border-bottom: 1px solid hsl(189, 11%, 26%);
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  
+  left: 36px;
+  top: 0;
+  color: white;
+  z-index: 2;
+  width: calc(72px * 4);
+  height: 36px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+noflo-search input {
+  background-color: hsl(187, 45%, 5%);
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  border: none;
+  padding: 0px;
+  padding-right: 10px;
+  padding-left: 10px;
+  color: white;
+  width: 245px;
+  height: 36px;
+  display: inline;
+}
+noflo-search button {
+  width: 36px;
+  height: 36px;
+  margin: 0px;
+  margin-left: -5px;
+  padding: 0px;
+  display: inline;
+  display: inline;
+}
+
+noflo-new-graph,
+noflo-new-project,
+noflo-new-component,
+noflo-graph-inspector {
+  background-color: hsl(187, 45%, 8%);
+  display: block;
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  
+  width: calc(72px * 8);
+  top: calc(50% - 50px);
+  left: 50%;
+  margin-left: calc(-72px * 4);
+  /*outline: solid hsla(0, 0%, 11%, 0.6) 1000px;*/
+  z-index: 5;
+}
+
+#workspace {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1;
-}
-
-.noflo-ui-main {
-  padding: 1em;
-}
-
-.noflo-ui-main .btn {
-  padding: 0.5em;
-  margin: 0.5em;
-  background-color: #c0c0c0;
-  color: #000000;
-  border-radius: 2px;
-}
-
-.noflo-ui-main ul {
-  margin-top: 1em;
-  margin-left: 0px;
-  list-style: none;
-}
-
-.noflo-ui-main ul li a {
-  float: left;
-  margin: 6px;
-  background-color: #000000;
-  color: #ffffff;
-  text-align: center;
-  padding: 20px;
-  width: 60px;
-  height: 20px;
-}
-
-.noflo-ui-main h2 {
-  clear: left;
-  margin-top: 1em;
+  z-index: 0;
 }
 
 #preview-iframe {
   display: none;
-  outline: 1px solid #2a2b31;
   border: none;
-}
-.dataflow-card #preview-iframe {
-  display: block;
-}
-
-.dataflow-card .noflo-ui-preview {
-  overflow: hidden;
+  width: 300px;
+  height: 300px;
 }
 
-.dataflow-card .noflo-ui-preview h2 {
-  margin: 0px;
-  padding: 4px 4px;
-  font-size: 18px;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar .online {
-  color: #7ee67e;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar .offline {
-  color: #e67e7e;
-}
-
-.dataflow-card .noflo-ui-preview .toolbar button {
-  color: #3e8bc5;
-  background-color: transparent;
-  border: none;
-}
-
-.dataflow-card .noflo-ui-preview .preview pre {
-  max-height: 300px;
-  color: #7ee67e;
-  font-size: 10px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  font-family: monospace;
-}
-
-.dataflow-node-inspector-inputs label.connected {
+#zoomrange {
   display: none;
 }
 
-.noflo-ui-settings {
-  max-height: 300px;
-  overflow-x: hidden;
-  overflow-y: scroll;
+the-graph-nav the-graph-map {
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  bottom: 0px;
+  left: auto;
+  top: auto;
+  right: 36px;
+  width: 216px;
+  height: 180px;
+  border-top: 36px solid hsla(0, 0%, 0%, 0.5);
+  border-left: 36px solid hsla(0, 0%, 0%, 0.5);
+  overflow: visible;
+  border-right: 36px solid hsla(0, 0%, 0%, 0.5);
+  background-size: calc(100% - 1px);
+  background-position: 0px;
+  border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+
 }
 
-.noflo-ui-settings form label,
-.noflo-ui-settings div.toolbar,
-.noflo-ui-settings h2 {
+#zoom button {
+  width: 36px;
+  height: 36px;
+  font-size: 10px;
+  position: fixed;
+  -webkit-transform: translateZ(0px);
+  right: 36px;
+  color: hsl(190, 100%, 90%);
+  background-color: hsla(187, 85%, 10%, 0.8);
+}
+
+#zoomin {
+  bottom: 144px;
+}
+
+#zoomout {
+  bottom: 0px;
+}
+
+noflo-component-editor {
   display: block;
-  padding: 15px 20px 10px;
-  margin: 0px;
-  border-top: 1px solid hsla(0, 0%, 0%, .1);
-  border-bottom: 1px solid hsl(220, 10%, 16%);
-  background-color: hsla(0, 100%, 0%, 0.1);
+  position: absolute;
+  top: 36px;
+  left: 36px;
+  right: 36px;
+  height: calc(100% - 72px);
+}
+.CodeMirror {
+  height: 100%;
+}
+.CodeMirror-scroll {
+  height: 100%;
+}
+noflo-component-editor #code,
+noflo-component-editor #tests {
+  display: block;
+  background: hsl(189,47%,4%);
+  width: 50%;
+  height: 100%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+noflo-component-editor #tests {
+  left: auto;
+  right: 0px;
+}
+noflo-component-editor #code h1,
+noflo-component-editor #tests h1 {
+  line-height: 36px;
+  padding-left: 36px;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: hsl(189, 11%, 26%);
+}
+noflo-component-editor #code h1 {
+  text-align: right;
 }
 
-.noflo-ui-settings form input,
-.noflo-ui-settings form textarea {
-  width: 100%;
-  color: hsl(220, 10%, 65%);
-  background-color: hsla(240, 7%, 11%, .8);
-  border: 1px solid hsla(0, 0%, 63%, .1);
-  box-shadow: inset 0 1px 3px hsla(0, 0%, 0%, .2);
+::-webkit-scrollbar {
+  width: 2px;
 }
-.noflo-ui-settings form textarea {
-  height: 12em;
+::-webkit-scrollbar-thumb {
+  -webkit-border-radius: 5px;
+  border-radius: 1px;
+  background: hsla(191, 100%, 92%, 0.3);
+  -webkit-box-shadow: inset 0 0 6px hsla(0, 0%, 0%, 0.5);
 }
-.noflo-ui-settings form input:focus,
-.noflo-ui-settings form textarea:focus {
-  color: hsl(220, 10%, 85%);
-  background-color: hsl(0, 100%, 50%);
-  box-shadow: 0px 2px 4px hsla(0, 0%, 40%, .1);
-  background-color: hsla(240, 7%, 8%, 1);
-  border: 1px solid hsla(0, 0%, 94%, .1);
+
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px hsla(0, 0%, 0%, 0.3);
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  background-color: hsl(0, 0%, 0%);
 }

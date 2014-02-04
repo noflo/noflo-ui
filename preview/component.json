@@ -13,14 +13,20 @@
     "noflo/noflo-dom": "*",
     "noflo/noflo-flow": "*",
     "noflo/noflo-gestures": "*",
+    "noflo/noflo-groups": "*",
     "noflo/noflo-interaction": "*",
     "noflo/noflo-localstorage": "*",
     "noflo/noflo-math": "*",
     "noflo/noflo-objects": "*",
+    "noflo/noflo-packets": "*",
     "noflo/noflo-physics": "*",
+    "noflo/noflo-routers": "*",
     "noflo/noflo-strings": "*",
     "noflo/noflo-websocket": "*",
-    "d4tocchini/noflo-draggabilly": "*"
+    "noflo/noflo-indexeddb": "*",
+    "d4tocchini/noflo-draggabilly": "*",
+    "forresto/noflo-gum": "*",
+    "forresto/noflo-seriously": "*"
   },
   "json": [
     "component.json"

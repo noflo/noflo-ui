@@ -1,4 +1,5 @@
 /node_modules/
+/bower_components/
 /preview/node_modules
 /browser/
 /preview/browser/
@@ -7,3 +8,4 @@
 /spec/*.js
 /spec/*.xml
 noflo.zip
+app.*

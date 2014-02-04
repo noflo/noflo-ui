@@ -27,13 +27,14 @@ class WebSocketRuntime extends Base
 
     # Normalize the preview setup
     preview = @normalizePreview preview
+    @preview = preview
 
     @address = preview.wsUrl
     @connection = new WebSocket @address, @protocol
     @connection.addEventListener 'open', =>
       @connecting = false
       @emit 'status',
-        state: 'online'
+        online: true
         label: 'connected'
       @emit 'connected'
       @flush()
@@ -43,13 +44,13 @@ class WebSocketRuntime extends Base
     @connection.addEventListener 'close', =>
       @connection = null
       @emit 'status',
-        state: 'offline'
+        online: false
         label: 'disconnected'
       @emit 'disconnected'
     , false
     @connecting = true
 
-  disconnect: (protocol) ->
+  disconnect: ->
     return unless @connection
     @connection.close()
 

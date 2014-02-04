@@ -1,0 +1,286 @@
+<link rel="import" href="number-scrubber.html">
+
+<polymer-element name="noflo-node-inspector" attributes="node graph" class="the-card-content">
+  <style>
+    .ports {
+      margin-bottom: 8px;
+    }
+    ul.ports li {
+      display: block;
+      position: relative;
+      clear: left;
+    }
+    ul.ports li label span {
+      float: left;
+      clear: left;
+      font-size: 10px;
+      padding-top: 0;
+      width: 87px;
+      line-height: 36px;
+      overflow: hidden;
+    }
+    
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    ul.ports li button {
+      padding: 8px;
+      height: 19px;
+      width: 19px;
+    }
+    ul.ports li label button {
+      background-color: hsl(184, 50%, 11%);
+      color: hsl(184, 40%, 89%);
+      display: block;
+      padding: 8px;
+      height: 36px;
+      width: 36px;
+    }
+    ul.ports li label i {
+      margin:0;
+    }
+    ul.ports li span.route {
+      /* TODO: route colors */
+      background-color: white;
+      float: none;
+      display: inline-block;
+      width: 125px;
+      height: 1px;
+      padding: 0;
+    }
+    ul.ports .remove-value {
+      background-color: transparent !important;
+      opacity: .3;
+      border: none !important;
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      line-height: 36px;
+      height: 36px;
+      width: 36px;
+      text-align: center;
+      padding: 0px;
+      font-size: 12px;
+    }
+    ul.ports li span.route1  { background-color: hsl(  0, 100%, 60%); }
+    ul.ports li span.route2  { background-color: hsl( 30, 100%, 60%); }
+    ul.ports li span.route3  { background-color: hsl( 60, 100%, 60%); }
+    ul.ports li span.route4  { background-color: hsl( 90, 100%, 60%); }
+    ul.ports li span.route5  { background-color: hsl(120, 100%, 60%); }
+    ul.ports li span.route6  { background-color: hsl(150, 100%, 60%); }
+    ul.ports li span.route7  { background-color: hsl(180, 100%, 60%); }
+    ul.ports li span.route8  { background-color: hsl(210, 100%, 60%); }
+    ul.ports li span.route9  { background-color: hsl(240, 100%, 60%); }
+    ul.ports li span.route10 { background-color: hsl(270, 100%, 60%); }
+    ul.ports li span.route11 { background-color: hsl(300, 100%, 60%); }
+    ul.ports li span.route12 { background-color: hsl(330, 100%, 60%); }
+    
+    
+    ul.ports li input {
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+
+      width: 180px;
+      height: 36px;
+      border: none;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      font-size: 10px;
+      padding: 9px;
+      padding-left: 36px;
+      
+    }
+    ul.ports li:nth-child(even) input, ul.ports li:nth-child(even) button {
+      background-color: hsla(210, 100%, 20%,.1);
+      color: hsl(210, 100%, 79%);
+    }
+    ul.ports li:nth-child(odd) input, ul.ports li:nth-child(odd) button {
+      background-color: hsla(190, 100%, 20%,.1);
+      color: hsl(190, 100%, 79%);
+    }
+
+    ul.ports li.route0  input, ul.ports li.route0  button  { background-color: hsla(  0,   0%, 20%, .2); color: hsl(  0, 0%, 75%);}    
+    ul.ports li.route1  input, ul.ports li.route1  button  { background-color: hsla(  0, 100%, 20%, .2); color: hsl(  0, 100%, 75%);}
+    ul.ports li.route2  input, ul.ports li.route2  button  { background-color: hsla( 30, 100%, 20%, .2); color: hsl( 30, 100%, 75%);}
+    ul.ports li.route3  input, ul.ports li.route3  button  { background-color: hsla( 60, 100%, 20%, .2); color: hsl( 60, 100%, 75%);}
+    ul.ports li.route4  input, ul.ports li.route4  button  { background-color: hsla( 90, 100%, 20%, .2); color: hsl( 90, 100%, 75%);}
+    ul.ports li.route5  input, ul.ports li.route5  button  { background-color: hsla(120, 100%, 20%, .2); color: hsl(120, 100%, 75%);}
+    ul.ports li.route6  input, ul.ports li.route6  button  { background-color: hsla(150, 100%, 20%, .2); color: hsl(150, 100%, 75%);}
+    ul.ports li.route7  input, ul.ports li.route7  button  { background-color: hsla(180, 100%, 20%, .2); color: hsl(180, 100%, 75%);}
+    ul.ports li.route8  input, ul.ports li.route8  button  { background-color: hsla(210, 100%, 20%, .2); color: hsl(210, 100%, 75%);}
+    ul.ports li.route9  input, ul.ports li.route9  button  { background-color: hsla(240, 100%, 20%, .2); color: hsl(240, 100%, 75%);}
+    ul.ports li.route10 input, ul.ports li.route10 button  { background-color: hsla(270, 100%, 20%, .2); color: hsl(270, 100%, 75%);}
+    ul.ports li.route11 input, ul.ports li.route11 button  { background-color: hsla(300, 100%, 20%, .2); color: hsl(300, 100%, 75%);}
+    ul.ports li.route12 input, ul.ports li.route12 button  { background-color: hsla(330, 100%, 20%, .2); color: hsl(330, 100%, 75%);}
+    
+    
+    ul.ports li.route0  label > span { color: hsl(  0, 0%, 75%);}  
+    ul.ports li.route1  label > span { color: hsl(  0, 100%, 75%);}
+    ul.ports li.route2  label > span { color: hsl( 30, 100%, 75%);}
+    ul.ports li.route3  label > span { color: hsl( 60, 100%, 75%);}
+    ul.ports li.route4  label > span { color: hsl( 90, 100%, 75%);}
+    ul.ports li.route5  label > span { color: hsl(120, 100%, 75%);}
+    ul.ports li.route6  label > span { color: hsl(150, 100%, 75%);}
+    ul.ports li.route7  label > span { color: hsl(180, 100%, 75%);}
+    ul.ports li.route8  label > span { color: hsl(210, 100%, 75%);}
+    ul.ports li.route9  label > span { color: hsl(240, 100%, 75%);}
+    ul.ports li.route10 label > span { color: hsl(270, 100%, 75%);}
+    ul.ports li.route11 label > span { color: hsl(300, 100%, 75%);}
+    ul.ports li.route12 label > span { color: hsl(330, 100%, 75%);}
+    
+    
+
+    ul.ports  li.route0:not(.readonly) input, ul.ports  li.route0:not(.readonly) button                 {  border-left: 1px solid hsla(  0, 0%,   75%,.1);  }
+    ul.ports  li.route1:not(.readonly) input, ul.ports  li.route1:not(.readonly) button                 {  border-left: 1px solid hsla(  0, 100%, 75%,.1); }
+    ul.ports  li.route2:not(.readonly) input, ul.ports  li.route2:not(.readonly) button                 {  border-left: 1px solid hsla( 30, 100%, 75%,.1); }
+    ul.ports  li.route3:not(.readonly) input, ul.ports  li.route3:not(.readonly) button                 {  border-left: 1px solid hsla( 60, 100%, 75%,.1); }
+    ul.ports  li.route4:not(.readonly) input, ul.ports  li.route4:not(.readonly) button                 {  border-left: 1px solid hsla( 90, 100%, 75%,.1); }
+    ul.ports  li.route5:not(.readonly) input, ul.ports  li.route5:not(.readonly) button                 {  border-left: 1px solid hsla(120, 100%, 75%,.1); }
+    ul.ports  li.route6:not(.readonly) input, ul.ports  li.route6:not(.readonly) button                 {  border-left: 1px solid hsla(150, 100%, 75%,.1); }
+    ul.ports  li.route7:not(.readonly) input, ul.ports  li.route7:not(.readonly) button                 {  border-left: 1px solid hsla(180, 100%, 75%,.1); }
+    ul.ports  li.route8:not(.readonly) input, ul.ports  li.route8:not(.readonly) button                 {  border-left: 1px solid hsla(210, 100%, 75%,.1); }
+    ul.ports  li.route9:not(.readonly) input, ul.ports  li.route9:not(.readonly) button                 {  border-left: 1px solid hsla(240, 100%, 75%,.1); }
+    ul.ports li.route10:not(.readonly) input, ul.ports li.route10:not(.readonly) button                 {  border-left: 1px solid hsla(270, 100%, 75%,.1); }
+    ul.ports li.route11:not(.readonly) input, ul.ports li.route11:not(.readonly) button                 {  border-left: 1px solid hsla(300, 100%, 75%,.1); }
+    ul.ports li.route12:not(.readonly) input, ul.ports li.route12:not(.readonly) button                 {  border-left: 1px solid hsla(330, 100%, 75%,.1); }
+    
+    number-scrubber,
+    ul.ports li label span:before {
+      display: inline;
+      line-height: 36px;
+      font-size: 10px;
+      float: right;
+      position: absolute;
+      left: 86px;
+      text-transform: uppercase;
+      opacity: 0.2;
+      width: 36px;
+      text-align: center;      
+    }
+    
+    ul.ports li.port-type-color label span:before,
+    ul.ports li.port-type-number label span:before,
+    ul.ports li.port-type-int label span:before {
+      content: '#';
+    }
+    ul.ports li.port-type-array label span:before {
+      content: '[]';
+    }
+    ul.ports li.port-type-object label span:before {
+      content: '{}';
+    }
+    ul.ports li.port-type-string label span:before {
+      content: '"';
+    }
+    ul.ports li.port-type-all label span:before {
+      content: '*';
+    }
+
+  </style>
+  <template>
+    <header>
+      <h1 on-keyup="{{ updateLabel }}" contenteditable>{{ node.label }}</h1>
+      <template if="{{ node.label != node.component }}">
+        <h2>{{ node.component }}</h2>
+      </template>
+    </header>
+    <ul class="ports">
+      <template repeat="{{ port in inports }}">
+        <li class="route route{{ port.route }} {{ port.class }} port-type-{{ port.type }}">
+          <label><span>{{ port.name }}</span>
+          <template if="{{ port.showInput }}">
+            <template if="{{ port.type == 'bang' }}">
+              <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
+            </template>
+            <template if="{{ port.type == 'boolean' }}">
+              <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-change="{{ updateValue }}">
+            </template>
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+              <template if="{{ port.type == 'number' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
+              <template if="{{ port.type == 'int' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" on-changed="{{updateValue}}">#</number-scrubber>
+              </template>
+              <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
+            </template>
+            <template if="{{ port.type != 'bang' && port.value != undefined }}">
+              <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
+            </template>
+          </template>
+          <template if="{{ !port.showInput }}">
+            <template if="{{ port.type == 'boolean' }}">
+              <input type="checkbox" name="{{ port.name }}" readonly checked="{{ port.value }}" on-change="{{ updateValue }}">
+            </template>
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+              <input type="{{ port.type }}" name="{{ port.name }}" readonly value="{{ port.value }}" on-blur="{{ updateValue }}">
+            </template>
+          </template>
+          </label>
+        </li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-node-inspector', {
+      inports: [],
+      enteredView: function () {
+        this.updatePorts();
+      },
+      updateLabel: function (event, detail, sender) {
+        this.node.label = sender.innerText;
+      },
+      updatePorts: function () {
+        this.inports = [];
+        this.node.getInports().forEach(function (port) {
+           var portDef = {
+            name: port.name,
+            class: '',
+            type: port.type,
+            value: port.getValue(true),
+            showInput: (!port.isConnected()),
+            route: port.route
+          };
+          if (!portDef.showInput) {
+            portDef.class = 'readonly';
+          }
+          port.addEventListener('portroute', function () {
+            portDef.route = port.route;
+          });
+          this.inports.push(portDef);
+        }.bind(this));
+      },
+      updateValue: function (event, detail, sender) {
+        event.preventDefault();
+        if (!sender.value) {
+          return;
+        }
+        var value = sender.value;
+        if (sender.type==="checkbox") {
+          value = sender.checked;
+        }
+        var port = this.node.getInportByName(sender.getAttribute('name'));
+        port.setValue(value);
+      },
+      removeValue: function (event, detail, sender) {
+        event.preventDefault();
+        var name = sender.getAttribute('data-port');
+        var port = this.node.getInportByName(name);
+        port.removeValue();
+        this.inports.forEach(function (port) {
+          if (port.name === name) {
+            port.value = null;
+          }
+        });
+      },
+      sendBang: function (event, detail, sender) {
+        event.preventDefault();
+        var name = sender.getAttribute('name');
+        var port = this.node.getInportByName(name);
+        port.sendBang();
+      }
+    });
+  </script>
+</polymer-element>

@@ -1,0 +1,299 @@
+<link rel="import" href="noflo-preview.html">
+<link rel="import" href="noflo-graph-inspector.html">
+<polymer-element name="noflo-runtime" attributes="graphs" class="gpu">
+  <style>
+    noflo-runtime {
+      position: fixed;
+      right: 36px;
+      padding-left: 36px;
+      box-sizing: border-box;
+      top: 0;
+      color: hsl(189, 11%, 26%);
+      z-index: 3;
+      width: 288px;
+      height: 72px;
+      background-color: hsl(187, 45%, 5%);
+    }
+
+    noflo-runtime h2 {
+      font-size: 14px;
+      width: 216px;
+      font-weight: normal;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 36px;
+      margin: 0px;
+      padding: 0px;
+    }
+
+    noflo-runtime #address h2 {
+      position: absolute;
+      left: 72px;
+      width: 180px;
+      top: 0px;
+    }
+    noflo-runtime #address #graphinspector {
+      position: absolute;
+      right: 0px;
+      top: 0px;
+      color: hsl(189, 11%, 26%);
+    }
+
+    noflo-runtime #address, noflo-runtime #address button {
+      color: #e70215;
+    }
+    noflo-runtime .online#address, noflo-runtime .online#address button {
+      color: #01d159;
+    }
+
+    noflo-runtime #runcontrol h2 {
+      position: absolute;
+      left: 72px;
+      top: 36px;
+    }
+    noflo-runtime #runcontrol button {
+      color: hsl(189, 11%, 26%);
+    }
+  </style>
+  <template>
+    <template if="{{ currentGraph }}">
+      <div id="address" class="{{ { online: online } | tokenList }}">
+        <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
+        <template if="{{ currentGraph.properties.environment.runtime == 'html' }}">
+          <h2>{{ currentGraph.properties.environment.src }}</h2>
+        </template>
+        <template if="{{ currentGraph.properties.environment.runtime == 'websocket' }}">
+          <h2>{{ currentGraph.properties.environment.wsUrl }}</h2>
+        </template>
+        <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
+      </div>
+    <div id="runcontrol">
+      <template if="{{ online }}">
+        <template if="{{ execution.running }}">
+          <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
+        </template>
+        <template if="{{ execution.running == false }}">
+          <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
+        </template>
+        <h2>{{ execution.label }}</h2>
+      </template>
+    </div>
+  </template>
+  </template>
+  <script>
+    Polymer('noflo-runtime', {
+      currentGraph: null,
+      graphs: null,
+      runtime: null,
+      online: false,
+      execution: {
+        label: 'not started',
+        running: false
+      },
+      card: null,
+      graphInspector: null,
+      panel: null,
+      edges: null,
+      wasConnected: false,
+      graphsChanged: function () {
+        if (!this.graphs || this.graphs.length === 0) {
+          this.currentGraph = null;
+          return;
+        }
+        // Use the top-level graph as the runtime main graph
+        this.currentGraph = this.graphs[0];
+      },
+      edgesChanged: function () {
+        this.sendEdges();
+      },
+      sendEdges: function () {
+        if (!this.runtime || !this.edges || !this.edges.map || !this.currentGraph) {
+          return;
+        }
+        var edgeData = this.edges.map(function (edge) { return edge.toJSON(); });
+        this.runtime.sendNetwork('edges', {
+          edges: edgeData,
+          graph: this.currentGraph.id
+        });
+      },
+      currentGraphChanged: function () {
+        this.wasConnected = false;
+        if (this.runtime) {
+          this.stop();
+          this.execution.running = false;
+          this.execution.stopped = true;
+          this.runtime = null;
+        }
+        if (this.card) {
+          this.card.parentNode.removeChild(this.card);
+          this.card = null;
+        }
+        if (this.graphInspector) {
+          this.graphInspector.parentNode.removeChild(this.graphInspector);
+          this.graphInspector = null;
+        }
+        if (!this.currentGraph) {
+          return;
+        }
+        var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
+        this.runtime = new runtime(this.currentGraph);
+        this.subscribeRuntime();
+        switch (this.runtime.getType()) {
+          case 'iframe':
+            this.icon = 'globe';
+            break;
+          default:
+            this.icon = 'cloud';
+            break;
+        }
+        this.fire('runtime', this.runtime);
+      },
+      subscribeRuntime: function () {
+        this.runtime.on('status', function (status) {
+          this.online = status.online;
+          if (!this.online) {
+            this.hideCard();
+            this.execution.running = false;
+            this.execution.label = 'not started';
+            if (this.panel) {
+              this.panel.open = false;
+            }
+          }
+        }.bind(this));
+        this.runtime.on('execution', function (status) {
+          if (status.running) {
+            this.execution.running = true;
+          } else {
+            this.execution.running = false;
+          }
+          this.execution.label = status.label;
+        }.bind(this));
+        this.runtime.on('network', function (message) {
+          if (message.command === 'error') {
+            this.notify('Error', message.payload.message);
+            return;
+          }
+        }.bind(this));
+      },
+      determineRuntime: function () {
+        if (!this.currentGraph.properties.environment) {
+          return 'iframe';
+        }
+        switch (this.currentGraph.properties.environment.runtime) {
+          case 'html':
+            return 'iframe';
+          case 'websocket':
+            return 'websocket';
+          default:
+            return 'iframe';
+        }
+      },
+      start: function (event) {
+        event.preventDefault();
+        this.requestNotificationPermission();
+        if (this.card) {
+          this.sendEdges();
+          this.runtime.start();
+          return;
+        }
+        this.showCard();
+        if (this.runtime.getType() === 'iframe') {
+          this.runtime.once('connected', function () {
+            this.runtime.start();
+          }.bind(this));
+          return;
+        }
+        this.runtime.start();
+      },
+      stop: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.runtime.stop();
+      },
+      reconnect: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        this.runtime.reconnect();
+      },
+      showCard: function () {
+        if (this.card || !this.panel) {
+          return;
+        }
+        this.card = document.createElement('the-card');
+        this.card.type = 'noflo-runtime-preview';
+        // Move the preview element of the runtime into the card
+        var preview = document.createElement('noflo-preview');
+        preview.classList.add('the-card-content');
+        preview.runtime = this.runtime;
+        preview.returnTo = this.parentNode;
+        this.card.appendChild(preview);
+        this.card.addTo(this.panel.getMain());
+        this.panel.open = true;
+
+        // Handle maximization
+        var originalSize = this.panel.size;
+        preview.addEventListener('maximized', function (e) {
+          if (e.detail) {
+            this.panel.size = window.innerWidth - 36;
+          } else {
+            this.panel.size = originalSize;
+          }
+        }.bind(this));
+      },
+      hideCard: function () {
+        if (!this.card) {
+          return;
+        }
+        var el = this.runtime.getElement();
+        this.card.parentNode.removeChild(this.card);
+        this.card = null;
+      },
+      showGraphInspector: function () {
+        if (this.graphs.length === 0) {
+          return;
+        }
+        this.graphInspector = document.createElement('noflo-graph-inspector');
+        this.graphInspector.graph = this.currentGraph;
+        this.parentNode.appendChild(this.graphInspector);
+      },
+      canNotify: function () {
+        if (!window.webkitNotifications) {
+          return false;
+        }
+        return true;
+      },
+      allowedToNotify: function () {
+        if (!this.canNotify()) {
+          return false;
+        }
+        if (window.webkitNotifications.checkPermission() !== 0) {
+          return false;
+        }
+        return true;
+      },
+      requestNotificationPermission: function () {
+        if (!this.canNotify()) {
+          return;
+        }
+        if (this.allowedToNotify()) {
+          return;
+        }
+        window.webkitNotifications.requestPermission();
+      },
+      notify: function (title, message) {
+        if (!this.allowedToNotify()) {
+          if (!console || !console.log) {
+            return;
+          }
+          console.log(title + ': ' + message);
+          return;
+        }
+        var notification = window.webkitNotifications.createNotification('app/noflo.png', title, message);
+        notification.show();
+      }
+    });
+  </script>
+</polymer-element>

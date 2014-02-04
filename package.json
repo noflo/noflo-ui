@@ -19,11 +19,10 @@
   "dependencies": {},
   "devDependencies": {
     "grunt": "~0.4.1",
-    "grunt-contrib-coffee": "~0.6.6",
+    "grunt-contrib-coffee": "~0.7.0",
     "grunt-coffeelint": "~0.0.6",
     "chai": "~1.5.0",
     "mocha": "~1.9.0",
-    "grunt-mocha-phantomjs": "~0.2.2",
     "grunt-contrib-uglify": "~0.2.0",
     "grunt-contrib-watch": "~0.3.1",
     "grunt-contrib-compress": "~0.5.2",
@@ -32,7 +31,11 @@
     "component-json": "~0.1.4",
     "component-coffee": "~0.1.4",
     "grunt-exec": "~0.4.2",
-    "component": "~0.17.6"
+    "component": "~0.17.6",
+    "bower": "~1.2.7",
+    "grunt-lint-inline": "~0.3.1",
+    "vulcanize": "git://github.com/Polymer/vulcanize.git",
+    "grunt-contrib-clean": "~0.5.0"
   },
   "scripts": {
     "postinstall": "cd preview && npm install && cd ..",
