@@ -17,7 +17,8 @@
     "https://noflo-gate.herokuapp.com/",
     "https://api.github.com/",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "identity"
   ],
   "icons": {
     "16": "app/noflo-16.png",
