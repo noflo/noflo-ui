@@ -164,7 +164,6 @@
         this.runtime.on('execution', function (status) {
           if (status.running) {
             this.execution.running = true;
-            this.sendEdges();
           } else {
             this.execution.running = false;
           }
@@ -194,6 +193,7 @@
         event.preventDefault();
         this.requestNotificationPermission();
         if (this.card) {
+          this.sendEdges();
           this.runtime.start();
           return;
         }
