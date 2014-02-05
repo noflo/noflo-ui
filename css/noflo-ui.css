@@ -31,8 +31,8 @@ input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, 
 */
 
 #container.blur {
-  -webkit-filter: blur(4px);
-  filter: blur(4px);
+  -webkit-filter: blur(2px);
+  filter: blur(2px);
 }
 
 h1, h2, h3 {
