@@ -33,7 +33,7 @@
         });
       },
       searchChanged: function () {
-        if (!this.search) {
+        if (!this.search || typeof this.search !== 'string') {
           return;
         }
         if (!this.editor) {
