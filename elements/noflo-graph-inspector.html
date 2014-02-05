@@ -7,16 +7,16 @@
       height: 210px;
     }
   </style>
+  <script src="../bower_components/codemirror/lib/codemirror.js"></script>
+  <script src="../bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+  <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
     <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
     <template if="{{ graph.properties.environment.runtime == 'html' }}">
     <label>
       <span>Preview address</span>
       <input type="text" value="{{ graph.properties.environment.src }}">
-    </label>
-    <label>
-      <span>Preview contents</span>
-      <textarea id="content" value="{{ graph.properties.environment.content }}"></textarea>
     </label>
     </template>
     <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
@@ -25,6 +25,9 @@
       <input type="text" value="{{ graph.properties.environment.wsUrl }}">
     </label>
     </template>
+    <label id="content">
+      <span>Preview contents</span>
+    </label>
     <div class="toolbar">
       <button on-click="{{ close }}">Done</button>
     </div>
@@ -36,9 +39,24 @@
       },
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
+        if (!this.graph || this.graph.properties.environment.runtime !== 'html') {
+          return;
+        }
+        this.prepareEditor();
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
+      },
+      prepareEditor: function () {
+        this.previewEditor = CodeMirror(this.$.content, {
+          lineNumbers: true,
+          value: this.graph.properties.environment.content,
+          language: 'htmlmixed',
+          theme: 'noflo'
+        });
+        this.previewEditor.on('change', function () {
+          this.graph.properties.environment.content = this.previewEditor.getValue();
+        }.bind(this));
       },
       close: function () {
         if (!this.parentNode) {
