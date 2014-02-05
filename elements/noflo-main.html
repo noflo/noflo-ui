@@ -48,7 +48,7 @@
   </template>
   <script>
     Polymer('noflo-main', {
-      open: false,
+      open: true,
       projects: [],
       sketches: [],
       examples: [],
@@ -57,15 +57,10 @@
       },
       openChanged: function () {
         if (String(this.open) === 'true') {
-          this.style.display = 'block';
-          this.style.opacity = 1;
+          this.style.height = '100%';
           return;
         }
-        this.style.opacity = 0;
-        // TODO: On transition end
-        setTimeout(function () {
-          this.style.display = 'none';
-        }.bind(this), 300);
+        this.style.height = '0px';
       },
       openSketch: function (event, details, sender) {
         event.preventDefault();

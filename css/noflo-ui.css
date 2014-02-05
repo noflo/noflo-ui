@@ -110,6 +110,8 @@ the-panel#account header h1 {
   border-bottom: 1px solid hsl(189, 11%, 26%);
   height: 36px;
   line-height: 36px;
+  font-size: 17px;
+  white-space: nowrap;
 }
 the-panel#account main ul {
   margin: 0px;
@@ -361,11 +363,10 @@ noflo-main {
   position: fixed;
   top: 0px;
   -webkit-transform: translateZ(0px);
-  
   overflow-y: scroll;
   height: 100%;
   width: 100%;
-  transition: opacity 0.3s ease-in-out;
+  transition: height 1s ease-in-out;
 }
 noflo-main section {
   background-image: radial-gradient(circle 0.5px at 1px 1px, hsl(189, 11%, 10%) 0px, hsl(189, 11%, 12%) 1px, transparent 2px);
@@ -442,6 +443,7 @@ noflo-main ul li h2 {
   text-transform: none;
   font-size: 10px;
   text-align: left;
+  white-space: nowrap;
   left: 18px;
   padding: 0px;
   margin: 0px;
