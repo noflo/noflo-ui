@@ -573,12 +573,10 @@ noflo-graph-inspector {
   display: block;
   position: fixed;
   -webkit-transform: translateZ(0px);
-  
   width: calc(72px * 8);
   top: calc(50% - 50px);
   left: 50%;
   margin-left: calc(-72px * 4);
-  /*outline: solid hsla(0, 0%, 11%, 0.6) 1000px;*/
   z-index: 5;
 }
 

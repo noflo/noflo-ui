@@ -51,6 +51,12 @@
       updateName: function (event, detail, sender) {
         this.graph.properties.name = sender.textContent;
       },
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
       close: function () {
         if (!this.parentNode) {
           return;

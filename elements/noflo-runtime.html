@@ -257,7 +257,7 @@
         }
         this.graphInspector = document.createElement('noflo-graph-inspector');
         this.graphInspector.graph = this.currentGraph;
-        this.parentNode.appendChild(this.graphInspector);
+        this.parentNode.parentNode.appendChild(this.graphInspector);
       },
       canNotify: function () {
         if (!window.webkitNotifications) {
