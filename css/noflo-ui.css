@@ -565,6 +565,7 @@ noflo-graph-inspector {
   padding: 17px;
   box-sizing: border-box;
   border-radius: 3px;
+  box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
 }
 noflo-new-graph h1,
 noflo-new-project h1,
