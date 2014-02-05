@@ -47,7 +47,6 @@ class ConnectRuntime extends noflo.Component
 
   sendGraph: (runtime, graph) ->
     runtime.sendGraph 'clear',
-      baseDir: 'noflo-ui-preview'
       id: graph.id
     for name, definition of graph.processes
       runtime.sendGraph 'addnode',
