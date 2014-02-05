@@ -169,6 +169,7 @@
         results.search = this.search;
         results.addEventListener('resultclick', function () {
           this.search = '';
+          this.blur();
         }.bind(this));
 
         this.resultsCard = document.createElement('the-card');
