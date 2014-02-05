@@ -13,8 +13,10 @@
           <option value="javascript">JavaScript</option>
         </select>
       </label>
-      <button on-click="{{ send }}">Create</button>
-      <a on-click="{{ close }}">Cancel</a>
+      <div class="toolbar">
+        <button on-click="{{ send }}">Create</button>
+        <a on-click="{{ close }}">Cancel</a>
+      </div>
     </form>
   </template>
   <script>

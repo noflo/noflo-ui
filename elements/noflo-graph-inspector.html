@@ -1,29 +1,10 @@
 <polymer-element name="noflo-graph-inspector" attributes="graph">
   <style>
-    noflo-graph-inspector label span {
-      display: block;
-      font-size: 8pt;
-      padding-top: 8px;
+    noflo-graph-inspector {
+      top: calc(50% - 220px) !important;
     }
     noflo-graph-inspector textarea {
       height: 210px;
-      border: none;
-      width: 100%;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      padding: 8px;
-      background-color: hsl(184, 50%, 11%);
-      color: hsl(184, 40%, 89%);
-      box-sizing: border-box;
-    }
-    noflo-graph-inspector input {
-      width: 100%;
-      height: 19px;
-      border: none;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      padding: 8px;
-      background-color: hsl(184, 50%, 11%);
-      color: hsl(184, 40%, 89%);
-      box-sizing: border-box;
     }
   </style>
   <template>
@@ -44,7 +25,9 @@
       <input type="text" value="{{ graph.properties.environment.wsUrl }}">
     </label>
     </template>
-    <button on-click="{{ close }}">Done</button>
+    <div class="toolbar">
+      <button on-click="{{ close }}">Done</button>
+    </div>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {

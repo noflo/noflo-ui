@@ -18,7 +18,7 @@ button {
   padding:0;
 }
 
-input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
+input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
   outline:none;
 }
 
@@ -137,22 +137,6 @@ the-panel#account main ul li a i {
   line-height: 36px;
   color: hsl(189, 11%, 26%);
   margin-right: 4px;
-}
-the-panel#account main ul li noflo-account img {
-  margin-top: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 36px;
-  border: 1px solid #01d8e5;
-  float: right;
-}
-the-panel#account main ul li noflo-account h1,
-the-panel#account main ul li noflo-account .toolbar button {
-  display: none;
-}
-the-panel#account main ul li noflo-account .toolbar a {
-  font-size: 16px;
-  line-height: 36px;
 }
 #context {
   position: fixed;
@@ -574,10 +558,88 @@ noflo-graph-inspector {
   position: fixed;
   -webkit-transform: translateZ(0px);
   width: calc(72px * 8);
-  top: calc(50% - 50px);
+  top: calc(50% - 150px);
   left: 50%;
   margin-left: calc(-72px * 4);
   z-index: 5;
+  padding: 17px;
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+noflo-new-graph h1,
+noflo-new-project h1,
+noflo-new-component h1,
+noflo-graph-inspector h1 {
+  font-size: 17px;
+  line-height: 36px;
+}
+noflo-new-graph label,
+noflo-new-project label,
+noflo-new-component label,
+noflo-graph-inspector label {
+  display: block;
+  font-size: 13px;
+  margin-top: 17px;
+  color: hsl(189, 11%, 26%);
+  line-height: 17px;
+}
+noflo-new-graph input,
+noflo-new-project input,
+noflo-new-component input,
+noflo-graph-inspector input,
+noflo-new-graph select,
+noflo-new-project select,
+noflo-new-component select,
+noflo-graph-inspector select,
+noflo-new-graph textarea,
+noflo-new-project textarea,
+noflo-new-component textarea,
+noflo-graph-inspector textarea {
+  display: block;
+  font-size: 17px;
+  background-color: hsl(189, 47%, 6%);
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  color: white;
+  border-radius: 3px;
+  padding: 3px;
+  border: none;
+  margin: 0px;
+  width: 100%;
+}
+
+noflo-new-graph .toolbar,
+noflo-new-project .toolbar,
+noflo-new-component .toolbar,
+noflo-graph-inspector .toolbar {
+  display: block;
+  line-height: 36px;
+  margin-top: 17px;
+}
+noflo-new-graph .toolbar button,
+noflo-new-project .toolbar button,
+noflo-new-component .toolbar button,
+noflo-graph-inspector .toolbar button {
+  background-color: transparent;
+  color: hsl(189, 11%, 26%);
+  border: 1px solid hsl(189, 11%, 26%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
+  margin: 0px;
+}
+noflo-new-graph .toolbar a,
+noflo-new-project .toolbar a,
+noflo-new-component .toolbar a,
+noflo-graph-inspector .toolbar a {
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
 }
 
 #workspace {
