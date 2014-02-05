@@ -142,17 +142,17 @@
       },
       openHome: function () {
         event.preventDefault();
-        this.$.account.open = false;
+        this.$.account.toggleOpen(false);
         window.location.hash = '#';
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
-        this.$.account.open = false;
+        this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
       },
       openComponent: function (event, detail, sender) {
         event.preventDefault();
-        this.$.account.open = false;
+        this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
       }
     });
