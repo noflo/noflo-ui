@@ -35,13 +35,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   </head>
   <body>
-    <noflo-main></noflo-main>
-    <noflo-context></noflo-context>
-    <noflo-runtime></noflo-runtime>
-    <noflo-search></noflo-search>
-    <noflo-library></noflo-library>
-    <noflo-project></noflo-project>
-    <main id="workspace"></main>
+    <div id="container">
+      <noflo-main></noflo-main>
+      <noflo-context></noflo-context>
+      <noflo-runtime></noflo-runtime>
+      <noflo-search></noflo-search>
+      <noflo-library></noflo-library>
+      <noflo-project></noflo-project>
+      <main id="workspace"></main>
+  </div>
     <script type="application/fbp" id="PrepareStorage">
       EXPORT=OPEN.NAME:NAME
       EXPORT=ERRORS.OUT:ERROR

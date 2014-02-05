@@ -30,6 +30,11 @@ input:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
 }
 */
 
+#container.blur {
+  -webkit-filter: blur(4px);
+  filter: blur(4px);
+}
+
 h1, h2, h3 {
   font-weight: normal;
 }

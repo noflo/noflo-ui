@@ -23,6 +23,12 @@
       name: '',
       project: '',
       type: 'html',
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
       send: function (event) {
         if (event) {
           event.preventDefault();
