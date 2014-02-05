@@ -5,6 +5,7 @@ class ConnectRuntime extends noflo.Component
     @editor = null
     @runtime = null
     @connected = false
+    @project = null
     @inPorts =
       editor: new noflo.Port 'object'
       project: new noflo.Port 'object'
@@ -13,16 +14,14 @@ class ConnectRuntime extends noflo.Component
     @outPorts =
       editor: new noflo.Port 'object'
 
-    @inPorts.editor.on 'connect', =>
-      @editor = null
     @inPorts.editor.on 'data', (@editor) =>
       @connect @editor, @runtime
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
-    @inPorts.project.on 'data', (data) =>
-      @runtime.on 'connected', =>
-        @sendProject @runtime, data
+      if @runtime
+        @editor = null
+    @inPorts.project.on 'data', (@project) =>
     @inPorts.newgraph.on 'data', (data) =>
       @sendGraph @runtime, data
     @inPorts.runtime.on 'connect', =>
@@ -30,7 +29,9 @@ class ConnectRuntime extends noflo.Component
     @inPorts.runtime.on 'data', (runtime) =>
       @runtime.stop() if @runtime
       @runtime = runtime
-      @connect @editor, @runtime
+      if @editor
+        @connect @editor, @runtime
+        @editor = null
 
   sendProject: (runtime, project) ->
     if project.components
@@ -38,7 +39,6 @@ class ConnectRuntime extends noflo.Component
         @sendComponent runtime, component
     if project.graphs
       for graph in project.graphs
-        continue if graph.id is project.main
         @sendGraph runtime, graph
 
   sendComponent: (runtime, component) ->
@@ -146,13 +146,11 @@ class ConnectRuntime extends noflo.Component
     return unless editor and runtime
     runtime.on 'connected', =>
       @connected = true
-      # TODO: Read basedir from graph?
-      runtime.sendComponent 'list', 'noflo-ui-preview'
-      @sendGraph runtime, editor.toJSON()
+      runtime.sendComponent 'list', ''
+      @sendProject @runtime, @project if @project
     runtime.on 'disconnected', =>
       @connected = false
-    graph = editor.toJSON()
-    @subscribeEditor graph.id, editor, runtime
+    @subscribeEditor editor.graph.id, editor, runtime
 
     runtime.on 'component', (message) ->
       if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
