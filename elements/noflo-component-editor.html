@@ -15,8 +15,16 @@
   <script>
     Polymer('noflo-component-editor', {
       component: null,
+      graphs: null,
       codeEditor: null,
       testsEditor: null,
+      graphsChanged: function () {
+        if (this.graphs.length) {
+          this.style.display = 'none';
+          return;
+        }
+        this.style.display = 'block';
+      },
       componentChanged: function () {
         this.codeEditor = CodeMirror(this.$.code, {
           lineNumbers: true,

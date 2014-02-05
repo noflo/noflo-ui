@@ -708,6 +708,7 @@ noflo-component-editor {
   left: 36px;
   right: 36px;
   height: calc(100% - 72px);
+  z-index: 1;
 }
 .CodeMirror {
   height: 100%;

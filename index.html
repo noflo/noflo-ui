@@ -28,7 +28,7 @@
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
-    <noflo-polymer name="noflo-component-editor" inports="component" outports="changed"></noflo-polymer>
+    <noflo-polymer name="noflo-component-editor" inports="component graphs" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -42,7 +42,10 @@
       <noflo-search></noflo-search>
       <noflo-library></noflo-library>
       <noflo-project></noflo-project>
-      <main id="workspace"></main>
+      <main id="workspace">
+        <noflo-component-editor></noflo-component-editor>
+        <the-graph-editor></the-graph-editor>
+      </main>
   </div>
     <script type="application/fbp" id="PrepareStorage">
       EXPORT=OPEN.NAME:NAME
@@ -256,9 +259,8 @@
       EXPORT=CONTEXT.GRAPHS:GRAPHS
       EXPORT=CONTEXT.COMPONENT:COMPONENT
       EXPORT=CONTEXT.CLEAR:CLEAR
-      EXPORT=SPLITWORKSPACE.IN:WORKSPACE
-      EXPORT=EDITGRAPH.CHANGED:GRAPHCHANGED
-      EXPORT=EDITCOMPONENT.CHANGED:COMPONENTCHANGED
+      EXPORT=GRAPHEDITOR.CHANGED:GRAPHCHANGED
+      EXPORT=COMPONENTEDITOR.CHANGED:COMPONENTCHANGED
       EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
       EXPORT=LOADPROJECTDATA.DB:DB
@@ -297,20 +299,19 @@
       Context NEWGRAPH -> IN MergeNewGraph
 
       # Prepare graph editor
-      Context CURRENTGRAPH -> CURRENTGRAPH EditGraph(local/GraphEditor)
-      SplitWorkspace(core/Split) OUT -> WORKSPACE EditGraph
-      Runtime RUNTIME -> RUNTIME EditGraph
-      Context NEWGRAPH -> NEWGRAPH EditGraph
-      Context PROJECT -> STRING HoldProject(strings/SendString) OUT -> PROJECT EditGraph
-      Runtime RUNTIME -> IN HoldProject
-      EditGraph NODECLICK -> NODE Context
-      EditGraph EDGECLICK -> EDGE Context
-      EditGraph EDITOR -> EDITOR Library
-      EditGraph EDITOR -> EDITOR Context
+      Context CURRENTGRAPH -> CURRENTGRAPH GraphEditor(local/GraphEditor)
+      Runtime RUNTIME -> RUNTIME GraphEditor
+      Context NEWGRAPH -> NEWGRAPH GraphEditor
+      Context PROJECT -> PROJECT GraphEditor
+      GraphEditor NODECLICK -> NODE Context
+      GraphEditor EDGECLICK -> EDGE Context
+      GraphEditor EDITOR -> EDITOR Library
+      GraphEditor EDITOR -> EDITOR Context
 
       # Prepare component editor
-      Context COMPONENT -> COMPONENT EditComponent(local/ComponentEditor)
-      SplitWorkspace OUT -> WORKSPACE EditComponent
+      'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
+      Context COMPONENT -> COMPONENT ComponentEditor
+      Context GRAPHS -> GRAPHS ComponentEditor
     </script>
     <script type="application/fbp" id="ComponentEditor">
       EXPORT=SPLITCOMPONENT.IN:COMPONENT
@@ -327,15 +328,17 @@
       EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
       EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
       EXPORT=CONNECTRUNTIME.NEWGRAPH:NEWGRAPH
-      EXPORT=MERGEGRAPH.IN:CURRENTGRAPH
-      EXPORT=SPLITGRAPH.OUT:CURRENTGRAPH
-      EXPORT=LOADEDITOR.EDITOR:EDITOR
+      EXPORT=GRAPHEDITOR.GRAPH:CURRENTGRAPH
+      EXPORT=SPLITEDITOR.OUT:EDITOR
       EXPORT=GRAPHEDITOR.NODECLICK:NODECLICK
       EXPORT=GRAPHEDITOR.EDGECLICK:EDGECLICK
       EXPORT=CONVERT.OUT:CHANGED
-      MergeGraph(core/Merge) OUT -> IN SplitGraph(core/Split) OUT -> GRAPH LoadEditor(ui/LoadGraphEditor)
-      LoadEditor EDITOR -> EDITOR ConnectRuntime(ui/ConnectRuntime)
-      ConnectRuntime EDITOR -> ELEMENT GraphEditor(polymer/the-graph-editor)
+      'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
+      GraphEditor ELEMENT -> IN Async(core/RepeatAsync) OUT -> IN SplitEditor(core/Split)
+      '' -> START ListenWindow(interaction/ListenResize)
+      ListenWindow WIDTH -> WIDTH GraphEditor
+      ListenWindow HEIGHT -> HEIGHT GraphEditor
+      SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
       'toJSON' -> METHOD Convert(objects/CallMethod)
       GraphEditor CHANGED -> IN Convert
     </script>
@@ -364,8 +367,8 @@
       Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
 
       # Prepare workspace
-      '#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
-      Workspace OUT -> WORKSPACE Context
+      #'#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
+      #Workspace OUT -> WORKSPACE Context
 
       # Prepare the context
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
@@ -392,10 +395,6 @@
       'false' -> DATA HideMain(core/Kick) OUT -> OPEN Main
       Router MAIN -> IN ShowMain
       Router ROUTE -> IN HideMain
-
-      # Clear workspace on route changes
-      Workspace OUT -> WORKSPACE ClearWorkspace(local/ClearWorkspace)
-      Router ROUTE -> CLEAR ClearWorkspace
 
       # Routing
       LoadData COMPLETE -> START ListenHash(interaction/ListenHash)

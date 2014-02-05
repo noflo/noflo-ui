@@ -19,8 +19,6 @@ class ConnectRuntime extends noflo.Component
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
-      if @runtime
-        @editor = null
     @inPorts.project.on 'data', (@project) =>
     @inPorts.newgraph.on 'data', (data) =>
       @sendGraph @runtime, data
@@ -29,9 +27,7 @@ class ConnectRuntime extends noflo.Component
     @inPorts.runtime.on 'data', (runtime) =>
       @runtime.stop() if @runtime
       @runtime = runtime
-      if @editor
-        @connect @editor, @runtime
-        @editor = null
+      @connect @editor, @runtime
 
   sendProject: (runtime, project) ->
     if project.components
@@ -144,6 +140,7 @@ class ConnectRuntime extends noflo.Component
 
   connect: (editor, runtime) ->
     return unless editor and runtime
+    @connected = false
     runtime.on 'connected', =>
       @connected = true
       runtime.sendComponent 'list', ''
