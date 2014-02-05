@@ -210,19 +210,6 @@
       Read TRANSACTION -> TRANSACTION Store STORE -> STORE PutProject(indexeddb/Put)
       Split OUT -> VALUE PutProject
     </script>
-    <script type="application/fbp" id="LoadComponent">
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=SPLITID.IN:ID
-      EXPORT=GET.ITEM:COMPONENT
-      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
-      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
-      SplitId OUT -> IN HoldMode
-      'components' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
-      SplitId OUT -> IN HoldStore
-      SplitStore OUT -> NAME Store(indexeddb/GetStore)
-      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Get(indexeddb/Get)
-      SplitId OUT -> KEY Get
-    </script>
     <script type="application/fbp" id="StoreComponent">
       EXPORT=MERGE.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
