@@ -84,7 +84,9 @@
       },
       graphsModified: function () {
         this.fire('graphs', this.graphs);
-        this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
+        if (this.graphs.length) {
+          this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
+        }
         this.search = '';
       },
       nodesModified: function () {

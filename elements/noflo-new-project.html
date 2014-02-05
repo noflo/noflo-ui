@@ -28,7 +28,9 @@
         }
         this.fire('new', {
           name: this.name,
-          type: this.type
+          type: this.type,
+          graphs: [],
+          components: []
         });
         this.close();
       },
