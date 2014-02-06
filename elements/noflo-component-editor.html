@@ -2,9 +2,11 @@
   <template>
     <section id="code">
       <h1>Implementation</h1>
+      <div id="code_editor"></div>
     </section> 
     <section id="tests">
       <h1>Tests</h1>
+      <div id="tests_editor"></div>
     </section> 
   </template>
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
@@ -26,7 +28,8 @@
         this.style.display = 'block';
       },
       componentChanged: function () {
-        this.codeEditor = CodeMirror(this.$.code, {
+        this.$.code_editor.innerHTML = '';
+        this.codeEditor = CodeMirror(this.$.code_editor, {
           lineNumbers: true,
           value: this.component.code,
           language: this.component.language,
@@ -36,7 +39,8 @@
           this.component.code = this.codeEditor.getValue();
           this.fire('changed', this.component);
         }.bind(this));
-        this.testsEditor = CodeMirror(this.$.tests, {
+        this.$.tests_editor.innerHTML = '';
+        this.testsEditor = CodeMirror(this.$.tests_editor, {
           lineNumbers: true,
           value: this.component.tests,
           language: this.component.language,
