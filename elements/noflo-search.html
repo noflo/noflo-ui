@@ -1,8 +1,7 @@
 <link rel="import" href="noflo-menu.html">
 <link rel="import" href="noflo-search-results.html">
-<polymer-element name="noflo-search" class="gpu" attributes="buttons results project graph component">
+<polymer-element name="noflo-search" class="gpu" attributes="buttons results project graphs component">
   <style>
-
     noflo-search.overlay #breadcrumb {
       width: calc(72px * 4);
       display: block;
@@ -100,12 +99,14 @@
       <template if="{{ graph && !project }}">
       <h2>Sketch</h2>
       </template>
+      <h1>
       <template if="{{ graph }}">
-      <h1>{{ graph.properties.name }}</h1>
+        {{ graph.properties.name }}
       </template>
-      <template if="{{ component }}">
-      <h1>{{ component.name }}</h1>
+      <template if="{{ component && !graph }}">
+        {{ component.name }}
       </template>
+      </h1>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
   </template>
@@ -118,8 +119,16 @@
       search: '',
       project: null,
       graph: null,
+      graphs: [],
       component: null,
       panel: null,
+      graphsChanged: function () {
+        if (this.graphs.length) {
+          this.graph = this.graphs[this.graphs.length - 1];
+        } else {
+          this.graph = null;
+        }
+      },
       enteredView: function () {
         this.observer = new ArrayObserver(this.results);
         this.observer.open(this.resultsModified.bind(this));
