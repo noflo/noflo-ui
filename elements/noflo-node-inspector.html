@@ -161,8 +161,7 @@
     }
     
     ul.ports li.port-type-color label span:before,
-    ul.ports li.port-type-number label span:before,
-    ul.ports li.port-type-int label span:before {
+    ul.ports li.port-type-number label span:before {
       content: '#';
     }
     ul.ports li.port-type-array label span:before {
@@ -195,16 +194,13 @@
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
             </template>
             <template if="{{ port.type == 'boolean' }}">
-              <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" on-change="{{ updateValue }}">
+              <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-              <template if="{{ port.type == 'number' }}">
-                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" on-changed="{{updateValue}}">#</number-scrubber>
+              <template if="{{ port.inputType == 'number' }}">
+                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
-              <template if="{{ port.type == 'int' }}">
-                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" on-changed="{{updateValue}}">#</number-scrubber>
-              </template>
-              <input type="{{ port.type }}" name="{{ port.name }}" value="{{ port.value }}" on-blur="{{ updateValue }}">
+              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-blur="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
@@ -212,10 +208,10 @@
           </template>
           <template if="{{ !port.showInput }}">
             <template if="{{ port.type == 'boolean' }}">
-              <input type="checkbox" name="{{ port.name }}" readonly checked="{{ port.value }}" on-change="{{ updateValue }}">
+              <input type="checkbox" name="{{ port.name }}" readonly checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-              <input type="{{ port.type }}" name="{{ port.name }}" readonly value="{{ port.value }}" on-blur="{{ updateValue }}">
+              <input type="{{ port.inputType }}" name="{{ port.name }}" data-type="{{ port.type }}" readonly value="{{ port.value }}" on-blur="{{ updateValue }}">
             </template>
           </template>
           </label>
@@ -232,17 +228,51 @@
       updateLabel: function (event, detail, sender) {
         this.node.label = sender.innerText;
       },
+      portToInput: function (port) {
+         var portDef = {
+          name: port.name,
+          class: '',
+          type: port.type,
+          inputType: port.type,
+          value: port.getValue(true),
+          showInput: (!port.isConnected()),
+          route: port.route
+        };
+        switch (port.type) {
+          case 'object':
+          case 'array':
+            portDef.value = JSON.stringify(port.getValue(true));
+            portDef.inputType = 'text';
+            break;
+          case 'int':
+            portDef.inputType = 'number';
+            break;
+          case 'all':
+            portDef.inputType = 'text';
+            break;
+        }
+        return portDef;
+      },
+      inputToPort: function (input) {
+        var dataType = input.getAttribute('data-type');
+        switch (dataType) {
+          case 'object':
+          case 'array':
+            try {
+              return JSON.parse(input.value);
+            } catch (e) {
+              return input.value;
+            }
+          case 'boolean':
+            return input.checked;
+          default:
+            return input.value;
+        }
+      },
       updatePorts: function () {
         this.inports = [];
         this.node.getInports().forEach(function (port) {
-           var portDef = {
-            name: port.name,
-            class: '',
-            type: port.type,
-            value: port.getValue(true),
-            showInput: (!port.isConnected()),
-            route: port.route
-          };
+          var portDef = this.portToInput(port);
           if (!portDef.showInput) {
             portDef.class = 'readonly';
           }
@@ -257,10 +287,7 @@
         if (!sender.value) {
           return;
         }
-        var value = sender.value;
-        if (sender.type==="checkbox") {
-          value = sender.checked;
-        }
+        var value = this.inputToPort(sender);
         var port = this.node.getInportByName(sender.getAttribute('name'));
         port.setValue(value);
       },
