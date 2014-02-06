@@ -118,10 +118,6 @@ class ConnectRuntime extends noflo.Component
       return unless @connected
       runtime.sendGraph 'removeedge', @convertEdge id, edge.detail
     , false
-    editor.addEventListener 'addinitial', (iip) =>
-      return unless @connected
-      runtime.sendGraph 'addinitial', @convertInitial id, iip.detail
-    , false
     editor.addEventListener 'removeinitial', (iip) =>
       return unless @connected
       runtime.sendGraph 'removeinitial', @convertInitial id, iip.detail
