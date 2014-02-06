@@ -45,7 +45,7 @@
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
-        this.parentNode.parentNode.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var graph = event.detail;
           graph.id = graph.properties.name.replace(' ', '_');
