@@ -39,11 +39,19 @@ class ConnectRuntime extends noflo.Component
 
   sendComponent: (runtime, component) ->
     return unless component.code
-    runtime.sendComponent 'source', component
+    runtime.sendComponent 'source',
+      name: component.name
+      language: component.language
+      library: component.project
+      code: component.code
+      tests: component.tests
 
   sendGraph: (runtime, graph) ->
     runtime.sendGraph 'clear',
       id: graph.id
+      name: graph.name
+      library: graph.project
+      main: (@project and graph.id is @project.main)
     for name, definition of graph.processes
       runtime.sendGraph 'addnode',
         id: name
