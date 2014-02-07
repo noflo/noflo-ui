@@ -4,7 +4,11 @@
     <form>
       <label>
         Project name
-        <input type="text" value="{{ name }}" placeholder="my-project" required>
+        <input type="text" value="{{ projectId }}" placeholder="my-project" required>
+      </label>
+      <label>
+        Project label
+        <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
       </label>
       <label>
         Primary Type
@@ -22,6 +26,7 @@
   </template>
   <script>
     Polymer('noflo-new-project', {
+      projectId: '',
       name: '',
       type: 'html',
       enteredView: function () {
@@ -35,6 +40,7 @@
           event.preventDefault();
         }
         this.fire('new', {
+          id: this.projectId.replace(' ', '-'),
           name: this.name,
           type: this.type,
           graphs: [],
