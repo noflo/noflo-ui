@@ -329,13 +329,6 @@
       'toJSON' -> METHOD Convert(objects/CallMethod)
       GraphEditor CHANGED -> IN Convert
     </script>
-
-    <script type="application/fbp" id="ClearWorkspace">
-      EXPORT=CLEARWORKSPACE.CONTAINER:WORKSPACE
-      EXPORT=DOCLEARWORKSPACE.IN:CLEAR
-      '' -> DATA DoClearWorkspace(core/Kick)
-      DoClearWorkspace OUT -> HTML ClearWorkspace(dom/WriteHtml)
-    </script>
     <script type="application/fbp" id="main">
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
 
