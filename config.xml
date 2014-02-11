@@ -4,6 +4,7 @@
         id        = "org.noflojs.noflo"
         version   = "1.0.0">
     <name>NoFlo</name>
+    <icon src="app/noflo-200.png" />
     <description>Flow-Based Programming environment</description>
     <author href="http://noflojs.org" email="henri.bergius@iki.fi">NoFlo team</author>
     <content src="index.html" />
