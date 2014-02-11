@@ -10,7 +10,7 @@
     </template>
     <template if="{{ !user }}">
       <div class="toolbar">
-        <a href="{{ site }}/login/authorize?client_id={{ clientid }}&response_type=code&redirect_uri={{ redirect }}">Login</a>
+        <a href="{{ site }}/login/authorize/github_public?client_id={{ clientid }}&scope=github&&response_type=code&redirect_uri={{ redirect }}">Login</a>
       </div>
     </template>
   </template>

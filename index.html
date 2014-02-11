@@ -128,19 +128,6 @@
       SplitStart OUT -> IN HoldAllComponents
       ComponentStore STORE -> STORE GetComponents
     </script>
-    <script type="application/fbp" id="LoadGraph">
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=SPLITID.IN:ID
-      EXPORT=GET.ITEM:GRAPH
-      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
-      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
-      SplitId OUT -> IN HoldMode
-      'graphs' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
-      SplitId OUT -> IN HoldStore
-      SplitStore OUT -> NAME GraphStore(indexeddb/GetStore)
-      Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE Get(indexeddb/Get)
-      SplitId OUT -> KEY Get
-    </script>
     <script type="application/fbp" id="StoreGraph">
       EXPORT=MERGE.IN:ITEM
       EXPORT=HOLDDB.DATA:DB
@@ -344,13 +331,6 @@
       SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
       'toJSON' -> METHOD Convert(objects/CallMethod)
       GraphEditor CHANGED -> IN Convert
-    </script>
-
-    <script type="application/fbp" id="ClearWorkspace">
-      EXPORT=CLEARWORKSPACE.CONTAINER:WORKSPACE
-      EXPORT=DOCLEARWORKSPACE.IN:CLEAR
-      '' -> DATA DoClearWorkspace(core/Kick)
-      DoClearWorkspace OUT -> HTML ClearWorkspace(dom/WriteHtml)
     </script>
     <script type="application/fbp" id="main">
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
