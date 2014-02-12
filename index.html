@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component download"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -46,7 +46,7 @@
         <noflo-component-editor></noflo-component-editor>
         <the-graph-editor></the-graph-editor>
       </main>
-  </div>
+    </div>
     <script type="application/fbp" id="PrepareStorage">
       EXPORT=OPEN.NAME:NAME
       EXPORT=ERRORS.OUT:ERROR
@@ -114,7 +114,7 @@
       SplitStart OUT -> IN HoldGraphStore
       ProjectStore TRANSACTION -> TRANSACTION GraphStore
       '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllGraphs
+      GetProjects ITEM -> IN HoldAllGraphs
       GraphStore STORE -> STORE GetGraphs
 
       # Read components list
@@ -122,7 +122,7 @@
       SplitStart OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
       '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllComponents
+      GetProjects ITEM -> IN HoldAllComponents
       ComponentStore STORE -> STORE GetComponents
     </script>
     <script type="application/fbp" id="StoreGraph">
@@ -365,6 +365,8 @@
       SplitChangedGraph OUT -> GRAPHS Main
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
+
+      Main DOWNLOAD -> IN Show(core/Output)
 
       # Example handling
       Router EXAMPLE -> GIST LoadExample(local/LoadExample)
