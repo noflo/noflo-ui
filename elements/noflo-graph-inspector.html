@@ -50,7 +50,7 @@
       prepareEditor: function () {
         this.previewEditor = CodeMirror(this.$.content, {
           lineNumbers: true,
-          value: this.graph.properties.environment.content,
+          value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
           theme: 'noflo'
         });
