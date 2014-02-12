@@ -552,6 +552,7 @@ noflo-search button {
 noflo-new-graph,
 noflo-new-project,
 noflo-new-component,
+noflo-account-settings,
 noflo-graph-inspector {
   background-color: hsl(187, 45%, 8%);
   display: block;
@@ -570,6 +571,7 @@ noflo-graph-inspector {
 noflo-new-graph h1,
 noflo-new-project h1,
 noflo-new-component h1,
+noflo-account-settings h1,
 noflo-graph-inspector h1 {
   font-size: 17px;
   line-height: 36px;
@@ -577,6 +579,7 @@ noflo-graph-inspector h1 {
 noflo-new-graph label,
 noflo-new-project label,
 noflo-new-component label,
+noflo-account-settings label,
 noflo-graph-inspector label {
   display: block;
   font-size: 13px;
@@ -587,6 +590,7 @@ noflo-graph-inspector label {
 noflo-new-graph input,
 noflo-new-project input,
 noflo-new-component input,
+noflo-account-settings input,
 noflo-graph-inspector input,
 noflo-new-graph select,
 noflo-new-project select,
@@ -611,6 +615,7 @@ noflo-graph-inspector textarea {
 noflo-new-graph .toolbar,
 noflo-new-project .toolbar,
 noflo-new-component .toolbar,
+noflo-account-settings .toolbar,
 noflo-graph-inspector .toolbar {
   display: block;
   line-height: 36px;
@@ -619,6 +624,7 @@ noflo-graph-inspector .toolbar {
 noflo-new-graph .toolbar button,
 noflo-new-project .toolbar button,
 noflo-new-component .toolbar button,
+noflo-account-settings .toolbar button,
 noflo-graph-inspector .toolbar button {
   background-color: transparent;
   color: hsl(189, 11%, 26%);
@@ -634,6 +640,7 @@ noflo-graph-inspector .toolbar button {
 noflo-new-graph .toolbar a,
 noflo-new-project .toolbar a,
 noflo-new-component .toolbar a,
+noflo-account-settings .toolbar a,
 noflo-graph-inspector .toolbar a {
   font-size: 13px;
   color: hsl(189, 11%, 26%);

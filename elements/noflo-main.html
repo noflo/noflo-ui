@@ -3,7 +3,7 @@
 <link rel="import" href="noflo-new-project.html">
 <polymer-element name="noflo-main" attributes="open projects sketches examples graphs components">
   <template>
-    <noflo-account clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
+    <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
       <h2>Projects <small>{{ projects.length }} projects</small></h2>
       <ul>
@@ -52,8 +52,12 @@
       projects: [],
       sketches: [],
       examples: [],
+      githubToken: '',
       enteredView: function () {
         this.openChanged();
+        this.$.mainaccount.addEventListener('githubtoken', function (event) {
+          this.githubToken = event.detail;
+        }.bind(this));
       },
       openChanged: function () {
         if (String(this.open) === 'true') {
