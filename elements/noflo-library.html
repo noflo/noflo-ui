@@ -22,15 +22,13 @@
         // TODO fix with pan
         var pan = this.editor.$.graph.getPan();
 
-        this.editor.$.graph.nodes.push({
-          name: id,
-          component: component,
-          metadata: {
+        this.editor.$.graph.addNode(id, component, 
+          {
             label: component,
-            x: -pan.x + 334,
-            y: -pan.y + 100
+            x: -pan[0] + 334,
+            y: -pan[1] + 100
           }
-        });
+        );
       },
       searchChanged: function () {
         if (!this.search || typeof this.search !== 'string') {

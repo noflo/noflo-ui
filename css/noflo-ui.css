@@ -70,6 +70,17 @@ h1, h2, h3 {
   src: url("SourceCodePro-Bold.otf.woff") format('woff');
   font-weight: bold;
 }
+@font-face {
+  /* we want the svg version if the icons */
+  font-family: 'FontAwesomeSVG';
+  src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg'),
+    url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
+    url('../bower_components/font-awesome/fonts/fontawesome-webfont.woff?v=4.0.3') format('woff'),
+    url('../bower_components/font-awesome/fonts/fontawesome-webfont.ttf?v=4.0.3') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 
 html, body, button {
   background-color: hsl(187, 45%, 5%);
