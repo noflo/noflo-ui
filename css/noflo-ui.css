@@ -717,11 +717,13 @@ the-graph-nav the-graph-map {
 noflo-component-editor {
   display: block;
   position: absolute;
-  top: 36px;
+  top: 0px;
   left: 36px;
   right: 36px;
-  height: calc(100% - 72px);
+  height: 100%;
+  background-color: hsl(189,47%,4%);
   z-index: 1;
+  overflow: hidden;
 }
 .CodeMirror {
   height: 100%;
@@ -737,7 +739,7 @@ noflo-component-editor #tests {
   height: 100%;
   position: absolute;
   left: 0px;
-  top: 0px;
+  top: 36px;
 }
 noflo-component-editor #tests {
   left: auto;

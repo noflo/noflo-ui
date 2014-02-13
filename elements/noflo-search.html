@@ -42,7 +42,7 @@
       box-sizing: border-box;
       padding-left: 10px;
       color: hsl(189, 11%, 26%);
-      font-size: 15px;
+      font-size: 13px;
       font-weight: normal;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -94,7 +94,7 @@
     <div id="breadcrumb" on-click="{{ focus }}">
       <i class="fa fa-search"></i>
       <template if="{{ project }}">
-      <h2>{{ project.name }}</h2>
+      <h2>{{ project.id }}</h2>
       </template>
       <template if="{{ graph && !project }}">
       <h2>Sketch</h2>

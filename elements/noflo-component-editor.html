@@ -1,4 +1,4 @@
-<polymer-element name="noflo-component-editor" attributes="component">
+<polymer-element name="noflo-component-editor" attributes="component width height">
   <template>
     <section id="code">
       <h1>Implementation</h1>
@@ -18,6 +18,8 @@
     Polymer('noflo-component-editor', {
       component: null,
       graphs: null,
+      width: null,
+      height: null,
       codeEditor: null,
       testsEditor: null,
       graphsChanged: function () {
@@ -50,6 +52,24 @@
           this.component.tests = this.testsEditor.getValue();
           this.fire('changed', this.component);
         }.bind(this));
+
+        this.setSize();
+      },
+      widthChanged: function () {
+        this.setSize();
+      },
+      heightChanged: function () {
+        this.setSize();
+      },
+      setSize: function () {
+        if (!this.codeEditor || !this.testsEditor || !this.width || !this.height) {
+          return;
+        }
+        var width = (this.width - 80) / 2;
+        var height = this.height - 82;
+        console.log('size', width, height);
+        this.codeEditor.setSize(width, height);
+        this.testsEditor.setSize(width, height);
       }
     });
   </script>
