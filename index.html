@@ -28,7 +28,7 @@
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changedproject upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
-    <noflo-polymer name="noflo-component-editor" inports="component graphs" outports="changed"></noflo-polymer>
+    <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -345,16 +345,13 @@
       'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
       Context COMPONENT -> COMPONENT ComponentEditor
       Context GRAPHS -> GRAPHS ComponentEditor
-    </script>
-    <script type="application/fbp" id="ComponentEditor">
-      EXPORT=SPLITCOMPONENT.IN:COMPONENT
-      EXPORT=CREATEEDITOR.CONTAINER:WORKSPACE
-      EXPORT=EDITOR.CHANGED:CHANGED
-      'noflo-component-editor' -> STRING Send(strings/SendString) OUT -> TAGNAME CreateEditor(dom/CreateElement)
-      CreateEditor ELEMENT -> IN SplitEditor(core/Split) OUT -> ELEMENT Editor(polymer/noflo-component-editor)
-      SplitComponent OUT -> STRING HoldComponent(strings/SendString) OUT -> COMPONENT Editor
-      SplitComponent(core/Split) OUT -> IN Send
-      SplitEditor OUT -> IN HoldComponent
+
+      # Listen for screen size changes and communicate with editors
+      '' -> START ListenWindow(interaction/ListenResize)
+      ListenWindow WIDTH -> WIDTH GraphEditor
+      ListenWindow HEIGHT -> HEIGHT GraphEditor
+      ListenWindow WIDTH -> WIDTH ComponentEditor
+      ListenWindow HEIGHT -> HEIGHT ComponentEditor
     </script>
     <script type="application/fbp" id="GraphEditor">
       EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
@@ -362,15 +359,14 @@
       EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
       EXPORT=CONNECTRUNTIME.NEWGRAPH:NEWGRAPH
       EXPORT=GRAPHEDITOR.GRAPH:CURRENTGRAPH
+      EXPORT=GRAPHEDITOR.WIDTH:WIDTH
+      EXPORT=GRAPHEDITOR.HEIGHT:HEIGHT
       EXPORT=SPLITEDITOR.OUT:EDITOR
       EXPORT=GRAPHEDITOR.NODECLICK:NODECLICK
       EXPORT=GRAPHEDITOR.EDGECLICK:EDGECLICK
       EXPORT=CONVERT.OUT:CHANGED
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       GraphEditor ELEMENT -> IN Async(core/RepeatAsync) OUT -> IN SplitEditor(core/Split)
-      '' -> START ListenWindow(interaction/ListenResize)
-      ListenWindow WIDTH -> WIDTH GraphEditor
-      ListenWindow HEIGHT -> HEIGHT GraphEditor
       SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
       'toJSON' -> METHOD Convert(objects/CallMethod)
       GraphEditor CHANGED -> IN Convert

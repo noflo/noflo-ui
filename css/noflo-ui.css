@@ -712,6 +712,7 @@ noflo-component-editor {
   height: 100%;
   background-color: hsl(189,47%,4%);
   z-index: 1;
+  overflow: hidden;
 }
 .CodeMirror {
   height: 100%;
