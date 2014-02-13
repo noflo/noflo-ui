@@ -137,7 +137,7 @@
               this.clearCache();
             }
           }.bind(this);
-          req.open('GET', this.site + '/api/user');
+          req.open('GET', this.site + '/api/user', true);
           req.setRequestHeader('Authorization', 'Bearer ' + token);
           req.send(null);
         },

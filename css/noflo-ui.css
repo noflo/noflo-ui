@@ -345,6 +345,7 @@ the-card ul li p {
   font-size: 8px;
 }
 
+
 noflo-main {
   background-color: hsl(187, 45%, 8%);
   display: block;
@@ -379,7 +380,32 @@ noflo-main section > h2 small {
   text-transform: uppercase;
   color: hsl(189, 11%, 26%);
 }
-noflo-main ul {
+noflo-main ul.tabs {
+  position: relative;
+  display: inline-block;
+  top: -52px;
+  left: calc(50% - 133px);
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  padding: 1px;
+}
+noflo-main ul.tabs li {
+  display: inline;
+  line-height: 36px;
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  padding-left: 36px;
+  padding-right: 36px;
+}
+noflo-main ul.tabs li.selected {
+  border: 1px solid hsl(189, 11%, 26%);
+  border-radius: 3px;
+  padding-top: 8px;
+  padding-bottom: 9px;
+}
+noflo-main ul.projects {
   padding: 0px;
   margin-top: 0px;
   margin-bottom: 36px;
@@ -387,7 +413,7 @@ noflo-main ul {
   margin-right: -18px;
   list-style: none;
 }
-noflo-main ul li {
+noflo-main ul.projects li {
   width: 216px;
   height: 105px;
   overflow: hidden;
@@ -400,16 +426,16 @@ noflo-main ul li {
   margin-bottom: 36px;
   position: relative;
 }
-noflo-main ul li.add {
+noflo-main ul.projects li.add {
   background-color: hsl(187, 45%, 10%);
 }
-noflo-main ul li the-graph-thumb {
+noflo-main ul.projects li the-graph-thumb {
   display: block;
   position: absolute;
   left: 100px;
   top: -20px;
 }
-noflo-main ul li button {
+noflo-main ul.projects li button {
   display: block;
   position: absolute;
   right: 18px;
@@ -424,11 +450,11 @@ noflo-main ul li button {
   padding-left: 13px;
   padding-right: 13px;
 }
-noflo-main ul li h2 {
+noflo-main ul.projects li h2 {
   position: absolute;
   top: 36px;
   line-height: 36px;
-  width: 75px;
+  width: 126px;
   text-transform: none;
   font-size: 10px;
   text-align: left;
@@ -436,8 +462,10 @@ noflo-main ul li h2 {
   left: 18px;
   padding: 0px;
   margin: 0px;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
-noflo-main ul li p {
+noflo-main ul.projects li p {
   position: absolute;
   top: 53px;
   left: 18px;
@@ -445,9 +473,11 @@ noflo-main ul li p {
   text-transform: uppercase;
   font-size: 8px;
   text-align: left;
+  max-height: 36px;
+  overflow: hidden;
   color: hsl(189, 11%, 26%);
 }
-noflo-main ul li a {
+noflo-main ul.projects li a {
   color: black;
   text-decoration: none;
 }
@@ -511,7 +541,6 @@ noflo-main noflo-account .toolbar a {
   padding-left: 36px;
   padding-right: 36px;
 }
-
 noflo-search {
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
