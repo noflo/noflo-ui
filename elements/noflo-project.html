@@ -2,7 +2,7 @@
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
-<polymer-element name="noflo-project" attributes="project graphs components">
+<polymer-element name="noflo-project" attributes="project graphs components githubtoken graphs component">
   <style>
     noflo-project h2 {
       font-size: 16px;
@@ -67,6 +67,69 @@
       text-align: left;
       white-space: nowrap;
     }
+    noflo-project main {
+      padding-bottom: 144px;
+      overflow-y: auto;
+      max-height: calc(100% - 180px);
+    }
+    noflo-project main::-webkit-scrollbar {
+      display: none;
+    }
+    noflo-project footer {
+      background-color: hsl(190, 30%, 6%);
+      display: block;
+      position: absolute;
+      bottom: 0px;
+      left: 0px;
+      padding-left: 36px;
+      width: 325px;
+      padding-right: 36px;
+      box-sizing: border-box;
+      overflow: hidden;
+      height: 144px;
+      transition: background-color 0.3s ease-in-out;
+    }
+    the-panel#account[open] footer {
+      background-color: black;
+    }
+    noflo-project footer h1 {
+      font-size: 17px;
+      line-height: 36px;
+      text-align: center;
+    }
+    noflo-project footer textarea {
+      display: block;
+      font-size: 13px;
+      background-color: hsl(189, 47%, 6%);
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      color: white;
+      border-radius: 3px;
+      padding: 3px;
+      border: none;
+      margin: 0px;
+      width: 100%;
+      height: 54px;
+      box-sizing: border-box;
+      margin-left: auto;
+      margin-right: auto;
+      resize: none;
+    }
+    noflo-project footer button {
+      background-color: transparent;
+      color: hsl(189, 11%, 26%);
+      border: 1px solid hsl(189, 11%, 26%);
+      font-size: 13px;
+      border-radius: 3px;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      height: 36px;
+      padding-left: 17px;
+      padding-right: 17px;
+      line-height: 36px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 8px;
+    }
   </style>
   <template>
     <the-panel id="account" edge="left" size="324" handle="36" automatic="false">
@@ -117,11 +180,37 @@
         </ul>
         </template>
       </main>
+      <template if="{{ project.repo }}">
+      <footer>
+        <h1><i class="fa fa-github"></i> {{ project.repo }}</h1>
+        <textarea placeholder="Commit message" value="{{ commitMessage }}"></textarea>
+        <button on-click="{{ upload }}"><i class="fa fa-cloud-upload"></i>
+          <template if="{{ graph }}">
+          Upload {{ graph.properties.name }}
+          </template>
+          <template if="{{ component && !graph }}">
+          Upload {{ component.name }}
+          </template>
+        </button>
+      </footer>
+      </template>
     </the-panel>
   </template>
   <script>
     Polymer('noflo-project', {
       project: null,
+      commitMessage: '',
+      githubtoken: '',
+      graphs: [],
+      graph: null,
+      component: null,
+      graphsChanged: function () {
+        if (this.graphs.length) {
+          this.graph = this.graphs[this.graphs.length - 1];
+        } else {
+          this.graph = null;
+        }
+      },
       newGraph: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-graph');
@@ -178,6 +267,14 @@
         event.preventDefault();
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
+      },
+      upload: function (event) {
+        event.preventDefault();
+        this.fire('upload', {
+          file: this.graph || this.component,
+          token: this.githubtoken,
+          message: this.commitMessage
+        });
       }
     });
   </script>

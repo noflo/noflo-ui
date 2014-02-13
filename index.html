@@ -26,7 +26,7 @@
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent changedproject"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changedproject upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
@@ -251,6 +251,7 @@
       EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
       EXPORT=PROJECT.CHANGEDPROJECT:CHANGEDPROJECT
+      EXPORT=PROJECT.UPLOAD:UPLOAD
       EXPORT=LOADPROJECTDATA.DB:DB
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -283,6 +284,8 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
+      Context GRAPHS -> GRAPHS Project
+      Context COMPONENT -> COMPONENT Project
       Project NEWGRAPH -> IN MergeNewGraph(core/Merge)
       Context NEWGRAPH -> IN MergeNewGraph
 
@@ -369,6 +372,7 @@
       Context CHANGEDPROJECT -> ITEM StoreProject
 
       Main DOWNLOAD -> IN Show(core/Output)
+      Context UPLOAD -> IN Show
 
       # Example handling
       Router EXAMPLE -> GIST LoadExample(local/LoadExample)
