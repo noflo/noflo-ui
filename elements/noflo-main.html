@@ -101,6 +101,9 @@
           this.githubToken = event.detail;
         }.bind(this));
       },
+      token: function () {
+        this.fire('githubtoken', this.githubToken);
+      },
       openChanged: function () {
         if (String(this.open) === 'true') {
           this.style.height = '100%';

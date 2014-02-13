@@ -273,8 +273,17 @@
         if (!this.githubtoken) {
           return;
         }
+        var content;
+        if (this.graph) {
+          content = JSON.stringify(this.graph, null, 4);
+        }
+        if (this.component) {
+          content = this.component.code;
+        }
         this.fire('upload', {
-          file: this.graph || this.component,
+          repo: this.project.repo,
+          doc: this.graph || this.component,
+          content: content,
           token: this.githubtoken,
           message: this.commitMessage
         });

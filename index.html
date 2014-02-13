@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component download"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route token" outports="newsketch newproject project graph component download githubtoken"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -241,6 +241,47 @@
       Generate OUT -> VALUE SetId
       SplitItem OUT -> IN SetId
     </script>
+    <script type="application/fbp" id="GithubUpload">
+      EXPORT=REPO.IN:REPO
+      EXPORT=TOKEN.IN:TOKEN
+      EXPORT=UPLOAD.PATH:NAME
+      EXPORT=UPLOAD.MESSAGE:MESSAGE
+      EXPORT=WAITREPO.STRING:CONTENT
+
+      # Plain repository name for repo creation
+      '(.*)\/(.*)' -> PATTERN RepoName(strings/Replace)
+      '$2' -> REPLACEMENT RepoName
+      Repo(core/Repeat) OUT -> IN RepoName(strings/Replace)
+      RepoName OUT -> DATA StartCreate(core/Kick)
+
+      # Check if repository exists
+      Token(core/Repeat) OUT -> TOKEN CheckRepo
+      Repo OUT -> IN CheckRepo(github/GetRepository)
+      CheckRepo ERROR -> IN Show(core/Output) OUT -> IN StartCreate
+      # If not, we create it
+      Token OUT -> TOKEN CreateRepo(github/CreateRepository)
+      StartCreate OUT -> IN CreateRepo
+
+      # Once we have repository we can upload the document
+      Token OUT -> TOKEN Upload
+      Repo OUT -> REPOSITORY Upload(github/SetContents)
+      WaitRepo(strings/SendString) OUT -> IN Upload
+
+      # Wait until the repository is ready
+      CheckRepo OUT -> IN WaitRepo
+      CreateRepo OUT -> IN WaitRepo
+
+      Upload OUT -> IN Show(core/Output)
+    </script>
+    <script type="application/fbp" id="Upload">
+      EXPORT=GETTOKEN.IN:IN
+      'token' -> KEY GetToken(objects/GetObjectKey) OUT -> TOKEN Upload(local/GithubUpload)
+      'repo' -> KEY GetRepo(objects/GetObjectKey) OUT -> REPO Upload
+      'doc' -> KEY GetDoc(objects/GetObjectKey) OUT -> IN MakePath(ui/MakePath) OUT -> NAME Upload
+      'message' -> KEY GetMessage(objects/GetObjectKey) OUT -> MESSAGE Upload
+      'content' -> KEY GetContent(objects/GetObjectKey) OUT -> CONTENT Upload
+      GetToken OBJECT -> IN GetRepo OBJECT -> IN GetDoc OBJECT -> IN GetMessage OBJECT -> IN GetContent
+    </script>
     <script type="application/fbp" id="ProjectContext">
       EXPORT=CONTEXT.PROJECT:PROJECT
       EXPORT=CONTEXT.GRAPHS:GRAPHS
@@ -249,6 +290,7 @@
       EXPORT=GRAPHEDITOR.CHANGED:GRAPHCHANGED
       EXPORT=COMPONENTEDITOR.CHANGED:COMPONENTCHANGED
       EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
+      EXPORT=PROJECT.GITHUBTOKEN:GITHUBTOKEN
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
       EXPORT=PROJECT.CHANGEDPROJECT:CHANGEDPROJECT
       EXPORT=PROJECT.UPLOAD:UPLOAD
@@ -371,8 +413,10 @@
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
       Context CHANGEDPROJECT -> ITEM StoreProject
 
+      # Handle GitHub tokens
+      '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context
       Main DOWNLOAD -> IN Show(core/Output)
-      Context UPLOAD -> IN Show
+      Context UPLOAD -> IN Upload(local/Upload)
 
       # Example handling
       Router EXAMPLE -> GIST LoadExample(local/LoadExample)
