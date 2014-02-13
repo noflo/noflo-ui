@@ -31,7 +31,7 @@
         this.$.code_editor.innerHTML = '';
         this.codeEditor = CodeMirror(this.$.code_editor, {
           lineNumbers: true,
-          value: this.component.code,
+          value: this.component.code || '',
           language: this.component.language,
           theme: 'noflo'
         });
@@ -42,7 +42,7 @@
         this.$.tests_editor.innerHTML = '';
         this.testsEditor = CodeMirror(this.$.tests_editor, {
           lineNumbers: true,
-          value: this.component.tests,
+          value: this.component.tests || '',
           language: this.component.language,
           theme: 'noflo'
         });

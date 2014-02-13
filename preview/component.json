@@ -24,6 +24,7 @@
     "noflo/noflo-strings": "*",
     "noflo/noflo-websocket": "*",
     "noflo/noflo-indexeddb": "*",
+    "noflo/noflo-github": "*",
     "d4tocchini/noflo-draggabilly": "*",
     "forresto/noflo-gum": "*",
     "forresto/noflo-seriously": "*"

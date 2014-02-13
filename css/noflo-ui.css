@@ -356,6 +356,7 @@ the-card ul li p {
   font-size: 8px;
 }
 
+
 noflo-main {
   background-color: hsl(187, 45%, 8%);
   display: block;
@@ -390,7 +391,32 @@ noflo-main section > h2 small {
   text-transform: uppercase;
   color: hsl(189, 11%, 26%);
 }
-noflo-main ul {
+noflo-main ul.tabs {
+  position: relative;
+  display: inline-block;
+  top: -52px;
+  left: calc(50% - 133px);
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  padding: 1px;
+}
+noflo-main ul.tabs li {
+  display: inline;
+  line-height: 36px;
+  font-size: 13px;
+  color: hsl(189, 11%, 26%);
+  text-decoration: none;
+  padding-left: 36px;
+  padding-right: 36px;
+}
+noflo-main ul.tabs li.selected {
+  border: 1px solid hsl(189, 11%, 26%);
+  border-radius: 3px;
+  padding-top: 8px;
+  padding-bottom: 9px;
+}
+noflo-main ul.projects {
   padding: 0px;
   margin-top: 0px;
   margin-bottom: 36px;
@@ -398,7 +424,7 @@ noflo-main ul {
   margin-right: -18px;
   list-style: none;
 }
-noflo-main ul li {
+noflo-main ul.projects li {
   width: 216px;
   height: 105px;
   overflow: hidden;
@@ -411,16 +437,16 @@ noflo-main ul li {
   margin-bottom: 36px;
   position: relative;
 }
-noflo-main ul li.add {
+noflo-main ul.projects li.add {
   background-color: hsl(187, 45%, 10%);
 }
-noflo-main ul li the-graph-thumb {
+noflo-main ul.projects li the-graph-thumb {
   display: block;
   position: absolute;
   left: 100px;
   top: -20px;
 }
-noflo-main ul li button {
+noflo-main ul.projects li button {
   display: block;
   position: absolute;
   right: 18px;
@@ -435,11 +461,11 @@ noflo-main ul li button {
   padding-left: 13px;
   padding-right: 13px;
 }
-noflo-main ul li h2 {
+noflo-main ul.projects li h2 {
   position: absolute;
   top: 36px;
   line-height: 36px;
-  width: 75px;
+  width: 126px;
   text-transform: none;
   font-size: 10px;
   text-align: left;
@@ -447,8 +473,10 @@ noflo-main ul li h2 {
   left: 18px;
   padding: 0px;
   margin: 0px;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
-noflo-main ul li p {
+noflo-main ul.projects li p {
   position: absolute;
   top: 53px;
   left: 18px;
@@ -456,9 +484,11 @@ noflo-main ul li p {
   text-transform: uppercase;
   font-size: 8px;
   text-align: left;
+  max-height: 36px;
+  overflow: hidden;
   color: hsl(189, 11%, 26%);
 }
-noflo-main ul li a {
+noflo-main ul.projects li a {
   color: black;
   text-decoration: none;
 }
@@ -522,7 +552,6 @@ noflo-main noflo-account .toolbar a {
   padding-left: 36px;
   padding-right: 36px;
 }
-
 noflo-search {
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
@@ -560,10 +589,7 @@ noflo-search button {
   display: inline;
 }
 
-noflo-new-graph,
-noflo-new-project,
-noflo-new-component,
-noflo-graph-inspector {
+.modal-content {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
@@ -578,35 +604,20 @@ noflo-graph-inspector {
   border-radius: 3px;
   box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
 }
-noflo-new-graph h1,
-noflo-new-project h1,
-noflo-new-component h1,
-noflo-graph-inspector h1 {
+.modal-content h1 {
   font-size: 17px;
   line-height: 36px;
 }
-noflo-new-graph label,
-noflo-new-project label,
-noflo-new-component label,
-noflo-graph-inspector label {
+.modal-content label {
   display: block;
   font-size: 13px;
   margin-top: 17px;
   color: hsl(189, 11%, 26%);
   line-height: 17px;
 }
-noflo-new-graph input,
-noflo-new-project input,
-noflo-new-component input,
-noflo-graph-inspector input,
-noflo-new-graph select,
-noflo-new-project select,
-noflo-new-component select,
-noflo-graph-inspector select,
-noflo-new-graph textarea,
-noflo-new-project textarea,
-noflo-new-component textarea,
-noflo-graph-inspector textarea {
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
   display: block;
   font-size: 17px;
   background-color: hsl(189, 47%, 6%);
@@ -619,18 +630,12 @@ noflo-graph-inspector textarea {
   width: 100%;
 }
 
-noflo-new-graph .toolbar,
-noflo-new-project .toolbar,
-noflo-new-component .toolbar,
-noflo-graph-inspector .toolbar {
+.modal-content .toolbar {
   display: block;
   line-height: 36px;
   margin-top: 17px;
 }
-noflo-new-graph .toolbar button,
-noflo-new-project .toolbar button,
-noflo-new-component .toolbar button,
-noflo-graph-inspector .toolbar button {
+.modal-content .toolbar button {
   background-color: transparent;
   color: hsl(189, 11%, 26%);
   border: 1px solid hsl(189, 11%, 26%);
@@ -642,10 +647,7 @@ noflo-graph-inspector .toolbar button {
   padding-right: 36px;
   margin: 0px;
 }
-noflo-new-graph .toolbar a,
-noflo-new-project .toolbar a,
-noflo-new-component .toolbar a,
-noflo-graph-inspector .toolbar a {
+.modal-content .toolbar a {
   font-size: 13px;
   color: hsl(189, 11%, 26%);
   text-decoration: none;

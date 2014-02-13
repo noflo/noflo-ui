@@ -1,4 +1,4 @@
-<polymer-element name="noflo-graph-inspector" attributes="graph">
+<polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content">
   <style>
     noflo-graph-inspector {
       top: calc(50% - 220px) !important;
@@ -50,7 +50,7 @@
       prepareEditor: function () {
         this.previewEditor = CodeMirror(this.$.content, {
           lineNumbers: true,
-          value: this.graph.properties.environment.content,
+          value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
           theme: 'noflo'
         });

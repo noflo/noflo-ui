@@ -1,0 +1,71 @@
+<polymer-element name="noflo-project-inspector" class="modal-content">
+  <template>
+    <h1>{{ project.name }} settings</h1>
+    <form>
+      <label>
+        GitHub repository
+        <input type="text" value="{{ repo }}" placeholder="username/my-project" required>
+      </label>
+      <label>
+        Project label
+        <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
+      </label>
+      <label>
+        Main graph
+        <select name="type" value="{{ main }}">
+          <template repeat="{{ graph in project.graphs }}">
+          <option value="{{ graph.id }}">{{ graph.properties.name }}</option>
+          </template>
+        </select>
+      </label>
+      <div class="toolbar">
+        <button on-click="{{ send }}">Save</button>
+        <a on-click="{{ close }}">Cancel</a>
+      </div>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-project-inspector', {
+      repo: '',
+      name: '',
+      main: '',
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      projectChanged: function () {
+        this.repo = this.project.repo;
+        this.name = this.project.name;
+        this.main = this.project.main;
+      },
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        var type = this.project.type;
+        this.project.graphs.forEach(function (graph) {
+          if (graph.id === this.main && graph.properties.environment.runtime) {
+            type = graph.properties.environment.runtime;
+            this.project.mainGraph = graph;
+          }
+        }.bind(this));
+        this.fire('updated', {
+          id: this.project.id,
+          name: this.name,
+          main: this.main,
+          type: type,
+          repo: this.repo
+        });
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

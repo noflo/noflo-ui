@@ -24,7 +24,7 @@
     "noflo/noflo-core": "*",
     "noflo/noflo-polymer": "*",
     "noflo/noflo-indexeddb": "*",
-    "noflo/noflo-runtime-iframe": "*"
+    "noflo/noflo-github": "*"
   },
   "noflo": {
     "components": {
@@ -34,7 +34,8 @@
       "GenerateId": "components/GenerateId.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "Router": "components/Router.coffee",
-      "MigrateLocalStorage": "components/MigrateLocalStorage.coffee"
+      "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
+      "MakePath": "components/MakePath.coffee"
     }
   },
   "main": "index.js",
@@ -49,7 +50,8 @@
     "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",
-    "components/MigrateLocalStorage.coffee"
+    "components/MigrateLocalStorage.coffee",
+    "components/MakePath.coffee"
   ],
   "json": [
     "component.json"

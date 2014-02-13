@@ -1,10 +1,11 @@
+<link rel="import" href="noflo-account-settings.html">
 <polymer-element name="noflo-account" attributes="clientid site gatekeeper">
   <template>
     <template if="{{ user }}">
       <div class="avatar"><img src="{{ user.avatar }}"></div>
       <h1>{{ user.name }}</h1>
       <div class="toolbar">
-        <a href="{{ site }}/account">Profile</a>
+        <a on-click="{{ openSettings }}">Settings</a>
         <button on-click="{{ logout }}">Logout</button>
       </div>
     </template>
@@ -52,13 +53,21 @@
         redirect: '',
         user: null,
         gridToken: '',
+        githubToken: '',
         storage: {
           grid: 'grid-token',
+          github: 'github-token',
           user: 'grid-user'
         },
         enteredView: function () {
           this.redirect = window.location.href;
           this.checkLogin();
+          storage.get(this.storage.github, function (token) {
+            if (!token) {
+              return;
+            }
+            this.githubToken = token;
+          }.bind(this));
         },
         checkLogin: function () {
           storage.get(this.storage.grid, function (token) {
@@ -128,7 +137,7 @@
               this.clearCache();
             }
           }.bind(this);
-          req.open('GET', this.site + '/api/user');
+          req.open('GET', this.site + '/api/user', true);
           req.setRequestHeader('Authorization', 'Bearer ' + token);
           req.send(null);
         },
@@ -136,12 +145,25 @@
           this.user = null;
           this.clearCache();
         },
+        openSettings: function () {
+          var dialog = document.createElement('noflo-account-settings');
+          dialog.githubtoken = this.githubToken;
+          dialog.user = this.user;
+          document.body.appendChild(dialog);
+          dialog.addEventListener('updated', function (event) {
+            this.githubToken = event.detail.githubtoken;
+            storage.set(this.storage.github, this.githubToken);
+          }.bind(this));
+        },
         clearCache: function () {
           storage.remove(this.storage.grid);
           storage.remove(this.storage.user);
         },
         gridTokenChanged: function () {
           this.getUser(this.gridToken);
+        },
+        githubTokenChanged: function () {
+          this.fire('githubtoken', this.githubToken);
         }
       });
     })();

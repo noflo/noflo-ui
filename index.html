@@ -20,7 +20,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route" outports="newsketch newproject project graph component"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route token" outports="newsketch newproject project graph component download githubtoken"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -29,7 +29,7 @@
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changedproject upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
@@ -49,7 +49,7 @@
         <noflo-component-editor></noflo-component-editor>
         <the-graph-editor></the-graph-editor>
       </main>
-  </div>
+    </div>
     <script type="application/fbp" id="PrepareStorage">
       EXPORT=OPEN.NAME:NAME
       EXPORT=ERRORS.OUT:ERROR
@@ -117,7 +117,7 @@
       SplitStart OUT -> IN HoldGraphStore
       ProjectStore TRANSACTION -> TRANSACTION GraphStore
       '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllGraphs
+      GetProjects ITEM -> IN HoldAllGraphs
       GraphStore STORE -> STORE GetGraphs
 
       # Read components list
@@ -125,7 +125,7 @@
       SplitStart OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
       '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllComponents
+      GetProjects ITEM -> IN HoldAllComponents
       ComponentStore STORE -> STORE GetComponents
     </script>
     <script type="application/fbp" id="StoreGraph">
@@ -244,6 +244,47 @@
       Generate OUT -> VALUE SetId
       SplitItem OUT -> IN SetId
     </script>
+    <script type="application/fbp" id="GithubUpload">
+      EXPORT=REPO.IN:REPO
+      EXPORT=TOKEN.IN:TOKEN
+      EXPORT=UPLOAD.PATH:NAME
+      EXPORT=UPLOAD.MESSAGE:MESSAGE
+      EXPORT=WAITREPO.STRING:CONTENT
+
+      # Plain repository name for repo creation
+      '(.*)\/(.*)' -> PATTERN RepoName(strings/Replace)
+      '$2' -> REPLACEMENT RepoName
+      Repo(core/Repeat) OUT -> IN RepoName(strings/Replace)
+      RepoName OUT -> DATA StartCreate(core/Kick)
+
+      # Check if repository exists
+      Token(core/Repeat) OUT -> TOKEN CheckRepo
+      Repo OUT -> IN CheckRepo(github/GetRepository)
+      CheckRepo ERROR -> IN Show(core/Output) OUT -> IN StartCreate
+      # If not, we create it
+      Token OUT -> TOKEN CreateRepo(github/CreateRepository)
+      StartCreate OUT -> IN CreateRepo
+
+      # Once we have repository we can upload the document
+      Token OUT -> TOKEN Upload
+      Repo OUT -> REPOSITORY Upload(github/SetContents)
+      WaitRepo(strings/SendString) OUT -> IN Upload
+
+      # Wait until the repository is ready
+      CheckRepo OUT -> IN WaitRepo
+      CreateRepo OUT -> IN WaitRepo
+
+      Upload OUT -> IN Show(core/Output)
+    </script>
+    <script type="application/fbp" id="Upload">
+      EXPORT=GETTOKEN.IN:IN
+      'token' -> KEY GetToken(objects/GetObjectKey) OUT -> TOKEN Upload(local/GithubUpload)
+      'repo' -> KEY GetRepo(objects/GetObjectKey) OUT -> REPO Upload
+      'doc' -> KEY GetDoc(objects/GetObjectKey) OUT -> IN MakePath(ui/MakePath) OUT -> NAME Upload
+      'message' -> KEY GetMessage(objects/GetObjectKey) OUT -> MESSAGE Upload
+      'content' -> KEY GetContent(objects/GetObjectKey) OUT -> CONTENT Upload
+      GetToken OBJECT -> IN GetRepo OBJECT -> IN GetDoc OBJECT -> IN GetMessage OBJECT -> IN GetContent
+    </script>
     <script type="application/fbp" id="ProjectContext">
       EXPORT=CONTEXT.PROJECT:PROJECT
       EXPORT=CONTEXT.GRAPHS:GRAPHS
@@ -252,7 +293,10 @@
       EXPORT=GRAPHEDITOR.CHANGED:GRAPHCHANGED
       EXPORT=COMPONENTEDITOR.CHANGED:COMPONENTCHANGED
       EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
+      EXPORT=PROJECT.GITHUBTOKEN:GITHUBTOKEN
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
+      EXPORT=PROJECT.CHANGEDPROJECT:CHANGEDPROJECT
+      EXPORT=PROJECT.UPLOAD:UPLOAD
       EXPORT=LOADPROJECTDATA.DB:DB
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -285,6 +329,8 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Context PROJECT -> PROJECT Project
+      Context GRAPHS -> GRAPHS Project
+      Context COMPONENT -> COMPONENT Project
       Project NEWGRAPH -> IN MergeNewGraph(core/Merge)
       Context NEWGRAPH -> IN MergeNewGraph
 
@@ -345,9 +391,9 @@
       LoadData COMPONENTS -> COMPONENTS Main
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
       Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
-      Storage DB -> DB StoreNewProject(local/StoreProject)
+      Storage DB -> DB StoreProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
-      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
 
       # Prepare workspace
       #'#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
@@ -368,6 +414,12 @@
       SplitChangedGraph OUT -> GRAPHS Main
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
+      Context CHANGEDPROJECT -> ITEM StoreProject
+
+      # Handle GitHub tokens
+      '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context
+      Main DOWNLOAD -> IN Show(core/Output)
+      Context UPLOAD -> IN Upload(local/Upload)
 
       # Example handling
       Router EXAMPLE -> GIST LoadExample(local/LoadExample)

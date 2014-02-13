@@ -3,10 +3,30 @@
 <link rel="import" href="noflo-new-project.html">
 <polymer-element name="noflo-main" attributes="open projects sketches examples graphs components">
   <template>
-    <noflo-account clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
+    <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
-      <h2>Projects <small>{{ projects.length }} projects</small></h2>
-      <ul>
+      <h2>Projects
+          <template if="{{ projectList === 'local' }}">
+          <small>{{ projects.length }} projects</small>
+          </template>
+          <template if="{{ projectList === 'github' }}">
+          <small>{{ remoteProjects.length }} projects</small>
+          </template>
+      </h2>
+      <ul class="tabs">
+        <template if="{{ projectList === 'local' }}">
+          <li class="selected">On device</li>
+          <template if="{{ githubToken }}">
+          <li on-click="{{ openGithub }}">GitHub</li>
+          </template>
+        </template>
+        <template if="{{ projectList === 'github' }}">
+        <li on-click="{{ openLocal }}">On device</li>
+          <li class="selected">GitHub</li>
+        </template>
+      </ul>
+      <ul class="projects">
+        <template if="{{ projectList === 'local' }}">
         <li class="add">
           <h2>New project</h2>
           <button on-click="{{ newProject }}">Create</button>
@@ -18,11 +38,25 @@
             <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
           </li>
         </template>
+        </template>
+        <template if="{{ projectList === 'github' }}">
+        <li class="add">
+          <h2>GitHub repos</h2>
+          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
+        </li>
+        <template repeat="{{ project in remoteProjects }}">
+          <li>
+            <h2>{{ project.name }}</h2>
+            <p>{{ project.description }}</p>
+            <button on-click="{{ downloadProject }}" data-name="{{ project.name }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+          </li>
+        </template>
+        </template>
       </ul>
     </section>
     <section id="sketches">
       <h2>Sketches <small>{{ sketches.length }} projects</small></h2>
-      <ul>
+      <ul class="projects">
         <li class="add">
           <h2>New sketch</h2>
           <button on-click="{{ newSketch }}">Create</button>
@@ -37,7 +71,7 @@
     </section>
     <section id="examples">
       <h2>Examples <small>{{ examples.length }} projects</small></h2>
-      <ul>
+      <ul class="projects">
         <template repeat="{{ examples }}">
         <li on-click="{{ openExample }}" data-id="{{ id }}">
           <h2>{{ name }}</h2>
@@ -50,10 +84,25 @@
     Polymer('noflo-main', {
       open: true,
       projects: [],
+      remoteProjects: [],
       sketches: [],
       examples: [],
+      githubToken: '',
+      projectList: 'local',
+      languages: [
+        'HTML',
+        'JavaScript',
+        'CoffeeScript',
+        'C++'
+      ],
       enteredView: function () {
         this.openChanged();
+        this.$.mainaccount.addEventListener('githubtoken', function (event) {
+          this.githubToken = event.detail;
+        }.bind(this));
+      },
+      token: function () {
+        this.fire('githubtoken', this.githubToken);
       },
       openChanged: function () {
         if (String(this.open) === 'true') {
@@ -61,6 +110,80 @@
           return;
         }
         this.style.height = '0px';
+      },
+      openLocal: function (event) {
+        event.preventDefault();
+        this.projectList = 'local';
+      },
+      openGithub: function (event) {
+        event.preventDefault();
+        if (!this.githubToken) {
+          return;
+        }
+        event.preventDefault();
+        this.projectList = 'github';
+        if (this.remoteProjects.length === 0) {
+          this.fetchGithub();
+        }
+      },
+      downloadProject: function (event, details, sender) {
+        event.preventDefault();
+        if (!this.githubToken) {
+          return;
+        }
+        this.fire('download', {
+          project: {
+            id: sender.getAttribute('data-name'),
+            name: sender.getAttribute('data-name'),
+            repo: sender.getAttribute('data-repo'),
+            // TODO: Figure out platform from repo contents
+            type: 'html',
+            graphs: [],
+            components: []
+          },
+          token: this.githubToken
+        });
+      },
+      fetchGithub: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.githubToken) {
+          return;
+        }
+        this.remoteProjects = [];
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status !== 200) {
+            return;
+          }
+          var repos = JSON.parse(req.responseText);
+          repos.forEach(function (repo) {
+            if (!repo.permissions.push) {
+              return;
+            }
+            for (var i = 0; i < this.projects.length; i++) {
+              if (this.projects[i].repo === repo.full_name) {
+                return;
+              }
+            }
+            if (this.languages.indexOf(repo.language) === -1) {
+              return;
+            }
+            this.remoteProjects.push({
+              name: repo.name,
+              description: repo.description,
+              repo: repo.full_name,
+              language: repo.language
+            });
+          }.bind(this));
+        }.bind(this);
+        req.open('GET', 'https://api.github.com/user/repos?type=public&access_token=' + encodeURIComponent(this.githubToken), true);
+        req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
+        req.send(null);
       },
       openSketch: function (event, details, sender) {
         event.preventDefault();
