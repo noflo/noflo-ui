@@ -11,11 +11,11 @@
         <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
       </label>
       <label>
-        Primary Type
-        <select name="type" value="{{ type }}">
-          <option value="html">Browser</option>
-          <option value="websocket">Node.js</option>
-          <option value="websocket">Microcontroller</option>
+        Main graph
+        <select name="type" value="{{ main }}">
+          <template repeat="{{ graph in project.graphs }}">
+          <option value="{{ graph.id }}">{{ graph.properties.name }}</option>
+          </template>
         </select>
       </label>
       <div class="toolbar">
@@ -28,7 +28,7 @@
     Polymer('noflo-project-inspector', {
       repo: '',
       name: '',
-      type: 'html',
+      main: '',
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
       },
@@ -38,16 +38,24 @@
       projectChanged: function () {
         this.repo = this.project.repo;
         this.name = this.project.name;
-        this.type = this.project.type;
+        this.main = this.project.main;
       },
       send: function (event) {
         if (event) {
           event.preventDefault();
         }
+        var type = this.project.type;
+        this.project.graphs.forEach(function (graph) {
+          if (graph.id === this.main && graph.properties.environment.runtime) {
+            type = graph.properties.environment.runtime;
+            this.project.mainGraph = graph;
+          }
+        }.bind(this));
         this.fire('updated', {
           id: this.project.id,
           name: this.name,
-          type: this.type,
+          main: this.main,
+          type: type,
           repo: this.repo
         });
         this.close();
