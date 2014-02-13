@@ -6,7 +6,6 @@ exports.getComponent = ->
     return unless event is 'data'
     
     path = "graphs/#{payload.id}.json"
-    console.log payload
     
     if payload.code and payload.language
       switch payload.language
@@ -14,7 +13,6 @@ exports.getComponent = ->
           path = "components/#{payload.name}.coffee"
         when 'javascript'
           path = "components/#{payload.name}.js"
-    console.log path
     c.outPorts.out.send path
     c.outPorts.out.disconnect()
   c.outPorts.add 'out'
