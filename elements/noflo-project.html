@@ -180,7 +180,7 @@
         </ul>
         </template>
       </main>
-      <template if="{{ project.repo }}">
+      <template if="{{ project.repo && githubtoken}}">
       <footer>
         <h1><i class="fa fa-github"></i> {{ project.repo }}</h1>
         <textarea placeholder="Commit message" value="{{ commitMessage }}"></textarea>
@@ -270,6 +270,9 @@
       },
       upload: function (event) {
         event.preventDefault();
+        if (!this.githubtoken) {
+          return;
+        }
         this.fire('upload', {
           file: this.graph || this.component,
           token: this.githubtoken,
