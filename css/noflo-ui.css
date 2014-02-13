@@ -578,11 +578,7 @@ noflo-search button {
   display: inline;
 }
 
-noflo-new-graph,
-noflo-new-project,
-noflo-new-component,
-noflo-account-settings,
-noflo-graph-inspector {
+.modal-content {
   background-color: hsl(187, 45%, 8%);
   display: block;
   position: fixed;
@@ -597,38 +593,20 @@ noflo-graph-inspector {
   border-radius: 3px;
   box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
 }
-noflo-new-graph h1,
-noflo-new-project h1,
-noflo-new-component h1,
-noflo-account-settings h1,
-noflo-graph-inspector h1 {
+.modal-content h1 {
   font-size: 17px;
   line-height: 36px;
 }
-noflo-new-graph label,
-noflo-new-project label,
-noflo-new-component label,
-noflo-account-settings label,
-noflo-graph-inspector label {
+.modal-content label {
   display: block;
   font-size: 13px;
   margin-top: 17px;
   color: hsl(189, 11%, 26%);
   line-height: 17px;
 }
-noflo-new-graph input,
-noflo-new-project input,
-noflo-new-component input,
-noflo-account-settings input,
-noflo-graph-inspector input,
-noflo-new-graph select,
-noflo-new-project select,
-noflo-new-component select,
-noflo-graph-inspector select,
-noflo-new-graph textarea,
-noflo-new-project textarea,
-noflo-new-component textarea,
-noflo-graph-inspector textarea {
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
   display: block;
   font-size: 17px;
   background-color: hsl(189, 47%, 6%);
@@ -641,20 +619,12 @@ noflo-graph-inspector textarea {
   width: 100%;
 }
 
-noflo-new-graph .toolbar,
-noflo-new-project .toolbar,
-noflo-new-component .toolbar,
-noflo-account-settings .toolbar,
-noflo-graph-inspector .toolbar {
+.modal-content .toolbar {
   display: block;
   line-height: 36px;
   margin-top: 17px;
 }
-noflo-new-graph .toolbar button,
-noflo-new-project .toolbar button,
-noflo-new-component .toolbar button,
-noflo-account-settings .toolbar button,
-noflo-graph-inspector .toolbar button {
+.modal-content .toolbar button {
   background-color: transparent;
   color: hsl(189, 11%, 26%);
   border: 1px solid hsl(189, 11%, 26%);
@@ -666,11 +636,7 @@ noflo-graph-inspector .toolbar button {
   padding-right: 36px;
   margin: 0px;
 }
-noflo-new-graph .toolbar a,
-noflo-new-project .toolbar a,
-noflo-new-component .toolbar a,
-noflo-account-settings .toolbar a,
-noflo-graph-inspector .toolbar a {
+.modal-content .toolbar a {
   font-size: 13px;
   color: hsl(189, 11%, 26%);
   text-decoration: none;
