@@ -42,7 +42,7 @@
         <template if="{{ projectList === 'github' }}">
         <li class="add">
           <h2>GitHub repos</h2>
-          <button on-click="{{ fetchGithub }}">Refresh</button>
+          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
         </li>
         <template repeat="{{ project in remoteProjects }}">
           <li>
@@ -161,6 +161,11 @@
           repos.forEach(function (repo) {
             if (!repo.permissions.push) {
               return;
+            }
+            for (var i = 0; i < this.projects.length; i++) {
+              if (this.projects[i].repo === repo.full_name) {
+                return;
+              }
             }
             if (this.languages.indexOf(repo.language) === -1) {
               return;
