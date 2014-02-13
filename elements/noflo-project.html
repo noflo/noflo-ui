@@ -1,6 +1,7 @@
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
+<link rel="import" href="noflo-project-inspector.html">
 <polymer-element name="noflo-project" attributes="project graphs components">
   <style>
     noflo-project h2 {
@@ -80,6 +81,7 @@
       <main>
         <ul>
           <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
+          <li><a on-click="{{ openSettings }}"><i class="fa fa-cog"></i>Settings</a></li>
         </ul>
         <template if="{{ project }}">
         <h2>Graphs</h2>
@@ -140,10 +142,31 @@
           this.fire('newcomponent', event.detail);
         }.bind(this));
       },
-      openHome: function () {
+      openHome: function (event) {
         event.preventDefault();
         this.$.account.toggleOpen(false);
         window.location.hash = '#';
+      },
+      openSettings: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-project-inspector');
+        dialog.project = this.project;
+        this.parentNode.parentNode.appendChild(dialog);
+        dialog.addEventListener('updated', function (event) {
+          Object.keys(event.detail).forEach(function (property) {
+            this.project[property] = event.detail[property];
+          }.bind(this));
+
+          // Send only the data we actually want to store
+          this.fire('changedproject', {
+            id: this.project.id,
+            name: this.project.name,
+            repo: this.project.repo,
+            type: this.project.type,
+            graphs: [],
+            components: []
+          });
+        }.bind(this));
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();

@@ -26,7 +26,7 @@
     <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project graphs components" outports="newgraph newcomponent changedproject"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
@@ -250,6 +250,7 @@
       EXPORT=COMPONENTEDITOR.CHANGED:COMPONENTCHANGED
       EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
       EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
+      EXPORT=PROJECT.CHANGEDPROJECT:CHANGEDPROJECT
       EXPORT=LOADPROJECTDATA.DB:DB
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -342,9 +343,9 @@
       LoadData COMPONENTS -> COMPONENTS Main
       Storage DB -> DB StoreNewGraph(local/StoreGraph)
       Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
-      Storage DB -> DB StoreNewProject(local/StoreProject)
+      Storage DB -> DB StoreProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
-      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreNewProject
+      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
 
       # Prepare workspace
       #'#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
@@ -365,6 +366,7 @@
       SplitChangedGraph OUT -> GRAPHS Main
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
+      Context CHANGEDPROJECT -> ITEM StoreProject
 
       Main DOWNLOAD -> IN Show(core/Output)
 
