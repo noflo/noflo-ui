@@ -299,9 +299,9 @@
         var validatePortValue = function(type, value) {
           switch (port.type) {
             case 'object':
-              return value instanceof Object
+              return value instanceof Object;
             case 'array':
-              return value instanceof Array
+              return value instanceof Array;
           }
           return true;
         };
