@@ -52,7 +52,7 @@
       EXPORT=ERRORS.OUT:ERROR
       EXPORT=SPLITDB.OUT:DB
       Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
-      '1' -> VERSION Open
+      '2' -> VERSION Open
       Open DB -> IN SplitDb(core/Split)
 
       # Database upgrade setup
@@ -87,6 +87,14 @@
       'project' -> KEYPATH ComponentProject
       CreateComponents STORE -> STORE ComponentProject
       ComponentProject ERROR -> IN Errors
+
+      # ## Version 2
+
+      # Runtime storage
+      'runtimes' -> NAME CreateRuntimes(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateRuntimes
+      Upgrade VERSIONS -> DB CreateRuntimes
+      CreateRuntimes ERROR -> IN Errors
     </script>
     <script type="application/fbp" id="LoadData">
       EXPORT=READ.DB:DB
