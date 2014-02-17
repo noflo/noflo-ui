@@ -161,6 +161,7 @@
         },
         gridTokenChanged: function () {
           this.getUser(this.gridToken);
+          this.fire('gridtoken', this.gridToken);
         },
         githubTokenChanged: function () {
           this.fire('githubtoken', this.githubToken);

@@ -1,7 +1,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
-<polymer-element name="noflo-main" attributes="open projects sketches examples graphs components">
+<polymer-element name="noflo-main" attributes="open projects sketches graphs components">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
@@ -69,12 +69,16 @@
         </template>
       </ul>
     </section>
-    <section id="examples">
-      <h2>Examples <small>{{ examples.length }} projects</small></h2>
+    <section id="runtimes">
+      <h2>Runtimes <small>{{ runtimes.length }} runtimes</small></h2>
       <ul class="projects">
-        <template repeat="{{ examples }}">
-        <li on-click="{{ openExample }}" data-id="{{ id }}">
-          <h2>{{ name }}</h2>
+        <li class="add">
+          <h2>Flowhub runtimes</h2>
+          <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+        </li>
+        <template repeat="{{ runtimes }}">
+        <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
+          <h2>{{ label }}</h2>
         </li>
         </template>
       </ul>
@@ -86,8 +90,9 @@
       projects: [],
       remoteProjects: [],
       sketches: [],
-      examples: [],
+      runtimes: [],
       githubToken: '',
+      gridToken: '',
       projectList: 'local',
       languages: [
         'HTML',
@@ -100,6 +105,10 @@
         this.$.mainaccount.addEventListener('githubtoken', function (event) {
           this.githubToken = event.detail;
         }.bind(this));
+        this.$.mainaccount.addEventListener('gridtoken', function (event) {
+          this.gridToken = event.detail;
+        }.bind(this));
+        this.registry = require('flowhub-registry');
       },
       token: function () {
         this.fire('githubtoken', this.githubToken);
@@ -184,6 +193,21 @@
         req.open('GET', 'https://api.github.com/user/repos?type=public&access_token=' + encodeURIComponent(this.githubToken), true);
         req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
         req.send(null);
+      },
+      fetchFlowhub: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.gridToken) {
+          return;
+        }
+        this.registry.list(this.gridToken, function (err, runtimes) {
+          if (err) {
+            return;
+          }
+          // TODO: Update only relevant attributes
+          this.runtimes = runtimes;
+        }.bind(this));
       },
       openSketch: function (event, details, sender) {
         event.preventDefault();
