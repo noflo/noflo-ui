@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches graphs components runtimes route token" outports="newsketch newproject project graph component download githubtoken"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects sketches graphs components runtimes route token" outports="newsketch newproject project graph component download githubtoken runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -231,6 +231,20 @@
       Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
       Split OUT -> VALUE Put
     </script>
+    <script type="application/fbp" id="StoreRuntime">
+      EXPORT=MERGE.IN:ITEM
+      EXPORT=HOLDDB.DATA:DB
+      EXPORT=PUT.KEY:KEY
+      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      Split OUT -> IN HoldMode
+      'runtimes' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      Split OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
+      Split OUT -> VALUE Put
+    </script>
     <script type="application/fbp" id="LoadExample">
       EXPORT=SPLITGIST.IN:GIST
       EXPORT=PARSEEXAMPLE.OUT:GRAPH
@@ -426,6 +440,8 @@
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
       Context CHANGEDPROJECT -> ITEM StoreProject
+      Store DB -> DB StoreRuntime(local/StoreRuntime)
+      Main RUNTIME -> ITEM StoreRuntime
 
       # Handle GitHub tokens
       '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context

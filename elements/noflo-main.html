@@ -215,7 +215,7 @@
               }
             });
             if (!inStore) {
-              this.fire('newruntime', runtime.runtime);
+              this.fire('runtime', runtime.runtime);
               return;
             }
 
@@ -229,7 +229,7 @@
               changed = true;
             });
             if (changed) {
-              this.fire('changedruntime', inStore);
+              this.fire('runtime', inStore);
             }
           }.bind(this));
 
