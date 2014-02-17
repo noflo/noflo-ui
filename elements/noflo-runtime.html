@@ -130,7 +130,9 @@
           this.card = null;
         }
         if (this.graphInspector) {
-          this.graphInspector.parentNode.removeChild(this.graphInspector);
+          if (this.graphInspector.parentNode) {
+            this.graphInspector.parentNode.removeChild(this.graphInspector);
+          }
           this.graphInspector = null;
         }
         if (!this.currentGraph) {

@@ -26,7 +26,9 @@
     </label>
     </template>
     <label id="content">
+      <template if="{{ graph.properties.environment.runtime == 'html' }}">
       <span>Preview contents</span>
+      </template>
     </label>
     <div class="toolbar">
       <button on-click="{{ close }}">Done</button>
