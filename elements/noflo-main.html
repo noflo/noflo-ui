@@ -1,7 +1,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
-<polymer-element name="noflo-main" attributes="open projects sketches graphs components">
+<polymer-element name="noflo-main" attributes="open projects sketches graphs components runtimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
@@ -205,8 +205,43 @@
           if (err) {
             return;
           }
-          // TODO: Update only relevant attributes
-          this.runtimes = runtimes;
+          var found = [];
+          runtimes.forEach(function (runtime) {
+            var inStore = null;
+            this.runtimes.forEach(function (storedRuntime) {
+              if (storedRuntime.id === runtime.runtime.id) {
+                inStore = storedRuntime;
+                found.push(inStore.id);
+              }
+            });
+            if (!inStore) {
+              this.fire('newruntime', runtime.runtime);
+              return;
+            }
+
+            // Update existing
+            var changed = false;
+            Object.keys(runtime.runtime).forEach(function (attr) {
+              if (inStore[attr] === runtime.runtime[attr]) {
+                return;
+              }
+              inStore[attr] = runtime.runtime[attr];
+              changed = true;
+            });
+            if (changed) {
+              this.fire('changedruntime', inStore);
+            }
+          }.bind(this));
+
+          // Remove deleted runtimes
+          this.runtimes.forEach(function (runtime, index) {
+            if (found.indexOf(runtime.id) !== -1) {
+              return;
+            }
+            this.fire('removedruntime', runtime);
+            this.runtimes.splice(index, 1);
+          }.bind(this));
+
         }.bind(this));
       },
       openSketch: function (event, details, sender) {
