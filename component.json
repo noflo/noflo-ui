@@ -25,7 +25,8 @@
     "noflo/noflo-polymer": "*",
     "noflo/noflo-indexeddb": "*",
     "noflo/noflo-github": "*",
-    "the-grid/flowhub-registry": "*"
+    "the-grid/flowhub-registry": "*",
+    "gjohnson/uuid": "*"
   },
   "noflo": {
     "components": {

@@ -65,6 +65,7 @@
         <template repeat="{{ runtimes }}">
         <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
           <h2>{{ label }}</h2>
+          <p>{{ address }}</p>
         </li>
         </template>
       </ul>
@@ -79,6 +80,7 @@
       runtimes: [],
       githubToken: '',
       gridToken: '',
+      user: null,
       projectList: 'local',
       languages: [
         'HTML',
@@ -93,6 +95,9 @@
         }.bind(this));
         this.$.mainaccount.addEventListener('gridtoken', function (event) {
           this.gridToken = event.detail;
+        }.bind(this));
+        this.$.mainaccount.addEventListener('user', function (event) {
+          this.user = event.detail;
         }.bind(this));
         this.registry = require('flowhub-registry');
       },
@@ -228,7 +233,27 @@
             this.runtimes.splice(index, 1);
           }.bind(this));
 
+          if (runtimes.length === 0) {
+            this.registerDefaultRuntimes();
+          }
         }.bind(this));
+      },
+      registerDefaultRuntimes: function () {
+        if (!this.gridToken || !this.user) {
+          return;
+        }
+        // Every NoFlo UI instance has at least the local IFRAME runtime available
+        var runtime = new this.registry.Runtime({
+          label: 'Local NoFlo HTML5 environment',
+          id: require('uuid')(),
+          user: this.user.uuid,
+          protocol: 'iframe',
+          address: 'preview/iframe.html',
+          type: 'noflo-browser'
+        });
+        this.runtimes.push(runtime.runtime);
+        runtime.register(function () {});
+        this.fire('runtime', runtime.runtime);
       },
       openProject: function (event, details, sender) {
         event.preventDefault();

@@ -417,6 +417,8 @@
       Storage DB -> DB StoreProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
       Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
+      Storage DB -> DB StoreRuntime(local/StoreRuntime)
+      Main RUNTIME -> ITEM StoreRuntime
 
       # Prepare workspace
       #'#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
@@ -438,8 +440,6 @@
       Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
       Context CHANGEDPROJECT -> ITEM StoreProject
-      Store DB -> DB StoreRuntime(local/StoreRuntime)
-      Main RUNTIME -> ITEM StoreRuntime
 
       # Handle GitHub tokens
       '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context
