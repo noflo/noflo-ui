@@ -54,6 +54,7 @@
         </template>
       </ul>
     </section>
+    <template if="{{ gridToken }}">
     <section id="runtimes">
       <h2>Runtimes <small>{{ runtimes.length }} runtimes</small></h2>
       <ul class="projects">
@@ -68,6 +69,7 @@
         </template>
       </ul>
     </section>
+    </template>
   </template>
   <script>
     Polymer('noflo-main', {
