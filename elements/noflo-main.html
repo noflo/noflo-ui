@@ -1,7 +1,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
-<polymer-element name="noflo-main" attributes="open projects sketches graphs components runtimes">
+<polymer-element name="noflo-main" attributes="open projects graphs components runtimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
@@ -54,21 +54,6 @@
         </template>
       </ul>
     </section>
-    <section id="sketches">
-      <h2>Sketches <small>{{ sketches.length }} projects</small></h2>
-      <ul class="projects">
-        <li class="add">
-          <h2>New sketch</h2>
-          <button on-click="{{ newSketch }}">Create</button>
-        </li>
-        <template repeat="{{ sketch in sketches }}">
-          <li on-click="{{ openSketch }}" data-id="{{ sketch.id }}">
-            <the-graph-thumb graphjson="{{ sketch }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ sketch.properties.name }}</h2>
-          </li>
-        </template>
-      </ul>
-    </section>
     <section id="runtimes">
       <h2>Runtimes <small>{{ runtimes.length }} runtimes</small></h2>
       <ul class="projects">
@@ -89,7 +74,6 @@
       open: true,
       projects: [],
       remoteProjects: [],
-      sketches: [],
       runtimes: [],
       githubToken: '',
       gridToken: '',
@@ -244,10 +228,6 @@
 
         }.bind(this));
       },
-      openSketch: function (event, details, sender) {
-        event.preventDefault();
-        window.location.hash = '#graph/' + sender.getAttribute('data-id');
-      },
       openProject: function (event, details, sender) {
         event.preventDefault();
         var project = null;
@@ -265,15 +245,6 @@
         event.preventDefault();
         window.location.hash = '#example/' + sender.getAttribute('data-id');
       },
-      newSketch: function (event) {
-        event.preventDefault();
-        var dialog = document.createElement('noflo-new-graph');
-        this.parentNode.parentNode.appendChild(dialog);
-        dialog.addEventListener('new', function (event) {
-          this.sketches.push(event.detail);
-          this.fire('newsketch', event.detail);
-        }.bind(this));
-      },
       newProject: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-project');
@@ -285,7 +256,7 @@
       },
       graphs: function (graph) {
         if (!graph.project) {
-          this.sketches.push(graph);
+          // TODO: Create a project for old-style sketches
           return;
         }
         this.projects.forEach(function (project) {
@@ -353,14 +324,6 @@
             }
           }.bind(this));
           return;
-        }
-
-        if (routeData.graphs) {
-          this.sketches.forEach(function (sketch) {
-            if (sketch.id === routeData.graphs[0]) {
-              this.fire('graph', sketch);
-            }
-          }.bind(this));
         }
       }
     });

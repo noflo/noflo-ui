@@ -17,7 +17,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches graphs components runtimes route token" outports="newsketch newproject project graph component download githubtoken runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token" outports="newproject project graph component download githubtoken runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -414,8 +414,6 @@
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main
       LoadData RUNTIMES -> RUNTIMES Main
-      Storage DB -> DB StoreNewGraph(local/StoreGraph)
-      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
       Storage DB -> DB StoreProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
       Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject

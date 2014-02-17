@@ -30,7 +30,7 @@ class Router extends noflo.Component
           @outPorts.main.send true
           @outPorts.main.disconnect()
           return
-        when 'sketch', 'graph'
+        when 'graph'
           if matched.project and @outPorts.project.isAttached()
             @outPorts.project.send matched.project
             @outPorts.project.disconnect()
@@ -66,10 +66,6 @@ class Router extends noflo.Component
         return routeData
       routeData.route = 'graph'
       routeData.graphs = parts
-      return routeData
-    if url.substr(0, 6) is 'graph/'
-      routeData.route = 'sketch'
-      routeData.graphs = [url.substr(6)]
       return routeData
     if url.substr(0, 8) is 'example/'
       routeData.route = 'example'
