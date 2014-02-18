@@ -76,6 +76,20 @@ class ConnectRuntime extends noflo.Component
           node: edge.tgt.process
           port: edge.tgt.port
         graph: graph.id
+    if graph.inports
+      for pub, priv of graph.inports
+        runtime.sendGraph 'addinport',
+          public: pub
+          node: priv.process
+          port: priv.port
+          graph: graph.id
+    if graph.outports
+      for pub, priv of graph.outports
+        runtime.sendGraph 'addoutport',
+          public: pub
+          node: priv.process
+          port: priv.port
+          graph: graph.id
 
   convertNode: (id, node) ->
     data = node.toJSON()
