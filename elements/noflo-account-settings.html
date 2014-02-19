@@ -3,6 +3,10 @@
     <h1>Account settings for {{ user.name }}</h1>
     <form>
       <label>
+        User Identifier
+        <input type="text" readonly value="{{ user.uuid }}">
+      </label>
+      <label>
         GitHub API token
         <input type="text" value="{{ githubtoken }}" placeholder="Token for GitHub API access" required>
       </label>

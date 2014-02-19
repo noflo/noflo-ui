@@ -19,7 +19,11 @@
       line-height: 36px;
       overflow: hidden;
     }
-    
+
+    ul.ports li.error label {
+      background-color: rgb(121, 18, 18);
+    }
+
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button {
       -webkit-appearance: none; 
@@ -291,7 +295,22 @@
         }
         var value = this.inputToPort(sender);
         var port = this.node.getInportByName(sender.getAttribute('name'));
-        port.setValue(value);
+
+        var validatePortValue = function(type, value) {
+          switch (port.type) {
+            case 'object':
+              return value instanceof Object;
+            case 'array':
+              return value instanceof Array;
+          }
+          return true;
+        };
+
+        if (validatePortValue(port.type, value)) {
+          port.setValue(value);
+          sender.parentNode.parentNode.classList.remove('error');
+        } else
+          sender.parentNode.parentNode.classList.add('error');
       },
       removeValue: function (event, detail, sender) {
         event.preventDefault();

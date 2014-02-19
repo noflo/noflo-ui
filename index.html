@@ -20,7 +20,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects sketches examples graphs components route token" outports="newsketch newproject project graph component download githubtoken"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token" outports="newproject project graph component download githubtoken runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -51,11 +51,11 @@
       </main>
     </div>
     <script type="application/fbp" id="PrepareStorage">
-      EXPORT=OPEN.NAME:NAME
-      EXPORT=ERRORS.OUT:ERROR
-      EXPORT=SPLITDB.OUT:DB
+      INPORT=Open.NAME:NAME
+      OUTPORT=Errors.OUT:ERROR
+      OUTPORT=SplitDb.OUT:DB
       Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
-      '1' -> VERSION Open
+      '2' -> VERSION Open
       Open DB -> IN SplitDb(core/Split)
 
       # Database upgrade setup
@@ -90,18 +90,27 @@
       'project' -> KEYPATH ComponentProject
       CreateComponents STORE -> STORE ComponentProject
       ComponentProject ERROR -> IN Errors
+
+      # ## Version 2
+
+      # Runtime storage
+      'runtimes' -> NAME CreateRuntimes(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateRuntimes
+      Upgrade VERSIONS -> DB CreateRuntimes
+      CreateRuntimes ERROR -> IN Errors
     </script>
     <script type="application/fbp" id="LoadData">
-      EXPORT=READ.DB:DB
-      EXPORT=MERGESTART.IN:LOAD
-      EXPORT=GETPROJECTS.ITEM:PROJECTS
-      EXPORT=GETGRAPHS.ITEM:GRAPHS
-      EXPORT=GETCOMPONENTS.ITEM:COMPONENTS
-      EXPORT=READ.COMPLETE:COMPLETE
+      INPORT=Read.DB:DB
+      INPORT=MergeStart.IN:LOAD
+      OUTPORT=GetProjects.ITEM:PROJECTS
+      OUTPORT=GetGraphs.ITEM:GRAPHS
+      OUTPORT=GetComponents.ITEM:COMPONENTS
+      OUTPORT=GetRuntimes.ITEM:RUNTIMES
+      OUTPORT=Read.COMPLETE:COMPLETE
       MergeStart(core/Merge) OUT -> IN SplitStart(core/Split)
       'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
       SplitStart OUT -> IN HoldMode
-      'projects,graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+      'projects,graphs,components,runtimes' -> DATA HoldStores(core/Kick) OUT -> STORES Read
       SplitStart OUT -> IN HoldStores
 
       # Read projects list
@@ -127,11 +136,19 @@
       '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
       GetProjects ITEM -> IN HoldAllComponents
       ComponentStore STORE -> STORE GetComponents
+
+      # Read runtimes list
+      'runtimes' -> DATA HoldRuntimeStore(core/Kick) OUT -> NAME RuntimeStore(indexeddb/GetStore)
+      SplitStart OUT -> IN HoldRuntimeStore
+      GraphStore TRANSACTION -> TRANSACTION RuntimeStore
+      '' -> DATA HoldAllRuntimes(core/Kick) OUT -> ALL GetRuntimes(indexeddb/Query)
+      SplitStart OUT -> IN HoldAllRuntimes
+      RuntimeStore STORE -> STORE GetRuntimes
     </script>
     <script type="application/fbp" id="StoreGraph">
-      EXPORT=MERGE.IN:ITEM
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=PUTGRAPH.KEY:KEY
+      INPORT=Merge.IN:ITEM
+      INPORT=HoldDb.DATA:DB
+      OUTPORT=PutGraph.KEY:KEY
       Merge(core/Merge) OUT -> IN DropExamples(ui/DropExamples)
       DropExamples OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitGraph(core/Split)
       SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
@@ -149,23 +166,10 @@
       'project' -> PROPERTY SetProject
       GetProject MISSED -> IN SetProject OUT -> IN MergeStorable
     </script>
-    <script type="application/fbp" id="LoadProject">
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=SPLITID.IN:ID
-      EXPORT=GET.ITEM:PROJECT
-      SplitId(core/Split) OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
-      'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read
-      SplitId OUT -> IN HoldMode
-      'projects' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
-      SplitId OUT -> IN HoldStore
-      SplitStore OUT -> NAME Store(indexeddb/GetStore)
-      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Get(indexeddb/Get)
-      SplitId OUT -> KEY Get
-    </script>
     <script type="application/fbp" id="PrepareProject">
-      EXPORT=GENERATEID.IN:IN
-      EXPORT=STOREGRAPH.DB:DB
-      EXPORT=SETMAIN.OUT:OUT
+      INPORT=GenerateId.IN:IN
+      INPORT=StoreGraph.DB:DB
+      OUTPORT=SetMain.OUT:OUT
       GenerateId(local/GenerateId) OUT -> IN Split(core/Split)
       'id' -> KEY GetId(objects/GetObjectKey)
       'project' -> PROPERTY SetProject(objects/SetPropertyValue)
@@ -190,9 +194,9 @@
       SplitGraphId OUT -> IN HoldProject
     </script>
     <script type="application/fbp" id="StoreProject">
-      EXPORT=DISC.IN:ITEM
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=PUTPROJECT.KEY:KEY
+      INPORT=Disc.IN:ITEM
+      INPORT=HoldDb.DATA:DB
+      OUTPORT=PutProject.KEY:KEY
       Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -204,9 +208,9 @@
       Split OUT -> VALUE PutProject
     </script>
     <script type="application/fbp" id="StoreComponent">
-      EXPORT=MERGE.IN:ITEM
-      EXPORT=HOLDDB.DATA:DB
-      EXPORT=PUT.KEY:KEY
+      INPORT=Merge.IN:ITEM
+      INPORT=HoldDb.DATA:DB
+      OUTPORT=Put.KEY:KEY
       Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -217,10 +221,24 @@
       Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
       Split OUT -> VALUE Put
     </script>
+    <script type="application/fbp" id="StoreRuntime">
+      INPORT=Merge.IN:ITEM
+      INPORT=HoldDb.DATA:DB
+      OUTPORT=Put.KEY:KEY
+      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
+      'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
+      Split OUT -> IN HoldMode
+      'runtimes' -> DATA HoldStore(core/Kick) OUT -> IN SplitStore(core/Split) OUT -> STORES Read
+      Split OUT -> IN HoldStore
+      SplitStore OUT -> NAME Store(indexeddb/GetStore)
+      Read TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
+      Split OUT -> VALUE Put
+    </script>
     <script type="application/fbp" id="LoadExample">
-      EXPORT=SPLITGIST.IN:GIST
-      EXPORT=PARSEEXAMPLE.OUT:GRAPH
-      EXPORT=ERRORS.OUT:ERROR
+      INPORT=SplitGist.IN:GIST
+      OUTPORT=ParseExample.OUT:GRAPH
+      OUTPORT=Errors.OUT:ERROR
       'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
       '/' -> DELIMITER CreateUrl(strings/CompileString)
       SplitGist(core/Split) OUT -> IN GistPrefix
@@ -237,19 +255,19 @@
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
     </script>
     <script type="application/fbp" id="GenerateId">
-      EXPORT=SPLITITEM.IN:IN
-      EXPORT=SETID.OUT:OUT
+      INPORT=SplitItem.IN:IN
+      OUTPORT=SetId.OUT:OUT
       'id' -> PROPERTY SetId(objects/SetPropertyValue)
       SplitItem(core/Split) OUT -> START Generate(ui/GenerateId)
       Generate OUT -> VALUE SetId
       SplitItem OUT -> IN SetId
     </script>
     <script type="application/fbp" id="GithubUpload">
-      EXPORT=REPO.IN:REPO
-      EXPORT=TOKEN.IN:TOKEN
-      EXPORT=UPLOAD.PATH:NAME
-      EXPORT=UPLOAD.MESSAGE:MESSAGE
-      EXPORT=WAITREPO.STRING:CONTENT
+      INPORT=Repo.IN:REPO
+      INPORT=Token.IN:TOKEN
+      INPORT=Upload.PATH:NAME
+      INPORT=Upload.MESSAGE:MESSAGE
+      INPORT=WaitRepo.STRING:CONTENT
 
       # Plain repository name for repo creation
       '(.*)\/(.*)' -> PATTERN RepoName(strings/Replace)
@@ -277,7 +295,7 @@
       Upload OUT -> IN Show(core/Output)
     </script>
     <script type="application/fbp" id="Upload">
-      EXPORT=GETTOKEN.IN:IN
+      INPORT=GetToken.IN:IN
       'token' -> KEY GetToken(objects/GetObjectKey) OUT -> TOKEN Upload(local/GithubUpload)
       'repo' -> KEY GetRepo(objects/GetObjectKey) OUT -> REPO Upload
       'doc' -> KEY GetDoc(objects/GetObjectKey) OUT -> IN MakePath(ui/MakePath) OUT -> NAME Upload
@@ -286,18 +304,18 @@
       GetToken OBJECT -> IN GetRepo OBJECT -> IN GetDoc OBJECT -> IN GetMessage OBJECT -> IN GetContent
     </script>
     <script type="application/fbp" id="ProjectContext">
-      EXPORT=CONTEXT.PROJECT:PROJECT
-      EXPORT=CONTEXT.GRAPHS:GRAPHS
-      EXPORT=CONTEXT.COMPONENT:COMPONENT
-      EXPORT=CONTEXT.CLEAR:CLEAR
-      EXPORT=GRAPHEDITOR.CHANGED:GRAPHCHANGED
-      EXPORT=COMPONENTEDITOR.CHANGED:COMPONENTCHANGED
-      EXPORT=MERGENEWGRAPH.OUT:NEWGRAPH
-      EXPORT=PROJECT.GITHUBTOKEN:GITHUBTOKEN
-      EXPORT=PROJECT.NEWCOMPONENT:NEWCOMPONENT
-      EXPORT=PROJECT.CHANGEDPROJECT:CHANGEDPROJECT
-      EXPORT=PROJECT.UPLOAD:UPLOAD
-      EXPORT=LOADPROJECTDATA.DB:DB
+      INPORT=Context.PROJECT:PROJECT
+      INPORT=Context.GRAPHS:GRAPHS
+      INPORT=Context.COMPONENT:COMPONENT
+      INPORT=Context.CLEAR:CLEAR
+      INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
+      INPORT=LoadProjectData.DB:DB
+      OUTPORT=GraphEditor.CHANGED:GRAPHCHANGED
+      OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
+      OUTPORT=MergeNewGraph.OUT:NEWGRAPH
+      OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
+      OUTPORT=Project.CHANGEDPROJECT:CHANGEDPROJECT
+      OUTPORT=Project.UPLOAD:UPLOAD
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
       # Runtime handling
@@ -357,17 +375,16 @@
       ListenWindow HEIGHT -> HEIGHT ComponentEditor
     </script>
     <script type="application/fbp" id="GraphEditor">
-      EXPORT=LOADEDITOR.CONTAINER:WORKSPACE
-      EXPORT=CONNECTRUNTIME.RUNTIME:RUNTIME
-      EXPORT=CONNECTRUNTIME.PROJECT:PROJECT
-      EXPORT=CONNECTRUNTIME.NEWGRAPH:NEWGRAPH
-      EXPORT=GRAPHEDITOR.GRAPH:CURRENTGRAPH
-      EXPORT=GRAPHEDITOR.WIDTH:WIDTH
-      EXPORT=GRAPHEDITOR.HEIGHT:HEIGHT
-      EXPORT=SPLITEDITOR.OUT:EDITOR
-      EXPORT=GRAPHEDITOR.NODECLICK:NODECLICK
-      EXPORT=GRAPHEDITOR.EDGECLICK:EDGECLICK
-      EXPORT=CONVERT.OUT:CHANGED
+      INPORT=ConnectRuntime.RUNTIME:RUNTIME
+      INPORT=ConnectRuntime.PROJECT:PROJECT
+      INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
+      INPORT=GraphEditor.GRAPH:CURRENTGRAPH
+      INPORT=GraphEditor.WIDTH:WIDTH
+      INPORT=GraphEditor.HEIGHT:HEIGHT
+      OUTPORT=SplitEditor.OUT:EDITOR
+      OUTPORT=GraphEditor.NODECLICK:NODECLICK
+      OUTPORT=GraphEditor.EDGECLICK:EDGECLICK
+      OUTPORT=Convert.OUT:CHANGED
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       GraphEditor ELEMENT -> IN Async(core/RepeatAsync) OUT -> IN SplitEditor(core/Split)
       SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
@@ -385,15 +402,12 @@
       LoadData PROJECTS -> PROJECTS Main
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main
-      Storage DB -> DB StoreNewGraph(local/StoreGraph)
-      Main NEWSKETCH -> IN NewGraphId(local/GenerateId) OUT -> ITEM StoreNewGraph
+      LoadData RUNTIMES -> RUNTIMES Main
       Storage DB -> DB StoreProject(local/StoreProject)
       Storage DB -> DB PrepareProject(local/PrepareProject)
       Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
-
-      # Prepare workspace
-      #'#workspace' -> SELECTOR GetWorkspace(dom/GetElement) ELEMENT -> IN Workspace(core/Split)
-      #Workspace OUT -> WORKSPACE Context
+      Storage DB -> DB StoreRuntime(local/StoreRuntime)
+      Main RUNTIME -> ITEM StoreRuntime
 
       # Prepare the context
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)

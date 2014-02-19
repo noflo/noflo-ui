@@ -116,6 +116,7 @@
             if (user) {
               try {
                 this.user = JSON.parse(user);
+                this.fire('user', this.user);
                 return;
               } catch (e) {
                 storage.remove(this.storage.user);
@@ -133,6 +134,7 @@
             if (req.status === 200) {
               storage.set(this.storage.user, req.responseText);
               this.user = JSON.parse(req.responseText);
+              this.fire('user', this.user);
               } else {
               this.clearCache();
             }
@@ -161,6 +163,7 @@
         },
         gridTokenChanged: function () {
           this.getUser(this.gridToken);
+          this.fire('gridtoken', this.gridToken);
         },
         githubTokenChanged: function () {
           this.fire('githubtoken', this.githubToken);
