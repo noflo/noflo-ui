@@ -3,17 +3,6 @@
     Polymer('noflo-library', {
       search: '',
       editor: null,
-      buttons: function () {
-        if (!this.editor) {
-          return;
-        }
-        this.fire('button', {
-          id: 'library',
-          icon: 'plus-square-o',
-          label: 'Library',
-          search: 'show library'
-        });
-      },
       addNode: function (component) {
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);

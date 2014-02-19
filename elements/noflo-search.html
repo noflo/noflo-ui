@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-menu.html">
 <link rel="import" href="noflo-search-results.html">
-<polymer-element name="noflo-search" class="gpu" attributes="buttons results project graphs component">
+<polymer-element name="noflo-search" class="gpu" attributes="results project graphs component">
   <style>
     noflo-search.overlay #breadcrumb {
       width: calc(72px * 4);
@@ -114,7 +114,6 @@
     Polymer('noflo-search', {
       menuCard: null,
       resultsCard: null,
-      buttons: [],
       results: [],
       search: '',
       project: null,
