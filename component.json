@@ -32,7 +32,6 @@
   "noflo": {
     "components": {
       "ConnectRuntime": "components/ConnectRuntime.coffee",
-      "DropExamples": "components/DropExamples.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "Router": "components/Router.coffee",
@@ -47,7 +46,6 @@
     "src/runtimes/iframe.coffee",
     "src/runtimes/websocket.coffee",
     "components/ConnectRuntime.coffee",
-    "components/DropExamples.coffee",
     "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",

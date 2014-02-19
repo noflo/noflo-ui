@@ -148,11 +148,12 @@
       RuntimeStore STORE -> STORE GetRuntimes
     </script>
     <script type="application/fbp" id="StoreGraph">
-      INPORT=Merge.IN:ITEM
+      INPORT=Convert.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=PutGraph.KEY:KEY
-      Merge(core/Merge) OUT -> IN DropExamples(ui/DropExamples)
-      DropExamples OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitGraph(core/Split)
+      'toJSON' -> METHOD Convert(objects/CallMethod)
+      Convert OUT -> IN EnsureId(local/GenerateId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      Disc OUT -> IN SplitGraph(core/Split)
       SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       SplitGraph OUT -> IN HoldMode
@@ -212,7 +213,8 @@
       INPORT=Merge.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=Put.KEY:KEY
-      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Merge(core/Merge) OUT -> IN EnsureId(local/GenerateId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      Disc OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       Split OUT -> IN HoldMode
@@ -311,7 +313,7 @@
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
       INPORT=LoadProjectData.DB:DB
-      OUTPORT=GraphEditor.CHANGED:GRAPHCHANGED
+      OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
       OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
@@ -363,6 +365,9 @@
       Context COMPONENT -> COMPONENT ComponentEditor
       Context GRAPHS -> GRAPHS ComponentEditor
 
+      # Listen for graph changes
+      Context CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
+
       # Listen for screen size changes and communicate with editors
       '' -> START ListenWindow(interaction/ListenResize)
       ListenWindow WIDTH -> WIDTH GraphEditor
@@ -374,18 +379,16 @@
       INPORT=ConnectRuntime.RUNTIME:RUNTIME
       INPORT=ConnectRuntime.PROJECT:PROJECT
       INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
-      INPORT=GraphEditor.GRAPH:CURRENTGRAPH
+      INPORT=Graph.IN:CURRENTGRAPH
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
-      OUTPORT=SplitEditor.OUT:EDITOR
+      OUTPORT=Async.OUT:EDITOR
       OUTPORT=GraphEditor.NODECLICK:NODECLICK
       OUTPORT=GraphEditor.EDGECLICK:EDGECLICK
-      OUTPORT=Convert.OUT:CHANGED
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
-      GraphEditor ELEMENT -> IN Async(core/RepeatAsync) OUT -> IN SplitEditor(core/Split)
-      SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
-      'toJSON' -> METHOD Convert(objects/CallMethod)
-      GraphEditor CHANGED -> IN Convert
+      GraphEditor ELEMENT -> IN Async(core/RepeatAsync)
+      Graph(core/Repeat) OUT -> GRAPH GraphEditor
+      Async OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
     </script>
     <script type="application/fbp" id="main">
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
@@ -412,14 +415,13 @@
       Main GRAPH -> GRAPHS Context
       Main COMPONENT -> COMPONENT Context
       Storage DB -> DB StoreComponent(local/StoreComponent)
-      Context COMPONENTCHANGED -> IN SplitChangedComponent(core/Split) OUT -> ITEM StoreComponent
-      SplitChangedComponent OUT -> COMPONENTS Main
+      Context COMPONENTCHANGED -> ITEM StoreComponent
+      Context COMPONENTCHANGED -> COMPONENTS Main
       Storage DB -> DB StoreGraph(local/StoreGraph)
       'id' -> KEY CheckGraphID(objects/GetObjectKey)
-      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> IN SplitChangedGraph(core/Split) OUT -> ITEM StoreGraph
-      SplitChangedGraph OUT -> GRAPHS Main
-      Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
-      Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
+      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
+      Context NEWGRAPH -> ITEM StoreGraph
+      Context NEWCOMPONENT -> ITEM StoreComponent
       Context CHANGEDPROJECT -> ITEM StoreProject
 
       # Handle GitHub tokens
