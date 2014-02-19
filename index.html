@@ -54,10 +54,13 @@
     <script type="application/fbp" id="PrepareStorage">
       INPORT=Open.NAME:NAME
       OUTPORT=Errors.OUT:ERROR
-      OUTPORT=SplitDb.OUT:DB
+      OUTPORT=Open.DB:DB
+
+      # Open database connection
       Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
+
+      # Specify storage version to get correct migrations
       '2' -> VERSION Open
-      Open DB -> IN SplitDb(core/Split)
 
       # Database upgrade setup
       Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
@@ -151,7 +154,7 @@
       INPORT=HoldDb.DATA:DB
       OUTPORT=PutGraph.KEY:KEY
       'toJSON' -> METHOD Convert(objects/CallMethod)
-      Convert OUT -> IN EnsureId(local/GenerateId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      Convert OUT -> IN EnsureId(local/EnsureId) OUT -> IN Disc(core/DisconnectAfterPacket)
       Disc OUT -> IN SplitGraph(core/Split)
       SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -169,10 +172,10 @@
       GetProject MISSED -> IN SetProject OUT -> VALUE PutGraph
     </script>
     <script type="application/fbp" id="PrepareProject">
-      INPORT=GenerateId.IN:IN
+      INPORT=EnsureId.IN:IN
       INPORT=StoreGraph.DB:DB
       OUTPORT=SetMain.OUT:OUT
-      GenerateId(local/GenerateId) OUT -> IN Split(core/Split)
+      EnsureId(local/EnsureId) OUT -> IN Split(core/Split)
       'id' -> KEY GetId(objects/GetObjectKey)
       'project' -> PROPERTY SetProject(objects/SetPropertyValue)
       GetId OUT -> VALUE SetProject
@@ -187,7 +190,7 @@
       Split OUT -> IN GetType
       Split OUT -> START InitializeGraph(objects/CreateObject)
       InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> IN SetProject OUT -> DETAILS ToGraph(graph/CreateGraph)
-      ToGraph OUT -> IN GenGraphId(local/GenerateId)
+      ToGraph OUT -> IN GenGraphId(local/EnsureId)
       GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
       'main' -> PROPERTY SetMain(objects/SetPropertyValue)
       StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
@@ -212,7 +215,7 @@
       INPORT=EnsureId.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=Put.KEY:KEY
-      EnsureId(local/GenerateId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      EnsureId(local/EnsureId) OUT -> IN Disc(core/DisconnectAfterPacket)
       Disc OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
@@ -256,13 +259,13 @@
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
     </script>
-    <script type="application/fbp" id="GenerateId">
-      INPORT=SplitItem.IN:IN
+    <script type="application/fbp" id="EnsureId">
+      INPORT=Item.IN:IN
       OUTPORT=SetId.OUT:OUT
       'id' -> PROPERTY SetId(objects/SetPropertyValue)
-      SplitItem(core/Split) OUT -> START Generate(ui/GenerateId)
+      Item(core/Repeat) OUT -> START Generate(ui/GenerateId)
       Generate OUT -> VALUE SetId
-      SplitItem OUT -> IN SetId
+      Item OUT -> IN SetId
     </script>
     <script type="application/fbp" id="GithubUpload">
       INPORT=Repo.IN:REPO
@@ -390,6 +393,7 @@
       Async OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
     </script>
     <script type="application/fbp" id="main">
+      # Name of our IndexedDB database
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
 
       # Prepare the main view
