@@ -25,6 +25,7 @@
     "noflo/noflo-polymer": "*",
     "noflo/noflo-indexeddb": "*",
     "noflo/noflo-github": "*",
+    "noflo/noflo-graph": "*",
     "the-grid/flowhub-registry": "*",
     "gjohnson/uuid": "*"
   },
@@ -32,7 +33,6 @@
     "components": {
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "DropExamples": "components/DropExamples.coffee",
-      "CreateGraph": "components/CreateGraph.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "Router": "components/Router.coffee",
@@ -48,7 +48,6 @@
     "src/runtimes/websocket.coffee",
     "components/ConnectRuntime.coffee",
     "components/DropExamples.coffee",
-    "components/CreateGraph.coffee",
     "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",

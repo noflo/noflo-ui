@@ -104,7 +104,7 @@
       INPORT=Read.DB:DB
       INPORT=MergeStart.IN:LOAD
       OUTPORT=GetProjects.ITEM:PROJECTS
-      OUTPORT=GetGraphs.ITEM:GRAPHS
+      OUTPORT=ConvertGraph.OUT:GRAPHS
       OUTPORT=GetComponents.ITEM:COMPONENTS
       OUTPORT=GetRuntimes.ITEM:RUNTIMES
       OUTPORT=Read.COMPLETE:COMPLETE
@@ -129,6 +129,7 @@
       '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
       GetProjects ITEM -> IN HoldAllGraphs
       GraphStore STORE -> STORE GetGraphs
+      GetGraphs ITEM -> IN ConvertGraph(graph/LoadJson)
 
       # Read components list
       'components' -> DATA HoldComponentStore(core/Kick) OUT -> NAME ComponentStore(indexeddb/GetStore)
@@ -185,7 +186,7 @@
       GetType OUT -> VALUE SetType
       Split OUT -> IN GetType
       Split OUT -> START InitializeGraph(objects/CreateObject)
-      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> DETAILS ToGraph(ui/CreateGraph)
+      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> DETAILS ToGraph(graph/CreateGraph)
       'toJSON' -> METHOD Convert(objects/CallMethod)
       ToGraph OUT -> IN Convert OUT -> IN SetProject OUT -> IN GenGraphId(local/GenerateId)
       GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)

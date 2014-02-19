@@ -282,7 +282,7 @@
         }.bind(this));
       },
       graphs: function (graph) {
-        if (!graph.project) {
+        if (!graph.properties.project) {
           // TODO: Create a project for old-style sketches
           return;
         }
@@ -293,14 +293,14 @@
           if (!project.components) {
             project.components = [];
           }
-          if (graph.project !== project.id) {
+          if (graph.properties.project !== project.id) {
             return;
           }
-          if (graph.id === project.main) {
+          if (graph.properties.id === project.main) {
             project.mainGraph = graph;
           }
           for (var i = 0; i < project.graphs.length; i++) {
-            if (project.graphs[i].id === graph.id) {
+            if (project.graphs[i].id === graph.properties.id) {
               project.graphs[i] = graph;
               return;
             }
