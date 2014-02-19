@@ -335,7 +335,7 @@
                 while (routeData.graphs.length) {
                   var graphId = routeData.graphs.shift();
                   for (var i = 0; i < project.graphs.length; i++) {
-                    if (project.graphs[i].id === graphId) {
+                    if (project.graphs[i].properties.id === graphId) {
                       this.fire('graph', project.graphs[i]);
                     }
                   }

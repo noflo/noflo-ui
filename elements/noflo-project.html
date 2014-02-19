@@ -154,9 +154,9 @@
             <button on-click="{{ newGraph }}">Create</button>
           </li>
           <template repeat="{{ graph in project.graphs }}">
-          <li on-click="{{ openGraph }}" data-id="{{ graph.id }}">
+          <li on-click="{{ openGraph }}" data-id="{{ graph.properties.id }}">
             <the-graph-thumb graphjson="{{ graph }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ graph.properties.name }}</h2>
+            <h2>{{ graph.name }}</h2>
           </li>
           </template>
         </ul>
