@@ -300,8 +300,8 @@
             project.mainGraph = graph;
           }
           for (var i = 0; i < project.graphs.length; i++) {
-            if (project.graphs[i].id === graph.properties.id) {
-              project.graphs[i] = graph;
+            if (project.graphs[i].properties.id === graph.properties.id) {
+              // We already have this graph in the project
               return;
             }
           }
