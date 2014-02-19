@@ -207,6 +207,7 @@
             });
             if (!inStore) {
               this.fire('runtime', runtime.runtime);
+              this.runtimes.push(runtime.runtime);
               return;
             }
 
