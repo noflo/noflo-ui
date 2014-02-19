@@ -12,19 +12,15 @@
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
-    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
-    <template if="{{ graph.properties.environment.runtime == 'html' }}">
+    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
     <label>
-      <span>Preview address</span>
-      <input type="text" value="{{ graph.properties.environment.src }}">
+      <span>Description</span>
+      <input type="text" value="{{ description }}">
     </label>
-    </template>
-    <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
     <label>
       <span>Runtime address</span>
-      <input type="text" value="{{ graph.properties.environment.wsUrl }}">
+      <input type="text" value="{{ address }}">
     </label>
-    </template>
     <label id="content">
       <template if="{{ graph.properties.environment.runtime == 'html' }}">
       <span>Preview contents</span>
@@ -37,16 +33,18 @@
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
+      description: '',
       address: '',
       preview: '',
       updateName: function (event, detail, sender) {
-        this.graph.properties.name = sender.textContent;
+        this.graph.name = sender.textContent;
       },
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
         if (!this.graph) {
           return;
         }
+
         if (this.graph.properties.environment.runtime == 'html') {
           this.prepareEditor();
         }
@@ -55,6 +53,8 @@
         if (this.graph.properties.environment.runtime == 'websocket') {
           this.address = this.graph.properties.environment.wsUrl;
         }
+
+        this.description = this.graph.properties.description;
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
@@ -76,14 +76,16 @@
         if (this.graph.properties.environment.runtime == 'websocket') {
           env.wsUrl = this.address;
           this.graph.setProperties({
-            environment: env
+            environment: env,
+            description: this.description
           });
           return;
         }
         env.content = this.preview;
         env.src = this.address;
         this.graph.setProperties({
-          environment: env
+          environment: env,
+          description: this.description
         });
         this.close();
       },
