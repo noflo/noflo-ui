@@ -37,12 +37,13 @@
         }
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
-        graph.properties.environment = {
-          runtime: this.type
-        };
-        var graphData = graph.toJSON();
-        graphData.project = this.project;
-        this.fire('new', graphData);
+        graph.setProperties({
+          project: this.project,
+          environment: {
+            runtime: this.type
+          }
+        });
+        this.fire('new', graph);
         this.close();
       },
       close: function () {
