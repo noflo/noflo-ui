@@ -19,12 +19,12 @@ class BaseRuntime extends EventEmitter
   # Start a NoFlo Network
   start: ->
     @sendNetwork 'start',
-      graph: @graph.id
+      graph: @graph.properties.id
 
   # Stop a NoFlo network
   stop: ->
     @sendNetwork 'stop',
-      graph: @graph.id
+      graph: @graph.properties.id
 
   # Set the Dataflow parent element
   setParentElement: (parent) ->

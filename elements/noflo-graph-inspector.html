@@ -31,20 +31,30 @@
       </template>
     </label>
     <div class="toolbar">
-      <button on-click="{{ close }}">Done</button>
+      <button on-click="{{ save }}">Save</button>
+      <a on-click="{{ close }}">Cancel</a>
     </div>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
+      address: '',
+      preview: '',
       updateName: function (event, detail, sender) {
         this.graph.properties.name = sender.textContent;
       },
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
-        if (!this.graph || this.graph.properties.environment.runtime !== 'html') {
+        if (!this.graph) {
           return;
         }
-        this.prepareEditor();
+        if (this.graph.properties.environment.runtime == 'html') {
+          this.prepareEditor();
+        }
+
+        this.address = this.graph.properties.environment.src;
+        if (this.graph.properties.environment.runtime == 'websocket') {
+          this.address = this.graph.properties.environment.wsUrl;
+        }
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
@@ -57,8 +67,25 @@
           theme: 'noflo'
         });
         this.previewEditor.on('change', function () {
+          this.preview = this.previewEditor.getValue();
           this.graph.properties.environment.content = this.previewEditor.getValue();
         }.bind(this));
+      },
+      save: function () {
+        var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
+        if (this.graph.properties.environment.runtime == 'websocket') {
+          env.wsUrl = this.address;
+          this.graph.setProperties({
+            environment: env
+          });
+          return;
+        }
+        env.content = this.preview;
+        env.src = this.address;
+        this.graph.setProperties({
+          environment: env
+        });
+        this.close();
       },
       close: function () {
         if (!this.parentNode) {
