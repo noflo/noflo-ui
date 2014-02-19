@@ -101,7 +101,7 @@
       </template>
       <h1>
       <template if="{{ graph }}">
-        {{ graph.properties.name }}
+        {{ graph.name }}
       </template>
       <template if="{{ component && !graph }}">
         {{ component.name }}
@@ -128,6 +128,7 @@
         } else {
           this.graph = null;
         }
+        this.blur();
       },
       enteredView: function () {
         this.observer = new ArrayObserver(this.results);
@@ -139,7 +140,13 @@
         this.$.search.focus();
       },
       blur: function () {
+        this.clearResults();
         this.classList.add('overlay');
+      },
+      clearResults: function () {
+        while (this.results.length) {
+          this.results.pop();
+        }
       },
       checkField: function () {
         event.preventDefault();
@@ -155,9 +162,7 @@
       },
       searchChanged: function () {
         event.preventDefault();
-        while (this.results.length) {
-          this.results.pop();
-        }
+        this.clearResults();
         if (this.resultsCard) {
           this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
         }
