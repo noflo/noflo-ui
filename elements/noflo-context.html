@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-edge-inspector.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
-<polymer-element name="noflo-context" attributes="editor project graphs component node edge search">
+<polymer-element name="noflo-context" attributes="project graphs component node edge search">
   <template>
     <section id="context"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36" automatic="false">
@@ -15,7 +15,6 @@
   </template>
   <script>
     Polymer('noflo-context', {
-      editor: null,
       project: null,
       search: '',
       graphs: [],
@@ -102,7 +101,7 @@
         if (!this.nodeMenu) {
           var menu = document.createElement('noflo-node-menu');
           menu.nodes = this.nodes;
-          menu.editor = this.editor;
+          menu.graph = this.graphs[this.graphs.length - 1];
           this.nodeMenu = document.createElement('the-card');
           this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);

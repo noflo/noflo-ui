@@ -1,5 +1,5 @@
 <link rel="import" href="noflo-new-graph.html">
-<polymer-element name="noflo-node-menu" attributes="editor nodes" class="sticky-head the-card-content">
+<polymer-element name="noflo-node-menu" attributes="graph nodes" class="sticky-head the-card-content">
   <template>
     <header>
       <h1>{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
@@ -12,7 +12,7 @@
   </template>
   <script>
     Polymer('noflo-node-menu', {
-      editor: null,
+      graph: null,
       nodes: [],
       clear: function (event) {
         event.preventDefault();
@@ -26,7 +26,7 @@
         if (event) {
           event.preventDefault();
         }
-        var currentGraph = this.editor.graph;
+        var currentGraph = this.graph;
         currentGraph.checkTransactionStart();
         while (this.nodes.length) {
           var node = this.nodes.pop();
@@ -42,7 +42,7 @@
       }*/
       subgraph: function (event) {
         event.preventDefault();
-        var currentGraph = this.editor.graph;
+        var currentGraph = this.graph;
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
