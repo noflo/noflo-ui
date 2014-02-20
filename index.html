@@ -16,7 +16,7 @@
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <link rel="import" href="bower_components/the-graph/the-graph-thumb/the-graph-thumb.html">
-    <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
+    <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="changed nodeclick edgeclick"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="project graphs component node edge search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
@@ -391,8 +391,10 @@
       OUTPORT=GraphEditor.NODECLICK:NODECLICK
       OUTPORT=GraphEditor.EDGECLICK:EDGECLICK
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
-      GraphEditor ELEMENT -> IN Async(core/RepeatAsync)
+      Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
+      EmptyLibrary OUT -> LIBRARY GraphEditor
       Graph(core/Repeat) OUT -> GRAPH GraphEditor
+      GraphEditor ELEMENT -> IN Async(core/RepeatAsync)
       Async OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
     </script>
     <script type="application/fbp" id="HandleRuntime">

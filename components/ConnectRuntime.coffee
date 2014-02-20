@@ -159,15 +159,16 @@ class ConnectRuntime extends noflo.Component
 
   connect: (editor, runtime) ->
     return unless editor and runtime
-    editor.library = {}
     @connected = false
+    runtime.once 'connected', =>
+      for name, def of editor.$.graph.library
+        delete editor.$.graph.library[name]
     runtime.on 'connected', =>
       @connected = true
       runtime.sendComponent 'list', ''
       @sendProject @runtime, @project if @project
     runtime.on 'disconnected', =>
       @connected = false
-    @subscribeEditor editor.graph.properties.id, editor, runtime
 
     runtime.on 'component', (message) ->
       if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'

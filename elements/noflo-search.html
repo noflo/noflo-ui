@@ -144,7 +144,6 @@
         }
       },
       searchChanged: function () {
-        event.preventDefault();
         this.clearResults();
         if (this.resultsCard) {
           this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
