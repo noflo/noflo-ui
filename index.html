@@ -25,7 +25,7 @@
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
-    <noflo-polymer name="noflo-search" inports="results project graphs component panel" outports="menu search"></noflo-polymer>
+    <noflo-polymer name="noflo-search" inports="toggle results project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
@@ -332,6 +332,9 @@
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
       Context GRAPHS -> GRAPHS Search
       Context COMPONENT -> COMPONENT Search
+
+      's' -> KEYS Shortcuts(interaction/ListenKeyboardShortcuts)
+      Shortcuts SHORTCUT -> TOGGLE Search
 
       # Panel handling
       '' -> GETPANEL Context TOOLPANEL -> PANEL Runtime
