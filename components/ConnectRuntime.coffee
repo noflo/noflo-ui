@@ -159,10 +159,10 @@ class ConnectRuntime extends noflo.Component
 
   connect: (editor, runtime) ->
     return unless editor and runtime
+    editor.library = {}
     @connected = false
     runtime.on 'connected', =>
       @connected = true
-      editor.library = {}
       runtime.sendComponent 'list', ''
       @sendProject @runtime, @project if @project
     runtime.on 'disconnected', =>
