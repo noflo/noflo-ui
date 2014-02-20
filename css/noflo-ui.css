@@ -446,20 +446,23 @@ noflo-main ul.projects li the-graph-thumb {
   left: 100px;
   top: -20px;
 }
-noflo-main ul.projects li button {
-  display: block;
-  position: absolute;
-  right: 18px;
-  top: 36px;
+noflo-main section button {
   background-color: transparent;
   color: hsl(189, 11%, 26%);
-  border: 1px solid hsl(189, 11%, 26%);
   font-size: 13px;
   border-radius: 3px;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   height: 36px;
+  border: none;
   padding-left: 13px;
   padding-right: 13px;
+}
+noflo-main ul.projects li button {
+  display: block;
+  border: 1px solid hsl(189, 11%, 26%);
+  position: absolute;
+  right: 18px;
+  top: 36px;
 }
 noflo-main ul.projects li h2 {
   position: absolute;

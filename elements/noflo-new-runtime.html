@@ -1,0 +1,43 @@
+<polymer-element name="noflo-new-runtime" class="modal-content">
+  <style>
+  noflo-new-runtime a {
+    color: white;
+  }
+  noflo-new-runtime p {
+    font-size: 11px;
+  }
+  </style>
+  <template>
+    <h1>Register new runtime</h1>
+    <p>
+    <a href="http://flowhub.io" target="_blank">Flowhub</a> keeps a registry of runtimes available to each user.
+    To add new runtimes, use the <a href="https://github.com/the-grid/flowhub-registry#readme" target="_blank">Flowhub Registry API</a> and the refresh the runtime list.
+    </p>
+    <p>
+    For <a href="http://noflojs.org" target="_blank">NoFlo</a> runtimes running on Node.js, see <a href="https://github.com/noflo/noflo-nodejs#readme" target="_blank">noflo-nodejs</a>.
+    </p>
+    <label>
+      User Identifier
+      <input type="text" readonly value="{{ user.uuid }}">
+    </label>
+    <div class="toolbar">
+      <button on-click="{{ close }}">Close</button>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-new-runtime', {
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

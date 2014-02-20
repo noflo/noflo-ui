@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-account.html">
-<link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
+<link rel="import" href="noflo-new-runtime.html">
 <polymer-element name="noflo-main" attributes="open projects graphs components runtimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
@@ -11,6 +11,9 @@
           </template>
           <template if="{{ projectList === 'github' }}">
           <small>{{ remoteProjects.length }} projects</small>
+          </template>
+          <template if="{{ projectList === 'github' }}">
+          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
           </template>
       </h2>
       <ul class="tabs">
@@ -40,10 +43,6 @@
         </template>
         </template>
         <template if="{{ projectList === 'github' }}">
-        <li class="add">
-          <h2>GitHub repos</h2>
-          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
-        </li>
         <template repeat="{{ project in remoteProjects }}">
           <li>
             <h2>{{ project.name }}</h2>
@@ -56,11 +55,14 @@
     </section>
     <template if="{{ gridToken }}">
     <section id="runtimes">
-      <h2>Runtimes <small>{{ runtimes.length }} runtimes</small></h2>
+      <h2>
+        Runtimes <small>{{ runtimes.length }} runtimes</small>
+        <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+      </h2>
       <ul class="projects">
         <li class="add">
-          <h2>Flowhub runtimes</h2>
-          <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+          <h2>New runtime</h2>
+          <button on-click="{{ newRuntime }}">Register</button>
         </li>
         <template repeat="{{ runtimes }}">
         <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
@@ -280,6 +282,12 @@
           this.projects.push(event.detail);
           this.fire('newproject', event.detail);
         }.bind(this));
+      },
+      newRuntime: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-new-runtime');
+        dialog.user = this.user;
+        this.parentNode.parentNode.appendChild(dialog);
       },
       graphs: function (graph) {
         if (!graph.properties.project) {
