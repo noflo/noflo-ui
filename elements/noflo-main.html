@@ -277,6 +277,7 @@
       newProject: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-project');
+        dialog.runtimes = this.runtimes;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.projects.push(event.detail);
