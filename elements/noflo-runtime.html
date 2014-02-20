@@ -173,10 +173,19 @@
         this.updateGraphType(this.currentGraph);
 
         // Find runtime for Graph
+        var iframeRuntime = null;
         for (var i = 0; i < this.runtimes.length; i++) {
           if (this.runtimes[i].graph === this.currentGraph.properties.id) {
             this.fire('runtime', this.runtimes[i]);
+            return;
           }
+          if (this.runtimes[i].protocol === 'iframe') {
+            iframeRuntime = this.runtimes[i];
+          }
+        }
+        if (this.currentGraph.properties.environment.type === 'noflo-browser' && iframeRuntime) {
+          // Fall-back, select the IFRAME runtime as default
+          this.fire('runtime', iframeRuntime);
         }
         return;
       },
