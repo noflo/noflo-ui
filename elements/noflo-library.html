@@ -24,16 +24,17 @@
         if (!this.editor) {
           return;
         }
-        Object.keys(this.editor.library).forEach(function (component) {
-          if (this.search !== 'show library' && component.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
+        Object.keys(this.editor.getLibrary()).forEach(function (name) {
+          if (this.search !== 'show library' && name.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
             return;
           }
+          var component = this.editor.getComponent(name);
           this.fire('result', {
-            label: component,
-            icon: this.editor.library[component].icon,
-            description: this.editor.library[component].description,
+            label: component.name,
+            icon: component.icon || 'cog',
+            description: component.description,
             action: function () {
-              this.addNode(component);
+              this.addNode(component.name);
             }.bind(this)
           });
         }.bind(this));
