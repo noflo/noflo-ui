@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-menu.html">
 <link rel="import" href="noflo-search-results.html">
-<polymer-element name="noflo-search" class="gpu" attributes="results project graphs component">
+<polymer-element name="noflo-search" class="gpu" attributes="results graphs component">
   <style>
     noflo-search.overlay #breadcrumb {
       width: calc(72px * 4);
@@ -34,24 +34,6 @@
       color: hsl(189, 11%, 26%);
       
     }
-    noflo-search #breadcrumb h2 {
-      display: inline-block;
-      line-height: 72px;
-      margin: 0px;
-      padding: 0px;
-      box-sizing: border-box;
-      padding-left: 10px;
-      color: hsl(189, 11%, 26%);
-      font-size: 13px;
-      font-weight: normal;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 98px;
-    }
-    noflo-search #breadcrumb h2:after {
-      content: '/';
-      display: inline;
-    }
     noflo-search #breadcrumb h1 {
       display: inline-block;
       line-height: 72px;
@@ -60,7 +42,7 @@
       padding: 0px;
       overflow: hidden;
       text-overflow: ellipsis;
-      width: 158px;
+      width: 156px;
       font-weight: normal;
     }
     noflo-search.overlay #search {
@@ -93,12 +75,6 @@
   <template>
     <div id="breadcrumb" on-click="{{ focus }}">
       <i class="fa fa-search"></i>
-      <template if="{{ project }}">
-      <h2>{{ project.id }}</h2>
-      </template>
-      <template if="{{ graph && !project }}">
-      <h2>Sketch</h2>
-      </template>
       <h1>
       <template if="{{ graph }}">
         {{ graph.name }}
@@ -116,7 +92,6 @@
       resultsCard: null,
       results: [],
       search: '',
-      project: null,
       graph: null,
       graphs: [],
       component: null,
