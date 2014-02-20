@@ -12,7 +12,6 @@
     "dataflow"
   ],
   "dependencies": {
-    "component/emitter": "*",
     "noflo/noflo": "*",
     "noflo/noflo-strings": "*",
     "noflo/noflo-ajax": "*",
@@ -26,6 +25,7 @@
     "noflo/noflo-indexeddb": "*",
     "noflo/noflo-github": "*",
     "noflo/noflo-graph": "*",
+    "noflo/noflo-runtime": "*",
     "the-grid/flowhub-registry": "*",
     "gjohnson/uuid": "*"
   },
@@ -42,9 +42,6 @@
   "main": "index.js",
   "scripts": [
     "index.js",
-    "src/runtimes/base.coffee",
-    "src/runtimes/iframe.coffee",
-    "src/runtimes/websocket.coffee",
     "components/ConnectRuntime.coffee",
     "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",

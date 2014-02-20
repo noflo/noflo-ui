@@ -1,0 +1,96 @@
+<polymer-element name="noflo-runtime-selector" attributes="graph" class="modal-content">
+  <style>
+    noflo-runtime-selector {
+      top: calc(50% - 220px) !important;
+    }
+    noflo-runtime-selector ul.runtimes {
+      padding: 0px;
+      margin-top: 0px;
+      margin-bottom: 36px;
+      margin-left: -18px;
+      margin-right: -18px;
+      list-style: none;
+    }
+    noflo-runtime-selector ul.runtimes li {
+      width: 216px;
+      height: 105px;
+      overflow: hidden;
+      display: inline-block;
+      text-align: center;
+      background-color: hsl(189, 47%, 6%);
+      border-radius: 3px;
+      margin-right: 18px;
+      margin-left: 18px;
+      margin-bottom: 36px;
+      position: relative;
+    }
+    noflo-runtime-selector ul.runtimes li h2 {
+      position: absolute;
+      top: 36px;
+      line-height: 36px;
+      width: 126px;
+      text-transform: none;
+      font-size: 10px;
+      text-align: left;
+      white-space: nowrap;
+      left: 18px;
+      padding: 0px;
+      margin: 0px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    noflo-runtime-selector ul.runtimes li p {
+      position: absolute;
+      top: 53px;
+      left: 18px;
+      width: 75px;
+      text-transform: uppercase;
+      font-size: 8px;
+      text-align: left;
+      max-height: 36px;
+      overflow: hidden;
+      color: hsl(189, 11%, 26%);
+    }
+    </style>
+    <template>
+  <h1>Select runtime for {{ graph.name }}</h1>
+    <ul class="runtimes">
+      <template repeat="{{ runtime in runtimes }}">
+      <template if="{{ runtime.type == graph.properties.environment.type }}">
+      <li on-click="{{ selectRuntime }}" data-id="{{ runtime.id }}" class="{{ runtime.type }}">
+        <h2>{{ runtime.label }}</h2>
+        <p>{{ runtime.address }}</p>
+      </li>
+      </template>
+      </template>
+    </ul>
+    <div class="toolbar">
+      <button on-click="{{ close }}">Cancel</button>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-runtime-selector', {
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      selectRuntime: function (event, details, sender) {
+        var id = sender.getAttribute('data-id');
+        this.runtimes.forEach(function (runtime) {
+          if (runtime.id === id) {
+            this.fire('runtime', runtime);
+            this.close();
+          }
+        }.bind(this));
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

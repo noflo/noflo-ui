@@ -17,12 +17,8 @@
       <span>Description</span>
       <input type="text" value="{{ description }}">
     </label>
-    <label>
-      <span>Runtime address</span>
-      <input type="text" value="{{ address }}">
-    </label>
     <label id="content">
-      <template if="{{ graph.properties.environment.runtime == 'html' }}">
+      <template if="{{ graph.properties.environment.type == 'noflo-browser' }}">
       <span>Preview contents</span>
       </template>
     </label>
@@ -34,7 +30,6 @@
   <script>
     Polymer('noflo-graph-inspector', {
       description: '',
-      address: '',
       preview: '',
       updateName: function (event, detail, sender) {
         this.graph.name = sender.textContent;
@@ -45,13 +40,8 @@
           return;
         }
 
-        if (this.graph.properties.environment.runtime == 'html') {
+        if (this.graph.properties.environment.type == 'noflo-browser') {
           this.prepareEditor();
-        }
-
-        this.address = this.graph.properties.environment.src;
-        if (this.graph.properties.environment.runtime == 'websocket') {
-          this.address = this.graph.properties.environment.wsUrl;
         }
 
         this.description = this.graph.properties.description;
@@ -73,16 +63,7 @@
       },
       save: function () {
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
-        if (this.graph.properties.environment.runtime == 'websocket') {
-          env.wsUrl = this.address;
-          this.graph.setProperties({
-            environment: env,
-            description: this.description
-          });
-          return;
-        }
         env.content = this.preview;
-        env.src = this.address;
         this.graph.setProperties({
           environment: env,
           description: this.description
