@@ -17,19 +17,14 @@
     Polymer('noflo-context', {
       project: null,
       search: '',
+      editor: null,
       graphs: [],
-      nodes: [],
       edges: [],
-      node: null,
-      edge: null,
+      nodes: [],
       component: '',
       enteredView: function () {
         this.graphObserver = new ArrayObserver(this.graphs);
         this.graphObserver.open(this.graphsModified.bind(this));
-        this.nodeObserver = new ArrayObserver(this.nodes);
-        this.nodeObserver.open(this.nodesModified.bind(this));
-        this.edgeObserver = new ArrayObserver(this.edges);
-        this.edgeObserver.open(this.edgesModified.bind(this));
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {
@@ -50,33 +45,17 @@
         this.fire('toolpanel', this.$.fixed);
         this.fire('contextpanel', this.$.context);
       },
-      nodeChanged: function () {
-        if (!this.node) {
+      editorChanged: function () {
+        if (!this.editor) {
           return;
         }
-        if (this.nodes.indexOf(this.node) !== -1) {
-          this.nodes.splice(this.nodes.indexOf(this.node), 1);
-          this.node.selected = false;
-          this.node = null;
-          return;
-        }
-        this.nodes.push(this.node);
-        this.node.selected = true;
-        this.node = null;
-      },
-      edgeChanged: function () {
-        if (!this.edge) {
-          return;
-        }
-        if (this.edges.indexOf(this.edge) !== -1) {
-          this.edges.splice(this.edges.indexOf(this.edge), 1);
-          this.edge.selected = false;
-          this.edge = null;
-          return;
-        }
-        this.edges.push(this.edge);        
-        this.edge.selected = true;
-        this.edge = null;
+        this.editor.addMenuAction('node', 'n4', {
+          icon: 'search',
+          iconLabel: 'inspect',
+          action: function (graph, itemKey, item) {
+            this.nodes.push(item);
+          }.bind(this)
+        });
       },
       projectChanged: function () {
         this.fire('project', this.project);
@@ -88,7 +67,7 @@
         }
         this.search = '';
       },
-      nodesModified: function () {
+      nodesChanged: function () {
         this.fire('nodes', this.nodes);
         if (this.nodes.length) {
           this.showNodeCards();
@@ -113,12 +92,13 @@
         }
 
         this.nodes.forEach(function (node) {
-          var id = node.getAttribute('name');
+          var id = node.id;
           if (this.nodeInspectors[id]) {
             return;
           }
           var inspector = document.createElement('noflo-node-inspector');
           inspector.node = node;
+          inspector.component = this.editor.getComponent(node.component);
           inspector.graph = this.graphs[this.graphs.length - 1];
           this.nodeInspectors[id] = document.createElement('the-card');
           this.nodeInspectors[id].type = 'node-inspector';
@@ -130,7 +110,7 @@
         Object.keys(this.nodeInspectors).forEach(function (id) {
           found = false;
           this.nodes.forEach(function (node) {
-            if (node.getAttribute('name') === id) {
+            if (node.id === id) {
               found = true;
             }
           });
