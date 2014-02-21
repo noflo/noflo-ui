@@ -36,7 +36,7 @@
         </li>
         <template repeat="{{ project in projects }}">
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">
-            <the-graph-thumb graphjson="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
+            <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
             <h2>{{ project.name }}</h2>
             <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
           </li>
