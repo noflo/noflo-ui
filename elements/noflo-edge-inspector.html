@@ -92,17 +92,14 @@
         }
       },
       edgeChanged: function () {
-        var src = this.edge.getSource();
-        var tgt = this.edge.getTarget();
+        var src = this.edge.from;
+        var tgt = this.edge.to;
         this.sourceNode = this.nodeLabel(src.node);
         this.sourcePort = src.port;
         this.targetNode = this.nodeLabel(tgt.node);
         this.targetPort = tgt.port;
-        this.route = this.edge.route;
-        this.edge.addEventListener('route', function () {
-          this.route = this.edge.route;
-        }.bind(this));
-        this.animate();
+        this.route = this.edge.metadata.route;
+        //this.animate();
       },
       nodeLabel: function (node) {
         var extractLibrary = node.split('/');

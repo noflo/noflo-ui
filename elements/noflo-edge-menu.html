@@ -82,7 +82,6 @@
     </header>
     <ul class="toolbar toolbar2right">
       <li><button class="blue-button" on-click="{{ clear }}"><!--i class="fa fa-check"  --></i>Deselect</button></li>
-      <li><button class="red-button" on-click="{{ remove }}"><!--i class="fa fa-trash-o"--></i>Delete</button></li>
     </ul>
     <ul class="routes">
       <template repeat="{{ route in routes }}">
@@ -93,6 +92,7 @@
   <script>
     Polymer('noflo-edge-menu', {
       edges: [],
+      graph: null,
       routes: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12],
       clear: function (event) {
         event.preventDefault();
@@ -113,10 +113,16 @@
       },
       setRoute: function (event, detail, sender) {
         event.preventDefault();
-        var route = sender.getAttribute('name');
+        var route = parseInt(sender.getAttribute('name'));
+        this.graph.startTransaction('changeroute');
+
         this.edges.forEach(function (edge) {
-          edge.route = route;
-        });
+          this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, {
+            route: route
+          });
+        }.bind(this));
+
+        this.graph.endTransaction('changeroute');
       }
     });
   </script>

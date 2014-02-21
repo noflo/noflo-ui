@@ -59,6 +59,16 @@
             this.nodes.push(item);
           }.bind(this)
         });
+        this.editor.addMenuAction('edge', 'n4', {
+          icon: 'search',
+          iconLabel: 'inspect',
+          action: function (graph, itemKey, item) {
+            if (this.edges.indexOf(item) !== -1) {
+              return;
+            }
+            this.edges.push(item);
+          }.bind(this)
+        });
       },
       projectChanged: function () {
         this.fire('project', this.project);
@@ -134,7 +144,7 @@
           delete this.nodeInspectors[id];
         }
       },
-      edgesModified: function () {
+      edgesChanged: function () {
         this.fire('edges', this.edges);
         if (this.edges.length) {
           this.showEdgeCards();
@@ -147,6 +157,7 @@
         if (!this.edgeMenu) {
           var menu = document.createElement('noflo-edge-menu');
           menu.edges = this.edges;
+          menu.graph = this.graphs[this.graphs.length - 1];
           this.edgeMenu = document.createElement('the-card');
           this.edgeMenu.type = 'edge-menu';
           this.edgeMenu.appendChild(menu);
@@ -160,7 +171,7 @@
           }
           var inspector = document.createElement('noflo-edge-inspector');
           inspector.edge = edge;
-          inspector.graph = graph;
+          inspector.graph = this.graphs[this.graphs.length - 1];
           this.edgeInspectors[id] = document.createElement('the-card');
           this.edgeInspectors[id].type = 'edge-inspector';
           this.edgeInspectors[id].appendChild(inspector);
