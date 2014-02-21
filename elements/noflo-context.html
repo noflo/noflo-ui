@@ -53,6 +53,9 @@
           icon: 'search',
           iconLabel: 'inspect',
           action: function (graph, itemKey, item) {
+            if (this.nodes.indexOf(item) !== -1) {
+              return;
+            }
             this.nodes.push(item);
           }.bind(this)
         });
