@@ -127,39 +127,6 @@ class ConnectRuntime extends noflo.Component
         port: bang.port
       graph: id
 
-  subscribeEditor: (id, editor, runtime) ->
-    editor.addEventListener 'addnode', (node) =>
-      return unless @connected
-      runtime.sendGraph 'addnode', @convertNode id, node.detail
-    , false
-    editor.addEventListener 'removenode', (node) =>
-      return unless @connected
-      runtime.sendGraph 'removenode', @convertNode id, node.detail
-    , false
-    editor.addEventListener 'addedge', (edge) =>
-      return unless @connected
-      runtime.sendGraph 'addedge', @convertEdge id, edge.detail
-    , false
-    editor.addEventListener 'removeedge', (edge) =>
-      return unless @connected
-      runtime.sendGraph 'removeedge', @convertEdge id, edge.detail
-    , false
-    editor.addEventListener 'removeinitial', (iip) =>
-      return unless @connected
-      runtime.sendGraph 'removeinitial', @convertInitial id, iip.detail
-    , false
-    # IIP value changes need to be propagated as add+remove
-    editor.addEventListener 'iip', (iip) =>
-      return unless @connected
-      runtime.sendGraph 'removeinitial', @convertInitial id, iip.detail
-      runtime.sendGraph 'addinitial', @convertInitial id, iip.detail
-    , false
-    editor.addEventListener 'bang', (bang) =>
-      return unless @connected
-      runtime.sendGraph 'removeinitial', @convertBang id, bang.detail
-      runtime.sendGraph 'addinitial', @convertBang id, bang.detail
-    , false
-
   connect: (editor, runtime) ->
     return unless editor and runtime
     @connected = false
@@ -209,8 +176,5 @@ class ConnectRuntime extends noflo.Component
     runtime.on 'icon', ({id, icon}) ->
       return unless editor.updateIcon
       editor.updateIcon id, icon
-
-    runtime.setParentElement editor.parentNode
-    runtime.connect editor.graph.properties.environment
 
 exports.getComponent = -> new ConnectRuntime
