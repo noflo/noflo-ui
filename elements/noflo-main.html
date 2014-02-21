@@ -235,27 +235,35 @@
             this.runtimes.splice(index, 1);
           }.bind(this));
 
-          if (runtimes.length === 0) {
-            this.registerDefaultRuntimes();
-          }
+
+          this.registerDefaultRuntimes();
         }.bind(this));
       },
       registerDefaultRuntimes: function () {
         if (!this.gridToken || !this.user) {
           return;
         }
-        // Every NoFlo UI instance has at least the local IFRAME runtime available
-        var runtime = new this.registry.Runtime({
-          label: 'Local NoFlo HTML5 environment',
-          id: require('uuid')(),
-          user: this.user.uuid,
-          protocol: 'iframe',
-          address: 'preview/iframe.html',
-          type: 'noflo-browser'
-        });
-        this.runtimes.push(runtime.runtime);
-        runtime.register(function () {});
-        this.fire('runtime', runtime.runtime);
+
+        // Every NoFlo UI instance should have at least the local IFRAME runtime available
+        var hasIframeRuntime = false;
+        this.runtimes.forEach(function (runtime, index) {
+            if (runtime.protocol === "iframe") {
+              hasIframeRuntime = true;
+            }
+        }.bind(this));
+        if (!hasIframeRuntime) {
+          var runtime = new this.registry.Runtime({
+            label: 'Local NoFlo HTML5 environment',
+            id: require('uuid')(),
+            user: this.user.uuid,
+            protocol: 'iframe',
+            address: 'preview/iframe.html',
+            type: 'noflo-browser'
+          });
+          this.runtimes.push(runtime.runtime);
+          runtime.register(function () {});
+          this.fire('runtime', runtime.runtime);
+        }
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
