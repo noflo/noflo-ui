@@ -47,49 +47,53 @@ class ConnectRuntime extends noflo.Component
       tests: component.tests
 
   sendGraph: (runtime, graph) ->
+    if graph.properties.environment.type and graph.properties.environment.type isnt @runtime.definition.type
+      return
+
     runtime.sendGraph 'clear',
-      id: graph.id
+      id: graph.properties.id
       name: graph.name
-      library: graph.project
-      main: (@project and graph.id is @project.main)
-    for name, definition of graph.processes
+      library: graph.properties.project
+      main: (@project and graph.properties.id is @project.main)
+    for node in graph.nodes
       runtime.sendGraph 'addnode',
-        id: name
-        component: definition.component
-        metadata: definition.metadata
-        graph: graph.id
-    for edge in graph.connections
-      if edge.src
-        runtime.sendGraph 'addedge',
-          src:
-            node: edge.src.process
-            port: edge.src.port
-          tgt:
-            node: edge.tgt.process
-            port: edge.tgt.port
-          graph: graph.id
-        continue
+        id: node.id
+        component: node.component
+        metadata: node.metadata
+        graph: graph.properties.id
+    for edge in graph.edges
+      runtime.sendGraph 'addedge',
+        src:
+          node: edge.from.node
+          port: edge.from.port
+        tgt:
+          node: edge.to.node
+          port: edge.to.port
+        metadata: edge.metadata
+        graph: graph.properties.id
+    for iip in graph.initializers
       runtime.sendGraph 'addinitial',
         src:
-          data: edge.data
+          data: iip.from.data
         tgt:
-          node: edge.tgt.process
-          port: edge.tgt.port
-        graph: graph.id
+          node: iip.to.node
+          port: iip.to.port
+        metadata: iip.metadata
+        graph: graph.properties.id
     if graph.inports
       for pub, priv of graph.inports
         runtime.sendGraph 'addinport',
           public: pub
           node: priv.process
           port: priv.port
-          graph: graph.id
+          graph: graph.properties.id
     if graph.outports
       for pub, priv of graph.outports
         runtime.sendGraph 'addoutport',
           public: pub
           node: priv.process
           port: priv.port
-          graph: graph.id
+          graph: graph.properties.id
 
   convertNode: (id, node) ->
     data = node.toJSON()
@@ -159,13 +163,15 @@ class ConnectRuntime extends noflo.Component
   connect: (editor, runtime) ->
     return unless editor and runtime
     @connected = false
+    runtime.once 'connected', =>
+      for name, def of editor.$.graph.library
+        delete editor.$.graph.library[name]
     runtime.on 'connected', =>
       @connected = true
       runtime.sendComponent 'list', ''
       @sendProject @runtime, @project if @project
     runtime.on 'disconnected', =>
       @connected = false
-    @subscribeEditor editor.graph.id, editor, runtime
 
     runtime.on 'component', (message) ->
       if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'

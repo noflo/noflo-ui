@@ -1,6 +1,7 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-graph-inspector.html">
-<polymer-element name="noflo-runtime" attributes="graphs" class="gpu">
+<link rel="import" href="noflo-runtime-selector.html">
+<polymer-element name="noflo-runtime" attributes="graphs edges runtimes" class="gpu">
   <style>
     noflo-runtime {
       position: fixed;
@@ -33,11 +34,14 @@
       width: 180px;
       top: 0px;
     }
-    noflo-runtime #address #graphinspector {
+    noflo-runtime #graphinspector {
       position: absolute;
       right: 0px;
       top: 0px;
       color: hsl(189, 11%, 26%);
+    }
+    noflo-runtime #select #graphinspector {
+      top: 18px;
     }
 
     noflo-runtime #address, noflo-runtime #address button {
@@ -55,17 +59,29 @@
     noflo-runtime #runcontrol button {
       color: hsl(189, 11%, 26%);
     }
+
+    noflo-runtime #select button.select {
+      width: auto;
+      height: auto;
+      background-color: transparent;
+      color: hsl(189, 11%, 26%);
+      border: 1px solid hsl(189, 11%, 26%);
+      font-size: 13px;
+      border-radius: 3px;
+      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      height: 36px;
+      padding-left: 36px;
+      padding-right: 36px;
+      margin: 0px;
+      margin-top: 18px;
+    }
   </style>
   <template>
-    <template if="{{ currentGraph }}">
+  <template if="{{ currentGraph }}">
+  <template if="{{ runtime }}">
       <div id="address" class="{{ { online: online } | tokenList }}">
         <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
-        <template if="{{ currentGraph.properties.environment.runtime == 'html' }}">
-          <h2>{{ currentGraph.properties.environment.src }}</h2>
-        </template>
-        <template if="{{ currentGraph.properties.environment.runtime == 'websocket' }}">
-          <h2>{{ currentGraph.properties.environment.wsUrl }}</h2>
-        </template>
+        <h2>{{ runtime.definition.address }}</h2>
         <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </div>
     <div id="runcontrol">
@@ -80,12 +96,20 @@
       </template>
     </div>
   </template>
+  <template if="{{ !runtime }}">
+      <div id="select">
+        <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
+        <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
+      </div>
+  </template>
+  </template>
   </template>
   <script>
     Polymer('noflo-runtime', {
       currentGraph: null,
       graphs: null,
       runtime: null,
+      runtimes: [],
       online: false,
       execution: {
         label: 'not started',
@@ -135,23 +159,41 @@
           }
           this.graphInspector = null;
         }
-        if (!this.currentGraph) {
+        if (this.runtimeSelector) {
+          if (this.runtimeSelector.parentNode) {
+            this.runtimeSelector.parentNode.removeChild(this.runtimeSelector);
+          }
+          this.runtimeSelector = null;
+        }
+        if (!this.currentGraph || !this.currentGraph.properties.id) {
           return;
         }
-        var runtime = require('/noflo-ui/src/runtimes/' + this.determineRuntime());
-        this.runtime = new runtime(this.currentGraph);
-        this.subscribeRuntime();
-        switch (this.runtime.getType()) {
-          case 'iframe':
-            this.icon = 'globe';
-            break;
-          default:
-            this.icon = 'cloud';
-            break;
+
+        // Fix legacy env type setting
+        this.updateGraphType(this.currentGraph);
+
+        // Find runtime for Graph
+        var iframeRuntime = null;
+        for (var i = 0; i < this.runtimes.length; i++) {
+          if (this.runtimes[i].graph === this.currentGraph.properties.id) {
+            this.fire('runtime', this.runtimes[i]);
+            return;
           }
-        this.fire('runtime', this.runtime);
+          if (this.runtimes[i].protocol === 'iframe') {
+            iframeRuntime = this.runtimes[i];
+          }
+        }
+        if (this.currentGraph.properties.environment.type === 'noflo-browser' && iframeRuntime) {
+          // Fall-back, select the IFRAME runtime as default
+          this.fire('runtime', iframeRuntime);
+        }
+        return;
       },
-      subscribeRuntime: function () {
+      runtimeChanged: function () {
+        if (!this.runtime) {
+          return;
+        }
+        this.runtime.setMain(this.currentGraph);
         this.runtime.on('status', function (status) {
           this.online = status.online;
           if (!this.online) {
@@ -178,18 +220,31 @@
           }
         }.bind(this));
       },
-      determineRuntime: function () {
-        if (!this.currentGraph.properties.environment) {
-          return 'iframe';
+      updateGraphType: function (graph) {
+        var type = 'noflo-browser';
+        if (!graph.properties.environment) {
+          graph.setProperties({
+            environment: {
+              type: type
+            }
+          });
         }
-        switch (this.currentGraph.properties.environment.runtime) {
-          case 'html':
-            return 'iframe';
+        var env = JSON.parse(JSON.stringify(graph.properties.environment));
+        if (env.type) {
+          return;
+        }
+        switch (env.runtime) {
           case 'websocket':
-            return 'websocket';
+            type = 'noflo-nodejs';
+            break;
           default:
-            return 'iframe';
+            type = 'noflo-browser';
+            break;
         }
+        env.type = type;
+        graph.setProperties({
+          environment: env
+        });
       },
       start: function (event) {
         event.preventDefault();
@@ -252,6 +307,21 @@
         var el = this.runtime.getElement();
         this.card.parentNode.removeChild(this.card);
         this.card = null;
+      },
+      selectRuntime: function () {
+        if (this.graphs.length === 0) {
+          return;
+        }
+        this.runtimeSelector = document.createElement('noflo-runtime-selector');
+        this.runtimeSelector.graph = this.currentGraph;
+        this.runtimeSelector.runtimes = this.runtimes;
+        this.runtimeSelector.addEventListener('runtime', function (event) {
+          var runtime = event.detail;
+          runtime.graph = this.currentGraph.properties.id;
+          this.fire('runtime', runtime);
+          this.fire('changed', runtime);
+        }.bind(this));
+        this.parentNode.parentNode.appendChild(this.runtimeSelector);
       },
       showGraphInspector: function () {
         if (this.graphs.length === 0) {

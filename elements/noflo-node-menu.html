@@ -1,5 +1,5 @@
 <link rel="import" href="noflo-new-graph.html">
-<polymer-element name="noflo-node-menu" attributes="editor nodes" class="sticky-head the-card-content">
+<polymer-element name="noflo-node-menu" attributes="graph nodes" class="sticky-head the-card-content">
   <template>
     <header>
       <h1>{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
@@ -12,12 +12,12 @@
   </template>
   <script>
     Polymer('noflo-node-menu', {
-      editor: null,
+      graph: null,
       nodes: [],
       clear: function (event) {
         event.preventDefault();
         var node;
-        while(this.nodes.length) {
+        while (this.nodes.length) {
           node = this.nodes.pop();
           node.selected = false;
         }
@@ -26,12 +26,13 @@
         if (event) {
           event.preventDefault();
         }
-        while(this.nodes.length) {
+        var currentGraph = this.graph;
+        currentGraph.checkTransactionStart();
+        while (this.nodes.length) {
           var node = this.nodes.pop();
-          if (node.parentNode) {
-            node.parentNode.removeChild(node);
-          }
+          currentGraph.removeNode(node.id);
         }
+        currentGraph.checkTransactionEnd();
       },
       /*
       group: function (event) {
@@ -41,72 +42,80 @@
       }*/
       subgraph: function (event) {
         event.preventDefault();
-        var currentGraph = this.editor.toJSON();
+        var currentGraph = this.graph;
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var graph = event.detail;
-          graph.id = graph.properties.name.replace(' ', '_');
+          graph.startTransaction('newsubgraph');
 
-          // Associate subgraph with current project
-          graph.project = currentGraph.project;
+          graph.setProperties({
+            id: graph.name.replace(' ', '_'),
+            project: currentGraph.project
+          });
 
           // Copy nodes
           this.nodes.forEach(function (node) {
-            var nodeData = node.toJSON();
-            graph.processes[nodeData.id] = nodeData;
+            graph.addNode(node.id, node.component, node.metadata);
           });
 
           // Copy edges between nodes
-          currentGraph.connections.forEach(function (edge) {
-            if (edge.src && graph.processes[edge.src.process] && graph.processes[edge.tgt.process]) {
-              graph.connections.push(edge);
-            }
-            if (!edge.src && graph.processes[edge.tgt.process]) {
-              // Move IIPs to subgraph as well
-              graph.connections.push(edge);
-            }
-          }.bind(this));
-
-          // Emit new subgraph so that it can be stored
-          this.fire('newgraph', graph);
-
-          // Create subgraph node
-          var firstNode = this.nodes[0].toJSON();
-          this.editor.$.graph.nodes.push({
-            name: graph.id,
-            component: graph.id,
-            metadata: {
-              label: graph.properties.name,
-              x: firstNode.metadata.x,
-              y: firstNode.metadata.y
+          currentGraph.edges.forEach(function (edge) {
+            if (graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
+              graph.addEdge(edge.from.node, edge.from.port, edge.to.node, edge.to.port, edge.metadata);
             }
           });
 
+          // Move IIPs to subgraph as well
+          currentGraph.initializers.forEach(function (iip) {
+            if (graph.getNode(iip.to.node)) {
+              graph.addInitial(iip.from.data, iip.to.node, iip.to.port, iip.metadata);
+            }
+          });
+
+          // Create subgraph node
+          var initialMetadata = this.nodes[0].metadata;
+          currentGraph.startTransaction('subgraph');
+          currentGraph.addNode(graph.properties.id, graph.properties.id, {
+            label: graph.name,
+            x: initialMetadata.x,
+            y: initialMetadata.y
+          });
+
+          var subgraphPort = function (node, port) {
+            return node.id + '_' + port;
+          };
+
           // Reconnect external edges to subgraph node
-          currentGraph.connections.forEach(function (edge) {
-            if (edge.src && !graph.processes[edge.src.process] && graph.processes[edge.tgt.process]) {
-              // Edge from outside the new subgraph to a subgraph port
-              this.editor.$.graph.edges.push({
-                source: edge.src.process + '.' + edge.src.port,
-                target: graph.id + '.' + edge.tgt.process.toLowerCase() + '.' + edge.tgt.port
-              });
+          currentGraph.edges.forEach(function (edge) {
+            // Edge from outside the new subgraph to a subgraph port
+            if (!graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
+              // Create exported inport
+              var inport = subgraphPort(edge.to.node, edge.to.port);
+              graph.addInport(inport, edge.to.node, edge.to.port);
+              currentGraph.addEdge(edge.from.node, edge.from.port, graph.properties.id, inport);
             }
-            if (edge.src && graph.processes[edge.src.process] && !graph.processes[edge.tgt.process]) {
-              // Edge from subgraph port to the outside
-              this.editor.$.graph.edges.push({
-                source: graph.id + '.' + edge.src.process.toLowerCase() + '.' + edge.src.port,
-                target: edge.tgt.process + '.' + edge.tgt.port
-              });
+            // Edge from subgraph port to the outside
+            if (graph.getNode(edge.from.node) && !graph.getNode(edge.to.node)) {
+              var outport = subgraphPort(edge.from.node, edge.from.port);
+              graph.addOutport(outport, edge.from.node, edge.from.port);
+              currentGraph.addEdge(graph.properties.id, outport, edge.to.node, edge.to.port);
             }
-          }.bind(this));
+          });
 
           // Remove the selected nodes
           this.remove();
 
-          console.log(this.editor.toJSON(), graph);
+          // Emit new subgraph so that it can be stored
+          graph.endTransaction('newsubgraph');
+          this.fire('newgraph', graph);
+
+          // End the transaction on the main graph
+          currentGraph.endTransaction('subgraph');
+
+          console.log(currentGraph, graph);
         }.bind(this));
       }
     });

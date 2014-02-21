@@ -12,39 +12,39 @@
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
-    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
-    <template if="{{ graph.properties.environment.runtime == 'html' }}">
+    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
     <label>
-      <span>Preview address</span>
-      <input type="text" value="{{ graph.properties.environment.src }}">
+      <span>Description</span>
+      <input type="text" value="{{ description }}">
     </label>
-    </template>
-    <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
-    <label>
-      <span>Runtime address</span>
-      <input type="text" value="{{ graph.properties.environment.wsUrl }}">
-    </label>
-    </template>
     <label id="content">
-      <template if="{{ graph.properties.environment.runtime == 'html' }}">
+      <template if="{{ graph.properties.environment.type == 'noflo-browser' }}">
       <span>Preview contents</span>
       </template>
     </label>
     <div class="toolbar">
-      <button on-click="{{ close }}">Done</button>
+      <button on-click="{{ save }}">Save</button>
+      <a on-click="{{ close }}">Cancel</a>
     </div>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
+      description: '',
+      preview: '',
       updateName: function (event, detail, sender) {
-        this.graph.properties.name = sender.textContent;
+        this.graph.name = sender.textContent;
       },
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
-        if (!this.graph || this.graph.properties.environment.runtime !== 'html') {
+        if (!this.graph) {
           return;
         }
-        this.prepareEditor();
+
+        if (this.graph.properties.environment.type == 'noflo-browser') {
+          this.prepareEditor();
+        }
+
+        this.description = this.graph.properties.description;
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
@@ -57,8 +57,18 @@
           theme: 'noflo'
         });
         this.previewEditor.on('change', function () {
+          this.preview = this.previewEditor.getValue();
           this.graph.properties.environment.content = this.previewEditor.getValue();
         }.bind(this));
+      },
+      save: function () {
+        var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
+        env.content = this.preview;
+        this.graph.setProperties({
+          environment: env,
+          description: this.description
+        });
+        this.close();
       },
       close: function () {
         if (!this.parentNode) {

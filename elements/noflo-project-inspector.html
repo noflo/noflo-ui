@@ -14,7 +14,7 @@
         Main graph
         <select name="type" value="{{ main }}">
           <template repeat="{{ graph in project.graphs }}">
-          <option value="{{ graph.id }}">{{ graph.properties.name }}</option>
+          <option value="{{ graph.properties.id }}">{{ graph.name }}</option>
           </template>
         </select>
       </label>
