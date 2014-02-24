@@ -52,7 +52,7 @@
 
           graph.setProperties({
             id: graph.name.replace(' ', '_'),
-            project: currentGraph.project
+            project: currentGraph.properties.project
           });
 
           // Copy nodes
@@ -77,14 +77,15 @@
           // Create subgraph node
           var initialMetadata = this.nodes[0].metadata;
           currentGraph.startTransaction('subgraph');
-          currentGraph.addNode(graph.properties.id, graph.properties.id, {
+          currentGraph.addNode(graph.properties.id, currentGraph.properties.project + '/' + graph.properties.id, {
             label: graph.name,
             x: initialMetadata.x,
             y: initialMetadata.y
           });
 
           var subgraphPort = function (node, port) {
-            return node.id + '_' + port;
+            var portName = node + '.' + port;
+            return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4');
           };
 
           // Reconnect external edges to subgraph node
@@ -112,7 +113,9 @@
           this.fire('newgraph', graph);
 
           // End the transaction on the main graph
-          currentGraph.endTransaction('subgraph');
+          setTimeout(function () {
+            currentGraph.endTransaction('subgraph');
+          }, 5);
 
           console.log(currentGraph, graph);
         }.bind(this));
