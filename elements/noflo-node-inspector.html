@@ -24,6 +24,18 @@
       background-color: rgb(121, 18, 18);
     }
 
+    ul.ports li p {
+      margin: 0px;
+      padding: 0px;
+      font-size: 10px;
+      margin-left: 87px;
+      margin-bottom: 3px;
+      line-height: 13px;
+      max-height: 26px;
+      overflow: hidden;
+      color: hsl(189, 11%, 26%);
+    }
+
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button {
       -webkit-appearance: none; 
@@ -86,7 +98,7 @@
       -webkit-box-sizing: border-box;
       -moz-box-sizing: border-box;
       box-sizing: border-box;
-      width: 180px;
+      width: 178px;
       height: 36px;
       border: none;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
@@ -219,6 +231,9 @@
             </template>
           </template>
           </label>
+          <template if="{{ port.description }}">
+          <p>{{ port.description }}</p>
+          </template>
         </li>
       </template>
     </ul>
@@ -270,6 +285,7 @@
         };
       },
       portToInput: function (port) {
+        console.log(port);
         var value = this.getPortValue(port.name);
         var connection = this.getPortConnection(port.name);
         var portDef = {
@@ -277,6 +293,7 @@
           label: port.name.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2.$4'),
           class: '',
           type: port.type,
+          description: port.description,
           inputType: port.type,
           value: value,
           showInput: (!connection.connected),

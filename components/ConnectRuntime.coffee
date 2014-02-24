@@ -153,12 +153,16 @@ class ConnectRuntime extends noflo.Component
         definition.inports.push
           name: port.id
           type: port.type
-          array: port.array
+          required: port.required
+          description: port.description
+          addressable: port.addressable
       for port in message.payload.outPorts
         definition.outports.push
           name: port.id
           type: port.type
-          array: port.array
+          required: port.required
+          description: port.description
+          addressable: port.addressable
       editor.registerComponent definition
     edges = {}
     runtime.on 'network', ({command, payload}) ->
