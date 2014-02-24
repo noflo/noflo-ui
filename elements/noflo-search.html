@@ -192,7 +192,11 @@
         this.resultsCard.appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
-      showGraphInspector: function () {
+      showGraphInspector: function (event) {
+        if (event) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
         if (this.graphs.length === 0) {
           return;
         }
