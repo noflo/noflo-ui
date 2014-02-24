@@ -103,7 +103,7 @@ html, body, button {
 the-panel {
   background-color: hsl(190, 30%, 6%);
   z-index: 3;
-  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out;
+  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
 }
 the-panel#account {
   top: 0px;

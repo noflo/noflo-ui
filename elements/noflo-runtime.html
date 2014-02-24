@@ -274,7 +274,7 @@
         // Handle maximization
         var originalSize = this.panel.size;
         preview.addEventListener('maximized', function (e) {
-          if (e.detail) {
+          if (e.detail === true) {
             this.panel.size = window.innerWidth - 36;
           } else {
             this.panel.size = originalSize;
