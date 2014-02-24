@@ -30,6 +30,16 @@ input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, 
 }
 */
 
+#bugreport {
+  color: hsl(189, 11%, 57%);
+  position: fixed;
+  right: 11px;
+  top: 0px;
+  z-index: 10;
+  line-height: 36px;
+  font-size: 14px;
+}
+
 #container.blur {
   -webkit-filter: blur(2px);
   filter: blur(2px);
