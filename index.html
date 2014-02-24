@@ -20,7 +20,7 @@
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="project graphs component editor search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token" outports="newproject project graph component download githubtoken runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
@@ -420,6 +420,7 @@
 
       # Prepare the main view
       'noflo-main' -> SELECTOR Main(polymer/noflo-main)
+      '' -> PREPAREDEFAULTS Main
 
       # Pass database connection to persistence handlers
       Storage DB -> DB LoadData(local/LoadData)
@@ -444,7 +445,7 @@
 
       # Prepare the context
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
-      LoadData RUNTIMES -> RUNTIMES Context
+      Main RUNTIMES -> RUNTIMES Context
       Router ROUTE -> ROUTE Main
       Main PROJECT -> PROJECT Context
       Main GRAPH -> GRAPHS Context

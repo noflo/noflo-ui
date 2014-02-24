@@ -2,7 +2,7 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-runtime.html">
-<polymer-element name="noflo-main" attributes="open localProjects graphs components runtimes">
+<polymer-element name="noflo-main" attributes="open localProjects graphs components userRuntimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
@@ -57,7 +57,7 @@
     <template if="{{ gridToken }}">
     <section id="runtimes">
       <h2>
-        Runtimes <small>{{ runtimes.length }} runtimes</small>
+        Runtimes <small>{{ userRuntimes.length }} runtimes</small>
         <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">
@@ -65,7 +65,7 @@
           <h2>New runtime</h2>
           <button on-click="{{ newRuntime }}">Register</button>
         </li>
-        <template repeat="{{ runtimes }}">
+        <template repeat="{{ userRuntimes }}">
         <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
           <h2>{{ label }}</h2>
           <p>{{ address }}</p>
@@ -80,7 +80,7 @@
       open: true,
       localProjects: [],
       remoteProjects: [],
-      runtimes: [],
+      userRuntimes: [],
       githubToken: '',
       gridToken: '',
       user: null,
@@ -192,6 +192,13 @@
         req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
         req.send(null);
       },
+      runtimes: function (runtime) {
+        if (runtime.protocol === 'iframe') {
+          return;
+        }
+        this.userRuntimes.push(runtime);
+        this.fire('runtimes', runtime);
+      },
       fetchFlowhub: function (event) {
         if (event) {
           event.preventDefault();
@@ -206,7 +213,10 @@
           var found = [];
           runtimes.forEach(function (runtime) {
             var inStore = null;
-            this.runtimes.forEach(function (storedRuntime) {
+            if (runtime.protocol === 'iframe') {
+              return;
+            }
+            this.userRuntimes.forEach(function (storedRuntime) {
               if (storedRuntime.id === runtime.runtime.id) {
                 inStore = storedRuntime;
                 found.push(inStore.id);
@@ -214,7 +224,7 @@
             });
             if (!inStore) {
               this.fire('runtime', runtime.runtime);
-              this.runtimes.push(runtime.runtime);
+              this.userRuntimes.push(runtime.runtime);
               return;
             }
 
@@ -233,43 +243,29 @@
           }.bind(this));
 
           // Remove deleted runtimes
-          this.runtimes.forEach(function (runtime, index) {
+          this.userRuntimes.forEach(function (runtime, index) {
             if (found.indexOf(runtime.id) !== -1) {
               return;
             }
             this.fire('removedruntime', runtime);
-            this.runtimes.splice(index, 1);
+            this.userRuntimes.splice(index, 1);
           }.bind(this));
 
 
           this.registerDefaultRuntimes();
         }.bind(this));
       },
-      registerDefaultRuntimes: function () {
-        if (!this.gridToken || !this.user) {
-          return;
-        }
-
+      preparedefaults: function () {
         // Every NoFlo UI instance should have at least the local IFRAME runtime available
         var hasIframeRuntime = false;
-        this.runtimes.forEach(function (runtime, index) {
-            if (runtime.protocol === "iframe") {
-              hasIframeRuntime = true;
-            }
-        }.bind(this));
-        if (!hasIframeRuntime) {
-          var runtime = new this.registry.Runtime({
-            label: 'Local NoFlo HTML5 environment',
-            id: require('uuid')(),
-            user: this.user.uuid,
-            protocol: 'iframe',
-            address: 'preview/iframe.html',
-            type: 'noflo-browser'
-          });
-          this.runtimes.push(runtime.runtime);
-          runtime.register(function () {});
-          this.fire('runtime', runtime.runtime);
-        }
+        var runtime = new this.registry.Runtime({
+          label: 'Local NoFlo HTML5 environment',
+          id: require('uuid')(),
+          protocol: 'iframe',
+          address: 'preview/iframe.html',
+          type: 'noflo-browser'
+        });
+        this.fire('runtimes', runtime.runtime);
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
@@ -291,7 +287,7 @@
       newProject: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-project');
-        dialog.runtimes = this.runtimes;
+        dialog.runtimes = this.userRuntimes;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.fire('newproject', event.detail);
