@@ -1,5 +1,6 @@
 <link rel="import" href="noflo-menu.html">
 <link rel="import" href="noflo-search-results.html">
+<link rel="import" href="noflo-graph-inspector.html">
 <polymer-element name="noflo-search" class="gpu" attributes="results graphs component">
   <style>
     noflo-search.overlay #breadcrumb {
@@ -26,13 +27,22 @@
       border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
       
     }
-    noflo-search #breadcrumb i {
+    noflo-search #breadcrumb i.fa-search {
       position: absolute;
       line-height: 72px;
-      right: 18px;
+      right: 72px;
       font-size: 15px;
       color: hsl(189, 11%, 26%);
-      
+    }
+    noflo-search #breadcrumb #graphinspector {
+      position: absolute;
+      right: 9px;
+      top: 0px;
+      line-height: 72px;
+      display: block;
+      height: 72px;
+      font-size: 15px;
+      color: hsl(189, 11%, 26%);
     }
     noflo-search #breadcrumb h1 {
       display: inline-block;
@@ -84,6 +94,7 @@
         {{ component.name }}
       </template>
       </h1>
+      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
   </template>
@@ -97,11 +108,18 @@
       graphs: [],
       component: null,
       panel: null,
+      graphInspector: null,
       graphsChanged: function () {
         if (this.graphs.length) {
           this.graph = this.graphs[this.graphs.length - 1];
         } else {
           this.graph = null;
+        }
+        if (this.graphInspector) {
+          if (this.graphInspector.parentNode) {
+            this.graphInspector.parentNode.removeChild(this.graphInspector);
+          }
+          this.graphInspector = null;
         }
         this.blur();
       },
@@ -173,7 +191,16 @@
         this.resultsCard.type = 'noflo-search-results';
         this.resultsCard.appendChild(results);
         this.resultsCard.addTo(this.panel, true);
-      }
+      },
+      showGraphInspector: function () {
+        if (this.graphs.length === 0) {
+          return;
+        }
+        this.graphInspector = document.createElement('noflo-graph-inspector');
+        this.graphInspector.graph = this.graph;
+        this.graphInspector.project = this.project;
+        this.parentNode.parentNode.appendChild(this.graphInspector);
+      },
     });
   </script>
 </polymer-element>

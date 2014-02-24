@@ -1,5 +1,4 @@
 <link rel="import" href="noflo-preview.html">
-<link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <polymer-element name="noflo-runtime" attributes="graphs edges runtimes" class="gpu">
   <style>
@@ -82,7 +81,6 @@
       <div id="address" class="{{ { online: online } | tokenList }}">
         <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
         <h2>{{ runtime.definition.address }}</h2>
-        <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </div>
     <div id="runcontrol">
       <template if="{{ online }}">
@@ -116,7 +114,6 @@
         running: false
       },
       card: null,
-      graphInspector: null,
       panel: null,
       edges: null,
       wasConnected: false,
@@ -152,12 +149,6 @@
         if (this.card) {
           this.card.parentNode.removeChild(this.card);
           this.card = null;
-        }
-        if (this.graphInspector) {
-          if (this.graphInspector.parentNode) {
-            this.graphInspector.parentNode.removeChild(this.graphInspector);
-          }
-          this.graphInspector = null;
         }
         if (this.runtimeSelector) {
           if (this.runtimeSelector.parentNode) {
@@ -322,14 +313,6 @@
           this.fire('changed', runtime);
         }.bind(this));
         this.parentNode.parentNode.appendChild(this.runtimeSelector);
-      },
-      showGraphInspector: function () {
-        if (this.graphs.length === 0) {
-          return;
-        }
-        this.graphInspector = document.createElement('noflo-graph-inspector');
-        this.graphInspector.graph = this.currentGraph;
-        this.parentNode.parentNode.appendChild(this.graphInspector);
       },
       canNotify: function () {
         if (!window.webkitNotifications) {
