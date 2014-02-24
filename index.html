@@ -173,29 +173,34 @@
     </script>
     <script type="application/fbp" id="PrepareProject">
       INPORT=EnsureId.IN:IN
-      INPORT=StoreGraph.DB:DB
+      INPORT=SplitDb.IN:DB
       OUTPORT=SetMain.OUT:OUT
-      EnsureId(local/EnsureId) OUT -> IN Split(core/Split)
+      OUTPORT=SendGraph.OUT:GRAPH
       'id' -> KEY GetId(objects/GetObjectKey)
       'project' -> PROPERTY SetProject(objects/SetPropertyValue)
       GetId OUT -> VALUE SetProject
-      Split OUT -> IN GetId
+      EnsureId(local/EnsureId) OUT -> IN GetId
       'name' -> KEY GetName(objects/GetObjectKey)
       'name' -> PROPERTY SetName(objects/SetPropertyValue)
       GetName OUT -> VALUE SetName
-      Split OUT -> IN GetName
+      EnsureId OUT -> IN GetName
       'type' -> KEY GetType(objects/GetObjectKey)
       'type' -> PROPERTY SetType(objects/SetPropertyValue)
       GetType OUT -> VALUE SetType
-      Split OUT -> IN GetType
-      Split OUT -> START InitializeGraph(objects/CreateObject)
-      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> IN SetProject OUT -> DETAILS ToGraph(graph/CreateGraph)
-      ToGraph OUT -> IN GenGraphId(local/EnsureId)
-      GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
+      EnsureId OUT -> IN GetType
+      EnsureId OUT -> START InitializeGraph(objects/CreateObject)
+      InitializeGraph OUT -> IN GenGraphId(local/EnsureId) OUT -> IN SetName OUT -> IN SetType OUT -> IN SetProject
+      SetProject OUT -> DETAILS ToGraph(graph/CreateGraph)
+      SplitDb(core/Split) OUT -> DB StoreGraph(local/StoreGraph)
+      ToGraph OUT -> ITEM StoreGraph
+      ToGraph OUT -> DATA SendGraph(core/Kick)
       'main' -> PROPERTY SetMain(objects/SetPropertyValue)
-      StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
-      Split OUT -> DATA HoldProject(core/Kick) OUT -> IN SetMain
-      SplitGraphId OUT -> IN HoldProject
+      StoreGraph KEY -> VALUE SetMain
+      EnsureId OUT -> DATA HoldProject(core/Kick) OUT -> IN SetMain
+      SplitDb OUT -> DB StoreProject(local/StoreProject)
+      SetMain OUT -> ITEM StoreProject
+      StoreGraph KEY -> IN HoldProject
+      StoreProject KEY -> IN SendGraph
     </script>
     <script type="application/fbp" id="StoreProject">
       INPORT=Disc.IN:ITEM
@@ -433,7 +438,8 @@
       LoadData RUNTIMES -> RUNTIMES Main
 
       # Handle data changes from main
-      Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
+      Main NEWPROJECT -> IN PrepareProject OUT -> PROJECTS Main
+      PrepareProject GRAPH -> GRAPHS Main
       Main RUNTIME -> ITEM StoreRuntime
 
       # Prepare the context

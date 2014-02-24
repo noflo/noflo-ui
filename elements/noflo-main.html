@@ -2,13 +2,13 @@
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-runtime.html">
-<polymer-element name="noflo-main" attributes="open projects graphs components runtimes">
+<polymer-element name="noflo-main" attributes="open localProjects graphs components runtimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
     <section id="projects">
       <h2>Projects
           <template if="{{ projectList === 'local' }}">
-          <small>{{ projects.length }} projects</small>
+          <small>{{ localProjects.length }} projects</small>
           </template>
           <template if="{{ projectList === 'github' }}">
           <small>{{ remoteProjects.length }} projects</small>
@@ -35,7 +35,7 @@
           <h2>New project</h2>
           <button on-click="{{ newProject }}">Create</button>
         </li>
-        <template repeat="{{ project in projects }}">
+        <template repeat="{{ project in localProjects }}">
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">
             <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
             <h2>{{ project.name }}</h2>
@@ -78,7 +78,7 @@
   <script>
     Polymer('noflo-main', {
       open: true,
-      projects: [],
+      localProjects: [],
       remoteProjects: [],
       runtimes: [],
       githubToken: '',
@@ -168,8 +168,8 @@
             if (!repo.permissions.push) {
               return;
             }
-            for (var i = 0; i < this.projects.length; i++) {
-              if (this.projects[i].repo === repo.full_name) {
+            for (var i = 0; i < this.localProjects.length; i++) {
+              if (this.localProjects[i].repo === repo.full_name) {
                 return;
               }
             }
@@ -270,7 +270,7 @@
       openProject: function (event, details, sender) {
         event.preventDefault();
         var project = null;
-        this.projects.forEach(function (p) {
+        this.localProjects.forEach(function (p) {
           if (p.id === sender.getAttribute('data-id')) {
             project = p;
           }
@@ -290,7 +290,6 @@
         dialog.runtimes = this.runtimes;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
-          this.projects.push(event.detail);
           this.fire('newproject', event.detail);
         }.bind(this));
       },
@@ -300,12 +299,15 @@
         dialog.user = this.user;
         this.parentNode.parentNode.appendChild(dialog);
       },
+      projects: function (project) {
+        this.localProjects.push(project);
+      },
       graphs: function (graph) {
         if (!graph.properties.project) {
           // TODO: Create a project for old-style sketches
           return;
         }
-        this.projects.forEach(function (project) {
+        this.localProjects.forEach(function (project) {
           if (!project.graphs) {
             project.graphs = [];
           }
@@ -328,7 +330,7 @@
         });
       },
       components: function (component) {
-        this.projects.forEach(function (project) {
+        this.localProjects.forEach(function (project) {
           if (!project.components) {
             project.components = [];
           }
@@ -346,7 +348,7 @@
       },
       route: function (routeData) {
         if (routeData.project) {
-          this.projects.forEach(function (project) {
+          this.localProjects.forEach(function (project) {
             if (project.id === routeData.project) {
               this.fire('project', project);
 
