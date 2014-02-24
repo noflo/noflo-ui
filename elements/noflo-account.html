@@ -10,6 +10,8 @@
       </div>
     </template>
     <template if="{{ !user }}">
+      <div class="avatar"></div>
+      <h1>Flowhub</h1>
       <div class="toolbar">
         <a href="{{ site }}/login/authorize/github_public?client_id={{ clientid }}&scope=github&&response_type=code&redirect_uri={{ redirect }}">Login</a>
       </div>
@@ -135,6 +137,7 @@
               storage.set(this.storage.user, req.responseText);
               this.user = JSON.parse(req.responseText);
               this.fire('user', this.user);
+              this.fire('login', this.user);
               } else {
               this.clearCache();
             }

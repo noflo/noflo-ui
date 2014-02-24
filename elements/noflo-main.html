@@ -101,6 +101,10 @@
         }.bind(this));
         this.$.mainaccount.addEventListener('user', function (event) {
           this.user = event.detail;
+          this.fire('user', this.user);
+        }.bind(this));
+        this.$.mainaccount.addEventListener('login', function (event) {
+          this.fetchFlowhub();
         }.bind(this));
         this.registry = require('flowhub-registry');
       },
