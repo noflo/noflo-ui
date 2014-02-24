@@ -113,7 +113,7 @@
       },
       setRoute: function (event, detail, sender) {
         event.preventDefault();
-        var route = parseInt(sender.getAttribute('name'));
+        var route = parseInt(sender.getAttribute('name'), 10);
         this.graph.startTransaction('changeroute');
 
         this.edges.forEach(function (edge) {
