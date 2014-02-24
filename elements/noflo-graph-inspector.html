@@ -6,45 +6,86 @@
     noflo-graph-inspector textarea {
       height: 210px;
     }
+    noflo-graph-inspector p {
+      font-size: 13px;
+      line-height: 18px;
+      color: hsl(189, 11%, 26%);
+    }
+    noflo-graph-inspector p a {
+      color: #ffffff;
+      text-decoration: none;
+    }
   </style>
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
   <script src="../bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
-    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.properties.name }}</h1>
-    <template if="{{ graph.properties.environment.runtime == 'html' }}">
-    <label>
-      <span>Preview address</span>
-      <input type="text" value="{{ graph.properties.environment.src }}">
-    </label>
+    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
+    <template if="{{ isMain }}">
+    <p>Main graph of project {{ project.name }}.</p>
     </template>
-    <template if="{{ graph.properties.environment.runtime == 'websocket' }}">
-    <label>
-      <span>Runtime address</span>
-      <input type="text" value="{{ graph.properties.environment.wsUrl }}">
-    </label>
+    <template if="{{ inGraph.length }}">
+    <p>Used as subgraph in
+    <template repeat="{{ parent in inGraph }}">
+      <a href="#project/{{ project.id }}/{{ parent.properties.id }}">
+        {{ parent.name }}
+      </a>
     </template>
+    .</p>
+    </template>
+    <label>
+      <span>Description</span>
+      <input type="text" value="{{ description }}">
+    </label>
     <label id="content">
-      <template if="{{ graph.properties.environment.runtime == 'html' }}">
+      <template if="{{ graph.properties.environment.type == 'noflo-browser' }}">
       <span>Preview contents</span>
       </template>
     </label>
     <div class="toolbar">
-      <button on-click="{{ close }}">Done</button>
+      <button on-click="{{ save }}">Save</button>
+      <a on-click="{{ close }}">Cancel</a>
     </div>
   </template>
   <script>
     Polymer('noflo-graph-inspector', {
+      description: '',
+      preview: '',
+      graph: null,
+      project: null,
+      isMain: false,
+      inGraph: [],
       updateName: function (event, detail, sender) {
-        this.graph.properties.name = sender.textContent;
+        this.graph.name = sender.textContent;
       },
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
-        if (!this.graph || this.graph.properties.environment.runtime !== 'html') {
+        if (!this.graph) {
           return;
         }
-        this.prepareEditor();
+
+        if (this.graph.properties.environment.type == 'noflo-browser') {
+          this.prepareEditor();
+        }
+
+        this.description = this.graph.properties.description;
+
+        this.inGraph = [];
+        this.isMain = false;
+        if (this.project) {
+          if (this.graph.properties.id === this.project.main) {
+            this.isMain = true;
+          } else {
+            this.project.graphs.forEach(function (graph) {
+              graph.nodes.forEach(function (node) {
+                if (node.component === this.graph.properties.id || node.component === this.project.id + '/' + this.graph.properties.id) {
+                  this.inGraph.push(graph);
+                }
+              }.bind(this));
+            }.bind(this));
+          }
+        }
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
@@ -57,8 +98,18 @@
           theme: 'noflo'
         });
         this.previewEditor.on('change', function () {
+          this.preview = this.previewEditor.getValue();
           this.graph.properties.environment.content = this.previewEditor.getValue();
         }.bind(this));
+      },
+      save: function () {
+        var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
+        env.content = this.preview;
+        this.graph.setProperties({
+          environment: env,
+          description: this.description
+        });
+        this.close();
       },
       close: function () {
         if (!this.parentNode) {

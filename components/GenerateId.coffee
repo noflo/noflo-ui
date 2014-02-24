@@ -10,6 +10,7 @@ class GenerateId extends noflo.Component
     @inPorts.start.on 'data', (data) =>
       id = @randomString()
       id = data.id if data.id
+      id = data.properties.id if data.properties and data.properties.id
       @outPorts.out.send id
       @outPorts.out.disconnect()
 

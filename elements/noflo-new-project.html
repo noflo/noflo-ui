@@ -1,4 +1,4 @@
-<polymer-element name="noflo-new-project" class="modal-content">
+<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content">
   <template>
     <h1>Create new project</h1>
     <form>
@@ -13,9 +13,9 @@
       <label>
         Primary Type
         <select name="type" value="{{ type }}">
-          <option value="html">Browser</option>
-          <option value="websocket">Node.js</option>
-          <option value="websocket">Microcontroller</option>
+          <option value="noflo-browser">Browser</option>
+          <option value="noflo-nodejs">Node.js</option>
+          <option value="microflo">Microcontroller</option>
         </select>
       </label>
       <div class="toolbar">
@@ -28,7 +28,8 @@
     Polymer('noflo-new-project', {
       projectId: '',
       name: '',
-      type: 'html',
+      type: 'noflo-browser',
+      runtimes: null,
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
       },

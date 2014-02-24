@@ -1,6 +1,7 @@
+<link rel="import" href="../bower_components/the-graph/the-graph-thumb/the-graph-thumb.html">
 <link rel="import" href="noflo-account.html">
-<link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-project.html">
+<link rel="import" href="noflo-new-runtime.html">
 <polymer-element name="noflo-main" attributes="open projects graphs components runtimes">
   <template>
     <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
@@ -11,6 +12,9 @@
           </template>
           <template if="{{ projectList === 'github' }}">
           <small>{{ remoteProjects.length }} projects</small>
+          </template>
+          <template if="{{ projectList === 'github' }}">
+          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
           </template>
       </h2>
       <ul class="tabs">
@@ -33,17 +37,13 @@
         </li>
         <template repeat="{{ project in projects }}">
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">
-            <the-graph-thumb graphjson="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
+            <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
             <h2>{{ project.name }}</h2>
             <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
           </li>
         </template>
         </template>
         <template if="{{ projectList === 'github' }}">
-        <li class="add">
-          <h2>GitHub repos</h2>
-          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
-        </li>
         <template repeat="{{ project in remoteProjects }}">
           <li>
             <h2>{{ project.name }}</h2>
@@ -56,11 +56,14 @@
     </section>
     <template if="{{ gridToken }}">
     <section id="runtimes">
-      <h2>Runtimes <small>{{ runtimes.length }} runtimes</small></h2>
+      <h2>
+        Runtimes <small>{{ runtimes.length }} runtimes</small>
+        <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+      </h2>
       <ul class="projects">
         <li class="add">
-          <h2>Flowhub runtimes</h2>
-          <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+          <h2>New runtime</h2>
+          <button on-click="{{ newRuntime }}">Register</button>
         </li>
         <template repeat="{{ runtimes }}">
         <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
@@ -234,27 +237,35 @@
             this.runtimes.splice(index, 1);
           }.bind(this));
 
-          if (runtimes.length === 0) {
-            this.registerDefaultRuntimes();
-          }
+
+          this.registerDefaultRuntimes();
         }.bind(this));
       },
       registerDefaultRuntimes: function () {
         if (!this.gridToken || !this.user) {
           return;
         }
-        // Every NoFlo UI instance has at least the local IFRAME runtime available
-        var runtime = new this.registry.Runtime({
-          label: 'Local NoFlo HTML5 environment',
-          id: require('uuid')(),
-          user: this.user.uuid,
-          protocol: 'iframe',
-          address: 'preview/iframe.html',
-          type: 'noflo-browser'
-        });
-        this.runtimes.push(runtime.runtime);
-        runtime.register(function () {});
-        this.fire('runtime', runtime.runtime);
+
+        // Every NoFlo UI instance should have at least the local IFRAME runtime available
+        var hasIframeRuntime = false;
+        this.runtimes.forEach(function (runtime, index) {
+            if (runtime.protocol === "iframe") {
+              hasIframeRuntime = true;
+            }
+        }.bind(this));
+        if (!hasIframeRuntime) {
+          var runtime = new this.registry.Runtime({
+            label: 'Local NoFlo HTML5 environment',
+            id: require('uuid')(),
+            user: this.user.uuid,
+            protocol: 'iframe',
+            address: 'preview/iframe.html',
+            type: 'noflo-browser'
+          });
+          this.runtimes.push(runtime.runtime);
+          runtime.register(function () {});
+          this.fire('runtime', runtime.runtime);
+        }
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
@@ -276,14 +287,21 @@
       newProject: function (event) {
         event.preventDefault();
         var dialog = document.createElement('noflo-new-project');
+        dialog.runtimes = this.runtimes;
         this.parentNode.parentNode.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.projects.push(event.detail);
           this.fire('newproject', event.detail);
         }.bind(this));
       },
+      newRuntime: function (event) {
+        event.preventDefault();
+        var dialog = document.createElement('noflo-new-runtime');
+        dialog.user = this.user;
+        this.parentNode.parentNode.appendChild(dialog);
+      },
       graphs: function (graph) {
-        if (!graph.project) {
+        if (!graph.properties.project) {
           // TODO: Create a project for old-style sketches
           return;
         }
@@ -294,15 +312,15 @@
           if (!project.components) {
             project.components = [];
           }
-          if (graph.project !== project.id) {
+          if (graph.properties.project !== project.id) {
             return;
           }
-          if (graph.id === project.main) {
+          if (graph.properties.id === project.main) {
             project.mainGraph = graph;
           }
           for (var i = 0; i < project.graphs.length; i++) {
-            if (project.graphs[i].id === graph.id) {
-              project.graphs[i] = graph;
+            if (project.graphs[i].properties.id === graph.properties.id) {
+              // We already have this graph in the project
               return;
             }
           }
@@ -336,7 +354,7 @@
                 while (routeData.graphs.length) {
                   var graphId = routeData.graphs.shift();
                   for (var i = 0; i < project.graphs.length; i++) {
-                    if (project.graphs[i].id === graphId) {
+                    if (project.graphs[i].properties.id === graphId) {
                       this.fire('graph', project.graphs[i]);
                     }
                   }

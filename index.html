@@ -10,23 +10,26 @@
     <script src="bower_components/platform/platform.js"></script>
     <link rel="import" href="bower_components/polymer/polymer.html">
 
+    <!-- React -->
+    <script src="bower_components/react/react.js"></script>
+
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
-    <noflo-polymer name="the-graph-editor" inports="graph width height" outports="changed nodeclick edgeclick"></noflo-polymer>
+    <noflo-polymer name="the-graph-editor" inports="graph library width height" outports=""></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="editor project graphs component node edge buttons search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges button result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="project graphs component editor search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token" outports="newproject project graph component download githubtoken runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
-    <noflo-polymer name="noflo-runtime" inports="graphs edges panel" outports="runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
-    <noflo-polymer name="noflo-search" inports="buttons results project graphs component panel" outports="menu search"></noflo-polymer>
+    <noflo-polymer name="noflo-search" inports="toggle results project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
-    <noflo-polymer name="noflo-library" inports="buttons editor search" outports="button result"></noflo-polymer>
+    <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changedproject upload"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
@@ -35,6 +38,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
   </head>
   <body>
+    <a id="bugreport" href="https://github.com/noflo/noflo-ui/issues" title="Report a bug" target="_blank"><i class="fa fa-bug"></i></a>
     <div id="container">
       <noflo-main></noflo-main>
       <noflo-context></noflo-context>
@@ -50,10 +54,13 @@
     <script type="application/fbp" id="PrepareStorage">
       INPORT=Open.NAME:NAME
       OUTPORT=Errors.OUT:ERROR
-      OUTPORT=SplitDb.OUT:DB
+      OUTPORT=Open.DB:DB
+
+      # Open database connection
       Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
+
+      # Specify storage version to get correct migrations
       '2' -> VERSION Open
-      Open DB -> IN SplitDb(core/Split)
 
       # Database upgrade setup
       Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
@@ -98,37 +105,37 @@
     </script>
     <script type="application/fbp" id="LoadData">
       INPORT=Read.DB:DB
-      INPORT=MergeStart.IN:LOAD
+      INPORT=Start.IN:LOAD
       OUTPORT=GetProjects.ITEM:PROJECTS
-      OUTPORT=GetGraphs.ITEM:GRAPHS
+      OUTPORT=ConvertGraph.OUT:GRAPHS
       OUTPORT=GetComponents.ITEM:COMPONENTS
       OUTPORT=GetRuntimes.ITEM:RUNTIMES
       OUTPORT=Read.COMPLETE:COMPLETE
-      MergeStart(core/Merge) OUT -> IN SplitStart(core/Split)
       'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
-      SplitStart OUT -> IN HoldMode
+      Start(core/Repeat) OUT -> IN HoldMode
       'projects,graphs,components,runtimes' -> DATA HoldStores(core/Kick) OUT -> STORES Read
-      SplitStart OUT -> IN HoldStores
+      Start OUT -> IN HoldStores
 
       # Read projects list
       'projects' -> DATA HoldProjectStore(core/Kick) OUT -> NAME ProjectStore(indexeddb/GetStore)
-      SplitStart OUT -> IN HoldProjectStore
+      Start OUT -> IN HoldProjectStore
       Read TRANSACTION -> TRANSACTION ProjectStore
       '' -> DATA HoldAllProjects(core/Kick) OUT -> ALL GetProjects(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllProjects
+      Start OUT -> IN HoldAllProjects
       ProjectStore STORE -> STORE GetProjects
 
       # Read graphs list
       'graphs' -> DATA HoldGraphStore(core/Kick) OUT -> NAME GraphStore(indexeddb/GetStore)
-      SplitStart OUT -> IN HoldGraphStore
+      Start OUT -> IN HoldGraphStore
       ProjectStore TRANSACTION -> TRANSACTION GraphStore
       '' -> DATA HoldAllGraphs(core/Kick) OUT -> ALL GetGraphs(indexeddb/Query)
       GetProjects ITEM -> IN HoldAllGraphs
       GraphStore STORE -> STORE GetGraphs
+      GetGraphs ITEM -> IN ConvertGraph(graph/LoadJson)
 
       # Read components list
       'components' -> DATA HoldComponentStore(core/Kick) OUT -> NAME ComponentStore(indexeddb/GetStore)
-      SplitStart OUT -> IN HoldComponentStore
+      Start OUT -> IN HoldComponentStore
       GraphStore TRANSACTION -> TRANSACTION ComponentStore
       '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
       GetProjects ITEM -> IN HoldAllComponents
@@ -136,18 +143,19 @@
 
       # Read runtimes list
       'runtimes' -> DATA HoldRuntimeStore(core/Kick) OUT -> NAME RuntimeStore(indexeddb/GetStore)
-      SplitStart OUT -> IN HoldRuntimeStore
+      Start OUT -> IN HoldRuntimeStore
       GraphStore TRANSACTION -> TRANSACTION RuntimeStore
       '' -> DATA HoldAllRuntimes(core/Kick) OUT -> ALL GetRuntimes(indexeddb/Query)
-      SplitStart OUT -> IN HoldAllRuntimes
+      Start OUT -> IN HoldAllRuntimes
       RuntimeStore STORE -> STORE GetRuntimes
     </script>
     <script type="application/fbp" id="StoreGraph">
-      INPORT=Merge.IN:ITEM
+      INPORT=Convert.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=PutGraph.KEY:KEY
-      Merge(core/Merge) OUT -> IN DropExamples(ui/DropExamples)
-      DropExamples OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SplitGraph(core/Split)
+      'toJSON' -> METHOD Convert(objects/CallMethod)
+      Convert OUT -> IN EnsureId(local/EnsureId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      Disc OUT -> IN SplitGraph(core/Split)
       SplitGraph OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       SplitGraph OUT -> IN HoldMode
@@ -156,18 +164,18 @@
       SplitStore OUT -> NAME GraphStore(indexeddb/GetStore)
       Read TRANSACTION -> TRANSACTION GraphStore STORE -> STORE PutGraph(indexeddb/Put)
       'project' -> KEY GetProject(objects/GetObjectKey)
-      SplitGraph OUT -> IN GetProject OBJECT -> IN MergeStorable(core/Merge) OUT -> VALUE PutGraph
+      SplitGraph OUT -> IN GetProject OBJECT -> VALUE PutGraph
       GetProject OUT -> IN DropProject(core/Drop)
       '' -> DATA HoldProject(core/Kick) OUT -> VALUE SetProject(objects/SetPropertyValue)
       SplitGraph OUT -> IN HoldProject
       'project' -> PROPERTY SetProject
-      GetProject MISSED -> IN SetProject OUT -> IN MergeStorable
+      GetProject MISSED -> IN SetProject OUT -> VALUE PutGraph
     </script>
     <script type="application/fbp" id="PrepareProject">
-      INPORT=GenerateId.IN:IN
+      INPORT=EnsureId.IN:IN
       INPORT=StoreGraph.DB:DB
       OUTPORT=SetMain.OUT:OUT
-      GenerateId(local/GenerateId) OUT -> IN Split(core/Split)
+      EnsureId(local/EnsureId) OUT -> IN Split(core/Split)
       'id' -> KEY GetId(objects/GetObjectKey)
       'project' -> PROPERTY SetProject(objects/SetPropertyValue)
       GetId OUT -> VALUE SetProject
@@ -181,9 +189,8 @@
       GetType OUT -> VALUE SetType
       Split OUT -> IN GetType
       Split OUT -> START InitializeGraph(objects/CreateObject)
-      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> DETAILS ToGraph(ui/CreateGraph)
-      'toJSON' -> METHOD Convert(objects/CallMethod)
-      ToGraph OUT -> IN Convert OUT -> IN SetProject OUT -> IN GenGraphId(local/GenerateId)
+      InitializeGraph OUT -> IN SetName OUT -> IN SetType OUT -> IN SetProject OUT -> DETAILS ToGraph(graph/CreateGraph)
+      ToGraph OUT -> IN GenGraphId(local/EnsureId)
       GenGraphId OUT -> ITEM StoreGraph(local/StoreGraph)
       'main' -> PROPERTY SetMain(objects/SetPropertyValue)
       StoreGraph KEY -> IN SplitGraphId(core/Split) OUT -> VALUE SetMain
@@ -205,10 +212,11 @@
       Split OUT -> VALUE PutProject
     </script>
     <script type="application/fbp" id="StoreComponent">
-      INPORT=Merge.IN:ITEM
+      INPORT=EnsureId.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=Put.KEY:KEY
-      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      EnsureId(local/EnsureId) OUT -> IN Disc(core/DisconnectAfterPacket)
+      Disc OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       Split OUT -> IN HoldMode
@@ -219,10 +227,10 @@
       Split OUT -> VALUE Put
     </script>
     <script type="application/fbp" id="StoreRuntime">
-      INPORT=Merge.IN:ITEM
+      INPORT=Disc.IN:ITEM
       INPORT=HoldDb.DATA:DB
       OUTPORT=Put.KEY:KEY
-      Merge(core/Merge) OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
+      Disc(core/DisconnectAfterPacket) OUT -> IN Split(core/Split)
       Split OUT -> IN HoldDb(core/Kick) OUT -> DB Read(indexeddb/BeginTransaction)
       'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE Read
       Split OUT -> IN HoldMode
@@ -251,13 +259,13 @@
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
     </script>
-    <script type="application/fbp" id="GenerateId">
-      INPORT=SplitItem.IN:IN
+    <script type="application/fbp" id="EnsureId">
+      INPORT=Item.IN:IN
       OUTPORT=SetId.OUT:OUT
       'id' -> PROPERTY SetId(objects/SetPropertyValue)
-      SplitItem(core/Split) OUT -> START Generate(ui/GenerateId)
+      Item(core/Repeat) OUT -> START Generate(ui/GenerateId)
       Generate OUT -> VALUE SetId
-      SplitItem OUT -> IN SetId
+      Item OUT -> IN SetId
     </script>
     <script type="application/fbp" id="GithubUpload">
       INPORT=Repo.IN:REPO
@@ -304,21 +312,22 @@
       INPORT=Context.PROJECT:PROJECT
       INPORT=Context.GRAPHS:GRAPHS
       INPORT=Context.COMPONENT:COMPONENT
+      INPORT=Runtime.RUNTIMES:RUNTIMES
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
       INPORT=LoadProjectData.DB:DB
-      OUTPORT=GraphEditor.CHANGED:GRAPHCHANGED
+      OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
       OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
-      OUTPORT=Project.CHANGEDPROJECT:CHANGEDPROJECT
+      OUTPORT=Project.CHANGED:PROJECTCHANGED
+      OUTPORT=Runtime.CHANGED:RUNTIMECHANGED
       OUTPORT=Project.UPLOAD:UPLOAD
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
       # Runtime handling
-      'noflo-runtime' -> SELECTOR Runtime(polymer/noflo-runtime)
-      Context GRAPHS -> GRAPHS Runtime
-      Context EDGES -> EDGES Runtime
+      Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
+      #Context EDGES -> EDGES Runtime
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
@@ -326,16 +335,15 @@
       Context COMPONENT -> COMPONENT Search
       Context PROJECT -> PROJECT Search
 
+      's' -> KEYS Shortcuts(interaction/ListenKeyboardShortcuts)
+      Shortcuts SHORTCUT -> TOGGLE Search
+
       # Panel handling
       '' -> GETPANEL Context TOOLPANEL -> PANEL Runtime
       Context CONTEXTPANEL -> PANEL Search
 
       # Library handling
       'noflo-library' -> SELECTOR Library(polymer/noflo-library)
-
-      # Main menu
-      Search MENU -> BUTTONS Context BUTTON -> BUTTONS Search
-      Search MENU -> BUTTONS Library BUTTON -> BUTTONS Search
 
       # UI searching
       Search SEARCH -> SEARCH Library RESULT -> RESULTS Search
@@ -354,8 +362,6 @@
       Runtime RUNTIME -> RUNTIME GraphEditor
       Context NEWGRAPH -> NEWGRAPH GraphEditor
       Context PROJECT -> PROJECT GraphEditor
-      GraphEditor NODECLICK -> NODE Context
-      GraphEditor EDGECLICK -> EDGE Context
       GraphEditor EDITOR -> EDITOR Library
       GraphEditor EDITOR -> EDITOR Context
 
@@ -363,6 +369,11 @@
       'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
       Context COMPONENT -> COMPONENT ComponentEditor
       Context GRAPHS -> GRAPHS ComponentEditor
+
+      # Listen for graph changes
+      Context CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
+      Runtime RUNTIME -> RUNTIME SendGraphChanges(runtime/SendGraphChanges)
+      Context CURRENTGRAPH -> GRAPH SendGraphChanges
 
       # Listen for screen size changes and communicate with editors
       '' -> START ListenWindow(interaction/ListenResize)
@@ -375,53 +386,70 @@
       INPORT=ConnectRuntime.RUNTIME:RUNTIME
       INPORT=ConnectRuntime.PROJECT:PROJECT
       INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
-      INPORT=GraphEditor.GRAPH:CURRENTGRAPH
+      INPORT=Graph.IN:CURRENTGRAPH
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
-      OUTPORT=SplitEditor.OUT:EDITOR
-      OUTPORT=GraphEditor.NODECLICK:NODECLICK
-      OUTPORT=GraphEditor.EDGECLICK:EDGECLICK
-      OUTPORT=Convert.OUT:CHANGED
+      OUTPORT=Async.OUT:EDITOR
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
-      GraphEditor ELEMENT -> IN Async(core/RepeatAsync) OUT -> IN SplitEditor(core/Split)
-      SplitEditor OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
-      'toJSON' -> METHOD Convert(objects/CallMethod)
-      GraphEditor CHANGED -> IN Convert
+      Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
+      EmptyLibrary OUT -> LIBRARY GraphEditor
+      Graph(core/Repeat) OUT -> GRAPH GraphEditor
+      GraphEditor ELEMENT -> IN Async(core/RepeatAsync)
+      Async OUT -> EDITOR ConnectRuntime(ui/ConnectRuntime)
+    </script>
+    <script type="application/fbp" id="HandleRuntime">
+      INPORT=RuntimeElement.GRAPHS:GRAPHS
+      INPORT=RuntimeElement.PANEL:PANEL
+      INPORT=RuntimeElement.RUNTIMES:RUNTIMES
+      OUTPORT=Connect.RUNTIME:RUNTIME
+      OUTPORT=RuntimeElement.CHANGED:CHANGED
+
+      'noflo-runtime' -> SELECTOR RuntimeElement(polymer/noflo-runtime)
+      'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect(runtime/ConnectRuntime)
+      RuntimeElement RUNTIME -> DEFINITION Connect
+      Connect RUNTIME -> RUNTIME RuntimeElement
     </script>
     <script type="application/fbp" id="main">
+      # Name of our IndexedDB database
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
 
       # Prepare the main view
       'noflo-main' -> SELECTOR Main(polymer/noflo-main)
+
+      # Pass database connection to persistence handlers
       Storage DB -> DB LoadData(local/LoadData)
+      Storage DB -> DB StoreProject(local/StoreProject)
+      Storage DB -> DB PrepareProject(local/PrepareProject)
+      Storage DB -> DB StoreComponent(local/StoreComponent)
+      Storage DB -> DB StoreGraph(local/StoreGraph)
+      Storage DB -> DB StoreRuntime(local/StoreRuntime)
       Storage ERROR -> IN ShowErrors(core/Output)
+
+      # Start by loading user's local data
       '' -> LOAD LoadData
       LoadData PROJECTS -> PROJECTS Main
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main
       LoadData RUNTIMES -> RUNTIMES Main
-      Storage DB -> DB StoreProject(local/StoreProject)
-      Storage DB -> DB PrepareProject(local/PrepareProject)
+
+      # Handle data changes from main
       Main NEWPROJECT -> IN PrepareProject OUT -> ITEM StoreProject
-      Storage DB -> DB StoreRuntime(local/StoreRuntime)
       Main RUNTIME -> ITEM StoreRuntime
 
       # Prepare the context
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
+      LoadData RUNTIMES -> RUNTIMES Context
       Router ROUTE -> ROUTE Main
       Main PROJECT -> PROJECT Context
       Main GRAPH -> GRAPHS Context
       Main COMPONENT -> COMPONENT Context
-      Storage DB -> DB StoreComponent(local/StoreComponent)
-      Context COMPONENTCHANGED -> IN SplitChangedComponent(core/Split) OUT -> ITEM StoreComponent
-      SplitChangedComponent OUT -> COMPONENTS Main
-      Storage DB -> DB StoreGraph(local/StoreGraph)
-      'id' -> KEY CheckGraphID(objects/GetObjectKey)
-      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> IN SplitChangedGraph(core/Split) OUT -> ITEM StoreGraph
-      SplitChangedGraph OUT -> GRAPHS Main
-      Context NEWGRAPH -> IN NewProjectGraphId(local/GenerateId) OUT -> ITEM StoreGraph
-      Context NEWCOMPONENT -> IN NewProjectComponentId(local/GenerateId) OUT -> ITEM StoreComponent
-      Context CHANGEDPROJECT -> ITEM StoreProject
+      Context COMPONENTCHANGED -> ITEM StoreComponent
+      Context COMPONENTCHANGED -> COMPONENTS Main
+      Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
+      Context PROJECTCHANGED -> ITEM StoreProject
+      Context RUNTIMECHANGED -> ITEM StoreRuntime
+      Context NEWGRAPH -> ITEM StoreGraph
+      Context NEWCOMPONENT -> ITEM StoreComponent
 
       # Handle GitHub tokens
       '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context

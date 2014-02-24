@@ -1,6 +1,6 @@
 <link rel="import" href="number-scrubber.html">
 
-<polymer-element name="noflo-node-inspector" attributes="node graph" class="the-card-content">
+<polymer-element name="noflo-node-inspector" attributes="node component graph" class="the-card-content">
   <style>
     .ports {
       margin-bottom: 8px;
@@ -184,7 +184,7 @@
   </style>
   <template>
     <header>
-      <h1 on-keyup="{{ updateLabel }}" contenteditable>{{ node.label }}</h1>
+      <h1 on-keyup="{{ updateLabel }}" contenteditable>{{ label }}</h1>
       <template if="{{ node.label != node.component }}">
         <h2>{{ node.component }}</h2>
       </template>
@@ -225,28 +225,67 @@
   </template>
   <script>
     Polymer('noflo-node-inspector', {
+      label: '',
+      node: null,
+      component: null,
+      graph: null,
       inports: [],
       enteredView: function () {
         this.updatePorts();
+        this.label = this.node.metadata.label;
       },
       updateLabel: function (event, detail, sender) {
-        this.node.label = sender.innerText;
+        this.graph.setNodeMetadata(this.node.id, {
+          label: sender.innerText
+        });
+      },
+      getPortValue: function (port) {
+        var value;
+        this.graph.initializers.forEach(function (iip) {
+          if (iip.to.node == this.node.id && iip.to.port === port) {
+            value = iip.from.data;
+          }
+        }.bind(this));
+        return value;
+      },
+      getPortConnection: function (port) {
+        var connected = false;
+        var route = 0;
+        Object.keys(this.graph.inports).forEach(function (name) {
+          var inport = this.graph.inports[name];
+          if (inport.process == this.node.id && inport.port == port) {
+            connected = true;
+            route = 2;
+          }
+        }.bind(this));
+        this.graph.edges.forEach(function (edge) {
+          if (edge.to.node == this.node.id && edge.to.port == port) {
+            connected = true;
+            route = edge.metadata.route || 0;
+          }
+        }.bind(this));
+        return {
+          connected: connected,
+          route: route
+        };
       },
       portToInput: function (port) {
+        var value = this.getPortValue(port.name);
+        var connection = this.getPortConnection(port.name);
         var portDef = {
           name: port.name,
           label: port.name.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2.$4'),
           class: '',
           type: port.type,
           inputType: port.type,
-          value: port.getValue(true),
-          showInput: (!port.isConnected()),
-          route: port.route
+          value: value,
+          showInput: (!connection.connected),
+          route: connection.route
         };
         switch (port.type) {
           case 'object':
           case 'array':
-            portDef.value = JSON.stringify(port.getValue(true));
+            portDef.value = JSON.stringify(value);
             portDef.inputType = 'text';
             break;
           case 'int':
@@ -277,14 +316,11 @@
       },
       updatePorts: function () {
         this.inports = [];
-        this.node.getInports().forEach(function (port) {
+        this.component.inports.forEach(function (port) {
           var portDef = this.portToInput(port);
           if (!portDef.showInput) {
             portDef.class = 'readonly';
           }
-          port.addEventListener('portroute', function () {
-            portDef.route = port.route;
-          });
           this.inports.push(portDef);
         }.bind(this));
       },
@@ -294,7 +330,13 @@
           return;
         }
         var value = this.inputToPort(sender);
-        var port = this.node.getInportByName(sender.getAttribute('name'));
+        var name = sender.getAttribute('name');
+        var port;
+        this.inports.forEach(function (p) {
+          if (p.name === name) {
+            port = p;
+          }
+        });
 
         var validatePortValue = function(type, value) {
           switch (port.type) {
@@ -307,16 +349,19 @@
         };
 
         if (validatePortValue(port.type, value)) {
-          port.setValue(value);
+          this.graph.startTransaction('iipchange');
+          this.graph.removeInitial(this.node.id, name);
+          this.graph.addInitial(value, this.node.id, name);
+          this.graph.endTransaction('iipchange');
           sender.parentNode.parentNode.classList.remove('error');
-        } else
+        } else {
           sender.parentNode.parentNode.classList.add('error');
+        }
       },
       removeValue: function (event, detail, sender) {
         event.preventDefault();
         var name = sender.getAttribute('data-port');
-        var port = this.node.getInportByName(name);
-        port.removeValue();
+        this.graph.removeInitial(this.node.id, name);
         this.inports.forEach(function (port) {
           if (port.name === name) {
             port.value = null;
@@ -326,8 +371,11 @@
       sendBang: function (event, detail, sender) {
         event.preventDefault();
         var name = sender.getAttribute('name');
-        var port = this.node.getInportByName(name);
-        port.sendBang();
+        this.graph.startTransaction('bang');
+        this.graph.removeInitial(this.node.id, name);
+        this.graph.addInitial(true, this.node.id, name);
+        this.graph.removeInitial(this.node.id, name);
+        this.graph.endTransaction('bang');
       }
     });
   </script>

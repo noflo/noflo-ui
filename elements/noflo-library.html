@@ -3,17 +3,6 @@
     Polymer('noflo-library', {
       search: '',
       editor: null,
-      buttons: function () {
-        if (!this.editor) {
-          return;
-        }
-        this.fire('button', {
-          id: 'library',
-          icon: 'plus-square-o',
-          label: 'Library',
-          search: 'show library'
-        });
-      },
       addNode: function (component) {
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);
@@ -22,14 +11,10 @@
         // TODO fix with pan
         var pan = this.editor.$.graph.getPan();
 
-        this.editor.$.graph.nodes.push({
-          name: id,
-          component: component,
-          metadata: {
-            label: component,
-            x: -pan.x + 334,
-            y: -pan.y + 100
-          }
+        this.editor.graph.addNode(id, component, {
+          label: component,
+          x: -pan[0] + 334,
+          y: -pan[1] + 100
         });
       },
       searchChanged: function () {
@@ -39,16 +24,17 @@
         if (!this.editor) {
           return;
         }
-        Object.keys(this.editor.library).forEach(function (component) {
-          if (this.search !== 'show library' && component.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
+        Object.keys(this.editor.getLibrary()).forEach(function (name) {
+          if (this.search !== 'show library' && name.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
             return;
           }
+          var component = this.editor.getComponent(name);
           this.fire('result', {
-            label: component,
-            icon: this.editor.library[component].icon,
-            description: this.editor.library[component].description,
+            label: component.name,
+            icon: component.icon || 'cog',
+            description: component.description,
             action: function () {
-              this.addNode(component);
+              this.addNode(component.name);
             }.bind(this)
           });
         }.bind(this));

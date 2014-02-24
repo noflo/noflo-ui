@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
+<link rel="import" href="../bower_components/the-graph/the-graph-thumb/the-graph-thumb.html">
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
@@ -154,9 +155,9 @@
             <button on-click="{{ newGraph }}">Create</button>
           </li>
           <template repeat="{{ graph in project.graphs }}">
-          <li on-click="{{ openGraph }}" data-id="{{ graph.id }}">
-            <the-graph-thumb graphjson="{{ graph }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ graph.properties.name }}</h2>
+          <li on-click="{{ openGraph }}" data-id="{{ graph.properties.id }}">
+            <the-graph-thumb graph="{{ graph }}" width="200" height="120"></the-graph-thumb>
+            <h2>{{ graph.name }}</h2>
           </li>
           </template>
         </ul>
@@ -247,7 +248,7 @@
           }.bind(this));
 
           // Send only the data we actually want to store
-          this.fire('changedproject', {
+          this.fire('changed', {
             id: this.project.id,
             name: this.project.name,
             repo: this.project.repo,

@@ -1,6 +1,7 @@
 <link rel="import" href="noflo-menu.html">
 <link rel="import" href="noflo-search-results.html">
-<polymer-element name="noflo-search" class="gpu" attributes="buttons results project graphs component">
+<link rel="import" href="noflo-graph-inspector.html">
+<polymer-element name="noflo-search" class="gpu" attributes="results graphs component">
   <style>
     noflo-search.overlay #breadcrumb {
       width: calc(72px * 4);
@@ -26,31 +27,22 @@
       border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
       
     }
-    noflo-search #breadcrumb i {
+    noflo-search #breadcrumb i.fa-search {
       position: absolute;
       line-height: 72px;
-      right: 18px;
+      right: 72px;
       font-size: 15px;
       color: hsl(189, 11%, 26%);
-      
     }
-    noflo-search #breadcrumb h2 {
-      display: inline-block;
+    noflo-search #breadcrumb #graphinspector {
+      position: absolute;
+      right: 9px;
+      top: 0px;
       line-height: 72px;
-      margin: 0px;
-      padding: 0px;
-      box-sizing: border-box;
-      padding-left: 10px;
+      display: block;
+      height: 72px;
+      font-size: 15px;
       color: hsl(189, 11%, 26%);
-      font-size: 13px;
-      font-weight: normal;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 98px;
-    }
-    noflo-search #breadcrumb h2:after {
-      content: '/';
-      display: inline;
     }
     noflo-search #breadcrumb h1 {
       display: inline-block;
@@ -60,8 +52,9 @@
       padding: 0px;
       overflow: hidden;
       text-overflow: ellipsis;
-      width: 158px;
+      width: 156px;
       font-weight: normal;
+      padding-left: 18px;
     }
     noflo-search.overlay #search {
       display: none;
@@ -92,21 +85,14 @@
   </style>
   <template>
     <div id="breadcrumb" on-click="{{ focus }}">
-      <i class="fa fa-search"></i>
-      <template if="{{ project }}">
-      <h2>{{ project.id }}</h2>
-      </template>
-      <template if="{{ graph && !project }}">
-      <h2>Sketch</h2>
-      </template>
-      <h1>
       <template if="{{ graph }}">
-        {{ graph.properties.name }}
+      <i class="fa fa-search"></i>
+      <h1>{{ graph.name }}</h1>
+      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ component && !graph }}">
-        {{ component.name }}
+      <h1>{{ component.name }}</h1>
       </template>
-      </h1>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
   </template>
@@ -114,20 +100,26 @@
     Polymer('noflo-search', {
       menuCard: null,
       resultsCard: null,
-      buttons: [],
       results: [],
       search: '',
-      project: null,
       graph: null,
       graphs: [],
       component: null,
       panel: null,
+      graphInspector: null,
       graphsChanged: function () {
         if (this.graphs.length) {
           this.graph = this.graphs[this.graphs.length - 1];
         } else {
           this.graph = null;
         }
+        if (this.graphInspector) {
+          if (this.graphInspector.parentNode) {
+            this.graphInspector.parentNode.removeChild(this.graphInspector);
+          }
+          this.graphInspector = null;
+        }
+        this.blur();
       },
       enteredView: function () {
         this.observer = new ArrayObserver(this.results);
@@ -135,11 +127,28 @@
         this.blur();
       },
       focus: function () {
+        if (!this.graph) {
+          return;
+        }
         this.classList.remove('overlay');
         this.$.search.focus();
       },
       blur: function () {
+        this.clearResults();
         this.classList.add('overlay');
+        this.search = '';
+      },
+      toggle: function () {
+        if (this.classList.contains('overlay')) {
+          this.focus();
+          return;
+        }
+        this.blur();
+      },
+      clearResults: function () {
+        while (this.results.length) {
+          this.results.pop();
+        }
       },
       checkField: function () {
         event.preventDefault();
@@ -154,10 +163,7 @@
         }
       },
       searchChanged: function () {
-        event.preventDefault();
-        while (this.results.length) {
-          this.results.pop();
-        }
+        this.clearResults();
         if (this.resultsCard) {
           this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
         }
@@ -186,7 +192,20 @@
         this.resultsCard.type = 'noflo-search-results';
         this.resultsCard.appendChild(results);
         this.resultsCard.addTo(this.panel, true);
-      }
+      },
+      showGraphInspector: function (event) {
+        if (event) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
+        if (this.graphs.length === 0) {
+          return;
+        }
+        this.graphInspector = document.createElement('noflo-graph-inspector');
+        this.graphInspector.graph = this.graph;
+        this.graphInspector.project = this.project;
+        this.parentNode.parentNode.appendChild(this.graphInspector);
+      },
     });
   </script>
 </polymer-element>
