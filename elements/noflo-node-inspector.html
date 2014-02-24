@@ -108,6 +108,24 @@
       padding-left: 36px;
       
     }
+    ul.ports li input[type="checkbox"] {
+      height: 18px;
+      margin-top: 9px;
+      margin-left: 36px;
+      width: 18px;
+    }
+    ul.ports li input[type="checkbox"]:before {
+      display: block;
+      content: '';
+      width: 177px;
+      height: 36px;
+      margin-top: -9px;
+      margin-left: -36px;
+      background-color: hsla( 0, 0%, 20%, .2);
+      color: hsl( 0, 0%, 75%);
+      border-left: 1px solid hsla( 0, 0%, 75%,.1);
+    }
+
     ul.ports li:nth-child(even) input, ul.ports li:nth-child(even) button {
       background-color: hsla(210, 100%, 20%,.1);
       color: hsl(210, 100%, 79%);
