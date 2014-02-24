@@ -85,16 +85,14 @@
   </style>
   <template>
     <div id="breadcrumb" on-click="{{ focus }}">
-      <i class="fa fa-search"></i>
-      <h1>
       <template if="{{ graph }}">
-        {{ graph.name }}
+      <i class="fa fa-search"></i>
+      <h1>{{ graph.name }}</h1>
+      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ component && !graph }}">
-        {{ component.name }}
+      <h1>{{ component.name }}</h1>
       </template>
-      </h1>
-      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
   </template>
@@ -129,6 +127,9 @@
         this.blur();
       },
       focus: function () {
+        if (!this.graph) {
+          return;
+        }
         this.classList.remove('overlay');
         this.$.search.focus();
       },
