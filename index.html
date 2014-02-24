@@ -372,6 +372,8 @@
 
       # Listen for graph changes
       Context CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
+      Runtime RUNTIME -> RUNTIME SendGraphChanges(runtime/SendGraphChanges)
+      Context CURRENTGRAPH -> GRAPH SendGraphChanges
 
       # Listen for screen size changes and communicate with editors
       '' -> START ListenWindow(interaction/ListenResize)

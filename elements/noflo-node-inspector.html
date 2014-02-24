@@ -374,6 +374,7 @@
         this.graph.startTransaction('bang');
         this.graph.removeInitial(this.node.id, name);
         this.graph.addInitial(true, this.node.id, name);
+        this.graph.removeInitial(this.node.id, name);
         this.graph.endTransaction('bang');
       }
     });
