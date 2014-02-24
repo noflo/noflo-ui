@@ -18,7 +18,7 @@
   ],
   "dependencies": {
     "polymer": "~0.1.4",
-    "the-graph": "git://github.com/the-grid/the-graph.git#svg",
+    "the-graph": "master",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.0.3",
