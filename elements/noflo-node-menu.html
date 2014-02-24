@@ -85,7 +85,7 @@
 
           var subgraphPort = function (node, port) {
             var portName = node + '.' + port;
-            return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4');
+            return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4').toLowerCase();
           };
 
           // Reconnect external edges to subgraph node
@@ -116,8 +116,6 @@
           setTimeout(function () {
             currentGraph.endTransaction('subgraph');
           }, 5);
-
-          console.log(currentGraph, graph);
         }.bind(this));
       }
     });
