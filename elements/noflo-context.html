@@ -23,8 +23,6 @@
       nodes: [],
       component: '',
       enteredView: function () {
-        this.graphObserver = new ArrayObserver(this.graphs);
-        this.graphObserver.open(this.graphsModified.bind(this));
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {
@@ -75,7 +73,7 @@
       projectChanged: function () {
         this.fire('project', this.project);
       },
-      graphsModified: function () {
+      graphsChanged: function () {
         this.fire('graphs', this.graphs);
         if (this.graphs.length) {
           this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
