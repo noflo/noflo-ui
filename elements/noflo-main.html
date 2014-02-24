@@ -197,7 +197,7 @@
           return;
         }
         this.userRuntimes.push(runtime);
-        this.fire('runtimes', runtime);
+        this.fire('runtimes', this.userRuntimes);
       },
       fetchFlowhub: function (event) {
         if (event) {
@@ -265,7 +265,8 @@
           address: 'preview/iframe.html',
           type: 'noflo-browser'
         });
-        this.fire('runtimes', runtime.runtime);
+        this.userRuntimes.push(runtime.runtime);
+        this.fire('runtimes', this.userRuntimes);
       },
       createdproject: function (project) {
         window.location.hash = '#project/' + project.id + '/' + project.main;
