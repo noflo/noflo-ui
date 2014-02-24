@@ -54,6 +54,7 @@
           iconLabel: 'inspect',
           action: function (graph, itemKey, item) {
             if (this.nodes.indexOf(item) !== -1) {
+              this.nodes.splice(this.nodes.indexOf(item), 1);
               return;
             }
             this.nodes.push(item);
@@ -64,6 +65,7 @@
           iconLabel: 'inspect',
           action: function (graph, itemKey, item) {
             if (this.edges.indexOf(item) !== -1) {
+              this.edges.splice(this.edges.indexOf(item), 1);
               return;
             }
             this.edges.push(item);
