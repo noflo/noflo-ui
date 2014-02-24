@@ -54,24 +54,33 @@
     </style>
     <template>
   <h1>Select runtime for {{ graph.name }}</h1>
+    <template if="{{ available.length }}">
     <ul class="runtimes">
-      <template repeat="{{ runtime in runtimes }}">
-      <template if="{{ runtime.type == graph.properties.environment.type }}">
+      <template repeat="{{ runtime in available }}">
       <li on-click="{{ selectRuntime }}" data-id="{{ runtime.id }}" class="{{ runtime.type }}">
         <h2>{{ runtime.label }}</h2>
         <p>{{ runtime.address }}</p>
       </li>
       </template>
-      </template>
     </ul>
+    </template>
+    <template if="{{ !available.length }}">
+    <p>No compatible runtimes available.</p>
+    </template>
     <div class="toolbar">
       <button on-click="{{ close }}">Cancel</button>
     </div>
   </template>
   <script>
     Polymer('noflo-runtime-selector', {
+      available: [],
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
+        this.runtimes.forEach(function (rt) {
+          if (rt.type == this.graph.properties.type) {
+            this.available.push(rt);
+          }
+        }.bind(this));
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');

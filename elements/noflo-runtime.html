@@ -33,15 +33,6 @@
       width: 180px;
       top: 0px;
     }
-    noflo-runtime #graphinspector {
-      position: absolute;
-      right: 0px;
-      top: 0px;
-      color: hsl(189, 11%, 26%);
-    }
-    noflo-runtime #select #graphinspector {
-      top: 18px;
-    }
 
     noflo-runtime #address, noflo-runtime #address button {
       color: #e70215;
@@ -95,10 +86,9 @@
     </div>
   </template>
   <template if="{{ !runtime }}">
-      <div id="select">
-        <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
-        <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
-      </div>
+    <div id="select">
+      <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
+    </div>
   </template>
   </template>
   </template>
