@@ -791,3 +791,7 @@ noflo-component-editor #code h1 {
   border-radius: 5px;
   background-color: hsl(0, 0%, 0%);
 }
+
+polymer-element.modal-content {
+  display: none;
+}
