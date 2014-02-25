@@ -34,6 +34,9 @@
         if (event) {
           event.preventDefault();
         }
+        if (!this.name) {
+          return;
+        }
         this.fire('new', {
           name: this.name,
           language: this.language,

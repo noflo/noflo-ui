@@ -35,6 +35,9 @@
         if (event) {
           event.preventDefault();
         }
+        if (!this.name) {
+          return;
+        }
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
