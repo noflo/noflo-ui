@@ -76,7 +76,12 @@
       graphsChanged: function () {
         this.fire('graphs', this.graphs);
         if (this.graphs.length) {
-          this.fire('currentgraph', this.graphs[this.graphs.length - 1]);
+          var graph = this.graphs[this.graphs.length - 1];
+          this.fire('currentgraph', graph);
+          var noflo = require('noflo');
+          if (!graph.journal) {
+            graph.journal = new noflo.Journal(graph);
+          }
         }
         this.search = '';
       },
