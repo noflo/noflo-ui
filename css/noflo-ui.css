@@ -195,6 +195,11 @@ the-panel#fixed:before {
 the-panel#fixed:not([open]):before {
   opacity: 1;
 }
+the-panel#fixed footer {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+}
 
 .the-card-content {
   display: block;
