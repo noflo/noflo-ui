@@ -156,6 +156,13 @@
         this.updateGraphType(this.currentGraph);
         this.showJournalCard(this.currentGraph);
 
+        // Subscribe to possible type changes
+        this.currentGraph.on('changeProperties', function (newProps, oldProps) {
+          if (newProps.environment.type !== oldProps.environment.type) {
+            this.currentGraphChanged();
+          }
+        }.bind(this));
+
         // Find runtime for Graph
         var iframeRuntime = null;
         for (var i = 0; i < this.runtimes.length; i++) {

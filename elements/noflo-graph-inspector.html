@@ -35,11 +35,19 @@
     .</p>
     </template>
     <label>
+      Type
+      <select name="type" value="{{ type }}">
+        <option value="noflo-browser">Browser</option>
+        <option value="noflo-nodejs">Node.js</option>
+        <option value="microflo">Microcontroller</option>
+      </select>
+    </label>
+    <label>
       <span>Description</span>
       <input type="text" value="{{ description }}">
     </label>
     <label id="content">
-      <template if="{{ graph.properties.environment.type == 'noflo-browser' }}">
+      <template if="{{ type == 'noflo-browser' }}">
       <span>Preview contents</span>
       </template>
     </label>
@@ -51,6 +59,7 @@
   <script>
     Polymer('noflo-graph-inspector', {
       description: '',
+      type: '',
       preview: '',
       graph: null,
       project: null,
@@ -65,11 +74,8 @@
           return;
         }
 
-        if (this.graph.properties.environment.type == 'noflo-browser') {
-          this.prepareEditor();
-        }
-
         this.description = this.graph.properties.description;
+        this.type = this.graph.properties.environment.type;
 
         this.inGraph = [];
         this.isMain = false;
@@ -90,6 +96,14 @@
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
       },
+      typeChanged: function () {
+        if (this.type == 'noflo-browser') {
+          this.prepareEditor();
+        } else {
+          this.$.content.innerHTML = '';
+          this.previewEditor = null;
+        }
+      },
       prepareEditor: function () {
         this.previewEditor = CodeMirror(this.$.content, {
           lineNumbers: true,
@@ -105,6 +119,7 @@
       save: function () {
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
         env.content = this.preview;
+        env.type = this.type;
         this.graph.setProperties({
           environment: env,
           description: this.description
