@@ -4,8 +4,9 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in', (event, payload) ->
     return unless event is 'data'
-    
-    path = "graphs/#{payload.id}.json"
+   
+    if payload.properties
+      path = "graphs/#{payload.properties.id}.json"
     
     if payload.code and payload.language
       switch payload.language

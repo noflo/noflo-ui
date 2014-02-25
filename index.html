@@ -288,7 +288,7 @@
       # Check if repository exists
       Token(core/Repeat) OUT -> TOKEN CheckRepo
       Repo OUT -> IN CheckRepo(github/GetRepository)
-      CheckRepo ERROR -> IN Show(core/Output) OUT -> IN StartCreate
+      CheckRepo ERROR -> IN StartCreate
       # If not, we create it
       Token OUT -> TOKEN CreateRepo(github/CreateRepository)
       StartCreate OUT -> IN CreateRepo
@@ -302,7 +302,7 @@
       CheckRepo OUT -> IN WaitRepo
       CreateRepo OUT -> IN WaitRepo
 
-      Upload OUT -> IN Show(core/Output)
+      Upload OUT -> IN Drop(core/Drop)
     </script>
     <script type="application/fbp" id="GithubDownload">
       INPORT=Token.IN:TOKEN
