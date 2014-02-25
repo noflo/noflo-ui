@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-type-selector.html">
 <polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content">
   <template>
     <h1>Create new project</h1>
@@ -12,11 +13,7 @@
       </label>
       <label>
         Primary Type
-        <select name="type" value="{{ type }}">
-          <option value="noflo-browser">Browser</option>
-          <option value="noflo-nodejs">Node.js</option>
-          <option value="microflo">Microcontroller</option>
-        </select>
+        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
       </label>
       <div class="toolbar">
         <button on-click="{{ send }}">Create</button>

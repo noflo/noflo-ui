@@ -1,10 +1,11 @@
+<link rel="import" href="noflo-type-selector.html">
 <polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content">
   <style>
     noflo-graph-inspector {
-      top: calc(50% - 220px) !important;
+      top: calc(50% - 286px) !important;
     }
     noflo-graph-inspector textarea {
-      height: 210px;
+      height: 144px;
     }
     noflo-graph-inspector p {
       font-size: 13px;
@@ -36,11 +37,7 @@
     </template>
     <label>
       Type
-      <select name="type" value="{{ type }}">
-        <option value="noflo-browser">Browser</option>
-        <option value="noflo-nodejs">Node.js</option>
-        <option value="microflo">Microcontroller</option>
-      </select>
+      <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
     </label>
     <label>
       <span>Description</span>
@@ -63,6 +60,7 @@
       preview: '',
       graph: null,
       project: null,
+      runtimes: [],
       isMain: false,
       inGraph: [],
       updateName: function (event, detail, sender) {
@@ -111,6 +109,7 @@
           language: 'htmlmixed',
           theme: 'noflo'
         });
+        this.previewEditor.setSize(543, 144);
         this.previewEditor.on('change', function () {
           this.preview = this.previewEditor.getValue();
           this.graph.properties.environment.content = this.previewEditor.getValue();

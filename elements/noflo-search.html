@@ -106,6 +106,7 @@
       graphs: [],
       component: null,
       panel: null,
+      runtimes: [],
       graphInspector: null,
       graphsChanged: function () {
         if (this.graphs.length) {
@@ -204,6 +205,7 @@
         this.graphInspector = document.createElement('noflo-graph-inspector');
         this.graphInspector.graph = this.graph;
         this.graphInspector.project = this.project;
+        this.graphInspector.runtimes = this.runtimes;
         this.parentNode.parentNode.appendChild(this.graphInspector);
       },
     });

@@ -1,0 +1,136 @@
+<polymer-element name="noflo-type-selector" attributes="runtimes type">
+  <style>
+    noflo-type-selector {
+      top: calc(50% - 220px) !important;
+    }
+    noflo-type-selector ul.types {
+      padding: 0px;
+      margin-left: -9px;
+      margin-right: -9px;
+      list-style: none;
+    }
+    noflo-type-selector ul.types li {
+      width: 257px;
+      height: 105px;
+      overflow: hidden;
+      display: inline-block;
+      text-align: center;
+      background-color: hsl(187, 45%, 10%);
+      color: hsl(189, 11%, 26%);
+      border-radius: 3px;
+      margin-right: 9px;
+      margin-left: 9px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    noflo-type-selector ul.types li.selected {
+      background-color: hsl(189, 47%, 6%);
+      border: 1px solid #000000;
+      color: hsl(189, 11%, 50%);
+    }
+    noflo-type-selector ul.types li h2 {
+      position: absolute;
+      top: 36px;
+      line-height: 36px;
+      width: 180px;
+      text-transform: none;
+      font-size: 10px;
+      text-align: left;
+      white-space: nowrap;
+      left: 18px;
+      padding: 0px;
+      margin: 0px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    noflo-type-selector ul.types li p {
+      position: absolute;
+      top: 53px;
+      left: 18px;
+      width: 180px;
+      text-transform: uppercase;
+      font-size: 8px;
+      text-align: left;
+      max-height: 36px;
+      overflow: hidden;
+      color: hsl(189, 11%, 26%);
+    }
+    noflo-type-selector ul.types li i {
+      font-size: 72px;
+      position: absolute;
+      right: -8px;
+      top: 9px;
+    }
+    </style>
+    <template>
+    <ul class="types">
+      <template repeat="{{ availtype in available }}">
+      <li on-click="{{ selectType }}" data-id="{{ availtype.id }}" class="{{ { selected: type == availtype.id } | tokenList }}">
+        <h2>{{ availtype.label }}</h2>
+        <i class="fa fa-{{ availtype.icon }}"></i>
+        <template if="{{ availtype.runtimes.length === 1 }}">
+        <p>{{ availtype.runtimes.length }} runtime</p>
+        </template>
+        <template if="{{ availtype.runtimes.length > 1 }}">
+        <p>{{ availtype.runtimes.length }} runtimes</p>
+        </template>
+      </li>
+      </template>
+    </ul>
+    </template>
+  </template>
+  <script>
+    Polymer('noflo-type-selector', {
+      type: 'noflo-nodejs',
+      available: [],
+      runtimes: [],
+      runtimesChanged: function () {
+        this.available = [];
+        this.runtimes.forEach(function (rt) {
+          var availType = this.getByType(rt.type);
+          availType.runtimes.push(rt);
+        }.bind(this));
+      },
+      selectType: function (event, details, sender) {
+        this.type = sender.getAttribute('data-id');
+      },
+      getByType: function (type) {
+        for (var i = 0; i < this.available.length; i++) {
+          if (this.available[i].id === type) {
+            return this.available[i];
+          }
+        }
+        return this.prepareAvailable(type);
+      },
+      prepareAvailable: function (type) {
+        var label;
+        var icon;
+        switch (type) {
+          case 'noflo-browser':
+            label = 'Browser';
+            icon = 'html5';
+            break;
+          case 'noflo-nodejs':
+            label = 'Node.js';
+            icon = 'cloud';
+            break;
+          case 'microflo':
+            label = 'Microcontroller';
+            icon = 'lightbulb-o';
+            break;
+          default:
+            label = type;
+            icon = 'cogs';
+        }
+        var availType = {
+          id: type,
+          label: label,
+          icon: icon,
+          runtimes: []
+        };
+        this.available.push(availType);
+        return availType;
+      }
+    });
+  </script>
+</polymer-element>

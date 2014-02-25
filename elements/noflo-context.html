@@ -21,6 +21,7 @@
       graphs: [],
       edges: [],
       nodes: [],
+      runtimes: [],
       component: '',
       enteredView: function () {
         this.contextBar = this.$.context;
@@ -99,6 +100,7 @@
           var menu = document.createElement('noflo-node-menu');
           menu.nodes = this.nodes;
           menu.graph = this.graphs[this.graphs.length - 1];
+          menu.runtimes = this.runtimes;
           this.nodeMenu = document.createElement('the-card');
           this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);

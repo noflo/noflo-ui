@@ -1,4 +1,5 @@
-<polymer-element name="noflo-new-graph" attributes="project" class="modal-content">
+<link rel="import" href="noflo-type-selector.html">
+<polymer-element name="noflo-new-graph" attributes="project runtimes" class="modal-content">
   <template>
     <h1>Create new graph</h1>
     <form>
@@ -8,11 +9,7 @@
       </label>
       <label>
         Type
-        <select name="type" value="{{ type }}">
-          <option value="noflo-browser">Browser</option>
-          <option value="noflo-nodejs">Node.js</option>
-          <option value="microflo">Microcontroller</option>
-        </select>
+        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
       </label>
       <div class="toolbar">
         <button on-click="{{ send }}">Create</button>
@@ -24,6 +21,7 @@
     Polymer('noflo-new-graph', {
       name: '',
       project: '',
+      runtimes: [],
       type: 'noflo-browser',
       enteredView: function () {
         document.getElementById('container').classList.add('blur');

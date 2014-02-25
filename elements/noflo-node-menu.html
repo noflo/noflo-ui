@@ -13,6 +13,7 @@
     Polymer('noflo-node-menu', {
       graph: null,
       nodes: [],
+      runtimes: [],
       clear: function (event) {
         event.preventDefault();
         var node;
@@ -45,6 +46,7 @@
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
+        dialog.runtimes = this.runtimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var graph = event.detail;

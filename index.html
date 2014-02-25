@@ -18,18 +18,18 @@
     <noflo-polymer name="the-graph-editor" inports="graph library width height" outports=""></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="project graphs component editor search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
-    <noflo-polymer name="noflo-search" inports="toggle results project graphs component panel" outports="menu search"></noflo-polymer>
+    <noflo-polymer name="noflo-search" inports="toggle results runtimes project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
@@ -414,7 +414,7 @@
       INPORT=Context.PROJECT:PROJECT
       INPORT=Context.GRAPHS:GRAPHS
       INPORT=Context.COMPONENT:COMPONENT
-      INPORT=Runtime.RUNTIMES:RUNTIMES
+      INPORT=Runtimes.IN:RUNTIMES
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
       INPORT=LoadProjectData.DB:DB
@@ -428,11 +428,14 @@
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
       # Runtime handling
+      Runtimes(core/Split) OUT -> RUNTIMES Runtime
+      Runtimes OUT -> RUNTIMES Context
       Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
       #Context EDGES -> EDGES Runtime
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
+      Runtimes OUT -> RUNTIMES Search
       Context GRAPHS -> GRAPHS Search
       Context COMPONENT -> COMPONENT Search
       Context PROJECT -> PROJECT Search
@@ -453,6 +456,7 @@
 
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
+      Runtimes OUT -> RUNTIMES Project
       Context PROJECT -> PROJECT Project
       Context GRAPHS -> GRAPHS Project
       Context COMPONENT -> COMPONENT Project
