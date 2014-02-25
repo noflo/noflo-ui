@@ -321,6 +321,10 @@
           if (graph.properties.project !== project.id) {
             return;
           }
+          if (!project.main) {
+            project.mainGraph = graph;
+            project.main = graph.properties.id;
+          }
           if (graph.properties.id === project.main) {
             project.mainGraph = graph;
           }

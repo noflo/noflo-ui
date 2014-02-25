@@ -304,6 +304,103 @@
 
       Upload OUT -> IN Show(core/Output)
     </script>
+    <script type="application/fbp" id="GithubDownload">
+      INPORT=Token.IN:TOKEN
+      INPORT=Repo.IN:REPO
+      INPORT=Project.IN:PROJECT
+      OUTPORT=SetComponentLanguage.OUT:COMPONENT
+      OUTPORT=SetGraphId.OUT:GRAPH
+      OUTPORT=Errors.OUT:ERROR
+
+      # Get project components
+      Token(core/Split) OUT -> TOKEN ListComponents(github/GetContents)
+      Repo(core/Split) OUT -> REPOSITORY ListComponents
+      'false' -> SENDREPO ListComponents
+      ListComponents OUT -> IN Drop(core/Drop)
+      ListComponents ERROR -> IN Drop
+      'components' -> STRING StartComponentList(strings/SendString) OUT -> PATH ListComponents
+      Repo OUT -> IN StartComponentList
+      'path' -> KEY GetComponentPath(objects/GetObjectKey)
+      'false' -> SENDGROUP GetComponentPath
+      ListComponents FILES -> IN GetComponentPath
+      Token OUT -> TOKEN GetComponent(github/GetContents)
+      Repo OUT -> REPOSITORY GetComponent
+      'false' -> SENDREPO GetComponent
+      GetComponentPath OUT -> PATH GetComponent
+      GetComponent OUT -> IN ComponentPath(groups/ReadGroup)
+      '(.*)\/(.*)\.(.*)' -> PATTERN CleanComponentName(strings/Replace)
+      '$2' -> REPLACEMENT CleanComponentName
+      ComponentPath GROUP -> IN CleanComponentName
+      '(.*)\.coffee' -> PATTERN DetectCoffee(strings/Replace)
+      'coffeescript' -> REPLACEMENT DetectCoffee
+      ComponentPath GROUP -> IN DetectCoffee
+      '(.*)\.js' -> PATTERN DetectJavaScript(strings/Replace)
+      'javascript' -> REPLACEMENT DetectJavaScript
+      DetectCoffee OUT -> IN DetectJavaScript
+      'project' -> PROPERTY SetComponentProject(objects/SetPropertyValue)
+      Project(core/Split) OUT -> VALUE SetComponentProject
+      'true' -> KEEP SetComponentProject
+      'code' -> PROPERTY SetComponentCode(objects/SetPropertyValue)
+      ComponentPath OUT -> VALUE SetComponentCode
+      'name' -> PROPERTY SetComponentName(objects/SetPropertyValue)
+      CleanComponentName OUT -> VALUE SetComponentName
+      'language' -> PROPERTY SetComponentLanguage(objects/SetPropertyValue)
+      DetectJavaScript OUT -> VALUE SetComponentLanguage
+      ComponentPath GROUP -> START CreateComponent(objects/CreateObject)
+      CreateComponent OUT -> IN SetComponentProject OUT -> IN SetComponentCode
+      SetComponentCode OUT -> IN SetComponentName OUT -> IN SetComponentLanguage
+
+      # Get project graphs
+      Token(core/Split) OUT -> TOKEN ListGraphs(github/GetContents)
+      Repo(core/Split) OUT -> REPOSITORY ListGraphs
+      'false' -> SENDREPO ListGraphs
+      ListGraphs OUT -> IN Drop(core/Drop)
+      ListGraphs ERROR -> IN Drop
+      'graphs' -> STRING StartGraphList(strings/SendString) OUT -> PATH ListGraphs
+      Repo OUT -> IN StartGraphList
+      'path' -> KEY GetGraphPath(objects/GetObjectKey)
+      'false' -> SENDGROUP GetGraphPath
+      ListGraphs FILES -> IN GetGraphPath
+      Token OUT -> TOKEN GetGraph(github/GetContents)
+      Repo OUT -> REPOSITORY GetGraph
+      'false' -> SENDREPO GetGraph
+      GetGraphPath OUT -> PATH GetGraph
+      GetGraph OUT -> IN GraphPath(groups/ReadGroup)
+      '(.*)\/(.*)\.(.*)' -> PATTERN CleanGraphName(strings/Replace)
+      '$2' -> REPLACEMENT CleanGraphName
+      'project' -> PROPERTY SetGraphProject(graph/SetPropertyValue)
+      Project(core/Split) OUT -> VALUE SetGraphProject
+      'true' -> KEEP SetGraphProject
+      'id' -> PROPERTY SetGraphId(graph/SetPropertyValue)
+      CleanGraphName OUT -> VALUE SetGraphId
+      'name' -> PROPERTY SetGraphName(objects/SetPropertyValue)
+      CleanGraphName OUT -> VALUE SetGraphName
+      GraphPath GROUP -> IN CleanGraphName
+      GraphPath OUT -> IN LoadGraph(graph/LoadGraph)
+      LoadGraph OUT -> IN SetGraphName OUT -> IN SetGraphProject OUT -> IN SetGraphId
+
+      # Error handling
+      GetComponent ERROR -> IN Errors(core/Merge)
+      GetGraph ERROR -> IN Errors(core/Merge)
+    </script>
+    <script type="application/fbp" id="Download">
+      INPORT=GetToken.IN:IN
+      OUTPORT=GetProject.OUT:PROJECT
+      OUTPORT=Download.COMPONENT:COMPONENT
+      OUTPORT=Download.GRAPH:GRAPH
+      OUTPORT=Download.ERROR:ERROR
+      'token' -> KEY GetToken(objects/GetObjectKey)
+      'project' -> KEY GetProject(objects/GetObjectKey)
+      'repo' -> KEY GetRepo(objects/GetObjectKey)
+      'id' -> KEY GetProjectId(objects/GetObjectKey)
+      GetToken OBJECT -> IN GetProject
+      GetProject OUT -> IN GetRepo
+      GetRepo OBJECT -> IN GetProjectId
+
+      GetToken OUT -> TOKEN Download(local/GithubDownload)
+      GetProjectId OUT -> PROJECT Download
+      GetRepo OUT -> REPO Download
+    </script>
     <script type="application/fbp" id="Upload">
       INPORT=GetToken.IN:IN
       'token' -> KEY GetToken(objects/GetObjectKey) OUT -> TOKEN Upload(local/GithubUpload)
@@ -462,7 +559,14 @@
 
       # Handle GitHub tokens
       '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context
-      Main DOWNLOAD -> IN Show(core/Output)
+      Main DOWNLOAD -> IN Download(local/Download)
+      Download PROJECT -> ITEM StoreProject
+      Download PROJECT -> PROJECTS Main
+      Download GRAPH -> ITEM StoreGraph
+      Download GRAPH -> GRAPHS Main
+      Download COMPONENT -> ITEM StoreComponent
+      Download COMPONENT -> COMPONENTS Main
+      Download ERROR -> IN ShowErrors
       Context UPLOAD -> IN Upload(local/Upload)
 
       # Example handling
