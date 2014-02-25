@@ -27,6 +27,11 @@
       border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
       
     }
+    noflo-search #breadcrumb a#parentlink {
+      color: hsl(189, 11%, 26%);
+      text-decoration: none;
+      padding-right: 9px;
+    }
     noflo-search #breadcrumb i.fa-search {
       position: absolute;
       line-height: 72px;
@@ -87,7 +92,12 @@
     <div id="breadcrumb" on-click="{{ focus }}">
       <template if="{{ graph }}">
       <i class="fa fa-search"></i>
-      <h1>{{ graph.name }}</h1>
+      <h1>
+        <template if="{{ parentPath }}">
+        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
+        </template>
+        {{ graph.name }}
+      </h1>
       <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ component && !graph }}">
@@ -102,6 +112,7 @@
       resultsCard: null,
       results: [],
       search: '',
+      parentPath: '',
       graph: null,
       graphs: [],
       component: null,
@@ -109,7 +120,14 @@
       runtimes: [],
       graphInspector: null,
       graphsChanged: function () {
+        this.parentPath = '';
         if (this.graphs.length) {
+          this.graphs.forEach(function (graph, idx) {
+            if (idx >= this.graphs.length - 1) {
+              return;
+            }
+            this.parentPath += '/' + graph.properties.id;
+          }.bind(this));
           this.graph = this.graphs[this.graphs.length - 1];
         } else {
           this.graph = null;
