@@ -26,7 +26,7 @@
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="toggle results runtimes project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
-    <noflo-polymer name="noflo-library" inports="editor search" outports="result"></noflo-polymer>
+    <noflo-polymer name="noflo-library" inports="editor project graphs search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
@@ -449,6 +449,8 @@
 
       # Library handling
       'noflo-library' -> SELECTOR Library(polymer/noflo-library)
+      Context PROJECT -> PROJECT Library
+      Context GRAPHS -> GRAPHS Library
 
       # UI searching
       Search SEARCH -> SEARCH Library RESULT -> RESULTS Search

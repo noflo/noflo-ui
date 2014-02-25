@@ -3,6 +3,8 @@
     Polymer('noflo-library', {
       search: '',
       editor: null,
+      graphs: [],
+      project: null,
       addNode: function (component) {
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);
@@ -29,6 +31,17 @@
             return;
           }
           var component = this.editor.getComponent(name);
+          if (component.subgraph) {
+            var nameParts = component.name.split('/');
+            if (nameParts[0] === this.project.id) {
+              for (var i = 0; i < this.graphs.length; i++) {
+                if (this.graphs[i].properties.id === nameParts[1]) {
+                  // Prevent circular dependencies
+                  return;
+                }
+              }
+            }
+          }
           this.fire('result', {
             label: component.name,
             icon: component.icon || 'cog',

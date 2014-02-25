@@ -147,6 +147,7 @@ class ConnectRuntime extends noflo.Component
         name: message.payload.name
         description: message.payload.description
         icon: message.payload.icon
+        subgraph: message.payload.subgraph or false
         inports: []
         outports: []
       for port in message.payload.inPorts
