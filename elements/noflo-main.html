@@ -247,6 +247,9 @@
             if (found.indexOf(runtime.id) !== -1) {
               return;
             }
+            if (runtime.protocol === 'iframe') {
+              return;
+            }
             this.fire('removedruntime', runtime);
             this.userRuntimes.splice(index, 1);
           }.bind(this));
