@@ -23,6 +23,8 @@
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
+    <link rel="import" href="elements/noflo-packets.html">
+    <noflo-polymer name="noflo-packets" inports="runtime currentgraph edges packet panel" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-search.html">
     <noflo-polymer name="noflo-search" inports="toggle results runtimes project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
@@ -46,6 +48,7 @@
       <noflo-search></noflo-search>
       <noflo-library></noflo-library>
       <noflo-project></noflo-project>
+      <noflo-packets></noflo-packets>
       <main id="workspace">
         <noflo-component-editor></noflo-component-editor>
         <the-graph-editor></the-graph-editor>
@@ -444,8 +447,10 @@
       Shortcuts SHORTCUT -> TOGGLE Search
 
       # Panel handling
+      'noflo-packets' -> SELECTOR Packets(polymer/noflo-packets)
       '' -> GETPANEL Context TOOLPANEL -> PANEL Runtime
       Context CONTEXTPANEL -> PANEL Search
+      Context CONTEXTPANEL -> PANEL Packets
 
       # Library handling
       'noflo-library' -> SELECTOR Library(polymer/noflo-library)
@@ -483,6 +488,12 @@
       Runtime RUNTIME -> RUNTIME SendGraphChanges(runtime/SendGraphChanges)
       Context CURRENTGRAPH -> GRAPH SendGraphChanges
 
+      # Listen for network packets
+      Context EDGES -> EDGES Packets
+      Runtime RUNTIME -> RUNTIME Packets
+      GraphEditor PACKET -> PACKET Packets
+      Context CURRENTGRAPH -> CURRENTGRAPH Packets
+
       # Listen for screen size changes and communicate with editors
       '' -> START ListenWindow(interaction/ListenResize)
       ListenWindow WIDTH -> WIDTH GraphEditor
@@ -498,6 +509,7 @@
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
       OUTPORT=Async.OUT:EDITOR
+      OUTPORT=ConnectRuntime.PACKET:PACKET
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
       EmptyLibrary OUT -> LIBRARY GraphEditor

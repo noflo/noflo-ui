@@ -79,6 +79,7 @@
       lastlog: 0,
       showlogs: 20,
       edge: null,
+      log: null,
       graph: null,
       sourceNode: '',
       sourcePort: '',
@@ -99,7 +100,7 @@
         this.targetNode = this.nodeLabel(tgt.node);
         this.targetPort = tgt.port;
         this.route = this.edge.metadata.route;
-        //this.animate();
+        this.animate();
       },
       nodeLabel: function (node) {
         var extractLibrary = node.split('/');
@@ -109,23 +110,26 @@
         return node.split('_')[0];
       },
       animate: function () {
+        if (!this.log) {
+          return;
+        }
         // TODO top-level animation loop
         this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
-        if (this.edge.log.length <= this.lastlog) {
+        if (this.log.length <= this.lastlog) {
           return;
         }
         this.renderLogs();
-        this.lastlog = this.edge.log.length;
+        this.lastlog = this.log.length;
       },
       renderLogs: function () {
         var first = this.lastlog;
         var i, item, li, content;
-        if (this.edge.log.length - this.lastlog > this.showlogs) {
-          first = this.edge.log.length - this.showlogs;
+        if (this.log.length - this.lastlog > this.showlogs) {
+          first = this.log.length - this.showlogs;
         }
         var fragment = document.createDocumentFragment();
-        for (i = first; i < this.edge.log.length; i++) {
-          item = this.edge.log.get(i);
+        for (i = first; i < this.log.length; i++) {
+          item = this.log.get(i);
           if (!item) {
             continue;
           }

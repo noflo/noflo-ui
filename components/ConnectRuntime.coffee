@@ -13,6 +13,7 @@ class ConnectRuntime extends noflo.Component
       runtime: new noflo.Port 'object'
     @outPorts =
       editor: new noflo.Port 'object'
+      packet: new noflo.Port 'object'
 
     @inPorts.editor.on 'data', (@editor) =>
       @connect @editor, @runtime
@@ -166,18 +167,15 @@ class ConnectRuntime extends noflo.Component
           addressable: port.addressable
       editor.registerComponent definition
     edges = {}
-    runtime.on 'network', ({command, payload}) ->
+    runtime.on 'network', ({command, payload}) =>
       return if command is 'error'
-      return unless payload.tgt and payload.src
-      id = "#{payload.src.node}#{payload.src.port}#{payload.tgt.node}#{payload.tgt.port}"
-      unless edges[id]
-        edges[id] = editor.querySelector "the-graph-edge[source=\"#{payload.src.node}.#{payload.src.port}\"][target=\"#{payload.tgt.node}.#{payload.tgt.port}\"]"
-      edge = edges[id]
-      return unless edge and edge.log
-      edge.log.push
+      return unless payload.id
+      @outPorts.packet.send
+        edge: payload.id
         type: command
         group: if payload.group? then payload.group else ''
         data: if payload.data? then payload.data else ''
+        subgraph: if payload.subgraph? then payload.subgraph else ''
     runtime.on 'icon', ({id, icon}) ->
       return unless editor.updateIcon
       editor.updateIcon id, icon
