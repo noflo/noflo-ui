@@ -45,12 +45,7 @@
         if (!packet.edge) {
           return;
         }
-        if (!this.logs[packet.edge]) {
-          this.logs[packet.edge] = new CircularBuffer(40);
-          if (this.edgeInspectors[packet.edge]) {
-            this.edgeInspectors[packet.edge].log = this.logs[packet.edge];
-          }
-        }
+        this.ensureLog(packet.edge);
         this.logs[packet.edge].push(packet);
       },
       edgeInspectors: {},
@@ -65,6 +60,12 @@
         var fromStr = edge.from.node + '() ' + edge.from.port.toUpperCase();
         var toStr = edge.to.port.toUpperCase() + ' ' + edge.to.node + '()';
         return fromStr + ' -> ' + toStr;
+      },
+      ensureLog: function (id) {
+        if (this.logs[id]) {
+          return;
+        }
+        this.logs[id] = new CircularBuffer(40);
       },
       showEdgeCards: function () {
         if (!this.edgeMenu) {
@@ -82,6 +83,7 @@
           if (this.edgeInspectors[id]) {
             return;
           }
+          this.ensureLog(id);
           var inspector = document.createElement('noflo-edge-inspector');
           inspector.edge = edge;
           inspector.log = this.logs[id];
