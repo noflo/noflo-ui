@@ -12,11 +12,12 @@
 
         // TODO fix with pan
         var pan = this.editor.$.graph.getPan();
+        var scale = this.editor.$.graph.getScale();
 
         this.editor.graph.addNode(id, component, {
           label: component,
-          x: -pan[0] + 334,
-          y: -pan[1] + 100
+          x: (-pan[0] + 334) / scale,
+          y: (-pan[1] + 100) / scale
         });
       },
       searchChanged: function () {
