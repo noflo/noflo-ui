@@ -138,7 +138,7 @@
         });
         this.runtime.sendNetwork('edges', {
           edges: edgeData,
-          graph: this.currentGraph.id
+          graph: this.currentGraph.properties.id
         });
       },
       currentGraphChanged: function () {
