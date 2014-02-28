@@ -434,7 +434,7 @@
       Runtimes(core/Split) OUT -> RUNTIMES Runtime
       Runtimes OUT -> RUNTIMES Context
       Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
-      #Context EDGES -> EDGES Runtime
+      Context EDGES -> EDGES Runtime
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
@@ -519,6 +519,7 @@
     </script>
     <script type="application/fbp" id="HandleRuntime">
       INPORT=RuntimeElement.GRAPHS:GRAPHS
+      INPORT=RuntimeElement.EDGES:EDGES
       INPORT=RuntimeElement.PANEL:PANEL
       INPORT=RuntimeElement.RUNTIMES:RUNTIMES
       OUTPORT=Connect.RUNTIME:RUNTIME
