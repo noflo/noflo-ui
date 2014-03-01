@@ -1,0 +1,39 @@
+<polymer-element name="noflo-autolayout" attributes="graph">
+  <style>
+    the-card[type="noflo-autolayout"] .the-card-content {
+      padding: 0px;
+      height: 35px;
+      max-height: none;
+      overflow: hidden;
+    }
+  </style>
+  <template>
+    <div id="controls">
+      <button on-click="{{ applyAutolayout }}" id="applyautolayout-button"><i class="fa ">Autolayout</i></button>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-autolayout', {
+      graph: null,
+      returnTo: null,
+      enteredView: function () {
+
+      },
+      leftView: function () {
+        if (!this.runtime || !this.returnTo) {
+          return;
+        }
+        // Return runtime element to main container
+        this.returnTo.appendChild(this.runtime.getElement());
+      },
+      applyAutolayout: function (event, data, sender) {
+        event.preventDefault();
+        if (!this.graph) {
+          return;
+        }
+        var graph = document.getElementById("graph");
+        graph.triggerAutolayout();
+      }
+    });
+  </script>
+</polymer-element>
