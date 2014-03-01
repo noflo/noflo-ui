@@ -124,10 +124,21 @@
         if (!this.runtime || !this.edges || !this.edges.map || !this.currentGraph) {
           return;
         }
-        var edgeData = this.edges.map(function (edge) { return edge.toJSON(); });
+        var edgeData = this.edges.map(function (edge) {
+          return {
+            src: {
+              process: edge.from.node,
+              port: edge.from.port
+            },
+            tgt: {
+              process: edge.to.node,
+              port: edge.to.port
+            }
+          };
+        });
         this.runtime.sendNetwork('edges', {
           edges: edgeData,
-          graph: this.currentGraph.id
+          graph: this.currentGraph.properties.id
         });
       },
       currentGraphChanged: function () {
