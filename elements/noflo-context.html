@@ -1,5 +1,6 @@
 <link rel="import" href="noflo-node-menu.html">
 <link rel="import" href="noflo-node-inspector.html">
+<link rel="import" href="noflo-exported-inspector.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge search">
@@ -53,13 +54,25 @@
           icon: 'pencil-square-o',
           iconLabel: 'rename',
           action: function (graph, itemKey, item) {
-          }
+            var dialog = document.createElement('noflo-exported-inspector');
+            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.publicport = itemKey;
+            dialog.privateport = item;
+            dialog.direction = 'input';
+            document.body.appendChild(dialog);
+          }.bind(this)
         });
         this.editor.addMenuAction('graphOutport', 'n4', {
           icon: 'pencil-square-o',
           iconLabel: 'rename',
           action: function (graph, itemKey, item) {
-          }
+            var dialog = document.createElement('noflo-exported-inspector');
+            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.publicport = itemKey;
+            dialog.privateport = item;
+            dialog.direction = 'output';
+            document.body.appendChild(dialog);
+          }.bind(this)
         });
         /*
         this.editor.addMenuAction('node', 'n4', {
