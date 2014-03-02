@@ -16,6 +16,7 @@ body {
 
 button {
   padding:0;
+  cursor: pointer;
 }
 
 input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
@@ -124,6 +125,7 @@ the-panel#account:before {
   transition: opacity 0.3s ease-in-out;
 }
 the-panel#account:not([open]):before {
+  cursor: e-resize;
   opacity: 1;
 }
 the-panel#account header,
@@ -153,6 +155,7 @@ the-panel#account main ul li a {
   color: white;
   text-decoration: none;
   display: block;
+  cursor: pointer;
 }
 the-panel#account main ul li a i {
   float: right;
@@ -195,6 +198,7 @@ the-panel#fixed:before {
 }
 the-panel#fixed:not([open]):before {
   opacity: 1;
+  cursor: w-resize;
 }
 the-panel#fixed footer {
   position: absolute;
@@ -425,12 +429,14 @@ noflo-main ul.tabs li {
   text-decoration: none;
   padding-left: 36px;
   padding-right: 36px;
+  cursor: pointer;
 }
 noflo-main ul.tabs li.selected {
   border: 1px solid hsl(189, 11%, 26%);
   border-radius: 3px;
   padding-top: 8px;
   padding-bottom: 9px;
+  cursor: auto;
 }
 noflo-main ul.projects {
   padding: 0px;
@@ -452,9 +458,17 @@ noflo-main ul.projects li {
   margin-left: 18px;
   margin-bottom: 36px;
   position: relative;
+  cursor: pointer;
 }
 noflo-main ul.projects li.add {
   background-color: hsl(187, 45%, 10%);
+  cursor: auto;
+}
+noflo-main ul.projects li.remote {
+  cursor: auto;
+}
+noflo-main ul.projects li.runtime {
+  cursor: auto;
 }
 noflo-main ul.projects li the-graph-thumb {
   display: block;
@@ -570,6 +584,7 @@ noflo-main noflo-account .toolbar a {
   height: 36px;
   padding-left: 36px;
   padding-right: 36px;
+  cursor: pointer;
 }
 noflo-search {
   background-color: hsl(187, 45%, 5%);
@@ -673,6 +688,7 @@ noflo-search button {
   height: 36px;
   padding-left: 36px;
   padding-right: 36px;
+  cursor: pointer;
 }
 
 #workspace {
@@ -746,6 +762,7 @@ noflo-component-editor {
 }
 .CodeMirror {
   height: 100%;
+  cursor: text;
 }
 .CodeMirror-scroll {
   height: 100%;

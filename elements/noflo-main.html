@@ -45,7 +45,7 @@
         </template>
         <template if="{{ projectList === 'github' }}">
         <template repeat="{{ project in remoteProjects }}">
-          <li>
+          <li class="remote">
             <h2>{{ project.name }}</h2>
             <p>{{ project.description }}</p>
             <button on-click="{{ downloadProject }}" data-name="{{ project.name }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
@@ -66,7 +66,7 @@
           <button on-click="{{ newRuntime }}">Register</button>
         </li>
         <template repeat="{{ userRuntimes }}">
-        <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="{{ type }}">
+        <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="runtime {{ type }}">
           <h2>{{ label }}</h2>
           <p>{{ address }}</p>
         </li>
