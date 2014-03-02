@@ -344,6 +344,8 @@
             break;
           case 'boolean':
             return input.checked;
+        case 'number':
+            return parseFloat(input.value);
           default:
             return input.value;
         }
