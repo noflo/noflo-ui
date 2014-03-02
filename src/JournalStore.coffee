@@ -8,7 +8,8 @@ class IDBJournalStore extends noflo.journal.JournalStore
   genKey: (revId) -> "#{@graph.properties.id}_#{revId}"
 
   putTransaction: (revId, entries) ->
-    @lastRevision = revId if revId > @lastRevision
+    super revId, entries
+
     trans = @db.transaction ['journals'], 'readwrite'
     store = trans.objectStore 'journals'
 
@@ -19,6 +20,8 @@ class IDBJournalStore extends noflo.journal.JournalStore
       graph: @graph.properties.id
       revId: revId
       entries: entries
+
+    @transactions[revId] = entries
 
   fetchTransaction: (revId) ->
     return @transactions[revId]
