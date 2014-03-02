@@ -37,6 +37,8 @@
     <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
+    <link rel="import" href="elements/noflo-journal.html">
+    <noflo-polymer name="noflo-journal" inports="graph panel undo redo" outports=""></noflo-polymer>
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -52,6 +54,7 @@
       <noflo-library></noflo-library>
       <noflo-project></noflo-project>
       <noflo-packets></noflo-packets>
+      <noflo-journal></noflo-journal>
       <main id="workspace">
         <noflo-component-editor></noflo-component-editor>
         <the-graph-editor></the-graph-editor>
@@ -460,6 +463,14 @@
 
       's' -> KEYS Shortcuts(interaction/ListenKeyboardShortcuts)
       Shortcuts SHORTCUT -> TOGGLE Search
+
+      # Journal history handling
+      'noflo-journal' -> SELECTOR Journal(polymer/noflo-journal)
+      Context CURRENTGRAPH -> GRAPH Journal
+      'z' -> KEYS Shortcuts
+      Shortcuts SHORTCUT -> UNDO Journal
+      'r' -> KEYS Shortcuts
+      Shortcuts SHORTCUT -> REDO Journal
 
       # Panel handling
       'noflo-packets' -> SELECTOR Packets(polymer/noflo-packets)

@@ -1,7 +1,5 @@
 <link rel="import" href="noflo-preview.html">
-<link rel="import" href="noflo-journal-history.html">
 <link rel="import" href="noflo-runtime-selector.html">
-<link rel="import" href="noflo-autolayout.html">
 <polymer-element name="noflo-runtime" attributes="graphs edges runtimes" class="gpu">
   <style>
     noflo-runtime {
@@ -106,8 +104,6 @@
         running: false
       },
       card: null,
-      journalCard: null,
-      autolayoutCard: null,
       panel: null,
       edges: null,
       wasConnected: false,
@@ -167,8 +163,6 @@
 
         // Fix legacy env type setting
         this.updateGraphType(this.currentGraph);
-        this.showJournalCard(this.currentGraph);
-        this.showAutolayoutCard(this.currentGraph);
 
         // Subscribe to possible type changes
         this.currentGraph.on('changeProperties', function (newProps, oldProps) {
@@ -313,43 +307,6 @@
         this.card.parentNode.removeChild(this.card);
         this.card = null;
       },
-      showJournalCard: function (graph) {
-        if (!this.panel) {
-          return;
-        }
-    
-        if (!this.journalCard) {
-            // FIXME: should probably be called something else
-            this.journalCard = document.createElement('the-card');
-            this.journalCard.type = 'noflo-journal-history';
-            // Move the preview element of the runtime into the card
-            var history = document.createElement('noflo-journal-history');
-            history.classList.add('the-card-content');
-            history.graph = graph;
-            history.returnTo = this.parentNode;
-            this.journalCard.appendChild(history);
-            this.journalCard.addTo(this.panel.getFooter());
-        }
-        this.journalCard.childNodes[0].graph = graph;
-        this.panel.open = true;
-      },
-      showAutolayoutCard: function (graph) {
-        if (!this.panel) {
-          return;                    
-        }
-        if (!this.autolayoutCard) {
-          this.autolayoutCard = document.createElement('the-card');
-          this.autolayoutCard.type = 'noflo-autolayout';
-          var autolayoutUI = document.createElement('noflo-autolayout');
-          autolayoutUI.classList.add('the-card-content');
-          autolayoutUI.graph = graph;
-          autolayoutUI.returnTo = this.parentNode;
-          this.autolayoutCard.appendChild(autolayoutUI);
-          this.autolayoutCard.addTo(this.panel.getFooter());
-        }
-        this.autolayoutCard.childNodes[0].graph = graph;
-        this.panel.open = true;
-      },                      
       selectRuntime: function () {
         if (this.graphs.length === 0) {
           return;

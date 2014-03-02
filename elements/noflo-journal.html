@@ -1,0 +1,80 @@
+<polymer-element name="noflo-journal" attributes="graph panel">
+  <style>
+    the-card[type="noflo-journal"] .the-card-content {
+      padding: 0px;
+      height: 35px;
+      max-height: none;
+      overflow: hidden;
+    }
+
+    noflo-journal {
+      display: block;
+      position: fixed;
+      right: 36px;
+      bottom: 0;
+      z-index: 3;
+      width: 288px;
+      height: 36px;
+      color: hsl(189, 11%, 26%);
+      background-color: hsl(187, 45%, 5%);
+      box-sizing: border-box;
+      padding-left: 36px;
+    }
+
+    noflo-journal #controls button {
+      line-height: 36px;
+      border: none;
+      background-color: transparent;
+      font-size: 14px;
+      width: 72px;
+      color: hsl(189, 11%, 26%);
+    }
+    noflo-journal #controls button.redo {
+      position: absolute;
+      right: 0px;
+    }
+    noflo-journal #controls button.autolayout {
+      position: absolute;
+      left: calc(50% - 18px);
+    }
+  </style>
+  <template>
+    <div id="controls">
+      <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
+      <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
+      <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-journal', {
+      graph: null,
+      returnTo: null,
+      undo: function (event, data, sender) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.graph || !this.graph.journal) {
+          return;
+        }
+        this.graph.journal.undo();
+      },
+      redo: function (event, data, sender) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.graph || !this.graph.journal) {
+          return;
+        }
+        this.graph.journal.redo();
+      },
+      autolayout: function (event, data, sender) {
+        event.preventDefault();
+        if (!this.graph) {
+          return;
+        }
+        var graph = document.getElementById("graph");
+        graph.triggerAutolayout();
+      }
+    });
+  </script>
+</polymer-element>
