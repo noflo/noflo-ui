@@ -14,7 +14,7 @@
   </style>
   <script>
     Polymer('number-scrubber', {
-      value: 0,
+      value: undefined,
       startValue: 0,
       min: -Infinity,
       max: Infinity,
@@ -23,11 +23,15 @@
       distance: 5,
       precision: 1000000,
       onTrackStart: function (event) {
+        if (this.value === undefined)
+          return;
         this.value = parseFloat(this.value);
         this.startValue = this.value;
         document.body.style.cursor = "ew-resize";
       },
       onTrack: function (event) {
+        if (this.value === undefined)
+          return;
         var lastValue = this.value;
 
         var delta = event.dx;
@@ -66,6 +70,8 @@
         }
       },
       onTrackEnd: function (event) {
+        if (this.value === undefined)
+          return;
         document.body.style.cursor = "auto";
       }
     });
