@@ -3,8 +3,8 @@ noflo-breadcrumb {
 }
 
 input::-webkit-input-speech-button {
-
   margin-right 18px;
+  cursor: pointer;
 }
 
 body {
