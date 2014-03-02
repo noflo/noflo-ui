@@ -74,8 +74,11 @@
           menu.graph = this.currentgraph;
           this.edgeMenu = document.createElement('the-card');
           this.edgeMenu.type = 'edge-menu';
+          this.edgeMenu.dialog = menu;
           this.edgeMenu.appendChild(menu);
           this.edgeMenu.addTo(this.panel);
+        } else {
+          this.edgeMenu.dialog.edges = this.edges;
         }
 
         this.edges.forEach(function (edge) {

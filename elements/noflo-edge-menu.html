@@ -78,10 +78,9 @@
   </style>
   <template>
     <header>
-      <h1>{{ edges.length}} <template if="{{ edges.length > 1 }}">Edges</template><template if="{{ edges.length == 1 }}">Edge</template></h1>    
+      <h1 on-click="{{ clear }}">{{ edges.length}} <template if="{{ edges.length > 1 }}">Edges</template><template if="{{ edges.length == 1 }}">Edge</template></h1>    
     </header>
     <ul class="toolbar toolbar2right">
-      <li><button class="blue-button" on-click="{{ clear }}"><!--i class="fa fa-check"  --></i>Deselect</button></li>
     </ul>
     <ul class="routes">
       <template repeat="{{ route in routes }}">

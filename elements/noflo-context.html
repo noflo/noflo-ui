@@ -18,8 +18,8 @@
       search: '',
       editor: null,
       graphs: [],
-      edges: [],
       nodes: [],
+      edges: [],
       runtimes: [],
       component: '',
       enteredView: function () {
@@ -133,10 +133,13 @@
           this.nodeMenu.type = 'node-menu';
           this.nodeMenu.appendChild(menu);
           this.nodeMenu.addTo(this.contextBar);
+          this.nodeMenu.dialog = menu;
           this.nodeMenu.addEventListener('newgraph', function (event) {
             this.project.graphs.push(event.detail);
             this.fire('newgraph', event.detail);
           }.bind(this));
+        } else {
+          this.nodeMenu.dialog.nodes = this.nodes;
         }
 
         this.nodes.forEach(function (node) {

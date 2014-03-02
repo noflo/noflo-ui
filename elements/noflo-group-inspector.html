@@ -1,0 +1,81 @@
+<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content">
+  <template>
+    <h1>
+      <template if="{{ group }}">
+      {{ group }}
+      </template>
+      <template if="{{ !group }}">
+      New
+      </template>
+      group containing {{ nodes.length }} nodes
+    </h1>
+    <form>
+      <label>
+        Group name
+        <input type="text" value="{{ name }}" placeholder="processing" required>
+      </label>
+      <label>
+        Group description
+        <input type="text" value="{{ description }}" placeholder="The nodes that process things" required>
+      </label>
+      <div class="toolbar">
+        <button on-click="{{ send }}">
+          <template if="{{ group }}">
+          Rename
+          </template>
+          <template if="{{ !group }}">
+          Create
+          </template>
+        </button>
+        <a on-click="{{ close }}">Cancel</a>
+      </div>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-group-inspector', {
+      name: '',
+      description: '',
+      graph: null,
+      nodes: [],
+      group: '',
+      groupdescription: '',
+      enteredView: function () {
+        document.getElementById('container').classList.add('blur');
+        this.name =  this.group;
+        this.description =  this.groupdescription;
+      },
+      leftView: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.name) {
+          return;
+        }
+        if (this.group) {
+          if (this.name !== this.group) {
+            this.graph.renameGroup(this.group, this.name);
+          }
+          if (this.description !== this.groupdescription) {
+            this.graph.setGroupMetadata(this.group, {
+              description: this.description
+            });
+          }
+        } else {
+        this.graph.addGroup(this.name, this.nodes, {
+          description: this.description
+        });
+        }
+        this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

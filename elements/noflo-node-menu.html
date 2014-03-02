@@ -1,11 +1,12 @@
 <link rel="import" href="noflo-new-graph.html">
+<link rel="import" href="noflo-group-inspector.html">
 <polymer-element name="noflo-node-menu" attributes="graph nodes" class="sticky-head the-card-content">
   <template>
     <header>
-      <h1>{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
+      <h1 on-click="{{ clear }}">{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
     </header>
     <ul class="toolbar toolbar2right">
-      <li><button class="blue-button" on-click="{{ clear }}"><!--i class="fa fa-check"></i-->Deselect</button></li>
+      <li><button class="blue-button" on-click="{{ group }}">Group</button></li>
       <li><button class="blue-button" on-click="{{ subgraph }}">Subgraph</button></li>
     </ul>
   </template>
@@ -34,12 +35,33 @@
         }
         currentGraph.checkTransactionEnd();
       },
-      /*
       group: function (event) {
         event.preventDefault();
-        this.nodes.forEach(function (node) {
+
+        // See if the nodes are already part of a group
+        var group = '';
+        var description = '';
+        var selectedNodes = this.nodes.map(function (node) {
+          return node.id;
         });
-      }*/
+        selectedNodes.sort();
+
+        this.graph.groups.forEach(function (grp) {
+          var grpNodes = JSON.parse(JSON.stringify(grp.nodes));
+          grpNodes.sort();
+          if (grpNodes.join(',') == selectedNodes.join(',')) {
+            group = grp.name;
+            description = grp.metadata.description;
+          }
+        });
+
+        var dialog = document.createElement('noflo-group-inspector');
+        dialog.group = group;
+        dialog.groupdescription = description;
+        dialog.nodes = selectedNodes;
+        dialog.graph = this.graph;
+        document.body.appendChild(dialog);
+      },
       subgraph: function (event) {
         event.preventDefault();
         var currentGraph = this.graph;
