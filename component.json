@@ -47,7 +47,8 @@
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",
     "components/MigrateLocalStorage.coffee",
-    "components/MakePath.coffee"
+    "components/MakePath.coffee",
+    "src/JournalStore.coffee"
   ],
   "json": [
     "component.json"

@@ -21,7 +21,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -66,7 +66,7 @@
       Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
 
       # Specify storage version to get correct migrations
-      '2' -> VERSION Open
+      '3' -> VERSION Open
 
       # Database upgrade setup
       Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
@@ -108,6 +108,18 @@
       'id' -> KEYPATH CreateRuntimes
       Upgrade VERSIONS -> DB CreateRuntimes
       CreateRuntimes ERROR -> IN Errors
+
+      # ## Version 3
+
+      # Journal storage
+      'journals' -> NAME CreateJournals(indexeddb/CreateStore)
+      'id' -> KEYPATH CreateJournals
+      Upgrade VERSIONS -> DB CreateJournals
+      CreateJournals ERROR -> IN Errors
+      'graph' -> NAME JournalGraph(indexeddb/CreateIndex)
+      'graph' -> KEYPATH JournalGraph
+      CreateJournals STORE -> STORE JournalGraph
+      JournalGraph ERROR -> IN Errors
     </script>
     <script type="application/fbp" id="LoadData">
       INPORT=Read.DB:DB
@@ -423,7 +435,7 @@
       INPORT=Runtimes.IN:RUNTIMES
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
-      INPORT=LoadProjectData.DB:DB
+      INPORT=Context.DB:DB
       OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
@@ -571,6 +583,7 @@
 
       # Prepare the context
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
+      Storage DB -> DB Context
       Main RUNTIMES -> RUNTIMES Context
       Router ROUTE -> ROUTE Main
       Main PROJECT -> PROJECT Context
