@@ -3,7 +3,7 @@
 <polymer-element name="noflo-node-menu" attributes="graph nodes" class="sticky-head the-card-content">
   <template>
     <header>
-      <h1 on-click="{{ clear }}">{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
+      <h1 class="clear" on-click="{{ clear }}">{{ nodes.length}} <template if="{{ nodes.length > 1 }}">Nodes</template><template if="{{ nodes.length == 1 }}">Node</template></h1>
     </header>
     <ul class="toolbar toolbar2right">
       <li><button class="blue-button" on-click="{{ group }}">Group</button></li>

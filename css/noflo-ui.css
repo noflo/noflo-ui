@@ -290,6 +290,9 @@ the-card header h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+the-card header h1.clear {
+  cursor: pointer;
+}
 the-card header h2 {
   line-height: 36px;
   width: 72px;
@@ -305,6 +308,7 @@ the-card header h2 {
   font-size: 10px;
   color: hsla(190, 100%, 80%, 0.8);
   display: block;
+  cursor: default;
 }
 the-card header {
   height: 36px;
