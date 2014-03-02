@@ -18,10 +18,10 @@
 
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
-    <noflo-polymer name="the-graph-editor" inports="graph library width height" outports=""></noflo-polymer>
+    <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -480,6 +480,9 @@
       Context PROJECT -> PROJECT GraphEditor
       GraphEditor EDITOR -> EDITOR Library
       GraphEditor EDITOR -> EDITOR Context
+      GraphEditor EDGES -> EDGES Context
+      GraphEditor NODES -> NODES Context
+
 
       # Prepare component editor
       'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
@@ -513,6 +516,8 @@
       INPORT=GraphEditor.HEIGHT:HEIGHT
       OUTPORT=Async.OUT:EDITOR
       OUTPORT=ConnectRuntime.PACKET:PACKET
+      OUTPORT=GraphEditor.EDGES:EDGES
+      OUTPORT=GraphEditor.NODES:NODES
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
       EmptyLibrary OUT -> LIBRARY GraphEditor
