@@ -436,7 +436,7 @@ noflo-main ul.tabs li.selected {
   border-radius: 3px;
   padding-top: 8px;
   padding-bottom: 9px;
-  cursor: auto;
+  cursor: default;
 }
 noflo-main ul.projects {
   padding: 0px;
@@ -462,13 +462,13 @@ noflo-main ul.projects li {
 }
 noflo-main ul.projects li.add {
   background-color: hsl(187, 45%, 10%);
-  cursor: auto;
+  cursor: default;
 }
 noflo-main ul.projects li.remote {
-  cursor: auto;
+  cursor: default;
 }
 noflo-main ul.projects li.runtime {
-  cursor: auto;
+  cursor: default;
 }
 noflo-main ul.projects li the-graph-thumb {
   display: block;
