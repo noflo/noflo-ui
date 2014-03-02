@@ -46,11 +46,22 @@
         this.fire('contextpanel', this.$.context);
       },
       editorChanged: function () {
-        return;
-        /*
         if (!this.editor) {
           return;
         }
+        this.editor.addMenuAction('graphInport', 'n4', {
+          icon: 'pencil-square-o',
+          iconLabel: 'rename',
+          action: function (graph, itemKey, item) {
+          }
+        });
+        this.editor.addMenuAction('graphOutport', 'n4', {
+          icon: 'pencil-square-o',
+          iconLabel: 'rename',
+          action: function (graph, itemKey, item) {
+          }
+        });
+        /*
         this.editor.addMenuAction('node', 'n4', {
           icon: 'search',
           iconLabel: 'inspect',
