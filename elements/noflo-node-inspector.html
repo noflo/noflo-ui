@@ -282,6 +282,15 @@
         }.bind(this));
         return value;
       },
+      getPortFromName: function (portName) {
+        var port;
+        this.inports.forEach(function (p) {
+          if (p.name === portName) {
+            port = p;
+          }
+        });
+        return port;
+      },
       getPortConnection: function (port) {
         var connected = false;
         var route = 0;
@@ -368,12 +377,7 @@
         }
         var value = this.inputToPort(sender);
         var name = sender.getAttribute('name');
-        var port;
-        this.inports.forEach(function (p) {
-          if (p.name === name) {
-            port = p;
-          }
-        });
+        var port = this.getPortFromName(name);
 
         var validatePortValue = function(type, value) {
           switch (port.type) {
@@ -399,11 +403,8 @@
         event.preventDefault();
         var name = sender.getAttribute('data-port');
         this.graph.removeInitial(this.node.id, name);
-        this.inports.forEach(function (port) {
-          if (port.name === name) {
-            port.value = null;
-          }
-        });
+        var port = this.getPortFromName(name);
+        port.value = null;
         sender.parentNode.classList.remove('error');
       },
       sendBang: function (event, detail, sender) {
