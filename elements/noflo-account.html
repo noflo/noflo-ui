@@ -13,7 +13,7 @@
       <div class="avatar flowhub"><img src="../app/fl-74.png"></div>
       <h1>Flowhub</h1>
       <div class="toolbar">
-        <a href="{{ site }}/login/authorize/github_public?client_id={{ clientid }}&scope=github&&response_type=code&redirect_uri={{ redirect }}">Login</a>
+        <a on-click="{{ login }}">Login</a>
       </div>
     </template>
   </template>
@@ -35,8 +35,10 @@
       };
       if (typeof chrome !== 'undefined' && chrome.storage) {
         // Chrome App, use their storage API
-        storage.set = function (key, value) {
-          chrome.storage.sync.set({key: value});
+        storage.set = function (key, value, callback) {
+          var values = {};
+          values[key] = value;
+          chrome.storage.sync.set(values, callback);
         };
         storage.get = function (key, callback) {
           chrome.storage.sync.get(key, function (items) {
@@ -61,15 +63,28 @@
           github: 'github-token',
           user: 'grid-user'
         },
+        login: function () {
+          if (typeof chrome !== 'undefined' && chrome.identity) {
+            this.redirect = chrome.identity.getRedirectURL();
+            chrome.identity.launchWebAuthFlow({
+              interactive: true,
+              url: this.getLoginUrl()
+            }, function (responseUrl) {
+              if (chrome.runtime.lastError) {
+                return;
+              }
+              this.remoteLogin(responseUrl, false);
+            }.bind(this));
+            return;
+          }
+          window.location.href = this.getLoginUrl();
+        },
+        getLoginUrl: function () {
+          return this.site + '/login/authorize/github_public?client_id=' + this.clientid  + '&scope=github&response_type=code&redirect_uri=' + encodeURIComponent(this.redirect);
+        },
         enteredView: function () {
           this.redirect = window.location.href;
           this.checkLogin();
-          storage.get(this.storage.github, function (token) {
-            if (!token) {
-              return;
-            }
-            this.githubToken = token;
-          }.bind(this));
         },
         checkLogin: function () {
           storage.get(this.storage.grid, function (token) {
@@ -77,11 +92,17 @@
               this.gridToken = token;
               return;
             }
-            this.remoteLogin();
+            this.remoteLogin(window.location.href, true);
+          }.bind(this));
+          storage.get(this.storage.github, function (token) {
+            if (!token) {
+              return;
+            }
+            this.githubToken = token;
           }.bind(this));
         },
-        remoteLogin: function () {
-          var code = window.location.href.match(/\?code=(.*)/);
+        remoteLogin: function (responseUrl, cleanUp) {
+          var code = responseUrl.match(/\?code=(.*)/);
           if (code && code[1]) {
             var req = new XMLHttpRequest();
             req.onreadystatechange = function () {
@@ -96,9 +117,13 @@
                     // Clear old user data
                     storage.remove(this.storage.user);
 
-                    // Clean up URL
-                    var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
-                    window.location.href = window.location.href.replace(regex, '');
+                    if (cleanUp) {
+                      // Clean up URL
+                      var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
+                      window.location.href = window.location.href.replace(regex, '');
+                    } else {
+                      this.gridToken = data.token;
+                    }
                   }.bind(this));
                 }
               } else {
@@ -148,6 +173,8 @@
         },
         logout: function () {
           this.user = null;
+          this.gridToken = '';
+          this.githubToken = '';
           this.clearCache();
         },
         openSettings: function () {
@@ -162,10 +189,13 @@
         },
         clearCache: function () {
           storage.remove(this.storage.grid);
+          storage.remove(this.storage.github);
           storage.remove(this.storage.user);
         },
         gridTokenChanged: function () {
-          this.getUser(this.gridToken);
+          if (this.gridToken) {
+            this.getUser(this.gridToken);
+          }
           this.fire('gridtoken', this.gridToken);
         },
         githubTokenChanged: function () {

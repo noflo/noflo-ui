@@ -13,10 +13,10 @@
     ]
   },
   "permissions": [
-    "https://the-grid-account.herokuapp.com/",
-    "https://noflo-gate.herokuapp.com/",
+    "https://passport.thegrid.io/",
     "https://api.github.com/",
     "https://api.flowhub.io/",
+    "https://secure.gravatar.com/",
     "storage",
     "unlimitedStorage",
     "identity"
