@@ -596,6 +596,8 @@ noflo-main noflo-account .toolbar a {
   color: hsl(189, 11%, 26%);
   text-decoration: none;
   height: 36px;
+  display: inline-block;
+  line-height: 36px;
   padding-left: 36px;
   padding-right: 36px;
   cursor: pointer;
