@@ -183,7 +183,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['clean:nuke_main', 'clean:nuke_bower', 'clean:nuke_preview', 'clean:nuke_main_built', 'clean:nuke_preview_built']
-  @registerTask 'build', ['exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'compress']
+  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'compress']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
