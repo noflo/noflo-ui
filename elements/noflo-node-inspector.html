@@ -20,8 +20,9 @@
       overflow: hidden;
     }
 
-    ul.ports li.error label {
-      background-color: rgb(121, 18, 18);
+    ul.ports li label.error *,
+    ul.ports li label.error input {
+      color: red;
     }
 
     ul.ports li p {
@@ -389,9 +390,9 @@
           this.graph.removeInitial(this.node.id, name);
           this.graph.addInitial(value, this.node.id, name);
           this.graph.endTransaction('iipchange');
-          sender.parentNode.parentNode.classList.remove('error');
+          sender.parentNode.classList.remove('error');
         } else {
-          sender.parentNode.parentNode.classList.add('error');
+          sender.parentNode.classList.add('error');
         }
       },
       removeValue: function (event, detail, sender) {
@@ -403,6 +404,7 @@
             port.value = null;
           }
         });
+        sender.parentNode.classList.remove('error');
       },
       sendBang: function (event, detail, sender) {
         event.preventDefault();
