@@ -58,7 +58,7 @@ module.exports = ->
     compress:
       app:
         options:
-          archive: 'noflo.zip'
+          archive: 'noflo-<%= pkg.version %>.zip'
         files: [
           src: ['browser/noflo-noflo-indexeddb/vendor/*']
           expand: true
@@ -117,7 +117,7 @@ module.exports = ->
     "phonegap-build":
       app:
         options:
-          archive: 'noflo.zip'
+          archive: 'noflo-<%= pkg.version %>.zip'
           appId: process.env.PHONEGAP_APP_ID
           user:
             token: process.env.PHONEGAP_TOKEN

@@ -34,7 +34,7 @@
     "component": "~0.17.6",
     "bower": "~1.2.7",
     "grunt-lint-inline": "~0.3.1",
-    "vulcanize": "git://github.com/Polymer/vulcanize.git",
+    "vulcanize": "~0.1.15",
     "grunt-contrib-clean": "~0.5.0"
   },
   "scripts": {
