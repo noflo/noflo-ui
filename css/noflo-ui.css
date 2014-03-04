@@ -561,6 +561,16 @@ noflo-main noflo-account .avatar:before {
   position: absolute;
   z-index: 1;
 }
+noflo-main noflo-account .flowhub img {
+  margin-top: 3px;
+  margin-left: 1px;
+  width: 74px;
+  height: 74px;
+  border: 1px solid #01d8e5;
+  border-radius: 60px;
+  padding: 10px;
+  box-sizing: border-box;
+}
 noflo-main noflo-account .toolbar {
   margin-top: 36px;
   padding: 1px;
