@@ -9,3 +9,4 @@
 /spec/*.xml
 noflo.zip
 app.*
+dist.sh
