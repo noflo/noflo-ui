@@ -28,8 +28,7 @@
     "noflo/noflo-finitedomain": "*",
     "d4tocchini/noflo-draggabilly": "*",
     "forresto/noflo-gum": "*",
-    "forresto/noflo-seriously": "*",
-    "jonnor/noflo-cad": "*"
+    "forresto/noflo-seriously": "*"
   },
   "json": [
     "component.json"
