@@ -41,7 +41,9 @@
   <template>
     <div id="controls">
       <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
+      <template if="{{ klay }}">
       <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
+      </template>
       <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
     </div>
   </template>
@@ -49,6 +51,12 @@
     Polymer('noflo-journal', {
       graph: null,
       returnTo: null,
+      klay: false,
+      enteredView: function () {
+        if (typeof window.$klay !== 'undefined') {
+          this.klay = true;
+        }
+      },
       undo: function (event, data, sender) {
         if (event) {
           event.preventDefault();
@@ -69,7 +77,7 @@
       },
       autolayout: function (event, data, sender) {
         event.preventDefault();
-        if (!this.graph) {
+        if (!this.graph || !this.klay) {
           return;
         }
         var graph = document.getElementById("graph");
