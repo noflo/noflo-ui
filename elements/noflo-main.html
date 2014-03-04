@@ -94,9 +94,17 @@
       enteredView: function () {
         this.openChanged();
         this.$.mainaccount.addEventListener('githubtoken', function (event) {
+          if (typeof event.detail !== 'string') {
+            this.githubToken = '';
+            return;
+          }
           this.githubToken = event.detail;
         }.bind(this));
         this.$.mainaccount.addEventListener('gridtoken', function (event) {
+          if (typeof event.detail !== 'string') {
+            this.gridToken = '';
+            return;
+          }
           this.gridToken = event.detail;
         }.bind(this));
         this.$.mainaccount.addEventListener('user', function (event) {
