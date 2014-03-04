@@ -42,7 +42,7 @@
       -webkit-appearance: none; 
       margin: 0; 
     }
-    ul.ports li button {
+    ul.ports li input[type="button"] {
       padding: 8px;
       height: 19px;
       width: 19px;
@@ -228,17 +228,24 @@
             <template if="{{ port.type == 'bang' }}">
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
             </template>
-            <template if="{{ port.type == 'boolean' }}">
-              <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
-            </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-              <template if="{{ port.inputType == 'number' }}">
-                <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
+            <template if="{{ port.type != 'bang' }}">
+              <template if="{{ port.conversionType != 'boolean' }}">
+                <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" on-blur="{{ updateValue }}">
               </template>
-              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-blur="{{ updateValue }}">
+              <template if="{{ port.conversionType == 'boolean' }}">
+                <input type="{{ port.inputType }}" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" on-blur="{{ updateValue }}">
+              </template>
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
+            </template>
+            <template if="{{ port.type == 'all' }}">
+              <select name="{{ port.name }}" value="{{ port.conversionType }}" data-type="{{ port.type }}" on-change="{{ updateConversion }}">
+                <option value="string">String</option>
+                <option value="boolean">Boolean</option>
+                <option value="number">Number</option>
+                <option value="object">Object</option>
+              </select>
             </template>
           </template>
           <template if="{{ !port.showInput }}">
@@ -312,6 +319,28 @@
           route: route
         };
       },
+      inputTypeFromPortType: function (port) {
+        switch (port.conversionType) {
+        case 'array':
+          return 'text';
+        case 'number':
+          return 'number';
+        case 'boolean':
+          return 'checkbox';
+        case 'bang':
+          return 'button';
+        default:
+          return 'text';
+        }
+      },
+      conversionTypeFromPortTypeAndValue: function (port, value) {
+        switch (port.type) {
+        case 'all':
+          return typeof value;
+        default:
+          return port.type;
+        }
+      },
       portToInput: function (port) {
         var value = this.getPortValue(port.name);
         var connection = this.getPortConnection(port.name);
@@ -321,44 +350,20 @@
           class: '',
           type: port.type,
           description: port.description,
-          inputType: port.type,
-          value: value,
           showInput: (!connection.connected),
-          route: connection.route
+          route: connection.route,
         };
-        switch (port.type) {
-          case 'object':
-          case 'array':
-            portDef.value = JSON.stringify(value);
-            portDef.inputType = 'text';
-            break;
-          case 'int':
-            portDef.inputType = 'number';
-            break;
-          case 'all':
-            portDef.inputType = 'text';
-            break;
-        }
+        portDef.conversionType = this.conversionTypeFromPortTypeAndValue(portDef, value);
+        portDef.cachedValue = portDef.value = this.convertPortValueToInputValue(portDef, value);
+        portDef.inputType = this.inputTypeFromPortType(portDef);
         return portDef;
       },
       inputToPort: function (input) {
-        var dataType = input.getAttribute('data-type');
-        switch (dataType) {
-          case 'object':
-          case 'array':
-            try {
-              return JSON.parse(input.value);
-            } catch (e) {
-              return input.value;
-            }
-            break;
-          case 'boolean':
-            return input.checked;
-        case 'number':
-            return parseFloat(input.value);
-          default:
-            return input.value;
-        }
+        var name = input.getAttribute('name');
+        var port = this.getPortFromName(name);
+        var inputValue = this.extractValueFromInput(port, input);
+        var value = this.convertInputValueToPortValue(port, inputValue);
+        return value;
       },
       updatePorts: function () {
         this.inports = [];
@@ -370,26 +375,88 @@
           this.inports.push(portDef);
         }.bind(this));
       },
+      extractValueFromInput: function (port, input) {
+        switch (port.conversionType) {
+        case 'boolean':
+          return input.checked;
+        default:
+          return input.value;
+        }
+      },
+      convertPortValueToInputValue: function (port, value) {
+        switch (port.conversionType) {
+        case 'object':
+        case 'array':
+          return JSON.stringify(value);
+        default:
+          return value;
+        }
+      },
+      convertInputValueToPortValue: function (port, value) {
+        var type = port.conversionType !== undefined ?
+              port.conversionType : port.type;
+        switch (type) {
+        case 'object':
+        case 'array':
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            return value;
+          }
+          break;
+        case 'boolean':
+          return value;
+        case 'number':
+          return parseFloat(value);
+        }
+        return value;
+      },
+      validatePortValue: function (port, value) {
+        var type = port.conversionType !== undefined ?
+              port.conversionType : port.type;
+        switch (type) {
+        case 'object':
+          return (value instanceof Object);
+        case 'array':
+          return (value instanceof Array);
+        case 'number':
+          return typeof(value) === "number";
+        case 'boolean':
+          return typeof(value) === "boolean";
+        }
+        return true;
+      },
       updateValue: function (event, detail, sender) {
         event.preventDefault();
-        if (!sender.value) {
+        if (sender.value === undefined ||
+            sender.value === null ||
+            sender.checked === undefined) {
           return;
         }
         var value = this.inputToPort(sender);
         var name = sender.getAttribute('name');
         var port = this.getPortFromName(name);
 
-        var validatePortValue = function(type, value) {
-          switch (port.type) {
-            case 'object':
-              return value instanceof Object;
-            case 'array':
-              return value instanceof Array;
-          }
-          return true;
-        };
+        if (this.validatePortValue(port, value)) {
+          port.cachedValue = value;
+          this.graph.startTransaction('iipchange');
+          this.graph.removeInitial(this.node.id, name);
+          this.graph.addInitial(value, this.node.id, name);
+          this.graph.endTransaction('iipchange');
+          sender.parentNode.classList.remove('error');
+        } else {
+          sender.parentNode.classList.add('error');
+        }
+      },
+      updateConversion: function (event, detail, sender) {
+        event.preventDefault();
+        var name = sender.getAttribute('name');
+        var port = this.getPortFromName(name);
+        port.conversionType = sender.value;
+        port.inputType = this.inputTypeFromPortType(port);
+        var value = this.convertInputValueToPortValue(port, port.cachedValue);
 
-        if (validatePortValue(port.type, value)) {
+        if (this.validatePortValue(port, value)) {
           this.graph.startTransaction('iipchange');
           this.graph.removeInitial(this.node.id, name);
           this.graph.addInitial(value, this.node.id, name);
@@ -404,7 +471,7 @@
         var name = sender.getAttribute('data-port');
         this.graph.removeInitial(this.node.id, name);
         var port = this.getPortFromName(name);
-        port.value = null;
+        port.value = port.cachedValue = null;
         sender.parentNode.classList.remove('error');
       },
       sendBang: function (event, detail, sender) {
