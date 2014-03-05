@@ -40,6 +40,11 @@
     noflo-runtime .online#address, noflo-runtime .online#address button {
       color: #01d159;
     }
+    noflo-runtime #address button.clear {
+      position: absolute;
+      right: 0px;
+      color: hsl(189, 11%, 26%);
+    }
 
     noflo-runtime #runcontrol h2 {
       position: absolute;
@@ -72,6 +77,7 @@
       <div id="address" class="{{ { online: online } | tokenList }}">
         <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
         <h2>{{ runtime.definition.address }}</h2>
+        <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
       </div>
     <div id="runcontrol">
       <template if="{{ online }}">
@@ -138,6 +144,16 @@
           edges: edgeData,
           graph: this.currentGraph.properties.id
         });
+      },
+      clearRuntime: function () {
+        for (var i = 0; i < this.runtimes.length; i++) {
+          if (this.runtimes[i].graph === this.currentGraph.properties.id) {
+            this.runtimes[i].graph = null;
+            this.fire('runtime', this.runtimes[i]);
+          }
+        }
+        this.runtime = null;
+        this.currentGraphChanged();
       },
       currentGraphChanged: function () {
         this.wasConnected = false;

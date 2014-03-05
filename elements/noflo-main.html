@@ -204,7 +204,9 @@
         if (runtime.protocol === 'iframe') {
           return;
         }
-        this.userRuntimes.push(runtime);
+        if (this.userRuntimes.indexOf(runtime) === -1) {
+          this.userRuntimes.push(runtime);
+        }
         this.fire('runtimes', this.userRuntimes);
       },
       fetchFlowhub: function (event) {

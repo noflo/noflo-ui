@@ -78,7 +78,7 @@
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
         this.runtimes.forEach(function (rt) {
-          if (rt.type == this.graph.properties.environment.type) {
+          if (rt.type == this.graph.properties.environment.type && this.available.indexOf(rt) === -1) {
             this.available.push(rt);
           }
         }.bind(this));
