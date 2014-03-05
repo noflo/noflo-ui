@@ -551,7 +551,7 @@ noflo-main noflo-account {
 noflo-main noflo-account .avatar {
   border-radius: 50px;
   background-color: black;
-  border: 1px solid hsl(190, 100%, 30%);
+  border: 2px solid hsl(190, 100%, 30%);
   display: block;
   position: relative;
   width: 72px;
@@ -577,6 +577,7 @@ noflo-main noflo-account .avatar:before {
 }
 noflo-main noflo-account .avatar.flowhub {
   border-radius: 11px;
+  border: 1px solid hsl(190, 100%, 30%);
 }
 noflo-main noflo-account .avatar.flowhub:before {
   border: none;
