@@ -233,7 +233,7 @@ the-card[type="noflo-runtime-preview"] {
 }
 
 the-card.maximized {
-  background-color: hsla(190, 30%, 6%, 0.95);
+  background-color: hsla(0, 0%, 0%, 0.99);
   width: calc(100% - 70px);
   height: calc(100% - 36px);
   max-height: none;
