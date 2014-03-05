@@ -7,6 +7,6 @@
 /preview/components/*/
 /spec/*.js
 /spec/*.xml
-noflo.zip
+*.zip
 app.*
 dist.sh
