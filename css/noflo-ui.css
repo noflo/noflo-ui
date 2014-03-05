@@ -105,7 +105,7 @@ html, body, button {
 }
 
 the-panel {
-  background-color: hsl(190, 30%, 6%);
+  background-color: hsla(0, 0%, 0%, 0.98) !important;
   z-index: 3;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
   position: fixed;
@@ -535,10 +535,10 @@ noflo-main ul.projects li a {
 noflo-main noflo-account {
   text-align: center;
   display: block;
-  background-color: hsl(189, 47%, 6%);
+  background-color: hsla(0, 0%, 0%, 0.98) !important;
   margin-top: -36px;
   padding-top: 36px;
-  padding-bottom: 36px;
+  padding-bottom: 72px;
 }
 noflo-main noflo-account .avatar {
   border-radius: 50px;
@@ -643,7 +643,7 @@ noflo-search button {
 }
 
 .modal-content {
-  background-color: hsl(187, 45%, 8%);
+  background-color: hsla(0, 0%, 0%, 0.98) !important;
   display: block;
   position: fixed;
   -webkit-transform: translateZ(0px);
@@ -668,6 +668,9 @@ noflo-search button {
   color: hsl(189, 11%, 26%);
   line-height: 17px;
 }
+.modal-content label span {
+  color: hsl(189, 11%, 38%);
+}
 .modal-content input,
 .modal-content select,
 .modal-content textarea {
@@ -681,6 +684,10 @@ noflo-search button {
   border: none;
   margin: 0px;
   width: 100%;
+}
+.modal-content div.CodeMirror {
+  border: 1px solid hsl(189, 47%, 6%);
+  border-radius: 3px;
 }
 
 .modal-content .toolbar {
