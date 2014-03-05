@@ -8,10 +8,10 @@
     <section id="projects">
       <h2>Projects
           <template if="{{ projectList === 'local' }}">
-          <small>{{ localProjects.length }} projects</small>
+          <small>{{ localProjects.length }}</small>
           </template>
           <template if="{{ projectList === 'github' }}">
-          <small>{{ remoteProjects.length }} projects</small>
+          <small>{{ remoteProjects.length }}</small>
           </template>
           <template if="{{ projectList === 'github' }}">
           <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
@@ -57,7 +57,7 @@
     <template if="{{ gridToken }}">
     <section id="runtimes">
       <h2>
-        Runtimes <small>{{ userRuntimes.length }} runtimes</small>
+        Runtimes <small>{{ userRuntimes.length }}</small>
         <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">

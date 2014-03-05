@@ -8,7 +8,7 @@
       <template if="{{ !avatar }}">
       <div class="avatar flowhub"><img src="../app/fl-74.png"></div>
       </template>
-      <h1>{{ user.name }}</h1>
+      <h1>{{ user.name }} <a href="http://flowhub.io/preorder/" target="_blank" id="plan" class="{{ plan }}">{{ plan }}</a></h1>
       <div class="toolbar">
         <a on-click="{{ openSettings }}">Settings</a>
         <button on-click="{{ logout }}">Logout</button>
@@ -61,6 +61,7 @@
         gatekeeper: 'https://noflo-gate.herokuapp.com/authenticate/',
         redirect: '',
         user: null,
+        plan: 'free',
         gridToken: '',
         githubToken: '',
         avatar: '',

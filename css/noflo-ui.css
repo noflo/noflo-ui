@@ -398,7 +398,7 @@ noflo-main {
 }
 noflo-main section {
   background-image: radial-gradient(1px at 0px 0px, hsl(210, 78%, 10%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-  background-position: calc(50% - 19px) 4px;
+  background-position: calc(50% - 19px) 0px;
   background-size: 36px 36px;
   display: block;
   position: relative;
@@ -452,7 +452,7 @@ noflo-main ul.tabs li.selected {
 }
 noflo-main ul.projects {
   padding: 0px;
-  margin-top: 0px;
+  margin-top: 36px;
   margin-bottom: 36px;
   margin-left: -18px;
   margin-right: -18px;
@@ -532,7 +532,7 @@ noflo-main ul.projects li p {
   text-align: left;
   max-height: 36px;
   overflow: hidden;
-  color: hsl(189, 11%, 26%);
+  color: hsl(189, 11%, 50%);
 }
 noflo-main ul.projects li a {
   color: black;
@@ -606,6 +606,24 @@ noflo-main noflo-account h1 {
   line-height: 18px;
   margin: 0px;
   padding: 0px;
+  position: relative;
+}
+noflo-main noflo-account #plan {
+  position: absolute;
+  font-size: 8px;
+  text-transform: uppercase;
+  top: -8px;
+  margin-left: 8px;
+  color: black;
+  background-color: hsl(190, 90%, 45%);
+  line-height: 10px;
+  text-decoration: none;
+  padding: 2px;
+  border-radius: 2px;
+}
+noflo-main noflo-account #plan.free,
+noflo-main noflo-account #plan.beta {
+  background-color: hsl(135,90%,45%);
 }
 noflo-main noflo-account .toolbar {
   margin-top: 54px;
