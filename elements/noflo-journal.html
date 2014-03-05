@@ -1,13 +1,6 @@
 <polymer-element name="noflo-journal" attributes="graph panel">
   <style>
-    the-card[type="noflo-journal"] .the-card-content {
-      padding: 0px;
-      height: 35px;
-      max-height: none;
-      overflow: hidden;
-    }
-
-    noflo-journal {
+    noflo-journal #controls {
       display: block;
       position: fixed;
       right: 36px;
@@ -42,6 +35,7 @@
     }
   </style>
   <template>
+    <template if="{{ graph }}">
     <div id="controls">
       <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
       <template if="{{ klay }}">
@@ -49,6 +43,7 @@
       </template>
       <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
     </div>
+    </template>
   </template>
   <script>
     Polymer('noflo-journal', {

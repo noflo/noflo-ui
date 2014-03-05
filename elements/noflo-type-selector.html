@@ -5,17 +5,18 @@
     }
     noflo-type-selector ul.types {
       padding: 0px;
+      margin: 0px;
       margin-left: -9px;
       margin-right: -9px;
       list-style: none;
     }
     noflo-type-selector ul.types li {
-      width: 257px;
+      width: 275px;
       height: 105px;
       overflow: hidden;
       display: inline-block;
       text-align: center;
-      background-color: hsl(187, 45%, 10%);
+      background-color: hsl(192, 25%, 75%);
       color: hsl(189, 11%, 26%);
       border-radius: 3px;
       margin-right: 9px;
@@ -23,12 +24,16 @@
       margin-bottom: 18px;
       position: relative;
       cursor: pointer;
+      transition: background-color 0.3s ease-in-out;
     }
-    noflo-type-selector ul.types li.selected {
-      background-color: hsl(189, 47%, 6%);
-      border: 1px solid hsl(189, 47%, 16%);
-      color: hsl(189, 11%, 50%);
+    noflo-type-selector ul.types li.selected,
+    noflo-type-selector ul.types li:hover {
+      background-color: hsl(190, 100%, 30%);
+      color: white;
       cursor: default;
+    }
+    noflo-type-selector ul.types li.selected p {
+      color: hsl(0, 0%, 80%);
     }
     noflo-type-selector ul.types li h2 {
       position: absolute;

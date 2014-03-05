@@ -70,13 +70,13 @@
       position: absolute;
       top: 0px;
       left: 0px;
-      background-color: hsla(190, 30%, 9%, 0.98) !important;
+      background-color: hsl(192, 25%, 92%);
+      color: black;
       font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
       border: none;
       padding: 0px;
       padding-right: 18px;
       padding-left: 18px;
-      color: white;
       width: calc(72px * 4 - 36px);
       height: 72px;
       /*box-sizing: border-box;*/
@@ -87,6 +87,12 @@
       background-position: 0px;
       border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
       border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
+    }
+    noflo-search #search::-webkit-input-placeholder {
+      color: hsl(190, 90%, 45%);
+    }
+    noflo-search #search #speech {
+      color: hsl(190, 90%, 45%);
     }
   </style>
   <template>

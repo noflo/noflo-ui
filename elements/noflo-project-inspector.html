@@ -3,15 +3,15 @@
     <h1>{{ project.name }} settings</h1>
     <form>
       <label>
-        GitHub repository
+        <span>GitHub repository</span>
         <input type="text" value="{{ repo }}" placeholder="username/my-project" required>
       </label>
       <label>
-        Project label
+        <span>Project label</span>
         <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
       </label>
       <label>
-        Main graph
+        <span>Main graph</span>
         <select name="type" value="{{ main }}">
           <template repeat="{{ graph in project.graphs }}">
           <option value="{{ graph.properties.id }}">{{ graph.name }}</option>

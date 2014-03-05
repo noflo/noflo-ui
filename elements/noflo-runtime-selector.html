@@ -5,25 +5,33 @@
     }
     noflo-runtime-selector ul.runtimes {
       padding: 0px;
-      margin-top: 18px;
-      margin-bottom: 36px;
+      margin-top: 36px;
       margin-left: -9px;
       margin-right: -9px;
+      margin-bottom: 18px;
       list-style: none;
     }
     noflo-runtime-selector ul.runtimes li {
-      width: 257px;
+      width: 274px;
       height: 105px;
       overflow: hidden;
       display: inline-block;
       text-align: center;
-      background-color: hsl(189, 47%, 6%);
+      background-color: hsl(192, 25%, 75%);
+      color: hsl(189, 11%, 26%);
+      transition: background-color 0.3s ease-in-out;
       border-radius: 3px;
       margin-right: 9px;
       margin-left: 9px;
       margin-bottom: 18px;
       position: relative;
       cursor: pointer;
+    }
+    noflo-runtime-selector ul.runtimes li.selected,
+    noflo-runtime-selector ul.runtimes li:hover {
+      background-color: hsl(190, 100%, 30%);
+      color: white;
+      cursor: default;
     }
     noflo-runtime-selector ul.runtimes li h2 {
       position: absolute;
