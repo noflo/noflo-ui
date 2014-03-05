@@ -2,7 +2,12 @@
 <polymer-element name="noflo-account" attributes="clientid site gatekeeper">
   <template>
     <template if="{{ user }}">
-      <div class="avatar"><img src="{{ user.avatar }}"></div>
+      <template if="{{ avatar }}">
+      <div class="avatar"><img src="{{ avatar }}"></div>
+      </template>
+      <template if="{{ !avatar }}">
+      <div class="avatar flowhub"><img src="../app/fl-74.png"></div>
+      </template>
       <h1>{{ user.name }}</h1>
       <div class="toolbar">
         <a on-click="{{ openSettings }}">Settings</a>
@@ -58,10 +63,12 @@
         user: null,
         gridToken: '',
         githubToken: '',
+        avatar: '',
         storage: {
           grid: 'grid-token',
           github: 'github-token',
-          user: 'grid-user'
+          user: 'grid-user',
+          avatar: 'grid-avatar'
         },
         login: function () {
           if (typeof chrome !== 'undefined' && chrome.identity) {
@@ -175,6 +182,7 @@
           this.user = null;
           this.gridToken = '';
           this.githubToken = '';
+          this.avatar = '';
           this.clearCache();
         },
         openSettings: function () {
@@ -191,6 +199,34 @@
           storage.remove(this.storage.grid);
           storage.remove(this.storage.github);
           storage.remove(this.storage.user);
+          storage.remove(this.storage.avatar);
+        },
+        userChanged: function () {
+          if (!this.user || !this.user.avatar) {
+            return;
+          }
+          storage.get(this.storage.avatar, function (avatar) {
+            if (avatar) {
+              this.avatar = avatar;
+              return;
+            }
+            var req = new XMLHttpRequest();
+            var fileReader = new FileReader();
+            req.open('GET', this.user.avatar, true);
+            req.responseType = 'blob';
+            req.onload = function (e) {
+              if (req.status !== 200) {
+                return;
+              }
+              fileReader.onload = function (event) {
+                this.avatar = event.target.result;
+                storage.set(this.storage.avatar, this.avatar);
+              }.bind(this);
+              fileReader.readAsDataURL(req.response);
+
+            }.bind(this);
+            req.send();
+          }.bind(this));
         },
         gridTokenChanged: function () {
           if (this.gridToken) {
