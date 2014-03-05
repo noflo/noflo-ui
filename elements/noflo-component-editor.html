@@ -17,19 +17,16 @@
   <script>
     Polymer('noflo-component-editor', {
       component: null,
-      graphs: null,
       width: null,
       height: null,
       codeEditor: null,
       testsEditor: null,
-      graphsChanged: function () {
-        if (this.graphs.length) {
+      componentChanged: function () {
+        if (!this.component || !this.component.id) {
           this.style.display = 'none';
           return;
         }
         this.style.display = 'block';
-      },
-      componentChanged: function () {
         this.$.code_editor.innerHTML = '';
         this.codeEditor = CodeMirror(this.$.code_editor, {
           lineNumbers: true,

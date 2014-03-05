@@ -191,6 +191,9 @@
         this.fire('edges', this.edges);
       },
       componentChanged: function () {
+        if (this.component && typeof this.component === 'object' && !this.component.id) {
+          this.component = null;
+        }
         this.fire('component', this.component);
       },
       clear: function () {

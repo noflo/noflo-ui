@@ -65,7 +65,8 @@ class Router extends noflo.Component
         routeData.component = parts[1]
         return routeData
       routeData.route = 'graph'
-      routeData.graphs = parts
+      routeData.graph = parts.shift()
+      routeData.nodes = parts
       return routeData
     if url.substr(0, 8) is 'example/'
       routeData.route = 'example'

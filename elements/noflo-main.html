@@ -365,28 +365,79 @@
         });
       },
       route: function (routeData) {
+        this.fire('component', null);
+        var getGraphById = function (id, project) {
+          for (var i = 0; i < project.graphs.length; i++) {
+            if (project.graphs[i].properties.id === id) {
+              return project.graphs[i];
+            }
+          }
+        };
+        var getComponentByName = function (id, project) {
+          for (var i = 0; i < project.components.length; i++) {
+            if (project.components[i].name === id) {
+              return project.components[i];
+            }
+          }
+        };
+        var getItemByNode = function (node, project) {
+          var componentParts = node.component.split('/');
+          if (componentParts.length > 1) {
+            var library = componentParts.shift();
+            if (library !== project.id) {
+              return null;
+            }
+          }
+          var graph = getGraphById(componentParts[0], project);
+          if (graph) {
+            return ['graph', graph];
+          }
+          var component = getComponentByName(componentParts[0], project);
+          if (component) {
+            return ['component', component];
+          }
+        };
         if (routeData.project) {
           this.localProjects.forEach(function (project) {
-            if (project.id === routeData.project) {
-              this.fire('project', project);
+            var currentGraph, currentItem, currentNode, nodeId;
+            if (project.id !== routeData.project) {
+              return;
+            }
+            this.fire('project', project);
 
-              if (routeData.route === 'graph') {
-                while (routeData.graphs.length) {
-                  var graphId = routeData.graphs.shift();
-                  for (var i = 0; i < project.graphs.length; i++) {
-                    if (project.graphs[i].properties.id === graphId) {
-                      this.fire('graph', project.graphs[i]);
-                    }
-                  }
+            if (routeData.route === 'graph') {
+              // Toplevel graph is identified by ID
+              currentGraph = getGraphById(routeData.graph, project);
+              if (!currentGraph) {
+                return;
+              }
+              this.fire('graph', currentGraph);
+
+              // Later levels are identified by node names 
+              while (routeData.nodes.length) {
+                nodeId = decodeURIComponent(routeData.nodes.shift());
+                currentNode = currentGraph.getNode(nodeId);
+                if (!currentNode || !currentNode.component) {
+                  return;
                 }
+                currentItem = getItemByNode(currentNode, project);
+                if (!currentItem) {
+                  return;
+                }
+                if (currentItem[0] === 'component') {
+                  this.fire('component', currentItem[1]);
+                  return;
+                }
+                currentGraph = currentItem[1];
+                this.fire('graph', currentGraph);
               }
-              if (routeData.route === 'component') {
-                project.components.forEach(function (component) {
-                  if (component.id === routeData.component) {
-                    this.fire('component', component);
-                  }
-                }.bind(this));
+            }
+            if (routeData.route === 'component') {
+              currentItem = getComponentByName(routeData.component, project);
+              if (!currentItem) {
+                return;
               }
+              this.fire('component', currentItem);
             }
           }.bind(this));
           return;

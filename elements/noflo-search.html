@@ -91,7 +91,7 @@
   </style>
   <template>
     <div id="breadcrumb" on-click="{{ focus }}">
-      <template if="{{ graph }}">
+      <template if="{{ graph && (!component || !component.id) }}">
       <i class="fa fa-search"></i>
       <h1>
         <template if="{{ parentPath }}">
@@ -101,8 +101,13 @@
       </h1>
       <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ component && !graph }}">
-      <h1>{{ component.name }}</h1>
+      <template if="{{ component && component.id }}">
+      <h1>
+        <template if="{{ parentPath }}">
+        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
+        </template>
+        {{ component.name }}
+      </h1>
       </template>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" x-webkit-speech>
@@ -147,7 +152,7 @@
         this.blur();
       },
       focus: function () {
-        if (!this.graph) {
+        if (this.component && this.component.id) {
           return;
         }
         this.classList.remove('overlay');

@@ -170,7 +170,7 @@
             <button on-click="{{ newComponent }}">Create</button>
           </li>
           <template repeat="{{ component in project.components }}">
-          <li on-click="{{ openComponent }}" data-id="{{ component.id }}">
+          <li on-click="{{ openComponent }}" data-id="{{ component.name }}">
             <h2>{{ component.name }}</h2>
             <template if="{{ component.language == 'coffeescript' }}">
             <i class="fa fa-coffee"></i>
