@@ -75,30 +75,48 @@
             document.body.appendChild(dialog);
           }.bind(this)
         });
-        /*
-        this.editor.addMenuAction('node', 'n4', {
-          icon: 'search',
-          iconLabel: 'inspect',
-          action: function (graph, itemKey, item) {
-            if (this.nodes.indexOf(item) !== -1) {
-              this.nodes.splice(this.nodes.indexOf(item), 1);
-              return;
+        this.editor.addMenuCallback('node', function (defaultMenu, options) {
+          if (!options.item.component) {
+            return defaultMenu;
+          }
+          var componentParts = options.item.component.split('/');
+          if (componentParts.shift() !== this.project.id) {
+            return defaultMenu;
+          }
+          var i, menuKey;
+          var localMenu = {};
+          for (i = 0; i < this.project.graphs.length; i++) {
+            if (this.project.graphs[i].properties.id === componentParts[0]) {
+              for (menuKey in defaultMenu) {
+                localMenu[menuKey] = defaultMenu[menuKey];
+              }
+              localMenu.n4 = {
+                icon: 'arrow-circle-o-up',
+                iconLabel: 'open',
+                action: function (graph, itemKey, item) {
+                  window.location.hash += '/' + encodeURIComponent(item.id);
+                }
+              };
+              return localMenu;
             }
-            this.nodes.push(item);
-          }.bind(this)
-        });
-        this.editor.addMenuAction('edge', 'n4', {
-          icon: 'search',
-          iconLabel: 'inspect',
-          action: function (graph, itemKey, item) {
-            if (this.edges.indexOf(item) !== -1) {
-              this.edges.splice(this.edges.indexOf(item), 1);
-              return;
+          }
+          for (i = 0; i < this.project.components.length; i++) {
+            if (this.project.components[i].name === componentParts[0]) {
+              for (menuKey in defaultMenu) {
+                localMenu[menuKey] = defaultMenu[menuKey];
+              }
+              localMenu.n4 = {
+                icon: 'arrow-circle-o-up',
+                iconLabel: 'open',
+                action: function (graph, itemKey, item) {
+                  window.location.hash += '/' + encodeURIComponent(item.id);
+                }
+              };
+              return localMenu;
             }
-            this.edges.push(item);
-          }.bind(this)
-        });
-        */
+          }
+          return defaultMenu;
+        }.bind(this));
       },
       projectChanged: function () {
         this.fire('project', this.project);
