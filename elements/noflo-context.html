@@ -85,18 +85,20 @@
           }
           var i, menuKey;
           var localMenu = {};
+          var openAction =  {
+            icon: 'arrow-circle-o-up',
+            iconLabel: 'open',
+            action: function (graph, itemKey, item) {
+              window.location.hash += '/' + encodeURIComponent(item.id);
+            }
+          };
+
           for (i = 0; i < this.project.graphs.length; i++) {
             if (this.project.graphs[i].properties.id === componentParts[0]) {
               for (menuKey in defaultMenu) {
                 localMenu[menuKey] = defaultMenu[menuKey];
               }
-              localMenu.n4 = {
-                icon: 'arrow-circle-o-up',
-                iconLabel: 'open',
-                action: function (graph, itemKey, item) {
-                  window.location.hash += '/' + encodeURIComponent(item.id);
-                }
-              };
+              localMenu.n4 = openAction;
               return localMenu;
             }
           }
@@ -105,13 +107,7 @@
               for (menuKey in defaultMenu) {
                 localMenu[menuKey] = defaultMenu[menuKey];
               }
-              localMenu.n4 = {
-                icon: 'arrow-circle-o-up',
-                iconLabel: 'open',
-                action: function (graph, itemKey, item) {
-                  window.location.hash += '/' + encodeURIComponent(item.id);
-                }
-              };
+              localMenu.n4 = openAction;
               return localMenu;
             }
           }
