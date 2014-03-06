@@ -10,3 +10,4 @@
 *.zip
 app.*
 dist.sh
+manifest.json

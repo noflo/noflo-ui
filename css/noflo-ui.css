@@ -579,11 +579,17 @@ noflo-main noflo-account .avatar.flowhub {
   border-radius: 11px;
   border: 1px solid hsl(190, 100%, 30%);
 }
+noflo-main noflo-account .avatar.noflo {
+  border: 1px solid hsl(190, 100%, 30%);
+}
 noflo-main noflo-account .avatar.flowhub:before {
   border: none;
   border-radius: 6px;
   width: 72px;
   height: 72px;
+}
+noflo-main noflo-account .avatar.noflo:before {
+  border: none;
 }
 noflo-main noflo-account .avatar img {
   border: 2px solid hsl(190, 90%, 45%);
@@ -601,6 +607,14 @@ noflo-main noflo-account .flowhub img {
   margin-top: 8px;
   border-radius: 6px;
   box-sizing: border-box;
+}
+noflo-main noflo-account .noflo img {
+  width: 55px;
+  height: 22px;
+  border: none;
+  margin-top: 23px;
+  margin-left: 5px;
+  border-radius: initial;
 }
 noflo-main noflo-account h1 {
   line-height: 18px;

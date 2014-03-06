@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-new-runtime.html">
 <polymer-element name="noflo-main" attributes="open localProjects graphs components userRuntimes">
   <template>
-    <noflo-account id="mainaccount" clientid="9d963a3d-8b6f-42fe-bb36-6fccecd039af"></noflo-account>
+    <noflo-account id="mainaccount" clientid="$NOFLO_OAUTH_CLIENT_ID"></noflo-account>
     <section id="projects">
       <h2>Projects
           <template if="{{ projectList === 'local' }}">

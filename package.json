@@ -35,7 +35,8 @@
     "bower": "~1.2.7",
     "grunt-lint-inline": "~0.3.1",
     "vulcanize": "~0.1.15",
-    "grunt-contrib-clean": "~0.5.0"
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-string-replace": "^0.2.7"
   },
   "scripts": {
     "postinstall": "cd preview && npm install && cd ..",

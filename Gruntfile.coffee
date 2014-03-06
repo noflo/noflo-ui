@@ -55,6 +55,27 @@ module.exports = ->
         files:
           './preview/browser/noflo-ui-preview.min.js': ['./preview/browser/noflo-ui-preview.js']
 
+    'string-replace':
+      app:
+        files:
+          './app.html': './app.html'
+          './app.js': './app.js'
+          './manifest.json': './manifest.dist.json'
+        options:
+          replacements: [
+            pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
+            replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
+          ,
+            pattern: /\$NOFLO_APP_TITLE/ig
+            replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
+          ,
+            pattern: /\$NOFLO_APP_VERSION/ig
+            replacement: '<%= pkg.version %>'
+          ,
+            pattern: /\$NOFLO_THEME/ig
+            replacement: process.env.NOFLO_THEME or 'noflo'
+          ]
+
     compress:
       app:
         options:
@@ -170,6 +191,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
+  @loadNpmTasks 'grunt-string-replace'
 
   # Grunt plugins used for mobile app building
   @loadNpmTasks 'grunt-contrib-compress'
@@ -183,7 +205,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['clean:nuke_main', 'clean:nuke_bower', 'clean:nuke_preview', 'clean:nuke_main_built', 'clean:nuke_preview_built']
-  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'compress']
+  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace', 'compress']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']

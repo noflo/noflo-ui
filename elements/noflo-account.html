@@ -6,7 +6,7 @@
       <div class="avatar"><img src="{{ avatar }}"></div>
       </template>
       <template if="{{ !avatar }}">
-      <div class="avatar flowhub"><img src="../app/fl-74.png"></div>
+      <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       </template>
       <h1>{{ user.name }} <a href="http://flowhub.io/preorder/" target="_blank" id="plan" class="{{ plan }}">{{ plan }}</a></h1>
       <div class="toolbar">
@@ -15,8 +15,8 @@
       </div>
     </template>
     <template if="{{ !user }}">
-      <div class="avatar flowhub"><img src="../app/fl-74.png"></div>
-      <h1>flowhub</h1>
+      <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
+      <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
         <a class="login" on-click="{{ login }}">Login</a>
       </div>
@@ -143,7 +143,7 @@
             req.open('GET', this.gatekeeper + code[1], true);
             req.send(null);
           } else {
-            this.help.show('New to Flowhub?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');
+            this.help.show('New to $NOFLO_APP_TITLE?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');
           }
         },
         getUser: function (token, refresh) {
