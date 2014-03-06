@@ -126,6 +126,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
+          src: ["#{process.env.NOFLO_THEME or 'noflo'}.ico"]
+          expand: true
+          dest: '/'
+        ,
           src: ['css/*']
           expand: true
           dest: '/'
