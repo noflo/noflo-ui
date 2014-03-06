@@ -71,6 +71,7 @@
           user: 'grid-user',
           avatar: 'grid-avatar'
         },
+        help: null,
         login: function () {
           if (typeof chrome !== 'undefined' && chrome.identity) {
             this.redirect = chrome.identity.getRedirectURL();
@@ -92,6 +93,7 @@
         },
         enteredView: function () {
           this.redirect = window.location.href;
+          this.help = document.querySelector('noflo-help');
           this.checkLogin();
         },
         checkLogin: function () {
@@ -140,6 +142,8 @@
             }.bind(this);
             req.open('GET', this.gatekeeper + code[1], true);
             req.send(null);
+          } else {
+            this.help.show('New to Flowhub?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');
           }
         },
         getUser: function (token, refresh) {

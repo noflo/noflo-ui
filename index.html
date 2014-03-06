@@ -39,6 +39,7 @@
     <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
     <noflo-polymer name="noflo-journal" inports="graph panel undo redo" outports=""></noflo-polymer>
+    <link rel="import" href="elements/noflo-help.html">
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -46,6 +47,7 @@
   </head>
   <body>
     <a id="bugreport" href="https://github.com/noflo/noflo-ui/issues" title="Report a bug" target="_blank"><i class="fa fa-bug"></i></a>
+    <noflo-help></noflo-help>
     <div id="container">
       <noflo-main></noflo-main>
       <noflo-context></noflo-context>
