@@ -210,9 +210,7 @@
         // See if the nodes are already part of a group
         var group = '';
         var description = '';
-        var selectedNodes = item.nodes.map(function (node) {
-          return node.id;
-        });
+        var selectedNodes = item.nodes;
         selectedNodes.sort();
 
         graph.groups.forEach(function (grp) {
@@ -249,7 +247,8 @@
           });
 
           // Copy nodes
-          item.nodes.forEach(function (node) {
+          item.nodes.forEach(function (id) {
+            var node = currentGraph.getNode(id);
             graph.addNode(node.id, node.component, node.metadata);
           });
 
@@ -268,7 +267,7 @@
           });
 
           // Create subgraph node
-          var initialMetadata = item.nodes[0].metadata;
+          var initialMetadata = currentGraph.getNode(item.nodes[0]).metadata;
           currentGraph.startTransaction('subgraph');
           currentGraph.addNode(graph.properties.id, currentGraph.properties.project + '/' + graph.properties.id, {
             label: graph.name,
@@ -299,7 +298,9 @@
           });
 
           // Remove the selected nodes
-          this.remove();
+          item.nodes.forEach(function (id) {
+            currentGraph.removeNode(id);
+          });
 
           // Emit new subgraph so that it can be stored
           graph.endTransaction('newsubgraph');
