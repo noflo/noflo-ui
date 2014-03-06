@@ -95,7 +95,13 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/**', '!bower_components/**/*.html']
+          src: [
+            'bower_components/**/*.js'
+            'bower_components/**/*.css'
+            'bower_components/**/*.woff'
+            'bower_components/**/*.ttf'
+            'bower_components/**/*.svg'
+          ]
           expand: true
           dest: '/'
         ,
