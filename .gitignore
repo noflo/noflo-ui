@@ -7,6 +7,8 @@
 /preview/components/*/
 /spec/*.js
 /spec/*.xml
+/dist/
+/gh-pages/
 *.zip
 app.*
 dist.sh

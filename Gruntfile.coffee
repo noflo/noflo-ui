@@ -16,16 +16,18 @@ module.exports = ->
 
     # Directory cleaning
     clean:
-      nuke_main:
-        src: ['components/*/']
-      nuke_main_built:
-        src: ['browser']
-      nuke_bower:
-        src: ['bower_components']
-      nuke_preview:
-        src: ['preview/components']
-      nuke_preview_built:
-        src: ['preview/browser']
+      build: [
+        'browser'
+        'preview/browser'
+      ]
+      dependencies: [
+        'bower_components'
+        'components/*/'
+        'preview/components'
+      ]
+      dist: [
+        'dist'
+      ]
 
     # Browser version building
     exec:
@@ -93,7 +95,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/**', '!bower_components/**/index.html']
+          src: ['bower_components/**', '!bower_components/**/*.html']
           expand: true
           dest: '/'
         ,
@@ -143,25 +145,15 @@ module.exports = ->
           user:
             token: process.env.PHONEGAP_TOKEN
 
-    # Automated recompilation and testing when developing
-    watch:
-      files: [
-        'src/*.coffee'
-        'src/**/*.coffee'
-        'components/*.coffee'
-        'graphs/*.json'
-        'component.json'
-        'spec/*.coffee'
-      ]
-      tasks: ['test']
+    unzip:
+      dist: 'noflo-<%= pkg.version %>.zip'
 
-
-    # BDD tests on browser
-    mocha_phantomjs:
+    'gh-pages':
       options:
-        output: 'spec/result.xml'
-        reporter: 'dot'
-      all: ['spec/runner.html']
+        base: 'dist'
+        clone: 'gh-pages'
+      src: '**/*'
+
 
     # Coding standards
     coffeelint:
@@ -195,6 +187,8 @@ module.exports = ->
 
   # Grunt plugins used for mobile app building
   @loadNpmTasks 'grunt-contrib-compress'
+  @loadNpmTasks 'grunt-zip'
+  @loadNpmTasks 'grunt-gh-pages'
   @loadNpmTasks 'grunt-phonegap-build'
 
   # Grunt plugins used for testing
@@ -204,14 +198,14 @@ module.exports = ->
   @loadNpmTasks 'grunt-lint-inline'
 
   # Our local tasks
-  @registerTask 'nuke', ['clean:nuke_main', 'clean:nuke_bower', 'clean:nuke_preview', 'clean:nuke_main_built', 'clean:nuke_preview_built']
+  @registerTask 'nuke', ['clean']
   @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace', 'compress']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
   @registerTask 'preview_rebuild', ['clean:nuke_preview', 'preview_build']
   @registerTask 'rebuild', ['main_rebuild', 'preview_rebuild']
-  # @registerTask 'test', ['coffeelint', 'build', 'coffee', 'mocha_phantomjs']
   @registerTask 'test', ['coffeelint', 'inlinelint']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
+  @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'gh-pages']

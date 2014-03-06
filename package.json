@@ -36,7 +36,9 @@
     "grunt-lint-inline": "~0.3.1",
     "vulcanize": "~0.1.15",
     "grunt-contrib-clean": "~0.5.0",
-    "grunt-string-replace": "^0.2.7"
+    "grunt-string-replace": "^0.2.7",
+    "grunt-zip": "^0.13.0",
+    "grunt-gh-pages": "^0.9.1"
   },
   "scripts": {
     "postinstall": "cd preview && npm install && cd ..",
