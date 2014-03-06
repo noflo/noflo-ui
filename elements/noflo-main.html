@@ -14,7 +14,7 @@
           <small>{{ remoteProjects.length }}</small>
           </template>
           <template if="{{ projectList === 'github' }}">
-          <button on-click="{{ fetchGithub }}"><i class="fa fa-refresh"></i></button>
+          <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
           </template>
       </h2>
       <ul class="tabs">
@@ -58,7 +58,7 @@
     <section id="runtimes">
       <h2>
         Runtimes <small>{{ userRuntimes.length }}</small>
-        <button on-click="{{ fetchFlowhub }}"><i class="fa fa-refresh"></i></button>
+        <button on-click="{{ fetchFlowhub }}"><i id="fetchflowhub" class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">
         <li class="add">
@@ -92,6 +92,7 @@
         'C++'
       ],
       registry: null,
+      help: null,
       enteredView: function () {
         this.openChanged();
         this.$.mainaccount.addEventListener('githubtoken', function (event) {
@@ -116,6 +117,7 @@
           this.fetchFlowhub();
         }.bind(this));
         this.registry = require('flowhub-registry');
+        this.help = document.querySelector('noflo-help');
       },
       token: function () {
         this.fire('githubtoken', this.githubToken);
@@ -139,7 +141,9 @@
         event.preventDefault();
         this.projectList = 'github';
         if (this.remoteProjects.length === 0) {
-          this.fetchGithub();
+          setTimeout(function () {
+            this.fetchGithub();
+          }.bind(this), 1);
         }
       },
       downloadProject: function (event, details, sender) {
@@ -168,12 +172,23 @@
           return;
         }
         this.remoteProjects = [];
+        var button = document.getElementById('fetchgithub');
+        button.classList.add('fa-spin');
         var req = new XMLHttpRequest();
         req.onreadystatechange = function () {
           if (req.readyState !== 4) {
             return;
           }
+          button.classList.remove('fa-spin');
           if (req.status !== 200) {
+            var error;
+            try {
+              var data = JSON.parse(req.responseText);
+              error = data.message;
+            } catch (e) {
+              error = 'Unknown Error';
+            }
+            this.help.show('Error accessing GitHub', 'GitHub API responded with: ' + error + '. You may want to check your GitHub API key in the account settings.');
             return;
           }
           var repos = JSON.parse(req.responseText);
@@ -217,7 +232,10 @@
         if (!this.gridToken) {
           return;
         }
+        var button = document.getElementById('fetchflowhub');
+        button.classList.add('fa-spin');
         this.registry.list(this.gridToken, function (err, runtimes) {
+          button.classList.remove('fa-spin');
           if (err) {
             return;
           }
