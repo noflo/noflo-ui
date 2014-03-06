@@ -1,6 +1,7 @@
-<link rel="import" href="noflo-node-menu.html">
 <link rel="import" href="noflo-node-inspector.html">
 <link rel="import" href="noflo-exported-inspector.html">
+<link rel="import" href="noflo-new-graph.html">
+<link rel="import" href="noflo-group-inspector.html">
 <link rel="import" href="../bower_components/the-card/the-card/the-card.html">
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge search">
@@ -75,6 +76,16 @@
             document.body.appendChild(dialog);
           }.bind(this)
         });
+        this.editor.addMenuAction('selection', 'e4', {
+          icon: 'sitemap',
+          iconLabel: 'graph',
+          action: this.subgraph.bind(this)
+        });
+        this.editor.addMenuAction('selection', 'w4', {
+          icon: 'square-o',
+          iconLabel: 'group',
+          action: this.group.bind(this)
+        });
         this.editor.addMenuCallback('node', function (defaultMenu, options) {
           if (!options.item.component) {
             return defaultMenu;
@@ -143,24 +154,6 @@
       },
       nodeInspectors: {},
       showNodeCards: function () {
-        if (!this.nodeMenu) {
-          var menu = document.createElement('noflo-node-menu');
-          menu.nodes = this.nodes;
-          menu.graph = this.graphs[this.graphs.length - 1];
-          menu.runtimes = this.runtimes;
-          this.nodeMenu = document.createElement('the-card');
-          this.nodeMenu.type = 'node-menu';
-          this.nodeMenu.appendChild(menu);
-          this.nodeMenu.addTo(this.contextBar);
-          this.nodeMenu.dialog = menu;
-          this.nodeMenu.addEventListener('newgraph', function (event) {
-            this.project.graphs.push(event.detail);
-            this.fire('newgraph', event.detail);
-          }.bind(this));
-        } else {
-          this.nodeMenu.dialog.nodes = this.nodes;
-        }
-
         this.nodes.forEach(function (node) {
           var id = node.id;
           if (this.nodeInspectors[id]) {
@@ -191,11 +184,6 @@
         }.bind(this));
       },
       hideNodeCards: function () {
-        if (this.nodeMenu) {
-          this.nodeMenu.parentNode.removeChild(this.nodeMenu);
-          this.nodeMenu = null;
-        }
-
         for (var id in this.nodeInspectors) {
           this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
           delete this.nodeInspectors[id];
@@ -215,6 +203,113 @@
         this.graphs.splice(0, this.graphs.length);
         this.nodes.splice(0, this.nodes.length);
         this.edges.splice(0, this.edges.length);
+      },
+      group: function (graph, itemKey, item) {
+        event.preventDefault();
+
+        // See if the nodes are already part of a group
+        var group = '';
+        var description = '';
+        var selectedNodes = item.nodes.map(function (node) {
+          return node.id;
+        });
+        selectedNodes.sort();
+
+        graph.groups.forEach(function (grp) {
+          var grpNodes = JSON.parse(JSON.stringify(grp.nodes));
+          grpNodes.sort();
+          if (grpNodes.join(',') == selectedNodes.join(',')) {
+            group = grp.name;
+            description = grp.metadata.description;
+          }
+        });
+
+        var dialog = document.createElement('noflo-group-inspector');
+        dialog.group = group;
+        dialog.groupdescription = description;
+        dialog.nodes = selectedNodes;
+        dialog.graph = graph;
+        document.body.appendChild(dialog);
+      },
+      subgraph: function (currentGraph, itemKey, item) {
+        event.preventDefault();
+
+        // Ask user to name the new subgraph
+        var dialog = document.createElement('noflo-new-graph');
+        dialog.runtimes = this.runtimes;
+        dialog.type = currentGraph.properties.environment.type;
+        document.body.appendChild(dialog);
+        dialog.addEventListener('new', function (event) {
+          var graph = event.detail;
+          graph.startTransaction('newsubgraph');
+
+          graph.setProperties({
+            id: graph.name.replace(' ', '_'),
+            project: currentGraph.properties.project
+          });
+
+          // Copy nodes
+          item.nodes.forEach(function (node) {
+            graph.addNode(node.id, node.component, node.metadata);
+          });
+
+          // Copy edges between nodes
+          currentGraph.edges.forEach(function (edge) {
+            if (graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
+              graph.addEdge(edge.from.node, edge.from.port, edge.to.node, edge.to.port, edge.metadata);
+            }
+          });
+
+          // Move IIPs to subgraph as well
+          currentGraph.initializers.forEach(function (iip) {
+            if (graph.getNode(iip.to.node)) {
+              graph.addInitial(iip.from.data, iip.to.node, iip.to.port, iip.metadata);
+            }
+          });
+
+          // Create subgraph node
+          var initialMetadata = item.nodes[0].metadata;
+          currentGraph.startTransaction('subgraph');
+          currentGraph.addNode(graph.properties.id, currentGraph.properties.project + '/' + graph.properties.id, {
+            label: graph.name,
+            x: initialMetadata.x,
+            y: initialMetadata.y
+          });
+
+          var subgraphPort = function (node, port) {
+            var portName = node + '.' + port;
+            return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4').toLowerCase();
+          };
+
+          // Reconnect external edges to subgraph node
+          currentGraph.edges.forEach(function (edge) {
+            // Edge from outside the new subgraph to a subgraph port
+            if (!graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
+              // Create exported inport
+              var inport = subgraphPort(edge.to.node, edge.to.port);
+              graph.addInport(inport, edge.to.node, edge.to.port);
+              currentGraph.addEdge(edge.from.node, edge.from.port, graph.properties.id, inport);
+            }
+            // Edge from subgraph port to the outside
+            if (graph.getNode(edge.from.node) && !graph.getNode(edge.to.node)) {
+              var outport = subgraphPort(edge.from.node, edge.from.port);
+              graph.addOutport(outport, edge.from.node, edge.from.port);
+              currentGraph.addEdge(graph.properties.id, outport, edge.to.node, edge.to.port);
+            }
+          });
+
+          // Remove the selected nodes
+          this.remove();
+
+          // Emit new subgraph so that it can be stored
+          graph.endTransaction('newsubgraph');
+          this.fire('newgraph', graph);
+
+          // End the transaction on the main graph
+          setTimeout(function () {
+            currentGraph.endTransaction('subgraph');
+          }, 5);
+        }.bind(this));
       }
     });
   </script>
