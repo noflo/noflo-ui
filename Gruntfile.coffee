@@ -152,6 +152,7 @@ module.exports = ->
       options:
         base: 'dist'
         clone: 'gh-pages'
+        message: 'Updating web version to <%= pkg.version %>'
       src: '**/*'
 
 
