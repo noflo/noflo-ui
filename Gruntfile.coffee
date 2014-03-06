@@ -68,6 +68,9 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
           ,
+            pattern: /\$NOFLO_OAUTH_GATE/ig
+            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com/authenticate/'
+          ,
             pattern: /\$NOFLO_APP_TITLE/ig
             replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
           ,
