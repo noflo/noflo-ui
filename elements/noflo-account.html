@@ -85,7 +85,6 @@
                 button.innerHTML = 'Login';
                 return;
               }
-              this.help.close();
               this.remoteLogin(responseUrl, false);
             }.bind(this));
             return;
@@ -124,6 +123,7 @@
                 return;
               }
               if (req.status === 200) {
+                this.help.close();
                 var data = JSON.parse(req.responseText);
                 if (data.token) {
                   // Save the access token
