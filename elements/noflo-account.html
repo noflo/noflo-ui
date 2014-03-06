@@ -18,7 +18,7 @@
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
-        <a class="login" on-click="{{ login }}">Login</a>
+        <a id="loginbutton" class="login" on-click="{{ login }}">Login</a>
       </div>
     </template>
   </template>
@@ -73,6 +73,8 @@
         },
         help: null,
         login: function () {
+          var button = document.getElementById('loginbutton');
+          button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
           if (typeof chrome !== 'undefined' && chrome.identity) {
             this.redirect = chrome.identity.getRedirectURL();
             chrome.identity.launchWebAuthFlow({
@@ -80,6 +82,7 @@
               url: this.getLoginUrl()
             }, function (responseUrl) {
               if (chrome.runtime.lastError) {
+                button.innerHTML = 'Login';
                 return;
               }
               this.remoteLogin(responseUrl, false);
