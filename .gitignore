@@ -13,3 +13,4 @@
 app.*
 dist.sh
 manifest.json
+config.xml

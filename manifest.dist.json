@@ -1,6 +1,7 @@
 {
   "name": "$NOFLO_APP_TITLE",
-  "description": "Flow-Based Programming Environment",
+  "short_name": "$NOFLO_APP_NAME",
+  "description": "$NOFLO_APP_DESCRIPTION",
   "version": "$NOFLO_APP_VERSION",
   "app": {
     "background": {

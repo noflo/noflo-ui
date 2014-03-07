@@ -62,6 +62,7 @@ module.exports = ->
         files:
           './app.html': './app.html'
           './app.js': './app.js'
+          './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
         options:
           replacements: [
@@ -71,11 +72,17 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_GATE/ig
             replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com/'
           ,
+            pattern: /\$NOFLO_APP_NAME/ig
+            replacement: process.env.NOFLO_APP_NAME or process.env.NOFLO_APP_TITLE or 'NoFlo UI'
+          ,
             pattern: /\$NOFLO_APP_TITLE/ig
             replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
           ,
+            pattern: /\$NOFLO_APP_DESCRIPTION/ig
+            replacement: process.env.NOFLO_APP_DESCRIPTION or 'Flow-Based Programming Environment'
+          ,
             pattern: /\$NOFLO_APP_VERSION/ig
-            replacement: '<%= pkg.version %>'
+            replacement: process.env.NOFLO_APP_VERSION or '<%= pkg.version %>'
           ,
             pattern: /\$NOFLO_THEME/ig
             replacement: process.env.NOFLO_THEME or 'noflo'
