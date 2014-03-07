@@ -23,7 +23,6 @@
     "identity"
   ],
   "icons": {
-    "16": "app/$NOFLO_THEME-16.png",
     "128": "app/$NOFLO_THEME-128.png"
   }
 }
