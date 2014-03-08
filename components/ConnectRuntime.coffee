@@ -6,10 +6,12 @@ class ConnectRuntime extends noflo.Component
     @runtime = null
     @connected = false
     @project = null
+    @example = null
     @inPorts =
       editor: new noflo.Port 'object'
       project: new noflo.Port 'object'
       newgraph: new noflo.Port 'object'
+      example: new noflo.Port 'object'
       runtime: new noflo.Port 'object'
     @outPorts =
       editor: new noflo.Port 'object'
@@ -21,8 +23,11 @@ class ConnectRuntime extends noflo.Component
         @outPorts.editor.send @editor
         @outPorts.editor.disconnect()
     @inPorts.project.on 'data', (@project) =>
+      @example = null
     @inPorts.newgraph.on 'data', (data) =>
       @sendGraph @runtime, data
+    @inPorts.example.on 'data', (@example) =>
+      @sendGraph @runtime, @example
     @inPorts.runtime.on 'connect', =>
       @runtime = null
     @inPorts.runtime.on 'data', (runtime) =>
@@ -138,6 +143,7 @@ class ConnectRuntime extends noflo.Component
       @connected = true
       runtime.sendComponent 'list', ''
       @sendProject @runtime, @project if @project
+      @sendGraph @runtime, @example if @example
     runtime.on 'disconnected', =>
       @connected = false
 

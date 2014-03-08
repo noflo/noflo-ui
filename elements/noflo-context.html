@@ -133,13 +133,19 @@
         if (this.graphs.length) {
           var graph = this.graphs[this.graphs.length - 1];
           this.fire('currentgraph', graph);
-          var noflo = require('noflo');
-          var IDBJournalStore = require('noflo-ui/src/JournalStore').IDBJournalStore;
-          if (!graph.journal) {
-            var store = new IDBJournalStore(graph, this.db);
-            store.init(function () {
-              graph.journal = new noflo.Journal(graph, undefined, store);
-            });
+          if (!graph.properties.project) {
+            window.setTimeout(function () {
+              this.fire('example', graph);
+            }.bind(this), 1);
+          } else {
+            var noflo = require('noflo');
+            var IDBJournalStore = require('noflo-ui/src/JournalStore').IDBJournalStore;
+            if (!graph.journal) {
+              var store = new IDBJournalStore(graph, this.db);
+              store.init(function () {
+                graph.journal = new noflo.Journal(graph, undefined, store);
+              });
+            }
           }
         }
         this.search = '';

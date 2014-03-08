@@ -17,7 +17,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -509,6 +509,7 @@
       Context CURRENTGRAPH -> CURRENTGRAPH GraphEditor(local/GraphEditor)
       Runtime RUNTIME -> RUNTIME GraphEditor
       Context NEWGRAPH -> NEWGRAPH GraphEditor
+      Context EXAMPLE -> EXAMPLE GraphEditor
       Context PROJECT -> PROJECT GraphEditor
       GraphEditor EDITOR -> EDITOR Library
       GraphEditor EDITOR -> EDITOR Context
@@ -542,6 +543,7 @@
       INPORT=ConnectRuntime.RUNTIME:RUNTIME
       INPORT=ConnectRuntime.PROJECT:PROJECT
       INPORT=ConnectRuntime.NEWGRAPH:NEWGRAPH
+      INPORT=ConnectRuntime.EXAMPLE:EXAMPLE
       INPORT=Graph.IN:CURRENTGRAPH
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
@@ -613,7 +615,7 @@
       Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context PROJECTCHANGED -> ITEM StoreProject
       Context RUNTIMECHANGED -> ITEM StoreRuntime
-      Context NEWGRAPH -> ITEM StoreGraph
+      Context NEWGRAPH -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> ITEM StoreComponent
 
       # Handle GitHub tokens
