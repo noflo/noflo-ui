@@ -25,8 +25,5 @@
     "coffee-script": "~1.6.3",
     "polymer": "Polymer/polymer#0.2.1",
     "platform": "Polymer/platform#0.2.1"
-  },
-  "resolutions": {
-    "platform": "0.2.1"
   }
 }
