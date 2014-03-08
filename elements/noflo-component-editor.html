@@ -34,7 +34,7 @@
           lineNumbers: true,
           value: this.component.code || '',
           language: this.component.language,
-          theme: 'noflo'
+          theme: this.getMirrorTheme()
         });
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
@@ -45,7 +45,7 @@
           lineNumbers: true,
           value: this.component.tests || '',
           language: this.component.language,
-          theme: 'noflo'
+          theme: this.getMirrorTheme()
         });
         this.testsEditor.on('change', function () {
           this.component.tests = this.testsEditor.getValue();
