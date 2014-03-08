@@ -94,6 +94,21 @@ module.exports = ->
             pattern: /\$NOFLO_THEME/ig
             replacement: process.env.NOFLO_THEME or 'noflo'
           ]
+      analytics:
+        files:
+          './dist/index.html': './dist/index.html'
+        options:
+          replacements: [
+            pattern: '<!-- $NOFLO_APP_ANALYTICS -->'
+            replacement: process.env.NOFLO_APP_ANALYTICS or "<script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+              ga('create', 'UA-75936-14', 'noflojs.org');
+              ga('send', 'pageview');
+            </script>"
+          ]
 
     compress:
       app:
@@ -228,7 +243,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['clean']
-  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace', 'compress']
+  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
   @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
@@ -237,4 +252,4 @@ module.exports = ->
   @registerTask 'test', ['coffeelint', 'inlinelint']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
-  @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'gh-pages']
+  @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
