@@ -31,6 +31,8 @@ module.exports = ->
 
     # Browser version building
     exec:
+      bower_cache_clean:
+        command: 'node ./node_modules/bower/bin/bower cache clean'
       bower_install:
         command: 'node ./node_modules/bower/bin/bower install -F'
       main_install:
@@ -242,7 +244,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-lint-inline'
 
   # Our local tasks
-  @registerTask 'nuke', ['clean']
+  @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
   @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
   @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
   @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']

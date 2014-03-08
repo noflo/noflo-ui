@@ -23,9 +23,9 @@
     "font-awesome": "~4.0.3",
     "codemirror": "~3.22.0",
     "coffee-script": "~1.6.3",
-    "polymer": "Polymer/polymer#0.2.1"
+    "polymer": "Polymer/polymer#0.2.0"
   },
   "resolutions": {
-    "platform": "0.2.1"
+    "platform": "0.2.0"
   }
 }
