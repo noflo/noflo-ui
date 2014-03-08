@@ -116,6 +116,11 @@
         this.$.mainaccount.addEventListener('login', function (event) {
           this.fetchFlowhub();
         }.bind(this));
+        this.$.mainaccount.addEventListener('theme', function (event) {
+          window.setTimeout(function () {
+            this.fire('theme', event.detail);
+          }.bind(this), 1000);
+        }.bind(this));
         this.registry = require('flowhub-registry');
         this.help = document.querySelector('noflo-help');
       },

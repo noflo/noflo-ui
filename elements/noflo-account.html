@@ -65,11 +65,13 @@
         gridToken: '',
         githubToken: '',
         avatar: '',
+        theme: 'dark',
         storage: {
           grid: 'grid-token',
           github: 'github-token',
           user: 'grid-user',
-          avatar: 'grid-avatar'
+          avatar: 'grid-avatar',
+          theme: 'flowhub-theme'
         },
         help: null,
         login: function () {
@@ -112,6 +114,12 @@
               return;
             }
             this.githubToken = token;
+          }.bind(this));
+          storage.get(this.storage.theme, function (theme) {
+            if (!theme) {
+              return;
+            }
+            this.theme = theme;
           }.bind(this));
         },
         remoteLogin: function (responseUrl, cleanUp) {
@@ -197,11 +205,14 @@
         openSettings: function () {
           var dialog = document.createElement('noflo-account-settings');
           dialog.githubtoken = this.githubToken;
+          dialog.theme = this.theme;
           dialog.user = this.user;
           document.body.appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.githubToken = event.detail.githubtoken;
+            this.theme = event.detail.theme;
             storage.set(this.storage.github, this.githubToken);
+            storage.set(this.storage.theme, this.theme);
           }.bind(this));
         },
         clearCache: function () {
@@ -245,6 +256,11 @@
         },
         githubTokenChanged: function () {
           this.fire('githubtoken', this.githubToken);
+        },
+        themeChanged: function (oldTheme, newTheme) {
+          this.fire('theme', this.theme);
+          document.body.classList.remove(oldTheme);
+          document.body.classList.add(newTheme);
         }
       });
     })();

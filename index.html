@@ -14,12 +14,12 @@
     <script src="bower_components/react/react.js"></script>
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
-    <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
+    <noflo-polymer name="the-graph-editor" inports="graph library theme width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
     <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime theme"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-packets.html">
@@ -28,7 +28,6 @@
     <noflo-polymer name="noflo-search" inports="toggle results runtimes project graphs component panel" outports="menu search"></noflo-polymer>
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="editor project graphs search" outports="result"></noflo-polymer>
-    <link rel="import" href="elements/noflo-account.html">
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
@@ -449,6 +448,7 @@
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
       INPORT=Context.DB:DB
+      INPORT=GraphEditor.THEME:THEME
       OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
@@ -548,6 +548,7 @@
       INPORT=Graph.IN:CURRENTGRAPH
       INPORT=GraphEditor.WIDTH:WIDTH
       INPORT=GraphEditor.HEIGHT:HEIGHT
+      INPORT=GraphEditor.THEME:THEME
       OUTPORT=Async.OUT:EDITOR
       OUTPORT=ConnectRuntime.PACKET:PACKET
       OUTPORT=GraphEditor.EDGES:EDGES
@@ -611,6 +612,7 @@
       Main PROJECT -> PROJECT Context
       Main GRAPH -> GRAPHS Context
       Main COMPONENT -> COMPONENT Context
+      Main THEME -> THEME Context
       Context COMPONENTCHANGED -> ITEM StoreComponent
       Context COMPONENTCHANGED -> COMPONENTS Main
       Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph

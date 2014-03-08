@@ -1,4 +1,4 @@
-<polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken" class="modal-content">
+<polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken theme" class="modal-content">
   <template>
     <h1>Account settings for {{ user.name }}</h1>
     <form>
@@ -9,6 +9,13 @@
       <label>
         GitHub API token
         <input type="text" value="{{ githubtoken }}" placeholder="Token for GitHub API access" autocapitalize="off" autocorrect="off" required>
+      </label>
+      <label>
+        Theme
+        <select name="type" value="{{ theme }}">
+          <option value="light">Morning</option>
+          <option value="dark">Midnight</option>
+        </select>
       </label>
       <div class="toolbar">
         <button on-click="{{ send }}">Save</button>
@@ -21,6 +28,7 @@
       user: null,
       gridtoken: '',
       githubtoken: '',
+      theme: '',
       enteredView: function () {
         document.getElementById('container').classList.add('blur');
       },
@@ -30,7 +38,8 @@
       send: function (event) {
         event.preventDefault();
         this.fire('updated', {
-          githubtoken: this.githubtoken
+          githubtoken: this.githubtoken,
+          theme: this.theme
         });
         this.close();
       },
