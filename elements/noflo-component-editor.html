@@ -13,6 +13,7 @@
   <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
   <script src="../bower_components/codemirror/mode/coffeescript/coffeescript.js"></script>
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <script>
     Polymer('noflo-component-editor', {
@@ -21,6 +22,7 @@
       height: null,
       codeEditor: null,
       testsEditor: null,
+      theme: 'dark',
       componentChanged: function () {
         if (!this.component || !this.component.id) {
           this.style.display = 'none';
@@ -57,6 +59,19 @@
       },
       heightChanged: function () {
         this.setSize();
+      },
+      getMirrorTheme: function () {
+        if (this.theme === 'light') {
+          return 'mdn-like';
+        }
+        return 'noflo';
+      },
+      themeChanged: function () {
+        if (!this.codeEditor || !this.testsEditor) {
+          return;
+        }
+        this.codeEditor.setOption('theme', this.getMirrorTheme());
+        this.testsEditor.setOption('theme', this.getMirrorTheme());
       },
       setSize: function () {
         if (!this.codeEditor || !this.testsEditor || !this.width || !this.height) {

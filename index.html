@@ -31,7 +31,7 @@
     <link rel="import" href="elements/noflo-project.html">
     <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
-    <noflo-polymer name="noflo-component-editor" inports="component graphs width height" outports="changed"></noflo-polymer>
+    <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
     <noflo-polymer name="noflo-journal" inports="graph panel undo redo" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-help.html">
@@ -448,7 +448,7 @@
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
       INPORT=Context.DB:DB
-      INPORT=GraphEditor.THEME:THEME
+      INPORT=Theme.IN:THEME
       OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
@@ -508,6 +508,7 @@
 
       # Prepare graph editor
       Context CURRENTGRAPH -> CURRENTGRAPH GraphEditor(local/GraphEditor)
+      Theme(core/Repeat) OUT -> THEME GraphEditor
       Runtime RUNTIME -> RUNTIME GraphEditor
       Context NEWGRAPH -> NEWGRAPH GraphEditor
       Context EXAMPLE -> EXAMPLE GraphEditor
@@ -521,6 +522,7 @@
       # Prepare component editor
       'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
       Context COMPONENT -> COMPONENT ComponentEditor
+      Theme OUT -> THEME ComponentEditor
 
       # Listen for graph changes
       Context CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
