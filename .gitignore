@@ -13,4 +13,5 @@
 app.*
 dist.sh
 manifest.json
+manifest.webapp
 config.xml

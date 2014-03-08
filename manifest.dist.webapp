@@ -1,0 +1,23 @@
+{
+  "name": "$NOFLO_APP_TITLE",
+  "description": "$NOFLO_APP_DESCRIPTION",
+  "default_locale": "en",
+  "launch_path": "/index.html",
+  "developer": {
+    "name": "$NOFLO_ORGANIZATION",
+    "url": "$NOFLO_WEBSITE"
+  },
+  "installs_allowed_from": ["https://marketplace.firefox.com", "*"],
+  "type": "privileged",
+  "permissions": {
+    "storage": {
+      "description": "Required for storage of your projects and components."
+    },
+    "systemXHR": {
+      "description": "Required for talking with remote flow-based runtimes"
+    }
+  },
+  "icons": {
+    "128": "app/$NOFLO_THEME-128.png"
+  }
+}

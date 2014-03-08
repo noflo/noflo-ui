@@ -64,6 +64,7 @@ module.exports = ->
           './app.js': './app.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
+          './manifest.webapp': './manifest.dist.webapp'
         options:
           replacements: [
             pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
@@ -77,6 +78,12 @@ module.exports = ->
           ,
             pattern: /\$NOFLO_APP_TITLE/ig
             replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
+          ,
+            pattern: /\$NOFLO_ORGANIZATION/ig
+            replacement: process.env.NOFLO_ORGANIZATION or 'NoFlo Community'
+          ,
+            pattern: /\$NOFLO_WEBSITE/ig
+            replacement: process.env.NOFLO_WEBSITE or 'http://noflojs.org'
           ,
             pattern: /\$NOFLO_APP_DESCRIPTION/ig
             replacement: process.env.NOFLO_APP_DESCRIPTION or 'Flow-Based Programming Environment'
@@ -130,6 +137,10 @@ module.exports = ->
           dest: '/'
         ,
           src: ['manifest.json']
+          expand: true
+          dest: '/'
+        ,
+          src: ['manifest.webapp']
           expand: true
           dest: '/'
         ,
