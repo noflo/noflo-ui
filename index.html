@@ -273,7 +273,7 @@
     </script>
     <script type="application/fbp" id="LoadExample">
       INPORT=SplitGist.IN:GIST
-      OUTPORT=ParseExample.OUT:GRAPH
+      OUTPORT=SetGraphId.OUT:GRAPH
       OUTPORT=Errors.OUT:ERROR
       'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
       '/' -> DELIMITER CreateUrl(strings/CompileString)
@@ -289,6 +289,10 @@
       GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
+      'id' -> PROPERTY SetGraphId(graph/SetPropertyValue)
+      SplitGist OUT -> VALUE SetGraphId
+      ParseExample OUT -> IN ConvertGraph(graph/LoadJson)
+      ConvertGraph OUT -> IN SetGraphId
     </script>
     <script type="application/fbp" id="EnsureId">
       INPORT=Item.IN:IN
