@@ -8,6 +8,8 @@
     "url": "$NOFLO_WEBSITE"
   },
   "installs_allowed_from": ["https://marketplace.firefox.com", "*"],
+  "orientation": "landscape",
+  "origin": "app://flowhub.io",
   "type": "privileged",
   "permissions": {
     "storage": {
