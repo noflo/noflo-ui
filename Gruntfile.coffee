@@ -131,9 +131,13 @@ module.exports = ->
             'bower_components/**/*.woff'
             'bower_components/**/*.ttf'
             'bower_components/**/*.svg'
-            'bower_components/**/*.map'
           ]
           expand: true
+          dest: '/'
+        ,
+          src: ['bower_components/**/*.map']
+          expand: true
+          flatten: true
           dest: '/'
         ,
           src: ['app.js']
