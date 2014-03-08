@@ -31,6 +31,9 @@
             this.clearSelection();
           }
         }.bind(this));
+
+        // Workaround for https://github.com/Polymer/PointerEvents/issues/134
+        document.addEventListener('touchstart', function () {});
       },
       clearSelection: function () {
         var edge, node;
