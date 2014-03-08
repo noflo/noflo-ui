@@ -9,14 +9,9 @@
 
     <!-- KLayJS (autolayout) -->
     <!--<script src="bower_components/klay-js/klay/klay.nocache.js"></script>-->
-    
-    <!-- Polymer deps -->
     <script src="bower_components/platform/platform.js"></script>
     <link rel="import" href="bower_components/polymer/polymer.html">
-
-    <!-- React -->
     <script src="bower_components/react/react.js"></script>
-
     <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
     <link rel="import" href="bower_components/the-graph/the-graph-editor/the-graph-editor.html">
     <noflo-polymer name="the-graph-editor" inports="graph library width height" outports="edges nodes"></noflo-polymer>
@@ -45,6 +40,13 @@
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="./css/noflo-ui.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="apple-touch-icon" href="app/$NOFLO_THEME-60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="app/$NOFLO_THEME-120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="app/$NOFLO_THEME-144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="app/$NOFLO_THEME-152.png">
   </head>
   <body class="$NOFLO_THEME">
     <a id="bugreport" href="https://github.com/noflo/noflo-ui/issues" title="Report a bug" target="_blank"><i class="fa fa-bug"></i></a>
