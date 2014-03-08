@@ -104,10 +104,6 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['browser/noflo-noflo-polymer/noflo-polymer/*']
-          expand: true
-          dest: '/'
-        ,
           src: ['browser/noflo-ui.js']
           expand: true
           dest: '/'
