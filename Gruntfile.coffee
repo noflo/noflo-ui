@@ -32,7 +32,7 @@ module.exports = ->
     # Browser version building
     exec:
       bower_install:
-        command: 'node ./node_modules/bower/bin/bower install'
+        command: 'node ./node_modules/bower/bin/bower install -F'
       main_install:
         command: 'node ./node_modules/component/bin/component install'
       main_build:
