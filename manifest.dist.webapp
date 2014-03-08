@@ -1,5 +1,5 @@
 {
-  "name": "$NOFLO_APP_TITLE",
+  "name": "$NOFLO_APP_NAME",
   "description": "$NOFLO_APP_DESCRIPTION",
   "default_locale": "en",
   "launch_path": "/index.html",
