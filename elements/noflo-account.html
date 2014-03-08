@@ -100,6 +100,7 @@
           this.redirect = window.location.href;
           this.help = document.querySelector('noflo-help');
           this.checkLogin();
+          document.body.classList.add(this.theme);
         },
         checkLogin: function () {
           storage.get(this.storage.grid, function (token) {
