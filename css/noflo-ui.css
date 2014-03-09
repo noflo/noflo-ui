@@ -21,6 +21,8 @@ body.loading #loading {
   left: calc(50% - 200px);
   font-size: 36px;
   color: white;
+  animation: pulsate 2s ease-in-out;
+  animation-iteration-count: infinite;
   -webkit-animation: pulsate 2s ease-in-out;
   -webkit-animation-iteration-count: infinite;
   width: 400px;
