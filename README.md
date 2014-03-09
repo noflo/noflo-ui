@@ -31,7 +31,7 @@ Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you
 
 ### Managing server-side flows
 
-In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-ui-server](https://github.com/noflo/noflo-ui-server).
+In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-nodejs](https://github.com/noflo/noflo-nodejs).
 
 ### Mobile app
 
