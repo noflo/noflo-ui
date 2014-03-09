@@ -24,6 +24,7 @@
       edges: [],
       runtimes: [],
       component: '',
+      help: null,
       enteredView: function () {
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
@@ -34,6 +35,8 @@
 
         // Workaround for https://github.com/Polymer/PointerEvents/issues/134
         document.addEventListener('touchstart', function () {});
+
+        this.help = document.querySelector('noflo-help');
       },
       clearSelection: function () {
         var edge, node;
@@ -136,6 +139,11 @@
         if (this.graphs.length) {
           var graph = this.graphs[this.graphs.length - 1];
           this.fire('currentgraph', graph);
+          if (graph.nodes.length === 0 && this.graphs.length === 1) {
+            // Empty main graph, we should show the help text
+            this.showHelp(graph);
+          }
+
           if (!graph.properties.project) {
             window.setTimeout(function () {
               this.fire('example', graph);
@@ -319,6 +327,15 @@
           setTimeout(function () {
             currentGraph.endTransaction('subgraph');
           }, 5);
+        }.bind(this));
+      },
+      showHelp: function (graph) {
+        if (!this.help) {
+          return;
+        }
+        this.help.show('$NOFLO_APP_TITLE graph editor', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner. Searching for <i>show library</i> will show all the components available in the current runtime');
+        graph.once('addNode', function () {
+          this.help.close();
         }.bind(this));
       }
     });
