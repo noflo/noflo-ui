@@ -1,4 +1,6 @@
-window.addEventListener('WebComponentsReady', function() { 
+window.addEventListener('polymer-ready', function() {
+  document.body.classList.remove('loading');
+
   var noflo = require('noflo');
   var graphs = {};
   var fbps = Array.prototype.slice.call(document.querySelectorAll('script[type="application/fbp"]'));

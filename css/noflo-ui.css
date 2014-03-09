@@ -14,6 +14,48 @@ body {
   -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
 }
 
+body.loading #loading {
+  display: block;
+  position: fixed;
+  top: calc(50% - 18px);
+  left: calc(50% - 200px);
+  font-size: 36px;
+  color: white;
+  -webkit-animation: pulsate 2s ease-in-out;
+  -webkit-animation-iteration-count: infinite;
+  width: 400px;
+  text-align: center;
+  z-index: 10;
+}
+@keyframes pulsate {
+  0% {
+    transform: scale(1.0, 1.0);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1, 1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.0, 1.0);
+    opacity: 0;
+  }
+}
+@-webkit-keyframes pulsate {
+  0% {
+    -webkit-transform: scale(1.0, 1.0);
+    opacity: 0.1;
+  }
+  50% {
+    -webkit-transform: scale(1.1, 1.1);
+    opacity: 1;
+  }
+  100% {
+    -webkit-transform: scale(1.0, 1.0);
+    opacity: 0;
+  }
+}
+
 button {
   padding:0;
   cursor: pointer;

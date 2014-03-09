@@ -81,6 +81,9 @@ module.exports = ->
             pattern: /\$NOFLO_APP_TITLE/ig
             replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
           ,
+            pattern: /\$NOFLO_APP_LOADING/ig
+            replacement: process.env.NOFLO_APP_LOADING or 'Rewiring Polymers'
+          ,
             pattern: /\$NOFLO_ORGANIZATION/ig
             replacement: process.env.NOFLO_ORGANIZATION or 'NoFlo Community'
           ,
