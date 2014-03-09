@@ -8,13 +8,7 @@ The NoFlo UI is still under heavy development. See the [Kickstarter project](htt
 
 ### Projects
 
-Full FBP projects stored on version control are not yet supported.
-
-### Sketches
-
-Sketches are flow-based programs that are only stored locally in your browser's LocalStorage. These are intended for lightweight experimentation before actually moving the flows to real projects.
-
-The sketches follow the same format as the example Gists explained below.
+Projects are how the NoFlo UI manages its graphs and components. Your projects are stored in the browser's local IndexedDB database, and can be synchronized with GitHub repositories. Each project can support multiple components, a main graph, and as many subgraphs as needed.
 
 ### Examples
 
@@ -32,10 +26,6 @@ Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you
 ### Managing server-side flows
 
 In addition to being able to manage and run client-side NoFlo flows, the NoFlo UI is also able to run server-side NoFlo code (and indeed anything else [compatible with the API](#supporting-other-fbp-systems)). For NoFlo flows running on Node.js, you need to install and run [noflo-nodejs](https://github.com/noflo/noflo-nodejs).
-
-### Mobile app
-
-In addition to the web version, the NoFlo UI also also packaged as a [PhoneGap](http://phonegap.com/) mobile app. This will enable us to provide it in an easier way and without unnecessary browser chrome to popular platforms like iOS and Android.
 
 ## Development
 
@@ -62,16 +52,15 @@ Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 
-### Adding components
+### Adding components to the bundled runtime
 
 The HTML runtime of NoFlo utilizes a custom [Component.io](http://component.io/) build of NoFlo that includes most of the common NoFlo [component libraries](http://noflojs.org/library/) that work with the browser. If you need to add new libraries, edit the `preview/component.json` file and rebuild.
 
 ### Supporting other FBP systems
 
-Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs. Instead, it is utilizing the [FBP Network Protocol](https://github.com/noflo/noflo/issues/107) which enables it to talk to any compatible FBP system.
+Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs. Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
 
-If you want to integrate the UI with a new environment you need to provide some transport layer (for example, WebSockets) that can talk the protocol, and then implement [runtime access](https://github.com/noflo/noflo-ui/tree/master/src/runtimes) for that in the UI. For showing the state of the runtime you may also want to implement a [dataflow plugin](https://github.com/noflo/noflo-ui/blob/master/src/plugins/preview-iframe.coffee).
-
+If you want to integrate the UI with a new environment you need to provide some transport layer (for example, WebSockets) that can talk the protocol, and then implement [runtime access](https://github.com/noflo/noflo-runtime) for that.
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/noflo/noflo-ui/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
