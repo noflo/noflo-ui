@@ -149,7 +149,9 @@
       <main>
         <ul>
           <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
+          <template if="{{ project }}">
           <li><a on-click="{{ openSettings }}"><i class="fa fa-cog"></i>Settings</a></li>
+          </template>
         </ul>
         <template if="{{ project }}">
         <h2>Graphs</h2>

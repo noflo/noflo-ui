@@ -32,7 +32,7 @@
             return;
           }
           var component = this.editor.getComponent(name);
-          if (component.subgraph) {
+          if (component.subgraph && this.project) {
             var nameParts = component.name.split('/');
             if (nameParts[0] === this.project.id) {
               for (var i = 0; i < this.graphs.length; i++) {
