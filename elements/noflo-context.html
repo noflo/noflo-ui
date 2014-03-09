@@ -97,7 +97,7 @@
             return defaultMenu;
           }
           var componentParts = options.item.component.split('/');
-          if (componentParts.shift() !== this.project.id) {
+          if (!this.project || componentParts.shift() !== this.project.id) {
             return defaultMenu;
           }
           var i, menuKey;
@@ -248,6 +248,9 @@
       },
       subgraph: function (currentGraph, itemKey, item) {
         event.preventDefault();
+        if (!this.project) {
+          return;
+        }
 
         // Ask user to name the new subgraph
         var dialog = document.createElement('noflo-new-graph');
