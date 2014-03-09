@@ -126,16 +126,28 @@ module.exports = ->
           dest: '/'
         ,
           src: [
-            'bower_components/**/*.js'
-            'bower_components/**/*.css'
-            'bower_components/**/*.woff'
-            'bower_components/**/*.ttf'
-            'bower_components/**/*.svg'
+            'bower_components/codemirror/**/*.js'
+            'bower_components/codemirror/lib/*.css'
+            'bower_components/codemirror/theme/mdn-like.css'
+            'bower_components/coffee-script/extras/*.js'
+            'bower_components/font-awesome/css/*.css'
+            'bower_components/font-awesome/**/*.woff'
+            'bower_components/font-awesome/**/*.ttf'
+            'bower_components/font-awesome/**/*.svg'
+            'bower_components/klay-js/klay/*.js'
+            'bower_components/platform/*.js'
+            'bower_components/polymer/*.js'
+            'bower_components/react/*.js'
+            'bower_components/the-graph/**/*.js'
+            'bower_components/the-graph/**/*.css'
           ]
           expand: true
           dest: '/'
         ,
-          src: ['bower_components/**/*.map']
+          src: [
+            'bower_components/platform/*.map'
+            'bower_components/polymer/*.map'
+          ]
           expand: true
           flatten: true
           dest: '/'
