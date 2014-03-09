@@ -324,6 +324,7 @@
 
           // Emit new subgraph so that it can be stored
           graph.endTransaction('newsubgraph');
+          this.project.graphs.push(graph);
           this.fire('newgraph', graph);
 
           // End the transaction on the main graph
