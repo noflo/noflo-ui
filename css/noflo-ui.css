@@ -734,6 +734,7 @@ noflo-search {
 }
 noflo-search input {
   background-color: hsl(187, 45%, 5%);
+  background-image: none;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   border: none;
   padding: 0px;
@@ -790,6 +791,7 @@ noflo-search button {
   display: block;
   font-size: 17px;
   background-color: rgba(0, 42, 51, 0.498039);
+  background-image: none;
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   color: white;
   border-radius: 3px;
