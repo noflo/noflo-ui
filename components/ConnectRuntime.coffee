@@ -188,6 +188,7 @@ class ConnectRuntime extends noflo.Component
         group: if payload.group? then payload.group else ''
         data: if payload.data? then payload.data else ''
         subgraph: if payload.subgraph? then payload.subgraph else ''
+        runtime: runtime.definition.id
     runtime.on 'icon', ({id, icon}) ->
       return unless editor.updateIcon
       editor.updateIcon id, icon
