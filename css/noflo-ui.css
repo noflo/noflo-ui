@@ -855,23 +855,9 @@ noflo-search button {
   display: none;
 }
 
-the-graph-nav the-graph-map {
-  position: fixed;
-  -webkit-transform: translateZ(0px);
-  bottom: 0px;
-  left: auto;
-  top: auto;
-  right: 36px;
-  width: 216px;
-  height: 180px;
-  border-top: 36px solid hsla(0, 0%, 0%, 0.5);
-  border-left: 36px solid hsla(0, 0%, 0%, 0.5);
-  overflow: visible;
-  border-right: 36px solid hsla(0, 0%, 0%, 0.5);
-  background-size: calc(100% - 1px);
-  background-position: 0px;
-  border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
-
+the-graph-nav {
+  right: 36px !important;
+  bottom: 36px !important;
 }
 
 #zoom button {
