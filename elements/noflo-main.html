@@ -206,7 +206,7 @@
                 return;
               }
             }
-            if (this.languages.indexOf(repo.language) === -1) {
+            if (repo.language !== null && this.languages.indexOf(repo.language) === -1) {
               return;
             }
             this.remoteProjects.push({
@@ -217,7 +217,7 @@
             });
           }.bind(this));
         }.bind(this);
-        req.open('GET', 'https://api.github.com/user/repos?type=public&access_token=' + encodeURIComponent(this.githubToken), true);
+        req.open('GET', 'https://api.github.com/user/repos?type=public&sort=pushed&access_token=' + encodeURIComponent(this.githubToken), true);
         req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
         req.send(null);
       },
