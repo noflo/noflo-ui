@@ -45,6 +45,12 @@ class ConnectRuntime extends noflo.Component
 
   sendComponent: (runtime, component) ->
     return unless component.code
+
+    # Check for platform-specific components
+    runtimeType = component.code.match /@runtime ([a-z\-]+)/
+    if runtimeType and runtimeType[1] isnt runtime.definition.type
+      return
+
     runtime.sendComponent 'source',
       name: component.name
       language: component.language
