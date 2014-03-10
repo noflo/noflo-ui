@@ -29,7 +29,8 @@
     "d4tocchini/noflo-draggabilly": "*",
     "forresto/noflo-gum": "*",
     "forresto/noflo-seriously": "*",
-    "jonnor/noflo-cad": "*"
+    "jonnor/noflo-cad": "*",
+    "alfa256/noflo-prompts": "*"
   },
   "json": [
     "component.json"
