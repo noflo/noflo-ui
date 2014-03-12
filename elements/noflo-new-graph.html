@@ -12,7 +12,7 @@
         <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
       </label>
       <div class="toolbar">
-        <button on-click="{{ send }}">Create</button>
+        <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
         <a on-click="{{ close }}">Cancel</a>
       </div>
     </form>
@@ -28,6 +28,13 @@
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
+      },
+      nameChanged: function () {
+        if (this.name && this.project) {
+          this.canSend = true;
+        } else {
+          this.canSend = false;
+        }
       },
       send: function (event) {
         if (event) {

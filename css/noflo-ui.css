@@ -825,6 +825,9 @@ noflo-search button {
   padding-right: 36px;
   margin: 0px;
 }
+.modal-content .toolbar button.disabled {
+  opacity: 0.1;
+}
 .modal-content .toolbar a {
   font-size: 13px;
   color: hsl(190, 100%, 30%);
