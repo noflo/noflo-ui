@@ -126,6 +126,11 @@
         remoteLogin: function (responseUrl, cleanUp) {
           var code = responseUrl.match(/\?code=(.*)/);
           if (code && code[1]) {
+            setTimeout(function () {
+              var button = document.getElementById('loginbutton');
+              if (!button) { return; }
+              button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+            }, 1);
             var req = new XMLHttpRequest();
             req.onreadystatechange = function () {
               if (req.readyState !== 4) {
@@ -150,6 +155,10 @@
                   }.bind(this));
                 }
               } else {
+                var button = document.getElementById('loginbutton');
+                if (button) {
+                  button.innerHTML = 'Login';
+                }
                 this.clearCache();
               }
             }.bind(this);
