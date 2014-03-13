@@ -222,7 +222,7 @@ the-panel#account main ul li a i {
   max-height: calc(100% - 72px);
   box-sizing: border-box;
   display: block;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: visible;
   z-index: 2;
 }
@@ -440,7 +440,7 @@ noflo-main {
   top: 0px;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
-  overflow-y: scroll;
+  overflow-y: auto;
   height: 100%;
   width: 100%;
   transition: height 1s ease-in-out;
