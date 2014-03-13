@@ -99,7 +99,8 @@ h1, h2, h3 {
 }
 
 .gpu {
-  -webkit-transform: translateZ(0px);
+  -webkit-transform: translateZ(0);
+  -transform: translateZ(0);
 }
 
 /*
@@ -213,12 +214,14 @@ the-panel#account main ul li a i {
 }
 #context {
   position: fixed;
-  -webkit-transform: translateZ(0px);
-  
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   left: 36px;
   top: 72px;
   width: calc(72px * 4 + 3px);
   max-height: calc(100% - 72px);
+  box-sizing: border-box;
+  display: block;
   overflow-y: scroll;
   overflow-x: visible;
   z-index: 2;
@@ -283,8 +286,8 @@ the-card.maximized {
   height: calc(100% - 36px);
   max-height: none;
   position: fixed;
-  -webkit-transform: translateZ(0px);
-  
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   top: 72px;
   left: 36px;
   transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
@@ -435,7 +438,8 @@ noflo-main {
   z-index: 4;
   position: fixed;
   top: 0px;
-  -webkit-transform: translateZ(0px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   overflow-y: scroll;
   height: 100%;
   width: 100%;
@@ -723,7 +727,8 @@ noflo-search {
   background-color: hsl(187, 45%, 5%);
   border-bottom: 1px solid hsl(189, 11%, 26%);
   position: fixed;
-  -webkit-transform: translateZ(0px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   
   left: 36px;
   top: 0;
@@ -762,7 +767,8 @@ noflo-search button {
   color: black;
   display: block;
   position: fixed;
-  -webkit-transform: translateZ(0px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   width: calc(72px * 9);
   top: calc(50% - 150px);
   left: 50%;
@@ -868,7 +874,8 @@ the-graph-nav {
   height: 36px;
   font-size: 10px;
   position: fixed;
-  -webkit-transform: translateZ(0px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   right: 36px;
   color: hsl(190, 100%, 90%);
   background-color: hsla(187, 85%, 10%, 0.8);
