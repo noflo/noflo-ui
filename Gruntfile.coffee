@@ -265,11 +265,7 @@ module.exports = ->
   # Our local tasks
   @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
   @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
-  @registerTask 'main_build', ['exec:main_install', 'exec:bower_install', 'exec:main_build']
-  @registerTask 'main_rebuild', ['clean:nuke_main', 'clean:nuke_bower', 'main_build']
-  @registerTask 'preview_build', ['exec:preview_install', 'exec:preview_build']
-  @registerTask 'preview_rebuild', ['clean:nuke_preview', 'preview_build']
-  @registerTask 'rebuild', ['main_rebuild', 'preview_rebuild']
+  @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', ['coffeelint', 'inlinelint']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
