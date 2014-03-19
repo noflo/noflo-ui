@@ -1,5 +1,49 @@
 <polymer-element name="noflo-component-editor" attributes="component width height">
   <template>
+    <style type="text/css">
+      :host {
+        display: block;
+        position: absolute;
+        top: 0px;
+        left: 36px;
+        right: 36px;
+        height: 100%;
+        background-color: black;
+        z-index: 1;
+        overflow: hidden;
+      }
+      .CodeMirror {
+        height: 100%;
+        cursor: text;
+      }
+      .CodeMirror-scroll {
+        height: 100%;
+      }
+      #code,
+      #tests {
+        display: block;
+        width: 50%;
+        height: 100%;
+        position: absolute;
+        left: 0px;
+        top: 36px;
+      }
+      #tests {
+        left: auto;
+        right: 0px;
+      }
+      #code h1,
+      #tests h1 {
+        line-height: 36px;
+        padding-left: 36px;
+        font-size: 14px;
+        text-transform: uppercase;
+        color: white;
+      }
+      #code h1 {
+        text-align: right;
+      }
+    </style>
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>

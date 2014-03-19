@@ -4,139 +4,140 @@
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
 <polymer-element name="noflo-project" attributes="project graphs components githubtoken graphs component">
-  <style>
-    noflo-project h2 {
-      font-size: 16px;
-      line-height: 36px;
-      text-transform: none;
-      font-weight: normal;
-      padding: 0px;
-      margin: 0px;
-    }
-    noflo-project ul.graphs li {
-      width: 245px;
-      height: 70px;
-      overflow: hidden;
-      float: left;
-      text-align: center;
-      background-color: hsl(190, 90%, 45%);
-      color: black;
-      border-radius: 3px;
-      margin-right: 0px;
-      margin-left: 0px;
-      margin-bottom: 5px;
-      position: relative;
-      cursor: pointer;
-    }
-    noflo-project ul.graphs li.add {
-      background-color: hsl(192, 25%, 92%);
-      color: black;
-      cursor: default;
-    }
-    noflo-project ul.graphs li the-graph-thumb {
-      display: block;
-      position: absolute;
-      left: 100px;
-      top: -20px;
-    }
-    noflo-project ul.graphs li i.fa {
-      display: block;
-      position: absolute;
-      right: 17px;
-      top: 17px;
-      font-size: 36px;
-      color: black;
-    }
-    noflo-project ul.graphs li button {
-      display: block;
-      position: absolute;
-      right: 17px;
-      top: 17px;
-      background-color: transparent;
-      color: hsl(189, 11%, 26%);
-      border: 1px solid hsl(189, 11%, 26%);
-      font-size: 13px;
-      border-radius: 3px;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      height: 36px;
-      padding-left: 13px;
-      padding-right: 13px;
-    }
-    noflo-project ul.graphs li h2 {
-      position: absolute;
-      top: 18px;
-      left: 17px;
-      width: 75px;
-      text-transform: none;
-      font-size: 13px;
-      text-align: left;
-      white-space: nowrap;
-    }
-    noflo-project main {
-      padding-bottom: 144px;
-      overflow-y: auto;
-      max-height: calc(100% - 180px);
-    }
-    noflo-project main::-webkit-scrollbar {
-      display: none;
-    }
-    noflo-project footer {
-      background-color: hsla(0, 0%, 0%, 0.98);
-      display: block;
-      position: absolute;
-      bottom: 0px;
-      left: 0px;
-      padding-left: 36px;
-      width: 325px;
-      padding-right: 36px;
-      box-sizing: border-box;
-      overflow: hidden;
-      height: 144px;
-      transition: background-color 0.3s ease-in-out;
-    }
-    the-panel#account[open] footer {
-      background-color: hsl(190, 90%, 45%);
-    }
-    noflo-project footer h1 {
-      font-size: 17px;
-      line-height: 36px;
-      text-align: center;
-    }
-    noflo-project footer textarea {
-      display: block;
-      font-size: 13px;
-      background-color: rgba(0, 42, 51, 0.498039);
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      color: white;
-      border-radius: 3px;
-      padding: 3px;
-      border: none;
-      margin: 0px;
-      width: calc(100% - 2px);
-      height: 54px;
-      box-sizing: border-box;
-      margin-left: auto;
-      margin-right: auto;
-      resize: none;
-    }
-    noflo-project footer button {
-      background-color: white;
-      color: hsl(190, 90%, 45%);
-      border: none;
-      font-size: 13px;
-      border-radius: 3px;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      height: 36px;
-      padding-left: 17px;
-      padding-right: 17px;
-      line-height: 36px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      margin-top: 8px;
-    }
-  </style>
   <template>
+    <style type="text/css" src="../css/noflo-ui-shared.css" ></style>
+    <style>
+      h2 {
+        font-size: 16px;
+        line-height: 36px;
+        text-transform: none;
+        font-weight: normal;
+        padding: 0px;
+        margin: 0px;
+      }
+      ul.graphs li {
+        width: 245px;
+        height: 70px;
+        overflow: hidden;
+        float: left;
+        text-align: center;
+        background-color: hsl(190, 90%, 45%);
+        color: black;
+        border-radius: 3px;
+        margin-right: 0px;
+        margin-left: 0px;
+        margin-bottom: 5px;
+        position: relative;
+        cursor: pointer;
+      }
+      ul.graphs li.add {
+        background-color: hsl(192, 25%, 92%);
+        color: black;
+        cursor: default;
+      }
+      ul.graphs li the-graph-thumb {
+        display: block;
+        position: absolute;
+        left: 100px;
+        top: -20px;
+      }
+      ul.graphs li i.fa {
+        display: block;
+        position: absolute;
+        right: 17px;
+        top: 17px;
+        font-size: 36px;
+        color: black;
+      }
+      ul.graphs li button {
+        display: block;
+        position: absolute;
+        right: 17px;
+        top: 17px;
+        background-color: transparent;
+        color: hsl(189, 11%, 26%);
+        border: 1px solid hsl(189, 11%, 26%);
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+      ul.graphs li h2 {
+        position: absolute;
+        top: 18px;
+        left: 17px;
+        width: 75px;
+        text-transform: none;
+        font-size: 13px;
+        text-align: left;
+        white-space: nowrap;
+      }
+      main {
+        padding-bottom: 144px;
+        overflow-y: auto;
+        max-height: calc(100% - 180px);
+      }
+      main::-webkit-scrollbar {
+        display: none;
+      }
+      footer {
+        background-color: hsla(0, 0%, 0%, 0.98);
+        display: block;
+        position: absolute;
+        bottom: 0px;
+        left: 0px;
+        padding-left: 36px;
+        width: 325px;
+        padding-right: 36px;
+        box-sizing: border-box;
+        overflow: hidden;
+        height: 144px;
+        transition: background-color 0.3s ease-in-out;
+      }
+      the-panel#account[open] /shadow/ footer {
+        background-color: hsl(190, 90%, 45%);
+      }
+      footer h1 {
+        font-size: 17px;
+        line-height: 36px;
+        text-align: center;
+      }
+      footer textarea {
+        display: block;
+        font-size: 13px;
+        background-color: rgba(0, 42, 51, 0.498039);
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        color: white;
+        border-radius: 3px;
+        padding: 3px;
+        border: none;
+        margin: 0px;
+        width: calc(100% - 2px);
+        height: 54px;
+        box-sizing: border-box;
+        margin-left: auto;
+        margin-right: auto;
+        resize: none;
+      }
+      footer button {
+        background-color: white;
+        color: hsl(190, 90%, 45%);
+        border: none;
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        padding-left: 17px;
+        padding-right: 17px;
+        line-height: 36px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 8px;
+      }
+    </style>
     <the-panel id="account" edge="left" size="324" handle="36" automatic="false">
       <header>
         <template if="{{ project }}">

@@ -1,40 +1,40 @@
 <polymer-element name="noflo-journal" attributes="graph panel">
-  <style>
-    noflo-journal #controls {
-      display: block;
-      position: fixed;
-      right: 36px;
-      bottom: 0;
-      z-index: 3;
-      width: 288px;
-      height: 36px;
-      color: hsl(189, 11%, 26%);
-      box-sizing: border-box;
-      background-color: hsla(0, 0%, 0%, 0.98) !important;
-      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-      background-size: calc(100% - 1px);
-      background-position: 0px -1px;
-      border-top: 1px hsla(190, 90%, 80%, 0.2) solid;
-    }
-
-    noflo-journal #controls button {
-      line-height: 36px;
-      border: none;
-      background-color: transparent;
-      font-size: 14px;
-      width: 72px;
-      color: hsl(189, 11%, 26%);
-    }
-    noflo-journal #controls button.redo {
-      position: absolute;
-      right: 0px;
-    }
-    noflo-journal #controls button.autolayout {
-      position: absolute;
-      left: calc(50% - 18px);
-    }
-  </style>
   <template>
+    <style>
+      #controls {
+        display: block;
+        position: fixed;
+        right: 36px;
+        bottom: 0;
+        z-index: 3;
+        width: 288px;
+        height: 36px;
+        color: hsl(189, 11%, 26%);
+        box-sizing: border-box;
+        background-color: hsla(0, 0%, 0%, 0.98) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-size: calc(100% - 1px);
+        background-position: 0px -1px;
+        border-top: 1px hsla(190, 90%, 80%, 0.2) solid;
+      }
+
+      #controls button {
+        line-height: 36px;
+        border: none;
+        background-color: transparent;
+        font-size: 14px;
+        width: 72px;
+        color: hsl(189, 11%, 26%);
+      }
+      #controls button.redo {
+        position: absolute;
+        right: 0px;
+      }
+      #controls button.autolayout {
+        position: absolute;
+        left: calc(50% - 18px);
+      }
+    </style>
     <template if="{{ graph }}">
     <div id="controls">
       <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>

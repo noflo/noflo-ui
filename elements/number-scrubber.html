@@ -1,17 +1,19 @@
 <polymer-element name="number-scrubber" attributes="value min max mod step distance" touch-action="none" on-trackstart="{{onTrackStart}}" on-track="{{onTrack}}" on-trackend="{{onTrackEnd}}">
-  <style>
-    number-scrubber {
-      -webkit-user-select: none;      /* disable cut copy paste */
-      -webkit-touch-callout: none;    /* disable callout, image save panel */
-      user-select: none;
-      touch-callout: none;
+  <template>
+    <style>
+      :host {
+        -webkit-user-select: none;      /* disable cut copy paste */
+        -webkit-touch-callout: none;    /* disable callout, image save panel */
+        user-select: none;
+        touch-callout: none;
 
-      cursor: ew-resize;
+        cursor: ew-resize;
 
-      display: inline-block;
-      text-align: center;      
-    }
-  </style>
+        display: inline-block;
+        text-align: center;      
+      }
+    </style>
+  </template>
   <script>
     Polymer('number-scrubber', {
       value: undefined,

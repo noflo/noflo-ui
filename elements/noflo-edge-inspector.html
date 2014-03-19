@@ -1,75 +1,74 @@
 <polymer-element name="noflo-edge-inspector" attributes="edge graph showlogs" class="the-card-content">
-  <style>
-    the-card noflo-edge-inspector h1 {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 10px;
-      width: 100%;
-    }
-    the-card noflo-edge-inspector h1 .connection {
-      text-transform: uppercase;
-      font-size: 9px;
-    }
-    the-card noflo-edge-inspector h1 .connection.route0 { color: #fff; }
-    the-card noflo-edge-inspector h1 .connection.route1 { color: hsl(0,    100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route2 { color: hsl(30,   100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route3 { color: hsl(60,   100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route4 { color: hsl(90,   100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route5 { color: hsl(120,  100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route6 { color: hsl(150,  100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route7 { color: hsl(180,  100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route8 { color: hsl(210,  100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route9 { color: hsl(240,  100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route10 { color: hsl(270, 100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route11 { color: hsl(300, 100%,  65%); }
-    the-card noflo-edge-inspector h1 .connection.route12 { color: hsl(330, 100%,  65%); }
-    the-card noflo-edge-inspector ul#events {
-      max-height: 140px;
-      overflow-x: hidden;
-      overflow-y: auto;
-      clear: left;
-    }
-    the-card noflo-edge-inspector ul#events li {
-      font-size: 10px;
-      line-height: 14px;
-      margin-bottom: 0px;
-      color: hsl(185,100%,75%);
-      max-height: 56px;
-      overflow: hidden;
-      margin-bottom: 2px;
-      padding-bottom: 2px;
-      border-bottom: 1px solid hsla(190, 30%, 2%, 0.4);
-    }
-    the-card noflo-edge-inspector ul#events li.begingroup {
-      color: hsl(189, 11%, 26%);
-    }
-    the-card noflo-edge-inspector ul#events li.begingroup:before {
-      display: inline;
-      content: '<';
-    }
-    the-card noflo-edge-inspector ul#events li.begingroup:after {
-      display: inline;
-      content: '>';
-    }
-    the-card noflo-edge-inspector ul#events li.endgroup {
-      color: hsl(189, 11%, 26%);
-    }
-    the-card noflo-edge-inspector ul#events li.endgroup:before {
-      display: inline;
-      content: '</';
-    }
-    the-card noflo-edge-inspector ul#events li.endgroup:after {
-      display: inline;
-      content: '>';
-    }
-    the-card noflo-edge-inspector ul#events li.disconnect {
-      border-bottom: 1px solid #ff8080;
-      height: 3px;
-      margin-bottom: 3px;
-    }
-  </style>
   <template>
+    <style>
+      h1 {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 10px;
+        width: 100%;
+      }
+      h1 .connection {
+        text-transform: uppercase;
+        font-size: 9px;
+      }
+      h1 .connection.route0 { color: #fff; }
+      h1 .connection.route1 { color: hsl(  0,  98%, 46%); }
+      h1 .connection.route2 { color: hsl( 35,  98%, 46%); }
+      h1 .connection.route3 { color: hsl( 60,  98%, 46%); }
+      h1 .connection.route4 { color: hsl(135,  98%, 46%); }
+      h1 .connection.route5 { color: hsl(160,  98%, 46%); }
+      h1 .connection.route6 { color: hsl(185,  98%, 46%); }
+      h1 .connection.route7 { color: hsl(210,  98%, 46%); }
+      h1 .connection.route8 { color: hsl(285,  98%, 46%); }
+      h1 .connection.route9 { color: hsl(310,  98%, 46%); }
+      h1 .connection.route10 {color: hsl(335,  98%, 46%); }
+
+      ul#events {
+        max-height: 140px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        clear: left;
+      }
+      ul#events li {
+        font-size: 10px;
+        line-height: 14px;
+        margin-bottom: 0px;
+        color: hsl(185,100%,75%);
+        max-height: 56px;
+        overflow: hidden;
+        margin-bottom: 2px;
+        padding-bottom: 2px;
+        border-bottom: 1px solid hsla(190, 30%, 2%, 0.4);
+      }
+      ul#events li.begingroup {
+        color: hsl(189, 11%, 26%);
+      }
+      ul#events li.begingroup:before {
+        display: inline;
+        content: '<';
+      }
+      ul#events li.begingroup:after {
+        display: inline;
+        content: '>';
+      }
+      ul#events li.endgroup {
+        color: hsl(189, 11%, 26%);
+      }
+      ul#events li.endgroup:before {
+        display: inline;
+        content: '</';
+      }
+      ul#events li.endgroup:after {
+        display: inline;
+        content: '>';
+      }
+      ul#events li.disconnect {
+        border-bottom: 1px solid #ff8080;
+        height: 3px;
+        margin-bottom: 3px;
+      }
+    </style>
     <h1>{{ sourceNode }} <span class="connection route{{ route }}">{{ sourcePort }} &#10142; {{ targetPort }}</span> {{ targetNode }}</h1>
     <ul id="events">
     </ul>

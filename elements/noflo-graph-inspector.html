@@ -1,27 +1,27 @@
 <link rel="import" href="noflo-type-selector.html">
 <polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content">
-  <style>
-    noflo-graph-inspector {
-      top: calc(50% - 286px) !important;
-    }
-    noflo-graph-inspector textarea {
-      height: 144px;
-    }
-    noflo-graph-inspector p {
-      font-size: 13px;
-      line-height: 18px;
-      color: hsl(189, 11%, 26%);
-    }
-    noflo-graph-inspector p a {
-      color: #ffffff;
-      text-decoration: none;
-    }
-  </style>
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
   <script src="../bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
+    <style>
+      :host {
+        top: calc(50% - 286px) !important;
+      }
+      textarea {
+        height: 144px;
+      }
+      p {
+        font-size: 13px;
+        line-height: 18px;
+        color: hsl(189, 11%, 26%);
+      }
+      p a {
+        color: #ffffff;
+        text-decoration: none;
+      }
+    </style>
     <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
     <template if="{{ isMain }}">
     <p>Main graph of project {{ project.name }}.</p>

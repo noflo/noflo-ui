@@ -2,101 +2,146 @@
 <link rel="import" href="noflo-search-results.html">
 <link rel="import" href="noflo-graph-inspector.html">
 <polymer-element name="noflo-search" class="gpu" attributes="results graphs component">
-  <style>
-    noflo-search.overlay #breadcrumb {
-      width: calc(72px * 4);
-      display: block;
-    }
-    noflo-search #breadcrumb {
-      position: relative;
-      overflow: hidden;
-      width: 0px;
-      height: 72px;
-      left: 0px;
-      top: 0px;
-      z-index: 1;
-      
-      /*transition: width 0.3s ease-in-out;*/
-      display: none;
-      /*box-sizing: border-box;*/
-
-      background-color: hsla(0, 0%, 0%, 0.98) !important;
-      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-      background-size: calc(100% - 1px);
-      background-position: 0px;
-      border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
-      
-    }
-    noflo-search #breadcrumb a#parentlink {
-      color: hsl(189, 11%, 26%);
-      text-decoration: none;
-      padding-right: 9px;
-    }
-    noflo-search #breadcrumb i.fa-search {
-      position: absolute;
-      line-height: 72px;
-      right: 72px;
-      font-size: 15px;
-      color: hsl(189, 11%, 26%);
-      cursor: text;
-    }
-    noflo-search #breadcrumb #graphinspector {
-      position: absolute;
-      right: 9px;
-      top: 0px;
-      line-height: 72px;
-      display: block;
-      height: 72px;
-      font-size: 15px;
-      color: hsl(189, 11%, 26%);
-    }
-    noflo-search #breadcrumb h1 {
-      display: inline-block;
-      line-height: 72px;
-      font-size: 15px;
-      margin: 0px;
-      padding: 0px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 156px;
-      font-weight: normal;
-      padding-left: 18px;
-    }
-    noflo-search.overlay #search {
-      display: none;
-    }
-    noflo-search #search {
-      display: block;
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      background-color: hsl(192, 25%, 92%);
-      color: black;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      border: none;
-      padding: 0px;
-      padding-right: 18px;
-      padding-left: 18px;
-      width: calc(72px * 4 - 36px);
-      height: 72px;
-      /*box-sizing: border-box;*/
-      font-size: 12px;
-      display: inline;
-      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-      background-size: calc(100% - 1px);
-      background-position: 0px;
-      border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
-      border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
-      border-radius: none;
-    }
-    noflo-search #search::-webkit-input-placeholder {
-      color: hsl(190, 90%, 45%);
-    }
-    noflo-search #search #speech {
-      color: hsl(190, 90%, 45%);
-    }
-  </style>
   <template>
+    <style>
+      :host {
+        background-color: hsl(187, 45%, 5%);
+        border-bottom: 1px solid hsl(189, 11%, 26%);
+        position: fixed;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        
+        left: 36px;
+        top: 0;
+        color: white;
+        z-index: 2;
+        width: calc(72px * 4);
+        height: 36px;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      input {
+        background-color: hsl(187, 45%, 5%);
+        background-image: none;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        border: none;
+        padding: 0px;
+        padding-right: 10px;
+        padding-left: 10px;
+        color: white;
+        width: 245px;
+        height: 36px;
+        display: inline;
+      }
+      button {
+        width: 36px;
+        height: 36px;
+        margin: 0px;
+        margin-left: -5px;
+        padding: 0px;
+        display: inline;
+        display: inline;
+
+        font-size: 10px;
+        background-color: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+      }
+
+      :host(.overlay) #breadcrumb {
+        width: calc(72px * 4);
+        display: block;
+      }
+      #breadcrumb {
+        position: relative;
+        overflow: hidden;
+        width: 0px;
+        height: 72px;
+        left: 0px;
+        top: 0px;
+        z-index: 1;
+        
+        /*transition: width 0.3s ease-in-out;*/
+        display: none;
+        /*box-sizing: border-box;*/
+
+        background-color: hsla(0, 0%, 0%, 0.98) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-size: calc(100% - 1px);
+        background-position: 0px;
+        border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+        
+      }
+      #breadcrumb a#parentlink {
+        color: hsl(189, 11%, 26%);
+        text-decoration: none;
+        padding-right: 9px;
+      }
+      #breadcrumb i.fa-search {
+        position: absolute;
+        line-height: 72px;
+        right: 72px;
+        font-size: 15px;
+        color: hsl(189, 11%, 26%);
+        cursor: text;
+      }
+      #breadcrumb #graphinspector {
+        position: absolute;
+        right: 9px;
+        top: 0px;
+        line-height: 72px;
+        display: block;
+        height: 72px;
+        font-size: 15px;
+        color: hsl(189, 11%, 26%);
+      }
+      #breadcrumb h1 {
+        display: inline-block;
+        line-height: 72px;
+        font-size: 15px;
+        margin: 0px;
+        padding: 0px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 156px;
+        font-weight: normal;
+        padding-left: 18px;
+      }
+      :host(.overlay) #search {
+        display: none;
+      }
+      #search {
+        display: block;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        background-color: hsl(192, 25%, 92%);
+        color: black;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        border: none;
+        padding: 0px;
+        padding-right: 18px;
+        padding-left: 18px;
+        width: calc(72px * 4 - 36px);
+        height: 72px;
+        /*box-sizing: border-box;*/
+        font-size: 12px;
+        display: inline;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-size: calc(100% - 1px);
+        background-position: 0px;
+        border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+        border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
+        border-radius: none;
+      }
+      #search::-webkit-input-placeholder {
+        color: hsl(190, 90%, 45%);
+      }
+      #search #speech {
+        color: hsl(190, 90%, 45%);
+      }
+    </style>
     <div id="breadcrumb" on-click="{{ focus }}">
       <template if="{{ graph && (!component || !component.id) }}">
       <i class="fa fa-search"></i>

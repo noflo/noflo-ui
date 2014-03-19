@@ -1,75 +1,75 @@
 <polymer-element name="noflo-type-selector" attributes="runtimes type">
-  <style>
-    noflo-type-selector {
-      top: calc(50% - 220px) !important;
-    }
-    noflo-type-selector ul.types {
-      padding: 0px;
-      margin: 0px;
-      margin-left: -9px;
-      margin-right: -9px;
-      list-style: none;
-    }
-    noflo-type-selector ul.types li {
-      width: 275px;
-      height: 105px;
-      overflow: hidden;
-      display: inline-block;
-      text-align: center;
-      background-color: hsl(192, 25%, 75%);
-      color: hsl(189, 11%, 26%);
-      border-radius: 3px;
-      margin-right: 9px;
-      margin-left: 9px;
-      margin-bottom: 18px;
-      position: relative;
-      cursor: pointer;
-      transition: background-color 0.3s ease-in-out;
-    }
-    noflo-type-selector ul.types li.selected,
-    noflo-type-selector ul.types li:hover {
-      background-color: hsl(190, 100%, 30%);
-      color: white;
-      cursor: default;
-    }
-    noflo-type-selector ul.types li.selected p {
-      color: hsl(0, 0%, 80%);
-    }
-    noflo-type-selector ul.types li h2 {
-      position: absolute;
-      top: 36px;
-      line-height: 36px;
-      width: 180px;
-      text-transform: none;
-      font-size: 10px;
-      text-align: left;
-      white-space: nowrap;
-      left: 18px;
-      padding: 0px;
-      margin: 0px;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-    noflo-type-selector ul.types li p {
-      position: absolute;
-      top: 53px;
-      left: 18px;
-      width: 180px;
-      text-transform: uppercase;
-      font-size: 8px;
-      text-align: left;
-      max-height: 36px;
-      overflow: hidden;
-      color: hsl(189, 11%, 26%);
-    }
-    noflo-type-selector ul.types li i {
-      font-size: 72px;
-      position: absolute;
-      right: -8px;
-      top: 9px;
-    }
+  <template>
+    <style>
+      :host {
+        top: calc(50% - 220px) !important;
+      }
+      ul.types {
+        padding: 0px;
+        margin: 0px;
+        margin-left: -9px;
+        margin-right: -9px;
+        list-style: none;
+      }
+      ul.types li {
+        width: 275px;
+        height: 105px;
+        overflow: hidden;
+        display: inline-block;
+        text-align: center;
+        background-color: hsl(192, 25%, 75%);
+        color: hsl(189, 11%, 26%);
+        border-radius: 3px;
+        margin-right: 9px;
+        margin-left: 9px;
+        margin-bottom: 18px;
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.3s ease-in-out;
+      }
+      ul.types li.selected,
+      ul.types li:hover {
+        background-color: hsl(190, 100%, 30%);
+        color: white;
+        cursor: default;
+      }
+      ul.types li.selected p {
+        color: hsl(0, 0%, 80%);
+      }
+      ul.types li h2 {
+        position: absolute;
+        top: 36px;
+        line-height: 36px;
+        width: 180px;
+        text-transform: none;
+        font-size: 10px;
+        text-align: left;
+        white-space: nowrap;
+        left: 18px;
+        padding: 0px;
+        margin: 0px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      ul.types li p {
+        position: absolute;
+        top: 53px;
+        left: 18px;
+        width: 180px;
+        text-transform: uppercase;
+        font-size: 8px;
+        text-align: left;
+        max-height: 36px;
+        overflow: hidden;
+        color: hsl(189, 11%, 26%);
+      }
+      ul.types li i {
+        font-size: 72px;
+        position: absolute;
+        right: -8px;
+        top: 9px;
+      }
     </style>
-    <template>
     <ul class="types">
       <template repeat="{{ availtype in available }}">
       <li on-click="{{ selectType }}" data-id="{{ availtype.id }}" class="{{ { selected: type == availtype.id } | tokenList }}">

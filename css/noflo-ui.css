@@ -1,7 +1,3 @@
-noflo-breadcrumb {
-  display:none;
-}
-
 input::-webkit-input-speech-button {
   margin-right 18px;
   cursor: pointer;
@@ -68,7 +64,7 @@ input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, 
   outline:none;
 }
 
-/* fucking bullshit... can't change input selection colors in Chrome?
+/* Wat... can't change input selection colors in Chrome?
 *::selection {
   background-color: black;
   background: black;
@@ -154,329 +150,7 @@ html, body, button {
   padding: 0;
 }
 
-the-panel {
-  background-color: hsla(0, 0%, 0%, 0.98) !important;
-  z-index: 3;
-  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
-  position: fixed;
-}
-the-panel#account {
-  top: 0px;
-}
-the-panel#account:before {
-  font-family: FontAwesome;
-  content: '\f03a';
-  color: hsl(189, 11%, 26%);
-  position: absolute;
-  text-align: center;
-  right: 0px;
-  width: 36px;
-  top: 50%;
-  top: calc(50% - 7px);
-  font-size: 17px;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-the-panel#account:not([open]):before {
-  cursor: e-resize;
-  opacity: 1;
-}
-the-panel#account header,
-the-panel#account main {
-  display: block;
-  margin-left: 36px;
-  margin-right: 36px;
-}
-the-panel#account header h1 {
-  text-align: center;
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-  height: 36px;
-  line-height: 36px;
-  font-size: 17px;
-  white-space: nowrap;
-}
-the-panel#account main ul {
-  margin: 0px;
-  padding: 0px;
-  list-style: none;
-}
-the-panel#account main ul li {
-  line-height: 36px;
-  min-height: 36px;
-}
-the-panel#account main ul li a {
-  color: white;
-  text-decoration: none;
-  display: block;
-  cursor: pointer;
-}
-the-panel#account main ul li a i {
-  float: right;
-  line-height: 36px;
-  color: hsl(189, 11%, 26%);
-  margin-right: 4px;
-}
-#context {
-  position: fixed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  left: 36px;
-  top: 72px;
-  width: calc(72px * 4 + 3px);
-  max-height: calc(100% - 72px);
-  box-sizing: border-box;
-  display: block;
-  overflow-y: auto;
-  overflow-x: visible;
-  z-index: 2;
-}
-the-panel#fixed {
-  padding-left: 36px;
-  padding-top: 72px;
-  box-sizing: border-box;
-  top: 0px;
-  z-index: 2;
-}
-the-panel#fixed:before {
-  font-family: FontAwesome;
-  content: '\f06e';
-  color: hsl(189, 11%, 26%);
-  position: absolute;
-  text-align: center;
-  left: 0px;
-  width: 36px;
-  top: 50%;
-  top: calc(50% - 7px);
-  font-size: 17px;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-the-panel#fixed:not([open]):before {
-  opacity: 1;
-  cursor: w-resize;
-}
-the-panel#fixed footer {
-  position: absolute;
-  bottom: 0px;
-  right: 0px;
-}
 
-.the-card-content {
-  display: block;
-  margin: 0px;
-  padding: 10px 10px 10px;
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
-  border-bottom: 1px hsla(190, 100%, 30%, 0.1) solid;
-  border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
-  background-color: hsla(0, 0%, 0%, 0.99) !important;
-  width: calc(72px * 4);
-  max-height: calc(72px * 4);
-  overflow-x: hidden;
-  overflow-y: auto;
-  position: relative;
-}
-
-the-card[type="noflo-runtime-preview"] {
-  padding: 0px;
-  width: calc(72px * 4);
-  overflow: hidden;
-}
-
-the-card.maximized {
-  background-color: hsla(0, 0%, 0%, 0.99);
-  width: calc(100% - 70px);
-  height: calc(100% - 36px);
-  max-height: none;
-  position: fixed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  top: 72px;
-  left: 36px;
-  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
-  z-index: 3;
-  border: none;
-}
-the-card.maximized .the-card-content {
-  width: 100%;
-  height: 100%;
-}
-html the-card-stack .sticky-head {
-  background-color: hsla(0, 0%, 5%, 0.99) !important;
-  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-  background-size: calc(100% - 1px) 100%;
-  background-position: 0px;
-}
-
-html the-card-stack .sticky-head h1 {
-  font-size:15px;
-}
-
-the-card button,
-noflo-search button,
-noflo-runtime button {
-  width: 36px;
-  height: 36px;
-  font-size: 10px;
-  background-color: transparent;
-  border: none;
-  color: white;
-  text-align: center;
-}
-
-the-card h1 {
-  font-size: 12px;
-  line-height: 36px;
-  margin: 0px;
-  margin-bottom: 0px;
-  text-shadow: 0 1px hsl(0, 0%, 0%);  
-  text-align: left;
-}
-
-the-card header h1 {
-  display: block;
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: calc(72px * 3 - 1px);
-  height: 36px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-the-card header h1.clear {
-  cursor: pointer;
-}
-the-card header h2 {
-  line-height: 36px;
-  width: 72px;
-  height: 36px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  margin: 0px;
-  text-align: right;
-  font-size: 10px;
-  color: hsla(190, 100%, 80%, 0.8);
-  display: block;
-  cursor: default;
-}
-the-card header {
-  height: 36px;
-}
-
-the-card ul {
-  margin: 0px;
-  padding: 0px;
-  list-style: none;
-}
-
-the-card textarea {
-  width: 100%;
-  min-height: 100px;
-  max-height: calc(72px * 4);
-}
-
-the-card ul li {
-  display: block;
-  padding: 0px;
-  margin: 0px;
-}
-the-card ul.toolbar2right {
-  width: 180px;
-  display:block;
-  position: absolute;
-  right: 10px;
-  top: 10px;
-}
-the-card ul.toolbar li {
-  float: left;
-  display: block;
-  width: calc(100%/2);  
-  height: 36px;
-  text-align: center;
-  margin: 0px;
-  margin-right: 0px;
-}
-the-card ul.toolbar li * {
-  line-height: 36px;
-}
-the-card ul.toolbar li button {
-  width:100%;
-  height:100%;
-}
-.red-button {
-  background-color: hsla(0, 100%, 20%, 0.2);
-  color: hsl(0, 100%, 65%);
-}
-.blue-button {
-  background-color: hsla(190, 100%, 20%, 0.2);
-  color: hsl(190, 100%, 65%);
-}
-
-
-
-the-card ul li h2 {
-  font-size: 10px;
-  margin: 0px;
-}
-the-card ul li i {
-  /*display: none !important;*/
-  margin-right: 5px;
-}
-the-card ul li p {
-  margin: 0px;
-  margin-top: 10px;
-  padding: 0px;
-  font-size: 8px;
-}
-
-
-
-
-
-noflo-search {
-  background-color: hsl(187, 45%, 5%);
-  border-bottom: 1px solid hsl(189, 11%, 26%);
-  position: fixed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  
-  left: 36px;
-  top: 0;
-  color: white;
-  z-index: 2;
-  width: calc(72px * 4);
-  height: 36px;
-  font-size: 10px;
-  white-space: nowrap;
-}
-noflo-search input {
-  background-color: hsl(187, 45%, 5%);
-  background-image: none;
-  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-  border: none;
-  padding: 0px;
-  padding-right: 10px;
-  padding-left: 10px;
-  color: white;
-  width: 245px;
-  height: 36px;
-  display: inline;
-}
-noflo-search button {
-  width: 36px;
-  height: 36px;
-  margin: 0px;
-  margin-left: -5px;
-  padding: 0px;
-  display: inline;
-  display: inline;
-}
 
 .modal-content {
   background-color: hsl(192, 25%, 92%);
@@ -560,6 +234,11 @@ noflo-search button {
   cursor: pointer;
 }
 
+polymer-element.modal-content {
+  display: none;
+}
+
+
 #workspace {
   position: absolute;
   top: 0;
@@ -585,68 +264,8 @@ the-graph-nav {
   bottom: 36px !important;
 }
 
-#zoom button {
-  width: 36px;
-  height: 36px;
-  font-size: 10px;
-  position: fixed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  right: 36px;
-  color: hsl(190, 100%, 90%);
-  background-color: hsla(187, 85%, 10%, 0.8);
-}
 
-#zoomin {
-  bottom: 144px;
-}
 
-#zoomout {
-  bottom: 0px;
-}
-
-noflo-component-editor {
-  display: block;
-  position: absolute;
-  top: 0px;
-  left: 36px;
-  right: 36px;
-  height: 100%;
-  background-color: black;
-  z-index: 1;
-  overflow: hidden;
-}
-.CodeMirror {
-  height: 100%;
-  cursor: text;
-}
-.CodeMirror-scroll {
-  height: 100%;
-}
-noflo-component-editor #code,
-noflo-component-editor #tests {
-  display: block;
-  width: 50%;
-  height: 100%;
-  position: absolute;
-  left: 0px;
-  top: 36px;
-}
-noflo-component-editor #tests {
-  left: auto;
-  right: 0px;
-}
-noflo-component-editor #code h1,
-noflo-component-editor #tests h1 {
-  line-height: 36px;
-  padding-left: 36px;
-  font-size: 14px;
-  text-transform: uppercase;
-  color: white;
-}
-noflo-component-editor #code h1 {
-  text-align: right;
-}
 
 ::-webkit-scrollbar {
   width: 2px;
@@ -665,6 +284,3 @@ noflo-component-editor #code h1 {
   background-color: hsl(0, 0%, 0%);
 }
 
-polymer-element.modal-content {
-  display: none;
-}

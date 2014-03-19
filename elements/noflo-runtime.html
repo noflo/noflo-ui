@@ -1,110 +1,120 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <polymer-element name="noflo-runtime" attributes="graphs edges runtimes" class="gpu">
-  <style>
-    noflo-runtime {
-      position: fixed;
-      right: 36px;
-      padding-left: 18px;
-      box-sizing: border-box;
-      top: 0;
-      color: hsl(189, 11%, 26%);
-      z-index: 3;
-      width: 288px;
-      height: 72px;
-      background-color: hsla(0, 0%, 0%, 0.98) !important;
-      background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-      background-size: calc(100% - 1px);
-      background-position: 0px;
-      border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
-    }
-
-    noflo-runtime h2 {
-      font-size: 14px;
-      width: 216px;
-      font-weight: normal;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      line-height: 36px;
-      margin: 0px;
-      padding: 0px;
-    }
-
-    noflo-runtime #address h2 {
-      position: absolute;
-      left: 54px;
-      width: 180px;
-      top: 0px;
-      color: hsl(189, 11%, 26%);
-    }
-
-    noflo-runtime #address, noflo-runtime #address button {
-      color: #e70215;
-    }
-    noflo-runtime .online#address, noflo-runtime .online#address button {
-      color: #01d159;
-    }
-    noflo-runtime #address button.clear {
-      position: absolute;
-      right: 0px;
-      color: hsl(189, 11%, 26%);
-    }
-
-    noflo-runtime #runcontrol h2 {
-      position: absolute;
-      left: 54px;
-      top: 36px;
-    }
-    noflo-runtime #runcontrol button {
-      color: hsl(189, 11%, 26%);
-    }
-
-    noflo-runtime #select {
-      text-align: center;
-    }
-    noflo-runtime #select button.select {
-      width: auto;
-      height: auto;
-      background-color: hsl(190, 90%, 45%);
-      color: hsla(0, 0%, 0%, 0.98);
-      border: none;
-      font-size: 13px;
-      border-radius: 3px;
-      font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-      height: 36px;
-      padding-left: 36px;
-      padding-right: 36px;
-      margin: 0px;
-      margin-top: 18px;
-    }
-  </style>
   <template>
-  <template if="{{ currentGraph }}">
-  <template if="{{ runtime }}">
-      <div id="address" class="{{ { online: online } | tokenList }}">
-        <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
-        <h2>{{ runtime.definition.address }}</h2>
-        <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
-      </div>
-    <div id="runcontrol">
-      <template if="{{ online }}">
-        <template if="{{ execution.running }}">
-          <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
-        </template>
-        <template if="{{ execution.running == false }}">
-          <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
-        </template>
-        <h2>{{ execution.label }}</h2>
+    <style>
+      :host {
+        position: fixed;
+        right: 36px;
+        padding-left: 18px;
+        box-sizing: border-box;
+        top: 0;
+        color: hsl(189, 11%, 26%);
+        z-index: 3;
+        width: 288px;
+        height: 72px;
+        background-color: hsla(0, 0%, 0%, 0.98) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-size: calc(100% - 1px);
+        background-position: 0px;
+        border-bottom: 1px hsla(190, 90%, 80%, 0.2) solid;
+      }
+
+      h2 {
+        font-size: 14px;
+        width: 216px;
+        font-weight: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 36px;
+        margin: 0px;
+        padding: 0px;
+      }
+
+      button {
+        width: 36px;
+        height: 36px;
+        font-size: 10px;
+        background-color: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+      }
+
+      #address h2 {
+        position: absolute;
+        left: 54px;
+        width: 180px;
+        top: 0px;
+        color: hsl(189, 11%, 26%);
+      }
+
+      #address, #address button {
+        color: #e70215;
+      }
+      .online#address, .online#address button {
+        color: #01d159;
+      }
+      #address button.clear {
+        position: absolute;
+        right: 0px;
+        color: hsl(189, 11%, 26%);
+      }
+
+      #runcontrol h2 {
+        position: absolute;
+        left: 54px;
+        top: 36px;
+      }
+      #runcontrol button {
+        color: hsl(189, 11%, 26%);
+      }
+
+      #select {
+        text-align: center;
+      }
+      #select button.select {
+        width: auto;
+        height: auto;
+        background-color: hsl(190, 90%, 45%);
+        color: hsla(0, 0%, 0%, 0.98);
+        border: none;
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        padding-left: 36px;
+        padding-right: 36px;
+        margin: 0px;
+        margin-top: 18px;
+      }
+    </style>
+    <template if="{{ currentGraph }}">
+      <template if="{{ runtime }}">
+          <div id="address" class="{{ { online: online } | tokenList }}">
+            <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
+            <h2>{{ runtime.definition.address }}</h2>
+            <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
+          </div>
+        <div id="runcontrol">
+          <template if="{{ online }}">
+            <template if="{{ execution.running }}">
+              <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
+            </template>
+            <template if="{{ execution.running == false }}">
+              <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
+            </template>
+            <h2>{{ execution.label }}</h2>
+          </template>
+        </div>
       </template>
-    </div>
-  </template>
-  <template if="{{ !runtime }}">
-    <div id="select">
-      <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
-    </div>
-  </template>
-  </template>
+      <template if="{{ !runtime }}">
+        <div id="select">
+          <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
+        </div>
+      </template>
+    </template>
   </template>
   <script>
     Polymer('noflo-runtime', {

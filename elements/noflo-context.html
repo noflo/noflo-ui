@@ -6,6 +6,23 @@
 <link rel="import" href="../bower_components/the-panel/the-panel/the-panel.html">
 <polymer-element name="noflo-context" attributes="project graphs component node edge search">
   <template>
+    <link rel="stylesheet" href="../css/noflo-ui-shared.css">
+    <style>
+      #context {
+        position: fixed;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        left: 36px;
+        top: 72px;
+        width: calc(72px * 4 + 3px);
+        max-height: calc(100% - 72px);
+        box-sizing: border-box;
+        display: block;
+        overflow-y: auto;
+        overflow-x: visible;
+        z-index: 2;
+      }
+    </style>
     <section id="context"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36" automatic="false">
       <header></header>
