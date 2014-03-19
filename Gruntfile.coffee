@@ -62,6 +62,7 @@ module.exports = ->
     'string-replace':
       app:
         files:
+          './dev.html': './index.html'
           './app.html': './app.html'
           './app.js': './app.js'
           './config.xml': './config.dist.xml'
