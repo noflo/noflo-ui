@@ -4,6 +4,301 @@
 <link rel="import" href="noflo-new-runtime.html">
 <polymer-element name="noflo-main" attributes="open localProjects graphs components userRuntimes">
   <template>
+    <style>
+      :host {
+        background-color: hsl(190, 90%, 45%);
+        display: block;
+        z-index: 4;
+        position: fixed;
+        top: 0px;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        overflow-y: auto;
+        height: 100%;
+        width: 100%;
+        transition: height 1s ease-in-out;
+      }
+      section {
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 78%, 10%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-position: calc(50% - 19px) 0px;
+        background-size: 36px 36px;
+        display: block;
+        position: relative;
+        width: 70%;
+        padding-left: 15%;
+        padding-right: 15%;
+      }
+      section > h2 {
+        font-size: 17px;
+        line-height: 36px;
+        margin-top: 36px;
+        height: 36px;
+        color: white;
+        text-shadow: 0 1px 0 hsl(190, 100%, 40%);
+        text-transform: none;
+      }
+      section > h2 small {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: hsl(189, 11%, 26%);
+      }
+      ul.tabs {
+        position: absolute;
+        display: inline-block;
+        top: 0px;
+        left: calc(50% - 133px);
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+        padding: 1px;
+      }
+      ul.tabs li {
+        display: inline;
+        line-height: 36px;
+        font-size: 13px;
+        color: hsl(189, 11%, 26%);
+        text-decoration: none;
+        padding-left: 36px;
+        padding-right: 36px;
+        cursor: pointer;
+      }
+      ul.tabs li.selected {
+        border: none;
+        border-radius: 3px;
+        background-color: rgba(0, 42, 51, 0.498039);
+        color: white;
+        border-radius: 3px;
+        padding-top: 8px;
+        padding-bottom: 9px;
+        cursor: default;
+      }
+      ul.projects {
+        padding: 0px;
+        margin-top: 36px;
+        margin-bottom: 36px;
+        margin-left: -18px;
+        margin-right: -18px;
+        list-style: none;
+      }
+      ul.projects li {
+        width: 216px;
+        height: 105px;
+        overflow: hidden;
+        display: inline-block;
+        text-align: center;
+        background-color: hsla(0, 0%, 0%, .98);
+        border-radius: 3px;
+        margin-right: 18px;
+        margin-left: 18px;
+        margin-bottom: 36px;
+        position: relative;
+        cursor: pointer;
+      }
+      ul.projects li.add {
+        background-color: hsl(192, 25%, 92%);
+        color: black;
+        cursor: default;
+      }
+      ul.projects li.remote {
+        cursor: default;
+      }
+      ul.projects li.runtime {
+        cursor: default;
+      }
+      ul.projects li the-graph-thumb {
+        display: block;
+        position: absolute;
+        left: 100px;
+        top: -20px;
+      }
+      section button {
+        background-color: transparent;
+        color: hsl(189, 11%, 26%);
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        border: none;
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+      ul.projects li button {
+        display: block;
+        border: 1px solid hsl(189, 11%, 26%);
+        position: absolute;
+        right: 18px;
+        top: 36px;
+      }
+      ul.projects li h2 {
+        position: absolute;
+        top: 36px;
+        line-height: 36px;
+        width: 126px;
+        text-transform: none;
+        font-size: 10px;
+        text-align: left;
+        white-space: nowrap;
+        left: 18px;
+        padding: 0px;
+        margin: 0px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      ul.projects li p {
+        position: absolute;
+        top: 53px;
+        left: 18px;
+        width: 75px;
+        text-transform: uppercase;
+        font-size: 8px;
+        text-align: left;
+        max-height: 36px;
+        overflow: hidden;
+        color: hsl(189, 11%, 50%);
+      }
+      ul.projects li a {
+        color: black;
+        text-decoration: none;
+      }
+
+
+      noflo-account {
+        text-align: center;
+        display: block;
+        background-color: hsla(0, 0%, 0%, 0.98) !important;
+        padding-top: 36px;
+        padding-bottom: 72px;
+        background-image: radial-gradient(2px at 0px 0px, hsla(0, 100%, 100%, 0.2) 1px, hsla(0, 0%, 0%, 0) 1.1px), radial-gradient(2px at 0px 0px, hsla(210, 51%, 21%, 0.5) 1px, hsla(0, 0%, 0%, 0) 1.1px);
+        background-size: 72px 72px, calc(36px / 2) calc(36px / 2);
+        background-position: 50% 0px, calc(50% - 9px) 0px;
+      }
+      noflo-account /shadow/ .avatar {
+        border-radius: 50px;
+        background-color: black;
+        border: 2px solid hsl(190, 100%, 30%);
+        display: block;
+        position: relative;
+        width: 72px;
+        height: 72px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 36px;
+        margin-bottom: 36px;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      noflo-account /shadow/ .avatar:before {
+        content: '';
+        border: 3px solid black;
+        border-radius: 50px;
+        width: 70px;
+        height: 70px;
+        left: -1px;
+        top: -1px;
+        position: absolute;
+        z-index: 1;
+        box-sizing: border-box;
+      }
+      noflo-account /shadow/ .avatar.flowhub {
+        border-radius: 11px;
+        border: 1px solid hsl(190, 100%, 30%);
+      }
+      noflo-account /shadow/ .avatar.noflo {
+        border: 1px solid hsl(190, 100%, 30%);
+      }
+      noflo-account /shadow/ .avatar.flowhub:before {
+        border: none;
+        border-radius: 6px;
+        width: 72px;
+        height: 72px;
+      }
+      noflo-account /shadow/ .avatar.noflo:before {
+        border: none;
+      }
+      noflo-account /shadow/ .avatar img {
+        border: 2px solid hsl(190, 90%, 45%);
+        width: 66px;
+        height: 66px;
+        margin-top: 1px;
+        margin-left: 1px;
+        box-sizing: border-box;
+        border-radius: 50px;
+      }
+      noflo-account /shadow/ .flowhub img {
+        width: 54px;
+        height: 53px;
+        padding: 6px;
+        margin-top: 8px;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+      noflo-account /shadow/ .noflo img {
+        width: 55px;
+        height: 22px;
+        border: none;
+        margin-top: 23px;
+        margin-left: 5px;
+        border-radius: initial;
+      }
+      noflo-account /shadow/ h1 {
+        line-height: 18px;
+        margin: 0px;
+        padding: 0px;
+        position: relative;
+      }
+      noflo-account /shadow/ #plan {
+        position: absolute;
+        font-size: 8px;
+        text-transform: uppercase;
+        top: -8px;
+        margin-left: 8px;
+        color: black;
+        background-color: hsl(190, 90%, 45%);
+        line-height: 10px;
+        text-decoration: none;
+        padding: 2px;
+        border-radius: 2px;
+      }
+      noflo-account /shadow/ #plan.free,
+      noflo-account /shadow/ #plan.beta {
+        background-color: hsl(135,90%,45%);
+      }
+      noflo-account /shadow/ .toolbar {
+        margin-top: 54px;
+        padding: 1px;
+        border-radius: 3px;
+        border: 1px solid hsl(190, 90%, 45%);
+        color: hsl(190, 90%, 45%);
+        background-color: black;
+        display: inline-block;
+        box-sizing: border-box;
+        margin-bottom: -3px;
+      }
+      noflo-account /shadow/ .toolbar button,
+      noflo-account /shadow/ .toolbar a.login {
+        background-color: hsl(190, 90%, 45%);
+        color: hsla(0, 0%, 0%, 0.98);
+        border: none;
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        padding-left: 36px;
+        padding-right: 36px;
+        margin: 0px;
+      }
+      noflo-account /shadow/ .toolbar a {
+        font-size: 13px;
+        color: hsl(190, 90%, 45%);
+        text-decoration: none;
+        height: 36px;
+        display: inline-block;
+        line-height: 36px;
+        padding-left: 36px;
+        padding-right: 36px;
+        cursor: pointer;
+      }    
+    </style>
     <noflo-account id="mainaccount" clientid="$NOFLO_OAUTH_CLIENT_ID"></noflo-account>
     <section id="projects">
       <h2>Projects
