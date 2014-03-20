@@ -9,3 +9,5 @@ env:
   global:
   - secure: SqpDxIE0eAc0s9lvm+djIcS+y+778NeoZrRSsnF6+8b6K7pYjM9A41WdYFLhcP2fb/keVKcG9nbpwtYdTXGjhe59NFHM0gE3GjML/hpfy8Y7djEIdnt3EGjNEkXAd8pB9NCMyxNUjYgUUF6w7splOR1rViXpdyig8StGtfunM+k=
   - secure: MGOSVmfg+zl8lco7IYcSzYVAuS9VkhK0z2z8/bcZmCeRmPh+IaeSfEaeHka1Swcr4rO0IWj4bU9fqjp8IjA/8ntlbnSZcPM4QJ0SQaXLUGOsNnmIE8X0eLe8xKKFw682qUUdm+nowtdFiCF07+aRBzLYwAzSlevZVl3NuwALrBM=
+notifications:
+  slack: thegrid:ySBwsWaxwetttCJvrem0I7oQ

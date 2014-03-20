@@ -58,6 +58,7 @@ button {
   padding:0;
   cursor: pointer;
   background-image: none;
+  border: 0;
 }
 
 input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
