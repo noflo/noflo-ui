@@ -27,5 +27,16 @@ window.addEventListener('polymer-ready', function() {
       }
     });
   });
+
+  // Show help on demand
+  var help = document.querySelector('noflo-help');
+  document.getElementById("openhelp").addEventListener("click", function (event) {
+    if (help) {
+      help.open();
+      event.preventDefault();
+    }
+    // Otherwise follow link to docs
+  });
+
 });
 

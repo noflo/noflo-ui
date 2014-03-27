@@ -155,6 +155,8 @@
         if (this.graphs.length) {
           var graph = this.graphs[this.graphs.length - 1];
           this.fire('currentgraph', graph);
+          // Set help message if manually shown
+          this.setHelp();
           if (graph.nodes.length === 0 && this.graphs.length === 1) {
             // Empty main graph, we should show the help text
             this.showHelp(graph);
@@ -348,6 +350,12 @@
             currentGraph.endTransaction('subgraph');
           }, 5);
         }.bind(this));
+      },
+      setHelp: function () {
+        // If manually triggered, show something relevant
+        if (!this.help) { return; }
+        this.help.headline = '$NOFLO_APP_TITLE graph editor';
+        this.help.text = 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner. Searching for <i>show library</i> will show all components.';
       },
       showHelp: function (graph) {
         if (!this.help) {

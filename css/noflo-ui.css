@@ -82,11 +82,11 @@ input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, 
   line-height: 36px;
   font-size: 14px;
 }
-#docs {
+#openhelp {
   color: hsl(189, 50%, 80%);
   position: fixed;
-  left: 11px;
-  top: 0px;
+  right: 14px;
+  top: 36px;
   z-index: 10;
   line-height: 36px;
   font-size: 14px;
