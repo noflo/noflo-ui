@@ -17,7 +17,7 @@ the-panel#account {
 the-panel#account:before {
   font-family: FontAwesome;
   content: '\f03a';
-  color: hsl(189, 11%, 26%);
+  color: hsl(189, 50%, 80%);
   position: absolute;
   text-align: center;
   right: 0px;
@@ -40,7 +40,7 @@ the-panel#account /shadow/ main {
 }
 the-panel#account /shadow/ header h1 {
   text-align: center;
-  border-bottom: 1px solid hsl(189, 11%, 26%);
+  border-bottom: 1px solid hsl(189, 50%, 80%);
   height: 36px;
   line-height: 36px;
   font-size: 17px;
@@ -64,7 +64,7 @@ the-panel#account /shadow/ main ul li a {
 the-panel#account /shadow/ main ul li a i {
   float: right;
   line-height: 36px;
-  color: hsl(189, 11%, 26%);
+  color: hsl(189, 50%, 80%);
   margin-right: 4px;
 }
 
@@ -80,7 +80,7 @@ the-panel#fixed {
 the-panel#fixed:before {
   font-family: FontAwesome;
   content: '\f06e';
-  color: hsl(189, 11%, 26%);
+  color: hsl(189, 50%, 80%);
   position: absolute;
   text-align: center;
   left: 0px;
