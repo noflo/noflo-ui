@@ -74,9 +74,18 @@ input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, 
 */
 
 #bugreport {
-  color: hsl(189, 11%, 57%);
+  color: hsl(189, 50%, 80%);
   position: fixed;
   right: 11px;
+  top: 0px;
+  z-index: 10;
+  line-height: 36px;
+  font-size: 14px;
+}
+#docs {
+  color: hsl(189, 50%, 80%);
+  position: fixed;
+  left: 11px;
   top: 0px;
   z-index: 10;
   line-height: 36px;

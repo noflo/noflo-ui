@@ -10,14 +10,13 @@
         transition: bottom 0.3s ease-in-out;
         z-index: 6;
         background-color: hsl(192, 25%, 92%);
-        padding-left: 72px;
-        padding-right: 72px;
-        padding-top: 36px;
-        padding-bottom: 18px;
+        padding: 36px 72px 18px 72px;
         color: black;
-        background-image: -webkit-radial-gradient( 50% 50%, circle closest-side, hsl(0, 100%, 100%) 0%, hsla(0, 100%, 100%, 0) 100%), radial-gradient(2px at 0px 0px, hsl(190, 80%, 30%) 1px, hsla(0, 0%, 0%, 0) 1.1px);
-        background-size: 100% 100%, 36px 36px;
-        background-position: 0;
+        /*
+        background-image: radial-gradient(2px at 0px 0px, hsl(190, 80%, 30%) 1px, hsla(0, 0%, 0%, 0) 1.1px);
+        background-size: 36px 36px;
+        background-position: 50% 0px;
+        */
         box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
         box-sizing: border-box;
 
@@ -37,9 +36,16 @@
       p a {
         color: hsl(190, 100%, 30%);
       }
+      #docslink {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        text-decoration: none;
+      }
     </style>
     <h1>{{ headline }}</h1>
     <p id="help-text"></p>
+    <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">Docs <i class="fa fa-question-circle"></i></a>
   </template>
   <script>
     Polymer('noflo-help', {
