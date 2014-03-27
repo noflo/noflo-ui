@@ -385,6 +385,7 @@
           });
         }
       },
+      lastNotification: null,
       notify: function (title, message) {
         if (!this.allowedToNotify()) {
           if (!console || !console.log) {
@@ -393,7 +394,11 @@
           console.log(title + ': ' + message);
           return;
         }
-        var notification = new Notification(title, {
+        // Check if notification is duplicate
+        if (this.lastNotification && this.lastNotification.title === title && this.lastNotification.body === message) {
+          this.lastNotification.close();
+        }
+        this.lastNotification = new Notification(title, {
           body: message,
           icon: 'app/noflo-64.png'
         });
