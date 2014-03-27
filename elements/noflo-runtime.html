@@ -357,16 +357,13 @@
         this.parentNode.parentNode.appendChild(this.runtimeSelector);
       },
       canNotify: function () {
-        if (!window.webkitNotifications) {
-          return false;
-        }
-        return true;
+        return ("Notification" in window);
       },
       allowedToNotify: function () {
         if (!this.canNotify()) {
           return false;
         }
-        if (window.webkitNotifications.checkPermission() !== 0) {
+        if (Notification.permission === "denied") {
           return false;
         }
         return true;
@@ -375,10 +372,18 @@
         if (!this.canNotify()) {
           return;
         }
-        if (this.allowedToNotify()) {
+        if (!this.allowedToNotify()) {
           return;
         }
-        window.webkitNotifications.requestPermission();
+        // Don't bug them if they already clicked
+        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+          Notification.requestPermission(function (permission) {
+            // Whatever the user answers, we make sure we store the information
+            if(!('permission' in Notification)) {
+              Notification.permission = permission;
+            }
+          });
+        }
       },
       notify: function (title, message) {
         if (!this.allowedToNotify()) {
@@ -388,8 +393,10 @@
           console.log(title + ': ' + message);
           return;
         }
-        var notification = window.webkitNotifications.createNotification('app/noflo.png', title, message);
-        notification.show();
+        var notification = new Notification(title, {
+          body: message,
+          icon: 'app/noflo-64.png'
+        });
       }
     });
   </script>
