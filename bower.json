@@ -23,7 +23,6 @@
     "font-awesome": "~4.0.3",
     "codemirror": "~3.22.0",
     "coffee-script": "~1.6.3",
-    "polymer": "Polymer/polymer#0.2.1",
-    "platform": "Polymer/platform#0.2.1"
+    "polymer": "0.2.2"
   }
 }
