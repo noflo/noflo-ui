@@ -1,4 +1,6 @@
-<polymer-element name="noflo-journal" attributes="graph panel">
+<link rel="import" href="../bower_components/the-graph/the-graph-nav/the-graph-nav.html">
+
+<polymer-element name="noflo-journal" attributes="graph editor panel">
   <template>
     <style>
       #controls {
@@ -8,7 +10,7 @@
         bottom: 0;
         z-index: 3;
         width: 288px;
-        height: 36px;
+        height: 180px;
         color: hsl(189, 50%, 80%);
         box-sizing: border-box;
         background-color: hsla(0, 0%, 0%, 0.98) !important;
@@ -26,30 +28,47 @@
         width: 72px;
         color: hsl(189, 50%, 80%);
       }
+      #controls button.undo {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+      }
       #controls button.redo {
         position: absolute;
-        right: 0px;
+        right: 0;
+        bottom: 0;
       }
       #controls button.autolayout {
         position: absolute;
         left: calc(50% - 18px);
+        bottom: 0;
+      }
+
+      #nav {
+        position: absolute;
+        left: 0;
+        top: 0;
       }
     </style>
-    <template if="{{ graph }}">
     <div id="controls">
-      <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
-      <template if="{{ klay }}">
-      <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
+      <template if="{{ graph }}">
+        <the-graph-nav id="nav" width="288" height="144" editor="{{ editor }}" hide="{{ hidenav }}"></the-graph-nav>
+
+        <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
+        <template if="{{ klay }}">
+          <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
+        </template>
+        <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
       </template>
-      <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
     </div>
-    </template>
   </template>
   <script>
     Polymer('noflo-journal', {
       graph: null,
+      editor: null,
       returnTo: null,
       klay: false,
+      hidenav: false,
       enteredView: function () {
         if (typeof window.$klay !== 'undefined') {
           this.klay = true;
@@ -80,6 +99,13 @@
         }
         var graph = document.getElementById("graph");
         graph.triggerAutolayout();
+      },
+      hidenavChanged: function () {
+        if (this.hidenav) {
+          this.$.controls.style.height = "36px";
+        } else {
+          this.$.controls.style.height = "180px";
+        }
       }
     });
   </script>

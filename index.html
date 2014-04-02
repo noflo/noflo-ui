@@ -33,7 +33,7 @@
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
-    <noflo-polymer name="noflo-journal" inports="graph panel undo redo" outports=""></noflo-polymer>
+    <noflo-polymer name="noflo-journal" inports="graph editor panel undo redo" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-help.html">
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
@@ -522,6 +522,7 @@
       GraphEditor EDITOR -> EDITOR Context
       GraphEditor EDGES -> EDGES Context
       GraphEditor NODES -> NODES Context
+      GraphEditor EDITOR -> EDITOR Journal
 
 
       # Prepare component editor
