@@ -31,7 +31,8 @@
     "forresto/noflo-seriously": "*",
     "jonnor/noflo-cad": "*",
     "alfa256/noflo-prompts": "*",
-    "noflo/noflo-image": "*"
+    "noflo/noflo-image": "*",
+    "forresto/noflo-ccv": "*"
   },
   "json": [
     "component.json"
