@@ -10,9 +10,12 @@ the-panel {
   z-index: 3;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
   position: fixed;
+  border: 0px solid hsla(190, 90%, 80%, 0.3);
+  box-sizing: border-box;
 }
 the-panel#account {
   top: 0px;
+  border-right-width: 1px;
 }
 the-panel#account:before {
   font-family: FontAwesome;
@@ -73,9 +76,9 @@ the-panel#account /shadow/ main ul li a i {
 the-panel#fixed {
   padding-left: 36px;
   padding-top: 72px;
-  box-sizing: border-box;
   top: 0px;
   z-index: 2;
+  border-left-width: 1px;
 }
 the-panel#fixed:before {
   font-family: FontAwesome;
