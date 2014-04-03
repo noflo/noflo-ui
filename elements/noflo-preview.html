@@ -1,25 +1,28 @@
 <polymer-element name="noflo-preview" attributes="runtime maximized">
   <template>
     <style>
-      the-card[type="noflo-runtime-preview"] /shadow/ .the-card-content {
+      :host {
         padding: 0px;
         height: 350px;
         max-height: none;
         overflow: hidden;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ .the-card-content header h1 {
+      :host(.the-card-content){
+        max-height: none !important;
+      }
+      header h1 {
         left: 0px;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ .the-card-content ul.toolbar2right {
+      ul.toolbar2right {
         right: 0px;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ .the-card-content .blue-button {
+      .blue-button {
         background-color: transparent;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ #preview {
+      #preview {
         text-align: center;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ #preview pre {
+      #preview pre {
         max-height: 304px;
         color: #7ee67e;
         font-size: 10px;
@@ -30,11 +33,16 @@
         -webkit-user-select: initial;
         user-select: initial;
       }
-      the-card[type="noflo-runtime-preview"] /shadow/ #preview-iframe {
-        margin-top: 25px;
+
+      #preview-iframe {
         display: block;
+        border: none;
+        width: 300px;
+        height: 300px;
+        margin-top: 0;
       }
-      the-card[type="noflo-runtime-preview"].maximized  /shadow/ #preview-iframe {
+
+      #preview.maximized #preview-iframe {
         width: 100%;
         min-height: 100%;
       }
@@ -68,8 +76,10 @@
       maximizedChanged: function() {
         if (this.maximized) {
           this.parentNode.classList.add('maximized');
+          this.$.preview.classList.add('maximized');
         } else {
           this.parentNode.classList.remove('maximized');
+          this.$.preview.classList.remove('maximized');
         }
         this.fire('maximized', this.maximized);
       },
