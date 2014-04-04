@@ -21,10 +21,6 @@
         overflow: hidden;
       }
 
-      ul.ports li.error label {
-        background-color: rgb(121, 18, 18);
-      }
-
       ul.ports li p {
         margin: 0px;
         padding: 0px;
@@ -186,6 +182,12 @@
       ul.ports li.route10 button  { 
         background-color: hsla(335, 98%, 20%, 0.35); 
       }
+
+
+      ul.ports li.error input {
+        background-color: rgb(121, 18, 18);
+        border: 1px solid red;
+      }
       
       
       ul.ports li.route0  label > span { color: hsl(  0,  0%, 90%);}  
@@ -300,7 +302,7 @@
               <template if="{{ port.inputType == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
-              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-blur="{{ updateValue }}">
+              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
@@ -430,6 +432,8 @@
 
         var validatePortValue = function(type, value) {
           switch (port.type) {
+            case 'number':
+              return !isNaN(value);
             case 'object':
               return value instanceof Object;
             case 'array':
@@ -457,6 +461,7 @@
             port.value = null;
           }
         });
+        sender.parentNode.parentNode.classList.remove('error');
       },
       sendBang: function (event, detail, sender) {
         event.preventDefault();
