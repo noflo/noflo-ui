@@ -190,7 +190,8 @@
       }
       
       
-      ul.ports li.route0  label > span { color: hsl(  0,  0%, 90%);}  
+      ul.ports li         label > span { color: hsl(  0,  0%, 75%);}  
+      ul.ports li.route0  label > span { color: hsl(  0,  0%,100%);}  
       ul.ports li.route1  label > span { color: hsl(  0, 98%, 46%);}
       ul.ports li.route2  label > span { color: hsl( 35, 98%, 46%);}
       ul.ports li.route3  label > span { color: hsl( 60, 98%, 46%);}
@@ -204,9 +205,13 @@
       
       
 
+      ul.ports  li        input, 
+      ul.ports  li        button {
+        border-left: 1px solid hsla(  0,  0%, 75%, 0.5); 
+      }
       ul.ports  li.route0 input, 
       ul.ports  li.route0 button {
-        border-left: 1px solid hsla(  0,  0%, 75%, 0.5); 
+        border-left: 1px solid hsla(  0,  0%,100%, 0.5); 
       }
       ul.ports  li.route1 input, 
       ul.ports  li.route1 button {
@@ -343,7 +348,7 @@
       },
       getPortConnection: function (port) {
         var connected = false;
-        var route = 0;
+        var route = "X";
         Object.keys(this.graph.inports).forEach(function (name) {
           var inport = this.graph.inports[name];
           if (inport.process == this.node.id && inport.port == port) {
@@ -403,7 +408,7 @@
             break;
           case 'boolean':
             return input.checked;
-        case 'number':
+          case 'number':
             return parseFloat(input.value);
           default:
             return input.value;
