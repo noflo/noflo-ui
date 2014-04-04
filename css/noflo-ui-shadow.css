@@ -28,7 +28,7 @@ the-panel#account:before {
   top: 50%;
   top: calc(50% - 7px);
   font-size: 17px;
-  opacity: 0;
+  opacity: 0.25;
   transition: opacity 0.3s ease-in-out;
 }
 the-panel#account:not([open]):before {
@@ -91,7 +91,7 @@ the-panel#fixed:before {
   top: 50%;
   top: calc(50% - 7px);
   font-size: 17px;
-  opacity: 0;
+  opacity: 0.25;
   transition: opacity 0.3s ease-in-out;
 }
 the-panel#fixed:not([open]):before {
@@ -115,7 +115,6 @@ the-card /shadow/ .the-card-content {
   border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
   background-color: hsla(0, 0%, 0%, 0.99) !important;
   width: calc(72px * 4);
-  max-height: calc(72px * 4);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;

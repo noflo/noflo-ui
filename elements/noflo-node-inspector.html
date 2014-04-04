@@ -55,6 +55,9 @@
         height: 36px;
         width: 36px;
       }
+      ul.ports li label button:active {
+        color: white;
+      }
       ul.ports li label i {
         margin:0;
       }
@@ -124,69 +127,64 @@
         border-left: 1px solid hsla( 0, 0%, 75%, 0.1);
       }
 
-      ul.ports li:nth-child(even) input, ul.ports li:nth-child(even) button {
-        background-color: hsla(210, 100%, 20%,.1);
-        color: hsl(210, 100%, 79%);
+      ul.ports li  input, 
+      ul.ports li  button  { 
+        background-color: hsla(  0,  0%, 30%, 0.35); 
+        color:             hsl(  0,  0%, 90%);
       }
-      ul.ports li:nth-child(odd) input, ul.ports li:nth-child(odd) button {
-        background-color: hsla(190, 100%, 20%,.1);
-        color: hsl(190, 100%, 79%);
+      
+      ul.ports li:nth-child(even) input, 
+      ul.ports li:nth-child(even) button {
+        background-color: hsla(210, 100%, 20%, .1);
+      }
+      ul.ports li:nth-child(odd) input, 
+      ul.ports li:nth-child(odd) button {
+        background-color: hsla(190, 100%, 20%, .1);
       }
 
       ul.ports li.route0  input, 
       ul.ports li.route0  button  { 
         background-color: hsla(  0,  0%, 30%, 0.35); 
-        color:             hsl(  0,  0%, 90%);
       }
       ul.ports li.route1  input, 
       ul.ports li.route1  button  { 
         background-color: hsla(  0, 98%, 20%, 0.35); 
-        color:             hsl(  0, 98%, 46%);
       }
       ul.ports li.route2  input, 
       ul.ports li.route2  button  { 
         background-color: hsla( 35, 98%, 20%, 0.35); 
-        color:             hsl( 35, 98%, 46%);
       }
       ul.ports li.route3  input, 
       ul.ports li.route3  button  { 
         background-color: hsla( 60, 98%, 20%, 0.35); 
-        color:             hsl( 60, 98%, 46%);
       }
       ul.ports li.route4  input, 
       ul.ports li.route4  button  { 
         background-color: hsla(135, 98%, 20%, 0.35); 
-        color:             hsl(135, 98%, 46%);
       }
       ul.ports li.route5  input, 
       ul.ports li.route5  button  { 
         background-color: hsla(160, 98%, 20%, 0.35); 
-        color:             hsl(160, 98%, 46%);
       }
       ul.ports li.route6  input, 
       ul.ports li.route6  button  { 
         background-color: hsla(185, 98%, 20%, 0.35); 
-        color:             hsl(185, 98%, 46%);
       }
       ul.ports li.route7  input, 
       ul.ports li.route7  button  { 
         background-color: hsla(210, 98%, 20%, 0.35); 
-        color:             hsl(210, 98%, 46%);
       }
       ul.ports li.route8  input, 
       ul.ports li.route8  button  { 
         background-color: hsla(285, 98%, 20%, 0.35); 
-        color:             hsl(285, 98%, 46%);
       }
       ul.ports li.route9  input, 
       ul.ports li.route9  button  { 
         background-color: hsla(310, 98%, 20%, 0.35); 
-        color:             hsl(310, 98%, 46%);
       }
       ul.ports li.route10 input, 
       ul.ports li.route10 button  { 
         background-color: hsla(335, 98%, 20%, 0.35); 
-        color:             hsl(335, 98%, 46%);
       }
       
       
@@ -204,49 +202,49 @@
       
       
 
-      ul.ports  li.route0:not(.readonly) input, 
-      ul.ports  li.route0:not(.readonly) button {
-        border-left: 1px solid hsla(  0,  0%, 75%, 0.1); 
+      ul.ports  li.route0 input, 
+      ul.ports  li.route0 button {
+        border-left: 1px solid hsla(  0,  0%, 75%, 0.5); 
       }
-      ul.ports  li.route1:not(.readonly) input, 
-      ul.ports  li.route1:not(.readonly) button {
-        border-left: 1px solid hsla(  0, 98%, 46%, 0.1);
+      ul.ports  li.route1 input, 
+      ul.ports  li.route1 button {
+        border-left: 1px solid hsla(  0, 98%, 46%, 0.5);
       }
-      ul.ports  li.route2:not(.readonly) input, 
-      ul.ports  li.route2:not(.readonly) button {
-        border-left: 1px solid hsla( 35, 98%, 46%, 0.1);
+      ul.ports  li.route2 input, 
+      ul.ports  li.route2 button {
+        border-left: 1px solid hsla( 35, 98%, 46%, 0.5);
       }
-      ul.ports  li.route3:not(.readonly) input, 
-      ul.ports  li.route3:not(.readonly) button {
-        border-left: 1px solid hsla( 60, 98%, 46%, 0.1);
+      ul.ports  li.route3 input, 
+      ul.ports  li.route3 button {
+        border-left: 1px solid hsla( 60, 98%, 46%, 0.5);
       }
-      ul.ports  li.route4:not(.readonly) input, 
-      ul.ports  li.route4:not(.readonly) button {
-        border-left: 1px solid hsla(135, 98%, 46%, 0.1);
+      ul.ports  li.route4 input, 
+      ul.ports  li.route4 button {
+        border-left: 1px solid hsla(135, 98%, 46%, 0.5);
       }
-      ul.ports  li.route5:not(.readonly) input, 
-      ul.ports  li.route5:not(.readonly) button {
-        border-left: 1px solid hsla(160, 98%, 46%, 0.1);
+      ul.ports  li.route5 input, 
+      ul.ports  li.route5 button {
+        border-left: 1px solid hsla(160, 98%, 46%, 0.5);
       }
-      ul.ports  li.route6:not(.readonly) input, 
-      ul.ports  li.route6:not(.readonly) button {
-        border-left: 1px solid hsla(185, 98%, 46%, 0.1);
+      ul.ports  li.route6 input, 
+      ul.ports  li.route6 button {
+        border-left: 1px solid hsla(185, 98%, 46%, 0.5);
       }
-      ul.ports  li.route7:not(.readonly) input, 
-      ul.ports  li.route7:not(.readonly) button {
-        border-left: 1px solid hsla(210, 98%, 46%, 0.1);
+      ul.ports  li.route7 input, 
+      ul.ports  li.route7 button {
+        border-left: 1px solid hsla(210, 98%, 46%, 0.5);
       }
-      ul.ports  li.route8:not(.readonly) input, 
-      ul.ports  li.route8:not(.readonly) button {
-        border-left: 1px solid hsla(285, 98%, 46%, 0.1);
+      ul.ports  li.route8 input, 
+      ul.ports  li.route8 button {
+        border-left: 1px solid hsla(285, 98%, 46%, 0.5);
       }
-      ul.ports  li.route9:not(.readonly) input, 
-      ul.ports  li.route9:not(.readonly) button {
-        border-left: 1px solid hsla(310, 98%, 46%, 0.1);
+      ul.ports  li.route9 input, 
+      ul.ports  li.route9 button {
+        border-left: 1px solid hsla(310, 98%, 46%, 0.5);
       }
-      ul.ports li.route10:not(.readonly) input, 
-      ul.ports li.route10:not(.readonly) button {
-        border-left: 1px solid hsla(335, 98%, 46%, 0.1);
+      ul.ports li.route10 input, 
+      ul.ports li.route10 button {
+        border-left: 1px solid hsla(335, 98%, 46%, 0.5);
       }
       
       number-scrubber,
@@ -291,7 +289,7 @@
       <template repeat="{{ port in inports }}">
         <li class="route route{{ port.route }} {{ port.class }} port-type-{{ port.type }}">
           <label><span title="{{ port.name }}">{{ port.label }}</span>
-          <template if="{{ port.showInput }}">
+
             <template if="{{ port.type == 'bang' }}">
               <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
             </template>
@@ -307,15 +305,7 @@
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
             </template>
-          </template>
-          <template if="{{ !port.showInput }}">
-            <template if="{{ port.type == 'boolean' }}">
-              <input type="checkbox" name="{{ port.name }}" readonly checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
-            </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
-              <input type="{{ port.inputType }}" name="{{ port.name }}" data-type="{{ port.type }}" readonly value="{{ port.value }}" on-blur="{{ updateValue }}">
-            </template>
-          </template>
+
           </label>
           <template if="{{ port.description }}">
           <p>{{ port.description }}</p>
@@ -381,7 +371,6 @@
           description: port.description,
           inputType: port.type,
           value: value,
-          showInput: (!connection.connected),
           route: connection.route
         };
         switch (port.type) {
@@ -422,9 +411,6 @@
         this.inports = [];
         this.component.inports.forEach(function (port) {
           var portDef = this.portToInput(port);
-          if (!portDef.showInput) {
-            portDef.class = 'readonly';
-          }
           this.inports.push(portDef);
         }.bind(this));
       },
