@@ -17,7 +17,12 @@ class ConnectRuntime extends noflo.Component
       editor: new noflo.Port 'object'
       packet: new noflo.Port 'object'
 
-    @inPorts.editor.on 'data', (@editor) =>
+    @inPorts.editor.on 'connect', =>
+      if @editor and @runtime
+        do @disconnect
+      @editor = null
+    @inPorts.editor.on 'data', (editor) =>
+      @editor = editor
       @connect @editor, @runtime
       if @outPorts.editor.isAttached()
         @outPorts.editor.send @editor
@@ -29,9 +34,10 @@ class ConnectRuntime extends noflo.Component
     @inPorts.example.on 'data', (@example) =>
       @sendGraph @runtime, @example
     @inPorts.runtime.on 'connect', =>
+      if @runtime
+        do @disconnect
       @runtime = null
     @inPorts.runtime.on 'data', (runtime) =>
-      @runtime.stop() if @runtime
       @runtime = runtime
       @connect @editor, @runtime
 
@@ -145,52 +151,68 @@ class ConnectRuntime extends noflo.Component
     runtime.once 'connected', =>
       for name, def of editor.$.graph.library
         delete editor.$.graph.library[name]
-    runtime.on 'connected', =>
-      @connected = true
-      runtime.sendComponent 'list', ''
-      @sendProject @runtime, @project if @project
-      @sendGraph @runtime, @example if @example
-    runtime.on 'disconnected', =>
-      @connected = false
+    runtime.on 'connected', @onRuntimeConnected
+    runtime.on 'disconnected', @onRuntimeDisconnected
+    runtime.on 'component', @onRuntimeComponent
+    runtime.on 'network', @onRuntimeNetwork
+    runtime.on 'icon', @onRuntimeIcon
 
-    runtime.on 'component', (message) ->
-      if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
-        return
-      definition =
-        name: message.payload.name
-        description: message.payload.description
-        icon: message.payload.icon
-        subgraph: message.payload.subgraph or false
-        inports: []
-        outports: []
-      for port in message.payload.inPorts
-        definition.inports.push
-          name: port.id
-          type: port.type
-          required: port.required
-          description: port.description
-          addressable: port.addressable
-      for port in message.payload.outPorts
-        definition.outports.push
-          name: port.id
-          type: port.type
-          required: port.required
-          description: port.description
-          addressable: port.addressable
-      editor.registerComponent definition
-    edges = {}
-    runtime.on 'network', ({command, payload}) =>
-      return if command is 'error'
-      return unless payload.id
-      @outPorts.packet.send
-        edge: payload.id
-        type: command
-        group: if payload.group? then payload.group else ''
-        data: if payload.data? then payload.data else ''
-        subgraph: if payload.subgraph? then payload.subgraph else ''
-        runtime: runtime.definition.id
-    runtime.on 'icon', ({id, icon}) ->
-      return unless editor.updateIcon
-      editor.updateIcon id, icon
+  disconnect: ->
+    @connected = false
+    @runtime.removeListener 'connected', @onRuntimeConnected
+    @runtime.removeListener 'disconnected', @onRuntimeDisconnected
+    @runtime.removeListener 'component', @onRuntimeComponent
+    @runtime.removeListener 'network', @onRuntimeNetwork
+    @runtime.removeListener 'icon', @onRuntimeIcon
+
+  onRuntimeConnected: =>
+    @connected = true
+    @runtime.sendComponent 'list', ''
+    @sendProject @runtime, @project if @project
+    @sendGraph @runtime, @example if @example
+
+  onRuntimeDisconnected: =>
+    @connected = false
+
+  onRuntimeComponent: (message) =>
+    if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
+      return
+    definition =
+      name: message.payload.name
+      description: message.payload.description
+      icon: message.payload.icon
+      subgraph: message.payload.subgraph or false
+      inports: []
+      outports: []
+    for port in message.payload.inPorts
+      definition.inports.push
+        name: port.id
+        type: port.type
+        required: port.required
+        description: port.description
+        addressable: port.addressable
+    for port in message.payload.outPorts
+      definition.outports.push
+        name: port.id
+        type: port.type
+        required: port.required
+        description: port.description
+        addressable: port.addressable
+    @editor.registerComponent definition
+
+  onRuntimeNetwork: ({command, payload}) =>
+    return if command is 'error'
+    return unless payload.id
+    @outPorts.packet.send
+      edge: payload.id
+      type: command
+      group: if payload.group? then payload.group else ''
+      data: if payload.data? then payload.data else ''
+      subgraph: if payload.subgraph? then payload.subgraph else ''
+      runtime: @runtime.definition.id
+
+  onRuntimeIcon: ({id, icon}) =>
+    return unless @editor.updateIcon
+    @editor.updateIcon id, icon
 
 exports.getComponent = -> new ConnectRuntime
