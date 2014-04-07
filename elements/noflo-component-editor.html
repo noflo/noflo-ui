@@ -55,7 +55,7 @@
     <script type="text/plain" id="CoffeeScriptExample">
 noflo = require 'noflo'
 
-module.exports = ->
+exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in', (event, payload) ->
     return unless event is 'data'
@@ -67,7 +67,7 @@ module.exports = ->
     <script type="text/plain" id="JavaScriptExample">
 var noflo = require('noflo');
 
-module.exports = function () {
+exports.getComponent = function () {
   var c = new noflo.Component();
 
   c.inPorts.add('in', function (event, payload) {
