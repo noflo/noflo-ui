@@ -52,6 +52,35 @@
       <h1>Tests</h1>
       <div id="tests_editor"></div>
     </section> 
+    <script type="text/plain" id="CoffeeScriptExample">
+noflo = require 'noflo'
+
+module.exports = ->
+  c = new noflo.Component
+  c.inPorts.add 'in', (event, payload) ->
+    return unless event is 'data'
+    # Do something with the packet, then
+    outPorts.out.send payload
+  c.outPorts.add 'out'
+  c
+    </script>
+    <script type="text/plain" id="JavaScriptExample">
+var noflo = require('noflo');
+
+module.exports = function () {
+  var c = new noflo.Component();
+
+  c.inPorts.add('in', function (event, payload) {
+    if (event !== 'data') {
+      return;
+    }
+    // Do something with the packet, then
+    c.outPorts.out.send(payload);
+  });
+  c.outPorts.add('out');
+  return c;
+};
+    </script>
   </template>
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
   <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
@@ -74,6 +103,11 @@
         }
         this.style.display = 'block';
         this.$.code_editor.innerHTML = '';
+
+        if (!this.component.code) {
+          this.component.code = this.getExampleCode();
+        }
+
         this.codeEditor = CodeMirror(this.$.code_editor, {
           lineNumbers: true,
           value: this.component.code || '',
@@ -109,6 +143,14 @@
           return 'mdn-like';
         }
         return 'noflo';
+      },
+      getExampleCode: function () {
+        if (this.component.language === 'coffeescript') {
+          return this.$.CoffeeScriptExample.innerText.trim();
+        }
+        if (this.component.language === 'javascript') {
+          return this.$.JavaScriptExample.innerText.trim();
+        }
       },
       themeChanged: function () {
         if (!this.codeEditor || !this.testsEditor) {
