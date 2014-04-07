@@ -155,6 +155,7 @@ class ConnectRuntime extends noflo.Component
     runtime.on 'disconnected', @onRuntimeDisconnected
     runtime.on 'component', @onRuntimeComponent
     runtime.on 'network', @onRuntimeNetwork
+    runtime.on 'runtime', @onRuntimeRuntime
     runtime.on 'icon', @onRuntimeIcon
 
   disconnect: ->
@@ -163,6 +164,7 @@ class ConnectRuntime extends noflo.Component
     @runtime.removeListener 'disconnected', @onRuntimeDisconnected
     @runtime.removeListener 'component', @onRuntimeComponent
     @runtime.removeListener 'network', @onRuntimeNetwork
+    @runtime.removeListener 'runtime', @onRuntimeRuntime
     @runtime.removeListener 'icon', @onRuntimeIcon
 
   onRuntimeConnected: =>
@@ -199,6 +201,9 @@ class ConnectRuntime extends noflo.Component
         description: port.description
         addressable: port.addressable
     @editor.registerComponent definition
+
+  onRuntimeRuntime: (message) =>
+    # TODO: Process capability info
 
   onRuntimeNetwork: ({command, payload}) =>
     return if command is 'error'
