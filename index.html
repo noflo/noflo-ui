@@ -459,7 +459,7 @@
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
       OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
       OUTPORT=Project.CHANGED:PROJECTCHANGED
-      OUTPORT=Runtime.CHANGED:RUNTIMECHANGED
+      OUTPORT=RuntimeChanged.OUT:RUNTIMECHANGED
       OUTPORT=Project.UPLOAD:UPLOAD
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -468,6 +468,7 @@
       Runtimes OUT -> RUNTIMES Context
       Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
       Context EDGES -> EDGES Runtime
+      Runtime CHANGED -> IN RuntimeChanged(core/Merge)
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
@@ -523,6 +524,7 @@
       GraphEditor EDGES -> EDGES Context
       GraphEditor NODES -> NODES Context
       GraphEditor EDITOR -> EDITOR Journal
+      GraphEditor RUNTIMECHANGED -> IN RuntimeChanged
 
 
       # Prepare component editor
@@ -561,6 +563,7 @@
       OUTPORT=ConnectRuntime.PACKET:PACKET
       OUTPORT=GraphEditor.EDGES:EDGES
       OUTPORT=GraphEditor.NODES:NODES
+      OUTPORT=ConnectRuntime.RUNTIME:RUNTIMECHANGED
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
       EmptyLibrary OUT -> LIBRARY GraphEditor

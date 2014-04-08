@@ -16,6 +16,7 @@ class ConnectRuntime extends noflo.Component
     @outPorts =
       editor: new noflo.Port 'object'
       packet: new noflo.Port 'object'
+      runtime: new noflo.Port 'object'
 
     @inPorts.editor.on 'connect', =>
       if @editor and @runtime
@@ -202,8 +203,14 @@ class ConnectRuntime extends noflo.Component
         addressable: port.addressable
     @editor.registerComponent definition
 
-  onRuntimeRuntime: (message) =>
-    # TODO: Process capability info
+  onRuntimeRuntime: ({command, payload}) =>
+    return unless command is 'runtime'
+    return unless @runtime.definition
+    for key, val of payload
+      @runtime.definition[key] = val
+    return unless @outPorts.runtime.isAttached()
+    @outPorts.runtime.send @runtime.definition
+    @outPorts.runtime.disconnect()
 
   onRuntimeNetwork: ({command, payload}) =>
     return if command is 'error'
