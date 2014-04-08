@@ -167,6 +167,7 @@
           </li>
           </template>
         </ul>
+        <template if="{{ canComponent }}">
         <h2>Components</h2>
         <ul class="graphs">
           <li class="add">
@@ -185,6 +186,7 @@
           </li>
           </template>
         </ul>
+        </template>
         </template>
       </main>
       <template if="{{ project.repo && githubtoken}}">
@@ -210,13 +212,22 @@
       githubtoken: '',
       graphs: [],
       runtimes: [],
+      runtime: null,
       graph: null,
       component: null,
+      canComponent: true,
       graphsChanged: function () {
         if (this.graphs.length) {
           this.graph = this.graphs[this.graphs.length - 1];
         } else {
           this.graph = null;
+        }
+      },
+      runtimeChanged: function () {
+        if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
+          if (this.runtime.definition.capabilities.indexOf('component:setsource') === -1) {
+            this.canComponent = false;
+          }
         }
       },
       newGraph: function (event) {
@@ -231,6 +242,9 @@
         }.bind(this));
       },
       newComponent: function (event) {
+        if (!this.canComponent) {
+          return;
+        }
         event.preventDefault();
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project.id;

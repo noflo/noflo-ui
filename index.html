@@ -29,7 +29,7 @@
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="editor project graphs search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project runtimes runtime graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
@@ -506,6 +506,7 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Runtimes OUT -> RUNTIMES Project
+      Runtime RUNTIME -> RUNTIME Project
       Context PROJECT -> PROJECT Project
       Context GRAPHS -> GRAPHS Project
       Context COMPONENT -> COMPONENT Project
