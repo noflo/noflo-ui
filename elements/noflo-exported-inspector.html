@@ -7,7 +7,7 @@
         <input type="text" value="{{ name }}" required>
       </label>
       <div class="toolbar">
-        <button on-click="{{ send }}">Rename</button>
+        <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Rename</button>
         <a on-click="{{ close }}">Cancel</a>
       </div>
     </form>
@@ -26,6 +26,18 @@
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
       },
+      nameChanged: function () {
+        if (!this.name) {
+          this.canSend = false;
+          return;
+        }
+        if (this.direction === 'input' && (this.name === 'start' || this.name === 'graph')) {
+          // Reserved port names
+          this.canSend = false;
+          return;
+        }
+        this.canSend = true;
+      },
       send: function (event) {
         if (event) {
           event.preventDefault();
@@ -34,6 +46,9 @@
           return;
         }
         if (this.direction === 'input') {
+          if (this.name === 'start' || this.name === 'graph') {
+            return;
+          }
           this.graph.renameInport(this.publicport, this.name);
         } else {
           this.graph.renameOutport(this.publicport, this.name);

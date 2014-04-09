@@ -21,7 +21,7 @@ The examples should also provide the necessary information for running the examp
 * `width`: optional width of the preview card in pixels
 * `height`: optional height of the preview card in pixels
 
-Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you can also [run it](http://noflo.github.io/noflo-ui/#example/6608098)).
+Please refer to an example Gist in <https://gist.github.com/bergie/6608098> (you can also [run it](http://app.flowhub.io/#example/6608098)).
 
 ### Managing server-side flows
 
@@ -48,7 +48,9 @@ If you prefer, you can also start a watcher process that will do a rebuild whene
 Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
     $ npm install simple-server
-    $ ./node_modules/.bin/simple-server .
+    $ ./node_modules/.bin/simple-server . 3005
+
+Where 3005 is the port you want the server to run.
 
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 

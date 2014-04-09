@@ -11,6 +11,7 @@
 /gh-pages/
 *.zip
 app.*
+dev.html
 dist.sh
 manifest.json
 manifest.webapp

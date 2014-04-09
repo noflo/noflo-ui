@@ -95,7 +95,9 @@
           <div id="address" class="{{ { online: online } | tokenList }}">
             <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
             <h2>{{ runtime.definition.address }}</h2>
+            <template if="{{ runtime.definition.protocol != 'iframe' }}">
             <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
+            </template>
           </div>
         <div id="runcontrol">
           <template if="{{ online }}">

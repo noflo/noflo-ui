@@ -143,23 +143,22 @@
       }
     </style>
     <div id="breadcrumb" on-click="{{ focus }}">
-      <template if="{{ graph && (!component || !component.id) }}">
+      <template if="{{ !component || !component.id }}">
       <i class="fa fa-search"></i>
-      <h1>
-        <template if="{{ parentPath }}">
-        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
-        </template>
-        {{ graph.name }}
-      </h1>
-      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ component && component.id }}">
       <h1>
-        <template if="{{ parentPath }}">
+        <template if="{{ project && parentPath }}">
         <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
         </template>
+        <template if="{{ graph && (!component || !component.id) }}">
+        {{ graph.name }}
+        </template>
+        <template if="{{ component && component.id }}">
         {{ component.name }}
+        </template>
       </h1>
+      <template if="{{ graph && (!component || !component.id) }}">
+      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" autocapitalize="off" autocorrect="off" x-webkit-speech>
@@ -177,19 +176,22 @@
       panel: null,
       runtimes: [],
       graphInspector: null,
-      graphsChanged: function () {
-        this.parentPath = '';
-        if (this.graphs.length) {
-          this.graphs.forEach(function (graph, idx) {
-            if (idx >= this.graphs.length - 1) {
-              return;
-            }
-            this.parentPath += '/' + graph.properties.id;
-          }.bind(this));
-          this.graph = this.graphs[this.graphs.length - 1];
-        } else {
-          this.graph = null;
+      componentChanged: function () {
+        if (!this.component || !this.component.id) {
+          // Component nullified, ensure we recount graphs
+          this.graphsChanged();
+          return;
         }
+        this.graph = null;
+        this.updateParentPath();
+      },
+      graphsChanged: function () {
+        if (!this.graphs.length || (this.component && this.component.id)) {
+          this.graph = null;
+        } else {
+          this.graph = this.graphs[this.graphs.length - 1];
+        }
+        this.updateParentPath();
         if (this.graphInspector) {
           if (this.graphInspector.parentNode) {
             this.graphInspector.parentNode.removeChild(this.graphInspector);
@@ -197,6 +199,25 @@
           this.graphInspector = null;
         }
         this.blur();
+      },
+      updateParentPath: function () {
+        this.parentPath = '';
+        this.graphs.forEach(function (graph, idx) {
+          if (this.graph && idx >= this.graphs.length - 1) {
+            return;
+          }
+          if (idx === 0) {
+            this.parentPath += '/' + encodeURIComponent(graph.properties.id);
+          } else {
+            var previous = this.graphs[idx - 1];
+            var node = null;
+            previous.nodes.forEach(function (node) {
+              if (node.component === this.project.id + '/' + graph.properties.id || node.component === graph.properties.id) {
+                this.parentPath += '/' + encodeURIComponent(node.id);
+              }
+            }.bind(this));
+          }
+        }.bind(this));
       },
       enteredView: function () {
         this.observer = new ArrayObserver(this.results);

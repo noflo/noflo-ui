@@ -54,8 +54,8 @@
         right: 17px;
         top: 17px;
         background-color: transparent;
-        color: hsl(189, 50%, 80%);
-        border: 1px solid hsl(189, 50%, 80%);
+        color: hsl(190, 100%, 30%);
+        border: 1px solid hsl(190, 100%, 30%);
         font-size: 13px;
         border-radius: 3px;
         font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
@@ -82,7 +82,7 @@
         display: none;
       }
       footer {
-        background-color: hsla(0, 0%, 0%, 0.98);
+        background-color: transparent;
         display: block;
         position: absolute;
         bottom: 0px;
@@ -167,6 +167,7 @@
           </li>
           </template>
         </ul>
+        <template if="{{ canComponent }}">
         <h2>Components</h2>
         <ul class="graphs">
           <li class="add">
@@ -185,6 +186,7 @@
           </li>
           </template>
         </ul>
+        </template>
         </template>
       </main>
       <template if="{{ project.repo && githubtoken}}">
@@ -210,13 +212,22 @@
       githubtoken: '',
       graphs: [],
       runtimes: [],
+      runtime: null,
       graph: null,
       component: null,
+      canComponent: true,
       graphsChanged: function () {
         if (this.graphs.length) {
           this.graph = this.graphs[this.graphs.length - 1];
         } else {
           this.graph = null;
+        }
+      },
+      runtimeChanged: function () {
+        if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
+          if (this.runtime.definition.capabilities.indexOf('component:setsource') === -1) {
+            this.canComponent = false;
+          }
         }
       },
       newGraph: function (event) {
@@ -231,6 +242,9 @@
         }.bind(this));
       },
       newComponent: function (event) {
+        if (!this.canComponent) {
+          return;
+        }
         event.preventDefault();
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project.id;

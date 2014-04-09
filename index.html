@@ -29,7 +29,7 @@
     <link rel="import" href="elements/noflo-library.html">
     <noflo-polymer name="noflo-library" inports="editor project graphs search" outports="result"></noflo-polymer>
     <link rel="import" href="elements/noflo-project.html">
-    <noflo-polymer name="noflo-project" inports="project runtimes graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
+    <noflo-polymer name="noflo-project" inports="project runtimes runtime graphs components githubtoken graphs component" outports="newgraph newcomponent changed upload"></noflo-polymer>
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
@@ -459,7 +459,7 @@
       OUTPORT=MergeNewGraph.OUT:NEWGRAPH
       OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
       OUTPORT=Project.CHANGED:PROJECTCHANGED
-      OUTPORT=Runtime.CHANGED:RUNTIMECHANGED
+      OUTPORT=RuntimeChanged.OUT:RUNTIMECHANGED
       OUTPORT=Project.UPLOAD:UPLOAD
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -468,6 +468,7 @@
       Runtimes OUT -> RUNTIMES Context
       Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
       Context EDGES -> EDGES Runtime
+      Runtime CHANGED -> IN RuntimeChanged(core/Merge)
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
@@ -505,6 +506,7 @@
       # Project menu
       'noflo-project' -> SELECTOR Project(polymer/noflo-project)
       Runtimes OUT -> RUNTIMES Project
+      Runtime RUNTIME -> RUNTIME Project
       Context PROJECT -> PROJECT Project
       Context GRAPHS -> GRAPHS Project
       Context COMPONENT -> COMPONENT Project
@@ -523,6 +525,7 @@
       GraphEditor EDGES -> EDGES Context
       GraphEditor NODES -> NODES Context
       GraphEditor EDITOR -> EDITOR Journal
+      GraphEditor RUNTIMECHANGED -> IN RuntimeChanged
 
 
       # Prepare component editor
@@ -561,6 +564,7 @@
       OUTPORT=ConnectRuntime.PACKET:PACKET
       OUTPORT=GraphEditor.EDGES:EDGES
       OUTPORT=GraphEditor.NODES:NODES
+      OUTPORT=ConnectRuntime.RUNTIME:RUNTIMECHANGED
       'the-graph-editor' -> SELECTOR GraphEditor(polymer/the-graph-editor)
       Graph(core/Repeat) OUT -> START EmptyLibrary(objects/CreateObject)
       EmptyLibrary OUT -> LIBRARY GraphEditor
