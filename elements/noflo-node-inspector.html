@@ -307,7 +307,7 @@
               <template if="{{ port.inputType == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
-              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-change="{{ updateValue }}">
+              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}">
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
@@ -421,11 +421,15 @@
           this.inports.push(portDef);
         }.bind(this));
       },
+      checkEnter: function (event, detail, sender) {
+        if (event.keyCode===13) {
+          event.preventDefault();
+          this.updateValue(event, detail, sender);
+        }
+      },
       updateValue: function (event, detail, sender) {
         event.preventDefault();
-        if (!sender.value) {
-          return;
-        }
+
         var value = this.inputToPort(sender);
         var name = sender.getAttribute('name');
         var port;
@@ -435,10 +439,16 @@
           }
         });
 
+        if (port.type!=='string' && (sender.value==="" || !sender.value)) {
+          // Empty string should remove number, object, array IIPs
+          this.removeValue(event, detail, sender);
+          return;
+        }
+
         var validatePortValue = function(type, value) {
-          switch (port.type) {
+          switch (type) {
             case 'number':
-              return !isNaN(value);
+              return (value!=="" && !isNaN(value));
             case 'object':
               return value instanceof Object;
             case 'array':
@@ -460,6 +470,9 @@
       removeValue: function (event, detail, sender) {
         event.preventDefault();
         var name = sender.getAttribute('data-port');
+        if (!name) {
+          name = sender.getAttribute('name');
+        }
         this.graph.removeInitial(this.node.id, name);
         this.inports.forEach(function (port) {
           if (port.name === name) {
