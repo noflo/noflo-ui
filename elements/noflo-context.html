@@ -350,6 +350,12 @@
           setTimeout(function () {
             currentGraph.endTransaction('subgraph');
           }, 5);
+
+          // Editor deselect, hide node inspectors
+          if (this.editor) {
+            this.editor.selectedNodes = [];
+            this.hideNodeCards();
+          }
         }.bind(this));
       },
       setHelp: function () {
