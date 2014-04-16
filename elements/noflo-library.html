@@ -1,7 +1,7 @@
 <polymer-element name="noflo-library" attributes="editor search">
   <script>
     Polymer('noflo-library', {
-      search: '',
+      search: null,
       editor: null,
       graphs: [],
       project: null,
@@ -21,14 +21,21 @@
         });
       },
       searchChanged: function () {
-        if (!this.search || typeof this.search !== 'string') {
+        if (!this.search) {
+          return;
+        }
+        if (typeof this.search.search !== 'string') {
           return;
         }
         if (!this.editor) {
           return;
         }
-        Object.keys(this.editor.getLibrary()).forEach(function (name) {
-          if (this.search !== 'show library' && name.toLowerCase().indexOf(this.search.toLowerCase()) === -1) {
+        var library = this.editor.getLibrary();
+        if (!library) {
+          return;
+        }
+        Object.keys(library).forEach(function (name) {
+          if (this.search.search !== '' && name.toLowerCase().indexOf(this.search.search.toLowerCase()) === -1) {
             return;
           }
           var component = this.editor.getComponent(name);
