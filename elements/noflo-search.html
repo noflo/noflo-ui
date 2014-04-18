@@ -168,7 +168,7 @@
       menuCard: null,
       resultsCard: null,
       results: [],
-      search: '',
+      search: null,
       parentPath: '',
       graph: null,
       graphs: [],
@@ -230,11 +230,12 @@
         }
         this.classList.remove('overlay');
         this.$.search.focus();
+        this.search = '';
       },
       blur: function () {
         this.clearResults();
         this.classList.add('overlay');
-        this.search = '';
+        this.search = null;
       },
       toggle: function () {
         if (this.classList.contains('overlay')) {
@@ -251,12 +252,11 @@
       checkField: function () {
         event.preventDefault();
         if (this.search === '') {
-          this.blur();
           if (this.resultsCard) {
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
           }
-          this.fire('search', this.search);
+          this.blur();
           return;
         }
       },
@@ -265,10 +265,12 @@
         if (this.resultsCard) {
           this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
         }
-        this.fire('search', this.search);
+        this.fire('search', {
+          search: this.search
+        });
       },
       resultsModified: function () {
-        if (this.resultsCard || this.search === '') {
+        if (this.resultsCard || this.search === null) {
           return;
         }
         if (this.results.length === 0) {
@@ -282,7 +284,6 @@
         results.results = this.results;
         results.search = this.search;
         results.addEventListener('resultclick', function () {
-          this.search = '';
           this.blur();
         }.bind(this));
 
