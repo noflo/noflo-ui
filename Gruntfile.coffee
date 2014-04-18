@@ -243,6 +243,20 @@ module.exports = ->
       all:
         src: ['elements/*.html']
 
+    watch:
+      preview:
+        files: 'preview/components/*/components/*'
+        tasks: ['exec:preview_build']
+        options:
+          livereload: true
+
+    connect:
+      server:
+        options:
+          port: 3000
+          hostname: '*' # Allow connection from mobile
+          livereload: true
+
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'
@@ -258,10 +272,14 @@ module.exports = ->
   @loadNpmTasks 'grunt-phonegap-build'
 
   # Grunt plugins used for testing
-  @loadNpmTasks 'grunt-contrib-watch'
   #@loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-coffeelint'
   @loadNpmTasks 'grunt-lint-inline'
+
+  # For automatic building when working on browser libraries
+  @loadNpmTasks 'grunt-contrib-watch'
+  @loadNpmTasks 'grunt-contrib-connect'
+
 
   # Our local tasks
   @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
@@ -271,3 +289,5 @@ module.exports = ->
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
+  @registerTask 'devp', ['connect:server', 'watch:preview']
+
