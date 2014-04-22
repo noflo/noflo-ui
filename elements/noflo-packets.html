@@ -30,10 +30,10 @@
       this._array[this.length%this._array.length] = v;
       this.length++;
     };
-    CircularBuffer.prototype.clear= function() {
+    CircularBuffer.prototype.clear = function() {
       this._array = new Array(this._array.length);
       this.length = 0;
-    },
+    };
     CircularBuffer.IndexError= {};
 
     Polymer('noflo-packets', {
