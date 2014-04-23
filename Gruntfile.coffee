@@ -44,12 +44,12 @@ module.exports = ->
       main_install:
         command: 'node ./node_modules/component/bin/component install'
       main_build:
-        command: 'node ./node_modules/component/bin/component build -u component-json,component-coffee -o browser -n noflo-ui -c'
+        command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui -c'
       preview_install:
         command: 'node ./node_modules/component/bin/component install'
         cwd: 'preview'
       preview_build:
-        command: 'node ./node_modules/component/bin/component build -u component-json,component-coffee -o browser -n noflo-ui-preview -c'
+        command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui-preview -c'
         cwd: 'preview'
       vulcanize:
         command: 'node ./node_modules/vulcanize/bin/vulcanize --csp -o app.html index.html'

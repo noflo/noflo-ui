@@ -7,6 +7,7 @@
     "component-builder": "git://github.com/bergie/builder.js.git#patch-1",
     "component-json": "~0.1.4",
     "component-coffee": "~0.1.4",
-    "component": "~0.17.6"
+    "component": "~0.17.6",
+    "component-fbp": "^0.1.0"
   }
 }
