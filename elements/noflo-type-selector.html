@@ -92,7 +92,14 @@
       available: [],
       runtimes: [],
       runtimesChanged: function () {
-        this.available = [];
+        this.available = [
+          {
+            id: 'all',
+            label: 'Multi-platform',
+            icon: 'asterisk',
+            runtimes: []
+          }
+        ];
         this.runtimes.forEach(function (rt) {
           var availType = this.getByType(rt.type);
           availType.runtimes.push(rt);
