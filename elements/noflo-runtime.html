@@ -225,6 +225,11 @@
         return;
       },
       runtimeChanged: function () {
+        this.online = false;
+        this.execution.running = false;
+        this.execution.label = 'not started';
+        this.panel.open = false;
+
         if (!this.runtime) {
           return;
         }
@@ -323,7 +328,9 @@
         preview.returnTo = this.parentNode;
         this.card.appendChild(preview);
         this.card.addTo(this.panel.getMain());
-        this.panel.open = true;
+        if (this.runtime.definition.protocol === 'iframe') {
+          this.panel.open = true;
+        }
 
         // Handle maximization
         var originalSize = this.panel.size;
