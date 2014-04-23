@@ -3,6 +3,12 @@ module.exports = ->
   @initConfig
     pkg: @file.readJSON 'package.json'
 
+    # Updating the package manifest files
+    noflo_manifest:
+      update:
+        files:
+          'component.json': ['graphs/*', 'components/*']
+
     # CoffeeScript compilation
     coffee:
       spec:
@@ -246,6 +252,7 @@ module.exports = ->
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-contrib-coffee'
+  @loadNpmTasks 'grunt-noflo-manifest'
   @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
@@ -265,7 +272,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
-  @registerTask 'build', ['inlinelint', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
+  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', ['coffeelint', 'inlinelint']
   @registerTask 'app', ['build', 'phonegap-build']

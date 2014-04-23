@@ -1,5 +1,7 @@
 noflo = require 'noflo'
 
+# @runtime noflo-browser
+
 class MigrateLocalStorage extends noflo.Component
   constructor: ->
     @inPorts =

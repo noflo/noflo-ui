@@ -1,5 +1,7 @@
 noflo = require 'noflo'
 
+# @runtime noflo-browser
+
 class IgnoreExamples extends noflo.Component
   constructor: ->
     @inPorts =
