@@ -7,7 +7,7 @@
   <template>
     <style>
       :host {
-        top: calc(50% - 286px) !important;
+        top: calc(50% - 371px) !important;
       }
       textarea {
         height: 144px;
@@ -15,14 +15,29 @@
       p {
         font-size: 13px;
         line-height: 18px;
-        color: hsl(189, 50%, 80%);
       }
       p a {
-        color: #ffffff;
+        color: color: rgb(0, 127, 153);
         text-decoration: none;
+      }
+      a#download {
+        position: absolute;
+        right: 36px;
+        top: 36px;
+        width: 36px;
+        display: block;
+        height: 36px;
+        line-height: 36px;
+        background-color: rgb(0, 127, 153);
+        text-align: center;
+        border-radius: 6px;
+        color: white;
       }
     </style>
     <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
+    <template if="{{ downloadUrl }}">
+      <a href="{{ downloadUrl }}" id="download" download="{{ graph.properties.id }}.json"><i class="fa fa-download"></i></a>
+    </template>
     <template if="{{ isMain }}">
     <p>Main graph of project {{ project.name }}.</p>
     </template>
@@ -63,6 +78,7 @@
       runtimes: [],
       isMain: false,
       inGraph: [],
+      downloadUrl: '',
       updateName: function (event, detail, sender) {
         this.graph.name = sender.textContent;
       },
@@ -90,6 +106,16 @@
             }.bind(this));
           }
         }
+        this.prepareDownload();
+      },
+      prepareDownload: function () {
+        if (!window.Blob || !window.URL) {
+          return;
+        }
+        var blob = new Blob([JSON.stringify(this.graph, null, 4)], {
+          type: "application/json"
+        });
+        this.downloadUrl = URL.createObjectURL(blob);
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');

@@ -34,9 +34,9 @@
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
-      "Router": "components/Router.coffee",
+      "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
-      "MakePath": "components/MakePath.coffee"
+      "Router": "components/Router.coffee"
     }
   },
   "main": "index.js",
