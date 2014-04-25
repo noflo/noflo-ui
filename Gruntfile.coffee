@@ -245,17 +245,17 @@ module.exports = ->
 
     watch:
       preview:
-        files: 'preview/components/*/components/*'
+        files: 'preview/components/*/*/*.coffee'
         tasks: ['exec:preview_build']
         options:
-          livereload: true
+          livereload: false
 
     connect:
       server:
         options:
           port: 3000
           hostname: '*' # Allow connection from mobile
-          livereload: true
+          livereload: false
 
 
   # Grunt plugins used for building
@@ -289,5 +289,5 @@ module.exports = ->
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
-  @registerTask 'devp', ['connect:server', 'watch:preview']
+  @registerTask 'devp', ['exec:preview_build', 'connect:server', 'watch:preview']
 
