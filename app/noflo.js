@@ -18,7 +18,7 @@ window.addEventListener('polymer-ready', function() {
 
   var fbps = Array.prototype.slice.call(document.querySelectorAll('script[type="application/fbp"]'));
   fbps.forEach(function (fbp) {
-    var fbpString = (fbp.innerText || fbp.textContent).trim();
+    var fbpString = fbp.textContent.trim();
     var fbpId = fbp.getAttribute('id');
     noflo.graph.loadFBP(fbpString, function (graph) {
       graphs[fbpId] = graph;
@@ -26,14 +26,7 @@ window.addEventListener('polymer-ready', function() {
       graph.baseDir = '/noflo-ui';
       if (fbpId === 'main') {
         noflo.createNetwork(graph, function (network) {
-          //network.on('data', function (data) { console.log(data); });
-          if (network.loader.ready) {
-            registerAndStart(network);
-            return;
-          }
-          network.loader.once('ready', function () {
-            registerAndStart(network);
-          });
+          registerAndStart(network);
         }, true);
       }
     });
