@@ -24,9 +24,11 @@ describe 'NoFlo UI initialization', ->
       db = event.target.result
       chai.expect(db).to.be.an 'object'
       done()
-  it 'should have created the object stores', ->
+  it 'should have created the project store', ->
     chai.expect(db.objectStoreNames.contains('projects')).to.equal true
+  it 'should have created the graph store', ->
     chai.expect(db.objectStoreNames.contains('graphs')).to.equal true
+  it 'should have created the component store', ->
     chai.expect(db.objectStoreNames.contains('components')).to.equal true
+  it 'should have created the runtime store', ->
     chai.expect(db.objectStoreNames.contains('runtimes')).to.equal true
-    chai.expect(db.objectStoreNames.contains('foo')).to.equal false

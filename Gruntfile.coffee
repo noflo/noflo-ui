@@ -263,9 +263,6 @@ module.exports = ->
           browsers: [
             browserName: 'chrome'
             version: '34'
-          ,
-            browserName: 'firefox'
-            version: '28'
           ]
           build: process.env.TRAVIS_JOB_ID
           testname: 'NoFlo UI browser tests'
