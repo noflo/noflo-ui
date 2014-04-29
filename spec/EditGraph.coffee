@@ -67,7 +67,6 @@ describe 'Editing a graph', ->
       Syn.click(input)
       .type 'GetEle'
       setTimeout ->
-        console.log 'after', search.results.length
         chai.expect(search.results.length).to.equal 1
         done()
       , 3000
