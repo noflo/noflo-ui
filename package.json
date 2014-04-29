@@ -1,7 +1,7 @@
 {
   "name": "noflo-ui",
   "description": "NoFlo Development Environment",
-  "version": "0.1.0",
+  "version": "0.0.7",
   "author": {
     "name": "Henri Bergius",
     "email": "henri.bergius@iki.fi"
@@ -24,7 +24,8 @@
     "chai": "~1.5.0",
     "mocha": "~1.9.0",
     "grunt-contrib-uglify": "~0.2.0",
-    "grunt-contrib-watch": "~0.3.1",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-connect": "~0.5.0",
     "grunt-contrib-compress": "~0.5.2",
     "grunt-phonegap-build": "0.0.8",
     "component-builder": "git://github.com/bergie/builder.js.git#patch-1",

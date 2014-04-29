@@ -249,11 +249,20 @@ module.exports = ->
       all:
         src: ['elements/*.html']
 
+    watch:
+      preview:
+        files: 'preview/components/*/*/*.coffee'
+        tasks: ['exec:preview_build']
+        options:
+          livereload: false
+
     # Web server for the browser tests
     connect:
       server:
         options:
           port: 9999
+          hostname: '*' # Allow connection from mobile
+          livereload: false
 
     # BDD tests on browser
     'saucelabs-mocha':
@@ -292,12 +301,18 @@ module.exports = ->
   @loadNpmTasks 'grunt-phonegap-build'
 
   # Grunt plugins used for testing
+  #@loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-contrib-watch'
   @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-saucelabs'
   @loadNpmTasks 'grunt-coffeelint'
   @loadNpmTasks 'grunt-contrib-connect'
   @loadNpmTasks 'grunt-lint-inline'
+
+  # For automatic building when working on browser libraries
+  @loadNpmTasks 'grunt-contrib-watch'
+  @loadNpmTasks 'grunt-contrib-connect'
+
 
   # Our local tasks
   @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
@@ -307,3 +322,5 @@ module.exports = ->
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
+  @registerTask 'devp', ['exec:preview_build', 'connect:server', 'watch:preview']
+

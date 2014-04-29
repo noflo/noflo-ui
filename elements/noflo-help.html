@@ -55,7 +55,7 @@
       enteredView: function () {
         this.visibleChanged();
         this.addEventListener('click', function (event) {
-          if (event.impl.target.tagName === 'A') {
+          if (unwrap(event).target.tagName === 'A') {
             return;
           }
           event.preventDefault();
