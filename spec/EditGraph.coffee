@@ -1,10 +1,22 @@
-describe 'Graph Editor', ->
+describe 'Editing a graph', ->
   win = null
   doc = null
+  editor = null
+  graph = null
   before ->
     iframe = document.getElementById 'app'
     win = iframe.contentWindow
     doc = iframe.contentDocument
+
+  describe 'initially', ->
+    it 'should have a graph editor available', ->
+      editor = doc.querySelector 'the-graph-editor'
+      chai.expect(editor).to.be.an 'object'
+      graph = editor.shadowRoot.querySelector 'the-graph'
+      chai.expect(graph).to.be.an 'object'
+    it 'should have no nodes in the graph editor', ->
+      nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
+      chai.expect(nodes.length).to.equal 0
 
   describe 'runtime', ->
     runtime = null
@@ -49,5 +61,18 @@ describe 'Graph Editor', ->
       .type 'GetEle'
       setTimeout ->
         chai.expect(search.results.length).to.equal 1
+        done()
+      , 1000
+    it 'should add a node when result is clicked', (done) ->
+      context = doc.querySelector 'noflo-context'
+      chai.expect(context).to.be.an 'object'
+      results = context.shadowRoot.querySelector 'noflo-search-results'
+      chai.expect(results).to.be.an 'object'
+      getelement = results.shadowRoot.querySelector 'li'
+      chai.expect(getelement).to.be.an 'object'
+      Syn.click getelement
+      setTimeout ->
+        nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
+        chai.expect(nodes.length).to.equal 1
         done()
       , 1000
