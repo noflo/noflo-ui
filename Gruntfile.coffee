@@ -42,11 +42,11 @@ module.exports = ->
       bower_install:
         command: 'node ./node_modules/bower/bin/bower install -F'
       main_install:
-        command: 'node ./node_modules/component/bin/component install'
+        command: 'node ./node_modules/component/bin/component install -r https://raw.githubusercontent.com'
       main_build:
         command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui -c'
       preview_install:
-        command: 'node ./node_modules/component/bin/component install'
+        command: 'node ./node_modules/component/bin/component install -r https://raw.githubusercontent.com'
         cwd: 'preview'
       preview_build:
         command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui-preview -c'

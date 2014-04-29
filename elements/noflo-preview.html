@@ -33,6 +33,14 @@
         -webkit-user-select: initial;
         user-select: initial;
       }
+      #preview img {
+        max-width: 265px;
+        max-height: 265px;
+      }
+      #preview.maximized img {
+        max-width: 100%;
+        max-height: 100%;
+      }
 
       #preview-iframe {
         display: block;
@@ -59,7 +67,7 @@
       <li><button class="blue-button" on-click="{{ minimize }}"><i class="fa fa-arrow-right"></i> Minimize</button></li>
       </template>
     </ul>
-    <div id="preview"></div>
+    <div id="preview" class="{{ { maximized: maximized } | tokenList }}"></div>
   </template>
   <script>
     Polymer('noflo-preview', {

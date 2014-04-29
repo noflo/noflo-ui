@@ -115,7 +115,11 @@
         var blob = new Blob([JSON.stringify(this.graph, null, 4)], {
           type: "application/json"
         });
-        this.downloadUrl = URL.createObjectURL(blob);
+        try {
+          this.downloadUrl = URL.createObjectURL(blob);
+        } catch (e) {
+          return;
+        }
       },
       leftView: function () {
         document.getElementById('container').classList.remove('blur');
