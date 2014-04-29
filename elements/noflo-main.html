@@ -193,7 +193,7 @@
         <template if="{{ projectList === 'local' }}">
         <li class="add">
           <h2>New project</h2>
-          <button on-click="{{ newProject }}">Create</button>
+          <button id="newproject" on-click="{{ newProject }}">Create</button>
         </li>
         <template repeat="{{ project in localProjects }}">
           <li on-click="{{ openProject }}" data-id="{{ project.id }}">

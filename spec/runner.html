@@ -2,31 +2,27 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>noflo-ui in browser</title>
+    <title>NoFlo UI browser tests</title>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
     <style type="text/css">
       #fixtures {
         display: none;
       }
+      #app {
+        width: 800px;
+        height: 600px;
+        border: none;
+      }
     </style>
   </head>
   <body>
     <div id="mocha"></div>
-    <div id="fixtures">
-      <div class="dataflow-graph-test"></div>
-    </div>
-    <!-- Dataflow Dependencies -->
-    <script src="../browser/meemoo-dataflow/libs/jquery.js"></script>
-    <script src="../browser/meemoo-dataflow/libs/jquery-ui.js"></script>
-    <script src="../browser/meemoo-dataflow/libs/jquery.ui.touch-punch.js"></script>
-    <script src="../browser/meemoo-dataflow/libs/underscore.js"></script>
-    <script src="../browser/meemoo-dataflow/libs/backbone.js"></script>
-    <script src="../browser/meemoo-dataflow/libs/hammer.min.js"></script>
-
-    <script src="../browser/noflo-ui.js"></script>
+    <iframe id="app" src="../app.html"></iframe>
     <script src="http://chaijs.com/chai.js"></script>
     <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../bower_components/syn/dist/syn.js"></script>
     <script>mocha.setup('bdd');</script>
+    <script src="CreateProject.js"></script>
     <script>
       if (window.mochaPhantomJS) {
         mochaPhantomJS.run();
