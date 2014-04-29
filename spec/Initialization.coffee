@@ -11,7 +11,7 @@ describe 'NoFlo UI initialization', ->
       doc = iframe.contentDocument
       setTimeout ->
         done()
-      , 1000
+      , 3000
   it 'should start with the main screen', ->
     chai.expect(win.location.hash).to.equal ''
   it 'should have created the IndexedDB database', (done) ->
