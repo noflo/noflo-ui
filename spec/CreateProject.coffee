@@ -40,35 +40,37 @@ describe 'Project Creation Dialog', ->
         chai.expect(dialogs.length).to.equal 0
         done()
       , 10
-  it 'clicking the button should show the dialog again', (done) ->
-    Syn.click button
-    setTimeout ->
-      dialogs = doc.querySelectorAll 'noflo-new-project'
-      chai.expect(dialogs.length).to.equal 1
-      dialog = dialogs[0]
-      chai.expect(dialog.shadowRoot).to.be.an 'object'
-      done()
-  it 'typing values to the required input fields should enable submission', (done) ->
-    inputs = dialog.shadowRoot.querySelectorAll 'input'
-    chai.expect(inputs.length).to.equal 2
-    Syn.click(inputs[0])
-    .type('foo')
-    Syn.click(inputs[1])
-    .type('Foo')
-    setTimeout ->
+  describe 'Creating a project', ->
+    it 'clicking the button should show the dialog again', (done) ->
+      Syn.click button
+      setTimeout ->
+        dialogs = doc.querySelectorAll 'noflo-new-project'
+        chai.expect(dialogs.length).to.equal 1
+        dialog = dialogs[0]
+        chai.expect(dialog.shadowRoot).to.be.an 'object'
+        done()
+      , 10
+    it 'typing values to the required input fields should enable submission', (done) ->
+      inputs = dialog.shadowRoot.querySelectorAll 'input'
+      chai.expect(inputs.length).to.equal 2
+      Syn.click(inputs[0])
+      .type('foo')
+      Syn.click(inputs[1])
+      .type('Foo')
+      setTimeout ->
+        submit = dialog.shadowRoot.querySelector '.toolbar button'
+        chai.expect(submit.classList.contains('disabled')).to.equal false
+        done()
+      , 100
+    it 'should redirect to the project after clicking submit', (done) ->
       submit = dialog.shadowRoot.querySelector '.toolbar button'
-      chai.expect(submit.classList.contains('disabled')).to.equal false
-      done()
-    , 100
-  it 'should redirect to the project after clicking submit', (done) ->
-    submit = dialog.shadowRoot.querySelector '.toolbar button'
-    Syn.click submit
-    setTimeout ->
-      chai.expect(win.location.hash.indexOf('project/foo')).to.not.equal -1
-      done()
-    , 1000
-  it 'should have closed the dialog', ->
-    dialogs = doc.querySelectorAll 'noflo-new-project'
-    chai.expect(dialogs.length).to.equal 0
-  it 'should have registered the project to noflo-main', ->
-    chai.expect(main.localProjects.length).to.be.above 0
+      Syn.click submit
+      setTimeout ->
+        chai.expect(win.location.hash.indexOf('project/foo')).to.not.equal -1
+        done()
+      , 1000
+    it 'should have closed the dialog', ->
+      dialogs = doc.querySelectorAll 'noflo-new-project'
+      chai.expect(dialogs.length).to.equal 0
+    it 'should have registered the project to noflo-main', ->
+      chai.expect(main.localProjects.length).to.be.above 0
