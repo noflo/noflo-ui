@@ -11,7 +11,7 @@ describe 'NoFlo UI initialization', ->
       doc = iframe.contentDocument
       setTimeout ->
         done()
-      , 1000
+      , 7000
   after ->
     db.close()
 
@@ -23,6 +23,8 @@ describe 'NoFlo UI initialization', ->
     req.onerror = ->
       chai.expect(true).to.equal false
       done()
+    req.onupgradeneeded = (e) =>
+      throw new Error 'We didn\'t get a ready database'
     req.onsuccess = (event) ->
       db = event.target.result
       chai.expect(db).to.be.an 'object'
