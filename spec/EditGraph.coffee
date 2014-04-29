@@ -20,8 +20,11 @@ describe 'Graph Editor', ->
         chai.expect(search.classList.contains('overlay')).to.equal false
         done()
       , 500
-    it 'should initially show results', ->
-      chai.expect(search.results.length).to.be.above 10
+    it 'should initially show results', (done) ->
+      setTimeout ->
+        chai.expect(search.results.length).to.be.above 10
+        done()
+      , 1800
     it 'should narrow them down when something is written', (done) ->
       input = search.shadowRoot.querySelector '#search'
       Syn.click(input)
