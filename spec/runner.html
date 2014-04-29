@@ -5,13 +5,8 @@
     <title>NoFlo UI browser tests</title>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
     <style type="text/css">
-      #fixtures {
-        display: none;
-      }
       #app {
-        width: 800px;
-        height: 600px;
-        border: none;
+        display: none;
       }
     </style>
   </head>
@@ -24,6 +19,7 @@
     <script>mocha.setup('bdd');</script>
     <script src="CreateProject.js"></script>
     <script>
+      window.createChange = null;
       if (window.mochaPhantomJS) {
         mochaPhantomJS.run();
       } else {
