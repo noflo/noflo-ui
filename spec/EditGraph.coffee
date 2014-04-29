@@ -43,15 +43,18 @@ describe 'Editing a graph', ->
       chai.expect(search).to.be.an 'object'
       chai.expect(search.classList.contains('overlay')).to.equal true
     it 'when clicked it should show the search input', (done) ->
+      @timeout 10000
       breadcrumb = search.shadowRoot.querySelector '#breadcrumb'
       chai.expect(breadcrumb).to.be.an 'object'
-      Syn.click breadcrumb
       setTimeout ->
-        chai.expect(search.classList.contains('overlay')).to.equal false
-        done()
-      , 500
+        Syn.click breadcrumb
+        setTimeout ->
+          chai.expect(search.classList.contains('overlay')).to.equal false
+          done()
+        , 500
+      , 5000
     it 'should initially show results', (done) ->
-      @timeout 10000
+      @timeout 20000
       if search.results.length
         chai.expect(search.results.length).to.be.above 10
         done()
@@ -60,7 +63,7 @@ describe 'Editing a graph', ->
       setTimeout ->
         chai.expect(search.results.length).to.be.above 10
         done()
-       , 8000
+       , 10000
     it 'should narrow them down when something is written', (done) ->
       @timeout 10000
       input = search.shadowRoot.querySelector '#search'
