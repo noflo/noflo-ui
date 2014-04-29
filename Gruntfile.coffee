@@ -256,16 +256,38 @@ module.exports = ->
         options:
           livereload: false
 
+    # Web server for the browser tests
     connect:
       server:
         options:
-          port: 3000
+          port: 9999
           hostname: '*' # Allow connection from mobile
           livereload: false
 
+    # BDD tests on browser
+    'saucelabs-mocha':
+      all:
+        options:
+          urls: ['http://127.0.0.1:9999/spec/runner.html']
+          browsers: [
+            browserName: 'googlechrome'
+            version: '34'
+          ,
+            browserName: 'safari'
+            platform: 'OS X 10.8'
+            version: '6'
+          ,
+            browserName: 'internet explorer'
+            platform: 'Windows 8.1',
+            version: '11'
+          ]
+          build: process.env.TRAVIS_JOB_ID
+          testname: 'NoFlo UI browser tests'
+          tunnelTimeout: 5
+          concurrency: 1
+          detailedError: true
 
   # Grunt plugins used for building
-  @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-noflo-manifest'
   @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
@@ -280,7 +302,11 @@ module.exports = ->
 
   # Grunt plugins used for testing
   #@loadNpmTasks 'grunt-mocha-phantomjs'
+  @loadNpmTasks 'grunt-contrib-watch'
+  @loadNpmTasks 'grunt-contrib-coffee'
+  @loadNpmTasks 'grunt-saucelabs'
   @loadNpmTasks 'grunt-coffeelint'
+  @loadNpmTasks 'grunt-contrib-connect'
   @loadNpmTasks 'grunt-lint-inline'
 
   # For automatic building when working on browser libraries
@@ -292,7 +318,7 @@ module.exports = ->
   @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
   @registerTask 'build', ['inlinelint', 'noflo_manifest', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
-  @registerTask 'test', ['coffeelint', 'inlinelint']
+  @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
