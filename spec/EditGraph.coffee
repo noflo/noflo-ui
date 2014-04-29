@@ -6,6 +6,24 @@ describe 'Graph Editor', ->
     win = iframe.contentWindow
     doc = iframe.contentDocument
 
+  describe 'runtime', ->
+    runtime = null
+    it 'should be available as an element', ->
+      runtime = doc.querySelector 'noflo-runtime'
+    it 'should have the IFRAME runtime selected', ->
+      chai.expect(runtime.runtime).to.be.an 'object'
+    it 'should connect automatically to the IFRAME provider', (done) ->
+      @timeout 20000
+      if runtime.online
+        chai.expect(runtime.online).to.equal true
+        done()
+        return
+
+      runtime.runtime.on 'status', (status) ->
+        return unless status.online
+        chai.expect(runtime.online).to.equal true
+        done()
+
   describe 'component search', ->
     search = null
     it 'should initially show the breadcrumb', ->
@@ -24,7 +42,7 @@ describe 'Graph Editor', ->
       setTimeout ->
         chai.expect(search.results.length).to.be.above 10
         done()
-      , 1800
+      , 1000
     it 'should narrow them down when something is written', (done) ->
       input = search.shadowRoot.querySelector '#search'
       Syn.click(input)
