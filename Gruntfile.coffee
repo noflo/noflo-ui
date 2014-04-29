@@ -261,7 +261,11 @@ module.exports = ->
         options:
           urls: ['http://127.0.0.1:9999/spec/runner.html']
           browsers: [
-              browserName: 'chrome'
+            browserName: 'chrome'
+            version: '34'
+          ,
+            browserName: 'firefox'
+            version: '28'
           ]
           build: process.env.TRAVIS_JOB_ID
           testname: 'NoFlo UI browser tests'
