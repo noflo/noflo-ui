@@ -28,5 +28,8 @@
   },
   "devDependencies": {
     "syn": "~0.0.2"
+  },
+  "resolutions": {
+    "platform": "0.2.2"
   }
 }
