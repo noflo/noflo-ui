@@ -4,17 +4,10 @@ describe 'Project Creation Dialog', ->
   main = null
   button = null
   dialog = null
-  iframe = null
-  before (done) ->
-    @timeout 20000
+  before ->
     iframe = document.getElementById 'app'
-    iframe.src = '../app.html'
-    iframe.onload = ->
-      win = iframe.contentWindow
-      doc = iframe.contentDocument
-      done()
-  it 'should start with the main screen', ->
-    chai.expect(win.location.hash).to.equal ''
+    win = iframe.contentWindow
+    doc = iframe.contentDocument
   it 'should find noflo-main', ->
     main = doc.querySelector 'noflo-main'
     chai.expect(main).to.be.an 'object'
