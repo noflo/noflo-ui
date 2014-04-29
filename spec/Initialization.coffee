@@ -9,9 +9,9 @@ describe 'NoFlo UI initialization', ->
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
-      done()
-  after ->
-    db.close() if db
+      setTimeout ->
+        done()
+      , 1000
   it 'should start with the main screen', ->
     chai.expect(win.location.hash).to.equal ''
   it 'should have created the IndexedDB database', (done) ->
@@ -23,12 +23,18 @@ describe 'NoFlo UI initialization', ->
     req.onsuccess = (event) ->
       db = event.target.result
       chai.expect(db).to.be.an 'object'
+      db.close()
       done()
-  it 'should have created the project store', ->
-    chai.expect(db.objectStoreNames.contains('projects')).to.equal true
-  it 'should have created the graph store', ->
-    chai.expect(db.objectStoreNames.contains('graphs')).to.equal true
-  it 'should have created the component store', ->
-    chai.expect(db.objectStoreNames.contains('components')).to.equal true
-  it 'should have created the runtime store', ->
-    chai.expect(db.objectStoreNames.contains('runtimes')).to.equal true
+  it 'should have created the object stores', (done) ->
+    req = win.indexedDB.open 'noflo-ui', 3
+    req.onerror = ->
+      chai.expect(true).to.equal false
+      done()
+    req.onsuccess = (event) ->
+      db = event.target.result
+      chai.expect(db.objectStoreNames.contains('projects')).to.equal true
+      chai.expect(db.objectStoreNames.contains('graphs')).to.equal true
+      chai.expect(db.objectStoreNames.contains('components')).to.equal true
+      chai.expect(db.objectStoreNames.contains('runtimes')).to.equal true
+      db.close()
+      done()
