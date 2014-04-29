@@ -9,10 +9,9 @@ describe 'NoFlo UI initialization', ->
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
-      doc.addEventListener 'polymer-ready', ->
-        setTimeout ->
-          done()
-        , 5000
+      setTimeout ->
+        done()
+      , 9000
 
   after ->
     db.close()
