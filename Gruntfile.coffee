@@ -261,13 +261,21 @@ module.exports = ->
         options:
           urls: ['http://127.0.0.1:9999/spec/runner.html']
           browsers: [
-            browserName: 'chrome'
+            browserName: 'googlechrome'
             version: '34'
+          ,
+            browserName: 'safari'
+            platform: 'OS X 10.8'
+            version: '6'
+          ,
+            browserName: 'internet explorer'
+            platform: 'Windows 8.1',
+            version: '11'
           ]
           build: process.env.TRAVIS_JOB_ID
           testname: 'NoFlo UI browser tests'
           tunnelTimeout: 5
-          concurrency: 3
+          concurrency: 1
           detailedError: true
 
   # Grunt plugins used for building
