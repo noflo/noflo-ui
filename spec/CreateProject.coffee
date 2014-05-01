@@ -61,14 +61,15 @@ describe 'Project Creation Dialog', ->
         submit = dialog.shadowRoot.querySelector '.toolbar button'
         chai.expect(submit.classList.contains('disabled')).to.equal false
         done()
-      , 100
+      , 1000
     it 'should redirect to the project after clicking submit', (done) ->
+      @timeout 3000
       submit = dialog.shadowRoot.querySelector '.toolbar button'
       Syn.click submit
       setTimeout ->
         chai.expect(win.location.hash.indexOf('project/foo')).to.not.equal -1
         done()
-      , 1000
+      , 1800
     it 'should have closed the dialog', ->
       dialogs = doc.querySelectorAll 'noflo-new-project'
       chai.expect(dialogs.length).to.equal 0

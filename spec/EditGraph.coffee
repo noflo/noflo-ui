@@ -18,6 +18,19 @@ describe 'Editing a graph', ->
       nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
       chai.expect(nodes.length).to.equal 0
 
+  describe.skip 'help screen', ->
+    help = null
+    it 'should be visible initially', ->
+      help = doc.querySelector 'noflo-help'
+      chai.expect(help).to.be.an 'object'
+      chai.expect(help.visible).to.equal true
+    it 'should go away after a click', (done) ->
+      Syn.click help
+      setTimeout ->
+        chai.expect(help.visible).to.equal false
+        done()
+      , 1
+
   describe 'runtime', ->
     runtime = null
     it 'should be available as an element', ->
@@ -63,7 +76,7 @@ describe 'Editing a graph', ->
       setTimeout ->
         chai.expect(search.results.length).to.be.above 10
         done()
-       , 10000
+       , 14000
     it 'should narrow them down when something is written', (done) ->
       @timeout 10000
       input = search.shadowRoot.querySelector '#search'

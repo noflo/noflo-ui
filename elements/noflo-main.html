@@ -165,6 +165,7 @@
 
     </style>
     <noflo-account id="mainaccount" clientid="$NOFLO_OAUTH_CLIENT_ID"></noflo-account>
+    <template if="{{ gridToken }}">
     <section id="projects">
       <h2>Projects
           <template if="{{ projectList === 'local' }}">
@@ -214,7 +215,6 @@
         </template>
       </ul>
     </section>
-    <template if="{{ gridToken }}">
     <section id="runtimes">
       <h2>
         Runtimes <small>{{ userRuntimes.length }}</small>

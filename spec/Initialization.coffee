@@ -4,6 +4,16 @@ describe 'NoFlo UI initialization', ->
   db = null
   before (done) ->
     @timeout 20000
+
+    unless localStorage.getItem 'grid-token'
+      # Fake login
+      localStorage.setItem 'grid-token', '93c76ec0-d14b-11e3-9c1a-0800200c9a66'
+      localStorage.setItem 'grid-user', JSON.stringify
+        uuid: '11eecff0-d14c-11e3-9c1a-0800200c9a66'
+        email: 'user@domain.com'
+        name: 'Test User'
+        avatar: 'https://secure.gravatar.com/avatar/995f27ce7205a79c55d4e44223cd6de0'
+
     iframe = document.getElementById 'app'
     iframe.src = '../app.html'
     iframe.onload = ->
@@ -40,16 +50,3 @@ describe 'NoFlo UI initialization', ->
       chai.expect(db.objectStoreNames.contains('components')).to.equal true
     it 'should have created the runtime store', ->
       chai.expect(db.objectStoreNames.contains('runtimes')).to.equal true
-
-  describe 'help screen', ->
-    help = null
-    it 'should be visible initially', ->
-      help = doc.querySelector 'noflo-help'
-      chai.expect(help).to.be.an 'object'
-      chai.expect(help.visible).to.equal true
-    it 'should go away after a click', (done) ->
-      Syn.click help
-      setTimeout ->
-        chai.expect(help.visible).to.equal false
-        done()
-      , 1
