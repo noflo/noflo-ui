@@ -3,13 +3,37 @@ module.exports = ->
   @initConfig
     pkg: @file.readJSON 'package.json'
 
+    bower:
+      install:
+        options:
+          copy: false
+          bowerOptions:
+            forceLatest: false
+
     # Updating the package manifest files
     noflo_manifest:
       update:
         files:
           'component.json': ['graphs/*', 'components/*']
 
-    # CoffeeScript compilation
+    # Browser build of NoFlo
+    noflo_browser:
+      main:
+        files:
+          'browser/noflo-ui.js': ['component.json']
+      preview:
+        files:
+          'preview/browser/noflo-ui-preview.js': ['preview/component.json']
+
+    # Vulcanization compiles the Polymer elements into a HTML file
+    vulcanize:
+      app:
+        options:
+          csp: true
+        files:
+          'app.html': 'index.html'
+
+    # CoffeeScript compilation of tests
     coffee:
       spec:
         options:
@@ -34,25 +58,6 @@ module.exports = ->
       dist: [
         'dist'
       ]
-
-    # Browser version building
-    exec:
-      bower_cache_clean:
-        command: 'node ./node_modules/bower/bin/bower cache clean'
-      bower_install:
-        command: 'node ./node_modules/bower/bin/bower install -F'
-      main_install:
-        command: 'node ./node_modules/component/bin/component install -r https://raw.githubusercontent.com'
-      main_build:
-        command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui -c'
-      preview_install:
-        command: 'node ./node_modules/component/bin/component install -r https://raw.githubusercontent.com'
-        cwd: 'preview'
-      preview_build:
-        command: 'node ./node_modules/component/bin/component build -u component-json,component-fbp,component-coffee -o browser -n noflo-ui-preview -c'
-        cwd: 'preview'
-      vulcanize:
-        command: 'node ./node_modules/vulcanize/bin/vulcanize --csp -o app.html index.html'
 
     # JavaScript minification for the browser
     uglify:
@@ -288,8 +293,10 @@ module.exports = ->
           detailedError: true
 
   # Grunt plugins used for building
+  @loadNpmTasks 'grunt-bower-task'
   @loadNpmTasks 'grunt-noflo-manifest'
-  @loadNpmTasks 'grunt-exec'
+  @loadNpmTasks 'grunt-noflo-browser'
+  @loadNpmTasks 'grunt-vulcanize'
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
@@ -315,12 +322,12 @@ module.exports = ->
 
 
   # Our local tasks
-  @registerTask 'nuke', ['exec:bower_cache_clean', 'clean']
-  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'exec:main_install', 'exec:bower_install', 'exec:main_build', 'exec:preview_install', 'exec:preview_build', 'exec:vulcanize', 'string-replace:app', 'compress']
+  @registerTask 'nuke', ['clean']
+  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower:install', 'noflo_browser:main', 'noflo_browser:preview', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
-  @registerTask 'devp', ['exec:preview_build', 'connect:server', 'watch:preview']
+  @registerTask 'devp', ['noflo_browser:preview', 'connect:server', 'watch:preview']
 

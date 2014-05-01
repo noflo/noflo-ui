@@ -56,7 +56,6 @@
   "files": [
     "css/noflo-ui.css",
     "preview/iframe.html",
-    "preview/package.json",
     "preview/component.json",
     "index.html",
     "noflo.ico",
