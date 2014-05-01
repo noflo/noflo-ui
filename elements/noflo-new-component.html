@@ -45,6 +45,9 @@
         if (!this.name) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'newComponent');
+        }
         this.fire('new', {
           name: this.name,
           language: this.language,

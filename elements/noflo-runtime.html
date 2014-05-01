@@ -288,6 +288,9 @@
       },
       start: function (event) {
         event.preventDefault();
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'startRuntime');
+        }
         this.requestNotificationPermission();
         if (this.card) {
           this.sendEdges();
@@ -306,6 +309,9 @@
       stop: function (event) {
         if (event) {
           event.preventDefault();
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'stopRuntime');
         }
         this.runtime.stop();
       },

@@ -219,6 +219,9 @@
         },
         help: null,
         login: function () {
+          if (typeof ga === 'function') {
+            ga('send', 'event', 'button', 'click', 'login');
+          }
           var button = document.getElementById('loginbutton');
           button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
           if (typeof chrome !== 'undefined' && chrome.identity) {
@@ -350,6 +353,9 @@
           req.send(null);
         },
         logout: function () {
+          if (typeof ga === 'function') {
+            ga('send', 'event', 'button', 'click', 'logout');
+          }
           this.user = null;
           this.gridToken = '';
           this.githubToken = '';

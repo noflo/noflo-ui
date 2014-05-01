@@ -43,6 +43,9 @@
         if (!this.name) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'newGraph');
+        }
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({

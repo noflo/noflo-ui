@@ -60,6 +60,9 @@
         if (!this.name || !this.projectId) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'newProject');
+        }
         this.fire('new', {
           id: this.projectId.replace(' ', '-'),
           name: this.name,
