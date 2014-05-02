@@ -38,6 +38,9 @@
         right: 0;
         bottom: 0;
       }
+      #controls button.disabled {
+        color: rgba(179, 222, 230, 0.2);
+      }
       #controls button.autolayout {
         position: absolute;
         left: calc(50% - 18px);
@@ -54,25 +57,58 @@
       <template if="{{ graph }}">
         <the-graph-nav id="nav" width="288" height="144" editor="{{ editor }}" hide="{{ hidenav }}"></the-graph-nav>
 
-        <button title="Undo" class="undo" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
+        <button title="Undo" class="undo {{ { disabled: !canUndo } | tokenList }}" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
         <template if="{{ klay }}">
           <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
         </template>
-        <button title="Redo" class="redo" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
+        <button title="Redo" class="redo {{ { disabled: !canRedo } | tokenList }}" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
       </template>
     </div>
   </template>
   <script>
     Polymer('noflo-journal', {
+      db: null,
       graph: null,
       editor: null,
       returnTo: null,
       klay: false,
       hidenav: false,
+      canUndo: false,
+      canRedo: false,
       enteredView: function () {
         if (typeof window.$klay !== 'undefined') {
           this.klay = true;
         }
+      },
+      graphChanged: function () {
+        this.checkState();
+        if (!this.graph) {
+          return;
+        }
+        if (!this.graph.properties.project || this.graph.journal) {
+          return;
+        }
+
+        // Initialize persistent journal whenever needed
+        var noflo = require('noflo');
+        var IDBJournalStore = require('noflo-ui/src/JournalStore').IDBJournalStore;
+        var store = new IDBJournalStore(this.graph, this.db);
+        store.init(function () {
+          this.graph.journal = new noflo.Journal(this.graph, undefined, store);
+          this.checkState();
+          this.graph.journal.store.on('transaction', function () {
+            this.checkState();
+          }.bind(this));
+        }.bind(this));
+      },
+      checkState: function () {
+        if (!this.graph || !this.graph.journal) {
+          this.canUndo = false;
+          this.canRedo = false;
+          return;
+        }
+        this.canUndo = this.graph.journal.canUndo();
+        this.canRedo = this.graph.journal.canRedo();
       },
       undo: function (event, data, sender) {
         if (event) {
@@ -82,6 +118,7 @@
           return;
         }
         this.graph.journal.undo();
+        this.checkState();
       },
       redo: function (event, data, sender) {
         if (event) {
@@ -91,6 +128,7 @@
           return;
         }
         this.graph.journal.redo();
+        this.checkState();
       },
       autolayout: function (event, data, sender) {
         event.preventDefault();

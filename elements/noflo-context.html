@@ -32,7 +32,6 @@
   <script>
     Polymer('noflo-context', {
       project: null,
-      db: null,
       search: null,
       editor: null,
       graphs: [],
@@ -154,9 +153,6 @@
         this.fire('graphs', this.graphs);
         if (this.graphs.length) {
           var graph = this.graphs[this.graphs.length - 1];
-          this.fire('currentgraph', graph);
-          // Set help message if manually shown
-          this.setHelp();
           if (graph.nodes.length === 0 && this.graphs.length === 1) {
             // Empty main graph, we should show the help text
             this.showHelp(graph);
@@ -166,16 +162,9 @@
             window.setTimeout(function () {
               this.fire('example', graph);
             }.bind(this), 1);
-          } else {
-            var noflo = require('noflo');
-            var IDBJournalStore = require('noflo-ui/src/JournalStore').IDBJournalStore;
-            if (!graph.journal) {
-              var store = new IDBJournalStore(graph, this.db);
-              store.init(function () {
-                graph.journal = new noflo.Journal(graph, undefined, store);
-              });
-            }
           }
+          this.fire('currentgraph', graph);
+          this.setHelp();
         }
         this.search = null;
       },

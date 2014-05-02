@@ -18,7 +18,7 @@
     <noflo-polymer name="the-graph-editor" inports="graph library theme width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="runtimes db project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
     <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime theme"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
@@ -34,7 +34,7 @@
     <link rel="import" href="elements/noflo-component-editor.html">
     <noflo-polymer name="noflo-component-editor" inports="component graphs theme width height" outports="changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-journal.html">
-    <noflo-polymer name="noflo-journal" inports="graph editor panel undo redo" outports=""></noflo-polymer>
+    <noflo-polymer name="noflo-journal" inports="db graph editor panel undo redo" outports=""></noflo-polymer>
     <link rel="import" href="elements/noflo-help.html">
     <script src="./browser/noflo-ui.js"></script>
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
@@ -453,7 +453,7 @@
       INPORT=Runtimes.IN:RUNTIMES
       INPORT=Context.CLEAR:CLEAR
       INPORT=Project.GITHUBTOKEN:GITHUBTOKEN
-      INPORT=Context.DB:DB
+      INPORT=Journal.DB:DB
       INPORT=Theme.IN:THEME
       OUTPORT=ListenGraph.OUT:GRAPHCHANGED
       OUTPORT=ComponentEditor.CHANGED:COMPONENTCHANGED

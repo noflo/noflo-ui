@@ -22,6 +22,7 @@ class IDBJournalStore extends noflo.journal.JournalStore
       entries: entries
 
     @transactions[revId] = entries
+    super revId, entries
 
   fetchTransaction: (revId) ->
     return @transactions[revId]
