@@ -166,75 +166,75 @@
     </style>
     <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <noflo-account id="mainaccount" clientid="$NOFLO_OAUTH_CLIENT_ID"></noflo-account>
-    <template if="{{ gridToken }}">
-    <section id="projects">
-      <h2>Projects
+    <div id="loginrequired">
+      <section id="projects">
+        <h2>Projects
+            <template if="{{ projectList === 'local' }}">
+            <small>{{ localProjects.length }}</small>
+            </template>
+            <template if="{{ projectList === 'github' }}">
+            <small>{{ remoteProjects.length }}</small>
+            </template>
+            <template if="{{ projectList === 'github' }}">
+            <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+            </template>
+        </h2>
+        <ul class="tabs">
           <template if="{{ projectList === 'local' }}">
-          <small>{{ localProjects.length }}</small>
+            <li class="selected">On device</li>
+            <template if="{{ githubToken }}">
+            <li on-click="{{ openGithub }}">GitHub</li>
+            </template>
           </template>
           <template if="{{ projectList === 'github' }}">
-          <small>{{ remoteProjects.length }}</small>
+          <li on-click="{{ openLocal }}">On device</li>
+            <li class="selected">GitHub</li>
+          </template>
+        </ul>
+        <ul class="projects">
+          <template if="{{ projectList === 'local' }}">
+          <li class="add">
+            <h2>New project</h2>
+            <button id="newproject" on-click="{{ newProject }}">Create</button>
+          </li>
+          <template repeat="{{ project in localProjects }}">
+            <li on-click="{{ openProject }}" data-id="{{ project.id }}">
+              <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
+              <h2>{{ project.name }}</h2>
+              <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
+            </li>
+          </template>
           </template>
           <template if="{{ projectList === 'github' }}">
-          <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+          <template repeat="{{ project in remoteProjects }}">
+            <li class="remote">
+              <h2>{{ project.name }}</h2>
+              <p>{{ project.description }}</p>
+              <button on-click="{{ downloadProject }}" data-name="{{ project.name }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+            </li>
           </template>
-      </h2>
-      <ul class="tabs">
-        <template if="{{ projectList === 'local' }}">
-          <li class="selected">On device</li>
-          <template if="{{ githubToken }}">
-          <li on-click="{{ openGithub }}">GitHub</li>
           </template>
-        </template>
-        <template if="{{ projectList === 'github' }}">
-        <li on-click="{{ openLocal }}">On device</li>
-          <li class="selected">GitHub</li>
-        </template>
-      </ul>
-      <ul class="projects">
-        <template if="{{ projectList === 'local' }}">
-        <li class="add">
-          <h2>New project</h2>
-          <button id="newproject" on-click="{{ newProject }}">Create</button>
-        </li>
-        <template repeat="{{ project in localProjects }}">
-          <li on-click="{{ openProject }}" data-id="{{ project.id }}">
-            <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ project.name }}</h2>
-            <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
+        </ul>
+      </section>
+      <section id="runtimes">
+        <h2>
+          Runtimes <small>{{ userRuntimes.length }}</small>
+          <button on-click="{{ fetchFlowhub }}"><i id="fetchflowhub" class="fa fa-refresh"></i></button>
+        </h2>
+        <ul class="projects">
+          <li class="add">
+            <h2>New runtime</h2>
+            <button on-click="{{ newRuntime }}">Register</button>
           </li>
-        </template>
-        </template>
-        <template if="{{ projectList === 'github' }}">
-        <template repeat="{{ project in remoteProjects }}">
-          <li class="remote">
-            <h2>{{ project.name }}</h2>
-            <p>{{ project.description }}</p>
-            <button on-click="{{ downloadProject }}" data-name="{{ project.name }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+          <template repeat="{{ userRuntimes }}">
+          <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="runtime {{ type }}">
+            <h2>{{ label }}</h2>
+            <p>{{ address }}</p>
           </li>
-        </template>
-        </template>
-      </ul>
-    </section>
-    <section id="runtimes">
-      <h2>
-        Runtimes <small>{{ userRuntimes.length }}</small>
-        <button on-click="{{ fetchFlowhub }}"><i id="fetchflowhub" class="fa fa-refresh"></i></button>
-      </h2>
-      <ul class="projects">
-        <li class="add">
-          <h2>New runtime</h2>
-          <button on-click="{{ newRuntime }}">Register</button>
-        </li>
-        <template repeat="{{ userRuntimes }}">
-        <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="runtime {{ type }}">
-          <h2>{{ label }}</h2>
-          <p>{{ address }}</p>
-        </li>
-        </template>
-      </ul>
-    </section>
-    </template>
+          </template>
+        </ul>
+      </section>
+    </div>
   </template>
   <script>
     Polymer('noflo-main', {
@@ -284,6 +284,9 @@
         }.bind(this));
         this.registry = require('flowhub-registry');
         this.help = document.querySelector('noflo-help');
+
+        // Hide projects if not logged in
+        this.gridTokenChanged();
       },
       token: function () {
         this.fire('githubtoken', this.githubToken);
@@ -347,7 +350,7 @@
           return;
         }
         this.remoteProjects = [];
-        var button = document.getElementById('fetchgithub');
+        var button = this.$.fetchgithub;
         button.classList.add('fa-spin');
         var req = new XMLHttpRequest();
         req.onreadystatechange = function () {
@@ -407,7 +410,7 @@
         if (!this.gridToken) {
           return;
         }
-        var button = document.getElementById('fetchflowhub');
+        var button = this.$.fetchflowhub;
         button.classList.add('fa-spin');
         this.registry.list(this.gridToken, function (err, runtimes) {
           button.classList.remove('fa-spin');
@@ -458,6 +461,15 @@
             this.userRuntimes.splice(index, 1);
           }.bind(this));
         }.bind(this));
+      },
+      gridTokenChanged: function () {
+        // Hide projects if not logged in
+        // Done like this instead of template if so this.$.fetchflowhub etc work
+        if (this.gridToken) {
+          this.$.loginrequired.style.display = 'block';
+        } else {
+          this.$.loginrequired.style.display = 'none';
+        }
       },
       preparedefaults: function () {
         // Every NoFlo UI instance should have at least the local IFRAME runtime available
