@@ -34,6 +34,7 @@
         color: white;
       }
     </style>
+    <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
     <template if="{{ downloadUrl }}">
       <a href="{{ downloadUrl }}" id="download" download="{{ graph.properties.id }}.json"><i class="fa fa-download"></i></a>

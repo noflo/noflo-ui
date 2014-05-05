@@ -145,6 +145,7 @@
       }
 
     </style>
+    <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <template if="{{ user }}">
       <template if="{{ avatar }}">
       <div class="avatar"><img src="{{ avatar }}"></div>
@@ -312,7 +313,9 @@
             req.open('GET', this.gatekeeper + '/authenticate/' + code[1], true);
             req.send(null);
           } else {
-            this.help.show('New to $NOFLO_APP_TITLE?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');
+            if (this.help && this.help.show) {
+              this.help.show('New to $NOFLO_APP_TITLE?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');              
+            }
           }
         },
         getUser: function (token, refresh) {
