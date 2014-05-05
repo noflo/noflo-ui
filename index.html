@@ -141,7 +141,9 @@
       OUTPORT=GetComponents.ITEM:COMPONENTS
       OUTPORT=GetRuntimes.ITEM:RUNTIMES
       OUTPORT=Read.COMPLETE:COMPLETE
+      OUTPORT=Errors.OUT:ERROR
       'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
+      Read ERROR -> IN Errors(core/Merge)
       Start(core/Repeat) OUT -> IN HoldMode
       'projects,graphs,components,runtimes' -> DATA HoldStores(core/Kick) OUT -> STORES Read
       Start OUT -> IN HoldStores
@@ -602,10 +604,12 @@
       Storage DB -> DB StoreComponent(local/StoreComponent)
       Storage DB -> DB StoreGraph(local/StoreGraph)
       Storage DB -> DB StoreRuntime(local/StoreRuntime)
+      Storage DB -> IN DatabaseReady(ui/DatabaseReady)
       Storage ERROR -> IN ShowErrors(core/Output)
 
       # Start by loading user's local data
       '' -> LOAD LoadData
+      LoadData ERROR -> IN ShowErrors
       LoadData PROJECTS -> PROJECTS Main
       LoadData GRAPHS -> GRAPHS Main
       LoadData COMPONENTS -> COMPONENTS Main

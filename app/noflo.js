@@ -1,5 +1,6 @@
 window.addEventListener('polymer-ready', function() {
   document.body.classList.remove('loading');
+  window.nofloStarted = false;
 
   var noflo = require('noflo');
   var graphs = {};
@@ -11,6 +12,9 @@ window.addEventListener('polymer-ready', function() {
       }
       network.loader.registerComponent('local', component, graphs[component]);
     }
+    network.once('start', function () {
+      window.nofloStarted = true;
+    });
     network.connect(function () {
       network.start();
     });

@@ -67,25 +67,30 @@ describe 'Editing a graph', ->
         , 500
       , 5000
     it 'should initially show results', (done) ->
-      @timeout 20000
+      @timeout 30000
       if search.results.length
         chai.expect(search.results.length).to.be.above 10
         done()
         return
 
-      setTimeout ->
-        chai.expect(search.results.length).to.be.above 10
-        done()
-       , 14000
+      checkResults = ->
+        if search.results and search.results.length > 20
+          chai.expect(search.results.length).to.be.above 10
+          return done()
+        setTimeout checkResults, 1000
+      setTimeout checkResults, 1000
     it 'should narrow them down when something is written', (done) ->
       @timeout 10000
       input = search.shadowRoot.querySelector '#search'
       Syn.click(input)
       .type 'GetEle'
-      setTimeout ->
-        chai.expect(search.results.length).to.equal 1
-        done()
-      , 3000
+
+      checkResults = ->
+        if search.results and search.results.length is 1
+          chai.expect(search.results.length).to.equal 1
+          return done()
+        setTimeout checkResults, 1000
+      setTimeout checkResults, 1000
     it 'should add a node when result is clicked', (done) ->
       @timeout 3000
       context = doc.querySelector 'noflo-context'

@@ -3,7 +3,7 @@ describe 'NoFlo UI initialization', ->
   doc = null
   db = null
   before (done) ->
-    @timeout 20000
+    @timeout 40000
 
     unless localStorage.getItem 'grid-token'
       # Fake login
@@ -19,15 +19,23 @@ describe 'NoFlo UI initialization', ->
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
-      setTimeout ->
-        done()
-      , 9000
-
+      done()
   after ->
     db.close()
 
-  it 'should start with the main screen', ->
-    chai.expect(win.location.hash).to.equal ''
+  describe 'on startup', ->
+    it 'should start the NoFlo process', (done) ->
+      @timeout 60000
+      checkNoFlo = ->
+        chai.expect(win.nofloStarted).to.be.a 'boolean'
+        if win.nofloDBReady
+          chai.expect(win.nofloDBReady).to.be.a 'boolean'
+          return done()
+        setTimeout checkNoFlo, 1000
+      setTimeout checkNoFlo, 1000
+
+    it 'should start with the main screen', ->
+      chai.expect(win.location.hash).to.equal ''
 
   describe 'NoFlo PrepareStorage', ->
     it 'should have created the IndexedDB database', (done) ->
@@ -37,6 +45,7 @@ describe 'NoFlo UI initialization', ->
         chai.expect(true).to.equal false
         done()
       req.onupgradeneeded = (e) =>
+        e.target.transaction.abort()
         throw new Error 'We didn\'t get a ready database'
       req.onsuccess = (event) ->
         db = event.target.result

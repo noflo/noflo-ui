@@ -32,6 +32,7 @@
   "noflo": {
     "components": {
       "ConnectRuntime": "components/ConnectRuntime.coffee",
+      "DatabaseReady": "components/DatabaseReady.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "MakePath": "components/MakePath.coffee",
@@ -48,7 +49,8 @@
     "components/Router.coffee",
     "components/MigrateLocalStorage.coffee",
     "components/MakePath.coffee",
-    "src/JournalStore.coffee"
+    "src/JournalStore.coffee",
+    "components/DatabaseReady.coffee"
   ],
   "json": [
     "component.json"
