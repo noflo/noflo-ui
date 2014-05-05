@@ -214,6 +214,7 @@
         storage: {
           grid: 'grid-token',
           github: 'github-token',
+          githubUsername: 'github-username',
           user: 'grid-user',
           avatar: 'grid-avatar',
           theme: 'flowhub-theme'
@@ -256,15 +257,18 @@
           storage.get(this.storage.grid, function (token) {
             if (token) {
               this.gridToken = token;
+              storage.get(this.storage.github, function (token) {
+                if (!token) {
+                  if (this.gridToken) {
+                    this.getGitHubToken(this.gridToken);
+                  }
+                  return;
+                }
+                this.githubToken = token;
+              }.bind(this));
               return;
             }
             this.remoteLogin(window.location.href, true);
-          }.bind(this));
-          storage.get(this.storage.github, function (token) {
-            if (!token) {
-              return;
-            }
-            this.githubToken = token;
           }.bind(this));
           storage.get(this.storage.theme, function (theme) {
             if (!theme) {
@@ -324,6 +328,7 @@
         getUser: function (token, refresh) {
           if (refresh) {
             this.getRemoteUser(token);
+            this.getGitHubToken(token);
             return;
           }
           storage.get(this.storage.user, function (user) {
@@ -337,9 +342,10 @@
               }
             }
             this.getRemoteUser(token);
+            this.getGitHubToken(token);
           }.bind(this));
         },
-        getRemoteUser:function (token) {
+        getRemoteUser: function (token) {
           var req = new XMLHttpRequest();
           req.onreadystatechange = function () {
             if (req.readyState !== 4) {
@@ -358,6 +364,35 @@
           req.setRequestHeader('Authorization', 'Bearer ' + token);
           req.send(null);
         },
+        getGitHubToken: function (token) {
+          if (this.githubToken) {
+            return;
+          }
+          var req = new XMLHttpRequest();
+          req.onreadystatechange = function () {
+            if (req.readyState !== 4) {
+              return;
+            }
+            if (req.status === 200) {
+              var data;
+              try {
+                data = JSON.parse(req.responseText);
+              } catch (e) {
+                return;
+              }
+              if (!data.token || !data.username) {
+                return;
+              }
+              this.githubToken = data.token;
+              this.githubUsername = data.username;
+              storage.set(this.storage.github, this.githubToken);
+              storage.set(this.storage.githubUsername, this.githubUsername);
+            }
+          }.bind(this);
+          req.open('GET', this.site + '/api/user/github', true);
+          req.setRequestHeader('Authorization', 'Bearer ' + token);
+          req.send(null);
+        },
         logout: function () {
           if (typeof ga === 'function') {
             ga('send', 'event', 'button', 'click', 'logout');
@@ -365,6 +400,7 @@
           this.user = null;
           this.gridToken = '';
           this.githubToken = '';
+          this.githubUsername = '';
           this.avatar = '';
           this.clearCache();
         },
@@ -387,6 +423,7 @@
         clearCache: function () {
           storage.remove(this.storage.grid);
           storage.remove(this.storage.github);
+          storage.remove(this.storage.githubUsername);
           storage.remove(this.storage.user);
           storage.remove(this.storage.avatar);
         },
