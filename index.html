@@ -295,8 +295,9 @@
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
       'id' -> PROPERTY SetGraphId(graph/SetPropertyValue)
       SplitGist OUT -> VALUE SetGraphId
+      'project' -> PROPERTY RemoveProject(objects/RemoveProperty)
       ParseExample OUT -> IN ConvertGraph(graph/LoadJson)
-      ConvertGraph OUT -> IN SetGraphId
+      ConvertGraph OUT -> IN RemoveProject OUT -> IN SetGraphId
     </script>
     <script type="application/fbp" id="EnsureId">
       INPORT=Item.IN:IN
