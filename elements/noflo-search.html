@@ -300,7 +300,7 @@
         if (this.graphs.length === 0) {
           return;
         }
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.graphInspector = document.createElement('noflo-graph-inspector');

@@ -363,7 +363,7 @@
           this.clearCache();
         },
         openSettings: function () {
-          if (document.querySelectorAll('.modal-content').length) {
+          if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
             return;
           }
           var dialog = document.createElement('noflo-account-settings');

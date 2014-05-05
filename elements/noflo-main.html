@@ -299,14 +299,14 @@
       },
       openLocal: function (event) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.projectList = 'local';
       },
       openGithub: function (event) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         if (!this.githubToken) {
@@ -476,7 +476,7 @@
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         var project = null;
@@ -492,14 +492,14 @@
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         window.location.hash = '#example/' + sender.getAttribute('data-id');
       },
       newProject: function (event) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         var dialog = document.createElement('noflo-new-project');
@@ -511,7 +511,7 @@
       },
       newRuntime: function (event) {
         event.preventDefault();
-        if (document.querySelectorAll('.modal-content').length) {
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         var dialog = document.createElement('noflo-new-runtime');
