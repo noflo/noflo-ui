@@ -366,6 +366,9 @@
           this.clearCache();
         },
         openSettings: function () {
+          if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+            return;
+          }
           var dialog = document.createElement('noflo-account-settings');
           dialog.githubtoken = this.githubToken;
           dialog.theme = this.theme;

@@ -233,6 +233,9 @@
       },
       newGraph: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-graph');
         dialog.project = this.project.id;
         dialog.runtimes = this.runtimes;
@@ -247,6 +250,9 @@
           return;
         }
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
@@ -257,11 +263,17 @@
       },
       openHome: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#';
       },
       openSettings: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-project-inspector');
         dialog.project = this.project;
         this.parentNode.parentNode.appendChild(dialog);
@@ -284,11 +296,17 @@
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
       },
       openComponent: function (event, detail, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
       },

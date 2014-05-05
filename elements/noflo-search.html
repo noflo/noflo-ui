@@ -301,6 +301,9 @@
         if (this.graphs.length === 0) {
           return;
         }
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
         this.graphInspector = document.createElement('noflo-graph-inspector');
         this.graphInspector.graph = this.graph;
         this.graphInspector.project = this.project;
