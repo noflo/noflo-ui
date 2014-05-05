@@ -223,8 +223,10 @@
           if (typeof ga === 'function') {
             ga('send', 'event', 'button', 'click', 'login');
           }
-          var button = document.getElementById('loginbutton');
-          button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+          var button = this.$.loginbutton;
+          if (button) {
+            button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+          }
           if (typeof chrome !== 'undefined' && chrome.identity) {
             this.redirect = chrome.identity.getRedirectURL();
             chrome.identity.launchWebAuthFlow({
@@ -275,9 +277,10 @@
           var code = responseUrl.match(/\?code=(.*)/);
           if (code && code[1]) {
             setTimeout(function () {
-              var button = document.getElementById('loginbutton');
-              if (!button) { return; }
-              button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+              var button = this.$.loginbutton;
+              if (button) {
+                button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+              }
             }, 1);
             var req = new XMLHttpRequest();
             req.onreadystatechange = function () {
@@ -303,7 +306,7 @@
                   }.bind(this));
                 }
               } else {
-                var button = document.getElementById('loginbutton');
+                var button = this.$.loginbutton;
                 if (button) {
                   button.innerHTML = 'Login';
                 }
