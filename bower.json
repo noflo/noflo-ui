@@ -29,7 +29,7 @@
   "devDependencies": {
     "syn": "~0.0.2"
   },
-  "resolved": {
+  "resolutions": {
     "platform": "0.2.2"
   }
 }
