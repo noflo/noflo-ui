@@ -94,7 +94,7 @@ module.exports = ->
             replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
           ,
             pattern: /\$NOFLO_APP_LOADING/ig
-            replacement: process.env.NOFLO_APP_LOADING or 'Loading Elements'
+            replacement: process.env.NOFLO_APP_LOADING or 'Preparing NoFlo UI...'
           ,
             pattern: /\$NOFLO_ORGANIZATION/ig
             replacement: process.env.NOFLO_ORGANIZATION or 'NoFlo Community'
