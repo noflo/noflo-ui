@@ -299,10 +299,16 @@
       },
       openLocal: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         this.projectList = 'local';
       },
       openGithub: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         if (!this.githubToken) {
           return;
         }
@@ -470,6 +476,9 @@
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var project = null;
         this.localProjects.forEach(function (p) {
           if (p.id === sender.getAttribute('data-id')) {
@@ -483,6 +492,9 @@
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         window.location.hash = '#example/' + sender.getAttribute('data-id');
       },
       newProject: function (event) {

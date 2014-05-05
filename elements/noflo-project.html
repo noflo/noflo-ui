@@ -262,6 +262,9 @@
       },
       openHome: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#';
       },
@@ -292,11 +295,17 @@
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
       },
       openComponent: function (event, detail, sender) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
       },
