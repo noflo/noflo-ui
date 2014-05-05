@@ -487,6 +487,9 @@
       },
       newProject: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-project');
         dialog.runtimes = this.userRuntimes;
         this.parentNode.parentNode.appendChild(dialog);
@@ -496,6 +499,9 @@
       },
       newRuntime: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-runtime');
         dialog.user = this.user;
         this.parentNode.parentNode.appendChild(dialog);

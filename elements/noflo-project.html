@@ -232,6 +232,9 @@
       },
       newGraph: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-graph');
         dialog.project = this.project.id;
         dialog.runtimes = this.runtimes;
@@ -246,6 +249,9 @@
           return;
         }
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project.id;
         this.parentNode.parentNode.appendChild(dialog);
@@ -261,6 +267,9 @@
       },
       openSettings: function (event) {
         event.preventDefault();
+        if (document.querySelectorAll('.modal-content').length) {
+          return;
+        }
         var dialog = document.createElement('noflo-project-inspector');
         dialog.project = this.project;
         this.parentNode.parentNode.appendChild(dialog);
