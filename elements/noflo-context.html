@@ -230,7 +230,7 @@
         if (this.component && typeof this.component === 'object' && !this.component.id) {
           this.component = null;
         }
-        if (typeof ga === 'function') {
+        if (this.component && typeof ga === 'function') {
           ga('send', 'event', 'url', 'navigation', 'openComponent');
         }
         this.fire('component', this.component);
