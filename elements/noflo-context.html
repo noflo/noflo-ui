@@ -121,6 +121,9 @@
             icon: 'arrow-circle-o-up',
             iconLabel: 'open',
             action: function (graph, itemKey, item) {
+              if (typeof ga === 'function') {
+                ga('send', 'event', 'menu', 'click', 'openNode');
+              }
               window.location.hash += '/' + encodeURIComponent(item.id);
             }
           };
@@ -161,7 +164,14 @@
           if (!graph.properties.project) {
             window.setTimeout(function () {
               this.fire('example', graph);
+              if (typeof ga === 'function') {
+                ga('send', 'event', 'url', 'navigation', 'openExample');
+              }
             }.bind(this), 1);
+          } else {
+            if (typeof ga === 'function') {
+              ga('send', 'event', 'url', 'navigation', 'openGraph');
+            }
           }
           this.fire('currentgraph', graph);
           this.setHelp();
@@ -220,6 +230,9 @@
         if (this.component && typeof this.component === 'object' && !this.component.id) {
           this.component = null;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'url', 'navigation', 'openComponent');
+        }
         this.fire('component', this.component);
       },
       clear: function () {
@@ -230,6 +243,10 @@
       },
       group: function (graph, itemKey, item) {
         event.preventDefault();
+
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'menu', 'click', 'createGroup');
+        }
 
         // See if the nodes are already part of a group
         var group = '';
@@ -257,6 +274,10 @@
         event.preventDefault();
         if (!this.project) {
           return;
+        }
+
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'menu', 'click', 'createSubgraph');
         }
 
         // Ask user to name the new subgraph

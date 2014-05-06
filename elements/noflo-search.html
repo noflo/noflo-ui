@@ -263,6 +263,11 @@
       },
       searchChanged: function () {
         this.clearResults();
+
+        if (this.search && typeof ga === 'function') {
+          ga('send', 'event', 'search', 'input', 'newSearch');
+        }
+
         if (this.resultsCard) {
           this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
         }
@@ -303,6 +308,9 @@
         }
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'search', 'click', 'graphProperties');
         }
         this.graphInspector = document.createElement('noflo-graph-inspector');
         this.graphInspector.graph = this.graph;

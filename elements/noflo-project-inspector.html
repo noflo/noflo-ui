@@ -44,6 +44,9 @@
         if (event) {
           event.preventDefault();
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'saveProjectProperties');
+        }
         var type = this.project.type;
         this.project.graphs.forEach(function (graph) {
           if (graph.id === this.main && graph.properties.environment.runtime) {

@@ -266,6 +266,9 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'openHome');
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#';
       },
@@ -273,6 +276,9 @@
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'projectProperties');
         }
         var dialog = document.createElement('noflo-project-inspector');
         dialog.project = this.project;
@@ -299,6 +305,9 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'openGraph');
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
       },
@@ -307,6 +316,9 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'openComponent');
+        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
       },
@@ -314,6 +326,9 @@
         event.preventDefault();
         if (!this.githubtoken) {
           return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'pushGithub');
         }
         var content;
         if (this.graph) {

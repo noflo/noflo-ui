@@ -329,6 +329,9 @@
         if (!this.githubToken) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'pullGithub');
+        }
         this.fire('download', {
           project: {
             id: sender.getAttribute('data-name'),

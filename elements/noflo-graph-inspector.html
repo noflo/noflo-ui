@@ -147,6 +147,9 @@
         }.bind(this));
       },
       save: function () {
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'saveGraphProperties');
+        }
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
         env.content = this.preview;
         env.type = this.type;
