@@ -353,14 +353,18 @@
           return;
         }
         this.remoteProjects = [];
-        var button = this.$.fetchgithub;
-        button.classList.add('fa-spin');
+        var button = this.shadowRoot.getElementById('fetchgithub');
+        if (button) {
+          button.classList.add('fa-spin');
+        }
         var req = new XMLHttpRequest();
         req.onreadystatechange = function () {
           if (req.readyState !== 4) {
             return;
           }
-          button.classList.remove('fa-spin');
+          if (button) {
+            button.classList.remove('fa-spin');
+          }
           if (req.status !== 200) {
             var error;
             try {

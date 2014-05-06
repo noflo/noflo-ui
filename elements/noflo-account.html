@@ -227,7 +227,7 @@
           if (typeof ga === 'function') {
             ga('send', 'event', 'button', 'click', 'login');
           }
-          var button = this.$.loginbutton;
+          var button = this.shadowRoot.getElementById('loginbutton');
           if (button) {
             button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
           }
@@ -290,9 +290,11 @@
           var code = responseUrl.match(/\?code=(.*)/);
           if (code && code[1]) {
             setTimeout(function () {
-              var button = this.$.loginbutton;
-              if (button) {
-                button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+              if (this.shadowRoot) {
+                var button = this.shadowRoot.getElementById('loginbutton');
+                if (button) {
+                  button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                }
               }
             }, 1);
             var req = new XMLHttpRequest();
@@ -319,9 +321,11 @@
                   }.bind(this));
                 }
               } else {
-                var button = this.$.loginbutton;
-                if (button) {
-                  button.innerHTML = 'Login';
+                if (this.shadowRoot) {
+                  var button = this.shadowRoot.getElementById('loginbutton');
+                  if (button) {
+                    button.innerHTML = 'Login';
+                  }
                 }
                 this.clearCache();
               }
