@@ -2,7 +2,7 @@
 
 The NoFlo Development Environment is a client-side web application that helps users to build and run flow-based programs built with [NoFlo](http://noflojs.org/) and other compatible FBP systems. The NoFlo Development Environment is available under the [MIT license](https://github.com/noflo/noflo-ui/blob/master/LICENSE-MIT).
 
-This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/).
+This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/). Check the [project ChangeLog](https://github.com/noflo/noflo-ui/blob/master/CHANGES.md) for new features and other changes.
 
 ## Hosted version
 
