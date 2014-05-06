@@ -105,7 +105,8 @@
         border-radius: 2px;
       }
       #plan.free,
-      #plan.beta {
+      #plan.beta,
+      #plan.backer {
         background-color: hsl(135,90%,45%);
       }
       .toolbar {
@@ -203,6 +204,7 @@
       Polymer('noflo-account', {
         clientid: '',
         site: 'https://passport.thegrid.io',
+        profileSite: 'https://api.flowhub.io',
         gatekeeper: '$NOFLO_OAUTH_GATE',
         redirect: '',
         user: null,
@@ -216,6 +218,7 @@
           github: 'github-token',
           githubUsername: 'github-username',
           user: 'grid-user',
+          plan: 'flowhub-plan',
           avatar: 'grid-avatar',
           theme: 'flowhub-theme'
         },
@@ -260,7 +263,7 @@
               storage.get(this.storage.github, function (token) {
                 if (!token) {
                   if (this.gridToken) {
-                    this.getGitHubToken(this.gridToken);
+                    this.getRemoteUser(this.gridToken);
                   }
                   return;
                 }
@@ -275,6 +278,12 @@
               return;
             }
             this.theme = theme;
+          }.bind(this));
+          storage.get(this.storage.plan, function (plan) {
+            if (!plan) {
+              return;
+            }
+            this.plan = plan;
           }.bind(this));
         },
         remoteLogin: function (responseUrl, cleanUp) {
@@ -328,7 +337,6 @@
         getUser: function (token, refresh) {
           if (refresh) {
             this.getRemoteUser(token);
-            this.getGitHubToken(token);
             return;
           }
           storage.get(this.storage.user, function (user) {
@@ -342,7 +350,6 @@
               }
             }
             this.getRemoteUser(token);
-            this.getGitHubToken(token);
           }.bind(this));
         },
         getRemoteUser: function (token) {
@@ -352,44 +359,35 @@
               return;
             }
             if (req.status === 200) {
-              storage.set(this.storage.user, req.responseText);
-              this.user = JSON.parse(req.responseText);
-              this.fire('user', this.user);
-              this.fire('login', this.user);
-              } else {
+              var userData = JSON.parse(req.responseText);
+
+              if (!this.user) {
+                storage.set(this.storage.user, req.responseText);
+                this.user = userData;
+                this.fire('user', this.user);
+                this.fire('login', this.user);
+              }
+
+              if (!this.githubToken && userData.github && userData.github.token) {
+                this.githubToken = userData.github.token;
+                storage.set(this.storage.github, this.githubToken);
+              }
+
+              if (!this.githubToken && userData.github && userData.github.username) {
+                this.githubUsername = userData.github.username;
+                storage.set(this.storage.githubUsername, this.githubUsername);
+              }
+
+              if (userData.plan && userData.plan.type) {
+                this.plan = userData.plan.type;
+                storage.set(this.storage.plan, this.plan);
+              }
+
+            } else {
               this.clearCache();
             }
           }.bind(this);
-          req.open('GET', this.site + '/api/user', true);
-          req.setRequestHeader('Authorization', 'Bearer ' + token);
-          req.send(null);
-        },
-        getGitHubToken: function (token) {
-          if (this.githubToken) {
-            return;
-          }
-          var req = new XMLHttpRequest();
-          req.onreadystatechange = function () {
-            if (req.readyState !== 4) {
-              return;
-            }
-            if (req.status === 200) {
-              var data;
-              try {
-                data = JSON.parse(req.responseText);
-              } catch (e) {
-                return;
-              }
-              if (!data.token || !data.username) {
-                return;
-              }
-              this.githubToken = data.token;
-              this.githubUsername = data.username;
-              storage.set(this.storage.github, this.githubToken);
-              storage.set(this.storage.githubUsername, this.githubUsername);
-            }
-          }.bind(this);
-          req.open('GET', this.site + '/api/user/github', true);
+          req.open('GET', this.profileSite + '/user', true);
           req.setRequestHeader('Authorization', 'Bearer ' + token);
           req.send(null);
         },
@@ -402,6 +400,7 @@
           this.githubToken = '';
           this.githubUsername = '';
           this.avatar = '';
+          this.plan = 'free';
           this.clearCache();
         },
         openSettings: function () {
@@ -414,9 +413,7 @@
           dialog.user = this.user;
           document.body.appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
-            this.githubToken = event.detail.githubtoken;
             this.theme = event.detail.theme;
-            storage.set(this.storage.github, this.githubToken);
             storage.set(this.storage.theme, this.theme);
           }.bind(this));
         },
@@ -426,6 +423,7 @@
           storage.remove(this.storage.githubUsername);
           storage.remove(this.storage.user);
           storage.remove(this.storage.avatar);
+          storage.remove(this.storage.plan);
         },
         userChanged: function () {
           if (!this.user || !this.user.avatar) {
