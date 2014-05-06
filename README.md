@@ -1,10 +1,16 @@
 # NoFlo Development Environment [![Build Status](https://secure.travis-ci.org/noflo/noflo-ui.png?branch=master)](http://travis-ci.org/noflo/noflo-ui)
 
-The NoFlo Development Environment is a client-side web application that helps users to build and run flow-based programs built with [NoFlo](http://noflojs.org/) and other compatible FBP systems.
+The NoFlo Development Environment is a client-side web application that helps users to build and run flow-based programs built with [NoFlo](http://noflojs.org/) and other compatible FBP systems. The NoFlo Development Environment is available under the [MIT license](https://github.com/noflo/noflo-ui/blob/master/LICENSE-MIT).
 
-## Features
+This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/).
 
-The NoFlo UI is still under heavy development. See the [Kickstarter project](http://www.kickstarter.com/projects/noflo/noflo-development-environment) for the full explanation of what is to come.
+## Hosted version
+
+There is a hosted version of the NoFlo Development Environment available. Please refer to <http://noflojs.org/noflo-ui/>.
+
+## Usage
+
+Please read more from <http://flowhub.io/documentation/>. See also the [available support channels](http://noflojs.org/support/).
 
 ### Projects
 
@@ -16,8 +22,8 @@ In addition to graphs developed by users, the NoFlo UI is able to load and run e
 
 The examples should also provide the necessary information for running the example inside the `environment` key of the graph propeties: 
 
-* `runtime`: `html` for client-side flows, `websocket` for Node.js server-side flows
-* `content`: optional HTML contents to insert into the UIs preview card
+* `type`: `noflo-browser` for client-side flows, `noflo-nodejs` for Node.js server-side flows
+* `content`: optional HTML contents to insert into the UI's preview card
 * `width`: optional width of the preview card in pixels
 * `height`: optional height of the preview card in pixels
 
@@ -63,6 +69,3 @@ The HTML runtime of NoFlo utilizes a custom [Component.io](http://component.io/)
 Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs. Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
 
 If you want to integrate the UI with a new environment you need to provide some transport layer (for example, WebSockets) that can talk the protocol, and then implement [runtime access](https://github.com/noflo/noflo-runtime) for that.
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/noflo/noflo-ui/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
