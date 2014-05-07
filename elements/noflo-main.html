@@ -235,6 +235,19 @@
         </ul>
       </section>
     </div>
+    <section id="examples">
+      <h2>
+        Examples <small>{{ examples.length }}</small>
+      </h2>
+      <ul class="projects">
+        <template repeat="{{ examples }}">
+        <li on-click="{{ openExample }}" data-id="{{ id }}" class="example">
+          <h2>{{ label }}</h2>
+          <p>{{ address }}</p>
+        </li>
+        </template>
+      </ul>
+    </section>
   </template>
   <script>
     Polymer('noflo-main', {
@@ -242,6 +255,20 @@
       localProjects: [],
       remoteProjects: [],
       userRuntimes: [],
+      examples: [
+        {
+          label: 'Photo booth',
+          id: '7804187'
+        },
+        {
+          label: 'Animated clock',
+          id: '7135158'
+        },
+        {
+          label: 'Canvas pattern',
+          id: '1319c76fe006fb34c9c9'
+        }
+      ],
       githubToken: '',
       gridToken: '',
       user: null,
@@ -307,6 +334,13 @@
           return;
         }
         this.projectList = 'local';
+      },
+      openExample: function (event) {
+        event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        window.location.hash = '#example/' + event.target.getAttribute('data-id');
       },
       openGithub: function (event) {
         event.preventDefault();
