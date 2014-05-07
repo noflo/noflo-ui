@@ -3,7 +3,7 @@ NoFlo UI ChangeLog
 
 ## 0.1.3 (git master)
 
-* N/A
+* Added examples to home screen
 
 ## 0.1.1 (2014 May 6)
 

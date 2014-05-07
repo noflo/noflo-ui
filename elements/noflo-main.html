@@ -335,13 +335,6 @@
         }
         this.projectList = 'local';
       },
-      openExample: function (event) {
-        event.preventDefault();
-        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
-          return;
-        }
-        window.location.hash = '#example/' + event.target.getAttribute('data-id');
-      },
       openGithub: function (event) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
