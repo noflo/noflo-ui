@@ -1,6 +1,10 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.1.3 (git master)
+
+* N/A
+
 ## 0.1.1 (2014 May 6)
 
 * We now get the GitHub token, Flowhub plan, and user information through a single API call
