@@ -26,6 +26,9 @@
     "polymer": "Polymer/polymer#0.2.2",
     "platform": "Polymer/platform#0.2.2"
   },
+  "resolutions": {
+    "platform": "0.2.2"
+  },
   "devDependencies": {
     "syn": "~0.0.2"
   }
