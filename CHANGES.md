@@ -4,6 +4,7 @@ NoFlo UI ChangeLog
 ## 0.1.3 (git master)
 
 * Added examples to home screen
+* Added support for `int` and `date` inport types in Node Inspector
 
 ## 0.1.1 (2014 May 6)
 
