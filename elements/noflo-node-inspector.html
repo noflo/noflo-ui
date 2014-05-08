@@ -269,6 +269,7 @@
       }
       
       ul.ports li.port-type-color label span:before,
+      ul.ports li.port-type-int label span:before,
       ul.ports li.port-type-number label span:before {
         content: '#';
       }
@@ -304,7 +305,11 @@
             <template if="{{ port.type == 'boolean' }}">
               <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' }}">
+            <template if="{{ port.type == 'int' }}">
+              <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
+              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}">
+            </template>
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' }}">
               <template if="{{ port.inputType == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
@@ -411,6 +416,10 @@
             return input.checked;
           case 'number':
             return parseFloat(input.value);
+          case 'int':
+            return parseInt(input.value);
+          case 'date':
+            return new Date(input.value);
           default:
             return input.value;
         }
@@ -449,11 +458,14 @@
         var validatePortValue = function(type, value) {
           switch (type) {
             case 'number':
+            case 'int':
               return (value!=="" && !isNaN(value));
             case 'object':
               return value instanceof Object;
             case 'array':
               return value instanceof Array;
+            case 'date':
+              return value instanceof Date;
           }
           return true;
         };
