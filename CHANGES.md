@@ -5,6 +5,7 @@ NoFlo UI ChangeLog
 
 * Added examples to home screen
 * Added support for `int` and `date` inport types in Node Inspector
+* Fixed IndexedDB initialization issue with Chrome Apps
 
 ## 0.1.1 (2014 May 6)
 
