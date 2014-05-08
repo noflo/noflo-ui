@@ -417,7 +417,7 @@
           case 'number':
             return parseFloat(input.value);
           case 'int':
-            return parseInt(input.value);
+            return parseInt(input.value, 10);
           case 'date':
             return new Date(input.value);
           default:
