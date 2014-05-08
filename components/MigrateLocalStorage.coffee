@@ -30,6 +30,9 @@ class MigrateLocalStorage extends noflo.Component
     return graph
 
   migrateGraphs: (store) ->
+    # Don't use localStorage in Chrome App
+    return if typeof chrome isnt 'undefined' and chrome.storage
+
     try
       localStorage
     catch e
