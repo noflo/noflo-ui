@@ -34,6 +34,7 @@
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "GenerateId": "components/GenerateId.coffee",
+      "GetNode": "components/GetNode.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
@@ -50,7 +51,8 @@
     "components/MigrateLocalStorage.coffee",
     "components/MakePath.coffee",
     "src/JournalStore.coffee",
-    "components/DatabaseReady.coffee"
+    "components/DatabaseReady.coffee",
+    "components/GetNode.coffee"
   ],
   "json": [
     "component.json"
