@@ -18,9 +18,9 @@
     <noflo-polymer name="the-graph-editor" inports="graph library theme width height" outports="edges nodes"></noflo-polymer>
     <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
     <link rel="import" href="elements/noflo-context.html">
-    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
+    <noflo-polymer name="noflo-context" inports="runtimes project graphs component editor search clear getpanel nodes edges runtime" outports="project graphs currentgraph component example newgraph nodes edges result toolpanel contextpanel"></noflo-polymer>
     <link rel="import" href="elements/noflo-main.html">
-    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken runtimes runtime theme"></noflo-polymer>
+    <noflo-polymer name="noflo-main" inports="open projects graphs components runtimes route token preparedefaults createdproject" outports="newproject project graph component download githubtoken projects runtimes runtime theme"></noflo-polymer>
     <link rel="import" href="elements/noflo-runtime.html">
     <noflo-polymer name="noflo-runtime" inports="graphs edges panel runtimes runtime" outports="runtime changed"></noflo-polymer>
     <link rel="import" href="elements/noflo-packets.html">
@@ -464,6 +464,7 @@
       OUTPORT=Project.NEWCOMPONENT:NEWCOMPONENT
       OUTPORT=Project.CHANGED:PROJECTCHANGED
       OUTPORT=RuntimeChanged.OUT:RUNTIMECHANGED
+      OUTPORT=Runtime.RUNTIME:RUNTIME
       OUTPORT=Project.UPLOAD:UPLOAD
       'noflo-context' -> SELECTOR Context(polymer/noflo-context)
 
@@ -473,6 +474,7 @@
       Context GRAPHS -> GRAPHS Runtime(local/HandleRuntime)
       Context EDGES -> EDGES Runtime
       Runtime CHANGED -> IN RuntimeChanged(core/Merge)
+      Runtime RUNTIME -> RUNTIME Context
 
       # Search handling
       'noflo-search' -> SELECTOR Search(polymer/noflo-search)
@@ -589,6 +591,27 @@
       RuntimeElement RUNTIME -> DEFINITION Connect
       Connect RUNTIME -> RUNTIME RuntimeElement
     </script>
+    <script type="application/fbp" id="LoadRouteData">
+      INPORT=GetNode.ROUTE:ROUTE
+      INPORT=GetNode.PROJECTS:PROJECTS
+      INPORT=GetSource.RUNTIME:RUNTIME
+      OUTPORT=GetNode.PROJECT:PROJECT
+      OUTPORT=MergeGraphs.OUT:GRAPH
+      OUTPORT=MergeComponents.OUT:COMPONENT
+
+      # Locally available graphs and components
+      GetNode(ui/GetNode) GRAPH -> IN MergeGraphs(core/Merge)
+      GetNode COMPONENT -> IN MergeComponents(core/Merge)
+
+      # Example handling
+      GetNode EXAMPLE -> GIST LoadExample(local/LoadExample)
+      LoadExample GRAPH -> IN MergeGraphs
+
+      # Runtime component handling
+      GetNode RUNTIME -> NAME GetSource(runtime/GetSource)
+      GetSource SOURCE -> IN MergeComponents
+      GetSource ERROR -> IN Drop(core/Drop)
+    </script>
     <script type="application/fbp" id="main">
       # Name of our IndexedDB database
       'noflo-ui' -> NAME Storage(local/PrepareStorage)
@@ -626,15 +649,17 @@
       Router(ui/Router) ROUTE -> CLEAR Context(local/ProjectContext)
       Storage DB -> DB Context
       Main RUNTIMES -> RUNTIMES Context
-      Router ROUTE -> ROUTE Main
-      Main PROJECT -> PROJECT Context
-      Main GRAPH -> GRAPHS Context
-      Main COMPONENT -> COMPONENT Context
+      Router ROUTE -> ROUTE RouteData(local/LoadRouteData)
+      Main PROJECTS -> PROJECTS RouteData
+      RouteData PROJECT -> PROJECT Context
+      RouteData GRAPH -> GRAPHS Context
+      RouteData COMPONENT -> COMPONENT Context
       Main THEME -> THEME Context
       Context COMPONENTCHANGED -> ITEM StoreComponent
       Context COMPONENTCHANGED -> COMPONENTS Main
       Context GRAPHCHANGED -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context PROJECTCHANGED -> ITEM StoreProject
+      Context RUNTIME -> RUNTIME RouteData
       Context RUNTIMECHANGED -> ITEM StoreRuntime
       Context NEWGRAPH -> IN Check(ui/IgnoreExamples) OUT -> ITEM StoreGraph
       Context NEWCOMPONENT -> ITEM StoreComponent
@@ -650,10 +675,6 @@
       Download COMPONENT -> COMPONENTS Main
       Download ERROR -> IN ShowErrors
       Context UPLOAD -> IN Upload(local/Upload)
-
-      # Example handling
-      Router EXAMPLE -> GIST LoadExample(local/LoadExample)
-      LoadExample GRAPH -> GRAPHS Context
 
       # Show/hide main widget
       'true' -> DATA ShowMain(core/Kick) OUT -> OPEN Main

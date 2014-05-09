@@ -2,53 +2,32 @@ noflo = require 'noflo'
 
 class Router extends noflo.Component
   constructor: ->
-    @inPorts =
-      url: new noflo.ArrayPort 'string'
-    @outPorts =
-      route: new noflo.ArrayPort 'bang'
-      main: new noflo.Port 'string'
-      project: new noflo.Port 'string'
-      graph: new noflo.Port 'string'
-      component: new noflo.Port 'string'
-      example: new noflo.Port 'string'
-      missed: new noflo.Port 'string'
+    @inPorts = new noflo.InPorts
+      url:
+        datatype: 'string'
+    @outPorts = new noflo.OutPorts
+      route:
+        datatype: 'object'
+      main:
+        datatype: 'bang'
+        required: false
+      missed:
+        datatype: 'string'
+        required: false
 
     @inPorts.url.on 'data', (url) =>
       matched = @matchUrl url
-      if @outPorts.route.isAttached()
-        @outPorts.route.send matched
-        @outPorts.route.disconnect()
       unless matched
-        if @outPorts.missed.isAttached()
-          @outPorts.missed.send url
-          @outPorts.missed.disconnect()
-          return
+        @outPorts.missed.send url
+        @outPorts.missed.disconnect()
+        return
 
-      switch matched.route
-        when 'main'
-          return unless @outPorts.main.isAttached()
-          @outPorts.main.send true
-          @outPorts.main.disconnect()
-          return
-        when 'graph'
-          if matched.project and @outPorts.project.isAttached()
-            @outPorts.project.send matched.project
-            @outPorts.project.disconnect()
-          return unless @outPorts.graph.isAttached()
-          @outPorts.graph.send graph for graph in matched.graphs
-          @outPorts.graph.disconnect()
-          return
-        when 'component'
-          if matched.project and @outPorts.project.isAttached()
-            @outPorts.project.send matched.project
-            @outPorts.project.disconnect()
-          if @outPorts.component.isAttached()
-            @outPorts.component.send matched.component
-          return
-        when 'example'
-          return unless @outPorts.example.isAttached()
-          @outPorts.example.send matched.graphs[0]
-          @outPorts.example.disconnect()
+      @outPorts.route.send matched
+      @outPorts.route.disconnect()
+
+      if matched.route is 'main'
+        @outPorts.main.send true
+        @outPorts.main.disconnect()
 
   matchUrl: (url) ->
     routeData =
