@@ -42,14 +42,12 @@ class GetNode extends noflo.Component
     for component in project.components
       return component if component.name is id
 
-  getByComponent: (project, component) ->
-    [library, name] = component.split '/'
+  getByComponent: (project, componentName) ->
+    [library, name] = componentName.split '/'
 
-    if name and library isnt project.id
-      # Remote component
-      return ['runtime', component]
-
-    name = library unless name
+    unless name
+      name = library
+      library = undefined
 
     graph = @getGraph project, name
     return ['graph', graph] if graph
@@ -57,7 +55,8 @@ class GetNode extends noflo.Component
     component = @getComponent project, name
     return ['component', component] if component
 
-    return []
+    # Get from runtime
+    return ['runtime', componentName]
 
   findLocal: (project, route) ->
     if route.route is 'component'
