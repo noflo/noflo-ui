@@ -144,21 +144,21 @@
     </style>
     <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <div id="breadcrumb" on-click="{{ focus }}">
-      <template if="{{ !component || !component.id }}">
+      <template if="{{ !component || !component.name }}">
       <i class="fa fa-search"></i>
       </template>
       <h1>
         <template if="{{ project && parentPath }}">
         <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
         </template>
-        <template if="{{ graph && (!component || !component.id) }}">
+        <template if="{{ graph && (!component || !component.name) }}">
         {{ graph.name }}
         </template>
-        <template if="{{ component && component.id }}">
+        <template if="{{ component && component.name }}">
         {{ component.name }}
         </template>
       </h1>
-      <template if="{{ graph && (!component || !component.id) }}">
+      <template if="{{ graph && (!component || !component.name) }}">
       <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
       </template>
     </div>
@@ -178,7 +178,7 @@
       runtimes: [],
       graphInspector: null,
       componentChanged: function () {
-        if (!this.component || !this.component.id) {
+        if (!this.component || !this.component.name) {
           // Component nullified, ensure we recount graphs
           this.graphsChanged();
           return;
@@ -187,7 +187,7 @@
         this.updateParentPath();
       },
       graphsChanged: function () {
-        if (!this.graphs.length || (this.component && this.component.id)) {
+        if (!this.graphs.length || (this.component && this.component.name)) {
           this.graph = null;
         } else {
           this.graph = this.graphs[this.graphs.length - 1];
@@ -226,7 +226,7 @@
         this.blur();
       },
       focus: function () {
-        if (this.component && this.component.id) {
+        if (this.component && this.component.name) {
           return;
         }
         this.classList.remove('overlay');

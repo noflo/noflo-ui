@@ -97,7 +97,7 @@ exports.getComponent = function () {
       testsEditor: null,
       theme: 'dark',
       componentChanged: function () {
-        if (!this.component || !this.component.id) {
+        if (!this.component || !this.component.name) {
           this.style.display = 'none';
           return;
         }
@@ -112,7 +112,8 @@ exports.getComponent = function () {
           lineNumbers: true,
           value: this.component.code || '',
           language: this.component.language,
-          theme: this.getMirrorTheme()
+          theme: this.getMirrorTheme(),
+          readOnly: this.component.project ? false : true
         });
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
@@ -123,7 +124,8 @@ exports.getComponent = function () {
           lineNumbers: true,
           value: this.component.tests || '',
           language: this.component.language,
-          theme: this.getMirrorTheme()
+          theme: this.getMirrorTheme(),
+          readOnly: this.component.project ? false : true
         });
         this.testsEditor.on('change', function () {
           this.component.tests = this.testsEditor.getValue();
