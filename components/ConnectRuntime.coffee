@@ -178,6 +178,7 @@ class ConnectRuntime extends noflo.Component
     @connected = false
 
   onRuntimeComponent: (message) =>
+    return unless message.command is 'component'
     if message.payload.name is 'Graph' or message.payload.name is 'ReadDocument'
       return
     definition =
