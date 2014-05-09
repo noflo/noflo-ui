@@ -370,6 +370,10 @@
       },
       canGetSource: function (component) {
         var componentParts = component.split('/');
+        if (!this.project) {
+          return false;
+        }
+
         if (this.project && componentParts.shift() === this.project.id) {
           // Local component, see if it is available
           for (i = 0; i < this.project.graphs.length; i++) {
