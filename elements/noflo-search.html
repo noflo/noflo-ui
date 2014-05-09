@@ -86,7 +86,8 @@
         color: hsl(189, 50%, 80%);
         cursor: text;
       }
-      #breadcrumb #graphinspector {
+      #breadcrumb #graphinspector,
+      #breadcrumb #readonly {
         position: absolute;
         right: 9px;
         top: 0px;
@@ -160,6 +161,9 @@
       </h1>
       <template if="{{ graph && (!component || !component.name) }}">
       <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
+      </template>
+      <template if="{{ (component && component.readonly) || (graph && graph.properties.readonly) }}">
+      <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
     <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" autocapitalize="off" autocorrect="off" x-webkit-speech>

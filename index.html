@@ -609,7 +609,9 @@
 
       # Runtime component handling
       GetNode RUNTIME -> NAME GetSource(runtime/GetSource)
-      GetSource SOURCE -> IN MergeComponents
+      'true' -> VALUE SetReadOnly(objects/SetPropertyValue)
+      'readonly' -> PROPERTY SetReadOnly
+      GetSource SOURCE -> IN SetReadOnly OUT -> IN MergeComponents
       GetSource ERROR -> IN Drop(core/Drop)
     </script>
     <script type="application/fbp" id="main">
