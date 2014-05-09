@@ -85,6 +85,7 @@ exports.getComponent = function () {
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
   <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
   <script src="../bower_components/codemirror/mode/coffeescript/coffeescript.js"></script>
+  <script src="../bower_components/codemirror/mode/clike/clike.js"></script>
   <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
   <link rel="stylesheet" href="../css/codemirror-noflo.css">
@@ -111,7 +112,7 @@ exports.getComponent = function () {
         this.codeEditor = CodeMirror(this.$.code_editor, {
           lineNumbers: true,
           value: this.component.code || '',
-          language: this.component.language,
+          mode: this.getMirrorMode(this.component.language),
           theme: this.getMirrorTheme(),
           readOnly: this.component.project ? false : true
         });
@@ -123,7 +124,7 @@ exports.getComponent = function () {
         this.testsEditor = CodeMirror(this.$.tests_editor, {
           lineNumbers: true,
           value: this.component.tests || '',
-          language: this.component.language,
+          mode: this.getMirrorMode(this.component.language),
           theme: this.getMirrorTheme(),
           readOnly: this.component.project ? false : true
         });
@@ -139,6 +140,12 @@ exports.getComponent = function () {
       },
       heightChanged: function () {
         this.setSize();
+      },
+      getMirrorMode: function (language) {
+        if (language === 'coffeescript' || language === 'javascript') {
+          return language;
+        }
+        return 'clike';
       },
       getMirrorTheme: function () {
         if (this.theme === 'light') {
