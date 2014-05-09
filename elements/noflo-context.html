@@ -34,6 +34,7 @@
       project: null,
       search: null,
       editor: null,
+      runtime: null,
       graphs: [],
       nodes: [],
       edges: [],
@@ -111,8 +112,7 @@
           if (!options.item.component) {
             return defaultMenu;
           }
-          var componentParts = options.item.component.split('/');
-          if (!this.project || componentParts.shift() !== this.project.id) {
+          if (!this.canGetSource(options.item.component)) {
             return defaultMenu;
           }
           var i, menuKey;
@@ -127,26 +127,11 @@
               window.location.hash += '/' + encodeURIComponent(item.id);
             }
           };
-
-          for (i = 0; i < this.project.graphs.length; i++) {
-            if (this.project.graphs[i].properties.id === componentParts[0]) {
-              for (menuKey in defaultMenu) {
-                localMenu[menuKey] = defaultMenu[menuKey];
-              }
-              localMenu.n4 = openAction;
-              return localMenu;
-            }
+          for (menuKey in defaultMenu) {
+            localMenu[menuKey] = defaultMenu[menuKey];
           }
-          for (i = 0; i < this.project.components.length; i++) {
-            if (this.project.components[i].name === componentParts[0]) {
-              for (menuKey in defaultMenu) {
-                localMenu[menuKey] = defaultMenu[menuKey];
-              }
-              localMenu.n4 = openAction;
-              return localMenu;
-            }
-          }
-          return defaultMenu;
+          localMenu.n4 = openAction;
+          return localMenu;
         }.bind(this));
       },
       projectChanged: function () {
@@ -227,7 +212,7 @@
         this.fire('edges', this.edges);
       },
       componentChanged: function () {
-        if (this.component && typeof this.component === 'object' && !this.component.id) {
+        if (this.component && typeof this.component === 'object' && !this.component.name) {
           this.component = null;
         }
         if (this.component && typeof ga === 'function') {
@@ -382,6 +367,34 @@
         graph.once('addNode', function () {
           this.help.close();
         }.bind(this));
+      },
+      canGetSource: function (component) {
+        var componentParts = component.split('/');
+        if (this.project && componentParts.shift() === this.project.id) {
+          // Local component, see if it is available
+          for (i = 0; i < this.project.graphs.length; i++) {
+            if (this.project.graphs[i].properties.id === componentParts[0]) {
+              return true;
+            }
+          }
+          for (i = 0; i < this.project.components.length; i++) {
+            if (this.project.components[i].name === componentParts[0]) {
+              return true;
+            }
+          }
+        }
+
+        // Otherwise we check if Runtime can get it for us
+        if (!this.runtime) {
+          return false;
+        }
+        if (!this.runtime.definition || !this.runtime.definition.capabilities) {
+          return false;
+        }
+        if (this.runtime.definition.capabilities.indexOf('component:getsource') !== -1) {
+          return true;
+        }
+        return false;
       }
     });
   </script>
