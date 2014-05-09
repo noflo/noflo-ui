@@ -144,6 +144,8 @@ exports.getComponent = function () {
       getMirrorMode: function (language) {
         if (language === 'coffeescript' || language === 'javascript') {
           return language;
+        } else if (language === 'c++') {
+          return 'text/x-c++src';
         }
         return 'clike';
       },
