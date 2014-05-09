@@ -1,7 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.3 (git master)
+## 0.1.5 (git master)
+
+## 0.1.4 (2014 May 9)
+
+* No changes, just version bump for Chrome app
+
+## 0.1.3 (2014 May 8)
 
 * Added examples to home screen
 * Added support for `int` and `date` inport types in Node Inspector
