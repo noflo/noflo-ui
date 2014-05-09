@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 ## 0.1.5 (git master)
 
+* Added support for [viewing component source code](https://github.com/noflo/noflo-ui/issues/223) for library components. Requires runtime-level support
+
 ## 0.1.4 (2014 May 9)
 
 * No changes, just version bump for Chrome app
