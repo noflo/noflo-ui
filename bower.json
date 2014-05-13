@@ -29,6 +29,7 @@
     "syn": "~0.0.2"
   },
   "resolutions": {
-    "polymer": "0.2.3"
+    "polymer": "0.2.3",
+    "platform": "0.2.3"
   }
 }
