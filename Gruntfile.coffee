@@ -31,7 +31,7 @@ module.exports = ->
         options:
           csp: true
         files:
-          'app.html': 'index.html'
+          'index.html': 'index.dist.html'
 
     # CoffeeScript compilation of tests
     coffee:
@@ -73,8 +73,8 @@ module.exports = ->
     'string-replace':
       app:
         files:
-          './dev.html': './index.html'
-          './app.html': './app.html'
+          './dev.html': './index.dist.html'
+          './index.html': './index.html'
           './app.js': './app.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
@@ -171,10 +171,9 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['app.html']
+          src: ['index.html']
           expand: true
           dest: '/'
-          rename: (dest, src) -> 'index.html'
         ,
           src: ['app/*']
           expand: true

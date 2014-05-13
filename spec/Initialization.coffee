@@ -15,7 +15,7 @@ describe 'NoFlo UI initialization', ->
         avatar: 'https://secure.gravatar.com/avatar/995f27ce7205a79c55d4e44223cd6de0'
 
     iframe = document.getElementById 'app'
-    iframe.src = '../app.html'
+    iframe.src = '../index.html'
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
