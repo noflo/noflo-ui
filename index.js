@@ -48,10 +48,16 @@
       selectedNodes: [],
       selectedEdges: [],
       animatedEdges: [],
+      autolayouter: null,
       created: function () {
         this.library = {};
         // Default pan
         this.pan = [0,0];
+        // Initializes the autolayouter
+        this.autolayouter = klay.init({
+          onSuccess: this.applyAutolayout.bind(this),
+          workerScript: "../bower_components/klay-js/klay-worker.js"
+        });
       },
       ready: function () {
         this.themeChanged();
@@ -194,12 +200,14 @@
         }
       },
       triggerAutolayout: function (event) {
-        if (window.KLayInterface) {
-          setTimeout(function () {
-            var portInfo = this.graphView ? this.graphView.portInfo : null;
-            window.KLayInterface(this.graph, portInfo, this.applyAutolayout.bind(this));
-          }.bind(this), 0);
-        }
+        var graph = this.graph;
+        var portInfo = this.graphView ? this.graphView.portInfo : null;
+        // Calls the autolayouter
+        this.autolayouter.layout({
+          "graph": graph,
+          "portInfo": portInfo,
+          "direction": "RIGHT"
+        });
       },
       applyAutolayout: function (layoutedKGraph) {
         this.graph.startTransaction("autolayout");
