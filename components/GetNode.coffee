@@ -101,7 +101,7 @@ class GetNode extends noflo.Component
     return unless @projects.length
     project = null
     for p in @projects
-      project = p if p.id is route.project
+      project = p if p.id is decodeURIComponent route.project
     return unless project
     @outPorts.project.send project
 

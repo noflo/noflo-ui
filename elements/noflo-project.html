@@ -309,7 +309,7 @@
           ga('send', 'event', 'button', 'click', 'openGraph');
         }
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + this.project.id + '/' + sender.getAttribute('data-id');
+        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + sender.getAttribute('data-id');
       },
       openComponent: function (event, detail, sender) {
         event.preventDefault();
@@ -320,7 +320,7 @@
           ga('send', 'event', 'button', 'click', 'openComponent');
         }
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + this.project.id + '/component/' + sender.getAttribute('data-id');
+        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + sender.getAttribute('data-id');
       },
       upload: function (event) {
         event.preventDefault();
