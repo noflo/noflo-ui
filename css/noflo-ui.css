@@ -141,7 +141,7 @@ h1, h2, h3 {
   font-weight: bold;
 }
 @font-face {
-  /* we want the svg version if the icons */
+  /* we want the svg version of the icons */
   font-family: 'FontAwesomeSVG';
   src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg'),
     url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
@@ -150,7 +150,6 @@ h1, h2, h3 {
   font-weight: normal;
   font-style: normal;
 }
-
 
 html, body, button {
   background-color: hsl(187, 45%, 5%);

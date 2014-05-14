@@ -70,7 +70,6 @@
         top: 9px;
       }
     </style>
-    <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <ul class="types">
       <template repeat="{{ availtype in available }}">
       <li on-click="{{ selectType }}" data-id="{{ availtype.id }}" class="{{ { selected: type == availtype.id } | tokenList }}">
