@@ -149,7 +149,7 @@ module.exports = ->
             'bower_components/font-awesome/**/*.woff'
             'bower_components/font-awesome/**/*.ttf'
             'bower_components/font-awesome/**/*.svg'
-            'bower_components/klay-js/klay/*.js'
+            'bower_components/klay-js/klay*.js'
             'bower_components/platform/*.js'
             'bower_components/polymer/*.js'
             'bower_components/react/*.js'
