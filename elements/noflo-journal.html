@@ -77,9 +77,7 @@
       canUndo: false,
       canRedo: false,
       enteredView: function () {
-        if (typeof window.$klay !== 'undefined') {
-          this.klay = true;
-        }
+        this.klay = true;
       },
       graphChanged: function () {
         this.checkState();
