@@ -104,7 +104,11 @@ html /deep/ the-panel#fixed ::shadow footer {
   right: 0px;
 }
 
-the-card ::shadow .the-card-content {
+/*html /deep/ the-card {
+  position: relative;
+}
+*/
+html /deep/ the-card .the-card-content {
   display: block;
   margin: 0px;
   padding: 10px 10px 10px;
