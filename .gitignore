@@ -10,7 +10,8 @@
 /dist/
 /gh-pages/
 *.zip
-app.*
+index.html
+index.js
 dev.html
 dist.sh
 manifest.json
