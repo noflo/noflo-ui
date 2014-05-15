@@ -17,3 +17,4 @@ dist.sh
 manifest.json
 manifest.webapp
 config.xml
+sauce_connect.log

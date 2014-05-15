@@ -41,9 +41,7 @@
       "Router": "components/Router.coffee"
     }
   },
-  "main": "index.js",
   "scripts": [
-    "index.js",
     "components/ConnectRuntime.coffee",
     "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",
