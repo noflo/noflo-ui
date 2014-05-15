@@ -5,7 +5,7 @@ html /deep/ h3 {
   font-weight: normal;
 }
 
-the-panel {
+html /deep/ the-panel {
   background-color: hsla(0, 0%, 0%, 0.98) !important;
   z-index: 3;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
@@ -13,11 +13,11 @@ the-panel {
   border: 0px solid hsla(190, 90%, 80%, 0.3);
   box-sizing: border-box;
 }
-the-panel#account {
+html /deep/ the-panel#account {
   top: 0px;
   border-right-width: 1px;
 }
-the-panel#account:before {
+html /deep/ the-panel#account:before {
   font-family: FontAwesome;
   content: '\f03a';
   color: hsl(189, 50%, 80%);
@@ -31,17 +31,17 @@ the-panel#account:before {
   opacity: 0.25;
   transition: opacity 0.3s ease-in-out;
 }
-the-panel#account:not([open]):before {
+html /deep/ the-panel#account:not([open]):before {
   cursor: e-resize;
   opacity: 1;
 }
-the-panel#account ::shadow header,
-the-panel#account ::shadow main {
+html /deep/ the-panel#account header,
+html /deep/ the-panel#account main {
   display: block;
   margin-left: 36px;
   margin-right: 36px;
 }
-the-panel#account ::shadow header h1 {
+html /deep/ the-panel#account header h1 {
   text-align: center;
   border-bottom: 1px solid hsl(189, 50%, 80%);
   height: 36px;
@@ -49,22 +49,22 @@ the-panel#account ::shadow header h1 {
   font-size: 17px;
   white-space: nowrap;
 }
-the-panel#account ::shadow main ul {
+html /deep/ the-panel#account main ul {
   margin: 0px;
   padding: 0px;
   list-style: none;
 }
-the-panel#account ::shadow main ul li {
+html /deep/ the-panel#account main ul li {
   line-height: 36px;
   min-height: 36px;
 }
-the-panel#account ::shadow main ul li a {
+html /deep/ the-panel#account main ul li a {
   color: white;
   text-decoration: none;
   display: block;
   cursor: pointer;
 }
-the-panel#account ::shadow main ul li a i {
+html /deep/ the-panel#account main ul li a i {
   float: right;
   line-height: 36px;
   color: hsl(189, 50%, 80%);
@@ -73,14 +73,14 @@ the-panel#account ::shadow main ul li a i {
 
 
 
-the-panel#fixed {
+html /deep/ the-panel#fixed {
   padding-left: 36px;
   padding-top: 72px;
   top: 0px;
   z-index: 2;
   border-left-width: 1px;
 }
-the-panel#fixed:before {
+html /deep/ the-panel#fixed:before {
   font-family: FontAwesome;
   content: '\f06e';
   color: hsl(189, 50%, 80%);
@@ -94,11 +94,11 @@ the-panel#fixed:before {
   opacity: 0.25;
   transition: opacity 0.3s ease-in-out;
 }
-the-panel#fixed:not([open]):before {
+html /deep/ the-panel#fixed:not([open]):before {
   opacity: 1;
   cursor: w-resize;
 }
-the-panel#fixed ::shadow footer {
+html /deep/ the-panel#fixed ::shadow footer {
   position: absolute;
   bottom: 0px;
   right: 0px;
@@ -120,13 +120,13 @@ the-card ::shadow .the-card-content {
   position: relative;
 }
 
-the-card[type="noflo-runtime-preview"] {
+html /deep/ the-card[type="noflo-runtime-preview"] {
   padding: 0px;
   width: calc(72px * 4);
   overflow: hidden;
 }
 
-the-card.maximized {
+html /deep/ the-card.maximized {
   background-color: hsla(0, 0%, 0%, 0.99);
   width: calc(100% - 70px);
   height: calc(100% - 36px);
@@ -140,23 +140,23 @@ the-card.maximized {
   z-index: 3;
   border: none;
 }
-the-card.maximized ::shadow .the-card-content {
+html /deep/ the-card.maximized ::shadow .the-card-content {
   width: 100%;
   height: 100%;
   max-height: none;
 }
-the-card-stack  ::shadow .sticky-head {
+html /deep/ the-card-stack  ::shadow .sticky-head {
   background-color: hsla(0, 0%, 5%, 0.99) !important;
   background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
   background-size: calc(100% - 1px) 100%;
   background-position: 0px;
 }
 
-the-card-stack ::shadow .sticky-head h1 {
+html /deep/ the-card-stack ::shadow .sticky-head h1 {
   font-size:15px;
 }
 
-the-card ::shadow button {
+html /deep/ the-card ::shadow button {
   width: 36px;
   height: 36px;
   font-size: 10px;
@@ -166,7 +166,7 @@ the-card ::shadow button {
   text-align: center;
 }
 
-the-card ::shadow h1 {
+html /deep/ the-card ::shadow h1 {
   font-size: 12px;
   line-height: 36px;
   margin: 0px;
@@ -175,7 +175,7 @@ the-card ::shadow h1 {
   text-align: left;
 }
 
-the-card ::shadow header h1 {
+html /deep/ the-card ::shadow header h1 {
   display: block;
   position: absolute;
   top: 10px;
@@ -186,10 +186,10 @@ the-card ::shadow header h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-the-card ::shadow header h1.clear {
+html /deep/ the-card ::shadow header h1.clear {
   cursor: pointer;
 }
-the-card ::shadow header h2 {
+html /deep/ the-card ::shadow header h2 {
   line-height: 36px;
   width: 72px;
   height: 36px;
@@ -206,35 +206,35 @@ the-card ::shadow header h2 {
   display: block;
   cursor: default;
 }
-the-card ::shadow header {
+html /deep/ the-card ::shadow header {
   height: 36px;
 }
 
-the-card ::shadow ul {
+html /deep/ the-card ::shadow ul {
   margin: 0px;
   padding: 0px;
   list-style: none;
 }
 
-the-card ::shadow textarea {
+html /deep/ the-card ::shadow textarea {
   width: 100%;
   min-height: 100px;
   max-height: calc(72px * 4);
 }
 
-the-card ::shadow ul li {
+html /deep/ the-card ::shadow ul li {
   display: block;
   padding: 0px;
   margin: 0px;
 }
-the-card ::shadow ul.toolbar2right {
+html /deep/ the-card ::shadow ul.toolbar2right {
   width: 180px;
   display:block;
   position: absolute;
   right: 10px;
   top: 10px;
 }
-the-card ::shadow ul.toolbar li {
+html /deep/ the-card ::shadow ul.toolbar li {
   float: left;
   display: block;
   width: calc(100%/2);  
@@ -243,10 +243,10 @@ the-card ::shadow ul.toolbar li {
   margin: 0px;
   margin-right: 0px;
 }
-the-card ::shadow ul.toolbar li * {
+html /deep/ the-card ::shadow ul.toolbar li * {
   line-height: 36px;
 }
-the-card ::shadow ul.toolbar li button {
+html /deep/ the-card ::shadow ul.toolbar li button {
   width:100%;
   height:100%;
 }
@@ -262,15 +262,15 @@ html /deep/ .blue-button {
 
 
 
-the-card ::shadow ul li h2 {
+html /deep/ the-card ::shadow ul li h2 {
   font-size: 10px;
   margin: 0px;
 }
-the-card ::shadow ul li i {
+html /deep/ the-card ::shadow ul li i {
   /*display: none !important;*/
   margin-right: 5px;
 }
-the-card ::shadow ul li p {
+html /deep/ the-card ::shadow ul li p {
   margin: 0px;
   margin-top: 10px;
   padding: 0px;

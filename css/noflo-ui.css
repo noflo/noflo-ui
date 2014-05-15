@@ -273,6 +273,10 @@ the-graph-nav {
   bottom: 36px !important;
 }
 
+the-graph-editor {
+  position: fixed;
+}
+
 
 
 
