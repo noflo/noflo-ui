@@ -61,10 +61,6 @@ button {
   border: 0;
 }
 
-input:focus, select:focus, textarea:focus, button:focus, h1, h2, h3, div, a, p, div {
-  outline:none;
-}
-
 /* Wat... can't change input selection colors in Chrome?
 *::selection {
   background-color: black;

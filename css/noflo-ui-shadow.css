@@ -1,9 +1,23 @@
-h1, h2, h3,
 html /deep/ h1,
 html /deep/ h2, 
 html /deep/ h3 {
   font-weight: normal;
 }
+
+html /deep/ input:focus, 
+html /deep/ select:focus, 
+html /deep/ textarea:focus, 
+html /deep/ button:focus, 
+html /deep/ h1, 
+html /deep/ h2, 
+html /deep/ h3, 
+html /deep/ div, 
+html /deep/ a, 
+html /deep/ p, 
+html /deep/ div {
+  outline:none;
+}
+
 
 html /deep/ the-panel {
   background-color: hsla(0, 0%, 0%, 0.98) !important;
@@ -104,10 +118,6 @@ html /deep/ the-panel#fixed ::shadow footer {
   right: 0px;
 }
 
-/*html /deep/ the-card {
-  position: relative;
-}
-*/
 html /deep/ the-card .the-card-content {
   display: block;
   margin: 0px;
@@ -265,13 +275,12 @@ html /deep/ .blue-button {
 }
 
 
-
+/*
 html /deep/ the-card ::shadow ul li h2 {
   font-size: 10px;
   margin: 0px;
 }
 html /deep/ the-card ::shadow ul li i {
-  /*display: none !important;*/
   margin-right: 5px;
 }
 html /deep/ the-card ::shadow ul li p {
@@ -280,7 +289,7 @@ html /deep/ the-card ::shadow ul li p {
   padding: 0px;
   font-size: 8px;
 }
-
+*/
 
 
 html /deep/ .modal-content {
