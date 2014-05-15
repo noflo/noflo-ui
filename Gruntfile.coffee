@@ -167,7 +167,7 @@ module.exports = ->
           flatten: true
           dest: '/'
         ,
-          src: ['app.js']
+          src: ['index.js']
           expand: true
           dest: '/'
         ,
