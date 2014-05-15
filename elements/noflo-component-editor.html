@@ -44,6 +44,9 @@
         text-align: right;
       }
     </style>
+    <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
+    <link rel="stylesheet" href="../css/codemirror-noflo.css">
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>
@@ -86,9 +89,6 @@ exports.getComponent = function () {
   <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
   <script src="../bower_components/codemirror/mode/coffeescript/coffeescript.js"></script>
   <script src="../bower_components/codemirror/mode/clike/clike.js"></script>
-  <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
-  <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
-  <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <script>
     Polymer('noflo-component-editor', {
       component: null,
