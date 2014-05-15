@@ -361,6 +361,6 @@ html /deep/ .modal-content /deep/ .toolbar a {
   cursor: pointer;
 }
 
-polymer-element.modal-content {
+html polymer-element.modal-content {
   display: none;
 }
