@@ -288,7 +288,7 @@
 
     </style>
     <header>
-      <h1 on-keydown="{{ checkUpdateLabel }}" on-input="{{ updateLabel }}" contenteditable>{{ label }}</h1>
+      <h1 on-keydown="{{ checkUpdateLabel }}" on-blur="{{ updateLabel }}" contenteditable>{{ label }}</h1>
       <template if="{{ node.label != node.component }}">
         <h2>{{ node.component }}</h2>
       </template>
