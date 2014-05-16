@@ -33,7 +33,8 @@
     "alfa256/noflo-prompts": "*",
     "noflo/noflo-image": "*",
     "forresto/noflo-ccv": "*",
-    "noflo/noflo-canvas": "*"
+    "noflo/noflo-canvas": "*",
+    "noflo/noflo-adapters": "*"
   },
   "json": [
     "component.json"
