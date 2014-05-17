@@ -227,8 +227,6 @@
         this.edges.splice(0, this.edges.length);
       },
       group: function (graph, itemKey, item) {
-        event.preventDefault();
-
         if (typeof ga === 'function') {
           ga('send', 'event', 'menu', 'click', 'createGroup');
         }
@@ -256,7 +254,6 @@
         document.body.appendChild(dialog);
       },
       subgraph: function (currentGraph, itemKey, item) {
-        event.preventDefault();
         if (!this.project) {
           return;
         }

@@ -287,9 +287,8 @@
       }
 
     </style>
-    <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
     <header>
-      <h1 on-keyup="{{ updateLabel }}" contenteditable>{{ label }}</h1>
+      <h1 on-keydown="{{ checkUpdateLabel }}" on-blur="{{ updateLabel }}" contenteditable>{{ label }}</h1>
       <template if="{{ node.label != node.component }}">
         <h2>{{ node.component }}</h2>
       </template>
@@ -337,6 +336,12 @@
       enteredView: function () {
         this.updatePorts();
         this.label = this.node.metadata.label;
+      },
+      checkUpdateLabel: function (event, detail, sender) {
+        if (event.keyCode===13) { // Enter
+          event.preventDefault();
+          this.updateLabel(event, detail, sender);
+        }
       },
       updateLabel: function (event, detail, sender) {
         this.graph.setNodeMetadata(this.node.id, {

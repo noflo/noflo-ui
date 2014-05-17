@@ -1,9 +1,8 @@
 <link rel="import" href="noflo-type-selector.html">
+<script src="../bower_components/codemirror/lib/codemirror.js"></script>
+<script src="../bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+
 <polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content">
-  <script src="../bower_components/codemirror/lib/codemirror.js"></script>
-  <script src="../bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-  <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
-  <link rel="stylesheet" href="../css/codemirror-noflo.css">
   <template>
     <style>
       :host {
@@ -34,8 +33,11 @@
         color: white;
       }
     </style>
-    <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.min.css">
-    <h1 on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
+    <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
+    <link rel="stylesheet" href="../css/codemirror-noflo.css">
+
+    <h1 on-keydown="{{ checkUpdateName }}" on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
     <template if="{{ downloadUrl }}">
       <a href="{{ downloadUrl }}" id="download" download="{{ graph.properties.id }}.json"><i class="fa fa-download"></i></a>
     </template>
@@ -80,6 +82,12 @@
       isMain: false,
       inGraph: [],
       downloadUrl: '',
+      checkUpdateName: function (event, detail, sender) {
+        if (event.keyCode===13) { // Enter
+          event.preventDefault();
+          this.updateName(event, detail, sender);
+        }
+      },
       updateName: function (event, detail, sender) {
         this.graph.name = sender.textContent;
       },

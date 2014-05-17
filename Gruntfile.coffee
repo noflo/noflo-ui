@@ -75,7 +75,7 @@ module.exports = ->
         files:
           './dev.html': './index.dist.html'
           './index.html': './index.html'
-          './app.js': './app.js'
+          './index.js': './index.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
           './manifest.webapp': './manifest.dist.webapp'
@@ -167,7 +167,7 @@ module.exports = ->
           flatten: true
           dest: '/'
         ,
-          src: ['app.js']
+          src: ['index.js']
           expand: true
           dest: '/'
         ,
@@ -275,7 +275,7 @@ module.exports = ->
           urls: ['http://127.0.0.1:9999/spec/runner.html']
           browsers: [
             browserName: 'googlechrome'
-            version: '34'
+            version: 'beta'
           ,
             browserName: 'safari'
             platform: 'OS X 10.8'
