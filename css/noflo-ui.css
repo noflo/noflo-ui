@@ -265,6 +265,10 @@ polymer-element.modal-content {
   height: 300px;
 }
 
+#container > .preview-container {
+  display: none;
+}
+
 #zoomrange {
   display: none;
 }
