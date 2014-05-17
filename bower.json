@@ -17,19 +17,15 @@
     "spec"
   ],
   "dependencies": {
-    "the-graph": "polymer023",
+    "the-graph": "*",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.0.3",
     "codemirror": "~3.22.0",
     "coffee-script": "~1.6.3",
-    "polymer": "0.2.3"
+    "polymer": "~0.2.3"
   },
   "devDependencies": {
     "syn": "~0.0.2"
-  },
-  "resolutions": {
-    "polymer": "0.2.3",
-    "platform": "0.2.3"
   }
 }
