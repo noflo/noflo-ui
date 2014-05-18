@@ -157,10 +157,10 @@ exports.getComponent = function () {
       },
       getExampleCode: function () {
         if (this.component.language === 'coffeescript') {
-          return this.$.CoffeeScriptExample.innerText.trim();
+          return this.$.CoffeeScriptExample.textContent.trim();
         }
         if (this.component.language === 'javascript') {
-          return this.$.JavaScriptExample.innerText.trim();
+          return this.$.JavaScriptExample.textContent.trim();
         }
       },
       themeChanged: function () {

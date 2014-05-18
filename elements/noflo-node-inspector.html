@@ -345,7 +345,7 @@
       },
       updateLabel: function (event, detail, sender) {
         this.graph.setNodeMetadata(this.node.id, {
-          label: sender.innerText
+          label: sender.textContent
         });
       },
       getPortValue: function (port) {
