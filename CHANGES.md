@@ -1,10 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.5 (git master)
+## 0.1.6 (git master)
+
+## 0.1.5 (2014 May 17)
 
 * Added support for [viewing component source code](https://github.com/noflo/noflo-ui/issues/223) for library components. Requires runtime-level support
 * Support for Chrome 35+ (native custom elements) and Polymer 0.2.3 
+* Pinch zoom gesture via Hammer.js 
 
 ## 0.1.4 (2014 May 9)
 
