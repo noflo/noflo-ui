@@ -195,6 +195,7 @@ class ConnectRuntime extends noflo.Component
         required: port.required
         description: port.description
         addressable: port.addressable
+        values: port.values
     for port in message.payload.outPorts
       definition.outports.push
         name: port.id

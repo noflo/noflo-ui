@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 ## 0.1.6 (git master)
 
+* Node inspector renders a `<select>` dropdown for ports with `values` set
+
 ## 0.1.5 (2014 May 17)
 
 * Added support for [viewing component source code](https://github.com/noflo/noflo-ui/issues/223) for library components. Requires runtime-level support

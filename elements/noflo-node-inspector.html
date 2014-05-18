@@ -123,6 +123,13 @@
         border-left: 1px solid hsla( 0, 0%, 75%, 0.1);
       }
 
+      ul.ports li select {
+        height: 18px;
+        margin-top: 9px;
+        margin-left: 36px;
+        max-width: 110px;
+      }
+
       ul.ports li  input, 
       ul.ports li  button  { 
         background-color: hsla(  0,  0%, 30%, 0.35); 
@@ -304,11 +311,18 @@
             <template if="{{ port.type == 'boolean' }}">
               <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
             </template>
-            <template if="{{ port.type == 'int' }}">
+            <template if="{{ port.values }}">
+              <select name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" value="{{ port.value }}">
+                <template repeat="{{ value in port.values }}">
+                  <option value="[[value]]" selected?="{{ port.value == value }}" >[[value]]</option>
+                </template>
+              </select>
+            </template>
+            <template if="{{ port.type == 'int' && !port.values }}">
               <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}">
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' }}">
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && !port.values }}">
               <template if="{{ port.inputType == 'number' }}">
                 <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="0.01" data-type="{{ port.type }}" on-changed="{{updateValue}}">#</number-scrubber>
               </template>
@@ -389,6 +403,7 @@
           description: port.description,
           inputType: port.type,
           value: value,
+          values: port.values,
           route: connection.route
         };
         switch (port.type) {
