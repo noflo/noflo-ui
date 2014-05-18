@@ -6,19 +6,34 @@
       graphs: [],
       project: null,
       addNode: function (component) {
+        var componentName = component.name;
         var num = 60466176; // 36^5
         num = Math.floor(Math.random() * num);
-        var id = component + '_' + num.toString(36);
+        var id = componentName + '_' + num.toString(36);
 
         // TODO fix with pan
         var pan = this.editor.$.graph.getPan();
         var scale = this.editor.$.graph.getScale();
 
-        this.editor.graph.addNode(id, component, {
-          label: component,
+        var graph = this.editor.graph;
+
+        graph.startTransaction('addnode');
+
+        graph.addNode(id, componentName, {
+          label: componentName,
           x: (-pan[0] + 334) / scale,
           y: (-pan[1] + 100) / scale
         });
+
+        // Add IIPs for default values
+        component.inports.forEach( function (port) {
+          var value = port.default;
+          if (value !== undefined) {
+            graph.addInitial(value, id, port.name);
+          }
+        });
+
+        graph.endTransaction('addnode');
       },
       searchChanged: function () {
         if (!this.search) {
@@ -55,7 +70,7 @@
             icon: component.icon || 'cog',
             description: component.description,
             action: function () {
-              this.addNode(component.name);
+              this.addNode(component);
             }.bind(this)
           });
         }.bind(this));
