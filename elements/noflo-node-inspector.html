@@ -313,6 +313,7 @@
             </template>
             <template if="{{ port.values }}">
               <select name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" value="{{ port.value }}">
+                <option></option>
                 <template repeat="{{ value in port.values }}">
                   <option value="[[value]]" selected?="{{ port.value == value }}" >[[value]]</option>
                 </template>
