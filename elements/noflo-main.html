@@ -518,7 +518,7 @@
         this.fire('runtimes', this.userRuntimes);
       },
       createdproject: function (project) {
-        window.location.hash = '#project/' + project.id + '/' + project.main;
+        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + project.main;
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
@@ -534,7 +534,7 @@
         if (!project) {
           return;
         }
-        window.location.hash = '#project/' + project.id + '/' + project.main;
+        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + project.main;
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
