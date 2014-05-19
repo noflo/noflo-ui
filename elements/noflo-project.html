@@ -225,9 +225,7 @@
       },
       runtimeChanged: function () {
         if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
-          if (this.runtime.definition.capabilities.indexOf('component:setsource') === -1) {
-            this.canComponent = false;
-          }
+          this.canComponent = (this.runtime.definition.capabilities.indexOf('component:setsource') !== -1);
         }
       },
       newGraph: function (event) {
