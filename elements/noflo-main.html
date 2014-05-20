@@ -280,7 +280,7 @@
       ],
       registry: null,
       help: null,
-      enteredView: function () {
+      attached: function () {
         this.openChanged();
         this.$.mainaccount.addEventListener('githubtoken', function (event) {
           if (typeof event.detail !== 'string') {

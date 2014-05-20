@@ -52,7 +52,7 @@
       visible: false,
       headline: '',
       text: '',
-      enteredView: function () {
+      attached: function () {
         this.visibleChanged();
         this.addEventListener('click', function (event) {
           if (unwrap(event).target.tagName === 'A') {

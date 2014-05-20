@@ -74,7 +74,7 @@
       runtime: null,
       returnTo: null,
       maximized: false,
-      enteredView: function () {
+      attached: function () {
       },
       button: function (event, data, sender) {
         event.preventDefault();
@@ -101,7 +101,7 @@
         // Capture runtime container to here
         this.$.preview.appendChild(this.runtime.getElement());
       },
-      leftView: function () {
+      detached: function () {
         if (!this.runtime || !this.returnTo) {
           return;
         }

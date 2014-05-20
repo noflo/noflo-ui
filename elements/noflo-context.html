@@ -41,7 +41,7 @@
       runtimes: [],
       component: '',
       help: null,
-      enteredView: function () {
+      attached: function () {
         this.contextBar = this.$.context;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {

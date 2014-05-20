@@ -223,7 +223,7 @@
           }
         }.bind(this));
       },
-      enteredView: function () {
+      attached: function () {
         this.observer = new ArrayObserver(this.results);
         this.observer.open(this.resultsModified.bind(this));
         this.blur();

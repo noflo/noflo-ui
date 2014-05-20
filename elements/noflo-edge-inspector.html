@@ -100,7 +100,7 @@
       targetPort: '',
       route: 0,
       frameReq: null,
-      leftView: function () {
+      detached: function () {
         if (this.frameReq) {
           window.cancelAnimationFrame(this.frameReq);
         }

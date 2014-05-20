@@ -91,7 +91,7 @@
       updateName: function (event, detail, sender) {
         this.graph.name = sender.textContent;
       },
-      enteredView: function () {
+      attached: function () {
         document.getElementById('container').classList.add('blur');
         if (!this.graph) {
           return;
@@ -130,7 +130,7 @@
           return;
         }
       },
-      leftView: function () {
+      detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
       typeChanged: function () {

@@ -39,12 +39,12 @@
       nodes: [],
       group: '',
       groupdescription: '',
-      enteredView: function () {
+      attached: function () {
         document.getElementById('container').classList.add('blur');
         this.name =  this.group;
         this.description =  this.groupdescription;
       },
-      leftView: function () {
+      detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
       send: function (event) {

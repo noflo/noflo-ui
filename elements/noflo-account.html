@@ -249,7 +249,7 @@
         getLoginUrl: function () {
           return this.site + '/login/authorize/github_public?client_id=' + this.clientid  + '&scope=github&response_type=code&redirect_uri=' + encodeURIComponent(this.redirect);
         },
-        enteredView: function () {
+        attached: function () {
           this.redirect = window.location.href;
           this.help = document.querySelector('noflo-help');
           this.checkLogin();

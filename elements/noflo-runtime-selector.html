@@ -83,7 +83,7 @@
   <script>
     Polymer('noflo-runtime-selector', {
       available: [],
-      enteredView: function () {
+      attached: function () {
         document.getElementById('container').classList.add('blur');
         this.runtimes.forEach(function (rt) {
           if ((rt.type == this.graph.properties.environment.type || this.graph.properties.environment.type === 'all' )&& this.available.indexOf(rt) === -1) {
@@ -91,7 +91,7 @@
           }
         }.bind(this));
       },
-      leftView: function () {
+      detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
       selectRuntime: function (event, details, sender) {

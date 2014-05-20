@@ -26,10 +26,10 @@
   </template>
   <script>
     Polymer('noflo-new-runtime', {
-      enteredView: function () {
+      attached: function () {
         document.getElementById('container').classList.add('blur');
       },
-      leftView: function () {
+      detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
       close: function () {

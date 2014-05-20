@@ -19,11 +19,11 @@
       publicport: '',
       privateport: null,
       graph: null,
-      enteredView: function () {
+      attached: function () {
         document.getElementById('container').classList.add('blur');
         this.name =  this.publicport;
       },
-      leftView: function () {
+      detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
       nameChanged: function () {
