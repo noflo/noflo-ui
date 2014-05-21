@@ -81,11 +81,12 @@
       #breadcrumb i.fa-search {
         position: absolute;
         line-height: 72px;
-        right: 72px;
+        right: 54px;
         font-size: 15px;
         color: hsl(189, 50%, 80%);
         cursor: text;
       }
+      #clear,
       #breadcrumb #graphinspector,
       #breadcrumb #readonly {
         position: absolute;
@@ -96,6 +97,9 @@
         height: 72px;
         font-size: 15px;
         color: hsl(189, 50%, 80%);
+      }
+      #clear {
+        color: hsl(189, 50%, 50%);
       }
       #breadcrumb h1 {
         display: inline-block;
@@ -122,9 +126,9 @@
         font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         border: none;
         padding: 0px;
-        padding-right: 18px;
+        padding-right: 54px;
         padding-left: 18px;
-        width: calc(72px * 4 - 36px);
+        width: calc(72px * 4 - 72px);
         height: 72px;
         /*box-sizing: border-box;*/
         font-size: 12px;
@@ -142,6 +146,7 @@
       #search #speech {
         color: hsl(190, 90%, 45%);
       }
+
     </style>
     <div id="breadcrumb" on-click="{{ focus }}">
       <template if="{{ !component || !component.name }}">
@@ -165,13 +170,14 @@
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
-    <input id="search" value="{{ search }}" type="text" on-blur="{{ checkField }}" placeholder="Search" autocapitalize="off" autocorrect="off" x-webkit-speech>
+    <input id="search" value="{{ search }}" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" x-webkit-speech>
+    <button id="clear" on-click="{{ clearSearch }}"><i class="fa fa-times"></i></button>
   </template>
   <script>
     Polymer('noflo-search', {
       menuCard: null,
       resultsCard: null,
-      results: [],
+      searchResults: [],
       search: null,
       parentPath: '',
       graph: null,
@@ -223,8 +229,11 @@
           }
         }.bind(this));
       },
+      results: function (result) {
+        this.searchResults.push(result);
+      },
       attached: function () {
-        this.observer = new ArrayObserver(this.results);
+        this.observer = new ArrayObserver(this.searchResults);
         this.observer.open(this.resultsModified.bind(this));
         this.blur();
       },
@@ -234,12 +243,15 @@
         }
         this.classList.remove('overlay');
         this.$.search.focus();
-        this.search = '';
+        if (this.search === null) {
+          // Show all
+          this.search = '';
+        }
+        this.searchChanged();
       },
       blur: function () {
         this.clearResults();
         this.classList.add('overlay');
-        this.search = null;
       },
       toggle: function () {
         if (this.classList.contains('overlay')) {
@@ -249,20 +261,17 @@
         this.blur();
       },
       clearResults: function () {
-        while (this.results.length) {
-          this.results.pop();
+        while (this.searchResults.length) {
+          this.searchResults.pop();
         }
       },
-      checkField: function (event) {
-        event.preventDefault();
-        if (this.search === '') {
-          if (this.resultsCard) {
-            this.resultsCard.parentNode.removeChild(this.resultsCard);
-            this.resultsCard = null;
-          }
-          this.blur();
-          return;
+      clearSearch: function () {
+        if (this.resultsCard) {
+          this.resultsCard.parentNode.removeChild(this.resultsCard);
+          this.resultsCard = null;
         }
+        this.search = null;
+        this.blur();
       },
       searchChanged: function () {
         this.clearResults();
@@ -282,7 +291,7 @@
         if (this.resultsCard || this.search === null) {
           return;
         }
-        if (this.results.length === 0) {
+        if (this.searchResults.length === 0) {
           if (this.resultsCard) {
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
@@ -290,7 +299,7 @@
           return;
         }
         var results = document.createElement('noflo-search-results');
-        results.results = this.results;
+        results.results = this.searchResults;
         results.search = this.search;
         results.addEventListener('resultclick', function () {
           this.blur();
