@@ -259,7 +259,7 @@ module.exports = ->
     watch:
       preview:
         files: 'preview/components/*/*/*.coffee'
-        tasks: ['exec:preview_build']
+        tasks: ['noflo_browser:preview']
         options:
           livereload: false
 
