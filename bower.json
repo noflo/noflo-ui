@@ -23,7 +23,7 @@
     "font-awesome": "~4.0.3",
     "codemirror": "~3.22.0",
     "coffee-script": "~1.6.3",
-    "polymer": "~0.2.3"
+    "polymer": "Polymer/polymer#0.2.4"
   },
   "devDependencies": {
     "syn": "~0.0.2"
