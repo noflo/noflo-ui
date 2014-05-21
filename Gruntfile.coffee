@@ -154,7 +154,7 @@ module.exports = ->
             'bower_components/polymer/*.js'
             'bower_components/polymer-gestures/polymer-gestures.html'
             'bower_components/polymer-gestures/src/*.js'
-            'bower_components/hammer.js/hammer.js'
+            'bower_components/hammerjs/hammer.js'
             'bower_components/react/*.js'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
