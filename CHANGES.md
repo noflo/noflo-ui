@@ -1,7 +1,9 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.6 (git master)
+## 0.1.7 (git master)
+
+## 0.1.6 (2014 May 20)
 
 * Node inspector renders a `<select>` dropdown for ports with `values` set
 * Number scrubber fixes
