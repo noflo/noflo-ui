@@ -5,6 +5,9 @@ NoFlo UI ChangeLog
 
 * Node inspector renders a `<select>` dropdown for ports with `values` set
 * Number scrubber fixes
+* Changing label now changes node id #214
+* Changes to search UX #238
+* Polymer 0.2.4
 
 ## 0.1.5 (2014 May 17)
 
