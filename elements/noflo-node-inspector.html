@@ -370,9 +370,30 @@
         }
       },
       updateLabel: function (event, detail, sender) {
+        // Check if we need to make change
+        var label = sender.textContent;
+        if (label === this.node.metadata.label) {
+          return;
+        }
+        // Change label
+        this.graph.startTransaction('rename');
         this.graph.setNodeMetadata(this.node.id, {
-          label: sender.textContent
+          label: label
         });
+        // Change id
+        var id = label;
+        if (id !== this.node.id) {
+          // Ensure unique
+          while (this.graph.getNode(id)) {
+            var num = 60466176; // 36^5
+            num = Math.floor(Math.random() * num);
+            id = label + '_' + num.toString(36);
+          }
+          this.graph.renameNode(this.node.id, id);
+        }
+        this.graph.endTransaction('rename');
+
+        console.log(this.graph.toJSON());
       },
       getPortValue: function (port) {
         var value;
