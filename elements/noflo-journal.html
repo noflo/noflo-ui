@@ -77,6 +77,7 @@
       canRedo: false,
       attached: function () {
         this.klay = true;
+        console.log(this.klay);
       },
       graphChanged: function () {
         this.checkState();
@@ -129,12 +130,13 @@
         this.checkState();
       },
       autolayout: function (event, data, sender) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         if (!this.graph || !this.klay) {
           return;
         }
-        var graph = document.getElementById("graph");
-        graph.triggerAutolayout();
+        this.editor.triggerAutolayout();
       },
       hidenavChanged: function () {
         if (this.hidenav) {
