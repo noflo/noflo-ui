@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.7 (git master)
+## 0.1.8 (master)
+
+## 0.1.7 (2014 May 23)
+
+* Autolayout fix
 
 ## 0.1.6 (2014 May 20)
 
