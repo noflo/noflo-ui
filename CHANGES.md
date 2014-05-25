@@ -3,6 +3,9 @@ NoFlo UI ChangeLog
 
 ## 0.1.8 (master)
 
+* Disable git upload button until you type a commit message
+* z-index layering refactor and pixel tweaks
+
 ## 0.1.7 (2014 May 23)
 
 * Autolayout fix

@@ -58,20 +58,18 @@
     <a id="bugreport" href="https://github.com/noflo/noflo-ui/issues" title="Report a bug" target="_blank"><i class="fa fa-bug"></i></a>
     <a id="openhelp" href="http://flowhub.io/documentation" title="Help" target="_blank"><i class="fa fa-question"></i></a>
     <noflo-help></noflo-help>
-    <div id="container">
+    <main id="container">
       <noflo-main></noflo-main>
-      <noflo-context></noflo-context>
-      <noflo-runtime></noflo-runtime>
+      <the-graph-editor></the-graph-editor>
       <noflo-search></noflo-search>
       <noflo-library></noflo-library>
+      <noflo-context></noflo-context>
+      <noflo-runtime></noflo-runtime>
+      <noflo-journal></noflo-journal>
+      <noflo-component-editor></noflo-component-editor>
       <noflo-project></noflo-project>
       <noflo-packets></noflo-packets>
-      <noflo-journal></noflo-journal>
-      <main id="workspace">
-        <noflo-component-editor></noflo-component-editor>
-        <the-graph-editor></the-graph-editor>
-      </main>
-    </div>
+    </main>
     <script type="application/fbp" id="PrepareStorage">
       INPORT=Open.NAME:NAME
       OUTPORT=Errors.OUT:ERROR
