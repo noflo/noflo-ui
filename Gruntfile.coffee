@@ -87,6 +87,9 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_GATE/ig
             replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com/'
           ,
+            pattern: /\$NOFLO_REGISTRY_SERVICE/ig
+            replacement: process.env.NOFLO_REGISTRY_SERVICE or 'https://api.flowhub.io'
+          ,
             pattern: /\$NOFLO_APP_NAME/ig
             replacement: process.env.NOFLO_APP_NAME or process.env.NOFLO_APP_TITLE or 'NoFlo UI'
           ,
