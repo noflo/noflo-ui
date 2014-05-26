@@ -14,6 +14,9 @@
         padding: 0px;
         margin: 0px;
       }
+      ul.graphs {
+        margin-bottom: 144px;
+      }
       ul.graphs li {
         width: 245px;
         height: 70px;
@@ -74,9 +77,11 @@
         white-space: nowrap;
       }
       main {
-        padding-bottom: 144px;
         overflow-y: auto;
-        max-height: calc(100% - 180px);
+        max-height: calc(100% - 72px);
+      }
+      main.repo {
+        max-height: calc(100% - 72px * 3);
       }
       main::-webkit-scrollbar {
         display: none;
@@ -102,11 +107,12 @@
         font-size: 17px;
         line-height: 36px;
         text-align: center;
+        margin: 0;
       }
       footer textarea {
         display: block;
         font-size: 13px;
-        background-color: rgba(0, 42, 51, 0.498039);
+        background-color: hsl(0, 0%, 10%);
         font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         color: white;
         border-radius: 3px;
@@ -135,6 +141,10 @@
         margin-left: auto;
         margin-right: auto;
         margin-top: 8px;
+        cursor: pointer;
+      }
+      footer button:disabled {
+        opacity: 0.5;
       }
     </style>
     <the-panel id="account" edge="left" size="324" handle="36" automatic="false">
@@ -146,7 +156,7 @@
         <h1>Sketch</h1>
         </template>
       </header>
-      <main>
+      <main class="{{ (project.repo ? 'repo' : 'norepo') }}">
         <ul>
           <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
           <template if="{{ project }}">
@@ -193,7 +203,8 @@
       <footer>
         <h1><i class="fa fa-github"></i> {{ project.repo }}</h1>
         <textarea placeholder="Commit message" value="{{ commitMessage }}"></textarea>
-        <button on-click="{{ upload }}"><i class="fa fa-cloud-upload"></i>
+        <button on-click="{{ upload }}" disabled?="{{commitMessage === ''}}" title="{{(commitMessage === '' ? 'needs commit message' : '')}}">
+          <i class="fa fa-cloud-upload"></i>
           <template if="{{ graph }}">
           Upload {{ graph.properties.name }}
           </template>

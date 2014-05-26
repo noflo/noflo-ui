@@ -21,7 +21,6 @@ html /deep/ div {
 
 html /deep/ the-panel {
   background-color: hsla(0, 0%, 0%, 0.98) !important;
-  z-index: 3;
   transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
   position: fixed;
   border: 0px solid hsla(190, 90%, 80%, 0.3);
@@ -91,7 +90,6 @@ html /deep/ the-panel#fixed {
   padding-left: 36px;
   padding-top: 72px;
   top: 0px;
-  z-index: 2;
   border-left-width: 1px;
 }
 html /deep/ the-panel#fixed:before {
