@@ -279,6 +279,7 @@
         'C++'
       ],
       registry: null,
+      registryUrl: 'https://api.flowhub.io',
       help: null,
       attached: function () {
         this.openChanged();
@@ -445,7 +446,9 @@
         }
         var button = this.$.fetchflowhub;
         button.classList.add('fa-spin');
-        this.registry.list(this.gridToken, function (err, runtimes) {
+        this.registry.list(this.gridToken, {
+          host: this.registryUrl
+        },function (err, runtimes) {
           button.classList.remove('fa-spin');
           if (err) {
             return;
@@ -513,6 +516,8 @@
           protocol: 'iframe',
           address: 'preview/iframe.html',
           type: 'noflo-browser'
+        }, {
+          host: this.registryUrl
         });
         this.userRuntimes.push(runtime.runtime);
         this.fire('runtimes', this.userRuntimes);
