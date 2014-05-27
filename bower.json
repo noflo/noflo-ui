@@ -22,10 +22,9 @@
     "the-card": "*",
     "font-awesome": "~4.1.0",
     "codemirror": "~3.22.0",
-    "coffee-script": "https://raw.github.com/jashkenas/coffee-script/1.6.2/extras/coffee-script.js",
+    "coffee-script": "*",
     "polymer": "Polymer/polymer#0.2.4",
-    "requirejs": "~2.1.11",
-    "require-cs": "~0.4.4"
+    "requirejs": "~2.1.11"
   },
   "devDependencies": {
     "syn": "~0.0.2"
