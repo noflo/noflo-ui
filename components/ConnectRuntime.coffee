@@ -73,7 +73,7 @@ class ConnectRuntime extends noflo.Component
       id: graph.properties.id
       name: graph.name
       library: graph.properties.project
-      main: (@project and graph.properties.id is @project.main)
+      main: ((@project and graph.properties.id is @project.main) or graph is @example)
     for node in graph.nodes
       runtime.sendGraph 'addnode',
         id: node.id
