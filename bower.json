@@ -22,7 +22,7 @@
     "the-card": "*",
     "font-awesome": "~4.1.0",
     "codemirror": "~3.22.0",
-    "coffee-script": "~1.6.3",
+    "coffee-script": "*",
     "polymer": "Polymer/polymer#0.2.4",
     "requirejs": "~2.1.11"
   },

@@ -33,7 +33,9 @@
     "noflo/noflo-image": "*",
     "noflo/noflo-ccv": "*",
     "noflo/noflo-canvas": "*",
-    "noflo/noflo-adapters": "*"
+    "noflo/noflo-adapters": "*",
+    "noflo/noflo-amd": "*",
+    "noflo/noflo-react": "*"
   },
   "json": [
     "component.json"

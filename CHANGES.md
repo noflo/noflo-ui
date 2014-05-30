@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 ## 0.1.9 (master)
 
+* Added the `noflo-react` and `noflo-amd` components and the appropriate Require.js setup to the bundled HTML runtime
+
 ## 0.1.8 (2014 May 25)
 
 * Disable git upload button until you type a commit message

@@ -6,12 +6,24 @@
 
     <script src="./browser/noflo-ui-preview.js"></script>
     <script src="./browser/noflo-noflo-runtime-iframe/runtime/network.js"></script>
+    <script src="../bower_components/coffee-script/extras/coffee-script.js"></script>
     <script>
       window.NofloIframeRuntime({
         baseDir: 'noflo-ui-preview'
       });
     </script>
-    <script src="../bower_components/coffee-script/extras/coffee-script.js"></script>
+    <script src="../bower_components/requirejs/require.js"></script>
+    <script>
+      requirejs.config({
+        packages: [
+          {
+            name: 'React',
+            location: '../bower_components/react',
+            main: 'react'
+          }
+        ]
+      });
+    </script>
     <style>
       body {
         padding: 0px;
