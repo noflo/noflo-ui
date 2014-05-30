@@ -108,6 +108,10 @@
         line-height: 36px;
         text-align: center;
         margin: 0;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       footer textarea {
         display: block;
@@ -201,7 +205,7 @@
       </main>
       <template if="{{ project.repo && githubtoken}}">
       <footer>
-        <h1><i class="fa fa-github"></i> {{ project.repo }}</h1>
+        <h1 title="{{ project.repo }}"><i class="fa fa-github"></i> {{ project.repo }}</h1>
         <textarea placeholder="Commit message" value="{{ commitMessage }}"></textarea>
         <button on-click="{{ upload }}" disabled?="{{commitMessage === ''}}" title="{{(commitMessage === '' ? 'needs commit message' : '')}}">
           <i class="fa fa-cloud-upload"></i>
