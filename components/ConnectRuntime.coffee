@@ -66,7 +66,7 @@ class ConnectRuntime extends noflo.Component
       tests: component.tests
 
   sendGraph: (runtime, graph) ->
-    if graph.properties.environment.type
+    if graph.properties.environment?.type
       if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt @runtime.definition.type
         return
 
