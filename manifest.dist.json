@@ -20,6 +20,7 @@
     "https://secure.gravatar.com/",
     "storage",
     "unlimitedStorage",
+    "serial",
     "identity"
   ],
   "icons": {
