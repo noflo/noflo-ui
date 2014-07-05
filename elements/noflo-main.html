@@ -218,7 +218,7 @@
       <section id="runtimes">
         <h2>
           Runtimes <small>{{ userRuntimes.length }}</small>
-          <button on-click="{{ fetchFlowhub }}"><i id="fetchflowhub" class="fa fa-refresh"></i></button>
+          <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
         </h2>
         <ul class="projects">
           <li class="add">
@@ -306,7 +306,7 @@
           this.fire('user', this.user);
         }.bind(this));
         this.$.mainaccount.addEventListener('login', function (event) {
-          this.fetchFlowhub();
+          this.fetchRuntimes();
         }.bind(this));
         this.$.mainaccount.addEventListener('theme', function (event) {
           window.setTimeout(function () {
@@ -327,7 +327,7 @@
           // Make main visible
           this.style.height = '100%';
           // Update runtime registry every time we go to the main view
-          this.fetchFlowhub();
+          this.fetchRuntimes();
           return;
         }
         this.style.height = '0px';
@@ -433,13 +433,50 @@
         req.send(null);
       },
       runtimes: function (runtime) {
-        if (runtime.protocol === 'iframe') {
+        if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
           return;
         }
         if (this.userRuntimes.indexOf(runtime) === -1) {
           this.userRuntimes.push(runtime);
         }
         this.fire('runtimes', this.userRuntimes);
+      },
+      fetchRuntimes: function (event) {
+        this.fetchFlowhub();
+        this.fetchMicroFlo();
+      },
+      fetchMicroFlo: function (event) {
+        var microflo = require('microflo');
+        if (!microflo.serial.isSupported()) {
+          return;
+        }
+        microflo.serial.listDevices(function (devices) {
+          // Remove existing
+          var runtimes = [];
+          for (var i=0; i<this.userRuntimes.length; i++) {
+            var rt = this.userRuntimes[i];
+            if (rt.protocol == 'microflo' && rt.address.indexOf('serial://') !== -1) {
+
+            } else {
+              runtimes.push(rt);
+            }
+          }
+          this.userRuntimes = runtimes;
+
+          // Add new
+          for (i=0; i<devices.length; i++) {
+            var device = devices[i];
+            var rtNew = new this.registry.Runtime({
+              label: device,
+              id: require('uuid')(),
+              protocol: 'microflo',
+              address: 'serial://'+device,
+              type: 'microflo'
+            });
+            this.userRuntimes.push(rtNew.runtime);
+          }
+          this.fire('runtimes', this.userRuntimes);
+        }.bind(this));
       },
       fetchFlowhub: function (event) {
         if (event) {
@@ -448,7 +485,7 @@
         if (!this.gridToken) {
           return;
         }
-        var button = this.$.fetchflowhub;
+        var button = this.$.fetchruntimes;
         button.classList.add('fa-spin');
         this.registry.list(this.gridToken, {
           host: this.registryUrl
@@ -460,7 +497,7 @@
           var found = [];
           runtimes.forEach(function (runtime) {
             var inStore = null;
-            if (runtime.protocol === 'iframe') {
+            if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
             this.userRuntimes.forEach(function (storedRuntime) {
@@ -494,7 +531,7 @@
             if (found.indexOf(runtime.id) !== -1) {
               return;
             }
-            if (runtime.protocol === 'iframe') {
+            if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
             this.fire('removedruntime', runtime);
@@ -504,7 +541,7 @@
       },
       gridTokenChanged: function () {
         // Hide projects if not logged in
-        // Done like this instead of template if so this.$.fetchflowhub etc work
+        // Done like this instead of template if so this.$.fetchruntimes etc work
         if (this.gridToken) {
           this.$.loginrequired.style.display = 'block';
         } else {
@@ -513,8 +550,7 @@
       },
       preparedefaults: function () {
         // Every NoFlo UI instance should have at least the local IFRAME runtime available
-        var hasIframeRuntime = false;
-        var runtime = new this.registry.Runtime({
+        var iframe = new this.registry.Runtime({
           label: 'Local NoFlo HTML5 environment',
           id: require('uuid')(),
           protocol: 'iframe',
@@ -523,7 +559,7 @@
         }, {
           host: this.registryUrl
         });
-        this.userRuntimes.push(runtime.runtime);
+        this.userRuntimes.push(iframe.runtime);
         this.fire('runtimes', this.userRuntimes);
       },
       createdproject: function (project) {

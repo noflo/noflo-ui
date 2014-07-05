@@ -27,6 +27,7 @@
     "noflo/noflo-graph": "*",
     "noflo/noflo-runtime": "*",
     "the-grid/flowhub-registry": "*",
+    "jonnor/microflo": "*",
     "gjohnson/uuid": "*"
   },
   "noflo": {
