@@ -116,6 +116,7 @@
           }
           var i, menuKey;
           var localMenu = {};
+          var project = this.project;
           var openAction =  {
             icon: 'arrow-circle-o-up',
             iconLabel: 'open',
@@ -123,7 +124,10 @@
               if (typeof ga === 'function') {
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
-              window.location.hash += '/' + encodeURIComponent(item.id);
+              window.location.hash =
+                    '#project/' + encodeURIComponent(project.id) +
+                    '/' + project.main +
+                    '/' + encodeURIComponent(item.id);
             }
           };
           for (menuKey in defaultMenu) {
