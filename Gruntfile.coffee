@@ -3,12 +3,10 @@ module.exports = ->
   @initConfig
     pkg: @file.readJSON 'package.json'
 
-    bower:
-      install:
-        options:
-          copy: false
-          bowerOptions:
-            forceLatest: false
+    'bower-install-simple':
+      options:
+        interactive: false
+        forceLatest: false
 
     # Updating the package manifest files
     noflo_manifest:
@@ -299,7 +297,7 @@ module.exports = ->
           detailedError: true
 
   # Grunt plugins used for building
-  @loadNpmTasks 'grunt-bower-task'
+  @loadNpmTasks 'grunt-bower-install-simple'
   @loadNpmTasks 'grunt-noflo-manifest'
   @loadNpmTasks 'grunt-noflo-browser'
   @loadNpmTasks 'grunt-vulcanize'
@@ -329,7 +327,7 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['clean']
-  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower:install', 'noflo_browser:main', 'noflo_browser:preview', 'vulcanize', 'string-replace:app', 'compress']
+  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower-install-simple', 'noflo_browser:main', 'noflo_browser:preview', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
