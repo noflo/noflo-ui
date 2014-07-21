@@ -34,6 +34,7 @@
     "noflo/noflo-image": "*",
     "noflo/noflo-ccv": "*",
     "noflo/noflo-canvas": "*",
+    "automata/noflo-geometry": "*",
     "noflo/noflo-adapters": "*",
     "noflo/noflo-amd": "*",
     "noflo/noflo-react": "*"
