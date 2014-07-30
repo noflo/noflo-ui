@@ -595,7 +595,7 @@
         }
         var dialog = document.createElement('noflo-new-project');
         dialog.runtimes = this.userRuntimes;
-        this.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.fire('newproject', event.detail);
         }.bind(this));
@@ -607,7 +607,7 @@
         }
         var dialog = document.createElement('noflo-new-runtime');
         dialog.user = this.user;
-        this.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
       },
       projects: function (project) {
         this.localProjects.push(project);
