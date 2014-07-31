@@ -1,27 +1,29 @@
-<polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken theme" class="modal-content">
+<polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken theme" class="modal-content" on-click="{{ close }}">
   <template>
-    <h1>Account settings for {{ user.name }}</h1>
-    <form>
-      <label>
-        User Identifier
-        <input type="text" readonly value="{{ user.uuid }}">
-      </label>
-      <label>
-        GitHub API token
-        <input type="text" value="{{ githubtoken }}" placeholder="Token for GitHub API access" autocapitalize="off" autocorrect="off" readonly>
-      </label>
-      <label>
-        Theme
-        <select name="type" value="{{ theme }}">
-          <option value="dark">Lazer</option>
-          <option value="light">Tube</option>
-        </select>
-      </label>
-      <div class="toolbar">
-        <button on-click="{{ send }}">Save</button>
-        <a on-click="{{ close }}">Cancel</a>
-      </div>
-    </form>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Account settings for {{ user.name }}</h1>
+      <form>
+        <label>
+          User Identifier
+          <input type="text" readonly value="{{ user.uuid }}">
+        </label>
+        <label>
+          GitHub API token
+          <input type="text" value="{{ githubtoken }}" placeholder="Token for GitHub API access" autocapitalize="off" autocorrect="off" readonly>
+        </label>
+        <label>
+          Theme
+          <select name="type" value="{{ theme }}">
+            <option value="dark">Lazer</option>
+            <option value="light">Tube</option>
+          </select>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}">Save</button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
+      </form>
+    </div>
   </template>
   <script>
     Polymer('noflo-account-settings', {
@@ -41,6 +43,10 @@
           theme: this.theme
         });
         this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {

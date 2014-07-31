@@ -1,16 +1,18 @@
-<polymer-element name="noflo-exported-inspector" attributes="graph publicport privateport direction" class="modal-content">
+<polymer-element name="noflo-exported-inspector" attributes="graph publicport privateport direction" class="modal-content" on-click="{{ close }}">
   <template>
-    <h1>Published {{ direction }} port {{ publicport }}</h1>
-    <form>
-      <label>
-        Port name
-        <input type="text" value="{{ name }}" required>
-      </label>
-      <div class="toolbar">
-        <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Rename</button>
-        <a on-click="{{ close }}">Cancel</a>
-      </div>
-    </form>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Published {{ direction }} port {{ publicport }}</h1>
+      <form>
+        <label>
+          Port name
+          <input type="text" value="{{ name }}" required>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Rename</button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
+      </form>
+    </div>
   </template>
   <script>
     Polymer('noflo-exported-inspector', {
@@ -54,6 +56,10 @@
           this.graph.renameOutport(this.publicport, this.name);
         }
         this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {

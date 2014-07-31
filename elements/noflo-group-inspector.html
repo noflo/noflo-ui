@@ -1,35 +1,37 @@
-<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content">
+<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content" on-click="{{ close }}">
   <template>
-    <h1>
-      <template if="{{ group }}">
-      {{ group }}
-      </template>
-      <template if="{{ !group }}">
-      New
-      </template>
-      group containing {{ nodes.length }} nodes
-    </h1>
-    <form>
-      <label>
-        Group name
-        <input type="text" value="{{ name }}" placeholder="processing" required>
-      </label>
-      <label>
-        Group description
-        <input type="text" value="{{ description }}" placeholder="The nodes that process things" required>
-      </label>
-      <div class="toolbar">
-        <button on-click="{{ send }}">
-          <template if="{{ group }}">
-          Rename
-          </template>
-          <template if="{{ !group }}">
-          Create
-          </template>
-        </button>
-        <a on-click="{{ close }}">Cancel</a>
-      </div>
-    </form>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>
+        <template if="{{ group }}">
+        {{ group }}
+        </template>
+        <template if="{{ !group }}">
+        New
+        </template>
+        group containing {{ nodes.length }} nodes
+      </h1>
+      <form>
+        <label>
+          Group name
+          <input type="text" value="{{ name }}" placeholder="processing" required>
+        </label>
+        <label>
+          Group description
+          <input type="text" value="{{ description }}" placeholder="The nodes that process things" required>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}">
+            <template if="{{ group }}">
+            Rename
+            </template>
+            <template if="{{ !group }}">
+            Create
+            </template>
+          </button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
+      </form>
+    </div>
   </template>
   <script>
     Polymer('noflo-group-inspector', {
@@ -69,6 +71,10 @@
         });
         }
         this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {
