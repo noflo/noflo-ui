@@ -37,6 +37,7 @@
     "automata/noflo-geometry": "*",
     "forresto/noflo-clmtrackr": "*",
     "automata/noflo-webaudio": "*",
+    "noflo/noflo-tween": "*",
     "noflo/noflo-adapters": "*",
     "noflo/noflo-amd": "*",
     "noflo/noflo-react": "*"
