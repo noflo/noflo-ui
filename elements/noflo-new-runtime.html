@@ -1,4 +1,4 @@
-<polymer-element name="noflo-new-runtime" class="modal-content">
+<polymer-element name="noflo-new-runtime" class="modal-content" on-click="{{ close }}">
   <template>
     <style>
       a {
@@ -8,20 +8,22 @@
         font-size: 11px;
       }
     </style>
-    <h1>Register new runtime</h1>
-    <p>
-    <a href="http://flowhub.io" target="_blank">Flowhub</a> keeps a registry of runtimes available to each user.
-    To add new runtimes, use the <a href="https://github.com/the-grid/flowhub-registry#readme" target="_blank">Flowhub Registry API</a> and the refresh the runtime list.
-    </p>
-    <p>
-    For <a href="http://noflojs.org" target="_blank">NoFlo</a> runtimes running on Node.js, see <a href="https://github.com/noflo/noflo-nodejs#readme" target="_blank">noflo-nodejs</a>.
-    </p>
-    <label>
-      User Identifier
-      <input type="text" readonly value="{{ user.uuid }}">
-    </label>
-    <div class="toolbar">
-      <button on-click="{{ close }}">Close</button>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Register new runtime</h1>
+      <p>
+      <a href="http://flowhub.io" target="_blank">Flowhub</a> keeps a registry of runtimes available to each user.
+      To add new runtimes, use the <a href="https://github.com/the-grid/flowhub-registry#readme" target="_blank">Flowhub Registry API</a> and the refresh the runtime list.
+      </p>
+      <p>
+      For <a href="http://noflojs.org" target="_blank">NoFlo</a> runtimes running on Node.js, see <a href="https://github.com/noflo/noflo-nodejs#readme" target="_blank">noflo-nodejs</a>.
+      </p>
+      <label>
+        User Identifier
+        <input type="text" readonly value="{{ user.uuid }}">
+      </label>
+      <div class="toolbar">
+        <button on-click="{{ close }}">Close</button>
+      </div>
     </div>
   </template>
   <script>
@@ -31,6 +33,10 @@
       },
       detached: function () {
         document.getElementById('container').classList.remove('blur');
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {

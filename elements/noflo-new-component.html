@@ -1,21 +1,23 @@
-<polymer-element name="noflo-new-component" attributes="project" class="modal-content">
+<polymer-element name="noflo-new-component" attributes="project" class="modal-content" on-click="{{ close }}">
   <template>
-    <h1>Create new component</h1>
-    <form>
-      <label>
-        Component name
-        <input type="text" value="{{ name }}" placeholder="MyCoolComponent" required>
-      </label>
-      <label>
-        Language
-        <select name="type" value="{{ language }}">
-          <option value="coffeescript">CoffeeScript</option>
-          <option value="javascript">JavaScript</option>
-        </select>
-      </label>
-      <div class="toolbar">
-        <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-        <a on-click="{{ close }}">Cancel</a>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Create new component</h1>
+      <form>
+        <label>
+          Component name
+          <input type="text" value="{{ name }}" placeholder="MyCoolComponent" required>
+        </label>
+        <label>
+          Language
+          <select name="type" value="{{ language }}">
+            <option value="coffeescript">CoffeeScript</option>
+            <option value="javascript">JavaScript</option>
+          </select>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
       </div>
     </form>
   </template>
@@ -56,6 +58,10 @@
           tests: ''
         });
         this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {

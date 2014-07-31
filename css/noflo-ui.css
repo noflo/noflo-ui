@@ -3,11 +3,20 @@ input::-webkit-input-speech-button {
   cursor: pointer;
 }
 
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   /* iOS don't clash with our hold behavior */
   -webkit-user-select: none;                /* disable cut copy paste */
   -webkit-touch-callout: none;              /* disable callout, image save panel */
   -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
+}
+
+#loading {
+  display: none;
 }
 
 body.loading #loading {
@@ -90,10 +99,13 @@ button {
 
 #container.blur {
   -webkit-filter: blur(2px);
+  -moz-filter: blur(2px);
   filter: blur(2px);
   width: 100%;
   height: 100%;
   position: absolute;
+
+  overflow: hidden;
 }
 
 #container > pre {

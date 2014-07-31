@@ -1,30 +1,30 @@
 <link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content">
+<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content" on-click="{{ close }}">
+  <style>
+    :host {
+      background-color: red;
+    }
+  </style>
   <template>
-    <style>
-      :host {
-        top: calc(50% - 233px) !important;
-        overflow-y: auto;
-        height: 500px;
-      }
-    </style>
-    <h1>Create new project</h1>
-    <form>
-      <label>
-        Project name
-        <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" required>
-      </label>
-      <label>
-        Project label
-        <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
-      </label>
-      <label>
-        Primary Type
-        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
-      </label>
-      <div class="toolbar">
-        <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-        <a on-click="{{ close }}">Cancel</a>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Create new project</h1>
+      <form>
+        <label>
+          Project name
+          <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" required>
+        </label>
+        <label>
+          Project label
+          <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
+        </label>
+        <label>
+          Primary Type
+          <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
       </div>
     </form>
   </template>
@@ -73,6 +73,10 @@
           components: []
         });
         this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
       },
       close: function () {
         if (!this.parentNode) {

@@ -289,24 +289,36 @@ html /deep/ the-card ::shadow ul li p {
 }
 */
 
+.modal-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: hsla(192, 25%, 92%, 0.1);
+  overflow: auto;
+}
 
-html /deep/ .modal-content {
+html /deep/ .modal-container {
   background-color: hsl(192, 25%, 92%);
   color: black;
   display: block;
   position: absolute;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  top: 100px;
   width: calc(72px * 9);
-  top: calc(50% - 150px);
-  left: 50%;
-  margin-left: calc(-72px * 4);
+  /*max-width: 100%;*/
+  left: calc(50% - 72px * 4.5);
+  /*left: 50%;*/
+  /*margin-left: calc(72px * -4.5);*/
   z-index: 5;
   padding: 36px;
   box-sizing: border-box;
   border-radius: 3px;
   box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
 }
+
 html /deep/ .modal-content /deep/ h1 {
   font-size: 17px;
   line-height: 36px;
