@@ -413,7 +413,6 @@
         }
         // Check if notification is duplicate
         if (this.lastNotification && this.lastNotification.title === title && this.lastNotification.body === message) {
-          console.log(this.lastNotification, this.lastNotification.title, title, this.lastNotification.title === title, this.lastNotification.body, message, this.lastNotification.body === message);
           this.lastNotification.close();
         }
         this.lastNotification = new Notification(title, {

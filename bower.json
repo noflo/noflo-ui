@@ -27,6 +27,6 @@
     "requirejs": "~2.1.11"
   },
   "devDependencies": {
-    "syn": "~0.0.2"
+    "syn": "~0.0.3"
   }
 }
