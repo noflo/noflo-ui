@@ -1,6 +1,10 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.1.11 (git master)
+
+* Updated to Polymer 0.3.4
+
 ## 0.1.10 (2014 August 4)
 
 * Added the `noflo-react` and `noflo-amd` components and the appropriate Require.js setup to the bundled HTML runtime
