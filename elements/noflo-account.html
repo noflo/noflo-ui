@@ -329,7 +329,7 @@
                 this.clearCache();
               }
             }.bind(this);
-            req.open('GET', this.gatekeeper + '/authenticate/' + code[1], true);
+            req.open('GET', this.gatekeeper + 'authenticate/' + code[1], true);
             req.send(null);
           } else {
             if (this.help && this.help.show) {
