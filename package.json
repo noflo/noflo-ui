@@ -33,7 +33,7 @@
     "grunt-noflo-browser": "^0.1.3",
     "grunt-noflo-manifest": "^0.1.10",
     "grunt-phonegap-build": "0.0.8",
-    "grunt-saucelabs": "^8.1.1",
+    "grunt-saucelabs": "^8.2.0",
     "grunt-string-replace": "^0.2.7",
     "grunt-vulcanize": "^0.4.1",
     "grunt-zip": "^0.13.0",
