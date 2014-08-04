@@ -1,9 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.9 (master)
+## 0.1.10 (2014 August 4)
 
 * Added the `noflo-react` and `noflo-amd` components and the appropriate Require.js setup to the bundled HTML runtime
+* Added `noflo-webaudio`
+* Minor authentication fixes
 
 ## 0.1.8 (2014 May 25)
 
