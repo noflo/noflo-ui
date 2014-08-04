@@ -17,13 +17,13 @@
     "spec"
   ],
   "dependencies": {
-    "the-graph": "~0.2.5",
+    "the-graph": "~0.2.6",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.1.0",
     "codemirror": "~3.22.0",
     "coffee-script": "*",
-    "polymer": "Polymer/polymer#0.2.4",
+    "polymer": "Polymer/polymer#0.3.4",
     "requirejs": "~2.1.11"
   },
   "devDependencies": {
