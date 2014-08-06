@@ -280,27 +280,38 @@
     </script>
     <script type="application/fbp" id="LoadExample">
       INPORT=SplitGist.IN:GIST
+      INPORT=GetGist.TOKEN:TOKEN
       OUTPORT=SetGraphId.OUT:GRAPH
       OUTPORT=Errors.OUT:ERROR
-      'https://api.github.com/gists' -> STRING GistPrefix(strings/SendString)
-      '/' -> DELIMITER CreateUrl(strings/CompileString)
-      SplitGist(core/Split) OUT -> IN GistPrefix
-      GistPrefix OUT -> IN CreateUrl
-      SplitGist OUT -> IN CreateUrl
-      CreateUrl OUT -> URL GetGist(ajax/GetJsonP)
+
+      # Try loading with Gist API first
+      SplitGist(core/Split) OUT -> GIST GetGist(github/GetGist)
+
+      # Fallback for browsers without token: load via JSONP
+      'https://api.github.com/gists/$1' -> REPLACEMENT CreateUrl(strings/Replace)
+      '([a-z0-9]+)' -> PATTERN CreateUrl
+      SplitGist OUT -> STRING SendGist(strings/SendString)
+      SendGist OUT -> IN CreateUrl
+      GetGist ERROR -> IN SendGist
+      CreateUrl OUT -> URL GetGistJsonP(ajax/GetJsonP)
+      GetGistJsonP ERROR -> IN Errors
       'data' -> KEY GetData(objects/GetObjectKey)
+      GetGistJsonP OUT -> IN GetData OUT -> IN GetFiles
+
+      # Get the graph contents
       'files' -> KEY GetFiles(objects/GetObjectKey)
       'noflo.json' -> KEY GetFile(objects/GetObjectKey)
       'content' -> KEY GetFileContent(objects/GetObjectKey)
-      GetGist OUT -> IN GetData
-      GetData OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
+      GetGist OUT -> IN GetFiles OUT -> IN GetFile OUT -> IN GetFileContent
       GetFiles MISSED -> IN Errors
       GetFileContent OUT -> IN ParseExample(strings/ParseJson)
+
+      # Normalize to a graph
       'id' -> PROPERTY SetGraphId(graph/SetPropertyValue)
       SplitGist OUT -> VALUE SetGraphId
       'project' -> PROPERTY RemoveProject(objects/RemoveProperty)
-      ParseExample OUT -> IN ConvertGraph(graph/LoadJson)
-      ConvertGraph OUT -> IN RemoveProject OUT -> IN SetGraphId
+      ParseExample OUT -> IN RemoveProject OUT -> IN ConvertGraph(graph/LoadJson)
+      ConvertGraph OUT -> IN SetGraphId
     </script>
     <script type="application/fbp" id="EnsureId">
       INPORT=Item.IN:IN
@@ -596,6 +607,7 @@
       INPORT=GetNode.ROUTE:ROUTE
       INPORT=GetNode.PROJECTS:PROJECTS
       INPORT=GetSource.RUNTIME:RUNTIME
+      INPORT=LoadExample.TOKEN:GITHUBTOKEN
       OUTPORT=GetNode.PROJECT:PROJECT
       OUTPORT=MergeGraphs.OUT:GRAPH
       OUTPORT=MergeComponents.OUT:COMPONENT
@@ -670,6 +682,7 @@
 
       # Handle GitHub tokens
       '' -> TOKEN Main GITHUBTOKEN -> GITHUBTOKEN Context
+      Main GITHUBTOKEN -> GITHUBTOKEN RouteData
       Main DOWNLOAD -> IN Download(local/Download)
       Download PROJECT -> ITEM StoreProject
       Download PROJECT -> PROJECTS Main
