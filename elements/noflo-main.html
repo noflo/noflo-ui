@@ -234,19 +234,21 @@
         </ul>
       </section>
     </div>
-    <section id="examples">
-      <h2>
-        Examples <small>{{ examples.length }}</small>
-      </h2>
-      <ul class="projects">
-        <template repeat="{{ examples }}">
-        <li on-click="{{ openExample }}" data-id="{{ id }}" class="example">
-          <h2>{{ label }}</h2>
-          <p>{{ address }}</p>
-        </li>
-        </template>
-      </ul>
-    </section>
+    <div id="loginrequiredChrome">
+      <section id="examples">
+        <h2>
+          Examples <small>{{ examples.length }}</small>
+        </h2>
+        <ul class="projects">
+          <template repeat="{{ examples }}">
+          <li on-click="{{ openExample }}" data-id="{{ id }}" class="example">
+            <h2>{{ label }}</h2>
+            <p>{{ address }}</p>
+          </li>
+          </template>
+        </ul>
+      </section>
+    </div>
   </template>
   <script>
     Polymer('noflo-main', {
@@ -544,8 +546,14 @@
         // Done like this instead of template if so this.$.fetchruntimes etc work
         if (this.gridToken) {
           this.$.loginrequired.style.display = 'block';
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            this.$.loginrequiredChrome.style.display = 'block';
+          }
         } else {
           this.$.loginrequired.style.display = 'none';
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            this.$.loginrequiredChrome.style.display = 'none';
+          }
         }
       },
       preparedefaults: function () {
