@@ -34,12 +34,18 @@
     "components": {
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
+      "GatherProjectData": "components/GatherProjectData.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
       "Router": "components/Router.coffee"
+    },
+    "graphs": {
+      "LoadData": "graphs/LoadData.fbp",
+      "PrepareStorage": "graphs/PrepareStorage.fbp",
+      "main": "graphs/main.fbp"
     }
   },
   "scripts": [
@@ -51,7 +57,11 @@
     "components/MakePath.coffee",
     "src/JournalStore.coffee",
     "components/DatabaseReady.coffee",
-    "components/GetNode.coffee"
+    "components/GetNode.coffee",
+    "graphs/main.fbp",
+    "graphs/PrepareStorage.fbp",
+    "graphs/LoadData.fbp",
+    "components/GatherProjectData.coffee"
   ],
   "json": [
     "component.json"
@@ -63,5 +73,10 @@
     "noflo.ico",
     "app/noflo-200.png",
     "examples.json"
+  ],
+  "fbp": [
+    "graphs/main.fbp",
+    "graphs/PrepareStorage.fbp",
+    "graphs/LoadData.fbp"
   ]
 }

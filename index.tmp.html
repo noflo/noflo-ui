@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="bower_components/platform/platform.js"></script>
+    <link rel="import" href="bower_components/polymer/polymer.html">
+    <script src="bower_components/klay-js/klay.js"></script>
+    <script src="bower_components/hammerjs/hammer.js"></script>
+    <script src="bower_components/react/react.js"></script>
+    <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
+    <script src="./browser/noflo-ui.js"></script>
+    <link rel="import" href="elements/noflo-ui.html">
+    <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
+    <link rel="stylesheet" href="./css/font-awesome-shadow.css" shim-shadowdom>
+    <link rel="stylesheet" href="./css/noflo-ui.css">
+    <link rel="stylesheet" href="./css/noflo-ui-shadow.css" shim-shadowdom>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <noflo-polymer name="noflo-ui" inports="projects runtimes" outports="event"></noflo-polymer>
+  </head>
+  <body>
+    <noflo-ui id="container"></noflo-ui>
+    <script src="app/noflo-extracted.js"></script>
+  </body>
+</html>

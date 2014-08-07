@@ -1,0 +1,42 @@
+<link rel="import" href="noflo-main.html">
+<link rel="import" href="../bower_components/the-graph/the-graph-editor/the-graph-editor.html">
+<link rel="import" href="noflo-library.html">
+<link rel="import" href="noflo-context.html">
+<link rel="import" href="noflo-runtime.html">
+<link rel="import" href="noflo-journal.html">
+<link rel="import" href="noflo-component-editor.html">
+<link rel="import" href="noflo-search.html">
+<link rel="import" href="noflo-project.html">
+<link rel="import" href="noflo-packets.html">
+<polymer-element name="noflo-ui">
+  <template>
+    <noflo-main id="main"></noflo-main>
+    <the-graph-editor></the-graph-editor>
+    <noflo-library></noflo-library>
+    <noflo-context></noflo-context>
+    <noflo-runtime></noflo-runtime>
+    <noflo-journal></noflo-journal>
+    <noflo-component-editor></noflo-component-editor>
+    <noflo-search></noflo-search>
+    <noflo-project></noflo-project>
+    <noflo-packets></noflo-packets>
+  </template>
+  <script>
+    Polymer('noflo-ui', {
+      ready: function () {
+        console.log(this.$.main);
+        /*
+        this.$.main.addEventListener('download', function (event) {
+          this.fire('event', 
+        }.bind(this));
+        */
+      },
+      projects: function (projects) {
+        projects.forEach(this.$.main.projects.bind(this.$.main));
+      },
+      runtimes: function (runtimes) {
+        runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
+      }
+    });
+  </script>
+</polymer-element>

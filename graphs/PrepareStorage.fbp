@@ -1,0 +1,52 @@
+
+INPORT=Open.NAME:NAME
+OUTPORT=Errors.OUT:ERROR
+OUTPORT=Open.DB:DB
+# Open database connection
+Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
+# Specify storage version to get correct migrations
+'3' -> VERSION Open
+# Database upgrade setup
+Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
+# ## Version 1
+# Project storage
+'projects' -> NAME CreateProjects(indexeddb/CreateStore)
+'id' -> KEYPATH CreateProjects
+Upgrade VERSIONS -> DB CreateProjects
+CreateProjects ERROR -> IN Errors
+# Graph storage
+'graphs' -> NAME CreateGraphs(indexeddb/CreateStore)
+'id' -> KEYPATH CreateGraphs
+CreateProjects DB -> DB CreateGraphs
+CreateGraphs ERROR -> IN Errors
+'project' -> NAME GraphProject(indexeddb/CreateIndex)
+'project' -> KEYPATH GraphProject
+CreateGraphs STORE -> STORE GraphProject
+# Migrate old LocalStorage data
+GraphProject STORE -> GRAPHSTORE Migrate(ui/MigrateLocalStorage)
+GraphProject ERROR -> IN Errors
+# Component storage
+'components' -> NAME CreateComponents(indexeddb/CreateStore)
+'id' -> KEYPATH CreateComponents
+CreateGraphs DB -> DB CreateComponents
+CreateComponents ERROR -> IN Errors
+'project' -> NAME ComponentProject(indexeddb/CreateIndex)
+'project' -> KEYPATH ComponentProject
+CreateComponents STORE -> STORE ComponentProject
+ComponentProject ERROR -> IN Errors
+# ## Version 2
+# Runtime storage
+'runtimes' -> NAME CreateRuntimes(indexeddb/CreateStore)
+'id' -> KEYPATH CreateRuntimes
+Upgrade VERSIONS -> DB CreateRuntimes
+CreateRuntimes ERROR -> IN Errors
+# ## Version 3
+# Journal storage
+'journals' -> NAME CreateJournals(indexeddb/CreateStore)
+'id' -> KEYPATH CreateJournals
+Upgrade VERSIONS -> DB CreateJournals
+CreateJournals ERROR -> IN Errors
+'graph' -> NAME JournalGraph(indexeddb/CreateIndex)
+'graph' -> KEYPATH JournalGraph
+CreateJournals STORE -> STORE JournalGraph
+JournalGraph ERROR -> IN Errors
