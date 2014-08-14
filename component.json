@@ -39,11 +39,14 @@
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
+      "GetRemoteUser": "components/GetRemoteUser.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
-      "Router": "components/Router.coffee"
+      "RemoteLogin": "components/RemoteLogin.coffee",
+      "Router": "components/Router.coffee",
+      "StoreUser": "components/StoreUser.coffee"
     },
     "graphs": {
       "LoadData": "graphs/LoadData.fbp",
@@ -68,7 +71,10 @@
     "components/GatherProjectData.coffee",
     "components/ClearUserData.coffee",
     "components/LoadUserData.coffee",
-    "graphs/UserStorage.fbp"
+    "graphs/UserStorage.fbp",
+    "components/GetRemoteUser.coffee",
+    "components/RemoteLogin.coffee",
+    "components/StoreUser.coffee"
   ],
   "json": [
     "component.json"

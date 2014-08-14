@@ -2,14 +2,30 @@ INPORT=Dispatch.IN:IN
 INPORT=LoadUser.START:START
 OUTPORT=Merge.OUT:USER
 
-'user:login,user:logout' -> ROUTES Dispatch(routers/GroupRouter)
+'login,logout' -> ROUTES Dispatch(routers/GroupRouter)
+Dispatch MISSED -> IN ReadG(groups/ReadGroup) GROUP -> IN Show(core/Output)
 
 # Initial persistent user data
 LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
 # In case of errors reset
 LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 
-# TODO: Login handling
+# Login handling
+'https://passport.thegrid.io' -> SITE Login(ui/RemoteLogin)
+'https://api.flowhub.io' -> SITE GetRemoteUser(ui/GetRemoteUser)
+'$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
+'$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
+'github' -> SCOPE Login
+Dispatch OUT[0] -> LOGIN Login
+Login TOKEN -> TOKEN GetRemoteUser
+GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
+StoreUser USER -> IN Merge
+
+Login ERROR -> IN Show(core/Output)
+GetRemoteUser ERROR -> IN Show(core/Output)
+
+# On browser we need to check login state immediately
+'' -> CHECK Login
 
 # Logout handling
 Dispatch OUT[1] -> CLEAR Reset

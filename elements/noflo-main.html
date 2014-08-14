@@ -164,7 +164,7 @@
       }
 
     </style>
-    <noflo-account id="mainaccount" clientid="$NOFLO_OAUTH_CLIENT_ID" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>
+    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>
     <div id="loginrequired">
       <section id="projects">
         <h2>Projects
@@ -526,7 +526,6 @@
         }.bind(this));
       },
       gridTokenChanged: function () {
-        console.log('changed');
         // Hide projects if not logged in
         // Done like this instead of template if so this.$.fetchruntimes etc work
         if (this.gridToken) {

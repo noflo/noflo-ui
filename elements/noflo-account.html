@@ -1,8 +1,7 @@
 <link rel="import" href="noflo-account-settings.html">
-<polymer-element name="noflo-account" attributes="clientid site gatekeeper avatar user plan">
+<polymer-element name="noflo-account" attributes="avatar user plan">
   <template>
     <style>
-
       :host {
         text-align: center;
         display: block;
@@ -201,183 +200,21 @@
       }
 
       Polymer('noflo-account', {
-        clientid: '',
-        site: 'https://passport.thegrid.io',
-        profileSite: 'https://api.flowhub.io',
-        gatekeeper: '$NOFLO_OAUTH_GATE',
-        redirect: '',
         user: null,
         plan: 'free',
         gridToken: '',
         githubToken: '',
         avatar: '',
         theme: 'dark',
-        storage: {
-          grid: 'grid-token',
-          github: 'github-token',
-          githubUsername: 'github-username',
-          user: 'grid-user',
-          plan: 'flowhub-plan',
-          avatar: 'grid-avatar',
-          theme: 'flowhub-theme'
-        },
         help: null,
         login: function () {
-          if (typeof ga === 'function') {
-            ga('send', 'event', 'button', 'click', 'login');
-          }
-          var button = this.shadowRoot.getElementById('loginbutton');
-          if (button) {
-            button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-          }
-          if (typeof chrome !== 'undefined' && chrome.identity) {
-            this.redirect = chrome.identity.getRedirectURL();
-            chrome.identity.launchWebAuthFlow({
-              interactive: true,
-              url: this.getLoginUrl()
-            }, function (responseUrl) {
-              if (chrome.runtime.lastError) {
-                button.innerHTML = 'Login';
-                return;
-              }
-              this.remoteLogin(responseUrl, false);
-            }.bind(this));
-            return;
-          }
-          window.location.href = this.getLoginUrl();
-        },
-        getLoginUrl: function () {
-          return this.site + '/login/authorize/github_public?client_id=' + this.clientid  + '&scope=github&response_type=code&redirect_uri=' + encodeURIComponent(this.redirect);
-        },
-        attached: function () {
-          this.redirect = window.location.href;
-          this.help = document.querySelector('noflo-help');
-          this.checkLogin();
-          document.body.classList.add(this.theme);
-        },
-        checkLogin: function () {
-          this.remoteLogin(window.location.href, true);
-        },
-        remoteLogin: function (responseUrl, cleanUp) {
-          var code = responseUrl.match(/\?code=(.*)/);
-          if (code && code[1]) {
-            setTimeout(function () {
-              if (this.shadowRoot) {
-                var button = this.shadowRoot.getElementById('loginbutton');
-                if (button) {
-                  button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                }
-              }
-            }, 1);
-            var req = new XMLHttpRequest();
-            req.onreadystatechange = function () {
-              if (req.readyState !== 4) {
-                return;
-              }
-              if (req.status === 200) {
-                this.help.close();
-                var data = JSON.parse(req.responseText);
-                if (data.token) {
-                  // Save the access token
-                  storage.set(this.storage.grid, data.token, function () {
-                    // Clear old user data
-                    storage.remove(this.storage.user);
-
-                    if (cleanUp) {
-                      // Clean up URL
-                      var regex = new RegExp("(?:\\/)?\\?code=" + code[1]);
-                      window.location.href = window.location.href.replace(regex, '');
-                    } else {
-                      this.gridToken = data.token;
-                    }
-                  }.bind(this));
-                }
-              } else {
-                if (this.shadowRoot) {
-                  var button = this.shadowRoot.getElementById('loginbutton');
-                  if (button) {
-                    button.innerHTML = 'Login';
-                  }
-                }
-                this.clearCache();
-              }
-            }.bind(this);
-            req.open('GET', this.gatekeeper + 'authenticate/' + code[1], true);
-            req.send(null);
-          } else {
-            if (this.help && this.help.show) {
-              this.help.show('New to $NOFLO_APP_TITLE?', 'Start by logging into your <a href="http://flowhub.io/" target="_blank">Flowhub</a> account, and you\'ll be able to synchronize projects with GitHub and download examples.');              
-            }
-          }
-        },
-        getUser: function (token, refresh) {
-          if (refresh) {
-            this.getRemoteUser(token);
-            return;
-          }
-          storage.get(this.storage.user, function (user) {
-            if (user) {
-              try {
-                this.user = JSON.parse(user);
-                this.fire('user', this.user);
-                return;
-              } catch (e) {
-                storage.remove(this.storage.user);
-              }
-            }
-            this.getRemoteUser(token);
-          }.bind(this));
-        },
-        getRemoteUser: function (token) {
-          var req = new XMLHttpRequest();
-          req.onreadystatechange = function () {
-            if (req.readyState !== 4) {
-              return;
-            }
-            if (req.status === 200) {
-              var userData = JSON.parse(req.responseText);
-
-              if (!this.user) {
-                storage.set(this.storage.user, req.responseText);
-                this.user = userData;
-                this.fire('user', this.user);
-                this.fire('login', this.user);
-              }
-
-              if (!this.githubToken && userData.github && userData.github.token) {
-                this.githubToken = userData.github.token;
-                storage.set(this.storage.github, this.githubToken);
-              }
-
-              if (!this.githubToken && userData.github && userData.github.username) {
-                this.githubUsername = userData.github.username;
-                storage.set(this.storage.githubUsername, this.githubUsername);
-              }
-
-              if (userData.plan && userData.plan.type) {
-                this.plan = userData.plan.type;
-                storage.set(this.storage.plan, this.plan);
-              }
-
-            } else {
-              this.clearCache();
-            }
-          }.bind(this);
-          req.open('GET', this.profileSite + '/user', true);
-          req.setRequestHeader('Authorization', 'Bearer ' + token);
-          req.send(null);
+          this.fire('login', true);
         },
         logout: function () {
-          if (typeof ga === 'function') {
-            ga('send', 'event', 'button', 'click', 'logout');
-          }
-          this.user = null;
-          this.gridToken = '';
-          this.githubToken = '';
-          this.githubUsername = '';
-          this.avatar = '';
-          this.plan = 'free';
-          this.clearCache();
+          this.fire('logout', true);
+        },
+        attached: function () {
+          document.body.classList.add(this.theme);
         },
         openSettings: function () {
           if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
@@ -391,41 +228,6 @@
           dialog.addEventListener('updated', function (event) {
             this.theme = event.detail.theme;
             storage.set(this.storage.theme, this.theme);
-          }.bind(this));
-        },
-        clearCache: function () {
-          storage.remove(this.storage.grid);
-          storage.remove(this.storage.github);
-          storage.remove(this.storage.githubUsername);
-          storage.remove(this.storage.user);
-          storage.remove(this.storage.avatar);
-          storage.remove(this.storage.plan);
-        },
-        userChanged: function () {
-          if (!this.user || !this.user.avatar) {
-            return;
-          }
-          storage.get(this.storage.avatar, function (avatar) {
-            if (avatar) {
-              this.avatar = avatar;
-              return;
-            }
-            var req = new XMLHttpRequest();
-            var fileReader = new FileReader();
-            req.open('GET', this.user.avatar, true);
-            req.responseType = 'blob';
-            req.onload = function (e) {
-              if (req.status !== 200) {
-                return;
-              }
-              fileReader.onload = function (event) {
-                this.avatar = event.target.result;
-                storage.set(this.storage.avatar, this.avatar);
-              }.bind(this);
-              fileReader.readAsDataURL(req.response);
-
-            }.bind(this);
-            req.send();
           }.bind(this));
         },
         gridTokenChanged: function () {

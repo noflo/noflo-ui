@@ -27,6 +27,7 @@ exports.getComponent = ->
       'grid-token'
       'grid-user'
       'github-token'
+      'github-username'
       'flowhub-plan'
       'flowhub-theme'
     ]

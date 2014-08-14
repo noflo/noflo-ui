@@ -24,7 +24,12 @@
   <script>
     Polymer('noflo-ui', {
       ready: function () {
-        console.log(this.$.main);
+        this.$.main.addEventListener('logout', function (event) {
+          this.fire('user:logout', true);
+        }.bind(this));
+        this.$.main.addEventListener('login', function (event) {
+          this.fire('user:login', true);
+        }.bind(this));
         /*
         this.$.main.addEventListener('download', function (event) {
           this.fire('event', 
@@ -41,7 +46,7 @@
         this.$.main.githubToken = user['github-token'];
         this.$.main.gridToken = user['grid-token'];
         this.$.main.user = user['grid-user'];
-        this.$.main.avatar = user['avatar'];
+        this.$.main.avatar = user['grid-avatar'];
         this.$.main.plan = user['flowhub-plan'];
         console.log('RECEIVED USER', user);
       }

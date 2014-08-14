@@ -22,7 +22,7 @@ LoadData ERROR -> IN ShowErrors
 
 # Event dispatching
 Main EVENT -> IN Dispatch(routers/GroupRouter)
-'user:.*' -> ROUTES Dispatch
+'user' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch MISSED -> IN ShowErrors
 
