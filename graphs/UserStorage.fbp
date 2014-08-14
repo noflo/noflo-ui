@@ -3,7 +3,6 @@ INPORT=LoadUser.START:START
 OUTPORT=Merge.OUT:USER
 
 'login,logout' -> ROUTES Dispatch(routers/GroupRouter)
-Dispatch MISSED -> IN ReadG(groups/ReadGroup) GROUP -> IN Show(core/Output)
 
 # Initial persistent user data
 LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
