@@ -1,3 +1,4 @@
+console.time('noflo-ui-init');
 console.time('polymer-ready');
 window.addEventListener('polymer-ready', function() {
   console.timeEnd('polymer-ready');
@@ -10,6 +11,7 @@ window.addEventListener('polymer-ready', function() {
     g.baseDir = '/noflo-ui';
     noflo.createNetwork(g, function (n) {
       console.timeEnd('noflo-prepare');
+      console.timeEnd('noflo-ui-init');
     });
   });
 });

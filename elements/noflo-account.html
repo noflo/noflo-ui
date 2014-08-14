@@ -1,5 +1,5 @@
 <link rel="import" href="noflo-account-settings.html">
-<polymer-element name="noflo-account" attributes="clientid site gatekeeper">
+<polymer-element name="noflo-account" attributes="clientid site gatekeeper avatar user plan">
   <template>
     <style>
 
@@ -256,34 +256,7 @@
           document.body.classList.add(this.theme);
         },
         checkLogin: function () {
-          storage.get(this.storage.grid, function (token) {
-            if (token) {
-              this.gridToken = token;
-              storage.get(this.storage.github, function (token) {
-                if (!token) {
-                  if (this.gridToken) {
-                    this.getRemoteUser(this.gridToken);
-                  }
-                  return;
-                }
-                this.githubToken = token;
-              }.bind(this));
-              return;
-            }
-            this.remoteLogin(window.location.href, true);
-          }.bind(this));
-          storage.get(this.storage.theme, function (theme) {
-            if (!theme) {
-              return;
-            }
-            this.theme = theme;
-          }.bind(this));
-          storage.get(this.storage.plan, function (plan) {
-            if (!plan) {
-              return;
-            }
-            this.plan = plan;
-          }.bind(this));
+          this.remoteLogin(window.location.href, true);
         },
         remoteLogin: function (responseUrl, cleanUp) {
           var code = responseUrl.match(/\?code=(.*)/);

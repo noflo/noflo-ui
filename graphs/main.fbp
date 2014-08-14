@@ -1,17 +1,31 @@
-# Name of our IndexedDB database
+# Prepare the view layer
+'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
+Main ELEMENT -> IN Start(core/Repeat)
+
+# Prepare IndexedDB
 'noflo-ui' -> NAME Storage(ui/PrepareStorage)
+
+# Load user data
+Start OUT -> START UserStorage(ui/UserStorage)
+
 # Pass database connection to persistence handlers
 Storage DB -> DB LoadData(ui/LoadData)
 Storage DB -> IN DatabaseReady(ui/DatabaseReady)
 Storage ERROR -> IN ShowErrors(core/Output)
 
-# Prepare the view layer
-'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
 
-# Start by loading user's local data
-LoadData ERROR -> IN ShowErrors
+# Connect storage to UI
 LoadData PROJECTS -> PROJECTS Main
 LoadData RUNTIMES -> RUNTIMES Main
+UserStorage(ui/UserStorage) USER -> USER Main
+LoadData ERROR -> IN ShowErrors
+
+# Event dispatching
+Main EVENT -> IN Dispatch(routers/GroupRouter)
+'user:.*' -> ROUTES Dispatch
+Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
+Dispatch MISSED -> IN ShowErrors
+
 
 # Start URL routing
 #LoadData COMPLETE -> START ListenHash(interaction/ListenHash)

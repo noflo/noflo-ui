@@ -36,6 +36,14 @@
       },
       runtimes: function (runtimes) {
         runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
+      },
+      user: function (user) {
+        this.$.main.githubToken = user['github-token'];
+        this.$.main.gridToken = user['grid-token'];
+        this.$.main.user = user['grid-user'];
+        this.$.main.avatar = user['avatar'];
+        this.$.main.plan = user['flowhub-plan'];
+        console.log('RECEIVED USER', user);
       }
     });
   </script>

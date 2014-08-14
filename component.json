@@ -19,6 +19,7 @@
     "noflo/noflo-interaction": "*",
     "noflo/noflo-objects": "*",
     "noflo/noflo-groups": "*",
+    "noflo/noflo-routers": "*",
     "noflo/noflo-dom": "*",
     "noflo/noflo-core": "*",
     "noflo/noflo-polymer": "*",
@@ -32,12 +33,14 @@
   },
   "noflo": {
     "components": {
+      "ClearUserData": "components/ClearUserData.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
+      "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
       "Router": "components/Router.coffee"
@@ -45,6 +48,7 @@
     "graphs": {
       "LoadData": "graphs/LoadData.fbp",
       "PrepareStorage": "graphs/PrepareStorage.fbp",
+      "UserStorage": "graphs/UserStorage.fbp",
       "main": "graphs/main.fbp"
     }
   },
@@ -61,7 +65,10 @@
     "graphs/main.fbp",
     "graphs/PrepareStorage.fbp",
     "graphs/LoadData.fbp",
-    "components/GatherProjectData.coffee"
+    "components/GatherProjectData.coffee",
+    "components/ClearUserData.coffee",
+    "components/LoadUserData.coffee",
+    "graphs/UserStorage.fbp"
   ],
   "json": [
     "component.json"
@@ -77,6 +84,7 @@
   "fbp": [
     "graphs/main.fbp",
     "graphs/PrepareStorage.fbp",
-    "graphs/LoadData.fbp"
+    "graphs/LoadData.fbp",
+    "graphs/UserStorage.fbp"
   ]
 }

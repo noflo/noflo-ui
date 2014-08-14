@@ -1,0 +1,16 @@
+INPORT=Dispatch.IN:IN
+INPORT=LoadUser.START:START
+OUTPORT=Merge.OUT:USER
+
+'user:login,user:logout' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Initial persistent user data
+LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
+# In case of errors reset
+LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
+
+# TODO: Login handling
+
+# Logout handling
+Dispatch OUT[1] -> CLEAR Reset
+Reset USER -> IN Merge
