@@ -18,16 +18,15 @@ buildContext = (url) ->
 
   if url.substr(0, 8) is 'project/'
     # Locally stored project
+    routeData.route = 'project'
     remainder = url.substr 8
     parts = normalize remainder.split '/'
     routeData.project = parts.shift()
 
     if parts[0] is 'component' and parts.length is 2
-      routeData.route = 'component'
       routeData.component = parts[1]
       return routeData
 
-    routeData.route = 'graph'
     routeData.graph = parts.shift()
     routeData.nodes = parts
     return routeData

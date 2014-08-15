@@ -11,12 +11,12 @@
 <polymer-element name="noflo-ui">
   <template>
     <noflo-main id="main"></noflo-main>
-    <the-graph-editor></the-graph-editor>
+    <the-graph-editor id="grapheditor"></the-graph-editor>
     <noflo-library></noflo-library>
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
     <noflo-journal></noflo-journal>
-    <noflo-component-editor></noflo-component-editor>
+    <noflo-component-editor id="componenteditor"></noflo-component-editor>
     <noflo-search></noflo-search>
     <noflo-project></noflo-project>
     <noflo-packets></noflo-packets>
@@ -38,12 +38,20 @@
       },
       context: function (context) {
         console.log('CTX is', context);
+        if (context.projects) {
+          this.populateMain(context);
+          this.$.main.open = true;
+          return;
+        }
+        this.$.main.open = false;
+        if (context.graphs.length) {
+          this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
+        }
+        this.$.componenteditor.component = context.component;
       },
-      projects: function (projects) {
-        projects.forEach(this.$.main.projects.bind(this.$.main));
-      },
-      runtimes: function (runtimes) {
-        runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
+      populateMain: function (ctx) {
+        ctx.projects.forEach(this.$.main.projects.bind(this.$.main));
+        ctx.runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];
@@ -51,7 +59,6 @@
         this.$.main.user = user['grid-user'];
         this.$.main.avatar = user['grid-avatar'];
         this.$.main.plan = user['flowhub-plan'];
-        console.log('RECEIVED USER', user);
       }
     });
   </script>

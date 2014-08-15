@@ -1,19 +1,27 @@
-INPORT=PopulateLocalData.IN:OPEN
+INPORT=DispatchOpen.IN:OPEN
 OUTPORT=MergeContext.OUT:CONTEXT
 
 # Prepare IndexedDB
 'noflo-ui' -> NAME Storage(ui/PrepareStorage)
 
-# Load user data
-'' -> START UserStorage(ui/UserStorage)
+# Route opening requests
+'main,project' -> ROUTES DispatchOpen(routers/GroupRouter)
+DispatchOpen MISSED -> IN ShowErrors(core/Output)
 
 # Pass database connection to persistence handlers
 Storage DB -> DB LoadData(ui/LoadData)
 Storage DB -> IN DatabaseReady(ui/DatabaseReady)
 Storage ERROR -> IN ShowErrors(core/Output)
 
-# Pass local data to populating
-LoadData PROJECTS -> PROJECTS PopulateLocalData(ui/PopulateLocalData)
-PopulateLocalData OUT -> IN MergeContext(core/Merge)
+# Pass data to main context builder
+LoadData PROJECTS -> PROJECTS PopulateMainData(ui/PopulateMainData)
+LoadData RUNTIMES -> RUNTIMES PopulateMainData
+DispatchOpen OUT[0] -> IN PopulateMainData
+PopulateMainData OUT -> IN MergeContext(core/Merge)
+
+# Pass data to project context builder
+LoadData PROJECTS -> PROJECTS PopulateProjectData(ui/PopulateProjectData)
+DispatchOpen OUT[1] -> IN PopulateProjectData
+PopulateProjectData OUT -> IN MergeContext
 
 LoadData ERROR -> IN ShowErrors

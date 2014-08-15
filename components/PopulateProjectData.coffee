@@ -47,7 +47,6 @@ exports.getComponent = ->
     params: ['projects']
     out: 'out'
   , (route, groups, out) ->
-    console.log 'POPULATE', route
     # Send the 'loading' ctx
     initial = buildContext()
     initial.state = 'loading'

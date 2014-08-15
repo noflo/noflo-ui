@@ -13,7 +13,10 @@ UserStorage(ui/UserStorage) USER -> USER Main
 ProjectStorage(ui/ProjectStorage) CONTEXT -> CONTEXT Main
 
 # Start routing
-Main ELEMENT -> START ListenHash(interaction/ListenHash)
-ListenHash INITIAL -> URL Router(ui/Router)
+ListenHash(interaction/ListenHash) INITIAL -> URL Router(ui/Router)
 ListenHash CHANGE -> URL Router
 Router ROUTE -> IN Dispatch
+
+# Once we have the element we can start things
+Main ELEMENT -> START UserStorage
+Main ELEMENT -> START ListenHash

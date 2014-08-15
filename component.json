@@ -44,7 +44,8 @@
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
-      "PopulateLocalData": "components/PopulateLocalData.coffee",
+      "PopulateMainData": "components/PopulateMainData.coffee",
+      "PopulateProjectData": "components/PopulateProjectData.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "StoreUser": "components/StoreUser.coffee"
@@ -77,8 +78,9 @@
     "components/GetRemoteUser.coffee",
     "components/RemoteLogin.coffee",
     "components/StoreUser.coffee",
-    "components/PopulateLocalData.coffee",
-    "graphs/ProjectStorage.fbp"
+    "components/PopulateProjectData.coffee",
+    "graphs/ProjectStorage.fbp",
+    "components/PopulateMainData.coffee"
   ],
   "json": [
     "component.json"

@@ -602,7 +602,9 @@
         document.body.appendChild(dialog);
       },
       projects: function (project) {
-        this.localProjects.push(project);
+        if (this.localProjects.indexOf(project) === -1) {
+          this.localProjects.push(project);
+        }
         this.fire('projects', this.localProjects);
       },
       graphs: function (graph) {
