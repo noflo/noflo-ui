@@ -36,6 +36,9 @@
         }.bind(this));
         */
       },
+      context: function (context) {
+        console.log('CTX is', context);
+      },
       projects: function (projects) {
         projects.forEach(this.$.main.projects.bind(this.$.main));
       },

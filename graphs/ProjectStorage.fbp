@@ -1,0 +1,19 @@
+INPORT=PopulateLocalData.IN:OPEN
+OUTPORT=MergeContext.OUT:CONTEXT
+
+# Prepare IndexedDB
+'noflo-ui' -> NAME Storage(ui/PrepareStorage)
+
+# Load user data
+'' -> START UserStorage(ui/UserStorage)
+
+# Pass database connection to persistence handlers
+Storage DB -> DB LoadData(ui/LoadData)
+Storage DB -> IN DatabaseReady(ui/DatabaseReady)
+Storage ERROR -> IN ShowErrors(core/Output)
+
+# Pass local data to populating
+LoadData PROJECTS -> PROJECTS PopulateLocalData(ui/PopulateLocalData)
+PopulateLocalData OUT -> IN MergeContext(core/Merge)
+
+LoadData ERROR -> IN ShowErrors

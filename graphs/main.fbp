@@ -1,34 +1,19 @@
-# Prepare the view layer
-'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
-Main ELEMENT -> IN Start(core/Repeat)
-
-# Prepare IndexedDB
-'noflo-ui' -> NAME Storage(ui/PrepareStorage)
-
-# Load user data
-Start OUT -> START UserStorage(ui/UserStorage)
-
-# Pass database connection to persistence handlers
-Storage DB -> DB LoadData(ui/LoadData)
-Storage DB -> IN DatabaseReady(ui/DatabaseReady)
-Storage ERROR -> IN ShowErrors(core/Output)
-
-
-# Connect storage to UI
-LoadData PROJECTS -> PROJECTS Main
-LoadData RUNTIMES -> RUNTIMES Main
-UserStorage(ui/UserStorage) USER -> USER Main
-LoadData ERROR -> IN ShowErrors
-
 # Event dispatching
 Main EVENT -> IN Dispatch(routers/GroupRouter)
-'user' -> ROUTES Dispatch
+'user,open' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
-Dispatch MISSED -> IN ShowErrors
+Dispatch OUT[1] -> OPEN ProjectStorage(ui/ProjectStorage)
+Dispatch MISSED -> IN ShowErrors(core/Output)
+
+# Prepare the view layer
+'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
+
+# Connect storage to UI
+UserStorage(ui/UserStorage) USER -> USER Main
+ProjectStorage(ui/ProjectStorage) CONTEXT -> CONTEXT Main
 
 # Start routing
-Start OUT -> START ListenHash(interaction/ListenHash)
-# Convert URL changes to dispatches
+Main ELEMENT -> START ListenHash(interaction/ListenHash)
 ListenHash INITIAL -> URL Router(ui/Router)
 ListenHash CHANGE -> URL Router
 Router ROUTE -> IN Dispatch

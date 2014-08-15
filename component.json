@@ -44,6 +44,7 @@
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
+      "PopulateLocalData": "components/PopulateLocalData.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "StoreUser": "components/StoreUser.coffee"
@@ -51,6 +52,7 @@
     "graphs": {
       "LoadData": "graphs/LoadData.fbp",
       "PrepareStorage": "graphs/PrepareStorage.fbp",
+      "ProjectStorage": "graphs/ProjectStorage.fbp",
       "UserStorage": "graphs/UserStorage.fbp",
       "main": "graphs/main.fbp"
     }
@@ -74,7 +76,9 @@
     "graphs/UserStorage.fbp",
     "components/GetRemoteUser.coffee",
     "components/RemoteLogin.coffee",
-    "components/StoreUser.coffee"
+    "components/StoreUser.coffee",
+    "components/PopulateLocalData.coffee",
+    "graphs/ProjectStorage.fbp"
   ],
   "json": [
     "component.json"
@@ -91,6 +95,7 @@
     "graphs/main.fbp",
     "graphs/PrepareStorage.fbp",
     "graphs/LoadData.fbp",
-    "graphs/UserStorage.fbp"
+    "graphs/UserStorage.fbp",
+    "graphs/ProjectStorage.fbp"
   ]
 }
