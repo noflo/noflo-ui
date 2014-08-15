@@ -26,8 +26,9 @@ Main EVENT -> IN Dispatch(routers/GroupRouter)
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch MISSED -> IN ShowErrors
 
-
-# Start URL routing
-#LoadData COMPLETE -> START ListenHash(interaction/ListenHash)
-#ListenHash INITIAL -> URL Router
-#ListenHash CHANGE -> URL Router
+# Start routing
+Start OUT -> START ListenHash(interaction/ListenHash)
+# Convert URL changes to dispatches
+ListenHash INITIAL -> URL Router(ui/Router)
+ListenHash CHANGE -> URL Router
+Router ROUTE -> IN Dispatch

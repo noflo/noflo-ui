@@ -1,56 +1,81 @@
 noflo = require 'noflo'
 
-class Router extends noflo.Component
-  constructor: ->
-    @inPorts = new noflo.InPorts
-      url:
-        datatype: 'string'
-    @outPorts = new noflo.OutPorts
-      route:
-        datatype: 'object'
-      main:
-        datatype: 'bang'
-        required: false
-      missed:
-        datatype: 'string'
-        required: false
+normalize = (parts) ->
+  parts.map (part) -> decodeURIComponent part
 
-    @inPorts.url.on 'data', (url) =>
-      matched = @matchUrl url
-      unless matched
-        @outPorts.missed.send url
-        @outPorts.missed.disconnect()
-        return
+buildContext = (url) ->
+  routeData =
+    route: ''
+    runtime: null
+    project: null
+    graph: null
+    component: null
+    nodes: []
 
-      @outPorts.route.send matched
-      @outPorts.route.disconnect()
+  if url is ''
+    routeData.route = 'main'
+    return routeData
 
-      if matched.route is 'main'
-        @outPorts.main.send true
-        @outPorts.main.disconnect()
+  if url.substr(0, 8) is 'project/'
+    # Locally stored project
+    remainder = url.substr 8
+    parts = normalize remainder.split '/'
+    routeData.project = parts.shift()
 
-  matchUrl: (url) ->
-    routeData =
-      route: ''
-    if url is ''
-      routeData.route = 'main'
+    if parts[0] is 'component' and parts.length is 2
+      routeData.route = 'component'
+      routeData.component = parts[1]
       return routeData
-    if url.substr(0, 8) is 'project/'
-      remainder = url.substr 8
-      parts = remainder.split '/'
-      routeData.project = parts.shift()
-      if parts[0] is 'component' and parts.length is 2
-        routeData.route = 'component'
-        routeData.component = parts[1]
-        return routeData
-      routeData.route = 'graph'
-      routeData.graph = parts.shift()
-      routeData.nodes = parts
-      return routeData
-    if url.substr(0, 8) is 'example/'
-      routeData.route = 'example'
-      routeData.graphs = [url.substr(8)]
-      return routeData
-    return null
 
-exports.getComponent = -> new Router
+    routeData.route = 'graph'
+    routeData.graph = parts.shift()
+    routeData.nodes = parts
+    return routeData
+
+  if url.substr(0, 8) is 'example/'
+    # Remote example
+    remainder = url.substr 8
+    parts = normalize remainder.split '/'
+    routeData.route = 'example'
+    routeData.graph = parts.shift()
+    routeData.nodes = parts
+    return routeData
+
+  if url.substr(0, 8) is 'runtime/'
+    # Remote example
+    remainder = url.substr 8
+    parts = normalize remainder.split '/'
+    routeData.route = 'runtime'
+    routeData.runtime = parts.shift()
+    routeData.nodes = parts
+    return routeData
+
+  return null
+
+exports.getComponent = ->
+  c = new noflo.Component
+  c.inPorts.add 'url',
+    datatype: 'string'
+  c.outPorts.add 'route',
+    datatype: 'object'
+  c.outPorts.add 'missed',
+    datatype: 'bang'
+
+  noflo.helpers.WirePattern c,
+    in: 'url'
+    out: 'route'
+    forwardGroups: false
+  , (url, groups, out) ->
+    ctx = buildContext url
+    unless ctx
+      c.outPorts.missed.send ctx
+      c.outPorts.missed.disconnect()
+      return
+
+    out.beginGroup 'open'
+    out.beginGroup ctx.route
+    out.send ctx
+    out.endGroup()
+    out.endGroup()
+
+  c
