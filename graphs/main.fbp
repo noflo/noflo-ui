@@ -7,6 +7,10 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Prepare the view layer
 'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
+Main ELEMENT -> IN Start(core/Repeat)
+Start OUT -> START ListenWindow(interaction/ListenResize)
+ListenWindow WIDTH -> WIDTH Main
+ListenWIndow HEIGHT -> HEIGHT Main
 
 # Connect storage to UI
 UserStorage(ui/UserStorage) USER -> USER Main
@@ -18,5 +22,5 @@ ListenHash CHANGE -> URL Router
 Router ROUTE -> IN Dispatch
 
 # Once we have the element we can start things
-Main ELEMENT -> START UserStorage
-Main ELEMENT -> START ListenHash
+Start OUT -> START UserStorage
+Start OUT -> START ListenHash

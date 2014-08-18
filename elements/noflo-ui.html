@@ -8,21 +8,23 @@
 <link rel="import" href="noflo-search.html">
 <link rel="import" href="noflo-project.html">
 <link rel="import" href="noflo-packets.html">
-<polymer-element name="noflo-ui">
+<polymer-element name="noflo-ui" attributes="width height">
   <template>
     <noflo-main id="main"></noflo-main>
-    <the-graph-editor id="grapheditor"></the-graph-editor>
+    <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
     <noflo-library></noflo-library>
     <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
     <noflo-journal></noflo-journal>
-    <noflo-component-editor id="componenteditor"></noflo-component-editor>
+    <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
     <noflo-search></noflo-search>
     <noflo-project></noflo-project>
     <noflo-packets></noflo-packets>
   </template>
   <script>
     Polymer('noflo-ui', {
+      width: window.innerWidth,
+      height: window.innerHeight,
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
