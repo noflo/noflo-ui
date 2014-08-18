@@ -95,7 +95,6 @@ exports.getComponent = function () {
         this.componentChanged();
       },
       componentChanged: function () {
-        console.log('componentChanged');
         if (!this.component || !this.component.name) {
           this.style.display = 'none';
           return;

@@ -10,6 +10,24 @@
 <link rel="import" href="noflo-packets.html">
 <polymer-element name="noflo-ui" attributes="width height">
   <template>
+    <style>
+      the-graph-editor {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+
+      noflo-component-editor {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 36px;
+        right: 0;
+        z-index: 0;
+      }
+    </style>
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
     <noflo-library></noflo-library>
@@ -43,9 +61,9 @@
         if (context.projects) {
           this.populateMain(context);
           this.$.main.open = true;
-          return;
+        } else {
+          this.$.main.open = false;
         }
-        this.$.main.open = false;
         if (context.graphs.length) {
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
         }
