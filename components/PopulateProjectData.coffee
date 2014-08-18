@@ -47,11 +47,6 @@ exports.getComponent = ->
     params: ['projects']
     out: 'out'
   , (route, groups, out) ->
-    # Send the 'loading' ctx
-    initial = buildContext()
-    initial.state = 'loading'
-    c.outPorts.out.send initial
-
     # Match to local data
     ctx = buildContext()
     ctx.project = findProject route.project, c.params.projects

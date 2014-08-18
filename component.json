@@ -35,11 +35,14 @@
     "components": {
       "ClearUserData": "components/ClearUserData.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
+      "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
+      "ErrorToContext": "components/ErrorToContext.coffee",
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
+      "GraphToContext": "components/GraphToContext.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
@@ -52,6 +55,7 @@
     },
     "graphs": {
       "LoadData": "graphs/LoadData.fbp",
+      "LoadExample": "graphs/LoadExample.fbp",
       "PrepareStorage": "graphs/PrepareStorage.fbp",
       "ProjectStorage": "graphs/ProjectStorage.fbp",
       "UserStorage": "graphs/UserStorage.fbp",
@@ -80,7 +84,11 @@
     "components/StoreUser.coffee",
     "components/PopulateProjectData.coffee",
     "graphs/ProjectStorage.fbp",
-    "components/PopulateMainData.coffee"
+    "components/PopulateMainData.coffee",
+    "components/ErrorToContext.coffee",
+    "components/GraphToContext.coffee",
+    "graphs/LoadExample.fbp",
+    "components/CreateLoadingContext.coffee"
   ],
   "json": [
     "component.json"
@@ -98,6 +106,7 @@
     "graphs/PrepareStorage.fbp",
     "graphs/LoadData.fbp",
     "graphs/UserStorage.fbp",
-    "graphs/ProjectStorage.fbp"
+    "graphs/ProjectStorage.fbp",
+    "graphs/LoadExample.fbp"
   ]
 }
