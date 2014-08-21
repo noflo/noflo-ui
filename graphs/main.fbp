@@ -1,8 +1,9 @@
 # Event dispatching
 Main EVENT -> IN Dispatch(routers/GroupRouter)
-'user,open' -> ROUTES Dispatch
+'user,open,search' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch OUT[1] -> OPEN ProjectStorage(ui/ProjectStorage)
+Dispatch OUT[2] -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Prepare the view layer

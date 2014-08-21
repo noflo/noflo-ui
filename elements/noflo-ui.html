@@ -35,7 +35,7 @@
     <noflo-runtime></noflo-runtime>
     <noflo-journal></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
-    <noflo-search></noflo-search>
+    <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
     <noflo-packets></noflo-packets>
   </template>
@@ -50,11 +50,9 @@
         this.$.main.addEventListener('login', function (event) {
           this.fire('user:login', true);
         }.bind(this));
-        /*
-        this.$.main.addEventListener('download', function (event) {
-          this.fire('event', 
+        this.$.search.addEventListener('search', function (event) {
+          this.fire('search', event.detail.search);
         }.bind(this));
-        */
       },
       context: function (context) {
         console.log('CTX is', context);
@@ -72,8 +70,10 @@
         }
         this.$.project.graphs = context.graphs;
         this.$.project.project = context.project;
-        this.$.componenteditor.component = context.component;
         this.$.project.component = context.component;
+        this.$.componenteditor.component = context.component;
+        this.$.search.graphs = context.graphs;
+        this.$.search.component = context.component;
       },
       populateMain: function (ctx) {
         ctx.projects.forEach(this.$.main.projects.bind(this.$.main));

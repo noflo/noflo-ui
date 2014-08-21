@@ -286,7 +286,7 @@
         }
         var dialog = document.createElement('noflo-project-inspector');
         dialog.project = this.project;
-        this.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
         dialog.addEventListener('updated', function (event) {
           Object.keys(event.detail).forEach(function (property) {
             this.project[property] = event.detail[property];
