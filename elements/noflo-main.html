@@ -104,9 +104,6 @@
       ul.projects li.remote {
         cursor: default;
       }
-      ul.projects li.runtime {
-        cursor: default;
-      }
       ul.projects li the-graph-thumb {
         display: block;
         position: absolute;
@@ -579,6 +576,13 @@
           return;
         }
         window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + project.main;
+      },
+      openRuntime: function (event, details, sender) {
+        event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        window.location.hash = '#runtime/' + sender.getAttribute('data-id');
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
