@@ -3,7 +3,7 @@
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
-<polymer-element name="noflo-project" attributes="project graphs components githubtoken graphs component">
+<polymer-element name="noflo-project" attributes="project githubtoken graph component">
   <template>
     <style>
       h2 {
@@ -225,19 +225,11 @@
       project: null,
       commitMessage: '',
       githubtoken: '',
-      graphs: [],
       runtimes: [],
       runtime: null,
       graph: null,
       component: null,
       canComponent: true,
-      graphsChanged: function () {
-        if (this.graphs.length) {
-          this.graph = this.graphs[this.graphs.length - 1];
-        } else {
-          this.graph = null;
-        }
-      },
       runtimeChanged: function () {
         if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
           this.canComponent = (this.runtime.definition.capabilities.indexOf('component:setsource') !== -1);

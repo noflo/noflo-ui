@@ -36,7 +36,7 @@
     <noflo-journal></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
     <noflo-search></noflo-search>
-    <noflo-project></noflo-project>
+    <noflo-project id="project"></noflo-project>
     <noflo-packets></noflo-packets>
   </template>
   <script>
@@ -66,8 +66,14 @@
         }
         if (context.graphs.length) {
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
+          this.$.project.graph = context.graphs[context.graphs.length - 1];
+        } else {
+          this.$.project.graph = null;
         }
+        this.$.project.graphs = context.graphs;
+        this.$.project.project = context.project;
         this.$.componenteditor.component = context.component;
+        this.$.project.component = context.component;
       },
       populateMain: function (ctx) {
         ctx.projects.forEach(this.$.main.projects.bind(this.$.main));
@@ -75,6 +81,7 @@
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];
+        this.$.project.githubtoken = user['github-token'];
         this.$.main.gridToken = user['grid-token'];
         this.$.main.user = user['grid-user'];
         this.$.main.avatar = user['grid-avatar'];
