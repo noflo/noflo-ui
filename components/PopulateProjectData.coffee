@@ -32,6 +32,22 @@ findComponent = (name, project) ->
     return component if component.name is name
   return null
 
+findByComponent = (componentName, project) ->
+  [library, name] = componentName.split '/'
+
+  unless name
+    name = library
+    library = undefined
+
+  graph = findGraph name, project
+  return ['graph', graph] if graph
+
+  component = findComponent name, project
+  return ['component', component] if component
+
+  # Get from runtime
+  return ['runtime', componentName]
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
@@ -63,9 +79,27 @@ exports.getComponent = ->
     return sendError out unless mainGraph
     ctx.graphs.push mainGraph
 
-    # TODO: Handle subnodes
+    currentGraph = mainGraph
+    while route.nodes.length
+      nodeId = route.nodes.shift()
+      node = currentGraph.getNode nodeId
+      return sendError out unless node
+      return sendError out unless node.component
+      [type, currentGraph] = findByComponent node.component, ctx.project
+
+      if type is 'component'
+        ctx.component = currentGraph
+        return sendError out if route.nodes.length
+        break
+
+      if type is 'runtime'
+        ctx.remote.push currentGraph
+        continue
+
+      ctx.graphs.push currentGraph
 
     ctx.state = 'ok'
+    ctx.state = 'loading' if ctx.remote.length
     out.send ctx
 
   c
