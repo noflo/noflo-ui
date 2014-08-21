@@ -225,7 +225,7 @@
           <template repeat="{{ userRuntimes }}">
           <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="runtime {{ type }}">
             <h2>{{ label }}</h2>
-            <p>{{ address }}</p>
+            <p>{{ address }}. Seen {{ seenHoursAgo }}h ago</p>
           </li>
           </template>
         </ul>
@@ -420,7 +420,7 @@
           // Non-persistent runtime, don't show
           return;
         }
-        runtime.seenHoursAgo = (Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000);
+        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000));
         if ((runtime.seenHoursAgo / 24) > 31) {
           // We haven't seen this runtime in over a month, don't show it
           return;
@@ -463,7 +463,7 @@
               type: 'microflo',
               seen: new Date().toString()
             });
-            this.userRuntimes.push(rtNew.runtime);
+            this.runtimes(rtNew);
           }
           this.fire('runtimes', this.userRuntimes);
         }.bind(this));
@@ -497,8 +497,7 @@
               }
             });
             if (!inStore) {
-              this.fire('runtime', runtime.runtime);
-              this.userRuntimes.push(runtime.runtime);
+              this.runtimes(runtime);
               return;
             }
 
