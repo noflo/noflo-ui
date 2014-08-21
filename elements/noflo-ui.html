@@ -62,6 +62,9 @@
       },
       context: function (context) {
         console.log('CTX is', context);
+        if (context.state !== 'ok') {
+          return;
+        }
         if (context.graphs.length || context.component) {
           this.$.main.open = false;
         } else {
