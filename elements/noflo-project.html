@@ -243,7 +243,7 @@
         var dialog = document.createElement('noflo-new-graph');
         dialog.project = this.project.id;
         dialog.runtimes = this.runtimes;
-        this.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.project.graphs.push(event.detail);
           this.fire('newgraph', event.detail);
@@ -259,7 +259,7 @@
         }
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project.id;
-        this.parentNode.parentNode.appendChild(dialog);
+        document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.project.components.push(event.detail);
           this.fire('newcomponent', event.detail);
