@@ -31,7 +31,7 @@
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
     <noflo-library></noflo-library>
-    <noflo-runtime></noflo-runtime>
+    <noflo-runtime id="runtime"></noflo-runtime>
     <noflo-journal id="journal"></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
     <noflo-search id="search"></noflo-search>
@@ -66,9 +66,11 @@
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
           this.$.project.graph = context.graphs[context.graphs.length - 1];
           this.$.journal.graph = context.graphs[context.graphs.length - 1];
+          this.$.runtime.graph = context.graphs[0];
         } else {
           this.$.project.graph = null;
           this.$.journal.graph = null;
+          this.$.runtime.graph = null;
         }
         this.$.project.graphs = context.graphs;
         this.$.project.project = context.project;

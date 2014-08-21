@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
-<polymer-element name="noflo-runtime" attributes="graphs edges runtimes" class="gpu">
+<polymer-element name="noflo-runtime" attributes="graph edges runtimes" class="gpu">
   <template>
     <style>
       :host {
@@ -89,7 +89,7 @@
         margin-top: 18px;
       }
     </style>
-    <template if="{{ currentGraph }}">
+    <template if="{{ graph }}">
       <template if="{{ runtime }}">
           <div id="address" class="{{ { online: online } | tokenList }}">
             <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
@@ -119,8 +119,7 @@
   </template>
   <script>
     Polymer('noflo-runtime', {
-      currentGraph: null,
-      graphs: null,
+      graph: null,
       runtime: null,
       runtimes: [],
       online: false,
@@ -132,19 +131,11 @@
       panel: null,
       edges: null,
       wasConnected: false,
-      graphsChanged: function () {
-        if (!this.graphs || this.graphs.length === 0) {
-          this.currentGraph = null;
-          return;
-        }
-        // Use the top-level graph as the runtime main graph
-        this.currentGraph = this.graphs[0];
-      },
       edgesChanged: function () {
         this.sendEdges();
       },
       sendEdges: function () {
-        if (!this.runtime || !this.edges || !this.edges.map || !this.currentGraph) {
+        if (!this.runtime || !this.edges || !this.edges.map || !this.graph) {
           return;
         }
         var edgeData = this.edges.map(function (edge) {
@@ -161,20 +152,20 @@
         });
         this.runtime.sendNetwork('edges', {
           edges: edgeData,
-          graph: this.currentGraph.properties.id
+          graph: this.graph.properties.id
         });
       },
       clearRuntime: function () {
         for (var i = 0; i < this.runtimes.length; i++) {
-          if (this.runtimes[i].graph === this.currentGraph.properties.id) {
+          if (this.runtimes[i].graph === this.graph.properties.id) {
             this.runtimes[i].graph = null;
             this.fire('runtime', this.runtimes[i]);
           }
         }
         this.runtime = null;
-        this.currentGraphChanged();
+        this.graphChanged();
       },
-      currentGraphChanged: function () {
+      graphChanged: function () {
         this.wasConnected = false;
         if (this.runtime) {
           this.stop();
@@ -192,24 +183,24 @@
           }
           this.runtimeSelector = null;
         }
-        if (!this.currentGraph || !this.currentGraph.properties.id) {
+        if (!this.graph || !this.graph.properties.id) {
           return;
         }
 
         // Fix legacy env type setting
-        this.updateGraphType(this.currentGraph);
+        this.updateGraphType(this.graph);
 
         // Subscribe to possible type changes
-        this.currentGraph.on('changeProperties', function (newProps, oldProps) {
+        this.graph.on('changeProperties', function (newProps, oldProps) {
           if (newProps.environment.type !== oldProps.environment.type) {
-            this.currentGraphChanged();
+            this.graphChanged();
           }
         }.bind(this));
 
         // Find runtime for Graph
         var iframeRuntime = null;
         for (var i = 0; i < this.runtimes.length; i++) {
-          if (this.runtimes[i].graph === this.currentGraph.properties.id) {
+          if (this.runtimes[i].graph === this.graph.properties.id) {
             this.fire('runtime', this.runtimes[i]);
             return;
           }
@@ -217,7 +208,7 @@
             iframeRuntime = this.runtimes[i];
           }
         }
-        if (this.currentGraph.properties.environment.type === 'noflo-browser' && iframeRuntime) {
+        if (this.graph.properties.environment.type === 'noflo-browser' && iframeRuntime) {
           // Fall-back, select the IFRAME runtime as default
           this.fire('runtime', iframeRuntime);
         }
@@ -232,7 +223,7 @@
         if (!this.runtime) {
           return;
         }
-        this.runtime.setMain(this.currentGraph);
+        this.runtime.setMain(this.graph);
         this.runtime.on('status', function (status) {
           this.online = status.online;
           if (!this.online) {
@@ -356,22 +347,22 @@
         this.card = null;
       },
       selectRuntime: function () {
-        if (this.graphs.length === 0) {
+        if (!this.graph) {
           return;
         }
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.runtimeSelector = document.createElement('noflo-runtime-selector');
-        this.runtimeSelector.graph = this.currentGraph;
+        this.runtimeSelector.graph = this.graph;
         this.runtimeSelector.runtimes = this.runtimes;
         this.runtimeSelector.addEventListener('runtime', function (event) {
           var runtime = event.detail;
-          runtime.graph = this.currentGraph.properties.id;
+          runtime.graph = this.graph.properties.id;
           this.fire('runtime', runtime);
           this.fire('changed', runtime);
         }.bind(this));
-        this.parentNode.parentNode.appendChild(this.runtimeSelector);
+        document.body.appendChild(this.runtimeSelector);
       },
       canNotify: function () {
         return ("Notification" in window);
