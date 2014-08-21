@@ -31,9 +31,8 @@
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
     <noflo-library></noflo-library>
-    <noflo-context></noflo-context>
     <noflo-runtime></noflo-runtime>
-    <noflo-journal></noflo-journal>
+    <noflo-journal id="journal"></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
     <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
@@ -53,6 +52,7 @@
         this.$.search.addEventListener('search', function (event) {
           this.fire('search', event.detail.search);
         }.bind(this));
+        this.$.journal.editor = this.$.grapheditor;
       },
       context: function (context) {
         console.log('CTX is', context);
@@ -65,8 +65,10 @@
         if (context.graphs.length) {
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
           this.$.project.graph = context.graphs[context.graphs.length - 1];
+          this.$.journal.graph = context.graphs[context.graphs.length - 1];
         } else {
           this.$.project.graph = null;
+          this.$.journal.graph = null;
         }
         this.$.project.graphs = context.graphs;
         this.$.project.project = context.project;

@@ -82,7 +82,7 @@
         if (!this.graph) {
           return;
         }
-        if (!this.graph.properties.project || this.graph.journal) {
+        if (!this.graph.properties.project || this.graph.journal || !this.db) {
           return;
         }
 
