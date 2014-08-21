@@ -78,11 +78,12 @@
           this.$.runtime.graph = null;
         }
         this.$.project.graphs = context.graphs;
-        this.$.project.project = context.project;
         this.$.project.component = context.component;
+        this.$.project.project = context.project;
         this.$.componenteditor.component = context.component;
         this.$.search.graphs = context.graphs;
         this.$.search.component = context.component;
+        this.$.search.project = context.project;
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];
