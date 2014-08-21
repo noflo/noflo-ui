@@ -42,6 +42,12 @@
     Polymer('noflo-ui', {
       width: window.innerWidth,
       height: window.innerHeight,
+      runtimes: function (runtimes) {
+        runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
+      },
+      projects: function (projects) {
+        projects.forEach(this.$.main.projects.bind(this.$.main));
+      },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
@@ -56,11 +62,10 @@
       },
       context: function (context) {
         console.log('CTX is', context);
-        if (context.projects) {
-          this.populateMain(context);
-          this.$.main.open = true;
-        } else {
+        if (context.graphs.length || context.component) {
           this.$.main.open = false;
+        } else {
+          this.$.main.open = true;
         }
         if (context.graphs.length) {
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
@@ -78,10 +83,6 @@
         this.$.componenteditor.component = context.component;
         this.$.search.graphs = context.graphs;
         this.$.search.component = context.component;
-      },
-      populateMain: function (ctx) {
-        ctx.projects.forEach(this.$.main.projects.bind(this.$.main));
-        ctx.runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];

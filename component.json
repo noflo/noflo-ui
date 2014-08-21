@@ -35,10 +35,13 @@
     "components": {
       "ClearUserData": "components/ClearUserData.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
+      "CreateContext": "components/CreateContext.coffee",
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "ErrorToContext": "components/ErrorToContext.coffee",
+      "FindRuntimes": "components/FindRuntimes.coffee",
       "GatherProjectData": "components/GatherProjectData.coffee",
+      "GatherRuntimeData": "components/GatherRuntimeData.coffee",
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
@@ -54,10 +57,13 @@
       "StoreUser": "components/StoreUser.coffee"
     },
     "graphs": {
-      "LoadData": "graphs/LoadData.fbp",
+      "GithubStorage": "graphs/GithubStorage.fbp",
       "LoadExample": "graphs/LoadExample.fbp",
+      "LoadProjectData": "graphs/LoadProjectData.fbp",
+      "LoadRuntimeData": "graphs/LoadRuntimeData.fbp",
       "PrepareStorage": "graphs/PrepareStorage.fbp",
       "ProjectStorage": "graphs/ProjectStorage.fbp",
+      "RuntimeStorage": "graphs/RuntimeStorage.fbp",
       "UserStorage": "graphs/UserStorage.fbp",
       "main": "graphs/main.fbp"
     }
@@ -74,7 +80,6 @@
     "components/GetNode.coffee",
     "graphs/main.fbp",
     "graphs/PrepareStorage.fbp",
-    "graphs/LoadData.fbp",
     "components/GatherProjectData.coffee",
     "components/ClearUserData.coffee",
     "components/LoadUserData.coffee",
@@ -88,7 +93,14 @@
     "components/ErrorToContext.coffee",
     "components/GraphToContext.coffee",
     "graphs/LoadExample.fbp",
-    "components/CreateLoadingContext.coffee"
+    "components/CreateLoadingContext.coffee",
+    "components/CreateContext.coffee",
+    "components/FindRuntimes.coffee",
+    "components/GatherRuntimeData.coffee",
+    "graphs/LoadProjectData.fbp",
+    "graphs/LoadRuntimeData.fbp",
+    "graphs/RuntimeStorage.fbp",
+    "graphs/GithubStorage.fbp"
   ],
   "json": [
     "component.json"
@@ -104,9 +116,12 @@
   "fbp": [
     "graphs/main.fbp",
     "graphs/PrepareStorage.fbp",
-    "graphs/LoadData.fbp",
     "graphs/UserStorage.fbp",
     "graphs/ProjectStorage.fbp",
-    "graphs/LoadExample.fbp"
+    "graphs/LoadExample.fbp",
+    "graphs/LoadProjectData.fbp",
+    "graphs/LoadRuntimeData.fbp",
+    "graphs/RuntimeStorage.fbp",
+    "graphs/GithubStorage.fbp"
   ]
 }

@@ -1,35 +1,21 @@
-INPORT=DispatchOpen.IN:OPEN
+INPORT=SplitDb.IN:DB
+INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
-
-# Prepare IndexedDB
-'noflo-ui' -> NAME Storage(ui/PrepareStorage)
+OUTPORT=LoadData.PROJECTS:PROJECTS
 
 # Route opening requests
-'main,project,example' -> ROUTES DispatchOpen(routers/GroupRouter)
-DispatchOpen ROUTE -> START Loading(ui/CreateLoadingContext)
+'open' -> ROUTES Dispatch(routers/GroupRouter)
+Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
-DispatchOpen MISSED -> IN ShowErrors(core/Output)
+Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Pass database connection to persistence handlers
-Storage DB -> DB LoadData(ui/LoadData)
-Storage DB -> IN DatabaseReady(ui/DatabaseReady)
-Storage ERROR -> IN ShowErrors(core/Output)
-
-# Pass data to main context builder
-LoadData PROJECTS -> PROJECTS PopulateMainData(ui/PopulateMainData)
-LoadData RUNTIMES -> RUNTIMES PopulateMainData
-DispatchOpen OUT[0] -> IN PopulateMainData
-PopulateMainData OUT -> IN MergeContext(core/Merge)
+SplitDb(core/Split) OUT -> DB LoadData(ui/LoadProjectData)
 
 # Pass data to project context builder
 LoadData PROJECTS -> PROJECTS PopulateProjectData(ui/PopulateProjectData)
-DispatchOpen OUT[1] -> IN PopulateProjectData
+Dispatch OUT[0] -> IN PopulateProjectData
 PopulateProjectData OUT -> IN MergeContext
-
-# Load Gist examples
-'graph' -> KEY GistId(objects/GetObjectKey)
-DispatchOpen OUT[2] -> IN GistId OUT -> GIST LoadExample(ui/LoadExample)
-LoadExample GRAPH -> GRAPH ExampleToCtx(ui/GraphToContext) OUT -> IN MergeContext
 LoadExample ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
 
 LoadData ERROR -> IN ShowErrors

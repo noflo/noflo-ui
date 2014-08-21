@@ -35,7 +35,7 @@ buildContext = (url) ->
     # Remote example
     remainder = url.substr 8
     parts = normalize remainder.split '/'
-    routeData.route = 'example'
+    routeData.route = 'github'
     routeData.graph = parts.shift()
     routeData.nodes = parts
     return routeData
@@ -71,8 +71,8 @@ exports.getComponent = ->
       c.outPorts.missed.disconnect()
       return
 
-    out.beginGroup 'open'
     out.beginGroup ctx.route
+    out.beginGroup 'open'
     out.send ctx
     out.endGroup()
     out.endGroup()

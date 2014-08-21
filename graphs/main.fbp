@@ -1,9 +1,18 @@
+# Prepare IndexedDB
+'noflo-ui' -> NAME Storage(ui/PrepareStorage)
+Storage DB -> IN DatabaseReady(ui/DatabaseReady)
+Storage DB -> DB ProjectStorage(ui/ProjectStorage)
+Storage DB -> DB RuntimeStorage(ui/RuntimeStorage)
+
 # Event dispatching
 Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
-'user,open,search' -> ROUTES Dispatch
+'user,main,project,github,runtime,search' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
-Dispatch OUT[1] -> OPEN ProjectStorage(ui/ProjectStorage)
-Dispatch OUT[2] -> IN ShowErrors(core/Output)
+Dispatch OUT[1] -> START MainContext(ui/CreateContext) OUT -> CONTEXT Main
+Dispatch OUT[2] -> IN ProjectStorage
+Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage) CONTEXT -> CONTEXT Main
+Dispatch OUT[4] -> IN RuntimeStorage
+Dispatch OUT[5] -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Prepare the view layer
@@ -16,6 +25,8 @@ ListenWindow HEIGHT -> HEIGHT Main
 # Connect storage to UI
 UserStorage(ui/UserStorage) USER -> USER Main
 ProjectStorage(ui/ProjectStorage) CONTEXT -> CONTEXT Main
+ProjectStorage PROJECTS -> PROJECTS Main
+RuntimeStorage RUNTIMES -> RUNTIMES Main
 
 # Start routing
 ListenHash(interaction/ListenHash) INITIAL -> URL Router(ui/Router)

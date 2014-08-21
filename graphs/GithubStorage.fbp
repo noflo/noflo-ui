@@ -1,0 +1,13 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeContext.OUT:CONTEXT
+
+# Route opening requests
+'open' -> ROUTES Dispatch(routers/GroupRouter)
+Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
+Dispatch MISSED -> IN ShowErrors(core/Output)
+Loading OUT -> IN MergeContext(core/Merge)
+
+# Load Gist examples
+'graph' -> KEY GistId(objects/GetObjectKey)
+Dispatch OUT[0] -> IN GistId OUT -> GIST LoadExample(ui/LoadExample)
+LoadExample GRAPH -> GRAPH ExampleToCtx(ui/GraphToContext) OUT -> IN MergeContext

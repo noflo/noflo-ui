@@ -1,6 +1,5 @@
 INPORT=Start.IN:DB
 OUTPORT=Gather.PROJECTS:PROJECTS
-OUTPORT=Gather.RUNTIMES:RUNTIMES
 OUTPORT=Errors.OUT:ERROR
 
 'readonly' -> DATA HoldMode(core/Kick) OUT -> MODE Read(indexeddb/BeginTransaction)
@@ -8,7 +7,7 @@ Read ERROR -> IN Errors(core/Merge)
 Read COMPLETE -> SEND Gather(ui/GatherProjectData)
 Start(core/Repeat) OUT -> IN HoldMode
 Start OUT -> DB Read
-'projects,graphs,components,runtimes' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+'projects,graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
 Start OUT -> IN HoldStores
 
 # Read projects list
@@ -35,11 +34,3 @@ GraphStore TRANSACTION -> TRANSACTION ComponentStore
 '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
 GetProjects ITEM -> IN HoldAllComponents
 ComponentStore STORE -> STORE GetComponents ITEM -> COMPONENT Gather
-
-# Read runtimes list
-'runtimes' -> DATA HoldRuntimeStore(core/Kick) OUT -> NAME RuntimeStore(indexeddb/GetStore)
-Start OUT -> IN HoldRuntimeStore
-GraphStore TRANSACTION -> TRANSACTION RuntimeStore
-'' -> DATA HoldAllRuntimes(core/Kick) OUT -> ALL GetRuntimes(indexeddb/Query)
-Start OUT -> IN HoldAllRuntimes
-RuntimeStore STORE -> STORE GetRuntimes ITEM -> RUNTIME Gather

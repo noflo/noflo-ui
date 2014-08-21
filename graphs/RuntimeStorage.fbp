@@ -1,0 +1,13 @@
+INPORT=SplitDb.IN:DB
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=LoadData.RUNTIMES:RUNTIMES
+
+# Pass database connection to persistence handlers
+SplitDb(core/Split) OUT -> DB LoadData(ui/LoadRuntimeData)
+
+Dispatch(routers/GroupRouter) ROUTE -> START Loading(ui/CreateLoadingContext)
+Dispatch MISSED -> IN ShowErrors(core/Output)
+Loading OUT -> IN MergeContext(core/Merge)
+
+LoadData ERROR -> IN ShowErrors
