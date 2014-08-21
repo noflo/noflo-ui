@@ -1,5 +1,5 @@
 # Event dispatching
-Main EVENT -> IN Dispatch(routers/GroupRouter)
+Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
 'user,open,search' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch OUT[1] -> OPEN ProjectStorage(ui/ProjectStorage)
@@ -7,11 +7,11 @@ Dispatch OUT[2] -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Prepare the view layer
-'noflo-ui' -> SELECTOR Main(polymer/noflo-ui)
+'noflo-ui' -> SELECTOR Main
 Main ELEMENT -> IN Start(core/Repeat)
 Start OUT -> START ListenWindow(interaction/ListenResize)
 ListenWindow WIDTH -> WIDTH Main
-ListenWIndow HEIGHT -> HEIGHT Main
+ListenWindow HEIGHT -> HEIGHT Main
 
 # Connect storage to UI
 UserStorage(ui/UserStorage) USER -> USER Main
