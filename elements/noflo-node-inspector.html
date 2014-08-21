@@ -359,7 +359,7 @@
       component: null,
       graph: null,
       inports: [],
-      attached: function () {
+      nodeChanged: function() {
         this.updatePorts();
         this.label = this.node.metadata.label;
       },
