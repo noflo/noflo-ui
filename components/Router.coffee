@@ -41,7 +41,7 @@ buildContext = (url) ->
     return routeData
 
   if url.substr(0, 8) is 'runtime/'
-    # Remote example
+    # Graph running on a remote runtime
     remainder = url.substr 8
     parts = normalize remainder.split '/'
     routeData.route = 'runtime'
