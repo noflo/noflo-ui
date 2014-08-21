@@ -419,7 +419,13 @@
         req.send(null);
       },
       runtimes: function (runtime) {
-        if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
+        if (!runtime.seen) {
+          // Non-persistent runtime, don't show
+          return;
+        }
+        runtime.seenHoursAgo = (Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000);
+        if ((runtime.seenHoursAgo / 24) > 31) {
+          // We haven't seen this runtime in over a month, don't show it
           return;
         }
         if (this.userRuntimes.indexOf(runtime) === -1) {
@@ -457,7 +463,8 @@
               id: require('uuid')(),
               protocol: 'microflo',
               address: 'serial://'+device,
-              type: 'microflo'
+              type: 'microflo',
+              seen: new Date().toString()
             });
             this.userRuntimes.push(rtNew.runtime);
           }
