@@ -21,6 +21,9 @@ exports.getComponent = ->
       return
 
     ctx.compatibleRuntimes = rts.filter (rt) ->
+      if not ctx.graphs[0].properties.environment.type and ctx.graphs[0].properties.environment.runtime is 'html'
+        ctx.graphs[0].properties.environment.type = 'noflo-browser'
+
       return true if ctx.graphs[0].properties.environment.type is 'all'
       return true if ctx.graphs[0].properties.environment.type is rt.type
       false
