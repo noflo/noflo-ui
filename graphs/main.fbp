@@ -1,6 +1,5 @@
 # Prepare IndexedDB
 'noflo-ui' -> NAME Storage(ui/PrepareStorage)
-Storage DB -> IN DatabaseReady(ui/DatabaseReady)
 Storage DB -> DB ProjectStorage(ui/ProjectStorage)
 Storage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 

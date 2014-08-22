@@ -50,3 +50,6 @@ CreateJournals ERROR -> IN Errors
 'graph' -> KEYPATH JournalGraph
 CreateJournals STORE -> STORE JournalGraph
 JournalGraph ERROR -> IN Errors
+
+# Inform unit tests that DB is ready to be used
+Open DB -> IN DatabaseReady(ui/DatabaseReady)
