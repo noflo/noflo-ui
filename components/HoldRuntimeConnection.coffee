@@ -31,7 +31,7 @@ exports.getComponent = ->
     context.runtime = findRuntime context
     if context.runtime
       # Already connected
-      if c.params.runtime?.definition.id is context.runtime
+      if c.params.runtime?.definition.id is context.runtime.id
         context.runtime = c.params.runtime
         out.context.send context
         return

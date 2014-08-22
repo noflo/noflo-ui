@@ -4,6 +4,7 @@ NoFlo UI ChangeLog
 ## 0.1.11 (git master)
 
 * Updated to Polymer 0.3.4
+* Major refactoring to follow the Flux pattern
 
 ## 0.1.10 (2014 August 4)
 
