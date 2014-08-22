@@ -82,6 +82,9 @@ exports.getComponent = ->
     currentGraph = mainGraph
     while route.nodes.length
       nodeId = route.nodes.shift()
+      unless typeof currentGraph is 'object'
+        ctx.remote.push nodeId
+        continue
       node = currentGraph.getNode nodeId
       return sendError out unless node
       return sendError out unless node.component

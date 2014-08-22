@@ -17,15 +17,29 @@ exports.getComponent = ->
       c.context = payload
       c.outPorts.runtime.send c.context.runtime
       c.outPorts.runtime.disconnect()
-      for node in c.context.remote
-        c.outPorts.component.send node
-      c.outPorts.component.disconnect()
+      c.outPorts.component.send c.context.remote.shift()
   c.inPorts.add 'component',
     datatype: 'object'
     process: (event, payload) ->
       return unless event is 'data'
       return unless c.context
+      if payload.language is 'json'
+        noflo.graph.loadJSON JSON.parse(payload.code), (graph) ->
+          graph.name = [payload.library, payload.name].join '/'
+          c.context.graphs.push graph
+          unless c.context.remote.length
+            c.context.state = 'ok'
+            c.outPorts.context.send c.context
+            c.outPorts.context.disconnect()
+            c.context = null
+            return
+          node = graph.getNode c.context.remote.shift()
+          return c.error new Error 'Node not available' unless node
+          c.outPorts.component.send node.component
+        return
       c.context.component = payload
+      if c.context.remote.length
+        return c.error new Error 'Components are the lowest navigation level'
       c.context.state = 'ok'
       c.outPorts.context.send c.context
       c.outPorts.context.disconnect()
@@ -35,6 +49,7 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       c.context = null
+      c.outPorts.component.disconnect()
       c.error payload
   c.outPorts.add 'runtime',
     datatype: 'object'

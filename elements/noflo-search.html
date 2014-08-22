@@ -220,7 +220,7 @@
             var previous = this.graphs[idx - 1];
             var node = null;
             previous.nodes.forEach(function (node) {
-              if (node.component === this.project.id + '/' + graph.properties.id || node.component === graph.properties.id) {
+              if (node.component === this.project.id + '/' + graph.properties.id || node.component === graph.properties.id || node.component === graph.name) {
                 this.parentPath += '/' + encodeURIComponent(node.id);
               }
             }.bind(this));
