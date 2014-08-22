@@ -29,6 +29,9 @@ GetSource ERROR -> ERROR Collect
 Collect CONTEXT -> IN MergeContext
 Collect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
 
+# Send local data to runtime
+Collect CONTEXT -> CONTEXT SendContext(ui/ContextToRuntime)
+
 # Connection handling
 HoldConnection CONNECT -> CONTEXT ConnectRuntime(ui/ConnectionToContext)
 ConnectRuntime RUNTIME -> RUNTIME HoldConnection

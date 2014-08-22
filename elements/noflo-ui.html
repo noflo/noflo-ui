@@ -31,6 +31,7 @@
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
     <noflo-library></noflo-library>
+    <noflo-context id="context"></noflo-context>
     <noflo-runtime id="runtime"></noflo-runtime>
     <noflo-journal id="journal"></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
@@ -65,6 +66,7 @@
           this.fire('context:search', event.detail.search);
         }.bind(this));
         this.$.journal.editor = this.$.grapheditor;
+        this.$.runtime.panel = this.$.context.$.fixed;
       },
       context: function (context) {
         console.log('CTX is', context);

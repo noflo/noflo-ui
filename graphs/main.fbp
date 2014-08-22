@@ -5,13 +5,12 @@ PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
 Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
-'user,main,project,github,runtime,context' -> ROUTES Dispatch
+'user,main,project,github,runtime' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
 Dispatch OUT[2] -> IN ProjectStorage
 Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage)
 Dispatch OUT[4] -> IN RuntimeStorage
-Dispatch OUT[5] -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Base data to UI
