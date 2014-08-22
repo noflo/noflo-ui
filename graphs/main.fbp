@@ -1,7 +1,7 @@
 # Prepare IndexedDB
-'noflo-ui' -> NAME Storage(ui/PrepareStorage)
-Storage DB -> DB ProjectStorage(ui/ProjectStorage)
-Storage DB -> DB RuntimeStorage(ui/RuntimeStorage)
+'noflo-ui' -> NAME PrepareStorage(ui/PrepareStorage)
+PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
+PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
 Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
