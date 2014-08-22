@@ -37,7 +37,7 @@
     <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
     <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
-    <noflo-packets></noflo-packets>
+    <noflo-packets id="packets"></noflo-packets>
   </template>
   <script>
     Polymer('noflo-ui', {
@@ -66,10 +66,20 @@
           this.fire('context:search', event.detail.search);
         }.bind(this));
         this.$.journal.editor = this.$.grapheditor;
+        this.$.context.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
+        this.$.packets.panel = this.$.context.$.context;
       },
       context: function (context) {
         console.log('CTX is', context);
+        if (context.edges) {
+          this.$.packets.edges = context.edges;
+          return;
+        }
+        if (context.nodes) {
+          this.$.context.nodes = context.nodes;
+          return;
+        }
         if (context.state === 'loading') {
           return;
         }
@@ -94,6 +104,7 @@
           this.$.journal.graph = null;
           this.$.runtime.graph = null;
         }
+        this.$.context.graphs = context.graphs;
         this.$.project.graphs = context.graphs;
         this.$.project.component = context.component;
         this.$.project.project = context.project;

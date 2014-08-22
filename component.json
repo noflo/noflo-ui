@@ -62,6 +62,7 @@
     },
     "graphs": {
       "ConnectionToContext": "graphs/ConnectionToContext.fbp",
+      "ContextStorage": "graphs/ContextStorage.fbp",
       "GithubStorage": "graphs/GithubStorage.fbp",
       "LoadExample": "graphs/LoadExample.fbp",
       "LoadProjectData": "graphs/LoadProjectData.fbp",
@@ -110,7 +111,8 @@
     "components/SetToContext.coffee",
     "graphs/ConnectionToContext.fbp",
     "components/CollectRemoteNodes.coffee",
-    "components/ContextToRuntime.coffee"
+    "components/ContextToRuntime.coffee",
+    "graphs/ContextStorage.fbp"
   ],
   "json": [
     "component.json"
@@ -133,6 +135,7 @@
     "graphs/LoadRuntimeData.fbp",
     "graphs/RuntimeStorage.fbp",
     "graphs/GithubStorage.fbp",
-    "graphs/ConnectionToContext.fbp"
+    "graphs/ConnectionToContext.fbp",
+    "graphs/ContextStorage.fbp"
   ]
 }

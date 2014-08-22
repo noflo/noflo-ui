@@ -21,6 +21,8 @@ FindRuntimes CONTEXT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
 LoadData RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
 Dispatch OUT[0] -> IN PopulateRuntimeData
 PopulateRuntimeData OUT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
+
+# Connection handling, shared between contexts
 HoldConnection CONTEXT -> CONTEXT Collect(ui/CollectRemoteNodes)
 Collect RUNTIME -> RUNTIME GetSource(runtime/GetSource)
 Collect COMPONENT -> NAME GetSource

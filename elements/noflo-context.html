@@ -140,32 +140,6 @@
       projectChanged: function () {
         this.fire('project', this.project);
       },
-      graphsChanged: function () {
-        this.fire('graphs', this.graphs);
-        if (this.graphs.length) {
-          var graph = this.graphs[this.graphs.length - 1];
-          if (graph.nodes.length === 0 && this.graphs.length === 1) {
-            // Empty main graph, we should show the help text
-            this.showHelp(graph);
-          }
-
-          if (!graph.properties.project) {
-            window.setTimeout(function () {
-              this.fire('example', graph);
-              if (typeof ga === 'function') {
-                ga('send', 'event', 'url', 'navigation', 'openExample');
-              }
-            }.bind(this), 1);
-          } else {
-            if (typeof ga === 'function') {
-              ga('send', 'event', 'url', 'navigation', 'openGraph');
-            }
-          }
-          this.fire('currentgraph', graph);
-          this.setHelp();
-        }
-        this.search = null;
-      },
       nodesChanged: function () {
         this.fire('nodes', this.nodes);
         if (this.nodes.length) {
