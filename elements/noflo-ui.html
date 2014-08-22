@@ -55,8 +55,14 @@
         this.$.main.addEventListener('login', function (event) {
           this.fire('user:login', true);
         }.bind(this));
+        this.$.grapheditor.addEventListener('edges', function (event) {
+          this.fire('context:edges', event.detail);
+        }.bind(this));
+        this.$.grapheditor.addEventListener('nodes', function (event) {
+          this.fire('context:nodes', event.detail);
+        }.bind(this));
         this.$.search.addEventListener('search', function (event) {
-          this.fire('search', event.detail.search);
+          this.fire('context:search', event.detail.search);
         }.bind(this));
         this.$.journal.editor = this.$.grapheditor;
       },
