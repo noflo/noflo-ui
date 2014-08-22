@@ -1,13 +1,37 @@
 INPORT=SplitDb.IN:DB
 INPORT=Dispatch.IN:IN
+INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=LoadData.RUNTIMES:RUNTIMES
 
 # Pass database connection to persistence handlers
 SplitDb(core/Split) OUT -> DB LoadData(ui/LoadRuntimeData)
 
-Dispatch(routers/GroupRouter) ROUTE -> START Loading(ui/CreateLoadingContext)
-Dispatch MISSED -> IN ShowErrors(core/Output)
+# Route requests
+'open' -> ROUTES Dispatch(routers/GroupRouter)
+Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
+Dispatch MISSED -> IN ShowErrors(core/Output)
+
+# Add compatible runtimes to already-populated contexts
+LoadData RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
+FindRuntimes CONTEXT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
+
+# Build runtime context
+LoadData RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
+Dispatch OUT[0] -> IN PopulateRuntimeData
+PopulateRuntimeData OUT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
+HoldConnection CONTEXT -> CONTEXT Collect(ui/CollectRemoteNodes)
+Collect RUNTIME -> RUNTIME GetSource(runtime/GetSource)
+Collect COMPONENT -> NAME GetSource
+GetSource SOURCE -> COMPONENT Collect
+GetSource ERROR -> ERROR Collect
+Collect CONTEXT -> IN MergeContext
+Collect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
+
+# Connection handling
+HoldConnection CONNECT -> CONTEXT ConnectRuntime(ui/ConnectionToContext)
+ConnectRuntime RUNTIME -> RUNTIME HoldConnection
+ConnectRuntime CONTEXT -> CONTEXT Collect
 
 LoadData ERROR -> IN ShowErrors

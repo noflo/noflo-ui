@@ -11,3 +11,4 @@ Loading OUT -> IN MergeContext(core/Merge)
 'graph' -> KEY GistId(objects/GetObjectKey)
 Dispatch OUT[0] -> IN GistId OUT -> GIST LoadExample(ui/LoadExample)
 LoadExample GRAPH -> GRAPH ExampleToCtx(ui/GraphToContext) OUT -> IN MergeContext
+LoadExample ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext

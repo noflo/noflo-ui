@@ -34,6 +34,7 @@
   "noflo": {
     "components": {
       "ClearUserData": "components/ClearUserData.coffee",
+      "CollectRemoteNodes": "components/CollectRemoteNodes.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
       "CreateContext": "components/CreateContext.coffee",
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
@@ -46,16 +47,20 @@
       "GetNode": "components/GetNode.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
       "GraphToContext": "components/GraphToContext.coffee",
+      "HoldRuntimeConnection": "components/HoldRuntimeConnection.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
       "PopulateProjectData": "components/PopulateProjectData.coffee",
+      "PopulateRuntimeData": "components/PopulateRuntimeData.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
+      "SetToContext": "components/SetToContext.coffee",
       "StoreUser": "components/StoreUser.coffee"
     },
     "graphs": {
+      "ConnectionToContext": "graphs/ConnectionToContext.fbp",
       "GithubStorage": "graphs/GithubStorage.fbp",
       "LoadExample": "graphs/LoadExample.fbp",
       "LoadProjectData": "graphs/LoadProjectData.fbp",
@@ -98,7 +103,12 @@
     "graphs/LoadProjectData.fbp",
     "graphs/LoadRuntimeData.fbp",
     "graphs/RuntimeStorage.fbp",
-    "graphs/GithubStorage.fbp"
+    "graphs/GithubStorage.fbp",
+    "components/PopulateRuntimeData.coffee",
+    "components/HoldRuntimeConnection.coffee",
+    "components/SetToContext.coffee",
+    "graphs/ConnectionToContext.fbp",
+    "components/CollectRemoteNodes.coffee"
   ],
   "json": [
     "component.json"
@@ -120,6 +130,7 @@
     "graphs/LoadProjectData.fbp",
     "graphs/LoadRuntimeData.fbp",
     "graphs/RuntimeStorage.fbp",
-    "graphs/GithubStorage.fbp"
+    "graphs/GithubStorage.fbp",
+    "graphs/ConnectionToContext.fbp"
   ]
 }

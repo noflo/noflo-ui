@@ -37,7 +37,7 @@ buildContext = (url) ->
     parts = normalize remainder.split '/'
     routeData.route = 'github'
     routeData.graph = parts.shift()
-    routeData.nodes = parts
+    routeData.remote = parts
     return routeData
 
   if url.substr(0, 8) is 'runtime/'

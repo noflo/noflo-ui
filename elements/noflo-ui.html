@@ -79,6 +79,8 @@
           this.$.project.graph = context.graphs[context.graphs.length - 1];
           this.$.journal.graph = context.graphs[context.graphs.length - 1];
           this.$.runtime.graph = context.graphs[0];
+          this.$.runtime.runtimes = context.compatibleRuntimes;
+          this.$.runtime.runtime = context.runtime;
         } else {
           this.$.project.graph = null;
           this.$.journal.graph = null;

@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
-<polymer-element name="noflo-runtime" attributes="graph edges runtimes" class="gpu">
+<polymer-element name="noflo-runtime" attributes="runtimes" class="gpu">
   <template>
     <style>
       :host {
@@ -129,32 +129,7 @@
       },
       card: null,
       panel: null,
-      edges: null,
       wasConnected: false,
-      edgesChanged: function () {
-        this.sendEdges();
-      },
-      sendEdges: function () {
-        if (!this.runtime || !this.edges || !this.edges.map || !this.graph) {
-          return;
-        }
-        var edgeData = this.edges.map(function (edge) {
-          return {
-            src: {
-              process: edge.from.node,
-              port: edge.from.port
-            },
-            tgt: {
-              process: edge.to.node,
-              port: edge.to.port
-            }
-          };
-        });
-        this.runtime.sendNetwork('edges', {
-          edges: edgeData,
-          graph: this.graph.properties.id
-        });
-      },
       clearRuntime: function () {
         for (var i = 0; i < this.runtimes.length; i++) {
           if (this.runtimes[i].graph === this.graph.properties.id) {
@@ -167,12 +142,6 @@
       },
       graphChanged: function () {
         this.wasConnected = false;
-        if (this.runtime) {
-          this.stop();
-          this.execution.running = false;
-          this.execution.stopped = true;
-          this.runtime = null;
-        }
         if (this.card) {
           this.card.parentNode.removeChild(this.card);
           this.card = null;
@@ -183,42 +152,14 @@
           }
           this.runtimeSelector = null;
         }
-        if (!this.graph || !this.graph.properties.id) {
-          return;
-        }
-
-        // Fix legacy env type setting
-        this.updateGraphType(this.graph);
-
-        // Subscribe to possible type changes
-        this.graph.on('changeProperties', function (newProps, oldProps) {
-          if (newProps.environment.type !== oldProps.environment.type) {
-            this.graphChanged();
-          }
-        }.bind(this));
-
-        // Find runtime for Graph
-        var iframeRuntime = null;
-        for (var i = 0; i < this.runtimes.length; i++) {
-          if (this.runtimes[i].graph === this.graph.properties.id) {
-            this.fire('runtime', this.runtimes[i]);
-            return;
-          }
-          if (this.runtimes[i].protocol === 'iframe') {
-            iframeRuntime = this.runtimes[i];
-          }
-        }
-        if (this.graph.properties.environment.type === 'noflo-browser' && iframeRuntime) {
-          // Fall-back, select the IFRAME runtime as default
-          this.fire('runtime', iframeRuntime);
-        }
-        return;
       },
       runtimeChanged: function () {
         this.online = false;
         this.execution.running = false;
         this.execution.label = 'not started';
-        this.panel.open = false;
+        if (this.panel) {
+          this.panel.open = false;
+        }
 
         if (!this.runtime) {
           return;
@@ -249,32 +190,6 @@
             return;
           }
         }.bind(this));
-      },
-      updateGraphType: function (graph) {
-        var type = 'noflo-browser';
-        if (!graph.properties.environment) {
-          graph.setProperties({
-            environment: {
-              type: type
-            }
-          });
-        }
-        var env = JSON.parse(JSON.stringify(graph.properties.environment));
-        if (env.type) {
-          return;
-        }
-        switch (env.runtime) {
-          case 'websocket':
-            type = 'noflo-nodejs';
-            break;
-          default:
-            type = 'noflo-browser';
-            break;
-        }
-        env.type = type;
-        graph.setProperties({
-          environment: env
-        });
       },
       start: function (event) {
         event.preventDefault();

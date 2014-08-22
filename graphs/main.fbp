@@ -9,9 +9,9 @@ Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,search' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext) OUT -> CONTEXT Main
-Dispatch OUT[2] -> IN ProjectStorage
-Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage) CONTEXT -> CONTEXT Main
-Dispatch OUT[4] -> IN RuntimeStorage
+Dispatch OUT[2] -> IN ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
+Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage) CONTEXT -> CONTEXT RuntimeStorage
+Dispatch OUT[4] -> IN RuntimeStorage CONTEXT -> CONTEXT Main
 Dispatch OUT[5] -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
@@ -22,9 +22,8 @@ Start OUT -> START ListenWindow(interaction/ListenResize)
 ListenWindow WIDTH -> WIDTH Main
 ListenWindow HEIGHT -> HEIGHT Main
 
-# Connect storage to UI
+# Base data to UI
 UserStorage(ui/UserStorage) USER -> USER Main
-ProjectStorage(ui/ProjectStorage) CONTEXT -> CONTEXT Main
 ProjectStorage PROJECTS -> PROJECTS Main
 RuntimeStorage RUNTIMES -> RUNTIMES Main
 

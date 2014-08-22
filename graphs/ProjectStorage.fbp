@@ -16,6 +16,5 @@ SplitDb(core/Split) OUT -> DB LoadData(ui/LoadProjectData)
 LoadData PROJECTS -> PROJECTS PopulateProjectData(ui/PopulateProjectData)
 Dispatch OUT[0] -> IN PopulateProjectData
 PopulateProjectData OUT -> IN MergeContext
-LoadExample ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
 
 LoadData ERROR -> IN ShowErrors

@@ -22,6 +22,7 @@ exports.getComponent = ->
   , (err, groups, out) ->
     ctx = buildContext()
     ctx.state = 'error'
+    ctx.error = err
     out.send ctx
 
   c
