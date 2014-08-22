@@ -62,7 +62,11 @@
       },
       context: function (context) {
         console.log('CTX is', context);
-        if (context.state !== 'ok') {
+        if (context.state === 'loading') {
+          return;
+        }
+        if (context.state === 'error') {
+          this.showError(context);
           return;
         }
         if (context.graphs.length || context.component) {
@@ -95,6 +99,8 @@
         this.$.main.user = user['grid-user'];
         this.$.main.avatar = user['grid-avatar'];
         this.$.main.plan = user['flowhub-plan'];
+      },
+      showError: function (ctx) {
       }
     });
   </script>
