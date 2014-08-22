@@ -80,6 +80,8 @@ sendGraph = (graph, runtime, project) ->
         port: priv.port
         graph: graph.properties.id
 
+currentContext = null
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
@@ -87,10 +89,19 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       return unless payload.runtime
+      if currentContext?.runtime and currentContext.graphs[0] isnt payload.graphs[0]
+        if currentContext.runtime is payload.runtime
+          payload.runtime.reconnect()
+        else
+          currentContext.runtime.disconnect()
+      currentContext = payload
       sendContext payload
-
-      return unless payload.runtime.definition.protocol is 'iframe'
-      payload.runtime.on 'connected', ->
+      sender = ->
+        unless currentContext is payload
+          payload.runtime.removeListener 'connected', sender
+          return
         sendContext payload
+
+      payload.runtime.on 'connected', sender
 
   c

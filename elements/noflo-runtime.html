@@ -152,6 +152,9 @@
           }
           this.runtimeSelector = null;
         }
+        if (this.runtime && this.graph) {
+          this.runtime.setMain(this.graph);
+        }
       },
       runtimeChanged: function () {
         this.online = false;
