@@ -95,6 +95,7 @@
         if (context.graphs.length) {
           this.$.grapheditor.graph = context.graphs[context.graphs.length - 1];
           this.$.project.graph = context.graphs[context.graphs.length - 1];
+          this.$.packets.currentgraph = context.graphs[context.graphs.length - 1];
           this.$.journal.graph = context.graphs[context.graphs.length - 1];
           this.$.runtime.graph = context.graphs[0];
           this.$.runtime.runtimes = context.compatibleRuntimes;
