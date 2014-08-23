@@ -2,7 +2,6 @@ INPORT=SplitDb.IN:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
-OUTPORT=LoadData.RUNTIMES:RUNTIMES
 
 # Pass database connection to persistence handlers
 SplitDb(core/Split) OUT -> DB LoadData(ui/LoadRuntimeData)
@@ -12,6 +11,12 @@ SplitDb(core/Split) OUT -> DB LoadData(ui/LoadRuntimeData)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
+
+# Send all projects to the UI
+'' -> START CreateRuntimesCtx(ui/CreateContext)
+CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
+'runtimes' -> KEY SetRuntimes
+LoadData RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
 
 # Add compatible runtimes to already-populated contexts
 LoadData RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)

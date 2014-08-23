@@ -4,7 +4,7 @@ PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
 PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
-Main(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
+AppView(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,context' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
@@ -15,16 +15,15 @@ Dispatch OUT[5] -> IN ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Base data to UI
-UserStorage(ui/UserStorage) USER -> USER Main
-ProjectStorage PROJECTS -> PROJECTS Main
-RuntimeStorage RUNTIMES -> RUNTIMES Main
+UserStorage(ui/UserStorage) USER -> USER AppView
+
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
 GithubStorage CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
-MainContext OUT -> CONTEXT Main
-RuntimeStorage CONTEXT -> CONTEXT Main
-ContextStorage CONTEXT -> CONTEXT Main
+MainContext OUT -> CONTEXT AppView
+RuntimeStorage CONTEXT -> CONTEXT AppView
+ContextStorage CONTEXT -> CONTEXT AppView
 
 # Start routing
 ListenHash(interaction/ListenHash) INITIAL -> URL Router(ui/Router)
@@ -32,11 +31,11 @@ ListenHash CHANGE -> URL Router
 Router ROUTE -> IN Dispatch
 
 # Start the app
-'noflo-ui' -> SELECTOR Main
+'noflo-ui' -> SELECTOR AppView
 '' -> START ListenWindow(interaction/ListenResize)
 '' -> START UserStorage
 '' -> START ListenHash
 
 # Handle resizes
-ListenWindow WIDTH -> WIDTH Main
-ListenWindow HEIGHT -> HEIGHT Main
+ListenWindow WIDTH -> WIDTH AppView
+ListenWindow HEIGHT -> HEIGHT AppView

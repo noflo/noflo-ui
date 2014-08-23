@@ -1,7 +1,6 @@
 INPORT=SplitDb.IN:DB
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
-OUTPORT=LoadData.PROJECTS:PROJECTS
 
 # Route opening requests
 'open' -> ROUTES Dispatch(routers/GroupRouter)
@@ -11,6 +10,12 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Pass database connection to persistence handlers
 SplitDb(core/Split) OUT -> DB LoadData(ui/LoadProjectData)
+
+# Send all projects to the UI
+'' -> START CreateProjectsCtx(ui/CreateContext)
+CreateProjectsCtx OUT -> CONTEXT SetProjects(ui/SetToContext)
+'projects' -> KEY SetProjects
+LoadData PROJECTS -> VALUE SetProjects CONTEXT -> IN MergeContext
 
 # Pass data to project context builder
 LoadData PROJECTS -> PROJECTS PopulateProjectData(ui/PopulateProjectData)

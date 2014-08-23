@@ -76,6 +76,12 @@
         for (var key in context) {
           this.ctx[key] = context[key];
         }
+        if (context.projects) {
+          this.projects(context.projects);
+        }
+        if (context.runtimes) {
+          this.runtimes(context.runtimes);
+        }
         if (this.ctx.edges) {
           this.$.packets.edges = this.ctx.edges;
           return;
