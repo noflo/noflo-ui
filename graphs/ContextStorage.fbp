@@ -1,7 +1,7 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'edges,nodes' -> ROUTES Dispatch(routers/GroupRouter)
+'edges,nodes,search' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Selected edges
@@ -16,3 +16,6 @@ Dispatch OUT[1] -> IN SplitNodes(core/Split) OUT -> START CreateNodeCtx(ui/Creat
 CreateNodeCtx OUT -> CONTEXT SetNodes(ui/SetToContext)
 'nodes' -> KEY SetNodes
 SplitNodes OUT -> VALUE SetNodes CONTEXT -> IN MergeContext
+
+# Search passes through directly for now
+Dispatch OUT[2] -> IN MergeContext

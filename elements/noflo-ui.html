@@ -30,7 +30,7 @@
     </style>
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
-    <noflo-library></noflo-library>
+    <noflo-library id="library"></noflo-library>
     <noflo-context id="context"></noflo-context>
     <noflo-runtime id="runtime"></noflo-runtime>
     <noflo-journal id="journal"></noflo-journal>
@@ -64,8 +64,12 @@
           this.fire('context:nodes', event.detail);
         }.bind(this));
         this.$.search.addEventListener('search', function (event) {
-          this.fire('context:search', event.detail.search);
+          this.fire('context:search', event.detail);
         }.bind(this));
+        this.$.library.addEventListener('result', function (event) {
+          this.$.search.results(event.detail);
+        }.bind(this));
+        this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
@@ -89,6 +93,9 @@
         if (this.ctx.nodes) {
           this.$.context.nodes = this.ctx.nodes;
           return;
+        }
+        if (this.ctx.search) {
+          this.$.library.search = this.ctx.search;
         }
         if (this.ctx.state === 'loading') {
           return;
@@ -116,6 +123,7 @@
           this.$.runtime.graph = null;
         }
         this.$.context.graphs = this.ctx.graphs;
+        this.$.library.graphs = this.ctx.graphs;
         this.$.project.graphs = this.ctx.graphs;
         this.$.project.component = this.ctx.component;
         this.$.project.project = this.ctx.project;
