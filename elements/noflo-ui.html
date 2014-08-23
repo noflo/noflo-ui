@@ -67,7 +67,9 @@
           this.fire('context:search', event.detail);
         }.bind(this));
         this.$.library.addEventListener('result', function (event) {
-          this.$.search.results(event.detail);
+          this.fire('context:search_result', {
+            searchResult: event.detail
+          });
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
@@ -96,6 +98,9 @@
         }
         if (this.ctx.search) {
           this.$.library.search = this.ctx.search;
+        }
+        if (this.ctx.searchResult) {
+          this.$.search.results(this.ctx.searchResult);
         }
         if (this.ctx.state === 'loading') {
           return;
