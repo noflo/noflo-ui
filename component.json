@@ -47,6 +47,7 @@
       "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
+      "GetRuntimeGraph": "components/GetRuntimeGraph.coffee",
       "GraphToContext": "components/GraphToContext.coffee",
       "HoldRuntimeConnection": "components/HoldRuntimeConnection.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
@@ -59,7 +60,8 @@
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "SetToContext": "components/SetToContext.coffee",
-      "StoreUser": "components/StoreUser.coffee"
+      "StoreUser": "components/StoreUser.coffee",
+      "SubscribeGraph": "components/SubscribeGraph.coffee"
     },
     "graphs": {
       "ConnectionToContext": "graphs/ConnectionToContext.fbp",
@@ -114,7 +116,9 @@
     "components/CollectRemoteNodes.coffee",
     "components/ContextToRuntime.coffee",
     "graphs/ContextStorage.fbp",
-    "components/ListComponents.coffee"
+    "components/ListComponents.coffee",
+    "components/GetRuntimeGraph.coffee",
+    "components/SubscribeGraph.coffee"
   ],
   "json": [
     "component.json"

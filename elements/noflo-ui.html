@@ -118,33 +118,35 @@
           this.showError(this.ctx);
           return;
         }
-        if (this.ctx.graphs.length || this.ctx.component) {
+        if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
           this.$.main.open = false;
         } else {
           this.$.main.open = true;
         }
-        if (this.ctx.graphs.length) {
+        if (this.ctx.graphs && this.ctx.graphs.length) {
           this.$.grapheditor.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.project.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.packets.currentgraph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.journal.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.runtime.graph = this.ctx.graphs[0];
-          this.$.runtime.runtimes = this.ctx.compatibleRuntimes;
-          this.$.runtime.runtime = this.ctx.runtime;
         } else {
           this.$.project.graph = null;
           this.$.journal.graph = null;
           this.$.runtime.graph = null;
         }
-        this.$.context.graphs = this.ctx.graphs;
-        this.$.library.graphs = this.ctx.graphs;
-        this.$.project.graphs = this.ctx.graphs;
+        if (this.ctx.graphs) {
+          this.$.context.graphs = this.ctx.graphs;
+          this.$.library.graphs = this.ctx.graphs;
+          this.$.project.graphs = this.ctx.graphs;
+          this.$.search.graphs = this.ctx.graphs;
+        }
         this.$.project.component = this.ctx.component;
         this.$.project.project = this.ctx.project;
         this.$.componenteditor.component = this.ctx.component;
-        this.$.search.graphs = this.ctx.graphs;
         this.$.search.component = this.ctx.component;
         this.$.search.project = this.ctx.project;
+        this.$.runtime.runtimes = this.ctx.compatibleRuntimes;
+        this.$.runtime.runtime = this.ctx.runtime;
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];

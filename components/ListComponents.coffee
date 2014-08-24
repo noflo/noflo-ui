@@ -38,11 +38,12 @@ subscribe = (runtime, port) ->
 
   runtime.on 'connected', onRuntimeConnected
   runtime.on 'component', onRuntimeComponent
+  runtime.sendComponent 'list'
 
 unsubscribe = (runtime, port) ->
   port.disconnect()
-  runtime.removeListener 'connected', onRuntimeConnected
-  runtime.remoteListener 'component', onRuntimeComponent
+  runtime.removeListener 'connected', onRuntimeConnected if onRuntimeConnected
+  runtime.removeListener 'component', onRuntimeComponent if onRuntimeComponent
   onRuntimeConnected = null
   onRuntimeComponent = null
 
@@ -55,9 +56,13 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       unsubscribe c.runtime, c.outPorts.out if c.runtime
+      unless payload.canDo 'protocol:component'
+        return c.error new Error "Runtime #{payload.definition.id} is not able to list components"
       c.runtime = payload
       subscribe c.runtime, c.outPorts.out
   c.outPorts.add 'out',
+    datatype: 'object'
+  c.outPorts.add 'error',
     datatype: 'object'
 
   c.shutdown = ->

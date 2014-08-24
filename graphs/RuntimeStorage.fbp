@@ -1,7 +1,7 @@
 INPORT=LoadData.DB:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
-OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=SubscribeGraph.OUT:CONTEXT
 
 # Route requests
 'open' -> ROUTES Dispatch(routers/GroupRouter)
@@ -10,7 +10,7 @@ Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Send all projects to the UI
-'' -> START CreateRuntimesCtx(ui/CreateContext)
+'' -> START CreateRuntimesCtx(objects/CreateObject)
 CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
 'runtimes' -> KEY SetRuntimes
 LoadData(ui/LoadRuntimeData) RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
@@ -22,7 +22,17 @@ FindRuntimes CONTEXT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
 # Build runtime context
 LoadData RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
 Dispatch OUT[0] -> IN PopulateRuntimeData
-PopulateRuntimeData OUT -> CONTEXT HoldConnection(ui/HoldRuntimeConnection)
+PopulateRuntimeData OUT -> CONTEXT HoldDirectConnection(ui/HoldRuntimeConnection)
+HoldDirectConnection CONNECT -> CONTEXT ConnectDirectRuntime(ui/ConnectionToContext)
+ConnectDirectRuntime RUNTIME -> RUNTIME HoldDirectConnection
+ConnectDirectRuntime RUNTIME -> RUNTIME ListComponents(ui/ListComponents)
+ListComponents OUT -> IN MergeContext
+
+# Direct connection graph handling
+ConnectDirectRuntime CONTEXT -> CONTEXT GetRuntimeGraph(ui/GetRuntimeGraph)
+GetRuntimeGraph READY -> IN MergeContext
+GetRuntimeGraph READY -> CONTEXT SendContext(ui/ContextToRuntime)
+GetRuntimeGraph MISSING -> CONTEXT Collect
 
 # Connection handling, shared between contexts
 HoldConnection CONTEXT -> CONTEXT Collect(ui/CollectRemoteNodes)
@@ -42,5 +52,10 @@ ConnectRuntime RUNTIME -> RUNTIME HoldConnection
 ConnectRuntime RUNTIME -> RUNTIME ListComponents(ui/ListComponents)
 ListComponents OUT -> IN MergeContext
 ConnectRuntime CONTEXT -> CONTEXT Collect
+
+# Graph change subscription
+MergeContext OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
+SubscribeGraph RUNTIME -> RUNTIME SendGraph(runtime/SendGraphChanges)
+SubscribeGraph GRAPH -> GRAPH SendGraph
 
 LoadData ERROR -> IN ShowErrors

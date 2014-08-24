@@ -168,6 +168,9 @@
           return;
         }
         this.runtime.setMain(this.graph);
+        if (this.runtime.isConnected && this.runtime.isConnected()) {
+          this.online = true;
+        }
         this.runtime.on('status', function (status) {
           this.online = status.online;
           if (!this.online) {
@@ -189,6 +192,7 @@
         }.bind(this));
         this.runtime.on('network', function (message) {
           if (message.command === 'error') {
+            console.log(message.payload);
             this.notify('Error', message.payload.message);
             return;
           }

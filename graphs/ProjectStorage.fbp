@@ -12,7 +12,7 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 SplitDb(core/Split) OUT -> DB LoadData(ui/LoadProjectData)
 
 # Send all projects to the UI
-'' -> START CreateProjectsCtx(ui/CreateContext)
+'' -> START CreateProjectsCtx(objects/CreateObject)
 CreateProjectsCtx OUT -> CONTEXT SetProjects(ui/SetToContext)
 'projects' -> KEY SetProjects
 LoadData PROJECTS -> VALUE SetProjects CONTEXT -> IN MergeContext
