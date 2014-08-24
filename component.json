@@ -50,6 +50,7 @@
       "GraphToContext": "components/GraphToContext.coffee",
       "HoldRuntimeConnection": "components/HoldRuntimeConnection.coffee",
       "IgnoreExamples": "components/IgnoreExamples.coffee",
+      "ListComponents": "components/ListComponents.coffee",
       "LoadUserData": "components/LoadUserData.coffee",
       "MakePath": "components/MakePath.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
@@ -112,7 +113,8 @@
     "graphs/ConnectionToContext.fbp",
     "components/CollectRemoteNodes.coffee",
     "components/ContextToRuntime.coffee",
-    "graphs/ContextStorage.fbp"
+    "graphs/ContextStorage.fbp",
+    "components/ListComponents.coffee"
   ],
   "json": [
     "component.json"

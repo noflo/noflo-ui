@@ -137,11 +137,7 @@
           return localMenu;
         }.bind(this));
       },
-      projectChanged: function () {
-        this.fire('project', this.project);
-      },
       nodesChanged: function () {
-        this.fire('nodes', this.nodes);
         if (this.nodes.length) {
           this.showNodeCards();
         } else {
