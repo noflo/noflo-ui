@@ -17,6 +17,15 @@
         background-size: calc(100% - 1px);
         background-position: 0px;
         border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
+        overflow: hidden;
+      }
+
+      #runtime_icon {
+        position: absolute;
+        right: 8px;
+        top: 0px;
+        font-size: 72px;
+        color: hsl(189, 11%, 10%);
       }
 
       h2 {
@@ -91,13 +100,14 @@
     </style>
     <template if="{{ graph }}">
       <template if="{{ runtime }}">
-          <div id="address" class="{{ { online: online } | tokenList }}">
-            <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
-            <h2>{{ runtime.definition.address }}</h2>
-            <template if="{{ runtime.definition.protocol != 'iframe' }}">
-            <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
-            </template>
-          </div>
+        <i id="runtime_icon" class="fa fa-{{ icon }}"></i>
+        <div id="address" class="{{ { online: online } | tokenList }}">
+          <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
+          <h2>{{ runtime.definition.address }}</h2>
+          <template if="{{ runtime.definition.protocol != 'iframe' }}">
+          <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
+          </template>
+        </div>
         <div id="runcontrol">
           <template if="{{ online }}">
             <template if="{{ execution.running }}">
@@ -160,6 +170,9 @@
         this.online = false;
         this.execution.running = false;
         this.execution.label = 'not started';
+
+        this.icon = this.getRuntimeIcon(this.runtime);
+
         if (this.panel) {
           this.panel.open = false;
         }
@@ -331,6 +344,27 @@
           body: message,
           icon: 'app/noflo-64.png'
         });
+      },
+      getRuntimeIcon: function (runtime) {
+        if (!runtime || !runtime.definition || !runtime.definition.type) {
+          return 'cog';
+        }
+        switch (runtime.definition.type) {
+          case 'noflo-browser':
+            return 'html5';
+          case 'noflo-nodejs':
+            return 'cloud';
+          case 'noflo-gnome':
+            return 'desktop';
+          case 'noflo-gnome':
+            return 'desktop';
+          case 'microflo':
+            return 'lightbulb-o';
+          case 'javafbp':
+            return 'android';
+          case 'imgflo':
+            return 'picture-o';
+        }
       }
     });
   </script>
