@@ -76,9 +76,10 @@
         this.$.context.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
         this.$.packets.panel = this.$.context.$.context;
+        this.$.search.panel = this.$.context.$.context;
       },
       context: function (context) {
-        if (Object.keys(context)[0] !== 'componentDefinition') {
+        if (context.state) {
           console.log('CTX is', context);
         }
         for (var key in context) {
@@ -90,6 +91,14 @@
         if (context.runtimes) {
           this.runtimes(context.runtimes);
         }
+        if (context.search !== undefined) {
+          this.$.library.search = {
+            search: this.ctx.search
+          };
+        }
+        if (context.searchResult) {
+          this.$.search.results(this.ctx.searchResult);
+        }
         if (this.ctx.edges) {
           this.$.packets.edges = this.ctx.edges;
         }
@@ -99,14 +108,8 @@
         if (this.ctx.nodes || this.ctx.edges) {
           return;
         }
-        if (this.ctx.search) {
-          this.$.library.search = this.ctx.search;
-        }
         if (this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
-        }
-        if (this.ctx.searchResult) {
-          this.$.search.results(this.ctx.searchResult);
         }
         if (this.ctx.state === 'loading') {
           return;
