@@ -57,7 +57,7 @@ exports.getComponent = ->
   c.inPorts.add 'in', (event, payload) ->
     return unless event is 'data'
     # Do something with the packet, then
-    outPorts.out.send payload
+    c.outPorts.out.send payload
   c.outPorts.add 'out'
   c
     </script>
