@@ -1,19 +1,20 @@
 INPORT=LoadData.DB:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
-OUTPORT=SubscribeGraph.OUT:CONTEXT
+OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=ListenNetwork.PACKET:PACKET
 
 # Route requests
 'open' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
-Loading OUT -> IN MergeContext(core/Merge)
+Loading OUT -> IN MergeContextPreSubscribe(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Send all projects to the UI
 '' -> START CreateRuntimesCtx(objects/CreateObject)
 CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
 'runtimes' -> KEY SetRuntimes
-LoadData(ui/LoadRuntimeData) RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
+LoadData(ui/LoadRuntimeData) RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContextPreSubscribe
 
 # Add compatible runtimes to already-populated contexts
 LoadData RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
@@ -26,11 +27,11 @@ PopulateRuntimeData OUT -> CONTEXT HoldDirectConnection(ui/HoldRuntimeConnection
 HoldDirectConnection CONNECT -> CONTEXT ConnectDirectRuntime(ui/ConnectionToContext)
 ConnectDirectRuntime RUNTIME -> RUNTIME HoldDirectConnection
 ConnectDirectRuntime RUNTIME -> RUNTIME ListComponents(ui/ListComponents)
-ListComponents OUT -> IN MergeContext
+ListComponents OUT -> IN MergeContextPreSubscribe
 
 # Direct connection graph handling
 ConnectDirectRuntime CONTEXT -> CONTEXT GetRuntimeGraph(ui/GetRuntimeGraph)
-GetRuntimeGraph READY -> IN MergeContext
+GetRuntimeGraph READY -> IN MergeContextPreSubscribe
 GetRuntimeGraph READY -> CONTEXT SendContext(ui/ContextToRuntime)
 GetRuntimeGraph MISSING -> CONTEXT Collect
 
@@ -40,8 +41,8 @@ Collect RUNTIME -> RUNTIME GetSource(runtime/GetSource)
 Collect COMPONENT -> NAME GetSource
 GetSource SOURCE -> COMPONENT Collect
 GetSource ERROR -> ERROR Collect
-Collect CONTEXT -> IN MergeContext
-Collect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
+Collect CONTEXT -> IN MergeContextPreSubscribe
+Collect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContextPreSubscribe
 
 # Send local data to runtime
 Collect CONTEXT -> CONTEXT SendContext(ui/ContextToRuntime)
@@ -50,12 +51,20 @@ Collect CONTEXT -> CONTEXT SendContext(ui/ContextToRuntime)
 HoldConnection CONNECT -> CONTEXT ConnectRuntime(ui/ConnectionToContext)
 ConnectRuntime RUNTIME -> RUNTIME HoldConnection
 ConnectRuntime RUNTIME -> RUNTIME ListComponents(ui/ListComponents)
-ListComponents OUT -> IN MergeContext
+ListComponents OUT -> IN MergeContextPreSubscribe
 ConnectRuntime CONTEXT -> CONTEXT Collect
 
 # Graph change subscription
-MergeContext OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
+MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
 SubscribeGraph RUNTIME -> RUNTIME SendGraph(runtime/SendGraphChanges)
 SubscribeGraph GRAPH -> GRAPH SendGraph
+SubscribeGraph OUT -> IN MergeContext(core/Merge)
+
+# Listen to runtime network events
+SubscribeGraph RUNTIME -> RUNTIME ListenNetwork(runtime/ListenNetwork)
+SubscribeGraph GRAPH -> GRAPH ListenNetwork
+ListenNetwork PACKET -> PACKET PacketToContext(ui/PacketToContext)
+PacketToContext OUT -> IN MergeContext
+
 
 LoadData ERROR -> IN ShowErrors
