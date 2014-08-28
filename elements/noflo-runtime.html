@@ -144,7 +144,7 @@
         for (var i = 0; i < this.runtimes.length; i++) {
           if (this.runtimes[i].graph === this.graph.properties.id) {
             this.runtimes[i].graph = null;
-            this.fire('runtime', this.runtimes[i]);
+            this.fire('changed', this.runtimes[i]);
           }
         }
         this.runtime = null;
