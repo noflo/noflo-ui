@@ -545,7 +545,6 @@
       GraphEditor EDITOR -> EDITOR Journal
       GraphEditor RUNTIMECHANGED -> IN RuntimeChanged
 
-
       # Prepare component editor
       'noflo-component-editor' -> SELECTOR ComponentEditor(polymer/noflo-component-editor)
       Context COMPONENT -> COMPONENT ComponentEditor
@@ -602,6 +601,7 @@
       'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect(runtime/ConnectRuntime)
       RuntimeElement RUNTIME -> DEFINITION Connect
       Connect RUNTIME -> RUNTIME RuntimeElement
+      Connect UNAVAILABLE -> RUNTIME RuntimeElement
     </script>
     <script type="application/fbp" id="LoadRouteData">
       INPORT=GetNode.ROUTE:ROUTE
