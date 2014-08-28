@@ -233,6 +233,9 @@
           return;
         }
         this.runtime.setMain(this.currentGraph);
+        if (this.runtime.isConnected && this.runtime.isConnected()) {
+          this.online = true;
+        }
         this.runtime.on('status', function (status) {
           this.online = status.online;
           if (!this.online) {

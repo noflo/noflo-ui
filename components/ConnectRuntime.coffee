@@ -66,8 +66,9 @@ class ConnectRuntime extends noflo.Component
       tests: component.tests
 
   sendGraph: (runtime, graph) ->
+    return unless runtime
     if graph.properties.environment?.type
-      if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt @runtime.definition.type
+      if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt @runtime?.definition.type
         return
 
     runtime.sendGraph 'clear',
@@ -150,6 +151,11 @@ class ConnectRuntime extends noflo.Component
   connect: (editor, runtime) ->
     return unless editor and runtime
     @connected = false
+    if runtime.isConnected()
+      @connected = true
+      for name, def of editor.$.graph.library
+        delete editor.$.graph.library[name]
+      do @onRuntimeConnected
     runtime.once 'connected', =>
       for name, def of editor.$.graph.library
         delete editor.$.graph.library[name]
