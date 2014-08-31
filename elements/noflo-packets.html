@@ -37,11 +37,32 @@
     CircularBuffer.IndexError= {};
 
     Polymer('noflo-packets', {
+      editor: null,
       logs: {},
-      runtime: null,
       panel: null,
+      runtime: null,
       edges: [],
+      nodes: [],
       currentgraph: null,
+      attached: function () {
+        window.addEventListener('keyup', function (e) {
+          if (e.keyCode === 27) {
+            this.clearSelection();
+          }
+        }.bind(this));
+      },
+      clearSelection: function () {
+        var edge, node;
+        // Clear selections on Esc
+        while (this.edges.length) {
+          edge = this.edges.pop();
+          edge.selected = false;
+        }
+        while (this.nodes.length) {
+          node = this.nodes.pop();
+          node.selected = false;
+        }
+      },
       runtimeChanged: function () {
         this.logs = {};
       },
@@ -123,6 +144,50 @@
         for (var id in this.edgeInspectors) {
           this.edgeInspectors[id].parentNode.removeChild(this.edgeInspectors[id]);
           delete this.edgeInspectors[id];
+        }
+      },
+      nodesChanged: function () {
+        if (this.nodes.length) {
+          this.showNodeCards();
+        } else {
+          this.hideNodeCards();
+        }
+      },
+      nodeInspectors: {},
+      showNodeCards: function () {
+        this.nodes.forEach(function (node) {
+          var id = node.id;
+          if (this.nodeInspectors[id]) {
+            return;
+          }
+          var inspector = document.createElement('noflo-node-inspector');
+          inspector.node = node;
+          inspector.component = this.editor.getComponent(node.component);
+          inspector.graph = this.currentgraph;
+          this.nodeInspectors[id] = document.createElement('the-card');
+          this.nodeInspectors[id].type = 'node-inspector';
+          this.nodeInspectors[id].appendChild(inspector);
+          this.nodeInspectors[id].addTo(this.panel);
+        }.bind(this));
+
+        var found;
+        Object.keys(this.nodeInspectors).forEach(function (id) {
+          found = false;
+          this.nodes.forEach(function (node) {
+            if (node.id === id) {
+              found = true;
+            }
+          });
+          if (!found) {
+            this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+            delete this.nodeInspectors[id];
+          }
+        }.bind(this));
+      },
+      hideNodeCards: function () {
+        for (var id in this.nodeInspectors) {
+          this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+          delete this.nodeInspectors[id];
         }
       },
     });

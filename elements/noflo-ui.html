@@ -74,6 +74,7 @@
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;
+        this.$.packets.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
@@ -107,6 +108,7 @@
         }
         if (this.ctx.nodes) {
           this.$.context.nodes = this.ctx.nodes;
+          this.$.packets.nodes = this.ctx.nodes;
         }
         if (this.ctx.nodes || this.ctx.edges) {
           return;
