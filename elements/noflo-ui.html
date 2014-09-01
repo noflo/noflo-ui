@@ -105,6 +105,7 @@
         }
         if (this.ctx.packet) {
           this.$.packets.packet(this.ctx.packet);
+          this.ctx.packet = null;
         }
         if (this.ctx.nodes) {
           this.$.context.nodes = this.ctx.nodes;
@@ -115,6 +116,7 @@
         }
         if (this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
+          this.ctx.componentDefinition = null;
         }
         if (this.ctx.state === 'loading') {
           return;
