@@ -36,6 +36,7 @@
       "ClearUserData": "components/ClearUserData.coffee",
       "CollectRemoteNodes": "components/CollectRemoteNodes.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
+      "ContextToDebug": "components/ContextToDebug.coffee",
       "ContextToRuntime": "components/ContextToRuntime.coffee",
       "CreateContext": "components/CreateContext.coffee",
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
@@ -58,6 +59,7 @@
       "PacketToContext": "components/PacketToContext.coffee",
       "PopulateProjectData": "components/PopulateProjectData.coffee",
       "PopulateRuntimeData": "components/PopulateRuntimeData.coffee",
+      "ProcessErrorToContext": "components/ProcessErrorToContext.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "SetToContext": "components/SetToContext.coffee",
@@ -120,7 +122,9 @@
     "components/ListComponents.coffee",
     "components/GetRuntimeGraph.coffee",
     "components/SubscribeGraph.coffee",
-    "components/PacketToContext.coffee"
+    "components/PacketToContext.coffee",
+    "components/ProcessErrorToContext.coffee",
+    "components/ContextToDebug.coffee"
   ],
   "json": [
     "component.json"
