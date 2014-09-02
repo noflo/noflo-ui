@@ -17,7 +17,7 @@
     "spec"
   ],
   "dependencies": {
-    "the-graph": "~0.2.6",
+    "the-graph": "~0.3.0",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.1.0",

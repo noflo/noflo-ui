@@ -37,6 +37,7 @@
       graphs: [],
       nodes: [],
       edges: [],
+      errors: [],
       runtimes: [],
       component: '',
       help: null,
@@ -136,50 +137,6 @@
           localMenu.n4 = openAction;
           return localMenu;
         }.bind(this));
-      },
-      nodesChanged: function () {
-        if (this.nodes.length) {
-          this.showNodeCards();
-        } else {
-          this.hideNodeCards();
-        }
-      },
-      nodeInspectors: {},
-      showNodeCards: function () {
-        this.nodes.forEach(function (node) {
-          var id = node.id;
-          if (this.nodeInspectors[id]) {
-            return;
-          }
-          var inspector = document.createElement('noflo-node-inspector');
-          inspector.node = node;
-          inspector.component = this.editor.getComponent(node.component);
-          inspector.graph = this.graphs[this.graphs.length - 1];
-          this.nodeInspectors[id] = document.createElement('the-card');
-          this.nodeInspectors[id].type = 'node-inspector';
-          this.nodeInspectors[id].appendChild(inspector);
-          this.nodeInspectors[id].addTo(this.contextBar);
-        }.bind(this));
-
-        var found;
-        Object.keys(this.nodeInspectors).forEach(function (id) {
-          found = false;
-          this.nodes.forEach(function (node) {
-            if (node.id === id) {
-              found = true;
-            }
-          });
-          if (!found) {
-            this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
-            delete this.nodeInspectors[id];
-          }
-        }.bind(this));
-      },
-      hideNodeCards: function () {
-        for (var id in this.nodeInspectors) {
-          this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
-          delete this.nodeInspectors[id];
-        }
       },
       edgesChanged: function () {
         this.fire('edges', this.edges);

@@ -3,9 +3,10 @@
 <polymer-element name="noflo-packets">
 <script>
   (function () {
-    function CircularBuffer(n) {
+    function CircularBuffer(n, clearCallback) {
       this._array= new Array(n);
       this.length= 0;
+      this.clearCallback = clearCallback;
     }
     CircularBuffer.prototype.toString= function() {
       return '[object CircularBuffer('+this._array.length+') length '+this.length+']';
@@ -33,15 +34,39 @@
     CircularBuffer.prototype.clear = function() {
       this._array = new Array(this._array.length);
       this.length = 0;
+      if (this.clearCallback)
+        this.clearCallback();
     };
     CircularBuffer.IndexError= {};
 
     Polymer('noflo-packets', {
+      editor: null,
       logs: {},
-      runtime: null,
+      errorLogs: {},
       panel: null,
+      runtime: null,
       edges: [],
+      nodes: [],
       currentgraph: null,
+      attached: function () {
+        window.addEventListener('keyup', function (e) {
+          if (e.keyCode === 27) {
+            this.clearSelection();
+          }
+        }.bind(this));
+      },
+      clearSelection: function () {
+        var edge, node;
+        // Clear selections on Esc
+        while (this.edges.length) {
+          edge = this.edges.pop();
+          edge.selected = false;
+        }
+        while (this.nodes.length) {
+          node = this.nodes.pop();
+          node.selected = false;
+        }
+      },
       runtimeChanged: function () {
         this.logs = {};
       },
@@ -51,6 +76,26 @@
         }
         this.ensureLog(packet.edge);
         this.logs[packet.edge].push(packet);
+      },
+      processError: function (error) {
+        if (!error.process) {
+          return;
+        }
+        this.ensureErrorLog(error.process);
+        this.errorLogs[error.process].push(error.message);
+
+        this.editor.addErrorNode(error.process);
+        if (this.nodeInspectors[error.process]) {
+          var inspector = this.nodeInspectors[error.process].childNodes[0];
+          inspector.error();
+        }
+     },
+      updateEditorErrors: function () {
+        this.editor.clearErrorNodes();
+        for (var i in this.errorLogs) {
+          if (this.errorLogs[i].length > 0)
+            this.editor.addErrorNode(i);
+        }
       },
       edgeInspectors: {},
       edgesChanged: function () {
@@ -123,6 +168,59 @@
         for (var id in this.edgeInspectors) {
           this.edgeInspectors[id].parentNode.removeChild(this.edgeInspectors[id]);
           delete this.edgeInspectors[id];
+        }
+      },
+      nodesChanged: function () {
+        if (this.nodes.length) {
+          this.showNodeCards();
+        } else {
+          this.hideNodeCards();
+        }
+      },
+      ensureErrorLog: function (id) {
+        if (this.errorLogs[id]) {
+          return;
+        }
+        this.errorLogs[id] = new CircularBuffer(40,
+                                                this.updateEditorErrors.bind(this));
+      },
+      nodeInspectors: {},
+      showNodeCards: function () {
+        this.nodes.forEach(function (node) {
+          var id = node.id;
+          if (this.nodeInspectors[id]) {
+            return;
+          }
+          this.ensureErrorLog(id);
+          var inspector = document.createElement('noflo-node-inspector');
+          inspector.node = node;
+          inspector.component = this.editor.getComponent(node.component);
+          inspector.graph = this.currentgraph;
+          inspector.errorLog = this.errorLogs[id];
+          this.nodeInspectors[id] = document.createElement('the-card');
+          this.nodeInspectors[id].type = 'node-inspector';
+          this.nodeInspectors[id].appendChild(inspector);
+          this.nodeInspectors[id].addTo(this.panel);
+        }.bind(this));
+
+        var found;
+        Object.keys(this.nodeInspectors).forEach(function (id) {
+          found = false;
+          this.nodes.forEach(function (node) {
+            if (node.id === id) {
+              found = true;
+            }
+          });
+          if (!found) {
+            this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+            delete this.nodeInspectors[id];
+          }
+        }.bind(this));
+      },
+      hideNodeCards: function () {
+        for (var id in this.nodeInspectors) {
+          this.nodeInspectors[id].parentNode.removeChild(this.nodeInspectors[id]);
+          delete this.nodeInspectors[id];
         }
       },
     });

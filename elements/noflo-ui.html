@@ -74,6 +74,7 @@
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;
+        this.$.packets.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
@@ -102,17 +103,24 @@
         if (this.ctx.edges) {
           this.$.packets.edges = this.ctx.edges;
         }
+        if (this.ctx.error) {
+          this.$.packets.processError(this.ctx.error);
+          this.ctx.error = null;
+        }
         if (this.ctx.packet) {
           this.$.packets.packet(this.ctx.packet);
+          this.ctx.packet = null;
         }
         if (this.ctx.nodes) {
           this.$.context.nodes = this.ctx.nodes;
+          this.$.packets.nodes = this.ctx.nodes;
         }
         if (this.ctx.nodes || this.ctx.edges) {
           return;
         }
         if (this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
+          this.ctx.componentDefinition = null;
         }
         if (this.ctx.state === 'loading') {
           return;

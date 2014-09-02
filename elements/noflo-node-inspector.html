@@ -1,6 +1,6 @@
 <link rel="import" href="number-scrubber.html">
 
-<polymer-element name="noflo-node-inspector" attributes="node component graph" class="the-card-content">
+<polymer-element name="noflo-node-inspector" attributes="node component graph errorLog" class="the-card-content">
   <template>
     <style>
       .ports {
@@ -303,6 +303,30 @@
         content: '*';
       }
 
+      ul#errorEvents {
+        max-height: 140px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        clear: left;
+      }
+      ul#errorEvents li {
+        font-size: 10px;
+        line-height: 14px;
+        margin-bottom: 0px;
+        color: hsl(185,100%,75%);
+        max-height: 56px;
+        overflow: hidden;
+        margin-bottom: 2px;
+        padding-bottom: 2px;
+        border-bottom: 1px solid hsla(190, 30%, 2%, 0.4);
+      }
+      button#clear {
+        color: rgb(179, 222, 230);
+        right: 0px;
+        line-height: 36px;
+        background-color: hsla(0, 0%, 0%, 0.7);
+      }
+
     </style>
     <header>
       <h1 on-keydown="{{ checkUpdateLabel }}" on-blur="{{ updateLabel }}" contenteditable>{{ label }}</h1>
@@ -350,10 +374,18 @@
           </template>
         </li>
       </template>
+      <li>
+        <button id="clear" on-click="{{ clearErrors }}" title="Clear Error Log"><i class="fa fa-ban"></i></button>
+      </li>
+      <ul id="errorEvents">
+      </ul>
     </ul>
   </template>
   <script>
     Polymer('noflo-node-inspector', {
+      errorLog: null,
+      lastErrorLog: 0,
+      showErrorLogs: 20,
       label: '',
       node: null,
       component: null,
@@ -570,6 +602,42 @@
         this.graph.addInitial(true, this.node.id, name);
         this.graph.removeInitial(this.node.id, name);
         this.graph.endTransaction('bang');
+      },
+      error: function () {
+        this.renderLogs();
+      },
+      errorLogChanged: function () {
+        this.renderLogs();
+      },
+      clearErrors: function () {
+        this.errorLog.clear();
+        this.lastErrorLog = 0;
+        this.$.errorEvents.innerHTML = '';
+      },
+      renderLogs: function () {
+        var first = this.lastErrorLog;
+        var i, item, li, content;
+        if (this.errorLog.length - this.lastErrorLog > this.showErrorLogs) {
+          first = this.errorLog.length - this.showErrorLogs;
+        }
+        var fragment = document.createDocumentFragment();
+        for (i = first; i < this.errorLog.length; i++) {
+          item = this.errorLog.get(i);
+          if (!item) {
+            continue;
+          }
+          li = document.createElement('li');
+          content = document.createTextNode(item);
+          li.appendChild(content);
+          fragment.appendChild(li);
+        }
+        this.$.errorEvents.appendChild(fragment);
+        // Scroll to bottom
+        while (this.$.errorEvents.childElementCount > this.showErrorLogs) {
+          this.$.errorEvents.removeChild(this.$.errorEvents.firstChild);
+        }
+        this.$.errorEvents.scrollTop = this.$.errorEvents.scrollHeight;
+        this.lastErrorLog = this.errorLog.length;
       }
     });
   </script>
