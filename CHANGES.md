@@ -1,9 +1,9 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.11 (git master)
+## 0.1.12 (2014 September 4)
 
-* Updated to Polymer 0.3.4
+* Updated to Polymer 0.4.0
 * JavaFBP support via newer noflo-runtime library
 
 ## 0.1.10 (2014 August 4)
