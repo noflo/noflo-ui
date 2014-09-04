@@ -1,0 +1,34 @@
+INPORT=HoldConnection.CONTEXT:CONTEXT
+OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=Connect.RUNTIME:RUNTIME
+
+# First see if we're already connected
+HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Merge)
+
+# If not, the connect
+'runtime' -> KEY GetDefinition(objects/GetObjectKey)
+HoldConnection CONNECT -> IN GetDefinition
+GetDefinition OUT -> DEFINITION Connect(runtime/ConnectRuntime)
+'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect
+'runtime' -> KEY AddRuntime(ui/SetToContext)
+GetDefinition OBJECT -> CONTEXT AddRuntime
+Connect RUNTIME -> RUNTIME HoldConnection
+Connect RUNTIME -> VALUE AddRuntime
+AddRuntime CONTEXT -> IN ConnectedContext
+# Enable debug mode
+AddRuntime CONTEXT -> CONTEXT SendContext(ui/ContextToRuntime)
+# Send current project data to runtime
+SendContext CONTEXT -> CONTEXT EnableDebug(ui/ContextToDebug)
+
+# Collect remote nodes, if any
+ConnectedContext OUT -> CONTEXT Collect(ui/CollectRemoteNodes)
+Collect RUNTIME -> RUNTIME GetSource(runtime/GetSource)
+Collect COMPONENT -> NAME GetSource
+GetSource SOURCE -> COMPONENT Collect
+GetSource ERROR -> ERROR Collect
+Collect CONTEXT -> IN MergeContext(core/Merge)
+
+# Error handling
+Connect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
+Collect ERROR -> ERROR ErrorToCtx
+ErrorToCtx OUT -> IN MergeContext

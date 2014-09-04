@@ -67,13 +67,14 @@
       "SubscribeGraph": "components/SubscribeGraph.coffee"
     },
     "graphs": {
-      "ConnectionToContext": "graphs/ConnectionToContext.fbp",
       "ContextStorage": "graphs/ContextStorage.fbp",
+      "DirectRuntime": "graphs/DirectRuntime.fbp",
       "GithubStorage": "graphs/GithubStorage.fbp",
       "LoadExample": "graphs/LoadExample.fbp",
       "LoadProjectData": "graphs/LoadProjectData.fbp",
       "LoadRuntimeData": "graphs/LoadRuntimeData.fbp",
       "PrepareStorage": "graphs/PrepareStorage.fbp",
+      "ProjectRuntime": "graphs/ProjectRuntime.fbp",
       "ProjectStorage": "graphs/ProjectStorage.fbp",
       "RuntimeStorage": "graphs/RuntimeStorage.fbp",
       "UserStorage": "graphs/UserStorage.fbp",
@@ -115,7 +116,6 @@
     "components/PopulateRuntimeData.coffee",
     "components/HoldRuntimeConnection.coffee",
     "components/SetToContext.coffee",
-    "graphs/ConnectionToContext.fbp",
     "components/CollectRemoteNodes.coffee",
     "components/ContextToRuntime.coffee",
     "graphs/ContextStorage.fbp",
@@ -124,7 +124,9 @@
     "components/SubscribeGraph.coffee",
     "components/PacketToContext.coffee",
     "components/ProcessErrorToContext.coffee",
-    "components/ContextToDebug.coffee"
+    "components/ContextToDebug.coffee",
+    "graphs/DirectRuntime.fbp",
+    "graphs/ProjectRuntime.fbp"
   ],
   "json": [
     "component.json"
@@ -147,7 +149,8 @@
     "graphs/LoadRuntimeData.fbp",
     "graphs/RuntimeStorage.fbp",
     "graphs/GithubStorage.fbp",
-    "graphs/ConnectionToContext.fbp",
-    "graphs/ContextStorage.fbp"
+    "graphs/ContextStorage.fbp",
+    "graphs/DirectRuntime.fbp",
+    "graphs/ProjectRuntime.fbp"
   ]
 }

@@ -19,7 +19,7 @@ exports.getComponent = ->
 
   c.setRuntimeDebug = (enable) ->
     c.runtime.sendNetwork 'debug',
-      graph: c.graph.name
+      graph: c.graph.properties.id or c.graph.name
       enable: enable
 
   c.addListener = (runtime, graph) ->

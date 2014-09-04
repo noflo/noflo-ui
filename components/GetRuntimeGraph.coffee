@@ -4,16 +4,14 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
     datatype: 'object'
-  c.outPorts.add 'ready',
-    datatype: 'object'
-  c.outPorts.add 'missing',
+  c.outPorts.add 'context',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'context'
-    out: ['ready', 'missing']
+    out: 'context'
   , (data, groups, out) ->
     unless data.runtime
       return c.error new Error 'No runtime available'
@@ -22,16 +20,18 @@ exports.getComponent = ->
 
     if data.runtime.definition.graph
       data.remote = [] unless data.remote
-      data.remote.unshift data.runtime.definition.graph
-      out.missing.send data
+      if data.remote.indexOf(data.runtime.definition.graph) is -1
+        data.remote.unshift data.runtime.definition.graph
+      out.context.send data
       return
 
     # No graph available, prepare empty
     data.state = 'ok'
     data.graphs = [] unless data.graphs
-    emptyGraph = new noflo.Graph
-    emptyGraph.properties.id = data.runtime.definition.id
-    data.graphs.unshift emptyGraph
-    out.ready.send data
+    unless data.graphs.length
+      emptyGraph = new noflo.Graph
+      emptyGraph.properties.id = data.runtime.definition.id
+      data.graphs.unshift emptyGraph
+    out.context.send data
 
   c

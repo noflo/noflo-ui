@@ -1,0 +1,38 @@
+INPORT=HoldConnection.CONTEXT:CONTEXT
+OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=Connect.CONNECTED:RUNTIME
+
+# First see if we're already connected
+HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Merge)
+
+# Read runtime definition from context and connect
+'runtime' -> KEY GetDefinition(objects/GetObjectKey)
+HoldConnection CONNECT -> IN GetDefinition
+GetDefinition OUT -> DEFINITION Connect(runtime/ConnectRuntime)
+'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect
+'runtime' -> KEY AddRuntime(ui/SetToContext)
+GetDefinition OBJECT -> CONTEXT AddRuntime
+Connect CONNECTED -> VALUE AddRuntime
+Connect CONNECTED -> RUNTIME HoldConnection
+AddRuntime CONTEXT -> IN ConnectedContext
+
+# Get the main graph of the context
+ConnectedContext OUT -> CONTEXT GetGraph(ui/GetRuntimeGraph)
+
+# Collect remote nodes with getSource
+GetGraph CONTEXT -> CONTEXT Collect(ui/CollectRemoteNodes)
+Collect RUNTIME -> RUNTIME GetSource(runtime/GetSource)
+Collect COMPONENT -> NAME GetSource
+GetSource SOURCE -> COMPONENT Collect
+GetSource ERROR -> ERROR Collect
+Collect CONTEXT -> IN MergeContext(core/Merge)
+
+# Enable debug mode
+Collect CONTEXT -> CONTEXT EnableDebug(ui/ContextToDebug)
+
+# Error handling
+Connect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
+Collect ERROR -> ERROR ErrorToCtx
+# With direct runtimes not being able to connect is also an error
+Connect UNAVAILABLE -> ERROR ErrorToCtx
+ErrorToCtx OUT -> IN MergeContext

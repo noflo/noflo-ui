@@ -28,6 +28,9 @@ exports.getComponent = ->
     params: 'runtime'
     out: ['connect', 'context']
   , (context, groups, out) ->
+    if not context.graphs?.length and not context.remote?.length
+      out.context.send context
+      return
     context.runtime = findRuntime context
     if context.runtime
       # Already connected

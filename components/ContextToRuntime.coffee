@@ -101,7 +101,16 @@ exports.getComponent = ->
           payload.runtime.removeListener 'connected', sender
           return
         sendContext payload
+        c.outPorts.context.send payload
+        c.outPorts.context.disconnect()
 
       payload.runtime.on 'connected', sender
+
+      if payload.runtime.isConnected()
+        c.outPorts.context.send payload
+        c.outPorts.context.disconnect()
+
+  c.outPorts.add 'context',
+    datatype: 'object'
 
   c
