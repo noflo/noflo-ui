@@ -30,10 +30,11 @@ exports.getComponent = ->
       return unless status.online
       c.setRuntimeDebug true
     c.runtime.on 'status', c.listener
-    c.setRuntimeDebug true if c.runtime.isConnected()
+    c.setRuntimeDebug true if c.runtime?.isConnected()
 
   c.removeListener = ->
     return unless c.listener
+    return unless c.runtime
     # Disable debug on old runtime
     c.setRuntimeDebug false if c.runtime.isConnected()
     # Stop listening
