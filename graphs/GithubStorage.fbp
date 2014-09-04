@@ -1,5 +1,9 @@
 INPORT=Dispatch.IN:IN
+INPORT=GetToken.IN:USER
 OUTPORT=MergeContext.OUT:CONTEXT
+
+# Read user's GitHub token
+'github-token' -> KEY GetToken(objects/GetObjectKey)
 
 # Route opening requests
 'open' -> ROUTES Dispatch(routers/GroupRouter)
@@ -10,5 +14,6 @@ Loading OUT -> IN MergeContext(core/Merge)
 # Load Gist examples
 'graph' -> KEY GistId(objects/GetObjectKey)
 Dispatch OUT[0] -> IN GistId OUT -> GIST LoadExample(ui/LoadExample)
+GetToken OUT -> TOKEN LoadExample
 LoadExample GRAPH -> GRAPH ExampleToCtx(ui/GraphToContext) OUT -> IN MergeContext
 LoadExample ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
