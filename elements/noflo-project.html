@@ -3,7 +3,7 @@
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
-<polymer-element name="noflo-project" attributes="project githubtoken graph component">
+<polymer-element name="noflo-project" attributes="project graph component">
   <template>
     <style>
       h2 {
@@ -203,18 +203,12 @@
         </template>
         </template>
       </main>
-      <template if="{{ project.repo && githubtoken}}">
+      <template if="{{ project.repo }}">
       <footer>
         <h1 title="{{ project.repo }}"><i class="fa fa-github"></i> {{ project.repo }}</h1>
-        <textarea placeholder="Commit message" value="{{ commitMessage }}"></textarea>
-        <button on-click="{{ upload }}" disabled?="{{commitMessage === ''}}" title="{{(commitMessage === '' ? 'needs commit message' : '')}}">
+        <button on-click="{{ upload }}">
           <i class="fa fa-cloud-upload"></i>
-          <template if="{{ graph }}">
-          Upload {{ graph.properties.name }}
-          </template>
-          <template if="{{ component && !graph }}">
-          Upload {{ component.name }}
-          </template>
+          Synchronize
         </button>
       </footer>
       </template>
@@ -223,8 +217,6 @@
   <script>
     Polymer('noflo-project', {
       project: null,
-      commitMessage: '',
-      githubtoken: '',
       runtimes: [],
       runtime: null,
       graph: null,
@@ -328,27 +320,13 @@
       },
       upload: function (event) {
         event.preventDefault();
-        if (!this.githubtoken) {
-          return;
-        }
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'pushGithub');
         }
-        var content;
-        if (this.graph) {
-          content = JSON.stringify(this.graph, null, 4);
-        }
-        if (this.component && !this.graph) {
-          content = this.component.code;
-        }
-        this.fire('upload', {
+        this.fire('sync', {
           repo: this.project.repo,
-          doc: this.graph || this.component,
-          content: content,
-          token: this.githubtoken,
-          message: this.commitMessage
+          project: this.project
         });
-        this.commitMessage = '';
       }
     });
   </script>

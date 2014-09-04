@@ -63,6 +63,9 @@
         this.$.grapheditor.addEventListener('nodes', function (event) {
           this.fire('context:nodes', event.detail);
         }.bind(this));
+        this.$.project.addEventListener('sync', function (event) {
+          this.fire('github:sync:prepare', event.detail);
+        }.bind(this));
         this.$.search.addEventListener('search', function (event) {
           this.fire('context:search', event.detail);
         }.bind(this));
@@ -161,7 +164,6 @@
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];
-        this.$.project.githubtoken = user['github-token'];
         this.$.main.gridToken = user['grid-token'];
         this.$.main.user = user['grid-user'];
         this.$.main.avatar = user['grid-avatar'];

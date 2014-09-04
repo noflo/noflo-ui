@@ -1,0 +1,208 @@
+noflo = require 'noflo'
+octo = require 'octo'
+
+githubGet = (url, token, callback) ->
+  api = octo.api()
+  api.token token
+  request = api.get url
+  request.on 'success', (res) ->
+    unless res.body
+      callback new Error 'No result received'
+      return
+    callback null, res.body
+  request.on 'error', (err) ->
+    callback err.body
+  do request
+
+getTree = (repo, tree, token, callback) ->
+  githubGet "/repos/#{repo}/git/trees/#{tree}", token, callback
+
+getCommit = (repo, sha, token, callback) ->
+  githubGet "/repos/#{repo}/git/commits/#{sha}", token, callback
+
+processGraphsTree = (tree, objects, prefix) ->
+  graphs = tree.tree.filter (entry) ->
+    return false unless entry.type is 'blob'
+    return false unless entry.path.match '.*\.(fbp|json)$'
+    true
+  objects.graphs = objects.graphs.concat graphs.map (entry) ->
+    entry.name = entry.path.substr 0, entry.path.indexOf '.'
+    entry.fullPath = "#{prefix}#{entry.path}"
+    entry
+
+processComponentsTree = (tree, objects, prefix) ->
+  components = tree.tree.filter (entry) ->
+    return false unless entry.type is 'blob'
+    return false unless entry.path.match '.*\.(coffee|js)$'
+    true
+  objects.components = objects.components.concat components.map (entry) ->
+    entry.name = entry.path.substr 0, entry.path.indexOf '.'
+    entry.fullPath = "#{prefix}#{entry.path}"
+    entry
+
+getRemoteObjects = (repo, sha, token, callback) ->
+  getCommit repo, sha, token, (err, commit) ->
+    return callback err if err
+    getTree repo, commit.tree.sha, token, (err, rootTree) ->
+      return callback err if err
+
+      graphsSha = null
+      componentsSha = null
+      remoteObjects =
+        graphs: []
+        components: []
+      for entry in rootTree.tree
+        if entry.path is 'fbp.json' and entry.type is 'blob'
+          return callback new Error 'fbp.json support is pending standardization'
+        if entry.path is 'graphs' and entry.type is 'tree'
+          graphsSha = entry.sha
+          continue
+        if entry.path is 'components' and entry.type is 'tree'
+          componentsSha = entry.sha
+          continue
+
+      if graphsSha
+        getTree repo, graphsSha, token, (err, graphsTree) ->
+          return callback err if err
+          processGraphsTree graphsTree, remoteObjects, 'graphs/'
+          return callback remoteObjects unless componentsSha
+          getTree repo, componentsSha, token, (err, componentsTree) ->
+            return callback err if err
+            processComponentsTree componentsTree, remoteObjects, 'components/'
+            return callback null, remoteObjects
+        return
+
+      if componentsSha
+        getTree repo, componentsSha, token, (err, componentsTree) ->
+          return callback err if err
+          processComponentsTree componentsTree, remoteObjects, 'components/'
+          return callback null, remoteObjects
+        return
+
+      # No graphs or components on the remote
+      return callback null, remoteObjects
+
+addToPull = (type, local, remote, operations) ->
+  operations.pull.push
+    type: type
+    local: local
+    remote: remote
+addToPush = (type, local, remote, operations) ->
+  operations.push.push
+    type: type
+    local: local
+    remote: remote
+addToConflict = (type, local, remote, operations) ->
+  operations.conflict.push
+    type: type
+    local: local
+    remote: remote
+
+exports.getComponent = ->
+  c = new noflo.Component
+  c.inPorts.add 'reference',
+    datatype: 'object'
+  c.inPorts.add 'project',
+    datatype: 'object'
+  c.inPorts.add 'token',
+    datatype: 'string',
+    required: yes
+  c.outPorts.add 'noop',
+    datatype: 'object'
+  c.outPorts.add 'local',
+    datatype: 'object'
+  c.outPorts.add 'remote',
+    datatype: 'object'
+  c.outPorts.add 'both',
+    datatype: 'object'
+
+  noflo.helpers.WirePattern c,
+    in: ['reference', 'project']
+    params: 'token'
+    out: ['noop', 'local', 'remote', 'both']
+    async: true
+  , (data, groups, out, callback) ->
+    operations =
+      push: []
+      pull: []
+      conflict: []
+
+    getRemoteObjects data.project.repo, data.reference.object.sha, c.params.token, (err, objects) ->
+      return callback err if err
+
+      for remoteGraph in objects.graphs
+        matching = data.project.graphs.filter (localGraph) ->
+          return true if localGraph.properties.sha is remoteGraph.sha
+          return true if localGraph.name is remoteGraph.name
+          false
+        unless matching.length
+          # No local version, add to pull
+          addToPull 'graph', null, remoteGraph, operations
+          continue
+        if matching[0].properties.sha is remoteGraph.sha
+          # Updated local version
+          addToPush 'graph', matching[0], remoteGraph, operations if matching[0].properties.changed
+          continue
+        if matching[0].properties.changed is false
+          addToPull 'graph', matching[0], remoteGraph, operations
+          continue
+        addToConflict 'graph', matching[0], remoteGraph, operations
+
+      localOnly = data.project.graphs.filter (localGraph) ->
+        notPushed = true
+        for remoteGraph in objects.graphs
+          notPushed = false if localGraph.properties.sha is remoteGraph.sha
+          notPushed = false if localGraph.name is remoteGraph.name
+        return notPushed
+      addToPush 'graph', localGraph, null, operations for localGraph in localOnly
+
+      for remoteComponent in objects.components
+        matching = data.project.components.filter (localComponent) ->
+          return true if localComponent.sha is remoteComponent.sha
+          return true if localComponent.name is remoteComponent.name
+          false
+        unless matching.length
+          # No local version, add to pull
+          addToPull 'component', null, remoteComponent, operations
+          continue
+        if matching[0].sha is remoteComponent.sha
+          # Updated local version
+          addToPush 'component', matching[0], remoteComponent, operations if matching[0].changed
+          continue
+        if matching[0].changed is false
+          addToPull 'component', matching[0], remoteComponent, operations
+          continue
+        addToConflict 'component', matching[0], remoteComponent, operations
+
+      localOnly = data.project.components.filter (localComponent) ->
+        notPushed = true
+        for remoteComponent in objects.components
+          notPushed = false if localComponent.sha is remoteComponent.sha
+          notPushed = false if localComponent.name is remoteComponent.name
+        return notPushed
+      addToPush 'component', localComponent, null, operations for localComponent in localOnly
+
+      if operations.conflict.length
+        out.both.send operations
+        do callback
+        return
+
+      if operations.push.length and operations.pull.length
+        out.both.send operations
+        do callback
+        return
+
+      if operations.push.length
+        out.local.send operations
+        do callback
+        return
+
+      if operations.pull.length
+        out.remote.send operations
+        do callback
+        return
+
+      out.noop.send operations
+      do callback
+
+  c

@@ -29,10 +29,12 @@
     "noflo/noflo-runtime": "*",
     "the-grid/flowhub-registry": "*",
     "jonnor/microflo": "*",
-    "gjohnson/uuid": "*"
+    "gjohnson/uuid": "*",
+    "bergie/octo": "*"
   },
   "noflo": {
     "components": {
+      "CheckSyncState": "components/CheckSyncState.coffee",
       "ClearUserData": "components/ClearUserData.coffee",
       "CollectRemoteNodes": "components/CollectRemoteNodes.coffee",
       "ConnectRuntime": "components/ConnectRuntime.coffee",
@@ -70,6 +72,7 @@
       "ContextStorage": "graphs/ContextStorage.fbp",
       "DirectRuntime": "graphs/DirectRuntime.fbp",
       "GithubStorage": "graphs/GithubStorage.fbp",
+      "GithubSynchronization": "graphs/GithubSynchronization.fbp",
       "LoadExample": "graphs/LoadExample.fbp",
       "LoadProjectData": "graphs/LoadProjectData.fbp",
       "LoadRuntimeData": "graphs/LoadRuntimeData.fbp",
@@ -126,7 +129,9 @@
     "components/ProcessErrorToContext.coffee",
     "components/ContextToDebug.coffee",
     "graphs/DirectRuntime.fbp",
-    "graphs/ProjectRuntime.fbp"
+    "graphs/ProjectRuntime.fbp",
+    "graphs/GithubSynchronization.fbp",
+    "components/CheckSyncState.coffee"
   ],
   "json": [
     "component.json"
@@ -151,6 +156,7 @@
     "graphs/GithubStorage.fbp",
     "graphs/ContextStorage.fbp",
     "graphs/DirectRuntime.fbp",
-    "graphs/ProjectRuntime.fbp"
+    "graphs/ProjectRuntime.fbp",
+    "graphs/GithubSynchronization.fbp"
   ]
 }

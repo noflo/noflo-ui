@@ -1,0 +1,19 @@
+INPORT=Dispatch.IN:IN
+INPORT=Token.IN:TOKEN
+OUTPORT=Kick.OUT:CONTEXT
+OUTPORT=Errors.OUT:ERROR
+
+'prepare' -> ROUTES Dispatch(routers/GroupRouter)
+Dispatch MISSED -> IN ShowErrors(core/Output)
+
+# Preparation for sync: check local and remote situation
+'repo' -> KEY GetRepo(objects/GetObjectKey)
+Dispatch OUT[0] -> IN GetRepo
+Token(core/Repeat) OUT -> TOKEN GetReference(github/GetReference)
+GetRepo OUT -> REPOSITORY GetReference
+GetReference REFERENCE -> REFERENCE CheckSyncState(ui/CheckSyncState)
+'project' -> KEY GetProject(objects/GetObjectKey)
+GetRepo OBJECT -> IN GetProject OUT -> PROJECT CheckSyncState
+Token OUT -> TOKEN CheckSyncState
+GetReference ERROR -> IN Errors(core/Merge)
+GetReference REFERENCE -> IN Kick(core/Kick)
