@@ -1,6 +1,6 @@
 INPORT=Dispatch.IN:IN
 INPORT=Token.IN:TOKEN
-OUTPORT=Kick.OUT:CONTEXT
+OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=Errors.OUT:ERROR
 
 'prepare' -> ROUTES Dispatch(routers/GroupRouter)
@@ -16,4 +16,15 @@ GetReference REFERENCE -> REFERENCE CheckSyncState(ui/CheckSyncState)
 GetRepo OBJECT -> IN GetProject OUT -> PROJECT CheckSyncState
 Token OUT -> TOKEN CheckSyncState
 GetReference ERROR -> IN Errors(core/Merge)
+CheckSyncState ERROR -> IN Errors
 GetReference REFERENCE -> IN Kick(core/Kick)
+
+# Different synchronization states
+CheckSyncState NOOP -> IN MergeOps(core/Merge)
+CheckSyncState LOCAL -> IN MergeOps
+CheckSyncState REMOTE -> IN MergeOps
+CheckSyncState BOTH -> IN MergeOps
+'syncOperation' -> KEY OpsToContext(ui/SetToContext)
+MergeOps OUT -> VALUE OpsToContext
+MergeOps OUT -> START CreateCtx(ui/CreateContext) OUT -> CONTEXT OpsToContext
+OpsToContext CONTEXT -> IN MergeContext(core/Merge)

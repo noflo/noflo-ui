@@ -49,6 +49,7 @@ getRemoteObjects = (repo, sha, token, callback) ->
       graphsSha = null
       componentsSha = null
       remoteObjects =
+        tree: commit.tree.sha
         graphs: []
         components: []
       for entry in rootTree.tree
@@ -82,18 +83,30 @@ getRemoteObjects = (repo, sha, token, callback) ->
       # No graphs or components on the remote
       return callback null, remoteObjects
 
+createPath = (type, entity) ->
+  name = entity.name.replace /\s/g, '_'
+  if type is 'graph'
+    return "graphs/#{name}.json"
+  switch entity.language
+    when 'coffeescript' then return "components/#{name}." + 'coffee'
+    when 'javascript' then return "components/#{name}.js"
+    else return "components/#{name}.#{entity.language}"
+
 addToPull = (type, local, remote, operations) ->
   operations.pull.push
+    path: remote.fullPath
     type: type
     local: local
     remote: remote
 addToPush = (type, local, remote, operations) ->
   operations.push.push
+    path: remote?.fullPath or createPath type, local
     type: type
     local: local
     remote: remote
 addToConflict = (type, local, remote, operations) ->
   operations.conflict.push
+    path: remote.fullPath
     type: type
     local: local
     remote: remote
@@ -115,6 +128,8 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'both',
     datatype: 'object'
+  c.outPorts.add 'error',
+    datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: ['reference', 'project']
@@ -123,12 +138,16 @@ exports.getComponent = ->
     async: true
   , (data, groups, out, callback) ->
     operations =
+      repo: data.project.repo
+      ref: data.reference.ref
+      commit: data.reference.object.sha
       push: []
       pull: []
       conflict: []
 
-    getRemoteObjects data.project.repo, data.reference.object.sha, c.params.token, (err, objects) ->
+    getRemoteObjects operations.repo, operations.commit, c.params.token, (err, objects) ->
       return callback err if err
+      operations.tree = objects.tree
 
       for remoteGraph in objects.graphs
         matching = data.project.graphs.filter (localGraph) ->
