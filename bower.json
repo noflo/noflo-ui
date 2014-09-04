@@ -1,7 +1,7 @@
 {
   "name": "noflo-ui",
   "main": "index.js",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "homepage": "https://github.com/noflo/noflo-ui",
   "authors": [
     "Henri Bergius <henri.bergius@iki.fi>"
@@ -17,14 +17,13 @@
     "spec"
   ],
   "dependencies": {
-    "the-graph": "~0.3.0",
+    "the-graph": "0.3.1",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.1.0",
     "codemirror": "~4.5.0",
     "coffee-script": "*",
-    "platform": "Polymer/platform#0.3.5",
-    "polymer": "Polymer/polymer#0.3.4",
+    "polymer": "0.4.0",
     "requirejs": "~2.1.11"
   },
   "devDependencies": {
