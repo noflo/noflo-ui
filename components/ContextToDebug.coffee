@@ -18,27 +18,27 @@ exports.getComponent = ->
     out.send context
 
   c.setRuntimeDebug = (enable) ->
-    @runtime.sendNetwork 'debug',
-      graph: @graph.name
+    c.runtime.sendNetwork 'debug',
+      graph: c.graph.name
       enable: enable
 
   c.addListener = (runtime, graph) ->
     return unless runtime? and graph?
-    @runtime = runtime
-    @graph = graph
-    @listener = (status) =>
+    c.runtime = runtime
+    c.graph = graph
+    c.listener = (status) =>
       return unless status.online
-      @setRuntimeDebug true
-    @runtime.on 'status', @listener
-    @setRuntimeDebug true if @runtime.isConnected()
+      c.setRuntimeDebug true
+    c.runtime.on 'status', c.listener
+    c.setRuntimeDebug true if c.runtime.isConnected()
 
-  c.removeListener = () ->
-    return unless @listener
+  c.removeListener = ->
+    return unless c.listener
     # Disable debug on old runtime
-    @setRuntimeDebug false if @runtime.isConnected()
+    c.setRuntimeDebug false if c.runtime.isConnected()
     # Stop listening
-    @runtime.removeListener 'status', @listener
-    delete @runtime
-    delete @graph
+    c.runtime.removeListener 'status', c.listener
+    delete c.runtime
+    delete c.graph
 
   c
