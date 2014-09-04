@@ -3,6 +3,7 @@
 <link rel="import" href="noflo-new-graph.html">
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
+<link rel="import" href="noflo-project-sync.html">
 <polymer-element name="noflo-project" attributes="project graph component">
   <template>
     <style>
@@ -327,6 +328,14 @@
           repo: this.project.repo,
           project: this.project
         });
+      },
+      confirm: function (operation) {
+        var dialog = document.createElement('noflo-project-sync');
+        dialog.operation = operation;
+        document.body.appendChild(dialog);
+        dialog.addEventListener('sync', function (event) {
+          this.fire('syncDecision', event.detail);
+        }.bind(this));
       }
     });
   </script>

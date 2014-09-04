@@ -66,6 +66,9 @@
         this.$.project.addEventListener('sync', function (event) {
           this.fire('github:sync:prepare', event.detail);
         }.bind(this));
+        this.$.project.addEventListener('syncDecision', function (event) {
+          this.fire('github:sync:synchronize', event.detail);
+        }.bind(this));
         this.$.search.addEventListener('search', function (event) {
           this.fire('context:search', event.detail);
         }.bind(this));
@@ -118,7 +121,11 @@
           this.$.context.nodes = this.ctx.nodes;
           this.$.packets.nodes = this.ctx.nodes;
         }
-        if (this.ctx.nodes || this.ctx.edges) {
+        if (context.nodes || context.edges) {
+          return;
+        }
+        if (context.syncOperation) {
+          this.$.project.confirm(context.syncOperation);
           return;
         }
         if (this.ctx.componentDefinition) {

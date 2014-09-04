@@ -18,6 +18,9 @@ html /deep/ div {
   outline:none;
 }
 
+html /deep/ th {
+  text-align: left;
+}
 
 html /deep/ the-panel {
   background-color: hsla(0, 0%, 0%, 0.98) !important;
