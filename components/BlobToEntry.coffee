@@ -8,6 +8,7 @@ handleGraph = (sha, content, entry, project, out) ->
   # Start by loading the graph object
   method = 'loadJSON'
   method = 'loadFBP' if entry.remote.language is 'fbp'
+  content = JSON.parse content if entry.remote.language is 'json'
   noflo.graph[method] content, (graph) ->
     # Properties that need to be changed for both cases
     graph.properties = {} unless graph.properties
