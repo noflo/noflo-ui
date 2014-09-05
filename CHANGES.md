@@ -1,15 +1,24 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.1.11 (git master)
+# 0.2.0 (git master)
 
-* Updated to Polymer 0.3.4
 * Major refactoring to follow the Flux pattern
+* Full project synchronization with GitHub
 * Ability to connect dynamically to unregistered runtimes via supplying a URL-encoded runtime definition instead of the ID in format `endpoint?protocol=websocket&address=ws://example.net:3569`. For example:
 
 ```
 #runtime/endpoint%3Fprotocol%3Dwebsocket%26address%3Dws%3A%2F%2Flocalhost%3A3570
 ```
+
+## 0.1.13 (2014 September 5)
+
+* Firefox `shim-shadowdom` styling fix #320
+
+## 0.1.12 (2014 September 4)
+
+* Updated to Polymer 0.4.0
+* JavaFBP support via newer noflo-runtime library
 
 ## 0.1.10 (2014 August 4)
 
