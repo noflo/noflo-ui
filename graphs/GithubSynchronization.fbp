@@ -30,7 +30,10 @@ MergeOps OUT -> START CreateCtx(ui/CreateContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 
 # Actual synchronization operation(s)
-Dispatch OUT[1] -> IN PreparePulls(ui/PreparePulls)
+Dispatch OUT[1] -> IN DoSync(core/Repeat)
+
+# First pull changes in
+DoSync OUT -> IN PreparePulls(ui/PreparePulls)
 Token OUT -> TOKEN GetBlob(github/GetBlob)
 PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
 PreparePulls REPOSITORY -> REPOSITORY GetBlob
@@ -40,3 +43,34 @@ BlobToEntry COMPONENT -> IN ShowErrors
 BlobToEntry GRAPH -> IN ShowErrors
 BlobToEntry ERROR -> IN ShowErrors
 GetBlob ERROR -> IN Errors
+
+# Then push local changes
+DoSync OUT -> IN PreparePush(ui/PreparePush)
+PreparePush OUT -> IN UpdateFromTree(ui/UpdateFromTree)
+PreparePush BASETREE -> BASE CreateTree(github/CreateTree)
+Token OUT -> TOKEN CreateTree
+PreparePush TREE -> TREE CreateTree
+PreparePush REPOSITORY -> REPOSITORY CreateTree
+CreateTree OUT -> TREE UpdateFromTree
+PreparePush REPOSITORY -> REPOSITORY UpdateFromTree
+Token OUT -> TOKEN UpdateFromTree
+'sha' -> KEY GetTreeSha(objects/GetObjectKey)
+CreateTree OUT -> IN GetTreeSha
+GetTreeSha OUT -> TREE CreateCommit(github/CreateCommit)
+Token OUT -> TOKEN CreateCommit
+PreparePush MESSAGE -> MESSAGE CreateCommit
+PreparePush PARENTCOMMITS -> PARENTS CreateCommit
+PreparePush REPOSITORY -> REPOSITORY CreateCommit
+
+CreateCommit OUT -> COMMIT UpdateReference(github/UpdateReference)
+PreparePush REF -> REFERENCE UpdateReference
+Token OUT -> TOKEN UpdateReference
+PreparePush REPOSITORY -> REPOSITORY UpdateReference
+UpdateReference REFERENCE -> IN ShowErrors
+
+UpdateFromTree COMPONENT -> IN ShowErrors
+UpdateFromTree GRAPH -> IN ShowErrors
+UpdateFromTree ERROR -> IN ShowErrors
+CreateTree ERROR -> IN Errors
+CreateCommit ERROR -> IN Errors
+UpdateReference ERROR -> IN Errors

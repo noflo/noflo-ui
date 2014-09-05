@@ -3,7 +3,7 @@
   "description": "NoFlo Development Environment",
   "author": "Henri Bergius <henri.bergius@iki.fi>",
   "repo": "noflo/noflo-ui",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "keywords": [
     "fbp",
     "noflo",
@@ -63,12 +63,14 @@
       "PopulateProjectData": "components/PopulateProjectData.coffee",
       "PopulateRuntimeData": "components/PopulateRuntimeData.coffee",
       "PreparePulls": "components/PreparePulls.coffee",
+      "PreparePush": "components/PreparePush.coffee",
       "ProcessErrorToContext": "components/ProcessErrorToContext.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "SetToContext": "components/SetToContext.coffee",
       "StoreUser": "components/StoreUser.coffee",
-      "SubscribeGraph": "components/SubscribeGraph.coffee"
+      "SubscribeGraph": "components/SubscribeGraph.coffee",
+      "UpdateFromTree": "components/UpdateFromTree.coffee"
     },
     "graphs": {
       "ContextStorage": "graphs/ContextStorage.fbp",
@@ -135,7 +137,9 @@
     "graphs/GithubSynchronization.fbp",
     "components/CheckSyncState.coffee",
     "components/BlobToEntry.coffee",
-    "components/PreparePulls.coffee"
+    "components/PreparePulls.coffee",
+    "components/PreparePush.coffee",
+    "components/UpdateFromTree.coffee"
   ],
   "json": [
     "component.json"
