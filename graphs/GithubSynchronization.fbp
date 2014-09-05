@@ -3,7 +3,7 @@ INPORT=Token.IN:TOKEN
 OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=Errors.OUT:ERROR
 
-'prepare' -> ROUTES Dispatch(routers/GroupRouter)
+'prepare,synchronize' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Preparation for sync: check local and remote situation
@@ -28,3 +28,15 @@ CheckSyncState BOTH -> IN MergeOps
 MergeOps OUT -> VALUE OpsToContext
 MergeOps OUT -> START CreateCtx(ui/CreateContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
+
+# Actual synchronization operation(s)
+Dispatch OUT[1] -> IN PreparePulls(ui/PreparePulls)
+Token OUT -> TOKEN GetBlob(github/GetBlob)
+PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
+PreparePulls REPOSITORY -> REPOSITORY GetBlob
+PreparePulls SHA -> SHA GetBlob
+GetBlob OUT -> BLOB BlobToEntry
+BlobToEntry COMPONENT -> IN ShowErrors
+BlobToEntry GRAPH -> IN ShowErrors
+BlobToEntry ERROR -> IN ShowErrors
+GetBlob ERROR -> IN Errors

@@ -34,6 +34,7 @@
   },
   "noflo": {
     "components": {
+      "BlobToEntry": "components/BlobToEntry.coffee",
       "CheckSyncState": "components/CheckSyncState.coffee",
       "ClearUserData": "components/ClearUserData.coffee",
       "CollectRemoteNodes": "components/CollectRemoteNodes.coffee",
@@ -61,6 +62,7 @@
       "PacketToContext": "components/PacketToContext.coffee",
       "PopulateProjectData": "components/PopulateProjectData.coffee",
       "PopulateRuntimeData": "components/PopulateRuntimeData.coffee",
+      "PreparePulls": "components/PreparePulls.coffee",
       "ProcessErrorToContext": "components/ProcessErrorToContext.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
@@ -131,7 +133,9 @@
     "graphs/DirectRuntime.fbp",
     "graphs/ProjectRuntime.fbp",
     "graphs/GithubSynchronization.fbp",
-    "components/CheckSyncState.coffee"
+    "components/CheckSyncState.coffee",
+    "components/BlobToEntry.coffee",
+    "components/PreparePulls.coffee"
   ],
   "json": [
     "component.json"

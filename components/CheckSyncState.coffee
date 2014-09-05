@@ -27,6 +27,7 @@ processGraphsTree = (tree, objects, prefix) ->
     true
   objects.graphs = objects.graphs.concat graphs.map (entry) ->
     entry.name = entry.path.substr 0, entry.path.indexOf '.'
+    entry.language = entry.path.substr entry.path.lastIndexOf('.') + 1
     entry.fullPath = "#{prefix}#{entry.path}"
     entry
 
@@ -37,6 +38,11 @@ processComponentsTree = (tree, objects, prefix) ->
     true
   objects.components = objects.components.concat components.map (entry) ->
     entry.name = entry.path.substr 0, entry.path.indexOf '.'
+    language = entry.path.substr entry.path.lastIndexOf('.') + 1
+    switch language
+      when 'coffee' then entry.language = 'coffeescript'
+      when 'js' then entry.language = 'javascript'
+      else entry.language = language
     entry.fullPath = "#{prefix}#{entry.path}"
     entry
 
@@ -139,6 +145,7 @@ exports.getComponent = ->
   , (data, groups, out, callback) ->
     operations =
       repo: data.project.repo
+      project: data.project
       ref: data.reference.ref
       commit: data.reference.object.sha
       push: []
