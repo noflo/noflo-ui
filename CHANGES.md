@@ -1,6 +1,10 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.1.13 (2014 September 5)
+
+* Firefox `shim-shadowdom` styling fix #320
+
 ## 0.1.12 (2014 September 4)
 
 * Updated to Polymer 0.4.0
