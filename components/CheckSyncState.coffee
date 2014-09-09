@@ -72,7 +72,7 @@ getRemoteObjects = (repo, sha, token, callback) ->
         getTree repo, graphsSha, token, (err, graphsTree) ->
           return callback err if err
           processGraphsTree graphsTree, remoteObjects, 'graphs/'
-          return callback remoteObjects unless componentsSha
+          return callback null, remoteObjects unless componentsSha
           getTree repo, componentsSha, token, (err, componentsTree) ->
             return callback err if err
             processComponentsTree componentsTree, remoteObjects, 'components/'
