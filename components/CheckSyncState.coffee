@@ -89,8 +89,11 @@ getRemoteObjects = (repo, sha, token, callback) ->
       # No graphs or components on the remote
       return callback null, remoteObjects
 
+normalizeName = (name) ->
+  name.replace /\s/g, '_'
+
 createPath = (type, entity) ->
-  name = entity.name.replace /\s/g, '_'
+  name = normalizeName entity.name
   if type is 'graph'
     return "graphs/#{name}.json"
   switch entity.language
@@ -159,7 +162,7 @@ exports.getComponent = ->
       for remoteGraph in objects.graphs
         matching = data.project.graphs.filter (localGraph) ->
           return true if localGraph.properties.sha is remoteGraph.sha
-          return true if localGraph.name is remoteGraph.name
+          return true if normalizeName(localGraph.name) is remoteGraph.name
           false
         unless matching.length
           # No local version, add to pull
@@ -178,14 +181,14 @@ exports.getComponent = ->
         notPushed = true
         for remoteGraph in objects.graphs
           notPushed = false if localGraph.properties.sha is remoteGraph.sha
-          notPushed = false if localGraph.name is remoteGraph.name
+          notPushed = false if normalizeName(localGraph.name) is remoteGraph.name
         return notPushed
       addToPush 'graph', localGraph, null, operations for localGraph in localOnly
 
       for remoteComponent in objects.components
         matching = data.project.components.filter (localComponent) ->
           return true if localComponent.sha is remoteComponent.sha
-          return true if localComponent.name is remoteComponent.name
+          return true if normalizeName(localComponent.name) is remoteComponent.name
           false
         unless matching.length
           # No local version, add to pull
@@ -204,7 +207,7 @@ exports.getComponent = ->
         notPushed = true
         for remoteComponent in objects.components
           notPushed = false if localComponent.sha is remoteComponent.sha
-          notPushed = false if localComponent.name is remoteComponent.name
+          notPushed = false if normalizeName(localComponent.name) is remoteComponent.name
         return notPushed
       addToPush 'component', localComponent, null, operations for localComponent in localOnly
 
