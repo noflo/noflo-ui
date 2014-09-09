@@ -115,6 +115,7 @@ exports.getComponent = function () {
         });
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
+          this.component.changed = true;
           this.fire('changed', this.component);
         }.bind(this));
         this.$.tests_editor.innerHTML = '';
@@ -127,6 +128,7 @@ exports.getComponent = function () {
         });
         this.testsEditor.on('change', function () {
           this.component.tests = this.testsEditor.getValue();
+          this.component.changed = true;
           this.fire('changed', this.component);
         }.bind(this));
 
