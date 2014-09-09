@@ -3,7 +3,7 @@ INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 
 # Route opening requests
-'open' -> ROUTES Dispatch(routers/GroupRouter)
+'open,save' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
@@ -21,5 +21,11 @@ LoadData PROJECTS -> VALUE SetProjects CONTEXT -> IN MergeContext
 LoadData PROJECTS -> PROJECTS PopulateProjectData(ui/PopulateProjectData)
 Dispatch OUT[0] -> IN PopulateProjectData
 PopulateProjectData OUT -> IN MergeContext
+
+# Persistence
+#LoadData PROJECTS -> PROJECTS Save(ui/Save)
+SplitDb OUT -> DB Save(ui/Save)
+Dispatch OUT[1] -> IN Save
+Save OUT -> IN MergeContext
 
 LoadData ERROR -> IN ShowErrors

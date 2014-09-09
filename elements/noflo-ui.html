@@ -69,6 +69,9 @@
         this.$.project.addEventListener('syncDecision', function (event) {
           this.fire('github:sync:synchronize', event.detail);
         }.bind(this));
+        this.$.componenteditor.addEventListener('change', function (event) {
+          this.fire('project:save:component', event.detail);
+        }.bind(this));
         this.$.search.addEventListener('search', function (event) {
           this.fire('context:search', event.detail);
         }.bind(this));

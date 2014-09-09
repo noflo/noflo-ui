@@ -84,6 +84,7 @@
       "ProjectRuntime": "graphs/ProjectRuntime.fbp",
       "ProjectStorage": "graphs/ProjectStorage.fbp",
       "RuntimeStorage": "graphs/RuntimeStorage.fbp",
+      "Save": "graphs/Save.fbp",
       "UserStorage": "graphs/UserStorage.fbp",
       "main": "graphs/main.fbp"
     }
@@ -139,7 +140,8 @@
     "components/BlobToEntry.coffee",
     "components/PreparePulls.coffee",
     "components/PreparePush.coffee",
-    "components/UpdateFromTree.coffee"
+    "components/UpdateFromTree.coffee",
+    "graphs/Save.fbp"
   ],
   "json": [
     "component.json"
@@ -165,6 +167,7 @@
     "graphs/ContextStorage.fbp",
     "graphs/DirectRuntime.fbp",
     "graphs/ProjectRuntime.fbp",
-    "graphs/GithubSynchronization.fbp"
+    "graphs/GithubSynchronization.fbp",
+    "graphs/Save.fbp"
   ]
 }
