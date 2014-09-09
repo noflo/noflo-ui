@@ -17,7 +17,10 @@ handleGraph = (sha, content, entry, project, out) ->
     graph.properties.project = project.id
 
     if entry.local
-      # TODO: Handle applying changes on top of existing graph
+      entry.local.startTransaction sha
+      noflo.graph.mergeResolveTheirs entry.local, graph
+      entry.local.endTransaction sha
+      out.send entry.local
       return
 
     graph.properties.name = entry.remote.name
