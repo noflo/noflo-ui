@@ -4,9 +4,12 @@ onRuntimeConnected = null
 onRuntimeComponent = null
 
 subscribe = (runtime, port) ->
-  onRuntimeConnected = ->
+  requestListing = ->
+    return unless runtime.canDo 'protocol:component'
     runtime.sendComponent 'list'
     port.connect()
+
+  onRuntimeConnected = -> do requestListing
   onRuntimeComponent = (message) ->
     return unless message.command is 'component'
     return if message.payload.name in ['Graph', 'ReadDocument']
@@ -36,9 +39,9 @@ subscribe = (runtime, port) ->
     port.send
       componentDefinition: definition
 
-  runtime.on 'connected', onRuntimeConnected
+  runtime.on 'capabilities', onRuntimeConnected
   runtime.on 'component', onRuntimeComponent
-  runtime.sendComponent 'list'
+  do requestListing if runtime.isConnected()
 
 unsubscribe = (runtime, port) ->
   port.disconnect()
@@ -56,7 +59,7 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       unsubscribe c.runtime, c.outPorts.out if c.runtime
-      unless payload.canDo 'protocol:component'
+      if payload.isConnected() and not payload.canDo 'protocol:component'
         return c.error new Error "Runtime #{payload.definition.id} is not able to list components"
       c.runtime = payload
       subscribe c.runtime, c.outPorts.out
