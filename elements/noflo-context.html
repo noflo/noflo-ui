@@ -200,7 +200,7 @@
           graph.startTransaction('newsubgraph');
 
           graph.setProperties({
-            id: graph.name.replace(' ', '_'),
+            id: currentGraph.properties.project + '/' + graph.name.replace(' ', '_'),
             project: currentGraph.properties.project
           });
 
@@ -227,7 +227,7 @@
           // Create subgraph node
           var initialMetadata = currentGraph.getNode(item.nodes[0]).metadata;
           currentGraph.startTransaction('subgraph');
-          currentGraph.addNode(graph.properties.id, currentGraph.properties.project + '/' + graph.properties.id, {
+          currentGraph.addNode(graph.name, currentGraph.properties.project + '/' + graph.name, {
             label: graph.name,
             x: initialMetadata.x,
             y: initialMetadata.y
@@ -274,7 +274,6 @@
           if (this.editor) {
             console.log('noflo-context: set selected nodes');
             this.editor.selectedNodes = [];
-            this.hideNodeCards();
           }
         }.bind(this));
       },

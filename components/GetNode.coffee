@@ -35,6 +35,7 @@ class GetNode extends noflo.Component
   getGraph: (project, id) ->
     return unless project.graphs
     for graph in project.graphs
+      return graph if graph.name is id
       return graph if graph.properties.id is id
 
   getComponent: (project, id) ->

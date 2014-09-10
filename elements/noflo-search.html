@@ -236,7 +236,7 @@
             var previous = this.graphs[idx - 1];
             var node = null;
             previous.nodes.forEach(function (node) {
-              if (node.component === this.project.id + '/' + graph.properties.id || node.component === graph.properties.id || node.component === graph.name) {
+              if (node.component === this.project.id + '/' + graph.name || node.component === this.project.id + '/' + graph.properties.id || node.component === graph.name || node.component === graph.properties.id) {
                 this.parentPath += '/' + encodeURIComponent(node.id);
               }
             }.bind(this));

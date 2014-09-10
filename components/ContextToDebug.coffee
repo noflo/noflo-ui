@@ -24,11 +24,17 @@ exports.getComponent = ->
         enable: enable
     , 1
 
+  graphId = (graph) ->
+    id = graph.name or graph.properties.id
+    if graph.properties.library
+      return "#{graph.properties.library}/#{id}"
+    id
+
   c.addListener = (runtime, graph) ->
     return unless runtime? and graph?
     @runtime = runtime
     @graph = graph
-    @graphId = if graph.properties.library? then "#{graph.properties.library}/#{graph.properties.id}" else graph.properties.id
+    @graphId = graphId graph
     @listener = (status) =>
       return unless status.online
       c.setRuntimeDebug true

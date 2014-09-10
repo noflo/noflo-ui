@@ -35,8 +35,9 @@ sendGraph = (graph, runtime, project) ->
     if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt runtime.definition.type
       return
 
+  graphId = graph.name or graph.properties.id
   runtime.sendGraph 'clear',
-    id: graph.properties.id or graph.name
+    id: graphId
     name: graph.name
     library: graph.properties.project
     main: (not project or graph.properties.id is project.main)
@@ -45,7 +46,7 @@ sendGraph = (graph, runtime, project) ->
       id: node.id
       component: node.component
       metadata: node.metadata
-      graph: graph.properties.id
+      graph: graphId
   for edge in graph.edges
     runtime.sendGraph 'addedge',
       src:
@@ -55,7 +56,7 @@ sendGraph = (graph, runtime, project) ->
         node: edge.to.node
         port: edge.to.port
       metadata: edge.metadata
-      graph: graph.properties.id
+      graph: graphId
   for iip in graph.initializers
     runtime.sendGraph 'addinitial',
       src:
@@ -64,21 +65,21 @@ sendGraph = (graph, runtime, project) ->
         node: iip.to.node
         port: iip.to.port
       metadata: iip.metadata
-      graph: graph.properties.id
+      graph: graphId
   if graph.inports
     for pub, priv of graph.inports
       runtime.sendGraph 'addinport',
         public: pub
         node: priv.process
         port: priv.port
-        graph: graph.properties.id
+        graph: graphId
   if graph.outports
     for pub, priv of graph.outports
       runtime.sendGraph 'addoutport',
         public: pub
         node: priv.process
         port: priv.port
-        graph: graph.properties.id
+        graph: graphId
 
 currentContext = null
 
