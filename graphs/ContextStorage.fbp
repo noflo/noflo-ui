@@ -5,14 +5,14 @@ OUTPORT=MergeContext.OUT:CONTEXT
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Selected edges
-Dispatch OUT[0] -> IN SplitEdges(core/Split) OUT -> START CreateEdgeCtx(ui/CreateContext)
+Dispatch OUT[0] -> IN SplitEdges(core/Split) OUT -> START CreateEdgeCtx(objects/CreateObject)
 CreateEdgeCtx OUT -> CONTEXT SetEdges(ui/SetToContext)
 'edges' -> KEY SetEdges
 SplitEdges OUT -> VALUE SetEdges CONTEXT -> IN MergeContext(core/Merge)
 # TODO: Send to runtime
 
 # Selected nodes
-Dispatch OUT[1] -> IN SplitNodes(core/Split) OUT -> START CreateNodeCtx(ui/CreateContext)
+Dispatch OUT[1] -> IN SplitNodes(core/Split) OUT -> START CreateNodeCtx(objects/CreateObject)
 CreateNodeCtx OUT -> CONTEXT SetNodes(ui/SetToContext)
 'nodes' -> KEY SetNodes
 SplitNodes OUT -> VALUE SetNodes CONTEXT -> IN MergeContext
