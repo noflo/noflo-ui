@@ -70,14 +70,14 @@ describe 'Editing a graph', ->
       , 5000
     it 'should initially show results', (done) ->
       @timeout 30000
-      if search.searchResults.length
-        chai.expect(search.searchResults.length).to.be.above 10
+      if search.searchLibraryResults.length
+        chai.expect(search.searchLibraryResults.length).to.be.above 10
         done()
         return
 
       checkResults = ->
-        if search.searchResults and search.searchResults.length > 20
-          chai.expect(search.searchResults.length).to.be.above 10
+        if search.searchLibraryResults and search.searchLibraryResults.length > 20
+          chai.expect(search.searchLibraryResults.length).to.be.above 10
           return done()
         setTimeout checkResults, 1000
       setTimeout checkResults, 1000
@@ -88,8 +88,8 @@ describe 'Editing a graph', ->
       .type 'GetEle'
 
       checkResults = ->
-        if search.searchResults and search.searchResults.length is 1
-          chai.expect(search.searchResults.length).to.equal 1
+        if search.searchLibraryResults and search.searchLibraryResults.length is 1
+          chai.expect(search.searchLibraryResults.length).to.equal 1
           return done()
         setTimeout checkResults, 1000
       setTimeout checkResults, 1000
