@@ -38,7 +38,6 @@
       "CheckSyncState": "components/CheckSyncState.coffee",
       "ClearUserData": "components/ClearUserData.coffee",
       "CollectRemoteNodes": "components/CollectRemoteNodes.coffee",
-      "ConnectRuntime": "components/ConnectRuntime.coffee",
       "ContextToDebug": "components/ContextToDebug.coffee",
       "ContextToRuntime": "components/ContextToRuntime.coffee",
       "CreateContext": "components/CreateContext.coffee",
@@ -93,7 +92,6 @@
     }
   },
   "scripts": [
-    "components/ConnectRuntime.coffee",
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",
     "components/MigrateLocalStorage.coffee",
