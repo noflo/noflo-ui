@@ -10,12 +10,12 @@
       <h1>Create new project</h1>
       <form>
         <label>
-          Project name
-          <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" required>
-        </label>
-        <label>
           Project label
           <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
+        </label>
+        <label>
+          Project name
+          <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
         </label>
         <label>
           Primary Type
@@ -42,13 +42,7 @@
         document.getElementById('container').classList.remove('blur');
       },
       nameChanged: function () {
-        if (this.name && this.projectId) {
-          this.canSend = true;
-        } else {
-          this.canSend = false;
-        }
-      },
-      projectIdChanged: function () {
+        this.projectId = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
         if (this.name && this.projectId) {
           this.canSend = true;
         } else {
@@ -66,7 +60,7 @@
           ga('send', 'event', 'button', 'click', 'newProject');
         }
         this.fire('new', {
-          id: this.projectId.replace(' ', '-'),
+          id: this.projectId.replace(/[\/\s\.]/g, '-'),
           name: this.name,
           type: this.type,
           graphs: [],
