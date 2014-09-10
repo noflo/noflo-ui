@@ -57,11 +57,17 @@
         this.$.main.addEventListener('login', function (event) {
           this.fire('user:login', true);
         }.bind(this));
+        this.$.runtime.addEventListener('changed', function (event) {
+          this.fire('project:save:runtime', event.detail);
+        }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.fire('context:edges', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('nodes', function (event) {
           this.fire('context:nodes', event.detail);
+        }.bind(this));
+        this.$.project.addEventListener('changed', function (event) {
+          this.fire('project:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.fire('github:sync:prepare', event.detail);
@@ -69,7 +75,7 @@
         this.$.project.addEventListener('syncDecision', function (event) {
           this.fire('github:sync:synchronize', event.detail);
         }.bind(this));
-        this.$.componenteditor.addEventListener('change', function (event) {
+        this.$.componenteditor.addEventListener('changed', function (event) {
           this.fire('project:save:component', event.detail);
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
@@ -163,9 +169,11 @@
           this.$.journal.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.runtime.graph = this.ctx.graphs[0];
           if (oldGraph !== this.$.grapheditor.graph) {
-            this.fire('context:graph', {
-              graph: this.$.grapheditor.graph
-            });
+            setTimeout(function () {
+              this.fire('context:graph', {
+                graph: this.$.grapheditor.graph
+              });
+            }.bind(this), 1);
           }
         } else {
           this.$.project.graph = null;
