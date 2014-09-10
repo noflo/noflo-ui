@@ -1,6 +1,7 @@
 INPORT=Dispatch.IN:IN
 INPORT=Token.IN:TOKEN
 OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=Changed.OUT:CHANGED
 OUTPORT=Errors.OUT:ERROR
 
 'prepare,synchronize' -> ROUTES Dispatch(routers/GroupRouter)
@@ -39,8 +40,8 @@ PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
 PreparePulls REPOSITORY -> REPOSITORY GetBlob
 PreparePulls SHA -> SHA GetBlob
 GetBlob OUT -> BLOB BlobToEntry
-BlobToEntry COMPONENT -> IN ShowErrors
-BlobToEntry GRAPH -> IN ShowErrors
+BlobToEntry COMPONENT -> IN UpdatedComponent(core/Merge)
+BlobToEntry GRAPH -> IN UpdatedGraph(core/Merge)
 BlobToEntry ERROR -> IN ShowErrors
 GetBlob ERROR -> IN Errors
 
@@ -68,9 +69,18 @@ Token OUT -> TOKEN UpdateReference
 PreparePush REPOSITORY -> REPOSITORY UpdateReference
 UpdateReference REFERENCE -> IN ShowErrors
 
-UpdateFromTree COMPONENT -> IN ShowErrors
-UpdateFromTree GRAPH -> IN ShowErrors
+UpdateFromTree COMPONENT -> IN UpdatedComponent
+UpdateFromTree GRAPH -> IN UpdatedGraph
 UpdateFromTree ERROR -> IN ShowErrors
 CreateTree ERROR -> IN Errors
 CreateCommit ERROR -> IN Errors
 UpdateReference ERROR -> IN Errors
+
+# Grouping
+'save:graph' -> GROUP SetGraphGroup(groups/Group)
+UpdatedGraph OUT -> IN DiscGraph(core/DisconnectAfterPacket)
+DiscGraph OUT -> IN SetGraphGroup OUT -> IN Changed(core/Merge)
+'save:component' -> GROUP SetComponentGroup(groups/Group)
+UpdatedComponent OUT -> IN DiscComponent(core/DisconnectAfterPacket)
+DiscComponent OUT -> IN SetComponentGroup OUT -> IN Changed
+Changed OUT -> IN ShowErrors

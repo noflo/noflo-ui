@@ -10,6 +10,7 @@ HoldDb(core/Kick) OUT -> DB WriteTransaction(indexeddb/BeginTransaction)
 StoreName(core/Merge) OUT -> STORES WriteTransaction
 Dispatch ROUTE -> IN HoldDb
 Dispatch ROUTE -> IN HoldMode
+Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Component-specific handling
 'components' -> DATA ComponentStore(core/Kick) OUT -> IN StoreName

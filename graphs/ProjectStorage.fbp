@@ -6,6 +6,7 @@ OUTPORT=MergeContext.OUT:CONTEXT
 'open,save' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
+Dispatch ROUTE -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Pass database connection to persistence handlers
@@ -25,7 +26,7 @@ PopulateProjectData OUT -> IN MergeContext
 # Save handling for current graph
 PopulateProjectData CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
 'graph' -> GROUP SetGraphGroup(groups/Group)
-ListenGraph OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SetGraphGroup OUT -> IN Save
+ListenGraph OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SetGraphGroup OUT -> IN SetChanged(ui/SetGraphChanged) OUT -> IN Save
 
 # Persistence
 SplitDb OUT -> DB Save(ui/Save)

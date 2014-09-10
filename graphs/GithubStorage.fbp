@@ -1,6 +1,7 @@
 INPORT=Dispatch.IN:IN
 INPORT=GetToken.IN:USER
 OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=Sync.CHANGED:OUT
 
 # Read user's GitHub token
 'github-token' -> KEY GetToken(objects/GetObjectKey)

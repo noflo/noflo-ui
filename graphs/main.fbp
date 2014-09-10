@@ -21,6 +21,7 @@ UserStorage USER -> USER GithubStorage
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
 GithubStorage CONTEXT -> CONTEXT RuntimeStorage
+GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
 MainContext OUT -> CONTEXT AppView
 RuntimeStorage CONTEXT -> CONTEXT AppView

@@ -69,6 +69,7 @@
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
       "SearchGraphNodeToContext": "components/SearchGraphNodeToContext.coffee",
+      "SetGraphChanged": "components/SetGraphChanged.coffee",
       "SetToContext": "components/SetToContext.coffee",
       "StoreUser": "components/StoreUser.coffee",
       "SubscribeGraph": "components/SubscribeGraph.coffee",
@@ -145,7 +146,8 @@
     "graphs/Save.fbp",
     "components/FindNodesInGraph.coffee",
     "components/SearchGraphNodeToContext.coffee",
-    "components/EnsureId.coffee"
+    "components/EnsureId.coffee",
+    "components/SetGraphChanged.coffee"
   ],
   "json": [
     "component.json"
