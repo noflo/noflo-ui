@@ -1,6 +1,7 @@
 describe 'Project Creation Dialog', ->
   win = null
   doc = null
+  ui = null
   main = null
   button = null
   dialog = null
@@ -8,8 +9,12 @@ describe 'Project Creation Dialog', ->
     iframe = document.getElementById 'app'
     win = iframe.contentWindow
     doc = iframe.contentDocument
+  it 'should find noflo-ui', ->
+    ui = doc.querySelector 'noflo-ui'
+    chai.expect(ui).to.be.an 'object'
+    chai.expect(ui.shadowRoot).to.be.an 'object'
   it 'should find noflo-main', ->
-    main = doc.querySelector 'noflo-main'
+    main = ui.shadowRoot.querySelector 'noflo-main'
     chai.expect(main).to.be.an 'object'
     chai.expect(main.shadowRoot).to.be.an 'object'
   it 'should find the right button', ->

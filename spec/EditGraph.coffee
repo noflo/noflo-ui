@@ -1,6 +1,7 @@
 describe 'Editing a graph', ->
   win = null
   doc = null
+  ui = null
   editor = null
   graph = null
   before ->
@@ -10,7 +11,8 @@ describe 'Editing a graph', ->
 
   describe 'initially', ->
     it 'should have a graph editor available', ->
-      editor = doc.querySelector 'the-graph-editor'
+      ui = doc.querySelector 'noflo-ui'
+      editor = ui.shadowRoot.querySelector 'the-graph-editor'
       chai.expect(editor).to.be.an 'object'
       graph = editor.shadowRoot.querySelector 'the-graph'
       chai.expect(graph).to.be.an 'object'
@@ -34,7 +36,7 @@ describe 'Editing a graph', ->
   describe 'runtime', ->
     runtime = null
     it 'should be available as an element', ->
-      runtime = doc.querySelector 'noflo-runtime'
+      runtime = ui.shadowRoot.querySelector 'noflo-runtime'
     it 'should have the IFRAME runtime selected', ->
       chai.expect(runtime.runtime).to.be.an 'object'
     it 'should connect automatically to the IFRAME provider', (done) ->
@@ -52,7 +54,7 @@ describe 'Editing a graph', ->
   describe 'component search', ->
     search = null
     it 'should initially show the breadcrumb', ->
-      search = doc.querySelector 'noflo-search'
+      search = ui.shadowRoot.querySelector 'noflo-search'
       chai.expect(search).to.be.an 'object'
       chai.expect(search.classList.contains('overlay')).to.equal true
     it 'when clicked it should show the search input', (done) ->
@@ -93,7 +95,7 @@ describe 'Editing a graph', ->
       setTimeout checkResults, 1000
     it 'should add a node when result is clicked', (done) ->
       @timeout 3000
-      context = doc.querySelector 'noflo-context'
+      context = ui.shadowRoot.querySelector 'noflo-context'
       chai.expect(context).to.be.an 'object'
       results = context.shadowRoot.querySelector 'noflo-search-library-results'
       chai.expect(results).to.be.an 'object'
