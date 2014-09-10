@@ -18,9 +18,11 @@ exports.getComponent = ->
     out.send context
 
   c.setRuntimeDebug = (enable) ->
-    c.runtime.sendNetwork 'debug',
-      graph: @graphId
-      enable: enable
+    setTimeout =>
+      c.runtime.sendNetwork 'debug',
+        graph: @graphId
+        enable: enable
+    , 1
 
   c.addListener = (runtime, graph) ->
     return unless runtime? and graph?
