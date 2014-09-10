@@ -1,7 +1,8 @@
 <link rel="import" href="noflo-menu.html">
-<link rel="import" href="noflo-search-results.html">
+<link rel="import" href="noflo-search-graph-results.html">
+<link rel="import" href="noflo-search-library-results.html">
 <link rel="import" href="noflo-graph-inspector.html">
-<polymer-element name="noflo-search" class="gpu" attributes="results graphs component">
+<polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component">
   <template>
     <style>
       :host {
@@ -9,7 +10,7 @@
         position: fixed;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
-        
+
         left: 36px;
         top: 0;
         color: white;
@@ -59,7 +60,7 @@
         left: 0px;
         top: 0px;
         z-index: 1;
-        
+
         /*transition: width 0.3s ease-in-out;*/
         display: none;
         /*box-sizing: border-box;*/
@@ -69,7 +70,7 @@
         background-size: calc(100% - 1px);
         background-position: 0px;
         border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
-        
+
       }
       #breadcrumb a#parentlink {
         color: hsl(189, 50%, 80%);
@@ -138,10 +139,22 @@
         border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
         border-radius: none;
       }
-      #search::-webkit-input-placeholder {
+      #search #speech {
         color: hsl(190, 90%, 45%);
       }
-      #search #speech {
+
+      #search.components {
+        background-color: hsl(192, 25%, 92%);
+        transition: background-color 0.3s linear;
+      }
+      #search.components::-webkit-input-placeholder {
+        color: hsl(190, 90%, 45%);
+      }
+      #search.processes {
+        background-color: hsl(161, 79%, 68%);
+        transition: background-color 0.3s linear;
+      }
+      #search.processes::-webkit-input-placeholder {
         color: hsl(190, 90%, 45%);
       }
 
@@ -168,22 +181,25 @@
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
-    <input id="search" value="{{ search }}" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" x-webkit-speech>
+    <input id="search" placeholder="Search components" on-keydown="{{ switchSearch }}" value="{{ search }}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech>
     <button id="clear" on-click="{{ clearSearch }}"><i class="fa fa-times"></i></button>
   </template>
   <script>
     Polymer('noflo-search', {
       menuCard: null,
       resultsCard: null,
-      searchResults: [],
+      searchLibraryResults: [],
+      searchGraphResults: [],
       search: null,
       parentPath: '',
       graph: null,
       graphs: [],
       component: null,
+      editor: null,
       panel: null,
       runtimes: [],
       graphInspector: null,
+      searchLibrary: true,
       componentChanged: function () {
         if (!this.component || !this.component.name) {
           // Component nullified, ensure we recount graphs
@@ -227,12 +243,17 @@
           }
         }.bind(this));
       },
-      results: function (result) {
-        this.searchResults.push(result);
+      libraryResults: function (result) {
+        this.searchLibraryResults.push(result);
+      },
+      graphResults: function (result) {
+        this.searchGraphResults.push(result);
       },
       attached: function () {
-        this.observer = new ArrayObserver(this.searchResults);
-        this.observer.open(this.resultsModified.bind(this));
+        this.componentsObserver = new ArrayObserver(this.searchLibraryResults);
+        this.componentsObserver.open(this.libraryResultsModified.bind(this));
+        this.processesObserver = new ArrayObserver(this.searchGraphResults);
+        this.processesObserver.open(this.graphResultsModified.bind(this));
         this.blur();
       },
       focus: function () {
@@ -258,9 +279,14 @@
         this.blur();
       },
       clearResults: function () {
-        while (this.searchResults.length) {
-          this.searchResults.pop();
-        }
+        this.searchGraphResults.length = 0;
+        this.searchLibraryResults.length = 0;
+        // while (this.searchGraphResults.length) {
+        //   this.searchGraphResults.pop();
+        // }
+        // while (this.searchLibraryResults.length) {
+        //   this.searchLibraryResults.pop();
+        // }
       },
       clearSearch: function () {
         if (this.resultsCard) {
@@ -270,6 +296,22 @@
         this.search = null;
         this.blur();
       },
+      switchSearch: function (event, detail, sender) {
+        if (event.keyIdentifier === 'U+0009') {
+          event.preventDefault();
+          this.searchLibrary = !this.searchLibrary;
+          if (this.searchLibrary) {
+            this.$.search.classList.add('components');
+            this.$.search.classList.remove('processes');
+            this.$.search.placeholder = 'Search components';
+          } else {
+            this.$.search.classList.add('processes');
+            this.$.search.classList.remove('components');
+            this.$.search.placeholder = 'Search processes';
+          }
+          this.searchChanged();
+        }
+      },
       searchChanged: function () {
         this.clearResults();
 
@@ -278,32 +320,74 @@
         }
 
         if (this.resultsCard) {
-          this.resultsCard.getElementsByTagName('noflo-search-results')[0].search = this.search;
+          this.resultsCard.children[0].search = this.search;
+          this.resultsCard.search = this.search;
         }
-        this.fire('search', {
+        var event = this.searchLibrary ? 'search:library' : 'search:graph';
+        this.fire(event, {
           search: this.search
         });
       },
-      resultsModified: function () {
+      libraryResultsModified: function () {
+        if (!this.searchLibrary)
+          return;
+        if (this.resultsCard &&
+            this.resultsCard.type !== 'noflo-search-library-results') {
+          this.resultsCard.parentNode.removeChild(this.resultsCard);
+          this.resultsCard = null;
+        }
         if (this.resultsCard || this.search === null) {
           return;
         }
-        if (this.searchResults.length === 0) {
+        if (this.searchLibraryResults.length === 0) {
           if (this.resultsCard) {
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
           }
           return;
         }
-        var results = document.createElement('noflo-search-results');
-        results.results = this.searchResults;
+        var results = document.createElement('noflo-search-library-results');
+        results.id = 'results';
         results.search = this.search;
+        results.results = this.searchLibraryResults;
         results.addEventListener('resultclick', function () {
-          this.blur();
+          this.clearSearch();
         }.bind(this));
 
         this.resultsCard = document.createElement('the-card');
-        this.resultsCard.type = 'noflo-search-results';
+        this.resultsCard.type = 'noflo-search-library-results';
+        this.resultsCard.appendChild(results);
+        this.resultsCard.addTo(this.panel, true);
+      },
+      graphResultsModified: function () {
+        if (this.searchLibrary)
+          return;
+        if (this.resultsCard &&
+            this.resultsCard.type !== 'noflo-search-graph-results') {
+          this.resultsCard.parentNode.removeChild(this.resultsCard);
+          this.resultsCard = null;
+        }
+        if (this.resultsCard || this.search === null) {
+          return;
+        }
+        if (this.searchGraphResults.length === 0) {
+          if (this.resultsCard) {
+            this.resultsCard.parentNode.removeChild(this.resultsCard);
+            this.resultsCard = null;
+          }
+          return;
+        }
+        var results = document.createElement('noflo-search-graph-results');
+        results.id = 'results';
+        results.editor = this.editor;
+        results.search = this.search;
+        results.results = this.searchGraphResults;
+        results.addEventListener('resultclick', function () {
+          this.clearSearch();
+        }.bind(this));
+
+        this.resultsCard = document.createElement('the-card');
+        this.resultsCard.type = 'noflo-search-graph-results';
         this.resultsCard.appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },

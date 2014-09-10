@@ -45,6 +45,7 @@
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "ErrorToContext": "components/ErrorToContext.coffee",
+      "FindNodesInGraph": "components/FindNodesInGraph.coffee",
       "FindRuntimes": "components/FindRuntimes.coffee",
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GatherRuntimeData": "components/GatherRuntimeData.coffee",
@@ -67,6 +68,7 @@
       "ProcessErrorToContext": "components/ProcessErrorToContext.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
+      "SearchGraphNodeToContext": "components/SearchGraphNodeToContext.coffee",
       "SetToContext": "components/SetToContext.coffee",
       "StoreUser": "components/StoreUser.coffee",
       "SubscribeGraph": "components/SubscribeGraph.coffee",
@@ -139,7 +141,9 @@
     "components/BlobToEntry.coffee",
     "components/PreparePulls.coffee",
     "components/PreparePush.coffee",
-    "components/UpdateFromTree.coffee"
+    "components/UpdateFromTree.coffee",
+    "components/FindNodesInGraph.coffee",
+    "components/SearchGraphNodeToContext.coffee"
   ],
   "json": [
     "component.json"

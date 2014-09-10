@@ -69,18 +69,22 @@
         this.$.project.addEventListener('syncDecision', function (event) {
           this.fire('github:sync:synchronize', event.detail);
         }.bind(this));
-        this.$.search.addEventListener('search', function (event) {
-          this.fire('context:search', event.detail);
+        this.$.search.addEventListener('search:library', function (event) {
+          this.fire('context:search_library', event.detail);
+        }.bind(this));
+        this.$.search.addEventListener('search:graph', function (event) {
+          this.fire('context:search_graph', event.detail);
         }.bind(this));
         this.$.library.addEventListener('result', function (event) {
-          this.fire('context:search_result', {
-            searchResult: event.detail
+          this.fire('context:search_library_result', {
+            searchLibraryResult: event.detail
           });
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;
         this.$.packets.editor = this.$.grapheditor;
+        this.$.search.editor = this.$.grapheditor;
         this.$.runtime.panel = this.$.context.$.fixed;
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
@@ -99,12 +103,16 @@
           this.runtimes(context.runtimes);
         }
         if (context.search !== undefined) {
-          this.$.library.search = {
+          console.log('CTX search : ' + this.ctx.search);
+          this.$.library.search({
             search: this.ctx.search
-          };
+          });
         }
-        if (context.searchResult) {
-          this.$.search.results(this.ctx.searchResult);
+        if (context.searchLibraryResult) {
+          this.$.search.libraryResults(this.ctx.searchLibraryResult);
+        }
+        if (context.searchGraphResult) {
+          this.$.search.graphResults(this.ctx.searchGraphResult);
         }
         if (this.ctx.edges) {
           this.$.packets.edges = this.ctx.edges;
@@ -145,11 +153,17 @@
           this.$.main.open = true;
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
+          var oldGraph = this.$.grapheditor.graph;
           this.$.grapheditor.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.project.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.packets.currentgraph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.journal.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
           this.$.runtime.graph = this.ctx.graphs[0];
+          if (oldGraph !== this.$.grapheditor.graph) {
+            this.fire('context:graph', {
+              graph: this.$.grapheditor.graph
+            });
+          }
         } else {
           this.$.project.graph = null;
           this.$.journal.graph = null;

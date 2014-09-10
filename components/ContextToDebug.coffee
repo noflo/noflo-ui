@@ -19,26 +19,26 @@ exports.getComponent = ->
 
   c.setRuntimeDebug = (enable) ->
     c.runtime.sendNetwork 'debug',
-      graph: c.graph.properties.id or c.graph.name
+      graph: @graphId
       enable: enable
 
   c.addListener = (runtime, graph) ->
     return unless runtime? and graph?
-    c.runtime = runtime
-    c.graph = graph
-    c.listener = (status) =>
+    @runtime = runtime
+    @graph = graph
+    @graphId = if graph.properties.library? then "#{graph.properties.library}/#{graph.properties.id}" else graph.properties.id
+    @listener = (status) =>
       return unless status.online
       c.setRuntimeDebug true
-    c.runtime.on 'status', c.listener
-    c.setRuntimeDebug true if c.runtime?.isConnected()
+    @runtime.on 'status', c.listener
+    @setRuntimeDebug true if @runtime.isConnected()
 
   c.removeListener = ->
-    return unless c.listener
-    return unless c.runtime
+    return unless @listener and @runtime
     # Disable debug on old runtime
-    c.setRuntimeDebug false if c.runtime.isConnected()
+    @setRuntimeDebug false if @runtime.isConnected()
     # Stop listening
-    c.runtime.removeListener 'status', c.listener
+    @runtime.removeListener 'status', @listener
     delete c.runtime
     delete c.graph
 

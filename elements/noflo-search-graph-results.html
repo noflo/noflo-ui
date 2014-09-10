@@ -1,4 +1,4 @@
-<polymer-element name="noflo-search-results" attributes="search results">
+<polymer-element name="noflo-search-graph-results" attributes="editor results search">
   <template>
     <style>
       .search-results-header h1 {
@@ -26,7 +26,7 @@
         background-color: black;
         border-right: 1px solid hsla(190, 90%, 80%, 0.3);
       }
-    
+
       .search-results-item {
         -webkit-box-sizing: border-box;
         -mox-box-sizing: border-box;
@@ -45,7 +45,7 @@
         width: 36px;
         text-align: center;
         padding: 0;
-        margin: 0;   
+        margin: 0;
       }
       .search-results-item h2 {
         position: absolute;
@@ -79,26 +79,42 @@
     <ul class="search-results-list">
       <template repeat="{{ result, index in results }}">
         <li class="search-results-item" data-index="{{ index }}" on-click="{{ clicked }}">
-          <i class="fa fa-{{ result.icon }}"></i>
-          <h2>{{ result.label }}</h2>
-          <p>{{ result.description }}</p>
+          <i class="fa fa-cog"></i>
+          <h2>{{ result.metadata.label }}</h2>
+          <p>{{ result.component }}</p>
         </li>
       </template>
     </ul>
   </template>
   <script>
-    Polymer('noflo-search-results', {
+    Polymer('noflo-search-graph-results', {
+      editor: null,
       results: [],
       search: '',
+      detached: function () {
+        this.editor = null;
+      },
+      resultsChanged: function () {
+        if (!this.editor)
+          return;
+        if (!this.search || this.search.length < 1) {
+          this.editor.displaySelectionGroup = true;
+          this.editor.selectedNodes = [];
+        } else if (this.results) {
+          this.editor.displaySelectionGroup = (this.results.length > 0 ? false : true);
+          this.editor.selectedNodes = this.results;
+        }
+      },
       clicked: function (event, details, sender) {
         event.preventDefault();
         var index = sender.getAttribute('data-index');
         var result = this.results[index];
-        if (!result || !result.action) {
+        if (!result) {
           return;
         }
+        this.editor.displaySelectionGroup = true;
+        this.editor.selectedNodes = [ result, ];
         this.fire('resultclick', result);
-        result.action();
       }
     });
   </script>

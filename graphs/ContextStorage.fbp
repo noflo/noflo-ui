@@ -1,7 +1,7 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'edges,nodes,search,search_result' -> ROUTES Dispatch(routers/GroupRouter)
+'edges,nodes,search_library$,search_graph,search_library_result,graph' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Selected edges
@@ -21,4 +21,14 @@ SplitNodes OUT -> VALUE SetNodes CONTEXT -> IN MergeContext
 Dispatch OUT[2] -> IN MergeContext
 
 # Search results pass through directly for now
-Dispatch OUT[3] -> IN MergeContext
+Dispatch OUT[4] -> IN MergeContext
+
+# Search nodes in the graph
+Dispatch OUT[5] -> IN GetGraph(objects/GetObjectKey)
+'graph' -> KEY GetGraph
+GetGraph OUT -> GRAPH FindNodesInGraph(ui/FindNodesInGraph)
+Dispatch OUT[3] -> IN GetSearchTerm(objects/GetObjectKey)
+'search' -> KEY GetSearchTerm
+GetSearchTerm OUT -> SEARCH FindNodesInGraph
+FindNodesInGraph NODES -> NODES NodesToContext(ui/SearchGraphNodeToContext)
+NodesToContext CONTEXT -> IN MergeContext
