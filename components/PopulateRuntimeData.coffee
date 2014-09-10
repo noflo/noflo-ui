@@ -9,9 +9,10 @@ buildContext = ->
     graphs: []
     remote: []
 
-sendError = (out) ->
+sendError = (out, err) ->
   ctx = buildContext()
   ctx.state = 'error'
+  ctx.error = err
   out.send ctx
 
 decodeRuntime = (data) ->
@@ -50,7 +51,7 @@ exports.getComponent = ->
     # Match to local data
     ctx = buildContext()
     ctx.runtime = findRuntime route.runtime, c.params.runtimes
-    return sendError out unless ctx.runtime
+    return sendError out, new Error 'No runtime found'  unless ctx.runtime
     ctx.remote = route.nodes
     ctx.state = 'loading'
     out.send ctx

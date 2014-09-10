@@ -9,9 +9,10 @@ buildContext = ->
     graphs: []
     remote: []
 
-sendError = (out) ->
+sendError = (out, err) ->
   ctx = buildContext()
   ctx.state = 'error'
+  ctx.error = err
   out.send ctx
 
 findProject = (id, projects) ->
@@ -58,6 +59,8 @@ exports.getComponent = ->
   c.outPorts.add 'out',
     datatype: 'object'
 
+  c.inPorts.in.on 'data', (data) -> console.log 'IN', data
+
   noflo.helpers.WirePattern c,
     in: 'in'
     params: ['projects']
@@ -66,17 +69,17 @@ exports.getComponent = ->
     # Match to local data
     ctx = buildContext()
     ctx.project = findProject route.project, c.params.projects
-    return sendError out unless ctx.project
+    return sendError out, new Error 'No project found' unless ctx.project
 
     if route.component
       ctx.component = findComponent route.component, ctx.project
-      return sendError out unless ctx.component
+      return sendError out, new Error 'No component found' unless ctx.component
       ctx.state = 'ok'
       out.send ctx
       return
 
     mainGraph = findGraph route.graph, ctx.project
-    return sendError out unless mainGraph
+    return sendError out, new Error 'No main graph found' unless mainGraph
     ctx.graphs.push mainGraph
 
     currentGraph = mainGraph
@@ -86,13 +89,13 @@ exports.getComponent = ->
         ctx.remote.push nodeId
         continue
       node = currentGraph.getNode nodeId
-      return sendError out unless node
-      return sendError out unless node.component
+      return sendError out, new Error "Node #{nodeId} not found" unless node
+      return sendError out, new Error "Node #{nodeId} has no component defined" unless node.component
       [type, currentGraph] = findByComponent node.component, ctx.project
 
       if type is 'component'
         ctx.component = currentGraph
-        return sendError out if route.nodes.length
+        return sendError out, new Error 'Component cannot have subnodes' if route.nodes.length
         break
 
       if type is 'runtime'
