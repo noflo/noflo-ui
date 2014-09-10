@@ -15,7 +15,7 @@ exports.getComponent = ->
     in: 'context'
     out: ['runtime', 'graph', 'out']
   , (data, groups, out) ->
-    if data.runtime and data.runtime.canDo 'protocol:graph'
+    if data.runtime
       out.runtime.send data.runtime
     if data.graphs?.length
       out.graph.send data.graphs[data.graphs.length - 1]
