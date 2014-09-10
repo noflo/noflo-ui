@@ -222,7 +222,7 @@
             <button on-click="{{ newRuntime }}">Register</button>
           </li>
           <template repeat="{{ userRuntimes }}">
-          <li on-click="{{ openRuntime }}" data-id="{{ id }}" class="runtime {{ type }}">
+          <li on-click="{{ openRuntime }}" data-id="{{ id }}" data-protocol="{{ protocol }}" class="runtime {{ type }}">
             <h2>{{ label }}</h2>
             <p>{{ address }}. Seen {{ seenHoursAgo }}h ago</p>
           </li>
@@ -416,8 +416,12 @@
       },
       runtimes: function (runtime) {
         if (!runtime.seen) {
-          // Non-persistent runtime, don't show
-          return;
+          if (runtime.type === 'noflo-browser' && runtime.address === 'preview/iframe.html') {
+            runtime.seen = Date.now();
+          } else {
+            // Non-persistent runtime, don't show
+            return;
+          }
         }
         runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000));
         if ((runtime.seenHoursAgo / 24) > 31) {
@@ -542,23 +546,6 @@
           }
         }
       },
-      preparedefaults: function () {
-        // Every NoFlo UI instance should have at least the local IFRAME runtime available
-        var iframe = new this.registry.Runtime({
-          label: 'Local NoFlo HTML5 environment',
-          id: require('uuid')(),
-          protocol: 'iframe',
-          address: 'preview/iframe.html',
-          type: 'noflo-browser'
-        }, {
-          host: this.registryUrl
-        });
-        this.userRuntimes.push(iframe.runtime);
-        this.fire('runtimes', this.userRuntimes);
-      },
-      createdproject: function (project) {
-        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + project.main;
-      },
       openProject: function (event, details, sender) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
@@ -578,6 +565,9 @@
       openRuntime: function (event, details, sender) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        if (sender.getAttribute('data-protocol') === 'iframe') {
           return;
         }
         window.location.hash = '#runtime/' + sender.getAttribute('data-id');

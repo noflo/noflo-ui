@@ -13,7 +13,8 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 '' -> START CreateRuntimesCtx(objects/CreateObject)
 CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
 'runtimes' -> KEY SetRuntimes
-LoadData(ui/LoadRuntimeData) RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
+LoadData(ui/LoadRuntimeData) RUNTIMES -> RUNTIMES EnsureLocal(ui/EnsureLocalRuntimes)
+EnsureLocal RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
 
 # Add compatible runtimes to already-populated contexts
 LoadData RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)

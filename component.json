@@ -44,6 +44,7 @@
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "EnsureId": "components/EnsureId.coffee",
+      "EnsureLocalRuntimes": "components/EnsureLocalRuntimes.coffee",
       "ErrorToContext": "components/ErrorToContext.coffee",
       "FindNodesInGraph": "components/FindNodesInGraph.coffee",
       "FindRuntimes": "components/FindRuntimes.coffee",
@@ -145,7 +146,8 @@
     "components/FindNodesInGraph.coffee",
     "components/SearchGraphNodeToContext.coffee",
     "components/EnsureId.coffee",
-    "components/SetGraphChanged.coffee"
+    "components/SetGraphChanged.coffee",
+    "components/EnsureLocalRuntimes.coffee"
   ],
   "json": [
     "component.json"
