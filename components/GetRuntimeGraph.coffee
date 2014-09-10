@@ -22,7 +22,7 @@ exports.getComponent = ->
       data.remote = [] unless data.remote
       if data.remote.indexOf(data.runtime.definition.graph) is -1
         data.remote.unshift data.runtime.definition.graph
-      out.context.send data
+      out.send data
       return
 
     # No graph available, prepare empty
@@ -32,6 +32,6 @@ exports.getComponent = ->
       emptyGraph = new noflo.Graph
       emptyGraph.properties.id = data.runtime.definition.id
       data.graphs.unshift emptyGraph
-    out.context.send data
+    out.send data
 
   c

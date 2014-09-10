@@ -1,0 +1,105 @@
+<polymer-element name="noflo-search-library-results" attributes="results search">
+  <template>
+    <style>
+      .search-results-header h1 {
+        color: hsla(188, 15%, 60%, 0.8);
+        padding-left: 25px;
+        font-size: 12px !important;
+      }
+      .search-results-header i {
+        padding: 0;
+        margin: 0;
+        line-height: 36px;
+        width: 36px;
+        left: -10px;
+        position: absolute;
+        text-align: center;
+      }
+
+      .search-results-list {
+        -webkit-box-sizing: border-box;
+        -mox-box-sizing: border-box;
+        box-sizing: border-box;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        border-right: 1px solid hsla(190, 90%, 80%, 0.3);
+      }
+
+      .search-results-item {
+        -webkit-box-sizing: border-box;
+        -mox-box-sizing: border-box;
+        box-sizing: border-box;
+        min-height: 36px;
+        position: relative;
+        cursor: cell;
+        padding-top: 18px !important;
+        padding-right: 12px !important;
+      }
+      .search-results-item i {
+        color: hsla(191, 100%, 92%, 0.898039);
+        position: absolute;
+        top: 18px;
+        left: 0;
+        width: 36px;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+      }
+      .search-results-item h2 {
+        position: absolute;
+        margin: 0;
+        display: block;
+        left: 36px;
+        top: 18px;
+        height: 36px;
+        width: calc(100% - 36px);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow-x: hidden;
+      }
+      .search-results-item p {
+        position: relative;
+        display: block;
+        left: 8px;
+        padding: 0px;
+        margin: 0px;
+        margin-top: 24px;
+        height: auto;
+        line-height: calc(36px / 3);
+        font-size: 10px;
+        color: hsla(188, 15%, 60%, 0.8);
+        text-shadow: hsl(0, 0%, 0%) 0px 1px 1px;
+      }
+
+    </style>
+    <ul class="search-results-list">
+      <template repeat="{{ result, index in results }}">
+        <li class="search-results-item" data-index="{{ index }}" on-click="{{ clicked }}">
+          <i class="fa fa-{{ result.icon }}"></i>
+          <h2>{{ result.label }}</h2>
+          <p>{{ result.description }}</p>
+        </li>
+      </template>
+    </ul>
+  </template>
+  <script>
+    Polymer('noflo-search-library-results', {
+      results: [],
+      search: '',
+      clicked: function (event, details, sender) {
+        event.preventDefault();
+        var index = sender.getAttribute('data-index');
+        var result = this.results[index];
+        if (!result || !result.action) {
+          return;
+        }
+        this.fire('resultclick', result);
+        result.action();
+      }
+    });
+  </script>
+</polymer-element>

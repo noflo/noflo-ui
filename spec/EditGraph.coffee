@@ -95,7 +95,7 @@ describe 'Editing a graph', ->
       @timeout 3000
       context = doc.querySelector 'noflo-context'
       chai.expect(context).to.be.an 'object'
-      results = context.shadowRoot.querySelector 'noflo-search-results'
+      results = context.shadowRoot.querySelector 'noflo-search-library-results'
       chai.expect(results).to.be.an 'object'
       getelement = results.shadowRoot.querySelector 'li'
       chai.expect(getelement).to.be.an 'object'
