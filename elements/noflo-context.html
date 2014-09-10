@@ -125,10 +125,7 @@
               if (typeof ga === 'function') {
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
-              window.location.hash =
-                    '#project/' + encodeURIComponent(project.id) +
-                    '/' + project.main +
-                    '/' + encodeURIComponent(item.id);
+              window.location.hash = window.location.hash + '/' + encodeURIComponent(item.id);
             }
           };
           for (menuKey in defaultMenu) {
@@ -320,10 +317,10 @@
         if (!this.runtime) {
           return false;
         }
-        if (!this.runtime.definition || !this.runtime.definition.capabilities) {
+        if (!this.runtime.definition || !this.runtime.canDo) {
           return false;
         }
-        if (this.runtime.definition.capabilities.indexOf('component:getsource') !== -1) {
+        if (this.runtime.canDo('component:getsource') && this.runtime.isConnected()) {
           return true;
         }
         return false;
