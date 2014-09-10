@@ -17,12 +17,12 @@ LoadData(ui/LoadRuntimeData) RUNTIMES -> RUNTIMES EnsureLocal(ui/EnsureLocalRunt
 EnsureLocal RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
 
 # Add compatible runtimes to already-populated contexts
-LoadData RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
+EnsureLocal RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
 FindRuntimes CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 ProjectRuntime CONTEXT -> IN MergeContextPreSubscribe(core/Merge)
 
 # Build direct runtime context
-LoadData RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
+EnsureLocal RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
 Dispatch OUT[0] -> IN PopulateRuntimeData
 PopulateRuntimeData OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
 DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
@@ -31,6 +31,7 @@ DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 ProjectRuntime RUNTIME -> RUNTIME ListComponents(ui/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
 ListComponents OUT -> IN MergeContext
+ListComponents ERROR -> IN ShowErrors
 
 # Graph change subscription
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)

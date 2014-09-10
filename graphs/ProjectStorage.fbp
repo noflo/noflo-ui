@@ -6,7 +6,6 @@ OUTPORT=MergeContext.OUT:CONTEXT
 'open,save' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
-Dispatch ROUTE -> IN ShowErrors(core/Output)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Pass database connection to persistence handlers
