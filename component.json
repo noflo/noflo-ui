@@ -44,12 +44,12 @@
       "CreateContext": "components/CreateContext.coffee",
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
+      "EnsureId": "components/EnsureId.coffee",
       "ErrorToContext": "components/ErrorToContext.coffee",
       "FindNodesInGraph": "components/FindNodesInGraph.coffee",
       "FindRuntimes": "components/FindRuntimes.coffee",
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GatherRuntimeData": "components/GatherRuntimeData.coffee",
-      "GenerateId": "components/GenerateId.coffee",
       "GetNode": "components/GetNode.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
       "GetRuntimeGraph": "components/GetRuntimeGraph.coffee",
@@ -93,7 +93,6 @@
   },
   "scripts": [
     "components/ConnectRuntime.coffee",
-    "components/GenerateId.coffee",
     "components/IgnoreExamples.coffee",
     "components/Router.coffee",
     "components/MigrateLocalStorage.coffee",
@@ -145,7 +144,8 @@
     "components/UpdateFromTree.coffee",
     "graphs/Save.fbp",
     "components/FindNodesInGraph.coffee",
-    "components/SearchGraphNodeToContext.coffee"
+    "components/SearchGraphNodeToContext.coffee",
+    "components/EnsureId.coffee"
   ],
   "json": [
     "component.json"

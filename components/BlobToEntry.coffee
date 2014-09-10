@@ -20,6 +20,8 @@ handleGraph = (sha, content, entry, project, out) ->
       entry.local.startTransaction sha
       noflo.graph.mergeResolveTheirs entry.local, graph
       entry.local.endTransaction sha
+      # Ensure the graph is marked as not changed since SHA
+      entry.local.properties.changed = false
       out.send entry.local
       return
 

@@ -58,28 +58,28 @@ exports.getComponent = ->
     datatype: 'array'
   c.outPorts.add 'out',
     datatype: 'object'
-
-  c.inPorts.in.on 'data', (data) -> console.log 'IN', data
+  c.outPorts.add 'currentgraph',
+    datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'in'
     params: ['projects']
-    out: 'out'
+    out: ['out', 'currentgraph']
   , (route, groups, out) ->
     # Match to local data
     ctx = buildContext()
     ctx.project = findProject route.project, c.params.projects
-    return sendError out, new Error 'No project found' unless ctx.project
+    return sendError out.out, new Error 'No project found' unless ctx.project
 
     if route.component
       ctx.component = findComponent route.component, ctx.project
-      return sendError out, new Error 'No component found' unless ctx.component
+      return sendError out.out, new Error 'No component found' unless ctx.component
       ctx.state = 'ok'
-      out.send ctx
+      out.out.send ctx
       return
 
     mainGraph = findGraph route.graph, ctx.project
-    return sendError out, new Error 'No main graph found' unless mainGraph
+    return sendError out.out, new Error 'No main graph found' unless mainGraph
     ctx.graphs.push mainGraph
 
     currentGraph = mainGraph
@@ -89,13 +89,13 @@ exports.getComponent = ->
         ctx.remote.push nodeId
         continue
       node = currentGraph.getNode nodeId
-      return sendError out, new Error "Node #{nodeId} not found" unless node
-      return sendError out, new Error "Node #{nodeId} has no component defined" unless node.component
+      return sendError out.out, new Error "Node #{nodeId} not found" unless node
+      return sendError out.out, new Error "Node #{nodeId} has no component defined" unless node.component
       [type, currentGraph] = findByComponent node.component, ctx.project
 
       if type is 'component'
         ctx.component = currentGraph
-        return sendError out, new Error 'Component cannot have subnodes' if route.nodes.length
+        return sendError out.out, new Error 'Component cannot have subnodes' if route.nodes.length
         break
 
       if type is 'runtime'
@@ -106,6 +106,7 @@ exports.getComponent = ->
 
     ctx.state = 'ok'
     ctx.state = 'loading' if ctx.remote.length
-    out.send ctx
+    out.currentgraph.send ctx.graphs[ctx.graphs.length - 1] if ctx.graphs
+    out.out.send ctx
 
   c

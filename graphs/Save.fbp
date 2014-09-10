@@ -14,26 +14,28 @@ Dispatch ROUTE -> IN HoldMode
 # Component-specific handling
 'components' -> DATA ComponentStore(core/Kick) OUT -> IN StoreName
 Dispatch OUT[0] -> IN SplitComponent(core/Split) OUT -> IN ComponentStore 
-SplitComponent OUT -> VALUE Put
+SplitComponent OUT -> IN EnsureId(ui/EnsureId)
 
 # Graph-specific handling
 'graphs' -> DATA GraphStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[2] -> IN SplitGraph(core/Split) OUT -> IN GraphStore 
-SplitGraph OUT -> VALUE Put
+Dispatch OUT[1] -> IN SplitGraph(core/Split) OUT -> IN GraphStore
+'toJSON' -> METHOD ConvertGraph(objects/CallMethod)
+SplitGraph OUT -> IN ConvertGraph OUT -> IN EnsureId
 
 # Project-specific handling
 'projects' -> DATA ProjectStore(core/Kick) OUT -> IN StoreName
 Dispatch OUT[2] -> IN SplitProject(core/Split) OUT -> IN ProjectStore 
-SplitProject OUT -> VALUE Put
+SplitProject OUT -> IN EnsureId
 
 # Runtime-specific handling
 'runtimes' -> DATA RuntimeStore(core/Kick) OUT -> IN StoreName
 Dispatch OUT[3] -> IN SplitRuntime(core/Split) OUT -> IN RuntimeStore 
-SplitRuntime OUT -> VALUE Put
+SplitRuntime OUT -> IN EnsureId
 
 # Saving
 StoreName OUT -> NAME Store(indexeddb/GetStore)
 WriteTransaction TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
+EnsureId OUT -> VALUE Put
 
 # Error handling
 Put ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext(core/Merge)
