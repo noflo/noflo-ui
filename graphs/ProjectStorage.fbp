@@ -28,7 +28,6 @@ PopulateProjectData CURRENTGRAPH -> IN ListenGraph(graph/ListenChanges)
 ListenGraph OUT -> IN Disc(core/DisconnectAfterPacket) OUT -> IN SetGraphGroup OUT -> IN Save
 
 # Persistence
-#LoadData PROJECTS -> PROJECTS Save(ui/Save)
 SplitDb OUT -> DB Save(ui/Save)
 Dispatch OUT[1] -> IN Save
 Save OUT -> IN MergeContext

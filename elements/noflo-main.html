@@ -573,7 +573,7 @@
         if (!project) {
           return;
         }
-        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + project.main;
+        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
       },
       openRuntime: function (event, details, sender) {
         event.preventDefault();
@@ -598,7 +598,21 @@
         dialog.runtimes = this.userRuntimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
+          var noflo = require('noflo');
+          var graph = new noflo.Graph('main');
+          var graphId = event.detail.id + '/main';
+          graph.setProperties({
+            id: graphId,
+            project: event.detail.id,
+            environment: {
+              type: event.detail.type
+            }
+          });
+          event.detail.main = graphId;
+          this.fire('newgraph', graph);
           this.fire('newproject', event.detail);
+          event.detail.graphs.push(graph);
+          this.projects(event.detail);
         }.bind(this));
       },
       newRuntime: function (event) {

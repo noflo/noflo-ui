@@ -51,7 +51,6 @@
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
-          id: graph.name.replace(' ', '_'),
           project: this.project,
           environment: {
             type: this.type

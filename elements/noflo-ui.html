@@ -57,6 +57,19 @@
         this.$.main.addEventListener('login', function (event) {
           this.fire('user:login', true);
         }.bind(this));
+        this.$.main.addEventListener('login', function (event) {
+          this.fire('user:login', true);
+        }.bind(this));
+        this.$.main.addEventListener('newgraph', function (event) {
+          this.fire('project:save:graph', event.detail);
+        }.bind(this));
+        this.$.main.addEventListener('newproject', function (event) {
+          this.fire('project:save:project', event.detail);
+          this.ctx.projects.push(event.detail);
+          setTimeout(function () {
+            window.location.hash = '#project/' + encodeURIComponent(event.detail.id) + '/' + encodeURIComponent(event.detail.main);
+          }, 2);
+        }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
           this.fire('project:save:runtime', event.detail);
         }.bind(this));
@@ -68,6 +81,12 @@
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
           this.fire('project:save:project', event.detail);
+        }.bind(this));
+        this.$.project.addEventListener('newgraph', function (event) {
+          this.fire('project:save:graph', event.detail);
+        }.bind(this));
+        this.$.project.addEventListener('newcomponent', function (event) {
+          this.fire('project:save:component', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.fire('github:sync:prepare', event.detail);
