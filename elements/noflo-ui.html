@@ -76,6 +76,14 @@
         this.$.context.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
         }.bind(this));
+        this.$.runtime.addEventListener('runtime', function (event) {
+          var newCtx = {};
+          for (var key in this.ctx) {
+            newCtx[key] = this.ctx[key];
+          }
+          newCtx.runtime = event.detail;
+          this.fire('runtime:connect', newCtx);
+        }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
           this.fire('project:save:runtime', event.detail);
         }.bind(this));
@@ -172,6 +180,10 @@
         if (this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
           this.ctx.componentDefinition = null;
+        }
+        if (this.ctx.runtime) {
+          this.$.runtime.runtime = this.ctx.runtime;
+          this.$.context.runtime = this.ctx.runtime;
         }
         if (this.ctx.state === 'loading') {
           return;

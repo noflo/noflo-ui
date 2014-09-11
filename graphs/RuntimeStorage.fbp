@@ -4,7 +4,7 @@ INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
 
 # Route requests
-'open' -> ROUTES Dispatch(routers/GroupRouter)
+'open,connect' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
@@ -15,6 +15,9 @@ CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
 'runtimes' -> KEY SetRuntimes
 LoadData(ui/LoadRuntimeData) RUNTIMES -> RUNTIMES EnsureLocal(ui/EnsureLocalRuntimes)
 EnsureLocal RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
+
+# Add runtime connection to an existing context
+Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
 # Add compatible runtimes to already-populated contexts
 EnsureLocal RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)

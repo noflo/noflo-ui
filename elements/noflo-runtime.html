@@ -293,8 +293,8 @@
         this.runtimeSelector.addEventListener('runtime', function (event) {
           var runtime = event.detail;
           runtime.graph = this.graph.properties.id;
-          this.fire('runtime', runtime);
           this.fire('changed', runtime);
+          this.fire('runtime', runtime);
         }.bind(this));
         document.body.appendChild(this.runtimeSelector);
       },
