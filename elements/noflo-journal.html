@@ -82,6 +82,22 @@
         if (!this.graph) {
           return;
         }
+
+        var positionedNodes = this.graph.nodes.filter(function (node) {
+          if (!node.metadata) {
+            return false;
+          }
+          if (!node.metadata.x || !node.metadata.y) {
+            return false;
+          }
+          return true;
+        });
+        if (this.graph.nodes.length && !positionedNodes.length) {
+          setTimeout(function () {
+            this.autolayout();
+          }.bind(this), 10);
+        }
+
         if (!this.graph.properties.project || this.graph.journal || !this.db) {
           return;
         }
