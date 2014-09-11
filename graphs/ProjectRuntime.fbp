@@ -4,6 +4,7 @@ OUTPORT=Connect.RUNTIME:RUNTIME
 
 # First see if we're already connected
 HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Merge)
+'true' -> REQUIREGRAPHS HoldConnection
 
 # If not, the connect
 'runtime' -> KEY GetDefinition(objects/GetObjectKey)
@@ -29,6 +30,6 @@ GetSource ERROR -> ERROR Collect
 Collect CONTEXT -> IN MergeContext(core/Merge)
 
 # Error handling
-Connect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
+Connect ERROR -> IN ShowErrors(core/Output)
 Collect ERROR -> ERROR ErrorToCtx
 ErrorToCtx OUT -> IN MergeContext

@@ -18,6 +18,9 @@ exports.getComponent = ->
   c.inPorts.add 'runtime',
     datatype: 'object'
     required: false
+  c.inPorts.add 'requiregraphs',
+    datatype: 'boolean'
+    required: true
   c.outPorts.add 'connect',
     datatype: 'object'
   c.outPorts.add 'context',
@@ -25,16 +28,18 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     in: 'context'
-    params: 'runtime'
+    params: ['runtime', 'requiregraphs']
     out: ['connect', 'context']
   , (context, groups, out) ->
-    if not context.graphs?.length and not context.remote?.length
-      out.context.send context
-      return
+    requireGraphs = String(c.params.requiregraphs) is 'true'
+    if requireGraphs and not context.graphs?.length and not context.remote?.length
+      if not context.runtime or context.runtime.canDo
+        out.context.send context
+        return
     context.runtime = findRuntime context
     if context.runtime
-      # Already connected
-      if c.params.runtime?.definition.id is context.runtime.id
+      if c.params.runtime?.canDo and c.params.runtime?.definition.id is context.runtime.id
+        # Already connected
         context.runtime = c.params.runtime
         out.context.send context
         return

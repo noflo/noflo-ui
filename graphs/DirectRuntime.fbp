@@ -4,6 +4,7 @@ OUTPORT=Connect.CONNECTED:RUNTIME
 
 # First see if we're already connected
 HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Merge)
+'false' -> REQUIREGRAPHS HoldConnection
 
 # Read runtime definition from context and connect
 'runtime' -> KEY GetDefinition(objects/GetObjectKey)
