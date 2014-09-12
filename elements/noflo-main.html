@@ -504,6 +504,7 @@
             });
             if (!inStore) {
               this.runtimes.push(runtime);
+              this.fire('runtime', runtime);
               this.checkRuntimeSeen(runtime);
               return;
             }
