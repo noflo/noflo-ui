@@ -196,6 +196,9 @@
           this.$.main.open = false;
         } else {
           this.$.main.open = true;
+          for (var libKey in this.$.grapheditor.$.graph.library) {
+            delete this.$.grapheditor.$.graph.library[libKey];
+          }
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
           var oldGraph = this.$.grapheditor.graph;
