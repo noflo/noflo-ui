@@ -223,7 +223,7 @@
         }
         this.showCard();
         if (this.runtime.getType() === 'iframe') {
-          this.runtime.once('connected', function () {
+          this.runtime.once('capabilities', function () {
             this.runtime.start();
           }.bind(this));
           return;

@@ -102,13 +102,13 @@ exports.getComponent = ->
       sendContext payload
       sender = ->
         unless currentContext is payload
-          payload.runtime.removeListener 'connected', sender
+          payload.runtime.removeListener 'capabilities', sender
           return
         sendContext payload
         c.outPorts.context.send payload
         c.outPorts.context.disconnect()
 
-      payload.runtime.on 'connected', sender
+      payload.runtime.on 'capabilities', sender
 
       if payload.runtime.isConnected()
         c.outPorts.context.send payload
