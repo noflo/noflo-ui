@@ -44,9 +44,6 @@
       width: window.innerWidth,
       height: window.innerHeight,
       ctx: {},
-      runtimes: function (runtimes) {
-        runtimes.forEach(this.$.main.runtimes.bind(this.$.main));
-      },
       projects: function (projects) {
         projects.forEach(this.$.main.projects.bind(this.$.main));
       },
@@ -62,6 +59,9 @@
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
+        }.bind(this));
+        this.$.main.addEventListener('runtime', function (event) {
+          this.fire('project:save:runtime', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
           this.fire('project:save:project', event.detail);
@@ -142,7 +142,8 @@
           this.projects(context.projects);
         }
         if (context.runtimes) {
-          this.runtimes(context.runtimes);
+          this.$.main.runtimes = context.runtimes;
+          this.$.project.runtimes = context.runtimes;
         }
         if (context.search !== undefined) {
           this.$.library.search({

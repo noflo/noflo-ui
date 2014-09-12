@@ -251,6 +251,7 @@
       open: true,
       localProjects: [],
       remoteProjects: [],
+      runtimes: [],
       userRuntimes: [],
       examples: [
         {
@@ -414,7 +415,10 @@
         req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
         req.send(null);
       },
-      runtimes: function (runtime) {
+      runtimesChanged: function () {
+        this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
+      },
+      checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
           if (runtime.type === 'noflo-browser' && runtime.address === 'preview/iframe.html') {
             runtime.seen = Date.now();
@@ -431,7 +435,6 @@
         if (this.userRuntimes.indexOf(runtime) === -1) {
           this.userRuntimes.push(runtime);
         }
-        this.fire('runtimes', this.userRuntimes);
       },
       fetchRuntimes: function (event) {
         this.fetchFlowhub();
@@ -458,15 +461,15 @@
           // Add new
           for (i=0; i<devices.length; i++) {
             var device = devices[i];
-            var rtNew = new this.registry.Runtime({
+            var rtNew = {
               label: device,
               id: require('uuid')(),
               protocol: 'microflo',
               address: 'serial://'+device,
               type: 'microflo',
               seen: new Date().toString()
-            });
-            this.runtimes(rtNew);
+            };
+            this.userRuntimes.push(rtNew);
           }
           this.fire('runtimes', this.userRuntimes);
         }.bind(this));
@@ -493,14 +496,15 @@
             if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
-            this.userRuntimes.forEach(function (storedRuntime) {
+            this.runtimes.forEach(function (storedRuntime) {
               if (storedRuntime.id === runtime.runtime.id) {
                 inStore = storedRuntime;
                 found.push(inStore.id);
               }
             });
             if (!inStore) {
-              this.runtimes(runtime);
+              this.runtimes.push(runtime);
+              this.checkRuntimeSeen(runtime);
               return;
             }
 
@@ -585,7 +589,7 @@
           return;
         }
         var dialog = document.createElement('noflo-new-project');
-        dialog.runtimes = this.userRuntimes;
+        dialog.runtimes = this.runtimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var noflo = require('noflo');
