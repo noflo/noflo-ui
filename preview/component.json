@@ -40,7 +40,8 @@
     "noflo/noflo-tween": "*",
     "noflo/noflo-adapters": "*",
     "noflo/noflo-amd": "*",
-    "noflo/noflo-react": "*"
+    "noflo/noflo-react": "*",
+    "noflo/noflo-peer": "*"
   },
   "json": [
     "component.json"
