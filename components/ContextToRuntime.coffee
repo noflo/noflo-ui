@@ -20,8 +20,10 @@ sendComponent = (component, runtime) ->
 
   # Check for platform-specific components
   runtimeType = component.code.match /@runtime ([a-z\-]+)/
-  if runtimeType and runtimeType[1] isnt runtime.definition.type
-    return
+  if runtimeType
+    return unless runtimeType[1] in ['all', runtime.definition.type]
+
+  return unless runtime.canDo 'component:setsource'
 
   runtime.sendComponent 'source',
     name: component.name
@@ -32,8 +34,9 @@ sendComponent = (component, runtime) ->
 
 sendGraph = (graph, runtime, project) ->
   if graph.properties.environment?.type
-    if graph.properties.environment.type isnt 'all' and graph.properties.environment.type isnt runtime.definition.type
-      return
+    return unless graph.properties.environment.type in ['all', runtime.definition.type]
+
+  return unless runtime.canDo 'protocol:graph'
 
   graphId = graph.name or graph.properties.id
   runtime.sendGraph 'clear',
