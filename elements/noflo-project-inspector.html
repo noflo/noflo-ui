@@ -2,6 +2,9 @@
   <template>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>{{ project.name }} settings</h1>
+      <template if="{{ errorText }}">
+        <div class="error">{{ errorText }}</div>
+      </template>
       <form>
         <label>
           <span>GitHub repository</span>
@@ -28,6 +31,9 @@
   </template>
   <script>
     Polymer('noflo-project-inspector', {
+      token: '',
+      errorText: '',
+      originalRepo: '',
       repo: '',
       name: '',
       main: '',
@@ -38,24 +44,39 @@
         document.getElementById('container').classList.remove('blur');
       },
       projectChanged: function () {
+        this.originalRepo = this.project.repo;
         this.repo = this.project.repo;
         this.name = this.project.name;
         this.main = this.project.main;
       },
-      send: function (event) {
-        if (event) {
-          event.preventDefault();
-        }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'saveProjectProperties');
-        }
-        var type = this.project.type;
+      createProject: function (callback) {
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status !== 200 && req.status !== 201) {
+            return callback(req.responseText);
+          }
+          return callback(null);
+        };
+        var payload = JSON.stringify({
+          repo: this.repo,
+          active: true
+        });
+        req.open('POST', 'https://api.flowhub.io/projects', true);
+        req.setRequestHeader('Authorization', 'Bearer ' + this.token);
+        req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+        req.send(payload);
+      },
+      updateProject: function () {
         this.project.graphs.forEach(function (graph) {
           if (graph.id === this.main && graph.properties.environment.runtime) {
             type = graph.properties.environment.runtime;
             this.project.mainGraph = graph;
           }
         }.bind(this));
+        var type = this.project.type;
         this.fire('updated', {
           id: this.project.id,
           name: this.name,
@@ -64,6 +85,28 @@
           repo: this.repo
         });
         this.close();
+      },
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'saveProjectProperties');
+        }
+        if (!this.repo || this.originalRepo === this.repo) {
+          // No repository changes, save as-is
+          this.updateProject();
+          return;
+        }
+        // Register repository as active
+        this.errorText = '';
+        this.createProject(function (err) {
+          if (err) {
+            this.errorText = err;
+            return;
+          }
+          this.updateProject();
+        }.bind(this));
       },
       bgClick: function (event) {
         // Don't close if clicking within container

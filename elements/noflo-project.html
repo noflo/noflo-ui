@@ -199,6 +199,7 @@
   </template>
   <script>
     Polymer('noflo-project', {
+      gridToken: '',
       project: null,
       runtimes: [],
       runtime: null,
@@ -260,6 +261,7 @@
           ga('send', 'event', 'button', 'click', 'projectProperties');
         }
         var dialog = document.createElement('noflo-project-inspector');
+        dialog.token = this.gridToken;
         dialog.project = this.project;
         document.body.appendChild(dialog);
         dialog.addEventListener('updated', function (event) {
