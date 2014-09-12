@@ -51,6 +51,7 @@
       "GatherProjectData": "components/GatherProjectData.coffee",
       "GatherRuntimeData": "components/GatherRuntimeData.coffee",
       "GetNode": "components/GetNode.coffee",
+      "GetRemoteProjects": "components/GetRemoteProjects.coffee",
       "GetRemoteUser": "components/GetRemoteUser.coffee",
       "GetRuntimeGraph": "components/GetRuntimeGraph.coffee",
       "GraphToContext": "components/GraphToContext.coffee",
@@ -145,7 +146,8 @@
     "components/SearchGraphNodeToContext.coffee",
     "components/EnsureId.coffee",
     "components/SetGraphChanged.coffee",
-    "components/EnsureLocalRuntimes.coffee"
+    "components/EnsureLocalRuntimes.coffee",
+    "components/GetRemoteProjects.coffee"
   ],
   "json": [
     "component.json"
