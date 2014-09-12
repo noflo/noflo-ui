@@ -93,17 +93,25 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       return unless payload.runtime
-      if currentContext?.runtime and currentContext.graphs[0] isnt payload.graphs[0]
-        if currentContext.runtime is payload.runtime
-          payload.runtime.reconnect()
-        else
-          currentContext.runtime.disconnect()
-      currentContext = payload
-      sendContext payload
-      sender = ->
-        unless currentContext is payload
-          payload.runtime.removeListener 'capabilities', sender
+      if currentContext?.runtime
+        # We already had a connection
+        if currentContext.graphs[0] is payload.graphs[0]
+          # No need to make changes, still same runtime and same top-level graph
           return
+        if currentContext.runtime is payload.runtime
+          # Same runtime, different graph. Reconnect to clear caches
+          currentContext.runtime.removeListener 'capabilities', sender
+          currentContext.runtime.reconnect()
+        else
+          # Different runtime, different graph. Disconnect old runtime connection
+          currentContext.runtime.removeListener 'capabilities', sender
+          currentContext.runtime.disconnect()
+
+      # Prepare to send data
+      currentContext = payload
+      sendContext payload if payload.runtime.isConnected()
+      sender = ->
+        return unless currentContext is payload
         sendContext payload
         c.outPorts.context.send payload
         c.outPorts.context.disconnect()

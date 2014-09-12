@@ -16,9 +16,10 @@ GetDefinition OBJECT -> CONTEXT AddRuntime
 Connect RUNTIME -> RUNTIME HoldConnection
 Connect RUNTIME -> VALUE AddRuntime
 AddRuntime CONTEXT -> IN ConnectedContext
-# Enable debug mode
-AddRuntime CONTEXT -> CONTEXT SendContext(ui/ContextToRuntime)
+
 # Send current project data to runtime
+ConnectedContext OUT -> CONTEXT SendContext(ui/ContextToRuntime)
+# Enable debug mode
 SendContext CONTEXT -> CONTEXT EnableDebug(ui/ContextToDebug)
 
 # Collect remote nodes, if any

@@ -1,5 +1,7 @@
 noflo = require 'noflo'
 
+# @runtime noflo-browser
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
@@ -13,7 +15,7 @@ exports.getComponent = ->
     out: 'context'
     forwardGroup: true
   , (context, groups, out) ->
-    c.removeListener()
+    c.removeListener context
     c.addListener context.runtime, context.graphs?[0]
     out.send context
 
@@ -40,10 +42,10 @@ exports.getComponent = ->
     @runtime.on 'capabilities', c.listener
     @setRuntimeDebug true if @runtime.isConnected()
 
-  c.removeListener = ->
+  c.removeListener = (newContext) ->
     return unless @listener and @runtime
     # Disable debug on old runtime
-    @setRuntimeDebug false if @runtime.isConnected()
+    @setRuntimeDebug false if @runtime.isConnected() and @runtime isnt newContext.runtime
     # Stop listening
     @runtime.removeListener 'capabilities', @listener
     delete c.runtime
