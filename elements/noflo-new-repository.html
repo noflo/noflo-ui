@@ -17,7 +17,7 @@
           <input type="text" value="{{ repo }}" placeholder="username/repository" required>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
+          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Add</button>
           <a on-click="{{ close }}">Cancel</a>
         </div>
       </div>

@@ -306,9 +306,6 @@
         // Hide projects if not logged in
         this.gridTokenChanged();
       },
-      token: function () {
-        this.fire('githubtoken', this.githubToken);
-      },
       openChanged: function () {
         if (String(this.open) === 'true') {
           // Make main visible
@@ -320,7 +317,9 @@
         this.style.height = '0px';
       },
       openLocal: function (event) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
@@ -350,10 +349,19 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'pullGithub');
         }
-        this.fire('download', {
-          repo: sender.getAttribute('data-repo'),
+        var repo = sender.getAttribute('data-repo');
+        var project = {
+          id: repo.replace('/', '_'),
+          name: repo,
+          repo: repo,
+          graphs: [],
+          components: []
+        };
+        this.fire('downloadProject', {
+          project: project,
           token: this.githubToken
         });
+        this.openLocal();
       },
       fetchGithub: function (event) {
         if (event) {
@@ -526,6 +534,13 @@
         if (!project) {
           return;
         }
+        if (!project.main) {
+          if (!project.components.length) {
+            return;
+          }
+          window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+          return;
+        }
         window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
       },
       openRuntime: function (event, details, sender) {
@@ -593,10 +608,30 @@
         document.body.appendChild(dialog);
       },
       projects: function (project) {
+        if (!project.main) {
+          if (!project.graphs.length) {
+            // No graphs, wait for them to arrive from GitHub
+            var observer = new ArrayObserver(project.graphs);
+            observer.open(function () {
+              observer.close();
+              setTimeout(function () {
+                this.projects(project);
+              }.bind(this), 5);
+            }.bind(this));
+          }
+          // Find a suitable main graph
+          project.graphs.forEach(function (graph) {
+            if (graph.name === 'main') {
+              project.main = graph.properties.id;
+            }
+          });
+          if (!project.main && project.graphs.length) {
+            project.main = project.graphs[0].properties.id;
+          }
+        }
         if (this.localProjects.indexOf(project) === -1) {
           this.localProjects.push(project);
         }
-        this.fire('projects', this.localProjects);
       },
       graphs: function (graph) {
         if (!graph.properties.project) {

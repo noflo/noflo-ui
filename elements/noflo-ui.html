@@ -60,6 +60,17 @@
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.fire('github:fetch', event.detail);
         }.bind(this));
+        this.$.main.addEventListener('downloadProject', function (event) {
+          this.fire('project:save:project', event.detail.project);
+          setTimeout(function () {
+            this.fire('github:sync:pull', {
+              repo: event.detail.project.repo,
+              project: event.detail.project
+            });
+            this.$.main.projects(event.detail.project);
+            this.ctx.projects.push(event.detail.project);
+          }.bind(this), 2);
+        }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
         }.bind(this));
