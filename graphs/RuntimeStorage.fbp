@@ -4,7 +4,7 @@ INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
 
 # Route requests
-'open,connect' -> ROUTES Dispatch(routers/GroupRouter)
+'open,connect,sendGraph,sendComponent' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
@@ -52,5 +52,13 @@ SubscribeGraph RUNTIME -> RUNTIME ListenProcessErrors(runtime/ListenProcessError
 ListenProcessErrors PROCESS -> PROCESS ProcessErrorToContext(ui/ProcessErrorToContext)
 ListenProcessErrors MESSAGE -> MESSAGE ProcessErrorToContext
 ProcessErrorToContext OUT -> IN MergeContext
+
+# Sending newly-created graphs and components to runtime
+Dispatch OUT[2] -> GRAPH SendNewGraph(runtime/SendGraph)
+ProjectRuntime RUNTIME -> RUNTIME SendNewGraph
+DirectRuntime RUNTIME -> RUNTIME SendNewGraph
+Dispatch OUT[3] -> COMPONENT SendNewComponent(runtime/SendComponent)
+ProjectRuntime RUNTIME -> RUNTIME SendNewComponent
+DirectRuntime RUNTIME -> RUNTIME SendNewComponent
 
 LoadData ERROR -> IN ShowErrors
