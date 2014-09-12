@@ -1,0 +1,97 @@
+<link rel="import" href="noflo-type-selector.html">
+<polymer-element name="noflo-new-repository" attributes="runtimes" class="modal-content" on-click="{{ close }}">
+  <style>
+    :host {
+      background-color: red;
+    }
+  </style>
+  <template>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Add a new repository</h1>
+      <template if="{{ errorText }}">
+        <div class="error">{{ errorText }}</div>
+      </template>
+      <form>
+        <label>
+          GitHub repository name
+          <input type="text" value="{{ repo }}" placeholder="username/repository" required>
+        </label>
+        <div class="toolbar">
+          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Add</button>
+          <a on-click="{{ close }}">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-new-repository', {
+      token: '',
+      errorText: '',
+      repo: '',
+      canSend: false,
+      attached: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      detached: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      repoChanged: function () {
+        if (this.repo && this.repo.indexOf('/') !== -1) {
+          this.canSend = true;
+        } else {
+          this.canSend = false;
+        }
+      },
+      createProject: function (callback) {
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status !== 200 && req.status !== 201) {
+            return callback(req.responseText);
+          }
+          return callback(null);
+        };
+        var payload = JSON.stringify({
+          repo: this.repo,
+          active: false
+        });
+        req.open('POST', 'https://api.flowhub.io/projects', true);
+        req.setRequestHeader('Authorization', 'Bearer ' + this.token);
+        req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+        req.send(payload);
+      },
+      send: function (event) {
+        if (event) {
+          event.preventDefault();
+        }
+        if (!this.repo) {
+          return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'newRepository');
+        }
+        this.errorText = '';
+        this.createProject(function (err) {
+          if (err) {
+            this.errorText = err;
+            return;
+          }
+          this.fire('new', this.repo);
+          this.close();
+        }.bind(this));
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>

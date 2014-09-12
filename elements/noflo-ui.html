@@ -57,6 +57,20 @@
         this.$.main.addEventListener('login', function (event) {
           this.fire('user:login', true);
         }.bind(this));
+        this.$.main.addEventListener('fetchRemote', function (event) {
+          this.fire('github:fetch', event.detail);
+        }.bind(this));
+        this.$.main.addEventListener('downloadProject', function (event) {
+          this.fire('project:save:project', event.detail.project);
+          setTimeout(function () {
+            this.fire('github:sync:pull', {
+              repo: event.detail.project.repo,
+              project: event.detail.project
+            });
+            this.$.main.projects(event.detail.project);
+            this.ctx.projects.push(event.detail.project);
+          }.bind(this), 2);
+        }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
         }.bind(this));
@@ -178,6 +192,10 @@
           this.$.project.confirm(context.syncOperation);
           return;
         }
+        if (context.remoteProjects) {
+          this.$.main.githubProjects(context.remoteProjects);
+          return;
+        }
         if (this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
           this.ctx.componentDefinition = null;
@@ -242,6 +260,7 @@
         this.$.main.user = user['grid-user'];
         this.$.main.avatar = user['grid-avatar'];
         this.$.main.plan = user['flowhub-plan'];
+        this.$.project.gridToken = user['grid-token'];
       },
       showError: function (ctx) {
       }

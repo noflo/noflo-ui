@@ -1,6 +1,7 @@
 <link rel="import" href="../bower_components/the-graph/the-graph-thumb/the-graph-thumb.html">
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
+<link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
 <polymer-element name="noflo-main" attributes="open localProjects graphs components userRuntimes">
   <template>
@@ -201,11 +202,14 @@
           </template>
           </template>
           <template if="{{ projectList === 'github' }}">
+          <li class="add">
+            <h2>Add a repository</h2>
+            <button id="newrepository" on-click="{{ newRepository }}">Add</button>
+          </li>
           <template repeat="{{ project in remoteProjects }}">
             <li class="remote">
-              <h2>{{ project.name }}</h2>
-              <p>{{ project.description }}</p>
-              <button on-click="{{ downloadProject }}" data-name="{{ project.name }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+              <h2>{{ project.repo }}</h2>
+              <button on-click="{{ downloadProject }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
             </li>
           </template>
           </template>
@@ -302,9 +306,6 @@
         // Hide projects if not logged in
         this.gridTokenChanged();
       },
-      token: function () {
-        this.fire('githubtoken', this.githubToken);
-      },
       openChanged: function () {
         if (String(this.open) === 'true') {
           // Make main visible
@@ -316,7 +317,9 @@
         this.style.height = '0px';
       },
       openLocal: function (event) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
@@ -327,7 +330,7 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (!this.githubToken) {
+        if (!this.gridToken) {
           return;
         }
         event.preventDefault();
@@ -346,74 +349,40 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'pullGithub');
         }
-        this.fire('download', {
-          project: {
-            id: sender.getAttribute('data-name'),
-            name: sender.getAttribute('data-name'),
-            repo: sender.getAttribute('data-repo'),
-            // TODO: Figure out platform from repo contents
-            type: 'html',
-            graphs: [],
-            components: []
-          },
+        var repo = sender.getAttribute('data-repo');
+        var project = {
+          id: repo.replace('/', '_'),
+          name: repo,
+          repo: repo,
+          graphs: [],
+          components: []
+        };
+        this.fire('downloadProject', {
+          project: project,
           token: this.githubToken
         });
+        this.openLocal();
       },
       fetchGithub: function (event) {
         if (event) {
           event.preventDefault();
         }
-        if (!this.githubToken) {
+        if (!this.githubToken || !this.gridToken) {
           return;
         }
+        this.fire('fetchRemote', this.gridToken);
+      },
+      githubProjects: function (projects) {
         this.remoteProjects = [];
-        var button = this.shadowRoot.getElementById('fetchgithub');
-        if (button) {
-          button.classList.add('fa-spin');
-        }
-        var req = new XMLHttpRequest();
-        req.onreadystatechange = function () {
-          if (req.readyState !== 4) {
-            return;
-          }
-          if (button) {
-            button.classList.remove('fa-spin');
-          }
-          if (req.status !== 200) {
-            var error;
-            try {
-              var data = JSON.parse(req.responseText);
-              error = data.message;
-            } catch (e) {
-              error = 'Unknown Error';
-            }
-            this.help.show('Error accessing GitHub', 'GitHub API responded with: ' + error + '. You may want to check your GitHub API key in the account settings.');
-            return;
-          }
-          var repos = JSON.parse(req.responseText);
-          repos.forEach(function (repo) {
-            if (!repo.permissions.push) {
+        projects.forEach(function (remoteProject) {
+          for (var i = 0; i < this.localProjects.length; i++) {
+            if (this.localProjects[i].repo === remoteProject.repo) {
+              // We already have this project checked out
               return;
             }
-            for (var i = 0; i < this.localProjects.length; i++) {
-              if (this.localProjects[i].repo === repo.full_name) {
-                return;
-              }
-            }
-            if (repo.language !== null && this.languages.indexOf(repo.language) === -1) {
-              return;
-            }
-            this.remoteProjects.push({
-              name: repo.name,
-              description: repo.description,
-              repo: repo.full_name,
-              language: repo.language
-            });
-          }.bind(this));
-        }.bind(this);
-        req.open('GET', 'https://api.github.com/user/repos?type=public&sort=pushed&access_token=' + encodeURIComponent(this.githubToken), true);
-        req.setRequestHeader('Accept', 'application/vnd.github.beta+json');
-        req.send(null);
+          }
+          this.remoteProjects.push(remoteProject);
+        }.bind(this));
       },
       runtimesChanged: function () {
         this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
@@ -504,6 +473,7 @@
             });
             if (!inStore) {
               this.runtimes.push(runtime);
+              this.fire('runtime', runtime);
               this.checkRuntimeSeen(runtime);
               return;
             }
@@ -564,6 +534,13 @@
         if (!project) {
           return;
         }
+        if (!project.main) {
+          if (!project.components.length) {
+            return;
+          }
+          window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+          return;
+        }
         window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
       },
       openRuntime: function (event, details, sender) {
@@ -609,6 +586,18 @@
           this.projects(event.detail);
         }.bind(this));
       },
+      newRepository: function (event) {
+        event.preventDefault();
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        var dialog = document.createElement('noflo-new-repository');
+        dialog.token = this.gridToken;
+        dialog.addEventListener('new', function (event) {
+          this.fetchGithub();
+        }.bind(this));
+        document.body.appendChild(dialog);
+      },
       newRuntime: function (event) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
@@ -619,10 +608,30 @@
         document.body.appendChild(dialog);
       },
       projects: function (project) {
+        if (!project.main) {
+          if (!project.graphs.length) {
+            // No graphs, wait for them to arrive from GitHub
+            var observer = new ArrayObserver(project.graphs);
+            observer.open(function () {
+              observer.close();
+              setTimeout(function () {
+                this.projects(project);
+              }.bind(this), 5);
+            }.bind(this));
+          }
+          // Find a suitable main graph
+          project.graphs.forEach(function (graph) {
+            if (graph.name === 'main') {
+              project.main = graph.properties.id;
+            }
+          });
+          if (!project.main && project.graphs.length) {
+            project.main = project.graphs[0].properties.id;
+          }
+        }
         if (this.localProjects.indexOf(project) === -1) {
           this.localProjects.push(project);
         }
-        this.fire('projects', this.localProjects);
       },
       graphs: function (graph) {
         if (!graph.properties.project) {

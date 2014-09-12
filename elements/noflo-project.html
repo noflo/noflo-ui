@@ -82,7 +82,7 @@
         max-height: calc(100% - 72px);
       }
       main.repo {
-        max-height: calc(100% - 72px * 3);
+        max-height: calc(100% - 72px * 2);
       }
       main::-webkit-scrollbar {
         display: none;
@@ -98,7 +98,7 @@
         padding-right: 36px;
         box-sizing: border-box;
         overflow: hidden;
-        height: 144px;
+        height: 72;
         transition: background-color 0.3s ease-in-out;
       }
       the-panel#account[open] ::shadow footer {
@@ -114,23 +114,6 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      footer textarea {
-        display: block;
-        font-size: 13px;
-        background-color: hsl(0, 0%, 10%);
-        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
-        color: white;
-        border-radius: 3px;
-        padding: 3px;
-        border: none;
-        margin: 0px;
-        width: calc(100% - 2px);
-        height: 54px;
-        box-sizing: border-box;
-        margin-left: auto;
-        margin-right: auto;
-        resize: none;
-      }
       footer button {
         background-color: white;
         color: hsl(190, 90%, 45%);
@@ -145,7 +128,6 @@
         display: block;
         margin-left: auto;
         margin-right: auto;
-        margin-top: 8px;
         cursor: pointer;
       }
       footer button:disabled {
@@ -207,9 +189,9 @@
       <template if="{{ project.repo }}">
       <footer>
         <h1 title="{{ project.repo }}"><i class="fa fa-github"></i> {{ project.repo }}</h1>
-        <button on-click="{{ upload }}">
+        <button on-click="{{ synchronize }}">
           <i class="fa fa-cloud-upload"></i>
-          Synchronize
+          <span>Synchronize</span>
         </button>
       </footer>
       </template>
@@ -217,6 +199,7 @@
   </template>
   <script>
     Polymer('noflo-project', {
+      gridToken: '',
       project: null,
       runtimes: [],
       runtime: null,
@@ -278,6 +261,7 @@
           ga('send', 'event', 'button', 'click', 'projectProperties');
         }
         var dialog = document.createElement('noflo-project-inspector');
+        dialog.token = this.gridToken;
         dialog.project = this.project;
         document.body.appendChild(dialog);
         dialog.addEventListener('updated', function (event) {
@@ -319,10 +303,11 @@
         this.$.account.toggleOpen(false);
         window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(sender.getAttribute('data-id'));
       },
-      upload: function (event) {
+      synchronize: function (event) {
         event.preventDefault();
+        event.stopPropagation();
         if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'pushGithub');
+          ga('send', 'event', 'button', 'click', 'syncGithub');
         }
         this.fire('sync', {
           repo: this.project.repo,

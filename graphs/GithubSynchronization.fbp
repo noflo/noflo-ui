@@ -4,7 +4,7 @@ OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=Changed.OUT:CHANGED
 OUTPORT=Errors.OUT:ERROR
 
-'prepare,synchronize' -> ROUTES Dispatch(routers/GroupRouter)
+'prepare,synchronize,pull' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Preparation for sync: check local and remote situation
@@ -18,7 +18,6 @@ GetRepo OBJECT -> IN GetProject OUT -> PROJECT CheckSyncState
 Token OUT -> TOKEN CheckSyncState
 GetReference ERROR -> IN Errors(core/Merge)
 CheckSyncState ERROR -> IN Errors
-GetReference REFERENCE -> IN Kick(core/Kick)
 
 # Different synchronization states
 CheckSyncState NOOP -> IN MergeOps(core/Merge)
@@ -84,3 +83,16 @@ DiscGraph OUT -> IN SetGraphGroup OUT -> IN Changed(core/Merge)
 UpdatedComponent OUT -> IN DiscComponent(core/DisconnectAfterPacket)
 DiscComponent OUT -> IN SetComponentGroup OUT -> IN Changed
 Changed OUT -> IN ShowErrors
+
+# Pull-only sync, no decision needed
+'repo' -> KEY GetPullRepo(objects/GetObjectKey)
+Dispatch OUT[2] -> IN GetPullRepo
+Token(core/Repeat) OUT -> TOKEN GetPullReference(github/GetReference)
+GetPullRepo OUT -> REPOSITORY GetPullReference
+GetPullReference REFERENCE -> REFERENCE CheckPullState(ui/CheckSyncState)
+'project' -> KEY GetPullProject(objects/GetObjectKey)
+GetPullRepo OBJECT -> IN GetPullProject OUT -> PROJECT CheckPullState
+Token OUT -> TOKEN CheckPullState
+GetPullReference ERROR -> IN Errors(core/Merge)
+CheckPullState REMOTE -> IN DoSync
+CheckPullState ERROR -> IN Errors
