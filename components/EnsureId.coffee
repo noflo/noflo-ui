@@ -12,28 +12,34 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'out',
     datatype: 'object'
+  c.outPorts.add 'id',
+    datatype: 'string'
 
   noflo.helpers.WirePattern c,
     in: 'in'
-    out: 'out'
+    out: ['out', 'id']
   , (data, groups, out) ->
     if data.properties
       # Graph
       if data.properties.id
         # We already have an ID
         data.id = data.properties.id
-        out.send data
+        out.out.send data
+        out.id.send data.id
         return
       id = randomString()
       data.properties.id = id
       data.id = id
-      out.send data
+      out.out.send data
+      out.id.send data.id
 
     # Other types
     if data.id
-      out.send data
+      out.out.send data
+      out.id.send data.id
       return
     data.id = randomString()
-    out.send data
+    out.out.send data
+    out.id.send data.id
 
   c

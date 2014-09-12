@@ -136,6 +136,14 @@
             searchLibraryResult: event.detail
           });
         }.bind(this));
+        this.$.search.addEventListener('deleteGraph', function (event) {
+          var project = this.ctx.project || this.$.project.project;
+          if (project && project.graphs.indexOf(event.detail) !== -1) {
+            project.graphs.splice(project.graphs.indexOf(event.detail), 1);
+          }
+          this.fire('project:delete:graph', event.detail);
+          window.location.hash = '#';
+        }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;
@@ -158,6 +166,7 @@
         if (context.runtimes) {
           this.$.main.runtimes = context.runtimes;
           this.$.project.runtimes = context.runtimes;
+          this.$.search.runtimes = context.runtimes;
         }
         if (context.search !== undefined) {
           this.$.library.search({

@@ -1,0 +1,41 @@
+INPORT=HoldDb.DATA:DB
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeContext.OUT:OUT
+
+'component,graph,project,runtime' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Create transaction
+HoldDb(core/Kick) OUT -> DB DeleteTransaction(indexeddb/BeginTransaction)
+'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE DeleteTransaction
+StoreName(core/Merge) OUT -> STORES DeleteTransaction
+Dispatch ROUTE -> IN HoldDb
+Dispatch ROUTE -> IN HoldMode
+Dispatch MISSED -> IN ShowErrors(core/Output)
+
+# Component-specific handling
+'components' -> DATA ComponentStore(core/Kick) OUT -> IN StoreName
+Dispatch OUT[0] -> IN SplitComponent(core/Split) OUT -> IN ComponentStore 
+SplitComponent OUT -> IN GetKey(ui/EnsureId)
+
+# Graph-specific handling
+'graphs' -> DATA GraphStore(core/Kick) OUT -> IN StoreName
+Dispatch OUT[1] -> IN SplitGraph(core/Split) OUT -> IN GraphStore
+SplitGraph OUT -> IN GetKey
+
+# Project-specific handling
+'projects' -> DATA ProjectStore(core/Kick) OUT -> IN StoreName
+Dispatch OUT[2] -> IN SplitProject(core/Split) OUT -> IN ProjectStore 
+SplitProject OUT -> IN GetKey
+
+# Runtime-specific handling
+'runtimes' -> DATA RuntimeStore(core/Kick) OUT -> IN StoreName
+Dispatch OUT[3] -> IN SplitRuntime(core/Split) OUT -> IN RuntimeStore 
+SplitRuntime OUT -> IN GetKey
+
+# Saving
+StoreName OUT -> NAME Store(indexeddb/GetStore)
+DeleteTransaction TRANSACTION -> TRANSACTION Store STORE -> STORE Delete(indexeddb/Delete)
+GetKey ID -> KEY Delete
+
+# Error handling
+Delete ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext(core/Merge)

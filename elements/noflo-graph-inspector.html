@@ -29,6 +29,12 @@
         border-radius: 6px;
         color: white;
       }
+      button.delete {
+        position: absolute;
+        right: 36px;
+        border: 0px solid hsla( 0, 98%, 46%, .8) !important;
+        color: hsla( 0, 98%, 46%, .8) !important;
+      }
     </style>
     <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
     <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
@@ -67,6 +73,7 @@
       <div class="toolbar">
         <button on-click="{{ save }}">Save</button>
         <a on-click="{{ close }}">Cancel</a>
+        <button class="delete" on-click="{{ delete }}">Delete</button>
       </div>
     </div>
   </template>
@@ -164,6 +171,13 @@
           environment: env,
           description: this.description
         });
+        this.close();
+      },
+      delete: function () {
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'deleteGraph');
+        }
+        this.fire('delete', this.graph);
         this.close();
       },
       bgClick: function (event) {

@@ -409,6 +409,9 @@
         this.graphInspector.graph = this.graph;
         this.graphInspector.project = this.project;
         this.graphInspector.runtimes = this.runtimes;
+        this.graphInspector.addEventListener('delete', function (event) {
+          this.fire('deleteGraph', event.detail);
+        }.bind(this));
         document.body.appendChild(this.graphInspector);
       },
     });

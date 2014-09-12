@@ -77,6 +77,7 @@
     },
     "graphs": {
       "ContextStorage": "graphs/ContextStorage.fbp",
+      "Delete": "graphs/Delete.fbp",
       "DirectRuntime": "graphs/DirectRuntime.fbp",
       "GithubStorage": "graphs/GithubStorage.fbp",
       "GithubSynchronization": "graphs/GithubSynchronization.fbp",
@@ -147,7 +148,8 @@
     "components/EnsureId.coffee",
     "components/SetGraphChanged.coffee",
     "components/EnsureLocalRuntimes.coffee",
-    "components/GetRemoteProjects.coffee"
+    "components/GetRemoteProjects.coffee",
+    "graphs/Delete.fbp"
   ],
   "json": [
     "component.json"
@@ -174,6 +176,7 @@
     "graphs/DirectRuntime.fbp",
     "graphs/ProjectRuntime.fbp",
     "graphs/GithubSynchronization.fbp",
-    "graphs/Save.fbp"
+    "graphs/Save.fbp",
+    "graphs/Delete.fbp"
   ]
 }
