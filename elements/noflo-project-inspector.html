@@ -1,5 +1,13 @@
 <polymer-element name="noflo-project-inspector" class="modal-content" on-click="{{ close }}">
   <template>
+    <style>
+      button.delete {
+        position: absolute;
+        right: 36px;
+        border: 0px solid hsla( 0, 98%, 46%, .8) !important;
+        color: hsla( 0, 98%, 46%, .8) !important;
+      }
+    </style>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>{{ project.name }} settings</h1>
       <template if="{{ errorText }}">
@@ -25,6 +33,7 @@
         <div class="toolbar">
           <button on-click="{{ send }}">Save</button>
           <a on-click="{{ close }}">Cancel</a>
+          <button class="delete" on-click="{{ delete }}">Delete</button>
         </div>
       </div>
     </form>
@@ -107,6 +116,14 @@
           }
           this.updateProject();
         }.bind(this));
+      },
+      delete: function (event) {
+        event.preventDefault();
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'deleteProject');
+        }
+        this.fire('delete', this.project);
+        this.close();
       },
       bgClick: function (event) {
         // Don't close if clicking within container

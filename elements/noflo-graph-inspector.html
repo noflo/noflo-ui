@@ -173,7 +173,8 @@
         });
         this.close();
       },
-      delete: function () {
+      delete: function (event) {
+        event.preventDefault();
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'deleteGraph');
         }

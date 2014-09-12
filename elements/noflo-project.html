@@ -280,6 +280,9 @@
             components: []
           });
         }.bind(this));
+        dialog.addEventListener('delete', function (event) {
+          this.fire('deleteProject', event.detail);
+        }.bind(this));
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
