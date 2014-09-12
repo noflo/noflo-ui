@@ -2,6 +2,9 @@
   <template>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>Synchronize with <i class="fa fa-github"></i> {{ operation.repo }}</h1>
+      <template if="{{ statusText }}">
+        <div>{{ statusText }}</div>
+      </template>
       <form>
         <table>
           <template repeat="{{ entry in operation.conflict }}">
@@ -49,11 +52,15 @@
         pull: [],
         conflict: []
       },
+      statusText: '',
       chosen: {},
       hasPush: false,
       message: '',
       operationChanged: function () {
         this.chosen = {};
+        if (!this.operation.push.length && !this.operation.pull.length && !this.operation.conflict.length) {
+          this.statusText = 'All changes have been synchronized';
+        }
         if (this.operation.push.length || this.operation.conflict.length) {
           this.hasPush = true;
         } else {
