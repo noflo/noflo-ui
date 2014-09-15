@@ -129,7 +129,7 @@
               this.requestLogin = true;
               return;
             }
-            if (user.plan.type === 'free' && (scopes.indexOf('public_repo') === -1 || scopes.indexOf('repo') === -1)) {
+            if (user.plan.type === 'free' && (scopes.indexOf('public_repo') === -1 && scopes.indexOf('repo') === -1)) {
               this.statusText = 'Your GitHub token doesn\'t have repository access, please re-login';
               this.requestLogin = true;
               return;
