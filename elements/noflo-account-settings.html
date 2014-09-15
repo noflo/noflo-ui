@@ -116,19 +116,25 @@
             return;
           }
           this.newPlan = user.plan.type;
+          if (this.newPlan !== this.plan) {
+            this.statusText = 'Your Flowhub plan has been changed to ' + this.newPlan + ', please re-login';
+            this.requestLogin = true;
+            return;
+          }
           this.checkGithubUser(user.github.token, function (err, scopes) {
+            console.log(this.newPlan, scopes);
             this.$.refresh.classList.remove('fa-spin');
             if (err) {
               this.statusText = 'Failed to fetch GitHub user information, please re-login';
               this.requestLogin = true;
               return;
             }
-            if (user.plan.type === 'free' && scopes.indexOf('public_repo') !== -1 && scopes.indexOf('repo') !== -1) {
+            if (user.plan.type === 'free' && (scopes.indexOf('public_repo') === -1 || scopes.indexOf('repo') === -1)) {
               this.statusText = 'Your GitHub token doesn\'t have repository access, please re-login';
               this.requestLogin = true;
               return;
             }
-            if (user.plan.type !== 'free' && scopes.indexOf('repo') !== -1) {
+            if (user.plan.type !== 'free' && scopes.indexOf('repo') === -1) {
               this.statusText = 'Your GitHub token doesn\'t have private repository access, please re-login';
               this.requestLogin = true;
               return;
