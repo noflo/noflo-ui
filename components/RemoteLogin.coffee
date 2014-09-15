@@ -2,7 +2,7 @@ noflo = require 'noflo'
 
 getUrl = (params) ->
   redirect = params.redirect or window.location.href
-  "#{params.site}/login/authorize/github_public?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
+  "#{params.site}/login/authorize/#{params.provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
   callback null, null
@@ -37,6 +37,10 @@ exports.getComponent = ->
   c.inPorts.add 'gatekeeper',
     datatype: 'string'
     required: true
+  c.inPorts.add 'provider',
+    datatype: 'string'
+    required: true
+    default: 'github_public'
   c.inPorts.add 'clientid',
     datatype: 'string'
     required: true
@@ -56,6 +60,7 @@ exports.getComponent = ->
     params: [
       'site'
       'gatekeeper'
+      'provider'
       'clientid'
       'scope'
       'redirect'
