@@ -300,6 +300,10 @@
         this.$.mainaccount.addEventListener('login', function (event) {
           this.fetchRuntimes();
         }.bind(this));
+        this.$.mainaccount.addEventListener('relogin', function (event) {
+          event.stopPropagation();
+          this.fire('relogin', event.detail);
+        }.bind(this));
         this.$.mainaccount.addEventListener('theme', function (event) {
           window.setTimeout(function () {
             this.fire('theme', event.detail);
@@ -527,6 +531,7 @@
             this.$.loginrequiredChrome.style.display = 'none';
           }
         }
+        this.$.mainaccount.gridToken = this.gridToken;
       },
       openProject: function (event, details, sender) {
         event.preventDefault();

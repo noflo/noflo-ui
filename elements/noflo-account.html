@@ -221,23 +221,19 @@
             return;
           }
           var dialog = document.createElement('noflo-account-settings');
-          dialog.githubtoken = this.githubToken;
+          dialog.gridToken = this.gridToken;
           dialog.theme = this.theme;
+          dialog.plan = this.plan;
           dialog.user = this.user;
           document.body.appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.theme = event.detail.theme;
             storage.set(this.storage.theme, this.theme);
           }.bind(this));
-        },
-        gridTokenChanged: function () {
-          if (this.gridToken) {
-            this.getUser(this.gridToken);
-          }
-          this.fire('gridtoken', this.gridToken);
-        },
-        githubTokenChanged: function () {
-          this.fire('githubtoken', this.githubToken);
+          dialog.addEventListener('relogin', function (event) {
+            event.stopPropagation();
+            this.fire('relogin', event.detail);
+          }.bind(this));
         },
         themeChanged: function (oldTheme, newTheme) {
           this.fire('theme', this.theme);

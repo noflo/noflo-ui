@@ -1,11 +1,50 @@
-<polymer-element name="noflo-account-settings" attributes="user gridtoken githubtoken theme" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-account-settings" attributes="user gridToken plan theme" class="modal-content" on-click="{{ close }}">
   <template>
+    <style>
+      .plan strong {
+        text-transform: uppercase;
+        color: black;
+        background-color: hsl(190, 90%, 45%);
+        text-decoration: none;
+        padding: 2px;
+        border-radius: 2px;
+      }
+      .plan .free,
+      .plan .beta,
+      .plan .backer {
+        background-color: hsl(135,90%,45%);
+      }
+      button.refresh {
+        border: none;
+        background-color: transparent;
+      }
+      button.relogin {
+        background-color: transparent;
+        color: hsl(190, 100%, 30%);
+        border: 1px solid hsl(190, 100%, 30%);
+        padding: 2px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+      }
+    </style>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>Account settings for {{ user.name }}</h1>
       <form>
         <label>
           User Identifier
           <input type="text" readonly value="{{ user.uuid }}">
+        </label>
+        <label>
+          Flowhub plan
+          <div class="plan"><strong class="{{ plan }}">{{ plan }}</strong> <button id="refresh" class="refresh" on-click="{{ checkPlan }}"><i class="fa fa-refresh"></i></button></div>
+          <template if="{{ statusText }}">
+            <div>
+              <span>{{ statusText }}</span>
+              <template if="{{ requestLogin }}">
+                <button class="relogin" on-click="{{ relogin }}">Login</button>
+              </template>
+            </div>
+          </template>
         </label>
         <label>
           Theme
@@ -24,15 +63,89 @@
   <script>
     Polymer('noflo-account-settings', {
       user: null,
+      statusText: '',
+      requestLogin: false,
+      newPlan: '',
       theme: '',
+      gridToken: '',
       attached: function () {
         document.getElementById('container').classList.add('blur');
       },
       detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
+      checkFlowhubUser: function (callback) {
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status !== 200) {
+            return callback(new Error(req.responseText));
+          }
+          callback(null, JSON.parse(req.responseText));
+        };
+        req.open('GET', 'https://api.flowhub.io/user', true);
+        req.setRequestHeader('Authorization', 'Bearer ' + this.gridToken);
+        req.send(null);
+      },
+      checkGithubUser: function (token, callback) {
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function () {
+          if (req.readyState !== 4) {
+            return;
+          }
+          if (req.status !== 200) {
+            return callback(new Error(req.responseText));
+          }
+          callback(null, req.getResponseHeader('X-OAuth-Scopes').split(', '));
+        };
+        req.open('GET', 'https://api.github.com/user', true);
+        req.setRequestHeader('Authorization', 'token ' + token);
+        req.send(null);
+      },
+      checkPlan: function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.$.refresh.classList.add('fa-spin');
+        this.checkFlowhubUser(function (err, user) {
+          if (err) {
+            this.statusText = 'Failed to fetch Flowhub user information, please re-login';
+            this.requestLogin = true;
+            this.$.refresh.classList.remove('fa-spin');
+            return;
+          }
+          this.newPlan = user.plan.type;
+          this.checkGithubUser(user.github.token, function (err, scopes) {
+            this.$.refresh.classList.remove('fa-spin');
+            if (err) {
+              this.statusText = 'Failed to fetch GitHub user information, please re-login';
+              this.requestLogin = true;
+              return;
+            }
+            if (user.plan.type === 'free' && scopes.indexOf('public_repo') !== -1 && scopes.indexOf('repo') !== -1) {
+              this.statusText = 'Your GitHub token doesn\'t have repository access, please re-login';
+              this.requestLogin = true;
+              return;
+            }
+            if (user.plan.type !== 'free' && scopes.indexOf('repo') !== -1) {
+              this.statusText = 'Your GitHub token doesn\'t have private repository access, please re-login';
+              this.requestLogin = true;
+              return;
+            }
+            this.statusText = 'Everything up to date';
+            this.requestLogin = false;
+          }.bind(this));
+        }.bind(this));
+      },
+      relogin: function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.fire('relogin', this.newPlan);
+      },
       send: function (event) {
         event.preventDefault();
+        event.stopPropagation();
         this.fire('updated', {
           theme: this.theme
         });
