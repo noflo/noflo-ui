@@ -44,9 +44,6 @@
       width: window.innerWidth,
       height: window.innerHeight,
       ctx: {},
-      projects: function (projects) {
-        projects.forEach(this.$.main.projects.bind(this.$.main));
-      },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
@@ -181,6 +178,9 @@
         }
         if (context.projects) {
           this.$.main.projects = context.projects;
+        }
+        if (context.db) {
+          this.$.journal.db = context.db;
         }
         if (context.runtimes) {
           this.$.main.runtimes = context.runtimes;

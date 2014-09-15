@@ -11,6 +11,11 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 # Pass database connection to persistence handlers
 SplitDb(core/Split) OUT -> DB LoadData(ui/LoadProjectData)
 
+# Pass database connection to UI for Journal usage
+SplitDb OUT -> START CreateDbCtx(objects/CreateObject) OUT -> CONTEXT SetDb(ui/SetToContext)
+'db' -> KEY SetDb
+SplitDb OUT -> VALUE SetDb CONTEXT -> IN MergeContext
+
 # Send all projects to the UI
 '' -> START CreateProjectsCtx(objects/CreateObject)
 CreateProjectsCtx OUT -> CONTEXT SetProjects(ui/SetToContext)
