@@ -33,6 +33,7 @@
         <div class="toolbar">
           <button on-click="{{ send }}">Save</button>
           <a on-click="{{ close }}">Cancel</a>
+          <a href="https://github.com/new">New Repository</a>
           <button class="delete" on-click="{{ delete }}">Delete</button>
         </div>
       </div>
@@ -111,7 +112,8 @@
         this.errorText = '';
         this.createProject(function (err) {
           if (err) {
-            this.errorText = err;
+            this.errorText = err +
+                '\nNote: You must create new repositories manually using [New Repository]';
             return;
           }
           this.updateProject();
