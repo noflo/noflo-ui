@@ -480,13 +480,15 @@
             return;
           }
           var found = [];
-          runtimes.forEach(function (runtime) {
+          runtimes.forEach(function (runtimeObject) {
             var inStore = null;
+            // Flowhub registry API returns an object which contains the actual info we want
+            var runtime = runtimeObject.runtime;
             if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
             this.runtimes.forEach(function (storedRuntime) {
-              if (storedRuntime.id === runtime.runtime.id) {
+              if (storedRuntime.id === runtime.id) {
                 inStore = storedRuntime;
                 found.push(inStore.id);
               }
@@ -494,17 +496,17 @@
             if (!inStore) {
               this.runtimes.push(runtime);
               this.fire('runtime', runtime);
-              this.checkRuntimeSeen(runtime.runtime);
+              this.checkRuntimeSeen(runtime);
               return;
             }
 
             // Update existing
             var changed = false;
-            Object.keys(runtime.runtime).forEach(function (attr) {
-              if (inStore[attr] === runtime.runtime[attr]) {
+            Object.keys(runtime).forEach(function (attr) {
+              if (inStore[attr] === runtime[attr]) {
                 return;
               }
-              inStore[attr] = runtime.runtime[attr];
+              inStore[attr] = runtime[attr];
               changed = true;
             });
             if (changed) {
