@@ -34,6 +34,7 @@
       name: '',
       type: 'noflo-browser',
       runtimes: null,
+      projects: null,
       canSend: false,
       attached: function () {
         document.getElementById('container').classList.add('blur');
@@ -43,7 +44,16 @@
       },
       nameChanged: function () {
         this.projectId = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
-        if (this.name && this.projectId) {
+        var duplicates = [];
+        if (this.projects) {
+          duplicates = this.projects.filter(function (project) {
+            if (project.id === this.projectId || project.name == this.name) {
+              return true;
+            }
+            return false;
+          }.bind(this));
+        }
+        if (this.name && this.projectId && !duplicates.length) {
           this.canSend = true;
         } else {
           this.canSend = false;

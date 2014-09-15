@@ -574,6 +574,7 @@
           return;
         }
         var dialog = document.createElement('noflo-new-project');
+        dialog.projects = this.projects;
         dialog.runtimes = this.runtimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
