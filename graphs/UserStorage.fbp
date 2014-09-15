@@ -2,7 +2,7 @@ INPORT=Dispatch.IN:IN
 INPORT=LoadUser.START:START
 OUTPORT=Merge.OUT:USER
 
-'login,loginPro,logout' -> ROUTES Dispatch(routers/GroupRouter)
+'loginFree,loginPro,logout' -> ROUTES Dispatch(routers/GroupRouter)
 
 # Initial persistent user data
 LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
@@ -14,6 +14,7 @@ LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 'https://api.flowhub.io' -> SITE GetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
+'github_public' -> PROVIDER Login
 'github' -> SCOPE Login
 Dispatch OUT[0] -> LOGIN Login
 Login TOKEN -> TOKEN GetRemoteUser
