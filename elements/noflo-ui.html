@@ -156,6 +156,12 @@
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
           }
           this.fire('project:delete:graph', event.detail);
+          if (!project.graphs.length && !project.components.length) {
+            // Empty project, remove
+            this.fire('project:delete:project', project);
+            this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
+            this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
+          }
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
