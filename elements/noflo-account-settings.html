@@ -8,10 +8,6 @@
           <input type="text" readonly value="{{ user.uuid }}">
         </label>
         <label>
-          GitHub API token
-          <input type="text" value="{{ githubtoken }}" placeholder="Token for GitHub API access" autocapitalize="off" autocorrect="off" readonly>
-        </label>
-        <label>
           Theme
           <select name="type" value="{{ theme }}">
             <option value="dark">Lazer</option>
@@ -28,8 +24,6 @@
   <script>
     Polymer('noflo-account-settings', {
       user: null,
-      gridtoken: '',
-      githubtoken: '',
       theme: '',
       attached: function () {
         document.getElementById('container').classList.add('blur');

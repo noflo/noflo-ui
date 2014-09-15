@@ -79,7 +79,7 @@
       },
       graphChanged: function () {
         this.checkState();
-        if (!this.graph) {
+        if (!this.graph || !this.graph.on) {
           return;
         }
 
