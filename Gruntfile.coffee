@@ -4,9 +4,11 @@ module.exports = ->
     pkg: @file.readJSON 'package.json'
 
     'bower-install-simple':
-      options:
-        interactive: false
-        forceLatest: false
+      deps:
+        options:
+          interactive: false
+          forceLatest: false
+          directory: 'bower_components'
 
     # Updating the package manifest files
     noflo_manifest:
