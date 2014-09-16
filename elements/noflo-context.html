@@ -316,7 +316,7 @@
         if (!this.runtime) {
           return false;
         }
-        if (!this.runtime.definition || !this.runtime.canDo) {
+        if (!this.runtime.canDo) {
           return false;
         }
         if (this.runtime.canDo('component:getsource') && this.runtime.isConnected()) {
