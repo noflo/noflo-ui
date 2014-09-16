@@ -24,6 +24,7 @@ findProject = (id, projects) ->
 findGraph = (id, project) ->
   return unless project.graphs
   for graph in project.graphs
+    return graph if graph.name is id
     return graph if graph.properties.id is id
   return null
 

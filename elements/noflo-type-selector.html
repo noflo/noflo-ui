@@ -101,6 +101,9 @@
           }
         ];
         this.runtimes.forEach(function (rt) {
+          if (!rt.type) {
+            return;
+          }
           var availType = this.getByType(rt.type);
           availType.runtimes.push(rt);
         }.bind(this));

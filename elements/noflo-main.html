@@ -197,7 +197,12 @@
             <li on-click="{{ openProject }}" data-id="{{ project.id }}">
               <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
               <h2>{{ project.name }}</h2>
+              <template if="{{ project.graphs.length || project.components.length }}">
               <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
+              </template>
+              <template if="{{ !project.graphs.length && !project.components.length }}">
+              <button on-click="{{ deleteProject }}" data-id="{{ project.id }}"><i class="fa fa-trash-o"></i></button>
+              </template>
             </li>
           </template>
           </template>
@@ -217,7 +222,7 @@
       </section>
       <section id="runtimes">
         <h2>
-          Runtimes <small>{{ userRuntimes.length }}</small>
+          Runtimes <small>{{ userRuntimes.length }} / {{ runtimes.length }}</small>
           <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
         </h2>
         <ul class="projects">
@@ -358,8 +363,27 @@
           }.bind(this), 1);
         }
       },
+      deleteProject: function (event, details, sender) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'deleteProject');
+        }
+        var id = sender.getAttribute('data-id');
+        var matches = this.projects.filter(function (proj) {
+          if (proj.id === id) {
+            return true;
+          }
+          return false;
+        });
+        if (!matches.length) {
+          return;
+        }
+        this.fire('deleteProject', matches[0]);
+      },
       downloadProject: function (event, details, sender) {
         event.preventDefault();
+        event.stopPropagation();
         if (!this.githubToken) {
           return;
         }
@@ -367,8 +391,19 @@
           ga('send', 'event', 'button', 'click', 'pullGithub');
         }
         var repo = sender.getAttribute('data-repo');
+        var repoParts = repo.split('/');
+        var repoId = repoParts[1];
+        var dupes = this.projects.filter(function (proj) {
+          if (proj.id === repoId) {
+            return true;
+          }
+          return false;
+        });
+        if (dupes.length) {
+          repoId = repo.replace('/', '_');
+        }
         var project = {
-          id: repo.replace('/', '_'),
+          id: repoId,
           name: repo,
           repo: repo,
           graphs: [],
@@ -409,7 +444,7 @@
       },
       checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
-          if (runtime.type === 'noflo-browser' && runtime.address === 'preview/iframe.html') {
+          if (runtime.protocol === 'iframe' || runtime.protocol === 'microflo') {
             runtime.seen = Date.now();
           } else {
             // Non-persistent runtime, don't show
@@ -427,41 +462,6 @@
       },
       fetchRuntimes: function (event) {
         this.fetchFlowhub();
-        this.fetchMicroFlo();
-      },
-      fetchMicroFlo: function (event) {
-        var microflo = require('microflo');
-        if (!microflo.serial.isSupported()) {
-          return;
-        }
-        microflo.serial.listDevices(function (devices) {
-          // Remove existing
-          var runtimes = [];
-          for (var i=0; i<this.userRuntimes.length; i++) {
-            var rt = this.userRuntimes[i];
-            if (rt.protocol == 'microflo' && rt.address.indexOf('serial://') !== -1) {
-
-            } else {
-              runtimes.push(rt);
-            }
-          }
-          this.userRuntimes = runtimes;
-
-          // Add new
-          for (i=0; i<devices.length; i++) {
-            var device = devices[i];
-            var rtNew = {
-              label: device,
-              id: require('uuid')(),
-              protocol: 'microflo',
-              address: 'serial://'+device,
-              type: 'microflo',
-              seen: new Date().toString()
-            };
-            this.userRuntimes.push(rtNew);
-          }
-          this.fire('runtimes', this.userRuntimes);
-        }.bind(this));
       },
       fetchFlowhub: function (event) {
         if (event) {
@@ -480,13 +480,15 @@
             return;
           }
           var found = [];
-          runtimes.forEach(function (runtime) {
+          runtimes.forEach(function (runtimeObject) {
             var inStore = null;
+            // Flowhub registry API returns an object which contains the actual info we want
+            var runtime = runtimeObject.runtime;
             if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
             this.runtimes.forEach(function (storedRuntime) {
-              if (storedRuntime.id === runtime.runtime.id) {
+              if (storedRuntime.id === runtime.id) {
                 inStore = storedRuntime;
                 found.push(inStore.id);
               }
@@ -494,17 +496,17 @@
             if (!inStore) {
               this.runtimes.push(runtime);
               this.fire('runtime', runtime);
-              this.checkRuntimeSeen(runtime.runtime);
+              this.checkRuntimeSeen(runtime);
               return;
             }
 
             // Update existing
             var changed = false;
-            Object.keys(runtime.runtime).forEach(function (attr) {
-              if (inStore[attr] === runtime.runtime[attr]) {
+            Object.keys(runtime).forEach(function (attr) {
+              if (inStore[attr] === runtime[attr]) {
                 return;
               }
-              inStore[attr] = runtime.runtime[attr];
+              inStore[attr] = runtime[attr];
               changed = true;
             });
             if (changed) {

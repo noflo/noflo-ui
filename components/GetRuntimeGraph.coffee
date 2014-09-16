@@ -29,7 +29,7 @@ exports.getComponent = ->
     data.state = 'ok'
     data.graphs = [] unless data.graphs
     unless data.graphs.length
-      emptyGraph = new noflo.Graph
+      emptyGraph = new noflo.Graph data.runtime.definition.id
       emptyGraph.properties.id = data.runtime.definition.id
       data.graphs.unshift emptyGraph
     out.send data
