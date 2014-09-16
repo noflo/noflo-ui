@@ -292,15 +292,40 @@
           this.help.close();
         }.bind(this));
       },
+      libraryMatch: function (library, project) {
+        if (library === project.id) {
+          return true;
+        }
+        if (library === project.id.replace('noflo-')) {
+          return true;
+        }
+        if (!project.repo) {
+          return false;
+        }
+        var repoParts = project.repo.split('/');
+        if (repoParts.length !== 2) {
+          return false;
+        }
+        if (library === repoParts[1]) {
+          return true;
+        }
+        if (library === repoParts[1].replace('noflo-', '')) {
+          return true;
+        }
+        return false;
+      },
       canGetSource: function (component) {
         var componentParts = component.split('/');
         if (!this.project) {
           return false;
         }
 
-        if (this.project && componentParts.shift() === this.project.id) {
+        if (componentParts.length > 1 && this.project && this.libraryMatch(componentParts.shift(), this.project)) {
           // Local component, see if it is available
           for (i = 0; i < this.project.graphs.length; i++) {
+            if (this.project.graphs[i].name === componentParts[0]) {
+              return true;
+            }
             if (this.project.graphs[i].properties.id === componentParts[0]) {
               return true;
             }
