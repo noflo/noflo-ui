@@ -4,28 +4,25 @@ uuid = require 'uuid'
 microflo = require 'microflo'
 
 ensureOneIframeRuntime = (runtimes) ->
-  localIframes = runtimes.filter (runtime) ->
+  filtered = []
+  iframeRuntime = null
+  for runtime in runtimes
     if runtime.protocol is 'iframe'
-      return true
-    false
-  if localIframes.length > 1
-    # Remove duplicates
-    runtimes = runtimes.filter (runtime) ->
-      return true unless runtime.protocol is 'iframe'
-      return true if runtime.id is localIframes[0].id
-      false
-
-  if localIframes.length > 0
-    localIframes[0].seen = Date.now()
-    return
-
-  local =
-    label: 'Local NoFlo HTML5 environment'
-    id: uuid()
-    protocol: 'iframe'
-    address: 'preview/iframe.html'
-    type: 'noflo-browser'
-  runtimes.push local
+      unless iframeRuntime
+        iframeRuntime = runtime
+        filtered.push runtime
+    else
+      filtered.push runtime
+  unless iframeRuntime
+    iframeRuntime =
+      label: 'Local NoFlo HTML5 environment'
+      id: uuid()
+      protocol: 'iframe'
+      address: 'preview/iframe.html'
+      type: 'noflo-browser'
+    filtered.push iframeRuntime
+  iframeRuntime.seen = Date.now()
+  return filtered
 
 ensureMicroFloRuntimePerSerialDevice = (runtimes, callback) ->
   return callback runtimes if not microflo.serial.isSupported()
@@ -59,8 +56,8 @@ exports.getComponent = ->
     out: 'runtimes'
   , (data, groups, out) ->
 
-    ensureOneIframeRuntime data
-    ensureMicroFloRuntimePerSerialDevice data, (runtimes) ->
+    runtimesWithOneIframe = ensureOneIframeRuntime data
+    ensureMicroFloRuntimePerSerialDevice runtimesWithOneIframe, (runtimes) ->
       out.send runtimes
 
   c
