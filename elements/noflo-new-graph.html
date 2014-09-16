@@ -52,6 +52,7 @@
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
           project: this.project,
+          id: this.project+'/'+this.name,
           environment: {
             type: this.type
           }
