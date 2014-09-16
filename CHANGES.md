@@ -1,7 +1,9 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.2.0 (git master)
+# 0.2.1 (git master)
+
+# 0.2.0 (2014 September 16)
 
 * Major refactoring to follow the Flux pattern
 * Full project synchronization with GitHub
@@ -10,6 +12,8 @@ NoFlo UI ChangeLog
 ```
 #runtime/endpoint%3Fprotocol%3Dwebsocket%26address%3Dws%3A%2F%2Flocalhost%3A3570
 ```
+* Graph search: in the search input, press tab to toggle modes (search library / search graph)
+* More [bugfixes and tweaks](https://github.com/noflo/noflo-ui/issues?q=milestone%3A0.2.0+is%3Aclosed)
 
 ## 0.1.13 (2014 September 5)
 
