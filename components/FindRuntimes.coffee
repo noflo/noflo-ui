@@ -1,5 +1,19 @@
 noflo = require 'noflo'
 
+getGraphType = (graph) ->
+  if not graph.properties.environment.type and graph.properties.environment.runtime is 'html'
+    graph.properties.environment.type = 'noflo-browser'
+  graph.properties.environment.type
+
+findCompatible = (graphType, rts) ->
+  return [] unless graphType
+  compatibleRuntimes = rts.filter (rt) ->
+    return false unless rt.type
+    return true if graphType is 'all'
+    return true if graphType is rt.type
+    false
+  compatibleRuntimes
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
@@ -20,14 +34,16 @@ exports.getComponent = ->
       out.send ctx
       return
 
-    ctx.compatibleRuntimes = rts.filter (rt) ->
-      if not ctx.graphs[0].properties.environment.type and ctx.graphs[0].properties.environment.runtime is 'html'
-        ctx.graphs[0].properties.environment.type = 'noflo-browser'
-
-      return true if ctx.graphs[0].properties.environment.type is 'all'
-      return true if ctx.graphs[0].properties.environment.type is rt.type
-      false
-
+    graph = ctx.graphs[0]
+    graphType = getGraphType ctx.graphs[0]
+    ctx.compatibleRuntimes = findCompatible graphType, rts
     out.send ctx
+
+    graph.on 'changeProperties', ->
+      newGraphType = getGraphType graph
+      return if newGraphType is graphType
+      graphType = newGraphType
+      ctx.compatibleRuntimes = findCompatible graphType, rts
+      out.send ctx
 
   c
