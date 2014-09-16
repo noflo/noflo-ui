@@ -7,15 +7,89 @@
       p {
         font-size: 11px;
       }
+      ul.runtimes {
+        padding: 0px;
+        margin: 0px;
+        margin-left: -9px;
+        margin-right: -9px;
+        list-style: none;
+      }
+      ul.runtimes li {
+        display: inline-block;
+      }
+      ul.runtimes li a {
+        width: 274px;
+        height: 105px;
+        overflow: hidden;
+        display: inline-block;
+        text-align: center;
+        background-color: hsl(190, 100%, 30%);
+        color: white;
+        border-radius: 3px;
+        margin-right: 9px;
+        margin-left: 9px;
+        margin-bottom: 18px;
+        position: relative;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      ul.runtimes li h2 {
+        position: absolute;
+        top: 36px;
+        line-height: 36px;
+        width: 180px;
+        text-transform: none;
+        font-size: 10px;
+        text-align: left;
+        white-space: nowrap;
+        left: 18px;
+        padding: 0px;
+        margin: 0px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        text-decoration: none;
+      }
+      ul.runtimes li p {
+        position: absolute;
+        top: 53px;
+        left: 18px;
+        width: 180px;
+        text-transform: uppercase;
+        font-size: 8px;
+        text-align: left;
+        max-height: 36px;
+        overflow: hidden;
+        color: hsl(189, 50%, 80%);
+        text-decoration: none;
+      }
+      ul.runtimes li a i.fa {
+        font-size: 72px;
+        position: absolute;
+        right: -8px;
+        top: 9px;
+        text-decoration: none;
+      }
     </style>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>Register new runtime</h1>
       <p>
-      <a href="http://flowhub.io" target="_blank">Flowhub</a> keeps a registry of runtimes available to each user.
-      To add new runtimes, use the <a href="https://github.com/the-grid/flowhub-registry#readme" target="_blank">Flowhub Registry API</a> and the refresh the runtime list.
+      $NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="http://noflojs.org/documentation/protocol/" target="_blank">FBP protocol</a>.
+      $NOFLO_APP_TITLE comes with a bundled <a href="http://noflojs.org" target="_blank">NoFlo</a> runtime for the browser.
+      Here are some other popular ones:
       </p>
+      <ul class="runtimes">
+      <template repeat="{{ runtime in runtimes }}">
+      <li class="{{ runtime.name }}">
+        <a href="{{ runtime.url }}" target="_blank">
+          <i class="fa fa-{{ runtime.icon }}"></i>
+          <h2>{{ runtime.label }}</h2>
+          <p>{{ runtime.description }}</p>
+        </a>
+      </li>
+      </template>
+      </ul>
       <p>
-      For <a href="http://noflojs.org" target="_blank">NoFlo</a> runtimes running on Node.js, see <a href="https://github.com/noflo/noflo-nodejs#readme" target="_blank">noflo-nodejs</a>.
+      Once you have installed a runtime, connect it with your Flowhub account by registering it for your <strong>User Identifier</strong>, shown below:
       </p>
       <label>
         User Identifier
@@ -28,6 +102,43 @@
   </template>
   <script>
     Polymer('noflo-new-runtime', {
+      runtimes: [
+        {
+          name: 'noflo-nodejs',
+          label: 'NoFlo on Node.js',
+          description: 'Building network applications',
+          icon: 'cloud',
+          url: 'https://github.com/noflo/noflo-nodejs#readme'
+        },
+        {
+          name: 'noflo-gnome',
+          label: 'NoFlo on GNOME',
+          description: 'Desktop application development',
+          icon: 'desktop',
+          url: 'https://github.com/noflo/noflo-gnome#readme'
+        },
+        {
+          name: 'microflo',
+          label: 'MicroFlo',
+          description: 'Microcontroller programming',
+          icon: 'lightbulb-o',
+          url: 'https://github.com/jonnor/microflo#readme'
+        },
+        {
+          name: 'javafbp',
+          label: 'JavaFBP',
+          description: 'Java and Android programming',
+          icon: 'android',
+          url: 'https://github.com/jonnor/javafbp-runtime#readme'
+        },
+        {
+          name: 'imgflo',
+          label: 'ImgFlo',
+          description: 'Image Manipulation',
+          icon: 'picture-o',
+          url: 'https://github.com/jonnor/imgflo#readme'
+        }
+      ],
       attached: function () {
         document.getElementById('container').classList.add('blur');
       },
