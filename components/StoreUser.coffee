@@ -42,8 +42,6 @@ exports.getComponent = ->
     githubUsername = user.github?.username or ''
 
     downloadAvatar user.avatar, (err, avatar) ->
-      return callback err if err
-
       userData =
         'grid-avatar': avatar
         'grid-token': token
@@ -51,6 +49,8 @@ exports.getComponent = ->
         'github-token': githubToken
         'github-username': githubUsername
         'flowhub-plan': plan
+
+      delete userData['grid-avatar'] unless avatar
 
       if typeof chrome isnt 'undefined' and chrome.storage
         chrome.storage.sync.set userData, ->

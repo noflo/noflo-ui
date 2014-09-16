@@ -305,7 +305,9 @@
         this.$.main.githubToken = user['github-token'];
         this.$.main.gridToken = user['grid-token'];
         this.$.main.user = user['grid-user'];
-        this.$.main.avatar = user['grid-avatar'];
+        if (user['grid-avatar']) {
+          this.$.main.avatar = user['grid-avatar'];
+        }
         this.$.main.plan = user['flowhub-plan'];
         this.$.project.gridToken = user['grid-token'];
       },
