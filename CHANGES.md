@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.2.1 (git master)
+# 0.2.2 (git master)
+
+# 0.2.1 (2014 September 16)
+
+* Fixed login not working due to missing error handling on Gravatar failures
 
 # 0.2.0 (2014 September 16)
 
