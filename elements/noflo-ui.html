@@ -139,6 +139,18 @@
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
+        this.$.main.addEventListener('deleteProject', function (event) {
+          window.location.hash = '#';
+          event.detail.graphs.forEach(function (graph) {
+            this.fire('project:delete:graph', graph);
+          }.bind(this));
+          event.detail.components.forEach(function (component) {
+            this.fire('project:delete:component', component);
+          }.bind(this));
+          this.fire('project:delete:project', event.detail);
+          this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
+          this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
+        }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.fire('project:save:component', event.detail);
         }.bind(this));

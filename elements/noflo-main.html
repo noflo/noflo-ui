@@ -197,7 +197,12 @@
             <li on-click="{{ openProject }}" data-id="{{ project.id }}">
               <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
               <h2>{{ project.name }}</h2>
+              <template if="{{ project.graphs.length || project.components.length }}">
               <p>{{ project.graphs.length }}&nbsp;graphs, {{ project.components.length }}&nbsp;components</p>
+              </template>
+              <template if="{{ !project.graphs.length && !project.components.length }}">
+              <button on-click="{{ deleteProject }}" data-id="{{ project.id }}"><i class="fa fa-trash-o"></i></button>
+              </template>
             </li>
           </template>
           </template>
@@ -358,8 +363,27 @@
           }.bind(this), 1);
         }
       },
+      deleteProject: function (event, details, sender) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'deleteProject');
+        }
+        var id = sender.getAttribute('data-id');
+        var matches = this.projects.filter(function (proj) {
+          if (proj.id === id) {
+            return true;
+          }
+          return false;
+        });
+        if (!matches.length) {
+          return;
+        }
+        this.fire('deleteProject', matches[0]);
+      },
       downloadProject: function (event, details, sender) {
         event.preventDefault();
+        event.stopPropagation();
         if (!this.githubToken) {
           return;
         }
