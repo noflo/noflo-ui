@@ -367,8 +367,19 @@
           ga('send', 'event', 'button', 'click', 'pullGithub');
         }
         var repo = sender.getAttribute('data-repo');
+        var repoParts = repo.split('/');
+        var repoId = repoParts[1];
+        var dupes = this.projects.filter(function (proj) {
+          if (proj.id === repoId) {
+            return true;
+          }
+          return false;
+        });
+        if (dupes.length) {
+          repoId = repo.replace('/', '_');
+        }
         var project = {
-          id: repo.replace('/', '_'),
+          id: repoId,
           name: repo,
           repo: repo,
           graphs: [],
@@ -409,7 +420,7 @@
       },
       checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
-          if (runtime.type === 'noflo-browser' && runtime.address === 'preview/iframe.html') {
+          if (runtime.protocol === 'iframe' || runtime.protocol === 'microflo') {
             runtime.seen = Date.now();
           } else {
             // Non-persistent runtime, don't show
@@ -427,41 +438,6 @@
       },
       fetchRuntimes: function (event) {
         this.fetchFlowhub();
-        this.fetchMicroFlo();
-      },
-      fetchMicroFlo: function (event) {
-        var microflo = require('microflo');
-        if (!microflo.serial.isSupported()) {
-          return;
-        }
-        microflo.serial.listDevices(function (devices) {
-          // Remove existing
-          var runtimes = [];
-          for (var i=0; i<this.userRuntimes.length; i++) {
-            var rt = this.userRuntimes[i];
-            if (rt.protocol == 'microflo' && rt.address.indexOf('serial://') !== -1) {
-
-            } else {
-              runtimes.push(rt);
-            }
-          }
-          this.userRuntimes = runtimes;
-
-          // Add new
-          for (i=0; i<devices.length; i++) {
-            var device = devices[i];
-            var rtNew = {
-              label: device,
-              id: require('uuid')(),
-              protocol: 'microflo',
-              address: 'serial://'+device,
-              type: 'microflo',
-              seen: new Date().toString()
-            };
-            this.userRuntimes.push(rtNew);
-          }
-          this.fire('runtimes', this.userRuntimes);
-        }.bind(this));
       },
       fetchFlowhub: function (event) {
         if (event) {

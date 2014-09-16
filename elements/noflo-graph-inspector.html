@@ -43,7 +43,7 @@
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1 on-keydown="{{ checkUpdateName }}" on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
       <template if="{{ downloadUrl }}">
-        <a href="{{ downloadUrl }}" id="download" download="{{ graph.properties.id }}.json"><i class="fa fa-download"></i></a>
+        <a href="{{ downloadUrl }}" id="download" download="{{ graph.name }}.json"><i class="fa fa-download"></i></a>
       </template>
       <template if="{{ isMain }}">
       <p>Main graph of project {{ project.name }}.</p>
@@ -114,7 +114,7 @@
           } else {
             this.project.graphs.forEach(function (graph) {
               graph.nodes.forEach(function (node) {
-                if (node.component === this.graph.properties.id || node.component === this.project.id + '/' + this.graph.properties.id) {
+                if (node.component === this.graph.name || node.component === this.project.id + '/' + this.graph.name) {
                   this.inGraph.push(graph);
                 }
               }.bind(this));
