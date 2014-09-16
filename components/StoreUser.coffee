@@ -13,6 +13,9 @@ downloadAvatar = (avatarUrl, callback) ->
     fileReader.onload = (event) ->
       callback null, event.target.result
     fileReader.readAsDataURL req.response
+  req.ontimeout = ->
+    callback new Error 'Avatar request timed out'
+  req.timeout = 2000
   req.send()
 
 cleanUpUrl = (callback) ->
