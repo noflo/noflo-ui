@@ -125,7 +125,9 @@
               if (typeof ga === 'function') {
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
-              window.location.hash = window.location.hash + '/' + encodeURIComponent(item.id);
+              // Work around Firefox location.hash getter bug #352
+              var hash = window.location.href.split('#')[1] || '';
+              window.location.hash = hash + '/' + encodeURIComponent(item.id);
             }
           };
           for (menuKey in defaultMenu) {
