@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>noflo-component-editor</title>
+  <script src="../bower_components/platform/platform.js"></script>
+  <script src="../bower_components/polymer/polymer.js"></script>
+  <link rel="import" href="./noflo-component-editor.html">
+</head>
+<body style="background-color:grey;">
+  <div>
+    <noflo-component-editor id="ed" width="800" height="600">
+    </noflo-component-editor>
+  </div>
+  <script>
+    window.addEventListener('polymer-ready', function() {
+      console.log('polymer-ready');
+
+      var ed = document.getElementById('ed');
+      ed.component = {
+        name: 'ComponentName',
+        language: 'coffeescript',
+        project: {}
+      };
+    });
+  </script>
+</body>
+</html>
