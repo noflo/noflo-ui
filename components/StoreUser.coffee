@@ -15,6 +15,14 @@ downloadAvatar = (avatarUrl, callback) ->
     fileReader.readAsDataURL req.response
   req.send()
 
+cleanUpUrl = (callback) ->
+  regex = new RegExp "(?:\\/)?\\?code=[A-Za-z0-9]+"
+  newLoc = window.location.href.replace regex, ''
+  if newLoc isnt window.location.href
+    window.location.href = newLoc
+  do callback
+  return
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'user',
@@ -48,7 +56,7 @@ exports.getComponent = ->
         chrome.storage.sync.set userData, ->
           userData['grid-user'] = user
           out.send userData
-          do callback
+          cleanUpUrl callback
         return
 
       for key, val of userData
@@ -56,6 +64,6 @@ exports.getComponent = ->
 
       userData['grid-user'] = user
       out.send userData
-      do callback
+      cleanUpUrl callback
 
   c

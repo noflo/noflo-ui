@@ -40,7 +40,6 @@ exports.getComponent = ->
   c.inPorts.add 'provider',
     datatype: 'string'
     required: true
-    default: 'github_public'
   c.inPorts.add 'clientid',
     datatype: 'string'
     required: true

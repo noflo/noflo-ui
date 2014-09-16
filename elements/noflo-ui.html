@@ -44,18 +44,22 @@
       width: window.innerWidth,
       height: window.innerHeight,
       ctx: {},
-      projects: function (projects) {
-        projects.forEach(this.$.main.projects.bind(this.$.main));
-      },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
         }.bind(this));
         this.$.main.addEventListener('login', function (event) {
-          this.fire('user:login', true);
+          this.fire('user:loginFree', true);
         }.bind(this));
         this.$.main.addEventListener('login', function (event) {
-          this.fire('user:login', true);
+          this.fire('user:loginFree', true);
+        }.bind(this));
+        this.$.main.addEventListener('relogin', function (event) {
+          if (event.detail !== 'free') {
+            this.fire('user:loginPro', true);
+            return;
+          }
+          this.fire('user:loginFree', true);
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.fire('github:fetch', event.detail);
@@ -181,6 +185,9 @@
         }
         if (context.projects) {
           this.$.main.projects = context.projects;
+        }
+        if (context.db) {
+          this.$.journal.db = context.db;
         }
         if (context.runtimes) {
           this.$.main.runtimes = context.runtimes;

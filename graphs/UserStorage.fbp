@@ -2,7 +2,7 @@ INPORT=Dispatch.IN:IN
 INPORT=LoadUser.START:START
 OUTPORT=Merge.OUT:USER
 
-'login,logout' -> ROUTES Dispatch(routers/GroupRouter)
+'loginFree,loginPro,logout' -> ROUTES Dispatch(routers/GroupRouter)
 
 # Initial persistent user data
 LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
@@ -14,6 +14,7 @@ LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 'https://api.flowhub.io' -> SITE GetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
+'github_public' -> PROVIDER Login
 'github' -> SCOPE Login
 Dispatch OUT[0] -> LOGIN Login
 Login TOKEN -> TOKEN GetRemoteUser
@@ -26,6 +27,19 @@ GetRemoteUser ERROR -> IN Show(core/Output)
 # On browser we need to check login state immediately
 '' -> CHECK Login
 
+# Re-login handling for Pro
+'https://passport.thegrid.io' -> SITE ProLogin(ui/RemoteLogin)
+'https://api.flowhub.io' -> SITE ProGetRemoteUser(ui/GetRemoteUser)
+'$NOFLO_OAUTH_GATE' -> GATEKEEPER ProLogin
+'$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID ProLogin
+'github_private' -> PROVIDER ProLogin
+'github' -> SCOPE ProLogin
+Dispatch OUT[1] -> LOGIN ProLogin
+ProLogin TOKEN -> TOKEN ProGetRemoteUser
+ProGetRemoteUser USER -> USER StoreUser
+ProLogin ERROR -> IN Show(core/Output)
+ProGetRemoteUser ERROR -> IN Show(core/Output)
+
 # Logout handling
-Dispatch OUT[1] -> CLEAR Reset
+Dispatch OUT[2] -> CLEAR Reset
 Reset USER -> IN Merge

@@ -25,6 +25,13 @@ processGraphsTree = (tree, objects, prefix) ->
     return false unless entry.type is 'blob'
     return false unless entry.path.match '.*\.(fbp|json)$'
     true
+  graphs = graphs.filter (entry) ->
+    # If we have .json and .fbp for same graph, .json wins
+    return true if entry.path.indexOf('.fbp') is -1
+    jsonVersion = entry.path.replace '\.fbp', '.json'
+    for g in graphs
+      return false if g.path is jsonVersion
+    true
   objects.graphs = objects.graphs.concat graphs.map (entry) ->
     entry.name = entry.path.substr 0, entry.path.indexOf '.'
     entry.language = entry.path.substr entry.path.lastIndexOf('.') + 1

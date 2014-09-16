@@ -272,6 +272,14 @@
           id: '1319c76fe006fb34c9c9'
         },
         {
+          label: 'Yin-yang',
+          id: 'a1096a406131e109f836'
+        },
+        {
+          label: 'Delaunay masks',
+          id: 'f6d1141de2833e45fb3c'
+        },
+        {
           label: 'React TODO list',
           id: '1d42f66f5cc4614df935'
         },
@@ -299,6 +307,10 @@
         this.openChanged();
         this.$.mainaccount.addEventListener('login', function (event) {
           this.fetchRuntimes();
+        }.bind(this));
+        this.$.mainaccount.addEventListener('relogin', function (event) {
+          event.stopPropagation();
+          this.fire('relogin', event.detail);
         }.bind(this));
         this.$.mainaccount.addEventListener('theme', function (event) {
           window.setTimeout(function () {
@@ -468,13 +480,15 @@
             return;
           }
           var found = [];
-          runtimes.forEach(function (runtime) {
+          runtimes.forEach(function (runtimeObject) {
             var inStore = null;
+            // Flowhub registry API returns an object which contains the actual info we want
+            var runtime = runtimeObject.runtime;
             if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
               return;
             }
             this.runtimes.forEach(function (storedRuntime) {
-              if (storedRuntime.id === runtime.runtime.id) {
+              if (storedRuntime.id === runtime.id) {
                 inStore = storedRuntime;
                 found.push(inStore.id);
               }
@@ -488,11 +502,11 @@
 
             // Update existing
             var changed = false;
-            Object.keys(runtime.runtime).forEach(function (attr) {
-              if (inStore[attr] === runtime.runtime[attr]) {
+            Object.keys(runtime).forEach(function (attr) {
+              if (inStore[attr] === runtime[attr]) {
                 return;
               }
-              inStore[attr] = runtime.runtime[attr];
+              inStore[attr] = runtime[attr];
               changed = true;
             });
             if (changed) {
@@ -527,6 +541,7 @@
             this.$.loginrequiredChrome.style.display = 'none';
           }
         }
+        this.$.mainaccount.gridToken = this.gridToken;
       },
       openProject: function (event, details, sender) {
         event.preventDefault();

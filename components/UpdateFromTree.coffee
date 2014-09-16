@@ -27,7 +27,8 @@ processTree = (basePath, tree, entries, repo, token, out, callback) ->
       continue
 
     for localEntry in entries
-      continue unless entry.fullPath is localEntry.path
+      unless entry.fullPath is localEntry.path
+        continue unless entry.fullPath is localEntry.path.replace('\.fbp', '.json')
       if localEntry.type is 'graph'
         localEntry.local.properties.sha = entry.sha
         localEntry.local.properties.changed = false

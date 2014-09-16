@@ -14,6 +14,7 @@
               <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
                 <option value="push">&#xf093; push</option>
                 <option value="pull">&#xf019; pull</option>
+                <option value="noop">&#xf05e; ignore</option>
               </select>
             </td>
           </tr>
@@ -21,13 +22,23 @@
           <template repeat="{{ entry in operation.push }}">
           <tr>
             <th>{{ entry.path }}</th>
-            <td><i class="fa fa-upload"></i> push</td>
+            <td>
+              <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
+                <option value="push">&#xf093; push</option>
+                <option value="noop">&#xf05e; ignore</option>
+              </select>
+            </td>
           </tr>
           </template>
           <template repeat="{{ entry in operation.pull }}">
           <tr>
             <th>{{ entry.path }}</th>
-            <td><i class="fa fa-download"></i> pull</td>
+            <td>
+              <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
+                <option value="pull">&#xf019; pull</option>
+                <option value="noop">&#xf05e; ignore</option>
+              </select>
+            </td>
           </tr>
           </template>
         </table>
@@ -38,7 +49,7 @@
           </label>
         </template>
         <div class="toolbar">
-          <button on-click="{{ send }}">Synchronize</button>
+          <button on-click="{{ send }}" class="{{ { disabled: !hasOp } | tokenList }}">Synchronize</button>
           <a on-click="{{ close }}">Cancel</a>
         </div>
       </div>
@@ -50,16 +61,19 @@
         repo: '',
         push: [],
         pull: [],
-        conflict: []
+        conflict: [],
+        noop: []
       },
       statusText: '',
       chosen: {},
       hasPush: false,
+      hasOp: true,
       message: '',
       operationChanged: function () {
         this.chosen = {};
         if (!this.operation.push.length && !this.operation.pull.length && !this.operation.conflict.length) {
           this.statusText = 'All changes have been synchronized';
+          this.hasOp = false;
         }
         if (this.operation.push.length || this.operation.conflict.length) {
           this.hasPush = true;
@@ -69,19 +83,28 @@
         this.operation.conflict.forEach(function (entry) {
           this.chosen[entry.path] = 'push';
         }.bind(this));
+        this.operation.push.forEach(function (entry) {
+          this.chosen[entry.path] = 'push';
+        }.bind(this));
+        this.operation.pull.forEach(function (entry) {
+          this.chosen[entry.path] = 'pull';
+        }.bind(this));
       },
       choose: function (event, detail, sender) {
         this.chosen[sender.name] = sender.value;
-        if (this.operation.push.length) {
-          return;
-        }
         var pushes = false;
+        var ops = false;
         for (var name in this.chosen) {
           if (this.chosen[name] === 'push') {
             pushes = true;
+            ops = true;
+          }
+          if (this.chosen[name] === 'pull') {
+            ops = true;
           }
         }
         this.hasPush = pushes;
+        this.hasOp = ops;
       },
       attached: function () {
         document.getElementById('container').classList.add('blur');
@@ -97,18 +120,28 @@
           return;
         }
 
-        this.operation.conflict.forEach(function (entry) {
+        var originalConflicts = this.operation.conflict;
+        var originalPushes = this.operation.push;
+        var originalPulls = this.operation.pull;
+        this.operation.conflict = [];
+        this.operation.pull = [];
+        this.operation.push = [];
+        var checkOps = function (entry) {
           if (this.chosen[entry.path] === 'push') {
             this.operation.push.push(entry);
             return;
           }
-          this.operation.pull.push(entry);
-        }.bind(this));
-        this.operation.conflict = [];
+          if (this.chosen[entry.path] === 'pull') {
+            this.operation.pull.push(entry);
+            return;
+          }
+        }.bind(this);
+        originalConflicts.forEach(checkOps);
+        originalPushes.forEach(checkOps);
+        originalPulls.forEach(checkOps);
         this.operation.message = this.message;
 
         this.fire('sync', this.operation);
-
         this.close();
       },
       bgClick: function (event) {

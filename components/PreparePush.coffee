@@ -9,11 +9,16 @@ prepareContent = (type, local) ->
   delete def.properties.changed
   JSON.stringify def, null, 4
 
+preparePath = (type, path) ->
+  return path unless type is 'graph'
+  # We can't generate .fbp, so always push .json
+  return path.replace '\.fbp', '.json'
+
 buildTree = (entries) ->
   tree = []
   for entry in entries
     tree.push
-      path: entry.path
+      path: preparePath entry.type, entry.path
       content: prepareContent entry.type, entry.local
       mode: '100644'
   tree
