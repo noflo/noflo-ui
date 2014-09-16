@@ -367,8 +367,19 @@
           ga('send', 'event', 'button', 'click', 'pullGithub');
         }
         var repo = sender.getAttribute('data-repo');
+        var repoParts = repo.split('/');
+        var repoId = repoParts[1];
+        var dupes = this.projects.filter(function (proj) {
+          if (proj.id === repoId) {
+            return true;
+          }
+          return false;
+        });
+        if (dupes.length) {
+          repoId = repo.replace('/', '_');
+        }
         var project = {
-          id: repo.replace('/', '_'),
+          id: repoId,
           name: repo,
           repo: repo,
           graphs: [],
