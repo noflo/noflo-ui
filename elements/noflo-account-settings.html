@@ -100,7 +100,7 @@
           }
           callback(null, req.getResponseHeader('X-OAuth-Scopes').split(', '));
         };
-        req.open('GET', 'https://api.github.com/user', true);
+        req.open('GET', 'https://api.github.com/user?' + Date.now(), true);
         req.setRequestHeader('Authorization', 'token ' + token);
         req.send(null);
       },
