@@ -4,6 +4,7 @@ NoFlo UI ChangeLog
 # 0.2.2 (git master)
 
 * Copy and paste (via [the-graph](https://github.com/the-grid/the-graph/pull/167))
+* Reverted the-graph dependency to use a specific version so noflo-ui tags will work
 
 # 0.2.1 (2014 September 16)
 
