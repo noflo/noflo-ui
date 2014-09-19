@@ -32,7 +32,16 @@
         document.getElementById('container').classList.remove('blur');
       },
       nameChanged: function () {
-        if (this.name && this.project) {
+        var duplicates = [];
+        if (this.project) {
+          duplicates = this.project.graphs.filter(function (graph) {
+            if (graph.name === this.name) {
+              return true;
+            }
+            return false;
+          }.bind(this));
+        }
+        if (this.name && this.project && !duplicates.length) {
           this.canSend = true;
         } else {
           this.canSend = false;
@@ -51,8 +60,8 @@
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
-          project: this.project,
-          id: this.project+'/'+this.name,
+          project: this.project.id,
+          id: this.project.id+'/'+this.name,
           environment: {
             type: this.type
           }

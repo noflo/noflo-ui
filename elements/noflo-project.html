@@ -217,7 +217,7 @@
           return;
         }
         var dialog = document.createElement('noflo-new-graph');
-        dialog.project = this.project.id;
+        dialog.project = this.project;
         dialog.runtimes = this.runtimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
@@ -234,7 +234,7 @@
           return;
         }
         var dialog = document.createElement('noflo-new-component');
-        dialog.project = this.project.id;
+        dialog.project = this.project;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           this.project.components.push(event.detail);
