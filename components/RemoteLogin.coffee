@@ -5,7 +5,6 @@ getUrl = (params) ->
   "#{params.site}/login/authorize/#{params.provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
-  callback null, null
   code = url.match /\?code=(.*)/
   return callback null, null unless code
   return callback null, null unless code[1]
