@@ -1,7 +1,7 @@
 {
   "name": "noflo-ui",
   "main": "index.js",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "homepage": "https://github.com/noflo/noflo-ui",
   "authors": [
     "Henri Bergius <henri.bergius@iki.fi>"

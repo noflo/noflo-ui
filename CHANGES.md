@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.2.2 (git master)
+# 0.2.3 (git master)
+
+# 0.2.2 (2014 September 19)
+
+* Copy and paste (via [the-graph](https://github.com/the-grid/the-graph/pull/167))
 
 # 0.2.1 (2014 September 16)
 
