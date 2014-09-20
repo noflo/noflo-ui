@@ -6,7 +6,7 @@ This project was made possible by [1205 Kickstarter backers](http://noflojs.org/
 
 ## Hosted version
 
-There is a hosted version of the NoFlo Development Environment available. Please refer to <http://noflojs.org/noflo-ui/>.
+[Flowhub](http://flowhub.io) is a hosted and commercially supported version of the NoFlo Development Environment.
 
 ## Usage
 
