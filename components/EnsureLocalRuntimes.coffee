@@ -1,7 +1,10 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 
-microflo = require 'microflo'
+try
+  microflo = require 'microflo'
+catch e
+  console.log e
 
 ensureOneIframeRuntime = (runtimes) ->
   filtered = []
@@ -25,7 +28,8 @@ ensureOneIframeRuntime = (runtimes) ->
   return filtered
 
 ensureMicroFloRuntimePerSerialDevice = (runtimes, callback) ->
-  return callback runtimes if not microflo.serial.isSupported()
+  return callback runtimes unless microflo
+  return callback runtimes unless microflo.serial.isSupported()
 
   microflo.serial.listDevices (devices) ->
     # Remove old
