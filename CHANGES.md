@@ -5,6 +5,7 @@ NoFlo UI ChangeLog
 
 * Copy and paste (via [the-graph](https://github.com/the-grid/the-graph/pull/167))
 * Reverted the-graph dependency to use a specific version so noflo-ui tags will work
+* Added support for changing the [node icon](http://fontawesome.io/icons/) of subgraphs
 
 # 0.2.1 (2014 September 16)
 
