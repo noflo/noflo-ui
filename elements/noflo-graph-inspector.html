@@ -18,8 +18,8 @@
         font-size: 13px;
         line-height: 18px;
       }
-      p a {
-        color: color: rgb(0, 127, 153);
+      p a, label a {
+        color: rgb(0, 127, 153);
         text-decoration: none;
       }
       a#download {
@@ -71,6 +71,10 @@
         <span>Description</span>
         <input type="text" value="{{ description }}">
       </label>
+      <label>
+        <span>Icon <a href="http://fontawesome.io/icons/" target="_blank"><i class="fa fa-question-circle"></i></a></span>
+        <input type="text" value="{{ icon }}">
+      </label>
       <label id="content">
         <template if="{{ type == 'noflo-browser' }}">
         <span>Preview contents</span>
@@ -86,6 +90,7 @@
   <script>
     Polymer('noflo-graph-inspector', {
       description: '',
+      icon: '',
       type: '',
       preview: '',
       graph: null,
@@ -110,6 +115,7 @@
         }
 
         this.description = this.graph.properties.description;
+        this.icon = this.graph.properties.icon || '';
         this.type = this.graph.properties.environment.type;
 
         this.inGraph = [];
@@ -175,7 +181,8 @@
         env.type = this.type;
         this.graph.setProperties({
           environment: env,
-          description: this.description
+          description: this.description,
+          icon: this.icon
         });
         this.close();
       },

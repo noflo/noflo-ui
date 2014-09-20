@@ -44,6 +44,8 @@ sendGraph = (graph, runtime, project) ->
     name: graph.name
     library: graph.properties.project
     main: (not project or graph.properties.id is project.main)
+    icon: graph.properties.icon or ''
+    description: graph.properties.description or ''
   for node in graph.nodes
     runtime.sendGraph 'addnode',
       id: node.id
