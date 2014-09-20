@@ -183,9 +183,18 @@
         this.runtime.setMain(this.graph);
         if (this.runtime.isConnected && this.runtime.isConnected()) {
           this.online = true;
+          this.runtime.sendNetwork('getstatus', {
+            graph: this.graph.name || this.graph.properties.id
+          });
         }
         this.runtime.on('status', function (status) {
           this.online = status.online;
+          if (status.running) {
+            this.execution.running = true;
+          } else {
+            this.execution.running = false;
+          }
+          this.execution.label = status.label;
           if (!this.online) {
             this.hideCard();
             this.execution.running = false;
@@ -194,14 +203,6 @@
               this.panel.open = false;
             }
           }
-        }.bind(this));
-        this.runtime.on('execution', function (status) {
-          if (status.running) {
-            this.execution.running = true;
-          } else {
-            this.execution.running = false;
-          }
-          this.execution.label = status.label;
         }.bind(this));
         this.runtime.on('network', function (message) {
           if (message.command === 'error') {
