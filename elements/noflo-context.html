@@ -318,9 +318,6 @@
       },
       canGetSource: function (component) {
         var componentParts = component.split('/');
-        if (!this.project) {
-          return false;
-        }
 
         if (componentParts.length > 1 && this.project && this.libraryMatch(componentParts.shift(), this.project)) {
           // Local component, see if it is available
