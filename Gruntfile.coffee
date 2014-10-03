@@ -58,6 +58,11 @@ module.exports = ->
       dist: [
         'dist'
       ]
+      files: [
+        './index.js'
+        './index.html'
+        './dev.html'
+      ]
 
     # JavaScript minification for the browser
     uglify:
