@@ -113,7 +113,7 @@ module.exports = ->
             replacement: process.env.NOFLO_APP_VERSION or '<%= pkg.version %>'
           ,
             pattern: /\$NOFLO_THEME/ig
-            replacement: process.env.NOFLO_THEME or 'noflo'
+            replacement: process.env.NOFLO_THEME is '' or 'noflo'
           ]
       analytics:
         files:
