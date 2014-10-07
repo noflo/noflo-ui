@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-account-settings.html">
+<link rel="import" href="noflo-add-runtime.html">
 <polymer-element name="noflo-account" attributes="avatar user plan">
   <template>
     <style>
@@ -15,6 +16,21 @@
         background-size: 72px 72px, 18px 18px;
         background-position: 50% 0px, calc(50% - 9px) 0px;
         */
+      }
+      section {
+        display: block;
+        position: relative;
+        padding-left: 72px;
+        padding-right: 72px;
+      }
+      section > h2 {
+        font-size: 17px;
+        line-height: 36px;
+        margin-top: 36px;
+        height: 36px;
+        color: white;
+        text-shadow: 0 1px 0 hsl(190, 100%, 40%);
+        text-transform: none;
       }
       .avatar {
         border-radius: 50px;
@@ -161,6 +177,15 @@
     <template if="{{ !user }}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
+      <section id="runtimes">
+        <template if="{{ !runtime }}">
+          <h2>You can configure and add new runtime.</h2>
+          <button on-click="{{ addRuntime }}">Add new</button>
+        </template>  
+        <template if="{{ runtime }}">
+          <h2> Runtime already configured </h2>
+        </template>
+      </section>
       <div class="toolbar">
         <a id="loginbutton" class="login" on-click="{{ login }}">Login</a>
       </div>
@@ -207,6 +232,7 @@
         avatar: '',
         theme: 'dark',
         help: null,
+        runtime: null,
         login: function () {
           this.fire('login', true);
         },
@@ -239,6 +265,14 @@
           this.fire('theme', this.theme);
           document.body.classList.remove(oldTheme);
           document.body.classList.add(newTheme);
+        },
+        addRuntime: function (event) {
+          event.preventDefault(); 
+          if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+            return;
+          }
+          var dialog = document.createElement('noflo-add-runtime');
+          document.body.appendChild(dialog);
         }
       });
     })();
