@@ -180,7 +180,9 @@
       <section id="runtimes">
         <template if="{{ !runtime }}">
           <h2>You can configure and add new runtime.</h2>
-          <a class="login" on-click="{{ addRuntime }}">Add new</a>
+          <div class="toolbar">
+            <a class="login" on-click="{{ addRuntime }}">Add new</a>
+          </div>
         </template>  
         <template if="{{ runtime }}">
           <h2> Runtime already configured </h2>
