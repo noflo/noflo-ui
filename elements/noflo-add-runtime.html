@@ -1,0 +1,103 @@
+<polymer-element name="noflo-add-runtime" class="modal-content" on-click="{{ close }}">
+  <template>
+    <style>
+      a {
+        color: hsl(190, 100%, 30%);
+      }
+      p {
+        font-size: 11px;
+      }
+      ul.runtimes {
+        padding: 0px;
+        margin: 0px;
+        margin-left: -9px;
+        margin-right: -9px;
+        list-style: none;
+      }
+      ul.runtimes li {
+        display: inline-block;
+      }
+      ul.runtimes li a {
+        width: 274px;
+        height: 105px;
+        overflow: hidden;
+        display: inline-block;
+        text-align: center;
+        background-color: hsl(190, 100%, 30%);
+        color: white;
+        border-radius: 3px;
+        margin-right: 9px;
+        margin-left: 9px;
+        margin-bottom: 18px;
+        position: relative;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      ul.runtimes li h2 {
+        position: absolute;
+        top: 36px;
+        line-height: 36px;
+        width: 180px;
+        text-transform: none;
+        font-size: 10px;
+        text-align: left;
+        white-space: nowrap;
+        left: 18px;
+        padding: 0px;
+        margin: 0px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        text-decoration: none;
+      }
+      ul.runtimes li p {
+        position: absolute;
+        top: 53px;
+        left: 18px;
+        width: 180px;
+        text-transform: uppercase;
+        font-size: 8px;
+        text-align: left;
+        max-height: 36px;
+        overflow: hidden;
+        color: hsl(189, 50%, 80%);
+        text-decoration: none;
+      }
+      ul.runtimes li a i.fa {
+        font-size: 72px;
+        position: absolute;
+        right: -8px;
+        top: 9px;
+        text-decoration: none;
+      }
+    </style>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Add new runtime</h1>
+      Name (optional): <input type="text" value="">
+      IP address: <input type="text" value="">
+      Port: <input type="text" value="">
+      <div class="toolbar">
+        <button on-click="{{ connect }}">Connect</button>
+      </div>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-add-runtime', {
+      attached: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      detached: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>
