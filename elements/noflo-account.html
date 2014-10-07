@@ -174,18 +174,22 @@
         <button on-click="{{ logout }}">Logout</button>
       </div>
     </template>
-    <template if="{{ !user }}">
+    <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
       <section id="runtimes">
         <template if="{{ !runtime }}">
           <h2>You can configure and add new runtime.</h2>
-          <button on-click="{{ addRuntime }}">Add new</button>
+          <a class="login" on-click="{{ addRuntime }}">Add new</a>
         </template>  
         <template if="{{ runtime }}">
           <h2> Runtime already configured </h2>
         </template>
       </section>
+    </template>
+    <template if="{{ !user && $NOFLO_USER_LOGIN_ENABLED}}">
+      <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
+      <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
         <a id="loginbutton" class="login" on-click="{{ login }}">Login</a>
       </div>
