@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/the-graph/the-graph-thumb/the-graph-thumb.html">
+<link rel="import" href="noflo-anonymous.html">
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
@@ -161,7 +162,12 @@
       }
 
     </style>
-    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>
+    <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
+      <div on-anonymousOpenRuntime="{{ openRuntime }}">
+        <noflo-anonymous userRuntimes="{{ userRuntimes }}" on-anonymousOpenRuntime="{{ openRuntime }}"></noflo-anonymous>
+      </div>
+    </template>
+    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
     <div id="loginrequired">
       <section id="projects">
         <h2>Projects
@@ -567,6 +573,7 @@
         window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
       },
       openRuntime: function (event, details, sender) {
+        console.log("OPEN runtime");             
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;

@@ -1,5 +1,4 @@
 <link rel="import" href="noflo-account-settings.html">
-<link rel="import" href="noflo-add-runtime.html">
 <polymer-element name="noflo-account" attributes="avatar user plan">
   <template>
     <style>
@@ -174,21 +173,6 @@
         <button on-click="{{ logout }}">Logout</button>
       </div>
     </template>
-    <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
-      <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
-      <h1>$NOFLO_APP_TITLE</h1>
-      <section id="runtimes">
-        <template if="{{ !runtime }}">
-          <h2>You can configure and add new runtime.</h2>
-          <div class="toolbar">
-            <a class="login" on-click="{{ addRuntime }}">Add new</a>
-          </div>
-        </template>  
-        <template if="{{ runtime }}">
-          <h2> Runtime already configured </h2>
-        </template>
-      </section>
-    </template>
     <template if="{{ !user && $NOFLO_USER_LOGIN_ENABLED}}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
@@ -271,14 +255,6 @@
           this.fire('theme', this.theme);
           document.body.classList.remove(oldTheme);
           document.body.classList.add(newTheme);
-        },
-        addRuntime: function (event) {
-          event.preventDefault(); 
-          if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
-            return;
-          }
-          var dialog = document.createElement('noflo-add-runtime');
-          document.body.appendChild(dialog);
         }
       });
     })();
