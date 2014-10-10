@@ -163,12 +163,12 @@
 
     </style>
     <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
-      <div on-anonymousOpenRuntime="{{ openRuntime }}">
-        <noflo-anonymous userRuntimes="{{ userRuntimes }}" on-anonymousOpenRuntime="{{ openRuntime }}"></noflo-anonymous>
-      </div>
+      <noflo-anonymous id="mainaccount"></noflo-anonymous>
     </template>
-    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
-    <div id="loginrequired">
+    <template if="{{ $NOFLO_USER_LOGIN_ENABLED  }}">
+      <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
+    </template>  
+    <div id="loginrequired"></div>
       <section id="projects">
         <h2>Projects
             <template if="{{ projectList === 'local' }}">
@@ -226,25 +226,33 @@
           </template>
         </ul>
       </section>
-      <section id="runtimes">
-        <h2>
-          Runtimes <small>{{ userRuntimes.length }} / {{ runtimes.length }}</small>
-          <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
-        </h2>
-        <ul class="projects">
+    <section id="runtimes">
+      <h2>
+        Runtimes <small>{{ userRuntimes.length }} / {{ runtimes.length }}</small>
+        <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
+      </h2>
+      <ul class="projects">
+        <template if="{{ user && $NOFLO_USER_LOGIN_ENABLED }}">
           <li class="add">
             <h2>New runtime</h2>
             <button on-click="{{ newRuntime }}">Register</button>
           </li>
-          <template repeat="{{ userRuntimes }}">
+        </template>
+        <template if="{{ !$NOFLO_USER_LOGIN_ENABLED }}">
+          <li class="add">
+            <h2>Runtime</h2>
+            <button on-click="{{ addRuntime }}">Add new</button>
+          </li>
+        </template>  
+
+        <template repeat="{{ userRuntimes }}">
           <li on-click="{{ openRuntime }}" data-id="{{ id }}" data-protocol="{{ protocol }}" class="runtime {{ type }}">
             <h2>{{ label }}</h2>
             <p>{{ address }}. Seen {{ seenHoursAgo }}h ago</p>
           </li>
-          </template>
-        </ul>
-      </section>
-    </div>
+        </template>
+      </ul>
+    </section>
     <div id="loginrequiredChrome">
       <section id="examples">
         <h2>
@@ -636,6 +644,15 @@
         var dialog = document.createElement('noflo-new-runtime');
         dialog.user = this.user;
         document.body.appendChild(dialog);
+      },
+      addRuntime: function (event) {
+        event.preventDefault(); 
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        this.runtimeAdd = document.createElement('noflo-add-runtime');
+        this.runtimeAdd.userRuntimes = this.userRuntimes;
+        document.body.appendChild(this.runtimeAdd);
       },
       checkProject: function (project) {
         if (project.main) {
