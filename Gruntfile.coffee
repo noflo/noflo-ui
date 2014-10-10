@@ -122,6 +122,9 @@ module.exports = ->
           ,
             pattern: /\$NOFLO_USER_LOGIN_ENABLED/ig
             replacement: process.env.NOFLO_USER_LOGIN_ENABLED or true
+          ,
+            pattern: /\$NOFLO_OFFLINE_MODE/ig
+            replacement: process.env.NOFLO_OFFLINE_MODE or true
           ]
       analytics:
         files:
