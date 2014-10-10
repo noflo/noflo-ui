@@ -573,7 +573,6 @@
         window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
       },
       openRuntime: function (event, details, sender) {
-        console.log("OPEN runtime");             
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
