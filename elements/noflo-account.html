@@ -16,6 +16,21 @@
         background-position: 50% 0px, calc(50% - 9px) 0px;
         */
       }
+      section {
+        display: block;
+        position: relative;
+        padding-left: 72px;
+        padding-right: 72px;
+      }
+      section > h2 {
+        font-size: 17px;
+        line-height: 36px;
+        margin-top: 36px;
+        height: 36px;
+        color: white;
+        text-shadow: 0 1px 0 hsl(190, 100%, 40%);
+        text-transform: none;
+      }
       .avatar {
         border-radius: 50px;
         background-color: black;
@@ -158,7 +173,7 @@
         <button on-click="{{ logout }}">Logout</button>
       </div>
     </template>
-    <template if="{{ !user }}">
+    <template if="{{ !user && $NOFLO_USER_LOGIN_ENABLED}}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
@@ -207,6 +222,7 @@
         avatar: '',
         theme: 'dark',
         help: null,
+        runtime: null,
         login: function () {
           this.fire('login', true);
         },

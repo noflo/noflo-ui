@@ -58,6 +58,11 @@ module.exports = ->
       dist: [
         'dist'
       ]
+      files: [
+        './index.js'
+        './index.html'
+        './dev.html'
+      ]
 
     # JavaScript minification for the browser
     uglify:
@@ -114,6 +119,9 @@ module.exports = ->
           ,
             pattern: /\$NOFLO_THEME/ig
             replacement: process.env.NOFLO_THEME or 'noflo'
+          ,
+            pattern: /\$NOFLO_USER_LOGIN_ENABLED/ig
+            replacement: process.env.NOFLO_USER_LOGIN_ENABLED or true
           ]
       analytics:
         files:
