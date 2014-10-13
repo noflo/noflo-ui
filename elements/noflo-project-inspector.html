@@ -14,10 +14,12 @@
         <div class="error">{{ errorText }}</div>
       </template>
       <form>
-        <label>
-          <span>GitHub repository</span>
-          <input type="text" value="{{ repo }}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required>
-        </label>
+        <template if="{{ !$NOFLO_OFFLINE_MODE }}">
+          <label>
+            <span>GitHub repository</span>
+            <input type="text" value="{{ repo }}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required>
+          </label>
+        </template>
         <label>
           <span>Project label</span>
           <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
