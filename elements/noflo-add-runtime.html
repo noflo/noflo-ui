@@ -63,6 +63,12 @@
           }
           this.parentNode.removeChild(this);
         },
+        createUUID: function () {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+              return v.toString(16);
+              });
+        },
         create: function (event) {
           if (event) {
             event.preventDefault();
@@ -70,6 +76,11 @@
           runtime = {
             name: this.name,
             label: this.name,
+            id: this.createUUID(),
+            type: 'noflo-browser',
+            seen: new Date().toString(),
+            protocol: 'websocket',
+            address: 'ws://'+ this.address + ':' + this.port,
             description: '',
             icon: 'cloud',
             url: 'http://'+ this.address + ':' + this.port
