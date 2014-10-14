@@ -1,4 +1,4 @@
-<polymer-element name="noflo-add-runtime" class="modal-content" attributes="userRuntimes" on-click="{{ close }}">
+<polymer-element name="noflo-add-runtime" class="modal-content" attributes="userRuntimes runtimes" on-click="{{ close }}">
   <template>
     <style>
       a {
@@ -101,6 +101,7 @@
             icon: 'cloud'
           };
           this.userRuntimes.push(runtime);
+          this.runtimes.push(runtime);
           this.close();
         }
       });
