@@ -1,11 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.2.2 (git master)
+# 0.3.0 (2014 October 14)
 
+* Version naming scheme changed, all noflo-ui versions will be X.Y.0, custom builds should use X.Y.1+
 * Copy and paste (via [the-graph](https://github.com/the-grid/the-graph/pull/167))
 * Reverted the-graph dependency to use a specific version so noflo-ui tags will work
 * Added support for changing the [node icon](http://fontawesome.io/icons/) of subgraphs
+* Fixed access to component code in live mode
+* MicroFlo import errors are now non-fatal, the specific functionality will just be unavailable
+* Support for an offline-mode with reduced functionality, specified at build time
+* Fixed creating new graphs with same name would overwrite existing graph
 
 # 0.2.1 (2014 September 16)
 
