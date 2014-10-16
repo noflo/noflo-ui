@@ -108,8 +108,8 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/token'
           ,
-            pattern: /\$NOFLO_OAUTH_ENDPOINT_CODE/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_CODE or '/authenticate'
+            pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/ig
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_USER/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_USER or '/user'
