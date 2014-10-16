@@ -91,7 +91,7 @@ module.exports = ->
             replacement: process.env.NOFLO_OAUTH_PROVIDER or 'https://passport.thegrid.io'
           ,
             pattern: /\$NOFLO_OAUTH_GATE/ig
-            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com/'
+            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com'
           ,
             pattern: /\$NOFLO_OAUTH_SERVICE_USER/ig
             replacement: process.env.NOFLO_OAUTH_SERVICE_USER or 'https://api.flowhub.io'
