@@ -25,16 +25,14 @@ checkToken = (url, params, callback) ->
   oauth_client_secret = process.env.NOFLO_OAUTH_CLIENT_SECRET
   oauth_endpoint_token = process.env.NOFLO_OAUTH_ENDPOINT_TOKEN
   # get token directly from provider
-  if (oauth_client_secret) {
+  if oauth_client_secret isnt ''
     redirect = params.redirect or window.location.href
     req.open 'POST', "#{params.site}#{oauth_endpoint_token}", true
     req.send 'code=code[1]&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=#{oauth_client_secret}&redirect_uri=#{encodeURIComponent(redirect)}'
-  }
   # get token from oauth2 gate 
-  if (!oauth_client_secret) {
+  if oauth_client_secret is '' or null
     req.open 'GET', "#{params.gatekeeper}#{oauth_endpoint_authenticate}/#{code[1]}", true
     req.send null
-  }
 
 exports.getComponent = ->
   c = new noflo.Component
