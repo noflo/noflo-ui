@@ -33,8 +33,7 @@ exports.getComponent = ->
         do callback
         return
       callback new Error req.responseText
-    oauth_endpoint_user = process.env.NOFLO_OAUTH_ENDPOINT_USER
-    req.open 'GET', "#{c.params.site}#{oauth_endpoint_user}", true
+    req.open 'GET', "#{c.params.site}$NOFLO_OAUTH_ENDPOINT_USER", true
     req.setRequestHeader 'Authorization', "Bearer #{token}"
     req.send null
 

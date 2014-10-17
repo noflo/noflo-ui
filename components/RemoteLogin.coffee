@@ -1,9 +1,8 @@
 noflo = require 'noflo'
 
 getUrl = (params) ->
-  oauth_endpoint_authorize = process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE
   redirect = params.redirect or window.location.href
-  "#{params.site}#{oauth_endpoint_authorize}/#{params.provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
+  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/#{params.provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
   code = url.match /\?code=(.*)/
@@ -21,17 +20,14 @@ checkToken = (url, params, callback) ->
         return callback null, null
 
       callback null, data.token
-  oauth_endpoint_authenticate = process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE
-  oauth_client_secret = process.env.NOFLO_OAUTH_CLIENT_SECRET
-  oauth_endpoint_token = process.env.NOFLO_OAUTH_ENDPOINT_TOKEN
   # get token directly from provider
-  if oauth_client_secret isnt ''
+  if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
     redirect = params.redirect or window.location.href
-    req.open 'POST', "#{params.site}#{oauth_endpoint_token}", true
-    req.send 'code=code[1]&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=#{oauth_client_secret}&redirect_uri=#{encodeURIComponent(redirect)}'
+    req.open 'POST', "#{params.site}$NOFLO_OAUTH_ENDPOINT_TOKEN", true
+    req.send 'code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=$NOFLO_OAUTH_CLIENT_SECRET&redirect_uri=#{encodeURIComponent(redirect)}'
   # get token from oauth2 gate 
-  if oauth_client_secret is '' or null
-    req.open 'GET', "#{params.gatekeeper}#{oauth_endpoint_authenticate}/#{code[1]}", true
+  if '$NOFLO_OAUTH_CLIENT_SECRET' is '' or null
+    req.open 'GET', "#{params.gatekeeper}$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/#{code[1]}", true
     req.send null
 
 exports.getComponent = ->
