@@ -99,7 +99,11 @@
       },
       runtimeChanged: function () {
         // Capture runtime container to here
-        this.$.preview.appendChild(this.runtime.getElement());
+        var element = this.runtime.getElement();
+        if (!element) {
+          return;
+        }
+        this.$.preview.appendChild(element);
       },
       detached: function () {
         if (!this.runtime || !this.returnTo) {
