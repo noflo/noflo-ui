@@ -221,8 +221,10 @@
         dialog.runtimes = this.runtimes;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
-          this.project.graphs.push(event.detail);
-          this.fire('newgraph', event.detail);
+          var graph = event.detail;
+          this.project.graphs.push(graph);
+          this.fire('newgraph', graph);
+          this.gotoGraph(graph.properties.id);
         }.bind(this));
       },
       newComponent: function (event) {
@@ -237,8 +239,10 @@
         dialog.project = this.project;
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
-          this.project.components.push(event.detail);
-          this.fire('newcomponent', event.detail);
+          var component = event.detail;
+          this.project.components.push(component);
+          this.fire('newcomponent', component);
+          this.gotoComponent(component.name);
         }.bind(this));
       },
       openHome: function (event) {
@@ -284,6 +288,14 @@
           this.fire('deleteProject', event.detail);
         }.bind(this));
       },
+      gotoGraph: function (id) {
+        this.$.account.toggleOpen(false);
+        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + encodeURIComponent(id);
+      },
+      gotoComponent: function (id) {
+        this.$.account.toggleOpen(false);
+        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(id);
+      },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
@@ -292,8 +304,7 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'openGraph');
         }
-        this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + encodeURIComponent(sender.getAttribute('data-id'));
+        this.gotoGraph(sender.getAttribute('data-id'));
       },
       openComponent: function (event, detail, sender) {
         event.preventDefault();
@@ -303,8 +314,7 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'openComponent');
         }
-        this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(sender.getAttribute('data-id'));
+        this.gotoComponent(sender.getAttribute('data-id'));
       },
       synchronize: function (event) {
         event.preventDefault();
