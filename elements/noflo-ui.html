@@ -166,7 +166,6 @@
           });
         }.bind(this));
         this.$.search.addEventListener('deleteGraph', function (event) {
-          window.location.hash = '#';
           var project = this.ctx.project || this.$.project.project;
           if (project && project.graphs.indexOf(event.detail) !== -1) {
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
@@ -177,6 +176,14 @@
             this.fire('project:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
+            // Go home
+            window.location.hash = '#';
+          } else if (project.graphs[0]) {
+            // Go to first project
+            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
+          } else if (project.components[0]) {
+            // Go to first component
+            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
           }
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
