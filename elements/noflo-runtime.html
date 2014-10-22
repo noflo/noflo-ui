@@ -187,14 +187,16 @@
             graph: this.graph.name || this.graph.properties.id
           });
         }
-        this.runtime.on('status', function (status) {
-          this.online = status.online;
+        this.runtime.on('execution', function(status) {
           if (status.running) {
             this.execution.running = true;
           } else {
             this.execution.running = false;
           }
           this.execution.label = status.label;
+        }.bind(this));
+        this.runtime.on('status', function (status) {
+          this.online = status.online;
           if (!this.online) {
             this.hideCard();
             this.execution.running = false;
