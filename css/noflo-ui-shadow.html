@@ -148,7 +148,7 @@ html /deep/ the-card[type="noflo-runtime-preview"] {
 
 html /deep/ the-card.maximized {
   background-color: hsla(0, 0%, 0%, 0.99);
-  width: calc(100% - 70px);
+  width: calc(100% - 36px);
   height: calc(100% - 36px);
   max-height: none;
   position: fixed;
@@ -249,10 +249,11 @@ html /deep/ the-card ::shadow ul li {
 }
 html /deep/ the-card ::shadow ul.toolbar2right {
   width: 180px;
-  display:block;
+  display: block;
   position: absolute;
-  right: 10px;
+  right: 36px;
   top: 10px;
+  text-align: right;
 }
 html /deep/ the-card ::shadow ul.toolbar li {
   float: left;
@@ -262,6 +263,10 @@ html /deep/ the-card ::shadow ul.toolbar li {
   text-align: center;
   margin: 0px;
   margin-right: 0px;
+}
+html /deep/ the-card ::shadow ul.toolbar2right li {
+  float: right;
+  width: auto;
 }
 html /deep/ the-card ::shadow ul.toolbar li * {
   line-height: 36px;
