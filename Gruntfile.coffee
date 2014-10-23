@@ -298,7 +298,7 @@ module.exports = ->
           browsers: [
             browserName: 'googlechrome'
             platform: 'OS X 10.8'
-            version: '34'
+            version: '37'
           ,
             browserName: 'safari'
             platform: 'OS X 10.8'
