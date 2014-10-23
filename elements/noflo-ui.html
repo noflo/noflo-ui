@@ -8,6 +8,7 @@
 <link rel="import" href="noflo-search.html">
 <link rel="import" href="noflo-project.html">
 <link rel="import" href="noflo-packets.html">
+<link rel="import" href="noflo-alert.html">
 <polymer-element name="noflo-ui" attributes="width height">
   <template>
     <style>
@@ -18,7 +19,6 @@
         left: 0;
         right: 0;
       }
-
       #componenteditor {
         position: fixed;
         top: 0;
@@ -26,6 +26,20 @@
         left: 36px;
         right: 0;
         z-index: 0;
+      }
+      #alert {
+        box-sizing: border-box;
+        position: fixed;
+        top: -144px;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        max-height: 144px;
+        overflow: hidden;
+        transition: top 0.3s ease-in-out;
+      }
+      #alert.show {
+        top: 0;
       }
     </style>
     <noflo-main id="main"></noflo-main>
@@ -38,12 +52,15 @@
     <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
+    <noflo-alert id="alert" on-click="{{ hideAlert }}" iserror="{{ messageIsError }}">{{ message }}</noflo-alert>
   </template>
   <script>
     Polymer('noflo-ui', {
       width: window.innerWidth,
       height: window.innerHeight,
       ctx: {},
+      message: '',
+      messageIsError: false,
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
@@ -197,7 +214,19 @@
       },
       context: function (context) {
         if (context.state) {
-          console.log('CTX is', context);
+          switch (context.state) {
+            case 'error':
+              this.showError(context);
+              break;
+            case 'ok':
+              this.hideAlertSoon();
+              break;
+            case 'loading':
+              this.showProgress(context);
+              break;
+            default:
+              console.log('CTX is', context);
+          }
         }
         for (var key in context) {
           this.ctx[key] = context[key];
@@ -318,7 +347,27 @@
         this.$.main.plan = user['flowhub-plan'];
         this.$.project.gridToken = user['grid-token'];
       },
-      showError: function (ctx) {
+      showError: function (context) {
+        if (context.error && context.error.message) {
+          this.message = context.error.message;
+          this.messageIsError = true;
+          this.$.alert.classList.add('show');
+        }
+      },
+      showProgress: function (context) {
+        if (context.state) {
+          this.message = context.state;
+          this.messageIsError = false;
+          this.$.alert.classList.add('show');
+        }
+      },
+      hideAlert: function () {
+        this.$.alert.classList.remove('show');
+      },
+      hideAlertSoon: function () {
+        window.setTimeout(function(){
+          this.hideAlert();
+        }.bind(this), 1300);
       }
     });
   </script>

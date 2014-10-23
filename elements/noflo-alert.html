@@ -1,0 +1,47 @@
+<polymer-element name="noflo-alert" attributes="iserror">
+  <template>
+    <style>
+      :host {
+        text-align: center;
+        background-color: hsl(35, 98%, 46%);
+        color: white;
+        border-bottom: 1px black solid;
+        padding: 18px;
+      }
+      :host(.error) {
+        background-color: hsl(0, 98%, 46%);
+      }
+      a {
+        color: hsl(0, 98%, 46%);
+        background-color: white;
+        display: inline-block;
+        padding: 9px;
+        text-decoration: none;
+        font-size: 12px;
+        border-radius: 3px;
+      }
+    </style>
+    <template if="{{ iserror }}">
+      <i class="fa fa-warning"></i>
+    </template>
+    <template if="{{ !iserror }}">
+      <i class="fa fa-spinner fa-spin"></i>
+    </template>
+    <content></content>
+    <template if="{{ iserror }}">
+      <a href="{{ _hack_ }}#" class="button">go home</a>
+    </template>
+  </template>
+  <script>
+    // _hack_ -> https://github.com/Polymer/polymer/issues/651
+    Polymer('noflo-alert', {
+      iserrorChanged: function () {
+        if (this.iserror) {
+          this.classList.add('error');
+        } else {
+          this.classList.remove('error');
+        }
+      }
+    });
+  </script>
+</polymer-element>
