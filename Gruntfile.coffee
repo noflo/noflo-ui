@@ -176,6 +176,7 @@ module.exports = ->
             'bower_components/requirejs/*.js'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
+            'bower_components/rtc/dist/rtc.js'
           ]
           expand: true
           dest: '/'

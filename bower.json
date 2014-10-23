@@ -24,7 +24,8 @@
     "codemirror": "~4.5.0",
     "coffee-script": "*",
     "polymer": "0.4.0",
-    "requirejs": "~2.1.11"
+    "requirejs": "~2.1.11",
+    "rtc": "rtc-io/rtc#3.1.1"
   },
   "devDependencies": {
     "syn": "~0.0.3"
