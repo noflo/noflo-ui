@@ -193,7 +193,13 @@
           } else {
             this.execution.running = false;
           }
-          this.execution.label = status.label;
+          if (!status.started) {
+            this.execution.label = "not started";
+          } else if (status.started && !status.running) {
+            this.execution.label = "finished";
+          } else if (status.started && status.running) {
+            this.execution.label = "running";
+          }
         }.bind(this));
         this.runtime.on('status', function (status) {
           this.online = status.online;
