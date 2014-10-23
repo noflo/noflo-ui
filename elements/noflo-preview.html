@@ -9,9 +9,13 @@
       }
       :host(.the-card-content){
         max-height: none !important;
+        padding: 18px 0 0 0 !important;
+      }
+      :host(.the-card-content.maximized) header h1 {
+        left: 18px !important;
       }
       header h1 {
-        left: 0px;
+        left: 0px !important;
       }
       ul.toolbar2right {
         right: 0px;
@@ -45,26 +49,29 @@
       #preview-iframe {
         display: block;
         border: none;
-        width: 300px;
-        height: 300px;
+        width: 252px;
+        height: 360px;
         margin-top: 0;
       }
 
+      #preview.maximized {
+        height: 576px;
+        padding: 0 18px;
+      }
       #preview.maximized #preview-iframe {
         width: 100%;
-        min-height: 100%;
+        height: 100%;
       }
     </style>
     <header>
       <h1>Preview</h1>
     </header>
     <ul class="toolbar toolbar2right">
-      <li></li>
       <template if="{{ !maximized }}">
-      <li><button class="blue-button" on-click="{{ maximize }}"><i class="fa fa-arrows-alt"></i> Maximize</button></li>
+        <li><button class="blue-button" on-click="{{ maximizeToggle }}"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
       </template>
       <template if="{{ maximized }}">
-      <li><button class="blue-button" on-click="{{ minimize }}"><i class="fa fa-arrow-right"></i> Minimize</button></li>
+        <li><button class="blue-button" on-click="{{ maximizeToggle }}"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
       </template>
     </ul>
     <div id="preview" class="{{ { maximized: maximized } | tokenList }}"></div>
@@ -83,19 +90,18 @@
       },
       maximizedChanged: function() {
         if (this.maximized) {
+          this.classList.add('maximized');
           this.parentNode.classList.add('maximized');
           this.$.preview.classList.add('maximized');
         } else {
+          this.classList.remove('maximized');
           this.parentNode.classList.remove('maximized');
           this.$.preview.classList.remove('maximized');
         }
         this.fire('maximized', this.maximized);
       },
-      maximize: function () {
-        this.maximized = true;
-      },
-      minimize: function () {
-        this.maximized = false;
+      maximizeToggle: function () {
+        this.maximized = !this.maximized;
       },
       runtimeChanged: function () {
         // Capture runtime container to here
