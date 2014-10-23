@@ -27,11 +27,13 @@ window.addEventListener('polymer-ready', function() {
         defaultGraph: graph,
         baseDir: graph.baseDir
       };
-      var rt = runtime(null, runtimeOptions);
+      var rt = runtime(null, runtimeOptions, true);
+      rt.signaller = 'http://flowhub-rtc.herokuapp.com';
+      rt.start();
       console.log('WebRTC id is', rt.id);
       var ide = 'http://app.flowhub.io';
       ide = 'http://localhost:8000/index.html'; // TEMP
-      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.id);
+      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id);
       var debugLink = document.getElementById('flowhub_debug_url');
       if (debugLink) {
         debugLink.href = debugUrl;
