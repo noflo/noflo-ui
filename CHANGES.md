@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.4.0 (git master)
+
+* [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support, including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status/525093488246149120)
+* Removed duplicate notification pop-ups
+* Fixes to graph preview HTML handling
+* Fixes to preview maximization
+
 # 0.3.0 (2014 October 14)
 
 * Version naming scheme changed, all noflo-ui versions will be X.Y.0, custom builds should use X.Y.1+
