@@ -214,7 +214,6 @@
         }.bind(this));
         this.runtime.on('network', function (message) {
           if (message.command === 'error') {
-            console.log(message.payload);
             this.notify('Error', message.payload.message);
             return;
           }
@@ -328,7 +327,7 @@
           });
         }
       },
-      lastNotification: null,
+      notifications: [],
       notify: function (title, message) {
         if (!this.allowedToNotify()) {
           if (!console || !console.log) {
@@ -338,13 +337,23 @@
           return;
         }
         // Check if notification is duplicate
-        if (this.lastNotification && this.lastNotification.title === title && this.lastNotification.body === message) {
-          this.lastNotification.close();
+        var duplicates = this.notifications.filter(function (n) {
+          if (n.title === title && n.body === message) {
+            return true;
+          }
+          return false;
+        });
+        if (duplicates.length) {
+          return;
         }
-        this.lastNotification = new Notification(title, {
+        var notification = new Notification(title, {
           body: message,
           icon: 'app/noflo-64.png'
         });
+        this.notifications.push(notification);
+        notification.addEventListener('close', function () {
+          this.notifications.splice(this.notifications.indexOf(notification), 1);
+        }.bind(this), false);
       },
       getRuntimeIcon: function (runtime) {
         if (!runtime || !runtime.definition || !runtime.definition.type) {
