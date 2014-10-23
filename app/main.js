@@ -28,7 +28,6 @@ window.addEventListener('polymer-ready', function() {
         baseDir: graph.baseDir
       };
       var rt = runtime(null, runtimeOptions);
-      window.rt = rt;
       console.log('WebRTC id is', rt.id);
       var ide = 'http://app.flowhub.io';
       ide = 'http://localhost:8000/index.html'; // TEMP
@@ -36,6 +35,8 @@ window.addEventListener('polymer-ready', function() {
       var debugLink = document.getElementById('flowhub_debug_url');
       if (debugLink) {
         debugLink.href = debugUrl;
+      } else {
+        console.log(debugUrl);
       }
       rt.network.on('addnetwork', function () {
         return callback();
