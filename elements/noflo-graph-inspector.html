@@ -167,16 +167,13 @@
           theme: 'mdn-like'
         });
         this.previewEditor.setSize(576, 144);
-        this.previewEditor.on('change', function () {
-          this.preview = this.previewEditor.getValue();
-          this.graph.properties.environment.content = this.previewEditor.getValue();
-        }.bind(this));
       },
       save: function () {
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'saveGraphProperties');
         }
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
+        this.preview = this.previewEditor.getValue();
         env.content = this.preview;
         env.type = this.type;
         this.graph.setProperties({
