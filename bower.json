@@ -17,10 +17,10 @@
     "spec"
   ],
   "dependencies": {
-    "the-graph": "0.3.3",
+    "the-graph": "0.3.4",
     "the-panel": "*",
     "the-card": "*",
-    "font-awesome": "~4.1.0",
+    "font-awesome": "~4.2.0",
     "codemirror": "~4.5.0",
     "coffee-script": "*",
     "polymer": "0.4.0",

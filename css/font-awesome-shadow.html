@@ -1,36 +1,32 @@
 <style shim-shadowdom>
 
+
+ /* Modified to work with shadowdom with `html /deep/ ` in front of everything */
+
 /*!
- *  Font Awesome 4.0.3 by @davegandy - http://fontawesome.io - @fontawesome
+ *  Font Awesome 4.2.0 by @davegandy - http://fontawesome.io - @fontawesome
  *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)
  */
 /* FONT PATH
  * -------------------------- */
-
- /* Modified to work with shadowdom with `html /deep/ ` in front of everything */
-
 @font-face {
   font-family: 'FontAwesome';
-  src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?v=4.0.3');
-  src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'), 
-    url('../bower_components/font-awesome/fonts/fontawesome-webfont.woff?v=4.0.3') format('woff'), 
-    url('../bower_components/font-awesome/fonts/fontawesome-webfont.ttf?v=4.0.3') format('truetype'), 
-    url('../bower_components/font-awesome/fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg');
+  src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?v=4.2.0');
+  src: url('../bower_components/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.2.0') format('embedded-opentype'), url('../bower_components/font-awesome/fonts/fontawesome-webfont.woff?v=4.2.0') format('woff'), url('../bower_components/font-awesome/fonts/fontawesome-webfont.ttf?v=4.2.0') format('truetype'), url('../bower_components/font-awesome/fonts/fontawesome-webfont.svg?v=4.2.0#fontawesomeregular') format('svg');
   font-weight: normal;
   font-style: normal;
 }
 html /deep/ .fa {
   display: inline-block;
-  font-family: FontAwesome;
-  font-style: normal;
-  font-weight: normal;
-  line-height: 1;
+  font: normal normal normal 14px/1 FontAwesome;
+  font-size: inherit;
+  text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 /* makes the font 33% larger relative to the icon container */
 html /deep/ .fa-lg {
-  font-size: 1.3333333333333333em;
+  font-size: 1.33333333em;
   line-height: 0.75em;
   vertical-align: -15%;
 }
@@ -47,12 +43,12 @@ html /deep/ .fa-5x {
   font-size: 5em;
 }
 html /deep/ .fa-fw {
-  width: 1.2857142857142858em;
+  width: 1.28571429em;
   text-align: center;
 }
 html /deep/ .fa-ul {
   padding-left: 0;
-  margin-left: 2.142857142857143em;
+  margin-left: 2.14285714em;
   list-style-type: none;
 }
 html /deep/ .fa-ul > li {
@@ -60,23 +56,23 @@ html /deep/ .fa-ul > li {
 }
 html /deep/ .fa-li {
   position: absolute;
-  left: -2.142857142857143em;
-  width: 2.142857142857143em;
-  top: 0.14285714285714285em;
+  left: -2.14285714em;
+  width: 2.14285714em;
+  top: 0.14285714em;
   text-align: center;
 }
 html /deep/ .fa-lihtml /deep/ .fa-lg {
-  left: -1.8571428571428572em;
+  left: -1.85714286em;
 }
 html /deep/ .fa-border {
   padding: .2em .25em .15em;
   border: solid 0.08em #eeeeee;
   border-radius: .1em;
 }
-.pull-right {
+html /deep/ .fa.pull-right {
   float: right;
 }
-.pull-left {
+html /deep/ .fa.pull-left {
   float: left;
 }
 html /deep/ .fa.pull-left {
@@ -86,90 +82,65 @@ html /deep/ .fa.pull-right {
   margin-left: .3em;
 }
 html /deep/ .fa-spin {
-  -webkit-animation: spin 2s infinite linear;
-  -moz-animation: spin 2s infinite linear;
-  -o-animation: spin 2s infinite linear;
-  animation: spin 2s infinite linear;
+  -webkit-animation: fa-spin 2s infinite linear;
+  animation: fa-spin 2s infinite linear;
 }
-@-moz-keyframes spin {
-  0% {
-    -moz-transform: rotate(0deg);
-  }
-  100% {
-    -moz-transform: rotate(359deg);
-  }
-}
-@-webkit-keyframes spin {
+@-webkit-keyframes fa-spin {
   0% {
     -webkit-transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(359deg);
-  }
-}
-@-o-keyframes spin {
-  0% {
-    -o-transform: rotate(0deg);
-  }
-  100% {
-    -o-transform: rotate(359deg);
-  }
-}
-@-ms-keyframes spin {
-  0% {
-    -ms-transform: rotate(0deg);
-  }
-  100% {
-    -ms-transform: rotate(359deg);
-  }
-}
-@keyframes spin {
-  0% {
     transform: rotate(0deg);
   }
   100% {
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@keyframes fa-spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(359deg);
     transform: rotate(359deg);
   }
 }
 html /deep/ .fa-rotate-90 {
   filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);
   -webkit-transform: rotate(90deg);
-  -moz-transform: rotate(90deg);
   -ms-transform: rotate(90deg);
-  -o-transform: rotate(90deg);
   transform: rotate(90deg);
 }
 html /deep/ .fa-rotate-180 {
   filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2);
   -webkit-transform: rotate(180deg);
-  -moz-transform: rotate(180deg);
   -ms-transform: rotate(180deg);
-  -o-transform: rotate(180deg);
   transform: rotate(180deg);
 }
 html /deep/ .fa-rotate-270 {
   filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
   -webkit-transform: rotate(270deg);
-  -moz-transform: rotate(270deg);
   -ms-transform: rotate(270deg);
-  -o-transform: rotate(270deg);
   transform: rotate(270deg);
 }
 html /deep/ .fa-flip-horizontal {
   filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=0, mirror=1);
   -webkit-transform: scale(-1, 1);
-  -moz-transform: scale(-1, 1);
   -ms-transform: scale(-1, 1);
-  -o-transform: scale(-1, 1);
   transform: scale(-1, 1);
 }
 html /deep/ .fa-flip-vertical {
   filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2, mirror=1);
   -webkit-transform: scale(1, -1);
-  -moz-transform: scale(1, -1);
   -ms-transform: scale(1, -1);
-  -o-transform: scale(1, -1);
   transform: scale(1, -1);
+}
+:root .fa-rotate-90,
+:root .fa-rotate-180,
+:root .fa-rotate-270,
+:root .fa-flip-horizontal,
+:root .fa-flip-vertical {
+  filter: none;
 }
 html /deep/ .fa-stack {
   position: relative;
@@ -236,6 +207,8 @@ html /deep/ .fa-th-list:before {
 html /deep/ .fa-check:before {
   content: "\f00c";
 }
+html /deep/ .fa-remove:before,
+html /deep/ .fa-close:before,
 html /deep/ .fa-times:before {
   content: "\f00d";
 }
@@ -377,6 +350,8 @@ html /deep/ .fa-indent:before {
 html /deep/ .fa-video-camera:before {
   content: "\f03d";
 }
+html /deep/ .fa-photo:before,
+html /deep/ .fa-image:before,
 html /deep/ .fa-picture-o:before {
   content: "\f03e";
 }
@@ -563,7 +538,8 @@ html /deep/ .fa-arrows-v:before {
 html /deep/ .fa-arrows-h:before {
   content: "\f07e";
 }
-html /deep/ .fa-bar-chart-o:before {
+html /deep/ .fa-bar-chart-o:before,
+html /deep/ .fa-bar-chart:before {
   content: "\f080";
 }
 html /deep/ .fa-twitter-square:before {
@@ -740,6 +716,8 @@ html /deep/ .fa-floppy-o:before {
 html /deep/ .fa-square:before {
   content: "\f0c8";
 }
+html /deep/ .fa-navicon:before,
+html /deep/ .fa-reorder:before,
 html /deep/ .fa-bars:before {
   content: "\f0c9";
 }
@@ -799,11 +777,11 @@ html /deep/ .fa-sort:before {
   content: "\f0dc";
 }
 html /deep/ .fa-sort-down:before,
-html /deep/ .fa-sort-asc:before {
+html /deep/ .fa-sort-desc:before {
   content: "\f0dd";
 }
 html /deep/ .fa-sort-up:before,
-html /deep/ .fa-sort-desc:before {
+html /deep/ .fa-sort-asc:before {
   content: "\f0de";
 }
 html /deep/ .fa-envelope:before {
@@ -993,10 +971,8 @@ html /deep/ .fa-terminal:before {
 html /deep/ .fa-code:before {
   content: "\f121";
 }
+html /deep/ .fa-mail-reply-all:before,
 html /deep/ .fa-reply-all:before {
-  content: "\f122";
-}
-html /deep/ .fa-mail-reply-all:before {
   content: "\f122";
 }
 html /deep/ .fa-star-half-empty:before,
@@ -1344,5 +1320,361 @@ html /deep/ .fa-try:before {
 html /deep/ .fa-plus-square-o:before {
   content: "\f196";
 }
+html /deep/ .fa-space-shuttle:before {
+  content: "\f197";
+}
+html /deep/ .fa-slack:before {
+  content: "\f198";
+}
+html /deep/ .fa-envelope-square:before {
+  content: "\f199";
+}
+html /deep/ .fa-wordpress:before {
+  content: "\f19a";
+}
+html /deep/ .fa-openid:before {
+  content: "\f19b";
+}
+html /deep/ .fa-institution:before,
+html /deep/ .fa-bank:before,
+html /deep/ .fa-university:before {
+  content: "\f19c";
+}
+html /deep/ .fa-mortar-board:before,
+html /deep/ .fa-graduation-cap:before {
+  content: "\f19d";
+}
+html /deep/ .fa-yahoo:before {
+  content: "\f19e";
+}
+html /deep/ .fa-google:before {
+  content: "\f1a0";
+}
+html /deep/ .fa-reddit:before {
+  content: "\f1a1";
+}
+html /deep/ .fa-reddit-square:before {
+  content: "\f1a2";
+}
+html /deep/ .fa-stumbleupon-circle:before {
+  content: "\f1a3";
+}
+html /deep/ .fa-stumbleupon:before {
+  content: "\f1a4";
+}
+html /deep/ .fa-delicious:before {
+  content: "\f1a5";
+}
+html /deep/ .fa-digg:before {
+  content: "\f1a6";
+}
+html /deep/ .fa-pied-piper:before {
+  content: "\f1a7";
+}
+html /deep/ .fa-pied-piper-alt:before {
+  content: "\f1a8";
+}
+html /deep/ .fa-drupal:before {
+  content: "\f1a9";
+}
+html /deep/ .fa-joomla:before {
+  content: "\f1aa";
+}
+html /deep/ .fa-language:before {
+  content: "\f1ab";
+}
+html /deep/ .fa-fax:before {
+  content: "\f1ac";
+}
+html /deep/ .fa-building:before {
+  content: "\f1ad";
+}
+html /deep/ .fa-child:before {
+  content: "\f1ae";
+}
+html /deep/ .fa-paw:before {
+  content: "\f1b0";
+}
+html /deep/ .fa-spoon:before {
+  content: "\f1b1";
+}
+html /deep/ .fa-cube:before {
+  content: "\f1b2";
+}
+html /deep/ .fa-cubes:before {
+  content: "\f1b3";
+}
+html /deep/ .fa-behance:before {
+  content: "\f1b4";
+}
+html /deep/ .fa-behance-square:before {
+  content: "\f1b5";
+}
+html /deep/ .fa-steam:before {
+  content: "\f1b6";
+}
+html /deep/ .fa-steam-square:before {
+  content: "\f1b7";
+}
+html /deep/ .fa-recycle:before {
+  content: "\f1b8";
+}
+html /deep/ .fa-automobile:before,
+html /deep/ .fa-car:before {
+  content: "\f1b9";
+}
+html /deep/ .fa-cab:before,
+html /deep/ .fa-taxi:before {
+  content: "\f1ba";
+}
+html /deep/ .fa-tree:before {
+  content: "\f1bb";
+}
+html /deep/ .fa-spotify:before {
+  content: "\f1bc";
+}
+html /deep/ .fa-deviantart:before {
+  content: "\f1bd";
+}
+html /deep/ .fa-soundcloud:before {
+  content: "\f1be";
+}
+html /deep/ .fa-database:before {
+  content: "\f1c0";
+}
+html /deep/ .fa-file-pdf-o:before {
+  content: "\f1c1";
+}
+html /deep/ .fa-file-word-o:before {
+  content: "\f1c2";
+}
+html /deep/ .fa-file-excel-o:before {
+  content: "\f1c3";
+}
+html /deep/ .fa-file-powerpoint-o:before {
+  content: "\f1c4";
+}
+html /deep/ .fa-file-photo-o:before,
+html /deep/ .fa-file-picture-o:before,
+html /deep/ .fa-file-image-o:before {
+  content: "\f1c5";
+}
+html /deep/ .fa-file-zip-o:before,
+html /deep/ .fa-file-archive-o:before {
+  content: "\f1c6";
+}
+html /deep/ .fa-file-sound-o:before,
+html /deep/ .fa-file-audio-o:before {
+  content: "\f1c7";
+}
+html /deep/ .fa-file-movie-o:before,
+html /deep/ .fa-file-video-o:before {
+  content: "\f1c8";
+}
+html /deep/ .fa-file-code-o:before {
+  content: "\f1c9";
+}
+html /deep/ .fa-vine:before {
+  content: "\f1ca";
+}
+html /deep/ .fa-codepen:before {
+  content: "\f1cb";
+}
+html /deep/ .fa-jsfiddle:before {
+  content: "\f1cc";
+}
+html /deep/ .fa-life-bouy:before,
+html /deep/ .fa-life-buoy:before,
+html /deep/ .fa-life-saver:before,
+html /deep/ .fa-support:before,
+html /deep/ .fa-life-ring:before {
+  content: "\f1cd";
+}
+html /deep/ .fa-circle-o-notch:before {
+  content: "\f1ce";
+}
+html /deep/ .fa-ra:before,
+html /deep/ .fa-rebel:before {
+  content: "\f1d0";
+}
+html /deep/ .fa-ge:before,
+html /deep/ .fa-empire:before {
+  content: "\f1d1";
+}
+html /deep/ .fa-git-square:before {
+  content: "\f1d2";
+}
+html /deep/ .fa-git:before {
+  content: "\f1d3";
+}
+html /deep/ .fa-hacker-news:before {
+  content: "\f1d4";
+}
+html /deep/ .fa-tencent-weibo:before {
+  content: "\f1d5";
+}
+html /deep/ .fa-qq:before {
+  content: "\f1d6";
+}
+html /deep/ .fa-wechat:before,
+html /deep/ .fa-weixin:before {
+  content: "\f1d7";
+}
+html /deep/ .fa-send:before,
+html /deep/ .fa-paper-plane:before {
+  content: "\f1d8";
+}
+html /deep/ .fa-send-o:before,
+html /deep/ .fa-paper-plane-o:before {
+  content: "\f1d9";
+}
+html /deep/ .fa-history:before {
+  content: "\f1da";
+}
+html /deep/ .fa-circle-thin:before {
+  content: "\f1db";
+}
+html /deep/ .fa-header:before {
+  content: "\f1dc";
+}
+html /deep/ .fa-paragraph:before {
+  content: "\f1dd";
+}
+html /deep/ .fa-sliders:before {
+  content: "\f1de";
+}
+html /deep/ .fa-share-alt:before {
+  content: "\f1e0";
+}
+html /deep/ .fa-share-alt-square:before {
+  content: "\f1e1";
+}
+html /deep/ .fa-bomb:before {
+  content: "\f1e2";
+}
+html /deep/ .fa-soccer-ball-o:before,
+html /deep/ .fa-futbol-o:before {
+  content: "\f1e3";
+}
+html /deep/ .fa-tty:before {
+  content: "\f1e4";
+}
+html /deep/ .fa-binoculars:before {
+  content: "\f1e5";
+}
+html /deep/ .fa-plug:before {
+  content: "\f1e6";
+}
+html /deep/ .fa-slideshare:before {
+  content: "\f1e7";
+}
+html /deep/ .fa-twitch:before {
+  content: "\f1e8";
+}
+html /deep/ .fa-yelp:before {
+  content: "\f1e9";
+}
+html /deep/ .fa-newspaper-o:before {
+  content: "\f1ea";
+}
+html /deep/ .fa-wifi:before {
+  content: "\f1eb";
+}
+html /deep/ .fa-calculator:before {
+  content: "\f1ec";
+}
+html /deep/ .fa-paypal:before {
+  content: "\f1ed";
+}
+html /deep/ .fa-google-wallet:before {
+  content: "\f1ee";
+}
+html /deep/ .fa-cc-visa:before {
+  content: "\f1f0";
+}
+html /deep/ .fa-cc-mastercard:before {
+  content: "\f1f1";
+}
+html /deep/ .fa-cc-discover:before {
+  content: "\f1f2";
+}
+html /deep/ .fa-cc-amex:before {
+  content: "\f1f3";
+}
+html /deep/ .fa-cc-paypal:before {
+  content: "\f1f4";
+}
+html /deep/ .fa-cc-stripe:before {
+  content: "\f1f5";
+}
+html /deep/ .fa-bell-slash:before {
+  content: "\f1f6";
+}
+html /deep/ .fa-bell-slash-o:before {
+  content: "\f1f7";
+}
+html /deep/ .fa-trash:before {
+  content: "\f1f8";
+}
+html /deep/ .fa-copyright:before {
+  content: "\f1f9";
+}
+html /deep/ .fa-at:before {
+  content: "\f1fa";
+}
+html /deep/ .fa-eyedropper:before {
+  content: "\f1fb";
+}
+html /deep/ .fa-paint-brush:before {
+  content: "\f1fc";
+}
+html /deep/ .fa-birthday-cake:before {
+  content: "\f1fd";
+}
+html /deep/ .fa-area-chart:before {
+  content: "\f1fe";
+}
+html /deep/ .fa-pie-chart:before {
+  content: "\f200";
+}
+html /deep/ .fa-line-chart:before {
+  content: "\f201";
+}
+html /deep/ .fa-lastfm:before {
+  content: "\f202";
+}
+html /deep/ .fa-lastfm-square:before {
+  content: "\f203";
+}
+html /deep/ .fa-toggle-off:before {
+  content: "\f204";
+}
+html /deep/ .fa-toggle-on:before {
+  content: "\f205";
+}
+html /deep/ .fa-bicycle:before {
+  content: "\f206";
+}
+html /deep/ .fa-bus:before {
+  content: "\f207";
+}
+html /deep/ .fa-ioxhost:before {
+  content: "\f208";
+}
+html /deep/ .fa-angellist:before {
+  content: "\f209";
+}
+html /deep/ .fa-cc:before {
+  content: "\f20a";
+}
+html /deep/ .fa-shekel:before,
+html /deep/ .fa-sheqel:before,
+html /deep/ .fa-ils:before {
+  content: "\f20b";
+}
+html /deep/ .fa-meanpath:before {
+  content: "\f20c";
+}
+
 
 </style>
