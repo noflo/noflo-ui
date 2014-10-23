@@ -23,6 +23,7 @@ exports.getComponent = ->
         catch e
           return callback e
         out.send
+          state: 'ok'
           remoteProjects: projects
         do callback
         return
