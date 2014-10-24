@@ -36,5 +36,6 @@ Collect CONTEXT -> CONTEXT EnableDebug(ui/ContextToDebug)
 Connect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
 Collect ERROR -> ERROR ErrorToCtx
 # With direct runtimes not being able to connect is also an error
-Connect UNAVAILABLE -> START CreateError(objects/CreateError) OUT -> ERROR ErrorToCtx
+'Runtime not available' -> STRING SendUnavailable(strings/SendString)
+Connect UNAVAILABLE -> IN SendUnavailable OUT -> START CreateError(objects/CreateError) OUT -> ERROR ErrorToCtx
 ErrorToCtx OUT -> IN MergeContext
