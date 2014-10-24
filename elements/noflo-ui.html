@@ -279,7 +279,7 @@
           this.$.main.githubProjects(context.remoteProjects);
           return;
         }
-        if (this.ctx.componentDefinition !== undefined) {
+        if (this.ctx.componentDefinition !== undefined && this.ctx.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
           this.ctx.componentDefinition = null;
         }
