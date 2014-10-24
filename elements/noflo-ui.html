@@ -253,7 +253,7 @@
         if (context.searchGraphResult) {
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
-        if (this.ctx.edges) {
+        if (this.ctx.edges !== undefined) {
           this.$.packets.edges = this.ctx.edges;
         }
         if (this.ctx.error) {
@@ -264,26 +264,26 @@
           this.$.packets.packet(this.ctx.packet);
           this.ctx.packet = null;
         }
-        if (this.ctx.nodes) {
+        if (this.ctx.nodes !== undefined) {
           this.$.context.nodes = this.ctx.nodes;
           this.$.packets.nodes = this.ctx.nodes;
         }
         if (context.nodes || context.edges) {
           return;
         }
-        if (context.syncOperation) {
+        if (context.syncOperation !== undefined) {
           this.$.project.confirm(context.syncOperation);
           return;
         }
-        if (context.remoteProjects) {
+        if (context.remoteProjects !== undefined) {
           this.$.main.githubProjects(context.remoteProjects);
           return;
         }
-        if (this.ctx.componentDefinition) {
+        if (this.ctx.componentDefinition !== undefined) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
           this.ctx.componentDefinition = null;
         }
-        if (this.ctx.runtime) {
+        if (this.ctx.runtime !== undefined) {
           this.$.runtime.runtime = this.ctx.runtime;
           this.$.context.runtime = this.ctx.runtime;
         }
