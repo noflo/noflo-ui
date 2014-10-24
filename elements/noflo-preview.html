@@ -115,8 +115,12 @@
         if (!this.runtime || !this.returnTo) {
           return;
         }
+        var element = this.runtime.getElement();
+        if (!element) {
+          return;
+        }
         // Return runtime element to main container
-        this.returnTo.appendChild(this.runtime.getElement());
+        this.returnTo.appendChild(element);
       }
     });
   </script>
