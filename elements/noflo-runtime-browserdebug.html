@@ -1,0 +1,92 @@
+<polymer-element name="noflo-runtime-browserdebug" attributes="graph" class="modal-content" on-click="{{ close }}">
+  <template>
+    <style>
+    #runtimeLink {
+      width: 100%;
+    }
+    #qrcode {
+      width: 300px;
+      height: 300px;
+    }
+    .info {
+      clear: both;
+    }
+    </style>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>Launch noflo-browser device</h1>
+      <div class='info'>
+        <div><a id='runtimeLink' href="{{ runtimeUrl }}">Launch</a></div>
+        <div><img id='qrcode' src="{{ qrCodeUrl }}"></a></div>
+      </div>
+      <div class="toolbar">
+        <button on-click="{{ close }}">Cancel</button>
+        <button on-click="{{ connectRuntime }}">Connect</button>
+      </div>
+    </div>
+  </template>
+  <script>
+    Polymer('noflo-runtime-browserdebug', {
+      qrCodeUrl: '',
+      runtimeUrl: '',
+      runtime: {},
+      attached: function () {
+        document.getElementById('container').classList.add('blur');
+        this.generateRuntimeInfo();
+      },
+      detached: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      generateRuntimeInfo: function () {
+        console.log('getRuntimeInfo');
+
+        var baseAppUrl = 'http://192.168.1.10:3000/browser/main.html'; // TEMP
+        var signaller = 'http://flowhub-rtc.herokuapp.com'; // TEMP
+        var id = 'jon1234'; // require('uuid')();
+        var address = signaller+'#'+id;
+        var params = '?fbp_noload=true&fbp_protocol=webrtc&fbp_address='+encodeURIComponent(address);
+        var runtime = {
+          id: id,
+          seenHoursAgo: 1,
+          user: "3f3a8187-0931-4611-8963-239c0dff1931", // FIXME: correct
+          secret: "my-super-secret", // FIXME: correct
+          label: "noflo-browser live debug",
+          description: "On device debugging project",
+          graph: this.graph.properties.id,
+          protocol: 'webrtc',
+          type: 'noflo-browser',
+          address: address
+        };
+        this.runtime = runtime;
+
+        var appDebugUrl = baseAppUrl+params;
+        // TODO: show link in UI
+        // TODO: show QR code in UI
+        console.log(appDebugUrl);
+        var qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=';
+
+        this.qrCodeUrl = qrBase+encodeURIComponent(appDebugUrl);
+        this.runtimeUrl = appDebugUrl;
+
+        // TEMP: not needed
+        var ideBase = 'http://localhost:8000/index.html';
+        var ideDebugUrl = ideBase+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+address);
+        console.log(ideDebugUrl);
+
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
+      },
+      connectRuntime: function () {
+          this.fire('runtime', this.runtime);
+          this.close();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>
