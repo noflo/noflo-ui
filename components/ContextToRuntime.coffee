@@ -96,10 +96,6 @@ exports.getComponent = ->
       return unless event is 'data'
       return unless payload.runtime
       if currentContext?.runtime
-        # We already had a connection
-        if currentContext.graphs[0] is payload.graphs[0]
-          # No need to make changes, still same runtime and same top-level graph
-          return
         if currentContext.runtime is payload.runtime
           # Same runtime, different graph. Reconnect to clear caches
           currentContext.runtime.removeListener 'capabilities', sender
