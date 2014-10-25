@@ -18,6 +18,7 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     in: 'graph'
+    params: 'context'
     out: 'out'
   , (data, groups, out) ->
     ctx = buildContext()

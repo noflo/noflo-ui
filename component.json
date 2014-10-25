@@ -61,6 +61,7 @@
       "LoadUserData": "components/LoadUserData.coffee",
       "MigrateLocalStorage": "components/MigrateLocalStorage.coffee",
       "PacketToContext": "components/PacketToContext.coffee",
+      "PopulateExampleData": "components/PopulateExampleData.coffee",
       "PopulateProjectData": "components/PopulateProjectData.coffee",
       "PopulateRuntimeData": "components/PopulateRuntimeData.coffee",
       "PreparePulls": "components/PreparePulls.coffee",
@@ -148,7 +149,8 @@
     "components/SetGraphChanged.coffee",
     "components/EnsureLocalRuntimes.coffee",
     "components/GetRemoteProjects.coffee",
-    "graphs/Delete.fbp"
+    "graphs/Delete.fbp",
+    "components/PopulateExampleData.coffee"
   ],
   "json": [
     "component.json"
