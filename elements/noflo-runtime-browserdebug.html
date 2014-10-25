@@ -39,9 +39,9 @@
       generateRuntimeInfo: function () {
         console.log('getRuntimeInfo');
 
-        var baseAppUrl = 'http://192.168.1.10:3000/browser/main.html'; // TEMP
+        var baseAppUrl = 'http://noflojs.org/noflo-browser-app/main.html'; // TEMP
         var signaller = 'http://flowhub-rtc.herokuapp.com'; // TEMP
-        var id = 'jon1234'; // require('uuid')();
+        var id = require('uuid')();
         var address = signaller+'#'+id;
         var params = '?fbp_noload=true&fbp_protocol=webrtc&fbp_address='+encodeURIComponent(address);
         var runtime = {
@@ -57,21 +57,11 @@
           address: address
         };
         this.runtime = runtime;
-
         var appDebugUrl = baseAppUrl+params;
-        // TODO: show link in UI
-        // TODO: show QR code in UI
-        console.log(appDebugUrl);
         var qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=';
 
         this.qrCodeUrl = qrBase+encodeURIComponent(appDebugUrl);
         this.runtimeUrl = appDebugUrl;
-
-        // TEMP: not needed
-        var ideBase = 'http://localhost:8000/index.html';
-        var ideDebugUrl = ideBase+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+address);
-        console.log(ideDebugUrl);
-
       },
       bgClick: function (event) {
         // Don't close if clicking within container
