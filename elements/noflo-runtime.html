@@ -1,5 +1,6 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
+<link rel="import" href="noflo-runtime-browserdebug.html">
 <polymer-element name="noflo-runtime" attributes="runtimes" class="gpu">
   <template>
     <style>
@@ -107,6 +108,9 @@
           <template if="{{ runtime.definition.protocol != 'iframe' }}">
           <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
           </template>
+
+          <button on-click="{{ debugOnDevice }}" class="clear"><i class="fa fa-exchange">Debug</i></button>
+
         </div>
         <div id="runcontrol">
           <template if="{{ online }}">
@@ -279,6 +283,19 @@
         var el = this.runtime.getElement();
         this.card.parentNode.removeChild(this.card);
         this.card = null;
+      },
+      debugOnDevice: function () {
+        console.log('debug on device');
+        this.debugOnDeviceModal = document.createElement('noflo-runtime-browserdebug');
+        console.log('element', this.debugOnDeviceModal);
+        this.debugOnDeviceModal.graph = this.graph;
+        this.debugOnDeviceModal.addEventListener('runtime', function (event) {
+          var runtime = event.detail;
+          runtime.graph = this.graph.properties.id;
+          this.fire('changed', runtime);
+          this.fire('runtime', runtime);
+        }.bind(this));
+        document.body.appendChild(this.debugOnDeviceModal);
       },
       selectRuntime: function () {
         if (!this.graph) {
