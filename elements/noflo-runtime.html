@@ -285,9 +285,7 @@
         this.card = null;
       },
       debugOnDevice: function () {
-        console.log('debug on device');
         this.debugOnDeviceModal = document.createElement('noflo-runtime-browserdebug');
-        console.log('element', this.debugOnDeviceModal);
         this.debugOnDeviceModal.graph = this.graph;
         this.debugOnDeviceModal.addEventListener('runtime', function (event) {
           var runtime = event.detail;
