@@ -28,9 +28,7 @@ window.addEventListener('polymer-ready', function() {
         baseDir: graph.baseDir
       };
       var rt = runtime(null, runtimeOptions, true);
-      rt.signaller = 'http://flowhub-rtc.herokuapp.com';
       rt.start();
-      console.log('WebRTC id is', rt.id);
       var ide = 'http://app.flowhub.io';
       ide = 'http://localhost:8000/index.html'; // TEMP
       var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id);

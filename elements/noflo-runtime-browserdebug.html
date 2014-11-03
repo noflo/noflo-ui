@@ -42,7 +42,7 @@
         document.getElementById('container').classList.remove('blur');
       },
       generateRuntimeInfo: function () {
-        var signaller = 'http://flowhub-rtc.herokuapp.com'; // TEMP
+        var signaller = 'https://api.flowhub.io';
         var id = require('uuid')();
         var address = signaller+'#'+id;
         var params = '?fbp_noload=true&fbp_protocol=webrtc&fbp_address='+encodeURIComponent(address);
