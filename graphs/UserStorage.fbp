@@ -10,8 +10,8 @@ LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
 LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 
 # Login handling
-'https://passport.thegrid.io' -> SITE Login(ui/RemoteLogin)
-'https://api.flowhub.io' -> SITE GetRemoteUser(ui/GetRemoteUser)
+'$NOFLO_OAUTH_PROVIDER' -> SITE Login(ui/RemoteLogin)
+'$NOFLO_OAUTH_SERVICE_USER' -> SITE GetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
 'github_public' -> PROVIDER Login
@@ -28,8 +28,8 @@ GetRemoteUser ERROR -> IN Show(core/Output)
 '' -> CHECK Login
 
 # Re-login handling for Pro
-'https://passport.thegrid.io' -> SITE ProLogin(ui/RemoteLogin)
-'https://api.flowhub.io' -> SITE ProGetRemoteUser(ui/GetRemoteUser)
+'$NOFLO_OAUTH_PROVIDER' -> SITE ProLogin(ui/RemoteLogin)
+'$NOFLO_OAUTH_SERVICE_USER' -> SITE ProGetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER ProLogin
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID ProLogin
 'github_private' -> PROVIDER ProLogin

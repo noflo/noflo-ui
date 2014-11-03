@@ -7,6 +7,8 @@ NoFlo UI ChangeLog
 * Removed duplicate notification pop-ups
 * Fixes to graph preview HTML handling
 * Fixes to preview maximization
+* New loading and error state visualization
+* Enabled opening subgraphs and components also in gist examples
 
 # 0.3.0 (2014 October 14)
 

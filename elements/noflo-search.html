@@ -226,6 +226,9 @@
       },
       updateParentPath: function () {
         this.parentPath = '';
+        if (!this.project) {
+          return;
+        }
         this.graphs.forEach(function (graph, idx) {
           if (this.graph && idx >= this.graphs.length - 1) {
             return;

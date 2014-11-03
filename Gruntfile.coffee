@@ -87,11 +87,32 @@ module.exports = ->
           './manifest.webapp': './manifest.dist.webapp'
         options:
           replacements: [
+            pattern: /\$NOFLO_OAUTH_PROVIDER/ig
+            replacement: process.env.NOFLO_OAUTH_PROVIDER or 'https://passport.thegrid.io'
+          ,
+            pattern: /\$NOFLO_OAUTH_GATE/ig
+            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com'
+          ,
+            pattern: /\$NOFLO_OAUTH_SERVICE_USER/ig
+            replacement: process.env.NOFLO_OAUTH_SERVICE_USER or 'https://api.flowhub.io'
+          ,
             pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
           ,
-            pattern: /\$NOFLO_OAUTH_GATE/ig
-            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com/'
+            pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
+            replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
+          ,
+            pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize'
+          ,
+            pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/token'
+          ,
+            pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/ig
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate'
+          ,
+            pattern: /\$NOFLO_OAUTH_ENDPOINT_USER/ig
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_USER or '/user'
           ,
             pattern: /\$NOFLO_REGISTRY_SERVICE/ig
             replacement: process.env.NOFLO_REGISTRY_SERVICE or 'https://api.flowhub.io'

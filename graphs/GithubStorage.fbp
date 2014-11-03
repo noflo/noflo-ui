@@ -18,8 +18,10 @@ Loading OUT -> IN MergeContext(core/Merge)
 Dispatch OUT[0] -> IN GistId
 GistId OUT -> IN HoldToken OUT -> TOKEN LoadExample
 GistId OUT -> GIST LoadExample(ui/LoadExample)
-LoadExample GRAPH -> GRAPH ExampleToCtx(ui/GraphToContext) OUT -> IN MergeContext
-LoadExample ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext
+GistId OBJECT -> CONTEXT ExampleToCtx
+LoadExample GRAPH -> GRAPH ExampleToCtx(ui/PopulateExampleData) OUT -> IN MergeContext
+ExampleToCtx ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
+LoadExample ERROR -> ERROR ErrorToCtx OUT -> IN MergeContext
 
 # GitHub synchronization
 Dispatch OUT[1] -> IN Sync(ui/GithubSynchronization)
