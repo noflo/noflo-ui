@@ -14,6 +14,10 @@
     </style>
     <div class="modal-container" on-click="{{ bgClick }}">
       <h1>Launch noflo-browser device</h1>
+      <label>
+        <span>Base application</span>
+        <input type="text" value="{{ baseApp }}" on-change="{{ generateRuntimeInfo }}">
+      </label>
       <div class='info'>
         <div><a id='runtimeLink' href="{{ runtimeUrl }}">Launch</a></div>
         <div><img id='qrcode' src="{{ qrCodeUrl }}"></a></div>
@@ -28,6 +32,7 @@
     Polymer('noflo-runtime-browserdebug', {
       qrCodeUrl: '',
       runtimeUrl: '',
+      baseApp: 'http://noflojs.org/noflo-browser-app/main.html',
       runtime: {},
       attached: function () {
         document.getElementById('container').classList.add('blur');
@@ -37,7 +42,6 @@
         document.getElementById('container').classList.remove('blur');
       },
       generateRuntimeInfo: function () {
-        var baseAppUrl = 'http://noflojs.org/noflo-browser-app/main.html'; // TEMP
         var signaller = 'http://flowhub-rtc.herokuapp.com'; // TEMP
         var id = require('uuid')();
         var address = signaller+'#'+id;
@@ -55,7 +59,7 @@
           address: address
         };
         this.runtime = runtime;
-        var appDebugUrl = baseAppUrl+params;
+        var appDebugUrl = this.baseApp+params;
         var qrBase = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=';
 
         this.qrCodeUrl = qrBase+encodeURIComponent(appDebugUrl);
