@@ -25,7 +25,7 @@ checkToken = (url, params, callback) ->
     redirect = params.redirect or window.location.href
     req.open 'POST', "#{params.site}$NOFLO_OAUTH_ENDPOINT_TOKEN", true
     req.send 'code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=$NOFLO_OAUTH_CLIENT_SECRET&redirect_uri=#{encodeURIComponent(redirect)}'
-  # get token from oauth2 gate 
+  # get token from oauth2 gate
   if '$NOFLO_OAUTH_CLIENT_SECRET' is '' or null
     req.open 'GET', "#{params.gatekeeper}$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/#{code[1]}", true
     req.send null
