@@ -2,7 +2,7 @@ noflo = require 'noflo'
 
 getUrl = (params) ->
   redirect = params.redirect or window.location.href
-  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/#{params.provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
+  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
   code = url.match /\?code=(.*)/
@@ -22,9 +22,15 @@ checkToken = (url, params, callback) ->
       callback null, data.token
   # get token directly from provider
   if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
-    redirect = params.redirect or window.location.href
+    redirect = params.redirect or window.location.href  
+    post_params = "code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=$NOFLO_OAUTH_CLIENT_SECRET&redirect_uri=#{encodeURIComponent(redirect)}"  
     req.open 'POST', "#{params.site}$NOFLO_OAUTH_ENDPOINT_TOKEN", true
-    req.send 'code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=$NOFLO_OAUTH_CLIENT_SECRET&redirect_uri=#{encodeURIComponent(redirect)}'
+    # Set headers required for POST request
+    req.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+    req.setRequestHeader "Content-length", post_params.length
+    req.setRequestHeader "Connection", "close"
+    # Send data
+    req.send post_params
   # get token from oauth2 gate 
   if '$NOFLO_OAUTH_CLIENT_SECRET' is '' or null
     req.open 'GET', "#{params.gatekeeper}$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/#{code[1]}", true
