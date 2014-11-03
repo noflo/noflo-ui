@@ -3,7 +3,9 @@ NoFlo UI ChangeLog
 
 # 0.4.0 (git master)
 
-* [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support, including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status/525093488246149120)
+* [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support,
+including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status/525093488246149120)
+* Support for launching external NoFlo browser runtime from URL/QR code
 * Removed duplicate notification pop-ups
 * Fixes to graph preview HTML handling
 * Fixes to preview maximization
