@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.4.0 (git master)
+# 0.4.0 (2014 November 03)
 
 * [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support,
 including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status/525093488246149120)
@@ -11,6 +11,7 @@ including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status
 * Fixes to preview maximization
 * New loading and error state visualization
 * Enabled opening subgraphs and components also in gist examples
+* Allow to configure at buildtime endpoints for runtime registry and OAuth provider
 
 # 0.3.0 (2014 October 14)
 
