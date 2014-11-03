@@ -33,7 +33,7 @@ exports.getComponent = ->
         do callback
         return
       callback new Error req.responseText
-    req.open 'GET', "#{c.params.site}/user", true
+    req.open 'GET', "#{c.params.site}$NOFLO_OAUTH_ENDPOINT_USER", true
     req.setRequestHeader 'Authorization', "Bearer #{token}"
     req.send null
 
