@@ -19,7 +19,7 @@ checkToken = (url, params, callback) ->
       unless data.access_token
         return callback null, null
 
-      callback null, data.access_token # always expect access_token, http://tools.ietf.org/html/rfc6749#section-4.2.2
+      callback null, data.access_token # always expect access_token, http://tools.ietf.org/html/rfc6749#section-5.1
   # get token directly from provider
   if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
     redirect = params.redirect or window.location.href  
