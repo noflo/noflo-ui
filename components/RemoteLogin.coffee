@@ -16,10 +16,10 @@ checkToken = (url, params, callback) ->
         data = JSON.parse req.responseText
       catch e
         return callback e
-      unless data.token
+      unless data.access_token
         return callback null, null
 
-      callback null, data.token
+      callback null, data.access_token # always expect access_token, http://tools.ietf.org/html/rfc6749#section-4.2.2
   # get token directly from provider
   if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
     redirect = params.redirect or window.location.href  
