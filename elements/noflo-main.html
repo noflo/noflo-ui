@@ -162,24 +162,24 @@
       }
 
     </style>
-    <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
+    <template if="{{ !user}}">
       <noflo-anonymous id="mainaccount"></noflo-anonymous>
     </template>
-    <template if="{{ $NOFLO_USER_LOGIN_ENABLED  }}">
+    <template if="{{ user  }}">
       <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
     </template>  
     <div id="loginrequired"></div>
       <template if="{{ '$NOFLO_OAUTH_PROVIDER' != '' }}">
         <section id="accounts">
-          <h2>
-            Authorization provider (OAuth2) configured: $NOFLO_OAUTH_PROVIDER
-          </h2>
-          <ul class="projects">
+          <template if="{{ !user }}">
+            <p> Authorization provider (OAuth2) configured: $NOFLO_OAUTH_PROVIDER </p>          
+            <ul class="projects">
               <li class="add">
                 <h2>Login</h2>
                 <button on-click="{{ customLogin }}">Login</button>
               </li>
-          </ul>
+            </ul>
+          </template>
         </section>
       </template>
       <section id="projects">
