@@ -162,27 +162,9 @@
       }
 
     </style>
-    <template if="{{ !user}}">
-      <noflo-anonymous id="mainaccount"></noflo-anonymous>
-    </template>
-    <template if="{{ user  }}">
-      <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
-    </template>  
+    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>  
     <div id="loginrequired"></div>
-      <template if="{{ '$NOFLO_OAUTH_PROVIDER' != '' }}">
-        <section id="accounts">
-          <template if="{{ !user }}">
-            <p> Authorization provider (OAuth2) configured: $NOFLO_OAUTH_PROVIDER </p>          
-            <ul class="projects">
-              <li class="add">
-                <h2>Login</h2>
-                <button on-click="{{ customLogin }}">Login</button>
-              </li>
-            </ul>
-          </template>
-        </section>
-      </template>
-      <section id="projects">
+         <section id="projects">
         <h2>Projects
             <template if="{{ projectList === 'local' }}">
             <small>{{ localProjects.length }}</small>
@@ -335,10 +317,6 @@
       registry: null,
       registryUrl: '$NOFLO_REGISTRY_SERVICE',
       help: null,
-      customLogin: function (event) {
-        event.preventDefault();
-        this.fire('login', true);
-      },
       attached: function () {
         this.openChanged();
         this.$.mainaccount.addEventListener('login', function (event) {

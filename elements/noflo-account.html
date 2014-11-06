@@ -173,7 +173,7 @@
         <button on-click="{{ logout }}">Logout</button>
       </div>
     </template>
-    <template if="{{ !user && $NOFLO_USER_LOGIN_ENABLED}}">
+    <template if="{{ !user }}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
