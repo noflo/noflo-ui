@@ -73,6 +73,10 @@
         height: 3px;
         margin-bottom: 3px;
       }
+      ul#events img {
+        margin: 5px;
+        max-width: 100px;
+      }
       button#clear {
         color: rgb(179, 222, 230);
         position: absolute;
@@ -159,8 +163,17 @@
             var cleaned = item.data;
             if (typeof item.data === 'object') {
               cleaned = JSON.stringify(item.data, null, 2);
+              if (typeof item.data.type !== 'undefined' && item.data.type === 'previewurl') {
+                var separator = (item.data.url.indexOf('?') !== -1) ? '&' : '?';
+                content = document.createElement('img');
+                content.src = item.data.url + separator + 'timestamp=' + new Date().getTime();
+                content.classList.add('previewimg');
+              } else {
+                content = document.createTextNode(cleaned);
+              }
+            } else {
+              content = document.createTextNode(cleaned);
             }
-            content = document.createTextNode(cleaned);
           }
           li.appendChild(content);
           fragment.appendChild(li);
