@@ -2,6 +2,8 @@
 <link rel="import" href="noflo-search-graph-results.html">
 <link rel="import" href="noflo-search-library-results.html">
 <link rel="import" href="noflo-graph-inspector.html">
+<link rel="import" href="noflo-component-inspector.html">
+
 <polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component">
   <template>
     <style>
@@ -87,6 +89,7 @@
       }
       #clear,
       #breadcrumb #graphinspector,
+      #breadcrumb #componentinspector,
       #breadcrumb #readonly {
         position: absolute;
         right: 9px;
@@ -176,6 +179,9 @@
       </h1>
       <template if="{{ graph && (!component || !component.name) }}">
       <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
+      </template>
+      <template if="{{ !graph && component && component.name }}">
+      <button on-click="{{ showComponentInspector }}" id="componentinspector"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ (component && component.readonly) || (graph && graph.properties.readonly) }}">
       <i id="readonly" class="fa fa-lock"></i>
@@ -417,6 +423,25 @@
         }.bind(this));
         document.body.appendChild(this.graphInspector);
       },
+      showComponentInspector: function (event) {
+        if (event) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
+        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'search', 'click', 'componentProperties');
+        }
+        this.componentInspector = document.createElement('noflo-component-inspector');
+        this.componentInspector.component = this.component;
+        this.componentInspector.project = this.project;
+        this.componentInspector.addEventListener('delete', function (event) {
+          this.fire('deleteComponent', event.detail);
+        }.bind(this));
+        document.body.appendChild(this.componentInspector);
+      }
     });
   </script>
 </polymer-element>

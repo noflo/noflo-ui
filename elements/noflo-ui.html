@@ -196,11 +196,37 @@
             // Go home
             window.location.hash = '#';
           } else if (project.graphs[0]) {
-            // Go to first project
+            // Go to first graph
             window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
           } else if (project.components[0]) {
             // Go to first component
             window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+          }
+        }.bind(this));
+        this.$.search.addEventListener('deleteComponent', function (event) {
+          var project = this.ctx.project || this.$.project.project;
+          if (!project || !project.components) {
+            return;
+          }
+          var component = event.detail;
+          var index = project.components.indexOf(component);
+          if (index !== -1) {
+            project.components.splice(index, 1);
+          }
+          this.fire('project:delete:component', component);
+          if (!project.graphs.length && !project.components.length) {
+            // Empty project, remove
+            this.fire('project:delete:project', project);
+            this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
+            this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
+            // Go home
+            window.location.hash = '#';
+          } else if (project.components[0]) {
+            // Go to first component
+            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+          } else if (project.graphs[0]) {
+            // Go to first graph
+            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
           }
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;

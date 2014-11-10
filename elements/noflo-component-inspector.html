@@ -1,0 +1,57 @@
+<polymer-element name="noflo-component-inspector" class="modal-content" on-click="{{ close }}">
+  <template>
+    <style>
+      button.delete {
+        position: absolute;
+        right: 36px;
+        border: 0px solid hsla( 0, 98%, 46%, .8) !important;
+        color: hsla( 0, 98%, 46%, .8) !important;
+      }
+    </style>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <h1>{{ component.name }} settings</h1>
+      <template if="{{ errorText }}">
+        <div class="error">{{ errorText }}</div>
+      </template>
+      <form>
+        <div class="toolbar">
+          <!-- <button on-click="{{ send }}">Save</button> -->
+          <a on-click="{{ close }}">Cancel</a>
+          <button class="delete" on-click="{{ delete }}">Delete</button>
+        </div>
+      </div>
+    </form>
+  </template>
+  <script>
+    Polymer('noflo-component-inspector', {
+      component: null,
+      errorText: '',
+      attached: function () {
+        document.getElementById('container').classList.add('blur');
+      },
+      detached: function () {
+        document.getElementById('container').classList.remove('blur');
+      },
+      componentChanged: function () {
+      },
+      delete: function (event) {
+        event.preventDefault();
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'deleteComponent');
+        }
+        this.fire('delete', this.component);
+        this.close();
+      },
+      bgClick: function (event) {
+        // Don't close if clicking within container
+        event.stopPropagation();
+      },
+      close: function () {
+        if (!this.parentNode) {
+          return;
+        }
+        this.parentNode.removeChild(this);
+      }
+    });
+  </script>
+</polymer-element>
