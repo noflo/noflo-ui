@@ -162,14 +162,9 @@
       }
 
     </style>
-    <template if="{{ !user && !$NOFLO_USER_LOGIN_ENABLED}}">
-      <noflo-anonymous id="mainaccount"></noflo-anonymous>
-    </template>
-    <template if="{{ $NOFLO_USER_LOGIN_ENABLED  }}">
-      <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account> 
-    </template>  
+    <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>  
     <div id="loginrequired"></div>
-      <section id="projects">
+         <section id="projects">
         <h2>Projects
             <template if="{{ projectList === 'local' }}">
             <small>{{ localProjects.length }}</small>
