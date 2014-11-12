@@ -1,6 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.6.0 (git master)
+
+* 
+
+# 0.5.0 (2014 November 12)
+
+* Support for C, C++ in component code editor
+* Added component template for imgflo components
+* Full support for custom runtime registry and OAuth provider
+
 # 0.4.0 (2014 November 03)
 
 * [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support,
