@@ -63,6 +63,9 @@ module.exports = ->
         './index.html'
         './dev.html'
       ]
+      themes: [
+        'themes'
+      ]
 
     # JavaScript minification for the browser
     uglify:
@@ -162,6 +165,13 @@ module.exports = ->
               ga('send', 'pageview');
             </script>"
           ]
+
+    copy:
+      themes:
+        expand: true
+        flatten: true
+        src: ['./bower_components/the-graph/themes/*.css']
+        dest: './themes/'
 
     compress:
       app:
@@ -343,6 +353,7 @@ module.exports = ->
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
+  @loadNpmTasks 'grunt-contrib-copy'
 
   # Grunt plugins used for mobile app building
   @loadNpmTasks 'grunt-contrib-compress'
@@ -366,7 +377,9 @@ module.exports = ->
 
   # Our local tasks
   @registerTask 'nuke', ['clean']
-  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower-install-simple', 'noflo_browser:main', 'noflo_browser:preview', 'vulcanize', 'string-replace:app', 'compress']
+  @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower-install-simple',
+                          'noflo_browser:main', 'noflo_browser:preview',
+                          'copy', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
