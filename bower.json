@@ -17,16 +17,22 @@
     "spec"
   ],
   "dependencies": {
+    "polymer": "noflo/polymer#0.4.0-lockdeps",
+    "core-component-page": "noflo/core-component-page#0.4.0-lockdeps",
     "the-graph": "0.3.4",
     "the-panel": "*",
     "the-card": "*",
     "font-awesome": "~4.2.0",
     "codemirror": "~4.5.0",
     "coffee-script": "*",
-    "polymer": "0.4.0",
     "requirejs": "~2.1.11",
     "rtc": "rtc-io/rtc#3.1.1"
   },
+   "resolutions": {
+    "polymer": "0.4.0-lockdeps",
+    "core-component-page": "0.4.0-lockdeps",
+    "platform": "0.4.0"
+   },
   "devDependencies": {
     "syn": "~0.0.3"
   }
