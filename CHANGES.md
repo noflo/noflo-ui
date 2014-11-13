@@ -5,6 +5,10 @@ NoFlo UI ChangeLog
 
 * 
 
+# 0.5.2 (2014 November 13)
+
+* Fixes GitHub permission issue
+
 # 0.5.0 (2014 November 12)
 
 * Support for C, C++ in component code editor
