@@ -106,7 +106,7 @@ module.exports = ->
             replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize'
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize/github_public'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/token'
