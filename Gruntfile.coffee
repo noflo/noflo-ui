@@ -87,7 +87,7 @@ module.exports = ->
           './index.js': './index.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
-          './manifest.webapp': './manifest.dist.webapp'
+          './manifest.webapp.json': './manifest.dist.webapp.json'
         options:
           replacements: [
             pattern: /\$NOFLO_OAUTH_PROVIDER/ig
@@ -233,7 +233,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['manifest.webapp']
+          src: ['manifest.webapp.json']
           expand: true
           dest: '/'
         ,
