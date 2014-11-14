@@ -191,29 +191,26 @@ module.exports = ->
             'bower_components/codemirror/lib/*.css'
             'bower_components/codemirror/theme/mdn-like.css'
             'bower_components/coffee-script/extras/*.js'
+            'bower_components/ease-djdeath/*.js'
             'bower_components/font-awesome/css/*.css'
             'bower_components/font-awesome/**/*.woff'
             'bower_components/font-awesome/**/*.ttf'
             'bower_components/font-awesome/**/*.svg'
-            'bower_components/klay-js/klay*.js'
-            'bower_components/platform/*.js'
-            'bower_components/polymer/*.js'
-            'bower_components/polymer-gestures/polymer-gestures.html'
-            'bower_components/polymer-gestures/src/*.js'
             'bower_components/hammerjs/hammer.js'
+            'bower_components/klay-js/klay*.js'
+            'bower_components/polymer/*.js'
             'bower_components/react/*.js'
             'bower_components/react.animate-djdeath/*.js'
-            'bower_components/ease-djdeath/*.js'
             'bower_components/requirejs/*.js'
+            'bower_components/rtc/dist/rtc.js'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
-            'bower_components/rtc/dist/rtc.js'
+            'bower_components/webcomponentsjs/webcomponents.js'
           ]
           expand: true
           dest: '/'
         ,
           src: [
-            'bower_components/platform/*.map'
             'bower_components/polymer/*.map'
           ]
           expand: true

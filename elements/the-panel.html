@@ -1,4 +1,4 @@
-<polymer-element name="the-panel" attributes="edge size handle open automatic">
+<polymer-element name="the-panel" attributes="edge size handle open automatic" on-click="{{ handleClicked }}">
   <template>
     <style>
       @host {
@@ -27,7 +27,6 @@
         this.cleanUpLocation();
         this.automaticChanged();
         this.updateVisibility();
-        this.addEventListener('click', this.handleClicked.bind(this), false);
       },
       leftView: function () {
         this.unobserve();
