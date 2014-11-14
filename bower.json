@@ -20,8 +20,6 @@
     "polymer": "noflo/polymer#0.4.0-lockdeps",
     "core-component-page": "noflo/core-component-page#0.4.0-lockdeps",
     "the-graph": "0.3.4",
-    "the-panel": "*",
-    "the-card": "*",
     "font-awesome": "~4.2.0",
     "codemirror": "~4.5.0",
     "coffee-script": "*",

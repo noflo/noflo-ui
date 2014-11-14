@@ -1,0 +1,130 @@
+<polymer-element name="the-panel" attributes="edge size handle open automatic">
+  <template>
+    <style>
+      @host {
+        :scope {
+          position: fixed;
+          overflow: hidden;
+        }
+      }
+    </style>
+    <content select="header"></content>
+    <content select="main"></content>
+    <content select="footer"></content>
+  </template>
+  <script>
+    Polymer('the-panel', {
+      edge: 'left',
+      size: 200,
+      handle: 0,
+      automatic: true,
+      open: false,
+      toggleOpen: function (open) {
+        this.open = open;
+        this.updateVisibility();
+      },
+      enteredView: function () {
+        this.cleanUpLocation();
+        this.automaticChanged();
+        this.updateVisibility();
+        this.addEventListener('click', this.handleClicked.bind(this), false);
+      },
+      leftView: function () {
+        this.unobserve();
+      },
+      edgeChanged: function () {
+        this.updateVisibility();
+      },
+      sizeChanged: function () {
+        this.updateVisibility();
+      },
+      handleChanged: function () {
+        this.updateVisibility();
+      },
+      openChanged: function () {
+        this.updateVisibility();
+      },
+      automaticChanged: function () {
+        if (this.automatic) {
+          this.observeChanges();
+        } else {
+          this.unobserve();
+        }
+      },
+      getHeader: function () {
+        return this.querySelector('header');
+      },
+      getMain: function () {
+        return this.querySelector('main');
+      },
+      getFooter: function () {
+        return this.querySelector('footer');
+      },
+      handleClicked: function (event) {
+        if (this.automatic) {
+          return;
+        }
+        if (event.target !== this) {
+          return;
+        }
+        if (this.open) {
+          this.open = false;
+          return;
+        }
+        this.open = true;
+      },
+      observeChanges: function () {
+        this.observer = new MutationObserver(this.handleMutations.bind(this));
+        this.observer.observe(this.getMain(), {
+          subtree: false,
+          childList: true,
+          attributes: false,
+          characterData: false
+        });
+      },
+      unobserve: function () {
+        if (!this.observer) {
+          return;
+        }
+        this.observer.disconnect();
+        this.observer = null;
+      },
+      handleMutations: function () {
+        if (this.getMain().childElementCount === 0) {
+          this.open = false;
+        } else {
+          this.open = true;
+        }
+      },
+      getPositionDimension: function () {
+        return this.edge;
+      },
+      getSizeDimensions: function () {
+        switch (this.edge) {
+          case 'left':
+          case 'right':
+            return ['width', 'height'];
+          case 'top':
+          case 'bottom':
+            return ['height', 'width'];
+        }
+      },
+      cleanUpLocation: function () {
+        this.style.left = '';
+        this.style.right = '';
+        this.style.top = '';
+        this.style.bottom = '';
+      },
+      updateVisibility: function () {
+        var sizeDimensions = this.getSizeDimensions();
+        this.style[sizeDimensions[1]] = '100%';
+        this.style[sizeDimensions[0]] = this.size + 'px';
+        var outside = 0;
+        if (!this.open) {
+          outside = (this.size - this.handle) * -1;
+        }
+        this.style[this.getPositionDimension()] = outside + 'px';
+      }
+    });
+  </script>
+</polymer-element>
