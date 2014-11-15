@@ -37,12 +37,17 @@ describe 'Deleting a graph', ->
 
   describe 'graph delete', ->
     it 'should remove the graph and project and redirect home', (done) ->
+      @timeout 7000
       deleteButton = modal.shadowRoot.querySelector '.delete'
       chai.expect(deleteButton).to.be.an 'object'
       setTimeout ->
         Syn.click deleteButton
         setTimeout ->
-          chai.expect( win.location.hash ).to.equal ''
+          hash = win.location.hash
+          # workaround for ie
+          if hash is '#'
+            hash = ''
+          chai.expect(hash).to.equal ''
           done()
         , 1500
       , 1500
