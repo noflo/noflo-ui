@@ -40,7 +40,7 @@ module.exports = ->
           bare: true
         expand: true
         cwd: 'spec'
-        src: ['**.coffee']
+        src: '*.coffee'
         dest: 'spec'
         ext: '.js'
 
@@ -287,17 +287,21 @@ module.exports = ->
 
     # Coding standards
     coffeelint:
-      # noflo:
-      options:
-        max_line_length:
-          level: "ignore"
-      files: [
-        'Gruntfile.coffee'
-        'src/*.coffee'
-        'src/**/*.coffee'
-        'components/*.coffee'
-        'spec/*.coffee'
-      ]
+      app:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: [
+          'Gruntfile.coffee'
+          'src/*.coffee'
+          'src/**/*.coffee'
+          'components/*.coffee'
+        ]
+      spec:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: 'spec/*.coffee'
 
     inlinelint:
       options:
@@ -311,6 +315,11 @@ module.exports = ->
       preview:
         files: 'preview/components/*/*/*.coffee'
         tasks: ['noflo_browser:preview']
+        options:
+          livereload: false
+      spec:
+        files: 'spec/*.coffee'
+        tasks: ['coffeelint:spec', 'coffee:spec']
         options:
           livereload: false
 
@@ -382,9 +391,10 @@ module.exports = ->
                           'noflo_browser:main', 'noflo_browser:preview',
                           'copy', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
-  @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
+  @registerTask 'test', ['coffeelint:app', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
   @registerTask 'devp', ['noflo_browser:preview', 'connect:server', 'watch:preview']
+  @registerTask 'spec', ['coffeelint:spec', 'coffee:spec', 'connect:server', 'watch']
 
