@@ -44,5 +44,5 @@ describe 'Deleting a graph', ->
         setTimeout ->
           chai.expect( win.location.hash ).to.equal ''
           done()
-        , 1000
-      , 500
+        , 1500
+      , 1500
