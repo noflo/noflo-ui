@@ -1,0 +1,44 @@
+<link rel="import" href="./the-card-stack.html">
+<polymer-element name="the-card" attributes="type">
+  <template>
+    <content select="h1"></content>
+    <content></content>
+  </template>
+  <style>
+    the-card {
+      display: block;
+    }
+    h1 {
+      margin: 0px;
+    }
+  </style>
+  <script>
+    Polymer('the-card', {
+      enteredView: function () {
+        this.fire('show', this);
+      },
+      leftView: function () {
+        this.fire('hide', this);
+      },
+      addTo: function (parent, prepend) {
+        var stacks = parent.getElementsByTagName('the-card-stack');
+        for (var i = 0; i < stacks.length; i++) {
+          if (stacks[i].type === this.type) {
+            stacks[i].appendChild(this);
+            return;
+          }
+        }
+
+        var stack = document.createElement('the-card-stack');
+        stack.type = this.type;
+        stack.appendChild(this);
+
+        if (prepend && parent.childElementCount > 0) {
+          parent.insertBefore(stack, parent.firstChild);
+          return;
+        }
+        parent.appendChild(stack);
+      }
+    });
+  </script>
+</polymer-element>

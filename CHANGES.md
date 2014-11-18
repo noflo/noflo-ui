@@ -3,7 +3,8 @@ NoFlo UI ChangeLog
 
 # 0.6.0 (git master)
 
-* 
+* Compatibility with Android [Add to homescreen](https://developer.chrome.com/multidevice/android/installtohomescreen) feature with Chrome 39+
+* Update to [Polymer 0.5.1](https://github.com/Polymer/polymer/releases/tag/0.5.1)
 
 # 0.5.2 (2014 November 13)
 

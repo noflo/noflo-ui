@@ -1,0 +1,28 @@
+<polymer-element name="the-card-stack" attributes="type">
+  <script>
+    Polymer('the-card-stack', {
+      enteredView: function () {
+        this.observeChanges();
+      },
+      leftView: function () {
+        if (this.observer) {
+          this.observer.disconnect();
+        }
+      },
+      observeChanges: function () {
+        this.observer = new MutationObserver(this.updateVisibility.bind(this));
+        this.observer.observe(this, {
+          subtree: false,
+          childList: true,
+          attributes: false,
+          characterData: false
+        });
+      },
+      updateVisibility: function () {
+        if (this.childElementCount === 0) {
+          this.parentNode.removeChild(this);
+        }
+      }
+    });
+  </script>
+</polymer-element>

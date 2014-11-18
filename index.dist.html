@@ -3,10 +3,23 @@
   <head>
     <meta charset="utf-8">
     <title>$NOFLO_APP_TITLE v$NOFLO_APP_VERSION</title>
-    <link rel="shortcut icon" href="$NOFLO_THEME.ico" />
     <link href="https://github.com/noflo/noflo-ui" rel="source" />
     <meta name="description" content="$NOFLO_APP_DESCRIPTION">
-    <script src="bower_components/platform/platform.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="hsl(190, 90%, 45%)">
+    <link rel="manifest" href="manifest.webapp.json">
+    <link rel="apple-touch-icon" href="app/$NOFLO_THEME-60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="app/$NOFLO_THEME-120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="app/$NOFLO_THEME-144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="app/$NOFLO_THEME-152.png">
+    <link rel="icon" sizes="192x192" href="app/$NOFLO_THEME-192.png">
+    <link rel="icon" sizes="128x128" href="app/$NOFLO_THEME-128.png">
+    <link rel="shortcut icon" href="$NOFLO_THEME.ico" />
+    <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
     <link rel="import" href="bower_components/polymer/polymer.html">
     <script src="bower_components/klay-js/klay.js"></script>
     <script src="bower_components/hammerjs/hammer.js"></script>
@@ -22,16 +35,6 @@
     <link rel="import" href="./css/font-awesome-shadow.html">
     <link rel="stylesheet" href="./css/noflo-ui.css">
     <link rel="import" href="./css/noflo-ui-shadow.html">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="theme-color" content="hsl(190, 90%, 45%)">
-    <link rel="apple-touch-icon" href="app/$NOFLO_THEME-60.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="app/$NOFLO_THEME-120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="app/$NOFLO_THEME-144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="app/$NOFLO_THEME-152.png">
   </head>
   <body class="$NOFLO_THEME">
     <!-- $NOFLO_APP_ANALYTICS -->

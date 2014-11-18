@@ -40,7 +40,7 @@ module.exports = ->
           bare: true
         expand: true
         cwd: 'spec'
-        src: ['**.coffee']
+        src: '*.coffee'
         dest: 'spec'
         ext: '.js'
 
@@ -87,7 +87,7 @@ module.exports = ->
           './index.js': './index.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
-          './manifest.webapp': './manifest.dist.webapp'
+          './manifest.webapp.json': './manifest.dist.webapp.json'
         options:
           replacements: [
             pattern: /\$NOFLO_OAUTH_PROVIDER/ig
@@ -191,29 +191,26 @@ module.exports = ->
             'bower_components/codemirror/lib/*.css'
             'bower_components/codemirror/theme/mdn-like.css'
             'bower_components/coffee-script/extras/*.js'
+            'bower_components/ease-djdeath/*.js'
             'bower_components/font-awesome/css/*.css'
             'bower_components/font-awesome/**/*.woff'
             'bower_components/font-awesome/**/*.ttf'
             'bower_components/font-awesome/**/*.svg'
-            'bower_components/klay-js/klay*.js'
-            'bower_components/platform/*.js'
-            'bower_components/polymer/*.js'
-            'bower_components/polymer-gestures/polymer-gestures.html'
-            'bower_components/polymer-gestures/src/*.js'
             'bower_components/hammerjs/hammer.js'
+            'bower_components/klay-js/klay*.js'
+            'bower_components/polymer/*.js'
             'bower_components/react/*.js'
             'bower_components/react.animate-djdeath/*.js'
-            'bower_components/ease-djdeath/*.js'
             'bower_components/requirejs/*.js'
+            'bower_components/rtc/dist/rtc.js'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
-            'bower_components/rtc/dist/rtc.js'
+            'bower_components/webcomponentsjs/webcomponents.js'
           ]
           expand: true
           dest: '/'
         ,
           src: [
-            'bower_components/platform/*.map'
             'bower_components/polymer/*.map'
           ]
           expand: true
@@ -236,7 +233,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['manifest.webapp']
+          src: ['manifest.webapp.json']
           expand: true
           dest: '/'
         ,
@@ -290,17 +287,21 @@ module.exports = ->
 
     # Coding standards
     coffeelint:
-      # noflo:
-      options:
-        max_line_length:
-          level: "ignore"
-      files: [
-        'Gruntfile.coffee'
-        'src/*.coffee'
-        'src/**/*.coffee'
-        'components/*.coffee'
-        'spec/*.coffee'
-      ]
+      app:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: [
+          'Gruntfile.coffee'
+          'src/*.coffee'
+          'src/**/*.coffee'
+          'components/*.coffee'
+        ]
+      spec:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: 'spec/*.coffee'
 
     inlinelint:
       options:
@@ -314,6 +315,11 @@ module.exports = ->
       preview:
         files: 'preview/components/*/*/*.coffee'
         tasks: ['noflo_browser:preview']
+        options:
+          livereload: false
+      spec:
+        files: 'spec/*.coffee'
+        tasks: ['coffeelint:spec', 'coffee:spec']
         options:
           livereload: false
 
@@ -385,9 +391,10 @@ module.exports = ->
                           'noflo_browser:main', 'noflo_browser:preview',
                           'copy', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
-  @registerTask 'test', ['coffeelint', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
+  @registerTask 'test', ['coffeelint:app', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
   @registerTask 'devp', ['noflo_browser:preview', 'connect:server', 'watch:preview']
+  @registerTask 'spec', ['coffeelint:spec', 'coffee:spec', 'connect:server', 'watch']
 
