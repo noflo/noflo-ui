@@ -39,8 +39,9 @@ describe 'NoFlo UI initialization', ->
 
   describe 'NoFlo PrepareStorage', ->
     it 'should have created the IndexedDB database', (done) ->
-      chai.expect(win.indexedDB).to.be.an 'object'
-      req = win.indexedDB.open 'noflo-ui', 3
+      indexedDB = win.overrideIndexedDB or win.indexedDB
+      chai.expect(indexedDB).to.be.an 'object'
+      req = indexedDB.open 'noflo-ui', 3
       req.onerror = ->
         chai.expect(true).to.equal false
         done()
