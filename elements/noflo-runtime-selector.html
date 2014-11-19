@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-runtime-browserdebug.html">
+<link rel="import" href="noflo-runtime-customiframe.html">
 <polymer-element name="noflo-runtime-selector" attributes="graph" class="modal-content" on-click="{{ close }}">
   <template>
     <style>
@@ -93,8 +94,14 @@
           label: 'Launch new runtime',
           address: "WebRTC"
         };
+        var customIframeRuntime = {
+          id: 'custom-iframe-address',
+          label: 'Custom iframe URL',
+          address: "myapp.html"
+        };
         if (type == 'noflo-browser') {
           this.available.push(launchNewRuntime);
+          this.available.push(customIframeRuntime);
         }
 
         this.runtimes.forEach(function (rt) {
@@ -116,6 +123,11 @@
           this.close();
           this.debugOnDevice();
           return;
+        } else if (id == 'custom-iframe-address') {
+          // Add new iframe runtime for given address
+          this.close();
+          this.addIframeRuntime();
+          return;
         }
         this.runtimes.forEach(function (runtime) {
           if (runtime.id === id) {
@@ -133,6 +145,16 @@
           this.fire('runtime', runtime);
         }.bind(this));
         document.body.appendChild(this.debugOnDeviceModal);
+      },
+      addIframeRuntime: function () {
+        this.addIframeModal = document.createElement('noflo-runtime-customiframe');
+        this.addIframeModal.graph = this.graph;
+        this.addIframeModal.addEventListener('runtime', function (event) {
+          var runtime = event.detail;
+          runtime.graph = this.graph.properties.id;
+          this.fire('runtime', runtime);
+        }.bind(this));
+        document.body.appendChild(this.addIframeModal);
       },
       bgClick: function (event) {
         // Don't close if clicking within container
