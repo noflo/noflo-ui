@@ -30,6 +30,9 @@ exports.getComponent = ->
       'github-username'
       'flowhub-plan'
       'flowhub-theme'
+      'oauth2-token-access'
+      'oauth2-token-refresh'
+      'oauth2-token-expires-in'
     ]
     if typeof chrome isnt 'undefined' and chrome.storage
       chrome.storage.sync.get keys, (items) ->

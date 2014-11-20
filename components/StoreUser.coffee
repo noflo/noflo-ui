@@ -38,7 +38,8 @@ exports.getComponent = ->
     async: true
   , (user, groups, out, callback) ->
 
-    token = groups.pop()
+    token_data = groups.pop()
+    token = if token_data.token? then token_data.token else token_data.access_token
     plan = user.plan?.type or 'free'
     githubToken = user.github?.token or ''
     githubUsername = user.github?.username or ''
@@ -47,6 +48,9 @@ exports.getComponent = ->
       userData =
         'grid-avatar': avatar
         'grid-token': token
+        'oauth2-token-access': token
+        'oauth2-token-refresh': if token_data.refresh_token? then token_data.refresh_token else ''
+        'oauth2-token-expires-in': if token_data.expires_in? then token_data.expires_in else ''
         'grid-user': JSON.stringify user
         'github-token': githubToken
         'github-username': githubUsername

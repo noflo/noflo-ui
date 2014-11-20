@@ -20,6 +20,8 @@ exports.getComponent = ->
     async: true
   , (token, groups, out, callback) ->
     req = new XMLHttpRequest
+    token_data = token
+    token = if token_data.token? then token_data.token else token_data.access_token
     req.onreadystatechange = ->
       return unless req.readyState is 4
       if req.status is 200
@@ -27,7 +29,7 @@ exports.getComponent = ->
           userData = JSON.parse req.responseText
         catch e
           return callback e
-        out.beginGroup token
+        out.beginGroup token_data
         out.send userData
         out.endGroup()
         do callback

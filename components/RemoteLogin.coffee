@@ -27,7 +27,7 @@ checkToken = (url, params, callback) ->
       unless token_found
         return callback null, null
 
-      callback null, token_found
+      callback null, data
   # get token directly from provider
   if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
     redirect = params.redirect or window.location.href

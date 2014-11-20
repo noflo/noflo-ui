@@ -372,6 +372,9 @@
         }
         this.$.main.plan = user['flowhub-plan'];
         this.$.project.gridToken = user['grid-token'];
+        this.$.main.oauthTokenAccess = user['oauth2-token-access'];
+        this.$.main.oauthTokenRefresh = user['oauth2-token-refresh'];
+        this.$.main.oauthTokenExpiresIn = user['oauth2-token-expires-in'];
       },
       showError: function (context) {
         if (context.error && context.error.message) {
