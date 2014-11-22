@@ -133,11 +133,25 @@ gegl_op_class_init (GeglOpClass *klass)
 
 #endif
     </script>
+    <script type="text/plain" id="SuperColliderExample">
+SynthDef("MyFilter", {
+    arg in=SndFloLibrary.silentIn, out=SndFloLibrary.silentOut, freq=4400;
+    Out.ar(out, BLowPass.ar(In.ar(in), freq))
+},
+    metadata: (
+        description: "my filter",
+        specs: (
+            freq: ControlSpec(20, 20000, \exp, 0.1, 2200, "Hz")
+        )
+    )
+)
+    </script>
   </template>
   <script src="../bower_components/codemirror/lib/codemirror.js"></script>
   <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
   <script src="../bower_components/codemirror/mode/coffeescript/coffeescript.js"></script>
   <script src="../bower_components/codemirror/mode/clike/clike.js"></script>
+  <script src="../bower_components/codemirror/mode/smalltalk/smalltalk.js"></script>
   <script>
     Polymer('noflo-component-editor', {
       component: null,
@@ -202,6 +216,8 @@ gegl_op_class_init (GeglOpClass *klass)
           return 'text/x-csrc';  
         } else if (language === 'c++') {
           return 'text/x-c++src';
+        } else if (language === 'supercollider') {
+          return 'text/x-stsrc'; // smalltalk-like
         }
         return 'clike';
       },
@@ -221,6 +237,9 @@ gegl_op_class_init (GeglOpClass *klass)
         }
         if (this.component.language === 'c') {
           return this.$.ImgfloCExample.textContent.trim();
+        }
+        if (this.component.language === 'supercollider') {
+          return this.$.SuperColliderExample.textContent.trim();
         }
       },
       themeChanged: function () {
