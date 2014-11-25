@@ -35,6 +35,7 @@
   },
   "noflo": {
     "components": {
+      "AuthorizationRefreshToken": "components/AuthorizationRefreshToken.coffee",
       "BlobToEntry": "components/BlobToEntry.coffee",
       "CheckSyncState": "components/CheckSyncState.coffee",
       "ClearUserData": "components/ClearUserData.coffee",
@@ -77,6 +78,7 @@
       "UpdateFromTree": "components/UpdateFromTree.coffee"
     },
     "graphs": {
+      "AuthorizationRefresh": "graphs/AuthorizationRefresh.fbp",
       "ContextStorage": "graphs/ContextStorage.fbp",
       "Delete": "graphs/Delete.fbp",
       "DirectRuntime": "graphs/DirectRuntime.fbp",
@@ -150,7 +152,9 @@
     "components/EnsureLocalRuntimes.coffee",
     "components/GetRemoteProjects.coffee",
     "graphs/Delete.fbp",
-    "components/PopulateExampleData.coffee"
+    "components/PopulateExampleData.coffee",
+    "graphs/AuthorizationRefresh.fbp",
+    "components/AuthorizationRefreshToken.coffee"
   ],
   "json": [
     "component.json"
@@ -178,6 +182,7 @@
     "graphs/ProjectRuntime.fbp",
     "graphs/GithubSynchronization.fbp",
     "graphs/Save.fbp",
-    "graphs/Delete.fbp"
+    "graphs/Delete.fbp",
+    "graphs/AuthorizationRefresh.fbp"
   ]
 }
