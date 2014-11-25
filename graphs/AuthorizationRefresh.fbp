@@ -1,0 +1,29 @@
+INPORT=Dispatch.IN:IN
+INPORT=LoadUser.START:START
+OUTPORT=Merge.OUT:USER
+
+'refreshToken' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Initial persistent user data
+LoadUser(ui/LoadUserData) USER -> IN Merge(core/Merge)
+# In case of errors reset
+LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
+
+# Login handling
+'$NOFLO_OAUTH_PROVIDER' -> SITE RefreshToken(ui/AuthorizationRefreshToken)
+'$NOFLO_OAUTH_SERVICE_USER' -> SITE GetRemoteUser(ui/GetRemoteUser)
+'$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID RefreshToken
+Dispatch OUT[0] -> REFRESHTOKEN RefreshToken
+RefreshToken TOKEN -> TOKEN GetRemoteUser
+GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
+StoreUser USER -> IN Merge
+
+Login ERROR -> IN Show(core/Output)
+GetRemoteUser ERROR -> IN Show(core/Output)
+
+# On browser we need to check login state immediately
+'' -> CHECK RefreshToken
+
+# Logout handling
+#Dispatch OUT[2] -> CLEAR Reset
+#Reset USER -> IN Merge
