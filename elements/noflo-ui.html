@@ -106,6 +106,9 @@
             window.location.hash = '#project/' + encodeURIComponent(event.detail.id) + '/' + encodeURIComponent(event.detail.main);
           }, 2);
         }.bind(this));
+        this.$.main.addEventListener('refreshToken', function (event) {
+          this.fire('user:refreshToken', this.$.main.oauthTokenRefresh);
+        }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
           this.fire('runtime:sendGraph', event.detail);
@@ -375,6 +378,30 @@
         this.$.main.oauthTokenAccess = user['oauth2-token-access'];
         this.$.main.oauthTokenRefresh = user['oauth2-token-refresh'];
         this.$.main.oauthTokenExpiresIn = user['oauth2-token-expires-in'];
+        this.checkTokenExpiration(this.$.main.oauthTokenExpiresIn, this.$.main.oauthTokenRefresh, this.$.main.user);
+      },
+      checkTokenExpiration: function(expires_in, refresh_token, user) {
+        if (user === null || user === undefined) {
+          return;
+        }
+        if (expires_in === '' || expires_in === null || expires_in === undefined) {
+          return;
+        }
+        if (refresh_token === '' || refresh_token === null, refresh_token === undefined) {
+          return;
+        }
+        main = this;
+        function tick() {
+          interval = 10; // increase seconds and tick every n seconds
+          expiration = 30; // refresh token n seconds before it expires
+          expires_in = expires_in - interval;
+          if (expires_in > expiration) { 
+            setTimeout(tick, 1000 * interval); 
+          } else {
+            main.fire('user:refreshToken', refresh_token);
+          }
+        }
+        tick();
       },
       showError: function (context) {
         if (context.error && context.error.message) {
