@@ -78,7 +78,6 @@
       "UpdateFromTree": "components/UpdateFromTree.coffee"
     },
     "graphs": {
-      "AuthorizationRefresh": "graphs/AuthorizationRefresh.fbp",
       "ContextStorage": "graphs/ContextStorage.fbp",
       "Delete": "graphs/Delete.fbp",
       "DirectRuntime": "graphs/DirectRuntime.fbp",
@@ -153,7 +152,6 @@
     "components/GetRemoteProjects.coffee",
     "graphs/Delete.fbp",
     "components/PopulateExampleData.coffee",
-    "graphs/AuthorizationRefresh.fbp",
     "components/AuthorizationRefreshToken.coffee"
   ],
   "json": [
@@ -183,6 +181,5 @@
     "graphs/GithubSynchronization.fbp",
     "graphs/Save.fbp",
     "graphs/Delete.fbp",
-    "graphs/AuthorizationRefresh.fbp"
   ]
 }
