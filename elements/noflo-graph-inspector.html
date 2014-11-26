@@ -173,8 +173,10 @@
           ga('send', 'event', 'button', 'click', 'saveGraphProperties');
         }
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
-        this.preview = this.previewEditor.getValue();
-        env.content = this.preview;
+        if (this.previewEditor) {
+            this.preview = this.previewEditor.getValue();
+            env.content = this.preview;
+        }
         env.type = this.type;
         this.graph.setProperties({
           environment: env,
