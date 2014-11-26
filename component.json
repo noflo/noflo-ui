@@ -180,6 +180,6 @@
     "graphs/ProjectRuntime.fbp",
     "graphs/GithubSynchronization.fbp",
     "graphs/Save.fbp",
-    "graphs/Delete.fbp",
+    "graphs/Delete.fbp"
   ]
 }
