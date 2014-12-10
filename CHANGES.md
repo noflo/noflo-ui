@@ -1,7 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.6.0 (git master)
+# 0.7.0 (git master)
+
+# 0.6.0 (2014 December 10)
+
+* Add support for [sndflo runtime](http://github.com/jonnor/sndflo)
+* Allow using a custom build for noflo-browser iframe runtimes
+* Fix unable to change runtime type for a graph
 
 # 0.5.3 (2014 November 18)
 
