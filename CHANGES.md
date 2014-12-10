@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.7.0 (git master)
+# 0.8.0 (git master)
+
+# 0.7.0 (2014 December 10)
+
+* Allow adding runtimes manually
 
 # 0.6.0 (2014 December 10)
 
