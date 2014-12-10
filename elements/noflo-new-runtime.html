@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-add-runtime.html">
 <polymer-element name="noflo-new-runtime" class="modal-content" on-click="{{ close }}">
   <template>
     <style>
@@ -96,6 +97,7 @@
         <input type="text" readonly value="{{ user.uuid }}">
       </label>
       <div class="toolbar">
+        <button on-click="{{ addRuntime }}">Add manually</button>
         <button on-click="{{ close }}">Close</button>
       </div>
     </div>
@@ -161,6 +163,14 @@
           return;
         }
         this.parentNode.removeChild(this);
+      },
+      addRuntime: function (event) {
+        event.preventDefault();
+        this.runtimeAdd = document.createElement('noflo-add-runtime');
+        document.body.appendChild(this.runtimeAdd);
+        this.runtimeAdd.addEventListener('new', function(event) {
+            this.fire("addRuntime", event.detail);
+        }.bind(this));
       }
     });
   </script>

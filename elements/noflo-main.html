@@ -637,6 +637,11 @@
           return;
         }
         var dialog = document.createElement('noflo-new-runtime');
+        dialog.addEventListener('addRuntime', function(event) {
+          var runtime = event.detail;
+          this.userRuntimes.push(runtime);
+          this.runtimes.push(runtime);
+        }.bind(this));
         dialog.user = this.user;
         document.body.appendChild(dialog);
       },
@@ -646,9 +651,12 @@
           return;
         }
         this.runtimeAdd = document.createElement('noflo-add-runtime');
-        this.runtimeAdd.userRuntimes = this.userRuntimes;
-        this.runtimeAdd.runtimes = this.runtimes;
         document.body.appendChild(this.runtimeAdd);
+        this.runtimeAdd.addEventListener('new', function(event) {
+          var runtime = event.detail;
+          this.userRuntimes.push(runtime);
+          this.runtimes.push(runtime);
+        }.bind(this));
       },
       checkProject: function (project) {
         if (project.main) {
