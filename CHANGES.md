@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.8.0 (git master)
+# 0.7.2 (git dev)
+
+# 0.7.1 (2014 December 11)
+
+* Update to the-graph 0.3.7
 
 # 0.7.0 (2014 December 10)
 
