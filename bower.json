@@ -1,7 +1,7 @@
 {
   "name": "noflo-ui",
   "main": "index.js",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "homepage": "https://github.com/noflo/noflo-ui",
   "authors": [
     "Henri Bergius <henri.bergius@iki.fi>"
@@ -17,8 +17,8 @@
     "spec"
   ],
   "dependencies": {
-    "polymer": "0.5.1",
-    "the-graph": "0.3.7",
+    "polymer": "0.5.2",
+    "the-graph": "0.3.8",
     "font-awesome": "~4.2.0",
     "codemirror": "~4.5.0",
     "coffee-script": "*",
