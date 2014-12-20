@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.7.3 (git dev)
+# 0.7.4 (git dev)
+
+# 0.7.3 (2014 December 20)
+
+* fix klay deps
 
 # 0.7.2 (2014 December 19)
 
