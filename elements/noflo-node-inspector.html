@@ -361,8 +361,11 @@
               <number-scrubber name="{{ port.name }}" value="{{ port.value }}" step="0.01" data-type="number" on-scrubstart="{{ scrubStart }}" on-scrub="{{updateValue}}" on-scrubend="{{ scrubEnd }}">#</number-scrubber>
               <input type="text" data-type="number" name="{{ port.name }}" value="{{ port.value }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}" />
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && !port.values }}">
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'file' && !port.values }}">
               <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-keydown="{{ checkEnter }}" on-change="{{ updateValue }}" />
+            </template>
+            <template if="{{ port.type == 'file' }}">
+              <input type="file" name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}"><i class="fa fa-ban"></i></input>
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
@@ -503,6 +506,14 @@
             return parseInt(input.value, 10);
           case 'date':
             return new Date(input.value);
+          case 'file':
+            return function(callback) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    return callback(reader.result);
+                };
+                reader.readAsDataURL(input.files[0]);
+            };
           default:
             return input.value;
         }
@@ -553,7 +564,7 @@
           return true;
         };
 
-        if (validatePortValue(port.type, value)) {
+        var setPortValue = function(value) {
           if (!this.scrubbing) {
             this.graph.startTransaction('iipchange');
           }
@@ -561,6 +572,15 @@
           this.graph.addInitial(value, this.node.id, name);
           if (!this.scrubbing) {
             this.graph.endTransaction('iipchange');
+          }
+        }.bind(this);
+
+        if (validatePortValue(port.type, value)) {
+          if (typeof value === 'function') {
+            // async callback
+            value(setPortValue);
+          } else {
+            setPortValue(value);
           }
           sender.parentNode.parentNode.classList.remove('error');
         } else {
