@@ -361,11 +361,12 @@
               <number-scrubber name="{{ port.name }}" value="{{ port.value }}" step="0.01" data-type="number" on-scrubstart="{{ scrubStart }}" on-scrub="{{updateValue}}" on-scrubend="{{ scrubEnd }}">#</number-scrubber>
               <input type="text" data-type="number" name="{{ port.name }}" value="{{ port.value }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}" />
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'file' && !port.values }}">
+            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'uri' && !port.values }}">
               <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-keydown="{{ checkEnter }}" on-change="{{ updateValue }}" />
             </template>
-            <template if="{{ port.type == 'file' }}">
-              <input type="file" name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}"><i class="fa fa-ban"></i></input>
+            <template if="{{ port.type == 'uri' }}">
+              <input type="text" name="{{ port.name }}" data-type="string" on-change="{{ updateValue }}"></input>
+              <input type="file" name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}"></input>
             </template>
             <template if="{{ port.type != 'bang' && port.value != undefined }}">
               <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
@@ -506,7 +507,7 @@
             return parseInt(input.value, 10);
           case 'date':
             return new Date(input.value);
-          case 'file':
+          case 'uri':
             return function(callback) {
                 var reader = new FileReader();
                 reader.onload = function() {
