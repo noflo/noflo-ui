@@ -89,7 +89,7 @@
         var type = this.graph.properties.environment.type;
 
         // Insert button to launch new runtime for noflo-browser
-        var launchNewRuntime = {
+        var launchNewBrowserRuntime = {
           id: 'new-browser-runtime',
           label: 'Launch new runtime',
           address: "WebRTC"
@@ -99,9 +99,18 @@
           label: 'Custom iframe URL',
           address: "myapp.html"
         };
+        var launchImgfloHerokuRuntime = {
+          id: 'imgflo-heroku-new',
+          label: 'New imgflo app on Heroku',
+          address: "myapp.herokuapps.com"
+        };
+
         if (type == 'noflo-browser') {
-          this.available.push(launchNewRuntime);
+          this.available.push(launchNewBrowserRuntime);
           this.available.push(customIframeRuntime);
+        }
+        if (type == 'imgflo') {
+           this.available.push(launchImgfloHerokuRuntime);
         }
 
         this.runtimes.forEach(function (rt) {
@@ -128,6 +137,9 @@
           this.close();
           this.addIframeRuntime();
           return;
+        } else if (id == 'imgflo-heroku-new') {
+          this.close();
+          this.deployHeroku("https://github.com/jonnor/imgflo");
         }
         this.runtimes.forEach(function (runtime) {
           if (runtime.id === id) {
@@ -155,6 +167,13 @@
           this.fire('runtime', runtime);
         }.bind(this));
         document.body.appendChild(this.addIframeModal);
+      },
+      deployHeroku: function (template) {
+        // Send user over to Heroku
+        // The deployed runtime will then have a link which takes them back to Flowhub
+        // TODO: inform the user about this process
+        var baseUrl = "https://dashboard.heroku.com/new?template=";
+        document.location.href = baseUrl + encodeURIComponent(template);
       },
       bgClick: function (event) {
         // Don't close if clicking within container
