@@ -94,7 +94,7 @@ describe 'Editing a graph', ->
         setTimeout checkResults, 1000
       setTimeout checkResults, 1000
     it 'should add a node when result is clicked', (done) ->
-      @timeout 3000
+      @timeout 7000
       context = ui.shadowRoot.querySelector 'noflo-context'
       chai.expect(context).to.be.an 'object'
       results = context.shadowRoot.querySelector 'noflo-search-library-results'
@@ -106,4 +106,4 @@ describe 'Editing a graph', ->
         nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
         chai.expect(nodes.length).to.equal 1
         done()
-      , 1000
+      , 3000
