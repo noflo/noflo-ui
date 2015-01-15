@@ -332,6 +332,14 @@
         dialog.operation = operation;
         document.body.appendChild(dialog);
         dialog.addEventListener('sync', function (event) {
+          if (typeof ga === 'function') {
+            if (event.detail.push.length) {
+              ga('send', 'event', 'button', 'click', 'pushGithub');
+            }
+            if (event.detail.pull.length) {
+              ga('send', 'event', 'button', 'click', 'pullGithub');
+            }
+          }
           this.fire('syncDecision', event.detail);
         }.bind(this));
       }
