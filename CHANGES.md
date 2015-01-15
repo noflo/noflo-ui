@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.7.4 (git dev)
+# 0.7.5 (git dev)
+
+# 0.7.4 (2015 January 15)
+
+* alter some tests
 
 # 0.7.3 (2014 December 20)
 
