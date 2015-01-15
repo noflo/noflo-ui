@@ -40,7 +40,7 @@ describe 'Editing a graph', ->
     it 'should have the IFRAME runtime selected', ->
       chai.expect(runtime.runtime).to.be.an 'object'
     it 'should connect automatically to the IFRAME provider', (done) ->
-      @timeout 30000
+      @timeout 45000
       if runtime.online
         chai.expect(runtime.online).to.equal true
         done()

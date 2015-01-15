@@ -3,7 +3,7 @@ describe 'NoFlo UI initialization', ->
   doc = null
   db = null
   before (done) ->
-    @timeout 40000
+    @timeout 60000
 
     unless localStorage.getItem 'grid-token'
       # Fake login
@@ -19,7 +19,9 @@ describe 'NoFlo UI initialization', ->
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
-      done()
+      setTimeout ->
+        done()
+      , 5000
   after ->
     db.close()
 
