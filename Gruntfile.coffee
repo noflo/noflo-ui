@@ -204,6 +204,7 @@ module.exports = ->
             'bower_components/react.animate-djdeath/*.js'
             'bower_components/requirejs/*.js'
             'bower_components/rtc/dist/rtc.js'
+            'bower_components/rtc/dist/rtc.js.map'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
             'bower_components/webcomponentsjs/webcomponents.js'
