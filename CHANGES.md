@@ -5,7 +5,8 @@ NoFlo UI ChangeLog
 
 # 0.7.5 (2015 January 15)
 
-* fix GitHub pull and synchronization
+* Offer https when loaded on app.flowhub.io
+* Fix GitHub pull and synchronization
 
 # 0.7.4 (2015 January 15)
 
