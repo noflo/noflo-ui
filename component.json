@@ -31,7 +31,7 @@
     "the-grid/flowhub-registry": "*",
     "jonnor/microflo": "*",
     "gjohnson/uuid": "*",
-    "forresto/octo": "*"
+    "bergie/octo": "*"
   },
   "noflo": {
     "components": {
