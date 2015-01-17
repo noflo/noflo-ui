@@ -1,7 +1,7 @@
 {
   "name": "noflo-ui",
   "description": "NoFlo Development Environment",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "author": {
     "name": "Henri Bergius",
     "email": "henri.bergius@iki.fi"
@@ -18,7 +18,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "mocha": "~2.0.1",
+    "mocha": "~2.1.0",
     "chai": "~1.10.0",
     "grunt": "^0.4.5",
     "grunt-bower-install-simple": "^1.0.2",

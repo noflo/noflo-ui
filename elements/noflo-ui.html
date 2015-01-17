@@ -52,15 +52,14 @@
     <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
-    <noflo-alert id="alert" on-click="{{ hideAlert }}" iserror="{{ messageIsError }}">{{ message }}</noflo-alert>
+    <noflo-alert id="alert" on-click="{{ hideAlert }}"></noflo-alert>
   </template>
   <script>
     Polymer('noflo-ui', {
       width: window.innerWidth,
       height: window.innerHeight,
       ctx: {},
-      message: '',
-      messageIsError: false,
+      dontAutoHideAlert: false,
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
           this.fire('user:logout', true);
@@ -238,6 +237,15 @@
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
       },
+      attached: function () {
+        // Offer HTTPS
+        if (window.location.origin === 'http://app.flowhub.io') {
+          this.showProgress({
+            offerHTTPS: true,
+            dontAutoHideAlert: true
+          });
+        }
+      },
       context: function (context) {
         if (context.state) {
           switch (context.state) {
@@ -375,15 +383,18 @@
       },
       showError: function (context) {
         if (context.error && context.error.message) {
-          this.message = context.error.message;
-          this.messageIsError = true;
+          this.$.alert.message = context.error.message;
+          this.$.alert.isError = true;
+          this.$.alert.offerHTTPS = false;
           this.$.alert.classList.add('show');
         }
       },
       showProgress: function (context) {
-        if (context.state) {
-          this.message = context.state;
-          this.messageIsError = false;
+        if (context.state || context.offerHTTPS) {
+          this.$.alert.message = context.state || "";
+          this.$.alert.isError = false;
+          this.$.alert.offerHTTPS = context.offerHTTPS || false;
+          this.dontAutoHideAlert = context.dontAutoHideAlert || false;
           this.$.alert.classList.add('show');
         }
       },
@@ -391,6 +402,7 @@
         this.$.alert.classList.remove('show');
       },
       hideAlertSoon: function () {
+        if (this.dontAutoHideAlert) { return; }
         window.setTimeout(function(){
           this.hideAlert();
         }.bind(this), 1300);

@@ -1,4 +1,4 @@
-<polymer-element name="noflo-alert" attributes="iserror">
+<polymer-element name="noflo-alert" attributes="message isError offerHTTPS">
   <template>
     <style>
       :host {
@@ -52,22 +52,30 @@
         }
       }
     </style>
-    <template if="{{ iserror }}">
+    <template if="{{ isError }}">
       <i class="fa fa-warning"></i>
     </template>
-    <template if="{{ !iserror }}">
+    <template if="{{ !isError && !offerHTTPS }}">
       <i class="fa fa-spinner fa-spin"></i>
     </template>
+    <template if="{{ offerHTTPS }}">
+      <i class="fa fa-lock"></i>
+      This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="http://docs.flowhub.io/security-with-https-and-wss/">about</a>
+    </template>
     <content></content>
-    <template if="{{ iserror }}">
+    {{ message }}
+    <template if="{{ isError }}">
       <a href="{{ _hack_ }}#" class="button">go home</a>
     </template>
   </template>
   <script>
     // _hack_ -> https://github.com/Polymer/polymer/issues/651
     Polymer('noflo-alert', {
-      iserrorChanged: function () {
-        if (this.iserror) {
+      message: "",
+      isError: false,
+      offerHTTPS: false,
+      isErrorChanged: function () {
+        if (this.isError) {
           this.classList.add('error');
         } else {
           this.classList.remove('error');
