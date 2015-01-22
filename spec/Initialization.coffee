@@ -3,7 +3,7 @@ describe 'NoFlo UI initialization', ->
   doc = null
   db = null
   before (done) ->
-    @timeout 60000
+    @timeout 75000
 
     unless localStorage.getItem 'grid-token'
       # Fake login
@@ -27,7 +27,7 @@ describe 'NoFlo UI initialization', ->
 
   describe 'on startup', ->
     it 'should start the NoFlo process', (done) ->
-      @timeout 60000
+      @timeout 75000
       checkNoFlo = ->
         chai.expect(win.nofloStarted).to.be.a 'boolean'
         if win.nofloDBReady
