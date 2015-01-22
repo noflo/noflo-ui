@@ -34,7 +34,6 @@ THE SOFTWARE.
 .cm-s-noflo .CodeMirror-gutters {
   background-color: black;
   border-right: 1px solid hsla(190, 90%, 80%, 0.1);
-  width: 35px;
 }
 
 .cm-s-noflo .CodeMirror-linenumber {

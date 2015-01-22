@@ -191,6 +191,8 @@ module.exports = ->
             'bower_components/codemirror/lib/*.css'
             'bower_components/codemirror/theme/mdn-like.css'
             'bower_components/coffee-script/extras/*.js'
+            'bower_components/coffeelint/js/coffeelint.js'
+            'bower_components/jshint/dist/jshint.js'
             'bower_components/ease-djdeath/*.js'
             'bower_components/font-awesome/css/*.css'
             'bower_components/font-awesome/**/*.woff'

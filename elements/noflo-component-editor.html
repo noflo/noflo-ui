@@ -39,6 +39,7 @@
       }
     </style>
     <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="../bower_components/codemirror/addon/lint/lint.css">
     <link rel="stylesheet" href="../bower_components/codemirror/theme/mdn-like.css">
     <link rel="stylesheet" href="../css/codemirror-noflo.css">
     <section id="code">
@@ -147,11 +148,7 @@ SynthDef("MyFilter", {
 )
     </script>
   </template>
-  <script src="../bower_components/codemirror/lib/codemirror.js"></script>
-  <script src="../bower_components/codemirror/mode/javascript/javascript.js"></script>
-  <script src="../bower_components/codemirror/mode/coffeescript/coffeescript.js"></script>
-  <script src="../bower_components/codemirror/mode/clike/clike.js"></script>
-  <script src="../bower_components/codemirror/mode/smalltalk/smalltalk.js"></script>
+
   <script>
     Polymer('noflo-component-editor', {
       component: null,
@@ -175,26 +172,17 @@ SynthDef("MyFilter", {
           this.component.code = this.getExampleCode();
         }
 
-        this.codeEditor = CodeMirror(this.$.code_editor, {
-          lineNumbers: true,
-          value: this.component.code || '',
-          mode: this.getMirrorMode(this.component.language),
-          theme: this.getMirrorTheme(),
-          readOnly: this.component.project ? false : true
-        });
+        codeOptions = this.getMirrorOptions(this.component, this.component.code);
+        this.codeEditor = CodeMirror(this.$.code_editor, codeOptions);
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
           this.component.changed = true;
           this.fire('changed', this.component);
         }.bind(this));
+
         this.$.tests_editor.innerHTML = '';
-        this.testsEditor = CodeMirror(this.$.tests_editor, {
-          lineNumbers: true,
-          value: this.component.tests || '',
-          mode: this.getMirrorMode(this.component.language),
-          theme: this.getMirrorTheme(),
-          readOnly: this.component.project ? false : true
-        });
+        testOptions = this.getMirrorOptions(this.component, this.component.tests);
+        this.testsEditor = CodeMirror(this.$.tests_editor, testOptions);
         this.testsEditor.on('change', function () {
           this.component.tests = this.testsEditor.getValue();
           this.component.changed = true;
@@ -208,6 +196,23 @@ SynthDef("MyFilter", {
       },
       heightChanged: function () {
         this.setSize();
+      },
+      getMirrorOptions: function (component, value) {
+        var options = {
+          lineNumbers: true,
+          value: value || '',
+          mode: this.getMirrorMode(component.language),
+          theme: this.getMirrorTheme(),
+          readOnly: component.project ? false : true
+        }
+        var canLint = function (language) {
+          return (language === 'javascript' || language === 'coffeescript');
+        };
+        if (canLint(component.language) && !options.readOnly) {
+          options.gutters = ['CodeMirror-lint-markers'];
+          options.lint = true;
+        }
+        return options;
       },
       getMirrorMode: function (language) {
         if (language === 'coffeescript' || language === 'javascript') {
