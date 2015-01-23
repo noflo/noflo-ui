@@ -408,8 +408,8 @@ module.exports = ->
     'inlinelint'
     'build'
     'coffee'
-    # 'connect'
-    # 'saucelabs-mocha'
+    'connect'
+    'saucelabs-mocha'
   ]
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
