@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.7.9 (git dev)
+# 0.7.10 (git dev)
+
+# 0.7.9 (2015 January 23)
+
+* Match new superagent API in bergie/octo
 
 # 0.7.8 (2015 January 23)
 
