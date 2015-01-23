@@ -403,7 +403,14 @@ module.exports = ->
                           'noflo_browser:main', 'noflo_browser:preview',
                           'copy', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
-  @registerTask 'test', ['coffeelint:app', 'inlinelint', 'build', 'coffee', 'connect', 'saucelabs-mocha']
+  @registerTask 'test', [
+    'coffeelint:app'
+    'inlinelint'
+    'build'
+    'coffee'
+    'connect'
+    'saucelabs-mocha'
+  ]
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']

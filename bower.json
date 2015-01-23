@@ -16,7 +16,8 @@
     "spec"
   ],
   "dependencies": {
-    "polymer": "0.5.3",
+    "polymer": "0.5.2",
+    "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
     "the-graph": "0.3.10",
     "font-awesome": "~4.3.0",
     "codemirror": "~4.11.0",
