@@ -31,7 +31,8 @@
     "the-grid/flowhub-registry": "*",
     "jonnor/microflo": "*",
     "gjohnson/uuid": "*",
-    "bergie/octo": "*"
+    "bergie/octo": "*",
+    "visionmedia/superagent": "0.21.0"
   },
   "noflo": {
     "components": {

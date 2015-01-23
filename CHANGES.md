@@ -8,6 +8,7 @@ NoFlo UI ChangeLog
 * Enabled JSHint and CoffeeLint addons for component editor (#271)
 * the-graph 0.3.10
 * ~~Polymer 0.5.3~~ (doesn't work in Safari 7-8)
+* Specify superagent version (API changes after 0.21.0)
 
 # 0.7.6 (2015 January 15)
 

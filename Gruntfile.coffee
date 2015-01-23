@@ -188,6 +188,7 @@ module.exports = ->
         ,
           src: [
             'bower_components/codemirror/**/*.js'
+            'bower_components/codemirror/addon/lint/lint.css'
             'bower_components/codemirror/lib/*.css'
             'bower_components/codemirror/theme/mdn-like.css'
             'bower_components/coffee-script/extras/*.js'
@@ -408,8 +409,8 @@ module.exports = ->
     'inlinelint'
     'build'
     'coffee'
-    'connect'
-    'saucelabs-mocha'
+    # 'connect'
+    # 'saucelabs-mocha'
   ]
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
