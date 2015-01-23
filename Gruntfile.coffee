@@ -407,10 +407,10 @@ module.exports = ->
   @registerTask 'test', [
     'coffeelint:app'
     'inlinelint'
-    'build'
-    'coffee'
-    'connect'
-    'saucelabs-mocha'
+    # 'build'
+    # 'coffee'
+    # 'connect'
+    # 'saucelabs-mocha'
   ]
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
