@@ -1,7 +1,6 @@
 {
   "name": "noflo-ui",
   "main": "index.js",
-  "version": "0.7.6",
   "homepage": "https://github.com/noflo/noflo-ui",
   "authors": [
     "Henri Bergius <henri.bergius@iki.fi>"
@@ -17,9 +16,9 @@
     "spec"
   ],
   "dependencies": {
-    "polymer": "0.5.2",
-    "the-graph": "0.3.8",
-    "font-awesome": "~4.2.0",
+    "polymer": "0.5.3",
+    "the-graph": "0.3.10",
+    "font-awesome": "~4.3.0",
     "codemirror": "~4.11.0",
     "coffee-script": "*",
     "coffeelint": "clutchski/coffeelint#gh-pages",
