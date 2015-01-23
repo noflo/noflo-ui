@@ -344,7 +344,7 @@ module.exports = ->
           browsers: [
             browserName: 'googlechrome'
             platform: 'OS X 10.8'
-            version: '37'
+            version: '39'
           ,
             browserName: 'safari'
             platform: 'OS X 10.9'
@@ -360,7 +360,7 @@ module.exports = ->
           ,
             browserName: 'firefox'
             platform: 'Windows 7',
-            version: '33'
+            version: '34'
           ]
           build: process.env.TRAVIS_JOB_ID
           testname: 'NoFlo UI browser tests'
@@ -409,8 +409,8 @@ module.exports = ->
     'inlinelint'
     'build'
     'coffee'
-    # 'connect'
-    # 'saucelabs-mocha'
+    'connect'
+    'saucelabs-mocha'
   ]
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
