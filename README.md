@@ -47,6 +47,8 @@ This will provide you with all the needed development dependencies. Now you can 
 
     $ grunt build
 
+You have to run this command as an administrator on Windows.
+
 If you prefer, you can also start a watcher process that will do a rebuild whenever one of the files changes:
 
     $ grunt watch
