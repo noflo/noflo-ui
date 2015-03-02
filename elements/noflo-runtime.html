@@ -102,17 +102,17 @@
       <template if="{{ runtime }}">
         <i id="runtime_icon" class="fa fa-{{ icon }}"></i>
         <div id="address" class="{{ { online: online } | tokenList }}">
-          <button on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
+          <button title="Connect/Disconnect" on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
           <h2>{{ runtime.definition.address }}</h2>
-          <button on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
+          <button title="Change Runtime" on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
         </div>
         <div id="runcontrol">
           <template if="{{ online }}">
             <template if="{{ execution.running }}">
-              <button class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
+              <button title="Stop" class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
             </template>
             <template if="{{ execution.running == false }}">
-              <button class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
+              <button title="Start" class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
             </template>
             <h2>{{ execution.label }}</h2>
           </template>
