@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 # 0.7.10 (git dev)
 
+* More readable colors in runtime selector
+
 # 0.7.9 (2015 January 23)
 
 * Match new superagent API in bergie/octo
