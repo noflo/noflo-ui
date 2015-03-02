@@ -68,7 +68,7 @@
           <template repeat="{{ runtime in available }}">
           <li on-click="{{ selectRuntime }}" data-id="{{ runtime.id }}" class="{{ runtime.type }}">
             <h2>{{ runtime.label }}</h2>
-            <p>{{ runtime.address }}</p>
+            <p>{{ runtime.address }}.<br />Seen {{ runtime.seenHoursAgo }}h ago</p>
           </li>
           </template>
         </ul>
@@ -121,9 +121,22 @@
             this.available.push(rt);
           }
         }.bind(this));
+        this.available.forEach(this.checkRuntimeSeen.bind(this));
       },
       detached: function () {
         document.getElementById('container').classList.remove('blur');
+      },
+      // similiar to in noflo-main.html
+      checkRuntimeSeen: function (runtime) {
+        if (!runtime.seen) {
+          runtime.seen = Date.now();
+        }
+        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000));
+        if ((runtime.seenHoursAgo / 24) > 31) {
+          // We haven't seen this runtime in over a month, don't show it
+          var index = this.available.indexOf(runtime);
+          this.available.splice(index,1);
+        }
       },
       selectRuntime: function (event, details, sender) {
         var id = sender.getAttribute('data-id');
