@@ -95,14 +95,13 @@ exports.getComponent = ->
     process: (event, payload) ->
       return unless event is 'data'
       return unless payload.runtime
-      if currentContext?.runtime
+      if currentContext?.runtime and currentContext.graphs[0] isnt payload.graphs[0]
+        currentContext.runtime.removeListener 'capabilities', sender
         if currentContext.runtime is payload.runtime
           # Same runtime, different graph. Reconnect to clear caches
-          currentContext.runtime.removeListener 'capabilities', sender
           currentContext.runtime.reconnect()
         else
           # Different runtime, different graph. Disconnect old runtime connection
-          currentContext.runtime.removeListener 'capabilities', sender
           currentContext.runtime.disconnect()
 
       # Prepare to send data
