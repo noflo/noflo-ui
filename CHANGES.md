@@ -1,8 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.7.10 (git dev)
+# 0.9.0 (git dev)
 
+# 0.8.0
+
+* Request re-login if there is no token, fixes login error with Pro plans
+* Fix component editing (Stefan Sauer)
+* Add "seen ago" label also on runtime selector (Stefan Sauer)
 * More readable colors in runtime selector
 
 # 0.7.9 (2015 January 23)
