@@ -121,6 +121,16 @@
             this.requestLogin = true;
             return;
           }
+          if (!user.github || !user.github.token) {
+            if (user.plan.type !== 'free') {
+              this.statusText = 'Your GitHub token doesn\'t have private repository access, please re-login';
+              this.requestLogin = true;
+              return;
+            }
+            this.statusText = 'Your GitHub token doesn\'t have repository access, please re-login';
+            this.requestLogin = true;
+            return;
+          }
           this.checkGithubUser(user.github.token, function (err, scopes) {
             console.log(this.newPlan, scopes);
             this.$.refresh.classList.remove('fa-spin');
