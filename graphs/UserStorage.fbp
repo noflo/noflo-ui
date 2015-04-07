@@ -33,7 +33,7 @@ GetRemoteUser ERROR -> IN Show(core/Output)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER ProLogin
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID ProLogin
 'github_private' -> PROVIDER ProLogin
-'github' -> SCOPE ProLogin
+'github_private' -> SCOPE ProLogin
 Dispatch OUT[1] -> LOGIN ProLogin
 ProLogin TOKEN -> TOKEN ProGetRemoteUser
 ProGetRemoteUser USER -> USER StoreUser
