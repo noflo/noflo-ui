@@ -5,16 +5,21 @@
     <title>NoFlo web preview</title>
 
     <!-- Polyfills -->
-    <script src="http://www.polymer-project.org/polymer-all/PointerEvents/pointerevents.js"></script>
-
     <script src="../browser/noflo-ui.js"></script>
     <script src="./browser/noflo-noflo-runtime-iframe/runtime/network.js"></script>
+    <script src="../bower_components/coffee-script/extras/coffee-script.js"></script>
+    <script>
+      window.NofloIframeRuntime({
+        baseDir: 'noflo-ui'
+      });
+    </script>
     <style>
       body {
         padding: 0px;
         margin: 0px;
-        background-color: hsla(225,10%,15%,.98);
+        background-color: black;
         color: #ffffff;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         font-family: proxima-nova-regular,"Helvetica Neue",Helvetica,Arial,sans-serif;
       }
     </style>
