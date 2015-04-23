@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 # 0.9.0 (git dev)
 
+* Support for toggling the `secure` option for edges
+
 # 0.8.0
 
 * Request re-login if there is no token, fixes login error with Pro plans
