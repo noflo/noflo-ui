@@ -1,6 +1,9 @@
 <polymer-element name="noflo-edge-menu" attributes="edges" class="the-card-content sticky-head">
   <template>
     <style>
+      ul.toolbar2right {
+        right: 0px !important;
+      }
       ul.routes {
         margin: 0;
         margin-left: 0px;
@@ -98,6 +101,12 @@
       <h1 class="clear" on-click="{{ clear }}">{{ edges.length}} <template if="{{ edges.length > 1 }}">Edges</template><template if="{{ edges.length == 1 }}">Edge</template></h1>    
     </header>
     <ul class="toolbar toolbar2right">
+      <template if="{{ secure }}">
+        <li><button class="blue-button" on-click="{{ setUnsecure }}"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
+      </template>
+      <template if="{{ !secure }}">
+        <li><button class="blue-button" on-click="{{ setSecure }}"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
+      </template>
     </ul>
     <ul class="routes">
       <template repeat="{{ route in routes }}">
@@ -110,6 +119,19 @@
       edges: [],
       graph: null,
       routes: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10],
+      secure: false,
+      edgesChanged: function () {
+        if (!this.edges.length) {
+          return;
+        }
+        this.secure = true;
+        for (var i = 0; i < this.edges.length; i++) {
+          if (!this.edges[i].metadata.secure) {
+            this.secure = false;
+            return;
+          }
+        }
+      },
       clear: function (event) {
         event.preventDefault();
         var edge;
@@ -139,6 +161,24 @@
         }.bind(this));
 
         this.graph.endTransaction('changeroute');
+      },
+      setSecure: function (event, detail, sender) {
+        event.preventDefault();
+        this.toggleSecure(true);
+      },
+      setUnsecure: function (event, detail, sender) {
+        event.preventDefault();
+        this.toggleSecure(false);
+      },
+      toggleSecure: function (secure) {
+        this.graph.startTransaction('changesecure');
+        this.edges.forEach(function (edge) {
+          var meta = edge.metadata;
+          meta.secure = secure;
+          this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, meta);
+        }.bind(this));
+        this.graph.endTransaction('changesecure');
+        this.secure = secure;
       }
     });
   </script>
