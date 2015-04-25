@@ -1,7 +1,7 @@
 noflo = require 'noflo'
 
 prepareContent = (type, local) ->
-  return local.code if type is 'component'
+  return local.code if type in ['component', 'spec']
   def = local.toJSON()
   delete def.properties.sha
   delete def.properties.id
