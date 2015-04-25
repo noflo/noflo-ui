@@ -43,7 +43,7 @@ describe 'NoFlo UI initialization', ->
     it 'should have created the IndexedDB database', (done) ->
       indexedDB = win.overrideIndexedDB or win.indexedDB
       chai.expect(indexedDB).to.be.an 'object'
-      req = indexedDB.open 'noflo-ui', 3
+      req = indexedDB.open 'noflo-ui', 4
       req.onerror = ->
         chai.expect(true).to.equal false
         done()
@@ -62,3 +62,5 @@ describe 'NoFlo UI initialization', ->
       chai.expect(db.objectStoreNames.contains('components')).to.equal true
     it 'should have created the runtime store', ->
       chai.expect(db.objectStoreNames.contains('runtimes')).to.equal true
+    it 'should have created the spec store', ->
+      chai.expect(db.objectStoreNames.contains('specs')).to.equal true
