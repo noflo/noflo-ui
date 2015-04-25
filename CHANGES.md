@@ -4,6 +4,7 @@ NoFlo UI ChangeLog
 # 0.9.0 (git dev)
 
 * Support for toggling the `secure` option for edges
+* Add support for [MsgFlo](https://github.com/the-grid/msgflo#readme)
 
 # 0.8.0
 
