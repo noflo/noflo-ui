@@ -7,6 +7,7 @@ NoFlo UI ChangeLog
 * Add support for [MsgFlo](https://github.com/the-grid/msgflo#readme)
 * Manually added runtimes support a secret string
 * Added support for `.hpp` (C++), `.c` (C), and `.py` (Python) files in GitHub synchronization
+* Added support for editing and synchronizing [fbp-spec](https://github.com/flowbased/fbp-spec) tests
 
 # 0.8.0
 
