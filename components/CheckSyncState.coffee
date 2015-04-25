@@ -41,7 +41,7 @@ processGraphsTree = (tree, objects, prefix) ->
 processComponentsTree = (tree, objects, prefix) ->
   components = tree.tree.filter (entry) ->
     return false unless entry.type is 'blob'
-    return false unless entry.path.match '.*\.(coffee|js)$'
+    return false unless entry.path.match '.*\.(coffee|js|hpp|c|py)$'
     true
   objects.components = objects.components.concat components.map (entry) ->
     entry.name = entry.path.substr 0, entry.path.indexOf '.'
@@ -49,6 +49,9 @@ processComponentsTree = (tree, objects, prefix) ->
     switch language
       when 'coffee' then entry.language = 'coffeescript'
       when 'js' then entry.language = 'javascript'
+      when 'hpp' then entry.language = 'c++'
+      when 'c' then entry.language = 'c'
+      when 'py' then entry.language = 'python'
       else entry.language = language
     entry.fullPath = "#{prefix}#{entry.path}"
     entry
@@ -106,6 +109,8 @@ createPath = (type, entity) ->
   switch entity.language
     when 'coffeescript' then return "components/#{name}." + 'coffee'
     when 'javascript' then return "components/#{name}.js"
+    when 'c++' then return "components/#{name}.hpp"
+    when 'python' then return "components/#{name}.py"
     else return "components/#{name}.#{entity.language}"
 
 addToPull = (type, local, remote, operations) ->

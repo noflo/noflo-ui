@@ -5,6 +5,8 @@ NoFlo UI ChangeLog
 
 * Support for toggling the `secure` option for edges
 * Add support for [MsgFlo](https://github.com/the-grid/msgflo#readme)
+* Manually added runtimes support a secret string
+* Added support for `.hpp` (C++), `.c` (C), and `.py` (Python) files in GitHub synchronization
 
 # 0.8.0
 
