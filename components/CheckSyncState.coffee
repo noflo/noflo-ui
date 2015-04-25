@@ -280,7 +280,7 @@ exports.getComponent = ->
 
       localOnly = data.project.specs.filter (localSpec) ->
         notPushed = true
-        for remoteSpec in objects.components
+        for remoteSpec in objects.specs
           notPushed = false if localSpec.sha is remoteSpec.sha
           notPushed = false if normalizeName(localSpec.name) is remoteSpec.name
         return notPushed
