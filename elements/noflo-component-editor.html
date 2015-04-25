@@ -152,6 +152,8 @@ SynthDef("MyFilter", {
   <script>
     Polymer('noflo-component-editor', {
       component: null,
+      spec: null,
+      project: null,
       width: null,
       height: null,
       codeEditor: null,
@@ -165,6 +167,16 @@ SynthDef("MyFilter", {
           this.style.display = 'none';
           return;
         }
+
+        this.spec = null;
+        if (this.project) {
+          this.project.specs.forEach(function (spec) {
+            if (spec.name === this.component.name) {
+              this.spec = spec;
+            }
+          }.bind(this));
+        }
+
         this.style.display = 'block';
         this.$.code_editor.innerHTML = '';
 
@@ -179,16 +191,20 @@ SynthDef("MyFilter", {
           this.component.changed = true;
           this.fire('changed', this.component);
         }.bind(this));
-
+        this.setSize();
+      },
+      specChanged: function () {
         this.$.tests_editor.innerHTML = '';
-        testOptions = this.getMirrorOptions(this.component, this.component.tests);
+        if (!this.spec) {
+          return;
+        }
+        testOptions = this.getMirrorOptions(this.spec, this.spec.code);
         this.testsEditor = CodeMirror(this.$.tests_editor, testOptions);
         this.testsEditor.on('change', function () {
-          this.component.tests = this.testsEditor.getValue();
-          this.component.changed = true;
-          this.fire('changed', this.component);
+          this.spec.code = this.testsEditor.getValue();
+          this.spec.changed = true;
+          this.fire('specschanged', this.spec);
         }.bind(this));
-
         this.setSize();
       },
       widthChanged: function () {

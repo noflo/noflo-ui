@@ -420,7 +420,8 @@
           name: repo,
           repo: repo,
           graphs: [],
-          components: []
+          components: [],
+          specs: []
         };
         this.fire('downloadProject', {
           project: project,
@@ -713,6 +714,9 @@
           }
           if (!project.components) {
             project.components = [];
+          }
+          if (!project.specs) {
+            project.specs = [];
           }
           if (graph.properties.project !== project.id) {
             return;
