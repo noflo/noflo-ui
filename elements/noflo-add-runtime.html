@@ -29,6 +29,10 @@
             <option value="{{ t }}" template repeat="{{ t in availableTypes }}">{{ t }}</option>
           </select>
         </label>
+        <label>
+          Secret
+          <input type="text" value="{{ secret }}" placeholder="secret-string" required>
+        </label>
         <div class="toolbar">
           <button on-click="{{ create }}" class="{{ { disabled: !canCreate } | tokenList }}">Create</button>
           <a on-click="{{ close }}">Cancel</a>
@@ -42,6 +46,7 @@
         name: '',
         address: 'localhost',
         port: '3569',
+        secret: '',
         canCreate: false,
         type: '',
         observe: {
@@ -100,6 +105,7 @@
             protocol: 'websocket',
             address: 'ws://'+ this.address + ':' + this.port,
             description: '',
+            secret: this.secret,
             icon: 'cloud'
           };
           this.fire("new", runtime);
