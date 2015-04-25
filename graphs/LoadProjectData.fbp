@@ -7,7 +7,7 @@ Read ERROR -> IN Errors(core/Merge)
 Read COMPLETE -> SEND Gather(ui/GatherProjectData)
 Start(core/Repeat) OUT -> IN HoldMode
 Start OUT -> DB Read
-'projects,graphs,components' -> DATA HoldStores(core/Kick) OUT -> STORES Read
+'projects,graphs,components,specs' -> DATA HoldStores(core/Kick) OUT -> STORES Read
 Start OUT -> IN HoldStores
 
 # Read projects list
@@ -34,3 +34,11 @@ GraphStore TRANSACTION -> TRANSACTION ComponentStore
 '' -> DATA HoldAllComponents(core/Kick) OUT -> ALL GetComponents(indexeddb/Query)
 GetProjects ITEM -> IN HoldAllComponents
 ComponentStore STORE -> STORE GetComponents ITEM -> COMPONENT Gather
+
+# Read specs list
+'specs' -> DATA HoldSpecStore(core/Kick) OUT -> NAME SpecStore(indexeddb/GetStore)
+Start OUT -> IN HoldSpecStore
+GraphStore TRANSACTION -> TRANSACTION SpecStore
+'' -> DATA HoldAllSpecs(core/Kick) OUT -> ALL GetSpecs(indexeddb/Query)
+GetProjects ITEM -> IN HoldAllSpecs
+SpecStore STORE -> STORE GetSpecs ITEM -> SPEC Gather

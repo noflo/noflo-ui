@@ -51,6 +51,25 @@ handleComponent = (sha, content, entry, project, out) ->
   project.components.push newEntry
   out.send newEntry
 
+handleSpec = (sha, content, entry, project, out) ->
+  if entry.local
+    entry.local.code = content
+    entry.local.sha = sha
+    entry.local.changed = false
+    out.send entry.local
+    return
+  newEntry =
+    id: generateId project, entry
+    project: project.id
+    type: 'spec'
+    name: entry.remote.name
+    code: content
+    language: entry.remote.language
+    sha: sha
+    changed: false
+  project.specs.push newEntry
+  out.send newEntry
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'blob',
@@ -64,13 +83,15 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'component',
     datatype: 'object'
+  c.outPorts.add 'spec',
+    datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'blob'
     params: 'operation'
-    out: ['graph', 'component']
+    out: ['graph', 'component', 'spec']
   , (data, groups, out) ->
     sha = data.sha
     content = data.content
@@ -84,6 +105,8 @@ exports.getComponent = ->
       try
         if entry.type is 'graph'
           return handleGraph sha, content, entry, c.params.operation.project, out.graph
+        if entry.type is 'spec'
+          return handleSpec sha, content, entry, c.params.operation.project, out.spec
         return handleComponent sha, content, entry, c.params.operation.project, out.component
       catch e
         return c.error e

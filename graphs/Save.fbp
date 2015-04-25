@@ -2,7 +2,7 @@ INPORT=HoldDb.DATA:DB
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:OUT
 
-'component,graph,project,runtime' -> ROUTES Dispatch(routers/GroupRouter)
+'component,graph,project,runtime,spec' -> ROUTES Dispatch(routers/GroupRouter)
 
 # Create transaction
 HoldDb(core/Kick) OUT -> DB WriteTransaction(indexeddb/BeginTransaction)
@@ -32,6 +32,11 @@ SplitProject OUT -> IN EnsureId
 'runtimes' -> DATA RuntimeStore(core/Kick) OUT -> IN StoreName
 Dispatch OUT[3] -> IN SplitRuntime(core/Split) OUT -> IN RuntimeStore 
 SplitRuntime OUT -> IN EnsureId
+
+# FbpSpec-specific handling
+'specs' -> DATA SpecStore(core/Kick) OUT -> IN StoreName
+Dispatch OUT[4] -> IN SplitSpec(core/Split) OUT -> IN SpecStore 
+SplitSpec OUT -> IN EnsureId
 
 # Saving
 StoreName OUT -> NAME Store(indexeddb/GetStore)

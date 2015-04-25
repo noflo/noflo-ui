@@ -56,6 +56,21 @@ processComponentsTree = (tree, objects, prefix) ->
     entry.fullPath = "#{prefix}#{entry.path}"
     entry
 
+processSpecsTree = (tree, objects, prefix) ->
+  specs = tree.tree.filter (entry) ->
+    return false unless entry.type is 'blob'
+    return false unless entry.path.match '.*\.(yaml|coffee)$'
+    true
+  objects.specs = objects.specs.concat specs.map (entry) ->
+    entry.name = entry.path.substr 0, entry.path.indexOf '.'
+    entry.type = 'spec'
+    language = entry.path.substr entry.path.lastIndexOf('.') + 1
+    switch language
+      when 'coffee' then entry.language = 'coffeescript'
+      else entry.language = language
+    entry.fullPath = "#{prefix}#{entry.path}"
+    entry
+
 getRemoteObjects = (repo, sha, token, callback) ->
   getCommit repo, sha, token, (err, commit) ->
     return callback err if err
@@ -64,10 +79,12 @@ getRemoteObjects = (repo, sha, token, callback) ->
 
       graphsSha = null
       componentsSha = null
+      specsSha = null
       remoteObjects =
         tree: commit.tree.sha
         graphs: []
         components: []
+        specs: []
       for entry in rootTree.tree
         if entry.path is 'fbp.json' and entry.type is 'blob'
           return callback new Error 'fbp.json support is pending standardization'
@@ -76,6 +93,9 @@ getRemoteObjects = (repo, sha, token, callback) ->
           continue
         if entry.path is 'components' and entry.type is 'tree'
           componentsSha = entry.sha
+          continue
+        if entry.path is 'spec' and entry.type is 'tree'
+          specsSha = entry.sha
           continue
 
       if graphsSha
@@ -86,13 +106,28 @@ getRemoteObjects = (repo, sha, token, callback) ->
           getTree repo, componentsSha, token, (err, componentsTree) ->
             return callback err if err
             processComponentsTree componentsTree, remoteObjects, 'components/'
-            return callback null, remoteObjects
+            return callback null, remoteObjects unless specsSha
+            getTree repo, specsSha, token, (err, specsTree) ->
+              return callback err if err
+              processSpecsTree specsTree, remoteObjects, 'spec/'
+              return callback null, remoteObjects
         return
 
       if componentsSha
         getTree repo, componentsSha, token, (err, componentsTree) ->
           return callback err if err
           processComponentsTree componentsTree, remoteObjects, 'components/'
+          return callback null, remoteObjects unless specsSha
+          getTree repo, specsSha, token, (err, specsTree) ->
+            return callback err if err
+            processSpecsTree specsTree, remoteObjects, 'spec/'
+            return callback null, remoteObjects
+        return
+
+      if specsSha
+        getTree repo, specsSha, token, (err, specsTree) ->
+          return callback err if err
+          processSpecsTree specsTree, remoteObjects, 'spec/'
           return callback null, remoteObjects
         return
 
@@ -106,12 +141,14 @@ createPath = (type, entity) ->
   name = normalizeName entity.name
   if type is 'graph'
     return "graphs/#{name}.json"
+  componentDir = 'components'
+  componentDir = 'spec' if entity.type = 'spec'
   switch entity.language
-    when 'coffeescript' then return "components/#{name}." + 'coffee'
-    when 'javascript' then return "components/#{name}.js"
-    when 'c++' then return "components/#{name}.hpp"
-    when 'python' then return "components/#{name}.py"
-    else return "components/#{name}.#{entity.language}"
+    when 'coffeescript' then return "#{componentDir}/#{name}." + 'coffee'
+    when 'javascript' then return "#{componentDir}/#{name}.js"
+    when 'c++' then return "#{componentDir}/#{name}.hpp"
+    when 'python' then return "#{componentDir}/#{name}.py"
+    else return "#{componentDir}/#{name}.#{entity.language}"
 
 addToPull = (type, local, remote, operations) ->
   operations.pull.push
@@ -222,6 +259,32 @@ exports.getComponent = ->
           notPushed = false if normalizeName(localComponent.name) is remoteComponent.name
         return notPushed
       addToPush 'component', localComponent, null, operations for localComponent in localOnly
+
+      for remoteSpec in objects.specs
+        matching = data.project.specs.filter (localSpec) ->
+          return true if localSpec.sha is remoteSpec.sha
+          return true if normalizeName(localSpec.name) is remoteSpec.name
+          false
+        unless matching.length
+          # No local version, add to pull
+          addToPull 'spec', null, remoteSpec, operations
+          continue
+        if matching[0].sha is remoteSpec.sha
+          # Updated local version
+          addToPush 'spec', matching[0], remoteSpec, operations if matching[0].changed
+          continue
+        if matching[0].changed is false
+          addToPull 'spec', matching[0], remoteSpec, operations
+          continue
+        addToConflict 'spec', matching[0], remoteSpec, operations
+
+      localOnly = data.project.specs.filter (localSpec) ->
+        notPushed = true
+        for remoteSpec in objects.components
+          notPushed = false if localSpec.sha is remoteSpec.sha
+          notPushed = false if normalizeName(localSpec.name) is remoteSpec.name
+        return notPushed
+      addToPush 'spec', localSpec, null, operations for localSpec in localOnly
 
       if operations.conflict.length
         out.both.send operations

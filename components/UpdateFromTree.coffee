@@ -38,6 +38,9 @@ processTree = (basePath, tree, entries, repo, token, out, callback) ->
       localEntry.local.sha = entry.sha
       localEntry.local.changed = false
       handled.push localEntry
+      if localEntry.type is 'spec'
+        out.spec.send localEntry.local
+        continue
       out.component.send localEntry.local
 
   for found in handled
@@ -66,13 +69,15 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'component',
     datatype: 'object'
+  c.outPorts.add 'spec',
+    datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: ['in', 'tree', 'repository']
     params: 'token'
-    out: ['graph', 'component']
+    out: ['graph', 'component', 'spec']
     async: true
   , (data, groups, out, callback) ->
     return callback() unless data.tree.tree

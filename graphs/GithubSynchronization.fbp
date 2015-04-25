@@ -41,6 +41,7 @@ PreparePulls SHA -> SHA GetBlob
 GetBlob OUT -> BLOB BlobToEntry
 BlobToEntry COMPONENT -> IN UpdatedComponent(core/Merge)
 BlobToEntry GRAPH -> IN UpdatedGraph(core/Merge)
+BlobToEntry SPEC -> IN UpdatedSpec(core/Merge)
 BlobToEntry ERROR -> IN ShowErrors
 GetBlob ERROR -> IN Errors
 
@@ -70,6 +71,7 @@ UpdateReference REFERENCE -> IN ShowErrors
 
 UpdateFromTree COMPONENT -> IN UpdatedComponent
 UpdateFromTree GRAPH -> IN UpdatedGraph
+UpdateFromTree SPEC -> IN UpdatedSpec
 UpdateFromTree ERROR -> IN ShowErrors
 CreateTree ERROR -> IN Errors
 CreateCommit ERROR -> IN Errors
@@ -82,6 +84,10 @@ DiscGraph OUT -> IN SetGraphGroup OUT -> IN Changed(core/Merge)
 'save:component' -> GROUP SetComponentGroup(groups/Group)
 UpdatedComponent OUT -> IN DiscComponent(core/DisconnectAfterPacket)
 DiscComponent OUT -> IN SetComponentGroup OUT -> IN Changed
+'save:spec' -> GROUP SetSpecGroup(groups/Group)
+UpdatedSpec OUT -> IN DiscSpec(core/DisconnectAfterPacket)
+DiscSpec OUT -> IN SetSpecGroup OUT -> IN Changed
+Changed OUT -> IN ShowErrors
 Changed OUT -> IN ShowErrors
 
 # Pull-only sync, no decision needed

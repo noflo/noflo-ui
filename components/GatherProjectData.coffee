@@ -9,6 +9,7 @@ exports.getComponent = ->
       return unless event is 'data'
       payload.graphs = [] unless payload.graphs
       payload.components = [] unless payload.components
+      payload.specs = [] unless payload.specs
       c.projects.push payload
   c.inPorts.add 'graph',
     datatype: 'object'
@@ -36,6 +37,18 @@ exports.getComponent = ->
             project.components[idx] = payload
             return
         project.components.push payload
+  c.inPorts.add 'spec',
+    datatype: 'object'
+    process: (event, payload) ->
+      return unless event is 'data'
+      return unless payload.project
+      for project in c.projects
+        continue unless payload.project is project.id
+        for comp, idx in project.specs
+          if payload.id is comp.id
+            project.specs[idx] = payload
+            return
+        project.specs.push payload
   c.inPorts.add 'send',
     datatype: 'bang'
     process: (event, payload) ->
