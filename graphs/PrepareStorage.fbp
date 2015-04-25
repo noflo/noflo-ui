@@ -5,7 +5,7 @@ OUTPORT=Open.DB:DB
 # Open database connection
 Open(indexeddb/Open) ERROR -> IN Errors(core/Merge)
 # Specify storage version to get correct migrations
-'3' -> VERSION Open
+'4' -> VERSION Open
 # Database upgrade setup
 Open UPGRADE -> UPGRADE Upgrade(indexeddb/UpgradeRouter)
 # ## Version 1
@@ -50,6 +50,16 @@ CreateJournals ERROR -> IN Errors
 'graph' -> KEYPATH JournalGraph
 CreateJournals STORE -> STORE JournalGraph
 JournalGraph ERROR -> IN Errors
+# ## Version 4
+# FbpSpec storage
+'specs' -> NAME CreateSpecs(indexeddb/CreateStore)
+'id' -> KEYPATH CreateSpecs
+Upgrade VERSIONS -> DB CreateSpecs
+CreateSpecs ERROR -> IN Errors
+'project' -> NAME SpecProject(indexeddb/CreateIndex)
+'project' -> KEYPATH SpecProject
+CreateSpecs STORE -> STORE SpecProject
+SpecProject ERROR -> IN Errors
 
 # Inform unit tests that DB is ready to be used
 Open DB -> IN DatabaseReady(ui/DatabaseReady)
