@@ -34,7 +34,7 @@ SplitRuntime OUT -> IN GetKey
 
 # Spec-specific handling
 'specs' -> DATA SpecStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[3] -> IN SplitSpec(core/Split) OUT -> IN SpecStore 
+Dispatch OUT[4] -> IN SplitSpec(core/Split) OUT -> IN SpecStore
 SplitSpec OUT -> IN GetKey
 
 # Saving

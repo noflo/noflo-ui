@@ -32,6 +32,7 @@ exports.getComponent = ->
       data.id = id
       out.out.send data
       out.id.send data.id
+      return
 
     # Other types
     if data.id
