@@ -95,7 +95,7 @@ exports.getComponent = ->
   , (data, groups, out) ->
     sha = data.sha
     content = data.content
-    content = atob content if data.encoding is 'base64'
+    content = decodeURIComponent escape atob content if data.encoding is 'base64'
 
     unless c.params.operation.pull?.length
       return c.error new Error 'Operation does not provide any pull entries'

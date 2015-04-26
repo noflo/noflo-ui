@@ -8,6 +8,7 @@ NoFlo UI ChangeLog
 * Manually added runtimes support a secret string
 * Added support for `.hpp` (C++), `.c` (C), and `.py` (Python) files in GitHub synchronization
 * Added support for editing and synchronizing [fbp-spec](https://github.com/flowbased/fbp-spec) tests
+* Fixed GitHub push and pull with non-ASCII characters
 
 # 0.8.0
 
