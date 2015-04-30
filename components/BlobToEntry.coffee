@@ -94,7 +94,7 @@ exports.getComponent = ->
     out: ['graph', 'component', 'spec']
   , (data, groups, out) ->
     sha = data.sha
-    content = data.content
+    content = data.content.replace /\s/g, ''
     content = decodeURIComponent escape atob content if data.encoding is 'base64'
 
     unless c.params.operation.pull?.length
