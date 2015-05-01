@@ -3,7 +3,7 @@
   "description": "NoFlo Development Environment",
   "author": "Henri Bergius <henri.bergius@iki.fi>",
   "repo": "noflo/noflo-ui",
-  "version": "0.7.9",
+  "version": "0.8.0",
   "keywords": [
     "fbp",
     "noflo",
@@ -43,6 +43,7 @@
       "ContextToDebug": "components/ContextToDebug.coffee",
       "ContextToRuntime": "components/ContextToRuntime.coffee",
       "CreateContext": "components/CreateContext.coffee",
+      "CreateEmptyContext": "components/CreateEmptyContext.coffee",
       "CreateLoadingContext": "components/CreateLoadingContext.coffee",
       "DatabaseReady": "components/DatabaseReady.coffee",
       "EnsureId": "components/EnsureId.coffee",
@@ -151,7 +152,8 @@
     "components/EnsureLocalRuntimes.coffee",
     "components/GetRemoteProjects.coffee",
     "graphs/Delete.fbp",
-    "components/PopulateExampleData.coffee"
+    "components/PopulateExampleData.coffee",
+    "components/CreateEmptyContext.coffee"
   ],
   "json": [
     "component.json"

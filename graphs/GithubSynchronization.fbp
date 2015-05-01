@@ -26,7 +26,7 @@ CheckSyncState REMOTE -> IN MergeOps
 CheckSyncState BOTH -> IN MergeOps
 'syncOperation' -> KEY OpsToContext(ui/SetToContext)
 MergeOps OUT -> VALUE OpsToContext
-MergeOps OUT -> START CreateCtx(ui/CreateContext) OUT -> CONTEXT OpsToContext
+MergeOps OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 
 # Actual synchronization operation(s)
@@ -87,7 +87,6 @@ DiscComponent OUT -> IN SetComponentGroup OUT -> IN Changed
 'save:spec' -> GROUP SetSpecGroup(groups/Group)
 UpdatedSpec OUT -> IN DiscSpec(core/DisconnectAfterPacket)
 DiscSpec OUT -> IN SetSpecGroup OUT -> IN Changed
-Changed OUT -> IN ShowErrors
 Changed OUT -> IN ShowErrors
 
 # Pull-only sync, no decision needed
