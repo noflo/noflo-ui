@@ -175,6 +175,17 @@ SynthDef("MyFilter", {
               this.spec = spec;
             }
           }.bind(this));
+          if (!this.spec) {
+            this.spec = {
+              name: this.component.name,
+              changed: false,
+              code: '',
+              language: 'yaml',
+              project: this.component.project,
+              type: 'spec'
+            };
+            this.project.specs.push(this.spec);
+          }
         }
 
         this.style.display = 'block';
