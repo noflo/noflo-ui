@@ -271,13 +271,17 @@ SynthDef("MyFilter", {
         this.testsEditor.setOption('theme', this.getMirrorTheme());
       },
       setSize: function () {
-        if (!this.codeEditor || !this.testsEditor || !this.width || !this.height) {
+        if (!this.width || !this.height) {
           return;
         }
         var width = (this.width - 80) / 2;
         var height = this.height - 82;
-        this.codeEditor.setSize(width, height);
-        this.testsEditor.setSize(width, height);
+        if (this.codeEditor) {
+          this.codeEditor.setSize(width, height);
+        }
+        if (this.testsEditor) {
+          this.testsEditor.setSize(width, height);
+        }
       }
     });
   </script>
