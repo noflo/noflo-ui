@@ -242,7 +242,7 @@ SynthDef("MyFilter", {
         return options;
       },
       getMirrorMode: function (language) {
-        if (language === 'coffeescript' || language === 'javascript') {
+        if (language === 'coffeescript' || language === 'javascript' || language === 'yaml') {
           return language;
         } else if (language === 'c') {
           return 'text/x-csrc';  

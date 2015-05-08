@@ -237,6 +237,10 @@
             window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
           }
         }.bind(this));
+        this.$.search.addEventListener('specschanged', function (event) {
+            console.log('changed', event.detail);
+          this.fire('project:save:spec', event.detail);
+        }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
         this.$.context.editor = this.$.grapheditor;

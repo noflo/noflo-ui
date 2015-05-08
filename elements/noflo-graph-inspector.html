@@ -14,6 +14,9 @@
         color: rgb(0, 127, 153);
         text-decoration: none;
       }
+      div.hidden {
+        display: none;
+      }
       a#download {
         position: absolute;
         right: 36px;
@@ -32,6 +35,34 @@
         right: 36px;
         border: 0px solid hsla( 0, 98%, 46%, .8) !important;
         color: hsla( 0, 98%, 46%, .8) !important;
+      }
+      ul.tabs {
+        display: block;
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+        padding: 1px;
+        text-align: center;
+      }
+      ul.tabs li {
+        display: inline;
+        line-height: 36px;
+        font-size: 13px;
+        color: hsl(189, 50%, 25%);
+        text-decoration: none;
+        padding-left: 36px;
+        padding-right: 36px;
+        cursor: pointer;
+      }
+      ul.tabs li.selected {
+        border: none;
+        border-radius: 3px;
+        background-color: rgba(0, 42, 51, 0.498039);
+        color: white;
+        border-radius: 3px;
+        padding-top: 8px;
+        padding-bottom: 9px;
+        cursor: default;
       }
     </style>
     <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css">
@@ -55,10 +86,16 @@
       </template>
       .</p>
       </template>
-      <label>
-        <span>Type</span>
-        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
-      </label>
+      <ul class="tabs">
+        <li id="properties" on-click="{{ setView }}" class="{{ {selected: view == 'properties' } | tokenList }}">Properties</li>
+        <template if="{{ type == 'noflo-browser' }}">
+        <li id="html" on-click="{{ setView }}" class="{{ {selected: view == 'html' } | tokenList }}">HTML</li>
+        </template>
+        <template if="{{ spec }}">
+        <li id="tests" on-click="{{ setView }}" class="{{ {selected: view == 'tests' } | tokenList }}">Tests</li>
+        </template>
+      </ul>
+      <div class="{{ {hidden: view != 'properties' } | tokenList }}">
       <label>
         <span>Description</span>
         <input type="text" value="{{ description }}">
@@ -67,11 +104,21 @@
         <span>Icon <a href="http://fontawesome.io/icons/" target="_blank"><i class="fa fa-question-circle"></i></a></span>
         <input type="text" value="{{ icon }}">
       </label>
-      <label id="content">
-        <template if="{{ type == 'noflo-browser' }}">
-        <span>Preview contents</span>
-        </template>
+      <label>
+        <span>Type</span>
+        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
       </label>
+      </div>
+      <div class="{{ {hidden: view != 'html' } | tokenList }}">
+      <label id="html_editor">
+        <span>Preview contents</span>
+      </label>
+      </div>
+      <div class="{{ {hidden: view != 'tests' } | tokenList }}">
+      <label id="tests_editor">
+        <span>Tests</span>
+      </label>
+      </div>
       <div class="toolbar">
         <button on-click="{{ save }}">Save</button>
         <a on-click="{{ close }}">Cancel</a>
@@ -85,6 +132,7 @@
       icon: '',
       type: '',
       preview: '',
+      view: 'properties',
       graph: null,
       project: null,
       runtimes: [],
@@ -109,6 +157,7 @@
         this.description = this.graph.properties.description;
         this.icon = this.graph.properties.icon || '';
         this.type = this.graph.properties.environment.type;
+        this.view = 'properties';
 
         this.inGraph = [];
         this.isMain = false;
@@ -124,7 +173,25 @@
               }.bind(this));
             }.bind(this));
           }
+          this.project.specs.forEach(function (spec) {
+            if (spec.name === this.graph.name) {
+              this.spec = spec;
+            }
+          }.bind(this));
+          if (!this.spec) {
+            this.spec = {
+              name: this.graph.name,
+              changed: false,
+              code: '',
+              language: 'yaml',
+              project: this.project.id,
+              type: 'spec'
+            };
+            this.project.specs.push(this.spec);
+          }
         }
+        this.prepareHtmlEditor();
+        this.prepareTestsEditor();
         this.prepareDownload();
       },
       prepareDownload: function () {
@@ -143,31 +210,70 @@
       detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
-      typeChanged: function () {
-        if (this.type == 'noflo-browser') {
-          this.prepareEditor();
-        } else {
-          this.$.content.innerHTML = '';
-          this.previewEditor = null;
+      viewChanged: function () {
+        if (this.view === 'html' && this.htmlEditor) {
+          setTimeout(function () {
+            this.htmlEditor.setSize(576, 288);
+            this.htmlEditor.focus();
+          }.bind(this), 1);
+        }
+        if (this.view === 'tests' && this.testsEditor) {
+          setTimeout(function () {
+            this.testsEditor.setSize(576, 288);
+            this.testsEditor.focus();
+          }.bind(this), 1);
         }
       },
-      prepareEditor: function () {
-        this.previewEditor = CodeMirror(this.$.content, {
+      prepareHtmlEditor: function () {
+        if (this.type !== 'noflo-browser') {
+          return;
+        }
+        this.htmlEditor = CodeMirror(this.$.html_editor, {
           lineNumbers: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
           theme: 'mdn-like'
         });
-        this.previewEditor.setSize(576, 144);
+      },
+      prepareTestsEditor: function () {
+        if (!this.spec) {
+          return;
+        }
+        this.testsEditor = CodeMirror(this.$.tests_editor, {
+          lineNumbers: true,
+          value: this.spec.code || '',
+          mode: this.getMirrorMode(this.spec.language),
+          theme: 'mdn-like'
+        });
+      },
+      getMirrorMode: function (language) {
+        if (language === 'coffeescript' || language === 'javascript' || language === 'yaml') {
+          return language;
+        } else if (language === 'c') {
+          return 'text/x-csrc';  
+        } else if (language === 'c++') {
+          return 'text/x-c++src';
+        } else if (language === 'supercollider') {
+          return 'text/x-stsrc'; // smalltalk-like
+        }
+        return 'clike';
       },
       save: function () {
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'saveGraphProperties');
         }
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
-        if (this.previewEditor) {
-            this.preview = this.previewEditor.getValue();
+        if (this.htmlEditor) {
+            this.preview = this.htmlEditor.getValue();
             env.content = this.preview;
+        }
+        if (this.testsEditor && this.spec) {
+            var specCode = this.testsEditor.getValue();
+            if (specCode !== this.spec.code) {
+              this.spec.code = specCode;
+              this.spec.changed = true;
+              this.fire('specschanged', this.spec);
+            }
         }
         env.type = this.type;
         this.graph.setProperties({
@@ -194,6 +300,9 @@
           return;
         }
         this.parentNode.removeChild(this);
+      },
+      setView: function (event, details, sender) {
+        this.view = sender.id;
       }
     });
   </script>

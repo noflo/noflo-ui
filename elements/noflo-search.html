@@ -421,6 +421,9 @@
         this.graphInspector.addEventListener('delete', function (event) {
           this.fire('deleteGraph', event.detail);
         }.bind(this));
+        this.graphInspector.addEventListener('specschanged', function (event) {
+          this.fire('specschanged', event.detail);
+        }.bind(this));
         document.body.appendChild(this.graphInspector);
       },
       showComponentInspector: function (event) {
