@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.10.0
+# 0.10.0 (2015 June 14)
 
 * Graph tests are now editable in graph inspector
 * Moved graph preview HTML (`noflo-nodejs` only) to its own tab in the inspector
