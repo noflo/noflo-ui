@@ -53,7 +53,7 @@ module.exports = ->
       dependencies: [
         'bower_components'
         'components/*/'
-        'preview/components'
+        'preview/components/*/'
       ]
       dist: [
         'dist'
