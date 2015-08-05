@@ -1,6 +1,10 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.11.0 (git master)
+
+* Component search now also seeks descriptions, not just names
+
 # 0.10.0 (2015 June 14)
 
 * Graph tests are now editable in graph inspector

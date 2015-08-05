@@ -51,10 +51,24 @@
           return;
         }
         Object.keys(library).forEach(function (name) {
-          if (this._search.search !== '' && name.toLowerCase().indexOf(this._search.search.toLowerCase()) === -1) {
+          var match = false;
+          var component = this.editor.getComponent(name);
+          if (this._search.search === '') {
+            // Empty search, all components match
+            match = true;
+          } else {
+            if (name.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
+              // Component name matches
+              match = true;
+            }
+            if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
+              // Component description matches
+              match = true;
+            }
+          }
+          if (!match) {
             return;
           }
-          var component = this.editor.getComponent(name);
           if (component.subgraph && this.project) {
             var nameParts = component.name.split('/');
             if (nameParts[0] === this.project.id) {
