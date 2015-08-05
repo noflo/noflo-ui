@@ -3,6 +3,7 @@ NoFlo UI ChangeLog
 
 # 0.11.0 (git master)
 
+* Component libraries are cached by runtime
 * Component search now also seeks descriptions, not just names
 * NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 * NoFlo component creation template now uses more modern 'WirePattern' component
@@ -10,10 +11,10 @@ NoFlo UI ChangeLog
 # 0.10.0 (2015 June 14)
 
 * Graph tests are now editable in graph inspector
-* Moved graph preview HTML (`noflo-nodejs` only) to its own tab in the inspector
+* Moved graph preview HTML (`noflo-browser` only) to its own tab in the inspector
 * Fixed resizing of code and spec editors
 
-# 0.9.0
+# 0.9.0 (2015 May 7)
 
 * Support for toggling the `secure` option for edges,
 useful for hiding sensitive data like API tokens.
@@ -25,7 +26,7 @@ distributed message queue based FBP runtime.
 TODO: Running the tests
 * Fixed GitHub push and pull with non-ASCII characters.
 
-# 0.8.0
+# 0.8.0 (2015 March 24)
 
 * Request re-login if there is no token, fixes login error with Pro plans
 * Fix component editing (Stefan Sauer)

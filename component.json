@@ -32,7 +32,8 @@
     "jonnor/microflo": "*",
     "gjohnson/uuid": "*",
     "bergie/octo": "*",
-    "visionmedia/superagent": "0.21.0"
+    "visionmedia/superagent": "0.21.0",
+    "jashkenas/underscore": "*"
   },
   "noflo": {
     "components": {
@@ -76,6 +77,7 @@
       "SetToContext": "components/SetToContext.coffee",
       "StoreUser": "components/StoreUser.coffee",
       "SubscribeGraph": "components/SubscribeGraph.coffee",
+      "UpdateComponentLibrary": "components/UpdateComponentLibrary.coffee",
       "UpdateFromTree": "components/UpdateFromTree.coffee"
     },
     "graphs": {
@@ -153,7 +155,8 @@
     "components/GetRemoteProjects.coffee",
     "graphs/Delete.fbp",
     "components/PopulateExampleData.coffee",
-    "components/CreateEmptyContext.coffee"
+    "components/CreateEmptyContext.coffee",
+    "components/UpdateComponentLibrary.coffee"
   ],
   "json": [
     "component.json"

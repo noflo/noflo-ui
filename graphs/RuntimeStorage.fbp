@@ -2,6 +2,7 @@ INPORT=LoadData.DB:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=UpdateLibrary.RUNTIME:OUT
 
 # Route requests
 'open,connect,sendGraph,sendComponent' -> ROUTES Dispatch(routers/GroupRouter)
@@ -33,7 +34,10 @@ DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 # Get components list when connecting to new runtime
 ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
-ListComponents OUT -> IN MergeContext
+ListComponents OUT -> IN UpdateLibrary(ui/UpdateComponentLibrary)
+ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary
+DirectRuntime RUNTIME -> RUNTIME UpdateLibrary
+UpdateLibrary OUT -> IN MergeContext
 ListComponents ERROR -> IN ShowErrors
 
 # Graph change subscription
