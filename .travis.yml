@@ -4,8 +4,6 @@ node_js:
 - '0.10'
 before_script:
 - npm install -g grunt-cli
-after_success:
-- grunt app
 env:
   global:
   - secure: SqpDxIE0eAc0s9lvm+djIcS+y+778NeoZrRSsnF6+8b6K7pYjM9A41WdYFLhcP2fb/keVKcG9nbpwtYdTXGjhe59NFHM0gE3GjML/hpfy8Y7djEIdnt3EGjNEkXAd8pB9NCMyxNUjYgUUF6w7splOR1rViXpdyig8StGtfunM+k=
