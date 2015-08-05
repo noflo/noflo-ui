@@ -14,7 +14,7 @@ NoFlo UI ChangeLog
 * Moved graph preview HTML (`noflo-browser` only) to its own tab in the inspector
 * Fixed resizing of code and spec editors
 
-# 0.9.0
+# 0.9.0 (2015 May 7)
 
 * Support for toggling the `secure` option for edges,
 useful for hiding sensitive data like API tokens.
@@ -26,7 +26,7 @@ distributed message queue based FBP runtime.
 TODO: Running the tests
 * Fixed GitHub push and pull with non-ASCII characters.
 
-# 0.8.0
+# 0.8.0 (2015 March 24)
 
 * Request re-login if there is no token, fixes login error with Pro plans
 * Fix component editing (Stefan Sauer)
