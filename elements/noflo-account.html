@@ -230,6 +230,12 @@
           this.fire('logout', true);
         },
         attached: function () {
+          storage.get('flowhub-theme', function (definedTheme) {
+            if (!definedTheme) {
+              return;
+            }
+            this.theme = definedTheme;
+          }.bind(this));
           document.body.classList.add(this.theme);
         },
         openSettings: function () {
@@ -244,7 +250,7 @@
           document.body.appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.theme = event.detail.theme;
-            storage.set(this.storage.theme, this.theme);
+            storage.set('flowhub-theme', this.theme, function () {});
           }.bind(this));
           dialog.addEventListener('relogin', function (event) {
             event.stopPropagation();
