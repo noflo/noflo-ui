@@ -7,11 +7,6 @@
       "scripts": ["app/background.js"]
     }
   },
-  "sandbox": {
-    "pages": [
-      "preview/iframe.html"
-    ]
-  },
   "permissions": [
     "https://passport.thegrid.io/",
     "$NOFLO_OAUTH_GATE",

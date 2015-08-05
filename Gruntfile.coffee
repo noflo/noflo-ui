@@ -21,9 +21,6 @@ module.exports = ->
       main:
         files:
           'browser/noflo-ui.js': ['component.json']
-      preview:
-        files:
-          'preview/browser/noflo-ui-preview.js': ['preview/component.json']
 
     # Vulcanization compiles the Polymer elements into a HTML file
     vulcanize:
@@ -48,12 +45,10 @@ module.exports = ->
     clean:
       build: [
         'browser'
-        'preview/browser'
       ]
       dependencies: [
         'bower_components'
         'components/*/'
-        'preview/components'
       ]
       dist: [
         'dist'
@@ -74,9 +69,6 @@ module.exports = ->
       noflo:
         files:
           './browser/noflo-ui.min.js': ['./browser/noflo-ui.js']
-      preview:
-        files:
-          './preview/browser/noflo-ui-preview.min.js': ['./preview/browser/noflo-ui-preview.js']
 
     'string-replace':
       app:
@@ -257,18 +249,6 @@ module.exports = ->
           src: ['themes/*']
           expand: true
           dest: '/'
-        ,
-          src: ['preview/browser/noflo-noflo-runtime-iframe/runtime/network.js']
-          expand: true
-          dest: '/'
-        ,
-          src: ['preview/browser/noflo-ui-preview.js']
-          expand: true
-          dest: '/'
-        ,
-          src: ['preview/iframe.html']
-          expand: true
-          dest: '/'
         ]
 
     "phonegap-build":
@@ -317,11 +297,6 @@ module.exports = ->
         src: ['elements/*.html']
 
     watch:
-      preview:
-        files: 'preview/components/*/*/*.coffee'
-        tasks: ['noflo_browser:preview']
-        options:
-          livereload: false
       spec:
         files: 'spec/*.coffee'
         tasks: ['coffeelint:spec', 'coffee:spec']
@@ -401,7 +376,7 @@ module.exports = ->
   # Our local tasks
   @registerTask 'nuke', ['clean']
   @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower-install-simple',
-                          'noflo_browser:main', 'noflo_browser:preview',
+                          'noflo_browser',
                           'copy', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', [
@@ -415,6 +390,5 @@ module.exports = ->
   @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
-  @registerTask 'devp', ['noflo_browser:preview', 'connect:server', 'watch:preview']
   @registerTask 'spec', ['coffeelint:spec', 'coffee:spec', 'connect:server', 'watch']
 

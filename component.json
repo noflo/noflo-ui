@@ -160,8 +160,6 @@
   ],
   "files": [
     "css/noflo-ui.css",
-    "preview/iframe.html",
-    "preview/component.json",
     "noflo.ico",
     "app/noflo-200.png",
     "examples.json"
