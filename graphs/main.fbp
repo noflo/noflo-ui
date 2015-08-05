@@ -25,6 +25,7 @@ GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
 MainContext OUT -> CONTEXT AppView
 RuntimeStorage CONTEXT -> CONTEXT AppView
+RuntimeStorage OUT -> IN Dispatch
 ContextStorage CONTEXT -> CONTEXT AppView
 
 # Start routing
