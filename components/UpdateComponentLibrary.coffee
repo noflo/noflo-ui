@@ -42,6 +42,8 @@ exports.getComponent = ->
     datatype: 'object'
     process: (event, payload) ->
       return unless event is 'data'
+      c.outPorts.out.send
+        clearLibrary: true
       return unless payload.definition
       return unless payload.definition.id
       c.runtime = payload.definition
