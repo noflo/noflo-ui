@@ -4,6 +4,8 @@ NoFlo UI ChangeLog
 # 0.11.0 (git master)
 
 * Component search now also seeks descriptions, not just names
+* NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
+* NoFlo component creation template now uses more modern 'WirePattern' component
 
 # 0.10.0 (2015 June 14)
 
