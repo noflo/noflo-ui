@@ -36,10 +36,16 @@
         document.getElementById('container').classList.remove('blur');
       },
       repoChanged: function () {
-        if (this.repo && this.repo.indexOf('/') !== -1) {
+        this.canSend = false;
+        if (this.repo && typeof this.repo === 'string') {
+          var matched = this.repo.match(/^(git@github\.com:|https:\/\/github\.com\/)?(\S+\/\S+?(?=\.git|$))(\.git)?$/);
+          if (!matched || !matched[2]) {
+            return;
+          }
+          if (matched[2] !== this.repo) {
+            this.repo = matched[2];
+          }
           this.canSend = true;
-        } else {
-          this.canSend = false;
         }
       },
       createProject: function (callback) {
