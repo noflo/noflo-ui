@@ -347,7 +347,7 @@
         }
         var notification = new Notification(title, {
           body: message,
-          icon: 'app/noflo-64.png'
+          icon: 'app/$NOFLO_THEME-64.png'
         });
         this.notifications.push(notification);
         notification.addEventListener('close', function () {
