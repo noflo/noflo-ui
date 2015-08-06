@@ -30,7 +30,6 @@ window.addEventListener('polymer-ready', function() {
       var rt = runtime(null, runtimeOptions, true);
       rt.start();
       var ide = 'http://app.flowhub.io';
-      ide = 'http://localhost:8000/index.html'; // TEMP
       var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id);
       var debugLink = document.getElementById('flowhub_debug_url');
       if (debugLink) {
