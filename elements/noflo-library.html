@@ -19,8 +19,9 @@
 
         graph.startTransaction('addnode');
 
+        var nameParts = componentName.split('/');
         graph.addNode(id, componentName, {
-          label: componentName,
+          label: nameParts[nameParts.length - 1],
           x: (-pan[0] + 334) / scale,
           y: (-pan[1] + 100) / scale
         });
