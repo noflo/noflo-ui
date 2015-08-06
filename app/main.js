@@ -21,16 +21,26 @@ window.addEventListener('polymer-ready', function() {
     });
   };
   var loadGraphsDebuggable = function(callback) {
+    var secret = Math.random().toString(36).substring(7);
     noflo.graph.loadJSON(require(mainGraph), function (graph) {
       graph.baseDir = baseDir;
       var runtimeOptions = {
         defaultGraph: graph,
-        baseDir: graph.baseDir
+        baseDir: graph.baseDir,
+        permissions: {}
       };
+      runtimeOptions.permissions[secret] = [
+        'protocol:component',
+        'protocol:runtime',
+        'protocol:graph',
+        'protocol:network',
+        'component:getsource',
+        'component:setsource'
+      ];
       var rt = runtime(null, runtimeOptions, true);
       rt.start();
       var ide = 'http://app.flowhub.io';
-      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id);
+      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id+'&secret='+secret);
       var debugLink = document.getElementById('flowhub_debug_url');
       if (debugLink) {
         debugLink.href = debugUrl;
