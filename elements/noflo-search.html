@@ -48,6 +48,7 @@
         border: none;
         color: white;
         text-align: center;
+        cursor: pointer;
       }
 
       :host(.overlay) #breadcrumb {
@@ -114,6 +115,7 @@
         width: 156px;
         font-weight: normal;
         padding-left: 18px;
+        cursor: pointer;
       }
       :host(.overlay) #search {
         display: none;
@@ -166,9 +168,9 @@
       <template if="{{ !component || !component.name }}">
       <i class="fa fa-search"></i>
       </template>
-      <h1>
+      <h1 title="Search">
         <template if="{{ project && parentPath }}">
-        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink"><i class="fa fa-angle-left"></i></a>
+        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink" title="Back"><i class="fa fa-angle-left"></i></a>
         </template>
         <template if="{{ graph && (!component || !component.name) }}">
         {{ graph.name }}
@@ -178,17 +180,17 @@
         </template>
       </h1>
       <template if="{{ graph && (!component || !component.name) }}">
-      <button on-click="{{ showGraphInspector }}" id="graphinspector"><i class="fa fa-cog"></i></button>
+      <button on-click="{{ showGraphInspector }}" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ !graph && component && component.name }}">
-      <button on-click="{{ showComponentInspector }}" id="componentinspector"><i class="fa fa-cog"></i></button>
+      <button on-click="{{ showComponentInspector }}" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
       </template>
       <template if="{{ (component && component.readonly) || (graph && graph.properties.readonly) }}">
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
     <input id="search" placeholder="Search components" on-keydown="{{ switchSearch }}" value="{{ search }}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech>
-    <button id="clear" on-click="{{ clearSearch }}"><i class="fa fa-times"></i></button>
+    <button id="clear" on-click="{{ clearSearch }}" title="Clear search"><i class="fa fa-times"></i></button>
   </template>
   <script>
     Polymer('noflo-search', {
