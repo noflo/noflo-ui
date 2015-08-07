@@ -5,6 +5,8 @@ NoFlo UI ChangeLog
 
 * Component libraries are cached by runtime
 * Component search now also seeks descriptions, not just names
+* Component changes are now sent to the runtime only after user has stopped typing, instead of on every change
+* YAML editing (for fbp-spec) now supports syntax highlighting and linting
 * NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 * NoFlo component creation template now uses more modern 'WirePattern' component
 
