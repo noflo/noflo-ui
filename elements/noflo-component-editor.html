@@ -188,6 +188,14 @@ SynthDef("MyFilter", {
       theme: 'dark',
       ready: function () {
         this.componentChanged();
+        var self = this;
+        var _ = require('underscore');
+        this.debouncedComponentChange = _.debounce(function () {
+          self.fire('changed', self.component);
+        }, 500);
+        this.debouncedSpecChange = _.debounce(function () {
+          self.fire('specschanged', self.spec);
+        }, 500);
       },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
@@ -227,7 +235,7 @@ SynthDef("MyFilter", {
         this.codeEditor.on('change', function () {
           this.component.code = this.codeEditor.getValue();
           this.component.changed = true;
-          this.fire('changed', this.component);
+          this.debouncedComponentChange();
         }.bind(this));
         this.setSize();
       },
@@ -241,7 +249,7 @@ SynthDef("MyFilter", {
         this.testsEditor.on('change', function () {
           this.spec.code = this.testsEditor.getValue();
           this.spec.changed = true;
-          this.fire('specschanged', this.spec);
+          this.debouncedSpecChange();
         }.bind(this));
         this.setSize();
       },
