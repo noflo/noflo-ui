@@ -132,6 +132,7 @@
         this.$.project.addEventListener('newgraph', function (event) {
           this.fire('project:save:graph', event.detail);
           this.fire('runtime:sendGraph', event.detail);
+          this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
           this.fire('project:save:component', event.detail);
@@ -175,9 +176,12 @@
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.fire('project:save:component', event.detail);
+          this.fire('runtime:sendComponent', event.detail);
+          this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
           this.fire('project:save:spec', event.detail);
+          this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
           this.fire('context:search_library', event.detail);
@@ -238,8 +242,8 @@
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
-            console.log('changed', event.detail);
           this.fire('project:save:spec', event.detail);
+          this.triggerTests();
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
         this.$.journal.editor = this.$.grapheditor;
@@ -412,6 +416,9 @@
           this.dontAutoHideAlert = context.dontAutoHideAlert || false;
           this.$.alert.classList.add('show');
         }
+      },
+      triggerTests: function () {
+        this.$.runtime.runTests(this.ctx.project || this.$.project.project);
       },
       hideAlert: function () {
         this.$.alert.classList.remove('show');
