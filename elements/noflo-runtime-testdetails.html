@@ -1,8 +1,33 @@
 <polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{ close }}">
   <template>
     <style>
+      ul.horizontal-list {
+        padding: 0px;
+      }
       .suite-header label {
         font-weight: bold;
+      }
+      li {
+        list-style: none;
+      }
+      li label {
+        display: inline;
+        margin-top: 7px !important;
+      }
+      li label.assertion {
+        padding-left: 8px;
+      }
+      li label.error {
+        padding-left: 8px;
+        font-style: italic;
+      }
+      li.pass {
+        color: hsl(135, 98%, 46%);
+        list-style: disc;
+      }
+      li.fail {
+        color: hsl(0, 98%, 46%);
+        list-style: square;
       }
     </style>
     <div class="modal-container" on-click="{{ bgClick }}">
