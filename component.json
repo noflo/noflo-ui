@@ -73,6 +73,7 @@
       "ProcessErrorToContext": "components/ProcessErrorToContext.coffee",
       "RemoteLogin": "components/RemoteLogin.coffee",
       "Router": "components/Router.coffee",
+      "RunTests": "components/RunTests.coffee",
       "SearchGraphNodeToContext": "components/SearchGraphNodeToContext.coffee",
       "SetGraphChanged": "components/SetGraphChanged.coffee",
       "SetToContext": "components/SetToContext.coffee",
@@ -157,7 +158,8 @@
     "graphs/Delete.fbp",
     "components/PopulateExampleData.coffee",
     "components/CreateEmptyContext.coffee",
-    "components/UpdateComponentLibrary.coffee"
+    "components/UpdateComponentLibrary.coffee",
+    "components/RunTests.coffee"
   ],
   "json": [
     "component.json"

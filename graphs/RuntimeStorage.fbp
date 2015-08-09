@@ -5,7 +5,7 @@ OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=UpdateLibrary.RUNTIME:OUT
 
 # Route requests
-'open,connect,sendGraph,sendComponent' -> ROUTES Dispatch(routers/GroupRouter)
+'open,connect,sendGraph,sendComponent,runTests' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
@@ -64,5 +64,12 @@ DirectRuntime RUNTIME -> RUNTIME SendNewGraph
 Dispatch OUT[3] -> COMPONENT SendNewComponent(runtime/SendComponent)
 ProjectRuntime RUNTIME -> RUNTIME SendNewComponent
 DirectRuntime RUNTIME -> RUNTIME SendNewComponent
+
+# Running fbp-spec tests on the runtime
+Dispatch OUT[4] -> IN RunTests(ui/RunTests)
+ProjectRuntime RUNTIME -> RUNTIME RunTests
+DirectRuntime RUNTIME -> RUNTIME RunTests
+RunTests CONTEXT -> IN MergeContext
+RunTests ERROR -> IN ShowErrors
 
 LoadData ERROR -> IN ShowErrors

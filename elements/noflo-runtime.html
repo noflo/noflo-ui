@@ -283,36 +283,12 @@
         }
         this.runtime.reconnect();
       },
-      runTests: function (project) {
-        if (!project) {
-          return;
-        }
-        if (!this.runtime || !this.runtime.isConnected()) {
-          return;
-        }
-        if (!project.specs || !project.specs.length) {
-          return;
-        }
-        var specs = project.specs.filter(function (spec) {
-          if (spec.language === 'yaml') {
-            return true;
-          }
-          return false;
-        });
-        if (!specs.length) {
-          return;
-        }
+      showTests: function (suites) {
         var fbpSpec = require('fbp-spec');
-        this.suites = specs.map(function (spec) {
-          return fbpSpec.testsuite.loadYAML(spec.code);
-        });
-        var runner = new fbpSpec.runner.Runner(this.runtime);
-        fbpSpec.runner.runAll(runner, this.suites, function () {
-          React.render(fbpSpec.ui.widgets.TestStatus({
-            suites: this.suites
-          }), this.shadowRoot.getElementById('teststatus'));
-        }.bind(this), function (err) {
-        });
+        this.suites = suites;
+        React.render(fbpSpec.ui.widgets.TestStatus({
+          suites: this.suites
+        }), this.shadowRoot.getElementById('teststatus'));
       },
       showTestDetails: function () {
         if (!this.suites || !this.suites.length) {

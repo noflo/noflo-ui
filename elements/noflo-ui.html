@@ -342,6 +342,9 @@
           this.$.runtime.runtime = this.ctx.runtime;
           this.$.context.runtime = this.ctx.runtime;
         }
+        if (this.ctx.suites) {
+          this.$.runtime.showTests(this.ctx.suites);
+        }
         if (this.ctx.state === 'loading') {
           return;
         }
@@ -418,7 +421,7 @@
         }
       },
       triggerTests: function () {
-        this.$.runtime.runTests(this.ctx.project || this.$.project.project);
+        this.fire('runtime:runTests', this.ctx.project || this.$.project.project);
       },
       hideAlert: function () {
         this.$.alert.classList.remove('show');
