@@ -286,9 +286,13 @@
       showTests: function (suites) {
         var fbpSpec = require('fbp-spec');
         this.suites = suites;
+        var container = this.shadowRoot.getElementById('teststatus');
+        if (!container) {
+          return;
+        }
         React.render(fbpSpec.ui.widgets.TestStatus({
           suites: this.suites
-        }), this.shadowRoot.getElementById('teststatus'));
+        }), container);
       },
       showTestDetails: function () {
         if (!this.suites || !this.suites.length) {
