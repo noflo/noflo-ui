@@ -1,5 +1,6 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
+<link rel="import" href="noflo-runtime-testdetails.html">
 <polymer-element name="noflo-runtime" attributes="runtimes" class="gpu">
   <template>
     <style>
@@ -32,6 +33,8 @@
       #teststatus {
         position: absolute;
         right: 0px;
+        z-index: 1;
+        width: 100px;
       }
       #teststatus ul {
         margin: 0px;
@@ -131,7 +134,7 @@
           <h2>{{ runtime.definition.address }}</h2>
           <button title="Change Runtime" on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
         </div>
-        <div id="teststatus"></div>
+        <div id="teststatus" on-click="{{ showTestDetails }}"></div>
         <div id="runcontrol">
           <template if="{{ online }}">
             <template if="{{ execution.running }}">
@@ -156,6 +159,7 @@
       graph: null,
       runtime: null,
       runtimes: [],
+      suites: [],
       online: false,
       execution: {
         label: 'not started',
@@ -299,17 +303,24 @@
           return;
         }
         var fbpSpec = require('fbp-spec');
-        var suites = specs.map(function (spec) {
+        this.suites = specs.map(function (spec) {
           return fbpSpec.testsuite.loadYAML(spec.code);
         });
         var runner = new fbpSpec.runner.Runner(this.runtime);
-        fbpSpec.runner.runAll(runner, suites, function () {
+        fbpSpec.runner.runAll(runner, this.suites, function () {
           React.render(fbpSpec.ui.widgets.TestStatus({
-            suites: suites
+            suites: this.suites
           }), this.shadowRoot.getElementById('teststatus'));
         }.bind(this), function (err) {
-          console.log('done', suites, err);
         });
+      },
+      showTestDetails: function () {
+        if (!this.suites || !this.suites.length) {
+          return;
+        }
+        var details = document.createElement('noflo-runtime-testdetails');
+        details.suites = this.suites;
+        document.body.appendChild(details);
       },
       showCard: function () {
         if (this.card || !this.panel) {

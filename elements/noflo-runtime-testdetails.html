@@ -1,0 +1,38 @@
+<polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{ close }}">
+  <template>
+    <style>
+      .suite-header label {
+        font-weight: bold;
+      }
+    </style>
+    <div class="modal-container" on-click="{{ bgClick }}">
+      <div id="testlisting"></div>
+      <div class="toolbar">
+        <button on-click="{{ close }}">Close</button>
+      </div>
+    </div>
+  </template>
+  <script>
+    (function() {
+      Polymer('noflo-runtime-testdetails', {
+        suites: [],
+        attached: function () {
+          document.getElementById('container').classList.add('blur');
+          var fbpSpec = require('fbp-spec');
+          React.render(fbpSpec.ui.widgets.TestsListing({
+            suites: this.suites
+          }), this.$.testlisting);
+        },
+        detached: function () {
+          document.getElementById('container').classList.remove('blur');
+        },
+        close: function () {
+          if (!this.parentNode) {
+            return;
+          }
+          this.parentNode.removeChild(this);
+        }
+      });
+    })();
+  </script>
+</polymer>
