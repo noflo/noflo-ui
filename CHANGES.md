@@ -3,6 +3,7 @@ NoFlo UI ChangeLog
 
 # 0.11.0 (git master)
 
+* Automatic running and visualization of [fbp-spec](https://github.com/flowbased/fbp-spec) tests when components or graphs change
 * Component libraries are cached by runtime
 * Component search now also seeks descriptions, not just names
 * Component changes are now sent to the runtime only after user has stopped typing, instead of on every change
