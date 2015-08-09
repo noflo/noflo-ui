@@ -34,7 +34,13 @@ exports.getComponent = ->
       do callback
       return
 
-    suites = specs.map (s) -> fbpSpec.testsuite.loadYAML s.code
+    suites = []
+    for s in specs
+      suites = suites.concat fbpSpec.testsuite.loadYAML s.code
+    unless suites.length
+      do callback
+      return
+
     # Send out the initial suites
     out.send
       suites: suites
