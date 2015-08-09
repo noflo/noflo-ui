@@ -1,11 +1,18 @@
 <polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{ close }}">
   <template>
     <style>
-      ul.horizontal-list {
+      #testlisting ul {
         padding: 0px;
       }
-      .suite-header label {
+      li .suite-header label.topic {
         font-weight: bold;
+      }
+      li .suite-header label {
+        display: inline !important;
+        padding-right: 1em;
+      }
+      li.testsuite {
+        margin-bottom: 1em;
       }
       li {
         list-style: none;
