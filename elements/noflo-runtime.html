@@ -18,6 +18,7 @@
         background-position: 0px;
         border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
         overflow: hidden;
+        z-index: 2;
       }
 
       #runtime_icon {
@@ -26,6 +27,29 @@
         top: 0px;
         font-size: 72px;
         color: hsl(189, 11%, 10%);
+      }
+
+      #teststatus {
+        position: absolute;
+        right: 0px;
+      }
+      #teststatus ul {
+        margin: 0px;
+        padding: 0px;
+      }
+      #teststatus ul li {
+        display: inline;
+        padding-left: 8px;
+        line-height: 36px;
+      }
+      #teststatus ul li.pass {
+        color: hsl(135, 98%, 46%);
+      }
+      #teststatus ul li.fail {
+        color: hsl(0, 98%, 46%);
+      }
+      #teststatus ul li.skip {
+        color: hsl( 60, 98%, 46%);
       }
 
       h2 {
@@ -107,6 +131,7 @@
           <h2>{{ runtime.definition.address }}</h2>
           <button title="Change Runtime" on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
         </div>
+        <div id="teststatus"></div>
         <div id="runcontrol">
           <template if="{{ online }}">
             <template if="{{ execution.running }}">
@@ -279,8 +304,10 @@
         });
         var runner = new fbpSpec.runner.Runner(this.runtime);
         fbpSpec.runner.runAll(runner, suites, function () {
-          console.log('update');
-        }, function (err) {
+          React.render(fbpSpec.ui.widgets.TestStatus({
+            suites: suites
+          }), this.shadowRoot.getElementById('teststatus'));
+        }.bind(this), function (err) {
           console.log('done', suites, err);
         });
       },
