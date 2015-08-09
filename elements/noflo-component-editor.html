@@ -192,10 +192,10 @@ SynthDef("MyFilter", {
         var _ = require('underscore');
         this.debouncedComponentChange = _.debounce(function () {
           self.fire('changed', self.component);
-        }, 500);
+        }, 1500);
         this.debouncedSpecChange = _.debounce(function () {
           self.fire('specschanged', self.spec);
-        }, 500);
+        }, 1500);
       },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
