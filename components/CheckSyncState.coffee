@@ -74,6 +74,8 @@ processSpecsTree = (tree, objects, prefix) ->
 getRemoteObjects = (repo, sha, token, callback) ->
   getCommit repo, sha, token, (err, commit) ->
     return callback err if err
+    unless commit
+      return callback new Error "No commit found for #{repo} #{sha}"
     getTree repo, commit.tree.sha, token, (err, rootTree) ->
       return callback err if err
 
@@ -142,7 +144,7 @@ createPath = (type, entity) ->
   if type is 'graph'
     return "graphs/#{name}.json"
   componentDir = 'components'
-  componentDir = 'spec' if entity.type = 'spec'
+  componentDir = 'spec' if type is 'spec'
   switch entity.language
     when 'coffeescript' then return "#{componentDir}/#{name}." + 'coffee'
     when 'javascript' then return "#{componentDir}/#{name}.js"
