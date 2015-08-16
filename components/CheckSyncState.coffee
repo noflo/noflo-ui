@@ -255,6 +255,7 @@ exports.getComponent = ->
         addToConflict 'component', matching[0], remoteComponent, operations
 
       localOnly = data.project.components.filter (localComponent) ->
+        return false unless localComponent.code.length
         notPushed = true
         for remoteComponent in objects.components
           notPushed = false if localComponent.sha is remoteComponent.sha
@@ -281,6 +282,7 @@ exports.getComponent = ->
         addToConflict 'spec', matching[0], remoteSpec, operations
 
       localOnly = data.project.specs.filter (localSpec) ->
+        return false unless localSpec.code.length
         notPushed = true
         for remoteSpec in objects.specs
           notPushed = false if localSpec.sha is remoteSpec.sha
