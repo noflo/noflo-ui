@@ -36,7 +36,13 @@ exports.getComponent = ->
 
     suites = []
     for s in specs
-      suites = suites.concat fbpSpec.testsuite.loadYAML s.code
+      continue unless s.code.length
+      try
+        suite = fbpSpec.testsuite.loadYAML s.code
+      catch e
+        console.log e
+        continue
+      suites = suites.concat suite
     unless suites.length
       do callback
       return
