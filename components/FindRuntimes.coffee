@@ -5,6 +5,12 @@ getGraphType = (graph) ->
     graph.properties.environment.type = 'noflo-browser'
   graph.properties.environment.type
 
+getComponentType = (component) ->
+  return null unless component.code
+  runtimeType = component.code.match /@runtime ([a-z\-]+)/
+  return null unless runtimeType
+  return runtimeType[1]
+
 findCompatible = (graphType, rts) ->
   return [] unless graphType
   compatibleRuntimes = rts.filter (rt) ->
@@ -31,6 +37,14 @@ exports.getComponent = ->
   , (ctx, groups, out) ->
     rts = c.params?.runtimes or []
     unless ctx.graphs?.length
+      unless ctx.component
+        out.send ctx
+        return
+      componentType = getComponentType ctx.component
+      unless componentType
+        out.send ctx
+        return
+      ctx.compatibleRuntimes = findCompatible componentType, rts
       out.send ctx
       return
 

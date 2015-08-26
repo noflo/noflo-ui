@@ -2,12 +2,17 @@ noflo = require 'noflo'
 
 findRuntime = (context) ->
   return context.runtime if context.runtime
-  return null unless context.graphs?.length
+  return null if not context.graphs?.length and not context.component
   return null unless context.compatibleRuntimes?.length
   fallbackRt = null
   for rt in context.compatibleRuntimes
     fallbackRt = rt if rt.protocol is 'iframe'
-    return rt if rt.graph is context.graphs[0].properties.id
+    if context.component
+      return rt if rt.project and rt.project is context.component.project
+    if context.graphs?.length
+      return rt if rt.project and rt.project is context.graphs[0].properties.project
+      # Find runtime where the current graph was set
+      return rt if rt.graph is context.graphs[0].properties.id
   return fallbackRt
 
 exports.getComponent = ->
@@ -32,7 +37,7 @@ exports.getComponent = ->
     out: ['connect', 'context']
   , (context, groups, out) ->
     requireGraphs = String(c.params.requiregraphs) is 'true'
-    if requireGraphs and not context.graphs?.length and not context.remote?.length
+    if requireGraphs and not context.graphs?.length and not context.remote?.length and not context.component
       if not context.runtime or context.runtime.canDo
         out.context.send context
         return
