@@ -166,7 +166,6 @@
         this.debugOnDeviceModal.graph = this.graph;
         this.debugOnDeviceModal.addEventListener('runtime', function (event) {
           var runtime = event.detail;
-          runtime.graph = this.graph.properties.id;
           this.fire('runtime', runtime);
         }.bind(this));
         document.body.appendChild(this.debugOnDeviceModal);
@@ -176,7 +175,6 @@
         this.addIframeModal.graph = this.graph;
         this.addIframeModal.addEventListener('runtime', function (event) {
           var runtime = event.detail;
-          runtime.graph = this.graph.properties.id;
           this.fire('runtime', runtime);
         }.bind(this));
         document.body.appendChild(this.addIframeModal);
