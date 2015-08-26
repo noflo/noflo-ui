@@ -21,6 +21,7 @@ getCommit = (repo, sha, token, callback) ->
   githubGet "/repos/#{repo}/git/commits/#{sha}", token, callback
 
 processGraphsTree = (tree, objects, prefix) ->
+  return unless tree
   graphs = tree.tree.filter (entry) ->
     return false unless entry.type is 'blob'
     return false unless entry.path.match '.*\.(fbp|json)$'
@@ -39,6 +40,7 @@ processGraphsTree = (tree, objects, prefix) ->
     entry
 
 processComponentsTree = (tree, objects, prefix) ->
+  return unless tree
   components = tree.tree.filter (entry) ->
     return false unless entry.type is 'blob'
     return false unless entry.path.match '.*\.(coffee|js|hpp|c|py)$'
@@ -57,6 +59,7 @@ processComponentsTree = (tree, objects, prefix) ->
     entry
 
 processSpecsTree = (tree, objects, prefix) ->
+  return unless tree
   specs = tree.tree.filter (entry) ->
     return false unless entry.type is 'blob'
     return false unless entry.path.match '.*\.(yaml|coffee)$'
