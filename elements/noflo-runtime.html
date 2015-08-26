@@ -207,7 +207,7 @@
           return;
         }
         this.runtime.setMain(this.graph);
-        if (this.runtime.isConnected && this.runtime.isConnected()) {
+        if (this.graph && this.runtime.isConnected && this.runtime.isConnected()) {
           this.online = true;
           this.runtime.sendNetwork('getstatus', {
             graph: this.graph.name || this.graph.properties.id
