@@ -11,6 +11,7 @@ NoFlo UI ChangeLog
 * YAML editing (for fbp-spec) now supports syntax highlighting and linting
 * NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 * NoFlo component creation template now uses more modern 'WirePattern' component
+* [EcmaScript 6](http://es6-features.org/) support for JavaScript runtimes
 
 # 0.10.0 (2015 June 14)
 
