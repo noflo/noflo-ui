@@ -45,11 +45,11 @@
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>
-    </section> 
+    </section>
     <section id="tests">
       <h1>Tests</h1>
       <div id="tests_editor"></div>
-    </section> 
+    </section>
     <script type="text/plain" id="CoffeeScriptExample">
 noflo = require 'noflo'
 
@@ -81,6 +81,35 @@ exports.getComponent = ->
 var noflo = require('noflo');
 
 exports.getComponent = function() {
+  var c = new noflo.Component();
+  c.description = 'Forwards packets and metadata in the same way it receives them';
+  c.icon = 'forward';
+  c.inPorts.add('in', {
+    datatype: 'all',
+    description: 'Packet to forward'
+  });
+  c.outPorts.add('out', {
+    datatype: 'all'
+  });
+  noflo.helpers.WirePattern(c, {
+    "in": ['in'],
+    out: 'out',
+    forwardGroups: true,
+    async: true
+  }, function(data, groups, out, callback) {
+    // do something with data
+    // send output
+    out.send(data);
+    // tell WirePattern we are done
+    return callback();
+  });
+  return c;
+};
+    </script>
+    <script type="text/plain" id="ES6Example">
+import noflo from 'noflo';
+
+export var getComponent = function() {
   var c = new noflo.Component();
   c.description = 'Forwards packets and metadata in the same way it receives them';
   c.icon = 'forward';
@@ -282,7 +311,7 @@ SynthDef("MyFilter", {
         } else if (language === 'yaml') {
           return 'text/x-yaml';
         } else if (language === 'c') {
-          return 'text/x-csrc';  
+          return 'text/x-csrc';
         } else if (language === 'c++') {
           return 'text/x-c++src';
         } else if (language === 'supercollider') {
@@ -303,6 +332,9 @@ SynthDef("MyFilter", {
         }
         if (this.component.language === 'javascript') {
           return this.$.JavaScriptExample.textContent.trim();
+        }
+        if (this.component.language === 'es6') {
+          return this.$.ES6Example.textContent.trim();
         }
         if (this.component.language === 'c') {
           return this.$.ImgfloCExample.textContent.trim();
