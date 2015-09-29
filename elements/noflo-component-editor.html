@@ -106,7 +106,7 @@ exports.getComponent = function() {
   return c;
 };
     </script>
-    <script type="text/plain" id="ES6Example">
+    <script type="text/plain" id="ES2015Example">
 import noflo from 'noflo';
 
 export var getComponent = function() {
@@ -333,8 +333,8 @@ SynthDef("MyFilter", {
         if (this.component.language === 'javascript') {
           return this.$.JavaScriptExample.textContent.trim();
         }
-        if (this.component.language === 'es6') {
-          return this.$.ES6Example.textContent.trim();
+        if (this.component.language === 'es6' || this.component.language === 'es2015') {
+          return this.$.ES2015Example.textContent.trim();
         }
         if (this.component.language === 'c') {
           return this.$.ImgfloCExample.textContent.trim();
