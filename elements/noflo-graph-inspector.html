@@ -198,7 +198,14 @@
         if (!window.Blob || !window.URL) {
           return;
         }
-        var blob = new Blob([JSON.stringify(this.graph, null, 4)], {
+        var graph = JSON.parse(JSON.stringify(this.graph));
+        if (graph.properties) {
+          delete graph.properties.sha;
+          delete graph.properties.changed;
+          delete graph.properties.project;
+          delete graph.properties.id;
+        }
+        var blob = new Blob([JSON.stringify(graph, null, 4)], {
           type: "application/json"
         });
         try {
