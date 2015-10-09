@@ -310,6 +310,8 @@ SynthDef("MyFilter", {
           return language;
         } else if (language === 'yaml') {
           return 'text/x-yaml';
+        } else if (language === 'python') {
+          return 'text/x-python';
         } else if (language === 'c') {
           return 'text/x-csrc';
         } else if (language === 'c++') {
@@ -342,6 +344,10 @@ SynthDef("MyFilter", {
         if (this.component.language === 'supercollider') {
           return this.$.SuperColliderExample.textContent.trim();
         }
+        if (this.component.language === 'python') {
+          return "";
+        }
+        return "";
       },
       themeChanged: function () {
         if (!this.codeEditor || !this.testsEditor) {
