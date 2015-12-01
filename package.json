@@ -17,6 +17,7 @@
     }
   ],
   "dependencies": {
+    "indexeddbshim": "^2.2.1",
     "webcomponents.js": "^0.7.18"
   },
   "devDependencies": {

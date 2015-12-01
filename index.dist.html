@@ -26,7 +26,13 @@
     <script src="bower_components/react/react-with-addons.js"></script>
     <script src="bower_components/ease-djdeath/index.js"></script>
     <script src="bower_components/react.animate-djdeath/react.animate.js"></script>
-    <script src="browser/noflo-noflo-indexeddb/vendor/IndexedDBShim.min.js"></script>
+    <script src="node_modules/indexeddbshim/dist/indexeddbshim.min.js"></script>
+    <script>
+      if (navigator.userAgent.toLowerCase().indexOf('safari/') !== -1) {
+        console.log('Safari detected, replacing broken IndexedDB with shim');
+        window.shimIndexedDB.__useShim();
+      }
+    </script>
     <script src="bower_components/rtc/dist/rtc.js"></script>
     <script src="./browser/noflo-ui.js"></script>
 
