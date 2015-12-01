@@ -16,7 +16,9 @@
       "url": "undefined/blob/master/LICENSE-MIT"
     }
   ],
-  "dependencies": {},
+  "dependencies": {
+    "webcomponents.js": "^0.7.18"
+  },
   "devDependencies": {
     "mocha": "2.3.3",
     "chai": "1.10.0",
