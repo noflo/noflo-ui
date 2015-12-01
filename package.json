@@ -18,7 +18,7 @@
   ],
   "dependencies": {
     "indexeddbshim": "^2.2.1",
-    "webcomponents.js": "^0.7.18"
+    "webcomponents.js": "0.6.0"
   },
   "devDependencies": {
     "mocha": "2.3.3",
