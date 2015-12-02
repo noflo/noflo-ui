@@ -20,7 +20,7 @@ If you just want to create applications, we recommend that you use this version 
 
 Please read more from <http://flowhub.io/documentation/>. See also the [available support channels](http://noflojs.org/support/).
 
-### FBP systems support
+## FBP systems support
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
 Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
