@@ -15,15 +15,22 @@ It is free to use for open source projects, and for private projects if you do n
 
 If you just want to create applications, we recommend that you use this version instead of building your own from source.
 
-
 <a href="http://app.flowhub.io"><img alt="Start Flowhub webapp" src="https://flowhub.io/assets/app-web.svg" width="400"></a>
 <a href="https://chrome.google.com/webstore/detail/flowhub/aacpjichompfhafnciggfpfdpfododlk"><img alt="Install Chrome app" src="https://flowhub.io/assets/app-chrome.svg" width="400"></a>
 
 Please read more from <http://flowhub.io/documentation/>. See also the [available support channels](http://noflojs.org/support/).
 
+### FBP systems support
+
+Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
+Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
+
+By implementing the protocol in your runtime, you can program it with NoFlo UI. If you use WebSockets or WebRTC as the transport, you do not need to change anything on NoFlo UI. One can optionally add syntax highlighting and a 'get started' link to the list of supported runtimes.
+If you need/want to use another transport, you can add [support for that](https://github.com/noflo/noflo-runtime).
 
 ## Development of NoFlo UI
 
+Only necessary if you want to hack on NoFlo UI itself. Not neccesary for making apps with FBP.
 To be able to work on the NoFlo UI you need a checkout of this repository and a working [Node.js](http://nodejs.org/) installation. Go to the checkout folder and run:
 
     $ npm install
@@ -52,10 +59,3 @@ Where 3005 is the port you want the server to run. Once it is built and the serv
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 
 
-### Supporting other FBP systems
-
-Even though the UI itself is built with NoFlo, it isn't talking directly with that for running and building graphs.
-Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
-
-If you want to integrate the UI with a new environment you need to provide some transport layer (for example, WebSockets) that can talk the protocol,
-and then implement [runtime access](https://github.com/noflo/noflo-runtime) for that.
