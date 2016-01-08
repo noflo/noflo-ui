@@ -33,7 +33,7 @@
     "gjohnson/uuid": "*",
     "bergie/octo": "*",
     "visionmedia/superagent": "0.21.0",
-    "jashkenas/underscore": "*",
+    "jashkenas/underscore": "1.8.3",
     "flowbased/fbp-spec": "*"
   },
   "noflo": {
