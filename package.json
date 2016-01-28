@@ -19,7 +19,7 @@
   "dependencies": {},
   "devDependencies": {
     "mocha": "2.3.3",
-    "chai": "1.10.0",
+    "chai": "3.5.0",
     "grunt": "0.4.5",
     "grunt-bower-install-simple": "1.1.4",
     "grunt-coffeelint": "0.0.13",
