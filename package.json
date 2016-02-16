@@ -24,7 +24,7 @@
     "grunt-bower-install-simple": "1.1.4",
     "grunt-coffeelint": "0.0.13",
     "grunt-contrib-clean": "0.6.0",
-    "grunt-contrib-coffee": "0.13.0",
+    "grunt-contrib-coffee": "1.0.0",
     "component": "^0.14.0",
     "grunt-contrib-compress": "0.14.0",
     "grunt-contrib-connect": "0.7.1",
