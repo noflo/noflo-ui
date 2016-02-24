@@ -9,9 +9,9 @@ window.addEventListener('polymer-ready', function() {
   var mainGraph = 'noflo-ui/graphs/main.fbp';
 
   var loadGraphs = function(callback) {
-    noflo.graph.loadJSON(require(mainGraph), function (g) {
+    noflo.graph.loadJSON(require(mainGraph), function (err, g) {
       g.baseDir = baseDir;
-      noflo.createNetwork(g, function (n) {
+      noflo.createNetwork(g, function (err, n) {
         n.on('process-error', function (err) {
           console.log(err);
         });
