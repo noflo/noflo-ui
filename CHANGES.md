@@ -13,6 +13,8 @@ NoFlo UI ChangeLog
 * NoFlo component creation template now uses more modern 'WirePattern' component
 * [EcmaScript 6](http://es6-features.org/) support for JavaScript runtimes
 * Python component language support, including syntax highlighting
+* Updated application to be compatible with NoFlo 0.6
+* Fixed Safari 9 compatibility
 
 # 0.10.0 (2015 June 14)
 
