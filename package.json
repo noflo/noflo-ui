@@ -16,7 +16,10 @@
       "url": "undefined/blob/master/LICENSE-MIT"
     }
   ],
-  "dependencies": {},
+  "dependencies": {
+    "indexeddbshim": "^2.2.1",
+    "webcomponents.js": "0.6.0"
+  },
   "devDependencies": {
     "mocha": "2.3.3",
     "chai": "1.10.0",
