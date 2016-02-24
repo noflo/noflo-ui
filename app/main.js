@@ -1,7 +1,6 @@
 console.time('noflo-ui-init');
 console.time('polymer-ready');
 
-
 window.addEventListener('polymer-ready', function() {
   var noflo = require('noflo');
   var runtime = require('noflo-runtime-webrtc');
@@ -22,7 +21,10 @@ window.addEventListener('polymer-ready', function() {
   };
   var loadGraphsDebuggable = function(callback) {
     var secret = Math.random().toString(36).substring(7);
-    noflo.graph.loadJSON(require(mainGraph), function (graph) {
+    noflo.graph.loadJSON(require(mainGraph), function (err, graph) {
+      if (err) {
+        console.log(err);
+      }
       graph.baseDir = baseDir;
       var runtimeOptions = {
         defaultGraph: graph,
