@@ -322,12 +322,12 @@ module.exports = ->
             version: '39'
           ,
             browserName: 'safari'
-            platform: 'OS X 10.9'
-            version: '7'
+            platform: 'OS X 10.11'
+            version: '9'
           ,
             browserName: 'ipad'
             platform: 'OS X 10.9'
-            version: '8.1'
+            version: '9.2'
           ,
             browserName: 'internet explorer'
             platform: 'Windows 8.1',
