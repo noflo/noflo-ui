@@ -21,7 +21,7 @@
     "webcomponents.js": "0.6.0"
   },
   "devDependencies": {
-    "mocha": "2.3.3",
+    "mocha": "2.4.5",
     "chai": "1.10.0",
     "grunt": "0.4.5",
     "grunt-bower-install-simple": "1.1.4",
