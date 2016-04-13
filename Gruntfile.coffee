@@ -325,10 +325,6 @@ module.exports = ->
             platform: 'OS X 10.11'
             version: '9'
           ,
-            browserName: 'ipad'
-            platform: 'OS X 10.9'
-            version: '9.2'
-          ,
             browserName: 'internet explorer'
             platform: 'Windows 8.1',
             version: '11'
