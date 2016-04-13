@@ -21,7 +21,7 @@
     "webcomponents.js": "0.6.0"
   },
   "devDependencies": {
-    "mocha": "2.3.3",
+    "mocha": "^2.4.5",
     "chai": "1.10.0",
     "grunt": "0.4.5",
     "grunt-bower-install-simple": "1.1.4",
@@ -39,7 +39,7 @@
     "grunt-noflo-browser": "0.1.11",
     "grunt-noflo-manifest": "0.1.11",
     "grunt-phonegap-build": "0.0.8",
-    "grunt-saucelabs": "8.6.1",
+    "grunt-saucelabs": "^8.6.1",
     "grunt-string-replace": "1.2.0",
     "grunt-vulcanize": "0.4.2",
     "grunt-zip": "0.13.0"
