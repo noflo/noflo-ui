@@ -34,7 +34,7 @@
     "bergie/octo": "*",
     "visionmedia/superagent": "0.21.0",
     "jashkenas/underscore": "1.8.3",
-    "flowbased/fbp-spec": "*"
+    "flowbased/fbp-spec": "0.1.6"
   },
   "noflo": {
     "components": {
