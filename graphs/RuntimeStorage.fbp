@@ -34,6 +34,12 @@ DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 # Get components list when connecting to new runtime
 ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
+
+ProjectRuntime RUNTIME -> RUNTIME ListenRuntime(runtime/ListenRuntime)
+DirectRuntime RUNTIME -> RUNTIME ListenRuntime
+
+ListenRuntime CONNECTED -> IN Drop(core/Drop)
+
 ListComponents OUT -> IN UpdateLibrary(ui/UpdateComponentLibrary)
 ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary
 DirectRuntime RUNTIME -> RUNTIME UpdateLibrary
@@ -44,6 +50,10 @@ ListComponents ERROR -> IN ShowErrors
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
 SubscribeGraph RUNTIME -> RUNTIME SendGraph(runtime/SendGraphChanges)
 SubscribeGraph GRAPH -> GRAPH SendGraph
+
+SubscribeGraph GRAPH -> GRAPH UpdateGraph(ui/UpdateGraph)
+ListenRuntime GRAPH -> EVENT UpdateGraph
+
 SubscribeGraph OUT -> IN MergeContext(core/Merge)
 
 SubscribeGraph RUNTIME -> RUNTIME ListenNetwork(runtime/ListenNetwork)
