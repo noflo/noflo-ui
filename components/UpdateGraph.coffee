@@ -1,6 +1,12 @@
 noflo = require 'noflo'
 _ = require 'underscore'
 
+getInport = (graph, publicPort) ->
+  graph.inports[publicPort]
+
+getOutport = (graph, publicPort) ->
+  graph.outports[publicPort]
+
 getInitial = (graph, node, port) ->
   for initial in graph.initializers
     if initial.to.node is node and initial.to.port is port
@@ -49,7 +55,10 @@ class UpdateGraph extends noflo.Component
             when 'removenode'
               id = payload.payload.id
 
-              graph.removeNode id
+              oldNode = graph.getNode id
+
+              if oldNode
+                graph.removeNode id
 
             when 'changenode'
               id = payload.payload.id
@@ -128,7 +137,8 @@ class UpdateGraph extends noflo.Component
               port = payload.payload.port
               metadata = payload.payload.metadata
 
-              graph.addInport publicPort, node, port, metadata
+              unless getInport graph, publicPort
+                graph.addInport publicPort, node, port, metadata
 
             when 'removeinport'
               publicPort = payload.payload.public
@@ -138,7 +148,10 @@ class UpdateGraph extends noflo.Component
               from = payload.payload.from
               to = payload.payload.to
 
-              graph.renameInport from, to
+              renamed = getInport graph, to
+
+              unless renamed
+                graph.renameInport from, to
 
             when 'addoutport'
               publicPort = payload.payload.public
@@ -146,7 +159,8 @@ class UpdateGraph extends noflo.Component
               port = payload.payload.port
               metadata = payload.payload.metadata
 
-              graph.addOutport publicPort, node, port, metadata
+              unless getOutport graph, publicPort
+                graph.addOutport publicPort, node, port, metadata
 
             when 'removeoutport'
               publicPort = payload.payload.public
@@ -155,6 +169,11 @@ class UpdateGraph extends noflo.Component
             when 'renameoutport'
               from = payload.payload.from
               to = payload.payload.to
+
+              renamed = getInport graph, to
+
+              unless renamed
+                graph.renameInport from, to
 
               graph.renameOutport from, to
 
