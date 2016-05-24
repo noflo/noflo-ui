@@ -36,7 +36,7 @@ exports.getComponent = ->
     @runtime = runtime
     @graph = graph
     @graphId = graphId graph
-    @listener = (status) =>
+    @listener = (status) ->
       return unless status.online
       c.setRuntimeDebug true
     @runtime.on 'capabilities', c.listener
