@@ -20,7 +20,7 @@
     "noflo/noflo-objects": "*",
     "noflo/noflo-groups": "*",
     "noflo/noflo-routers": "*",
-    "noflo/noflo-dom": "*",
+    "noflo/noflo-dom": "0.1.0",
     "noflo/noflo-core": "0.2.0",
     "noflo/noflo-polymer": "*",
     "noflo/noflo-indexeddb": "*",
