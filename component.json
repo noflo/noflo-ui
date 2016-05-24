@@ -21,7 +21,7 @@
     "noflo/noflo-groups": "*",
     "noflo/noflo-routers": "*",
     "noflo/noflo-dom": "*",
-    "noflo/noflo-core": "*",
+    "noflo/noflo-core": "0.2.0",
     "noflo/noflo-polymer": "*",
     "noflo/noflo-indexeddb": "*",
     "noflo/noflo-github": "*",
