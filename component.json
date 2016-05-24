@@ -23,7 +23,7 @@
     "noflo/noflo-dom": "0.1.0",
     "noflo/noflo-core": "0.2.0",
     "noflo/noflo-polymer": "*",
-    "noflo/noflo-indexeddb": "*",
+    "noflo/noflo-indexeddb": "0.1.0",
     "noflo/noflo-github": "*",
     "noflo/noflo-graph": "*",
     "noflo/noflo-runtime": "0.2.0",
