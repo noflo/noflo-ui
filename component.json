@@ -30,7 +30,7 @@
     "noflo/noflo-runtime-webrtc": "0.0.5",
     "the-grid/flowhub-registry": "0.0.4",
     "jonnor/microflo": "0.3.36",
-    "gjohnson/uuid": "*",
+    "gjohnson/uuid": "0.0.1",
     "bergie/octo": "*",
     "visionmedia/superagent": "0.21.0",
     "jashkenas/underscore": "1.8.3",
