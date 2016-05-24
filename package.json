@@ -10,12 +10,7 @@
     "type": "git",
     "url": "git://github.com/noflo/noflo-ui.git"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "undefined/blob/master/LICENSE-MIT"
-    }
-  ],
+  "license": "MIT",
   "dependencies": {
     "indexeddbshim": "^2.2.1",
     "webcomponents.js": "0.6.0"
@@ -47,5 +42,5 @@
   "scripts": {
     "test": "grunt test"
   },
-  "keywords": []
+  "keywords": ["noflo", "fbp"]
 }
