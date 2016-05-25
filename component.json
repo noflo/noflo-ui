@@ -24,7 +24,7 @@
     "noflo/noflo-core": "0.2.0",
     "noflo/noflo-polymer": "0.1.0",
     "noflo/noflo-indexeddb": "0.1.0",
-    "noflo/noflo-github": "*",
+    "noflo/noflo-github": "0.0.15",
     "noflo/noflo-graph": "*",
     "noflo/noflo-runtime": "0.2.0",
     "noflo/noflo-runtime-webrtc": "0.0.5",
