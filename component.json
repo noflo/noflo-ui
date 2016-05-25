@@ -19,7 +19,7 @@
     "noflo/noflo-interaction": "0.1.0",
     "noflo/noflo-objects": "*",
     "noflo/noflo-groups": "*",
-    "noflo/noflo-routers": "*",
+    "noflo/noflo-routers": "0.2.1",
     "noflo/noflo-dom": "0.1.0",
     "noflo/noflo-core": "0.2.0",
     "noflo/noflo-polymer": "0.1.0",
