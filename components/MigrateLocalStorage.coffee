@@ -41,7 +41,7 @@ class MigrateLocalStorage extends noflo.Component
     graphs = @getGraphs()
     return if graphs.length is 0
     succeeded = 0
-    success = =>
+    success = ->
       succeeded++
       return unless succeeded is graphs.length
       # TODO: Remove from localStorage?
