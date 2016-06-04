@@ -58,7 +58,7 @@
           ga('send', 'event', 'button', 'click', 'newGraph');
         }
         var noflo = require('noflo');
-        var graph = new noflo.Graph(this.name);
+        var graph = new noflo.Graph(this.name, {caseSensitive: true});
         graph.setProperties({
           project: this.project.id,
           id: this.project.id+'/'+this.name,

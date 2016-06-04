@@ -609,7 +609,7 @@
         document.body.appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var noflo = require('noflo');
-          var graph = new noflo.Graph('main');
+          var graph = new noflo.Graph('main', {caseSensitive: true});
           var graphId = event.detail.id + '/main';
           graph.setProperties({
             id: graphId,
