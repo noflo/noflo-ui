@@ -1,4 +1,37 @@
-module.exports = ->
+path = require 'path'
+
+module.exports = (grunt) ->
+  configFile = grunt.option 'config'
+  config = if configFile
+    require path.resolve configFile
+  else
+    {}
+
+  defaultConfig =
+    NOFLO_OAUTH_PROVIDER: 'https://passport.thegrid.io'
+    NOFLO_OAUTH_GATE: 'https://noflo-gate.herokuapp.com'
+    NOFLO_OAUTH_SERVICE_USER: 'https://api.flowhub.io'
+    NOFLO_OAUTH_CLIENT_ID: '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
+    NOFLO_OAUTH_CLIENT_SECRET: ''
+    NOFLO_OAUTH_ENDPOINT_AUTHORIZE: '/login/authorize'
+    NOFLO_OAUTH_ENDPOINT_TOKEN: '/token'
+    NOFLO_OAUTH_ENDPOINT_AUTHENTICATE: '/authenticate'
+    NOFLO_OAUTH_ENDPOINT_USER: '/user'
+    NOFLO_REGISTRY_SERVICE: 'https://api.flowhub.io'
+    NOFLO_APP_NAME: 'NoFlo UI'
+    NOFLO_APP_TITLE: 'NoFlo Development Environment'
+    NOFLO_APP_LOADING: 'Preparing NoFlo UI...'
+    NOFLO_ORGANIZATION: 'NoFlo Community'
+    NOFLO_WEBSITE: 'http://noflojs.org'
+    NOFLO_APP_DESCRIPTION: 'Flow-Based Programming Environment'
+    NOFLO_APP_VERSION: '<%= pkg.version %>'
+    NOFLO_THEME: 'noflo'
+    NOFLO_USER_LOGIN_ENABLED: true
+    NOFLO_OFFLINE_MODE: false
+
+  getConfig = (option) ->
+    process.env[option] or config[option] or defaultConfig[option]
+
   # Project configuration
   @initConfig
     pkg: @file.readJSON 'package.json'
@@ -101,67 +134,10 @@ module.exports = ->
           './manifest.json': './manifest.dist.json'
           './manifest.webapp.json': './manifest.dist.webapp.json'
         options:
-          replacements: [
-            pattern: /\$NOFLO_OAUTH_PROVIDER/ig
-            replacement: process.env.NOFLO_OAUTH_PROVIDER or 'https://passport.thegrid.io'
-          ,
-            pattern: /\$NOFLO_OAUTH_GATE/ig
-            replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com'
-          ,
-            pattern: /\$NOFLO_OAUTH_SERVICE_USER/ig
-            replacement: process.env.NOFLO_OAUTH_SERVICE_USER or 'https://api.flowhub.io'
-          ,
-            pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
-            replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
-          ,
-            pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
-            replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
-          ,
-            pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize'
-          ,
-            pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/login/authorize/token'
-          ,
-            pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate'
-          ,
-            pattern: /\$NOFLO_OAUTH_ENDPOINT_USER/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_USER or '/user'
-          ,
-            pattern: /\$NOFLO_REGISTRY_SERVICE/ig
-            replacement: process.env.NOFLO_REGISTRY_SERVICE or 'https://api.flowhub.io'
-          ,
-            pattern: /\$NOFLO_APP_NAME/ig
-            replacement: process.env.NOFLO_APP_NAME or process.env.NOFLO_APP_TITLE or 'NoFlo UI'
-          ,
-            pattern: /\$NOFLO_APP_TITLE/ig
-            replacement: process.env.NOFLO_APP_TITLE or 'NoFlo Development Environment'
-          ,
-            pattern: /\$NOFLO_APP_LOADING/ig
-            replacement: process.env.NOFLO_APP_LOADING or 'Preparing NoFlo UI...'
-          ,
-            pattern: /\$NOFLO_ORGANIZATION/ig
-            replacement: process.env.NOFLO_ORGANIZATION or 'NoFlo Community'
-          ,
-            pattern: /\$NOFLO_WEBSITE/ig
-            replacement: process.env.NOFLO_WEBSITE or 'http://noflojs.org'
-          ,
-            pattern: /\$NOFLO_APP_DESCRIPTION/ig
-            replacement: process.env.NOFLO_APP_DESCRIPTION or 'Flow-Based Programming Environment'
-          ,
-            pattern: /\$NOFLO_APP_VERSION/ig
-            replacement: process.env.NOFLO_APP_VERSION or '<%= pkg.version %>'
-          ,
-            pattern: /\$NOFLO_THEME/ig
-            replacement: process.env.NOFLO_THEME or 'noflo'
-          ,
-            pattern: /\$NOFLO_USER_LOGIN_ENABLED/ig
-            replacement: process.env.NOFLO_USER_LOGIN_ENABLED or true
-          ,
-            pattern: /\$NOFLO_OFFLINE_MODE/ig
-            replacement: process.env.NOFLO_OFFLINE_MODE or false
-          ]
+          replacements: (for option of defaultConfig
+            pattern: new RegExp "\\$#{option}", "ig"
+            replacement: getConfig option
+          )
       analytics:
         files:
           './dist/index.html': './dist/index.html'
