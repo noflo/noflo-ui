@@ -81,14 +81,18 @@
               }
             }
           }
-          this.fire('result', {
-            label: component.name,
-            icon: component.icon || 'cog',
-            description: component.description,
-            action: function () {
-              this.addNode(component);
-            }.bind(this)
-          });
+          // timeout required because events fired by polymer that are received
+          // by graph router need to clean up before the graph receives another event
+          window.setTimeout(function () {
+            this.fire('result', {
+              label: component.name,
+              icon: component.icon || 'cog',
+              description: component.description,
+              action: function () {
+                this.addNode(component);
+              }.bind(this)
+            });
+          }.bind(this), 0);
         }.bind(this));
       }
     });
