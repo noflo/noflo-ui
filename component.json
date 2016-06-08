@@ -12,7 +12,7 @@
     "dataflow"
   ],
   "dependencies": {
-    "noflo/noflo": "0.7.5",
+    "noflo/noflo": "0.7.7",
     "noflo/noflo-strings": "0.1.12",
     "noflo/noflo-ajax": "0.1.5",
     "noflo/noflo-localstorage": "0.1.0",
@@ -29,9 +29,12 @@
     "noflo/noflo-runtime": "0.2.0",
     "noflo/noflo-runtime-webrtc": "0.0.5",
     "the-grid/flowhub-registry": "0.0.4",
-    "jonnor/microflo": "0.3.36",
+    "microflo/microflo": "0.3.37",
     "gjohnson/uuid": "0.0.1",
     "bergie/octo": "*",
+    "bergie/emitter": "*",
+    "mrluc/owl-deepcopy": "*",
+    "broofa/node-uuid": "*",
     "visionmedia/superagent": "0.21.0",
     "jashkenas/underscore": "1.8.3",
     "flowbased/fbp": "1.1.7",

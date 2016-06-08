@@ -164,6 +164,28 @@ module.exports = ->
         flatten: true
         src: ['./bower_components/the-graph/themes/*.css']
         dest: './themes/'
+      # HACK: use NPM modules for component.io build. In particular because of corruption issues
+      componentio:
+        files: [
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo', dest: 'components/noflo-noflo/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-strings', dest: 'components/noflo-noflo-strings/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-ajax', dest: 'components/noflo-noflo-ajax/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-localstorage', dest: 'components/noflo-noflo-localstorage/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-interaction', dest: 'components/noflo-noflo-interaction/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-objects', dest: 'components/noflo-noflo-objects/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-groups', dest: 'components/noflo-noflo-groups/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-routers', dest: 'components/noflo-noflo-routers/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-dom', dest: 'components/noflo-noflo-dom/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-core', dest: 'components/noflo-noflo-core/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-polymer', dest: 'components/noflo-noflo-polymer/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-indexeddb', dest: 'components/noflo-noflo-indexeddb/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-github', dest: 'components/noflo-noflo-github/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-graph', dest: 'components/noflo-noflo-graph/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-runtime', dest: 'components/noflo-noflo-runtime/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-runtime-base', dest: 'components/noflo-noflo-runtime-base/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/noflo-runtime-webrtc', dest: 'components/noflo-noflo-runtime-webrtc/' }
+          { expand: true, src: ['./**/*'], cwd: 'node_modules/fbp', dest: 'components/flowbased-fbp/' }
+        ]
 
     compress:
       app:
@@ -372,8 +394,8 @@ module.exports = ->
   # Our local tasks
   @registerTask 'nuke', ['clean']
   @registerTask 'build', ['inlinelint', 'noflo_manifest', 'bower-install-simple',
-                          'noflo_browser',
-                          'copy', 'vulcanize', 'string-replace:app', 'compress']
+                          'copy:componentio', 'noflo_browser',
+                          'copy:themes', 'vulcanize', 'string-replace:app', 'compress']
   @registerTask 'rebuild', ['nuke', 'build']
   @registerTask 'test', [
     'coffeelint:app'
