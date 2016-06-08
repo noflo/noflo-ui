@@ -17,7 +17,7 @@
     "flowhub-registry": "0.0.4",
     "indexeddbshim": "^2.2.1",
     "microflo": "0.3.36",
-    "noflo": "git://github.com/noflo/noflo.git#custom_loaders",
+    "noflo": "~0.7.7",
     "noflo-ajax": "0.1.5",
     "noflo-core": "0.2.3",
     "noflo-dom": "0.1.0",

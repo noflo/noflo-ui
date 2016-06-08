@@ -12,7 +12,7 @@
     "dataflow"
   ],
   "dependencies": {
-    "noflo/noflo": "custom_loaders",
+    "noflo/noflo": "0.7.7",
     "noflo/noflo-strings": "0.1.12",
     "noflo/noflo-ajax": "0.1.5",
     "noflo/noflo-localstorage": "0.1.0",
