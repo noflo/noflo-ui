@@ -31,7 +31,7 @@
     "grunt-contrib-watch": "1.0.0",
     "grunt-gh-pages": "0.9.1",
     "grunt-lint-inline": "0.4.4",
-    "grunt-noflo-browser": "0.1.17",
+    "grunt-noflo-browser": "0.1.18",
     "grunt-noflo-manifest": "0.1.11",
     "grunt-phonegap-build": "0.0.8",
     "grunt-saucelabs": "^8.6.1",
@@ -42,5 +42,8 @@
   "scripts": {
     "test": "grunt test"
   },
-  "keywords": ["noflo", "fbp"]
+  "keywords": [
+    "noflo",
+    "fbp"
+  ]
 }
