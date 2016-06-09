@@ -14,6 +14,29 @@ module.exports = ->
     noflo_browser:
       options:
         baseDir: './'
+        webpack:
+          externals:
+            'repl': 'commonjs repl' # somewhere inside coffee-script
+            'child_process': 'commonjs child_process' # somewhere inside coffee-script
+            'module': 'commonjs module' # somewhere inside coffee-script
+            'jison': 'commonjs jison'
+            'should': 'commonjs should' # used by tests in octo
+            'express': 'commonjs express' # used by tests in octo
+            'highlight': 'commonjs highlight' # used by octo?
+            'emitter': 'commonjs emitter' # used by octo?
+            'microflo-emscripten': 'commonjs microflo-emscripten' # optional?
+            'acorn': 'commonjs acorn' # optional?
+          module:
+            loaders: [
+              { test: /\.coffee$/, loader: "coffee-loader" }
+              { test: /\.json$/, loader: "json-loader" }
+              { test: /\.fbp$/, loader: "fbp-loader" }
+            ]
+          resolve:
+            extensions: ["", ".coffee", ".js"]
+        ignores: [
+          /bin\/coffee/
+        ]
       main:
         files:
           'browser/noflo-ui.js': ['./app/main.js']
