@@ -79,7 +79,7 @@ window.addEventListener('polymer-ready', function() {
   document.body.classList.remove('loading');
   window.nofloStarted = false;
   console.time('noflo-prepare');
-  var load = (true) ? loadGraphsDebuggable : loadGraphs;
+  var load = (false) ? loadGraphsDebuggable : loadGraphs;
   load(function() {
       console.timeEnd('noflo-prepare');
       console.timeEnd('noflo-ui-init');
