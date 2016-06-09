@@ -18,9 +18,11 @@ module.exports = ->
 
     # Browser build of NoFlo
     noflo_browser:
+      options:
+        baseDir: './'
       main:
         files:
-          'browser/noflo-ui.js': ['component.json']
+          'browser/noflo-ui.js': ['./app/main.js']
 
     # Vulcanization compiles the Polymer elements into a HTML file
     vulcanize:
