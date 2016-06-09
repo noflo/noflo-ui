@@ -32,7 +32,7 @@
     "noflo-routers": "0.2.1",
     "noflo-runtime": "0.2.0",
     "noflo-runtime-base": "^0.7.3",
-    "noflo-runtime-webrtc": "0.0.5",
+    "noflo-runtime-webrtc": "0.7.1",
     "noflo-strings": "0.1.12",
     "webcomponents.js": "0.6.0"
   },
