@@ -13,7 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "fbp": "1.1.7",
-    "fbp-spec": "0.1.6",
+    "fbp-spec": "0.1.15",
     "flowhub-registry": "0.0.4",
     "indexeddbshim": "^2.2.1",
     "microflo": "0.3.36",
