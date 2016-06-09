@@ -5,7 +5,8 @@ var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
   'uuid': require('uuid'),
-  'flowhub-registry': require('flowhub-registry')
+  'flowhub-registry': require('flowhub-registry'),
+  'noflo-ui/src/JournalStore': require('../src/JournalStore')
 };
 
 window.require = function (moduleName) {
