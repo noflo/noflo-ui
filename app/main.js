@@ -20,10 +20,10 @@ window.addEventListener('polymer-ready', function() {
   var runtime = require('noflo-runtime-webrtc');
 
   var baseDir = '/noflo-ui';
-  var mainGraph = 'noflo-ui/graphs/main.fbp';
+  var mainGraph = require('../graphs/main.fbp');
 
   var loadGraphs = function(callback) {
-    noflo.graph.loadJSON(require(mainGraph), function (err, g) {
+    noflo.graph.loadJSON(mainGraph, function (err, g) {
       if (err) {
         throw err;
       }
@@ -38,7 +38,7 @@ window.addEventListener('polymer-ready', function() {
   };
   var loadGraphsDebuggable = function(callback) {
     var secret = Math.random().toString(36).substring(7);
-    noflo.graph.loadJSON(require(mainGraph), function (err, graph) {
+    noflo.graph.loadJSON(mainGraph, function (err, graph) {
       if (err) {
         console.log(err);
       }
