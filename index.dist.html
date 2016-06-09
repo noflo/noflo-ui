@@ -19,6 +19,9 @@
     <link rel="icon" sizes="192x192" href="app/$NOFLO_THEME-192.png">
     <link rel="icon" sizes="128x128" href="app/$NOFLO_THEME-128.png">
     <link rel="shortcut icon" href="$NOFLO_THEME.ico" />
+
+    <script src="./browser/noflo-ui.js"></script>
+
     <script src="node_modules/webcomponents.js/webcomponents.min.js"></script>
     <link rel="import" href="bower_components/polymer/polymer.html">
     <script src="bower_components/klayjs-noflo/klay-noflo.js"></script>
@@ -34,7 +37,6 @@
       }
     </script>
     <script src="bower_components/rtc/dist/rtc.js"></script>
-    <script src="./browser/noflo-ui.js"></script>
 
     <script src="../bower_components/codemirror/lib/codemirror.js"></script>
     <script src="../bower_components/codemirror/mode/xml/xml.js"></script>
@@ -59,7 +61,7 @@
     <script src="../bower_components/codemirror/addon/lint/yaml-lint.js"></script>
 
     <link rel="import" href="elements/noflo-ui.html">
-    <link rel="import" href="browser/noflo-noflo-polymer/noflo-polymer/noflo-polymer.html">
+    <link rel="import" href="node_modules/noflo-polymer/noflo-polymer/noflo-polymer.html">
     <noflo-polymer name="noflo-ui" inports="user context width height" outports="event"></noflo-polymer>
     <link rel="import" href="./css/font-awesome-shadow.html">
     <link rel="stylesheet" href="./css/noflo-ui.css">
@@ -69,6 +71,5 @@
     <!-- $NOFLO_APP_ANALYTICS -->
     <div id="loading">$NOFLO_APP_LOADING</div>
     <noflo-ui id="container"></noflo-ui>
-    <script src="app/main.js"></script>
   </body>
 </html>
