@@ -28,7 +28,7 @@
     "noflo-interaction": "0.1.0",
     "noflo-localstorage": "0.1.0",
     "noflo-objects": "0.1.13",
-    "noflo-polymer": "0.1.0",
+    "noflo-polymer": "0.1.1",
     "noflo-routers": "0.2.1",
     "noflo-runtime": "0.2.0",
     "noflo-runtime-base": "^0.7.3",
