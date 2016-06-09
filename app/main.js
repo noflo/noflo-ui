@@ -29,6 +29,9 @@ window.addEventListener('polymer-ready', function() {
       }
       g.baseDir = baseDir;
       noflo.createNetwork(g, function (err, n) {
+        if (err) {
+          throw err;
+        }
         n.on('process-error', function (err) {
           console.log(err);
         });
