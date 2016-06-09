@@ -53,7 +53,6 @@
     "grunt-gh-pages": "0.9.1",
     "grunt-lint-inline": "0.4.4",
     "grunt-noflo-browser": "1.0.0-alpha3",
-    "grunt-noflo-manifest": "0.1.11",
     "grunt-phonegap-build": "0.0.8",
     "grunt-saucelabs": "^8.6.1",
     "grunt-string-replace": "1.2.1",
