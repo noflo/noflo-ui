@@ -1,6 +1,20 @@
 console.time('noflo-ui-init');
 console.time('polymer-ready');
 
+var exported = {
+  noflo: require('noflo'),
+  underscore: require('underscore'),
+  'uuid': require('uuid'),
+  'flowhub-registry': require('flowhub-registry')
+};
+
+window.require = function (moduleName) {
+  if (exported[moduleName]) {
+    return exported[moduleName];
+  }
+  throw new Error('Module ' + moduleName + ' not available');
+};
+
 window.addEventListener('polymer-ready', function() {
   var noflo = require('noflo');
   var runtime = require('noflo-runtime-webrtc');
