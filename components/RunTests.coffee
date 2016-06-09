@@ -1,5 +1,4 @@
 noflo = require 'noflo'
-fbpSpec = require 'fbp-spec'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -33,6 +32,10 @@ exports.getComponent = ->
     unless specs.length
       do callback
       return
+    try
+      fbpSpec = require 'fbp-spec'
+    catch e
+      return callback e
 
     suites = []
     for s in specs
