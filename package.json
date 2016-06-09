@@ -30,7 +30,7 @@
     "noflo-objects": "0.1.13",
     "noflo-polymer": "0.1.0",
     "noflo-routers": "0.2.1",
-    "noflo-runtime": "0.2.0",
+    "noflo-runtime": "0.3.1",
     "noflo-runtime-base": "^0.7.3",
     "noflo-runtime-webrtc": "0.0.5",
     "noflo-strings": "0.1.12",
