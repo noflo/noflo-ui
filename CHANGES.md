@@ -3,18 +3,30 @@ NoFlo UI ChangeLog
 
 # 0.11.0 (git master)
 
+New features
+
 * Automatic running and visualization of [fbp-spec](https://github.com/flowbased/fbp-spec) tests when components or graphs change
 * Component libraries are cached by runtime. Allows full editing of graphs when not connected to runtime
 * Component search now also seeks descriptions, not just names
 * Component changes are now sent to the runtime only after user has stopped typing, instead of on every change
-* The iframe runtime communication is now serialized as JSON. You will to rebuild old noflo-browser apps to be compatible.
 * YAML editing (for fbp-spec) now supports syntax highlighting and linting
-* NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 * NoFlo component creation template now uses more modern 'WirePattern' component
 * [EcmaScript 6](http://es6-features.org/) support for JavaScript runtimes
 * Python component language support, including syntax highlighting
-* Updated application to be compatible with NoFlo 0.6
+
+Breaking changes
+
+* The iframe runtime communication is now serialized as JSON. Old noflo-browser apps must be rebuilt with `noflo-runtime-iframe 0.6.0+` to be compatible.
+
+Bugfixes
+
 * Fixed Safari 9 compatibility
+
+Internal changes
+
+* Using NoFlo 0.7 instead of NoFlo 0.5
+* Using Webpack and NPM dependencies for building instead of component.io. Requires using NPM version 3 or higher
+* NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 
 # 0.10.0 (2015 June 14)
 
