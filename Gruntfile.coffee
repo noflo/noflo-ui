@@ -33,6 +33,8 @@ module.exports = ->
             ]
           resolve:
             extensions: ["", ".coffee", ".js"]
+          node:
+            fs: "mock"
         ignores: [
           /bin\/coffee/
           /fbp-spec/
