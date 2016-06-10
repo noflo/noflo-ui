@@ -22,10 +22,14 @@ checkToken = (url, params, callback) ->
         return callback null, null
 
       callback null, token_found
+
+  config =
+    client_secret: '$NOFLO_OAUTH_CLIENT_SECRET'
+
   # get token directly from provider
-  if '$NOFLO_OAUTH_CLIENT_SECRET' isnt ''
+  if config.client_secret
     redirect = params.redirect or window.location.href
-    post_params = "code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=$NOFLO_OAUTH_CLIENT_SECRET&redirect_uri=#{encodeURIComponent(redirect)}"
+    post_params = "code=#{code[1]}&client_id=#{params.clientid}&grant_type=authorization_code&client_secret=#{config.client_secret}&redirect_uri=#{encodeURIComponent(redirect)}"
     req.open 'POST', "#{params.site}$NOFLO_OAUTH_ENDPOINT_TOKEN", true
     # Set headers required for POST request
     req.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
@@ -34,9 +38,10 @@ checkToken = (url, params, callback) ->
     # Send data
     req.send post_params
   # get token from oauth2 gate
-  if '$NOFLO_OAUTH_CLIENT_SECRET' is '' or null
+  else
     req.open 'GET', "#{params.gatekeeper}$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/#{code[1]}", true
     req.send null
+
 
 exports.getComponent = ->
   c = new noflo.Component
