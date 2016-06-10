@@ -12,10 +12,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "coffeelint": "^1.15.7",
     "fbp": "1.1.7",
     "fbp-spec": "~0.1.15",
     "flowhub-registry": "0.0.4",
     "indexeddbshim": "^2.2.1",
+    "jshint": "^2.9.2",
     "microflo": "0.3.36",
     "noflo": "~0.7.7",
     "noflo-ajax": "~0.1.5",

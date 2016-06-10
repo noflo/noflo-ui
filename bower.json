@@ -21,9 +21,7 @@
     "the-graph": "0.3.11",
     "font-awesome": "~4.4.0",
     "codemirror": "~4.11.0",
-    "coffeelint": "clutchski/coffeelint#gh-pages",
-    "rtc": "rtc-io/rtc#3.1.1",
-    "jshint": "~2.5.11"
+    "rtc": "rtc-io/rtc#3.1.1"
   },
   "devDependencies": {
     "syn": "~0.0.3"
