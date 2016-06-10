@@ -20,7 +20,6 @@
     "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
     "the-graph": "0.3.11",
     "font-awesome": "~4.4.0",
-    "codemirror": "~4.11.0",
     "rtc": "rtc-io/rtc#3.1.1"
   },
   "devDependencies": {
