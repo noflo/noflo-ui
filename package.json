@@ -17,6 +17,7 @@
     "fbp": "1.1.7",
     "fbp-spec": "~0.1.15",
     "flowhub-registry": "0.0.4",
+    "font-awesome": "^4.6.3",
     "indexeddbshim": "^2.2.1",
     "jshint": "^2.9.2",
     "microflo": "0.3.36",
