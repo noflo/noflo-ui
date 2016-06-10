@@ -121,7 +121,7 @@ module.exports = ->
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/token'
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/login/authorize/token'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate'
