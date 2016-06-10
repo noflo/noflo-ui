@@ -190,10 +190,6 @@ module.exports = ->
         options:
           archive: 'noflo-<%= pkg.version %>.zip'
         files: [
-          src: ['browser/noflo-noflo-indexeddb/vendor/*']
-          expand: true
-          dest: '/'
-        ,
           src: ['browser/noflo-ui.js']
           expand: true
           dest: '/'
@@ -204,7 +200,7 @@ module.exports = ->
             'node_modules/codemirror/lib/*.css'
             'node_modules/codemirror/theme/mdn-like.css'
             'node_modules/coffee-script/extras/*.js'
-            'node_modules/coffeelint/js/coffeelint.js'
+            'node_modules/coffeelint/lib/coffeelint.js'
             'node_modules/jshint/dist/jshint.js'
             'bower_components/ease-djdeath/*.js'
             'node_modules/font-awesome/css/*.css'
@@ -225,7 +221,8 @@ module.exports = ->
             'node_modules/rtc/dist/rtc.js.map'
             'bower_components/the-graph/**/*.js'
             'bower_components/the-graph/**/*.css'
-            'bower_components/webcomponentsjs/webcomponents.js'
+            'node_modules/webcomponents.js/webcomponents.min.js'
+            'node_modules/indexeddbshim/dist/indexeddbshim.min.js'
           ]
           expand: true
           dest: '/'
