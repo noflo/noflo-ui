@@ -18,8 +18,7 @@
   "dependencies": {
     "polymer": "0.5.2",
     "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
-    "the-graph": "0.3.11",
-    "rtc": "rtc-io/rtc#3.1.1"
+    "the-graph": "0.3.11"
   },
   "devDependencies": {
     "syn": "~0.0.3"
