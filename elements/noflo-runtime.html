@@ -282,13 +282,7 @@
         this.runtime.reconnect();
       },
       showTests: function (suites) {
-        var fbpSpec = null;
-        try {
-          fbpSpec = require('fbp-spec');
-        } catch (e) {
-          console.log('fbp-spec skipped');
-          return;
-        }
+        var fbpSpec = require('fbp-spec');
         this.suites = suites;
         var container = this.shadowRoot.getElementById('teststatus');
         if (!container) {

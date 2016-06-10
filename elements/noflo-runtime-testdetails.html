@@ -50,13 +50,7 @@
         suites: [],
         attached: function () {
           document.getElementById('container').classList.add('blur');
-          var fbpSpec = null;
-          try {
-            fbpSpec = require('fbp-spec');
-          } catch (e) {
-            console.log('fbp-spec skipped');
-            return;
-          }
+          var fbpSpec = require('fbp-spec');
           React.render(fbpSpec.ui.widgets.TestsListing({
             suites: this.suites
           }), this.$.testlisting);
