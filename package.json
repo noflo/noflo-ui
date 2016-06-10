@@ -12,10 +12,14 @@
   },
   "license": "MIT",
   "dependencies": {
+    "codemirror": "^4.11.0",
+    "coffeelint": "^1.15.7",
     "fbp": "1.1.7",
     "fbp-spec": "~0.1.15",
     "flowhub-registry": "0.0.4",
+    "font-awesome": "^4.6.3",
     "indexeddbshim": "^2.2.1",
+    "jshint": "^2.9.2",
     "microflo": "0.3.36",
     "noflo": "~0.7.7",
     "noflo-ajax": "~0.1.5",
@@ -34,6 +38,7 @@
     "noflo-runtime-base": "^0.7.3",
     "noflo-runtime-webrtc": "~0.7.1",
     "noflo-strings": "~0.1.12",
+    "rtc": "^3.4.0",
     "webcomponents.js": "0.6.0"
   },
   "devDependencies": {
@@ -56,7 +61,8 @@
     "grunt-string-replace": "1.2.1",
     "grunt-vulcanize": "0.4.2",
     "grunt-zip": "0.17.0",
-    "mocha": "^2.4.5"
+    "mocha": "^2.4.5",
+    "syn": "0.1.5"
   },
   "scripts": {
     "test": "grunt test"

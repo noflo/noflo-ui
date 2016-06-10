@@ -4,6 +4,7 @@ console.time('polymer-ready');
 var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
+  'coffee-script': require('coffee-script'),
   'uuid': require('uuid'),
   'flowhub-registry': require('flowhub-registry'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore')

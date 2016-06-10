@@ -1,33 +1,9 @@
 {
   "name": "noflo-ui",
-  "main": "index.js",
-  "homepage": "https://github.com/noflo/noflo-ui",
-  "authors": [
-    "Henri Bergius <henri.bergius@iki.fi>"
-  ],
-  "description": "User interface for Flow-Based Programming",
-  "license": "MIT",
-  "ignore": [
-    "**/.*",
-    "node_modules",
-    "bower_components",
-    "components",
-    "Gruntfile.coffee",
-    "spec"
-  ],
+  "description": " !!!! DO NOT ADD DEPENDENCIES HERE. USE NPM INSTEAD. !!!!! ",
   "dependencies": {
     "polymer": "0.5.2",
     "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
-    "the-graph": "0.3.11",
-    "font-awesome": "~4.4.0",
-    "codemirror": "~4.11.0",
-    "coffee-script": "*",
-    "coffeelint": "clutchski/coffeelint#gh-pages",
-    "requirejs": "~2.1.11",
-    "rtc": "rtc-io/rtc#3.1.1",
-    "jshint": "~2.5.11"
-  },
-  "devDependencies": {
-    "syn": "~0.0.3"
+    "the-graph": "0.3.11"
   }
 }
