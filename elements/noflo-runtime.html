@@ -190,6 +190,7 @@
         }
         if (this.runtime && this.graph) {
           this.runtime.setMain(this.graph);
+          this.runtimeChanged();
         }
       },
       runtimeChanged: function () {

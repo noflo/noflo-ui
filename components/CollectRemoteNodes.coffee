@@ -15,9 +15,17 @@ exports.getComponent = ->
         c.error new Error 'No runtime connection for getting remote nodes'
         return
       c.context = payload
-      c.outPorts.runtime.send c.context.runtime
-      c.outPorts.runtime.disconnect()
-      c.outPorts.component.send c.context.remote.shift()
+
+      if 'component:getsource' in payload.runtime.definition.capabilities
+        c.outPorts.runtime.send c.context.runtime
+        c.outPorts.runtime.disconnect()
+        c.outPorts.component.send c.context.remote.shift()
+      else
+        graphName = payload.runtime.definition.graph
+        payload.graphs.push new noflo.Graph graphName, caseSensitive: true
+        c.outPorts.context.send payload
+        c.outPorts.context.disconnect()
+
   c.inPorts.add 'component',
     datatype: 'object'
     process: (event, payload) ->
