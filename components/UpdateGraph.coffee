@@ -38,6 +38,13 @@ class UpdateGraph extends noflo.Component
       process: (event, payload) =>
         graph = @graph
 
+        if (
+          event is 'data' and
+          payload.command is 'clear' and
+          payload.id is graph.name
+        )
+          noflo.resetGraph graph
+
         if event is 'data' and payload.payload?.graph is graph.name
           command = payload.command
 

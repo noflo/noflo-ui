@@ -16,10 +16,21 @@ exports.getComponent = ->
         return
       c.context = payload
 
-      if 'component:getsource' in payload.runtime.definition.capabilities
+      if 'graph:getgraph' in payload.runtime.definition.capabilities
+        graphName = payload.runtime.definition.graph
+        payload.graphs.push new noflo.Graph graphName, caseSensitive: true
+        payload.state = 'ok'
+
+        c.outPorts.context.send payload
+        c.outPorts.context.disconnect()
+
+        payload.runtime.sendGraph 'getgraph', id: graphName
+
+      else if 'component:getsource' in payload.runtime.definition.capabilities
         c.outPorts.runtime.send c.context.runtime
         c.outPorts.runtime.disconnect()
         c.outPorts.component.send c.context.remote.shift()
+
       else
         graphName = payload.runtime.definition.graph
         payload.graphs.push new noflo.Graph graphName, caseSensitive: true
