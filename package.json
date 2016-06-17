@@ -14,7 +14,7 @@
   "dependencies": {
     "codemirror": "^4.11.0",
     "coffeelint": "^1.15.7",
-    "fbp": "1.1.7",
+    "fbp": "1.4.0",
     "fbp-spec": "~0.1.15",
     "flowhub-registry": "0.0.4",
     "font-awesome": "^4.6.3",
