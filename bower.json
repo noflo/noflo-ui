@@ -4,6 +4,6 @@
   "dependencies": {
     "polymer": "0.5.2",
     "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
-    "the-graph": "0.4.2"
+    "the-graph": "0.4.3"
   }
 }
