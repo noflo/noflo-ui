@@ -1,6 +1,18 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.12.2 (git master)
+
+Bugfixes
+
+* Fixed display of data packet payloads
+
+# 0.12.1 (2016 July 19)
+
+Bugfixes
+
+* Updated the-graph to support pinch-zoom on touchscreen devices
+
 # 0.12.0 (2016 July 19)
 
 New features
