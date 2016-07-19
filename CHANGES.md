@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.12.0 (2016 July 19)
+
+New features
+
+* Update from `fbp` 1.3.0 to 1.5.0. Several syntax additions were made,
+see the [changelog](https://github.com/flowbased/fbp/blob/master/CHANGES.md#fbp-150---released-06072016)
+
 # 0.11.0 (2016 June 10)
 
 New features
