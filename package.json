@@ -51,7 +51,7 @@
     "grunt-contrib-compress": "1.2.0",
     "grunt-contrib-connect": "1.0.2",
     "grunt-contrib-copy": "1.0.0",
-    "grunt-contrib-uglify": "1.0.1",
+    "grunt-contrib-uglify": "1.0.2",
     "grunt-contrib-watch": "1.0.0",
     "grunt-gh-pages": "0.9.1",
     "grunt-lint-inline": "0.4.4",
