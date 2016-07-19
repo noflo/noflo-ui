@@ -62,7 +62,7 @@
     "grunt-vulcanize": "0.4.2",
     "grunt-zip": "0.17.0",
     "mocha": "^2.4.5",
-    "syn": "0.1.5"
+    "syn": "0.2.1"
   },
   "scripts": {
     "test": "grunt test"
