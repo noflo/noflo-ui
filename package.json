@@ -12,7 +12,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "codemirror": "^4.11.0",
+    "codemirror": "^5.18.0",
     "coffeelint": "^1.15.7",
     "fbp": "1.5.0",
     "fbp-spec": "~0.1.15",
