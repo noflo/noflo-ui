@@ -8,7 +8,8 @@ var exported = {
   'child_process': null,
   'uuid': require('uuid'),
   'flowhub-registry': require('flowhub-registry'),
-  'noflo-ui/src/JournalStore': require('../src/JournalStore')
+  'noflo-ui/src/JournalStore': require('../src/JournalStore'),
+  'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee')
 };
 
 window.require = function (moduleName) {
