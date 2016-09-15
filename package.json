@@ -55,7 +55,7 @@
     "grunt-contrib-watch": "1.0.0",
     "grunt-gh-pages": "0.9.1",
     "grunt-lint-inline": "0.4.4",
-    "grunt-noflo-browser": "1.0.0-alpha4",
+    "grunt-noflo-browser": "1.0.1",
     "grunt-phonegap-build": "0.0.8",
     "grunt-saucelabs": "^9.0.0",
     "grunt-string-replace": "1.2.1",
