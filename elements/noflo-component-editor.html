@@ -50,158 +50,6 @@
       <h1>Tests</h1>
       <div id="tests_editor"></div>
     </section>
-    <script type="text/plain" id="CoffeeScriptExample">
-noflo = require 'noflo'
-
-exports.getComponent = ->
-  c = new noflo.Component
-  c.description = 'Forwards packets and metadata in the same way it receives them'
-  c.icon = 'forward'
-  c.inPorts.add 'in',
-    datatype: 'all'
-    description: 'Packet to forward'
-  c.outPorts.add 'out',
-    datatype: 'all'
-
-  noflo.helpers.WirePattern c,
-    in: ['in']
-    out: 'out'
-    forwardGroups: true
-    async: true
-  , (data, groups, out, callback) ->
-    # do something with data
-    # send it on outport
-    out.send data
-
-    # let WirePattern know we are done
-    do callback
-  c
-    </script>
-    <script type="text/plain" id="JavaScriptExample">
-var noflo = require('noflo');
-
-exports.getComponent = function() {
-  var c = new noflo.Component();
-  c.description = 'Forwards packets and metadata in the same way it receives them';
-  c.icon = 'forward';
-  c.inPorts.add('in', {
-    datatype: 'all',
-    description: 'Packet to forward'
-  });
-  c.outPorts.add('out', {
-    datatype: 'all'
-  });
-  noflo.helpers.WirePattern(c, {
-    "in": ['in'],
-    out: 'out',
-    forwardGroups: true,
-    async: true
-  }, function(data, groups, out, callback) {
-    // do something with data
-    // send output
-    out.send(data);
-    // tell WirePattern we are done
-    return callback();
-  });
-  return c;
-};
-    </script>
-    <script type="text/plain" id="ES2015Example">
-import noflo from 'noflo';
-
-export var getComponent = function() {
-  var c = new noflo.Component();
-  c.description = 'Forwards packets and metadata in the same way it receives them';
-  c.icon = 'forward';
-  c.inPorts.add('in', {
-    datatype: 'all',
-    description: 'Packet to forward'
-  });
-  c.outPorts.add('out', {
-    datatype: 'all'
-  });
-  noflo.helpers.WirePattern(c, {
-    "in": ['in'],
-    out: 'out',
-    forwardGroups: true,
-    async: true
-  }, function(data, groups, out, callback) {
-    // do something with data
-    // send output
-    out.send(data);
-    // tell WirePattern we are done
-    return callback();
-  });
-  return c;
-};
-    </script>
-    <script type="text/plain" id="ImgfloCExample">
-/* This file is an image processing operation for GEGL */
-
-#ifdef GEGL_PROPERTIES
-    // Dummy prop, for testing
-    property_double (x, "X", 0.0)
-        ui_range (0.0, 1024.0)
-        ui_meta ("unit", "pixel-coordinate")
-#else
-
-#define GEGL_OP_POINT_FILTER
-#include "gegl-op.h"
-
-#ifndef IMGFLO_OP_NAME
-#define IMGFLO_OP_NAME(orig) orig
-#endif
-
-static void prepare(GeglOperation *operation)
-{
-    const Babl *format = babl_format("YA float");
-    gegl_operation_set_format(operation, "input", format);
-    gegl_operation_set_format(operation, "output", format);
-}
-
-gboolean
-process(GeglOperation *op, void *in_buf, void *out_buf, glong samples,
-        const GeglRectangle *roi, gint level)
-{
-    float *in = in_buf;
-    float *out = out_buf;
-    while (samples--) {
-        *out++ = *in++;
-        *out++ = *in++;
-    }
-    return TRUE;
-}
-
-static void
-gegl_op_class_init (GeglOpClass *klass)
-{
-  GeglOperationClass *operation_class = GEGL_OPERATION_CLASS(klass);
-  GeglOperationPointFilterClass *point_filter_class = GEGL_OPERATION_POINT_FILTER_CLASS(klass);
-  point_filter_class->process = process;
-  operation_class->prepare = prepare;
-  gegl_operation_class_set_keys (operation_class,
-      "name",        IMGFLO_OP_NAME("myop2"),
-      "title",       "imgflo: Dynamic Flowhub",
-      "categories" , "dev",
-      "description", "First GEGL op written in Flowhub 22",
-  NULL);
-}
-
-
-#endif
-    </script>
-    <script type="text/plain" id="SuperColliderExample">
-SynthDef("MyFilter", {
-    arg in=SndFloLibrary.silentIn, out=SndFloLibrary.silentOut, freq=4400;
-    Out.ar(out, BLowPass.ar(In.ar(in), freq))
-},
-    metadata: (
-        description: "my filter",
-        specs: (
-            freq: ControlSpec(20, 20000, \exp, 0.1, 2200, "Hz")
-        )
-    )
-)
     </script>
   </template>
 
@@ -214,6 +62,7 @@ SynthDef("MyFilter", {
       height: null,
       codeEditor: null,
       testsEditor: null,
+      runtime: null,
       theme: 'dark',
       ready: function () {
         this.componentChanged();
@@ -328,26 +177,28 @@ SynthDef("MyFilter", {
         return 'noflo';
       },
       getExampleCode: function () {
-        // TODO: differentiate between the various runtimes
-        if (this.component.language === 'coffeescript') {
-          return this.$.CoffeeScriptExample.textContent.trim();
+        var runtimeType = null;
+        if (this.runtime && this.runtime && this.runtime.definition && this.runtime.definition.type) {
+          runtimeType = this.runtime.definition.type;
         }
-        if (this.component.language === 'javascript') {
-          return this.$.JavaScriptExample.textContent.trim();
+        if (!runtimeType && this.project) {
+          runtimeType = this.project.type;
         }
-        if (this.component.language === 'es6' || this.component.language === 'es2015') {
-          return this.$.ES2015Example.textContent.trim();
+        if (!runtimeType) {
+          console.log('WARNING: Unknown runtime type');
         }
-        if (this.component.language === 'c') {
-          return this.$.ImgfloCExample.textContent.trim();
+
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var info = runtimeInfo[runtimeType];
+        var language = this.component.language;
+        if (language == 'es6') {
+          language = 'es2015';
         }
-        if (this.component.language === 'supercollider') {
-          return this.$.SuperColliderExample.textContent.trim();
+        var template = "";
+        if (info && info.componenttemplates && info.componenttemplates[this.component.language]) {
+          template = info.componenttemplates[this.component.language];
         }
-        if (this.component.language === 'python') {
-          return "";
-        }
-        return "";
+        return template;
       },
       themeChanged: function () {
         if (!this.codeEditor || !this.testsEditor) {

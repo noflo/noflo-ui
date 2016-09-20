@@ -120,51 +120,28 @@
         return this.prepareAvailable(type);
       },
       prepareAvailable: function (type) {
-        var label;
-        var icon;
-        switch (type) {
-          case 'noflo-browser':
-            label = 'Browser';
-            icon = 'html5';
-            break;
-          case 'noflo-nodejs':
-            label = 'Node.js';
-            icon = 'cloud';
-            break;
-          case 'noflo-gnome':
-            label = 'GNOME';
-            icon = 'desktop';
-            break;
-          case 'microflo':
-            label = 'Microcontroller';
-            icon = 'lightbulb-o';
-            break;
-          case 'javafbp':
-            label = 'Java';
-            icon = 'android';
-            break;
-          case 'imgflo':
-            label = 'Image Manipulation';
-            icon = 'picture-o';
-            break;
-          case 'sndflo':
-            label = 'Sound synthesis';
-            icon = 'music';
-            break;
-          case 'msgflo':
-            label = 'Message Queuing';
-            icon = 'cubes';
-            break;
-          default:
-            label = type;
-            icon = 'cogs';
-        }
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var runtimeTypeInfo = {};
+        Object.keys(runtimeInfo).forEach(function (name) {
+          var info = runtimeInfo[name];
+          Object.keys(info.runtimetypes).forEach(function (runtimeType) {
+            runtimeTypeInfo[runtimeType] = info.runtimetypes[runtimeType];
+          });
+        });
+        // Also unknown runtimes should show up, synthesize info using defaults
         var availType = {
           id: type,
-          label: label,
-          icon: icon,
+          label: type,
+          icon: 'cogs',
           runtimes: []
         };
+        var info = runtimeTypeInfo[type];
+        if (info && info.icon) {
+          availType.icon = info.icon;
+        }
+        if (info && info.shortname) {
+          availType.label = info.shortname;
+        }
         this.available.push(availType);
         return availType;
       }

@@ -30,6 +30,7 @@ module.exports = ->
               { test: /\.coffee$/, loader: "coffee-loader" }
               { test: /\.json$/, loader: "json-loader" }
               { test: /\.fbp$/, loader: "fbp-loader" }
+              { test: /\.yaml$/, loader: "json-loader!yaml-include-loader" }
             ]
           resolve:
             extensions: ["", ".coffee", ".js"]

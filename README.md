@@ -23,10 +23,22 @@ Please read more from <http://flowhub.io/documentation/>. See also the [availabl
 ## FBP systems support
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
-Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to any compatible FBP system.
+Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to *any* compatible FBP system.
+Currently over 5 different runtimes are known to work.
 
-By implementing the protocol in your runtime, you can program it with NoFlo UI. If you use WebSockets or WebRTC as the transport, you do not need to change anything on NoFlo UI. One can optionally add syntax highlighting and a 'get started' link to the list of supported runtimes.
-If you need/want to use another transport, you can add [support for that](https://github.com/noflo/noflo-runtime).
+By implementing the protocol in your runtime, you can program it with NoFlo UI.
+If you use WebSockets or WebRTC as the transport, you do not need to change anything on NoFlo UI.
+You can also [add support other transports](https://github.com/noflo/noflo-runtime).
+
+### Adding new runtime information
+
+One can *optionally* add component templates, syntax highlighting and a 'get started' link for new runtimes.
+
+1. Add a new YAML file with runtime info as `./runtimeinfo/myruntime.yaml`. [Example](./runtimeinfo/msgflo.yaml)
+2. Include it in [./runtimeinfo/index.coffee](./runtimeinfo/index.coffee)
+3. Commit the changes
+4. Send a [Pull Request](https://github.com/noflo/noflo-ui/pull/new/master), so everyone benefits!
+
 
 ## Development of NoFlo UI
 

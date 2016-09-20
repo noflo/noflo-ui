@@ -1,0 +1,8 @@
+runtimetypes:
+  microflo:
+    shortname: Microcontroller
+    icon: lightbulb-o
+
+componenttemplates:
+  'c++': |
+    // TODO
