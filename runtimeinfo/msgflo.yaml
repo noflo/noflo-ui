@@ -98,3 +98,13 @@ componenttemplates:
     };
 
     module.exports = RepeatParticipant;
+  yaml: |
+    # Declare MsgFlo participant on behalf of code which does not send discovery message by itself
+    component: DoorLock
+    label: Open the door
+    icon: lightbulb-o
+    inports:
+      open:
+        queue: /bitraf/door/#ROLE/open
+        type: object
+    outports: {}
