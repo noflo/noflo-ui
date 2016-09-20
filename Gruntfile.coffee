@@ -271,14 +271,6 @@ module.exports = ->
           dest: '/'
         ]
 
-    "phonegap-build":
-      app:
-        options:
-          archive: 'noflo-<%= pkg.version %>.zip'
-          appId: process.env.PHONEGAP_APP_ID
-          user:
-            token: process.env.PHONEGAP_TOKEN
-
     unzip:
       dist: 'noflo-<%= pkg.version %>.zip'
 
@@ -372,7 +364,6 @@ module.exports = ->
   @loadNpmTasks 'grunt-contrib-compress'
   @loadNpmTasks 'grunt-zip'
   @loadNpmTasks 'grunt-gh-pages'
-  @loadNpmTasks 'grunt-phonegap-build'
 
   # Grunt plugins used for testing
   #@loadNpmTasks 'grunt-mocha-phantomjs'
@@ -402,7 +393,6 @@ module.exports = ->
     'connect'
     'saucelabs-mocha'
   ]
-  @registerTask 'app', ['build', 'phonegap-build']
   @registerTask 'default', ['test']
   @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
   @registerTask 'spec', ['coffeelint:spec', 'coffee:spec', 'connect:server', 'watch']
