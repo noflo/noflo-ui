@@ -1,0 +1,8 @@
+runtimetypes:
+  javafbp:
+    shortname: Java
+    icon: android
+
+componenttemplates:
+  'java': |
+    // TODO

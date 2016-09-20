@@ -1,3 +1,13 @@
+runtimetypes:
+  'noflo-browser':
+    shortname: Browser
+    icon: html5
+  'noflo-nodejs':
+    shortname: Node.js
+    icon: cloud
+  'noflo-gnome':
+    shortname: GNOME
+    icon: desktop
 componenttemplates:
   javascript: |
     var noflo = require('noflo');
