@@ -62,6 +62,7 @@
       height: null,
       codeEditor: null,
       testsEditor: null,
+      runtime: null,
       theme: 'dark',
       ready: function () {
         this.componentChanged();
@@ -176,27 +177,28 @@
         return 'noflo';
       },
       getExampleCode: function () {
-        // TODO: differentiate between the various runtimes
+        var runtimeType = null;
+        if (this.runtime && this.runtime && this.runtime.definition && this.runtime.definition.type) {
+          runtimeType = this.runtime.definition.type;
+        }
+        if (!runtimeType && this.project) {
+          runtimeType = this.project.type;
+        }
+        if (!runtimeType) {
+          console.log('WARNING: Unknown runtime type');
+        }
+
         var runtimeInfo = require('noflo-ui/runtimeinfo');
-        if (this.component.language === 'coffeescript') {
-          return runtimeInfo.noflo.componenttemplates.coffeescript;
+        var info = runtimeInfo[runtimeType];
+        var language = this.component.language;
+        if (language == 'es6') {
+          language = 'es2015';
         }
-        if (this.component.language === 'javascript') {
-          return runtimeInfo.noflo.componenttemplates.javascript;
+        var template = "";
+        if (info && info.componenttemplates && info.componenttemplates[this.component.language]) {
+          template = info.componenttemplates[this.component.language];
         }
-        if (this.component.language === 'es6' || this.component.language === 'es2015') {
-          return runtimeInfo.noflo.componenttemplates.es2015;
-        }
-        if (this.component.language === 'c') {
-          return runtimeInfo.imgflo.componenttemplates.c;
-        }
-        if (this.component.language === 'supercollider') {
-          return runtimeInfo.sndflo.componenttemplates.supercollider;
-        }
-        if (this.component.language === 'python') {
-          return runtimeInfo.msgflo.componenttemplates.python;
-        }
-        return "";
+        return template;
       },
       themeChanged: function () {
         if (!this.codeEditor || !this.testsEditor) {
