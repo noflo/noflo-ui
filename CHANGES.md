@@ -1,6 +1,22 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.13.0 (2016 September 21)
+
+New features
+
+* Allow editing YAML component code (primarily for MsgFlo)
+* Added Python/JS/CoffeeScript/YAML component templates for MsgFlo
+
+Internal changes
+
+* Runtime information is now declared in YAML files under `./runtimeinfo`
+instead of being hardcoded various places in the app
+
+Bugfixes
+
+* Fixed build on Windows (issue #595)
+
 # 0.12.2 (2016 July 19)
 
 Bugfixes
