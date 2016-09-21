@@ -99,3 +99,29 @@ componenttemplates:
       });
       return c;
     };
+
+examples:
+  photobooth:
+    label: 'Photo booth'
+    id: '7804187'
+  clock:
+    label: 'Animated clock'
+    id: '7135158'
+  camtopalette:
+    label: 'Cam to palette'
+    id: '3c0ffdf17195649a2d57'
+  canvas:
+    label: 'Canvas pattern'
+    id: '1319c76fe006fb34c9c9'
+  yinyang:
+    label: 'Yin-yang'
+    id: 'a1096a406131e109f836'
+  delaunaymasks:
+    label: 'Delaunay masks'
+    id: 'f6d1141de2833e45fb3c'
+  reacttodo:
+    label: 'React TODO list'
+    id: '1d42f66f5cc4614df935'
+  webaudio:
+    label: 'Web Audio'
+    id: '04847249319d2326fa92'
