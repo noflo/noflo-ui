@@ -1,13 +1,20 @@
 runtimetypes:
   'noflo-browser':
-    shortname: Browser
+    shortname: NoFlo for Browser
     icon: html5
+    description: 'Build client-side browser applications'
+    helpurl: 'https://github.com/noflo/noflo-browser#readme'
   'noflo-nodejs':
-    shortname: Node.js
+    shortname: NoFlo for Node.js
     icon: cloud
+    description: 'Build network applications'
+    helpurl: 'https://github.com/noflo/noflo-nodejs#readme'
   'noflo-gnome':
-    shortname: GNOME
+    shortname: NoFlo for GNOME
     icon: desktop
+    description: 'Build GNOME desktop applications'
+    helpurl: 'https://github.com/noflo/noflo-gnome#readme'
+
 componenttemplates:
   javascript: |
     var noflo = require('noflo');

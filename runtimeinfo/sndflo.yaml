@@ -2,6 +2,8 @@ runtimetypes:
   sndflo:
     shortname: 'Sound synthesis'
     icon: music
+    description: 'Create sound using SuperCollider'
+    helpurl: 'https://github.com/jonnor/sndflo#readme'
 
 componenttemplates:
   supercollider: |

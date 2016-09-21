@@ -103,58 +103,31 @@
     </div>
   </template>
   <script>
-    Polymer('noflo-new-runtime', {
-      runtimes: [
-        {
-          name: 'noflo-nodejs',
-          label: 'NoFlo on Node.js',
-          description: 'Building network applications',
-          icon: 'cloud',
-          url: 'https://github.com/noflo/noflo-nodejs#readme'
-        },
-        {
-          name: 'noflo-gnome',
-          label: 'NoFlo on GNOME',
-          description: 'Desktop application development',
-          icon: 'desktop',
-          url: 'https://github.com/noflo/noflo-gnome#readme'
-        },
-        {
-          name: 'microflo',
-          label: 'MicroFlo',
-          description: 'Microcontroller programming',
-          icon: 'lightbulb-o',
-          url: 'https://github.com/jonnor/microflo#readme'
-        },
-        {
-          name: 'javafbp',
-          label: 'JavaFBP',
-          description: 'Java and Android programming',
-          icon: 'android',
-          url: 'https://github.com/jonnor/javafbp-runtime#readme'
-        },
-        {
-          name: 'imgflo',
-          label: 'ImgFlo',
-          description: 'Image Manipulation',
-          icon: 'picture-o',
-          url: 'https://github.com/jonnor/imgflo#readme'
-        },
-        {
-          name: 'sndflo',
-          label: 'sndflo',
-          description: 'Sound synthesis',
-          icon: 'music',
-          url: 'https://github.com/jonnor/sndflo#readme'
-        },
-        {
-          name: 'msgflo',
-          label: 'msgflo',
-          description: 'Message queue orchestration',
-          icon: 'cubes',
-          url: 'https://github.com/the-grid/msgflo#readme'
+    var runtimes = [];
+    var runtimeInfo = require('noflo-ui/runtimeinfo');
+    var runtimeTypeInfo = {};
+    var runtimeTypes = {};
+    Object.keys(runtimeInfo).forEach(function (name) {
+      var rtInfo = runtimeInfo[name];
+      Object.keys(rtInfo.runtimetypes).forEach(function (runtimeType) {
+        var info = rtInfo.runtimetypes[runtimeType];
+        var def = {
+            name: runtimeType,
+            label: info.shortname,
+            icon: info.icon,
+            description: info.description,
+            url: info.helpurl,
+        };
+        if (!runtimeTypes[runtimeType]) {
+            // Avoid duplicates
+            runtimeTypes[runtimeType] = def;
+            runtimes.push(def);
         }
-      ],
+      });
+    });
+
+    Polymer('noflo-new-runtime', {
+      runtimes: runtimes,
       attached: function () {
         document.getElementById('container').classList.add('blur');
       },

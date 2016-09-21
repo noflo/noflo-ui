@@ -2,6 +2,8 @@ runtimetypes:
   microflo:
     shortname: Microcontroller
     icon: lightbulb-o
+    description: 'Program microcontrollers like Arduino'
+    helpurl: 'https://github.com/jonnor/microflo#readme'
 
 componenttemplates:
   'c++': |

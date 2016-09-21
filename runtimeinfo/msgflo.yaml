@@ -2,6 +2,8 @@ runtimetypes:
   msgflo:
     shortname: Message Queuing
     icon: cubes
+    description: 'Message queue orchestration'
+    helpurl: 'https://github.com/the-grid/msgflo#readme'
 
 componenttemplates:
   python: |
