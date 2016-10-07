@@ -21,7 +21,7 @@ ensureOneIframeRuntime = (runtimes) ->
       label: 'Local NoFlo HTML5 environment'
       id: uuid()
       protocol: 'iframe'
-      address: 'http://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+      address: 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
       type: 'noflo-browser'
     filtered.push iframeRuntime
   iframeRuntime.seen = Date.now()
