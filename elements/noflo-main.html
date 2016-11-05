@@ -448,7 +448,32 @@
         if (event) {
           event.preventDefault();
         }
+
+        function addExamplesForRuntimes() {
+          // Add examples for all current runtimes
+          var runtimeInfo = require('noflo-ui/runtimeinfo');
+          var runtimeTypesFound = {};
+          var examplesFound = {};
+          this.examples = [];
+
+          this.runtimes.forEach(function (runtime) {
+
+            // If this is the first registry of its type, add examples for it
+            if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
+              var examples = runtimeInfo[runtime.type].examples;
+
+              Object.keys(examples).forEach(function (key) {
+                if (!examplesFound[key]) {
+                  this.examples.push(examples[key]);
+                  examplesFound[key] = true;
+                }
+              }.bind(this));
+            }
+          }.bind(this));
+        }
+
         if (!this.gridToken) {
+          addExamplesForRuntimes.bind(this)();
           return;
         }
         var button = this.$.fetchruntimes;
@@ -507,26 +532,8 @@
             this.userRuntimes.splice(index, 1);
           }.bind(this));
 
-          // Add examples for all current runtimes
-          var runtimeInfo = require('noflo-ui/runtimeinfo');
-          var runtimeTypesFound = {};
-          var examplesFound = {};
-          this.examples = [];
+          addExamplesForRuntimes.bind(this)();
 
-          this.runtimes.forEach(function (runtime) {
-
-            // If this is the first registry of its type, add examples for it
-            if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
-              var examples = runtimeInfo[runtime.type].examples;
-
-              Object.keys(examples).forEach(function (key) {
-                if (!examplesFound[key]) {
-                  this.examples.push(examples[key]);
-                  examplesFound[key] = true;
-                }
-              }.bind(this));
-            }
-          }.bind(this));
         }.bind(this));
       },
       gridTokenChanged: function () {
