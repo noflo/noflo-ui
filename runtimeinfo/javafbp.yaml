@@ -8,3 +8,5 @@ runtimetypes:
 componenttemplates:
   'java': |
     // TODO
+
+examples: {}

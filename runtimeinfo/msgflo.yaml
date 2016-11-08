@@ -110,3 +110,5 @@ componenttemplates:
         queue: /bitraf/door/#ROLE/open
         type: object
     outports: {}
+
+examples: {}

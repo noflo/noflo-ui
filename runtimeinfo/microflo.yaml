@@ -8,3 +8,5 @@ runtimetypes:
 componenttemplates:
   'c++': |
     // TODO
+
+examples: {}
