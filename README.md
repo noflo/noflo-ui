@@ -43,7 +43,14 @@ One can *optionally* add component templates, syntax highlighting and a 'get sta
 ## Development of NoFlo UI
 
 Only necessary if you want to hack on NoFlo UI itself. Not neccesary for making apps with FBP.
-To be able to work on the NoFlo UI you need a checkout of this repository and a working [Node.js](http://nodejs.org/) installation. Go to the checkout folder and run:
+
+To be able to work on the NoFlo UI you need:
+
+* A checkout of this repository
+* A working [Node.js](http://nodejs.org/) installation
+* At least version 3 of the NPM package manager
+
+Go to the checkout folder and run:
 
     $ npm install
 

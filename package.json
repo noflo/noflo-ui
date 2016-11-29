@@ -10,6 +10,9 @@
     "type": "git",
     "url": "git://github.com/noflo/noflo-ui.git"
   },
+  "engines": {
+    "npm": ">=3.0.0"
+  },
   "license": "MIT",
   "dependencies": {
     "codemirror": "^4.11.0",
