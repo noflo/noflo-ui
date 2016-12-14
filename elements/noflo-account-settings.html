@@ -85,7 +85,7 @@
           }
           callback(null, JSON.parse(req.responseText));
         };
-        req.open('GET', 'https://api.flowhub.io/user', true);
+        req.open('GET', '$NOFLO_REGISTRY_SERVICE/user', true);
         req.setRequestHeader('Authorization', 'Bearer ' + this.gridToken);
         req.send(null);
       },
