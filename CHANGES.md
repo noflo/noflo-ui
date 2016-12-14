@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.14.0 (git master)
+
+Breaking changes
+
+* Switched from The Grid to direct GitHub authentication. This means changes are required for running NoFlo UI in custom URLs. See the README for more information
+
 # 0.13.0 (2016 September 21)
 
 New features
