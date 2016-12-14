@@ -12,5 +12,3 @@ env:
   - secure: MGOSVmfg+zl8lco7IYcSzYVAuS9VkhK0z2z8/bcZmCeRmPh+IaeSfEaeHka1Swcr4rO0IWj4bU9fqjp8IjA/8ntlbnSZcPM4QJ0SQaXLUGOsNnmIE8X0eLe8xKKFw682qUUdm+nowtdFiCF07+aRBzLYwAzSlevZVl3NuwALrBM=
   - secure: HCMrykhJlLO2TJOYCPuBjiUoG3fYs22W7VvjMEHJrDDupQvGnQXCiDoriwz/V4ssdaUWqykwY885QLuJFbkxSSTpv51Ge5O/sJIMwjCflaoksMvVopEqIA54ykv743O/CkFMeydscuaMVGi63/NojpnXpz9N0p+0ZwJCU3z83Ro=
   - secure: kk5vjO9b6W6CnAU4Kd+9hi614e5qkfUetiQECygQa/dTrWvbAeth0ZwvmuGNFoWACj/WqlE2VRhmDMsNVWD2akdwpVc9TftQFweRFD70Svw9Pfu/91eibZnCMmeVflM8ke/MAyb0lTtwhb9yWL+y+o8LrAhPl+B83TXlAoh0hbs=
-notifications:
-  slack: thegrid:ySBwsWaxwetttCJvrem0I7oQ
