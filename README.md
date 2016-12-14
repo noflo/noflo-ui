@@ -71,10 +71,33 @@ If you prefer, you can also start a watcher process that will do a rebuild whene
 Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
     $ npm install simple-server
-    $ ./node_modules/.bin/simple-server . 3005
+    $ ./node_modules/.bin/simple-server . 9999
 
-Where 3005 is the port you want the server to run. Once it is built and the server is running you can access the UI at `http://localhost:3005/index.html`
+Where 9999 is the port you want the server to run. Once it is built and the server is running you can access the UI at `http://localhost:9999/index.html`
 
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 
+## Authentication and custom URLs
 
+NoFlo UI is using GitHub for authentication. We have a default application configured to work at `http://localhost:9999`. If you want to serve your NoFlo UI from a different URL, you need to register your own [OAuth application](https://github.com/settings/applications/new) with them. Make sure to match GitHub's [redirect URL policy](https://developer.github.com/v3/oauth/#redirect-urls).
+
+To enable your own OAuth application, set the following environment variables and rebuild NoFlo UI:
+
+* `$NOFLO_OAUTH_CLIENT_ID`: Client ID of your GitHub OAuth application
+* `$NOFLO_OAUTH_CLIENT_REDIRECT`: Redirect URL of your GitHub OAuth application
+
+### OAuth secrets
+
+For handling the OAuth Client Secret part of the login process, there are two options:
+
+#### Built-in OAuth secret
+
+This is the easy option for local NoFlo UI development. Simply build the OAuth client secret into the NoFlo UI app by setting it via the `$NOFLO_OAUTH_CLIENT_SECRET` environment variable.
+
+**Note:** this means anybody with access to this NoFlo UI build will be able to read your client secret. Never do this with a world-accessible URL. It is fine for local-only development builds, though.
+
+#### Gatekeeper
+
+You can deploy an instance of the [Gatekeeper Node.js app](https://github.com/prose/gatekeeper) to handle the OAuth token exchange for you. Configure the Gatekeeper location to your NoFlo UI build with `$NOFLO_OAUTH_GATE` environment variable.
+
+This is the more secure mechanism, since only the Gatekeeper server needs to know the Client Secret.
