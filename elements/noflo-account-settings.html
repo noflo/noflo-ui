@@ -32,7 +32,7 @@
       <form>
         <label>
           User Identifier
-          <input type="text" readonly value="{{ user.uuid }}">
+          <input type="text" readonly value="{{ user.id }}">
         </label>
         <label>
           Flowhub plan
@@ -132,7 +132,6 @@
             return;
           }
           this.checkGithubUser(user.github.token, function (err, scopes) {
-            console.log(this.newPlan, scopes);
             this.$.refresh.classList.remove('fa-spin');
             if (err) {
               this.statusText = 'Failed to fetch GitHub user information, please re-login';
