@@ -17,6 +17,7 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 # Base data to UI
 UserStorage(ui/UserStorage) USER -> USER AppView
 UserStorage USER -> USER GithubStorage
+UserStorage CONTEXT -> Context AppView
 
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage

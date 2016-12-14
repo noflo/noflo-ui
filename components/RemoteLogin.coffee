@@ -1,9 +1,18 @@
 noflo = require 'noflo'
+url = require 'url'
+
+isRedirectValid = (redirect) ->
+  parsedRedirect = url.parse redirect
+  parsedAppRedirect = url.parse '$NOFLO_OAUTH_CLIENT_REDIRECT'
+  return parsedRedirect.host is parsedAppRedirect.host
+
+getRedirect = (params) ->
+  return params.redirect or window.location.href
 
 getUrl = (params) ->
-  redirect = params.redirect or window.location.href
+  redirect = getRedirect params
   provider = if params.provider? then "/#{params.provider}" else ""
-  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE#{provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
+  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE#{provider}?client_id=#{encodeURIComponent(params.clientid)}&scope=#{encodeURIComponent(params.scope)}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
   code = url.match /\?code=(.*)/
@@ -22,6 +31,12 @@ checkToken = (url, params, callback) ->
         return callback null, null
 
       callback null, token_found
+      return
+    try
+      data = JSON.parse req.responseText
+      callback new Error "Authentication token exchange failed with #{data.error}"
+    catch e
+      callback new Error e
 
   config =
     client_secret: '$NOFLO_OAUTH_CLIENT_SECRET'
@@ -58,7 +73,7 @@ exports.getComponent = ->
     required: true
   c.inPorts.add 'provider',
     datatype: 'string'
-    required: true
+    required: false
   c.inPorts.add 'clientid',
     datatype: 'string'
     required: true
@@ -99,6 +114,10 @@ exports.getComponent = ->
           do callback
       return
 
+    # Validate that redirect URL matches the one configured for app
+    unless isRedirectValid getRedirect c.params
+      return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CLIENT_REDIRECT"
+
     # On browser we just redirect
     window.location.href = getUrl c.params
 
@@ -108,7 +127,13 @@ exports.getComponent = ->
 
     # With browser we check the URL also initially
     checkToken window.location.href, c.params, (err, token) ->
-      return if err
+      if err
+        # Send error with timeout so other context-affecting ops have time to finish
+        setTimeout ->
+          c.outPorts.error.send err
+          c.outPorts.error.disconnect()
+        , 1000
+        return
       return unless token
       c.outPorts.token.send token
       c.outPorts.token.disconnect()

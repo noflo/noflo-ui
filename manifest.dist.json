@@ -8,10 +8,9 @@
     }
   },
   "permissions": [
-    "https://passport.thegrid.io/",
     "$NOFLO_OAUTH_GATE/",
+    "$NOFLO_REGISTRY_SERVICE",
     "https://api.github.com/",
-    "https://api.flowhub.io/",
     "https://secure.gravatar.com/",
     "storage",
     "unlimitedStorage",

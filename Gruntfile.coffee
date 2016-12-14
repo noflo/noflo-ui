@@ -104,7 +104,7 @@ module.exports = ->
         options:
           replacements: [
             pattern: /\$NOFLO_OAUTH_PROVIDER/ig
-            replacement: process.env.NOFLO_OAUTH_PROVIDER or 'https://passport.thegrid.io'
+            replacement: process.env.NOFLO_OAUTH_PROVIDER or 'https://github.com'
           ,
             pattern: /\$NOFLO_OAUTH_GATE/ig
             replacement: process.env.NOFLO_OAUTH_GATE or 'https://noflo-gate.herokuapp.com'
@@ -113,16 +113,19 @@ module.exports = ->
             replacement: process.env.NOFLO_OAUTH_SERVICE_USER or 'https://api.flowhub.io'
           ,
             pattern: /\$NOFLO_OAUTH_CLIENT_ID/ig
-            replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '9d963a3d-8b6f-42fe-bb36-6fccecd039af'
+            replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '46fe25abef8d07e6dc2d'
+          ,
+            pattern: /\$NOFLO_OAUTH_CLIENT_REDIRECT/ig
+            replacement: process.env.NOFLO_OAUTH_CLIENT_REDIRECT or 'http://localhost:9999'
           ,
             pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/authorize'
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/oauth/authorize'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_TOKEN/ig
-            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/login/authorize/token'
+            replacement: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN or '/login/oauth/access_token'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate'
@@ -331,20 +334,13 @@ module.exports = ->
           urls: ['http://127.0.0.1:9999/spec/runner.html']
           browsers: [
             browserName: 'googlechrome'
-            platform: 'OS X 10.8'
             version: '39'
           ,
             browserName: 'safari'
-            platform: 'OS X 10.11'
             version: '9'
           ,
             browserName: 'internet explorer'
-            platform: 'Windows 8.1',
             version: '11'
-          ,
-            browserName: 'firefox'
-            platform: 'Windows 7',
-            version: '34'
           ]
           build: process.env.TRAVIS_JOB_ID
           testname: 'NoFlo UI browser tests'

@@ -28,7 +28,7 @@ exports.getComponent = ->
         do callback
         return
       callback new Error req.responseText
-    req.open 'GET', 'https://api.flowhub.io/projects', true
+    req.open 'GET', '$NOFLO_REGISTRY_SERVICE/projects', true
     req.setRequestHeader 'Authorization', "Bearer #{token}"
     req.send null
 
