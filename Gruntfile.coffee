@@ -334,19 +334,15 @@ module.exports = ->
           urls: ['http://127.0.0.1:9999/spec/runner.html']
           browsers: [
             browserName: 'googlechrome'
-            platform: 'OS X 10.8'
             version: '39'
           ,
             browserName: 'safari'
-            platform: 'OS X 10.11'
             version: '9'
           ,
             browserName: 'internet explorer'
-            platform: 'Windows 8.1',
             version: '11'
           ,
             browserName: 'firefox'
-            platform: 'Windows 7',
             version: '34'
           ]
           build: process.env.TRAVIS_JOB_ID
