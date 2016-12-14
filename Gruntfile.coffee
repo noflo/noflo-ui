@@ -116,7 +116,7 @@ module.exports = ->
             replacement: process.env.NOFLO_OAUTH_CLIENT_ID or '46fe25abef8d07e6dc2d'
           ,
             pattern: /\$NOFLO_OAUTH_CLIENT_REDIRECT/ig
-            replacement: process.env.NOFLO_OAUTH_CLIENT_ID or 'http://localhost:9999'
+            replacement: process.env.NOFLO_OAUTH_CLIENT_REDIRECT or 'http://localhost:9999'
           ,
             pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
