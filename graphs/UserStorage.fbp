@@ -15,7 +15,7 @@ LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 '$NOFLO_OAUTH_SERVICE_USER' -> SITE GetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
-'github' -> SCOPE Login
+'public_repo' -> SCOPE Login
 Dispatch OUT[0] -> LOGIN Login
 Login TOKEN -> TOKEN GetRemoteUser
 GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
@@ -32,7 +32,7 @@ StoreUser USER -> IN Merge
 '$NOFLO_OAUTH_SERVICE_USER' -> SITE ProGetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER ProLogin
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID ProLogin
-'github_private' -> SCOPE ProLogin
+'repo' -> SCOPE ProLogin
 Dispatch OUT[1] -> LOGIN ProLogin
 ProLogin TOKEN -> TOKEN ProGetRemoteUser
 ProGetRemoteUser USER -> USER StoreUser

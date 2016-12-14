@@ -12,7 +12,7 @@ getRedirect = (params) ->
 getUrl = (params) ->
   redirect = getRedirect params
   provider = if params.provider? then "/#{params.provider}" else ""
-  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE#{provider}?client_id=#{params.clientid}&scope=#{params.scope}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
+  "#{params.site}$NOFLO_OAUTH_ENDPOINT_AUTHORIZE#{provider}?client_id=#{encodeURIComponent(params.clientid)}&scope=#{encodeURIComponent(params.scope)}&response_type=code&redirect_uri=#{encodeURIComponent(redirect)}"
 
 checkToken = (url, params, callback) ->
   code = url.match /\?code=(.*)/
