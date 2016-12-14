@@ -8,7 +8,6 @@
     }
   },
   "permissions": [
-    "https://passport.thegrid.io/",
     "$NOFLO_OAUTH_GATE/",
     "https://api.github.com/",
     "https://api.flowhub.io/",
