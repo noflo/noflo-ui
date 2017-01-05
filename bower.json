@@ -3,6 +3,7 @@
   "description": " !!!! DO NOT ADD DEPENDENCIES HERE. USE NPM INSTEAD. !!!!! ",
   "dependencies": {
     "polymer": "0.5.2",
-    "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2"
+    "webcomponentsjs": "Polymer/webcomponentsjs#0.5.2",
+    "the-graph": "0.5.0"
   }
 }
