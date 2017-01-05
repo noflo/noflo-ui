@@ -186,7 +186,7 @@ module.exports = ->
       themes:
         expand: true
         flatten: true
-        src: ['./bower_components/the-graph/themes/*.css']
+        src: ['./node_modules/the-graph/themes/*.css']
         dest: './themes/'
 
     compress:
@@ -223,8 +223,8 @@ module.exports = ->
             'bower_components/react.animate-djdeath/*.js'
             'node_modules/rtc/dist/rtc.js'
             'node_modules/rtc/dist/rtc.js.map'
-            'bower_components/the-graph/**/*.js'
-            'bower_components/the-graph/**/*.css'
+            'node_modules/the-graph/**/*.js'
+            'node_modules/the-graph/**/*.css'
             'node_modules/webcomponents.js/webcomponents.min.js'
             'node_modules/indexeddbshim/dist/indexeddbshim.min.js'
           ]
