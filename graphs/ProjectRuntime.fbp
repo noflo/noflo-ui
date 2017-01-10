@@ -1,6 +1,7 @@
 INPORT=HoldConnection.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=Connect.RUNTIME:RUNTIME
+OUTPORT=Connect.CONNECTED:CONNECTED
 
 # First see if we're already connected
 HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Merge)
