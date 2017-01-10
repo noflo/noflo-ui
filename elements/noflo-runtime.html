@@ -259,6 +259,7 @@
         if (this.runtime.getType() === 'iframe') {
           this.runtime.once('capabilities', function () {
             setTimeout(function () {
+              this.runtime.setMain(this.graph);
               this.runtime.start();
             }.bind(this), 1);
           }.bind(this));
