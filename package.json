@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "chai": "1.10.0",
-    "grunt": "^0.4.5",
+    "grunt": "^1.0.1",
     "grunt-bower-install-simple": "^1.2.3",
     "grunt-coffeelint": "^0.0.15",
     "grunt-contrib-clean": "0.7.0",
