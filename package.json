@@ -22,7 +22,7 @@
     "flowhub-registry": "^0.1.0",
     "font-awesome": "^4.6.3",
     "indexeddbshim": "^2.2.1",
-    "jshint": "^2.9.2",
+    "jshint": "^2.9.3",
     "microflo": "~0.3.43",
     "noflo": "~0.7.9",
     "noflo-ajax": "~0.1.5",
