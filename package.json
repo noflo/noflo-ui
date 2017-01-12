@@ -49,7 +49,7 @@
     "chai": "1.10.0",
     "grunt": "^1.0.1",
     "grunt-bower-install-simple": "^1.2.3",
-    "grunt-coffeelint": "^0.0.15",
+    "grunt-coffeelint": "^0.0.16",
     "grunt-contrib-clean": "0.7.0",
     "grunt-contrib-coffee": "0.13.0",
     "grunt-contrib-compress": "^1.3.0",
