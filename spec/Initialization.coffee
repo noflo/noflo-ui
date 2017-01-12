@@ -41,19 +41,21 @@ describe 'NoFlo UI initialization', ->
 
   describe 'NoFlo PrepareStorage', ->
     it 'should have created the IndexedDB database', (done) ->
+      @timeout 4000
       indexedDB = win.overrideIndexedDB or win.indexedDB
-      chai.expect(indexedDB).to.be.an 'object'
+      chai.expect(indexedDB).to.exist
       req = indexedDB.open 'noflo-ui', 4
-      req.onerror = ->
-        chai.expect(true).to.equal false
-        done()
+      req.onerror = (err) ->
+        done err
       req.onupgradeneeded = (e) =>
         e.target.transaction.abort()
-        throw new Error 'We didn\'t get a ready database'
+        done new Error 'We didn\'t get a ready database'
       req.onsuccess = (event) ->
         db = event.target.result
-        chai.expect(db).to.be.an 'object'
+        chai.expect(db.name).to.equal 'noflo-ui'
+        chai.expect(db.version).to.equal 4
         done()
+      return
     it 'should have created the project store', ->
       chai.expect(db.objectStoreNames.contains('projects')).to.equal true
     it 'should have created the graph store', ->
