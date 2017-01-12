@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.14.1 (git master)
+
+Bugfixes
+
+* Safari 10 compatibility
+
 # 0.14.0 (2016 December 14)
 
 Breaking changes
