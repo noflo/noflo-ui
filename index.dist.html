@@ -30,12 +30,6 @@
     <script src="node_modules/react/dist/react-with-addons.js"></script>
     <script src="node_modules/react-dom/dist/react-dom.js"></script>
     <script src="node_modules/indexeddbshim/dist/indexeddbshim.min.js"></script>
-    <script>
-      if (navigator.vendor && navigator.vendor.indexOf('Apple') !== -1) {
-        console.log('Safari detected, replacing broken IndexedDB with shim');
-        window.shimIndexedDB.__useShim();
-      }
-    </script>
     <script src="node_modules/rtc/dist/rtc.js"></script>
 
     <script src="../node_modules/codemirror/lib/codemirror.js"></script>
