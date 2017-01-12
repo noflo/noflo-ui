@@ -15,22 +15,22 @@ describe 'Deleting a graph', ->
     it 'should have a graph editor available', ->
       ui = doc.querySelector 'noflo-ui'
       editor = ui.shadowRoot.querySelector 'the-graph-editor'
-      chai.expect(editor).to.be.an 'object'
+      chai.expect(editor).to.exist
       graph = editor.shadowRoot.querySelector 'the-graph'
-      chai.expect(graph).to.be.an 'object'
+      chai.expect(graph).to.exist
 
   describe 'graph settings', ->
     it 'should show the graph settings modal when clicked', (done) ->
       @timeout 7000
       search = ui.shadowRoot.querySelector 'noflo-search'
-      chai.expect(search).to.be.an 'object'
+      chai.expect(search).to.exist
       settingsButton = search.shadowRoot.querySelector '#graphinspector'
-      chai.expect(settingsButton).to.be.an 'object'
+      chai.expect(settingsButton).to.exist
       setTimeout ->
         Syn.click settingsButton
         setTimeout ->
           modal = doc.querySelector 'noflo-graph-inspector'
-          chai.expect(modal).to.be.an 'object'
+          chai.expect(modal).to.exist
           done()
         , 500
       , 2000
@@ -39,7 +39,7 @@ describe 'Deleting a graph', ->
     it 'should remove the graph and project and redirect home', (done) ->
       @timeout 7000
       deleteButton = modal.shadowRoot.querySelector '.delete'
-      chai.expect(deleteButton).to.be.an 'object'
+      chai.expect(deleteButton).to.exist
       setTimeout ->
         Syn.click deleteButton
         setTimeout ->

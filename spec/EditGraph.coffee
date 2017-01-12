@@ -13,9 +13,9 @@ describe 'Editing a graph', ->
     it 'should have a graph editor available', ->
       ui = doc.querySelector 'noflo-ui'
       editor = ui.shadowRoot.querySelector 'the-graph-editor'
-      chai.expect(editor).to.be.an 'object'
+      chai.expect(editor.shadowRoot).to.exist
       graph = editor.shadowRoot.querySelector 'the-graph'
-      chai.expect(graph).to.be.an 'object'
+      chai.expect(graph).to.exist
     it 'should have no nodes in the graph editor', ->
       nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
       chai.expect(nodes.length).to.equal 0
@@ -24,7 +24,7 @@ describe 'Editing a graph', ->
     help = null
     it 'should be visible initially', ->
       help = doc.querySelector 'noflo-help'
-      chai.expect(help).to.be.an 'object'
+      chai.expect(help).to.exist
       chai.expect(help.visible).to.equal true
     it 'should go away after a click', (done) ->
       Syn.click help
@@ -55,12 +55,12 @@ describe 'Editing a graph', ->
     search = null
     it 'should initially show the breadcrumb', ->
       search = ui.shadowRoot.querySelector 'noflo-search'
-      chai.expect(search).to.be.an 'object'
+      chai.expect(search).to.exist
       chai.expect(search.classList.contains('overlay')).to.equal true
     it 'when clicked it should show the search input', (done) ->
       @timeout 10000
       breadcrumb = search.shadowRoot.querySelector '#breadcrumb'
-      chai.expect(breadcrumb).to.be.an 'object'
+      chai.expect(breadcrumb).to.exist
       setTimeout ->
         Syn.click breadcrumb
         setTimeout ->
@@ -96,11 +96,11 @@ describe 'Editing a graph', ->
     it 'should add a node when result is clicked', (done) ->
       @timeout 7000
       context = ui.shadowRoot.querySelector 'noflo-context'
-      chai.expect(context).to.be.an 'object'
+      chai.expect(context).to.exist
       results = context.shadowRoot.querySelector 'noflo-search-library-results'
-      chai.expect(results).to.be.an 'object'
+      chai.expect(results).to.exist
       getelement = results.shadowRoot.querySelector 'li'
-      chai.expect(getelement).to.be.an 'object'
+      chai.expect(getelement).to.exist
       Syn.click getelement
       setTimeout ->
         nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
