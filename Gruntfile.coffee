@@ -332,7 +332,7 @@ module.exports = ->
             version: '39'
           ,
             browserName: 'safari'
-            version: '9'
+            version: '10'
           ,
             browserName: 'internet explorer'
             version: '11'
