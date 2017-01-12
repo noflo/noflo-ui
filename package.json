@@ -33,7 +33,7 @@
     "noflo-groups": "~0.1.8",
     "noflo-indexeddb": "~0.1.0",
     "noflo-interaction": "~0.1.1",
-    "noflo-localstorage": "~0.1.0",
+    "noflo-localstorage": "~0.1.1",
     "noflo-objects": "~0.1.13",
     "noflo-polymer": "~0.2.0",
     "noflo-routers": "~0.2.1",
