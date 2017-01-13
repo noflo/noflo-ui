@@ -32,10 +32,10 @@ PopulateRuntimeData OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
 DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 
 # Get components list when connecting to new runtime
-ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
+ProjectRuntime CONNECTED -> RUNTIME ListComponents(runtime/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
 ListComponents OUT -> IN UpdateLibrary(ui/UpdateComponentLibrary)
-ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary
+ProjectRuntime CONNECTED -> RUNTIME UpdateLibrary
 DirectRuntime RUNTIME -> RUNTIME UpdateLibrary
 UpdateLibrary OUT -> IN MergeContext
 ListComponents ERROR -> IN ShowErrors
@@ -44,6 +44,7 @@ ListComponents ERROR -> IN ShowErrors
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
 SubscribeGraph RUNTIME -> RUNTIME SendGraph(runtime/SendGraphChanges)
 SubscribeGraph GRAPH -> GRAPH SendGraph
+SendGraph ERROR -> IN ShowErrors
 SubscribeGraph OUT -> IN MergeContext(core/Merge)
 
 SubscribeGraph RUNTIME -> RUNTIME ListenNetwork(runtime/ListenNetwork)
@@ -59,15 +60,15 @@ ProcessErrorToContext OUT -> IN MergeContext
 
 # Sending newly-created graphs and components to runtime
 Dispatch OUT[2] -> GRAPH SendNewGraph(runtime/SendGraph)
-ProjectRuntime RUNTIME -> RUNTIME SendNewGraph
+ProjectRuntime CONNECTED -> RUNTIME SendNewGraph
 DirectRuntime RUNTIME -> RUNTIME SendNewGraph
 Dispatch OUT[3] -> COMPONENT SendNewComponent(runtime/SendComponent)
-ProjectRuntime RUNTIME -> RUNTIME SendNewComponent
+ProjectRuntime CONNECTED -> RUNTIME SendNewComponent
 DirectRuntime RUNTIME -> RUNTIME SendNewComponent
 
 # Running fbp-spec tests on the runtime
 Dispatch OUT[4] -> IN RunTests(ui/RunTests)
-ProjectRuntime RUNTIME -> RUNTIME RunTests
+ProjectRuntime CONNECTED -> RUNTIME RunTests
 DirectRuntime RUNTIME -> RUNTIME RunTests
 RunTests CONTEXT -> IN MergeContext
 RunTests ERROR -> IN ShowErrors

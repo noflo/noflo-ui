@@ -255,15 +255,17 @@
           this.runtime.start();
           return;
         }
-        this.showCard();
         if (this.runtime.getType() === 'iframe') {
           this.runtime.once('capabilities', function () {
+            this.runtime.setMain(this.graph);
             setTimeout(function () {
               this.runtime.start();
             }.bind(this), 1);
           }.bind(this));
+          this.showCard();
           return;
         }
+        this.showCard();
         this.runtime.start();
       },
       stop: function (event) {
