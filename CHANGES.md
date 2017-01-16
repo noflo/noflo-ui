@@ -1,11 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.14.1 (git master)
+# 0.14.1 (2017 January 16)
 
 Bugfixes
 
 * Safari 10 compatibility
+* Added logic to wait for full runtime connection before sending components and graphs
 
 # 0.14.0 (2016 December 14)
 
