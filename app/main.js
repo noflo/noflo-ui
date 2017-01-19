@@ -26,12 +26,14 @@ window.addEventListener('polymer-ready', function() {
   var loadGraphs = function(callback) {
     noflo.graph.loadJSON(mainGraph, function (err, g) {
       if (err) {
-        throw err;
+        callback(err);
+        return;
       }
       g.baseDir = baseDir;
       noflo.createNetwork(g, function (err, n) {
         if (err) {
-          throw err;
+          callback(err);
+          return;
         }
         n.on('process-error', function (err) {
           console.log(err);
@@ -44,7 +46,8 @@ window.addEventListener('polymer-ready', function() {
     var secret = Math.random().toString(36).substring(7);
     noflo.graph.loadJSON(mainGraph, function (err, graph) {
       if (err) {
-        console.log(err);
+        callback(err);
+        return;
       }
       graph.baseDir = baseDir;
       var runtimeOptions = {
@@ -79,6 +82,10 @@ window.addEventListener('polymer-ready', function() {
   document.body.classList.remove('loading');
   window.nofloStarted = false;
   var load = (false) ? loadGraphsDebuggable : loadGraphs;
-  load(function() {
+  load(function(err) {
+    if (err) {
+      throw err;
+    }
+    window.nofloStarted = true;
   });
 });
