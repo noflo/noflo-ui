@@ -16,7 +16,7 @@ window.require = function (moduleName) {
   throw new Error('Module ' + moduleName + ' not available');
 };
 
-window.addEventListener('polymer-ready', function() {
+window.addEventListener('WebComponentsReady', function() {
   var noflo = require('noflo');
   var runtime = require('noflo-runtime-webrtc');
 
