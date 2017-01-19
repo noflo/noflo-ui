@@ -1,6 +1,3 @@
-console.time('noflo-ui-init');
-console.time('polymer-ready');
-
 var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
@@ -79,13 +76,9 @@ window.addEventListener('polymer-ready', function() {
     });
   };
 
-  console.timeEnd('polymer-ready');
   document.body.classList.remove('loading');
   window.nofloStarted = false;
-  console.time('noflo-prepare');
   var load = (false) ? loadGraphsDebuggable : loadGraphs;
   load(function() {
-      console.timeEnd('noflo-prepare');
-      console.timeEnd('noflo-ui-init');
   });
 });
