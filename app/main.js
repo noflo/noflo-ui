@@ -79,13 +79,17 @@ window.addEventListener('polymer-ready', function() {
     });
   };
 
-  document.body.classList.remove('loading');
   window.nofloStarted = false;
   var load = (false) ? loadGraphsDebuggable : loadGraphs;
   load(function(err) {
     if (err) {
       throw err;
     }
+    document.body.classList.remove('loading');
     window.nofloStarted = true;
+    setTimeout(function () {
+      var loader = document.getElementById('loading');
+      document.body.removeChild(loader);
+    }, 400);
   });
 });
