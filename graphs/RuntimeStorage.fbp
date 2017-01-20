@@ -32,11 +32,11 @@ PopulateRuntimeData OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
 DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 
 # Get components list when connecting to new runtime
-ProjectRuntime CONNECTED -> RUNTIME ListComponents(runtime/ListComponents)
-DirectRuntime RUNTIME -> RUNTIME ListComponents
-ListComponents OUT -> IN UpdateLibrary(ui/UpdateComponentLibrary)
-ProjectRuntime CONNECTED -> RUNTIME UpdateLibrary
+ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary(ui/UpdateComponentLibrary)
 DirectRuntime RUNTIME -> RUNTIME UpdateLibrary
+ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
+DirectRuntime RUNTIME -> RUNTIME ListComponents
+ListComponents OUT -> IN UpdateLibrary
 UpdateLibrary OUT -> IN MergeContext
 ListComponents ERROR -> IN ShowErrors
 

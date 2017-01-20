@@ -43,3 +43,7 @@ Router ROUTE -> IN Dispatch
 # Handle resizes
 ListenWindow WIDTH -> WIDTH AppView
 ListenWindow HEIGHT -> HEIGHT AppView
+
+# Display storage errors
+PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT AppView
+PrepareStorage ERROR ->  IN ShowErrors

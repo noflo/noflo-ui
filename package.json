@@ -37,13 +37,13 @@
     "noflo-objects": "~0.1.13",
     "noflo-polymer": "~0.2.0",
     "noflo-routers": "~0.2.2",
-    "noflo-runtime": "~0.3.4",
+    "noflo-runtime": "~0.3.8",
     "noflo-runtime-base": "^0.7.3",
     "noflo-runtime-webrtc": "~0.7.3",
     "noflo-strings": "~0.1.12",
     "rtc": "^3.4.0",
     "the-graph": "^0.6.0",
-    "webcomponents.js": "0.6.0"
+    "webcomponents.js": "^0.6.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
@@ -65,7 +65,7 @@
     "grunt-vulcanize": "^0.4.2",
     "grunt-zip": "^0.17.0",
     "mocha": "^3.2.0",
-    "syn": "0.1.5",
+    "syn": "0.2.2",
     "yaml-include-loader": "^1.0.0"
   },
   "scripts": {
