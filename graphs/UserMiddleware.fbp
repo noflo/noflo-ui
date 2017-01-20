@@ -1,0 +1,19 @@
+INPORT=Dispatch.IN:ACTION
+OUTPORT=Passed.OUT:PASS
+OUTPORT=NewActions.OUT:ACTION
+
+'user,start' -> ROUTES Dispatch(ui/DispatchAction)
+
+# User action handling
+Dispatch HANDLE[0] -> IN NewActions(core/Merge)
+
+# Start action handling
+Dispatch HANDLE[1] -> IN ApplicationStart(core/Merge)
+ApplicationStart OUT -> IN Passed
+ApplicationStart OUT -> START LoadUser(ui/LoadUserData)
+'user:info' -> ACTION UserInfoAction(ui/SetAction)
+LoadUser USER -> IN UserInfoAction OUT -> IN NewActions
+'user:error' -> ACTION UserErrorAction(ui/SetAction)
+LoadUser ERROR -> IN UserErrorAction OUT -> IN NewActions
+
+Dispatch PASS -> IN Passed(core/Merge)
