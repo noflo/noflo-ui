@@ -11,6 +11,7 @@ HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Mer
 'runtime' -> KEY GetDefinition(objects/GetObjectKey)
 HoldConnection CONNECT -> IN GetDefinition
 GetDefinition OUT -> DEFINITION Connect(runtime/ConnectRuntime)
+'10000' -> TIMEOUT Connect
 'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect
 'runtime' -> KEY AddRuntime(ui/SetToContext)
 GetDefinition OBJECT -> CONTEXT AddRuntime
