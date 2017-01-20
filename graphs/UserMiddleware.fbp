@@ -8,9 +8,21 @@ OUTPORT=NewActions.OUT:ACTION
 Dispatch PASS -> IN Passed(core/Merge)
 
 # Start action handling
-Dispatch HANDLE[0] -> IN ApplicationStart(core/Merge)
-ApplicationStart OUT -> IN Passed
-ApplicationStart OUT -> START LoadUser(ui/LoadUserData)
+# - Check if we have an authorization code in URL and exchange for token
+# - Load user from localStorage
+Dispatch HANDLE[0] -> IN CheckQuery(ui/CheckTokenGrant)
+# If we have an OAuth grant code, we need to try exchanging it
+CheckQuery CODE -> CODE ExchangeToken(ui/ExchangeGrantToken)
+ExchangeToken TOKEN -> TOKEN GetRemoteUser(ui/GetRemoteUser)
+ExchangeToken ERROR -> IN UserErrorAction
+GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
+GetRemoteUser ERROR -> IN UserErrorAction
+StoreUser USER -> IN UserInfoAction
+
+# Pass the start event also onwards
+CheckQuery PASS -> IN Passed
+# No grant code in URL, try to load local user data
+CheckQuery PASS -> START LoadUser(ui/LoadUserData)
 'user:info' -> ACTION UserInfoAction(ui/SetAction)
 LoadUser USER -> IN UserInfoAction OUT -> IN NewActions(core/Merge)
 'user:error' -> ACTION UserErrorAction(ui/SetAction)
