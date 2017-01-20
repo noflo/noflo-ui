@@ -65,7 +65,7 @@
     "grunt-vulcanize": "^0.4.2",
     "grunt-zip": "^0.17.0",
     "mocha": "^3.2.0",
-    "syn": "0.1.5",
+    "syn": "0.2.2",
     "yaml-include-loader": "^1.0.0"
   },
   "scripts": {
