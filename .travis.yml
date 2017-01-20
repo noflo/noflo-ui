@@ -12,6 +12,7 @@ before_install:
 - if [[ `npm -v` != 3* ]]; then npm i -g npm@3; fi
 before_script:
 - npm install -g grunt-cli
+script: grunt crossbrowser
 env:
   matrix:
   - CXX=g++-4.8
