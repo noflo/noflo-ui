@@ -329,7 +329,10 @@ module.exports = ->
     noflo_browser_mocha:
       all:
         options:
-          scripts: ["../browser/<%=pkg.name%>.js"]
+          scripts: [
+            "../browser/<%=pkg.name%>.js"
+            '../node_modules/sinon/pkg/sinon-server.js'
+          ]
         files:
           'spec/tests.html': ['spec/*.js', '!spec/EndToEnd*.js']
     # BDD tests on browser

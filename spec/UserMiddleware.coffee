@@ -110,7 +110,7 @@ describe 'User Middleware', ->
           pass: false
           user: false
         action = 'start'
-        payload = true
+        payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, ->
           received.pass = true
           return unless received.user
@@ -122,6 +122,29 @@ describe 'User Middleware', ->
           return unless received.pass
           done()
         send actionIn, action, payload
+    describe 'without user and with invalid grant code in URL', ->
+      xhr = null
+      code = null
+      beforeEach ->
+        code = 'dj0328hf3d9cq3c'
+        xhr = sinon.fakeServer.create()
+      afterEach ->
+        xhr.restore()
+      it 'should perform a token exchange and fail', (done) ->
+        action = 'start'
+        payload = "https://app.flowhub.io?code=#{code}"
+        check = (data) ->
+          chai.expect(data.message).to.contain 'bad_code_foo'
+        receiveAction newAction, 'user:error', check, done
+        send actionIn, action, payload
+        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", [
+          402
+        ,
+          'Content-Type': 'application/json'
+        , JSON.stringify
+          error: 'bad_code_foo'
+        ]
+        do xhr.respond
   describe 'receiving user:logout action', ->
     originalUser = null
     userData =
@@ -134,9 +157,6 @@ describe 'User Middleware', ->
       return unless originalUser
       localStorage.setItem 'grid-user', originalUser
     it 'should send empty object as user:info', (done) ->
-      received =
-        pass: false
-        user: false
       action = 'user:logout'
       check = (data) ->
         chai.expect(data).to.eql {}
