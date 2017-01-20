@@ -46,5 +46,3 @@ exports.getComponent = ->
       return callback err if err
       out.send valid
       do callback
-
-  c
