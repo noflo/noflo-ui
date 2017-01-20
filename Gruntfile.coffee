@@ -13,6 +13,13 @@ module.exports = ->
     # Browser build of NoFlo
     noflo_browser:
       options:
+        manifest:
+          runtimes: [
+            'noflo'
+          ]
+          discover: true
+          recursive: true
+          subdirs: false
         baseDir: './'
         webpack:
           externals:
