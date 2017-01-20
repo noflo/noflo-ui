@@ -128,3 +128,26 @@ describe 'User Middleware', ->
           return unless received.pass
           done()
         send actionIn, action, payload
+  describe 'receiving user:logout action', ->
+    originalUser = null
+    userData =
+      id: 1
+      name: 'Henri Bergius'
+    before ->
+      originalUser = localStorage.getItem 'grid-user'
+      localStorage.setItem 'grid-user', JSON.stringify userData
+    after ->
+      return unless originalUser
+      localStorage.setItem 'grid-user', originalUser
+    it 'should send empty object as user:info', (done) ->
+      received =
+        pass: false
+        user: false
+      action = 'user:logout'
+      check = (data) ->
+        chai.expect(data).to.eql {}
+      receiveAction newAction, 'user:info', check, done
+      send actionIn, action, true
+    it 'should have cleared user data', (done) ->
+      chai.expect(localStorage.getItem('grid-user')).to.equal null
+      done()

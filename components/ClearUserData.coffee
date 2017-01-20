@@ -31,5 +31,3 @@ exports.getComponent = ->
       localStorage.removeItem key
     out.send {}
     do callback
-
-  c

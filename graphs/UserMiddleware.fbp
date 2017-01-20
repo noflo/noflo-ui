@@ -2,18 +2,20 @@ INPORT=Dispatch.IN:ACTION
 OUTPORT=Passed.OUT:PASS
 OUTPORT=NewActions.OUT:ACTION
 
-'user,start' -> ROUTES Dispatch(ui/DispatchAction)
+'start,user:logout' -> ROUTES Dispatch(ui/DispatchAction)
 
-# User action handling
-Dispatch HANDLE[0] -> IN NewActions(core/Merge)
+# Pass actions we don't care about onwards
+Dispatch PASS -> IN Passed(core/Merge)
 
 # Start action handling
-Dispatch HANDLE[1] -> IN ApplicationStart(core/Merge)
+Dispatch HANDLE[0] -> IN ApplicationStart(core/Merge)
 ApplicationStart OUT -> IN Passed
 ApplicationStart OUT -> START LoadUser(ui/LoadUserData)
 'user:info' -> ACTION UserInfoAction(ui/SetAction)
-LoadUser USER -> IN UserInfoAction OUT -> IN NewActions
+LoadUser USER -> IN UserInfoAction OUT -> IN NewActions(core/Merge)
 'user:error' -> ACTION UserErrorAction(ui/SetAction)
 LoadUser ERROR -> IN UserErrorAction OUT -> IN NewActions
 
-Dispatch PASS -> IN Passed(core/Merge)
+# Logout action handling
+Dispatch HANDLE[1] -> CLEAR Reset(ui/ClearUserData)
+Reset USER -> IN UserInfoAction
