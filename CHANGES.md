@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.14.2 (git master)
+
+Bugfixes
+
+* Updated noflo-runtime module to improve connection reliability with iframe runtimes
+* Improved error handling of IndexedDB errors
+
 # 0.14.1 (2017 January 16)
 
 Bugfixes
