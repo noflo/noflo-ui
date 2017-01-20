@@ -15,24 +15,45 @@ body {
   -webkit-tap-highlight-color: transparent; /* "turn off" link highlight */
 }
 
-#loading {
-  display: none;
+body #loading {
+  opacity: 0;
+  -webkit-transition: opacity 0.3s ease-in;
+  -moz-transition: opacity 0.3s ease-in;
+  -ms-transition: opacity 0.3s ease-in;
+  -o-transition: opacity 0.3s ease-in;
+  z-index: -1;
+  width: 400px;
+  color: white;
+  text-align: center;
+  top: calc(50% - 18px);
+  left: calc(50% - 200px);
+  font-size: 36px;
+  position: fixed;
 }
 
 body.loading #loading {
   display: block;
-  position: fixed;
+  opacity: 1;
   top: calc(50% - 18px);
   left: calc(50% - 200px);
   font-size: 36px;
-  color: white;
   animation: pulsate 2s ease-in-out;
   animation-iteration-count: infinite;
   -webkit-animation: pulsate 2s ease-in-out;
   -webkit-animation-iteration-count: infinite;
-  width: 400px;
   text-align: center;
   z-index: 10;
+}
+body noflo-ui {
+  opacity: 1;
+  transition: opacity 0.3s ease-in;
+  -webkit-transition: opacity 0.3s ease-in;
+  -moz-transition: opacity 0.3s ease-in;
+  -ms-transition: opacity 0.3s ease-in;
+  -o-transition: opacity 0.3s ease-in;
+}
+body.loading noflo-ui {
+  opacity: 0;
 }
 @keyframes pulsate {
   0% {

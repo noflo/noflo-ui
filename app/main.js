@@ -1,6 +1,3 @@
-console.time('noflo-ui-init');
-console.time('polymer-ready');
-
 var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
@@ -19,7 +16,7 @@ window.require = function (moduleName) {
   throw new Error('Module ' + moduleName + ' not available');
 };
 
-window.addEventListener('polymer-ready', function() {
+window.addEventListener('WebComponentsReady', function() {
   var noflo = require('noflo');
   var runtime = require('noflo-runtime-webrtc');
 
@@ -29,12 +26,14 @@ window.addEventListener('polymer-ready', function() {
   var loadGraphs = function(callback) {
     noflo.graph.loadJSON(mainGraph, function (err, g) {
       if (err) {
-        throw err;
+        callback(err);
+        return;
       }
       g.baseDir = baseDir;
       noflo.createNetwork(g, function (err, n) {
         if (err) {
-          throw err;
+          callback(err);
+          return;
         }
         n.on('process-error', function (err) {
           console.log(err);
@@ -47,7 +46,8 @@ window.addEventListener('polymer-ready', function() {
     var secret = Math.random().toString(36).substring(7);
     noflo.graph.loadJSON(mainGraph, function (err, graph) {
       if (err) {
-        console.log(err);
+        callback(err);
+        return;
       }
       graph.baseDir = baseDir;
       var runtimeOptions = {
@@ -79,13 +79,17 @@ window.addEventListener('polymer-ready', function() {
     });
   };
 
-  console.timeEnd('polymer-ready');
-  document.body.classList.remove('loading');
   window.nofloStarted = false;
-  console.time('noflo-prepare');
   var load = (false) ? loadGraphsDebuggable : loadGraphs;
-  load(function() {
-      console.timeEnd('noflo-prepare');
-      console.timeEnd('noflo-ui-init');
+  load(function(err) {
+    if (err) {
+      throw err;
+    }
+    document.body.classList.remove('loading');
+    window.nofloStarted = true;
+    setTimeout(function () {
+      var loader = document.getElementById('loading');
+      document.body.removeChild(loader);
+    }, 400);
   });
 });
