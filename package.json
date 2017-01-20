@@ -24,7 +24,7 @@
     "indexeddbshim": "^2.2.1",
     "jshint": "^2.9.2",
     "microflo": "~0.3.43",
-    "noflo": "~0.7.9",
+    "noflo": "^0.7.9",
     "noflo-ajax": "~0.1.5",
     "noflo-core": "~0.2.3",
     "noflo-dom": "~0.1.0",
