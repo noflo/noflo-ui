@@ -85,32 +85,26 @@ describe 'User Middleware', ->
       receivePass passAction, action, payload, done
       send actionIn, action, payload
   describe 'receiving start action', ->
+    originalUser = null
+    beforeEach ->
+      originalUser = localStorage.getItem 'grid-user'
+      return unless originalUser
+      localStorage.removeItem 'grid-user'
+    afterEach ->
+      return unless originalUser
+      localStorage.setItem 'grid-user', originalUser
     describe 'without logged in user', ->
-      originalUser = null
-      before ->
-        originalUser = localStorage.getItem 'grid-user'
-        return unless originalUser
-        localStorage.removeItem 'grid-user'
-      after ->
-        return unless originalUser
-        localStorage.setItem 'grid-user', originalUser
       it 'should pass it out as-is', (done) ->
         action = 'start'
-        payload = true
+        payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, done
         send actionIn, action, payload
     describe 'with logged in user', ->
-      originalUser = null
       userData =
         id: 1
         name: 'Henri Bergius'
-      before ->
-        originalUser = localStorage.getItem 'grid-user'
+      beforeEach ->
         localStorage.setItem 'grid-user', JSON.stringify userData
-      after ->
-        localStorage.removeItem 'grid-user'
-        return unless originalUser
-        localStorage.setItem 'grid-user', originalUser
       it 'should pass it out as-is and send user:info', (done) ->
         received =
           pass: false
