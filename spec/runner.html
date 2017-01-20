@@ -16,8 +16,13 @@
     </style>
     <script src="../node_modules/mocha/mocha.js"></script>
     <script src="../node_modules/chai/chai.js"></script>
-    <script src="../node_modules/syn/dist/syn.js"></script>
-    <script>window.Syn = window.syn;  window.checkSupport = function(m) { return true; }</script>
+    <script src="../node_modules/syn/dist/global/syn.js"></script>
+    <script>
+      window.Syn = window.syn;
+      window.checkSupport = function(m) {
+        return true;
+      }
+    </script>
     <script>mocha.setup('bdd');</script>
   </head>
   <body>
