@@ -30,6 +30,7 @@ exchangeToken = (code, params, callback) ->
       redirect_uri: params.redirect or window.location.href
     req.open 'POST', "#{params.token_server}#{params.token_endpoint}", true
     req.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+    req.setRequestHeader "Accept", "application/json"
     req.send qs.stringify payload
     return
   # Normal scenario: exchange token via Gatekeeper
@@ -55,7 +56,7 @@ exports.getComponent = ->
       redirect: '$NOFLO_OAUTH_CLIENT_REDIRECT'
       clientid: '$NOFLO_OAUTH_CLIENT_ID'
       clientsecret: '$NOFLO_OAUTH_CLIENT_SECRET'
-      token_server: '$NOFLO_OAUTH_SERVICE_USER'
+      token_server: '$NOFLO_OAUTH_PROVIDER'
       token_endpoint: '$NOFLO_OAUTH_ENDPOINT_TOKEN'
       gatekeeper_server: '$NOFLO_OAUTH_GATE'
       gatekeeper_endpoint: '$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE'
