@@ -76,5 +76,3 @@ exports.getComponent = ->
     out.send ctx
     out.endGroup()
     out.endGroup()
-
-  c
