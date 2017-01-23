@@ -100,10 +100,12 @@ describe 'User Middleware', ->
       return unless originalUser
       localStorage.setItem 'grid-user', originalUser
     describe 'without logged in user', ->
-      it 'should pass it out as-is', (done) ->
+      it 'should send out an empty user:info', (done) ->
         action = 'application:url'
         payload = 'https://app.flowhub.io'
-        receivePass passAction, action, payload, done
+        check = (data) ->
+          chai.expect(data['grid-user']).to.be.a 'null'
+        receiveAction newAction, 'user:info', check, done
         send actionIn, action, payload
     describe 'with logged in user', ->
       userData =
@@ -112,21 +114,11 @@ describe 'User Middleware', ->
       beforeEach ->
         localStorage.setItem 'grid-user', JSON.stringify userData
       it 'should pass it out as-is and send user:info', (done) ->
-        received =
-          pass: false
-          user: false
         action = 'application:url'
         payload = 'https://app.flowhub.io'
-        receivePass passAction, action, payload, ->
-          received.pass = true
-          return unless received.user
-          done()
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
-        receiveAction newAction, 'user:info', check, ->
-          received.user = true
-          return unless received.pass
-          done()
+        receiveAction newAction, 'user:info', check, done
         send actionIn, action, payload
     describe 'without user and with OAuth error in URL', ->
       it 'should send the error out', (done) ->
@@ -258,7 +250,7 @@ describe 'User Middleware', ->
     it 'should send empty object as user:info', (done) ->
       action = 'user:logout'
       check = (data) ->
-        chai.expect(data).to.eql {}
+        chai.expect(data['grid-user']).to.be.a 'null'
       receiveAction newAction, 'user:info', check, done
       send actionIn, action, true
     it 'should have cleared user data', (done) ->
