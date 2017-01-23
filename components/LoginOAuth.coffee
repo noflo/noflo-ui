@@ -33,6 +33,9 @@ exports.getComponent = ->
     if typeof chrome isnt 'undefined' and chrome.identity
       # With Chrome apps we do login via the WebAuthFlow
       redirect = chrome.identity.getRedirectURL()
+      unless isRedirectValid redirect
+        return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CLIENT_REDIRECT"
+
       chrome.identity.launchWebAuthFlow
         interactive: true
         url: getUrl
