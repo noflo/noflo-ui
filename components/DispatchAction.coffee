@@ -34,11 +34,9 @@ exports.getComponent = ->
       sentToIdx = handler
     sentTo.beginGroup grp, sentToIdx for grp in groups
     sentTo.send data, sentToIdx
+    sentTo.endGroup sentToIdx for grp in groups
   c.inPorts.in.on 'endgroup', (group) ->
     grp = groups.pop()
-    return unless sentTo
-    sentTo.endGroup sentToIdx
-    return if groups.length
   c.inPorts.in.on 'disconnect', ->
     return unless sentTo
     sentTo.disconnect sentToIdx
