@@ -84,7 +84,7 @@ describe 'User Middleware', ->
         hello: 'world'
       receivePass passAction, action, payload, done
       send actionIn, action, payload
-  describe 'receiving start action', ->
+  describe 'receiving application:start action', ->
     originalUser = null
     beforeEach ->
       originalUser = localStorage.getItem 'grid-user'
@@ -95,7 +95,7 @@ describe 'User Middleware', ->
       localStorage.setItem 'grid-user', originalUser
     describe 'without logged in user', ->
       it 'should pass it out as-is', (done) ->
-        action = 'start'
+        action = 'application:start'
         payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, done
         send actionIn, action, payload
@@ -109,7 +109,7 @@ describe 'User Middleware', ->
         received =
           pass: false
           user: false
-        action = 'start'
+        action = 'application:start'
         payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, ->
           received.pass = true
@@ -131,7 +131,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and fail', (done) ->
-        action = 'start'
+        action = 'application:start'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data.message).to.contain 'bad_code_foo'
@@ -156,7 +156,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and fail at user fetch', (done) ->
-        action = 'start'
+        action = 'application:start'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data.message).to.contain 'Bad Credentials'
@@ -194,7 +194,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and update user information', (done) ->
-        action = 'start'
+        action = 'application:start'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
@@ -211,6 +211,25 @@ describe 'User Middleware', ->
           , JSON.stringify userData
         do xhr.respond
         do xhr.respond
+  describe 'receiving user:login action', ->
+    describe 'with app URL not matching redirect configuration', ->
+      it 'should send user:error', (done) ->
+        action = 'user:login'
+        check = (data) ->
+          chai.expect(data.message).to.contain 'http://localhost:9999'
+        receiveAction newAction, 'user:error', check, done
+        send actionIn, action,
+          url: 'http://example.net'
+          scopes: []
+    describe 'with app URL matching redirect configuration', ->
+      it 'should send application:redirect action with redirect URL', (done) ->
+        action = 'user:login'
+        check = (data) ->
+          chai.expect(data).to.contain 'https://github.com/login/oauth/authorize'
+        receiveAction newAction, 'application:redirect', check, done
+        send actionIn, action,
+          url: 'http://localhost:9999'
+          scopes: []
   describe 'receiving user:logout action', ->
     originalUser = null
     userData =
