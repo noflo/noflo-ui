@@ -1,0 +1,12 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=Merge.OUT:USER
+OUTPORT=MergeContext.OUT:CONTEXT
+
+'info,error' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Normalize user information
+Dispatch OUT[0] -> IN Merge(core/Merge)
+
+# Convert user errors to context errors
+Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeContext(core/Merge)

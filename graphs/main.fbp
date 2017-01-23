@@ -4,9 +4,18 @@ PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
 PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
-AppView(polymer/noflo-ui) EVENT -> IN Dispatch(routers/GroupRouter)
+AppView(polymer/noflo-ui) EVENT -> IN Actions(core/Repeat)
+# First we send the events to middlewares, and allow them
+# to either pass along or generate new events
+Actions OUT -> ACTION Logger(ui/LoggingMiddleware)
+Logger PASS -> ACTION UrlMiddleware(ui/UrlMiddleware)
+UrlMiddleware ACTION -> IN Actions
+UrlMiddleware PASS -> ACTION UserMiddleware(ui/UserMiddleware)
+UserMiddleware ACTION -> IN Actions
+# Once middlewares have processed event, pass to stores
+UserMiddleware PASS -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,context' -> ROUTES Dispatch
-Dispatch OUT[0] -> IN UserStorage(ui/UserStorage)
+Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
 Dispatch OUT[2] -> IN ProjectStorage
 Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage)
@@ -15,9 +24,9 @@ Dispatch OUT[5] -> IN ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Base data to UI
-UserStorage(ui/UserStorage) USER -> USER AppView
-UserStorage USER -> USER GithubStorage
-UserStorage CONTEXT -> Context AppView
+UserReducer USER -> USER AppView
+UserReducer USER -> USER GithubStorage
+UserReducer CONTEXT -> Context AppView
 
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
@@ -29,16 +38,9 @@ RuntimeStorage CONTEXT -> CONTEXT AppView
 RuntimeStorage OUT -> IN Dispatch
 ContextStorage CONTEXT -> CONTEXT AppView
 
-# Start routing
-ListenHash(interaction/ListenHash) INITIAL -> URL Router(ui/Router)
-ListenHash CHANGE -> URL Router
-Router ROUTE -> IN Dispatch
-
 # Start the app
 'noflo-ui' -> SELECTOR AppView
 '' -> START ListenWindow(interaction/ListenResize)
-'' -> START UserStorage
-'' -> START ListenHash
 
 # Handle resizes
 ListenWindow WIDTH -> WIDTH AppView
