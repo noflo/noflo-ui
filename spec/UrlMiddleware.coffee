@@ -92,7 +92,7 @@ describe 'URL Middleware', ->
         scopes: []
       receivePass passAction, action, payload, done
       send actionIn, action, payload
-  describe 'receiving a application:start action', ->
+  describe 'receiving a noflo:ready action', ->
     it 'should send application:url and main:open actions', (done) ->
       checkUrl = (data) ->
         chai.expect(data).to.equal window.location.href
@@ -106,7 +106,7 @@ describe 'URL Middleware', ->
           nodes: []
       receiveAction newAction, 'application:url', checkUrl, ->
         receiveAction newAction, 'main:open', checkOpen, done
-      send actionIn, 'application:start', true
+      send actionIn, 'noflo:ready', true
   describe 'on hash change to a project URL', ->
     it 'should send project:open action', (done) ->
       checkOpen = (data) ->
