@@ -357,7 +357,7 @@ module.exports = ->
           urls: ['http://127.0.0.1:9999/spec/browser.html']
           browsers: [
             browserName: 'googlechrome'
-            version: '39'
+            version: '55'
           ,
             browserName: 'safari'
             version: '10'
