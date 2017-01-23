@@ -62,17 +62,18 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     in: 'url'
-    out: 'route'
+    out: ['route', 'missed']
     forwardGroups: false
-  , (url, groups, out) ->
+    async: true
+  , (url, groups, out, callback) ->
     ctx = buildContext url
     unless ctx
-      c.outPorts.missed.send ctx
-      c.outPorts.missed.disconnect()
-      return
+      out.missed.send ctx
+      return callback()
 
-    out.beginGroup ctx.route
-    out.beginGroup 'open'
-    out.send ctx
-    out.endGroup()
-    out.endGroup()
+    out.route.beginGroup ctx.route
+    out.route.beginGroup 'open'
+    out.route.send ctx
+    out.route.endGroup()
+    out.route.endGroup()
+    callback()
