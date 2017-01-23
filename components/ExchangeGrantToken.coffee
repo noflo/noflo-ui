@@ -9,7 +9,7 @@ exchangeToken = (code, params, callback) ->
         data = JSON.parse req.responseText
         callback new Error "Authentication token exchange failed with #{data.error}"
       catch e
-        callback e
+        callback new Error req.responseText
       return
     try
       data = JSON.parse req.responseText
@@ -22,14 +22,13 @@ exchangeToken = (code, params, callback) ->
   if params.clientsecret
     # We know the client secret. Get token directly from provider
     payload =
-      code: data
+      code: code
       client_id: params.clientid
       client_secret: params.clientsecret
       grant_type: 'authorization_code'
       redirect_uri: params.redirect or window.location.href
     req.open 'POST', "#{params.token_server}#{params.token_endpoint}", true
     req.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
-    req.setRequestHeader "Connection", "close"
     req.send qs.stringify payload
     return
   # Normal scenario: exchange token via Gatekeeper
