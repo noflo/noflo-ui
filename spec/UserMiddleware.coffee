@@ -51,16 +51,22 @@ describe 'User Middleware', ->
     
   receive = (socket, expected, check, done) ->
     received = []
-    socket.on 'begingroup', (group) ->
+    onBeginGroup = (group) ->
       received.push "< #{group}"
-    socket.on 'data', (data) ->
+    onData = (data) ->
       received.push 'DATA'
       check data
-    socket.on 'endgroup', (group) ->
+    onEndGroup = (group) ->
       received.push "> #{group}"
       return unless received.length >= expected.length
+      socket.removeListener 'begingroup', onBeginGroup
+      socket.removeListener 'data', onData
+      socket.removeListener 'endgroup', onEndGroup
       chai.expect(received).to.eql expected
       done()
+    socket.on 'begingroup', onBeginGroup
+    socket.on 'data', onData
+    socket.on 'endgroup', onEndGroup
 
   receiveAction = (socket, action, check, done) ->
     expected = []
@@ -84,7 +90,7 @@ describe 'User Middleware', ->
         hello: 'world'
       receivePass passAction, action, payload, done
       send actionIn, action, payload
-  describe 'receiving application:start action', ->
+  describe 'receiving application:url action', ->
     originalUser = null
     beforeEach ->
       originalUser = localStorage.getItem 'grid-user'
@@ -95,7 +101,7 @@ describe 'User Middleware', ->
       localStorage.setItem 'grid-user', originalUser
     describe 'without logged in user', ->
       it 'should pass it out as-is', (done) ->
-        action = 'application:start'
+        action = 'application:url'
         payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, done
         send actionIn, action, payload
@@ -109,7 +115,7 @@ describe 'User Middleware', ->
         received =
           pass: false
           user: false
-        action = 'application:start'
+        action = 'application:url'
         payload = 'https://app.flowhub.io'
         receivePass passAction, action, payload, ->
           received.pass = true
@@ -124,7 +130,7 @@ describe 'User Middleware', ->
         send actionIn, action, payload
     describe 'without user and with OAuth error in URL', ->
       it 'should send the error out', (done) ->
-        action = 'application:start'
+        action = 'application:url'
         payload = "https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match"
         check = (data) ->
           chai.expect(data.message).to.contain 'The redirect_uri MUST match'
@@ -139,7 +145,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and fail', (done) ->
-        action = 'application:start'
+        action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data.message).to.contain 'bad_code_foo'
@@ -164,7 +170,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and fail at user fetch', (done) ->
-        action = 'application:start'
+        action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data.message).to.contain 'Bad Credentials'
@@ -202,7 +208,7 @@ describe 'User Middleware', ->
       afterEach ->
         xhr.restore()
       it 'should perform a token exchange and update user information', (done) ->
-        action = 'application:start'
+        action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
