@@ -145,6 +145,35 @@ describe 'User Middleware', ->
           error: 'bad_code_foo'
         ]
         do xhr.respond
+    describe 'without user and with grant code in URL yielding invalid API token', ->
+      xhr = null
+      code = null
+      token = null
+      beforeEach ->
+        code = 'oivwehfh24890f84h'
+        token = 'niov2o3wnnv4ioufuhh92348fh42q9'
+        xhr = sinon.fakeServer.create()
+      afterEach ->
+        xhr.restore()
+      it 'should perform a token exchange and fail at user fetch', (done) ->
+        action = 'start'
+        payload = "https://app.flowhub.io?code=#{code}"
+        check = (data) ->
+          chai.expect(data.message).to.contain 'Bad Credentials'
+        receiveAction newAction, 'user:error', check, done
+        send actionIn, action, payload
+        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
+          req.respond 200,
+            'Content-Type': 'application/json'
+          , JSON.stringify
+            token: token
+        xhr.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
+          req.respond 401,
+            'Content-Type': 'application/json'
+          , JSON.stringify
+            message: 'Bad Credentials'
+        do xhr.respond
+        do xhr.respond
     describe 'without user and with valid grant code in URL', ->
       xhr = null
       code = null
@@ -180,35 +209,6 @@ describe 'User Middleware', ->
           req.respond 200,
             'Content-Type': 'application/json'
           , JSON.stringify userData
-        do xhr.respond
-        do xhr.respond
-    describe 'without user and with grant code in URL yielding invalid API token', ->
-      xhr = null
-      code = null
-      token = null
-      beforeEach ->
-        code = 'oivwehfh24890f84h'
-        token = 'niov2o3wnnv4ioufuhh92348fh42q9'
-        xhr = sinon.fakeServer.create()
-      afterEach ->
-        xhr.restore()
-      it 'should perform a token exchange and fail', (done) ->
-        action = 'start'
-        payload = "https://app.flowhub.io?code=#{code}"
-        check = (data) ->
-          chai.expect(data.message).to.contain 'Bad Credentials'
-        receiveAction newAction, 'user:error', check, done
-        send actionIn, action, payload
-        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
-          req.respond 200,
-            'Content-Type': 'application/json'
-          , JSON.stringify
-            token: token
-        xhr.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
-          req.respond 401,
-            'Content-Type': 'application/json'
-          , JSON.stringify
-            message: 'Bad Credentials'
         do xhr.respond
         do xhr.respond
   describe 'receiving user:logout action', ->
