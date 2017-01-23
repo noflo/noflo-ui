@@ -8,6 +8,8 @@ exports.getComponent = ->
     datatype: 'all'
   c.outPorts.add 'code',
     datatype: 'string'
+  c.outPorts.add 'error',
+    datatype: 'string'
 
   noflo.helpers.WirePattern c,
     in: ['in']
@@ -15,21 +17,17 @@ exports.getComponent = ->
     forwardGroups: true
     async: true
   , (data, groups, out, callback) ->
-    if typeof chrome isnt 'undefined' and chrome.identity
-      # In Chrome app build we don't perform this step
-      out.pass.send data
-      return callback()
-
-    # With browser we check the URL for a OAuth grant code
+    # Check the URL for a OAuth grant code
     unless typeof data is 'string'
-      out.pass.send data
-      return callback()
+      return callback new Error 'URL must be a string'
     [url, query] = data.split '?'
     unless query
       # No query params, pass out as-is
       out.pass.send data
       return callback()
     queryParams = qs.parse query
+    if queryParams.error and queryParams.error_description
+      callback new Error queryParams.error_description
     unless queryParams.code
       # We don't care about other query parameters
       out.pass.send data

@@ -19,7 +19,7 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'string'
-  c.outPorts.add 'code',
+  c.outPorts.add 'codeurl',
     datatype: 'string'
   c.outPorts.add 'redirect',
     datatype: 'string'
@@ -27,7 +27,7 @@ exports.getComponent = ->
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    out: ['code', 'redirect']
+    out: ['codeurl', 'redirect']
     async: true
   , (data, groups, out, callback) ->
     if typeof chrome isnt 'undefined' and chrome.identity
@@ -39,8 +39,8 @@ exports.getComponent = ->
           url: chrome.identity.getRedirectURL()
           scopes: data.scopes
       , (responseUrl) ->
-        # Handle error
-        # Handle grant code
+        out.codeurl.send responseUrl
+        do callback
       return
 
     unless isRedirectValid data.url

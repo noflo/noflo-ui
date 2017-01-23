@@ -122,6 +122,14 @@ describe 'User Middleware', ->
           return unless received.pass
           done()
         send actionIn, action, payload
+    describe 'without user and with OAuth error in URL', ->
+      it 'should send the error out', (done) ->
+        action = 'application:start'
+        payload = "https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match"
+        check = (data) ->
+          chai.expect(data.message).to.contain 'The redirect_uri MUST match'
+        receiveAction newAction, 'user:error', check, done
+        send actionIn, action, payload
     describe 'without user and with invalid grant code in URL', ->
       xhr = null
       code = null
