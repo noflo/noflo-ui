@@ -9,6 +9,7 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     async: true
+    forwardGroups: false
   , (data, groups, out, callback) ->
     out.send window.location.href
     do callback

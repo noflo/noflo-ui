@@ -9,6 +9,7 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     async: true
+    forwardGroups: false
   , (data, groups, out, callback) ->
     # This will in effect cause a NoFlo network stop as the app
     # redirects to new URL
