@@ -1,3 +1,5 @@
+noflo = require 'noflo'
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'routes',

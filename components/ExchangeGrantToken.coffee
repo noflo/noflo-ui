@@ -1,4 +1,5 @@
 qs = require 'querystring'
+noflo = require 'noflo'
 
 exchangeToken = (code, params, callback) ->
   req = new XMLHttpRequest

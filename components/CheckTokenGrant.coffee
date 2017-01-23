@@ -1,4 +1,5 @@
 qs = require 'querystring'
+noflo = require 'noflo'
 
 exports.getComponent = ->
   c = new noflo.Component
