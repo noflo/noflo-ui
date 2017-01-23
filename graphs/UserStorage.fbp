@@ -12,12 +12,11 @@ LoadUser ERROR -> CLEAR Reset(ui/ClearUserData)
 
 # Login handling
 '$NOFLO_OAUTH_PROVIDER' -> SITE Login(ui/RemoteLogin)
-'$NOFLO_OAUTH_SERVICE_USER' -> SITE GetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER Login
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID Login
 'public_repo' -> SCOPE Login
 Dispatch OUT[0] -> LOGIN Login
-Login TOKEN -> TOKEN GetRemoteUser
+Login TOKEN -> TOKEN GetRemoteUser(ui/GetRemoteUser)
 GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
 Login ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext(core/Merge)
 GetRemoteUser ERROR -> ERROR ErrorToCtx
@@ -29,12 +28,11 @@ StoreUser USER -> IN Merge
 
 # Re-login handling for Pro
 '$NOFLO_OAUTH_PROVIDER' -> SITE ProLogin(ui/RemoteLogin)
-'$NOFLO_OAUTH_SERVICE_USER' -> SITE ProGetRemoteUser(ui/GetRemoteUser)
 '$NOFLO_OAUTH_GATE' -> GATEKEEPER ProLogin
 '$NOFLO_OAUTH_CLIENT_ID' -> CLIENTID ProLogin
 'repo' -> SCOPE ProLogin
 Dispatch OUT[1] -> LOGIN ProLogin
-ProLogin TOKEN -> TOKEN ProGetRemoteUser
+ProLogin TOKEN -> TOKEN ProGetRemoteUser(ui/GetRemoteUser)
 ProGetRemoteUser USER -> USER StoreUser
 ProLogin ERROR -> ERROR ErrorToCtx
 ProGetRemoteUser ERROR -> ERROR ErrorToCtx
