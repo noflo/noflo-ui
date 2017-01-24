@@ -68,6 +68,14 @@ module.exports = ->
         src: '*.coffee'
         dest: 'spec'
         ext: '.js'
+      spec_browser:
+        options:
+          bare: true
+        expand: true
+        cwd: 'spec/browser'
+        src: '*.coffee'
+        dest: 'spec/browser'
+        ext: '.js'
 
     # Directory cleaning
     clean:
@@ -308,6 +316,12 @@ module.exports = ->
           max_line_length:
             level: "ignore"
         src: 'spec/*.coffee'
+      spec_browser:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: 'spec/browser/*.coffee'
+
 
     inlinelint:
       options:
@@ -321,6 +335,11 @@ module.exports = ->
       spec:
         files: 'spec/*.coffee'
         tasks: ['coffeelint:spec', 'coffee:spec']
+        options:
+          livereload: false
+      spec_browser:
+        files: 'spec/browser/*.coffee'
+        tasks: ['coffeelint:spec_browser', 'coffee:spec_browser']
         options:
           livereload: false
 
@@ -341,7 +360,7 @@ module.exports = ->
             '../node_modules/sinon/pkg/sinon-server.js'
           ]
         files:
-          'spec/tests.html': ['spec/*.js', '!spec/EndToEnd*.js']
+          'spec/tests.html': ['spec/*.js']
     # BDD tests on browser
     mocha_phantomjs:
       all:
@@ -354,7 +373,7 @@ module.exports = ->
     'saucelabs-mocha':
       all:
         options:
-          urls: ['http://127.0.0.1:9999/spec/browser.html']
+          urls: ['http://127.0.0.1:9999/spec/browser/tests.html']
           browsers: [
             browserName: 'googlechrome'
             version: '55'
@@ -417,7 +436,7 @@ module.exports = ->
     'build'
   ]
   @registerTask 'test', [
-    'coffeelint:app'
+    'coffeelint'
     'inlinelint'
     'build'
     'coffee'
@@ -441,7 +460,9 @@ module.exports = ->
   ]
   @registerTask 'spec', [
     'coffeelint:spec'
+    'coffeelint:spec_browser'
     'coffee:spec'
+    'coffee:spec_browser'
     'connect:server'
     'watch'
   ]

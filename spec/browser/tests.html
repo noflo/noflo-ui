@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>NoFlo UI browser tests</title>
-    <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
+    <link rel="stylesheet" href="../../node_modules/mocha/mocha.css">
     <style type="text/css">
       #app {
         width: 800px;
@@ -14,9 +14,9 @@
         border: none;
       }
     </style>
-    <script src="../node_modules/mocha/mocha.js"></script>
-    <script src="../node_modules/chai/chai.js"></script>
-    <script src="../node_modules/syn/dist/global/syn.js"></script>
+    <script src="../../node_modules/mocha/mocha.js"></script>
+    <script src="../../node_modules/chai/chai.js"></script>
+    <script src="../../node_modules/syn/dist/global/syn.js"></script>
     <script>
       window.Syn = window.syn;
       window.checkSupport = function(m) {
@@ -28,11 +28,11 @@
   <body>
     <div id="mocha"></div>
     <iframe id="app"></iframe>
-    <script src="EndToEndInitialization.js"></script>
-    <script src="EndToEndLogin.js"></script>
-    <script src="EndToEndCreateProject.js"></script>
-    <script src="EndToEndEditGraph.js"></script>
-    <script src="EndToEndDeleteGraph.js"></script>
+    <script src="Initialization.js"></script>
+    <script src="Login.js"></script>
+    <script src="CreateProject.js"></script>
+    <script src="EditGraph.js"></script>
+    <script src="DeleteGraph.js"></script>
     <script>
       Syn.support.oninput = true;
       var runner = mocha.run();
