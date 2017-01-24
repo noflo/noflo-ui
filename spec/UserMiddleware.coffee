@@ -129,13 +129,13 @@ describe 'User Middleware', ->
         receiveAction newAction, 'user:error', check, done
         send actionIn, action, payload
     describe 'without user and with invalid grant code in URL', ->
-      xhr = null
+      mock = null
       code = null
       beforeEach ->
         code = 'dj0328hf3d9cq3c'
-        xhr = sinon.fakeServer.create()
+        mock = sinon.fakeServer.create()
       afterEach ->
-        xhr.restore()
+        mock.restore()
       it 'should perform a token exchange and fail', (done) ->
         action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
@@ -143,24 +143,24 @@ describe 'User Middleware', ->
           chai.expect(data.message).to.contain 'bad_code_foo'
         receiveAction newAction, 'user:error', check, done
         send actionIn, action, payload
-        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", [
+        mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", [
           402
         ,
           'Content-Type': 'application/json'
         , JSON.stringify
           error: 'bad_code_foo'
         ]
-        do xhr.respond
+        do mock.respond
     describe 'without user and with grant code in URL yielding invalid API token', ->
-      xhr = null
+      mock = null
       code = null
       token = null
       beforeEach ->
         code = 'oivwehfh24890f84h'
         token = 'niov2o3wnnv4ioufuhh92348fh42q9'
-        xhr = sinon.fakeServer.create()
+        mock = sinon.fakeServer.create()
       afterEach ->
-        xhr.restore()
+        mock.restore()
       it 'should perform a token exchange and fail at user fetch', (done) ->
         action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
@@ -168,20 +168,20 @@ describe 'User Middleware', ->
           chai.expect(data.message).to.contain 'Bad Credentials'
         receiveAction newAction, 'user:error', check, done
         send actionIn, action, payload
-        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
+        mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
           , JSON.stringify
             token: token
-        xhr.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
+        mock.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
           req.respond 401,
             'Content-Type': 'application/json'
           , JSON.stringify
             message: 'Bad Credentials'
-        do xhr.respond
-        do xhr.respond
+        do mock.respond
+        do mock.respond
     describe 'without user and with valid grant code in URL', ->
-      xhr = null
+      mock = null
       code = null
       token = null
       userData = null
@@ -196,9 +196,9 @@ describe 'User Middleware', ->
             token: token
           plan:
             type: 'free'
-        xhr = sinon.fakeServer.create()
+        mock = sinon.fakeServer.create()
       afterEach ->
-        xhr.restore()
+        mock.restore()
       it 'should perform a token exchange and update user information', (done) ->
         action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}"
@@ -206,17 +206,17 @@ describe 'User Middleware', ->
           chai.expect(data['grid-user']).to.eql userData
         receiveAction newAction, 'user:info', check, done
         send actionIn, action, payload
-        xhr.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
+        mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
           , JSON.stringify
             token: token
-        xhr.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
+        mock.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
           , JSON.stringify userData
-        do xhr.respond
-        do xhr.respond
+        do mock.respond
+        do mock.respond
   describe 'receiving user:login action', ->
     describe 'with app URL not matching redirect configuration', ->
       it 'should send user:error', (done) ->
