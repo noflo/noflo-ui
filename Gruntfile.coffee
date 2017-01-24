@@ -13,6 +13,13 @@ module.exports = ->
     # Browser build of NoFlo
     noflo_browser:
       options:
+        manifest:
+          runtimes: [
+            'noflo'
+          ]
+          discover: true
+          recursive: true
+          subdirs: false
         baseDir: './'
         webpack:
           externals:
@@ -61,6 +68,14 @@ module.exports = ->
         src: '*.coffee'
         dest: 'spec'
         ext: '.js'
+      spec_browser:
+        options:
+          bare: true
+        expand: true
+        cwd: 'spec/browser'
+        src: '*.coffee'
+        dest: 'spec/browser'
+        ext: '.js'
 
     # Directory cleaning
     clean:
@@ -81,6 +96,9 @@ module.exports = ->
       ]
       themes: [
         'themes'
+      ]
+      specs: [
+        'spec/*.js'
       ]
 
     # JavaScript minification for the browser
@@ -298,6 +316,12 @@ module.exports = ->
           max_line_length:
             level: "ignore"
         src: 'spec/*.coffee'
+      spec_browser:
+        options:
+          max_line_length:
+            level: "ignore"
+        src: 'spec/browser/*.coffee'
+
 
     inlinelint:
       options:
@@ -313,6 +337,11 @@ module.exports = ->
         tasks: ['coffeelint:spec', 'coffee:spec']
         options:
           livereload: false
+      spec_browser:
+        files: 'spec/browser/*.coffee'
+        tasks: ['coffeelint:spec_browser', 'coffee:spec_browser']
+        options:
+          livereload: false
 
     # Web server for the browser tests
     connect:
@@ -322,14 +351,32 @@ module.exports = ->
           hostname: '*' # Allow connection from mobile
           livereload: false
 
+    # Generate runner.html
+    noflo_browser_mocha:
+      all:
+        options:
+          scripts: [
+            "../browser/<%=pkg.name%>.js"
+            '../node_modules/sinon/pkg/sinon-server.js'
+          ]
+        files:
+          'spec/tests.html': ['spec/*.js']
+    # BDD tests on browser
+    mocha_phantomjs:
+      all:
+        options:
+          reporter: 'spec'
+          urls: ['http://localhost:9999/spec/tests.html']
+          failWithOutput: true
+
     # BDD tests on browser
     'saucelabs-mocha':
       all:
         options:
-          urls: ['http://127.0.0.1:9999/spec/runner.html']
+          urls: ['http://127.0.0.1:9999/spec/browser/tests.html']
           browsers: [
             browserName: 'googlechrome'
-            version: '39'
+            version: '55'
           ,
             browserName: 'safari'
             version: '10'
@@ -361,6 +408,7 @@ module.exports = ->
   #@loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-contrib-watch'
   @loadNpmTasks 'grunt-contrib-coffee'
+  @loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-saucelabs'
   @loadNpmTasks 'grunt-coffeelint'
   @loadNpmTasks 'grunt-contrib-connect'
@@ -372,20 +420,49 @@ module.exports = ->
 
 
   # Our local tasks
-  @registerTask 'nuke', ['clean']
-  @registerTask 'build', ['inlinelint', 'bower-install-simple',
-                          'noflo_browser',
-                          'copy:themes', 'vulcanize', 'string-replace:app', 'compress']
-  @registerTask 'rebuild', ['nuke', 'build']
+  @registerTask 'nuke', [
+    'clean'
+  ]
+  @registerTask 'build', [
+    'bower-install-simple'
+    'noflo_browser'
+    'copy:themes'
+    'vulcanize'
+    'string-replace:app'
+    'compress'
+  ]
+  @registerTask 'rebuild', [
+    'nuke'
+    'build'
+  ]
   @registerTask 'test', [
-    'coffeelint:app'
+    'coffeelint'
     'inlinelint'
     'build'
     'coffee'
+    'noflo_browser_mocha'
     'connect'
+    'mocha_phantomjs'
+  ]
+  @registerTask 'crossbrowser', [
+    'test'
     'saucelabs-mocha'
   ]
-  @registerTask 'default', ['test']
-  @registerTask 'pages', ['build', 'clean:dist', 'unzip', 'string-replace:analytics', 'gh-pages']
-  @registerTask 'spec', ['coffeelint:spec', 'coffee:spec', 'connect:server', 'watch']
-
+  @registerTask 'default', [
+    'test'
+  ]
+  @registerTask 'pages', [
+    'build'
+    'clean:dist'
+    'unzip'
+    'string-replace:analytics'
+    'gh-pages'
+  ]
+  @registerTask 'spec', [
+    'coffeelint:spec'
+    'coffeelint:spec_browser'
+    'coffee:spec'
+    'coffee:spec_browser'
+    'connect:server'
+    'watch'
+  ]

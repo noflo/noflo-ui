@@ -29,7 +29,8 @@ exports.getComponent = ->
 
     for key in keys
       localStorage.removeItem key
-    out.send {}
+    newUserInfo = {}
+    for key in keys
+      newUserInfo[key] = null
+    out.send newUserInfo
     do callback
-
-  c

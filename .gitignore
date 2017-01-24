@@ -6,7 +6,9 @@
 /components/*/
 /preview/components/*/
 /spec/*.js
+/spec/browser/*.js
 /spec/*.xml
+/spec/tests.html
 /dist/
 /gh-pages/
 *.zip
