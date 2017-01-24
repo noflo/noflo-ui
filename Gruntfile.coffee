@@ -13,6 +13,7 @@ module.exports = ->
     # Browser build of NoFlo
     noflo_browser:
       options:
+        graph: 'ui/main'
         manifest:
           runtimes: [
             'noflo'
