@@ -1,6 +1,6 @@
-INPORT=Dispatch.IN:ACTION
+INPORT=Dispatch.IN:IN
 OUTPORT=Dispatch.PASS:PASS
-OUTPORT=NewActions.OUT:ACTION
+OUTPORT=NewActions.OUT:NEW
 
 'noflo:ready,application:redirect' -> ROUTES Dispatch(ui/DispatchAction)
 

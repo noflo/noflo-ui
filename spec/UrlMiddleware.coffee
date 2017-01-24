@@ -19,8 +19,8 @@ describe 'URL Middleware', ->
       return done err if err
       c = instance
       actionIn = noflo.internalSocket.createSocket()
-      c.inPorts.action.attach actionIn
-      actionIn.port = 'action'
+      c.inPorts.in.attach actionIn
+      actionIn.port = 'in'
       c.start()
       c.network.once 'start', ->
         done()
@@ -29,11 +29,11 @@ describe 'URL Middleware', ->
     c.outPorts.pass.attach passAction
     passAction.port = 'pass'
     newAction = noflo.internalSocket.createSocket()
-    c.outPorts.action.attach newAction
-    newAction.port = 'action'
+    c.outPorts.new.attach newAction
+    newAction.port = 'new'
   afterEach ->
     c.outPorts.pass.detach passAction
-    c.outPorts.action.detach newAction
+    c.outPorts.new.detach newAction
   after ->
     window.location.hash = ''
 

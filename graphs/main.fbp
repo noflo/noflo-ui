@@ -7,11 +7,11 @@ PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 AppView(polymer/noflo-ui) EVENT -> IN Actions(core/Repeat)
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
-Actions OUT -> ACTION Logger(ui/LoggingMiddleware)
-Logger PASS -> ACTION UrlMiddleware(ui/UrlMiddleware)
-UrlMiddleware ACTION -> IN Actions
-UrlMiddleware PASS -> ACTION UserMiddleware(ui/UserMiddleware)
-UserMiddleware ACTION -> IN Actions
+Actions OUT -> IN Logger(ui/LoggingMiddleware)
+Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
+UrlMiddleware NEW -> IN Actions
+UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
+UserMiddleware NEW -> IN Actions
 # Once middlewares have processed event, pass to stores
 UserMiddleware PASS -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,context' -> ROUTES Dispatch
