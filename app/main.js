@@ -5,6 +5,7 @@ var exported = {
   'child_process': null,
   'uuid': require('uuid'),
   'flowhub-registry': require('flowhub-registry'),
+  'fbp-protocol-client': require('fbp-protocol-client'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee')
 };
