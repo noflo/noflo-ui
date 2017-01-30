@@ -35,7 +35,7 @@ GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
 MainContext OUT -> CONTEXT AppView
 RuntimeStorage CONTEXT -> CONTEXT AppView
-RuntimeStorage OUT -> IN Actions
+RuntimeStorage NEW -> IN Actions
 ContextStorage CONTEXT -> CONTEXT AppView
 
 # Start the app
