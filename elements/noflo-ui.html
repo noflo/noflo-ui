@@ -60,12 +60,18 @@
       height: window.innerHeight,
       ctx: {},
       dontAutoHideAlert: false,
+      emitEvent: function (event, payload) {
+        this.fire(event, {
+          state: this.ctx,
+          payload: payload
+        });
+      },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
-          this.fire('user:logout', true);
+          this.emitEvent('user:logout', true);
         }.bind(this));
         this.$.main.addEventListener('login', function (event) {
-          this.fire('user:login', {
+          this.emitEvent('user:login', {
             url: window.location.href,
             scopes: []
           });
@@ -75,18 +81,18 @@
           if (event.detail !== 'free') {
             scopes = ['repo'];
           }
-          this.fire('user:login', {
+          this.emitEvent('user:login', {
             url: window.location.href,
             scopes: []
           });
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
-          this.fire('github:fetch', event.detail);
+          this.emitEvent('github:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.fire('project:save:project', event.detail.project);
+          this.emitEvent('project:save:project', event.detail.project);
           setTimeout(function () {
-            this.fire('github:sync:pull', {
+            this.emitEvent('github:sync:pull', {
               repo: event.detail.project.repo,
               project: event.detail.project
             });
@@ -96,21 +102,21 @@
           }.bind(this), 2);
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
-          this.fire('project:save:graph', event.detail);
+          this.emitEvent('project:save:graph', event.detail);
         }.bind(this));
         this.$.main.addEventListener('runtime', function (event) {
-          this.fire('project:save:runtime', event.detail);
+          this.emitEvent('project:save:runtime', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
-          this.fire('project:save:project', event.detail);
+          this.emitEvent('project:save:project', event.detail);
           this.ctx.projects.push(event.detail);
           setTimeout(function () {
             window.location.hash = '#project/' + encodeURIComponent(event.detail.id) + '/' + encodeURIComponent(event.detail.main);
           }, 2);
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
-          this.fire('project:save:graph', event.detail);
-          this.fire('runtime:sendGraph', event.detail);
+          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {
           var newCtx = {};
@@ -118,85 +124,82 @@
             newCtx[key] = this.ctx[key];
           }
           newCtx.runtime = event.detail;
-          this.fire('runtime:connect', newCtx);
+          this.emitEvent('runtime:connect', newCtx);
         }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
-          this.fire('project:save:runtime', event.detail);
+          this.emitEvent('project:save:runtime', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
-          this.fire('context:edges', {
-            graph: this.$.grapheditor.graph.name || this.$.grapheditor.graph.properties.id,
-            edges: event.detail
-          });
+          this.emitEvent('context:edges', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('nodes', function (event) {
-          this.fire('context:nodes', event.detail);
+          this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
-          this.fire('project:save:project', event.detail);
+          this.emitEvent('project:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
-          this.fire('project:save:graph', event.detail);
-          this.fire('runtime:sendGraph', event.detail);
+          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('runtime:sendGraph', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
-          this.fire('project:save:component', event.detail);
-          this.fire('runtime:sendComponent', event.detail);
+          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('runtime:sendComponent', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
-          this.fire('github:sync:prepare', event.detail);
+          this.emitEvent('github:sync:prepare', event.detail);
         }.bind(this));
         this.$.project.addEventListener('syncDecision', function (event) {
-          this.fire('github:sync:synchronize', event.detail);
+          this.emitEvent('github:sync:synchronize', event.detail);
         }.bind(this));
         this.$.project.addEventListener('deleteProject', function (event) {
           window.location.hash = '#';
           event.detail.graphs.forEach(function (graph) {
-            this.fire('project:delete:graph', graph);
+            this.emitEvent('project:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.fire('project:delete:component', component);
+            this.emitEvent('project:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.fire('project:delete:spec', spec);
+            this.emitEvent('project:delete:spec', spec);
           }.bind(this));
-          this.fire('project:delete:project', event.detail);
+          this.emitEvent('project:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
           window.location.hash = '#';
           event.detail.graphs.forEach(function (graph) {
-            this.fire('project:delete:graph', graph);
+            this.emitEvent('project:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.fire('project:delete:component', component);
+            this.emitEvent('project:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.fire('project:delete:spec', spec);
+            this.emitEvent('project:delete:spec', spec);
           }.bind(this));
-          this.fire('project:delete:project', event.detail);
+          this.emitEvent('project:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
-          this.fire('project:save:component', event.detail);
-          this.fire('runtime:sendComponent', event.detail);
+          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('runtime:sendComponent', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
-          this.fire('project:save:spec', event.detail);
+          this.emitEvent('project:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
-          this.fire('context:search_library', event.detail);
+          this.emitEvent('context:search_library', event.detail);
         }.bind(this));
         this.$.search.addEventListener('search:graph', function (event) {
-          this.fire('context:search_graph', event.detail);
+          this.emitEvent('context:search_graph', event.detail);
         }.bind(this));
         this.$.library.addEventListener('result', function (event) {
-          this.fire('context:search_library_result', {
+          this.emitEvent('context:search_library_result', {
             searchLibraryResult: event.detail
           });
         }.bind(this));
@@ -205,10 +208,10 @@
           if (project && project.graphs.indexOf(event.detail) !== -1) {
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
           }
-          this.fire('project:delete:graph', event.detail);
+          this.emitEvent('project:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.fire('project:delete:project', project);
+            this.emitEvent('project:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
@@ -231,10 +234,10 @@
           if (index !== -1) {
             project.components.splice(index, 1);
           }
-          this.fire('project:delete:component', component);
+          this.emitEvent('project:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.fire('project:delete:project', project);
+            this.emitEvent('project:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
@@ -248,7 +251,7 @@
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
-          this.fire('project:save:spec', event.detail);
+          this.emitEvent('project:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
@@ -309,7 +312,7 @@
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
         if (this.ctx.edges !== undefined) {
-          this.$.packets.edges = this.ctx.edges.edges;
+          this.$.packets.edges = this.ctx.edges;
         }
         if (this.ctx.error) {
           this.$.packets.processError(this.ctx.error);
@@ -373,7 +376,7 @@
           this.$.runtime.graph = this.ctx.graphs[0];
           if (oldGraph !== this.$.grapheditor.graph) {
             setTimeout(function () {
-              this.fire('context:graph', {
+              this.emitEvent('context:graph', {
                 graph: this.$.grapheditor.graph
               });
             }.bind(this), 1);
@@ -428,7 +431,7 @@
         }
       },
       triggerTests: function () {
-        this.fire('runtime:runTests', this.ctx.project || this.$.project.project);
+        this.emitEvent('runtime:runTests', this.ctx.project || this.$.project.project);
       },
       hideAlert: function () {
         this.$.alert.classList.remove('show');

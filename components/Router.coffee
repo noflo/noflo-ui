@@ -68,12 +68,14 @@ exports.getComponent = ->
   , (url, groups, out, callback) ->
     ctx = buildContext url
     unless ctx
-      out.missed.send ctx
+      out.missed.send
+        payload: ctx
       return callback()
 
     out.route.beginGroup ctx.route
     out.route.beginGroup 'open'
-    out.route.send ctx
+    out.route.send
+      payload: ctx
     out.route.endGroup()
     out.route.endGroup()
     callback()

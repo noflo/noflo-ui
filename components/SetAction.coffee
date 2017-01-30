@@ -19,7 +19,8 @@ exports.getComponent = ->
     actionParts = c.params.action.split ':'
     setTimeout ->
       out.beginGroup part for part in actionParts
-      out.send data
+      out.send
+        payload: data
       out.endGroup() for part in actionParts
       callback()
     , 1

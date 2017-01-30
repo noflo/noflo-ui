@@ -29,14 +29,6 @@ describe 'Runtime Middleware', ->
       actionIn = noflo.internalSocket.createSocket()
       c.inPorts.in.attach actionIn
       actionIn.port = 'in'
-      ###
-      c.network.on 'begingroup', (data) ->
-        console.log "   < #{data.id}"
-      c.network.on 'data', (data) ->
-        console.log "DATA #{data.id}"
-      c.network.on 'endgroup', (data) ->
-        console.log "   > #{data.id}"
-      ###
       c.start()
       c.network.once 'start', ->
         done()
@@ -52,10 +44,12 @@ describe 'Runtime Middleware', ->
     c.outPorts.new.detach newAction
     runtime.iframe.contentWindow.clearMessages()
 
-  send = (socket, action, payload) ->
+  send = (socket, action, payload, state) ->
     actionParts = action.split ':'
     socket.beginGroup part for part in actionParts
-    socket.send payload
+    socket.send
+      payload: payload
+      state: state
     socket.endGroup part for part in actionParts
 
   receive = (socket, expected, check, done) ->
@@ -64,7 +58,7 @@ describe 'Runtime Middleware', ->
       received.push "< #{group}"
     onData = (data) ->
       received.push 'DATA'
-      check data
+      check data.payload
     onEndGroup = (group) ->
       received.push "> #{group}"
       return unless received.length >= expected.length
@@ -129,11 +123,14 @@ describe 'Runtime Middleware', ->
           node: 'Bar'
           port: 'in'
       ]
-      send actionIn, 'context:edges',
-        graph: 'foo'
-        edges: expectedEdges
+      send actionIn, 'context:edges', expectedEdges,
+        graphs: [
+          name: 'foo'
+        ]
+        runtime: runtime
       runtime.iframe.contentWindow.handleProtocolMessage (msg) ->
         chai.expect(msg.protocol).to.equal 'network'
         chai.expect(msg.command).to.equal 'edges'
+        chai.expect(msg.payload.graph).to.equal 'foo'
         chai.expect(msg.payload.edges).to.eql expectedEdges
         done()

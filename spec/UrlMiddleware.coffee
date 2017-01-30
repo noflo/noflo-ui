@@ -37,10 +37,12 @@ describe 'URL Middleware', ->
   after ->
     window.location.hash = ''
 
-  send = (socket, action, payload) ->
+  send = (socket, action, payload, state) ->
     actionParts = action.split ':'
     socket.beginGroup part for part in actionParts
-    socket.send payload
+    socket.send
+      payload: payload
+      state: state
     socket.endGroup part for part in actionParts
     
   receive = (socket, expected, check, done) ->
@@ -49,7 +51,7 @@ describe 'URL Middleware', ->
       received.push "< #{group}"
     onData = (data) ->
       received.push 'DATA'
-      check data
+      check data.payload
     onEndGroup = (group) ->
       received.push "> #{group}"
       return unless received.length >= expected.length
