@@ -124,7 +124,10 @@
           this.fire('project:save:runtime', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
-          this.fire('context:edges', event.detail);
+          this.fire('context:edges', {
+            graph: this.$.grapheditor.graph.name || this.$.grapheditor.graph.properties.id,
+            edges: event.detail
+          });
         }.bind(this));
         this.$.grapheditor.addEventListener('nodes', function (event) {
           this.fire('context:nodes', event.detail);
@@ -306,7 +309,7 @@
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
         if (this.ctx.edges !== undefined) {
-          this.$.packets.edges = this.ctx.edges;
+          this.$.packets.edges = this.ctx.edges.edges;
         }
         if (this.ctx.error) {
           this.$.packets.processError(this.ctx.error);

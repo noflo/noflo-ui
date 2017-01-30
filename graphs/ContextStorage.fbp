@@ -9,7 +9,6 @@ Dispatch OUT[0] -> IN SplitEdges(core/Split) OUT -> START CreateEdgeCtx(objects/
 CreateEdgeCtx OUT -> CONTEXT SetEdges(ui/SetToContext)
 'edges' -> KEY SetEdges
 SplitEdges OUT -> VALUE SetEdges CONTEXT -> IN MergeContext(core/Merge)
-# TODO: Send to runtime
 
 # Selected nodes
 Dispatch OUT[1] -> IN SplitNodes(core/Split) OUT -> START CreateNodeCtx(objects/CreateObject)
