@@ -16,22 +16,33 @@
        if (!data.protocol || !data.command) {
          return;
        }
-       data.origin = message.origin;
        received.push(data);
      });
-     window.handleProtocolMessage = function (callback) {
-       if (!received.length) {
-         callback(null);
-       }
-       var msg = received.shift();
-       callback(msg, function (protocol, command, payload) {
-         console.log("SEND", protocol, command, payload, msg.origin);
+     window.sendProtocolMessage = function (protocol, command, payload) {
+       // Simulate some network delay
+       setTimeout(function () {
          window.parent.postMessage(JSON.stringify({
            protocol: protocol,
            command: command,
            payload: payload
-         }), msg.origin);
-       });
+         }), window.parent.location.href);
+       }, Math.ceil(Math.random() * 10));
+     };
+     window.handleProtocolMessage = function (callback, retried) {
+       if (!received.length) {
+         if (!retried) {
+           setTimeout(function () {
+             window.handleProtocolMessage(callback, true)
+           }, 10);
+           return;
+         }
+         callback(null);
+         return;
+       }
+       var msg = received.shift();
+       setTimeout(function () {
+         callback(msg, window.sendProtocolMessage);
+       }, 1);
      };
      window.clearMessages = function () {
        received = [];
