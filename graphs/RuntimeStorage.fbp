@@ -41,6 +41,12 @@ UpdateLibrary OUT -> IN MergeContext
 UpdateRuntime OUT -> IN NewActions(core/Split)
 ListComponents ERROR -> IN ShowErrors
 
+# Send runtime information as a new action
+'runtime:connected' -> ACTION RuntimeConnectionAction(ui/SetAction)
+RuntimeConnectionAction OUT -> IN NewActions
+ProjectRuntime CONNECTED -> IN RuntimeConnectionAction
+DirectRuntime RUNTIME -> IN RuntimeConnectionAction
+
 # Graph change subscription
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
 SubscribeGraph RUNTIME -> RUNTIME SendGraph(runtime/SendGraphChanges)
