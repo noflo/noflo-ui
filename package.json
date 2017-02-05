@@ -38,7 +38,7 @@
     "noflo-objects": "~0.2.0",
     "noflo-polymer": "~0.2.0",
     "noflo-routers": "~0.2.2",
-    "noflo-runtime": "~0.3.8",
+    "noflo-runtime": "~0.3.12",
     "noflo-runtime-base": "^0.7.3",
     "noflo-runtime-webrtc": "~0.7.3",
     "noflo-strings": "~0.2.0",
