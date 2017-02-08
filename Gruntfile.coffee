@@ -3,13 +3,6 @@ module.exports = ->
   @initConfig
     pkg: @file.readJSON 'package.json'
 
-    'bower-install-simple':
-      deps:
-        options:
-          interactive: false
-          forceLatest: false
-          directory: 'bower_components'
-
     # Browser build of NoFlo
     noflo_browser:
       options:
@@ -97,10 +90,6 @@ module.exports = ->
     clean:
       build: [
         'browser'
-      ]
-      dependencies: [
-        'bower_components'
-        'components/*/'
       ]
       dist: [
         'dist'
@@ -262,8 +251,8 @@ module.exports = ->
           dest: '/'
         ,
           src: [
-            'bower_components/polymer/*.js'
-            'bower_components/polymer/*.map'
+            'node_modules/@polymer/polymer/*.js'
+            'node_modules/@polymer/polymer/*.map'
             'node_modules/codemirror/**/*.js'
             'node_modules/codemirror/addon/lint/lint.css'
             'node_modules/codemirror/lib/*.css'
@@ -434,7 +423,6 @@ module.exports = ->
           detailedError: true
 
   # Grunt plugins used for building
-  @loadNpmTasks 'grunt-bower-install-simple'
   @loadNpmTasks 'grunt-noflo-browser'
   @loadNpmTasks 'grunt-vulcanize'
   @loadNpmTasks 'grunt-contrib-uglify'
@@ -466,7 +454,6 @@ module.exports = ->
     'clean'
   ]
   @registerTask 'build', [
-    'bower-install-simple'
     'noflo_browser'
     'copy:themes'
     'vulcanize'

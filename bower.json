@@ -1,7 +1,0 @@
-{
-  "name": "noflo-ui",
-  "description": " !!!! DO NOT ADD DEPENDENCIES HERE. USE NPM INSTEAD. !!!!! ",
-  "dependencies": {
-    "polymer": "0.5.2"
-  }
-}

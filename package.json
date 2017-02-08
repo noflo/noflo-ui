@@ -15,6 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@polymer/polymer": "^1.2.5-npm-test.2",
     "codemirror": "^5.22.2",
     "coffeelint": "^1.15.7",
     "debug": "^3.0.0",
@@ -46,7 +47,6 @@
   "devDependencies": {
     "chai": "^4.0.1",
     "grunt": "^1.0.1",
-    "grunt-bower-install-simple": "^1.2.3",
     "grunt-coffeelint": "^0.0.16",
     "grunt-contrib-clean": "^1.0.0",
     "grunt-contrib-coffee": "^1.0.0",
