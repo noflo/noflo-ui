@@ -371,11 +371,15 @@ module.exports = ->
           'spec/tests.html': ['spec/*.js']
     # BDD tests on browser
     mocha_phantomjs:
-      all:
+      unit:
         options:
           reporter: 'spec'
           urls: ['http://localhost:9999/spec/tests.html']
           failWithOutput: true
+      browser:
+        options:
+          reporter: 'spec'
+          urls: ['http://localhost:9999/spec/browser/tests.html']
 
     # BDD tests on browser
     'saucelabs-mocha':
@@ -413,7 +417,6 @@ module.exports = ->
   @loadNpmTasks 'grunt-gh-pages'
 
   # Grunt plugins used for testing
-  #@loadNpmTasks 'grunt-mocha-phantomjs'
   @loadNpmTasks 'grunt-contrib-watch'
   @loadNpmTasks 'grunt-contrib-coffee'
   @loadNpmTasks 'grunt-mocha-phantomjs'
