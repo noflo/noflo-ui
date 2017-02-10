@@ -115,7 +115,7 @@ describe 'Runtime Middleware', ->
       send actionIn, action, payload
   describe 'receiving a context:edges action', ->
     it 'should send selected edges to the runtime', (done) ->
-      expectedEdges = [
+      sentEdges = [
         from:
           node: 'Foo'
           port: 'out'
@@ -123,7 +123,15 @@ describe 'Runtime Middleware', ->
           node: 'Bar'
           port: 'in'
       ]
-      send actionIn, 'context:edges', expectedEdges,
+      expectedEdges = [
+        src:
+          node: 'Foo'
+          port: 'out'
+        tgt:
+          node: 'Bar'
+          port: 'in'
+      ]
+      send actionIn, 'context:edges', sentEdges,
         graphs: [
           name: 'foo'
         ]
