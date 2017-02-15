@@ -1,12 +1,23 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.14.2 (git master)
+# (git master)
+
+# 0.15.0 
 
 Bugfixes
 
+* Selecting edges now sends `network:edges` again, so runtime can selectively send edge data. https://github.com/noflo/noflo-ui/issues/328
+* Incoming edge data no longer relies on `id` convention for matching edges. https://github.com/noflo/noflo-ui/issues/293
 * Updated noflo-runtime module to improve connection reliability with iframe runtimes
 * Improved error handling of IndexedDB errors
+
+Internal changes
+
+* Runtime communication is now done using a React-middleware style pipeline.
+This should reduce risk of stale state compared to old approach. Some basic tests have been added.
+* Fetching of user information from API is now done using React-middleware style pipeline.
+Some tests were added.
 
 # 0.14.1 (2017 January 16)
 
