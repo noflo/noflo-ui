@@ -40,14 +40,14 @@ exports.getComponent = ->
         interactive: true
         url: getUrl
           url: chrome.identity.getRedirectURL()
-          scopes: data.scopes
+          scopes: data.payload.scopes
       , (responseUrl) ->
         out.codeurl.send responseUrl
         do callback
       return
 
-    unless isRedirectValid data.url
+    unless isRedirectValid data.payload.url
       return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CLIENT_REDIRECT"
 
-    out.redirect.send getUrl data
+    out.redirect.send getUrl data.payload
     do callback

@@ -17,6 +17,6 @@ exports.getComponent = ->
   , (data, groups, out, callback) ->
     action = groups.join ':'
     debugAction action
-    debugActionFull action, data
+    debugActionFull action, data.payload
     out.send data
     do callback

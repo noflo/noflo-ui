@@ -1,0 +1,17 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=Passed.OUT:PASS
+OUTPORT=NewActions.OUT:NEW
+
+'context:edges' -> ROUTES Dispatch(ui/DispatchAction)
+
+# Send selected edges to runtime
+'runtime,graphs[0]' -> KEYS GetEdgeState(ui/GetActionValues)
+Dispatch HANDLE[0] -> IN GetEdgeState
+GetEdgeState VALUES[0] -> RUNTIME SendEdges(runtime/SendEdges)
+GetEdgeState VALUES[1] -> GRAPH SendEdges
+GetEdgeState OUT -> EDGES SendEdges
+
+SendEdges OUT -> IN Passed(core/Merge)
+Dispatch PASS -> IN Passed
+
+NewActions(core/Merge)

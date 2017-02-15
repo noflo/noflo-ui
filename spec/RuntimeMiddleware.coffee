@@ -7,15 +7,23 @@ unless noflo.isBrowser()
 else
   baseDir = 'noflo-ui'
 
-describe 'URL Middleware', ->
+describe 'Runtime Middleware', ->
   c = null
   actionIn = null
   passAction = null
   newAction = null
+  runtime = null
   before (done) ->
     @timeout 4000
+    fixtures = document.getElementById 'fixtures'
+    transport = require('fbp-protocol-client').getTransport 'iframe'
+    runtime = new transport
+      address: 'mockruntime.html'
+    runtime.setParentElement fixtures
+    window.runtime = runtime
+
     loader = new noflo.ComponentLoader baseDir
-    loader.load 'ui/UrlMiddleware', (err, instance) ->
+    loader.load 'ui/RuntimeMiddleware', (err, instance) ->
       return done err if err
       c = instance
       actionIn = noflo.internalSocket.createSocket()
@@ -34,8 +42,7 @@ describe 'URL Middleware', ->
   afterEach ->
     c.outPorts.pass.detach passAction
     c.outPorts.new.detach newAction
-  after ->
-    window.location.hash = ''
+    runtime.iframe.contentWindow.clearMessages()
 
   send = (socket, action, payload, state) ->
     actionParts = action.split ':'
@@ -44,7 +51,7 @@ describe 'URL Middleware', ->
       payload: payload
       state: state
     socket.endGroup part for part in actionParts
-    
+
   receive = (socket, expected, check, done) ->
     received = []
     onBeginGroup = (group) ->
@@ -79,60 +86,59 @@ describe 'URL Middleware', ->
       chai.expect(data).to.equal payload
     receiveAction socket, action, check, done
 
-  describe 'receiving a runtime:connect action', ->
+  # Set up a fake runtime connection and test that we can play both ends
+  it 'should be able to connect', (done) ->
+    capabilities = [
+      'protocol:graph'
+      'protocol:component'
+      'protocol:network'
+      'protocol:runtime'
+    ]
+    runtime.connect()
+    runtime.once 'capabilities', (rtCapabilities) ->
+      chai.expect(rtCapabilities).to.eql capabilities
+      done()
+    runtime.iframe.addEventListener 'load', ->
+      setTimeout ->
+        runtime.iframe.contentWindow.handleProtocolMessage (msg, send) ->
+          chai.expect(msg.protocol).to.equal 'runtime'
+          chai.expect(msg.command).to.equal 'getruntime'
+          send 'runtime', 'runtime',
+            capabilities: capabilities
+      , 100
+
+  describe 'receiving a runtime:connected action', ->
     it 'should pass it out as-is', (done) ->
-      action = 'runtime:connect'
-      payload =
-        hello: 'world'
+      action = 'runtime:connected'
+      payload = runtime
       receivePass passAction, action, payload, done
       send actionIn, action, payload
-  describe 'receiving a user:login action', ->
-    it 'should pass it out as-is', (done) ->
-      action = 'user:login'
-      payload =
-        url: window.location.href
-        scopes: []
-      receivePass passAction, action, payload, done
-      send actionIn, action, payload
-  describe 'receiving a noflo:ready action', ->
-    it 'should send application:url and main:open actions', (done) ->
-      checkUrl = (data) ->
-        chai.expect(data).to.equal window.location.href
-      checkOpen = (data) ->
-        chai.expect(data).to.eql
-          route: 'main'
-          runtime: null
-          project: null
-          graph: null
-          component: null
-          nodes: []
-      receiveAction newAction, 'application:url', checkUrl, ->
-        receiveAction newAction, 'main:open', checkOpen, done
-      send actionIn, 'noflo:ready', true
-  describe 'on hash change to a project URL', ->
-    it 'should send project:open action', (done) ->
-      checkOpen = (data) ->
-        chai.expect(data).to.eql
-          route: 'project'
-          runtime: null
-          project: 'noflo-ui'
-          graph: 'noflo-ui_graphs_main'
-          component: null
-          nodes: [
-            'UserStorage'
-          ]
-      receiveAction newAction, 'project:open', checkOpen, done
-      window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
-  describe 'on hash change to an example URL', ->
-    it 'should send github:open action', (done) ->
-      checkOpen = (data) ->
-        chai.expect(data).to.eql
-          route: 'github'
-          runtime: null
-          project: null
-          graph: 'abc123'
-          component: null
-          nodes: []
-          remote: []
-      receiveAction newAction, 'github:open', checkOpen, done
-      window.location.hash = '#example/abc123'
+  describe 'receiving a context:edges action', ->
+    it 'should send selected edges to the runtime', (done) ->
+      sentEdges = [
+        from:
+          node: 'Foo'
+          port: 'out'
+        to:
+          node: 'Bar'
+          port: 'in'
+      ]
+      expectedEdges = [
+        src:
+          node: 'Foo'
+          port: 'out'
+        tgt:
+          node: 'Bar'
+          port: 'in'
+      ]
+      send actionIn, 'context:edges', sentEdges,
+        graphs: [
+          name: 'foo'
+        ]
+        runtime: runtime
+      runtime.iframe.contentWindow.handleProtocolMessage (msg) ->
+        chai.expect(msg.protocol).to.equal 'network'
+        chai.expect(msg.command).to.equal 'edges'
+        chai.expect(msg.payload.graph).to.equal 'foo'
+        chai.expect(msg.payload.edges).to.eql expectedEdges
+        done()

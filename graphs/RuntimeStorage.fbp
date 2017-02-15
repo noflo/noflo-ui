@@ -2,7 +2,7 @@ INPORT=LoadData.DB:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
-OUTPORT=UpdateLibrary.RUNTIME:OUT
+OUTPORT=UpdateLibrary.RUNTIME:NEW
 
 # Route requests
 'open,connect,sendGraph,sendComponent,runTests' -> ROUTES Dispatch(routers/GroupRouter)

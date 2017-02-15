@@ -99,11 +99,13 @@ describe 'Editing a graph', ->
       chai.expect(context).to.exist
       results = context.shadowRoot.querySelector 'noflo-search-library-results'
       chai.expect(results).to.exist
-      getelement = results.shadowRoot.querySelector 'li'
-      chai.expect(getelement).to.exist
-      Syn.click getelement
       setTimeout ->
-        nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
-        chai.expect(nodes.length).to.equal 1
-        done()
-      , 3000
+        getelement = results.shadowRoot.querySelector 'li'
+        chai.expect(getelement).to.exist
+        Syn.click getelement
+        setTimeout ->
+          nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
+          chai.expect(nodes.length).to.equal 1
+          done()
+        , 3000
+      , 10

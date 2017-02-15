@@ -19,9 +19,9 @@ exports.getComponent = ->
     async: true
   , (data, groups, out, callback) ->
     # Check the URL for a OAuth grant code
-    unless typeof data is 'string'
+    unless typeof data.payload is 'string'
       return callback new Error 'URL must be a string'
-    [url, query] = data.split '?'
+    [url, query] = data.payload.split '?'
     unless query
       # No query params, pass out as-is
       out.pass.send data
