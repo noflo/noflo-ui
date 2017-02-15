@@ -171,17 +171,17 @@
     </style>
     <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>  
     <div id="loginrequired"></div>
-         <section id="projects">
+      <section id="projects">
         <h2>Projects
-            <template if="{{ projectList === 'local' }}">
-            <small>{{ localProjects.length }}</small>
-            </template>
-            <template if="{{ projectList === 'github' }}">
-            <small>{{ remoteProjects.length }}</small>
-            </template>
-            <template if="{{ projectList === 'github' }}">
-            <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
-            </template>
+          <template if="{{ projectList === 'local' }}">
+          <small>{{ localProjects.length }}</small>
+          </template>
+          <template if="{{ projectList === 'github' }}">
+          <small>{{ remoteProjects.length }}</small>
+          </template>
+          <template if="{{ projectList === 'github' }}">
+          <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+          </template>
         </h2>
         <ul class="tabs">
           <template if="{{ projectList === 'local' }}">
@@ -191,7 +191,7 @@
             </template>
           </template>
           <template if="{{ projectList === 'github' }}">
-          <li on-click="{{ openLocal }}">On device</li>
+            <li on-click="{{ openLocal }}">On device</li>
             <li class="selected">GitHub</li>
           </template>
         </ul>
@@ -213,8 +213,8 @@
               </template>
             </li>
           </template>
-        </template>
-        <template if="{{ projectList === 'github' }}">
+          </template>
+          <template if="{{ projectList === 'github' }}">
           <li class="add">
             <h2>Add a repository</h2>
             <button id="newrepository" on-click="{{ newRepository }}">Add</button>
@@ -230,7 +230,6 @@
             </form>
           </li>
           </template>
-        </template>
           <template repeat="{{ project in remoteProjects }}">
             <li class="remote">
               <h2>{{ project.repo }}</h2>
