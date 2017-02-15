@@ -47,7 +47,7 @@ describe 'NoFlo UI initialization', ->
       req = indexedDB.open 'noflo-ui', 4
       req.onerror = (err) ->
         done err
-      req.onupgradeneeded = (e) =>
+      req.onupgradeneeded = (e) ->
         e.target.transaction.abort()
         done new Error 'We didn\'t get a ready database'
       req.onsuccess = (event) ->
