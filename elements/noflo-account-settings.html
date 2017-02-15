@@ -10,9 +10,29 @@
         border-radius: 2px;
       }
       .plan .free,
-      .plan .beta,
       .plan .backer {
-        background-color: hsl(135,90%,45%);
+        background-color: hsl(135, 98%, 46%);
+      }
+      .plan .pro {
+        background-color: hsl(160, 98%, 46%);
+      }
+      .plan .supporter {
+        background-color: hsl(185, 98%, 46%);
+      }
+      .plan form {
+        display: inline;
+      }
+      #cta {
+        display: inline;
+        width: auto;
+        background-color: transparent;
+        color: hsl(190, 100%, 30%);
+        border: 1px solid hsl(190, 100%, 30%);
+        font-size: 13px;
+        height: 36px;
+        padding-left: 36px;
+        padding-right: 36px;
+        cursor: pointer;
       }
     </style>
     <div class="modal-container" on-click="{{ bgClick }}">
@@ -24,7 +44,22 @@
         </label>
         <label>
           Flowhub plan
-          <div class="plan"><strong class="{{ plan }}">{{ plan }}</strong></div>
+          <div class="plan">
+            You're currently using <strong class="{{ plan }}">{{ plan }}</strong> plan.
+            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
+              <input type="hidden" name="username" value="{{ user.github.username }}">
+              <input type="hidden" name="password" value="{{ gridToken }}">
+              <input type="submit" id="cta" value="Manage subscription">
+            </form>
+          </div>
+          <template if="{{ statusText }}">
+            <div class="statustext">
+              <span>{{ statusText }}</span>
+              <template if="{{ requestLogin }}">
+                <button class="relogin" on-click="{{ relogin }}">Login</button>
+              </template>
+            </div>
+          </template>
         </label>
         <label>
           Theme
