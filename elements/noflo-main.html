@@ -97,7 +97,8 @@
         position: relative;
         cursor: pointer;
       }
-      ul.projects li.add {
+      ul.projects li.add,
+      ul.projects li.plan {
         background-color: hsl(192, 25%, 92%);
         color: black;
         cursor: default;
@@ -111,7 +112,8 @@
         left: 100px;
         top: -20px;
       }
-      section button {
+      section button,
+      section #cta {
         background-color: transparent;
         color: hsl(189, 50%, 25%);
         font-size: 13px;
@@ -121,8 +123,10 @@
         border: none;
         padding-left: 13px;
         padding-right: 13px;
+        cursor: pointer;
       }
-      ul.projects li button {
+      ul.projects li button,
+      ul.projects li #cta {
         display: block;
         border: 1px solid hsl(189, 50%, 25%);
         position: absolute;
@@ -156,11 +160,14 @@
         overflow: hidden;
         color: hsl(189, 11%, 50%);
       }
+      ul.projects li.plan p {
+        width: 100px;
+        font-size: 9px;
+      }
       ul.projects li a {
         color: black;
         text-decoration: none;
       }
-
     </style>
     <noflo-account id="mainaccount" user="{{ user }}" avatar="{{ avatar }}" plan="{{ plan }}"></noflo-account>  
     <div id="loginrequired"></div>
@@ -206,12 +213,24 @@
               </template>
             </li>
           </template>
-          </template>
-          <template if="{{ projectList === 'github' }}">
+        </template>
+        <template if="{{ projectList === 'github' }}">
           <li class="add">
             <h2>Add a repository</h2>
             <button id="newrepository" on-click="{{ newRepository }}">Add</button>
           </li>
+          <template if="{{ plan === 'free' }}">
+          <li class="plan {{ plan }}">
+            <h2>Flowhub free</h2>
+            <p>Access only to public GitHub repositories.</p>
+            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
+              <input type="hidden" name="username" value="{{ user.github.username }}">
+              <input type="hidden" name="password" value="{{ gridToken }}">
+              <input type="submit" id="cta" value="Upgrade">
+            </form>
+          </li>
+          </template>
+        </template>
           <template repeat="{{ project in remoteProjects }}">
             <li class="remote">
               <h2>{{ project.repo }}</h2>
