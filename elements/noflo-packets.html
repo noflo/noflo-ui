@@ -107,7 +107,12 @@
         }
       },
       genId: function (source, target) {
-        var fromStr = source.node + ' ' + source.port.toUpperCase();
+        var fromStr;
+        if (source) {
+          fromStr = source.node + ' ' + source.port.toUpperCase();
+        } else {
+          fromStr = 'DATA';
+        }
         var toStr = target.port.toUpperCase() + ' ' + target.node;
         return fromStr + ' -> ' + toStr;
       },
