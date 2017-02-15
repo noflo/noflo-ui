@@ -234,7 +234,16 @@
           <template repeat="{{ project in remoteProjects }}">
             <li class="remote">
               <h2>{{ project.repo }}</h2>
+              <template if="{{ project.private }}">
+              <p>Private repository</p>
+                <template if="{{ plan !== 'free' }}">
+                <button on-click="{{ downloadProject }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+                </template>
+              </template>
+              <template if="{{ !project.private }}">
+              <p>Public repository</p>
               <button on-click="{{ downloadProject }}" data-repo="{{ project.repo }}"><i class="fa fa-cloud-download"></i></button>
+              </template>
             </li>
           </template>
           </template>
