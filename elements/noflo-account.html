@@ -105,7 +105,11 @@
         padding: 0px;
         position: relative;
       }
+      h1 form {
+        display: inline;
+      }
       #plan {
+        display: inline;
         position: absolute;
         font-size: 8px;
         text-transform: uppercase;
@@ -113,15 +117,23 @@
         margin-left: 8px;
         color: black;
         background-color: hsl(190, 90%, 45%);
+        border: none;
         line-height: 10px;
         text-decoration: none;
         padding: 2px;
         border-radius: 2px;
+        cursor: pointer;
       }
       #plan.free,
       #plan.beta,
       #plan.backer {
-        background-color: hsl(135,90%,45%);
+        background-color: hsl(135, 98%, 46%)
+      }
+      #plan.pro {
+        background-color: hsl(160, 98%, 46%)
+      }
+      #plan.supporter {
+        background-color: hsl(185, 98%, 46%)
       }
       .toolbar {
         margin-top: 54px;
@@ -193,7 +205,14 @@
       <template if="{{ !avatar }}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       </template>
-      <h1>{{ user.name }} <a href="http://flowhub.io/preorder/" target="_blank" id="plan" class="{{ plan }}">{{ plan }}</a></h1>
+      <h1>
+        {{ user.name }}
+        <form method="post" action="https://plans.flowhub.io/auth/flowhub">
+          <input type="hidden" name="username" value="{{ user.github.username }}">
+          <input type="hidden" name="password" value="{{ gridToken }}">
+          <input type="submit" id="plan" class="{{ plan }}" value="{{ plan }}">
+        </form>
+      </h1>
       <div class="toolbar">
         <a on-click="{{ openSettings }}">Settings</a>
         <button on-click="{{ logout }}">Logout</button>
