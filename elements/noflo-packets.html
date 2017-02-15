@@ -71,9 +71,10 @@
         this.logs = {};
       },
       packet: function (packet) {
-        if (!packet.edge) {
+        if (!packet.tgt) {
           return;
         }
+        packet.edge = this.genId(packet.src, packet.tgt);
         this.ensureLog(packet.edge);
         this.logs[packet.edge].push(packet);
       },
@@ -105,10 +106,13 @@
           this.hideEdgeCards();
         }
       },
-      genEdgeId: function (edge) {
-        var fromStr = edge.from.node + '() ' + edge.from.port.toUpperCase();
-        var toStr = edge.to.port.toUpperCase() + ' ' + edge.to.node + '()';
+      genId: function (source, target) {
+        var fromStr = source.node + ' ' + source.port.toUpperCase();
+        var toStr = target.port.toUpperCase() + ' ' + target.node;
         return fromStr + ' -> ' + toStr;
+      },
+      genEdgeId: function (edge) {
+        return this.genId(edge.from, edge.to);
       },
       ensureLog: function (id) {
         if (this.logs[id]) {
