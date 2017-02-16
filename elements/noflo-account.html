@@ -158,7 +158,33 @@
         padding-right: 36px;
         cursor: pointer;
       }
-
+      .banner {
+        margin-top: 72px;
+        margin-bottom: -72px;
+        background-color: hsla(190, 98%, 46%, .8);
+        padding: 18px;
+      }
+      .banner a {
+        color: white;
+        cursor: pointer;
+      }
+      .banner div {
+        margin-top: 18px;
+      }
+      .banner button {
+        display: inline-block;
+        color: black;
+        background-color: hsl(192, 25%, 92%);
+        border: none;
+        font-size: 13px;
+        border-radius: 3px;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        height: 36px;
+        padding-left: 36px;
+        padding-right: 36px;
+        margin: 0px;
+        cursor: pointer;
+      }
     </style>
     <template if="{{ user }}">
       <template if="{{ avatar }}">
@@ -172,6 +198,22 @@
         <a on-click="{{ openSettings }}">Settings</a>
         <button on-click="{{ logout }}">Logout</button>
       </div>
+      <template if="{{ askForScope.length }}">
+        <div class="banner">
+          To be able to synchronize your GitHub projects, $NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
+          <div>
+            Grant access to:
+            <template repeat="{{ scope in askForScope }}">
+              <template if="{{ scope === 'public_repo' }}">
+                <button on-click="{{ relogin }}" data-scope="{{ scope }}">Public repositories only</button>
+              </template>
+              <template if="{{ scope === 'repo' }}">
+                <button on-click="{{ relogin }}" data-scope="{{ scope }}">Public and private repositories</button>
+              </template>
+            </template>
+          </div>
+        </div>
+      </template>
     </template>
     <template if="{{ !user }}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
@@ -216,6 +258,7 @@
 
       Polymer('noflo-account', {
         user: null,
+        askForScope: [],
         plan: 'free',
         gridToken: '',
         githubToken: '',
@@ -228,6 +271,31 @@
         },
         logout: function () {
           this.fire('logout', true);
+        },
+        relogin: function (event, details, sender) {
+          event.preventDefault()
+          var scope = sender.getAttribute('data-scope');
+          this.fire('relogin', scope);
+        },
+        userChanged: function () {
+          if (!this.user) {
+            return;
+          }
+          if (!this.user.plan || this.user.plan.type === 'free') {
+            if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
+              // User is on free plan but hasn't granted repo access
+              this.askForScope = ['public_repo'];
+            }
+            return;
+          }
+          if (!this.user.github.scopes || this.user.github.scopes.indexOf('repo') === -1) {
+            // User is on paid plan but hasn't granted repo access
+            this.askForScope = ['repo'];
+            if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
+              // Allow paid users to limit repo access to only public if they want
+              this.askForScope.push('public_repo');
+            }
+          }
         },
         attached: function () {
           storage.get('flowhub-theme', function (definedTheme) {
