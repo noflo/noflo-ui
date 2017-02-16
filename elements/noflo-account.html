@@ -252,10 +252,6 @@
             this.theme = event.detail.theme;
             storage.set('flowhub-theme', this.theme, function () {});
           }.bind(this));
-          dialog.addEventListener('relogin', function (event) {
-            event.stopPropagation();
-            this.fire('relogin', event.detail);
-          }.bind(this));
         },
         themeChanged: function (oldTheme, newTheme) {
           this.fire('theme', this.theme);
