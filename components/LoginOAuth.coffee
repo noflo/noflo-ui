@@ -46,7 +46,8 @@ exports.getComponent = ->
           url: chrome.identity.getRedirectURL()
           scopes: data.payload.scopes
       , (responseUrl) ->
-        out.codeurl.send responseUrl
+        out.codeurl.send
+          payload: responseUrl
         do callback
       return
 
