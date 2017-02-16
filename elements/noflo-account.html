@@ -273,7 +273,7 @@
           this.fire('logout', true);
         },
         relogin: function (event, details, sender) {
-          event.preventDefault()
+          event.preventDefault();
           var scope = sender.getAttribute('data-scope');
           this.fire('relogin', scope);
         },
