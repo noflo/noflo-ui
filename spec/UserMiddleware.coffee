@@ -137,6 +137,27 @@ describe 'User Middleware', ->
         , JSON.stringify userData
         ]
         do mock.respond
+      it 'should pass it out as-is and send updated user:info when token is valid', (done) ->
+        action = 'application:url'
+        payload = 'https://app.flowhub.io'
+        newUserData =
+          id: 1
+          name: 'Henri Bergius'
+          github:
+            scopes: ['repo']
+          plan:
+            type: 'backer'
+        check = (data) ->
+          chai.expect(data['grid-user']).to.eql newUserData
+        receiveAction newAction, 'user:info', check, done
+        send actionIn, action, payload
+        mock.respondWith 'GET', "https://api.flowhub.io/user", [
+          200
+        ,
+          'Content-Type': 'application/json'
+        , JSON.stringify newUserData
+        ]
+        do mock.respond
       it 'should send user:logout when token is invalid', (done) ->
         action = 'application:url'
         payload = 'https://app.flowhub.io'
