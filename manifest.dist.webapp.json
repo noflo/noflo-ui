@@ -1,5 +1,6 @@
 {
-  "name": "$NOFLO_APP_NAME",
+  "name": "$NOFLO_APP_TITLE",
+  "short_name": "$NOFLO_APP_NAME",
   "version": "$NOFLO_APP_VERSION",
   "description": "$NOFLO_APP_DESCRIPTION",
   "developer": {
