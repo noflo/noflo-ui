@@ -259,15 +259,6 @@
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
       },
-      attached: function () {
-        // Offer HTTPS
-        if (window.location.origin === 'http://app.flowhub.io') {
-          this.showProgress({
-            offerHTTPS: true,
-            dontAutoHideAlert: true
-          });
-        }
-      },
       context: function (context) {
         if (context.state) {
           switch (context.state) {
