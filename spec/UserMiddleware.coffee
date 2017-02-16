@@ -94,13 +94,15 @@ describe 'User Middleware', ->
       send actionIn, action, payload
   describe 'receiving application:url action', ->
     originalUser = null
+    originalToken = null
     beforeEach ->
       originalUser = localStorage.getItem 'grid-user'
-      return unless originalUser
-      localStorage.removeItem 'grid-user'
+      originalToken = localStorage.getItem 'grid-token'
+      localStorage.removeItem 'grid-user' if originalUser
+      localStorage.removeItem 'grid-token' if originalToken
     afterEach ->
-      return unless originalUser
-      localStorage.setItem 'grid-user', originalUser
+      localStorage.setItem 'grid-user', originalUser if originalUser
+      localStorage.setItem 'grid-token', originalToken if originalToken
     describe 'without logged in user', ->
       it 'should send out an empty user:info', (done) ->
         action = 'application:url'
@@ -113,15 +115,66 @@ describe 'User Middleware', ->
       userData =
         id: 1
         name: 'Henri Bergius'
+      userToken = 'oh3h8f89h28hyf98yf24g34g'
+      mock = null
       beforeEach ->
         localStorage.setItem 'grid-user', JSON.stringify userData
-      it 'should pass it out as-is and send user:info', (done) ->
+        localStorage.setItem 'grid-token', userToken
+        mock = sinon.fakeServer.create()
+      afterEach ->
+        mock.restore()
+      it 'should pass it out as-is and send user:info when token is valid', (done) ->
         action = 'application:url'
         payload = 'https://app.flowhub.io'
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
         receiveAction newAction, 'user:info', check, done
         send actionIn, action, payload
+        mock.respondWith 'GET', "https://api.flowhub.io/user", [
+          200
+        ,
+          'Content-Type': 'application/json'
+        , JSON.stringify userData
+        ]
+        do mock.respond
+      it 'should pass it out as-is and send updated user:info when token is valid', (done) ->
+        action = 'application:url'
+        payload = 'https://app.flowhub.io'
+        newUserData =
+          id: 1
+          name: 'Henri Bergius'
+          github:
+            scopes: ['repo']
+          plan:
+            type: 'backer'
+        check = (data) ->
+          # Check payload sent to UI
+          chai.expect(data['grid-user']).to.eql newUserData
+          # Check data stored in cache
+          cached = JSON.parse localStorage.getItem 'grid-user'
+          chai.expect(cached).to.eql newUserData
+        receiveAction newAction, 'user:info', check, done
+        send actionIn, action, payload
+        mock.respondWith 'GET', "https://api.flowhub.io/user", [
+          200
+        ,
+          'Content-Type': 'application/json'
+        , JSON.stringify newUserData
+        ]
+        do mock.respond
+      it 'should send user:logout when token is invalid', (done) ->
+        action = 'application:url'
+        payload = 'https://app.flowhub.io'
+        check = (data) ->
+        receiveAction newAction, 'user:logout', check, done
+        send actionIn, action, payload
+        mock.respondWith 'GET', "https://api.flowhub.io/user", [
+          401
+        ,
+          'Content-Type': 'application/json'
+        , JSON.stringify userData
+        ]
+        do mock.respond
     describe 'without user and with OAuth error in URL', ->
       it 'should send the error out', (done) ->
         action = 'application:url'

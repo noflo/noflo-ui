@@ -3,7 +3,12 @@ NoFlo UI ChangeLog
 
 # 0.16.0 (git master)
 
-Bugfixes:
+New features
+
+* User information is automatically refreshed from the server at application start-up, allowing instant updates to plan status and other details
+* Users can now authorize the app to access either their public or private GitHub repositories from the main screen
+
+Bugfixes
 
 * Examples that require SSL connection are no longer listed when on HTTP
 

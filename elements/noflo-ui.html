@@ -77,13 +77,9 @@
           });
         }.bind(this));
         this.$.main.addEventListener('relogin', function (event) {
-          var scopes = ['public_repo'];
-          if (event.detail !== 'free') {
-            scopes = ['repo'];
-          }
           this.emitEvent('user:login', {
             url: window.location.href,
-            scopes: []
+            scopes: [event.detail]
           });
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
@@ -262,15 +258,6 @@
         this.$.runtime.panel = this.$.context.$.fixed;
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
-      },
-      attached: function () {
-        // Offer HTTPS
-        if (window.location.origin === 'http://app.flowhub.io') {
-          this.showProgress({
-            offerHTTPS: true,
-            dontAutoHideAlert: true
-          });
-        }
       },
       context: function (context) {
         if (context.state) {

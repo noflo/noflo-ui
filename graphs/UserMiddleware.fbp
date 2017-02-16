@@ -11,6 +11,8 @@ UserInfoAction OUT -> IN NewActions(core/Merge)
 UserErrorAction OUT -> IN NewActions
 'application:redirect' -> ACTION ApplicationRedirectAction(ui/SetAction)
 ApplicationRedirectAction OUT -> IN NewActions
+'user:logout' -> ACTION UserLogoutAction(ui/SetAction)
+UserLogoutAction OUT -> IN NewActions
 
 # Start action handling
 # - Check if we have an authorization code in URL and exchange for token
@@ -27,8 +29,17 @@ StoreUser USER -> IN UserInfoAction
 
 # No grant code in URL, try to load local user data
 CheckQuery PASS -> START LoadUser(ui/LoadUserData)
-LoadUser USER -> IN UserInfoAction
+# Refresh user information from remote source
+LoadUser USER -> IN RefreshUser(ui/RefreshRemoteUser)
+# If user data hasn't changed pass as-is
+RefreshUser PASS -> IN UserInfoAction
+# If user data changed, update cache
+RefreshUser UPDATED -> USER StoreUser
+# If local user data was invalid, log out
+RefreshUser INVALID -> IN UserLogoutAction
+# Error handling
 LoadUser ERROR -> IN UserErrorAction
+RefreshUser ERROR -> IN UserErrorAction
 
 # Login action handling
 Dispatch HANDLE[1] -> IN Login(ui/LoginOAuth)
