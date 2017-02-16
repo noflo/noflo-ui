@@ -1,6 +1,6 @@
 runtimetypes:
   javafbp:
-    shortname: Java
+    shortname: JavaFBP
     icon: android
     description: 'Program Java and Android applications'
     helpurl: 'https://github.com/jonnor/javafbp-runtime#readme'

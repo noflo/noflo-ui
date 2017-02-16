@@ -463,6 +463,9 @@
               var examples = runtimeInfo[runtime.type].examples;
 
               Object.keys(examples).forEach(function (key) {
+                if (examples[key].ssl && location.protocol !== 'https:') {
+                  return;
+                }
                 if (!examplesFound[key]) {
                   this.examples.push(examples[key]);
                   examplesFound[key] = true;
@@ -483,6 +486,7 @@
         },function (err, runtimes) {
           button.classList.remove('fa-spin');
           if (err) {
+            addExamplesForRuntimes.bind(this)();
             return;
           }
           var found = [];

@@ -1,6 +1,6 @@
 runtimetypes:
   imgflo:
-    shortname: 'Image Manipulation'
+    shortname: 'ImgFlo Image Manipulation'
     icon: picture-o
     description: 'Process images using GEGL'
     helpurl: 'https://github.com/jonnor/imgflo#readme'
