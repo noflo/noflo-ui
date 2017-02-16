@@ -7,6 +7,7 @@ Bugfixes:
 
 * Examples that require SSL connection are no longer listed when on HTTP
 * Fixed login in Chrome app build
+* Fixed login in hosted SSL app
 
 # 0.15.0 (2017 February 15)
 
