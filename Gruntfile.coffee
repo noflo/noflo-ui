@@ -147,6 +147,18 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
           ,
+            pattern: /\$NOFLO_OAUTH_SSL_CLIENT_ID/ig
+            replacement: process.env.NOFLO_OAUTH_SSL_CLIENT_ID or ''
+          ,
+            pattern: /\$NOFLO_OAUTH_SSL_CLIENT_REDIRECT/ig
+            replacement: process.env.NOFLO_OAUTH_SSL_CLIENT_REDIRECT or ''
+          ,
+            pattern: /\$NOFLO_OAUTH_SSL_CLIENT_SECRET/ig
+            replacement: process.env.NOFLO_OAUTH_SSL_CLIENT_SECRET or ''
+          ,
+            pattern: /\$NOFLO_OAUTH_SSL_ENDPOINT_AUTHENTICATE/ig
+            replacement: process.env.NOFLO_SSL_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate/ssl'
+          ,
             pattern: /\$NOFLO_OAUTH_CHROME_CLIENT_ID/ig
             replacement: process.env.NOFLO_OAUTH_CHROME_CLIENT_ID or 'f29ae9f73bfb223d69d7'
           ,
@@ -155,6 +167,9 @@ module.exports = ->
           ,
             pattern: /\$NOFLO_OAUTH_CHROME_CLIENT_SECRET/ig
             replacement: process.env.NOFLO_OAUTH_CHROME_CLIENT_SECRET or ''
+          ,
+            pattern: /\$NOFLO_OAUTH_CHROME_ENDPOINT_AUTHENTICATE/ig
+            replacement: process.env.NOFLO_CHROME_OAUTH_ENDPOINT_AUTHENTICATE or '/authenticate/chrome'
           ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/oauth/authorize'

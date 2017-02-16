@@ -6,13 +6,15 @@ isRedirectValid = (redirect, chrome) ->
   parsedRedirect = url.parse redirect
   if chrome
     parsedAppRedirect = url.parse '$NOFLO_OAUTH_CHROME_CLIENT_REDIRECT'
+  else if window.location.protocol is 'https:' and '$NOFLO_OAUTH_SSL_CLIENT_ID'
+    parsedAppRedirect = url.parse '$NOFLO_OAUTH_SSL_CLIENT_REDIRECT'
   else
     parsedAppRedirect = url.parse '$NOFLO_OAUTH_CLIENT_REDIRECT'
   return parsedRedirect.host is parsedAppRedirect.host
 
 getUrl = (params) ->
   query =
-    client_id: params.client or '$NOFLO_OAUTH_CLIENT_ID'
+    client_id: params.client
     response_type: 'code'
     redirect_uri: params.url
   query.scope = params.scopes.join ' ' if params.scopes.length
@@ -54,5 +56,11 @@ exports.getComponent = ->
     unless isRedirectValid data.payload.url
       return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CLIENT_REDIRECT"
 
-    out.redirect.send getUrl data.payload
+    params =
+      client: '$NOFLO_OAUTH_CLIENT_ID'
+      url: data.payload.url
+      scopes: data.payload.scopes
+    if window.location.protocol is 'https:' and '$NOFLO_OAUTH_SSL_CLIENT_ID'
+      params.client = '$NOFLO_OAUTH_SSL_CLIENT_ID'
+    out.redirect.send getUrl params
     do callback
