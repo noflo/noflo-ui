@@ -31,12 +31,15 @@ StoreUser USER -> IN UserInfoAction
 CheckQuery PASS -> START LoadUser(ui/LoadUserData)
 # Refresh user information from remote source
 LoadUser USER -> IN RefreshUser(ui/RefreshRemoteUser)
-RefreshUser OUT -> IN UserInfoAction
+# If user data hasn't changed pass as-is
+RefreshUser PASS -> IN UserInfoAction
+# If user data changed, update cache
+RefreshUser UPDATED -> USER StoreUser
+# If local user data was invalid, log out
+RefreshUser INVALID -> IN UserLogoutAction
 # Error handling
 LoadUser ERROR -> IN UserErrorAction
 RefreshUser ERROR -> IN UserErrorAction
-# If local user data was invalid, log out
-RefreshUser INVALID -> IN UserLogoutAction
 
 # Login action handling
 Dispatch HANDLE[1] -> IN Login(ui/LoginOAuth)

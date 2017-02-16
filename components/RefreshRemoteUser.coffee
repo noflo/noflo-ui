@@ -4,7 +4,9 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'object'
-  c.outPorts.add 'out',
+  c.outPorts.add 'pass',
+    datatype: 'object'
+  c.outPorts.add 'updated',
     datatype: 'object'
   c.outPorts.add 'invalid',
     datatype: 'object'
@@ -13,18 +15,18 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     in: 'in'
-    out: ['out', 'invalid']
+    out: ['pass', 'updated', 'invalid']
     async: true
   , (data, groups, out, callback) ->
     unless data?['grid-token']
       # If user is not logged in, there is nothing to do
-      out.out.send data
+      out.pass.send data
       do callback
       return
 
     unless navigator.onLine
       # When offline we can't refresh
-      out.out.send data
+      out.pass.send data
       do callback
       return
 
@@ -48,9 +50,15 @@ exports.getComponent = ->
         userData = JSON.parse req.responseText
       catch e
         return callback e
+      if JSON.stringify(userData) is JSON.stringify(data['grid-user'])
+        # Local user data is up-to-date
+        out.pass.send data
+        do callback
+        return
       # Update user information based on remote data
-      data['grid-user'] = userData
-      out.out.send data
+      out.updated.beginGroup data['grid-token']
+      out.updated.send userData
+      out.updated.endGroup()
       do callback
       return
     req.open 'GET', "$NOFLO_OAUTH_SERVICE_USER$NOFLO_OAUTH_ENDPOINT_USER", true

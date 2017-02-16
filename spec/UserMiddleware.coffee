@@ -148,7 +148,11 @@ describe 'User Middleware', ->
           plan:
             type: 'backer'
         check = (data) ->
+          # Check payload sent to UI
           chai.expect(data['grid-user']).to.eql newUserData
+          # Check data stored in cache
+          cached = JSON.parse localStorage.getItem 'grid-user'
+          chai.expect(cached).to.eql newUserData
         receiveAction newAction, 'user:info', check, done
         send actionIn, action, payload
         mock.respondWith 'GET', "https://api.flowhub.io/user", [
