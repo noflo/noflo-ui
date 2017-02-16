@@ -61,6 +61,11 @@ exports.getComponent = ->
       gatekeeper_server: '$NOFLO_OAUTH_GATE'
       gatekeeper_endpoint: '$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE'
 
+    if typeof chrome isnt 'undefined' and chrome.identity
+      params.redirect = '$NOFLO_OAUTH_CHROME_CLIENT_REDIRECT'
+      params.clientid = '$NOFLO_OAUTH_CHROME_CLIENT_ID'
+      params.clientsecret = '$NOFLO_OAUTH_CHROME_CLIENT_SECRET'
+
     # TODO: "loading" action?
 
     # Perform token exchange

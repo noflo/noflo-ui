@@ -2,14 +2,17 @@ noflo = require 'noflo'
 url = require 'url'
 qs = require 'querystring'
 
-isRedirectValid = (redirect) ->
+isRedirectValid = (redirect, chrome) ->
   parsedRedirect = url.parse redirect
-  parsedAppRedirect = url.parse '$NOFLO_OAUTH_CLIENT_REDIRECT'
+  if chrome
+    parsedAppRedirect = url.parse '$NOFLO_OAUTH_CHROME_CLIENT_REDIRECT'
+  else
+    parsedAppRedirect = url.parse '$NOFLO_OAUTH_CLIENT_REDIRECT'
   return parsedRedirect.host is parsedAppRedirect.host
 
 getUrl = (params) ->
   query =
-    client_id: '$NOFLO_OAUTH_CLIENT_ID'
+    client_id: params.client or '$NOFLO_OAUTH_CLIENT_ID'
     response_type: 'code'
     redirect_uri: params.url
   query.scope = params.scopes.join ' ' if params.scopes.length
@@ -33,12 +36,13 @@ exports.getComponent = ->
     if typeof chrome isnt 'undefined' and chrome.identity
       # With Chrome apps we do login via the WebAuthFlow
       redirect = chrome.identity.getRedirectURL()
-      unless isRedirectValid redirect
-        return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CLIENT_REDIRECT"
+      unless isRedirectValid redirect, true
+        return callback new Error "App URL must match GitHub app configuration $NOFLO_OAUTH_CHROME_CLIENT_REDIRECT"
 
       chrome.identity.launchWebAuthFlow
         interactive: true
         url: getUrl
+          client: '$NOFLO_OAUTH_CHROME_CLIENT_ID'
           url: chrome.identity.getRedirectURL()
           scopes: data.payload.scopes
       , (responseUrl) ->

@@ -147,6 +147,15 @@ module.exports = ->
             pattern: /\$NOFLO_OAUTH_CLIENT_SECRET/ig
             replacement: process.env.NOFLO_OAUTH_CLIENT_SECRET or ''
           ,
+            pattern: /\$NOFLO_OAUTH_CHROME_CLIENT_ID/ig
+            replacement: process.env.NOFLO_OAUTH_CHROME_CLIENT_ID or 'f29ae9f73bfb223d69d7'
+          ,
+            pattern: /\$NOFLO_OAUTH_CHROME_CLIENT_REDIRECT/ig
+            replacement: process.env.NOFLO_OAUTH_CHROME_CLIENT_REDIRECT or 'https://hfhpoogbmnkfihpcaoigganphdglajmp.chromiumapp.org/'
+          ,
+            pattern: /\$NOFLO_OAUTH_CHROME_CLIENT_SECRET/ig
+            replacement: process.env.NOFLO_OAUTH_CHROME_CLIENT_SECRET or ''
+          ,
             pattern: /\$NOFLO_OAUTH_ENDPOINT_AUTHORIZE/ig
             replacement: process.env.NOFLO_OAUTH_ENDPOINT_AUTHORIZE or '/login/oauth/authorize'
           ,
