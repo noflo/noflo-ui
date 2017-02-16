@@ -9,7 +9,7 @@
   },
   "permissions": [
     "$NOFLO_OAUTH_GATE/",
-    "$NOFLO_REGISTRY_SERVICE",
+    "$NOFLO_REGISTRY_SERVICE/",
     "https://api.github.com/",
     "https://secure.gravatar.com/",
     "storage",
