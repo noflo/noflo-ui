@@ -1,6 +1,6 @@
 runtimetypes:
   msgflo:
-    shortname: Message Queuing
+    shortname: MsgFlo Message Queuing
     icon: cubes
     description: 'Message queue orchestration'
     helpurl: 'https://github.com/the-grid/msgflo#readme'
