@@ -11,6 +11,8 @@
   "launch_path": "/index.html",
   "display": "standalone",
   "orientation": "landscape",
+  "theme_color": "#071112",
+  "background_color": "#071112",
   "icons": [
     {
       "src": "app/$NOFLO_THEME-36.png",
