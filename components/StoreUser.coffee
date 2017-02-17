@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+urlParser = require 'url'
 
 downloadAvatar = (avatarUrl, callback) ->
   return callback null, null unless avatarUrl
@@ -18,14 +19,17 @@ downloadAvatar = (avatarUrl, callback) ->
   req.send()
 
 cleanUpUrl = (out, callback) ->
-  [url, query] = window.location.href.split '?'
-  return callback() unless query
+  url = urlParser.parse window.location.href
+  # Clear query params, if any
+  delete url.search
+  newUrl = urlParser.format url
+  return callback() if newUrl is url
   if window.history?.replaceState
     # We can manipulate URL without reloading page
-    window.history.replaceState {}, 'clear', window.location.pathname
+    window.history.replaceState {}, 'clear', url.pathname
     return callback()
   # Old-school redirect
-  out.send url
+  out.send newUrl
   do callback
   return
 
