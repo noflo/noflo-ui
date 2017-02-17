@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.16.1 (2017 February 17()
+# 0.16.1 (2017 February 17)
 
 Bugfixes
 
