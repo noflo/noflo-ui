@@ -254,7 +254,25 @@ describe 'User Middleware', ->
         mock = sinon.fakeServer.create()
       afterEach ->
         mock.restore()
-      it 'should perform a token exchange and update user information', (done) ->
+      it 'should perform a token exchange and update user information without state in URL', (done) ->
+        action = 'application:url'
+        payload = "https://app.flowhub.io?code=#{code}"
+        check = (data) ->
+          chai.expect(data['grid-user']).to.eql userData
+        receiveAction newAction, 'user:info', check, done
+        send actionIn, action, payload
+        mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
+          req.respond 200,
+            'Content-Type': 'application/json'
+          , JSON.stringify
+            token: token
+        mock.respondWith 'GET', "https://api.flowhub.io/user", (req) ->
+          req.respond 200,
+            'Content-Type': 'application/json'
+          , JSON.stringify userData
+        do mock.respond
+        do mock.respond
+      it 'should perform a token exchange and update user information with state in URL', (done) ->
         action = 'application:url'
         payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
