@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+urlParser = require 'url'
 
 downloadAvatar = (avatarUrl, callback) ->
   return callback null, null unless avatarUrl
@@ -17,11 +18,18 @@ downloadAvatar = (avatarUrl, callback) ->
     callback new Error 'Avatar request failed'
   req.send()
 
-cleanUpUrl = (callback) ->
-  regex = new RegExp "(?:\\/)?\\?code=[A-Za-z0-9]+"
-  newLoc = window.location.href.replace regex, ''
-  if newLoc isnt window.location.href
-    window.location.href = newLoc
+cleanUpUrl = (out, callback) ->
+  url = urlParser.parse window.location.href
+  # Clear query params, if any
+  delete url.search
+  newUrl = urlParser.format url
+  return callback() if newUrl is url
+  if window.history?.replaceState
+    # We can manipulate URL without reloading page
+    window.history.replaceState {}, 'clear', url.pathname
+    return callback()
+  # Old-school redirect
+  out.send newUrl
   do callback
   return
 
@@ -31,10 +39,12 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'user',
     datatype: 'object'
+  c.outPorts.add 'redirect',
+    datatype: 'string'
 
   noflo.helpers.WirePattern c,
     in: 'user'
-    out: 'user'
+    out: ['user', 'redirect']
     async: true
   , (user, groups, out, callback) ->
 
@@ -57,15 +67,13 @@ exports.getComponent = ->
       if typeof chrome isnt 'undefined' and chrome.storage
         chrome.storage.sync.set userData, ->
           userData['grid-user'] = user
-          out.send userData
-          cleanUpUrl callback
+          out.user.send userData
+          cleanUpUrl out.redirect, callback
         return
 
       for key, val of userData
         localStorage.setItem key, val
 
       userData['grid-user'] = user
-      out.send userData
-      cleanUpUrl callback
-
-  c
+      out.user.send userData
+      cleanUpUrl out.redirect, callback

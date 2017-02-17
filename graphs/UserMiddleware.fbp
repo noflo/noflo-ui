@@ -26,6 +26,8 @@ ExchangeToken ERROR -> IN UserErrorAction
 GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
 GetRemoteUser ERROR -> IN UserErrorAction
 StoreUser USER -> IN UserInfoAction
+# In some cases we need to clean up URL after user has been persisted by redirecting
+StoreUser REDIRECT -> IN ApplicationRedirectAction
 
 # No grant code in URL, try to load local user data
 CheckQuery PASS -> START LoadUser(ui/LoadUserData)
