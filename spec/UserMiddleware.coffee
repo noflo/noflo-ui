@@ -193,7 +193,7 @@ describe 'User Middleware', ->
         mock.restore()
       it 'should perform a token exchange and fail', (done) ->
         action = 'application:url'
-        payload = "https://app.flowhub.io?code=#{code}"
+        payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data.message).to.contain 'bad_code_foo'
         receiveAction newAction, 'user:error', check, done
@@ -218,7 +218,7 @@ describe 'User Middleware', ->
         mock.restore()
       it 'should perform a token exchange and fail at user fetch', (done) ->
         action = 'application:url'
-        payload = "https://app.flowhub.io?code=#{code}"
+        payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data.message).to.contain 'Bad Credentials'
         receiveAction newAction, 'user:error', check, done
@@ -256,7 +256,7 @@ describe 'User Middleware', ->
         mock.restore()
       it 'should perform a token exchange and update user information', (done) ->
         action = 'application:url'
-        payload = "https://app.flowhub.io?code=#{code}"
+        payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
         receiveAction newAction, 'user:info', check, done
