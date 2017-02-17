@@ -1,3 +1,4 @@
+urlParser = require 'url'
 qs = require 'querystring'
 noflo = require 'noflo'
 
@@ -21,12 +22,12 @@ exports.getComponent = ->
     # Check the URL for a OAuth grant code
     unless typeof data.payload is 'string'
       return callback new Error 'URL must be a string'
-    [url, query] = data.payload.split '?'
-    unless query
+    url = urlParser.parse data.payload
+    unless url.query
       # No query params, pass out as-is
       out.pass.send data
       return callback()
-    queryParams = qs.parse query
+    queryParams = qs.parse url.query
     if queryParams.error and queryParams.error_description
       callback new Error queryParams.error_description
     unless queryParams.code
