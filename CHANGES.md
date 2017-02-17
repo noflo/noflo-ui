@@ -1,7 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-# (git master)
+# 0.16.1 (git master)
+
+Bugfixes
+
+* Fixed compatibility with latest GitHub OAuth implementation
 
 # 0.16.0 (2017 Feburary 17)
 
