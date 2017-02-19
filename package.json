@@ -67,12 +67,14 @@
     "grunt-vulcanize": "^0.4.2",
     "grunt-zip": "^0.17.0",
     "mocha": "^3.2.0",
+    "simple-server": "^1.0.1",
     "sinon": "^1.17.7",
     "syn": "0.2.2",
     "yaml-include-loader": "^1.0.0"
   },
   "scripts": {
-    "test": "grunt test"
+    "test": "grunt test",
+    "start": "./node_modules/.bin/simple-server . 9999"
   },
   "keywords": [
     "noflo",
