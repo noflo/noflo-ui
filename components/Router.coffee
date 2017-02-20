@@ -6,6 +6,7 @@ normalize = (parts) ->
 buildContext = (url) ->
   routeData =
     route: ''
+    subroute: 'open'
     runtime: null
     project: null
     graph: null
@@ -36,6 +37,7 @@ buildContext = (url) ->
     remainder = url.substr 8
     parts = normalize remainder.split '/'
     routeData.route = 'github'
+    routeData.subroute = 'gist'
     routeData.graph = parts.shift()
     routeData.remote = parts
     return routeData
@@ -73,7 +75,7 @@ exports.getComponent = ->
       return callback()
 
     out.route.beginGroup ctx.route
-    out.route.beginGroup 'open'
+    out.route.beginGroup ctx.subroute
     out.route.send
       payload: ctx
     out.route.endGroup()
