@@ -64,8 +64,14 @@ describe 'URL Middleware', ->
           ]
       mw.receiveAction 'project:open', checkOpen, done
       window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
-  describe 'on hash change to an example URL', ->
-    it 'should send github:open action', (done) ->
+  describe 'on hash change to a old-style example URL', ->
+    it 'should send application:redirect action', (done) ->
+      checkRedirect = (data) ->
+        chai.expect(data).to.eql '#gist/abc123'
+      receiveAction newAction, 'application:redirect', checkRedirect, done
+      window.location.hash = '#example/abc123'
+  describe 'on hash change to an gist URL', ->
+    it 'should send github:gist action', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
           route: 'github'
@@ -75,5 +81,5 @@ describe 'URL Middleware', ->
           component: null
           nodes: []
           remote: []
-      mw.receiveAction 'github:open', checkOpen, done
-      window.location.hash = '#example/abc123'
+      receiveAction newAction, 'github:gist', checkOpen, done
+      window.location.hash = '#gist/abc123'

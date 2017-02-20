@@ -101,6 +101,7 @@ exports.getComponent = ->
 
     out.route.beginGroup ctx.route
     out.route.beginGroup ctx.subroute
+    delete ctx.subroute
     out.route.send
       payload: ctx
     out.route.endGroup()
