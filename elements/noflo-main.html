@@ -570,7 +570,7 @@
         var dialog = document.createElement('noflo-new-runtime');
         dialog.addEventListener('addRuntime', function(event) {
           var runtime = event.detail;
-          this.fire('runtime', event.detail);
+          this.fire('newruntime', event.detail);
         }.bind(this));
         dialog.user = this.user;
         document.body.appendChild(dialog);
