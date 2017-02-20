@@ -383,12 +383,10 @@
         if (!this.githubToken) {
           return;
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'pullGithub');
-        }
         var repo = sender.getAttribute('data-repo');
         var repoParts = repo.split('/');
         var repoId = repoParts[1];
+        var branch = 'master';
         var dupes = this.projects.filter(function (proj) {
           if (proj.id === repoId) {
             return true;
@@ -403,6 +401,7 @@
           name: repo,
           namespace: repoId,
           repo: repo,
+          branch: branch,
           graphs: [],
           components: [],
           specs: []

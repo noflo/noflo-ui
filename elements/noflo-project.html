@@ -250,9 +250,6 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'openHome');
-        }
         this.$.account.toggleOpen(false);
         window.location.hash = '#';
       },
