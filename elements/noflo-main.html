@@ -391,9 +391,6 @@
       downloadProject: function (event, details, sender) {
         event.preventDefault();
         event.stopPropagation();
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'pullGithub');
-        }
         var repo = sender.getAttribute('data-repo');
         var branch = 'master';
         window.location.hash = '#github/' + repo + '/tree/' + branch;
