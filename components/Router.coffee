@@ -29,7 +29,11 @@ buildContext = (url) ->
       routeData.graph = urlParts.shift()
       routeData.nodes = urlParts
       return routeData
-    when 'example', 'gist'
+    when 'example'
+      return ctx =
+        route: 'redirect'
+        url: "gist/#{urlParts.join('/')}"
+    when 'gist'
       # Example graph to be fetched from gists
       routeData.route = 'github'
       routeData.subroute = 'gist'
@@ -63,7 +67,10 @@ buildContext = (url) ->
       routeData.nodes = urlParts
       return routeData
 
-  return null
+  # No route matched, redirect to main screen
+  return ctx =
+    route: 'redirect'
+    url: ''
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -71,12 +78,14 @@ exports.getComponent = ->
     datatype: 'string'
   c.outPorts.add 'route',
     datatype: 'object'
+  c.outPorts.add 'redirect',
+    datatype: 'string'
   c.outPorts.add 'missed',
     datatype: 'bang'
 
   noflo.helpers.WirePattern c,
     in: 'url'
-    out: ['route', 'missed']
+    out: ['route', 'redirect', 'missed']
     forwardGroups: false
     async: true
   , (url, groups, out, callback) ->
@@ -84,6 +93,10 @@ exports.getComponent = ->
     unless ctx
       out.missed.send
         payload: ctx
+      return callback()
+
+    if ctx.route is 'redirect'
+      out.redirect.send "##{ctx.url}"
       return callback()
 
     out.route.beginGroup ctx.route
