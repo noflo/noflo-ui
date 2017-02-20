@@ -42,8 +42,9 @@ SplitSpec OUT -> IN EnsureId
 StoreName OUT -> NAME Store(indexeddb/GetStore)
 WriteTransaction TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/Put)
 EnsureId OUT -> VALUE Put
-'state=ok' -> PROPERTY SetOk(objects/SetProperty)
-Put KEY -> START CreateOk(objects/CreateObject) OUT -> IN SetOk OUT -> IN MergeContext
+StoreName OUT -> TYPE CreateOk(ui/PersistedToContext)
+'save' -> ACTION CreateOk
+Put VALUE -> ENTITY CreateOk CONTEXT -> IN MergeContext
 
 # Error handling
 Put ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext(core/Merge)
