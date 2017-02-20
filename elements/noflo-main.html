@@ -634,7 +634,7 @@
         var dialog = document.createElement('noflo-new-repository');
         dialog.token = this.gridToken;
         dialog.addEventListener('new', function (event) {
-          this.fetchGithub();
+          window.location.hash = '#github/' + event.detail.repo + '/tree/' + event.detail.branch;
         }.bind(this));
         document.body.appendChild(dialog);
       },

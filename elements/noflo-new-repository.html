@@ -84,7 +84,10 @@
             this.errorText = err;
             return;
           }
-          this.fire('new', this.repo);
+          this.fire('new', {
+            repo: this.repo,
+            branch: 'master'
+          });
           this.close();
         }.bind(this));
       },
