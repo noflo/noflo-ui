@@ -2,6 +2,10 @@ noflo = require 'noflo'
 debugAction = require('debug') 'noflo-ui:action'
 debugActionFull = require('debug') 'noflo-ui:action:full'
 
+sendEvent = (label, action = 'click', category = 'menu') ->
+  return unless typeof window.ga is 'function'
+  window.ga 'send', 'event', category, action, label
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
@@ -18,5 +22,12 @@ exports.getComponent = ->
     action = groups.join ':'
     debugAction action
     debugActionFull action, data.payload
+
+    switch action
+      when 'user:login'
+        sendEvent 'userLogin'
+      when 'user:logout'
+        sendEvent 'userLogout'
+
     out.send data
     do callback
