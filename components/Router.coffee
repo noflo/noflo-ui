@@ -49,7 +49,7 @@ buildContext = (url) ->
       if urlParts[0] is 'tree'
         # Opening a particular branch
         urlParts.shift()
-        routeData.brach = urlParts.join '/'
+        routeData.branch = urlParts.join '/'
         return routeData
       if urlParts[0] is 'blob'
         # Opening a particular file
@@ -59,7 +59,7 @@ buildContext = (url) ->
           routeData.graph = routeData[1]
         if routeData[0] is 'components'
           routeData.component = routeData[1]
-        return routeData
+      return routeData
     when 'runtime'
       # Graph running on a remote runtime
       routeData.route = 'runtime'
