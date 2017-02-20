@@ -1,8 +1,5 @@
 noflo = require 'noflo'
 
-normalize = (parts) ->
-  parts.map (part) -> decodeURIComponent part
-
 buildContext = (url) ->
   routeData =
     route: ''
@@ -17,39 +14,54 @@ buildContext = (url) ->
     routeData.route = 'main'
     return routeData
 
-  if url.substr(0, 8) is 'project/'
-    # Locally stored project
-    routeData.route = 'project'
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.project = parts.shift()
-
-    if parts[0] is 'component' and parts.length is 2
-      routeData.component = parts[1]
+  urlParts = url.split('/').map (part) -> decodeURIComponent part
+  route = urlParts.shift()
+  switch route
+    when 'project'
+      # Locally stored project
+      routeData.route = 'project'
+      routeData.project = urlParts.shift()
+      if urlParts[0] is 'component' and urlParts.length is 2
+        # Opening a component from the project
+        routeData.component = urlParts[1]
+        return routeData
+      # Opening a graph from the project
+      routeData.graph = urlParts.shift()
+      routeData.nodes = urlParts
       return routeData
-
-    routeData.graph = parts.shift()
-    routeData.nodes = parts
-    return routeData
-
-  if url.substr(0, 8) is 'example/'
-    # Remote example
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.route = 'github'
-    routeData.subroute = 'gist'
-    routeData.graph = parts.shift()
-    routeData.remote = parts
-    return routeData
-
-  if url.substr(0, 8) is 'runtime/'
-    # Graph running on a remote runtime
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.route = 'runtime'
-    routeData.runtime = parts.shift()
-    routeData.nodes = parts
-    return routeData
+    when 'example', 'gist'
+      # Example graph to be fetched from gists
+      routeData.route = 'github'
+      routeData.subroute = 'gist'
+      routeData.graph = urlParts.shift()
+      routeData.remote = urlParts
+      return routeData
+    when 'github'
+      # Project to download and open from GitHub
+      routeData.route = 'github'
+      [owner, repo] = urlParts.splice 0, 2
+      routeData.repo = "#{owner}/#{repo}"
+      return routeData unless urlParts.length
+      if urlParts[0] is 'tree'
+        # Opening a particular branch
+        urlParts.shift()
+        routeData.brach = urlParts.join '/'
+        return routeData
+      if urlParts[0] is 'blob'
+        # Opening a particular file
+        urlParts.shift()
+        routeData.branch = urlParts.shift()
+        if routeData[0] is 'graphs'
+          routeData.graph = routeData[1]
+        if routeData[0] is 'components'
+          routeData.component = routeData[1]
+        return routeData
+    when 'runtime'
+      # Graph running on a remote runtime
+      routeData.route = 'runtime'
+      routeData.runtime = urlParts.shift()
+      routeData.nodes = urlParts
+      return routeData
 
   return null
 
