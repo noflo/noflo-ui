@@ -312,8 +312,6 @@
         'CoffeeScript',
         'C++'
       ],
-      registry: null,
-      registryUrl: '$NOFLO_REGISTRY_SERVICE',
       help: null,
       attached: function () {
         this.openChanged();
@@ -329,7 +327,6 @@
             this.fire('theme', event.detail);
           }.bind(this), 1000);
         }.bind(this));
-        this.registry = require('flowhub-registry');
         this.help = document.querySelector('noflo-help');
 
         // Hide projects if not logged in
