@@ -1,6 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.17.0 (2017 February 20)
+
+Bugfixes
+
+* Fixed fbp-spec tests for components not executing. [#587](https://github.com/noflo/noflo-ui/issues/587)
+
+Internal changes
+
+* Added an `npm start` command, for serving the UI when developing
+
 # 0.16.1 (2017 February 17)
 
 Bugfixes
