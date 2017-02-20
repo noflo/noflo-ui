@@ -137,7 +137,7 @@
         this.$.main.addEventListener('newgraph', function (event) {
           this.emitEvent('project:save:graph', event.detail);
         }.bind(this));
-        this.$.main.addEventListener('runtime', function (event) {
+        this.$.main.addEventListener('newruntime', function (event) {
           this.emitEvent('project:save:runtime', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
