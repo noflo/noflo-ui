@@ -70,10 +70,9 @@ If you prefer, you can also start a watcher process that will do a rebuild whene
 
 Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
-    $ npm install simple-server
-    $ ./node_modules/.bin/simple-server . 9999
+    $ npm start
 
-Where 9999 is the port you want the server to run. Once it is built and the server is running you can access the UI at `http://localhost:9999/index.html`
+Once it is built and the server is running you can access the UI at `http://localhost:9999/index.html`
 
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 

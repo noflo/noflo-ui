@@ -6,6 +6,7 @@ var exported = {
   'uuid': require('uuid'),
   'flowhub-registry': require('flowhub-registry'),
   'fbp-protocol-client': require('fbp-protocol-client'),
+  'fbp-spec': require('fbp-spec'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee')
 };
