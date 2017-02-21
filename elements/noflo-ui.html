@@ -138,7 +138,7 @@
           this.emitEvent('project:save:graph', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
-          this.emitEvent('project:save:runtime', event.detail);
+          this.emitEvent('flowhub:runtimes:register', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
           this.emitEvent('project:save:project', event.detail);
