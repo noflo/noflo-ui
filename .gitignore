@@ -7,6 +7,7 @@
 /preview/components/*/
 /spec/*.js
 /spec/browser/*.js
+/spec/utils/*.js
 /spec/*.xml
 /spec/tests.html
 /dist/
