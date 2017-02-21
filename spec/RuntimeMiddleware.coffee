@@ -8,10 +8,7 @@ else
   baseDir = 'noflo-ui'
 
 describe 'Runtime Middleware', ->
-  c = null
-  actionIn = null
-  passAction = null
-  newAction = null
+  mw = null
   runtime = null
   before (done) ->
     @timeout 4000
@@ -22,26 +19,12 @@ describe 'Runtime Middleware', ->
     runtime.setParentElement fixtures
     window.runtime = runtime
 
-    loader = new noflo.ComponentLoader baseDir
-    loader.load 'ui/RuntimeMiddleware', (err, instance) ->
-      return done err if err
-      c = instance
-      actionIn = noflo.internalSocket.createSocket()
-      c.inPorts.in.attach actionIn
-      actionIn.port = 'in'
-      c.start()
-      c.network.once 'start', ->
-        done()
+    mw = window.middleware 'ui/RuntimeMiddleware', baseDir
+    mw.before done
   beforeEach ->
-    passAction = noflo.internalSocket.createSocket()
-    c.outPorts.pass.attach passAction
-    passAction.port = 'pass'
-    newAction = noflo.internalSocket.createSocket()
-    c.outPorts.new.attach newAction
-    newAction.port = 'new'
+    mw.beforeEach()
   afterEach ->
-    c.outPorts.pass.detach passAction
-    c.outPorts.new.detach newAction
+    mw.afterEach()
     runtime.iframe.contentWindow.clearMessages()
 
   # Set up a fake runtime connection and test that we can play both ends
@@ -69,8 +52,8 @@ describe 'Runtime Middleware', ->
     it 'should pass it out as-is', (done) ->
       action = 'runtime:connected'
       payload = runtime
-      middleware.receivePass passAction, action, payload, done
-      middleware.send actionIn, action, payload
+      mw.receivePass action, payload, done
+      mw.send action, payload
   describe 'receiving a context:edges action', ->
     it 'should send selected edges to the runtime', (done) ->
       sentEdges = [
@@ -89,7 +72,7 @@ describe 'Runtime Middleware', ->
           node: 'Bar'
           port: 'in'
       ]
-      middleware.send actionIn, 'context:edges', sentEdges,
+      mw.send 'context:edges', sentEdges,
         graphs: [
           name: 'foo'
         ]

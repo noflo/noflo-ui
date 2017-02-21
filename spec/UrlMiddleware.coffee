@@ -8,32 +8,15 @@ else
   baseDir = 'noflo-ui'
 
 describe 'URL Middleware', ->
-  c = null
-  actionIn = null
-  passAction = null
-  newAction = null
+  mw = null
   before (done) ->
     @timeout 4000
-    loader = new noflo.ComponentLoader baseDir
-    loader.load 'ui/UrlMiddleware', (err, instance) ->
-      return done err if err
-      c = instance
-      actionIn = noflo.internalSocket.createSocket()
-      c.inPorts.in.attach actionIn
-      actionIn.port = 'in'
-      c.start()
-      c.network.once 'start', ->
-        done()
+    mw = window.middleware 'ui/UrlMiddleware', baseDir
+    mw.before done
   beforeEach ->
-    passAction = noflo.internalSocket.createSocket()
-    c.outPorts.pass.attach passAction
-    passAction.port = 'pass'
-    newAction = noflo.internalSocket.createSocket()
-    c.outPorts.new.attach newAction
-    newAction.port = 'new'
+    mw.beforeEach()
   afterEach ->
-    c.outPorts.pass.detach passAction
-    c.outPorts.new.detach newAction
+    mw.afterEach()
   after ->
     window.location.hash = ''
 
@@ -42,16 +25,16 @@ describe 'URL Middleware', ->
       action = 'runtime:connect'
       payload =
         hello: 'world'
-      middleware.receivePass passAction, action, payload, done
-      middleware.send actionIn, action, payload
+      mw.receivePass action, payload, done
+      mw.send action, payload
   describe 'receiving a user:login action', ->
     it 'should pass it out as-is', (done) ->
       action = 'user:login'
       payload =
         url: window.location.href
         scopes: []
-      middleware.receivePass passAction, action, payload, done
-      middleware.send actionIn, action, payload
+      mw.receivePass action, payload, done
+      mw.send action, payload
   describe 'receiving a noflo:ready action', ->
     it 'should send application:url and main:open actions', (done) ->
       checkUrl = (data) ->
@@ -64,9 +47,9 @@ describe 'URL Middleware', ->
           graph: null
           component: null
           nodes: []
-      middleware.receiveAction newAction, 'application:url', checkUrl, ->
-        middleware.receiveAction newAction, 'main:open', checkOpen, done
-      middleware.send actionIn, 'noflo:ready', true
+      mw.receiveAction 'application:url', checkUrl, ->
+        mw.receiveAction 'main:open', checkOpen, done
+      mw.send 'noflo:ready', true
   describe 'on hash change to a project URL', ->
     it 'should send project:open action', (done) ->
       checkOpen = (data) ->
@@ -79,13 +62,13 @@ describe 'URL Middleware', ->
           nodes: [
             'UserStorage'
           ]
-      middleware.receiveAction newAction, 'project:open', checkOpen, done
+      mw.receiveAction 'project:open', checkOpen, done
       window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
   describe 'on hash change to a old-style example URL', ->
     it 'should send application:redirect action', (done) ->
       checkRedirect = (data) ->
         chai.expect(data).to.eql '#gist/abc123'
-      middleware.receiveAction newAction, 'application:redirect', checkRedirect, done
+      mw.receiveAction 'application:redirect', checkRedirect, done
       window.location.hash = '#example/abc123'
   describe 'on hash change to an gist URL', ->
     it 'should send github:gist action', (done) ->
@@ -98,5 +81,5 @@ describe 'URL Middleware', ->
           component: null
           nodes: []
           remote: []
-      middleware.receiveAction newAction, 'github:gist', checkOpen, done
+      mw.receiveAction 'github:gist', checkOpen, done
       window.location.hash = '#gist/abc123'
