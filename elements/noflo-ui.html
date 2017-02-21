@@ -446,9 +446,12 @@
           }
           if (list[i].id === entity.id) {
             // id match, replace
-            Object.keys(entity).forEach(function (key) {
+            for (var key in entity) {
+              if (!entity.hasOwnProperty(key)) {
+                continue;
+              }
               list[i][key] = entity[key];
-            });
+            }
             found = true;
             break;
           }
