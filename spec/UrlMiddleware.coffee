@@ -75,5 +75,5 @@ describe 'URL Middleware', ->
           component: null
           nodes: []
           remote: []
-      mw.receiveAction newAction, 'github:open', checkOpen, done
+      mw.receiveAction 'github:open', checkOpen, done
       window.location.hash = '#example/abc123'
