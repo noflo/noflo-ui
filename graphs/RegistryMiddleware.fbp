@@ -12,14 +12,14 @@ RegistryErrorAction OUT -> IN NewActions
 
 # Fetching list of user's registered runtimes
 'user' -> KEYS GetUserStateFetch(ui/GetActionValues)
-Dispatch HANDLE[0] -> IN GetUserState
+Dispatch HANDLE[0] -> IN GetUserStateFetch
 GetUserStateFetch VALUES[0] -> USER GetRuntimes(ui/GetRemoteRuntimes)
 GetRuntimes RUNTIME -> IN RuntimeSaveAction
 GetRuntimes ERROR -> IN RegistryErrorAction
 
 # Storing a new runtime definition to registry
 'user' -> KEYS GetUserStatePut(ui/GetActionValues)
-Dispatch HANDLE[1] -> IN GetUserState
+Dispatch HANDLE[1] -> IN GetUserStatePut
 GetUserStatePut VALUES[0] -> USER SaveRuntime(ui/StoreRemoteRuntime)
 GetUserStatePut OUT -> IN SaveRuntime
 SaveRuntime OUT -> IN RuntimeSaveAction
