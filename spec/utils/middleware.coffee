@@ -1,8 +1,16 @@
+debugOpenBracket = (data) ->
+  console.log "< #{data.id} #{data.group}"
+debugData = (data) ->
+  console.log "DATA #{data.id}"
+debugCloseBracket = (data) ->
+  console.log "> #{data.id} #{data.group}"
+
 class Middleware
   instance: null
   actionIn: null
   newAction: null
   passAction: null
+  debug: false
 
   constructor: (@component, @baseDir) ->
 
@@ -29,6 +37,19 @@ class Middleware
   afterEach: ->
     @instance.outPorts.pass.detach @passAction
     @instance.outPorts.new.detach @newAction
+
+  enableDebug: ->
+    return if @debug
+    @instance.network.on 'begingroup', debugOpenBracket
+    @instance.network.on 'data', debugData
+    @instance.network.on 'endgroup', debugCloseBracket
+    @debug = true
+  disableDebug: ->
+    return unless @debug
+    @instance.network.removeListener 'begingroup', debugOpenBracket
+    @instance.network.removeListener 'data', debugData
+    @instance.network.removeListener 'endgroup', debugCloseBracket
+    @debug = false
 
   send: (action, payload, state) ->
     actionParts = action.split ':'
