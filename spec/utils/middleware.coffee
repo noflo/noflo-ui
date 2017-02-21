@@ -1,11 +1,42 @@
-window.middleware =
-  send: (socket, action, payload, state) ->
+class Middleware
+  instance: null
+  actionIn: null
+  newAction: null
+  passAction: null
+
+  constructor: (@component, @baseDir) ->
+
+  before: (callback) ->
+    loader = new noflo.ComponentLoader @baseDir
+    loader.load @component, (err, instance) =>
+      return callback err if err
+      @instance = instance
+      @actionIn = noflo.internalSocket.createSocket()
+      @instance.inPorts.in.attach @actionIn
+      @actionIn.port = 'in'
+      @instance.start()
+      @instance.network.once 'start', ->
+        callback null
+
+  beforeEach: ->
+    @passAction = noflo.internalSocket.createSocket()
+    @instance.outPorts.pass.attach @passAction
+    @passAction.port = 'pass'
+    @newAction = noflo.internalSocket.createSocket()
+    @instance.outPorts.new.attach @newAction
+    @newAction.port = 'new'
+
+  afterEach: ->
+    @instance.outPorts.pass.detach @passAction
+    @instance.outPorts.new.detach @newAction
+
+  send: (action, payload, state) ->
     actionParts = action.split ':'
-    socket.beginGroup part for part in actionParts
-    socket.send
+    @actionIn.beginGroup part for part in actionParts
+    @actionIn.send
       payload: payload
       state: state
-    socket.endGroup part for part in actionParts
+    @actionIn.endGroup part for part in actionParts
 
   receive: (socket, expected, check, done) ->
     received = []
@@ -26,17 +57,26 @@ window.middleware =
     socket.on 'data', onData
     socket.on 'endgroup', onEndGroup
 
-  receiveAction: (socket, action, check, done) ->
+  receiveAction: (action, check, done) ->
     expected = []
     actionParts = action.split ':'
     expected.push "< #{part}" for part in actionParts
     expected.push 'DATA'
     actionParts.reverse()
     expected.push "> #{part}" for part in actionParts
-    @receive socket, expected, check, done
+    @receive @newAction, expected, check, done
 
-  receivePass: (socket, action, payload, done) ->
+  receivePass: (action, payload, done) ->
     check = (data) ->
       # Strict equality check for passed packets
       chai.expect(data).to.equal payload
-    @receiveAction socket, action, check, done
+    expected = []
+    actionParts = action.split ':'
+    expected.push "< #{part}" for part in actionParts
+    expected.push 'DATA'
+    actionParts.reverse()
+    expected.push "> #{part}" for part in actionParts
+    @receive @passAction, expected, check, done
+
+window.middleware = (component, baseDir) ->
+  return new Middleware component, baseDir
