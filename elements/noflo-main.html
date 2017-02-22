@@ -448,6 +448,11 @@
         // Add examples for all current runtimes
         var runtimeInfo = require('noflo-ui/runtimeinfo');
         var runtimeTypesFound = {};
+        var existingGists = this.projects.filter(function (project) {
+          return project.gist ? true : false;
+        }).map(function (project) {
+          return project.gist;
+        });;
         var examplesFound = {};
         this.examples = [];
 
@@ -459,6 +464,11 @@
 
             Object.keys(examples).forEach(function (key) {
               if (examples[key].ssl && location.protocol !== 'https:') {
+                // Skip examples that require SSL when on HTTP
+                return;
+              }
+              if (existingGists.indexOf(examples[key].id) !== -1) {
+                // Skip examples we already have downloaded locally
                 return;
               }
               if (!examplesFound[key]) {
