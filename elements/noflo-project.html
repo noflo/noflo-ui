@@ -277,9 +277,7 @@
             repo: this.project.repo,
             branch: this.project.branch ? this.project.branch : 'master',
             type: this.project.type,
-            main: this.project.main,
-            graphs: [],
-            components: []
+            main: this.project.main
           });
         }.bind(this));
         dialog.addEventListener('delete', function (event) {
