@@ -270,12 +270,17 @@
             this.project[property] = event.detail[property];
           }.bind(this));
 
+          if (this.project.repo) {
+            delete this.project.gist;
+          }
+
           // Send only the data we actually want to store
           this.fire('changed', {
             id: this.project.id,
             name: this.project.name,
             repo: this.project.repo,
             branch: this.project.branch ? this.project.branch : 'master',
+            gist: this.project.gist,
             type: this.project.type,
             main: this.project.main
           });
