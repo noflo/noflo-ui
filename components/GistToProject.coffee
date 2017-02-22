@@ -53,6 +53,8 @@ exports.getComponent = ->
         continue
       out.project.send project
       do callback
-    request.on 'error', (err) ->
-      callback err.error or err.body
+    request.on 'error', (res) ->
+      if res.body?.message
+        return callback new Error res.body.message
+      callback res.error
     do request
