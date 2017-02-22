@@ -8,20 +8,10 @@ OUTPORT=Sync.CHANGED:OUT
 GetToken OUT -> STRING HoldToken(strings/SendString)
 
 # Route opening requests
-'gist,sync,fetch' -> ROUTES Dispatch(routers/GroupRouter)
+'sync,fetch' -> ROUTES Dispatch(routers/GroupRouter)
 Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 Loading OUT -> IN MergeContext(core/Merge)
-
-# Load Gist examples
-'graph' -> KEY GistId(objects/GetObjectKey)
-Dispatch OUT[0] -> IN GistId
-GistId OUT -> IN HoldToken OUT -> TOKEN LoadExample
-GistId OUT -> GIST LoadExample(ui/LoadExample)
-GistId OBJECT -> CONTEXT ExampleToCtx
-LoadExample GRAPH -> GRAPH ExampleToCtx(ui/PopulateExampleData) OUT -> IN MergeContext
-ExampleToCtx ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
-LoadExample ERROR -> ERROR ErrorToCtx OUT -> IN MergeContext
 
 # GitHub synchronization
 Dispatch OUT[1] -> IN Sync(ui/GithubSynchronization)
