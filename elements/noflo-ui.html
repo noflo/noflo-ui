@@ -320,11 +320,6 @@
           }
         }
         if (context.runtimes) {
-          if (!Array.isArray(context.runtimes)) {
-            // Newly saved individual runtime, add to runtime list
-            this.addToList(this.ctx.runtimes, context.runtimes);
-            return;
-          }
           this.$.main.runtimes = context.runtimes;
           this.$.project.runtimes = context.runtimes;
           this.$.search.runtimes = context.runtimes;
