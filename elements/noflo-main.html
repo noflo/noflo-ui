@@ -388,10 +388,12 @@
       downloadProject: function (event, details, sender) {
         event.preventDefault();
         event.stopPropagation();
+        var slug = sender.getAttribute('data-repo').split('/');
         var branch = 'master';
         this.fire('hash', [
           'github',
-          sender.getAttribute('data-repo'),
+          slug[0],
+          slug[1],
           'tree',
           branch
         ]);
