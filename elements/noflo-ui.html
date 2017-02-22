@@ -96,10 +96,6 @@
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
           this.emitEvent('project:save:project', event.detail);
-          this.ctx.projects.push(event.detail);
-          setTimeout(function () {
-            window.location.hash = '#project/' + encodeURIComponent(event.detail.id) + '/' + encodeURIComponent(event.detail.main);
-          }, 2);
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('project:save:graph', event.detail);
@@ -141,7 +137,7 @@
           this.emitEvent('github:sync:synchronize', event.detail);
         }.bind(this));
         this.$.project.addEventListener('deleteProject', function (event) {
-          window.location.hash = '#';
+          this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('project:delete:graph', graph);
           }.bind(this));
@@ -156,7 +152,7 @@
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
-          window.location.hash = '#';
+          this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('project:delete:graph', graph);
           }.bind(this));
@@ -202,13 +198,22 @@
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
-            window.location.hash = '#';
+            this.emitEvent('application:hash', []);
           } else if (project.graphs[0]) {
             // Go to first graph
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              project.graphs[0].properties.id
+            ]);
           } else if (project.components[0]) {
             // Go to first component
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              'component',
+              project.components[0].name
+            ]);
           }
         }.bind(this));
         this.$.search.addEventListener('deleteComponent', function (event) {
@@ -228,13 +233,22 @@
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
-            window.location.hash = '#';
+            this.emitEvent('application:hash', []);
           } else if (project.components[0]) {
             // Go to first component
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              'component',
+              project.components[0].name
+            ]);
           } else if (project.graphs[0]) {
             // Go to first graph
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              project.graphs[0].properties.id
+            ]);
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
@@ -274,12 +288,28 @@
           this.$.journal.db = context.db;
         }
         if (context.persisted) {
-          if (context.persisted.type === 'runtimes') {
-            // For now we only handle runtimes through action loop
+          console.log(context.persisted);
+          if (context.persisted.type === 'runtimes' || context.persisted.type === 'projects') {
+            // For now we only handle runtimes and projects through action loop
             switch (context.persisted.action) {
                 case 'save':
-                  this.addToList(this.ctx.runtimes, context.persisted.entity);
-                this.$.main.runtimesChanged();
+                  if (context.persisted.type === 'runtimes') {
+                    this.addToList(this.ctx.runtimes, context.persisted.entity);
+                    // Update examples list based on available runtimes
+                    this.$.main.runtimesChanged();
+                  }
+                  if (context.persisted.type === 'projects') {
+                    this.addToList(this.ctx.projects, context.persisted.entity);
+                    if (this.ctx.project) {
+                      break;
+                    }
+                    // Redirect user to the newly-created project
+                    this.emitEvent('application:hash', [
+                      'project',
+                      context.persisted.entity.id,
+                      context.persisted.entity.main
+                    ]);
+                  }
                   break;
             }
           }
