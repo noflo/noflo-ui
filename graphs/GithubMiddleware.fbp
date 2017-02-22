@@ -29,3 +29,4 @@ CheckGist NEW -> IN GetGist(ui/GistToProject)
 GetGist GRAPH -> IN LoadGraph(graph/LoadJson) OUT -> IN SaveGraphAction
 GetGist COMPONENT -> IN SaveComponentAction
 GetGist PROJECT -> IN SaveProjectAction
+GetGist ERROR -> IN ErrorAction
