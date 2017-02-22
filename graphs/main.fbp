@@ -15,7 +15,7 @@ UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> IN Actions
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
 GithubMiddleware NEW -> IN Actions
-GithubMiddleware PASS -> IN RegistryMiddleware(ui/RuntimeMiddleware)
+GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
 RegistryMiddleware NEW -> IN Actions
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> IN Actions
