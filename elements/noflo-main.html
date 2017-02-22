@@ -388,9 +388,13 @@
       downloadProject: function (event, details, sender) {
         event.preventDefault();
         event.stopPropagation();
-        var repo = sender.getAttribute('data-repo');
         var branch = 'master';
-        window.location.hash = '#github/' + repo + '/tree/' + branch;
+        this.fire('hash', [
+          'github',
+          sender.getAttribute('data-repo'),
+          'tree',
+          branch
+        ]);
       },
       fetchGithub: function (event) {
         if (event) {
@@ -501,10 +505,19 @@
           if (!project.components.length) {
             return;
           }
-          window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+          this.fire('hash', [
+            'project',
+            project.id,
+            'component',
+            project.components[0].name
+          ]);
           return;
         }
-        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
+        this.fire('hash', [
+          'project',
+          project.id,
+          project.main
+        ]);
       },
       openRuntime: function (event, details, sender) {
         event.preventDefault();
@@ -514,14 +527,20 @@
         if (sender.getAttribute('data-protocol') === 'iframe') {
           return;
         }
-        window.location.hash = '#runtime/' + sender.getAttribute('data-id');
+        this.fire('hash', [
+          'runtime',
+          sender.getAttribute('data-id')
+        ]);
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        window.location.hash = '#gist/' + sender.getAttribute('data-id');
+        this.fire('hash', [
+          'gist',
+          sender.getAttribute('data-id')
+        ]);
       },
       newProject: function (event) {
         event.preventDefault();
@@ -558,7 +577,12 @@
         var dialog = document.createElement('noflo-new-repository');
         dialog.token = this.gridToken;
         dialog.addEventListener('new', function (event) {
-          window.location.hash = '#github/' + event.detail.repo + '/tree/' + event.detail.branch;
+          this.fire('hash', [
+            'github',
+            event.detail.repo,
+            'tree',
+            event.detail.branch
+          ]);
         }.bind(this));
         document.body.appendChild(dialog);
       },

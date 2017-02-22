@@ -251,7 +251,7 @@
           return;
         }
         this.$.account.toggleOpen(false);
-        window.location.hash = '#';
+        this.fire('hash', []);
       },
       openSettings: function (event) {
         event.preventDefault();
@@ -287,11 +287,20 @@
       },
       gotoGraph: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          id
+        ]);
       },
       gotoComponent: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          'component',
+          id
+        ]);
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();

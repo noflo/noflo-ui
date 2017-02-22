@@ -97,6 +97,9 @@
         this.$.main.addEventListener('newproject', function (event) {
           this.emitEvent('project:save:project', event.detail);
         }.bind(this));
+        this.$.main.addEventListener('hash', function (event) {
+          this.emitEvent('application:hash', event.detail);
+        }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('project:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
@@ -150,6 +153,9 @@
           this.emitEvent('project:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
+        }.bind(this));
+        this.$.project.addEventListener('hash', function (event) {
+          this.emitEvent('application:hash', event.detail);
         }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
           this.emitEvent('application:hash', []);
@@ -288,7 +294,6 @@
           this.$.journal.db = context.db;
         }
         if (context.persisted) {
-          console.log(context.persisted);
           if (context.persisted.type === 'runtimes' || context.persisted.type === 'projects') {
             // For now we only handle runtimes and projects through action loop
             switch (context.persisted.action) {
