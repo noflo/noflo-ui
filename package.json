@@ -42,7 +42,7 @@
     "rtc": "^3.4.0",
     "the-graph": "^0.10.0",
     "uuid": "^3.0.1",
-    "webcomponents.js": "^0.7.23"
+    "webcomponents.js": "^0.7.24"
   },
   "devDependencies": {
     "chai": "^4.0.1",
