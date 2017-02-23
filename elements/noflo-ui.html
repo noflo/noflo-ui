@@ -61,10 +61,7 @@
       ctx: {},
       dontAutoHideAlert: false,
       emitEvent: function (event, payload) {
-        this.fire(event, {
-          state: this.ctx,
-          payload: payload
-        });
+        this.fire(event, payload);
       },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
@@ -270,165 +267,70 @@
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
       },
-      context: function (context) {
-        if (context.state) {
-          switch (context.state) {
-            case 'error':
-              this.showError(context);
-              break;
-            case 'ok':
-              this.hideAlertSoon();
-              break;
-            case 'loading':
-              this.showProgress(context);
-              break;
-          }
-        }
-        for (var key in context) {
-          this.ctx[key] = context[key];
-        }
-        if (context.projects) {
-          this.$.main.projects = context.projects;
-        }
-        if (context.db) {
-          this.$.journal.db = context.db;
-        }
-        if (context.persisted) {
-          if (context.persisted.type === 'runtimes' || context.persisted.type === 'projects') {
-            // For now we only handle runtimes and projects through action loop
-            switch (context.persisted.action) {
-                case 'save':
-                  if (context.persisted.type === 'runtimes') {
-                    this.addToList(this.ctx.runtimes, context.persisted.entity);
-                    // Update examples list based on available runtimes
-                    this.$.main.runtimesChanged();
-                  }
-                  if (context.persisted.type === 'projects') {
-                    this.addToList(this.ctx.projects, context.persisted.entity);
-                    if (this.ctx.project) {
-                      break;
-                    }
-                    // Redirect user to the newly-created project
-                    this.emitEvent('application:hash', [
-                      'project',
-                      context.persisted.entity.id,
-                      context.persisted.entity.main
-                    ]);
-                  }
-                  break;
-            }
-          }
-        }
-        if (context.runtimes) {
-          this.$.main.runtimes = context.runtimes;
-          this.$.project.runtimes = context.runtimes;
-          this.$.search.runtimes = context.runtimes;
-        }
-        if (context.search !== undefined) {
-          this.$.library.search({
-            search: this.ctx.search
-          });
-        }
-        if (context.searchLibraryResult) {
-          this.$.search.libraryResults(this.ctx.searchLibraryResult);
-        }
-        if (context.searchGraphResult) {
-          this.$.search.graphResults(this.ctx.searchGraphResult);
-        }
-        if (this.ctx.edges !== undefined) {
-          this.$.packets.edges = this.ctx.edges;
-        }
-        if (this.ctx.error) {
-          this.$.packets.processError(this.ctx.error);
-          this.ctx.error = null;
-        }
-        if (this.ctx.packet) {
-          this.$.packets.packet(this.ctx.packet);
-          this.ctx.packet = null;
-        }
-        if (this.ctx.nodes !== undefined) {
-          this.$.context.nodes = this.ctx.nodes;
-          this.$.packets.nodes = this.ctx.nodes;
-        }
-        if (context.nodes || context.edges) {
+      state: function (state) {
+        // Show loading/error indicators as needed
+        this.handleStatus(state);
+        // Update local state reference
+        this.ctx = state;
+        // Pass data to views
+        // Logged in user
+        this.user(state.user);
+        // Project currently open
+        this.$.project.project = state.workspace.project;
+        this.$.context.project = state.workspace.project;
+        this.$.componenteditor.project = state.workspace.project;
+        this.$.search.project = state.workspace.project;
+        // Current graph being edited
+        this.$.project.graph = state.workspace.graph;
+        this.$.journal.graph = state.workspace.graph;
+        this.$.runtime.graph = state.workspace.graph;
+        this.$.grapheditor.graph = state.workspace.graph;
+        this.$.packets.currentgraph = state.workspace.graph;
+        // Current component being edited
+        this.$.project.component = state.workspace.component;
+        this.$.componenteditor.component = state.workspace.component;
+        this.$.search.component = state.workspace.component;
+        this.$.library.graphs = state.workspace.graphs;
+        // Graph viewing path
+        this.$.project.graphs = state.workspace.graphs;
+        this.$.context.graphs = state.workspace.graphs;
+        this.$.search.graphs = state.workspace.graphs;
+        // Current runtime connection
+        this.$.runtime.runtime = state.workspace.runtime;
+        this.$.context.runtime = state.workspace.runtime;
+        this.$.componenteditor.runtime = state.workspace.runtime;
+        // List of runtimes available
+        this.$.main.runtimes = state.runtimes.local;
+        this.$.project.runtimes = state.runtimes.local;
+        this.$.search.runtimes = state.runtimes.local;
+        // Projects listings
+        this.$.main.projects = state.projects.local;
+        this.$.main.remoteProjects = state.projects.remote;
+        this.$.context.nodes = state.workspace.selection.nodes;
+        // IndexedDB connection
+        this.$.journal.db = state.db;
+        // Selection state
+        this.$.packets.edges = state.workspace.selection.edges;
+        this.$.packets.nodes = state.workspace.selection.nodes;
+        // TODO: error, packet, search, sync, library, suites
+      },
+      handleStatus: function (state) {
+        if (!state.state) {
           return;
         }
-        if (context.syncOperation !== undefined) {
-          this.$.project.confirm(context.syncOperation);
-          return;
+        switch (state.state) {
+          case 'error':
+            this.showError(state);
+            break;
+          case 'ok':
+            this.hideAlertSoon();
+            break;
+          case 'loading':
+            this.showProgress(state);
+            break;
         }
-        if (context.remoteProjects !== undefined) {
-          this.$.main.githubProjects(context.remoteProjects);
-          return;
-        }
-        if (this.ctx.clearLibrary) {
-          for (var libKey in this.$.grapheditor.$.graph.library) {
-            delete this.$.grapheditor.$.graph.library[libKey];
-          }
-          delete this.ctx.clearLibrary;
-        }
-        if (this.ctx.componentDefinition !== undefined && this.ctx.componentDefinition) {
-          this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
-          this.ctx.componentDefinition = null;
-        }
-        if (this.ctx.runtime !== undefined) {
-          this.$.runtime.runtime = this.ctx.runtime;
-          this.$.componenteditor.runtime = this.ctx.runtime;
-          this.$.context.runtime = this.ctx.runtime;
-        }
-        if (this.ctx.suites) {
-          this.$.runtime.showTests(this.ctx.suites);
-        }
-        if (this.ctx.state === 'loading') {
-          return;
-        }
-        if (this.ctx.state === 'error') {
-          this.showError(this.ctx);
-          return;
-        }
-        if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
-          this.$.main.open = false;
-        } else {
-          this.$.main.open = true;
-        }
-        if (this.ctx.graphs && this.ctx.graphs.length) {
-          var oldGraph = this.$.grapheditor.graph;
-          this.$.grapheditor.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.project.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.packets.currentgraph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.journal.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.runtime.graph = this.ctx.graphs[0];
-          if (oldGraph !== this.$.grapheditor.graph) {
-            setTimeout(function () {
-              this.emitEvent('context:graph', {
-                graph: this.$.grapheditor.graph
-              });
-            }.bind(this), 1);
-          }
-        } else {
-          this.$.project.graph = null;
-          this.$.journal.graph = null;
-          this.$.runtime.graph = null;
-        }
-        if (this.ctx.graphs) {
-          this.$.context.graphs = this.ctx.graphs;
-          this.$.library.graphs = this.ctx.graphs;
-          this.$.project.graphs = this.ctx.graphs;
-          this.$.search.graphs = this.ctx.graphs;
-        }
-        this.$.context.project = this.ctx.project;
-        this.$.context.runtime = this.ctx.runtime;
-        this.$.project.component = this.ctx.component;
-        this.$.project.project = this.ctx.project;
-        this.$.componenteditor.component = this.ctx.component;
-        this.$.componenteditor.project = this.ctx.project;
-        this.$.search.component = this.ctx.component;
-        this.$.search.project = this.ctx.project;
-        this.$.runtime.runtimes = this.ctx.compatibleRuntimes;
-        this.$.runtime.runtime = this.ctx.runtime;
       },
       user: function (user) {
-        this.ctx.user = user;
         this.$.main.githubToken = user['github-token'];
         this.$.main.gridToken = user['grid-token'];
         this.$.main.user = user['grid-user'];
@@ -466,29 +368,6 @@
         window.setTimeout(function(){
           this.hideAlert();
         }.bind(this), 1300);
-      },
-      addToList: function (list, entity) {
-        var found = false;
-        for (var i = 0; i < list.length; i++) {
-          if (list[i] === entity) {
-            // Entity is already in list as-is, skip
-            return;
-          }
-          if (list[i].id === entity.id) {
-            // id match, replace
-            for (var key in entity) {
-              if (!entity.hasOwnProperty(key)) {
-                continue;
-              }
-              list[i][key] = entity[key];
-            }
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          list.push(entity);
-        }
       }
     });
   </script>

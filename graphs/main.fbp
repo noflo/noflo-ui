@@ -4,21 +4,20 @@ PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
 PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
-AppView(polymer/noflo-ui) EVENT -> IN Actions(core/Repeat)
+AppView(polymer/noflo-ui) EVENT -> IN DispatchAction(ui/StateMiddleware)
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
-Actions OUT -> IN HandleState(ui/StateMiddleware)
-HandleState PASS -> IN Logger(ui/LoggingMiddleware)
+DispatchAction OUT -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
-UrlMiddleware NEW -> IN Actions
+UrlMiddleware NEW -> IN DispatchAction
 UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
-UserMiddleware NEW -> IN Actions
+UserMiddleware NEW -> IN DispatchAction
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
-GithubMiddleware NEW -> IN Actions
+GithubMiddleware NEW -> IN DispatchAction
 GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
-RegistryMiddleware NEW -> IN Actions
+RegistryMiddleware NEW -> IN DispatchAction
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
-RuntimeMiddleware NEW -> IN Actions
+RuntimeMiddleware NEW -> IN DispatchAction
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,context' -> ROUTES Dispatch
@@ -31,19 +30,23 @@ Dispatch OUT[5] -> IN ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Base data to UI
-UserReducer USER -> USER AppView
+UserReducer USER -> USER UpdateState
 UserReducer USER -> USER GithubStorage
-UserReducer CONTEXT -> Context AppView
+UserReducer CONTEXT -> CONTEXT UpdateState(ui/UpdateState)
 
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
 GithubStorage CONTEXT -> CONTEXT RuntimeStorage
 GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
-MainContext OUT -> CONTEXT AppView
-RuntimeStorage CONTEXT -> CONTEXT AppView
-RuntimeStorage NEW -> IN Actions
-ContextStorage CONTEXT -> CONTEXT AppView
+MainContext OUT -> CONTEXT UpdateState
+RuntimeStorage CONTEXT -> CONTEXT UpdateState
+RuntimeStorage NEW -> IN DispatchAction
+ContextStorage CONTEXT -> CONTEXT UpdateState
+
+# Send updated state to app view
+UpdateState STATE -> STATE DispatchAction
+UpdateState STATE -> STATE AppView
 
 # Start the app
 'noflo-ui' -> SELECTOR AppView
@@ -54,5 +57,5 @@ ListenWindow WIDTH -> WIDTH AppView
 ListenWindow HEIGHT -> HEIGHT AppView
 
 # Display storage errors
-PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT AppView
+PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT UpdateState
 PrepareStorage ERROR ->  IN ShowErrors
