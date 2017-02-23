@@ -162,6 +162,11 @@ exports.getComponent = ->
       c.state.workspace.component = data.component
       delete data.component
 
+    if data.remoteProjects
+      clearList c.state.projects.remote
+      mergeLists 'projects', c.state.projects.remote, data.remoteProjects
+      delete data.remoteProjects
+
     if data.edges
       c.state.workspace.selection.edges = data.edges
       delete data.edges

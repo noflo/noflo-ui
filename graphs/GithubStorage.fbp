@@ -14,12 +14,12 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 Loading OUT -> IN MergeContext(core/Merge)
 
 # GitHub synchronization
-Dispatch OUT[1] -> IN Sync(ui/GithubSynchronization)
+Dispatch OUT[0] -> IN Sync(ui/GithubSynchronization)
 GetToken OUT -> TOKEN Sync
 Sync CONTEXT -> IN MergeContext
 Sync ERROR -> ERROR ErrorToCtx
 
 # GitHub projects list
-Dispatch OUT[2] -> TOKEN GetRemoteProjects(ui/GetRemoteProjects)
+Dispatch OUT[1] -> TOKEN GetRemoteProjects(ui/GetRemoteProjects)
 GetRemoteProjects PROJECTS -> IN MergeContext
 GetRemoteProjects ERROR -> ERROR ErrorToCtx
