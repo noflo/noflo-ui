@@ -2,7 +2,7 @@ noflo = require 'noflo'
 
 exports.getComponent = ->
   c = new noflo.Component
-  c.inPorts.add 'in',
+  c.inPorts.add 'action',
     datatype: 'all'
   c.inPorts.add 'state',
     datatype: 'object'
@@ -17,6 +17,7 @@ exports.getComponent = ->
     c.state = {}
 
   noflo.helpers.WirePattern c,
+    in: 'action'
     forwardGroups: true
     async: true
   , (data, groups, out, callback) ->

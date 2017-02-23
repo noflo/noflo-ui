@@ -4,20 +4,20 @@ PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
 PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
-AppView(polymer/noflo-ui) EVENT -> IN StoreDispatch(ui/Store)
+AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
 StoreDispatch OUT -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
-UrlMiddleware NEW -> IN StoreDispatch
+UrlMiddleware NEW -> ACTION StoreDispatch
 UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
-UserMiddleware NEW -> IN StoreDispatch
+UserMiddleware NEW -> ACTION StoreDispatch
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
-GithubMiddleware NEW -> IN StoreDispatch
+GithubMiddleware NEW -> ACTION StoreDispatch
 GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
-RegistryMiddleware NEW -> IN StoreDispatch
+RegistryMiddleware NEW -> ACTION StoreDispatch
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
-RuntimeMiddleware NEW -> IN StoreDispatch
+RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,runtime,context' -> ROUTES Dispatch
@@ -41,7 +41,7 @@ GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
 MainContext OUT -> CONTEXT UpdateState
 RuntimeStorage CONTEXT -> CONTEXT UpdateState
-RuntimeStorage NEW -> IN StoreDispatch
+RuntimeStorage NEW -> ACTION StoreDispatch
 ContextStorage CONTEXT -> CONTEXT UpdateState
 
 # Send updated state to app view
