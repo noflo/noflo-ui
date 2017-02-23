@@ -3,7 +3,7 @@ debug = require('debug') 'noflo-ui:state'
 
 exports.getComponent = ->
   c = new noflo.Component
-  c.inPorts.add 'in',
+  c.inPorts.add 'action',
     datatype: 'all'
   c.outPorts.add 'pass',
     datatype: 'object'
@@ -12,7 +12,7 @@ exports.getComponent = ->
   c.shutdown = ->
     c.state = {}
   noflo.helpers.WirePattern c,
-    in: 'in'
+    in: 'action'
     out: 'pass'
     forwardGroups: true
     async: true
