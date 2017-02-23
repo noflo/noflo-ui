@@ -1,5 +1,18 @@
 noflo = require 'noflo'
 
+findHandler = (actionParts, routes) ->
+  normalized = routes.map (route) ->
+    if route.indexOf('*') is -1
+      # No wildcards here
+      return route
+    routeParts = route.split ':'
+    for part, idx in routeParts
+      continue unless part is '*'
+      continue unless actionParts[idx]
+      routeParts[idx] = actionParts[idx]
+    return routeParts.join ':'
+  return normalized.indexOf actionParts.join(':')
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'routes',
@@ -25,8 +38,7 @@ exports.getComponent = ->
     groups.push group
   c.inPorts.in.on 'data', (data) ->
     handled = routes.split ','
-    groupString = groups.join ':'
-    handler = handled.indexOf groupString
+    handler = findHandler groups
     if handler is -1
       sentTo = c.outPorts.pass
     else
@@ -42,5 +54,10 @@ exports.getComponent = ->
     sentTo.disconnect sentToIdx
     sentTo = null
     sentToIdx = null
+
+  c.shutdown = ->
+    sentTo = null
+    sentToIdx = null
+    routes = null
 
   return c
