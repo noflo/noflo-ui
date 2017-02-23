@@ -22,5 +22,5 @@ exports.getComponent = ->
   , (data, groups, out, callback) ->
     out.send
       state: c.state
-      payload: data?.payload or data
+      payload: data
     do callback

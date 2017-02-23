@@ -91,8 +91,7 @@ exports.getComponent = ->
   , (url, groups, out, callback) ->
     ctx = buildContext url
     unless ctx
-      out.missed.send
-        payload: ctx
+      out.missed.send ctx
       return callback()
 
     if ctx.route is 'redirect'
@@ -102,8 +101,7 @@ exports.getComponent = ->
     out.route.beginGroup ctx.route
     out.route.beginGroup ctx.subroute
     delete ctx.subroute
-    out.route.send
-      payload: ctx
+    out.route.send ctx
     out.route.endGroup()
     out.route.endGroup()
     callback()

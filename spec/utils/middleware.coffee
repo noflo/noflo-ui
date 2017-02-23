@@ -65,7 +65,7 @@ class Middleware
       received.push "< #{group}"
     onData = (data) ->
       received.push 'DATA'
-      check data.payload
+      check data
     onEndGroup = (group) ->
       received.push "> #{group}"
       return unless received.length >= expected.length
@@ -90,7 +90,7 @@ class Middleware
   receivePass: (action, payload, done) ->
     check = (data) ->
       # Strict equality check for passed packets
-      chai.expect(data).to.equal payload
+      chai.expect(data.payload).to.equal payload
     expected = []
     actionParts = action.split ':'
     expected.push "< #{part}" for part in actionParts
