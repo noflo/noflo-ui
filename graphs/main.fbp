@@ -4,21 +4,20 @@ PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
 PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
 
 # Event dispatching
-AppView(polymer/noflo-ui) EVENT -> IN Actions(core/Repeat)
+AppView(polymer/noflo-ui) EVENT -> IN StoreDispatch(ui/Store)
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
-Actions OUT -> IN HandleState(ui/StateMiddleware)
-HandleState PASS -> IN Logger(ui/LoggingMiddleware)
+StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
-UrlMiddleware NEW -> IN Actions
+UrlMiddleware NEW -> IN StoreDispatch
 UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
-UserMiddleware NEW -> IN Actions
+UserMiddleware NEW -> IN StoreDispatch
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
-GithubMiddleware NEW -> IN Actions
+GithubMiddleware NEW -> IN StoreDispatch
 GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
-RegistryMiddleware NEW -> IN Actions
+RegistryMiddleware NEW -> IN StoreDispatch
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
-RuntimeMiddleware NEW -> IN Actions
+RuntimeMiddleware NEW -> IN StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
 'user,main,project,github,flowhub,runtime,context' -> ROUTES Dispatch
@@ -43,7 +42,7 @@ RegistryReducer CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
 MainContext OUT -> CONTEXT AppView
 RuntimeStorage CONTEXT -> CONTEXT AppView
-RuntimeStorage NEW -> IN Actions
+RuntimeStorage NEW -> IN StoreDispatch
 ContextStorage CONTEXT -> CONTEXT AppView
 
 # Start the app
