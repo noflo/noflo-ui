@@ -276,6 +276,7 @@
         // Logged in user
         this.user(state.user);
         // Project currently open
+        this.$.main.project = state.workspace.project;
         this.$.project.project = state.workspace.project;
         this.$.context.project = state.workspace.project;
         this.$.componenteditor.project = state.workspace.project;

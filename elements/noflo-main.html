@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
-<polymer-element name="noflo-main" attributes="open localProjects graphs components userRuntimes">
+<polymer-element name="noflo-main" attributes="project localProjects graphs components userRuntimes">
   <template>
     <style>
       :host {
@@ -293,7 +293,7 @@
   </template>
   <script>
     Polymer('noflo-main', {
-      open: true,
+      project: null,
       projects: [],
       localProjects: [],
       remoteProjects: [],
@@ -314,7 +314,7 @@
       ],
       help: null,
       attached: function () {
-        this.openChanged();
+        this.projectChanged();
         this.$.mainaccount.addEventListener('login', function (event) {
           this.fetchRuntimes();
         }.bind(this));
@@ -332,8 +332,8 @@
         // Hide projects if not logged in
         this.gridTokenChanged();
       },
-      openChanged: function () {
-        if (String(this.open) === 'true') {
+      projectChanged: function () {
+        if (!this.project) {
           // Make main visible
           this.style.height = '100%';
           // Update runtime registry every time we go to the main view
