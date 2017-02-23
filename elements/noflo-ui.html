@@ -313,7 +313,11 @@
         // Selection state
         this.$.packets.edges = state.workspace.selection.edges;
         this.$.packets.nodes = state.workspace.selection.nodes;
-        // TODO: error, packet, search, sync, library, suites
+        // Search
+        this.$.library.search = state.workspace.search.query;
+        this.$.search.libraryresults = state.workspace.search.components;
+        this.$.search.graphResults = state.workspace.search.nodes;
+        // TODO: error, packet, sync, library, suites
       },
       handleStatus: function (state) {
         if (!state.state) {

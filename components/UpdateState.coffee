@@ -151,5 +151,13 @@ exports.getComponent = ->
     if data.nodes
       c.state.workspace.selection.nodes = data.nodes
 
+    if typeof data.search isnt 'undefined'
+      c.state.workspace.search.query = data.search
+      clearList c.state.workspace.search.components
+      clearList c.state.workspace.search.nodes
+
+    if data.searchLibraryResult
+      addToList 'components', c.state.workspace.search.components, data.searchLibraryResult
+
     out.send c.state
     do callback

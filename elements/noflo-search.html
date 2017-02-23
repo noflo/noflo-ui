@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-component-inspector.html">
 
-<polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component">
+<polymer-element name="noflo-search" class="gpu" attributes="editor panel project graphs component runtimes libraryresults graphresults">
   <template>
     <style>
       :host {
@@ -196,9 +196,9 @@
     Polymer('noflo-search', {
       menuCard: null,
       resultsCard: null,
-      searchLibraryResults: [],
-      searchGraphResults: [],
       search: null,
+      libraryresults: null,
+      graphresults: null,
       parentPath: '',
       graph: null,
       graphs: [],
@@ -214,7 +214,6 @@
           this.graphsChanged();
           return;
         }
-        this.graph = null;
         this.updateParentPath();
       },
       graphsChanged: function () {
@@ -254,19 +253,6 @@
           }
         }.bind(this));
       },
-      libraryResults: function (result) {
-        this.searchLibraryResults.push(result);
-      },
-      graphResults: function (result) {
-        this.searchGraphResults.push(result);
-      },
-      attached: function () {
-        this.componentsObserver = new ArrayObserver(this.searchLibraryResults);
-        this.componentsObserver.open(this.libraryResultsModified.bind(this));
-        this.processesObserver = new ArrayObserver(this.searchGraphResults);
-        this.processesObserver.open(this.graphResultsModified.bind(this));
-        this.blur();
-      },
       focus: function () {
         if (this.component && this.component.name) {
           return;
@@ -279,7 +265,7 @@
         }
       },
       blur: function () {
-        this.clearResults();
+        this.search = null;
         this.classList.add('overlay');
       },
       toggle: function () {
@@ -289,22 +275,11 @@
         }
         this.blur();
       },
-      clearResults: function () {
-        this.searchGraphResults.length = 0;
-        this.searchLibraryResults.length = 0;
-        // while (this.searchGraphResults.length) {
-        //   this.searchGraphResults.pop();
-        // }
-        // while (this.searchLibraryResults.length) {
-        //   this.searchLibraryResults.pop();
-        // }
-      },
       clearSearch: function () {
         if (this.resultsCard) {
           this.resultsCard.parentNode.removeChild(this.resultsCard);
           this.resultsCard = null;
         }
-        this.search = null;
         this.blur();
       },
       switchSearch: function (event, detail, sender) {
@@ -324,8 +299,6 @@
         }
       },
       searchChanged: function () {
-        this.clearResults();
-
         if (this.search && typeof ga === 'function') {
           ga('send', 'event', 'search', 'input', 'newSearch');
         }
@@ -339,7 +312,7 @@
           search: this.search
         });
       },
-      libraryResultsModified: function () {
+      libraryresultsChanged: function () {
         if (!this.searchLibrary)
           return;
         if (this.resultsCard &&
@@ -350,7 +323,7 @@
         if (this.resultsCard || this.search === null) {
           return;
         }
-        if (this.searchLibraryResults.length === 0) {
+        if (this.libraryresults.length === 0) {
           if (this.resultsCard) {
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
@@ -360,7 +333,7 @@
         var results = document.createElement('noflo-search-library-results');
         results.id = 'results';
         results.search = this.search;
-        results.results = this.searchLibraryResults;
+        results.results = this.libraryresults;
         results.addEventListener('resultclick', function () {
           this.clearSearch();
         }.bind(this));
@@ -370,7 +343,7 @@
         this.resultsCard.appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
-      graphResultsModified: function () {
+      graphresultsChanged: function () {
         if (this.searchLibrary)
           return;
         if (this.resultsCard &&
@@ -381,7 +354,7 @@
         if (this.resultsCard || this.search === null) {
           return;
         }
-        if (this.searchGraphResults.length === 0) {
+        if (this.graphresults.length === 0) {
           if (this.resultsCard) {
             this.resultsCard.parentNode.removeChild(this.resultsCard);
             this.resultsCard = null;
@@ -392,7 +365,7 @@
         results.id = 'results';
         results.editor = this.editor;
         results.search = this.search;
-        results.results = this.searchGraphResults;
+        results.results = this.graphresults;
         results.addEventListener('resultclick', function () {
           this.clearSearch();
         }.bind(this));

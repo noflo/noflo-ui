@@ -1,7 +1,7 @@
 <polymer-element name="noflo-library" attributes="editor">
   <script>
     Polymer('noflo-library', {
-      _search: null,
+      search: null,
       editor: null,
       graphs: [],
       project: null,
@@ -36,12 +36,8 @@
 
         graph.endTransaction('addnode');
       },
-      search: function (obj) {
-        this._search = obj;
-        if (!this._search) {
-          return;
-        }
-        if (typeof this._search.search !== 'string') {
+      searchChanged: function () {
+        if (typeof this.search !== 'string') {
           return;
         }
         if (!this.editor) {
@@ -54,15 +50,15 @@
         Object.keys(library).forEach(function (name) {
           var match = false;
           var component = this.editor.getComponent(name);
-          if (this._search.search === '') {
+          if (this.search === '') {
             // Empty search, all components match
             match = true;
           } else {
-            if (name.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
+            if (name.toLowerCase().indexOf(this.search.toLowerCase()) !== -1) {
               // Component name matches
               match = true;
             }
-            if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
+            if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(this.search.toLowerCase()) !== -1) {
               // Component description matches
               match = true;
             }
@@ -85,6 +81,7 @@
           // by graph router need to clean up before the graph receives another event
           window.setTimeout(function () {
             this.fire('result', {
+              name: component.name,
               label: component.name,
               icon: component.icon || 'cog',
               description: component.description,
