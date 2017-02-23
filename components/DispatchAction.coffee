@@ -38,7 +38,7 @@ exports.getComponent = ->
     groups.push group
   c.inPorts.in.on 'data', (data) ->
     handled = routes.split ','
-    handler = findHandler groups
+    handler = findHandler groups, handled
     if handler is -1
       sentTo = c.outPorts.pass
     else
@@ -58,6 +58,6 @@ exports.getComponent = ->
   c.shutdown = ->
     sentTo = null
     sentToIdx = null
-    routes = null
+    routes = ''
 
   return c

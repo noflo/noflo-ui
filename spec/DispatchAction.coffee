@@ -75,7 +75,7 @@ describe 'DispatchAction component', ->
       sendAction 'foo:baz', expected.payload, expected.state
   describe 'receiving a handled wildcard action', ->
     it 'should send it to correct handler', (done) ->
-      routes.send 'bar:baz','foo:*'
+      routes.send 'bar:baz,foo:*'
       expected =
         payload: [1, 2]
         state:
