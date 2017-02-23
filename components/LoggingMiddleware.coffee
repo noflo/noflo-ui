@@ -23,7 +23,7 @@ exports.getComponent = ->
     action = groups.join ':'
     debugAction action
     debugActionFull action, data.payload
-    debugState data.state
+    debugState action, data.state
 
     switch action
       when 'user:login'

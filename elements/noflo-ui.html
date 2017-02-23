@@ -297,13 +297,15 @@
         this.$.context.graphs = state.workspace.graphs;
         this.$.search.graphs = state.workspace.graphs;
         // Current runtime connection
-        this.$.runtime.runtime = state.workspace.runtime;
-        this.$.context.runtime = state.workspace.runtime;
-        this.$.componenteditor.runtime = state.workspace.runtime;
+        this.$.runtime.runtime = state.workspace.runtime.selected;
+        this.$.context.runtime = state.workspace.runtime.selected;
+        this.$.componenteditor.runtime = state.workspace.runtime.selected;
         // List of runtimes available
         this.$.main.runtimes = state.runtimes.local;
         this.$.project.runtimes = state.runtimes.local;
         this.$.search.runtimes = state.runtimes.local;
+        // Filtered list of compatible runtimes
+        this.$.runtime.runtimes = state.workspace.runtime.compatible;
         // Projects listings
         this.$.main.projects = state.projects.local;
         this.$.main.remoteProjects = state.projects.remote;
