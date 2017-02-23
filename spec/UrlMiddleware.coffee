@@ -47,8 +47,9 @@ describe 'URL Middleware', ->
           graph: null
           component: null
           nodes: []
-      mw.receiveAction 'application:url', checkUrl, ->
-        mw.receiveAction 'main:open', checkOpen, done
+      mw.receivePass 'noflo:ready', true, ->
+        mw.receiveAction 'application:url', checkUrl, ->
+          mw.receiveAction 'main:open', checkOpen, done
       mw.send 'noflo:ready', true
   describe 'on hash change to a project URL', ->
     it 'should send project:open action', (done) ->
