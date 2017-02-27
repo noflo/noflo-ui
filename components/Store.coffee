@@ -22,6 +22,7 @@ exports.getComponent = ->
     async: true
   , (data, groups, out, callback) ->
     out.send
+      action: groups.join ':'
       state: c.state
       payload: data
     do callback
