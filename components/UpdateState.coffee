@@ -116,18 +116,6 @@ exports.getComponent = ->
       # Updating loading/ok status
       c.state.state = data.state
       delete data.state
-    if data.runtimes
-      # Received initial runtimes listing
-      mergeLists 'runtimes', c.state.runtimes.local, data.runtimes
-      delete data.runtimes
-    if data.projects
-      # Received initial projects listing
-      mergeLists 'projects', c.state.projects.local, data.projects
-      delete data.projects
-    if data.db
-      # IndexedDB connection
-      c.state.db = data.db
-      delete data.db
     if data.persisted
       # Storage save/delete action
       if data.persisted.action is 'save'
@@ -164,11 +152,6 @@ exports.getComponent = ->
     if typeof data.component isnt 'undefined'
       c.state.workspace.component = data.component
       delete data.component
-
-    if data.remoteProjects
-      clearList c.state.projects.remote
-      mergeLists 'projects', c.state.projects.remote, data.remoteProjects
-      delete data.remoteProjects
 
     if data.edges
       c.state.workspace.selection.edges = data.edges
