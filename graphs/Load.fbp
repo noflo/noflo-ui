@@ -1,0 +1,19 @@
+INPORT=Read.DB:DB
+INPORT=Store.IN:STORE
+OUTPORT=Query.ITEM:ITEM
+OUTPORT=Errors.OUT:ERROR
+
+'' -> STRING HoldQuery(strings/SendString)
+'readonly' -> STRING HoldMode(strings/SendString)
+Store(core/Repeat) OUT -> IN HoldQuery
+Store OUT -> IN HoldMode OUT -> MODE Read(indexeddb/BeginTransaction)
+Store OUT -> STORES Read
+Store OUT -> NAME GetStore(indexeddb/GetStore)
+Read TRANSACTION -> TRANSACTION GetStore
+GetStore STORE -> STORE Query(indexeddb/Query)
+HoldQuery OUT -> ALL Query
+
+# Error handling
+Read ERROR -> IN Errors(core/Merge)
+GetStore ERROR -> IN Errors
+Query ERROR -> IN Errors

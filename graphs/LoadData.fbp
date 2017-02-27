@@ -1,0 +1,50 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=LoadProjects.ITEM:PROJECT
+OUTPORT=LoadGraphs.ITEM:GRAPH
+OUTPORT=LoadComponents.ITEM:COMPONENT
+OUTPORT=LoadSpecs.ITEM:SPEC
+OUTPORT=LoadRuntimes.ITEM:RUNTIME
+OUTPORT=Errors.OUT:ERROR
+
+'storage:load:projects,storage:load:graphs,storage:load:components,storage:load:specs,storage:load:runtimes,storage:load:all' -> ROUTES Dispatch(ui/DispatchAction)
+
+# Loading projects
+'db' -> KEYS GetProjectsDb(ui/GetActionValues) VALUES[0] -> DB LoadProjects(ui/Load)
+'projects' -> STRING ProjectsStore(strings/SendString)
+Dispatch HANDLE[0] -> IN GetProjectsDb OUT -> IN ProjectsStore
+ProjectsStore OUT -> STORE LoadProjects ERROR -> IN Errors
+
+# Loading graphs
+'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB LoadGraphs(ui/Load)
+'graphs' -> STRING GraphsStore(strings/SendString)
+Dispatch HANDLE[1] -> IN GetGraphsDb OUT -> IN GraphsStore
+GraphsStore OUT -> STORE LoadGraphs ERROR -> IN Errors
+
+# Loading components
+'db' -> KEYS GetComponentsDb(ui/GetActionValues) VALUES[0] -> DB LoadComponents(ui/Load)
+'components' -> STRING ComponentsStore(strings/SendString)
+Dispatch HANDLE[2] -> IN GetComponentsDb OUT -> IN ComponentsStore
+ComponentsStore OUT -> STORE LoadComponents ERROR -> IN Errors
+
+# Loading specs
+'db' -> KEYS GetSpecsDb(ui/GetActionValues) VALUES[0] -> DB LoadSpecs(ui/Load)
+'specs' -> STRING SpecsStore(strings/SendString)
+Dispatch HANDLE[3] -> IN GetSpecsDb OUT -> IN SpecsStore
+SpecsStore OUT -> STORE LoadSpecs ERROR -> IN Errors
+
+# Loading runtimes
+'db' -> KEYS GetRuntimesDb(ui/GetActionValues) VALUES[0] -> DB LoadRuntimes(ui/Load)
+'runtimes' -> STRING RuntimesStore(strings/SendString)
+Dispatch HANDLE[4] -> IN GetRuntimesDb OUT -> IN RuntimesStore
+RuntimesStore OUT -> STORE LoadRuntimes ERROR -> IN Errors
+
+# Loading all persisted data
+Dispatch HANDLE[5] -> IN SplitAction(core/Split)
+SplitAction OUT -> IN GetProjectsDb
+SplitAction OUT -> IN GetGraphsDb
+SplitAction OUT -> IN GetComponentsDb
+SplitAction OUT -> IN GetSpecsDb
+SplitAction OUT -> IN GetRuntimesDb
+
+# Here we treat unknown actions as errors
+Dispatch PASS -> IN Errors(core/Merge)
