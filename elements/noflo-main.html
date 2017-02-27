@@ -173,15 +173,15 @@
     <div id="loginrequired"></div>
       <section id="projects">
         <h2>Projects
-          <template if="{{ projectList === 'local' }}">
-          <small>{{ localProjects.length }}</small>
-          </template>
-          <template if="{{ projectList === 'github' }}">
-          <small>{{ remoteProjects.length }}</small>
-          </template>
-          <template if="{{ projectList === 'github' }}">
-          <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
-          </template>
+            <template if="{{ projectList === 'local' }}">
+            <small>{{ projects.length }}</small>
+            </template>
+            <template if="{{ projectList === 'github' }}">
+            <small>{{ remoteProjects.length }}</small>
+            </template>
+            <template if="{{ projectList === 'github' }}">
+            <button on-click="{{ fetchGithub }}"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+            </template>
         </h2>
         <ul class="tabs">
           <template if="{{ projectList === 'local' }}">
@@ -201,7 +201,7 @@
             <h2>New project</h2>
             <button id="newproject" on-click="{{ newProject }}">Create</button>
           </li>
-          <template repeat="{{ project in localProjects }}">
+          <template repeat="{{ project in projects }}">
             <li on-click="{{ openProject }}" data-id="{{ project.id }}">
               <the-graph-thumb graph="{{ project.mainGraph }}" width="200" height="120"></the-graph-thumb>
               <h2>{{ project.name }}</h2>
@@ -295,7 +295,6 @@
     Polymer('noflo-main', {
       project: null,
       projects: [],
-      localProjects: [],
       remoteProjects: [],
       runtimes: [],
       userRuntimes: [],
@@ -407,24 +406,8 @@
         }
         this.fire('fetchRemote', this.gridToken);
       },
-      githubProjects: function (projects) {
-        this.remoteProjects = [];
-        projects.forEach(function (remoteProject) {
-          for (var i = 0; i < this.localProjects.length; i++) {
-            if (this.localProjects[i].repo === remoteProject.repo) {
-              // We already have this project checked out
-              return;
-            }
-          }
-          this.remoteProjects.push(remoteProject);
-        }.bind(this));
-      },
-      projectsChanged: function () {
-        this.projects.forEach(this.checkProject.bind(this));
-      },
       runtimesChanged: function () {
         this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
-        this.addExamplesForRuntimes();
       },
       checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
@@ -443,41 +426,6 @@
         if (this.userRuntimes.indexOf(runtime) === -1) {
           this.userRuntimes.push(runtime);
         }
-      },
-      addExamplesForRuntimes: function () {
-        // Add examples for all current runtimes
-        var runtimeInfo = require('noflo-ui/runtimeinfo');
-        var runtimeTypesFound = {};
-        var existingGists = this.projects.filter(function (project) {
-          return project.gist ? true : false;
-        }).map(function (project) {
-          return project.gist;
-        });
-        var examplesFound = {};
-        this.examples = [];
-
-        this.runtimes.forEach(function (runtime) {
-
-          // If this is the first registry of its type, add examples for it
-          if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
-            var examples = runtimeInfo[runtime.type].examples;
-
-            Object.keys(examples).forEach(function (key) {
-              if (examples[key].ssl && location.protocol !== 'https:') {
-                // Skip examples that require SSL when on HTTP
-                return;
-              }
-              if (existingGists.indexOf(examples[key].id) !== -1) {
-                // Skip examples we already have downloaded locally
-                return;
-              }
-              if (!examplesFound[key]) {
-                this.examples.push(examples[key]);
-                examplesFound[key] = true;
-              }
-            }.bind(this));
-          }
-        }.bind(this));
       },
       fetchRuntimes: function (event) {
         this.fire('fetchRuntimes', true);
@@ -505,7 +453,7 @@
           return;
         }
         var project = null;
-        this.localProjects.forEach(function (p) {
+        this.projects.forEach(function (p) {
           if (p.id === sender.getAttribute('data-id')) {
             project = p;
           }
@@ -623,97 +571,6 @@
           this.userRuntimes.push(runtime);
           this.runtimes.push(runtime);
         }.bind(this));
-      },
-      checkProject: function (project) {
-        if (project.main) {
-          var mainFound = false;
-          project.graphs.forEach(function (graph) {
-            if (graph.properties.id === project.main) {
-              mainFound = true;
-            }
-          });
-          if (!mainFound) {
-            project.main = null;
-          }
-        }
-        if (!project.main) {
-          if (!project.graphs.length) {
-            // No graphs, wait for them to arrive from GitHub
-            var observer = new ArrayObserver(project.graphs);
-            observer.open(function () {
-              observer.close();
-              setTimeout(function () {
-                this.checkProject(project);
-              }.bind(this), 5);
-            }.bind(this));
-          }
-          // Find a suitable main graph
-          project.graphs.forEach(function (graph) {
-            if (graph.name === 'main') {
-              project.main = graph.properties.id;
-            }
-          });
-          if (!project.main && project.graphs.length) {
-            project.main = project.graphs[0].properties.id;
-          }
-        }
-        if (this.localProjects.indexOf(project) === -1) {
-          this.localProjects.push(project);
-          this.localProjects.sort(function(a, b) {
-            return a.name.localeCompare(b.name);
-          });
-        }
-      },
-      graphs: function (graph) {
-        if (!graph.properties.project) {
-          // TODO: Create a project for old-style sketches
-          return;
-        }
-        this.localProjects.forEach(function (project) {
-          if (!project.graphs) {
-            project.graphs = [];
-          }
-          if (!project.components) {
-            project.components = [];
-          }
-          if (!project.specs) {
-            project.specs = [];
-          }
-          if (graph.properties.project !== project.id) {
-            return;
-          }
-          if (!project.main) {
-            project.mainGraph = graph;
-            project.main = graph.properties.id;
-          }
-          if (graph.properties.id === project.main) {
-            project.mainGraph = graph;
-          }
-          for (var i = 0; i < project.graphs.length; i++) {
-            if (project.graphs[i].properties.id === graph.properties.id) {
-              // We already have this graph in the project
-              return;
-            }
-          }
-          project.graphs.push(graph);
-        });
-      },
-      components: function (component) {
-        this.localProjects.forEach(function (project) {
-          if (!project.components) {
-            project.components = [];
-          }
-          if (component.project !== project.id) {
-            return;
-          }
-          for (var i = 0; i < project.components.length; i++) {
-            if (project.components[i].id === component.id) {
-              project.components[i] = component;
-              return;
-            }
-          }
-          project.components.push(component);
-        });
       }
     });
   </script>

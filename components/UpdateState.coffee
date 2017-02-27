@@ -46,6 +46,8 @@ produceInitialState = ->
       local: []
     specs:
       local: []
+    examples:
+      remote: []
 
 getId = (type, entity) ->
   if type is 'components'

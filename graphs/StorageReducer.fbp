@@ -9,7 +9,9 @@ Dispatch OUT[0] -> IN SetDb OUT -> IN MergeState(core/Merge)
 
 # Update state based on persisted data
 Dispatch OUT[1] -> IN StoredToState(ui/StoredToState)
-StoredToState OUT -> IN UpdateProjects(ui/UpdateProjectRelations) OUT -> IN MergeState
+StoredToState OUT -> IN UpdateProjects(ui/UpdateProjectRelations)
+UpdateProjects OUT -> IN FilterExamples(ui/FilterExamples)
+FilterExamples OUT -> IN MergeState
 
 # Set error to state
 Dispatch OUT[2] -> ERROR ErrorToCtx(ui/ErrorToContext)
