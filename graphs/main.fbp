@@ -7,7 +7,7 @@ Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
 UrlMiddleware NEW -> ACTION StoreDispatch
 UrlMiddleware PASS -> IN StorageMiddleware(ui/StorageMiddleware)
 StorageMiddleware NEW -> ACTION StoreDispatch
-StorageMiddleware PASS ->IN UserMiddleware(ui/UserMiddleware)
+StorageMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> ACTION StoreDispatch
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
 GithubMiddleware NEW -> ACTION StoreDispatch
