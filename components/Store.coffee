@@ -26,6 +26,7 @@ exports.getComponent = ->
     state = data?.state or c.state
     payload = data?.payload or data
     out.send
+      action: groups.join ':'
       state: state
       payload: payload
     do callback
