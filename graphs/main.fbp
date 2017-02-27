@@ -17,16 +17,16 @@ RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Dispatch(routers/GroupRouter)
-'user,storage,main,project,github,runtime,context' -> ROUTES Dispatch
+'user,storage,github,main,project,runtime,context' -> ROUTES Dispatch
 # Reducers for producing state changes from actions
 Dispatch OUT[0] -> IN UserReducer(ui/UserReducer) STATE -> STATE UpdateState(ui/UpdateState)
 Dispatch OUT[1] -> IN StorageReducer(ui/StorageReducer) STATE -> STATE UpdateState
+Dispatch OUT[2] -> IN GithubReducer(ui/GithubReducer) STATE -> STATE UpdateState
 # Legacy stores
-Dispatch OUT[2] -> IN CleanContext(ui/CleanAction) OUT -> START MainContext(ui/CreateContext)
-Dispatch OUT[3] -> IN CleanProject(ui/CleanAction) OUT -> ProjectStorage(ui/ProjectStorage)
-Dispatch OUT[4] -> IN CleanGithub(ui/CleanAction) OUT -> GithubStorage(ui/GithubStorage)
+Dispatch OUT[3] -> IN CleanContext(ui/CleanAction) OUT -> START MainContext(ui/CreateContext)
+Dispatch OUT[4] -> IN CleanProject(ui/CleanAction) OUT -> ProjectStorage(ui/ProjectStorage)
 Dispatch OUT[5] -> IN CleanRuntime(ui/CleanAction) OUT -> RuntimeStorage(ui/RuntimeStorage)
-Dispatch OUT[5] -> IN CleanContext(ui/CleanAction) OUT -> ContextStorage(ui/ContextStorage)
+Dispatch OUT[6] -> IN CleanContext(ui/CleanAction) OUT -> ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Pass local and GH contexts to runtime storage for remote node handling
