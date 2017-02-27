@@ -15,7 +15,7 @@ exports.getComponent = ->
     out: 'runtime'
     async: true
   , (data, groups, out, callback) ->
-    return unless data['grid-token']
+    return callback() unless data['grid-token']
     registry.list data['grid-token'],
       host: '$NOFLO_REGISTRY_SERVICE'
     , (err, runtimes) ->

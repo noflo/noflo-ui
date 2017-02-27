@@ -80,7 +80,7 @@
           });
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
-          this.emitEvent('github:fetch', event.detail);
+          this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('fetchRuntimes', function (event) {
           this.emitEvent('flowhub:runtimes:fetch', event.detail);

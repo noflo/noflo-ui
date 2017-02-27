@@ -17,11 +17,11 @@ RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Dispatch(routers/GroupRouter)
-'user,storage,github,main,project,runtime,context' -> ROUTES Dispatch
+'user,storage,flowhub,main,project,runtime,context' -> ROUTES Dispatch
 # Reducers for producing state changes from actions
 Dispatch OUT[0] -> IN UserReducer(ui/UserReducer) STATE -> STATE UpdateState(ui/UpdateState)
 Dispatch OUT[1] -> IN StorageReducer(ui/StorageReducer) STATE -> STATE UpdateState
-Dispatch OUT[2] -> IN GithubReducer(ui/GithubReducer) STATE -> STATE UpdateState
+Dispatch OUT[2] -> IN FlowhubReducer(ui/FlowhubReducer) STATE -> STATE UpdateState
 # Legacy stores
 Dispatch OUT[3] -> IN CleanContext(ui/CleanAction) OUT -> START MainContext(ui/CreateContext)
 Dispatch OUT[4] -> IN CleanProject(ui/CleanAction) OUT -> ProjectStorage(ui/ProjectStorage)
