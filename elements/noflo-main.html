@@ -250,7 +250,7 @@
       </section>
     <section id="runtimes">
       <h2>
-        Runtimes <small>{{ userRuntimes.length }} / {{ runtimes.length }}</small>
+        Runtimes <small>{{ runtimes.length }} / {{ runtimes.length }}</small>
         <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">
@@ -267,7 +267,7 @@
           </li>
         </template>  
 
-        <template repeat="{{ userRuntimes }}">
+        <template repeat="{{ runtimes }}">
           <li on-click="{{ openRuntime }}" data-id="{{ id }}" data-protocol="{{ protocol }}" class="runtime {{ type }}">
             <h2>{{ label }}</h2>
             <p>{{ address }}. Seen {{ seenHoursAgo }}h ago</p>
@@ -297,7 +297,6 @@
       projects: [],
       remoteProjects: [],
       runtimes: [],
-      userRuntimes: [],
       examples: [],
       githubToken: '',
       gridToken: '',
@@ -405,27 +404,6 @@
           return;
         }
         this.fire('fetchRemote', this.gridToken);
-      },
-      runtimesChanged: function () {
-        this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
-      },
-      checkRuntimeSeen: function (runtime) {
-        if (!runtime.seen) {
-          if (runtime.protocol === 'iframe' || runtime.protocol === 'microflo') {
-            runtime.seen = Date.now();
-          } else {
-            // Non-persistent runtime, don't show
-            return;
-          }
-        }
-        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000));
-        if ((runtime.seenHoursAgo / 24) > 31) {
-          // We haven't seen this runtime in over a month, don't show it
-          return;
-        }
-        if (this.userRuntimes.indexOf(runtime) === -1) {
-          this.userRuntimes.push(runtime);
-        }
       },
       fetchRuntimes: function (event) {
         this.fire('fetchRuntimes', true);
@@ -568,7 +546,6 @@
         document.body.appendChild(this.runtimeAdd);
         this.runtimeAdd.addEventListener('new', function(event) {
           var runtime = event.detail;
-          this.userRuntimes.push(runtime);
           this.runtimes.push(runtime);
         }.bind(this));
       }

@@ -38,6 +38,9 @@ exports.getComponent = ->
       when 'spec'
         addToList 'spec', data.state.specs.local, data.payload
       when 'runtime'
+        if data.payload.protocol in ['iframe', 'microflo']
+          data.payload.seen = Date.now()
+        data.payload.seenHoursAgo = Math.floor((Date.now() - new Date(data.payload.seen).getTime()) / (60*60*1000))
         addToList 'runtime', data.state.runtimes.local, data.payload
 
     out.send data.state
