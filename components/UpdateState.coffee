@@ -88,7 +88,7 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
     datatype: 'object'
-  c.inPorts.add 'user',
+  c.inPorts.add 'state',
     datatype: 'object'
   c.outPorts.add 'state',
     datatype: 'object'
@@ -97,8 +97,9 @@ exports.getComponent = ->
   c.shutdown = ->
     c.state = produceInitialState()
 
-  c.inPorts.user.on 'data', (data) ->
-    c.state.user = data
+  c.inPorts.state.on 'data', (data) ->
+    for key, val of data
+      c.state[key] = val
     c.outPorts.state.send c.state
 
   noflo.helpers.WirePattern c,

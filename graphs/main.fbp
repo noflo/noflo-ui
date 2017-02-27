@@ -1,8 +1,3 @@
-# Prepare IndexedDB
-'noflo-ui' -> NAME PrepareStorage(ui/PrepareStorage)
-PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
-PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
-
 # Event dispatching
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # First we send the events to middlewares, and allow them
@@ -10,7 +5,9 @@ AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 StoreDispatch OUT -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
 UrlMiddleware NEW -> ACTION StoreDispatch
-UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
+UrlMiddleware PASS -> IN StorageMiddleware(ui/StorageMiddleware)
+StorageMiddleware NEW -> ACTION StoreDispatch
+StorageMiddleware PASS ->IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> ACTION StoreDispatch
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
 GithubMiddleware NEW -> ACTION StoreDispatch
@@ -19,20 +16,18 @@ RegistryMiddleware NEW -> ACTION StoreDispatch
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
-RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
-'user,main,project,github,runtime,context' -> ROUTES Dispatch
-Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
-Dispatch OUT[1] -> START MainContext(ui/CreateContext)
-Dispatch OUT[2] -> IN ProjectStorage
-Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage)
-Dispatch OUT[4] -> IN RuntimeStorage
-Dispatch OUT[5] -> IN ContextStorage(ui/ContextStorage)
+RuntimeMiddleware PASS -> IN Dispatch(routers/GroupRouter)
+'user,storage,main,project,github,runtime,context' -> ROUTES Dispatch
+# Reducers for producing state changes from actions
+Dispatch OUT[0] -> IN UserReducer(ui/UserReducer) STATE -> STATE UpdateState(ui/UpdateState)
+Dispatch OUT[1] -> IN StorageReducer(ui/StorageReducer) STATE -> STATE UpdateState
+# Legacy stores
+Dispatch OUT[2] -> IN CleanContext(ui/CleanAction) OUT -> START MainContext(ui/CreateContext)
+Dispatch OUT[3] -> IN CleanProject(ui/CleanAction) OUT -> ProjectStorage
+Dispatch OUT[4] -> IN CleanGithub(ui/CleanAction) OUT -> GithubStorage(ui/GithubStorage)
+Dispatch OUT[5] -> IN CleanRuntime(ui/CleanAction) OUT -> RuntimeStorage
+Dispatch OUT[5] -> IN CleanContext(ui/CleanAction) OUT -> ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
-
-# Base data to UI
-UserReducer USER -> USER UpdateState
-UserReducer USER -> USER GithubStorage
-UserReducer CONTEXT -> CONTEXT UpdateState(ui/UpdateState)
 
 # Pass local and GH contexts to runtime storage for remote node handling
 ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
@@ -55,7 +50,3 @@ UpdateState STATE -> STATE AppView
 # Handle resizes
 ListenWindow WIDTH -> WIDTH AppView
 ListenWindow HEIGHT -> HEIGHT AppView
-
-# Display storage errors
-PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT UpdateState
-PrepareStorage ERROR ->  IN ShowErrors

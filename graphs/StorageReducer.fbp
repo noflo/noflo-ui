@@ -1,0 +1,12 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeState.OUT:STATE
+
+'db,error' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Set database connection to state
+'db' -> KEY SetDb(ui/SetStateValue)
+Dispatch OUT[0] -> IN SetDb OUT -> IN MergeState(core/Merge)
+
+# Set error to state
+Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeState
