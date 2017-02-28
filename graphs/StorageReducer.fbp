@@ -1,7 +1,7 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeState.OUT:STATE
 
-'db,stored,error' -> ROUTES Dispatch(routers/GroupRouter)
+'db,stored,removed,error' -> ROUTES Dispatch(routers/GroupRouter)
 
 # Set database connection to state
 'db' -> KEY SetDb(ui/SetStateValue)
@@ -13,6 +13,10 @@ StoredToState OUT -> IN UpdateProjects(ui/UpdateProjectRelations)
 UpdateProjects OUT -> IN FilterExamples(ui/FilterExamples)
 FilterExamples OUT -> IN MergeState
 
+# Update state based on persisted data
+Dispatch OUT[2] -> IN RemovedFromState(ui/RemovedFromState)
+RemovedFromState OUT -> IN UpdateProjects
+
 # Set error to state
-Dispatch OUT[2] -> ERROR ErrorToCtx(ui/ErrorToContext)
+Dispatch OUT[3] -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeState
