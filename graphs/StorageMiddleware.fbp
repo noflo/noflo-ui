@@ -25,8 +25,9 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:removed:spec' -> ACTION RemovedSpecAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:removed:runtime' -> ACTION RemovedRuntimeAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:error' -> ACTION StorageErrorAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
-'workspace:project' -> ACTION WorkspaceProjectAction(ui/SetAction) OUT -> IN Passed
 'workspace:error' -> ACTION WorkspaceErrorAction(ui/SetAction) OUT -> IN NewActions
+# Actions manipulated and passed on by this middleware
+'workspace:project' -> ACTION WorkspaceProjectAction(ui/SetAction) OUT -> IN Passed
 
 # Prepare IndexedDB database
 'noflo-ui' -> STRING DbName(strings/SendString)
