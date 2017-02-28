@@ -1,7 +1,6 @@
 INPORT=Read.DB:DB
 INPORT=Store.IN:STORE
-OUTPORT=Query.ITEM:ITEM
-OUTPORT=Read.COMPLETE:COMPLETE
+OUTPORT=ToArray.OUT:ITEMS
 OUTPORT=Errors.OUT:ERROR
 
 '' -> STRING HoldQuery(strings/SendString)
@@ -13,6 +12,7 @@ Store OUT -> NAME GetStore(indexeddb/GetStore)
 Read TRANSACTION -> TRANSACTION GetStore
 GetStore STORE -> STORE Query(indexeddb/Query)
 HoldQuery OUT -> ALL Query
+Query ITEM -> IN RemoveGroups(groups/RemoveGroups) OUT -> IN ToArray(adapters/PacketsToArray)
 
 # Error handling
 Read ERROR -> IN Errors(core/Merge)
