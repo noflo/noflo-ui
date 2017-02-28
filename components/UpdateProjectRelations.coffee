@@ -3,6 +3,8 @@ noflo = require 'noflo'
 getId = (type, entity) ->
   if type is 'component'
     return entity.name
+  if type is 'graph'
+    return entity.properties.id or entity.id
   entity.id
 
 addToList = (type, list, entity) ->

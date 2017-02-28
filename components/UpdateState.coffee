@@ -53,6 +53,8 @@ produceInitialState = ->
 getId = (type, entity) ->
   if type is 'components'
     return entity.name
+  if type is 'graph'
+    return entity.properties.id or entity.id
   entity.id
 
 mergeLists = (type, original, newList) ->

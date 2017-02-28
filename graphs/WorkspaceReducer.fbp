@@ -1,0 +1,19 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeState.OUT:STATE
+OUTPORT=Dispatch.MISSED:MISSED
+
+'main,project,runtime,error' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Clear current workspace state when going main
+Dispatch OUT[0] -> IN ClearWorkspace(ui/ClearWorkspace)
+ClearWorkspace OUT -> IN MergeState(core/Merge)
+
+# Set workspace to project context
+Dispatch OUT[1] -> IN SetWorkspace(ui/PrepareWorkspace)SetWorkspace OUT -> IN MergeState
+
+# Set workspace to runtime context
+Dispatch OUT[2] -> IN SetWorkspace
+
+# Set error to state
+Dispatch OUT[3] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeState
