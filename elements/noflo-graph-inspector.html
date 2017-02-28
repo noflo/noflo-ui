@@ -164,14 +164,6 @@
         if (this.project) {
           if (this.graph.properties.id === this.project.main) {
             this.isMain = true;
-          } else {
-            this.project.graphs.forEach(function (graph) {
-              graph.nodes.forEach(function (node) {
-                if (node.component === this.graph.name || node.component === this.project.id + '/' + this.graph.name) {
-                  this.inGraph.push(graph);
-                }
-              }.bind(this));
-            }.bind(this));
           }
           this.project.specs.forEach(function (spec) {
             if (spec.name === this.graph.name) {
