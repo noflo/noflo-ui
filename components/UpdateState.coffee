@@ -39,6 +39,7 @@ produceInitialState = ->
       local: []
       remote: []
     runtimes:
+      current: []
       local: []
     graphs:
       local: []

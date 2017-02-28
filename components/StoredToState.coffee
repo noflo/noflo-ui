@@ -43,5 +43,9 @@ exports.getComponent = ->
         data.payload.seenHoursAgo = Math.floor((Date.now() - new Date(data.payload.seen).getTime()) / (60*60*1000))
         addToList 'runtime', data.state.runtimes.local, data.payload
 
+        if (data.payload.seenHoursAgo / 24) < 31
+          # If the runtime has been seen within last month, consider it current
+          addToList 'runtime', data.state.runtimes.current, data.payload
+
     out.send data.state
     do callback

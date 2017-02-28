@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
-<polymer-element name="noflo-main" attributes="project localProjects graphs components userRuntimes">
+<polymer-element name="noflo-main" attributes="project projects graphs components runtimes currentRuntimes">
   <template>
     <style>
       :host {
@@ -250,7 +250,7 @@
       </section>
     <section id="runtimes">
       <h2>
-        Runtimes <small>{{ runtimes.length }} / {{ runtimes.length }}</small>
+        Runtimes <small>{{ currentRuntimes.length }} / {{ runtimes.length }}</small>
         <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">
@@ -267,7 +267,7 @@
           </li>
         </template>  
 
-        <template repeat="{{ runtimes }}">
+        <template repeat="{{ currentRuntimes }}">
           <li on-click="{{ openRuntime }}" data-id="{{ id }}" data-protocol="{{ protocol }}" class="runtime {{ type }}">
             <h2>{{ label }}</h2>
             <p>{{ address }}. Seen {{ seenHoursAgo }}h ago</p>
@@ -297,6 +297,7 @@
       projects: [],
       remoteProjects: [],
       runtimes: [],
+      currentRuntimes: [],
       examples: [],
       githubToken: '',
       gridToken: '',
