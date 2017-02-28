@@ -29,7 +29,7 @@ matchUrl = (url) ->
     when 'runtime'
       # Live mode with remote runtime
       routeData =
-        action: 'workspace:runtime'
+        action: 'workspace:remote'
         payload: {}
       routeData.payload.runtime = urlParts.shift()
       routeData.payload.nodes = urlParts

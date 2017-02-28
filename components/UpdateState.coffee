@@ -120,11 +120,6 @@ exports.getComponent = ->
       # Updating loading/ok status
       c.state.state = data.state
       delete data.state
-    if data.persisted
-      # Storage save/delete action
-      if data.persisted.action is 'save'
-        addToList data.persisted.type, c.state[data.persisted.type].local, data.persisted.entity
-        delete data.persisted
     if data.clearLibrary
       # Remove all items from component library
       clearList c.state.workspace.library
@@ -134,14 +129,6 @@ exports.getComponent = ->
       addToList 'components', c.state.workspace.library, data.componentDefinition
       delete data.componentDefinition
 
-    if typeof data.project isnt 'undefined'
-      if data.project
-        # Project opened
-        c.state.workspace.project = data.project
-      else
-        # Switched away from project, clear all current workspace
-        clearWorkspace c.state.workspace
-      delete data.project
     if typeof data.runtime isnt 'undefined'
       c.state.workspace.runtime.selected = data.runtime
       delete data.runtime
@@ -149,13 +136,6 @@ exports.getComponent = ->
       clearList c.state.workspace.runtime.compatible
       mergeLists 'runtimes', c.state.workspace.runtime.compatible, data.compatibleRuntimes
       delete data.compatibleRuntimes
-    if data.graphs
-      c.state.workspace.graphs = data.graphs
-      c.state.workspace.graph = data.graphs[data.graphs.length - 1] or null
-      delete data.graphs
-    if typeof data.component isnt 'undefined'
-      c.state.workspace.component = data.component
-      delete data.component
 
     if data.edges
       c.state.workspace.selection.edges = data.edges

@@ -9,10 +9,10 @@ Dispatch OUT[0] -> IN ClearWorkspace(ui/ClearWorkspace)
 ClearWorkspace OUT -> IN MergeState(core/Merge)
 
 # Set workspace to project context
-Dispatch OUT[1] -> IN SetWorkspace(ui/PrepareWorkspace)SetWorkspace OUT -> IN MergeState
+Dispatch OUT[1] -> IN SetWorkspace(ui/PrepareWorkspace) OUT -> IN MergeState
 
 # Set workspace to runtime context
-Dispatch OUT[2] -> IN SetWorkspace
+Dispatch OUT[2] -> IN SetWorkspaceRuntime(ui/PrepareWorkspaceRuntime) OUT -> IN MergeState
 
 # Set error to state
 Dispatch OUT[3] -> ERROR ErrorToCtx(ui/ErrorToContext)
