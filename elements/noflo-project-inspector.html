@@ -28,7 +28,7 @@
           <span>Main graph</span>
           <select name="type" value="{{ main }}">
             <template repeat="{{ graph in project.graphs }}">
-            <option value="{{ graph.properties.id }}">{{ graph.name }}</option>
+            <option value="{{ graph.id }}">{{ graph.properties.name }}</option>
             </template>
           </select>
         </label>

@@ -13,6 +13,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:stored:component' -> ACTION StorageComponentAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:stored:spec' -> ACTION StorageSpecAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:stored:runtime' -> ACTION StorageRuntimeAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
+'storage:ready' -> ACTION StorageReadyAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:removed:project' -> ACTION RemovedProjectAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:removed:graph' -> ACTION RemovedGraphAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:removed:component' -> ACTION RemovedComponentAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
@@ -37,6 +38,7 @@ LoadData GRAPH -> IN StorageGraphAction
 LoadData COMPONENT -> IN StorageComponentAction
 LoadData SPEC -> IN StorageSpecAction
 LoadData RUNTIME -> IN StorageRuntimeAction
+LoadData COMPLETE -> IN StorageReadyAction
 LoadData ERROR -> IN StorageErrorAction
 
 # Saving data to the DB
