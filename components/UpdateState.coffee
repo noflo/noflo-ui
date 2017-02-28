@@ -16,12 +16,13 @@ produceInitialState = ->
       project: null
       # Graph tree we're in
       graphs: []
-      # Current graph in view
+      # Current graph in view. Instance of fbp-graph.Graph
       graph: null
       # Current component in view
       component: null
       # Runtime connection
       runtime:
+        # Currently connected runtime. Instance of fbp-runtime-client
         selected: null
         compatible: []
       library: []
