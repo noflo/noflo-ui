@@ -91,7 +91,6 @@ exports.getComponent = ->
     async: true
   , (url, groups, out, callback) ->
     matched = matchUrl url
-    console.log url, matched
     unless matched
       out.missed.send url
       return callback()
