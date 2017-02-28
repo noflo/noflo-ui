@@ -39,6 +39,11 @@ exports.getComponent = ->
         out.invalid.send data
         do callback
         return
+      if req.status is 504
+        # Cannot reach service, use existing data
+        out.pass.send data
+        do callback
+        return
       unless req.status is 200
         try
           data = JSON.parse req.responseText
