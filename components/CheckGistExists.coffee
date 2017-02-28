@@ -20,7 +20,7 @@ exports.getComponent = ->
       return
 
     existing = data.state.projects.filter (project) ->
-      project.gist is data.payload.graph
+      project.gist is data.payload.gist
     unless existing.length
       out.new.send data
       do callback

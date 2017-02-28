@@ -23,10 +23,10 @@ exports.getComponent = ->
     api.token data.state.user['github-token'] if data.state.user?['github-token']
 
     project =
-      id: data.payload.graph
-      gist: data.payload.graph
+      id: data.payload.gist
+      gist: data.payload.gist
 
-    request = api.get "/gists/#{data.payload.graph}"
+    request = api.get "/gists/#{data.payload.gist}"
     request.on 'success', (res) ->
       for name, file of res.body.files
         basename = path.basename name, path.extname name
