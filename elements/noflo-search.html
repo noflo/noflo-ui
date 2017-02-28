@@ -303,9 +303,7 @@
           this.resultsCard.search = this.search;
         }
         var event = this.searchLibrary ? 'search:library' : 'search:graph';
-        this.fire(event, {
-          search: this.search
-        });
+        this.fire(event, this.search);
       },
       libraryresultsChanged: function () {
         if (!this.searchLibrary)

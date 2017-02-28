@@ -3,6 +3,7 @@
     Polymer('noflo-library', {
       search: null,
       editor: null,
+      components: [],
       graphs: [],
       project: null,
       addNode: function (component) {
@@ -36,61 +37,67 @@
 
         graph.endTransaction('addnode');
       },
+      componentsChanged: function () {
+        this.components.forEach(function (definition) {
+          this.editor.registerComponent(definition);
+        }.bind(this));
+      },
       searchChanged: function () {
         if (typeof this.search !== 'string') {
           return;
         }
-        if (!this.editor) {
-          return;
-        }
-        var library = this.editor.getLibrary();
-        if (!library) {
-          return;
-        }
-        Object.keys(library).forEach(function (name) {
-          var match = false;
-          var component = this.editor.getComponent(name);
+        var search = this.search.toLowerCase();
+        var matching = this.components.filter(function (component) {
           if (this.search === '') {
             // Empty search, all components match
-            match = true;
-          } else {
-            if (name.toLowerCase().indexOf(this.search.toLowerCase()) !== -1) {
-              // Component name matches
-              match = true;
-            }
-            if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(this.search.toLowerCase()) !== -1) {
-              // Component description matches
-              match = true;
+            return true;
+          }
+          var name = component.name.toLowerCase();
+          if (name.indexOf(search) !== -1) {
+            // Component name matches search
+            return true;
+          }
+          if (typeof component.description === 'string') {
+            var description = component.description.toLowerCase();
+            if (description.indexOf(search) !== -1) {
+              // Component description matches search
+              return true;
             }
           }
-          if (!match) {
-            return;
+          return false;
+        }).filter(function (component) {
+          if (!component.subgraph) {
+            return true;
           }
-          if (component.subgraph && this.project) {
-            var nameParts = component.name.split('/');
-            if (nameParts[0] === this.project.id) {
-              for (var i = 0; i < this.graphs.length; i++) {
-                if (this.graphs[i].name === nameParts[1] || this.graphs[i].properties.id === nameParts[1]) {
-                  // Prevent circular dependencies
-                  return;
-                }
+          if (!this.project) {
+            return true;
+          }
+          var nameParts = component.name.split('/');
+          if (nameParts[0] === this.project.id) {
+            for (var i = 0; i < this.graphs.length; i++) {
+              if (this.graphs[i].properties.name === nameParts[1] || this.graphs[i].id === nameParts[1]) {
+                // Prevent circular dependencies
+                return false;
               }
             }
           }
-          // timeout required because events fired by polymer that are received
-          // by graph router need to clean up before the graph receives another event
-          window.setTimeout(function () {
-            this.fire('result', {
-              name: component.name,
-              label: component.name,
-              icon: component.icon || 'cog',
-              description: component.description,
-              action: function () {
-                this.addNode(component);
-              }.bind(this)
-            });
-          }.bind(this), 0);
+          return true;
+        }.bind(this)).map(function (component) {
+          return {
+            name: component.name,
+            label: component.name,
+            icon: component.icon || 'cog',
+            description: component.description,
+            action: function () {
+              this.addNode(component);
+            }.bind(this)
+          };
         }.bind(this));
+        // timeout required because events fired by polymer that are received
+        // by graph router need to clean up before the graph receives another event
+        setTimeout(function () {
+          this.fire('results', matching);
+        }.bind(this), 0);
       }
     });
   </script>

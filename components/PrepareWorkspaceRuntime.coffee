@@ -6,8 +6,6 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'out',
     datatype: 'object'
-  c.outPorts.add 'error',
-    datatype: 'object'
 
   noflo.helpers.WirePattern c,
     async: true

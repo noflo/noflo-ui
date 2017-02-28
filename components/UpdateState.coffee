@@ -124,14 +124,6 @@ exports.getComponent = ->
       # Remove all items from component library
       clearList c.state.workspace.library
       delete data.clearLibrary
-    if data.componentDefinition
-      # Component defs coming from runtime
-      addToList 'components', c.state.workspace.library, data.componentDefinition
-      delete data.componentDefinition
-
-    if typeof data.runtime isnt 'undefined'
-      c.state.workspace.runtime.selected = data.runtime
-      delete data.runtime
     if data.compatibleRuntimes
       clearList c.state.workspace.runtime.compatible
       mergeLists 'runtimes', c.state.workspace.runtime.compatible, data.compatibleRuntimes
@@ -143,16 +135,6 @@ exports.getComponent = ->
     if data.nodes
       c.state.workspace.selection.nodes = data.nodes
       delete data.nodes
-
-    if typeof data.search isnt 'undefined'
-      c.state.workspace.search.query = data.search
-      clearList c.state.workspace.search.components
-      clearList c.state.workspace.search.nodes
-      delete data.search
-
-    if data.searchLibraryResult
-      addToList 'components', c.state.workspace.search.components, data.searchLibraryResult
-      delete data.searchLibraryResult
 
     unhandled = Object.keys data
     debugUnhandled data if unhandled.length

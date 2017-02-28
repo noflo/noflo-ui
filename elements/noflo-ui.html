@@ -179,15 +179,13 @@
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
-          this.emitEvent('context:search_library', event.detail);
+          this.emitEvent('workspace:search:library', event.detail);
         }.bind(this));
         this.$.search.addEventListener('search:graph', function (event) {
-          this.emitEvent('context:search_graph', event.detail);
+          this.emitEvent('workspace:search:graph', event.detail);
         }.bind(this));
-        this.$.library.addEventListener('result', function (event) {
-          this.emitEvent('context:search_library_result', {
-            searchLibraryResult: event.detail
-          });
+        this.$.library.addEventListener('results', function (event) {
+          this.emitEvent('workspace:search:results:library', event.detail);
         }.bind(this));
         this.$.search.addEventListener('deleteGraph', function (event) {
           var project = this.ctx.project || this.$.project.project;
@@ -324,7 +322,8 @@
         this.$.library.search = state.workspace.search.query;
         this.$.search.libraryresults = state.workspace.search.components;
         this.$.search.graphResults = state.workspace.search.nodes;
-        // TODO: error, packet, sync, library, suites
+        this.$.library.components = state.workspace.library;
+        // TODO: error, packet, sync, suites
       },
       handleStatus: function (state) {
         if (!state.state) {
