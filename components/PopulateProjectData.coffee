@@ -1,20 +1,5 @@
 noflo = require 'noflo'
 
-buildContext = ->
-  ctx =
-    state: ''
-    project: null
-    runtime: null
-    component: null
-    graphs: []
-    remote: []
-
-sendError = (out, err) ->
-  ctx = buildContext()
-  ctx.state = 'error'
-  ctx.error = err
-  out.send ctx
-
 findProject = (id, projects) ->
   return unless projects
   for project in projects
@@ -56,58 +41,63 @@ exports.getComponent = ->
     datatype: 'object'
   c.inPorts.add 'projects',
     required: true
-    datatype: 'array'
+    datatype: 'object'
   c.outPorts.add 'out',
     datatype: 'object'
-  c.outPorts.add 'currentgraph',
+  c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'in'
     params: ['projects']
-    out: ['out', 'currentgraph']
-  , (route, groups, out) ->
-    # Match to local data
-    ctx = buildContext()
-    ctx.project = findProject route.project, c.params.projects
-    return sendError out.out, new Error 'No project found' unless ctx.project
-
-    if route.component
-      ctx.component = findComponent route.component, ctx.project
-      return sendError out.out, new Error 'No component found' unless ctx.component
-      ctx.state = 'ok'
-      out.out.send ctx
+    out: 'out'
+    async: true
+  , (data, groups, out, callback) ->
+    project = findProject data.project, c.params.projects.local
+    unless project
+      callback new Error "Project #{data.project} not found"
       return
+    data.project = project
 
-    mainGraph = findGraph route.graph, ctx.project
-    return sendError out.out, new Error 'No main graph found' unless mainGraph
-    ctx.graphs.push mainGraph
+    if data.component
+      component = findComponent data.component, project
+      unless component
+        callback new Error "Project #{data.project.id} graph #{data.component} not found"
+        return
+      out.send data
+      return callback()
+
+    unless data.graph
+      data.graph = project.main
+
+    mainGraph = findGraph data.graph, project
+    unless mainGraph
+      callback new Error "Graph #{data.graph} not found"
+      return
+    data.graphs = [mainGraph]
+    delete data.graph
 
     currentGraph = mainGraph
-    while route.nodes.length
-      nodeId = route.nodes.shift()
-      unless typeof currentGraph is 'object'
-        ctx.remote.push nodeId
-        continue
+    while data.nodes.length
+      # Traverse node tree as far as we can fill it
+      # from local data
+      nodeId = route.nodes[0]
       node = currentGraph.getNode nodeId
-      return sendError out.out, new Error "Node #{nodeId} not found" unless node
-      return sendError out.out, new Error "Node #{nodeId} has no component defined" unless node.component
-      [type, currentGraph] = findByComponent node.component, ctx.project
-
-      if type is 'component'
-        ctx.component = currentGraph
-        return sendError out.out, new Error 'Component cannot have subnodes' if route.nodes.length
+      return callback new Error "Node #{nodeId} not found" unless node
+      return callback new Error "Node #{nodeId} has no component defined" unless node.component
+      [type, currentGraph] = findByComponent node.component, project
+      if type is 'runtime'
+        # This node can't be found locally, let
+        # runtime provide it
         break
 
-      if type is 'runtime'
-        ctx.remote.push currentGraph
-        continue
+      if type is 'component'
+        data.component = currentGraph
+        return callback new Error 'Component cannot have subnodes' if route.nodes.length
+        break
 
-      ctx.graphs.push currentGraph
+      data.graphs.push currentGraph
+      route.nodes.shift()
 
-    ctx.state = 'ok'
-    ctx.state = 'loading' if ctx.remote.length
-    out.currentgraph.send ctx.graphs[ctx.graphs.length - 1] if ctx.graphs
-    out.out.send ctx
-
-  c
+    out.send data
+    return
