@@ -39,7 +39,12 @@ Connect UNAVAILABLE -> IN RuntimeUnavailableAction
 Connect ERROR -> IN RuntimeErrorAction
 
 # Dealing with a connected runtime
-Dispatch HANDLE[3] -> IN ConnectedRuntime(ui/GetActionValues)
+'workspace' -> KEYS ConnectedRuntime(ui/GetActionValues)
+Dispatch HANDLE[3] -> IN ConnectedRuntime
+# Get list of components from the runtime
 ConnectedRuntime OUT -> RUNTIME ListComponents(runtime/ListComponents)
 ListComponents OUT -> IN WorkspaceComponentAction
 ListComponents ERROR -> IN RuntimeErrorAction
+# Send current project to runtime
+ConnectedRuntime VALUES[0] -> IN SendProject(ui/WorkspaceToRuntime)
+SendProject ERROR -> IN RuntimeErrorAction
