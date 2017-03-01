@@ -1,14 +1,12 @@
 noflo = require 'noflo'
 
-sendProject = (project, runtime) ->
-  console.log "PROJECT", project
-  console.log "RUNTIME", runtime
-  if project.components
-    sendComponent component, runtime for component in project.components
-  if project.graphs
-    sendGraph graph, runtime, project for graph in project.graphs
+sendProject = (project, runtime, out) ->
+  if project.components?.length
+    sendComponent component, runtime, out.component for component in project.components
+  if project.graphs?.length
+    sendGraph graph, runtime, project, out.graph for graph in project.graphs
 
-sendComponent = (component, runtime) ->
+sendComponent = (component, runtime, out) ->
   return unless component.code
 
   # Check for platform-specific components
@@ -16,93 +14,100 @@ sendComponent = (component, runtime) ->
   if runtimeType
     return unless runtimeType[1] in ['all', runtime.definition.type]
 
-  return unless runtime.canDo 'component:setsource'
+  out.send
+    command: 'source'
+    payload:
+      name: component.name
+      language: component.language
+      library: component.project or component.library
+      code: component.code
+      tests: component.tests
 
-  runtime.sendComponent 'source',
-    name: component.name
-    language: component.language
-    library: component.project or component.library
-    code: component.code
-    tests: component.tests
-
-sendGraph = (graph, runtime, project) ->
+sendGraph = (graph, runtime, project, out) ->
   if graph.properties.environment?.type
     return unless graph.properties.environment.type in ['all', runtime.definition.type]
 
-  return unless runtime.canDo 'protocol:graph'
-
   graphId = graph.properties.name or graph.id
-  runtime.sendGraph 'clear',
-    id: graphId
-    name: graph.name
-    library: graph.properties.project
-    main: (not project or graph.properties.id is project.main)
-    icon: graph.properties.icon or ''
-    description: graph.properties.description or ''
+  out.send
+    command: 'clear'
+    payload:
+      id: graphId
+      name: graph.name
+      library: graph.properties.project
+      main: (not project or graph.properties.id is project.main)
+      icon: graph.properties.icon or ''
+      description: graph.properties.description or ''
   for name, def of graph.processes
-    runtime.sendGraph 'addnode',
-      id: name
-      component: def.component
-      metadata: def.metadata
-      graph: graphId
+    out.send
+      command: 'addnode'
+      payload:
+        id: name
+        component: def.component
+        metadata: def.metadata
+        graph: graphId
   for edge in graph.connections
     if edge.src
-      runtime.sendGraph 'addedge',
+      out.send
+        command: 'addedge'
+        payload:
+          src:
+            node: edge.src.node
+            port: edge.src.port
+          tgt:
+            node: edge.tgt.node
+            port: edge.tgt.port
+          metadata: edge.metadata
+          graph: graphId
+      continue
+    out.send
+      command: 'addinitial'
+      payload:
         src:
-          node: edge.src.node
-          port: edge.src.port
+          data: edge.data
         tgt:
           node: edge.tgt.node
           port: edge.tgt.port
         metadata: edge.metadata
         graph: graphId
-      continue
-    runtime.sendGraph 'addinitial',
-      src:
-        data: edge.data
-      tgt:
-        node: edge.tgt.node
-        port: edge.tgt.port
-      metadata: edge.metadata
-      graph: graphId
   if graph.inports
     for pub, priv of graph.inports
-      runtime.sendGraph 'addinport',
-        public: pub
-        node: priv.process
-        port: priv.port
-        metadata: priv.metadata
-        graph: graphId
+      out.send
+        command: 'addinport'
+        payload:
+          public: pub
+          node: priv.process
+          port: priv.port
+          metadata: priv.metadata
+          graph: graphId
   if graph.outports
     for pub, priv of graph.outports
-      runtime.sendGraph 'addoutport',
-        public: pub
-        node: priv.process
-        port: priv.port
-        metadata: priv.metadata
-        graph: graphId
+      out.send
+        command: 'addoutport'
+        payload:
+          public: pub
+          node: priv.process
+          port: priv.port
+          metadata: priv.metadata
+          graph: graphId
 
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'object'
-  c.outPorts.add 'out',
+  c.outPorts.add 'graph',
     datatype: 'object'
-  c.outPorts.add 'error',
+  c.outPorts.add 'component',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
+    out: ['graph', 'component']
     async: true
   , (data, groups, out, callback) ->
     unless data.project
       # No project to send
-      out.send data
       return callback()
     unless data.runtime.selected
       # No runtime to send to
-      out.send data
       return callback()
-    sendProject data.project, data.runtime.selected, (err) ->
-      return callback err if err
-      out.send data
-      do callback
+    sendProject data.project, data.runtime.selected, out
+    do callback
