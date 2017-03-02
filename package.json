@@ -41,7 +41,7 @@
     "noflo-runtime": "~0.3.13",
     "noflo-runtime-base": "^0.7.3",
     "noflo-runtime-webrtc": "~0.7.3",
-    "noflo-strings": "~0.2.0",
+    "noflo-strings": "~0.3.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.6.0",
     "webcomponents.js": "^0.6.0"
