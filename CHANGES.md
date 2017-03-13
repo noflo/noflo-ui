@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.18.0 (2017 March 13)
+
+New features
+
+* Single sign-on link for managing user's [Flowhub Plan](https://plans.flowhub.io)
+
 # 0.17.0 (2017 February 20)
 
 Bugfixes
