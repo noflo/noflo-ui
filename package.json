@@ -68,7 +68,7 @@
     "grunt-zip": "^0.17.0",
     "mocha": "^3.2.0",
     "simple-server": "^1.0.1",
-    "sinon": "^1.17.7",
+    "sinon": "^2.0.0",
     "syn": "^0.4.2",
     "yaml-include-loader": "^1.0.0"
   },
