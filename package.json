@@ -44,7 +44,7 @@
     "noflo-strings": "~0.2.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.6.0",
-    "webcomponents.js": "^0.6.0"
+    "webcomponents.js": "^0.7.24"
   },
   "devDependencies": {
     "chai": "^3.5.0",
