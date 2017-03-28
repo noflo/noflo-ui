@@ -1,0 +1,8 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeState.OUT:STATE
+
+'error' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Set error to state
+Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeState(core/Merge)
