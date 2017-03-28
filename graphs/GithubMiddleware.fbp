@@ -8,6 +8,7 @@ OUTPORT=NewActions.OUT:NEW
 'application:hash' -> ACTION ApplicationRedirectAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:save:graph' -> ACTION SaveGraphAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:save:component' -> ACTION SaveComponentAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
+'storage:save:spec' -> ACTION SaveSpecAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:save:project' -> ACTION SaveProjectAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'github:error' -> ACTION ErrorAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 
@@ -16,7 +17,12 @@ Dispatch HANDLE[0] -> IN CheckRepo(ui/CheckRepoExists)
 # If it already exists, redirect
 CheckRepo EXISTING -> IN ApplicationRedirectAction
 # If not, download as new project
-CheckRepo NEW -> IN Debug(core/Output)
+CheckRepo NEW -> IN GetRepo(ui/RepoToProject)
+GetRepo GRAPH -> IN SaveGraphAction
+GetRepo COMPONENT -> IN SaveComponentAction
+GetRepo SPEC -> IN SaveSpecAction
+GetRepo PROJECT -> IN SaveProjectAction
+GetRepo ERROR -> IN ErrorAction
 
 # Downloading a gist example
 # First check if we already have a local version of the gist
