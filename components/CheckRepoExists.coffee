@@ -20,7 +20,11 @@ exports.getComponent = ->
       return
 
     existing = data.state.projects.local.filter (project) ->
-      project.gist is data.payload.gist
+      return false unless project.repo is data.payload.repo
+      if data.payload.branch is 'master' and not project.branch
+        # We didn't use to store branch info, assume master
+        return true
+      return project.branch is data.payload.branch
     unless existing.length
       out.new.send data
       do callback
@@ -32,3 +36,4 @@ exports.getComponent = ->
       existing[0].main
     ]
     do callback
+
