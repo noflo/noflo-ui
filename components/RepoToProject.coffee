@@ -6,27 +6,36 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'object'
-  c.outPorts.add 'graph',
-    datatype: 'object'
-  c.outPorts.add 'component',
-    datatype: 'object'
-  c.outPorts.add 'spec',
-    datatype: 'object'
   c.outPorts.add 'project',
+    datatype: 'object'
+  c.outPorts.add 'token',
+    datatype: 'string'
+  c.outPorts.add 'pull',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    out: ['graph', 'component', 'spec', 'project']
+    out: ['project', 'token', 'pull']
     async: true
   , (data, groups, out, callback) ->
-    api = octo.api()
-    api.token data.state.user['github-token'] if data.state.user?['github-token']
+    if data.state.user?['github-token']
+      token = data.state.user['github-token']
+    else
+      token = ''
 
     project =
       id: "#{data.payload.repo}_#{data.payload.branch}"
+      name: data.payload.repo
       repo: data.payload.repo
       branch: data.payload.branch
+    unless project.branch is 'master'
+      project.name += " #{project.branch}"
 
-    callback new Error "Not implemented yet"
+    out.project.send project
+    out.token.send token
+    out.pull.send
+      project: project
+      repo: project.repo
+      branch: project.branch
+    do callback

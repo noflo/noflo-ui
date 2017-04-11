@@ -16,13 +16,13 @@ handleGraph = (sha, content, entry, project, out) ->
     graph.properties.changed = false
     graph.properties.project = project.id
 
-    if entry.local
+    if entry.local and entry.local.startTransaction
       entry.local.startTransaction sha
       noflo.graph.mergeResolveTheirs entry.local, graph
       entry.local.endTransaction sha
       # Ensure the graph is marked as not changed since SHA
       entry.local.properties.changed = false
-      out.send entry.local
+      out.send entry.local.toJSON()
       return
 
     graph.properties.name = entry.remote.name
@@ -31,7 +31,7 @@ handleGraph = (sha, content, entry, project, out) ->
     graph.properties.environment = {} unless graph.properties.environment
     graph.properties.environment.type = project.type unless graph.properties.environment.type
     project.graphs.push graph
-    out.send graph
+    out.send graph.toJSON()
 
 handleComponent = (sha, content, entry, project, out) ->
   if entry.local
