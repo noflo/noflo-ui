@@ -438,6 +438,9 @@
         if (!project) {
           return;
         }
+        if (project.graphs.length && !project.main) {
+          project.main = project.graphs[0].id;
+        }
         if (!project.main) {
           if (!project.components.length) {
             return;
