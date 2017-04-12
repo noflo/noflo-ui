@@ -28,6 +28,8 @@ exports.getComponent = ->
 
     request = api.get "/gists/#{data.payload.graph}"
     request.on 'success', (res) ->
+      unless res.body?.files
+        return callback new Error "Gist #{data.payload.gist} didn't provide any files"
       for name, file of res.body.files
         basename = path.basename name, path.extname name
         if path.extname(name) is '.json'
