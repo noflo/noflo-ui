@@ -34,16 +34,17 @@ describe 'GitHub Middleware', ->
     it 'should send application:hash for existing gist', (done) ->
       action = 'github:gist'
       payload =
-        graph: 'abc123'
+        gist: 'abc123'
       state =
-        projects: [
-          id: 'foo'
-          main: 'foo_main'
-        ,
-          id: 'bar'
-          gist: 'abc123'
-          main: 'bar_main'
-        ]
+        projects:
+          local: [
+            id: 'foo'
+            main: 'foo_main'
+          ,
+            id: 'bar'
+            gist: 'abc123'
+            main: 'bar_main'
+          ]
       check = (data) ->
         chai.expect(data).to.eql [
           'project'
@@ -55,21 +56,15 @@ describe 'GitHub Middleware', ->
     it 'should send save events for new gist', (done) ->
       action = 'github:gist'
       payload =
-        graph: 'abc123'
+        gist: 'abc123'
       state = {}
       expected = [
-        caseSensitive: false
         properties:
           name: 'Hello world'
           environment:
             type: 'noflo-browser'
           project: 'abc123'
           id: 'abc123_noflo'
-        inports: {}
-        outports: {}
-        groups: []
-        processes: {}
-        connections: []
       ,
         id: 'abc123'
         gist: 'abc123'

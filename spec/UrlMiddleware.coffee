@@ -36,51 +36,41 @@ describe 'URL Middleware', ->
       mw.receivePass action, payload, done
       mw.send action, payload
   describe 'receiving a noflo:ready action', ->
-    it 'should send application:url and main:open actions', (done) ->
+    it 'should pass noflo:ready and send application:url', (done) ->
       checkUrl = (data) ->
         chai.expect(data).to.equal window.location.href
+      mw.receivePass 'noflo:ready', true, ->
+        mw.receiveAction 'application:url', checkUrl, done
+      mw.send 'noflo:ready', true
+  describe 'receiving a storage:ready action', ->
+    it 'should send workspace:main', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
-          route: 'main'
           runtime: null
           project: null
-          graph: null
-          component: null
-          nodes: []
-      mw.receivePass 'noflo:ready', true, ->
-        mw.receiveAction 'application:url', checkUrl, ->
-          mw.receiveAction 'main:open', checkOpen, done
-      mw.send 'noflo:ready', true
+      mw.receiveAction 'workspace:main', checkOpen, done
+      mw.send 'storage:ready', true
   describe 'on hash change to a project URL', ->
-    it 'should send project:open action', (done) ->
+    it 'should send workspace:project action', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
-          route: 'project'
-          runtime: null
           project: 'noflo-ui'
           graph: 'noflo-ui_graphs_main'
-          component: null
           nodes: [
             'UserStorage'
           ]
-      mw.receiveAction 'project:open', checkOpen, done
+      mw.receiveAction 'workspace:project', checkOpen, done
       window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
   describe 'on hash change to a old-style example URL', ->
-    it 'should send application:redirect action', (done) ->
+    it 'should send application:hash action', (done) ->
       checkRedirect = (data) ->
-        chai.expect(data).to.eql '#gist/abc123'
-      mw.receiveAction 'application:redirect', checkRedirect, done
+        chai.expect(data).to.eql ['gist', 'abc123']
+      mw.receiveAction 'application:hash', checkRedirect, done
       window.location.hash = '#example/abc123'
   describe 'on hash change to an gist URL', ->
     it 'should send github:gist action', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
-          route: 'github'
-          runtime: null
-          project: null
-          graph: 'abc123'
-          component: null
-          nodes: []
-          remote: []
+          gist: 'abc123'
       mw.receiveAction 'github:gist', checkOpen, done
       window.location.hash = '#gist/abc123'
