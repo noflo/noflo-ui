@@ -506,7 +506,6 @@
           this.fire('newgraph', graph);
           this.fire('newproject', event.detail);
           event.detail.graphs.push(graph);
-          this.checkProject(event.detail);
         }.bind(this));
       },
       newRepository: function (event) {
