@@ -49,7 +49,7 @@ describe 'Runtime Middleware', ->
       , 100
 
   describe 'receiving a runtime:connected action', ->
-    it 'should pass it out as-is', (done) ->
+    it.skip 'should pass it out as-is', (done) ->
       action = 'runtime:connected'
       payload = runtime
       mw.receivePass action, payload, done
