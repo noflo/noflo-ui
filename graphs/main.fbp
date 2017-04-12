@@ -23,7 +23,7 @@ Dispatch OUT[0] -> IN UserReducer(ui/UserReducer) STATE -> STATE UpdateState(ui/
 Dispatch OUT[1] -> IN StorageReducer(ui/StorageReducer) STATE -> STATE UpdateState
 Dispatch OUT[2] -> IN FlowhubReducer(ui/FlowhubReducer) STATE -> STATE UpdateState
 Dispatch OUT[3] -> IN WorkspaceReducer(ui/WorkspaceReducer) STATE -> STATE UpdateState
-Dispatch OUT[4] -> IN GithubReducer(ui/WorkspaceReducer) STATE -> STATE UpdateState
+Dispatch OUT[4] -> IN GithubReducer(ui/GithubReducer) STATE -> STATE UpdateState
 # Legacy stores
 Dispatch OUT[5] -> IN CleanContext(ui/CleanAction) OUT -> ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
