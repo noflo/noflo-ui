@@ -41,6 +41,39 @@
       #alert.show {
         top: 0;
       }
+      #asproject::before {
+        content: ' ';
+        position: absolute;
+        border: 2px solid hsl(185, 98%, 46%);
+        border-radius: 6px;
+        top: -6px;
+        bottom: -6px;
+        left: -6px;
+        right: -6px;
+      }
+      #asproject:hover {
+        background-color: black;
+        color: hsl(185, 98%, 46%);
+      }
+      #asproject {
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        position: fixed;
+        box-sizing: border-box;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9;
+        background-color: hsla(185, 98%, 46%, .8);
+        border: 1px solid hsl(185, 98%, 46%);
+        color: black;
+        top: 36px;
+        height: 36px;
+        border-radius: 3px;
+        padding: 8px;
+        cursor: pointer;
+        transition: color 0.3s ease, background-color 0.3s ease, opacity 5.0s ease-in;
+        visibility: hidden;
+        opacity: 0;
+      }
     </style>
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
@@ -53,6 +86,7 @@
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
     <noflo-alert id="alert" on-click="{{ hideAlert }}"></noflo-alert>
+    <button id="asproject" on-click="{{ editAsProject }}">Edit as project</button>
   </template>
   <script>
     Polymer('noflo-ui', {
@@ -351,8 +385,17 @@
         }
         if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
           this.$.main.open = false;
+          if (!this.ctx.project) {
+            this.$.asproject.style.visibility = 'visible';
+            this.$.asproject.style.opacity = 1;
+          } else {
+            this.$.asproject.style.visibility = 'hidden';
+            this.$.asproject.style.opacity = 0;
+          }
         } else {
           this.$.main.open = true;
+          this.$.asproject.style.visibility = 'hidden';
+          this.$.asproject.style.opacity = 0;
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
           var oldGraph = this.$.grapheditor.graph;
@@ -428,6 +471,16 @@
         window.setTimeout(function(){
           this.hideAlert();
         }.bind(this), 1300);
+      },
+      editAsProject: function () {
+        if (this.ctx.project) {
+          return;
+        }
+        this.emitEvent('project:fromruntime', {
+          graphs: this.ctx.graphs,
+          component: this.ctx.component,
+          runtime: this.ctx.runtime
+        });
       }
     });
   </script>
