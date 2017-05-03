@@ -1,6 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.19.0 (git master)
+
+New features
+
+* It is now possible to copy a live mode session into a project with the _Edit as project_ button
+
+Bugfixes
+
+* Information packets are now shown full in the packet inspectors instead of getting cut off
+
 # 0.18.0 (2017 March 13)
 
 New features
