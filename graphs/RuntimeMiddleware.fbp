@@ -8,6 +8,7 @@ OUTPORT=NewActions.OUT:NEW
 'project:save:project' -> ACTION ProjectSaveAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'project:save:graph' -> ACTION GraphSaveAction(ui/SetAction) OUT -> IN NewActions
 'project:save:component' -> ACTION ComponentSaveAction(ui/SetAction) OUT -> IN NewActions
+'project:save:runtime' -> ACTION RuntimeSaveAction(ui/SetAction) OUT -> IN NewActions
 'runtime:error' -> ACTION RuntimeErrorAction(ui/SetAction) OUT -> IN NewActions
 
 # Send selected edges to runtime
@@ -25,4 +26,5 @@ Dispatch HANDLE[1] -> IN RuntimeToProject(ui/RuntimeToProject)
 RuntimeToProject PROJECT -> IN ProjectSaveAction
 RuntimeToProject GRAPH -> IN GraphSaveAction
 RuntimeToProject COMPONENT -> IN ComponentSaveAction
+RuntimeToProject RUNTIME -> IN RuntimeSaveAction
 RuntimeToProject ERROR -> IN RuntimeErrorAction
