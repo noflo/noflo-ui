@@ -41,6 +41,37 @@
       #alert.show {
         top: 0;
       }
+      #asproject::before {
+        content: ' ';
+        position: absolute;
+        border: 2px solid hsl(185, 98%, 46%);
+        border-radius: 6px;
+        top: -6px;
+        bottom: -6px;
+        left: -6px;
+        right: -6px;
+      }
+      #asproject:hover {
+        background-color: black;
+        color: hsl(185, 98%, 46%);
+      }
+      #asproject {
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        position: fixed;
+        box-sizing: border-box;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9;
+        background-color: hsla(185, 98%, 46%, .8);
+        border: 1px solid hsl(185, 98%, 46%);
+        color: black;
+        top: 36px;
+        height: 36px;
+        border-radius: 3px;
+        padding: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
     </style>
     <noflo-main id="main"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
@@ -53,6 +84,7 @@
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
     <noflo-alert id="alert" on-click="{{ hideAlert }}"></noflo-alert>
+    <button id="asproject">Edit as project</button>
   </template>
   <script>
     Polymer('noflo-ui', {
