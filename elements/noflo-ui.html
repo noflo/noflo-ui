@@ -86,7 +86,7 @@
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
     <noflo-alert id="alert" on-click="{{ hideAlert }}"></noflo-alert>
-    <button id="asproject">Edit as project</button>
+    <button id="asproject" on-click="{{ editAsProject }}">Edit as project</button>
   </template>
   <script>
     Polymer('noflo-ui', {
@@ -471,6 +471,16 @@
         window.setTimeout(function(){
           this.hideAlert();
         }.bind(this), 1300);
+      },
+      editAsProject: function () {
+        if (this.ctx.project) {
+          return;
+        }
+        this.emitEvent('project:fromruntime', {
+          graphs: this.ctx.graphs,
+          component: this.ctx.component,
+          runtime: this.ctx.runtime
+        });
       }
     });
   </script>
