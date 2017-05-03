@@ -125,6 +125,47 @@ html /deep/ the-panel#fixed ::shadow footer {
   right: 0px;
 }
 
+html /deep/ the-panel#bottom {
+  padding-left: 36px;
+  padding-top: 36px;
+  border-top-width: 1px;
+}
+html /deep/ the-panel#bottom:before {
+  font-family: FontAwesome;
+  content: '\f1c0';
+  color: hsl(189, 50%, 80%);
+  position: absolute;
+  text-align: center;
+  left: 50%;
+  width: 36px;
+  top: 10px;
+  font-size: 17px;
+  opacity: 0.25;
+  transition: opacity 0.3s ease-in-out;
+}
+html /deep/ the-panel#bottom:not([open]):before {
+  opacity: 1;
+  cursor: w-resize;
+}
+
+html /deep/ #data-subscriptions {
+    height: 100%;
+    position: absolute;
+    width: 33%;
+}
+html /deep/ #data-timeline {
+    height: 100%;
+    position: absolute;
+    width: 33%;
+    left: 33%;
+}
+html /deep/ #data-inspectors {
+    height: 100%;
+    position: absolute;
+    width: 33%;
+    left: 66%;
+}
+
 html /deep/ the-card .the-card-content {
   display: block;
   margin: 0px;
