@@ -10,6 +10,7 @@ New features
 Bugfixes
 
 * Information packets are now shown full in the packet inspectors instead of getting cut off
+* Fixed sending of duplicate `graph:clear` messages to runtimes in project mode
 
 # 0.18.0 (2017 March 13)
 
