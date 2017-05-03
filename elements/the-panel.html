@@ -1,4 +1,4 @@
-<polymer-element name="the-panel" attributes="edge size handle open automatic" on-click="{{ handleClicked }}">
+<polymer-element name="the-panel" attributes="edge size handle open automatic sidesize" on-click="{{ handleClicked }}">
   <template>
     <style>
       @host {
@@ -16,6 +16,7 @@
     Polymer('the-panel', {
       edge: 'left',
       size: 200,
+      sidesize: '100%',
       handle: 0,
       automatic: true,
       open: false,
@@ -116,7 +117,7 @@
       },
       updateVisibility: function () {
         var sizeDimensions = this.getSizeDimensions();
-        this.style[sizeDimensions[1]] = '100%';
+        this.style[sizeDimensions[1]] = this.sidesize;
         this.style[sizeDimensions[0]] = this.size + 'px';
         var outside = 0;
         if (!this.open) {
