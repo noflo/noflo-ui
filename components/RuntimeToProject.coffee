@@ -29,6 +29,7 @@ exports.getComponent = ->
       specs: []
 
     for graph in data.payload.graphs
+      graph.name = graph.name.split('/').pop()
       graph.setProperties
         id: "#{project.id}/#{graph.properties?.id or graph.name}"
         project: project.id
