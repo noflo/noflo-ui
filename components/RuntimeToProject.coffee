@@ -28,7 +28,11 @@ exports.getComponent = ->
       components: []
       specs: []
 
-    for graph in data.payload.graphs
+    graphs = data.payload.graphs.slice 0
+    components = []
+    components.push data.payload.component if data.payload.component
+
+    for graph in graphs
       graph.name = graph.name.split('/').pop()
       graph.setProperties
         id: "#{project.id}/#{graph.properties?.id or graph.name}"
@@ -40,10 +44,10 @@ exports.getComponent = ->
       project.graphs.push graph
       out.graph.send graph
 
-    if data.payload.component
-      data.payload.component.project = project.id
-      project.components.push data.payload.component
-      out.component.send data.payload.component
+    for component in components
+      component.project = project.id
+      project.components.push component
+      out.component.send component
 
     # TODO: Discover components with project's namespace from runtime
 
