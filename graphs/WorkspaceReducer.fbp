@@ -1,0 +1,27 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeState.OUT:STATE
+OUTPORT=Dispatch.MISSED:MISSED
+
+'main,project,runtime,componentdefinition,search,error' -> ROUTES Dispatch(routers/GroupRouter)
+
+# Clear current workspace state when going main
+Dispatch OUT[0] -> IN ClearWorkspace(ui/ClearWorkspace)
+ClearWorkspace OUT -> IN MergeState(core/Merge)
+
+# Set workspace to project context
+Dispatch OUT[1] -> IN SetWorkspace(ui/PrepareWorkspace) OUT -> IN MergeState
+
+# Set workspace to runtime context
+Dispatch OUT[2] -> IN SetWorkspaceRuntime(ui/PrepareWorkspaceRuntime) OUT -> IN MergeState
+
+# Update component definitions coming from runtime
+Dispatch OUT[3] -> IN UpdateComponentDefinition(ui/UpdateComponentLibrary) OUT -> IN MergeState
+
+# Update search results based on state
+Dispatch OUT[4] -> IN UpdateSearch(ui/UpdateSearch) OUT -> IN MergeState
+
+# Set error to state
+Dispatch OUT[5] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeState
+
+Dispatch MISSED -> IN Output(core/Output)

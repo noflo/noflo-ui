@@ -55,7 +55,8 @@
             return;
           }
           if (req.status !== 200 && req.status !== 201) {
-            return callback(req.responseText);
+            var errorResp = JSON.parse(req.responseText);
+            return callback(errorResp.message);
           }
           return callback(null);
         };
@@ -84,7 +85,10 @@
             this.errorText = err;
             return;
           }
-          this.fire('new', this.repo);
+          this.fire('new', {
+            repo: this.repo,
+            branch: 'master'
+          });
           this.close();
         }.bind(this));
       },

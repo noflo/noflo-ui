@@ -34,6 +34,11 @@ exports.getComponent = ->
     req = new XMLHttpRequest
     req.onreadystatechange = ->
       return unless req.readyState is 4
+      if req.status is 0
+        # Cannot connect to server, keep using cached data
+        out.pass.send data
+        do callback
+        return
       if req.status is 401
         # We have invalid token, clear local user data
         out.invalid.send data

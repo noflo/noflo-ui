@@ -35,6 +35,7 @@
       editor: null,
       runtime: null,
       graphs: [],
+      graph: null,
       nodes: [],
       edges: [],
       errors: [],
@@ -79,7 +80,7 @@
           iconLabel: 'rename',
           action: function (graph, itemKey, item) {
             var dialog = document.createElement('noflo-exported-inspector');
-            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.graph = this.graph;
             dialog.publicport = itemKey;
             dialog.privateport = item;
             dialog.direction = 'input';
@@ -91,7 +92,7 @@
           iconLabel: 'rename',
           action: function (graph, itemKey, item) {
             var dialog = document.createElement('noflo-exported-inspector');
-            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.graph = this.graph;
             dialog.publicport = itemKey;
             dialog.privateport = item;
             dialog.direction = 'output';
@@ -322,10 +323,10 @@
         if (componentParts.length > 1 && this.project && this.libraryMatch(componentParts.shift(), this.project)) {
           // Local component, see if it is available
           for (i = 0; i < this.project.graphs.length; i++) {
-            if (this.project.graphs[i].name === componentParts[0]) {
+            if (this.project.graphs[i].properties.name === componentParts[0]) {
               return true;
             }
-            if (this.project.graphs[i].properties.id === componentParts[0]) {
+            if (this.project.graphs[i].id === componentParts[0]) {
               return true;
             }
           }

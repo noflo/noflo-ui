@@ -1,12 +1,12 @@
 INPORT=Dispatch.IN:IN
-OUTPORT=Merge.OUT:USER
-OUTPORT=MergeContext.OUT:CONTEXT
+OUTPORT=MergeState.OUT:STATE
 
 'info,error' -> ROUTES Dispatch(routers/GroupRouter)
 
-# Normalize user information
-Dispatch OUT[0] -> IN Merge(core/Merge)
+# Set latest user info to state
+'user' -> KEY SetUser(ui/SetStateValue)
+Dispatch OUT[0] -> IN SetUser OUT -> IN MergeState(core/Merge)
 
-# Convert user errors to context errors
+# Set error to state
 Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
-ErrorToCtx OUT -> IN MergeContext(core/Merge)
+ErrorToCtx OUT -> IN MergeState

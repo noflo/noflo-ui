@@ -76,6 +76,14 @@ module.exports = ->
         src: '*.coffee'
         dest: 'spec'
         ext: '.js'
+      spec_utils:
+        options:
+          bare: true
+        expand: true
+        cwd: 'spec/utils'
+        src: '*.coffee'
+        dest: 'spec/utils'
+        ext: '.js'
       spec_browser:
         options:
           bare: true
@@ -348,11 +356,11 @@ module.exports = ->
           max_line_length:
             level: "ignore"
         src: 'spec/*.coffee'
-      spec_browser:
+      spec_sub:
         options:
           max_line_length:
             level: "ignore"
-        src: 'spec/browser/*.coffee'
+        src: 'spec/**/*.coffee'
 
 
     inlinelint:
@@ -389,6 +397,7 @@ module.exports = ->
         options:
           scripts: [
             "../browser/<%=pkg.name%>.js"
+            "./utils/middleware.js"
             '../node_modules/sinon/pkg/sinon-server.js'
           ]
         files:
@@ -495,8 +504,9 @@ module.exports = ->
   ]
   @registerTask 'spec', [
     'coffeelint:spec'
-    'coffeelint:spec_browser'
+    'coffeelint:spec_sub'
     'coffee:spec'
+    'coffee:spec_utils'
     'coffee:spec_browser'
     'connect:server'
     'watch'

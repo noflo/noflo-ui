@@ -1,81 +1,100 @@
 noflo = require 'noflo'
 
-normalize = (parts) ->
-  parts.map (part) -> decodeURIComponent part
-
-buildContext = (url) ->
-  routeData =
-    route: ''
-    runtime: null
-    project: null
-    graph: null
-    component: null
-    nodes: []
-
+matchUrl = (url) ->
   if url is ''
-    routeData.route = 'main'
+    routeData =
+      action: 'workspace:main'
+      payload:
+        project: null
+        runtime: null
     return routeData
 
-  if url.substr(0, 8) is 'project/'
-    # Locally stored project
-    routeData.route = 'project'
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.project = parts.shift()
-
-    if parts[0] is 'component' and parts.length is 2
-      routeData.component = parts[1]
+  urlParts = url.split('/').map (part) -> decodeURIComponent part
+  route = urlParts.shift()
+  switch route
+    when 'project'
+      routeData =
+        action: 'workspace:project'
+        payload: {}
+      # Locally stored project
+      routeData.payload.project = urlParts.shift()
+      if urlParts[0] is 'component' and urlParts.length is 2
+        # Opening a component from the project
+        routeData.payload.component = urlParts[1]
+        return routeData
+      # Opening a graph from the project
+      routeData.payload.graph = urlParts.shift()
+      routeData.payload.nodes = urlParts
+      return routeData
+    when 'runtime'
+      # Live mode with remote runtime
+      routeData =
+        action: 'workspace:remote'
+        payload: {}
+      routeData.payload.runtime = urlParts.shift()
+      routeData.payload.nodes = urlParts
+      return routeData
+    when 'example'
+      # Redirect old example URLs to gists
+      routeData =
+        action: 'application:hash'
+        payload: ['gist'].concat urlParts
+      return routeData
+    when 'gist'
+      # Example graph to be fetched from gists
+      routeData =
+        action: 'github:gist'
+        payload:
+          gist: urlParts.shift()
+      return routeData
+    when 'github'
+      # Project to download and open from GitHub
+      routeData =
+        action: 'github:download'
+        payload: {}
+      [owner, repo] = urlParts.splice 0, 2
+      routeData.payload.repo = "#{owner}/#{repo}"
+      return routeData unless urlParts.length
+      if urlParts[0] is 'tree'
+        # Opening a particular branch
+        urlParts.shift()
+        routeData.payload.branch = urlParts.join '/'
+        return routeData
+      if urlParts[0] is 'blob'
+        # Opening a particular file
+        urlParts.shift()
+        routeData.payload.branch = urlParts.shift()
+        if routeData[0] is 'graphs'
+          routeData.payload.graph = routeData[1]
+        if routeData[0] is 'components'
+          routeData.payload.component = routeData[1]
       return routeData
 
-    routeData.graph = parts.shift()
-    routeData.nodes = parts
-    return routeData
-
-  if url.substr(0, 8) is 'example/'
-    # Remote example
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.route = 'github'
-    routeData.graph = parts.shift()
-    routeData.remote = parts
-    return routeData
-
-  if url.substr(0, 8) is 'runtime/'
-    # Graph running on a remote runtime
-    remainder = url.substr 8
-    parts = normalize remainder.split '/'
-    routeData.route = 'runtime'
-    routeData.runtime = parts.shift()
-    routeData.nodes = parts
-    return routeData
-
+  # No route matched
   return null
 
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'url',
     datatype: 'string'
-  c.outPorts.add 'route',
+  c.outPorts.add 'action',
+    datatype: 'string'
+  c.outPorts.add 'payload',
     datatype: 'object'
   c.outPorts.add 'missed',
-    datatype: 'bang'
+    datatype: 'string'
 
   noflo.helpers.WirePattern c,
     in: 'url'
-    out: ['route', 'missed']
+    out: ['action', 'payload', 'missed']
     forwardGroups: false
     async: true
   , (url, groups, out, callback) ->
-    ctx = buildContext url
-    unless ctx
-      out.missed.send
-        payload: ctx
+    matched = matchUrl url
+    unless matched
+      out.missed.send url
       return callback()
 
-    out.route.beginGroup ctx.route
-    out.route.beginGroup 'open'
-    out.route.send
-      payload: ctx
-    out.route.endGroup()
-    out.route.endGroup()
+    out.action.send matched.action
+    out.payload.send matched.payload
     callback()

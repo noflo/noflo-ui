@@ -159,8 +159,7 @@
           </li>
           <template repeat="{{ graph in project.graphs }}">
           <li on-click="{{ openGraph }}" data-id="{{ graph.properties.id }}">
-            <the-graph-thumb graph="{{ graph }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ graph.name }}</h2>
+            <h2>{{ graph.properties.name }}</h2>
           </li>
           </template>
         </ul>
@@ -250,11 +249,8 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'openHome');
-        }
         this.$.account.toggleOpen(false);
-        window.location.hash = '#';
+        this.fire('hash', []);
       },
       openSettings: function (event) {
         event.preventDefault();
@@ -273,15 +269,19 @@
             this.project[property] = event.detail[property];
           }.bind(this));
 
+          if (this.project.repo) {
+            delete this.project.gist;
+          }
+
           // Send only the data we actually want to store
           this.fire('changed', {
             id: this.project.id,
             name: this.project.name,
             repo: this.project.repo,
+            branch: this.project.branch ? this.project.branch : 'master',
+            gist: this.project.gist,
             type: this.project.type,
-            main: this.project.main,
-            graphs: [],
-            components: []
+            main: this.project.main
           });
         }.bind(this));
         dialog.addEventListener('delete', function (event) {
@@ -290,11 +290,20 @@
       },
       gotoGraph: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          id
+        ]);
       },
       gotoComponent: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          'component',
+          id
+        ]);
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();

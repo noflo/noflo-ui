@@ -61,10 +61,7 @@
       ctx: {},
       dontAutoHideAlert: false,
       emitEvent: function (event, payload) {
-        this.fire(event, {
-          state: this.ctx,
-          payload: payload
-        });
+        this.fire(event, payload);
       },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
@@ -83,35 +80,25 @@
           });
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
-          this.emitEvent('github:fetch', event.detail);
+          this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
-        this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('project:save:project', event.detail.project);
-          setTimeout(function () {
-            this.emitEvent('github:sync:pull', {
-              repo: event.detail.project.repo,
-              project: event.detail.project
-            });
-            this.$.main.projects.push(event.detail.project);
-            this.$.main.checkProject(event.detail.project);
-            this.ctx.projects.push(event.detail.project);
-          }.bind(this), 2);
+        this.$.main.addEventListener('fetchRuntimes', function (event) {
+          this.emitEvent('flowhub:runtimes:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
-        this.$.main.addEventListener('runtime', function (event) {
-          this.emitEvent('project:save:runtime', event.detail);
+        this.$.main.addEventListener('newruntime', function (event) {
+          this.emitEvent('flowhub:runtimes:register', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
-          this.emitEvent('project:save:project', event.detail);
-          this.ctx.projects.push(event.detail);
-          setTimeout(function () {
-            window.location.hash = '#project/' + encodeURIComponent(event.detail.id) + '/' + encodeURIComponent(event.detail.main);
-          }, 2);
+          this.emitEvent('storage:save:project', event.detail);
+        }.bind(this));
+        this.$.main.addEventListener('hash', function (event) {
+          this.emitEvent('application:hash', event.detail);
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {
@@ -123,7 +110,7 @@
           this.emitEvent('runtime:connect', newCtx);
         }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:runtime', event.detail);
+          this.emitEvent('storage:save:runtime', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.emitEvent('context:edges', event.detail);
@@ -132,15 +119,15 @@
           this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:project', event.detail);
+          this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
@@ -150,74 +137,84 @@
           this.emitEvent('github:sync:synchronize', event.detail);
         }.bind(this));
         this.$.project.addEventListener('deleteProject', function (event) {
-          window.location.hash = '#';
+          this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
+        this.$.project.addEventListener('hash', function (event) {
+          this.emitEvent('application:hash', event.detail);
+        }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
-          window.location.hash = '#';
+          this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
-          this.emitEvent('context:search_library', event.detail);
+          this.emitEvent('workspace:search:library', event.detail);
         }.bind(this));
         this.$.search.addEventListener('search:graph', function (event) {
-          this.emitEvent('context:search_graph', event.detail);
+          this.emitEvent('workspace:search:graph', event.detail);
         }.bind(this));
-        this.$.library.addEventListener('result', function (event) {
-          this.emitEvent('context:search_library_result', {
-            searchLibraryResult: event.detail
-          });
+        this.$.library.addEventListener('results', function (event) {
+          this.emitEvent('workspace:search:results:library', event.detail);
         }.bind(this));
         this.$.search.addEventListener('deleteGraph', function (event) {
           var project = this.ctx.project || this.$.project.project;
           if (project && project.graphs.indexOf(event.detail) !== -1) {
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
           }
-          this.emitEvent('project:delete:graph', event.detail);
+          this.emitEvent('storage:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
-            window.location.hash = '#';
+            this.emitEvent('application:hash', []);
           } else if (project.graphs[0]) {
             // Go to first graph
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              project.graphs[0].properties.id
+            ]);
           } else if (project.components[0]) {
             // Go to first component
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              'component',
+              project.components[0].name
+            ]);
           }
         }.bind(this));
         this.$.search.addEventListener('deleteComponent', function (event) {
@@ -230,24 +227,33 @@
           if (index !== -1) {
             project.components.splice(index, 1);
           }
-          this.emitEvent('project:delete:component', component);
+          this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
-            window.location.hash = '#';
+            this.emitEvent('application:hash', []);
           } else if (project.components[0]) {
             // Go to first component
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              'component',
+              project.components[0].name
+            ]);
           } else if (project.graphs[0]) {
             // Go to first graph
-            window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.graphs[0].properties.id);
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              project.graphs[0].properties.id
+            ]);
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
@@ -259,136 +265,81 @@
         this.$.packets.panel = this.$.context.$.context;
         this.$.search.panel = this.$.context.$.context;
       },
-      context: function (context) {
-        if (context.state) {
-          switch (context.state) {
-            case 'error':
-              this.showError(context);
-              break;
-            case 'ok':
-              this.hideAlertSoon();
-              break;
-            case 'loading':
-              this.showProgress(context);
-              break;
-          }
-        }
-        for (var key in context) {
-          this.ctx[key] = context[key];
-        }
-        if (context.projects) {
-          this.$.main.projects = context.projects;
-        }
-        if (context.db) {
-          this.$.journal.db = context.db;
-        }
-        if (context.runtimes) {
-          this.$.main.runtimes = context.runtimes;
-          this.$.project.runtimes = context.runtimes;
-          this.$.search.runtimes = context.runtimes;
-        }
-        if (context.search !== undefined) {
-          this.$.library.search({
-            search: this.ctx.search
-          });
-        }
-        if (context.searchLibraryResult) {
-          this.$.search.libraryResults(this.ctx.searchLibraryResult);
-        }
-        if (context.searchGraphResult) {
-          this.$.search.graphResults(this.ctx.searchGraphResult);
-        }
-        if (this.ctx.edges !== undefined) {
-          this.$.packets.edges = this.ctx.edges;
-        }
-        if (this.ctx.error) {
-          this.$.packets.processError(this.ctx.error);
-          this.ctx.error = null;
-        }
-        if (this.ctx.packet) {
-          this.$.packets.packet(this.ctx.packet);
-          this.ctx.packet = null;
-        }
-        if (this.ctx.nodes !== undefined) {
-          this.$.context.nodes = this.ctx.nodes;
-          this.$.packets.nodes = this.ctx.nodes;
-        }
-        if (context.nodes || context.edges) {
+      state: function (state) {
+        // Show loading/error indicators as needed
+        this.handleStatus(state);
+        // Update local state reference
+        this.ctx = state;
+        // Pass data to views
+        // Logged in user
+        this.user(state.user);
+        // Project currently open
+        this.$.main.project = state.workspace.project;
+        this.$.project.project = state.workspace.project;
+        this.$.context.project = state.workspace.project;
+        this.$.componenteditor.project = state.workspace.project;
+        this.$.search.project = state.workspace.project;
+        // Current graph being edited
+        this.$.project.graph = state.workspace.graph;
+        this.$.journal.graph = state.workspace.graph;
+        this.$.runtime.graph = state.workspace.graph;
+        this.$.context.graph = state.workspace.graph;
+        this.$.search.graph = state.workspace.graph;
+        this.$.grapheditor.graph = state.workspace.graph;
+        this.$.packets.currentgraph = state.workspace.graph;
+        // Current component being edited
+        this.$.project.component = state.workspace.component;
+        this.$.componenteditor.component = state.workspace.component;
+        this.$.search.component = state.workspace.component;
+        this.$.library.graphs = state.workspace.graphs;
+        // Graph viewing path
+        this.$.project.graphs = state.workspace.graphs;
+        this.$.context.graphs = state.workspace.graphs;
+        this.$.search.graphs = state.workspace.graphs;
+        // Current runtime connection
+        this.$.runtime.runtime = state.workspace.runtime.selected;
+        this.$.context.runtime = state.workspace.runtime.selected;
+        this.$.componenteditor.runtime = state.workspace.runtime.selected;
+        // List of runtimes available
+        this.$.main.runtimes = state.runtimes.local;
+        this.$.main.currentRuntimes = state.runtimes.current;
+        this.$.project.runtimes = state.runtimes.local;
+        this.$.search.runtimes = state.runtimes.local;
+        // Filtered list of compatible runtimes
+        this.$.runtime.runtimes = state.workspace.runtime.compatible;
+        // Projects listings
+        this.$.main.projects = state.projects.local;
+        this.$.main.remoteProjects = state.projects.remote;
+        this.$.context.nodes = state.workspace.selection.nodes;
+        // Examples listings
+        this.$.main.examples = state.examples.remote;
+        // IndexedDB connection
+        this.$.journal.db = state.db;
+        // Selection state
+        this.$.packets.edges = state.workspace.selection.edges;
+        this.$.packets.nodes = state.workspace.selection.nodes;
+        // Search
+        this.$.library.search = state.workspace.search.query;
+        this.$.search.libraryresults = state.workspace.search.components;
+        this.$.search.graphResults = state.workspace.search.nodes;
+        this.$.library.components = state.workspace.library;
+        // TODO: error, packet, sync, suites
+      },
+      handleStatus: function (state) {
+        if (!state.state) {
           return;
         }
-        if (context.syncOperation !== undefined) {
-          this.$.project.confirm(context.syncOperation);
-          return;
+        switch (state.state) {
+          case 'error':
+            this.showError(state);
+            break;
+          case 'ok':
+            this.hideAlertSoon();
+            break;
+          case 'loading':
+            this.showProgress(state);
+            break;
         }
-        if (context.remoteProjects !== undefined) {
-          this.$.main.githubProjects(context.remoteProjects);
-          return;
-        }
-        if (this.ctx.clearLibrary) {
-          for (var libKey in this.$.grapheditor.$.graph.library) {
-            delete this.$.grapheditor.$.graph.library[libKey];
-          }
-          delete this.ctx.clearLibrary;
-        }
-        if (this.ctx.componentDefinition !== undefined && this.ctx.componentDefinition) {
-          this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
-          this.ctx.componentDefinition = null;
-        }
-        if (this.ctx.runtime !== undefined) {
-          this.$.runtime.runtime = this.ctx.runtime;
-          this.$.componenteditor.runtime = this.ctx.runtime;
-          this.$.context.runtime = this.ctx.runtime;
-        }
-        if (this.ctx.suites) {
-          this.$.runtime.showTests(this.ctx.suites);
-        }
-        if (this.ctx.state === 'loading') {
-          return;
-        }
-        if (this.ctx.state === 'error') {
-          this.showError(this.ctx);
-          return;
-        }
-        if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
-          this.$.main.open = false;
-        } else {
-          this.$.main.open = true;
-        }
-        if (this.ctx.graphs && this.ctx.graphs.length) {
-          var oldGraph = this.$.grapheditor.graph;
-          this.$.grapheditor.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.project.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.packets.currentgraph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.journal.graph = this.ctx.graphs[this.ctx.graphs.length - 1];
-          this.$.runtime.graph = this.ctx.graphs[0];
-          if (oldGraph !== this.$.grapheditor.graph) {
-            setTimeout(function () {
-              this.emitEvent('context:graph', {
-                graph: this.$.grapheditor.graph
-              });
-            }.bind(this), 1);
-          }
-        } else {
-          this.$.project.graph = null;
-          this.$.journal.graph = null;
-          this.$.runtime.graph = null;
-        }
-        if (this.ctx.graphs) {
-          this.$.context.graphs = this.ctx.graphs;
-          this.$.library.graphs = this.ctx.graphs;
-          this.$.project.graphs = this.ctx.graphs;
-          this.$.search.graphs = this.ctx.graphs;
-        }
-        this.$.context.project = this.ctx.project;
-        this.$.context.runtime = this.ctx.runtime;
-        this.$.project.component = this.ctx.component;
-        this.$.project.project = this.ctx.project;
-        this.$.componenteditor.component = this.ctx.component;
-        this.$.componenteditor.project = this.ctx.project;
-        this.$.search.component = this.ctx.component;
-        this.$.search.project = this.ctx.project;
-        this.$.runtime.runtimes = this.ctx.compatibleRuntimes;
-        this.$.runtime.runtime = this.ctx.runtime;
       },
       user: function (user) {
         this.$.main.githubToken = user['github-token'];

@@ -1,0 +1,11 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=MergeState.OUT:STATE
+
+'projects,error' -> ROUTES Dispatch(routers/GroupRouter)
+
+Dispatch OUT[0] -> IN FilterRemote(ui/FilterRemoteProjects)
+FilterRemote OUT -> IN MergeState
+
+# Set error to state
+Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+ErrorToCtx OUT -> IN MergeState(core/Merge)

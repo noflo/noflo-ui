@@ -3,11 +3,6 @@ noflo = require 'noflo'
 buildContext = ->
   ctx =
     state: ''
-    project: null
-    runtime: null
-    component: null
-    graphs: []
-    remote: []
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -24,5 +19,3 @@ exports.getComponent = ->
     ctx.state = 'error'
     ctx.error = err
     out.send ctx
-
-  c

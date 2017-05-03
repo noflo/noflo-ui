@@ -80,4 +80,4 @@ describe 'Project Creation Dialog', ->
       dialogs = doc.querySelectorAll 'noflo-new-project'
       chai.expect(dialogs.length).to.equal 0
     it 'should have registered the project to noflo-main', ->
-      chai.expect(main.localProjects.length).to.be.above 0
+      chai.expect(main.projects.length).to.be.above 0

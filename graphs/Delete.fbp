@@ -1,46 +1,19 @@
-INPORT=HoldDb.DATA:DB
-INPORT=Dispatch.IN:IN
-OUTPORT=MergeContext.OUT:OUT
+INPORT=Write.DB:DB
+INPORT=Store.IN:STORE
+INPORT=EnsureId.IN:ITEM
+OUTPORT=Delete.KEY:KEY
+OUTPORT=Errors.OUT:ERROR
 
-'component,graph,project,runtime,spec' -> ROUTES Dispatch(routers/GroupRouter)
-
-# Create transaction
-HoldDb(core/Kick) OUT -> DB DeleteTransaction(indexeddb/BeginTransaction)
-'readwrite' -> DATA HoldMode(core/Kick) OUT -> MODE DeleteTransaction
-StoreName(core/Merge) OUT -> STORES DeleteTransaction
-Dispatch ROUTE -> IN HoldDb
-Dispatch ROUTE -> IN HoldMode
-Dispatch MISSED -> IN ShowErrors(core/Output)
-
-# Component-specific handling
-'components' -> DATA ComponentStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[0] -> IN SplitComponent(core/Split) OUT -> IN ComponentStore 
-SplitComponent OUT -> IN GetKey(ui/EnsureId)
-
-# Graph-specific handling
-'graphs' -> DATA GraphStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[1] -> IN SplitGraph(core/Split) OUT -> IN GraphStore
-SplitGraph OUT -> IN GetKey
-
-# Project-specific handling
-'projects' -> DATA ProjectStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[2] -> IN SplitProject(core/Split) OUT -> IN ProjectStore 
-SplitProject OUT -> IN GetKey
-
-# Runtime-specific handling
-'runtimes' -> DATA RuntimeStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[3] -> IN SplitRuntime(core/Split) OUT -> IN RuntimeStore 
-SplitRuntime OUT -> IN GetKey
-
-# Spec-specific handling
-'specs' -> DATA SpecStore(core/Kick) OUT -> IN StoreName
-Dispatch OUT[4] -> IN SplitSpec(core/Split) OUT -> IN SpecStore
-SplitSpec OUT -> IN GetKey
-
-# Saving
-StoreName OUT -> NAME Store(indexeddb/GetStore)
-DeleteTransaction TRANSACTION -> TRANSACTION Store STORE -> STORE Delete(indexeddb/Delete)
-GetKey ID -> KEY Delete
+'readwrite' -> STRING HoldMode(strings/SendString)
+Store(core/Repeat) OUT -> IN HoldMode
+HoldMode OUT -> MODE Write(indexeddb/BeginTransaction)
+Store OUT -> STORES Write
+Store OUT -> NAME GetStore(indexeddb/GetStore)
+Write TRANSACTION -> TRANSACTION GetStore
+GetStore STORE -> STORE Delete(indexeddb/Delete)
+EnsureId(ui/EnsureId) ID -> KEY Delete
 
 # Error handling
-Delete ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> IN MergeContext(core/Merge)
+Write ERROR -> IN Errors(core/Merge)
+GetStore ERROR -> IN Errors
+Delete ERROR -> IN Errors

@@ -1,45 +1,41 @@
-# Prepare IndexedDB
-'noflo-ui' -> NAME PrepareStorage(ui/PrepareStorage)
-PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
-PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
-
 # Event dispatching
-AppView(polymer/noflo-ui) EVENT -> IN Actions(core/Repeat)
+AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
-Actions OUT -> IN HandleState(ui/StateMiddleware)
-HandleState PASS -> IN Logger(ui/LoggingMiddleware)
+StoreDispatch OUT -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
-UrlMiddleware NEW -> IN Actions
-UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
-UserMiddleware NEW -> IN Actions
-UserMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
-RuntimeMiddleware NEW -> IN Actions
+UrlMiddleware NEW -> ACTION StoreDispatch
+UrlMiddleware PASS -> IN StorageMiddleware(ui/StorageMiddleware)
+StorageMiddleware NEW -> ACTION StoreDispatch
+StorageMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
+UserMiddleware NEW -> ACTION StoreDispatch
+UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
+GithubMiddleware NEW -> ACTION StoreDispatch
+GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
+RegistryMiddleware NEW -> ACTION StoreDispatch
+RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
+RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
-RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
-'user,main,project,github,runtime,context' -> ROUTES Dispatch
-Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
-Dispatch OUT[1] -> START MainContext(ui/CreateContext)
-Dispatch OUT[2] -> IN ProjectStorage
-Dispatch OUT[3] -> IN GithubStorage(ui/GithubStorage)
-Dispatch OUT[4] -> IN RuntimeStorage
-Dispatch OUT[5] -> IN ContextStorage(ui/ContextStorage)
+RuntimeMiddleware PASS -> IN Dispatch(routers/GroupRouter)
+'user,storage,flowhub,workspace,github,context' -> ROUTES Dispatch
+# Reducers for producing state changes from actions
+Dispatch OUT[0] -> IN UserReducer(ui/UserReducer) STATE -> STATE UpdateState(ui/UpdateState)
+Dispatch OUT[1] -> IN StorageReducer(ui/StorageReducer) STATE -> STATE UpdateState
+Dispatch OUT[2] -> IN FlowhubReducer(ui/FlowhubReducer) STATE -> STATE UpdateState
+Dispatch OUT[3] -> IN WorkspaceReducer(ui/WorkspaceReducer) STATE -> STATE UpdateState
+Dispatch OUT[4] -> IN GithubReducer(ui/GithubReducer) STATE -> STATE UpdateState
+# Legacy stores
+Dispatch OUT[5] -> IN CleanContext(ui/CleanAction) OUT -> ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
-# Base data to UI
-UserReducer USER -> USER AppView
-UserReducer USER -> USER GithubStorage
-UserReducer CONTEXT -> Context AppView
-
-# Pass local and GH contexts to runtime storage for remote node handling
-ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
-GithubStorage CONTEXT -> CONTEXT RuntimeStorage
-GithubStorage OUT -> IN ProjectStorage
 # Pass ready contexts to the UI
-MainContext OUT -> CONTEXT AppView
-RuntimeStorage CONTEXT -> CONTEXT AppView
-RuntimeStorage NEW -> IN Actions
-ContextStorage CONTEXT -> CONTEXT AppView
+RuntimeStorage CONTEXT -> CONTEXT UpdateState
+RuntimeStorage NEW -> ACTION StoreDispatch
+ContextStorage CONTEXT -> CONTEXT UpdateState
+
+# Send updated state to app view
+UpdateState STATE -> STATE StoreDispatch
+UpdateState STATE -> STATE AppView
 
 # Start the app
 'noflo-ui' -> SELECTOR AppView
@@ -48,7 +44,3 @@ ContextStorage CONTEXT -> CONTEXT AppView
 # Handle resizes
 ListenWindow WIDTH -> WIDTH AppView
 ListenWindow HEIGHT -> HEIGHT AppView
-
-# Display storage errors
-PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT AppView
-PrepareStorage ERROR ->  IN ShowErrors

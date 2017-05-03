@@ -1,15 +1,15 @@
-INPORT=Dispatch.IN:IN
 INPORT=Token.IN:TOKEN
+INPORT=GetRepo.IN:PREPARE
+INPORT=DoSync.IN:SYNCHRONIZE
+INPORT=GetPullRepo.IN:PULL
 OUTPORT=MergeContext.OUT:CONTEXT
-OUTPORT=Changed.OUT:CHANGED
+OUTPORT=UpdatedGraph.OUT:GRAPH
+OUTPORT=UpdatedComponent.OUT:COMPONENT
+OUTPORT=UpdatedSpec.OUT:SPEC
 OUTPORT=Errors.OUT:ERROR
-
-'prepare,synchronize,pull' -> ROUTES Dispatch(routers/GroupRouter)
-Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Preparation for sync: check local and remote situation
 'repo' -> KEY GetRepo(objects/GetObjectKey)
-Dispatch OUT[0] -> IN GetRepo
 Token(core/Repeat) OUT -> TOKEN GetReference(github/GetReference)
 GetRepo OUT -> REPOSITORY GetReference
 GetReference REFERENCE -> REFERENCE CheckSyncState(ui/CheckSyncState)
@@ -29,11 +29,10 @@ MergeOps OUT -> VALUE OpsToContext
 MergeOps OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 
-# Actual synchronization operation(s)
-Dispatch OUT[1] -> IN DoSync(core/Repeat)
+# # Actual synchronization operation(s)
 
 # First pull changes in
-DoSync OUT -> IN PreparePulls(ui/PreparePulls)
+DoSync(core/Split) OUT -> IN PreparePulls(ui/PreparePulls)
 Token OUT -> TOKEN GetBlob(github/GetBlob)
 PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
 PreparePulls REPOSITORY -> REPOSITORY GetBlob
@@ -42,7 +41,7 @@ GetBlob OUT -> BLOB BlobToEntry
 BlobToEntry COMPONENT -> IN UpdatedComponent(core/Merge)
 BlobToEntry GRAPH -> IN UpdatedGraph(core/Merge)
 BlobToEntry SPEC -> IN UpdatedSpec(core/Merge)
-BlobToEntry ERROR -> IN ShowErrors
+BlobToEntry ERROR -> IN Errors
 GetBlob ERROR -> IN Errors
 
 # Then push local changes
@@ -67,31 +66,17 @@ CreateCommit OUT -> COMMIT UpdateReference(github/UpdateReference)
 PreparePush REF -> REFERENCE UpdateReference
 Token OUT -> TOKEN UpdateReference
 PreparePush REPOSITORY -> REPOSITORY UpdateReference
-UpdateReference REFERENCE -> IN ShowErrors
 
 UpdateFromTree COMPONENT -> IN UpdatedComponent
 UpdateFromTree GRAPH -> IN UpdatedGraph
 UpdateFromTree SPEC -> IN UpdatedSpec
-UpdateFromTree ERROR -> IN ShowErrors
+UpdateFromTree ERROR -> IN Errors
 CreateTree ERROR -> IN Errors
 CreateCommit ERROR -> IN Errors
 UpdateReference ERROR -> IN Errors
 
-# Grouping
-'save:graph' -> GROUP SetGraphGroup(groups/Group)
-UpdatedGraph OUT -> IN DiscGraph(core/DisconnectAfterPacket)
-DiscGraph OUT -> IN SetGraphGroup OUT -> IN Changed(core/Merge)
-'save:component' -> GROUP SetComponentGroup(groups/Group)
-UpdatedComponent OUT -> IN DiscComponent(core/DisconnectAfterPacket)
-DiscComponent OUT -> IN SetComponentGroup OUT -> IN Changed
-'save:spec' -> GROUP SetSpecGroup(groups/Group)
-UpdatedSpec OUT -> IN DiscSpec(core/DisconnectAfterPacket)
-DiscSpec OUT -> IN SetSpecGroup OUT -> IN Changed
-Changed OUT -> IN ShowErrors
-
 # Pull-only sync, no decision needed
 'repo' -> KEY GetPullRepo(objects/GetObjectKey)
-Dispatch OUT[2] -> IN GetPullRepo
 Token(core/Repeat) OUT -> TOKEN GetPullReference(github/GetReference)
 GetPullRepo OUT -> REPOSITORY GetPullReference
 GetPullReference REFERENCE -> REFERENCE CheckPullState(ui/CheckSyncState)

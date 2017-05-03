@@ -1,20 +1,5 @@
 noflo = require 'noflo'
 
-buildContext = ->
-  ctx =
-    state: ''
-    project: null
-    runtime: null
-    component: null
-    graphs: []
-    remote: []
-
-sendError = (out, err) ->
-  ctx = buildContext()
-  ctx.state = 'error'
-  ctx.error = err
-  out.send ctx
-
 findProject = (id, projects) ->
   return unless projects
   for project in projects
@@ -24,8 +9,8 @@ findProject = (id, projects) ->
 findGraph = (id, project) ->
   return unless project.graphs
   for graph in project.graphs
-    return graph if graph.name is id
-    return graph if graph.properties.id is id
+    return graph if graph.properties?.name is id
+    return graph if graph.id is id
   return null
 
 findComponent = (name, project) ->
@@ -54,60 +39,68 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'object'
-  c.inPorts.add 'projects',
-    required: true
-    datatype: 'array'
   c.outPorts.add 'out',
     datatype: 'object'
-  c.outPorts.add 'currentgraph',
+  c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'in'
-    params: ['projects']
-    out: ['out', 'currentgraph']
-  , (route, groups, out) ->
-    # Match to local data
-    ctx = buildContext()
-    ctx.project = findProject route.project, c.params.projects
-    return sendError out.out, new Error 'No project found' unless ctx.project
-
-    if route.component
-      ctx.component = findComponent route.component, ctx.project
-      return sendError out.out, new Error 'No component found' unless ctx.component
-      ctx.state = 'ok'
-      out.out.send ctx
+    out: 'out'
+    async: true
+  , (data, groups, out, callback) ->
+    unless data.state.projects?.local
+      callback new Error "No projects found"
       return
+    project = findProject data.payload.project, data.state.projects.local
+    unless project
+      callback new Error "Project #{data.payload.project} not found"
+      return
+    data.payload.project = project
 
-    mainGraph = findGraph route.graph, ctx.project
-    return sendError out.out, new Error 'No main graph found' unless mainGraph
-    ctx.graphs.push mainGraph
+    if data.payload.component
+      component = findComponent data.payload.component, project
+      unless component
+        callback new Error "Project #{data.payload.project.id} graph #{data.payload.component} not found"
+        return
+      data.payload.graphs = []
+      data.payload.component = component
+      out.send data
+      return callback()
+
+    unless data.payload.graph
+      data.payload.graph = project.main
+
+    mainGraph = findGraph data.payload.graph, project
+    unless mainGraph
+      callback new Error "Graph #{data.payload.graph} not found"
+      return
+    data.payload.graphs = [mainGraph]
+    delete data.payload.graph
 
     currentGraph = mainGraph
-    while route.nodes.length
-      nodeId = route.nodes.shift()
-      unless typeof currentGraph is 'object'
-        ctx.remote.push nodeId
-        continue
-      node = currentGraph.getNode nodeId
-      return sendError out.out, new Error "Node #{nodeId} not found" unless node
-      return sendError out.out, new Error "Node #{nodeId} has no component defined" unless node.component
-      [type, currentGraph] = findByComponent node.component, ctx.project
-
-      if type is 'component'
-        ctx.component = currentGraph
-        return sendError out.out, new Error 'Component cannot have subnodes' if route.nodes.length
+    while data.payload.nodes.length
+      # Traverse node tree as far as we can fill it
+      # from local data
+      nodeId = data.payload.nodes[0]
+      node = currentGraph.processes[nodeId]
+      return callback new Error "Node #{nodeId} not found" unless node
+      return callback new Error "Node #{nodeId} has no component defined" unless node.component
+      [type, currentGraph] = findByComponent node.component, project
+      if type is 'runtime'
+        # This node can't be found locally, let
+        # runtime provide it
         break
 
-      if type is 'runtime'
-        ctx.remote.push currentGraph
-        continue
+      if type is 'component'
+        data.payload.component = currentGraph
+        data.payload.nodes.shift()
+        return callback new Error 'Component cannot have subnodes' if data.payload.nodes.length
+        break
 
-      ctx.graphs.push currentGraph
+      data.payload.graphs.push currentGraph
+      data.payload.nodes.shift()
 
-    ctx.state = 'ok'
-    ctx.state = 'loading' if ctx.remote.length
-    out.currentgraph.send ctx.graphs[ctx.graphs.length - 1] if ctx.graphs
-    out.out.send ctx
-
-  c
+    out.send data
+    callback()
+    return

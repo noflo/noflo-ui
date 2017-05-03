@@ -8,90 +8,23 @@ else
   baseDir = 'noflo-ui'
 
 describe 'User Middleware', ->
-  c = null
-  actionIn = null
-  passAction = null
-  newAction = null
+  mw = null
   before (done) ->
     @timeout 4000
-    loader = new noflo.ComponentLoader baseDir
-    loader.load 'ui/UserMiddleware', (err, instance) ->
-      return done err if err
-      c = instance
-      actionIn = noflo.internalSocket.createSocket()
-      c.inPorts.in.attach actionIn
-      actionIn.port = 'in'
-      ###
-      c.network.on 'begingroup', (data) ->
-        console.log "   < #{data.id}"
-      c.network.on 'data', (data) ->
-        console.log "DATA #{data.id}"
-      c.network.on 'endgroup', (data) ->
-        console.log "   > #{data.id}"
-      ###
-      c.start()
-      c.network.once 'start', ->
-        done()
+    mw = window.middleware 'ui/UserMiddleware', baseDir
+    mw.before done
   beforeEach ->
-    passAction = noflo.internalSocket.createSocket()
-    c.outPorts.pass.attach passAction
-    passAction.port = 'pass'
-    newAction = noflo.internalSocket.createSocket()
-    c.outPorts.new.attach newAction
-    newAction.port = 'new'
+    mw.beforeEach()
   afterEach ->
-    c.outPorts.pass.detach passAction
-    c.outPorts.new.detach newAction
-
-  send = (socket, action, payload, state) ->
-    actionParts = action.split ':'
-    socket.beginGroup part for part in actionParts
-    socket.send
-      payload: payload
-      state: state
-    socket.endGroup part for part in actionParts
-    
-  receive = (socket, expected, check, done) ->
-    received = []
-    onBeginGroup = (group) ->
-      received.push "< #{group}"
-    onData = (data) ->
-      received.push 'DATA'
-      check data.payload
-    onEndGroup = (group) ->
-      received.push "> #{group}"
-      return unless received.length >= expected.length
-      socket.removeListener 'begingroup', onBeginGroup
-      socket.removeListener 'data', onData
-      socket.removeListener 'endgroup', onEndGroup
-      chai.expect(received).to.eql expected
-      done()
-    socket.on 'begingroup', onBeginGroup
-    socket.on 'data', onData
-    socket.on 'endgroup', onEndGroup
-
-  receiveAction = (socket, action, check, done) ->
-    expected = []
-    actionParts = action.split ':'
-    expected.push "< #{part}" for part in actionParts
-    expected.push 'DATA'
-    actionParts.reverse()
-    expected.push "> #{part}" for part in actionParts
-    receive socket, expected, check, done
-
-  receivePass = (socket, action, payload, done) ->
-    check = (data) ->
-      # Strict equality check for passed packets
-      chai.expect(data).to.equal payload
-    receiveAction socket, action, check, done
+    mw.afterEach()
 
   describe 'receiving a runtime:connect action', ->
     it 'should pass it out as-is', (done) ->
       action = 'runtime:connect'
       payload =
         hello: 'world'
-      receivePass passAction, action, payload, done
-      send actionIn, action, payload
+      mw.receivePass action, payload, done
+      mw.send action, payload
   describe 'receiving application:url action', ->
     originalUser = null
     originalToken = null
@@ -109,8 +42,8 @@ describe 'User Middleware', ->
         payload = 'https://app.flowhub.io'
         check = (data) ->
           chai.expect(data['grid-user']).to.be.a 'null'
-        receiveAction newAction, 'user:info', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:info', check, done
+        mw.send action, payload
     describe 'with logged in user', ->
       userData =
         id: 1
@@ -128,8 +61,8 @@ describe 'User Middleware', ->
         payload = 'https://app.flowhub.io'
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
-        receiveAction newAction, 'user:info', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:info', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://api.flowhub.io/user", [
           200
         ,
@@ -153,8 +86,8 @@ describe 'User Middleware', ->
           # Check data stored in cache
           cached = JSON.parse localStorage.getItem 'grid-user'
           chai.expect(cached).to.eql newUserData
-        receiveAction newAction, 'user:info', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:info', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://api.flowhub.io/user", [
           200
         ,
@@ -166,8 +99,8 @@ describe 'User Middleware', ->
         action = 'application:url'
         payload = 'https://app.flowhub.io'
         check = (data) ->
-        receiveAction newAction, 'user:logout', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:logout', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://api.flowhub.io/user", [
           401
         ,
@@ -181,8 +114,8 @@ describe 'User Middleware', ->
         payload = "https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match"
         check = (data) ->
           chai.expect(data.message).to.contain 'The redirect_uri MUST match'
-        receiveAction newAction, 'user:error', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:error', check, done
+        mw.send action, payload
     describe 'without user and with invalid grant code in URL', ->
       mock = null
       code = null
@@ -196,8 +129,8 @@ describe 'User Middleware', ->
         payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data.message).to.contain 'bad_code_foo'
-        receiveAction newAction, 'user:error', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:error', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", [
           402
         ,
@@ -221,8 +154,8 @@ describe 'User Middleware', ->
         payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data.message).to.contain 'Bad Credentials'
-        receiveAction newAction, 'user:error', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:error', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
@@ -259,8 +192,8 @@ describe 'User Middleware', ->
         payload = "https://app.flowhub.io?code=#{code}"
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
-        receiveAction newAction, 'user:info', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:info', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
@@ -277,8 +210,8 @@ describe 'User Middleware', ->
         payload = "https://app.flowhub.io?code=#{code}&state="
         check = (data) ->
           chai.expect(data['grid-user']).to.eql userData
-        receiveAction newAction, 'user:info', check, done
-        send actionIn, action, payload
+        mw.receiveAction 'user:info', check, done
+        mw.send action, payload
         mock.respondWith 'GET', "https://noflo-gate.herokuapp.com/authenticate/#{code}", (req) ->
           req.respond 200,
             'Content-Type': 'application/json'
@@ -296,8 +229,8 @@ describe 'User Middleware', ->
         action = 'user:login'
         check = (data) ->
           chai.expect(data.message).to.contain 'http://localhost:9999'
-        receiveAction newAction, 'user:error', check, done
-        send actionIn, action,
+        mw.receiveAction 'user:error', check, done
+        mw.send action,
           url: 'http://example.net'
           scopes: []
     describe 'with app URL matching redirect configuration', ->
@@ -305,8 +238,8 @@ describe 'User Middleware', ->
         action = 'user:login'
         check = (data) ->
           chai.expect(data).to.contain 'https://github.com/login/oauth/authorize'
-        receiveAction newAction, 'application:redirect', check, done
-        send actionIn, action,
+        mw.receiveAction 'application:redirect', check, done
+        mw.send action,
           url: 'http://localhost:9999'
           scopes: []
   describe 'receiving user:logout action', ->
@@ -324,8 +257,8 @@ describe 'User Middleware', ->
       action = 'user:logout'
       check = (data) ->
         chai.expect(data['grid-user']).to.be.a 'null'
-      receiveAction newAction, 'user:info', check, done
-      send actionIn, action, true
+      mw.receiveAction 'user:info', check, done
+      mw.send action, true
     it 'should have cleared user data', (done) ->
       chai.expect(localStorage.getItem('grid-user')).to.equal null
       done()
