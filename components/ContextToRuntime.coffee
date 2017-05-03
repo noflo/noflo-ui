@@ -1,13 +1,21 @@
 noflo = require 'noflo'
+_ = require 'underscore'
 
-sendContext = (context) ->
+sendContext = (context, out) ->
   if context.project
     sendProject context.project, context.runtime
+    out.send context
+    out.disconnect()
     return
 
   if context.graphs?.length
     sendGraph graph, context.runtime for graph in context.graphs
+    out.send context
+    out.disconnect()
     return
+
+  out.send context
+  out.disconnect()
 
 sendProject = (project, runtime) ->
   if project.components
@@ -104,20 +112,16 @@ exports.getComponent = ->
           # Different runtime, different graph. Disconnect old runtime connection
           currentContext.runtime.disconnect()
 
+      send = _.debounce sendContext, 300, true
+
       # Prepare to send data
       currentContext = payload
-      sendContext payload if payload.runtime.isConnected()
+      send payload, c.outPorts.context if payload.runtime.isConnected()
       sender = ->
         return unless currentContext is payload
-        sendContext payload
-        c.outPorts.context.send payload
-        c.outPorts.context.disconnect()
+        send payload, c.outPorts.context
 
       payload.runtime.on 'capabilities', sender
-
-      if payload.runtime.isConnected()
-        c.outPorts.context.send payload
-        c.outPorts.context.disconnect()
 
   c.outPorts.add 'context',
     datatype: 'object'
