@@ -70,7 +70,9 @@
         border-radius: 3px;
         padding: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: color 0.3s ease, background-color 0.3s ease, opacity 5.0s ease-in;
+        visibility: hidden;
+        opacity: 0;
       }
     </style>
     <noflo-main id="main"></noflo-main>
@@ -383,8 +385,17 @@
         }
         if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
           this.$.main.open = false;
+          if (!this.ctx.project) {
+            this.$.asproject.style.visibility = 'visible';
+            this.$.asproject.style.opacity = 1;
+          } else {
+            this.$.asproject.style.visibility = 'hidden';
+            this.$.asproject.style.opacity = 0;
+          }
         } else {
           this.$.main.open = true;
+          this.$.asproject.style.visibility = 'hidden';
+          this.$.asproject.style.opacity = 0;
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
           var oldGraph = this.$.grapheditor.graph;
