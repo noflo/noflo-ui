@@ -14,8 +14,8 @@
           <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
         </label>
         <label>
-          Project name
-          <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
+          Project namespace
+          <input type="text" value="{{ namespace }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
         </label>
         <label>
           Primary Type
@@ -32,6 +32,7 @@
     Polymer('noflo-new-project', {
       projectId: '',
       name: '',
+      namespace: '',
       type: 'noflo-browser',
       runtimes: null,
       projects: null,
@@ -43,7 +44,8 @@
         document.getElementById('container').classList.remove('blur');
       },
       nameChanged: function () {
-        this.projectId = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
+        this.namespace = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
+        this.projectId = this.namespace;
         var duplicates = [];
         if (this.projects) {
           duplicates = this.projects.filter(function (project) {
@@ -53,7 +55,7 @@
             return false;
           }.bind(this));
         }
-        if (this.name && this.projectId && !duplicates.length) {
+        if (this.name && this.namespace && this.projectId && !duplicates.length) {
           this.canSend = true;
         } else {
           this.canSend = false;
@@ -63,7 +65,7 @@
         if (event) {
           event.preventDefault();
         }
-        if (!this.name || !this.projectId) {
+        if (!this.name || !this.namespace || !this.projectId) {
           return;
         }
         if (typeof ga === 'function') {
@@ -72,6 +74,7 @@
         this.fire('new', {
           id: this.projectId.replace(/[\/\s\.]/g, '-'),
           name: this.name,
+          namespace: this.namespace.replace(/[\/\s\.]/g, '-'),
           type: this.type,
           graphs: [],
           components: [],
