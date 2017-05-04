@@ -23,7 +23,7 @@ Please read more from <http://flowhub.io/documentation/>. See also the [availabl
 ## FBP systems support
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
-Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to *any* compatible FBP system.
+Instead, it is utilizing the [FBP Network Protocol](https://flowbased.github.io/fbp-protocol/) which enables it to talk to *any* compatible FBP system.
 Currently over 5 different runtimes are known to work.
 
 By implementing the protocol in your runtime, you can program it with NoFlo UI.
@@ -38,7 +38,6 @@ One can *optionally* add component templates, syntax highlighting and a 'get sta
 2. Include it in [./runtimeinfo/index.coffee](./runtimeinfo/index.coffee)
 3. Commit the changes
 4. Send a [Pull Request](https://github.com/noflo/noflo-ui/pull/new/master), so everyone benefits!
-
 
 ## Development of NoFlo UI
 
