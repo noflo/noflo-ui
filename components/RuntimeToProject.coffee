@@ -1,6 +1,11 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 
+isComponentInProject = (namespace, component) ->
+  return true if componentName.indexOf('/') is -1
+  [library, component] = componentName.split '/'
+  return library is namespace
+
 fetchSources = (components, runtime, sources, callback) ->
   return callback null, sources unless components.length
   handleMessage = (msg) ->
@@ -24,9 +29,7 @@ fetchFromLibrary = (runtime, callback) ->
   return callback null, [] unless runtime.definition?.namespace
   return callback null, [] unless runtime.definition.components
   components = Object.keys(runtime.definition.components).filter (componentName) ->
-    return true if componentName.indexOf('/') is -1
-    [library, component] = componentName.split '/'
-    return library is runtime.definition.namespace
+    isComponentInProject runtime.definition.namespace, componentName
   fetchSources components, runtime, [], callback
 
 exports.getComponent = ->
