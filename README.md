@@ -28,7 +28,7 @@ Currently over 5 different runtimes are known to work.
 
 By implementing the protocol in your runtime, you can program it with NoFlo UI.
 If you use WebSockets or WebRTC as the transport, you do not need to change anything on NoFlo UI.
-You can also [add support other transports](https://github.com/noflo/noflo-runtime).
+You can also [add support other transports](https://github.com/flowbased/fbp-protocol-client).
 
 ### Adding new runtime information
 
