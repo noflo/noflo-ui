@@ -1,7 +1,7 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 
-isComponentInProject = (namespace, component) ->
+isComponentInProject = (namespace, componentName) ->
   return true if componentName.indexOf('/') is -1
   [library, component] = componentName.split '/'
   return library is namespace
