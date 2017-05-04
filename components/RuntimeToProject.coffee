@@ -5,7 +5,7 @@ fetchSources = (components, runtime, sources, callback) ->
   return callback null, sources unless components.length
   handleMessage = (msg) ->
     if msg.command is 'error'
-      callback msg.payload
+      callback new Error msg.payload.message
       return
     if msg.command is 'source'
       sources.push msg.payload
