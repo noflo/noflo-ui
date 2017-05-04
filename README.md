@@ -23,12 +23,28 @@ Please read more from <http://flowhub.io/documentation/>. See also the [availabl
 ## FBP systems support
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
-Instead, it is utilizing the [FBP Network Protocol](http://noflojs.org/documentation/protocol/) which enables it to talk to *any* compatible FBP system.
+Instead, it is utilizing the [FBP Network Protocol](https://flowbased.github.io/fbp-protocol/) which enables it to talk to *any* compatible FBP system.
 Currently over 5 different runtimes are known to work.
 
 By implementing the protocol in your runtime, you can program it with NoFlo UI.
 If you use WebSockets or WebRTC as the transport, you do not need to change anything on NoFlo UI.
-You can also [add support other transports](https://github.com/noflo/noflo-runtime).
+You can also [add support other transports](https://github.com/flowbased/fbp-protocol-client).
+
+### Registering runtime for a user
+
+The easiest way to pass user the connection information of your runtime is through the _live mode_. With this, the connection details are passed to the app via URL parameters, like this:
+
+```
+http://app.flowhub.io#runtime/endpoint?protocol%3Dwebsocket%26address%3Dws%3A%2F%2F127.0.0.1%3A3569
+```
+
+The supported parameters for the endpoint include:
+
+* `protocol`: the FBP protocol transport to use for the connection. Possible values include `websocket`, `iframe`, and `webrtc`
+* `address`: URL to use for the connection. Can be for instance `ws://` URL for WebSockets, or the signaller URL and connection identifier for WebRTC
+* `secret`: secret to use for communicating with the runtime
+
+These URLs can be shown on command line output, or provided to user via other mechanism. See a [video demonstration](https://youtu.be/EdgeSDFd9p0) of opening the app in live mode via a NFC tag.
 
 ### Adding new runtime information
 
@@ -38,7 +54,6 @@ One can *optionally* add component templates, syntax highlighting and a 'get sta
 2. Include it in [./runtimeinfo/index.coffee](./runtimeinfo/index.coffee)
 3. Commit the changes
 4. Send a [Pull Request](https://github.com/noflo/noflo-ui/pull/new/master), so everyone benefits!
-
 
 ## Development of NoFlo UI
 
