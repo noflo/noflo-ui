@@ -8,8 +8,11 @@ var exported = {
   'fbp-protocol-client': require('fbp-protocol-client'),
   'fbp-spec': require('fbp-spec'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
-  'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee')
+  'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),
+  'the-graph': require('the-graph'),
 };
+
+window.TheGraph = exported['the-graph']; // expected by the-graph Polymer elements
 
 window.require = function (moduleName) {
   if (typeof exported[moduleName] !== 'undefined') {

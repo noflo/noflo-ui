@@ -53,9 +53,9 @@
       }
     </style>
     <div id="controls">
-      <template if="{{ graph }}">
-        <the-graph-nav id="nav" width="288" height="144" editor="{{ editor }}" hide="{{ hidenav }}"></the-graph-nav>
+      <the-graph-nav id="nav" width="288" height="144" graph="{{ graph }}" hide="{{ hidenav }}"></the-graph-nav>
 
+      <template if="{{ graph }}">
         <button title="Undo" class="undo {{ { disabled: !canUndo } | tokenList }}" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
         <template if="{{ klay }}">
           <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
@@ -76,6 +76,26 @@
       canRedo: false,
       attached: function () {
         this.klay = true;
+      },
+      editorChanged: function (oldEditor, newEditor) {
+        if (!newEditor) { return; }
+
+        // Connect nav and editor together
+        var nav = this.$.nav;
+        var editor = newEditor;
+        editor.addEventListener('viewchanged', function(e) {
+          nav.view = e.detail;
+        });
+        nav.addEventListener('panto', function(e) {
+          var pan = e.detail;
+          if (pan.x != editor.pan[0] || pan.y != editor.pan[1]) {
+            editor.pan[0] = pan.x;
+            editor.pan[1] = pan.y;
+          }
+        });
+        nav.addEventListener('tap', function() {
+          editor.triggerFit();
+        });
       },
       graphChanged: function () {
         this.checkState();
