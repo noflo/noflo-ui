@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-group-inspector.html">
 <link rel="import" href="the-card.html">
 <link rel="import" href="the-panel.html">
-<polymer-element name="noflo-context" attributes="project graphs component node edge search">
+<polymer-element name="noflo-context" attributes="project graphs component node edge search readonly">
   <template>
     <style>
       #context {
@@ -74,51 +74,23 @@
         if (!this.editor) {
           return;
         }
-        this.editor.addMenuAction('graphInport', 'n4', {
-          icon: 'pencil-square-o',
-          iconLabel: 'rename',
-          action: function (graph, itemKey, item) {
-            var dialog = document.createElement('noflo-exported-inspector');
-            dialog.graph = this.graphs[this.graphs.length - 1];
-            dialog.publicport = itemKey;
-            dialog.privateport = item;
-            dialog.direction = 'input';
-            document.body.appendChild(dialog);
-          }.bind(this)
-        });
-        this.editor.addMenuAction('graphOutport', 'n4', {
-          icon: 'pencil-square-o',
-          iconLabel: 'rename',
-          action: function (graph, itemKey, item) {
-            var dialog = document.createElement('noflo-exported-inspector');
-            dialog.graph = this.graphs[this.graphs.length - 1];
-            dialog.publicport = itemKey;
-            dialog.privateport = item;
-            dialog.direction = 'output';
-            document.body.appendChild(dialog);
-          }.bind(this)
-        });
-        this.editor.addMenuAction('selection', 'e4', {
-          icon: 'sitemap',
-          iconLabel: 'graph',
-          action: this.subgraph.bind(this)
-        });
-        this.editor.addMenuAction('selection', 'w4', {
-          icon: 'square-o',
-          iconLabel: 'group',
-          action: this.group.bind(this)
-        });
+        var emptyOnReadOnly = function (defaultMenu, options) {
+          if (this.readonly) {
+            return {};
+          }
+          return defaultMenu;
+        }.bind(this);
+        this.editor.addMenuCallback('main', emptyOnReadOnly);
+        this.editor.addMenuCallback('edge', emptyOnReadOnly);
         this.editor.addMenuCallback('node', function (defaultMenu, options) {
+          var localMenu = emptyOnReadOnly(defaultMenu, options);
           if (!options.item.component) {
-            return defaultMenu;
+            return localMenu;
           }
           if (!this.canGetSource(options.item.component)) {
-            return defaultMenu;
+            return localMenu;
           }
-          var i, menuKey;
-          var localMenu = {};
-          var project = this.project;
-          var openAction =  {
+          localMenu.n4 = {
             icon: 'arrow-circle-o-up',
             iconLabel: 'open',
             action: function (graph, itemKey, item) {
@@ -130,11 +102,62 @@
               window.location.hash = hash + '/' + encodeURIComponent(item.id);
             }
           };
-          for (menuKey in defaultMenu) {
-            localMenu[menuKey] = defaultMenu[menuKey];
-          }
-          localMenu.n4 = openAction;
           return localMenu;
+        }.bind(this));
+        this.editor.addMenuCallback('nodeInport', emptyOnReadOnly);
+        this.editor.addMenuCallback('nodeOutport', emptyOnReadOnly);
+        this.editor.addMenuCallback('graphInport', function (defaultMenu, options) {
+          if (this.readonly) {
+            return emptyOnReadOnly(defaultMenu, options);
+          }
+          defaultMenu.n4 = {
+            icon: 'pencil-square-o',
+            iconLabel: 'rename',
+            action: function (graph, itemKey, item) {
+              var dialog = document.createElement('noflo-exported-inspector');
+              dialog.graph = this.graphs[this.graphs.length - 1];
+              dialog.publicport = itemKey;
+              dialog.privateport = item;
+              dialog.direction = 'input';
+              document.body.appendChild(dialog);
+            }.bind(this)
+          };
+          return defaultMenu;
+        }.bind(this));
+        this.editor.addMenuCallback('graphOutport', function (defaultMenu, options) {
+          if (this.readonly) {
+            return emptyOnReadOnly(defaultMenu, options);
+          }
+          defaultMenu.n4 = {
+            icon: 'pencil-square-o',
+            iconLabel: 'rename',
+            action: function (graph, itemKey, item) {
+              var dialog = document.createElement('noflo-exported-inspector');
+              dialog.graph = this.graphs[this.graphs.length - 1];
+              dialog.publicport = itemKey;
+              dialog.privateport = item;
+              dialog.direction = 'output';
+              document.body.appendChild(dialog);
+            }.bind(this)
+          };
+          return defaultMenu;
+        }.bind(this));
+        this.editor.addMenuCallback('group', emptyOnReadOnly);
+        this.editor.addMenuCallback('selection', function (defaultMenu, options) {
+          if (this.readonly) {
+            return emptyOnReadOnly(defaultMenu, options);
+          }
+          defaultMenu.e4 = {
+            icon: 'sitemap',
+            iconLabel: 'graph',
+            action: this.subgraph.bind(this)
+          };
+          defaultMenu.w4 = {
+            icon: 'square-o',
+            iconLabel: 'group',
+            action: this.group.bind(this)
+          };
+          return defaultMenu;
         }.bind(this));
       },
       edgesChanged: function () {
@@ -156,6 +179,9 @@
         this.edges.splice(0, this.edges.length);
       },
       group: function (graph, itemKey, item) {
+        if (this.readonly) {
+          return;
+        }
         if (typeof ga === 'function') {
           ga('send', 'event', 'menu', 'click', 'createGroup');
         }
@@ -183,7 +209,7 @@
         document.body.appendChild(dialog);
       },
       subgraph: function (currentGraph, itemKey, item) {
-        if (!this.project) {
+        if (!this.project || this.readonly) {
           return;
         }
 

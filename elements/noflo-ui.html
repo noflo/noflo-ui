@@ -390,11 +390,13 @@
             this.$.asproject.style.opacity = 1;
             this.$.grapheditor.readonly = true;
             this.$.search.readonly = true;
+            this.$.context.readonly = true;
           } else {
             this.$.asproject.style.visibility = 'hidden';
             this.$.asproject.style.opacity = 0;
             this.$.grapheditor.readonly = false;
             this.$.search.readonly = false;
+            this.$.context.readonly = false;
           }
         } else {
           this.$.main.open = true;
