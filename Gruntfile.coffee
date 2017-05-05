@@ -389,7 +389,7 @@ module.exports = ->
         options:
           scripts: [
             "../browser/<%=pkg.name%>.js"
-            '../node_modules/sinon/pkg/sinon-server.js'
+            '../node_modules/sinon/pkg/sinon.js'
           ]
         files:
           'spec/tests.html': ['spec/*.js']
