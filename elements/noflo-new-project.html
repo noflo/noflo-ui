@@ -68,7 +68,7 @@
         this.fire('new', {
           id: this.projectId,
           name: this.name,
-          namespace: this.namespace,
+          namespace: this.produceNamespace(this.namespace),
           type: this.type,
           graphs: [],
           components: [],
