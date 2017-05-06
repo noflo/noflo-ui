@@ -18,7 +18,7 @@ Bugfixes
 
 Internal changes
 
-* Now using `the-graph` version 0.8. The JavaSscript is now bundled via Webpack instead of included in Polymer elements.
+* Now using `the-graph` version 0.8. The JavaScript is now bundled via Webpack instead of included in Polymer elements.
 This reduces the number of HTTP requests needed.
 
 # 0.18.0 (2017 March 13)
