@@ -325,6 +325,7 @@
           }
           this.searchChanged();
         }
+        event.stopPropagation();
       },
       searchChanged: function () {
         this.clearResults();
