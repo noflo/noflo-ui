@@ -7,6 +7,7 @@ New features
 
 * It is now possible to copy a live mode session into a project with the _Edit as project_ button
 * Live mode was changed to be read only
+* Updated NoFlo component examples to the [0.8 Process API](https://noflojs.org/documentation/components/)
 
 Bugfixes
 

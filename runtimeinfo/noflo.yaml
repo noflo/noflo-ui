@@ -30,17 +30,19 @@ componenttemplates:
       c.outPorts.add('out', {
         datatype: 'all'
       });
-      noflo.helpers.WirePattern(c, {
-        "in": ['in'],
-        out: 'out',
-        forwardGroups: true,
-        async: true
-      }, function(data, groups, out, callback) {
-        // do something with data
-        // send output
-        out.send(data);
-        // tell WirePattern we are done
-        return callback();
+      c.process(function (input, output) {
+        // Check preconditions on input data
+        if (!input.hasData('in')) {
+          return;
+        }
+        // Read packets we need to process
+        var data = input.getData('in');
+        // Process data and send output
+        output.send({
+          out: data
+        });
+        // Deactivate
+        output.done();
       });
       return c;
     };
@@ -56,20 +58,16 @@ componenttemplates:
         description: 'Packet to forward'
       c.outPorts.add 'out',
         datatype: 'all'
-
-      noflo.helpers.WirePattern c,
-        in: ['in']
-        out: 'out'
-        forwardGroups: true
-        async: true
-      , (data, groups, out, callback) ->
-        # do something with data
-        # send it on outport
-        out.send data
-
-        # let WirePattern know we are done
-        do callback
-      c
+      c.process (input, output) ->
+        # Check preconditions on input data
+        return unless input.hasData 'in'
+        # Read packets we need to process
+        data = input.getData 'in'
+        # Process data and send output
+        output.send
+          out: data
+        # Deactivate
+        output.done()
 
   es2015: |
     import noflo from 'noflo';
@@ -85,17 +83,19 @@ componenttemplates:
       c.outPorts.add('out', {
         datatype: 'all'
       });
-      noflo.helpers.WirePattern(c, {
-        "in": ['in'],
-        out: 'out',
-        forwardGroups: true,
-        async: true
-      }, function(data, groups, out, callback) {
-        // do something with data
-        // send output
-        out.send(data);
-        // tell WirePattern we are done
-        return callback();
+      c.process(function (input, output) {
+        // Check preconditions on input data
+        if (!input.hasData('in')) {
+          return;
+        }
+        // Read packets we need to process
+        var data = input.getData('in');
+        // Process data and send output
+        output.send({
+          out: data
+        });
+        // Deactivate
+        output.done();
       });
       return c;
     };
