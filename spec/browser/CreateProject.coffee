@@ -73,7 +73,7 @@ describe 'Project Creation Dialog', ->
       submit = dialog.shadowRoot.querySelector '.toolbar button'
       Syn.click submit
       setTimeout ->
-        chai.expect(win.location.hash.indexOf('project/foo')).to.not.equal -1
+        chai.expect(win.location.hash.indexOf('project/')).to.not.equal -1
         done()
       , 1800
     it 'should have closed the dialog', ->

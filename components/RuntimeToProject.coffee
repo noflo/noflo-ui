@@ -23,13 +23,13 @@ fetchSources = (components, runtime, sources, callback) ->
   runtime.sendComponent 'getsource',
     name: component
 
-fetchFromLibrary = (runtime, callback) ->
+fetchFromLibrary = (namespace, runtime, callback) ->
+  return callback null, [] unless namespace
   return callback null, [] unless runtime.isConnected()
   return callback null, [] unless runtime.canDo 'component:getsource'
-  return callback null, [] unless runtime.definition?.namespace
   return callback null, [] unless runtime.definition.components
   components = Object.keys(runtime.definition.components).filter (componentName) ->
-    isComponentInProject runtime.definition.namespace, componentName
+    isComponentInProject namespace, componentName
   fetchSources components, runtime, [], callback
 
 exports.getComponent = ->
@@ -55,9 +55,11 @@ exports.getComponent = ->
   , (data, groups, out, callback) ->
     project =
       id: uuid.v4()
+      namespace: data.payload.runtime?.definition?.namespace
       graphs: []
       components: []
       specs: []
+    project.name = project.namespace if project.namespace
 
     # Start with the data we already have
     graphs = data.payload.graphs.slice 0
@@ -65,7 +67,7 @@ exports.getComponent = ->
     components.push data.payload.component if data.payload.component
 
     # Add components and graphs from library
-    fetchFromLibrary data.payload.runtime, (err, sources) ->
+    fetchFromLibrary project.namespace, data.payload.runtime, (err, sources) ->
       return callback err if err
       graphs = graphs.concat sources.filter (c) -> c.language is 'json'
       components = components.concat sources.filter (c) -> c.language isnt 'json'
@@ -94,6 +96,7 @@ exports.getComponent = ->
       out.project.send
         id: project.id
         name: project.name
+        namespace: project.namespace
         type: project.type
         main: project.main
 
