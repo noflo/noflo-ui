@@ -14,8 +14,8 @@
           <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
         </label>
         <label>
-          Project name
-          <input type="text" value="{{ projectId }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
+          Project namespace
+          <input type="text" value="{{ namespace }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
         </label>
         <label>
           Primary Type
@@ -32,6 +32,7 @@
     Polymer('noflo-new-project', {
       projectId: '',
       name: '',
+      namespace: '',
       type: 'noflo-browser',
       runtimes: null,
       projects: null,
@@ -42,18 +43,13 @@
       detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
+      produceNamespace: function (namespace) {
+        return namespace.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
+      },
       nameChanged: function () {
-        this.projectId = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
-        var duplicates = [];
-        if (this.projects) {
-          duplicates = this.projects.filter(function (project) {
-            if (project.id === this.projectId || project.name == this.name) {
-              return true;
-            }
-            return false;
-          }.bind(this));
-        }
-        if (this.name && this.projectId && !duplicates.length) {
+        this.namespace = this.produceNamespace(this.name);
+        this.projectId = require('uuid').v4();
+        if (this.name && this.namespace && this.projectId) {
           this.canSend = true;
         } else {
           this.canSend = false;
@@ -63,15 +59,16 @@
         if (event) {
           event.preventDefault();
         }
-        if (!this.name || !this.projectId) {
+        if (!this.name || !this.namespace || !this.projectId) {
           return;
         }
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'newProject');
         }
         this.fire('new', {
-          id: this.projectId.replace(/[\/\s\.]/g, '-'),
+          id: this.projectId,
           name: this.name,
+          namespace: this.produceNamespace(this.namespace),
           type: this.type,
           graphs: [],
           components: [],

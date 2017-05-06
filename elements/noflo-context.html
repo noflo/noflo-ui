@@ -320,23 +320,11 @@
         }.bind(this));
       },
       libraryMatch: function (library, project) {
-        if (library === project.id) {
+        var namespace = project.namespace || project.id;
+        if (library === namespace) {
           return true;
         }
-        if (library === project.id.replace('noflo-')) {
-          return true;
-        }
-        if (!project.repo) {
-          return false;
-        }
-        var repoParts = project.repo.split('/');
-        if (repoParts.length !== 2) {
-          return false;
-        }
-        if (library === repoParts[1]) {
-          return true;
-        }
-        if (library === repoParts[1].replace('noflo-', '')) {
+        if (library === namespace.replace('noflo-')) {
           return true;
         }
         return false;

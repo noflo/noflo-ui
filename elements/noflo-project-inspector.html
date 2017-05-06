@@ -25,6 +25,10 @@
           <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
         </label>
         <label>
+          <span>Project namespace</span>
+          <input type="text" value="{{ namespace }}" placeholder="my-cool-project" required>
+        </label>
+        <label>
           <span>Main graph</span>
           <select name="type" value="{{ main }}">
             <template repeat="{{ graph in project.graphs }}">
@@ -50,6 +54,7 @@
       originalRepo: '',
       repo: '',
       name: '',
+      namespace: '',
       main: '',
       attached: function () {
         document.getElementById('container').classList.add('blur');
@@ -61,6 +66,7 @@
         this.originalRepo = this.project.repo;
         this.repo = this.project.repo;
         this.name = this.project.name;
+        this.namespace = this.project.namespace || this.project.id;
         this.main = this.project.main;
       },
       createProject: function (callback) {
@@ -94,6 +100,7 @@
         this.fire('updated', {
           id: this.project.id,
           name: this.name,
+          namespace: this.namespace,
           main: this.main,
           type: type,
           repo: this.repo

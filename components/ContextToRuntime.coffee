@@ -9,7 +9,7 @@ sendContext = (context, out) ->
     return
 
   if context.graphs?.length
-    sendGraph graph, context.runtime for graph in context.graphs
+    sendGraph null, graph, context.runtime for graph in context.graphs
     out.send context
     out.disconnect()
     return
@@ -18,12 +18,13 @@ sendContext = (context, out) ->
   out.disconnect()
 
 sendProject = (project, runtime) ->
+  namespace = project.namespace or project.id
   if project.components
-    sendComponent component, runtime for component in project.components
+    sendComponent namespace, component, runtime for component in project.components
   if project.graphs
-    sendGraph graph, runtime, project for graph in project.graphs
+    sendGraph namespace, graph, runtime, project for graph in project.graphs
 
-sendComponent = (component, runtime) ->
+sendComponent = (namespace, component, runtime) ->
   return unless component.code
 
   # Check for platform-specific components
@@ -36,11 +37,11 @@ sendComponent = (component, runtime) ->
   runtime.sendComponent 'source',
     name: component.name
     language: component.language
-    library: component.project or component.library
+    library: namespace
     code: component.code
     tests: component.tests
 
-sendGraph = (graph, runtime, project) ->
+sendGraph = (namespace, graph, runtime, project) ->
   if graph.properties.environment?.type
     return unless graph.properties.environment.type in ['all', runtime.definition.type]
 
@@ -50,7 +51,7 @@ sendGraph = (graph, runtime, project) ->
   runtime.sendGraph 'clear',
     id: graphId
     name: graph.name
-    library: graph.properties.project
+    library: namespace
     main: (not project or graph.properties.id is project.main)
     icon: graph.properties.icon or ''
     description: graph.properties.description or ''

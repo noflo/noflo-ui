@@ -7,6 +7,7 @@ New features
 
 * It is now possible to copy a live mode session into a project with the _Edit as project_ button
 * Live mode was changed to be read only
+* Project namespace used as library identifier for components and graphs is now separately editable
 
 Bugfixes
 
