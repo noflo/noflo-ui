@@ -12,6 +12,11 @@ Bugfixes
 * Information packets are now shown full in the packet inspectors instead of getting cut off
 * Fixed sending of duplicate `graph:clear` messages to runtimes in project mode
 
+Internal changes
+
+* Now using `the-graph` version 0.8. The JavaSscript is now bundled via Webpack instead of included in Polymer elements.
+This reduces the number of HTTP requests needed.
+
 # 0.18.0 (2017 March 13)
 
 New features
