@@ -4,7 +4,7 @@
 <link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-component-inspector.html">
 
-<polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component">
+<polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component readonly">
   <template>
     <style>
       :host {
@@ -165,7 +165,7 @@
 
     </style>
     <div id="breadcrumb" on-click="{{ focus }}">
-      <template if="{{ !component || !component.name }}">
+      <template if="{{ !readonly && (!component || !component.name) }}">
       <i class="fa fa-search"></i>
       </template>
       <h1 title="Search">
@@ -179,13 +179,13 @@
         {{ component.name }}
         </template>
       </h1>
-      <template if="{{ graph && (!component || !component.name) }}">
+      <template if="{{ !readonly && graph && (!component || !component.name) }}">
       <button on-click="{{ showGraphInspector }}" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ !graph && component && component.name }}">
+      <template if="{{ !readonly && !graph && component && component.name }}">
       <button on-click="{{ showComponentInspector }}" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ (component && component.readonly) || (graph && graph.properties.readonly) }}">
+      <template if="{{ readonly || (component && component.readonly) || (graph && graph.properties.readonly) }}">
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
@@ -268,6 +268,9 @@
         this.blur();
       },
       focus: function () {
+        if (this.readonly) {
+          return;
+        }
         if (this.component && this.component.name) {
           return;
         }

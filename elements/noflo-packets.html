@@ -1,6 +1,7 @@
+<link rel="import" href="noflo-node-inspector.html">
 <link rel="import" href="noflo-edge-menu.html">
 <link rel="import" href="noflo-edge-inspector.html">
-<polymer-element name="noflo-packets">
+<polymer-element name="noflo-packets" attributes="readonly">
 <script>
   (function () {
     function CircularBuffer(n, clearCallback) {
@@ -126,7 +127,14 @@
         this.logs[id] = new CircularBuffer(40);
       },
       showEdgeCards: function () {
-        if (!this.edgeMenu) {
+        if (this.edgeMenu) {
+          if (this.readonly) {
+            this.edgeMenu.parentNode.removeChild(this.edgeMenu);
+            this.edgeMenu = null;
+          } else {
+            this.edgeMenu.dialog.edges = this.edges;
+          }
+        } else if (!this.readonly) {
           var menu = document.createElement('noflo-edge-menu');
           menu.edges = this.edges;
           menu.graph = this.currentgraph;
@@ -135,8 +143,6 @@
           this.edgeMenu.dialog = menu;
           this.edgeMenu.appendChild(menu);
           this.edgeMenu.addTo(this.panel);
-        } else {
-          this.edgeMenu.dialog.edges = this.edges;
         }
 
         this.edges.forEach(function (edge) {
@@ -198,6 +204,9 @@
         this.nodes.forEach(function (node) {
           var id = node.id;
           if (this.nodeInspectors[id]) {
+            return;
+          }
+          if (this.readonly) {
             return;
           }
           this.ensureErrorLog(id);
