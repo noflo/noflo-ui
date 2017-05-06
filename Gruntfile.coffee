@@ -387,6 +387,8 @@ module.exports = ->
       all:
         options:
           scripts: [
+            "../node_modules/react/dist/react-with-addons.js"
+            "../node_modules/react-dom/dist/react-dom.js"
             "../browser/<%=pkg.name%>.js"
             '../node_modules/sinon/pkg/sinon-server.js'
           ]
