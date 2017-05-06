@@ -43,19 +43,13 @@
       detached: function () {
         document.getElementById('container').classList.remove('blur');
       },
+      produceNamespace: function (namespace) {
+        return namespace.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
+      },
       nameChanged: function () {
-        this.namespace = this.name.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
-        this.projectId = this.namespace;
-        var duplicates = [];
-        if (this.projects) {
-          duplicates = this.projects.filter(function (project) {
-            if (project.id === this.projectId || project.name == this.name) {
-              return true;
-            }
-            return false;
-          }.bind(this));
-        }
-        if (this.name && this.namespace && this.projectId && !duplicates.length) {
+        this.namespace = this.produceNamespace(this.name);
+        this.projectId = require('uuid').v4();
+        if (this.name && this.namespace && this.projectId) {
           this.canSend = true;
         } else {
           this.canSend = false;
@@ -72,9 +66,9 @@
           ga('send', 'event', 'button', 'click', 'newProject');
         }
         this.fire('new', {
-          id: this.projectId.replace(/[\/\s\.]/g, '-'),
+          id: this.projectId,
           name: this.name,
-          namespace: this.namespace.replace(/[\/\s\.]/g, '-'),
+          namespace: this.namespace,
           type: this.type,
           graphs: [],
           components: [],
