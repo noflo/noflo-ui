@@ -43,7 +43,7 @@
     "noflo-runtime-webrtc": "~0.7.3",
     "noflo-strings": "~0.2.0",
     "rtc": "^3.4.0",
-    "the-graph": "^0.6.0",
+    "the-graph": "^0.8.1",
     "uuid": "^3.0.1",
     "webcomponents.js": "^0.6.0"
   },

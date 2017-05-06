@@ -268,8 +268,7 @@ module.exports = ->
             'node_modules/react-dom/dist/*.js'
             'node_modules/rtc/dist/rtc.js'
             'node_modules/rtc/dist/rtc.js.map'
-            'node_modules/the-graph/**/*.js'
-            'node_modules/the-graph/**/*.css'
+            'node_modules/the-graph/themes/*.css'
             'node_modules/webcomponents.js/webcomponents.min.js'
             'node_modules/indexeddbshim/dist/indexeddbshim.min.js'
           ]
@@ -388,6 +387,8 @@ module.exports = ->
       all:
         options:
           scripts: [
+            "../node_modules/react/dist/react-with-addons.js"
+            "../node_modules/react-dom/dist/react-dom.js"
             "../browser/<%=pkg.name%>.js"
             '../node_modules/sinon/pkg/sinon.js'
           ]
