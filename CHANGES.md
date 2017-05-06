@@ -12,6 +12,7 @@ Bugfixes
 
 * Information packets are now shown full in the packet inspectors instead of getting cut off
 * Fixed sending of duplicate `graph:clear` messages to runtimes in project mode
+* Fixed the-graph capturing `s` and `f` shortcuts when typing in the search field
 
 Internal changes
 
