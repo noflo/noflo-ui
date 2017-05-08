@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.19.1 (2017 May 8)
+
+New features
+
+* Updated `the-graph` to version 0.9 that includes support for read-only live mode
+
 # 0.19.0 (2017 May 6)
 
 New features
