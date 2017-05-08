@@ -497,6 +497,9 @@
         if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || ! this.ctx.runtime.canDo('protocol:network')) {
           return;
         }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'editAsProject');
+        }
 
         this.emitEvent('project:fromruntime', {
           graphs: this.ctx.graphs,
