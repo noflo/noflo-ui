@@ -386,20 +386,20 @@
         if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
           this.$.main.open = false;
           if (!this.ctx.project) {
-            this.toggleEditAsProject(true);
+            this.showEditAsProject(true);
             this.$.grapheditor.readonly = true;
             this.$.context.readonly = true;
             this.$.packets.readonly = true;
             this.$.search.readonly = true;
           } else {
-            this.toggleEditAsProject(false);
+            this.showEditAsProject(false);
             this.$.grapheditor.readonly = false;
             this.$.context.readonly = false;
             this.$.packets.readonly = false;
             this.$.search.readonly = false;
           }
         } else {
-          this.toggleEditAsProject(false);
+          this.showEditAsProject(false);
           this.$.main.open = true;
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
@@ -477,7 +477,7 @@
           this.hideAlert();
         }.bind(this), 1300);
       },
-      toggleEditAsProject: function (enable) {
+      showEditAsProject: function (enable) {
         if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || ! this.ctx.runtime.canDo('protocol:network')) {
           // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
           enable = false;
