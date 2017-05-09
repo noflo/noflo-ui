@@ -386,24 +386,21 @@
         if ((this.ctx.graphs && this.ctx.graphs.length) || this.ctx.component) {
           this.$.main.open = false;
           if (!this.ctx.project) {
-            this.$.asproject.style.visibility = 'visible';
-            this.$.asproject.style.opacity = 1;
+            this.showEditAsProject(true);
             this.$.grapheditor.readonly = true;
             this.$.context.readonly = true;
             this.$.packets.readonly = true;
             this.$.search.readonly = true;
           } else {
-            this.$.asproject.style.visibility = 'hidden';
-            this.$.asproject.style.opacity = 0;
+            this.showEditAsProject(false);
             this.$.grapheditor.readonly = false;
             this.$.context.readonly = false;
             this.$.packets.readonly = false;
             this.$.search.readonly = false;
           }
         } else {
+          this.showEditAsProject(false);
           this.$.main.open = true;
-          this.$.asproject.style.visibility = 'hidden';
-          this.$.asproject.style.opacity = 0;
         }
         if (this.ctx.graphs && this.ctx.graphs.length) {
           var oldGraph = this.$.grapheditor.graph;
@@ -480,10 +477,30 @@
           this.hideAlert();
         }.bind(this), 1300);
       },
+      showEditAsProject: function (enable) {
+        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || ! this.ctx.runtime.canDo('protocol:network')) {
+          // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
+          enable = false;
+        }
+        if (!enable) {
+          this.$.asproject.style.visibility = 'hidden';
+          this.$.asproject.style.opacity = 0;
+          return;
+        }
+        this.$.asproject.style.visibility = 'visible';
+        this.$.asproject.style.opacity = 1;
+      },
       editAsProject: function () {
         if (this.ctx.project) {
           return;
         }
+        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || ! this.ctx.runtime.canDo('protocol:network')) {
+          return;
+        }
+        if (typeof ga === 'function') {
+          ga('send', 'event', 'button', 'click', 'editAsProject');
+        }
+
         this.emitEvent('project:fromruntime', {
           graphs: this.ctx.graphs,
           component: this.ctx.component,

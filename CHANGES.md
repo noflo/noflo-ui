@@ -1,6 +1,10 @@
 NoFlo UI ChangeLog
 ==================
 
+# 0.19.2 (git master)
+
+* The _Edit as project_ button is now shown only when the runtime allows editing
+
 # 0.19.1 (2017 May 8)
 
 New features
