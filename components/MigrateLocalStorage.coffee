@@ -4,6 +4,8 @@ noflo = require 'noflo'
 
 class MigrateLocalStorage extends noflo.Component
   constructor: ->
+    super()
+
     @inPorts =
       graphstore: new noflo.Port 'object'
 
