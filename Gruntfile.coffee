@@ -121,6 +121,7 @@ module.exports = ->
     uglify:
       options:
         report: 'min'
+        sourceMap: true
       noflo:
         files:
           './browser/noflo-ui.min.js': ['./browser/noflo-ui.js']
@@ -252,12 +253,17 @@ module.exports = ->
         options:
           archive: 'noflo-<%= pkg.version %>.zip'
         files: [
-          src: ['browser/noflo-ui.js']
+          src: [
+            'browser/noflo-ui.js'
+            'browser/noflo-ui.min.js'
+            'browser/noflo-ui.min.js.map'
+         ]
           expand: true
           dest: '/'
         ,
           src: [
             'bower_components/polymer/*.js'
+            'bower_components/polymer/*.map'
             'node_modules/codemirror/**/*.js'
             'node_modules/codemirror/addon/lint/lint.css'
             'node_modules/codemirror/lib/*.css'
@@ -269,13 +275,14 @@ module.exports = ->
             'node_modules/font-awesome/**/*.woff'
             'node_modules/font-awesome/**/*.ttf'
             'node_modules/font-awesome/**/*.svg'
-            'node_modules/hammerjs/hammer.js'
+            'node_modules/hammerjs/hammer.min.js'
+            'node_modules/hammerjs/hammer.min.js.map'
             'node_modules/klayjs/klay.js'
             'node_modules/klayjs-noflo/klay-noflo.js'
             'node_modules/react/dist/*.js'
             'node_modules/react-dom/dist/*.js'
-            'node_modules/rtc/dist/rtc.js'
-            'node_modules/rtc/dist/rtc.js.map'
+            'node_modules/rtc/dist/rtc.min.js'
+            'node_modules/rtc/dist/rtc.min.js.map'
             'node_modules/the-graph/themes/*.css'
             'node_modules/webcomponents.js/webcomponents.min.js'
             'node_modules/indexeddbshim/dist/indexeddbshim.min.js'
@@ -284,17 +291,9 @@ module.exports = ->
           dest: '/'
         ,
           src: [
-            'bower_components/polymer/*.map'
+            'index.js'
+            'index.html'
           ]
-          expand: true
-          flatten: true
-          dest: '/'
-        ,
-          src: ['index.js']
-          expand: true
-          dest: '/'
-        ,
-          src: ['index.html']
           expand: true
           dest: '/'
         ,
@@ -302,11 +301,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['manifest.json']
-          expand: true
-          dest: '/'
-        ,
-          src: ['manifest.webapp.json']
+          src: [
+            'manifest.json'
+            'manifest.webapp.json'
+          ]
           expand: true
           dest: '/'
         ,
@@ -318,11 +316,10 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: ['css/*']
-          expand: true
-          dest: '/'
-        ,
-          src: ['themes/*']
+          src: [
+            'css/*'
+            'themes/*'
+          ]
           expand: true
           dest: '/'
         ]
@@ -474,6 +471,7 @@ module.exports = ->
     'copy:themes'
     'vulcanize'
     'string-replace:app'
+    'uglify'
     'compress'
   ]
   @registerTask 'rebuild', [
