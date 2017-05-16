@@ -324,7 +324,7 @@
             // For now we only handle runtimes through action loop
             switch (context.persisted.action) {
                 case 'save':
-                  this.addToList(this.ctx.runtimes, context.persisted.entity);
+                  require('noflo-ui/collections').addToList(this.ctx.runtimes, context.persisted.entity);
                 this.$.main.runtimesChanged();
                   break;
             }
@@ -333,7 +333,7 @@
         if (context.runtimes) {
           if (!Array.isArray(context.runtimes)) {
             // Newly saved individual runtime, add to runtime list
-            this.addToList(this.ctx.runtimes, context.runtimes);
+            require('noflo-ui/collections').addToList(this.ctx.runtimes, context.runtimes);
             return;
           }
           this.$.main.runtimes = context.runtimes;
@@ -527,29 +527,6 @@
           runtime: this.ctx.runtime
         });
       },
-      addToList: function (list, entity) {
-        var found = false;
-        for (var i = 0; i < list.length; i++) {
-          if (list[i] === entity) {
-            // Entity is already in list as-is, skip
-            return;
-          }
-          if (list[i].id === entity.id) {
-            // id match, replace
-            for (var key in entity) {
-              if (!entity.hasOwnProperty(key)) {
-                continue;
-              }
-              list[i][key] = entity[key];
-            }
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          list.push(entity);
-        }
-      }
     });
   </script>
 </polymer-element>
