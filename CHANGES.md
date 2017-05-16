@@ -1,6 +1,14 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.19.3 (2017 May 16)
+
+Performance improvements
+
+* The main JavaScript file (`noflo-ui.js`) and several of the bigger dependencies are now minified.
+This reduces bandwidth required to start the app.
+Sourcemaps are provided, so debugging the project should work as before.
+
 ## 0.19.2 (2017 May 16)
 
 New features
