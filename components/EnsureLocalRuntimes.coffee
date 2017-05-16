@@ -18,7 +18,7 @@ ensureOneIframeRuntime = (runtimes) ->
       filtered.push runtime
   unless iframeRuntime
     iframeRuntime =
-      label: 'Local NoFlo HTML5 environment'
+      label: 'NoFlo HTML5 environment'
       id: uuid()
       protocol: 'iframe'
       address: 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'

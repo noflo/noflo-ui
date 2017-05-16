@@ -9,6 +9,7 @@ var exported = {
   'fbp-spec': require('fbp-spec'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),
+  'noflo-ui/collections': require('../src/collections.coffee'),
   'the-graph': require('the-graph'),
 };
 

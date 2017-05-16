@@ -90,12 +90,8 @@
       </template>
       </ul>
       <p>
-      Once you have installed a runtime, connect it with your Flowhub account by registering it for your <strong>User Identifier</strong>, shown below:
+      Most runtimes provide a link that connects to them in $NOFLO_APP_TITLE live mode at start-up. You can also add a runtime manually.
       </p>
-      <label>
-        User Identifier
-        <input type="text" readonly value="{{ user.id }}">
-      </label>
       <div class="toolbar">
         <button on-click="{{ addRuntime }}">Add manually</button>
         <button on-click="{{ close }}">Close</button>

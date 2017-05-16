@@ -312,8 +312,6 @@
         'CoffeeScript',
         'C++'
       ],
-      registry: null,
-      registryUrl: '$NOFLO_REGISTRY_SERVICE',
       help: null,
       attached: function () {
         this.openChanged();
@@ -329,7 +327,6 @@
             this.fire('theme', event.detail);
           }.bind(this), 1000);
         }.bind(this));
-        this.registry = require('flowhub-registry');
         this.help = document.querySelector('noflo-help');
 
         // Hide projects if not logged in
@@ -339,8 +336,6 @@
         if (String(this.open) === 'true') {
           // Make main visible
           this.style.height = '100%';
-          // Update runtime registry every time we go to the main view
-          this.fetchRuntimes();
           return;
         }
         this.style.height = '0px';
@@ -450,6 +445,7 @@
       },
       runtimesChanged: function () {
         this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
+        this.addExamplesForRuntimes();
       },
       checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
@@ -469,104 +465,33 @@
           this.userRuntimes.push(runtime);
         }
       },
-      fetchRuntimes: function (event) {
-        this.fetchFlowhub();
-      },
-      fetchFlowhub: function (event) {
-        if (event) {
-          event.preventDefault();
-        }
+      addExamplesForRuntimes: function () {
+        // Add examples for all current runtimes
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var runtimeTypesFound = {};
+        var examplesFound = {};
+        this.examples = [];
 
-        function addExamplesForRuntimes() {
-          // Add examples for all current runtimes
-          var runtimeInfo = require('noflo-ui/runtimeinfo');
-          var runtimeTypesFound = {};
-          var examplesFound = {};
-          this.examples = [];
+        this.runtimes.forEach(function (runtime) {
 
-          this.runtimes.forEach(function (runtime) {
+          // If this is the first registry of its type, add examples for it
+          if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
+            var examples = runtimeInfo[runtime.type].examples;
 
-            // If this is the first registry of its type, add examples for it
-            if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
-              var examples = runtimeInfo[runtime.type].examples;
-
-              Object.keys(examples).forEach(function (key) {
-                if (examples[key].ssl && location.protocol !== 'https:') {
-                  return;
-                }
-                if (!examplesFound[key]) {
-                  this.examples.push(examples[key]);
-                  examplesFound[key] = true;
-                }
-              }.bind(this));
-            }
-          }.bind(this));
-        }
-
-        if (!this.gridToken) {
-          addExamplesForRuntimes.bind(this)();
-          return;
-        }
-        var button = this.$.fetchruntimes;
-        button.classList.add('fa-spin');
-        this.registry.list(this.gridToken, {
-          host: this.registryUrl
-        },function (err, runtimes) {
-          button.classList.remove('fa-spin');
-          if (err) {
-            addExamplesForRuntimes.bind(this)();
-            return;
-          }
-          var found = [];
-          runtimes.forEach(function (runtimeObject) {
-            var inStore = null;
-            // Flowhub registry API returns an object which contains the actual info we want
-            var runtime = runtimeObject.runtime;
-            if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
-              return;
-            }
-            this.runtimes.forEach(function (storedRuntime) {
-              if (storedRuntime.id === runtime.id) {
-                inStore = storedRuntime;
-                found.push(inStore.id);
-              }
-            });
-            if (!inStore) {
-              this.runtimes.push(runtime);
-              this.fire('runtime', runtime);
-              this.checkRuntimeSeen(runtime);
-              return;
-            }
-
-            // Update existing
-            var changed = false;
-            Object.keys(runtime).forEach(function (attr) {
-              if (inStore[attr] === runtime[attr]) {
+            Object.keys(examples).forEach(function (key) {
+              if (examples[key].ssl && location.protocol !== 'https:') {
                 return;
               }
-              inStore[attr] = runtime[attr];
-              changed = true;
-            });
-            if (changed) {
-              this.fire('runtime', inStore);
-            }
-          }.bind(this));
-
-          // Remove deleted runtimes
-          this.userRuntimes.forEach(function (runtime, index) {
-            if (found.indexOf(runtime.id) !== -1) {
-              return;
-            }
-            if (runtime.protocol === 'iframe' || runtime.protocol == 'microflo') {
-              return;
-            }
-            this.fire('removedruntime', runtime);
-            this.userRuntimes.splice(index, 1);
-          }.bind(this));
-
-          addExamplesForRuntimes.bind(this)();
-
+              if (!examplesFound[key]) {
+                this.examples.push(examples[key]);
+                examplesFound[key] = true;
+              }
+            }.bind(this));
+          }
         }.bind(this));
+      },
+      fetchRuntimes: function (event) {
+        this.fire('fetchRuntimes', true);
       },
       gridTokenChanged: function () {
         // Hide projects if not logged in
@@ -583,7 +508,7 @@
           }
         }
         this.$.mainaccount.gridToken = this.gridToken;
-        setTimeout(this.fetchFlowhub.bind(this), 100);
+        setTimeout(this.fetchRuntimes.bind(this), 100);
       },
       openProject: function (event, details, sender) {
         event.preventDefault();
@@ -672,8 +597,7 @@
         var dialog = document.createElement('noflo-new-runtime');
         dialog.addEventListener('addRuntime', function(event) {
           var runtime = event.detail;
-          this.userRuntimes.push(runtime);
-          this.runtimes.push(runtime);
+          this.fire('newruntime', event.detail);
         }.bind(this));
         dialog.user = this.user;
         document.body.appendChild(dialog);

@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+uuid = require 'uuid'
 
 buildContext = ->
   ctx =
@@ -21,7 +22,7 @@ decodeRuntime = (data) ->
     [key, value] = param.split '='
     runtime[key] = value
   if runtime.protocol and runtime.address
-    runtime.id = encodeURIComponent runtime.address
+    runtime.id = runtime.id or uuid.v4()
     return runtime
   null
 

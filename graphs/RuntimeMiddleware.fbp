@@ -8,7 +8,7 @@ OUTPORT=NewActions.OUT:NEW
 'project:save:project' -> ACTION ProjectSaveAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'project:save:graph' -> ACTION GraphSaveAction(ui/SetAction) OUT -> IN NewActions
 'project:save:component' -> ACTION ComponentSaveAction(ui/SetAction) OUT -> IN NewActions
-'project:save:runtime' -> ACTION RuntimeSaveAction(ui/SetAction) OUT -> IN NewActions
+'flowhub:runtimes:register' -> ACTION RuntimeSaveAction(ui/SetAction) OUT -> IN NewActions
 'runtime:error' -> ACTION RuntimeErrorAction(ui/SetAction) OUT -> IN NewActions
 
 # Send selected edges to runtime
