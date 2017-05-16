@@ -1,20 +1,20 @@
 NoFlo UI ChangeLog
 ==================
 
-# 0.19.2 (2017 May 16)
+## 0.19.2 (2017 May 16)
 
 New features
 
 * The _Edit as project_ button is now shown only when the runtime allows editing
 * Runtimes are now persisted on Flowhub registry when opening them via _Edit as project_ for easier access across your multiple devices
 
-# 0.19.1 (2017 May 8)
+## 0.19.1 (2017 May 8)
 
 New features
 
 * Updated `the-graph` to version 0.9 that includes support for read-only live mode
 
-# 0.19.0 (2017 May 6)
+## 0.19.0 (2017 May 6)
 
 New features
 
@@ -34,13 +34,13 @@ Internal changes
 * Now using `the-graph` version 0.8. The JavaScript is now bundled via Webpack instead of included in Polymer elements.
 This reduces the number of HTTP requests needed.
 
-# 0.18.0 (2017 March 13)
+## 0.18.0 (2017 March 13)
 
 New features
 
 * Single sign-on link for managing user's [Flowhub Plan](https://plans.flowhub.io)
 
-# 0.17.0 (2017 February 20)
+## 0.17.0 (2017 February 20)
 
 Bugfixes
 
@@ -50,13 +50,13 @@ Internal changes
 
 * Added an `npm start` command, for serving the UI when developing
 
-# 0.16.1 (2017 February 17)
+## 0.16.1 (2017 February 17)
 
 Bugfixes
 
 * Fixed compatibility with latest GitHub OAuth implementation
 
-# 0.16.0 (2017 February 17)
+## 0.16.0 (2017 February 17)
 
 New features
 
@@ -69,7 +69,7 @@ Bugfixes
 * Fixed login in Chrome app build
 * Fixed login in hosted SSL app
 
-# 0.15.0 (2017 February 15)
+## 0.15.0 (2017 February 15)
 
 Bugfixes
 
@@ -85,20 +85,20 @@ This should reduce risk of stale state compared to old approach. Some basic test
 * Fetching of user information from API is now done using React-middleware style pipeline.
 Some tests were added.
 
-# 0.14.1 (2017 January 16)
+## 0.14.1 (2017 January 16)
 
 Bugfixes
 
 * Safari 10 compatibility
 * Added logic to wait for full runtime connection before sending components and graphs
 
-# 0.14.0 (2016 December 14)
+## 0.14.0 (2016 December 14)
 
 Breaking changes
 
 * Switched from The Grid to direct GitHub authentication. This means changes are required for running NoFlo UI in custom URLs. See the README for more information
 
-# 0.13.0 (2016 September 21)
+## 0.13.0 (2016 September 21)
 
 New features
 
@@ -114,26 +114,26 @@ Bugfixes
 
 * Fixed build on Windows (issue #595)
 
-# 0.12.2 (2016 July 19)
+## 0.12.2 (2016 July 19)
 
 Bugfixes
 
 * Fixed display of data packet payloads
 
-# 0.12.1 (2016 July 19)
+## 0.12.1 (2016 July 19)
 
 Bugfixes
 
 * Updated the-graph to support pinch-zoom on touchscreen devices
 
-# 0.12.0 (2016 July 19)
+## 0.12.0 (2016 July 19)
 
 New features
 
 * Update from `fbp` 1.3.0 to 1.5.0. Several syntax additions were made,
 see the [changelog](https://github.com/flowbased/fbp/blob/master/CHANGES.md#fbp-150---released-06072016)
 
-# 0.11.0 (2016 June 10)
+## 0.11.0 (2016 June 10)
 
 New features
 
@@ -160,13 +160,13 @@ Internal changes
 * Using Webpack and NPM dependencies for building instead of component.io. Requires using NPM version 3 or higher
 * NoFlo browser build "preview.html" is fetched from http://noflojs.org instead of being bundled. Offline capable after initial load.
 
-# 0.10.0 (2015 June 14)
+## 0.10.0 (2015 June 14)
 
 * Graph tests are now editable in graph inspector
 * Moved graph preview HTML (`noflo-browser` only) to its own tab in the inspector
 * Fixed resizing of code and spec editors
 
-# 0.9.0 (2015 May 7)
+## 0.9.0 (2015 May 7)
 
 * Support for toggling the `secure` option for edges,
 useful for hiding sensitive data like API tokens.
@@ -178,78 +178,78 @@ distributed message queue based FBP runtime.
 TODO: Running the tests
 * Fixed GitHub push and pull with non-ASCII characters.
 
-# 0.8.0 (2015 March 24)
+## 0.8.0 (2015 March 24)
 
 * Request re-login if there is no token, fixes login error with Pro plans
 * Fix component editing (Stefan Sauer)
 * Add "seen ago" label also on runtime selector (Stefan Sauer)
 * More readable colors in runtime selector
 
-# 0.7.9 (2015 January 23)
+## 0.7.9 (2015 January 23)
 
 * Match new superagent API in bergie/octo
 
-# 0.7.8 (2015 January 23)
+## 0.7.8 (2015 January 23)
 
 * Specify superagent version (API changes after 0.21.0)
 
-# 0.7.7 (2015 January 23)
+## 0.7.7 (2015 January 23)
 
 * Enabled JSHint and CoffeeLint addons for component editor (#271)
 * the-graph 0.3.10
 * ~~Polymer 0.5.3~~ (doesn't work in Safari 7-8)
 
-# 0.7.6 (2015 January 15)
+## 0.7.6 (2015 January 15)
 
 * Fix GitHub pull and synchronization
 
-# 0.7.5 (2015 January 15)
+## 0.7.5 (2015 January 15)
 
 * Offer https when loaded on app.flowhub.io
 
-# 0.7.4 (2015 January 15)
+## 0.7.4 (2015 January 15)
 
 * alter some tests
 
-# 0.7.3 (2014 December 20)
+## 0.7.3 (2014 December 20)
 
 * fix klay deps
 
-# 0.7.2 (2014 December 19)
+## 0.7.2 (2014 December 19)
 
 * Update to the-graph 0.3.8
 
-# 0.7.1 (2014 December 11)
+## 0.7.1 (2014 December 11)
 
 * Update to the-graph 0.3.7
 
-# 0.7.0 (2014 December 10)
+## 0.7.0 (2014 December 10)
 
 * Allow adding runtimes manually
 
-# 0.6.0 (2014 December 10)
+## 0.6.0 (2014 December 10)
 
 * Add support for [sndflo runtime](http://github.com/jonnor/sndflo)
 * Allow using a custom build for noflo-browser iframe runtimes
 * Fix unable to change runtime type for a graph
 
-# 0.5.3 (2014 November 18)
+## 0.5.3 (2014 November 18)
 
 * Compatibility with Android [Add to homescreen](https://developer.chrome.com/multidevice/android/installtohomescreen) feature with Chrome 39+
 * Update to [Polymer 0.5.1](https://github.com/Polymer/polymer/releases/tag/0.5.1)
 * Fix Safari 7.1+ (#404)
 
-# 0.5.2 (2014 November 13)
+## 0.5.2 (2014 November 13)
 
 * Fixes GitHub permission issue
 
-# 0.5.0 (2014 November 12)
+## 0.5.0 (2014 November 12)
 
 * Support for C, C++ in component code editor
 * Added component template for imgflo components
 * Full support for custom runtime registry and OAuth provider
 
-# 0.4.0 (2014 November 03)
+## 0.4.0 (2014 November 03)
 
 * [WebRTC](http://en.wikipedia.org/wiki/WebRTC) runtime support,
 including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status/525093488246149120)
@@ -261,7 +261,7 @@ including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status
 * Enabled opening subgraphs and components also in gist examples
 * Allow to configure at buildtime endpoints for runtime registry and OAuth provider
 
-# 0.3.0 (2014 October 14)
+## 0.3.0 (2014 October 14)
 
 * Version naming scheme changed, all noflo-ui versions will be X.Y.0, custom builds should use X.Y.1+
 * Copy and paste (via [the-graph](https://github.com/the-grid/the-graph/pull/167))
@@ -272,11 +272,11 @@ including live debugging of [NoFlo UI itself](https://twitter.com/jononor/status
 * Support for an offline-mode with reduced functionality, specified at build time
 * Fixed creating new graphs with same name would overwrite existing graph
 
-# 0.2.1 (2014 September 16)
+## 0.2.1 (2014 September 16)
 
 * Fixed login not working due to missing error handling on Gravatar failures
 
-# 0.2.0 (2014 September 16)
+## 0.2.0 (2014 September 16)
 
 * Major refactoring to follow the Flux pattern
 * Full project synchronization with GitHub
