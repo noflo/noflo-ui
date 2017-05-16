@@ -3,6 +3,8 @@ NoFlo UI ChangeLog
 
 # 0.19.2 (git master)
 
+New features
+
 * The _Edit as project_ button is now shown only when the runtime allows editing
 * Runtimes are now persisted on Flowhub registry when opening them via _Edit as project_ for easier access across your multiple devices
 
