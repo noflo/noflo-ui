@@ -16,7 +16,6 @@ It is free to use for open source projects, and for private projects if you do n
 If you just want to create applications, we recommend that you use this version instead of building your own from source.
 
 <a href="http://app.flowhub.io"><img alt="Start Flowhub webapp" src="https://flowhub.io/assets/app-web.svg" width="400"></a>
-<a href="https://chrome.google.com/webstore/detail/flowhub/aacpjichompfhafnciggfpfdpfododlk"><img alt="Install Chrome app" src="https://flowhub.io/assets/app-chrome.svg" width="400"></a>
 
 Please read more from <http://flowhub.io/documentation/>. See also the [available support channels](http://noflojs.org/support/).
 
