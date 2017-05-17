@@ -254,18 +254,10 @@
         <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
       </h2>
       <ul class="projects">
-        <template if="{{ user && $NOFLO_USER_LOGIN_ENABLED }}">
-          <li class="add">
-            <h2>New runtime</h2>
-            <button on-click="{{ newRuntime }}">Register</button>
-          </li>
-        </template>
-        <template if="{{ !$NOFLO_USER_LOGIN_ENABLED }}">
-          <li class="add">
-            <h2>Runtime</h2>
-            <button on-click="{{ addRuntime }}">Add new</button>
-          </li>
-        </template>  
+        <li class="add">
+          <h2>New runtime</h2>
+          <button on-click="{{ newRuntime }}">Register</button>
+        </li>
 
         <template repeat="{{ userRuntimes }}">
           <li on-click="{{ openRuntime }}" data-id="{{ id }}" data-protocol="{{ protocol }}" class="runtime {{ type }}">
