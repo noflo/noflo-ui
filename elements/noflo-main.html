@@ -251,7 +251,9 @@
     <section id="runtimes">
       <h2>
         Runtimes <small>{{ userRuntimes.length }} / {{ runtimes.length }}</small>
+        <template if="{{ user }}">
         <button on-click="{{ fetchRuntimes }}"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
+        </template>
       </h2>
       <ul class="projects">
         <li class="add">
@@ -483,6 +485,9 @@
         }.bind(this));
       },
       fetchRuntimes: function (event) {
+        if (!this.user) {
+          return;
+        }
         this.fire('fetchRuntimes', true);
       },
       gridTokenChanged: function () {
