@@ -165,7 +165,7 @@
       .banner div {
         margin-top: 18px;
       }
-      .banner button {
+      .banner button, .banner input[type="submit"] {
         display: inline-block;
         color: black;
         background-color: hsl(192, 25%, 92%);
@@ -228,12 +228,27 @@
           </div>
         </div>
       </template>
+      <template if="{{ plan === 'free' && !askForScope.length }}">
+        <div class="banner">
+          You're using a free Flowhub plan. Upgrade to Pro to access your private projects on GitHub.
+          <div>
+            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
+              <input type="hidden" name="username" value="{{ user.github.username }}">
+              <input type="hidden" name="password" value="{{ gridToken }}">
+              <input type="submit" id="cta" value="Upgrade now">
+            </form>
+          </div>
+        </div>
+      </template>
     </template>
     <template if="{{ !user }}">
       <div class="avatar $NOFLO_THEME"><img src="../app/$NOFLO_THEME-logo-74.png"></div>
       <h1>$NOFLO_APP_TITLE</h1>
       <div class="toolbar">
         <a id="loginbutton" class="login" on-click="{{ login }}">Login</a>
+      </div>
+      <div class="banner">
+        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
       </div>
     </template>
   </template>
