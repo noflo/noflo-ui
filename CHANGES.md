@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.19.4 (git master)
+
+New features
+
+* Added informative banner on GitHub access for non-authenticated and free users
+
 ## 0.19.3 (2017 May 16)
 
 Performance improvements
