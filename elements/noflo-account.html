@@ -178,7 +178,7 @@
           <div class="avatar"><img src="{{ avatar }}"></div>
         </template>
         <h1>
-          {{ user.name }}
+          {{ user.github.username }}
           <form method="post" action="https://plans.flowhub.io/auth/flowhub">
             <input type="hidden" name="username" value="{{ user.github.username }}">
             <input type="hidden" name="password" value="{{ gridToken }}">
