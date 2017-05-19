@@ -101,10 +101,6 @@ componenttemplates:
     };
 
 examples:
-  photobooth:
-    label: 'Photo booth'
-    id: '7804187'
-    ssl: true
   clock:
     label: 'Animated clock'
     id: '7135158'
