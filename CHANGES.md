@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.19.5 (git master)
+
+New features:
+
+* Redesigned the top part of the main application screen to take significantly less space
+* Added link to [app documentation](https://docs.flowhub.io/)
+
 ## 0.19.4 (2017 May 18)
 
 New features
