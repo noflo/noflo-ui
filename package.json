@@ -26,7 +26,7 @@
     "jshint": "^2.9.2",
     "microflo": "~0.3.43",
     "noflo": "^0.7.9",
-    "noflo-ajax": "~0.1.5",
+    "noflo-ajax": "~0.2.0",
     "noflo-core": "~0.2.3",
     "noflo-dom": "~0.1.0",
     "noflo-github": "~0.0.15",
