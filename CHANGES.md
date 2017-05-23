@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.19.5 (git master)
+## 0.19.5 (2017 May 23)
 
 New features:
 
