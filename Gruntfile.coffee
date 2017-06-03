@@ -48,7 +48,7 @@ module.exports = ->
               ]
             ]
           resolve:
-            extensions: [".coffee", ".js"]
+            extensions: [".coffee", ".js", ".json"]
           node:
             fs: "empty"
         ignores: [
