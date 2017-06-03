@@ -1,6 +1,7 @@
 noflo = require 'noflo'
 
 getGraphType = (graph) ->
+  return null unless graph.properties.environment
   if not graph.properties.environment.type and graph.properties.environment.runtime is 'html'
     graph.properties.environment.type = 'noflo-browser'
   graph.properties.environment.type
