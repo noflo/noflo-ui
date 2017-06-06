@@ -26,6 +26,10 @@ exports.getComponent = ->
       if payload.language is 'json'
         noflo.graph.loadJSON JSON.parse(payload.code), (err, graph) ->
           graph.name = [payload.library, payload.name].join '/'
+          unless graph.properties.environment
+            graph.properties.environment = {}
+            if c.context.runtime?.definition?.type
+              graph.properties.environment.type = c.context.runtime.definition.type
           c.context.graphs.push graph
           unless c.context.remote.length
             c.context.state = 'ok'

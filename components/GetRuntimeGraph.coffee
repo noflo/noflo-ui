@@ -31,6 +31,8 @@ exports.getComponent = ->
     unless data.graphs.length
       emptyGraph = new noflo.Graph data.runtime.definition.id
       emptyGraph.properties.id = data.runtime.definition.id
+      emptyGraph.properties.environment =
+        type: data.runtime.definition.type
       data.graphs.unshift emptyGraph
     out.send data
 
