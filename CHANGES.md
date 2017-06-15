@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.20.0 (git master)
+
+Internal changes:
+
+* Polymer elements from [the-graph](https://github.com/flowhub/the-graph) were moved into this repository to aid in Polymer 1.x migration
+
 ## 0.19.5 (2017 May 23)
 
 New features:
