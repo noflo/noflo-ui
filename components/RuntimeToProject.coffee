@@ -1,5 +1,7 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
+url = require 'url'
+path = require 'path'
 
 isComponentInProject = (namespace, componentName) ->
   return true if componentName.indexOf('/') is -1
@@ -61,6 +63,15 @@ exports.getComponent = ->
       specs: []
     project.name = project.namespace if project.namespace
 
+    if data.payload.runtime?.definition?.repository
+      parsed = url.parse data.payload.runtime.definition.repository
+      if parsed.hostname is 'github.com' and parsed.pathname
+        pathname = parsed.pathname.slice 1
+        org = path.dirname pathname
+        repo = path.basename pathname, path.extname pathname
+        project.repo = "#{org}/#{repo}"
+        project.name = project.repo
+
     # Start with the data we already have
     graphs = data.payload.graphs.slice 0
     components = []
@@ -97,6 +108,7 @@ exports.getComponent = ->
         id: project.id
         name: project.name
         namespace: project.namespace
+        repo: project.repo
         type: project.type
         main: project.main
 
