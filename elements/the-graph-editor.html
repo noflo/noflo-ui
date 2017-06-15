@@ -108,6 +108,9 @@
         this.notifyViewChanged();
       },
       graphChanged: function () {
+        if (!this.graph) {
+          return;
+        }
         if (typeof this.graph.addNode !== 'function') {
           throw new Error(".graph property of the-graph-editor must be a fbp-graph instance (since the-graph 0.8)");
         }
