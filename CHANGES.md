@@ -3,6 +3,11 @@ NoFlo UI ChangeLog
 
 ## 0.20.0 (git master)
 
+New features:
+
+* When synchronizing a project with GitHub, we now default to _Ignore_ instead of push to make it easier to push changes more selectively
+* Project repository and branch information is now read from runtime when using _Edit as project_
+
 Internal changes:
 
 * Polymer elements from [the-graph](https://github.com/flowhub/the-graph) were moved into this repository to aid in Polymer 1.x migration
