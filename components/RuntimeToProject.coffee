@@ -82,7 +82,12 @@ exports.getComponent = ->
     # Add components and graphs from library
     fetchFromLibrary project.namespace, data.payload.runtime, (err, sources) ->
       return callback err if err
-      graphs = graphs.concat sources.filter (c) -> c.language is 'json'
+      projectGraphs = sources.filter (c) -> c.language is 'json'
+      for graphDef in projectGraphs
+        noflo.graph.loadJSON graphDef, (err, graph) ->
+          return if err
+          graphs.push graph
+
       components = components.concat sources.filter (c) -> c.language isnt 'json'
 
       for graph in graphs
