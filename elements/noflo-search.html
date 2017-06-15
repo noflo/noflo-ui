@@ -218,7 +218,7 @@
         this.updateParentPath();
       },
       graphsChanged: function () {
-        if (!this.graphs.length || (this.component && this.component.name)) {
+        if ((!this.graphs || !this.graphs.length) || (this.component && this.component.name)) {
           this.graph = null;
         } else {
           this.graph = this.graphs[this.graphs.length - 1];
