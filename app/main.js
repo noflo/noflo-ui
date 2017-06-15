@@ -42,7 +42,7 @@ window.addEventListener('WebComponentsReady', function() {
           return;
         }
         n.on('process-error', function (err) {
-          console.log(err);
+          console.error(err.error);
         });
         return callback();
       });
