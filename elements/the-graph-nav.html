@@ -61,10 +61,12 @@
         this.style.height = this.height + "px";
 
         // HACK way to make PolymerGestures work for now
-        var noop = function(){};
-        PolymerGestures.addEventListener(this, "track", noop);
-        PolymerGestures.addEventListener(this, "trackend", noop);
-        PolymerGestures.addEventListener(this, "tap", noop);
+        if (PolymerGestures) {
+          var noop = function(){};
+          PolymerGestures.addEventListener(this, "track", noop);
+          PolymerGestures.addEventListener(this, "trackend", noop);
+          PolymerGestures.addEventListener(this, "tap", noop);
+        }
 
         // Pan graph by dragging map
         this.addEventListener("track", function (event) {
