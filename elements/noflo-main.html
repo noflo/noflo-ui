@@ -530,23 +530,7 @@
         if (!project) {
           return;
         }
-        if (!project.main) {
-          if (!project.components.length) {
-            return;
-          }
-          this.fire('hash', [
-            'project',
-            project.id,
-            'component',
-            project.components[0].name
-          ]);
-          return;
-        }
-        this.fire('hash', [
-          'project',
-          project.id,
-          project.main
-        ]);
+        this.fire('openProject', project);
       },
       openRuntime: function (event, details, sender) {
         event.preventDefault();

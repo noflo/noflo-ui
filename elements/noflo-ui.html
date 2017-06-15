@@ -146,6 +146,9 @@
         this.$.main.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
         }.bind(this));
+        this.$.main.addEventListener('openProject', function (event) {
+          this.openProject(event.detail);
+        }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('project:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
@@ -251,21 +254,8 @@
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
-          } else if (project.graphs[0]) {
-            // Go to first graph
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              project.graphs[0].properties.id
-            ]);
-          } else if (project.components[0]) {
-            // Go to first component
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              'component',
-              project.components[0].name
-            ]);
+          } else {
+            this.openProject(project);
           }
         }.bind(this));
         this.$.search.addEventListener('deleteComponent', function (event) {
@@ -286,21 +276,8 @@
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
-          } else if (project.components[0]) {
-            // Go to first component
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              'component',
-              project.components[0].name
-            ]);
-          } else if (project.graphs[0]) {
-            // Go to first graph
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              project.graphs[0].properties.id
-            ]);
+          } else {
+            this.openProject(project);
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
@@ -351,15 +328,12 @@
                   }
                   if (context.persisted.type === 'projects') {
                     require('noflo-ui/collections').addToList(this.ctx.projects, context.persisted.entity);
-                    if (this.ctx.project) {
-                      break;
+                    // Update examples list
+                    this.$.main.addExamplesForRuntimes();
+                    if (!this.ctx.project) {
+                      // Redirect user to the newly-created project
+                      this.openProject(context.persisted.entity);
                     }
-                    // Redirect user to the newly-created project
-                    this.emitEvent('application:hash', [
-                      'project',
-                      context.persisted.entity.id,
-                      context.persisted.entity.main
-                    ]);
                   }
                   break;
             }
@@ -562,6 +536,35 @@
           runtime: this.ctx.runtime
         });
       },
+      openProject: function (project) {
+        if (!project.graphs.length) {
+          if (project.components.length) {
+            // No graphs in this project, but there are components
+            this.emitEvent('application:hash', [
+              'project',
+              project.id,
+              'component',
+              project.components[0].name
+            ]);
+            return;
+          }
+          setTimeout(function () {
+            // Wait for graphs to be populated
+            if (!project.graphs.length && !project.components.length) {
+              // Still no graphs/components
+              return;
+            }
+            this.openProject(project);
+          }.bind(this), 100);
+          return;
+        }
+        var main = project.main || project.graphs[0].properties.id
+        this.emitEvent('application:hash', [
+          'project',
+          project.id,
+          main
+        ]);
+      }
     });
   </script>
 </polymer-element>
