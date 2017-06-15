@@ -54,10 +54,10 @@
       },
       graphChanged: function (oldGraph, newGraph) {
         if (oldGraph && oldGraph.removeListener) {
-          oldGraph.removeListener("endTransaction", this.fireChanged);
+          oldGraph.removeListener("endTransaction", this.emitChanged);
         }
         // Listen for graph changes
-        this.graph.on("endTransaction", this.fireChanged.bind(this));
+        this.graph.on("endTransaction", this.emitChanged.bind(this));
 
         // Listen for autolayout changes
         if (this.autolayout) {
@@ -172,7 +172,7 @@
         if (!this.graphView) { return; }
         this.graphView.setAnimatedEdges(this.animatedEdges);
       },
-      fireChanged: function (event) {
+      emitChanged: function (event) {
         this.fire("changed", this);
       },
       autolayoutChanged: function () {
