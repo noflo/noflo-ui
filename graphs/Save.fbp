@@ -26,7 +26,7 @@ SplitGraph OUT -> IN ConvertGraph OUT -> IN EnsureId
 # Project-specific handling
 'projects' -> DATA ProjectStore(core/Kick) OUT -> IN StoreName
 Dispatch OUT[2] -> IN SplitProject(core/Split) OUT -> IN ProjectStore 
-SplitProject OUT -> IN EnsureId
+SplitProject OUT -> IN CleanProject(ui/CleanProject) OUT -> IN EnsureId
 
 # Runtime-specific handling
 'runtimes' -> DATA RuntimeStore(core/Kick) OUT -> IN StoreName
@@ -44,6 +44,11 @@ WriteTransaction TRANSACTION -> TRANSACTION Store STORE -> STORE Put(indexeddb/P
 EnsureId OUT -> VALUE Put
 StoreName OUT -> TYPE CreateOk(ui/PersistedToContext)
 'save' -> ACTION CreateOk
+SplitComponent OUT -> ORIGINAL CreateOk
+SplitGraph OUT -> ORIGINAL CreateOk
+SplitProject OUT -> ORIGINAL CreateOk
+SplitRuntime OUT -> ORIGINAL CreateOk
+SplitSpec OUT -> ORIGINAL CreateOk
 Put VALUE -> ENTITY CreateOk CONTEXT -> IN MergeContext
 
 # Error handling

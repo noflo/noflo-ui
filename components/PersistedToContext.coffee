@@ -4,6 +4,8 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'entity',
     datatype: 'object'
+  c.inPorts.add 'original',
+    datatype: 'object'
   c.inPorts.add 'type',
     datatype: 'string'
     required: true
@@ -14,7 +16,7 @@ exports.getComponent = ->
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    in: ['entity', 'type']
+    in: ['entity', 'original', 'type']
     params: ['action']
     out: 'context'
   , (data, groups, out) ->
@@ -23,4 +25,4 @@ exports.getComponent = ->
       persisted:
         type: data.type
         action: c.params.action
-        entity: data.entity
+        entity: data.original
