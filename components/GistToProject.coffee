@@ -32,6 +32,7 @@ exports.getComponent = ->
     request.on 'success', (res) ->
       unless res.body?.files
         return callback new Error "Gist #{data.payload.gist} didn't provide any files"
+      project.name = res.body.description
       for name, file of res.body.files
         basename = path.basename name, path.extname name
         if path.extname(name) is '.json'
@@ -41,11 +42,10 @@ exports.getComponent = ->
               project: project.id
               id: "#{project.id}_#{basename}"
             project.main = graph.properties.id unless project.main
-            project.name = graph.properties.name unless project.name
-            project.graphs.push graph
+            project.name = graph.name unless project.name
             if graph.properties?.environment?.type
               project.type = graph.properties.environment.type unless project.type
-            out.graph.send graph
+            project.graphs.push graph
           continue
         # Component
         component =
@@ -54,10 +54,13 @@ exports.getComponent = ->
           project: project.id
           code: file.content
           tests: ''
-        project.components.push graph
-        out.component.send component
+        project.components.push
         continue
       out.project.send project
+      for graph in project.graphs
+        out.graph.send graph
+      for component in project.components
+        components.push component
       do callback
     request.on 'error', (err) ->
       callback err.error or err.body
