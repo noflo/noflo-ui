@@ -27,6 +27,7 @@ exports.getComponent = ->
       gist: data.payload.graph
       graphs: []
       components: []
+      specs: []
 
     request = api.get "/gists/#{data.payload.graph}"
     request.on 'success', (res) ->
