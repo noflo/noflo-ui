@@ -270,6 +270,7 @@ module.exports = ->
             'node_modules/react-dom/dist/*.js'
             'node_modules/rtc/dist/rtc.min.js'
             'node_modules/rtc/dist/rtc.min.js.map'
+            'node_modules/observe-js/src/observe.js'
             'node_modules/the-graph/themes/*.css'
             'node_modules/webcomponents.js/webcomponents-lite.min.js'
           ]
