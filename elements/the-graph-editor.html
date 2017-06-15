@@ -42,12 +42,9 @@
       animatedEdges: [],
       displaySelectionGroup: true,
       forceSelection: false,
-      created: function () {
+      ready: function () {
         this.pan = [0,0];
         this.menus = TheGraph.editor.getDefaultMenus(this);
-      },
-      ready: function () {},
-      attached: function () {
       },
       detached: function () {
         for (var name in this.plugins) {

@@ -38,7 +38,7 @@
       forceSelection: false,
       offsetY: null,
       offsetX: null,
-      created: function () {
+      ready: function () {
         this.library = {};
         // Default pan
         this.pan = [0,0];
@@ -47,8 +47,6 @@
           onSuccess: this.applyAutolayout.bind(this),
           workerScript: "../node_modules/klayjs/klay.js"
         });
-      },
-      ready: function () {
         this.themeChanged();
       },
       themeChanged: function () {
