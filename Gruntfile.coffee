@@ -271,7 +271,7 @@ module.exports = ->
             'node_modules/rtc/dist/rtc.min.js'
             'node_modules/rtc/dist/rtc.min.js.map'
             'node_modules/the-graph/themes/*.css'
-            'node_modules/webcomponents.js/webcomponents.min.js'
+            'node_modules/webcomponents.js/webcomponents-lite.min.js'
           ]
           expand: true
           dest: '/'
