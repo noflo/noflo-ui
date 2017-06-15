@@ -54,8 +54,6 @@ module.exports = ->
     # Vulcanization compiles the Polymer elements into a HTML file
     vulcanize:
       app:
-        options:
-          csp: true
         files:
           'index.html': 'index.dist.html'
 
