@@ -95,36 +95,20 @@ exports.getComponent = ->
         if graph.properties?.environment?.type and not project.type
           project.type = graph.properties.environment.type
         project.graphs.push graph
-        out.graph.send graph
 
       for component in components
         component.project = project.id
         project.components.push component
-        out.component.send component
 
       # Associate runtime with project for auto-connecting
       data.payload.runtime.definition.project = project.id
       out.runtime.send data.payload.runtime.definition
 
-      out.project.send
-        id: project.id
-        name: project.name
-        namespace: project.namespace
-        repo: project.repo
-        branch: project.branch
-        type: project.type
-        main: project.main
+      out.project.send project
 
-      # FIXME: Do in reducer
-      data.state.projects.push project
-      foundRuntime = data.state.runtimes.filter (rt) ->
-        rt.id is data.payload.runtime.definition.id
-      if foundRuntime.length
-        foundRuntime[0].project = project.id
-      else
-        data.state.runtimes.push data.payload.runtime.definition
-
-      # FIXME: Make an action
-      window.location.hash = "#project/#{encodeURIComponent(project.id)}/#{encodeURIComponent(project.main)}"
+      for graph in project.graphs
+        out.graph.send graph
+      for component in project.components
+        components.push component
 
       do callback
