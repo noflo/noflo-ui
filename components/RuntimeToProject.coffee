@@ -71,6 +71,8 @@ exports.getComponent = ->
         repo = path.basename pathname, path.extname pathname
         project.repo = "#{org}/#{repo}"
         project.name = project.repo
+    if data.payload.runtime?.definition?.repositoryVersion
+      project.branch = data.payload.runtime.definition.repositoryVersion
 
     # Start with the data we already have
     graphs = data.payload.graphs.slice 0
@@ -109,6 +111,7 @@ exports.getComponent = ->
         name: project.name
         namespace: project.namespace
         repo: project.repo
+        branch: project.branch
         type: project.type
         main: project.main
 
