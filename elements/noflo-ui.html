@@ -558,7 +558,7 @@
           }.bind(this), 100);
           return;
         }
-        var main = project.main || project.graphs[0].properties.id
+        var main = project.main || project.graphs[0].properties.id;
         this.emitEvent('application:hash', [
           'project',
           project.id,
