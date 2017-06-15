@@ -68,7 +68,7 @@ describe 'URL Middleware', ->
     it 'should send application:redirect action', (done) ->
       checkRedirect = (data) ->
         chai.expect(data).to.eql '#gist/abc123'
-      mw.receiveAction newAction, 'application:redirect', checkRedirect, done
+      mw.receiveAction 'application:redirect', checkRedirect, done
       window.location.hash = '#example/abc123'
   describe 'on hash change to an gist URL', ->
     it 'should send github:gist action', (done) ->
@@ -81,5 +81,5 @@ describe 'URL Middleware', ->
           component: null
           nodes: []
           remote: []
-      mw.receiveAction newAction, 'github:gist', checkOpen, done
+      mw.receiveAction 'github:gist', checkOpen, done
       window.location.hash = '#gist/abc123'
