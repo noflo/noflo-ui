@@ -25,6 +25,8 @@ exports.getComponent = ->
     project =
       id: data.payload.graph
       gist: data.payload.graph
+      graphs: []
+      components: []
 
     request = api.get "/gists/#{data.payload.graph}"
     request.on 'success', (res) ->
@@ -34,15 +36,16 @@ exports.getComponent = ->
         basename = path.basename name, path.extname name
         if path.extname(name) is '.json'
           # JSON graph
-          graph = JSON.parse file.content
-          graph.properties = {} unless graph.properties
-          graph.properties.project = project.id
-          graph.properties.id = "#{project.id}_#{basename}"
-          project.main = graph.properties.id unless project.main
-          project.name = graph.properties.name unless project.name
-          if graph.properties?.environment?.type
-            project.type = graph.properties.environment.type unless project.type
-          out.graph.send graph
+          noflo.graph.loadJSON file.content, (err, graph) ->
+            graph.setProperties
+              project: project.id
+              id: "#{project.id}_#{basename}"
+            project.main = graph.properties.id unless project.main
+            project.name = graph.properties.name unless project.name
+            project.graphs.push graph
+            if graph.properties?.environment?.type
+              project.type = graph.properties.environment.type unless project.type
+            out.graph.send graph
           continue
         # Component
         component =
@@ -51,6 +54,7 @@ exports.getComponent = ->
           project: project.id
           code: file.content
           tests: ''
+        project.components.push graph
         out.component.send component
         continue
       out.project.send project
