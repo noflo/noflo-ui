@@ -14,13 +14,13 @@ exports.getComponent = ->
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    in: 'entity'
-    params: ['type', 'action']
+    in: ['entity', 'type']
+    params: ['action']
     out: 'context'
   , (data, groups, out) ->
     out.send
       state: 'ok'
       persisted:
-        type: c.params.type
+        type: data.type
         action: c.params.action
-        entity: data
+        entity: data.entity
