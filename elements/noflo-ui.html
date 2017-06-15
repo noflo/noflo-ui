@@ -76,17 +76,17 @@
       }
     </style>
     <noflo-main id="main"></noflo-main>
-    <the-graph-editor id="grapheditor" width="{{ width }}" height="{{ height }}"></the-graph-editor>
+    <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}"></the-graph-editor>
     <noflo-library id="library"></noflo-library>
     <noflo-context id="context"></noflo-context>
     <noflo-runtime id="runtime"></noflo-runtime>
     <noflo-journal id="journal"></noflo-journal>
-    <noflo-component-editor id="componenteditor" width="{{ width }}" height="{{ height }}"></noflo-component-editor>
+    <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}"></noflo-component-editor>
     <noflo-search id="search"></noflo-search>
     <noflo-project id="project"></noflo-project>
     <noflo-packets id="packets"></noflo-packets>
-    <noflo-alert id="alert" on-click="{{ hideAlert }}"></noflo-alert>
-    <button id="asproject" on-click="{{ editAsProject }}">Edit as project</button>
+    <noflo-alert id="alert" on-click="{{hideAlert}}"></noflo-alert>
+    <button id="asproject" on-click="{{editAsProject}}">Edit as project</button>
   </template>
   <script>
     Polymer('noflo-ui', {

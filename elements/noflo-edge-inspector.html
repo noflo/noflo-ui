@@ -85,8 +85,8 @@
         background-color: hsla(0, 0%, 0%, 0.7);
       }
     </style>
-    <h1>{{ sourceNode }} <span class="connection route{{ route }}">{{ sourcePort }} &#10142; {{ targetPort }}</span> {{ targetNode }}</h1>
-    <button id="clear" on-click="{{ clear }}" title="Clear log"><i class="fa fa-ban"></i></button>
+    <h1>{{sourceNode}} <span class="connection route{{route}}">{{sourcePort}} &#10142; {{targetPort}}</span> {{targetNode}}</h1>
+    <button id="clear" on-click="{{clear}}" title="Clear log"><i class="fa fa-ban"></i></button>
     <ul id="events">
     </ul>
   </template>

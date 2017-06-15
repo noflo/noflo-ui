@@ -98,19 +98,19 @@
       
     </style>
     <header>
-      <h1 class="clear" on-click="{{ clear }}">{{ edges.length}} <template if="{{ edges.length > 1 }}">Edges</template><template if="{{ edges.length == 1 }}">Edge</template></h1>    
+      <h1 class="clear" on-click="{{clear}}">{{ edges.length}} <template if="{{edges.length > 1}}">Edges</template><template if="{{edges.length == 1}}">Edge</template></h1>    
     </header>
     <ul class="toolbar toolbar2right">
-      <template if="{{ secure }}">
-        <li><button class="blue-button" on-click="{{ setUnsecure }}"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
+      <template if="{{secure}}">
+        <li><button class="blue-button" on-click="{{setUnsecure}}"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
       </template>
-      <template if="{{ !secure }}">
-        <li><button class="blue-button" on-click="{{ setSecure }}"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
+      <template if="{{!secure}}">
+        <li><button class="blue-button" on-click="{{setSecure}}"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
       </template>
     </ul>
     <ul class="routes">
-      <template repeat="{{ route in routes }}">
-        <li><button name="{{ route }}" class="route{{ route }}" on-click="{{ setRoute }}"></button></li>
+      <template repeat="{{route in routes}}">
+        <li><button name="{{route}}" class="route{{route}}" on-click="{{setRoute}}"></button></li>
       </template>
     </ul>    
   </template>

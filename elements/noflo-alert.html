@@ -52,20 +52,20 @@
         }
       }
     </style>
-    <template if="{{ isError }}">
+    <template if="{{isError}}">
       <i class="fa fa-warning"></i>
     </template>
-    <template if="{{ !isError && !offerHTTPS }}">
+    <template if="{{!isError && !offerHTTPS}}">
       <i class="fa fa-spinner fa-spin"></i>
     </template>
-    <template if="{{ offerHTTPS }}">
+    <template if="{{offerHTTPS}}">
       <i class="fa fa-lock"></i>
       This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="https://docs.flowhub.io/article/75-security-with-https-and-wss">about</a>
     </template>
     <content></content>
-    {{ message }}
-    <template if="{{ isError }}">
-      <a href="{{ baseURI }}#" class="button">go home</a>
+    {{message}}
+    <template if="{{isError}}">
+      <a href="{{baseURI}}#" class="button">go home</a>
     </template>
   </template>
   <script>

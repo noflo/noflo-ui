@@ -53,14 +53,14 @@
       }
     </style>
     <div id="controls">
-      <the-graph-nav id="nav" width="288" height="144" graph="{{ graph }}" hide="{{ hidenav }}"></the-graph-nav>
+      <the-graph-nav id="nav" width="288" height="144" graph="{{graph}}" hide="{{hidenav}}"></the-graph-nav>
 
-      <template if="{{ graph }}">
-        <button title="Undo" class="undo {{ { disabled: !canUndo } | tokenList }}" on-click="{{ undo }}"><i class="fa fa-undo"></i></button>
-        <template if="{{ klay }}">
-          <button title="Autolayout" class="autolayout" on-click="{{ autolayout }}"><i class="fa fa-magic"></i></button>
+      <template if="{{graph}}">
+        <button title="Undo" class="undo {{ { disabled: !canUndo } | tokenList }}" on-click="{{undo}}"><i class="fa fa-undo"></i></button>
+        <template if="{{klay}}">
+          <button title="Autolayout" class="autolayout" on-click="{{autolayout}}"><i class="fa fa-magic"></i></button>
         </template>
-        <button title="Redo" class="redo {{ { disabled: !canRedo } | tokenList }}" on-click="{{ redo }}"><i class="fa fa-repeat"></i></button>
+        <button title="Redo" class="redo {{ { disabled: !canRedo } | tokenList }}" on-click="{{redo}}"><i class="fa fa-repeat"></i></button>
       </template>
     </div>
   </template>

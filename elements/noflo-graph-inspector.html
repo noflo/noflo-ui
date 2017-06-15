@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-type-selector.html">
 
-<polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       textarea {
@@ -69,44 +69,44 @@
     <link rel="stylesheet" href="../node_modules/codemirror/theme/mdn-like.css">
     <link rel="stylesheet" href="../css/codemirror-noflo.css">
 
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1 on-keydown="{{ checkUpdateName }}" on-blur="{{ updateName }}" contenteditable>{{ graph.name }}</h1>
-      <template if="{{ downloadUrl }}">
-        <a href="{{ downloadUrl }}" id="download" download="{{ graph.name }}.json"><i class="fa fa-download"></i></a>
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1 on-keydown="{{checkUpdateName}}" on-blur="{{updateName}}" contenteditable>{{graph.name}}</h1>
+      <template if="{{downloadUrl}}">
+        <a href="{{downloadUrl}}" id="download" download="{{graph.name}}.json"><i class="fa fa-download"></i></a>
       </template>
-      <template if="{{ isMain }}">
-      <p>Main graph of project {{ project.name }}.</p>
+      <template if="{{isMain}}">
+      <p>Main graph of project {{project.name}}.</p>
       </template>
-      <template if="{{ inGraph.length }}">
+      <template if="{{inGraph.length}}">
       <p>Used as subgraph in
-      <template repeat="{{ parent in inGraph }}">
-        <a href="#project/{{ project.id }}/{{ parent.properties.id }}">
-          {{ parent.name }}
+      <template repeat="{{parent in inGraph}}">
+        <a href="#project/{{project.id}}/{{parent.properties.id}}">
+          {{parent.name}}
         </a>
       </template>
       .</p>
       </template>
       <ul class="tabs">
-        <li id="properties" on-click="{{ setView }}" class="{{ {selected: view == 'properties' } | tokenList }}">Properties</li>
-        <template if="{{ type == 'noflo-browser' }}">
-        <li id="html" on-click="{{ setView }}" class="{{ {selected: view == 'html' } | tokenList }}">HTML</li>
+        <li id="properties" on-click="{{setView}}" class="{{ {selected: view == 'properties' } | tokenList }}">Properties</li>
+        <template if="{{type == 'noflo-browser'}}">
+        <li id="html" on-click="{{setView}}" class="{{ {selected: view == 'html' } | tokenList }}">HTML</li>
         </template>
-        <template if="{{ spec }}">
-        <li id="tests" on-click="{{ setView }}" class="{{ {selected: view == 'tests' } | tokenList }}">Tests</li>
+        <template if="{{spec}}">
+        <li id="tests" on-click="{{setView}}" class="{{ {selected: view == 'tests' } | tokenList }}">Tests</li>
         </template>
       </ul>
       <div class="{{ {hidden: view != 'properties' } | tokenList }}">
       <label>
         <span>Description</span>
-        <input type="text" value="{{ description }}">
+        <input type="text" value="{{description}}">
       </label>
       <label>
         <span>Icon <a href="http://fontawesome.io/icons/" target="_blank"><i class="fa fa-question-circle"></i></a></span>
-        <input type="text" value="{{ icon }}">
+        <input type="text" value="{{icon}}">
       </label>
       <label>
         <span>Type</span>
-        <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
+        <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
       </label>
       </div>
       <div class="{{ {hidden: view != 'html' } | tokenList }}">
@@ -120,9 +120,9 @@
       </label>
       </div>
       <div class="toolbar">
-        <button on-click="{{ save }}">Save</button>
-        <a on-click="{{ close }}">Cancel</a>
-        <button class="delete" on-click="{{ delete }}">Delete</button>
+        <button on-click="{{save}}">Save</button>
+        <a on-click="{{close}}">Cancel</a>
+        <button class="delete" on-click="{{delete}}">Delete</button>
       </div>
     </div>
   </template>

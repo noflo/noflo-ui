@@ -329,57 +329,57 @@
 
     </style>
     <header>
-      <h1 on-keydown="{{ checkUpdateLabel }}" on-blur="{{ updateLabel }}" contenteditable>{{ label }}</h1>
-      <template if="{{ node.label != node.component }}">
-        <h2>{{ node.component }}</h2>
+      <h1 on-keydown="{{checkUpdateLabel}}" on-blur="{{updateLabel}}" contenteditable>{{label}}</h1>
+      <template if="{{node.label != node.component}}">
+        <h2>{{node.component}}</h2>
       </template>
     </header>
     <ul class="ports">
-      <template repeat="{{ port in inports }}">
-        <li class="route route{{ port.route }} {{ port.class }} port-type-{{ port.type }}">
-          <label><span title="{{ port.name }}">{{ port.label }}</span>
+      <template repeat="{{port in inports}}">
+        <li class="route route{{port.route}} {{port.class}} port-type-{{port.type}}">
+          <label><span title="{{port.name}}">{{port.label}}</span>
 
-            <template if="{{ port.type == 'bang' }}">
-              <button name="{{ port.name }}" on-click="{{ sendBang }}"><i class="fa fa-bolt"></i></button>
+            <template if="{{port.type == 'bang'}}">
+              <button name="{{port.name}}" on-click="{{sendBang}}"><i class="fa fa-bolt"></i></button>
             </template>
-            <template if="{{ port.type == 'boolean' }}">
-              <input type="checkbox" name="{{ port.name }}" checked="{{ port.value }}" data-type="{{ port.type }}" on-change="{{ updateValue }}">
+            <template if="{{port.type == 'boolean'}}">
+              <input type="checkbox" name="{{port.name}}" checked="{{port.value}}" data-type="{{port.type}}" on-change="{{updateValue}}">
             </template>
-            <template if="{{ port.values }}">
-              <select name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}" value="{{ port.value }}">
+            <template if="{{port.values}}">
+              <select name="{{port.name}}" data-type="{{port.type}}" on-change="{{updateValue}}" value="{{port.value}}">
                 <option></option>
-                <template repeat="{{ value in port.values }}">
-                  <option value="[[value]]" selected?="{{ port.value == value }}" >[[value]]</option>
+                <template repeat="{{value in port.values}}">
+                  <option value="[[value]]" selected?="{{port.value == value}}" >[[value]]</option>
                 </template>
               </select>
             </template>
-            <template if="{{ port.type == 'int' && !port.values }}">
-              <number-scrubber name="{{ port.name }}" value="{{port.value}}" step="1" data-type="int" on-scrubstart="{{ scrubStart }}" on-scrub="{{updateValue}}" on-scrubend="{{ scrubEnd }}">#</number-scrubber>
-              <input type="text" data-type="int" name="{{ port.name }}" value="{{ port.value }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}" />
+            <template if="{{port.type == 'int' && !port.values}}">
+              <number-scrubber name="{{port.name}}" value="{{port.value}}" step="1" data-type="int" on-scrubstart="{{scrubStart}}" on-scrub="{{updateValue}}" on-scrubend="{{scrubEnd}}">#</number-scrubber>
+              <input type="text" data-type="int" name="{{port.name}}" value="{{port.value}}" on-change="{{updateValue}}" on-keydown="{{checkEnter}}" />
             </template>
-            <template if="{{ port.type == 'number' && !port.values }}">
-              <number-scrubber name="{{ port.name }}" value="{{ port.value }}" step="0.01" data-type="number" on-scrubstart="{{ scrubStart }}" on-scrub="{{updateValue}}" on-scrubend="{{ scrubEnd }}">#</number-scrubber>
-              <input type="text" data-type="number" name="{{ port.name }}" value="{{ port.value }}" on-change="{{ updateValue }}" on-keydown="{{ checkEnter }}" />
+            <template if="{{port.type == 'number' && !port.values}}">
+              <number-scrubber name="{{port.name}}" value="{{port.value}}" step="0.01" data-type="number" on-scrubstart="{{scrubStart}}" on-scrub="{{updateValue}}" on-scrubend="{{scrubEnd}}">#</number-scrubber>
+              <input type="text" data-type="number" name="{{port.name}}" value="{{port.value}}" on-change="{{updateValue}}" on-keydown="{{checkEnter}}" />
             </template>
-            <template if="{{ port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'uri' && !port.values }}">
-              <input type="{{ port.inputType }}" name="{{ port.name }}" value="{{ port.value }}" autocapitalize="off" autocorrect="off" data-type="{{ port.type }}" on-keydown="{{ checkEnter }}" on-change="{{ updateValue }}" />
+            <template if="{{port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'uri' && !port.values}}">
+              <input type="{{port.inputType}}" name="{{port.name}}" value="{{port.value}}" autocapitalize="off" autocorrect="off" data-type="{{port.type}}" on-keydown="{{checkEnter}}" on-change="{{updateValue}}" />
             </template>
-            <template if="{{ port.type == 'uri' }}">
-              <input type="text" name="{{ port.name }}" data-type="string" on-change="{{ updateValue }}"></input>
-              <input type="file" name="{{ port.name }}" data-type="{{ port.type }}" on-change="{{ updateValue }}"></input>
+            <template if="{{port.type == 'uri'}}">
+              <input type="text" name="{{port.name}}" data-type="string" on-change="{{updateValue}}"></input>
+              <input type="file" name="{{port.name}}" data-type="{{port.type}}" on-change="{{updateValue}}"></input>
             </template>
-            <template if="{{ port.type != 'bang' && port.value != undefined }}">
-              <button class="remove-value" data-port="{{ port.name }}" on-click="{{ removeValue }}"><i class="fa fa-ban"></i></button>
+            <template if="{{port.type != 'bang' && port.value != undefined}}">
+              <button class="remove-value" data-port="{{port.name}}" on-click="{{removeValue}}"><i class="fa fa-ban"></i></button>
             </template>
 
           </label>
-          <template if="{{ port.description }}">
-          <p>{{ port.description }}</p>
+          <template if="{{port.description}}">
+          <p>{{port.description}}</p>
           </template>
         </li>
       </template>
       <li>
-        <button id="clear" on-click="{{ clearErrors }}" title="Clear Error Log"><i class="fa fa-ban"></i></button>
+        <button id="clear" on-click="{{clearErrors}}" title="Clear Error Log"><i class="fa fa-ban"></i></button>
       </li>
       <ul id="errorEvents">
       </ul>

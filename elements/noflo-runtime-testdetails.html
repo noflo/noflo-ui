@@ -1,4 +1,4 @@
-<polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       #testlisting ul {
@@ -37,10 +37,10 @@
         list-style: square;
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <div id="testlisting"></div>
       <div class="toolbar">
-        <button on-click="{{ close }}">Close</button>
+        <button on-click="{{close}}">Close</button>
       </div>
     </div>
   </template>

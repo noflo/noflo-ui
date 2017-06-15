@@ -1,4 +1,4 @@
-<polymer-element name="noflo-runtime-customiframe" attributes="graph" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-runtime-customiframe" attributes="graph" class="modal-content" on-click="{{close}}">
   <template>
     <style>
     #runtimeLink {
@@ -12,15 +12,15 @@
       clear: both;
     }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Open noflo-browser runtime in preview area</h1>
       <label>
         <span>Base application</span>
-        <input type="url" value="{{ runtimeUrl }}" on-change="{{ generateRuntimeInfo }}">
+        <input type="url" value="{{runtimeUrl}}" on-change="{{generateRuntimeInfo}}">
       </label>
       <div class="toolbar">
-        <button on-click="{{ close }}">Cancel</button>
-        <button on-click="{{ connectRuntime }}">Connect</button>
+        <button on-click="{{close}}">Cancel</button>
+        <button on-click="{{connectRuntime}}">Connect</button>
       </div>
     </div>
   </template>

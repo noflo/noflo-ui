@@ -1,20 +1,20 @@
 <link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-graph" attributes="project runtimes" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-new-graph" attributes="project runtimes" class="modal-content" on-click="{{close}}">
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Create new graph</h1>
       <form>
         <label>
           Graph name
-          <input type="text" value="{{ name }}" placeholder="MyCoolGraph" required>
+          <input type="text" value="{{name}}" placeholder="MyCoolGraph" required>
         </label>
         <label>
           Type
-          <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
+          <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </div>
     </form>

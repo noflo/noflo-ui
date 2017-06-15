@@ -1,4 +1,4 @@
-<polymer-element name="noflo-account-settings" attributes="user gridToken plan theme" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-account-settings" attributes="user gridToken plan theme" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       .plan strong {
@@ -35,42 +35,42 @@
         cursor: pointer;
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1>Account settings for {{ user.name }}</h1>
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1>Account settings for {{user.name}}</h1>
       <form>
         <label>
           User Identifier
-          <input type="text" readonly value="{{ user.id }}">
+          <input type="text" readonly value="{{user.id}}">
         </label>
         <label>
           Flowhub plan
           <div class="plan">
-            You're currently using <strong class="{{ plan }}">{{ plan }}</strong> plan.
+            You're currently using <strong class="{{plan}}">{{plan}}</strong> plan.
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{ user.github.username }}">
-              <input type="hidden" name="password" value="{{ gridToken }}">
+              <input type="hidden" name="username" value="{{user.github.username}}">
+              <input type="hidden" name="password" value="{{gridToken}}">
               <input type="submit" id="cta" value="Manage subscription">
             </form>
           </div>
-          <template if="{{ statusText }}">
+          <template if="{{statusText}}">
             <div class="statustext">
-              <span>{{ statusText }}</span>
-              <template if="{{ requestLogin }}">
-                <button class="relogin" on-click="{{ relogin }}">Login</button>
+              <span>{{statusText}}</span>
+              <template if="{{requestLogin}}">
+                <button class="relogin" on-click="{{relogin}}">Login</button>
               </template>
             </div>
           </template>
         </label>
         <label>
           Theme
-          <select name="type" value="{{ theme }}">
+          <select name="type" value="{{theme}}">
             <option value="dark">Lazer</option>
             <option value="light">Tube</option>
           </select>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}">Save</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}">Save</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </form>
     </div>

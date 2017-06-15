@@ -1,6 +1,6 @@
 <link rel="import" href="noflo-runtime-browserdebug.html">
 <link rel="import" href="noflo-runtime-customiframe.html">
-<polymer-element name="noflo-runtime-selector" attributes="graph" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-runtime-selector" attributes="graph" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       ul.runtimes {
@@ -61,23 +61,23 @@
         color: hsl(189, 50%, 80%);
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1>Select runtime for {{ graph.name }}</h1>
-      <template if="{{ available.length }}">
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1>Select runtime for {{graph.name}}</h1>
+      <template if="{{available.length}}">
         <ul class="runtimes">
-          <template repeat="{{ runtime in available }}">
-          <li on-click="{{ selectRuntime }}" data-id="{{ runtime.id }}" class="{{ runtime.type }}">
-            <h2>{{ runtime.label }}</h2>
-            <p>{{ runtime.address }}.<br />Seen {{ runtime.seenHoursAgo }}h ago</p>
+          <template repeat="{{runtime in available}}">
+          <li on-click="{{selectRuntime}}" data-id="{{runtime.id}}" class="{{runtime.type}}">
+            <h2>{{runtime.label}}</h2>
+            <p>{{runtime.address}}.<br />Seen {{runtime.seenHoursAgo}}h ago</p>
           </li>
           </template>
         </ul>
       </template>
-      <template if="{{ !available.length }}">
+      <template if="{{!available.length}}">
         <p>No compatible runtimes available.</p>
       </template>
       <div class="toolbar">
-        <button on-click="{{ close }}">Cancel</button>
+        <button on-click="{{close}}">Cancel</button>
       </div>
     </div>
   </template>
