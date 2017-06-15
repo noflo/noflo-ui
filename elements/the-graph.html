@@ -306,6 +306,7 @@
         this.appView.setProps({menus: this.menus});
       },
       readonlyChanged: function () {
+        if (!this.appView) { return; }
         this.appView.setProps({ readonly: this.readonly});
       },
       debounceLibraryRefeshTimer: null,
