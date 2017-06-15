@@ -119,6 +119,9 @@
         this.viewrectangleChanged();
       },
       viewrectangleChanged: function () {
+        if (!this.viewrectangle || !this.viewrectangle.length) {
+          return;
+        }
         // Canvas to grey out outside view
         var context = this.$.outcanvas.getContext('2d');
         context = unwrap(context);
