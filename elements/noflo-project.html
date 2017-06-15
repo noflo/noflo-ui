@@ -143,7 +143,7 @@
         <h1>Live mode</h1>
         </template>
       </header>
-      <main class="{{ (project.repo ? 'repo' : 'norepo') }}">
+      <main class="{{ ((project && project.repo) ? 'repo' : 'norepo') }}">
         <ul>
           <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
           <template if="{{ project }}">
