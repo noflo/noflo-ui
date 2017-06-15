@@ -1,8 +1,8 @@
 <polymer-element name="noflo-menu">
   <template>
     <ul class="toolbar2right">
-      <template repeat="{{buttons}}">
-        <li><button on-click="{{clicked}}" id="{{id}}"><i class="fa fa-{{icon}}"></i> {{label}}</button></li>
+      <template repeat="{{button in buttons}}">
+        <li><button on-click="{{clicked}}" id="{{button.id}}"><i class="fa fa-{{button.icon}}"></i> {{label}}</button></li>
       </template>
     </ul>
   </template>

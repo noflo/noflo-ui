@@ -261,10 +261,10 @@
           <button on-click="{{newRuntime}}">Register</button>
         </li>
 
-        <template repeat="{{userRuntimes}}">
-          <li on-click="{{openRuntime}}" data-id="{{id}}" data-protocol="{{protocol}}" class="runtime {{type}}">
-            <h2>{{label}}</h2>
-            <p>{{address}}. Seen {{seenHoursAgo}}h ago</p>
+        <template repeat="{{runtime in userRuntimes}}">
+          <li on-click="{{openRuntime}}" data-id="{{runtime.id}}" data-protocol="{{runtime.protocol}}" class="runtime {{runtime.type}}">
+            <h2>{{runtime.label}}</h2>
+            <p>{{runtime.address}}. Seen {{runtime.seenHoursAgo}}h ago</p>
           </li>
         </template>
       </ul>
@@ -275,10 +275,10 @@
           Examples <small>{{examples.length}}</small>
         </h2>
         <ul class="projects">
-          <template repeat="{{examples}}">
-          <li on-click="{{openExample}}" data-id="{{id}}" class="example">
-            <h2>{{label}}</h2>
-            <p>{{address}}</p>
+          <template repeat="{{example in examples}}">
+          <li on-click="{{openExample}}" data-id="{{example.id}}" class="example">
+            <h2>{{example.label}}</h2>
+            <p>{{example.address}}</p>
           </li>
           </template>
         </ul>
