@@ -1,5 +1,11 @@
 noflo = require 'noflo'
 
+sendEvent = (hash) ->
+  return unless hash
+  return unless typeof window.ga is 'function'
+  window.ga 'set', 'page', "#{window.location.pathname}#{window.location.search}##{hash}"
+  window.ga 'send', 'pageview'
+
 buildContext = (url) ->
   routeData =
     route: ''
@@ -89,6 +95,7 @@ exports.getComponent = ->
     forwardGroups: false
     async: true
   , (url, groups, out, callback) ->
+    sendEvent url
     ctx = buildContext url
     unless ctx
       out.missed.send
