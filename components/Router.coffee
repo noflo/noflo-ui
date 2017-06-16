@@ -3,6 +3,9 @@ noflo = require 'noflo'
 sendEvent = (hash) ->
   return unless hash
   return unless typeof window.ga is 'function'
+  if hash.indexOf('?') isnt -1
+    # Don't send connection details
+    hash = hash.split('?')[0]
   window.ga 'set', 'page', "#{window.location.pathname}#{window.location.search}##{hash}"
   window.ga 'send', 'pageview'
 
