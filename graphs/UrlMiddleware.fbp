@@ -26,4 +26,4 @@ HashToAction REDIRECT -> IN ApplicationRedirectAction
 Dispatch HANDLE[1] -> IN Redirect(ui/SetUrl)
 
 # URL hash redirection
-Dispatch HANDLE[2] -> IN SetHash(ui/SetHash)
+Dispatch HANDLE[2] -> IN SetUrlHash(ui/SetUrlHash)
