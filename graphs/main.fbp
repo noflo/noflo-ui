@@ -13,7 +13,9 @@ Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
 UrlMiddleware NEW -> IN Actions
 UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> IN Actions
-UserMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
+UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
+GithubMiddleware NEW -> IN Actions
+GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
 RegistryMiddleware NEW -> IN Actions
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> IN Actions

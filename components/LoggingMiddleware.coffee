@@ -28,6 +28,12 @@ exports.getComponent = ->
         sendEvent 'userLogin'
       when 'user:logout'
         sendEvent 'userLogout'
+      when 'github:open'
+        sendEvent 'pullGithub', 'navigation', 'url'
+      when 'gist:open'
+        sendEvent 'pullGist', 'navigation', 'url'
+      when 'main:open'
+        sendEvent 'openHome', 'navigation', 'url'
 
     out.send data
     do callback

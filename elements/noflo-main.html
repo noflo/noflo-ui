@@ -383,12 +383,10 @@
         if (!this.githubToken) {
           return;
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'pullGithub');
-        }
         var repo = sender.getAttribute('data-repo');
         var repoParts = repo.split('/');
         var repoId = repoParts[1];
+        var branch = 'master';
         var dupes = this.projects.filter(function (proj) {
           if (proj.id === repoId) {
             return true;
@@ -403,6 +401,7 @@
           name: repo,
           namespace: repoId,
           repo: repo,
+          branch: branch,
           graphs: [],
           components: [],
           specs: []
@@ -463,6 +462,11 @@
         // Add examples for all current runtimes
         var runtimeInfo = require('noflo-ui/runtimeinfo');
         var runtimeTypesFound = {};
+        var existingGists = this.projects.filter(function (project) {
+          return project.gist ? true : false;
+        }).map(function (project) {
+          return project.gist;
+        });
         var examplesFound = {};
         this.examples = [];
 
@@ -474,6 +478,11 @@
 
             Object.keys(examples).forEach(function (key) {
               if (examples[key].ssl && location.protocol !== 'https:') {
+                // Skip examples that require SSL when on HTTP
+                return;
+              }
+              if (existingGists.indexOf(examples[key].id) !== -1) {
+                // Skip examples we already have downloaded locally
                 return;
               }
               if (!examplesFound[key]) {
@@ -521,14 +530,7 @@
         if (!project) {
           return;
         }
-        if (!project.main) {
-          if (!project.components.length) {
-            return;
-          }
-          window.location.hash = '#project/' + encodeURIComponent(project.id) + '/component/' + encodeURIComponent(project.components[0].name);
-          return;
-        }
-        window.location.hash = '#project/' + encodeURIComponent(project.id) + '/' + encodeURIComponent(project.main);
+        this.fire('openProject', project);
       },
       openRuntime: function (event, details, sender) {
         event.preventDefault();
@@ -538,14 +540,20 @@
         if (sender.getAttribute('data-protocol') === 'iframe') {
           return;
         }
-        window.location.hash = '#runtime/' + sender.getAttribute('data-id');
+        this.fire('hash', [
+          'runtime',
+          sender.getAttribute('data-id')
+        ]);
       },
       openExample: function (event, details, sender) {
         event.preventDefault();
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        window.location.hash = '#example/' + sender.getAttribute('data-id');
+        this.fire('hash', [
+          'gist',
+          sender.getAttribute('data-id')
+        ]);
       },
       newProject: function (event) {
         event.preventDefault();
@@ -567,10 +575,10 @@
               type: event.detail.type
             }
           });
+          event.detail.graphs.push(graph);
           event.detail.main = graphId;
           this.fire('newgraph', graph);
           this.fire('newproject', event.detail);
-          event.detail.graphs.push(graph);
           this.checkProject(event.detail);
         }.bind(this));
       },
@@ -648,6 +656,12 @@
         if (this.localProjects.indexOf(project) === -1) {
           this.localProjects.push(project);
           this.localProjects.sort(function(a, b) {
+            if (!a.name) {
+              a.name = a.id || 'Unknown project';
+            }
+            if (!b.name) {
+              b.name = b.id || 'Unknown project';
+            }
             return a.name.localeCompare(b.name);
           });
         }

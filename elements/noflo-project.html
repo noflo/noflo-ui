@@ -250,11 +250,8 @@
         if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'openHome');
-        }
         this.$.account.toggleOpen(false);
-        window.location.hash = '#';
+        this.fire('hash', []);
       },
       openSettings: function (event) {
         event.preventDefault();
@@ -273,12 +270,18 @@
             this.project[property] = event.detail[property];
           }.bind(this));
 
+          if (this.project.repo) {
+            delete this.project.gist;
+          }
+
           // Send only the data we actually want to store
           this.fire('changed', {
             id: this.project.id,
             name: this.project.name,
             namespace: this.project.namespace,
             repo: this.project.repo,
+            branch: this.project.branch ? this.project.branch : 'master',
+            gist: this.project.gist,
             type: this.project.type,
             main: this.project.main,
             graphs: [],
@@ -291,11 +294,20 @@
       },
       gotoGraph: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          id
+        ]);
       },
       gotoComponent: function (id) {
         this.$.account.toggleOpen(false);
-        window.location.hash = '#project/' + encodeURIComponent(this.project.id) + '/component/' + encodeURIComponent(id);
+        this.fire('hash', [
+          'project',
+          this.project.id,
+          'component',
+          id
+        ]);
       },
       openGraph: function (event, detail, sender) {
         event.preventDefault();
