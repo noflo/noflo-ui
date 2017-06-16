@@ -1,12 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.20.0 (git master)
+## 0.20.0 (2017 June 16)
 
 New features:
 
 * When synchronizing a project with GitHub, we now default to _Ignore_ instead of push to make it easier to push changes more selectively
 * Project repository and branch information is now read from runtime when using _Edit as project_
+* Examples are downloaded as local projects when clicked so they'll stay available when offline
 
 Internal changes:
 
