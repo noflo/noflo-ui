@@ -67,11 +67,11 @@
       <h1>Preview</h1>
     </header>
     <ul class="toolbar toolbar2right">
-      <template if="{{ !maximized }}">
-        <li><button class="blue-button" on-click="{{ maximizeToggle }}"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
+      <template if="{{!maximized}}">
+        <li><button class="blue-button" on-click="{{maximizeToggle}}"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
       </template>
-      <template if="{{ maximized }}">
-        <li><button class="blue-button" on-click="{{ maximizeToggle }}"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
+      <template if="{{maximized}}">
+        <li><button class="blue-button" on-click="{{maximizeToggle}}"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
       </template>
     </ul>
     <div id="preview" class="{{ { maximized: maximized } | tokenList }}"></div>

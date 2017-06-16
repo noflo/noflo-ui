@@ -164,33 +164,33 @@
       }
 
     </style>
-    <div id="breadcrumb" on-click="{{ focus }}">
-      <template if="{{ !readonly && (!component || !component.name) }}">
+    <div id="breadcrumb" on-click="{{focus}}">
+      <template if="{{!readonly && (!component || !component.name)}}">
       <i class="fa fa-search"></i>
       </template>
       <h1 title="Search">
-        <template if="{{ project && parentPath }}">
-        <a href="#project/{{ project.id }}{{ parentPath }}" id="parentlink" title="Back"><i class="fa fa-angle-left"></i></a>
+        <template if="{{project && parentPath}}">
+        <a href="#project/{{project.id}}{{parentPath}}" id="parentlink" title="Back"><i class="fa fa-angle-left"></i></a>
         </template>
-        <template if="{{ graph && (!component || !component.name) }}">
-        {{ graph.name }}
+        <template if="{{graph && (!component || !component.name)}}">
+        {{graph.name}}
         </template>
-        <template if="{{ component && component.name }}">
-        {{ component.name }}
+        <template if="{{component && component.name}}">
+        {{component.name}}
         </template>
       </h1>
-      <template if="{{ !readonly && graph && (!component || !component.name) }}">
-      <button on-click="{{ showGraphInspector }}" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
+      <template if="{{!readonly && graph && (!component || !component.name)}}">
+      <button on-click="{{showGraphInspector}}" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ !readonly && !graph && component && component.name }}">
-      <button on-click="{{ showComponentInspector }}" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
+      <template if="{{!readonly && !graph && component && component.name}}">
+      <button on-click="{{showComponentInspector}}" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{ readonly || (component && component.readonly) || (graph && graph.properties.readonly) }}">
+      <template if="{{readonly || (component && component.readonly) || (graph && graph.properties.readonly)}}">
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
-    <input id="search" placeholder="Search components" on-keydown="{{ switchSearch }}" value="{{ search }}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech>
-    <button id="clear" on-click="{{ clearSearch }}" title="Clear search"><i class="fa fa-times"></i></button>
+    <input id="search" placeholder="Search components" on-keydown="{{switchSearch}}" value="{{search}}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech>
+    <button id="clear" on-click="{{clearSearch}}" title="Clear search"><i class="fa fa-times"></i></button>
   </template>
   <script>
     Polymer('noflo-search', {
@@ -218,7 +218,7 @@
         this.updateParentPath();
       },
       graphsChanged: function () {
-        if (!this.graphs.length || (this.component && this.component.name)) {
+        if ((!this.graphs || !this.graphs.length) || (this.component && this.component.name)) {
           this.graph = null;
         } else {
           this.graph = this.graphs[this.graphs.length - 1];

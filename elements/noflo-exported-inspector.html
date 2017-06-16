@@ -1,15 +1,15 @@
-<polymer-element name="noflo-exported-inspector" attributes="graph publicport privateport direction" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-exported-inspector" attributes="graph publicport privateport direction" class="modal-content" on-click="{{close}}">
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1>Published {{ direction }} port {{ publicport }}</h1>
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1>Published {{direction}} port {{publicport}}</h1>
       <form>
         <label>
           Port name
-          <input type="text" value="{{ name }}" required>
+          <input type="text" value="{{name}}" required>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Rename</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Rename</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </form>
     </div>

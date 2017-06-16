@@ -136,48 +136,48 @@
     </style>
     <the-panel id="account" edge="left" size="324" handle="36" automatic="false">
       <header>
-        <template if="{{ project }}">
-        <h1>{{ project.name }}</h1>
+        <template if="{{project}}">
+        <h1>{{project.name}}</h1>
         </template>
-        <template if="{{ !project }}">
+        <template if="{{!project}}">
         <h1>Live mode</h1>
         </template>
       </header>
-      <main class="{{ (project.repo ? 'repo' : 'norepo') }}">
+      <main class="{{((project && project.repo) ? 'repo' : 'norepo')}}">
         <ul>
-          <li><a on-click="{{ openHome }}"><i class="fa fa-home"></i>Home</a></li>
-          <template if="{{ project }}">
-          <li><a on-click="{{ openSettings }}"><i class="fa fa-cog"></i>Settings</a></li>
+          <li><a on-click="{{openHome}}"><i class="fa fa-home"></i>Home</a></li>
+          <template if="{{project}}">
+          <li><a on-click="{{openSettings}}"><i class="fa fa-cog"></i>Settings</a></li>
           </template>
         </ul>
-        <template if="{{ project }}">
+        <template if="{{project}}">
         <h2>Graphs</h2>
         <ul class="graphs">
           <li class="add">
             <h2>New graph</h2>
-            <button on-click="{{ newGraph }}">Create</button>
+            <button on-click="{{newGraph}}">Create</button>
           </li>
-          <template repeat="{{ graph in project.graphs }}">
-          <li on-click="{{ openGraph }}" data-id="{{ graph.properties.id }}">
-            <the-graph-thumb graph="{{ graph }}" width="200" height="120"></the-graph-thumb>
-            <h2>{{ graph.name }}</h2>
+          <template repeat="{{graph in project.graphs}}">
+          <li on-click="{{openGraph}}" data-id="{{graph.properties.id}}">
+            <the-graph-thumb graph="{{graph}}" width="200" height="120"></the-graph-thumb>
+            <h2>{{graph.name}}</h2>
           </li>
           </template>
         </ul>
-        <template if="{{ canComponent }}">
+        <template if="{{canComponent}}">
         <h2>Components</h2>
         <ul class="graphs">
           <li class="add">
             <h2>New component</h2>
-            <button on-click="{{ newComponent }}">Create</button>
+            <button on-click="{{newComponent}}">Create</button>
           </li>
-          <template repeat="{{ component in project.components }}">
-          <li on-click="{{ openComponent }}" data-id="{{ component.name }}">
-            <h2>{{ component.name }}</h2>
-            <template if="{{ component.language == 'coffeescript' }}">
+          <template repeat="{{component in project.components}}">
+          <li on-click="{{openComponent}}" data-id="{{component.name}}">
+            <h2>{{component.name}}</h2>
+            <template if="{{component.language == 'coffeescript'}}">
             <i class="fa fa-coffee"></i>
             </template>
-            <template if="{{ component.language != 'coffeescript' }}">
+            <template if="{{component.language != 'coffeescript'}}">
             <i class="fa fa-code"></i>
             </template>
           </li>
@@ -186,10 +186,10 @@
         </template>
         </template>
       </main>
-      <template if="{{ project.repo }}">
+      <template if="{{project.repo}}">
       <footer>
-        <h1 title="{{ project.repo }}"><i class="fa fa-github"></i> {{ project.repo }}</h1>
-        <button on-click="{{ synchronize }}">
+        <h1 title="{{project.repo}}"><i class="fa fa-github"></i> {{project.repo}}</h1>
+        <button on-click="{{synchronize}}">
           <i class="fa fa-cloud-upload"></i>
           <span>Synchronize</span>
         </button>

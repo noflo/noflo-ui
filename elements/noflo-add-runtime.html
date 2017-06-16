@@ -1,4 +1,4 @@
-<polymer-element name="noflo-add-runtime" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-add-runtime" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       a {
@@ -8,34 +8,34 @@
         font-size: 11px;
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Add new runtime</h1>
       <form>
         <label>
           Runtime name 
-          <input type="text" value="{{ name }}" placeholder="New local runtime" required>
+          <input type="text" value="{{name}}" placeholder="New local runtime" required>
         </label>
         <label>
           IP address
-          <input type="text" value="{{ address }}" placeholder="127.0.0.1" required>
+          <input type="text" value="{{address}}" placeholder="127.0.0.1" required>
         </label>
         <label>
           Port
-          <input type="text" data-type="int" value="{{ port }}" placeholder="3569" required>
+          <input type="text" data-type="int" value="{{port}}" placeholder="3569" required>
         </label>
         <label>
           Type
-          <select id="type" value="{{ type }}">
-            <option value="{{ t }}" template repeat="{{ t in availableTypes }}">{{ t }}</option>
+          <select id="type" value="{{type}}">
+            <option value="{{t}}" template repeat="{{t in availableTypes}}">{{t}}</option>
           </select>
         </label>
         <label>
           Secret
-          <input type="text" value="{{ secret }}" placeholder="secret-string" required>
+          <input type="text" value="{{secret}}" placeholder="secret-string" required>
         </label>
         <div class="toolbar">
-          <button on-click="{{ create }}" class="{{ { disabled: !canCreate } | tokenList }}">Create</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{create}}" class="{{ { disabled: !canCreate } | tokenList }}">Create</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </form>
     </div>

@@ -1,4 +1,4 @@
-<polymer-element name="noflo-runtime-browserdebug" attributes="graph" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-runtime-browserdebug" attributes="graph" class="modal-content" on-click="{{close}}">
   <template>
     <style>
     #runtimeLink {
@@ -12,19 +12,19 @@
       clear: both;
     }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Launch noflo-browser device</h1>
       <label>
         <span>Base application</span>
-        <input type="text" value="{{ baseApp }}" on-change="{{ generateRuntimeInfo }}">
+        <input type="text" value="{{baseApp}}" on-change="{{generateRuntimeInfo}}">
       </label>
       <div class='info'>
-        <div><a id='runtimeLink' href="{{ runtimeUrl }}">Launch</a></div>
-        <div><img id='qrcode' src="{{ qrCodeUrl }}"></a></div>
+        <div><a id='runtimeLink' href="{{runtimeUrl}}">Launch</a></div>
+        <div><img id='qrcode' src="{{qrCodeUrl}}"></a></div>
       </div>
       <div class="toolbar">
-        <button on-click="{{ close }}">Cancel</button>
-        <button on-click="{{ connectRuntime }}">Connect</button>
+        <button on-click="{{close}}">Cancel</button>
+        <button on-click="{{connectRuntime}}">Connect</button>
       </div>
     </div>
   </template>

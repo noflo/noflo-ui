@@ -71,15 +71,15 @@
       }
     </style>
     <ul class="types">
-      <template repeat="{{ availtype in available }}">
-      <li on-click="{{ selectType }}" data-id="{{ availtype.id }}" class="{{ { selected: type == availtype.id } | tokenList }}">
-        <h2>{{ availtype.label }}</h2>
-        <i class="fa fa-{{ availtype.icon }}"></i>
-        <template if="{{ availtype.runtimes.length === 1 }}">
-        <p>{{ availtype.runtimes.length }} runtime</p>
+      <template repeat="{{availtype in available}}">
+      <li on-click="{{selectType}}" data-id="{{availtype.id}}" class="{{ { selected: type == availtype.id } | tokenList }}">
+        <h2>{{availtype.label}}</h2>
+        <i class="fa fa-{{availtype.icon}}"></i>
+        <template if="{{availtype.runtimes.length === 1}}">
+        <p>{{availtype.runtimes.length}} runtime</p>
         </template>
-        <template if="{{ availtype.runtimes.length > 1 }}">
-        <p>{{ availtype.runtimes.length }} runtimes</p>
+        <template if="{{availtype.runtimes.length > 1}}">
+        <p>{{availtype.runtimes.length}} runtimes</p>
         </template>
       </li>
       </template>

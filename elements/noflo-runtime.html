@@ -126,29 +126,29 @@
         margin-top: 18px;
       }
     </style>
-    <template if="{{ runtime }}">
-      <i id="runtime_icon" class="fa fa-{{ icon }}"></i>
+    <template if="{{runtime}}">
+      <i id="runtime_icon" class="fa fa-{{icon}}"></i>
       <div id="address" class="{{ { online: online } | tokenList }}">
-        <button title="Connect/Disconnect" on-click="{{ reconnect }}"><i class="fa fa-refresh"></i></button>
-        <h2>{{ runtime.definition.address }}</h2>
-        <button title="Change Runtime" on-click="{{ clearRuntime }}" class="clear"><i class="fa fa-exchange"></i></button>
+        <button title="Connect/Disconnect" on-click="{{reconnect}}"><i class="fa fa-refresh"></i></button>
+        <h2>{{runtime.definition.address}}</h2>
+        <button title="Change Runtime" on-click="{{clearRuntime}}" class="clear"><i class="fa fa-exchange"></i></button>
       </div>
-      <div id="teststatus" on-click="{{ showTestDetails }}"></div>
+      <div id="teststatus" on-click="{{showTestDetails}}"></div>
       <div id="runcontrol">
-        <template if="{{ online }}">
-          <template if="{{ execution.running }}">
-            <button title="Stop" class="stop" on-click="{{ stop }}"><i class="fa fa-pause"></i></button>
+        <template if="{{online}}">
+          <template if="{{execution.running}}">
+            <button title="Stop" class="stop" on-click="{{stop}}"><i class="fa fa-pause"></i></button>
           </template>
-          <template if="{{ execution.running == false }}">
-            <button title="Start" class="start" on-click="{{ start }}"><i class="fa fa-play"></i></button>
+          <template if="{{execution.running == false}}">
+            <button title="Start" class="start" on-click="{{start}}"><i class="fa fa-play"></i></button>
           </template>
-          <h2>{{ execution.label }}</h2>
+          <h2>{{execution.label}}</h2>
         </template>
       </div>
     </template>
-    <template if="{{ graph && !runtime }}">
+    <template if="{{graph && !runtime}}">
       <div id="select">
-        <button on-click="{{ selectRuntime }}" class="select">Select runtime</button>
+        <button on-click="{{selectRuntime}}" class="select">Select runtime</button>
       </div>
     </template>
   </template>

@@ -1,29 +1,29 @@
 <link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content" on-click="{{close}}">
   <style>
     :host {
       background-color: red;
     }
   </style>
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Create new project</h1>
       <form>
         <label>
           Project label
-          <input type="text" value="{{ name }}" placeholder="My Cool Project" required>
+          <input type="text" value="{{name}}" placeholder="My Cool Project" required>
         </label>
         <label>
           Project namespace
-          <input type="text" value="{{ namespace }}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
+          <input type="text" value="{{namespace}}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
         </label>
         <label>
           Primary Type
-          <noflo-type-selector type="{{ type }}" runtimes="{{ runtimes }}"></noflo-type-selector>
+          <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </div>
     </form>

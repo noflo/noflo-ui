@@ -1,17 +1,17 @@
-<polymer-element name="noflo-project-sync" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-project-sync" class="modal-content" on-click="{{close}}">
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1>Synchronize with <i class="fa fa-github"></i> {{ operation.repo }}</h1>
-      <template if="{{ statusText }}">
-        <div>{{ statusText }}</div>
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1>Synchronize with <i class="fa fa-github"></i> {{operation.repo}}</h1>
+      <template if="{{statusText}}">
+        <div>{{statusText}}</div>
       </template>
       <form>
         <table>
-          <template repeat="{{ entry in operation.conflict }}">
+          <template repeat="{{entry in operation.conflict}}">
           <tr>
-            <th>{{ entry.path }}</th>
+            <th>{{entry.path}}</th>
             <td>
-              <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
                 <option value="push">&#xf093; push</option>
                 <option value="pull">&#xf019; pull</option>
                 <option value="noop" selected>&#xf05e; ignore</option>
@@ -19,22 +19,22 @@
             </td>
           </tr>
           </template>
-          <template repeat="{{ entry in operation.push }}">
+          <template repeat="{{entry in operation.push}}">
           <tr>
-            <th>{{ entry.path }}</th>
+            <th>{{entry.path}}</th>
             <td>
-              <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
                 <option value="push">&#xf093; push</option>
                 <option value="noop" selected>&#xf05e; ignore</option>
               </select>
             </td>
           </tr>
           </template>
-          <template repeat="{{ entry in operation.pull }}">
+          <template repeat="{{entry in operation.pull}}">
           <tr>
-            <th>{{ entry.path }}</th>
+            <th>{{entry.path}}</th>
             <td>
-              <select name="{{ entry.path }}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{ choose }}">
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
                 <option value="pull">&#xf019; pull</option>
                 <option value="noop">&#xf05e; ignore</option>
               </select>
@@ -42,15 +42,15 @@
           </tr>
           </template>
         </table>
-        <template if="{{ hasPush }}">
+        <template if="{{hasPush}}">
           <label>
             <span>Commit message</span>
-            <input type="text" value="{{ message }}" required>
+            <input type="text" value="{{message}}" required>
           </label>
         </template>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !hasOp } | tokenList }}">Synchronize</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}" class="{{ { disabled: !hasOp } | tokenList }}">Synchronize</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </div>
     </form>

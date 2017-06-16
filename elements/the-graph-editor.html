@@ -3,7 +3,7 @@
 <polymer-element name="the-graph-editor" attributes="grid snap width height autolayout theme selectedNodes errorNodes selectedEdges animatedEdges onContextMenu displaySelectionGroup forceSelection readonly" touch-action="none">
   <template>
     <the-graph id="graph"
-      name="{{ graph.properties.name }}"
+      name="{{graph.properties.name}}"
       graph="{{graph}}"
       menus="{{menus}}"
       width="{{width}}" height="{{height}}"
@@ -42,12 +42,9 @@
       animatedEdges: [],
       displaySelectionGroup: true,
       forceSelection: false,
-      created: function () {
+      ready: function () {
         this.pan = [0,0];
         this.menus = TheGraph.editor.getDefaultMenus(this);
-      },
-      ready: function () {},
-      attached: function () {
       },
       detached: function () {
         for (var name in this.plugins) {
@@ -111,6 +108,9 @@
         this.notifyViewChanged();
       },
       graphChanged: function () {
+        if (!this.graph) {
+          return;
+        }
         if (typeof this.graph.addNode !== 'function') {
           throw new Error(".graph property of the-graph-editor must be a fbp-graph instance (since the-graph 0.8)");
         }

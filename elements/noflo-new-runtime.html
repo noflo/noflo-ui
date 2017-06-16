@@ -1,5 +1,5 @@
 <link rel="import" href="noflo-add-runtime.html">
-<polymer-element name="noflo-new-runtime" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-new-runtime" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       a {
@@ -71,7 +71,7 @@
         text-decoration: none;
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Register new runtime</h1>
       <p>
       $NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="http://noflojs.org/documentation/protocol/" target="_blank">FBP protocol</a>.
@@ -79,12 +79,12 @@
       Here are some other popular ones:
       </p>
       <ul class="runtimes">
-      <template repeat="{{ runtime in runtimes }}">
-      <li class="{{ runtime.name }}">
-        <a href="{{ runtime.url }}" target="_blank">
-          <i class="fa fa-{{ runtime.icon }}"></i>
-          <h2>{{ runtime.label }}</h2>
-          <p>{{ runtime.description }}</p>
+      <template repeat="{{runtime in runtimes}}">
+      <li class="{{runtime.name}}">
+        <a href="{{runtime.url}}" target="_blank">
+          <i class="fa fa-{{runtime.icon}}"></i>
+          <h2>{{runtime.label}}</h2>
+          <p>{{runtime.description}}</p>
         </a>
       </li>
       </template>
@@ -93,8 +93,8 @@
       Most runtimes provide a link that connects to them in $NOFLO_APP_TITLE live mode at start-up. You can also add a runtime manually.
       </p>
       <div class="toolbar">
-        <button on-click="{{ addRuntime }}">Add manually</button>
-        <button on-click="{{ close }}">Close</button>
+        <button on-click="{{addRuntime}}">Add manually</button>
+        <button on-click="{{close}}">Close</button>
       </div>
     </div>
   </template>

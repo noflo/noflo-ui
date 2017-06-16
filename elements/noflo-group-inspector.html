@@ -1,34 +1,34 @@
-<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content" on-click="{{close}}">
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>
-        <template if="{{ group }}">
-        {{ group }}
+        <template if="{{group}}">
+        {{group}}
         </template>
-        <template if="{{ !group }}">
+        <template if="{{!group}}">
         New
         </template>
-        group containing {{ nodes.length }} nodes
+        group containing {{nodes.length}} nodes
       </h1>
       <form>
         <label>
           Group name
-          <input type="text" value="{{ name }}" placeholder="processing" required>
+          <input type="text" value="{{name}}" placeholder="processing" required>
         </label>
         <label>
           Group description
-          <input type="text" value="{{ description }}" placeholder="The nodes that process things" required>
+          <input type="text" value="{{description}}" placeholder="The nodes that process things" required>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}">
-            <template if="{{ group }}">
+          <button on-click="{{send}}">
+            <template if="{{group}}">
             Rename
             </template>
-            <template if="{{ !group }}">
+            <template if="{{!group}}">
             Create
             </template>
           </button>
-          <a on-click="{{ close }}">Cancel</a>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </form>
     </div>

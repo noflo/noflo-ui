@@ -1,24 +1,23 @@
-<link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-repository" attributes="runtimes" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-new-repository" attributes="runtimes" class="modal-content" on-click="{{close}}">
   <style>
     :host {
       background-color: red;
     }
   </style>
   <template>
-    <div class="modal-container" on-click="{{ bgClick }}">
+    <div class="modal-container" on-click="{{bgClick}}">
       <h1>Add a new repository</h1>
-      <template if="{{ errorText }}">
-        <div class="error">{{ errorText }}</div>
+      <template if="{{errorText}}">
+        <div class="error">{{errorText}}</div>
       </template>
       <form>
         <label>
           GitHub repository name
-          <input type="text" value="{{ repo }}" placeholder="username/repository" required>
+          <input type="text" value="{{repo}}" placeholder="username/repository" required>
         </label>
         <div class="toolbar">
-          <button on-click="{{ send }}" class="{{ { disabled: !canSend } | tokenList }}">Add</button>
-          <a on-click="{{ close }}">Cancel</a>
+          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Add</button>
+          <a on-click="{{close}}">Cancel</a>
         </div>
       </div>
     </form>

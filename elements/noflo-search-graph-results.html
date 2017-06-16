@@ -77,11 +77,11 @@
 
     </style>
     <ul class="search-results-list">
-      <template repeat="{{ result, index in results }}">
-        <li class="search-results-item" data-index="{{ index }}" on-click="{{ clicked }}">
+      <template repeat="{{result, index in results}}">
+        <li class="search-results-item" data-index="{{index}}" on-click="{{clicked}}">
           <i class="fa fa-cog"></i>
-          <h2>{{ result.metadata.label }}</h2>
-          <p>{{ result.component }}</p>
+          <h2>{{result.metadata.label}}</h2>
+          <p>{{result.component}}</p>
         </li>
       </template>
     </ul>

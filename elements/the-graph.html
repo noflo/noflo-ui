@@ -38,7 +38,7 @@
       forceSelection: false,
       offsetY: null,
       offsetX: null,
-      created: function () {
+      ready: function () {
         this.library = {};
         // Default pan
         this.pan = [0,0];
@@ -47,8 +47,6 @@
           onSuccess: this.applyAutolayout.bind(this),
           workerScript: "../node_modules/klayjs/klay.js"
         });
-      },
-      ready: function () {
         this.themeChanged();
       },
       themeChanged: function () {
@@ -56,10 +54,13 @@
       },
       graphChanged: function (oldGraph, newGraph) {
         if (oldGraph && oldGraph.removeListener) {
-          oldGraph.removeListener("endTransaction", this.fireChanged);
+          oldGraph.removeListener("endTransaction", this.emitChanged);
+        }
+        if (!this.graph) {
+          return;
         }
         // Listen for graph changes
-        this.graph.on("endTransaction", this.fireChanged.bind(this));
+        this.graph.on("endTransaction", this.emitChanged.bind(this));
 
         // Listen for autolayout changes
         if (this.autolayout) {
@@ -174,7 +175,7 @@
         if (!this.graphView) { return; }
         this.graphView.setAnimatedEdges(this.animatedEdges);
       },
-      fireChanged: function (event) {
+      emitChanged: function (event) {
         this.fire("changed", this);
       },
       autolayoutChanged: function () {
@@ -305,6 +306,7 @@
         this.appView.setProps({menus: this.menus});
       },
       readonlyChanged: function () {
+        if (!this.appView) { return; }
         this.appView.setProps({ readonly: this.readonly});
       },
       debounceLibraryRefeshTimer: null,

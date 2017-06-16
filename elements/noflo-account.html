@@ -172,64 +172,64 @@
       </div>
     </section>
     <section class="user">
-    <template if="{{ user }}">
-      <div class="{{ plan }}">
-        <template if="{{ avatar }}">
-          <div class="avatar"><img src="{{ avatar }}"></div>
+    <template if="{{user}}">
+      <div class="{{plan}}">
+        <template if="{{avatar}}">
+          <div class="avatar"><img src="{{avatar}}"></div>
         </template>
         <h1>
-          {{ user.github.username }}
+          {{user.github.username}}
           <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-            <input type="hidden" name="username" value="{{ user.github.username }}">
-            <input type="hidden" name="password" value="{{ gridToken }}">
-            <input type="submit" id="plan" value="{{ plan }}">
+            <input type="hidden" name="username" value="{{user.github.username}}">
+            <input type="hidden" name="password" value="{{gridToken}}">
+            <input type="submit" id="plan" value="{{plan}}">
           </form>
         </h1>
         <div class="toolbar">
           <a href="https://docs.flowhub.io" target="_blank">Docs</a>
-          <a on-click="{{ openSettings }}">Settings</a>
-          <button on-click="{{ logout }}">Logout</button>
+          <a on-click="{{openSettings}}">Settings</a>
+          <button on-click="{{logout}}">Logout</button>
         </div>
       </div>
     </template>
-    <template if="{{ !user }}">
+    <template if="{{!user}}">
       <div class="toolbar">
-        <a id="loginbutton" class="login" on-click="{{ login }}">Login</a>
+        <a id="loginbutton" class="login" on-click="{{login}}">Login</a>
       </div>
     </template>
     </section>
     </nav>
-    <template if="{{ user }}">
-      <template if="{{ askForScope.length }}">
+    <template if="{{user}}">
+      <template if="{{askForScope.length}}">
         <div class="banner">
           To be able to synchronize your GitHub projects, $NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
           <div>
             Grant access to:
-            <template repeat="{{ scope in askForScope }}">
-              <template if="{{ scope === 'public_repo' }}">
-                <button on-click="{{ relogin }}" data-scope="{{ scope }}">Public repositories only</button>
+            <template repeat="{{scope in askForScope}}">
+              <template if="{{scope === 'public_repo'}}">
+                <button on-click="{{relogin}}" data-scope="{{scope}}">Public repositories only</button>
               </template>
-              <template if="{{ scope === 'repo' }}">
-                <button on-click="{{ relogin }}" data-scope="{{ scope }}">Public and private repositories</button>
+              <template if="{{scope === 'repo'}}">
+                <button on-click="{{relogin}}" data-scope="{{scope}}">Public and private repositories</button>
               </template>
             </template>
           </div>
         </div>
       </template>
-      <template if="{{ plan === 'free' && !askForScope.length }}">
+      <template if="{{plan === 'free' && !askForScope.length}}">
         <div class="banner">
           You're using a free Flowhub plan. Upgrade to Pro to access your private projects on GitHub.
           <div>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{ user.github.username }}">
-              <input type="hidden" name="password" value="{{ gridToken }}">
+              <input type="hidden" name="username" value="{{user.github.username}}">
+              <input type="hidden" name="password" value="{{gridToken}}">
               <input type="submit" id="cta" value="Upgrade now">
             </form>
           </div>
         </div>
       </template>
     </template>
-    <template if="{{ !user }}">
+    <template if="{{!user}}">
       <div class="banner">
         Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
       </div>

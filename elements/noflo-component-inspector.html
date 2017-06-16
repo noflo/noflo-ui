@@ -1,4 +1,4 @@
-<polymer-element name="noflo-component-inspector" class="modal-content" on-click="{{ close }}">
+<polymer-element name="noflo-component-inspector" class="modal-content" on-click="{{close}}">
   <template>
     <style>
       button.delete {
@@ -8,16 +8,16 @@
         color: hsla( 0, 98%, 46%, .8) !important;
       }
     </style>
-    <div class="modal-container" on-click="{{ bgClick }}">
-      <h1>{{ component.name }} settings</h1>
-      <template if="{{ errorText }}">
-        <div class="error">{{ errorText }}</div>
+    <div class="modal-container" on-click="{{bgClick}}">
+      <h1>{{component.name}} settings</h1>
+      <template if="{{errorText}}">
+        <div class="error">{{errorText}}</div>
       </template>
       <form>
         <div class="toolbar">
-          <!-- <button on-click="{{ send }}">Save</button> -->
-          <a on-click="{{ close }}">Cancel</a>
-          <button class="delete" on-click="{{ delete }}">Delete</button>
+          <!-- <button on-click="{{send}}">Save</button> -->
+          <a on-click="{{close}}">Cancel</a>
+          <button class="delete" on-click="{{delete}}">Delete</button>
         </div>
       </div>
     </form>
