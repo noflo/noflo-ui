@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.20.1 (2017 June 18)
+
+Bugfixes:
+
+* Safety for parsing repository URLs coming from a runtime
+
 ## 0.20.0 (2017 June 16)
 
 New features:
