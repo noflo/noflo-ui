@@ -96,6 +96,7 @@
       dontAutoHideAlert: false,
       emitEvent: function (event, payload) {
         this.fire(event, {
+          action: event,
           state: this.ctx,
           payload: payload
         });
