@@ -11,6 +11,6 @@ MergeOps OUT -> VALUE OpsToContext
 MergeOps OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 
-# Convert user errors to context errors
+# Convert GitHub errors to context errors
 Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeContext
