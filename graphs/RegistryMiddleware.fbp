@@ -31,5 +31,5 @@ SaveRuntime ERROR -> IN RegistryErrorAction
 'user' -> KEYS GetUserStateProjects(ui/GetActionValues)
 Dispatch HANDLE[2] -> IN GetUserStateProjects
 GetUserStateProjects VALUES[0] -> USER GetRemoteProjects(ui/GetRemoteProjects)
-GetRemoteProjects OUT -> IN RegistryProjectsAction
+GetRemoteProjects PROJECTS -> IN RegistryProjectsAction
 GetRemoteProjects ERROR -> IN RegistryErrorAction
