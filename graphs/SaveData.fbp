@@ -16,7 +16,7 @@ GetProjectsDb OUT -> DATA OriginaProject(core/Kick)
 SaveProject ITEM -> IN OriginalProject
 GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE SaveProject
 GetProjectsDb OUT -> IN ConvertProject(ui/CleanProject)
-ConvertProject OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
+ConvertProject OUT -> ITEM SaveProject ERROR -> IN Errors(core/Merge)
 
 # Saving graphs
 'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB SaveGraph(ui/Save)
