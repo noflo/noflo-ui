@@ -75,16 +75,12 @@
           this.statusText = 'All changes have been synchronized';
           this.hasOp = false;
         }
-        if (this.operation.push.length || this.operation.conflict.length) {
-          this.hasPush = true;
-        } else {
-          this.hasPush = false;
-        }
+        this.hasPush = false;
         this.operation.conflict.forEach(function (entry) {
-          this.chosen[entry.path] = 'push';
+          this.chosen[entry.path] = 'noop';
         }.bind(this));
         this.operation.push.forEach(function (entry) {
-          this.chosen[entry.path] = 'push';
+          this.chosen[entry.path] = 'noop';
         }.bind(this));
         this.operation.pull.forEach(function (entry) {
           this.chosen[entry.path] = 'pull';
