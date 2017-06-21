@@ -10,7 +10,9 @@ AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)
 Logger PASS -> IN UrlMiddleware(ui/UrlMiddleware)
 UrlMiddleware NEW -> ACTION StoreDispatch
-UrlMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
+UrlMiddleware PASS -> IN StorageMiddleware(ui/StorageMiddleware)
+StorageMiddleware NEW -> ACTION StoreDispatch
+StorageMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> ACTION StoreDispatch
 UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
 GithubMiddleware NEW -> ACTION StoreDispatch
