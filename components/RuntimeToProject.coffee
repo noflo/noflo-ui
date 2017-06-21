@@ -114,6 +114,6 @@ exports.getComponent = ->
       for graph in project.graphs
         out.graph.send graph
       for component in project.components
-        components.push component
+        out.component.send component
 
       do callback
