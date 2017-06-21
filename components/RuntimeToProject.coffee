@@ -63,8 +63,12 @@ exports.getComponent = ->
       specs: []
     project.name = project.namespace if project.namespace
 
-    if data.payload.runtime?.definition?.repository and typeof data.payload.runtime.definition.repository is 'string'
-      parsed = url.parse data.payload.runtime.definition.repository
+    if data.payload.runtime?.definition?.repository
+      if typeof data.payload.runtime.definition.repository is 'object'
+        repo = data.payload.runtime.definition.repository.url
+      else
+        repo = data.payload.runtime.definition.repository
+      parsed = url.parse repo
       if parsed.hostname is 'github.com' and parsed.pathname
         pathname = parsed.pathname.slice 1
         org = path.dirname pathname
