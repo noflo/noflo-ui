@@ -12,7 +12,7 @@ OUTPORT=Errors.OUT:ERROR
 'db' -> KEYS GetProjectsDb(ui/GetActionValues) VALUES[0] -> DB SaveProject(ui/Save)
 'projects' -> STRING ProjectsStore(strings/SendString)
 Dispatch HANDLE[0] -> IN GetProjectsDb
-GetProjectsDb OUT -> DATA OriginaProject(core/Kick)
+GetProjectsDb OUT -> DATA OriginalProject(core/Kick)
 SaveProject ITEM -> IN OriginalProject
 GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE SaveProject
 GetProjectsDb OUT -> IN ConvertProject(ui/CleanProject)
