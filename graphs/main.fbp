@@ -1,8 +1,3 @@
-# Prepare IndexedDB
-'noflo-ui' -> NAME PrepareStorage(ui/PrepareStorage)
-PrepareStorage DB -> DB ProjectStorage(ui/ProjectStorage)
-PrepareStorage DB -> DB RuntimeStorage(ui/RuntimeStorage)
-
 # Event dispatching
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # First we send the events to middlewares, and allow them
@@ -22,10 +17,9 @@ RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
-'user,main,project,github,flowhub,runtime,context' -> ROUTES Dispatch
+'user,main,github,flowhub,runtime,context' -> ROUTES Dispatch
 Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
-Dispatch OUT[2] -> IN ProjectStorage
 Dispatch OUT[3] -> IN GithubReducer(ui/GithubReducer)
 Dispatch OUT[4] -> IN RegistryReducer(ui/RegistryReducer)
 Dispatch OUT[5] -> IN RuntimeStorage
@@ -38,7 +32,6 @@ UserReducer USER -> USER GithubStorage
 UserReducer CONTEXT -> Context AppView
 
 # Pass local and GH contexts to runtime storage for remote node handling
-ProjectStorage CONTEXT -> CONTEXT RuntimeStorage
 GithubReducer CONTEXT -> CONTEXT RuntimeStorage
 RegistryReducer CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
@@ -54,7 +47,3 @@ ContextStorage CONTEXT -> CONTEXT AppView
 # Handle resizes
 ListenWindow WIDTH -> WIDTH AppView
 ListenWindow HEIGHT -> HEIGHT AppView
-
-# Display storage errors
-PrepareStorage ERROR -> ERROR ErrorToCtx(ui/ErrorToContext) OUT -> CONTEXT AppView
-PrepareStorage ERROR ->  IN ShowErrors
