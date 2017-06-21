@@ -2,18 +2,19 @@ noflo = require 'noflo'
 
 exports.getComponent = ->
   c = new noflo.Component
-  c.inPorts.add 'token',
-    datatype: 'string'
+  c.inPorts.add 'user',
+    datatype: 'object'
   c.outPorts.add 'projects',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    in: 'token'
+    in: 'user'
     out: 'projects'
     async: true
-  , (token, groups, out, callback) ->
+  , (user, groups, out, callback) ->
+    return callback() unless user['grid-token']
     req = new XMLHttpRequest
     req.onreadystatechange = ->
       return unless req.readyState is 4
@@ -22,14 +23,12 @@ exports.getComponent = ->
           projects = JSON.parse req.responseText
         catch e
           return callback e
-        out.send
-          state: 'ok'
-          remoteProjects: projects
+        out.send projects
         do callback
         return
       callback new Error req.responseText
     req.open 'GET', '$NOFLO_REGISTRY_SERVICE/projects', true
-    req.setRequestHeader 'Authorization', "Bearer #{token}"
+    req.setRequestHeader 'Authorization', "Bearer #{user['github-token']}"
     req.send null
 
   c
