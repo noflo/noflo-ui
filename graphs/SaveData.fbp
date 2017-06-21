@@ -15,7 +15,8 @@ Dispatch HANDLE[0] -> IN GetProjectsDb
 GetProjectsDb OUT -> DATA OriginaProject(core/Kick)
 SaveProject ITEM -> IN OriginalProject
 GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE SaveProject
-GetProjectsDb OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
+GetProjectsDb OUT -> IN CleanProject(ui/CleanProject)
+CleanProject OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
 
 # Saving graphs
 'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB SaveGraph(ui/Save)
