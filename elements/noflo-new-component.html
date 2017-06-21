@@ -41,6 +41,10 @@
       },
       nameChanged: function () {
         var duplicates = [];
+        if (this.name) {
+          // Same regexp as used by the FBP language parser
+          this.name = this.name.replace(/[^a-zA-Z0-9]+/g, "_");
+        }
         if (this.project) {
           duplicates = this.project.components.filter(function (component) {
             if (component.name === this.name) {
