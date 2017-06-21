@@ -107,6 +107,8 @@ exports.getComponent = ->
 
       # Associate runtime with project for auto-connecting
       data.payload.runtime.definition.project = project.id
+      unless data.payload.runtime.definition.label
+        data.payload.runtime.definition.label = "#{project.name} runtime"
       out.runtime.send data.payload.runtime.definition
 
       out.project.send project
