@@ -14,17 +14,24 @@ class Middleware
 
   constructor: (@component, @baseDir) ->
 
+  attachAndStart: (instance, callback) ->
+    @instance = instance
+    @actionIn = noflo.internalSocket.createSocket()
+    @instance.inPorts.in.attach @actionIn
+    @actionIn.port = 'in'
+    @instance.start()
+    @instance.network.once 'start', ->
+      callback null
+
   before: (callback) ->
     loader = new noflo.ComponentLoader @baseDir
     loader.load @component, (err, instance) =>
       return callback err if err
-      @instance = instance
-      @actionIn = noflo.internalSocket.createSocket()
-      @instance.inPorts.in.attach @actionIn
-      @actionIn.port = 'in'
-      @instance.start()
-      @instance.network.once 'start', ->
-        callback null
+      if instance.isReady()
+        @attachAndStart instance, callback
+        return
+      instance.once 'ready', =>
+        @attachAndStart instance, callback
 
   beforeEach: ->
     @passAction = noflo.internalSocket.createSocket()
