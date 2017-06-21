@@ -16,7 +16,7 @@ componenttemplates:
     class Repeat(msgflo.Participant):
       def __init__(self, role):
         d = {
-          'component': 'Repeat',
+          'component': '<%= namespace %>/<%= name %>',
           'label': 'Repeat input data without change',
         }
         msgflo.Participant.__init__(self, d, role)
@@ -51,7 +51,7 @@ componenttemplates:
     RepeatParticipant = (client, role) ->
 
       definition =
-        component: 'Repeat'
+        component: '<%= namespace %>/<%= name %>'
         icon: 'file-word-o'
         label: 'Repeats in data without changes'
         inports: [
@@ -77,7 +77,7 @@ componenttemplates:
 
     var RepeatParticipant = function(client, role) {
       var definition = {
-        component: 'Repeat',
+        component: '<%= namespace %>/<%= name %>',
         icon: 'file-word-o',
         label: 'Repeats in data without changes',
         inports: [
@@ -102,7 +102,7 @@ componenttemplates:
     module.exports = RepeatParticipant;
   yaml: |
     # Declare MsgFlo participant on behalf of code which does not send discovery message by itself
-    component: DoorLock
+    component: '<%= namespace %>/<%= name %>'
     label: Open the door
     icon: lightbulb-o
     inports:
