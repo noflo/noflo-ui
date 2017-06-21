@@ -272,21 +272,13 @@
 
           if (this.project.repo) {
             delete this.project.gist;
+            if (!this.project.branch) {
+              this.project.branch = 'master';
+            }
           }
 
           // Send only the data we actually want to store
-          this.fire('changed', {
-            id: this.project.id,
-            name: this.project.name,
-            namespace: this.project.namespace,
-            repo: this.project.repo,
-            branch: this.project.branch ? this.project.branch : 'master',
-            gist: this.project.gist,
-            type: this.project.type,
-            main: this.project.main,
-            graphs: [],
-            components: []
-          });
+          this.fire('changed', this.project);
         }.bind(this));
         dialog.addEventListener('delete', function (event) {
           this.fire('deleteProject', event.detail);
