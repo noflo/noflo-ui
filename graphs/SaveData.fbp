@@ -1,9 +1,9 @@
 INPORT=Dispatch.IN:IN
-OUTPORT=SaveProject.ITEM:PROJECT
-OUTPORT=SaveGraph.ITEM:GRAPH
-OUTPORT=SaveComponent.ITEM:COMPONENT
-OUTPORT=SaveSpec.ITEM:SPEC
-OUTPORT=SaveRuntime.ITEM:RUNTIME
+OUTPORT=OriginalProject.OUT:PROJECT
+OUTPORT=OriginalGraph.OUT:GRAPH
+OUTPORT=OriginalComponent.OUT:COMPONENT
+OUTPORT=OriginalSpec.OUT:SPEC
+OUTPORT=OriginalRuntime.OUT:RUNTIME
 OUTPORT=Errors.OUT:ERROR
 
 'storage:save:project,storage:save:graph,storage:save:component,storage:save:spec,storage:save:runtime' -> ROUTES Dispatch(ui/DispatchAction)
@@ -12,13 +12,17 @@ OUTPORT=Errors.OUT:ERROR
 'db' -> KEYS GetProjectsDb(ui/GetActionValues) VALUES[0] -> DB SaveProject(ui/Save)
 'projects' -> STRING ProjectsStore(strings/SendString)
 Dispatch HANDLE[0] -> IN GetProjectsDb
+GetProjectsDb OUT -> DATA OriginaProject(core/Kick)
+SaveProject ITEM -> IN OriginalProject
 GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE SaveProject
-GetProjectsDb OUT -> ITEM SaveProject ERROR -> IN Errors(core/Merge)
+GetProjectsDb OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
 
 # Saving graphs
 'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB SaveGraph(ui/Save)
 'graphs' -> STRING GraphsStore(strings/SendString)
 Dispatch HANDLE[1] -> IN GetGraphsDb
+GetGraphsDb OUT -> DATA OriginalGraph(core/Kick)
+SaveGraph ITEM -> IN OriginalGraph
 GetGraphsDb OUT -> IN GraphsStore OUT -> STORE SaveGraph
 GetGraphsDb OUT -> ITEM SaveGraph ERROR -> IN Errors
 
@@ -26,6 +30,8 @@ GetGraphsDb OUT -> ITEM SaveGraph ERROR -> IN Errors
 'db' -> KEYS GetComponentsDb(ui/GetActionValues) VALUES[0] -> DB SaveComponent(ui/Save)
 'components' -> STRING ComponentsStore(strings/SendString)
 Dispatch HANDLE[2] -> IN GetComponentsDb
+GetComponentsDb OUT -> DATA OriginalComponent(core/Kick)
+SaveComponent ITEM -> IN OriginalComponent
 GetComponentsDb OUT -> IN ComponentsStore OUT -> STORE SaveComponent
 GetComponentsDb OUT -> ITEM SaveComponent ERROR -> IN Errors
 
@@ -33,6 +39,8 @@ GetComponentsDb OUT -> ITEM SaveComponent ERROR -> IN Errors
 'db' -> KEYS GetSpecsDb(ui/GetActionValues) VALUES[0] -> DB SaveSpec(ui/Save)
 'specs' -> STRING SpecsStore(strings/SendString)
 Dispatch HANDLE[3] -> IN GetSpecsDb
+GetSpecsDb OUT -> DATA OriginalSpec(core/Kick)
+SaveSpec ITEM -> IN OriginalSpec
 GetSpecsDb OUT -> IN SpecsStore OUT -> STORE SaveSpec
 GetSpecsDb OUT -> ITEM SaveSpec ERROR -> IN Errors
 
@@ -40,6 +48,8 @@ GetSpecsDb OUT -> ITEM SaveSpec ERROR -> IN Errors
 'db' -> KEYS GetRuntimesDb(ui/GetActionValues) VALUES[0] -> DB SaveRuntime(ui/Save)
 'runtimes' -> STRING RuntimesStore(strings/SendString)
 Dispatch HANDLE[4] -> IN GetRuntimesDb OUT
+GetRuntimesDb OUT -> DATA OriginalRuntime(core/Kick)
+SaveRuntime ITEM -> IN OriginalRuntime
 GetRuntimesDb OUT -> IN RuntimesStore OUT -> STORE SaveRuntime
 GetRuntimesDb OUT -> ITEM SaveRuntime ERROR -> IN Errors
 
