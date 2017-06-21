@@ -117,7 +117,7 @@
           });
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
-          this.emitEvent('github:fetch', event.detail);
+          this.emitEvent('flowhub:projecs:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
           this.emitEvent('project:save:project', event.detail.project);
