@@ -1,6 +1,6 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=LoadProjects.ITEM:PROJECT
-OUTPORT=LoadGraphs.ITEM:GRAPH
+OUTPORT=ConvertGraphs.OUT:GRAPH
 OUTPORT=LoadComponents.ITEM:COMPONENT
 OUTPORT=LoadSpecs.ITEM:SPEC
 OUTPORT=LoadRuntimes.ITEM:RUNTIME
@@ -19,6 +19,8 @@ ProjectsStore OUT -> STORE LoadProjects ERROR -> IN Errors
 'graphs' -> STRING GraphsStore(strings/SendString)
 Dispatch HANDLE[1] -> IN GetGraphsDb OUT -> IN GraphsStore
 GraphsStore OUT -> STORE LoadGraphs ERROR -> IN Errors
+LoadGraphs ITEM -> IN ConvertGraph(graph/LoadJson)
+ConvertGraph ERROR -> IN Errors
 
 # Loading components
 'db' -> KEYS GetComponentsDb(ui/GetActionValues) VALUES[0] -> DB LoadComponents(ui/Load)

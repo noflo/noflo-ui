@@ -15,8 +15,8 @@ Dispatch HANDLE[0] -> IN GetProjectsDb
 GetProjectsDb OUT -> DATA OriginaProject(core/Kick)
 SaveProject ITEM -> IN OriginalProject
 GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE SaveProject
-GetProjectsDb OUT -> IN CleanProject(ui/CleanProject)
-CleanProject OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
+GetProjectsDb OUT -> IN ConvertProject(ui/CleanProject)
+ConvertProject OUT -> ITEM SaveProject ERROR -> IN Errors(core/Mergeo
 
 # Saving graphs
 'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB SaveGraph(ui/Save)
@@ -25,7 +25,9 @@ Dispatch HANDLE[1] -> IN GetGraphsDb
 GetGraphsDb OUT -> DATA OriginalGraph(core/Kick)
 SaveGraph ITEM -> IN OriginalGraph
 GetGraphsDb OUT -> IN GraphsStore OUT -> STORE SaveGraph
-GetGraphsDb OUT -> ITEM SaveGraph ERROR -> IN Errors
+'toJSON' -> METHOD ConvertGraph(objects/CallMethod)
+GetGraphsDb OUT -> IN ConvertGraph
+ConvertGraph OUT -> ITEM SaveGraph ERROR -> IN Errors
 
 # Saving components
 'db' -> KEYS GetComponentsDb(ui/GetActionValues) VALUES[0] -> DB SaveComponent(ui/Save)
