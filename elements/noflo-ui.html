@@ -192,15 +192,15 @@
         this.$.project.addEventListener('deleteProject', function (event) {
           this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
@@ -210,15 +210,15 @@
         this.$.main.addEventListener('deleteProject', function (event) {
           this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
@@ -247,10 +247,10 @@
           if (project && project.graphs.indexOf(event.detail) !== -1) {
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
           }
-          this.emitEvent('project:delete:graph', event.detail);
+          this.emitEvent('storage:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
@@ -269,10 +269,10 @@
           if (index !== -1) {
             project.components.splice(index, 1);
           }
-          this.emitEvent('project:delete:component', component);
+          this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
