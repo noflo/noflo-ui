@@ -87,9 +87,9 @@ describe 'GitHub Middleware', ->
           chai.expect(data.graphs.length).to.equal 1
           data.graphs.pop()
         chai.expect(data).to.eql expected.shift()
-      mw.receiveAction 'project:save:graph', check, (err) ->
+      mw.receiveAction 'storage:save:graph', check, (err) ->
         return done err if err
-        mw.receiveAction 'project:save:project', check, done
+        mw.receiveAction 'storage:save:project', check, done
       mw.send action, payload, state
 
       gistData =

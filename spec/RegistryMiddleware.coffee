@@ -31,7 +31,7 @@ describe 'Registry Middleware', ->
       mock = sinon.fakeServer.create()
     afterEach ->
       mock.restore()
-    it 'should send project:save:runtime for each runtime on server', (done) ->
+    it 'should send storage:save:runtime for each runtime on server', (done) ->
       action = 'flowhub:runtimes:fetch'
       payload = true
       state =
@@ -49,9 +49,9 @@ describe 'Registry Middleware', ->
         delete data.seen
         delete data.registered
         chai.expect(data).to.eql rt
-      mw.receiveAction 'project:save:runtime', check, (err) ->
+      mw.receiveAction 'storage:save:runtime', check, (err) ->
         return done err if err
-        mw.receiveAction 'project:save:runtime', check, done
+        mw.receiveAction 'storage:save:runtime', check, done
       mw.send action, payload, state
       mock.respondWith 'GET', "https://api.flowhub.io/runtimes/", [
         200

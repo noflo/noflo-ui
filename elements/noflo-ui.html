@@ -121,7 +121,7 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('project:save:project', event.detail.project);
+          this.emitEvent('storage:save:project', event.detail.project);
           setTimeout(function () {
             this.emitEvent('github:sync:pull', {
               repo: event.detail.project.repo,
@@ -136,13 +136,13 @@
           this.emitEvent('flowhub:runtimes:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
           this.emitEvent('flowhub:runtimes:register', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
-          this.emitEvent('project:save:project', event.detail);
+          this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.main.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
@@ -151,7 +151,7 @@
           this.openProject(event.detail);
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {
@@ -163,7 +163,7 @@
           this.emitEvent('runtime:connect', newCtx);
         }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:runtime', event.detail);
+          this.emitEvent('storage:save:runtime', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.emitEvent('context:edges', event.detail);
@@ -172,15 +172,15 @@
           this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:project', event.detail);
+          this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
@@ -223,12 +223,12 @@
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
@@ -282,7 +282,7 @@
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
