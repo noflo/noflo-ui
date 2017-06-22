@@ -24,7 +24,7 @@ Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
 Dispatch OUT[3] -> IN GithubReducer(ui/GithubReducer)
 Dispatch OUT[4] -> IN RegistryReducer(ui/RegistryReducer)
-Dispatch OUT[5] -> IN RuntimeStorage
+Dispatch OUT[5] -> IN RuntimeStorage(ui/RuntimeStorage)
 Dispatch OUT[6] -> IN ContextStorage(ui/ContextStorage)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
