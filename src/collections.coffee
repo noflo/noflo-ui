@@ -14,3 +14,16 @@ exports.addToList = (list, entity) ->
   return if found
   list.push entity
   return
+
+exports.removeFromList = (list, entity) ->
+  index = null
+  for existing, idx in list
+    if existing is entity
+      index = idx
+      continue
+    if existing.id is entity.id
+      index = idx
+      continue
+  return if index is null
+  list.splice index, 1
+  return
