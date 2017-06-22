@@ -1,5 +1,7 @@
 # Event dispatching
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
+# Application state updates
+AppView(polymer/noflo-ui) STATE -> STATE StoreDispatch
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
 StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)

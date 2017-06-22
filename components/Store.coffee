@@ -5,8 +5,13 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'action',
     datatype: 'all'
+  c.inPorts.add 'state',
+    datatype: 'object'
   c.outPorts.add 'pass',
     datatype: 'object'
+
+  c.inPorts.state.on 'data', (state) ->
+    c.state = state
 
   c.state = {}
   c.shutdown = ->

@@ -311,6 +311,10 @@
         for (var key in context) {
           this.ctx[key] = context[key];
         }
+
+        // Send updated state back to NoFlo-land
+        this.fire('state', this.ctx);
+
         if (context.projects) {
           this.$.main.projects = context.projects;
         }
