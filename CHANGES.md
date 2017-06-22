@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.20.2 (2017 June 22)
+
+Bugfixes:
+
+* Fixed saving components coming from runtime when using _Edit as project_
+* Ensured runtimes saved via live mode URL get proper labels
+
 ## 0.20.1 (2017 June 18)
 
 Bugfixes:
