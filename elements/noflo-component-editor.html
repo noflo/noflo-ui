@@ -198,6 +198,15 @@
         if (info && info.componenttemplates && info.componenttemplates[this.component.language]) {
           template = info.componenttemplates[this.component.language];
         }
+        if (template) {
+          // Allow passing project/component data to template
+          var _ = require('underscore');
+          var templateFunc = _.template(template);
+          template = templateFunc({
+            namespace: this.project.namespace || this.project.id,
+            name: this.component.name
+          });
+        }
         return template;
       },
       themeChanged: function () {

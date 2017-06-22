@@ -8,16 +8,20 @@ runtimetypes:
 componenttemplates:
   python: |
     #!/usr/bin/env python
-    import sys, os, json, logging
-    sys.path.append(os.path.abspath("."))
-    import gevent
     import msgflo
 
-    class Repeat(msgflo.Participant):
+    class <%= name %>(msgflo.Participant):
       def __init__(self, role):
         d = {
-          'component': 'Repeat',
+          'component': '<%= namespace %>/<%= name %>',
           'label': 'Repeat input data without change',
+          'icon': 'star-o',
+          'inports': [
+            { 'id': 'in', 'type': 'any' },
+          ],
+          'outports': [
+            { 'id': 'out', 'type': 'any' },
+          ],
         }
         msgflo.Participant.__init__(self, d, role)
 
@@ -25,22 +29,8 @@ componenttemplates:
         self.send('out', msg.data)
         self.ack(msg)
 
-
-    def main():
-      waiter = gevent.event.AsyncResult()
-      role = sys.argv[1] if len(sys.argv) > 1 else 'repeat'
-      repeater = Repeat(role)
-      engine = msgflo.run(repeater, done_cb=waiter.set)
-
-      print "Repeat running on %s" % (engine.broker_url)
-      sys.stdout.flush()
-      waiter.wait()
-      print "Shutdown"
-      sys.stdout.flush()
-
     if __name__ == '__main__':
-      logging.basicConfig()
-      main()
+      msgflo.main(<%= name %>)
   coffeescript: |
     # To work in msgflo-nodejs source tree
     try
@@ -48,10 +38,10 @@ componenttemplates:
     catch e
       msgflo = require '..'
 
-    RepeatParticipant = (client, role) ->
+    <%= name %> = (client, role) ->
 
       definition =
-        component: 'Repeat'
+        component: '<%= namespace %>/<%= name %>'
         icon: 'file-word-o'
         label: 'Repeats in data without changes'
         inports: [
@@ -66,7 +56,7 @@ componenttemplates:
         return callback 'out', null, indata
       return new msgflo.participant.Participant client, definition, process, role
 
-    module.exports = RepeatParticipant
+    module.exports = <%= name %>
   javascript: |
     try {
       var msgflo = require('msgflo-nodejs');
@@ -75,9 +65,9 @@ componenttemplates:
       var msgflo = require('..');
     }
 
-    var RepeatParticipant = function(client, role) {
+    var <%= name %> = function(client, role) {
       var definition = {
-        component: 'Repeat',
+        component: '<%= namespace %>/<%= name %>',
         icon: 'file-word-o',
         label: 'Repeats in data without changes',
         inports: [
@@ -99,10 +89,10 @@ componenttemplates:
       return new msgflo.participant.Participant(client, definition, process, role);
     };
 
-    module.exports = RepeatParticipant;
+    module.exports = <%= name %>;
   yaml: |
     # Declare MsgFlo participant on behalf of code which does not send discovery message by itself
-    component: DoorLock
+    component: '<%= namespace %>/<%= name %>'
     label: Open the door
     icon: lightbulb-o
     inports:
