@@ -3,6 +3,11 @@ NoFlo UI ChangeLog
 
 ## 0.20.2 (2017 June 22)
 
+New features:
+
+* Updated MsgFlo component templates to latest API
+* Component templates can now receive project namespace and component name
+
 Bugfixes:
 
 * Fixed saving components coming from runtime when using _Edit as project_
