@@ -10,6 +10,7 @@ else
 describe 'Storage Middleware', ->
   mw = null
   idb = null
+  component = null
   before (done) ->
     @timeout 4000
     mw = window.middleware 'ui/StorageMiddleware', baseDir
@@ -34,3 +35,34 @@ describe 'Storage Middleware', ->
         idb = data
       mw.receiveAction 'storage:db', check, done
       mw.send action, payload, {}
+  describe 'receiving a storage:save:component action', ->
+    it 'should send a storage:stored:component action', (done) ->
+      action = 'storage:save:component'
+      comp =
+        name: 'Foo'
+        language: 'python'
+        project: 'baz'
+        code: ''
+        tests: ''
+      check = (data) ->
+        chai.expect(data).to.eql comp
+        component = data
+      mw.receiveAction 'storage:stored:component', check, done
+      mw.send action, comp,
+        db: idb
+  describe 'receiving a storage:load:components action', ->
+    it 'should send a storage:stored:component action', (done) ->
+      action = 'storage:load:components'
+      check = (data) ->
+        chai.expect(data).to.eql component
+      mw.receiveAction 'storage:stored:component', check, done
+      mw.send action, {},
+        db: idb
+  describe 'receiving a storage:delete:component action', ->
+    it 'should send a storage:removed:component action', (done) ->
+      action = 'storage:delete:component'
+      check = (data) ->
+        chai.expect(data).to.equal component.id
+      mw.receiveAction 'storage:removed:component', check, done
+      mw.send action, component,
+        db: idb
