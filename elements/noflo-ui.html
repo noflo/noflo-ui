@@ -312,44 +312,13 @@
           this.ctx[key] = context[key];
         }
 
-        // Send updated state back to NoFlo-land
-        this.fire('state', this.ctx);
-
         if (context.projects) {
           this.$.main.projects = context.projects;
         }
         if (context.db) {
           this.$.journal.db = context.db;
         }
-        if (context.persisted) {
-          if (context.persisted.type === 'runtimes' || context.persisted.type === 'projects') {
-            // For now we only handle runtimes and projects through action loop
-            switch (context.persisted.action) {
-                case 'save':
-                  if (context.persisted.type === 'runtimes') {
-                    require('noflo-ui/collections').addToList(this.ctx.runtimes, context.persisted.entity);
-                    // Update examples list based on available runtimes
-                    this.$.main.runtimesChanged();
-                  }
-                  if (context.persisted.type === 'projects') {
-                    require('noflo-ui/collections').addToList(this.ctx.projects, context.persisted.entity);
-                    // Update examples list
-                    this.$.main.addExamplesForRuntimes();
-                    if (!this.ctx.project) {
-                      // Redirect user to the newly-created project
-                      this.openProject(context.persisted.entity);
-                    }
-                  }
-                  break;
-            }
-          }
-        }
         if (context.runtimes) {
-          if (!Array.isArray(context.runtimes)) {
-            // Newly saved individual runtime, add to runtime list
-            require('noflo-ui/collections').addToList(this.ctx.runtimes, context.runtimes);
-            return;
-          }
           this.$.main.runtimes = context.runtimes;
           this.$.project.runtimes = context.runtimes;
           this.$.search.runtimes = context.runtimes;

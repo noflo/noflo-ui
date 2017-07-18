@@ -1,7 +1,8 @@
 # Event dispatching
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # Application state updates
-AppView(polymer/noflo-ui) STATE -> STATE StoreDispatch
+State(ui/State) STATE -> STATE StoreDispatch
+State STATE -> CONTEXT AppView
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
 StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)
@@ -18,29 +19,30 @@ RegistryMiddleware NEW -> ACTION StoreDispatch
 RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
-RuntimeMiddleware PASS -> IN Clean(ui/CleanAction) OUT -> IN Dispatch(routers/GroupRouter)
-'user,main,github,flowhub,runtime,context' -> ROUTES Dispatch
-Dispatch OUT[0] -> IN UserReducer(ui/UserReducer)
+RuntimeMiddleware PASS -> IN Dispatch(routers/GroupRouter)
+'user,main,storage,github,flowhub,runtime,context' -> ROUTES Dispatch
+Dispatch OUT[0] -> IN CleanUser(ui/CleanAction) OUT -> IN UserReducer(ui/UserReducer)
 Dispatch OUT[1] -> START MainContext(ui/CreateContext)
-Dispatch OUT[3] -> IN GithubReducer(ui/GithubReducer)
-Dispatch OUT[4] -> IN RegistryReducer(ui/RegistryReducer)
-Dispatch OUT[5] -> IN RuntimeStorage(ui/RuntimeStorage)
-Dispatch OUT[6] -> IN ContextStorage(ui/ContextStorage)
-Dispatch MISSED -> IN ShowErrors(core/Output)
+Dispatch OUT[2] -> IN StorageReducer(ui/StorageReducer)
+Dispatch OUT[3] -> IN CleanGithub(ui/CleanAction) OUT -> IN GithubReducer(ui/GithubReducer)
+Dispatch OUT[4] -> IN CleanRegistry(ui/CleanAction) OUT -> IN RegistryReducer(ui/RegistryReducer)
+Dispatch OUT[5] -> IN CleanRuntime(ui/CleanAction) OUT -> IN RuntimeStorage(ui/RuntimeStorage)
+Dispatch OUT[6] -> IN CleanContext(ui/CleanAction) OUT -> IN ContextStorage(ui/ContextStorage)
+Dispatch MISSED -> IN CleanErrors(ui/CleanAction) OUT -> IN ShowErrors(core/Output)
 
 # Base data to UI
 UserReducer USER -> USER AppView
-UserReducer USER -> USER GithubStorage
-UserReducer CONTEXT -> Context AppView
+UserReducer CONTEXT -> IN STATE
 
 # Pass local and GH contexts to runtime storage for remote node handling
 GithubReducer CONTEXT -> CONTEXT RuntimeStorage
 RegistryReducer CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
-MainContext OUT -> CONTEXT AppView
-RuntimeStorage CONTEXT -> CONTEXT AppView
+StorageReducer OUT -> IN State
+MainContext OUT -> IN State
+RuntimeStorage CONTEXT -> IN State
 RuntimeStorage NEW -> ACTION StoreDispatch
-ContextStorage CONTEXT -> CONTEXT AppView
+ContextStorage CONTEXT -> IN State
 
 # Start the app
 'noflo-ui' -> SELECTOR AppView
