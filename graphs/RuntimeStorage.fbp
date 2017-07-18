@@ -10,13 +10,6 @@ Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
-# Send all projects to the UI
-'' -> START CreateRuntimesCtx(objects/CreateObject)
-CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
-'runtimes' -> KEY SetRuntimes
-LoadData(ui/LoadRuntimeData) RUNTIMES -> RUNTIMES EnsureLocal(ui/EnsureLocalRuntimes)
-EnsureLocal RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
-
 # Add runtime connection to an existing context
 Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
