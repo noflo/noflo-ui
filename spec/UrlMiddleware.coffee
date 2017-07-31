@@ -36,7 +36,14 @@ describe 'URL Middleware', ->
       mw.receivePass action, payload, done
       mw.send action, payload
   describe 'receiving a noflo:ready action', ->
-    it 'should send application:url and main:open actions', (done) ->
+    it 'should send application:url action', (done) ->
+      checkUrl = (data) ->
+        chai.expect(data).to.equal window.location.href
+      mw.receivePass 'noflo:ready', true, ->
+        mw.receiveAction 'application:url', checkUrl, done
+      mw.send 'noflo:ready', true
+  describe 'receiving a storage:ready action', ->
+    it 'should send main:open action', (done) ->
       checkUrl = (data) ->
         chai.expect(data).to.equal window.location.href
       checkOpen = (data) ->
@@ -47,10 +54,8 @@ describe 'URL Middleware', ->
           graph: null
           component: null
           nodes: []
-      mw.receivePass 'noflo:ready', true, ->
-        mw.receiveAction 'application:url', checkUrl, ->
-          mw.receiveAction 'main:open', checkOpen, done
-      mw.send 'noflo:ready', true
+      mw.receiveAction 'main:open', checkOpen, done
+      mw.send 'storage:ready', true
   describe 'on hash change to a project URL', ->
     it 'should send project:open action', (done) ->
       checkOpen = (data) ->
