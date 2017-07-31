@@ -393,6 +393,7 @@ module.exports = ->
           scripts: [
             "../node_modules/react/dist/react-with-addons.js"
             "../node_modules/react-dom/dist/react-dom.js"
+            "../node_modules/hammerjs/hammer.min.js"
             "../browser/<%=pkg.name%>.js"
             "./utils/middleware.js"
             "../node_modules/sinon/pkg/sinon.js"
