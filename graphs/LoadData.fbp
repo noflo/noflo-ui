@@ -3,7 +3,8 @@ OUTPORT=LoadProjects.ITEM:PROJECT
 OUTPORT=ConvertGraph.OUT:GRAPH
 OUTPORT=LoadComponents.ITEM:COMPONENT
 OUTPORT=LoadSpecs.ITEM:SPEC
-OUTPORT=LoadRuntimes.ITEM:RUNTIME
+OUTPORT=Runtimes.OUT:RUNTIME
+OUTPORT=LoadAllRuntimes.COMPLETE:COMPLETE
 OUTPORT=Errors.OUT:ERROR
 
 'storage:load:projects,storage:load:graphs,storage:load:components,storage:load:specs,storage:load:runtimes,storage:load:all' -> ROUTES Dispatch(ui/DispatchAction)
@@ -39,6 +40,7 @@ SpecsStore OUT -> STORE LoadSpecs ERROR -> IN Errors
 'runtimes' -> STRING RuntimesStore(strings/SendString)
 Dispatch HANDLE[4] -> IN GetRuntimesDb OUT -> IN RuntimesStore
 RuntimesStore OUT -> STORE LoadRuntimes ERROR -> IN Errors
+LoadRuntimes ITEM -> IN Runtimes(core/Merge)
 
 # Loading all persisted data
 Dispatch HANDLE[5] -> IN SplitAction(core/Split)
@@ -46,7 +48,11 @@ SplitAction OUT -> IN GetProjectsDb
 SplitAction OUT -> IN GetGraphsDb
 SplitAction OUT -> IN GetComponentsDb
 SplitAction OUT -> IN GetSpecsDb
-SplitAction OUT -> IN GetRuntimesDb
+'db' -> KEYS GetAllRuntimesDb(ui/GetActionValues) VALUES[0] -> DB LoadAllRuntimes(ui/Load)
+'runtimes' -> STRING AllRuntimesStore(strings/SendString)
+SplitAction OUT -> IN GetAllRuntimesDb OUT -> IN AllRuntimesStore
+AllRuntimesStore OUT -> STORE LoadAllRuntimes ERROR -> IN Errors
+LoadAllRuntimes ITEM -> IN Runtimes
 
 # Here we treat unknown actions as errors
 Dispatch PASS -> IN Errors(core/Merge)
