@@ -28,7 +28,7 @@ buildContext = (url) ->
   switch route
     when 'project'
       # Locally stored project
-      routeData.route = 'project'
+      routeData.route = 'storage'
       routeData.project = urlParts.shift()
       if urlParts[0] is 'component' and urlParts.length is 2
         # Opening a component from the project

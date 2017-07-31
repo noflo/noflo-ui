@@ -29,6 +29,9 @@ exports.getComponent = ->
         state.db = data.payload
         out.send state
         do callback
+      when 'storage:open'
+        out.send data.payload
+        do callback
       when 'storage:stored:project'
         state = {}
         project = data.payload

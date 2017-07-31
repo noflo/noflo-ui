@@ -57,7 +57,7 @@ describe 'URL Middleware', ->
       mw.receiveAction 'main:open', checkOpen, done
       mw.send 'storage:ready', true
   describe 'on hash change to a project URL', ->
-    it 'should send project:open action', (done) ->
+    it 'should send storage:open action', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
           route: 'project'
@@ -68,7 +68,7 @@ describe 'URL Middleware', ->
           nodes: [
             'UserStorage'
           ]
-      mw.receiveAction 'project:open', checkOpen, done
+      mw.receiveAction 'storage:open', checkOpen, done
       window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
   describe 'on hash change to a old-style example URL', ->
     it 'should send application:redirect action', (done) ->
