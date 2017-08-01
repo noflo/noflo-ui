@@ -19,7 +19,9 @@ NofloReady OUT -> IN InitialURL(ui/GetUrl)
 InitialURL OUT -> ApplicationUrlAction
 
 # Subscribe to hash changes and generate new actions
-Dispatch HANDLE[1] -> IN Async(core/RepeatAsync) OUT -> START ListenHash(interaction/ListenHash)
+Dispatch HANDLE[1] -> IN SplitReady(core/Split)
+SplitReady OUT -> IN Async(core/RepeatAsync) OUT -> START ListenHash(interaction/ListenHash)
+SplitReady OUT -> IN Passed
 ListenHash INITIAL -> URL HashToAction(ui/Router)
 ListenHash CHANGE -> URL HashToAction
 HashToAction ROUTE -> IN NewActions
