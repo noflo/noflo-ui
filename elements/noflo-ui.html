@@ -511,33 +511,13 @@
         });
       },
       openProject: function (project) {
-        if (!project.graphs.length) {
-          if (project.components.length) {
-            // No graphs in this project, but there are components
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              'component',
-              project.components[0].name
-            ]);
+        var projects = require('noflo-ui/projects');
+        projects.getProjectHash(project, function (err, hash) {
+          if (err) {
             return;
           }
-          setTimeout(function () {
-            // Wait for graphs to be populated
-            if (!project.graphs.length && !project.components.length) {
-              // Still no graphs/components
-              return;
-            }
-            this.openProject(project);
-          }.bind(this), 100);
-          return;
-        }
-        var main = project.main || project.graphs[0].properties.id;
-        this.emitEvent('application:hash', [
-          'project',
-          project.id,
-          main
-        ]);
+          this.emitEvent('application:hash', hash);
+        }.bind(this));
       }
     });
   </script>

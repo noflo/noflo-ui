@@ -21,6 +21,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:removed:runtime' -> ACTION RemovedRuntimeAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:error' -> ACTION StorageErrorAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:open' -> ACTION StorageOpenAction(ui/SetAction) OUT -> IN Passed
+'application:hash' -> ACTION ApplicationHashAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 
 # Prepare IndexedDB database
 'noflo-ui' -> STRING DbName(strings/SendString)
@@ -41,8 +42,12 @@ LoadData COMPLETE -> IN StorageReadyAction
 LoadData ERROR -> IN StorageErrorAction
 
 # Saving data to the DB
-Dispatch HANDLE[2] -> IN SaveData(ui/SaveData)
-SaveData PROJECT -> IN StorageProjectAction
+Dispatch HANDLE[2] -> IN SplitSave(core/Split)
+SplitSave OUT -> IN OpenNewProject(ui/OpenNewProject)
+SplitSave OUT -> IN SaveData(ui/SaveData)
+SaveData PROJECT -> PROJECT OpenNewProject
+OpenNewProject OUT -> IN StorageProjectAction
+OpenNewProject HASH -> IN ApplicationHashAction
 SaveData GRAPH -> IN StorageGraphAction
 SaveData COMPONENT -> IN StorageComponentAction
 SaveData SPEC -> IN StorageSpecAction
