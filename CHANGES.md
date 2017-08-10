@@ -1,6 +1,17 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.21.0 (git master)
+
+New features:
+
+* Added support for the new `opener` FBP protocol transport for opening Flowhub from a running NoFlo web app
+
+Internal changes:
+
+* Switched to [the-graph 0.10](https://github.com/flowhub/the-graph/blob/master/CHANGES.md#0100-2017-june-28) which no longer depends on Polymer
+* GitHub communications are now done using a Redux-style middleware
+
 ## 0.20.2 (2017 June 22)
 
 New features:
