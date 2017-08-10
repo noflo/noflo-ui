@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.20.3 (2017 August 10)
+
+New features:
+
+* Added support for the new `opener` FBP protocol transport for opening Flowhub from a running NoFlo web app
+
 ## 0.20.2 (2017 June 22)
 
 New features:
