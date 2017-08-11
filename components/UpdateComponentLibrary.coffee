@@ -11,7 +11,7 @@ exports.getComponent = ->
     return unless c.runtime
     return unless c.components[c.runtime.id]
     c.runtime.components = c.components[c.runtime.id]
-    c.outPorts.runtime.beginGroup 'project'
+    c.outPorts.runtime.beginGroup 'storage'
     c.outPorts.runtime.beginGroup 'save'
     c.outPorts.runtime.beginGroup 'runtime'
     c.outPorts.runtime.send c.runtime
@@ -27,7 +27,9 @@ exports.getComponent = ->
       return unless event is 'data'
       return unless payload.componentDefinition
       def = payload.componentDefinition
-      c.outPorts.out.send payload
+      c.outPorts.out.send
+        componentDefinition: def
+        clearLibrary: false
       return unless def.runtime
       c.components[def.runtime] = {} unless c.components[def.runtime]
 
@@ -53,6 +55,7 @@ exports.getComponent = ->
       for name, def of c.runtime.components
         c.outPorts.out.send
           componentDefinition: def
+          clearLibrary: false
 
   c.outPorts.add 'out',
     datatype: 'object'

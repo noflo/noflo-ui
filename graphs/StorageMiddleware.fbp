@@ -20,7 +20,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:removed:spec' -> ACTION RemovedSpecAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:removed:runtime' -> ACTION RemovedRuntimeAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:error' -> ACTION StorageErrorAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
-'storage:open' -> ACTION StorageOpenAction(ui/SetAction) OUT -> IN Passed
+'storage:opened' -> ACTION StorageOpenAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'application:hash' -> ACTION ApplicationHashAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 
 # Prepare IndexedDB database

@@ -25,18 +25,14 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
     datatype: 'object'
-  c.inPorts.add 'runtimes',
-    datatype: 'array'
-    required: true
   c.outPorts.add 'context',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
     in: 'context'
-    params: 'runtimes'
     out: 'context'
   , (ctx, groups, out) ->
-    rts = c.params?.runtimes or []
+    rts = ctx.runtimes or []
     unless ctx.graphs?.length
       unless ctx.component
         out.send ctx

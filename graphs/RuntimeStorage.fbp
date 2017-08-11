@@ -14,15 +14,8 @@ Dispatch MISSED -> IN ShowErrors(core/Output)
 Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
 # Add compatible runtimes to already-populated contexts
-EnsureLocal RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
-FindRuntimes CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
+FindRuntimes(ui/FindRuntimes) CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 ProjectRuntime CONTEXT -> IN MergeContextPreSubscribe(core/Merge)
-
-# Build direct runtime context
-EnsureLocal RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
-Dispatch OUT[0] -> IN PopulateRuntimeData
-PopulateRuntimeData OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
-DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 
 # Get components list when connecting to new runtime
 ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary(ui/UpdateComponentLibrary)
