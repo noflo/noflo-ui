@@ -18,6 +18,12 @@ exports.getComponent = ->
     out: 'out'
     async: true
   , (data, groups, out, callback) ->
+    if data.protocol in ['opener', 'microflo']
+      # These are transient runtimes, no need to persist on Registry
+      out.send data
+      do callback
+      return
+
     unless c.params?.user?['grid-token']
       # User not logged in, persist runtime only locally
       out.send data
