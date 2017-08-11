@@ -324,9 +324,7 @@
           this.$.search.runtimes = context.runtimes;
         }
         if (context.search !== undefined) {
-          this.$.library.search({
-            search: this.ctx.search
-          });
+          this.$.library.search = this.ctx.search;
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
