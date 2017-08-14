@@ -2,7 +2,7 @@ noflo = require 'noflo'
 collections = require '../src/collections'
 
 findProject = (entity, projects) ->
-  projectId = entity.properties.project or entity.project
+  projectId = entity.properties?.project or entity.project
   return null unless projectId
   for project in projects
     continue unless project.id is projectId
