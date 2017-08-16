@@ -321,7 +321,6 @@
           });
           // Emit new subgraph so that it can be stored
           graph.endTransaction('newsubgraph');
-          this.push('project.graphs', graph);
           this.fire('newgraph', graph);
           // End the transaction on the main graph
           setTimeout(function () {

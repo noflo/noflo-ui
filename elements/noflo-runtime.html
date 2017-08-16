@@ -244,7 +244,7 @@
         if (this.panel) {
           this.set('panel.open', false);
         }
-        if (!this.runtime) {
+        if (!this.runtime || !this.graph) {
           return;
         }
         this.runtime.setMain(this.graph);

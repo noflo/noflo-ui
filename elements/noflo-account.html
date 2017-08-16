@@ -322,6 +322,9 @@
           if (!this.user) {
             return;
           }
+          if (!this.user.github) {
+            return;
+          }
           if (!this.user.plan || this.user.plan.type === 'free') {
             if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
               // User is on free plan but hasn't granted repo access

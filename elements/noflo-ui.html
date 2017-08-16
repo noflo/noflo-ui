@@ -75,16 +75,16 @@
       }
     </style>
   <template>
-    <noflo-main id="main"></noflo-main>
-    <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}"></the-graph-editor>
-    <noflo-library id="library"></noflo-library>
-    <noflo-context id="context"></noflo-context>
-    <noflo-runtime id="runtime"></noflo-runtime>
-    <noflo-journal id="journal"></noflo-journal>
-    <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}"></noflo-component-editor>
-    <noflo-search id="search"></noflo-search>
-    <noflo-project id="project"></noflo-project>
-    <noflo-packets id="packets"></noflo-packets>
+    <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}"></noflo-main>
+    <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
+    <noflo-library id="library" search="{{ctx.search}}"></noflo-library>
+    <noflo-context id="context" nodes="{{ctx.nodes}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}"></noflo-context>
+    <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatibleRuntimes}}" graph="{{ctx.graph}}"></noflo-runtime>
+    <noflo-journal id="journal" db="{{ctx.db}}" graph="{{ctx.graph}}"></noflo-journal>
+    <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
+    <noflo-search id="search" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-search>
+    <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}" user="{{ctx.user}}"></noflo-project>
+    <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" graph="{{ctx.graph}}"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
     <button id="asproject" on-click="editAsProject">Edit as project</button>
   </template>
@@ -95,7 +95,20 @@
         ctx: {
           type: Object,
           value: function () {
-            return {};
+            return {
+              db: null,
+              search: null,
+              graph: null,
+              component: null,
+              graphs: [],
+              project: null,
+              projects: [],
+              runtime: null,
+              runtimes: [],
+              compatibleRuntimes: [],
+              edges: [],
+              nodes: [],
+            };
           }
         },
         dontAutoHideAlert: {
@@ -115,10 +128,10 @@
           notify: true
         }
       },
+      clearContextFirst: ['graphs', 'runtimes', 'projects', 'edges', 'nodes', 'compatibleRuntimes'],
       emitEvent: function (event, payload) {
         this.fire(event, {
           action: event,
-          state: this.ctx,
           payload: payload
         });
       },
@@ -152,9 +165,6 @@
               repo: event.detail.project.repo,
               project: event.detail.project
             });
-            this.push('$.main.projects', event.detail.project);
-            this.$.main.checkProject(event.detail.project);
-            this.push('ctx.projects', event.detail.project);
           }.bind(this), 2);
         }.bind(this));
         this.$.main.addEventListener('fetchRuntimes', function (event) {
@@ -226,8 +236,7 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.splice('$.main.projects', this.$.main.projects.indexOf(event.detail), 1);
-          this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(event.detail), 1);
+          this.splice('ctx.projects', this.ctx.projects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.project.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
@@ -244,8 +253,7 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.splice('$.main.projects', this.$.main.projects.indexOf(event.detail), 1);
-          this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(event.detail), 1);
+          this.splice('ctx.projects', this.ctx.projects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
@@ -266,16 +274,15 @@
           this.emitEvent('context:search_library_result', { searchLibraryResult: event.detail });
         }.bind(this));
         this.$.search.addEventListener('deleteGraph', function (event) {
-          var project = this.ctx.project || this.$.project.project;
+          var project = this.ctx.project;
           if (project && project.graphs.indexOf(event.detail) !== -1) {
-            project.graphs.splice(project.graphs.indexOf(event.detail), 1);
+            this.splice('ctx.project.graphs', project.graphs.indexOf(event.detail), 1);
           }
           this.emitEvent('storage:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.splice('$.main.projects', this.$.main.projects.indexOf(project), 1);
-            this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(project), 1);
+            this.splice('ctx.projects', this.ctx.projects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {
@@ -283,21 +290,20 @@
           }
         }.bind(this));
         this.$.search.addEventListener('deleteComponent', function (event) {
-          var project = this.ctx.project || this.$.project.project;
+          var project = this.ctx.project;
           if (!project || !project.components) {
             return;
           }
           var component = event.detail;
           var index = project.components.indexOf(component);
           if (index !== -1) {
-            project.components.splice(index, 1);
+            this.splice('ctx.project.components', index, 1);
           }
           this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.splice('$.main.projects', this.$.main.projects.indexOf(project), 1);
-            this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(project), 1);
+            this.splice('ctx.projects', this.ctx.projects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {
@@ -331,27 +337,25 @@
             break;
           }
         }
+
+        // Update local state with incoming data
         for (var key in context) {
+          if (this.clearContextFirst.indexOf(key) !== -1) {
+            // Clear arrays first so Polymer knows there are changes
+            this.set('ctx' + ('.' + key), []);
+          }
           this.set('ctx' + ('.' + key), context[key]);
         }
-        if (context.projects) {
-          var projects = context.projects;
-          this.set('$.main.projects', []);
-          this.set('$.main.projects', projects);
-        }
-        if (context.db) {
-          this.set('$.journal.db', context.db);
-        }
-        if (context.runtimes) {
-          this.set('$.main.runtimes', []);
-          this.set('$.main.runtimes', context.runtimes);
-          this.set('$.project.runtimes', []);
-          this.set('$.project.runtimes', context.runtimes);
-          this.set('$.search.runtimes', []);
-          this.set('$.search.runtimes', context.runtimes);
-        }
-        if (context.search !== undefined) {
-          this.set('$.library.search', this.ctx.search);
+
+        if (context.user) {
+          this.set('$.main.githubToken', context.user['github-token']);
+          this.set('$.main.gridToken', context.user['grid-token']);
+          this.set('$.main.user', context.user['grid-user']);
+          if (context.user['grid-avatar']) {
+            this.set('$.main.avatar', context.user['grid-avatar']);
+          }
+          this.set('$.main.plan', context.user['flowhub-plan']);
+          this.set('$.project.gridToken', context.user['grid-token']);
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
@@ -359,24 +363,11 @@
         if (context.searchGraphResult) {
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
-        if (this.ctx.edges !== undefined) {
-          this.set('$.packets.edges', []);
-          this.set('$.packets.edges', this.ctx.edges);
-        }
         if (this.ctx.error) {
           this.$.packets.processError(this.ctx.error);
         }
         if (this.ctx.packet) {
           this.$.packets.packet(this.ctx.packet);
-        }
-        if (this.ctx.nodes !== undefined) {
-          this.set('$.context.nodes', []);
-          this.set('$.context.nodes', this.ctx.nodes);
-          this.set('$.packets.nodes', []);
-          this.set('$.packets.nodes', this.ctx.nodes);
-        }
-        if (context.nodes || context.edges) {
-          return;
         }
         if (context.syncOperation !== undefined) {
           this.$.project.confirm(context.syncOperation);
@@ -386,20 +377,15 @@
           this.$.main.githubProjects(context.remoteProjects);
           return;
         }
-        if (this.ctx.clearLibrary) {
+        if (context.clearLibrary) {
           for (var libKey in this.$.grapheditor.$.graph.library) {
             delete this.$.grapheditor.$.graph.library[libKey];
           }
-          delete this.ctx.clearLibrary;
+          this.set('ctx.clearLibrary', false);
         }
-        if (this.ctx.componentDefinition !== undefined && this.ctx.componentDefinition) {
+        if (context.componentDefinition !== undefined && context.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
           this.set('ctx.componentDefinition', null);
-        }
-        if (this.ctx.runtime !== undefined) {
-          this.set('$.runtime.runtime', this.ctx.runtime);
-          this.set('$.componenteditor.runtime', this.ctx.runtime);
-          this.set('$.context.runtime', this.ctx.runtime);
         }
         if (this.ctx.suites) {
           this.$.runtime.showTests(this.ctx.suites);
@@ -411,7 +397,20 @@
           this.showError(this.ctx);
           return;
         }
-        if (this.ctx.graphs && this.ctx.graphs.length || this.ctx.component) {
+        if (context.graphs) {
+          if (context.graphs.length) {
+            var oldGraph = this.ctx.graph;
+            this.set('ctx.graph', context.graphs[context.graphs.length - 1]);
+            if (oldGraph !== this.ctx.graph) {
+              setTimeout(function () {
+                this.emitEvent('context:graph', { graph: this.ctx.graph });
+              }.bind(this), 1);
+            }
+          } else {
+            this.set('ctx.graph', null);
+          }
+        }
+        if (this.ctx.graph || this.ctx.component) {
           this.set('$.main.open', false);
           if (!this.ctx.project) {
             this.showEditAsProject(true);
@@ -430,50 +429,6 @@
           this.showEditAsProject(false);
           this.set('$.main.open', true);
         }
-        if (this.ctx.graphs && this.ctx.graphs.length) {
-          var oldGraph = this.$.grapheditor.graph;
-          this.set('$.grapheditor.graph', this.ctx.graphs[this.ctx.graphs.length - 1]);
-          this.set('$.project.graph', this.ctx.graphs[this.ctx.graphs.length - 1]);
-          this.set('$.packets.currentgraph', this.ctx.graphs[this.ctx.graphs.length - 1]);
-          this.set('$.journal.graph', this.ctx.graphs[this.ctx.graphs.length - 1]);
-          this.set('$.runtime.graph', this.ctx.graphs[0]);
-          if (oldGraph !== this.$.grapheditor.graph) {
-            setTimeout(function () {
-              this.emitEvent('context:graph', { graph: this.$.grapheditor.graph });
-            }.bind(this), 1);
-          }
-        } else {
-          this.set('$.project.graph', null);
-          this.set('$.journal.graph', null);
-          this.set('$.runtime.graph', null);
-        }
-        if (this.ctx.graphs) {
-          this.set('$.context.graphs', this.ctx.graphs);
-          this.set('$.library.graphs', this.ctx.graphs);
-          this.set('$.project.graphs', this.ctx.graphs);
-          this.set('$.search.graphs', this.ctx.graphs);
-        }
-        this.set('$.context.project', this.ctx.project);
-        this.set('$.context.runtime', this.ctx.runtime);
-        this.set('$.project.component', this.ctx.component);
-        this.set('$.project.project', this.ctx.project);
-        this.set('$.componenteditor.component', this.ctx.component);
-        this.set('$.componenteditor.project', this.ctx.project);
-        this.set('$.search.component', this.ctx.component);
-        this.set('$.search.project', this.ctx.project);
-        this.set('$.runtime.runtimes', this.ctx.compatibleRuntimes);
-        this.set('$.runtime.runtime', this.ctx.runtime);
-      },
-      user: function (user) {
-        this.set('ctx.user', user);
-        this.set('$.main.githubToken', user['github-token']);
-        this.set('$.main.gridToken', user['grid-token']);
-        this.set('$.main.user', user['grid-user']);
-        if (user['grid-avatar']) {
-          this.set('$.main.avatar', user['grid-avatar']);
-        }
-        this.set('$.main.plan', user['flowhub-plan']);
-        this.set('$.project.gridToken', user['grid-token']);
       },
       showError: function (context) {
         if (context.error && context.error.message) {

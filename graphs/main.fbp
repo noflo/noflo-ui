@@ -31,7 +31,6 @@ Dispatch OUT[6] -> IN CleanContext(ui/CleanAction) OUT -> IN ContextStorage(ui/C
 Dispatch MISSED -> IN CleanErrors(ui/CleanAction) OUT -> IN ShowErrors(core/Output)
 
 # Base data to UI
-UserReducer USER -> USER AppView
 UserReducer CONTEXT -> IN State
 
 # Pass local and GH contexts to runtime storage for remote node handling

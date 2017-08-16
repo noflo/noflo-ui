@@ -262,15 +262,9 @@
           this.graphsChanged();
           return;
         }
-        this.graph = null;
         this.updateParentPath();
       },
       graphsChanged: function () {
-        if (!this.graphs || !this.graphs.length || this.component && this.component.name) {
-          this.graph = null;
-        } else {
-          this.graph = this.graphs[this.graphs.length - 1];
-        }
         this.updateParentPath();
         if (this.graphInspector) {
           if (Polymer.dom(this.graphInspector).parentNode) {
