@@ -118,7 +118,7 @@ module.exports = ->
         files:
           './dev.html': './index.dist.html'
           './index.html': './index.html'
-          './browser/noflo-ui.js': './browser/noflo-ui.js'
+          './browser/noflo-ui.min.js': './browser/noflo-ui.min.js'
           './index.js': './index.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
