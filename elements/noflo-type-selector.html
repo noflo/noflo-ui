@@ -116,6 +116,9 @@
             icon: 'asterisk',
             runtimes: []
           }];
+        if (!this.runtimes) {
+          return;
+        }
         this.runtimes.forEach(function (rt) {
           if (!rt.type) {
             return;
