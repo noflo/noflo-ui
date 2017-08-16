@@ -455,9 +455,9 @@ module.exports = ->
   @registerTask 'build', [
     'noflo_browser'
     'copy:themes'
+    'uglify'
     'vulcanize'
     'string-replace:app'
-    'uglify'
     'compress'
   ]
   @registerTask 'rebuild', [
