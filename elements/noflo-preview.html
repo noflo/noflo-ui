@@ -103,11 +103,15 @@
       maximizedChanged: function () {
         if (this.maximized) {
           Polymer.dom(this).classList.add('maximized');
-          Polymer.dom(Polymer.dom(this).parentNode).classList.add('maximized');
+          if (Polymer.dom(this).parentNode) {
+            Polymer.dom(Polymer.dom(this).parentNode).classList.add('maximized');
+          }
           Polymer.dom(this.$.preview).classList.add('maximized');
         } else {
           Polymer.dom(this).classList.remove('maximized');
-          Polymer.dom(Polymer.dom(this).parentNode).classList.remove('maximized');
+          if (Polymer.dom(this).parentNode) {
+            Polymer.dom(Polymer.dom(this).parentNode).classList.remove('maximized');
+          }
           Polymer.dom(this.$.preview).classList.remove('maximized');
         }
         this.fire('maximized', this.maximized);
@@ -116,6 +120,9 @@
         this.maximized = !this.maximized;
       },
       runtimeChanged: function () {
+        if (!this.runtime) {
+          return;
+        }
         // Capture runtime container to here
         var element = this.runtime.getElement();
         if (!element) {
