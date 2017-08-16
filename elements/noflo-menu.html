@@ -2,7 +2,7 @@
   <template>
     <ul class="toolbar2right">
       <template is="dom-repeat" items="{{buttons}}" as="button">
-        <li><button on-click="clicked" id="{{button.id}}"><i class$="{{_computeClass(button)}}"></i> <span>{{label}}</span></button></li>
+        <li><button on-click="clicked" id="{{button.id}}"><i class$="{{_computeClass(button)}}"></i> <span>{{button.label}}</span></button></li>
       </template>
     </ul>
   </template>

@@ -354,11 +354,11 @@
               </select>
             </template>
             <template is="dom-if" if="{{_computeIf4(port)}}">
-              <number-scrubber name="{{port.name}}" value="{{port.value}}" step="1" data-type="int" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
+              <number-scrubber data-name$="{{port.name}}" value="{{port.value}}" step="1" data-type="int" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
               <input type="text" data-type="int" name="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
             </template>
             <template is="dom-if" if="{{_computeIf5(port)}}">
-              <number-scrubber name="{{port.name}}" value="{{port.value}}" step="0.01" data-type="number" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
+              <number-scrubber data-name$="{{port.name}}" value="{{port.value}}" step="0.01" data-type="number" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
               <input type="text" data-type="number" name="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
             </template>
             <template is="dom-if" if="{{_computeIf6(port)}}">
@@ -368,7 +368,7 @@
               <input type="text" name="{{port.name}}" data-type="string" on-change="updateValue">
               <input type="file" name="{{port.name}}" on-change="updateValue" data-type$="{{port.type}}">
             </template>
-            <template is="dom-if" if="{{_computeIf8(port, undefined)}}">
+            <template is="dom-if" if="{{_computeIf8(port)}}">
               <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}"><i class="fa fa-ban"></i></button>
             </template>
 
@@ -570,7 +570,7 @@
       updateValue: function (event) {
         event.preventDefault();
         var value = this.inputToPort(event.currentTarget);
-        var name = event.currentTarget.getAttribute('name');
+        var name = event.currentTarget.getAttribute('data-name');
         var port;
         this.inports.forEach(function (p) {
           if (p.name === name) {
@@ -714,7 +714,7 @@
       _computeIf7: function (port) {
         return port.type == 'uri';
       },
-      _computeIf8: function (port, undefined) {
+      _computeIf8: function (port) {
         return port.type != 'bang' && port.value != undefined;
       },
       _computeSelected: function (port, value) {

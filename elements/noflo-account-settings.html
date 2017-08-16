@@ -52,14 +52,6 @@
               <input type="submit" id="cta" value="Manage subscription">
             </form>
           </div>
-          <template is="dom-if" if="{{statusText}}">
-            <div class="statustext">
-              <span>{{statusText}}</span>
-              <template is="dom-if" if="{{requestLogin}}">
-                <button class="relogin" on-click="relogin">Login</button>
-              </template>
-            </div>
-          </template>
         </label>
         <label>
           Theme
