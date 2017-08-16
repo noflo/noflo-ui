@@ -391,16 +391,20 @@
       properties: {
         component: {
           value: null,
-          notify: true
+          notify: true,
+          observer: 'componentChanged'
         },
         errorLog: {
-          value: null,
+          value: function () {
+            return [];
+          },
           notify: true,
           observer: 'errorLogChanged'
         },
         graph: {
           value: null,
-          notify: true
+          notify: true,
+          observer: 'graphChanged'
         },
         inports: {
           type: Array,
@@ -434,8 +438,23 @@
         Polymer.dom(this).classList.add('the-card-content');
       },
       nodeChanged: function () {
+        if (!this.node) {
+          return;
+        }
         this.updatePorts();
         this.label = this.node.metadata.label;
+      },
+      componentChanged: function () {
+        if (!this.component) {
+          return;
+        }
+        this.updatePorts();
+      },
+      graphChanged: function () {
+        if (!this.graph) {
+          return;
+        }
+        this.updatePorts();
       },
       checkUpdateLabel: function (event) {
         if (event.keyCode === 13) {
@@ -559,9 +578,12 @@
       },
       updatePorts: function () {
         this.inports = [];
+        if (!this.component || !this.graph) {
+          return;
+        }
         this.component.inports.forEach(function (port) {
           var portDef = this.portToInput(port);
-          this.inports.push(portDef);
+          this.push('inports', portDef);
         }.bind(this));
       },
       checkEnter: function (event) {
@@ -693,6 +715,9 @@
         this.lastErrorLog = this.errorLog.length;
       },
       _computeIf: function (node) {
+        if (!node) {
+          return true;
+        }
         return node.label != node.component;
       },
       _computeClass: function (port) {

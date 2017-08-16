@@ -253,21 +253,22 @@
             var index = this.selectedNodes.indexOf(item);
             var isSelected = index !== -1;
             if (isSelected) {
-              this.selectedNodes.splice(index, 1);
+              this.splice('selectedNodes', index, 1);
             } else {
-              this.selectedNodes.push(item);
+              this.push('selectedNodes', item);
             }
           } else {
-            this.selectedNodes = [item];
+            this.set('selectedNodes', [item]);
           }
           this.fire('nodes', this.selectedNodes);
         },
         selectedNodesChanged: function () {
+          this.set('selectedNodesHash', {});
           var selectedNodesHash = {};
           for (var i = 0, len = this.selectedNodes.length; i < len; i++) {
             selectedNodesHash[this.selectedNodes[i].id] = true;
           }
-          this.selectedNodesHash = selectedNodesHash;
+          this.set('selectedNodesHash', selectedNodesHash);
           this.fire('nodes', this.selectedNodes);
         },
         selectedNodesHashChanged: function () {
