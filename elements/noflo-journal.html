@@ -76,7 +76,11 @@
           type: Boolean,
           value: false
         },
-        db: { value: null },
+        db: {
+          value: null,
+          notify: true,
+          observer: 'dbChanged'
+        },
         editor: {
           value: null,
           notify: true,
@@ -125,7 +129,14 @@
       },
       graphChanged: function () {
         this.checkState();
-        if (!this.graph || !this.graph.on) {
+        this.connectJournal();
+      },
+      dbChanged: function () {
+        this.checkState();
+        this.connectJournal();
+      },
+      connectJournal: function () {
+        if (!this.graph || !this.graph.on || !this.db) {
           return;
         }
         var positionedNodes = this.graph.nodes.filter(function (node) {
