@@ -493,7 +493,7 @@
               return;
             }
           }
-          this.remoteProjects.push(remoteProject);
+          this.push('remoteProjects', remoteProject);
         }.bind(this));
       },
       projectsChanged: function () {
@@ -518,7 +518,7 @@
           return;
         }
         if (this.userRuntimes.indexOf(runtime) === -1) {
-          this.userRuntimes.push(runtime);
+          this.push('userRuntimes', runtime);
         }
       },
       addExamplesForRuntimes: function () {
@@ -546,7 +546,7 @@
                 return;
               }
               if (!examplesFound[key]) {
-                this.examples.push(examples[key]);
+                this.push('examples', examples[key]);
                 examplesFound[key] = true;
               }
             }.bind(this));
@@ -674,8 +674,8 @@
         Polymer.dom(document.body).appendChild(this.runtimeAdd);
         this.runtimeAdd.addEventListener('new', function (event) {
           var runtime = event.detail;
-          this.userRuntimes.push(runtime);
-          this.runtimes.push(runtime);
+          this.push('userRuntimes', runtime);
+          this.push('runtimes', runtime);
         }.bind(this));
       },
       checkProject: function (project) {
@@ -712,7 +712,7 @@
           }
         }
         if (this.localProjects.indexOf(project) === -1) {
-          this.localProjects.push(project);
+          this.push('localProjects', project);
           this.localProjects.sort(function (a, b) {
             if (!a.name) {
               a.name = a.id || 'Unknown project';

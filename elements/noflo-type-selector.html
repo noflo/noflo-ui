@@ -161,7 +161,7 @@
         if (info && info.shortname) {
           availType.label = info.shortname;
         }
-        this.available.push(availType);
+        this.push('available', availType);
         return availType;
       },
       _computeClass: function (availtype, type) {

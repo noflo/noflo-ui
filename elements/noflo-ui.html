@@ -331,14 +331,19 @@
           this.set('ctx' + ('.' + key), context[key]);
         }
         if (context.projects) {
-          this.set('$.main.projects', context.projects);
+          var projects = context.projects;
+          this.set('$.main.projects', []);
+          this.set('$.main.projects', projects);
         }
         if (context.db) {
           this.set('$.journal.db', context.db);
         }
         if (context.runtimes) {
+          this.set('$.main.runtimes', []);
           this.set('$.main.runtimes', context.runtimes);
+          this.set('$.project.runtimes', []);
           this.set('$.project.runtimes', context.runtimes);
+          this.set('$.search.runtimes', []);
           this.set('$.search.runtimes', context.runtimes);
         }
         if (context.search !== undefined) {
@@ -351,18 +356,19 @@
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
         if (this.ctx.edges !== undefined) {
+          this.set('$.packets.edges', []);
           this.set('$.packets.edges', this.ctx.edges);
         }
         if (this.ctx.error) {
           this.$.packets.processError(this.ctx.error);
-          this.set('ctx.error', null);
         }
         if (this.ctx.packet) {
           this.$.packets.packet(this.ctx.packet);
-          this.set('ctx.packet', null);
         }
         if (this.ctx.nodes !== undefined) {
+          this.set('$.context.nodes', []);
           this.set('$.context.nodes', this.ctx.nodes);
+          this.set('$.packets.nodes', []);
           this.set('$.packets.nodes', this.ctx.nodes);
         }
         if (context.nodes || context.edges) {
