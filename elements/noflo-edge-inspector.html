@@ -141,6 +141,9 @@
         }
       },
       edgeChanged: function () {
+        if (!this.edge) {
+          return;
+        }
         var src = this.edge.from;
         var tgt = this.edge.to;
         this.sourceNode = this.nodeLabel(src.node);
