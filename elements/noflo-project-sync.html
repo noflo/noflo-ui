@@ -112,8 +112,8 @@
           this.chosen[entry.path] = 'pull';
         }.bind(this));
       },
-      choose: function (event, detail, sender) {
-        this.set('chosen' + ('.' + sender.name), sender.value);
+      choose: function (event) {
+        this.set('chosen' + ('.' + event.currentTarget.name), event.currentTarget.value);
         var pushes = false;
         var ops = false;
         for (var name in this.chosen) {

@@ -144,8 +144,8 @@
           this.available.splice(index, 1);
         }
       },
-      selectRuntime: function (event, details, sender) {
-        var id = sender.getAttribute('data-id');
+      selectRuntime: function (event) {
+        var id = event.currentTarget.getAttribute('data-id');
         if (id == 'new-browser-runtime') {
           // Launch new runtime instead of connect to existing
           this.close();

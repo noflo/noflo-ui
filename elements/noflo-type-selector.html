@@ -124,8 +124,8 @@
           availType.runtimes.push(rt);
         }.bind(this));
       },
-      selectType: function (event, details, sender) {
-        this.type = sender.getAttribute('data-id');
+      selectType: function (event) {
+        this.type = event.currentTarget.getAttribute('data-id');
       },
       getByType: function (type) {
         for (var i = 0; i < this.available.length; i++) {

@@ -103,9 +103,9 @@
           notify: true
         }
       },
-      clicked: function (event, details, sender) {
+      clicked: function (event) {
         event.preventDefault();
-        var index = sender.getAttribute('data-index');
+        var index = event.currentTarget.getAttribute('data-index');
         var result = this.results[index];
         if (!result || !result.action) {
           return;

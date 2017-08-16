@@ -325,7 +325,7 @@
           id
         ]);
       },
-      openGraph: function (event, detail, sender) {
+      openGraph: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
@@ -333,9 +333,9 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'openGraph');
         }
-        this.gotoGraph(sender.getAttribute('data-id'));
+        this.gotoGraph(event.currentTarget.getAttribute('data-id'));
       },
-      openComponent: function (event, detail, sender) {
+      openComponent: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
@@ -343,7 +343,7 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'openComponent');
         }
-        this.gotoComponent(sender.getAttribute('data-id'));
+        this.gotoComponent(event.currentTarget.getAttribute('data-id'));
       },
       synchronize: function (event) {
         event.preventDefault();

@@ -95,9 +95,9 @@
       },
       attached: function () {
       },
-      button: function (event, data, sender) {
+      button: function (event) {
         event.preventDefault();
-        var action = sender.getAttribute('data-action');
+        var action = event.currentTarget.getAttribute('data-action');
         this[action]();
       },
       maximizedChanged: function () {

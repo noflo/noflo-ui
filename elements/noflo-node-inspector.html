@@ -434,16 +434,16 @@
         this.updatePorts();
         this.label = this.node.metadata.label;
       },
-      checkUpdateLabel: function (event, detail, sender) {
+      checkUpdateLabel: function (event) {
         if (event.keyCode === 13) {
           // Enter
           event.preventDefault();
-          this.updateLabel(event, detail, sender);
+          this.updateLabel(event);
         }
       },
-      updateLabel: function (event, detail, sender) {
+      updateLabel: function (event) {
         // Check if we need to make change
-        var label = Polymer.dom(sender).textContent;
+        var label = Polymer.dom(event.currentTarget).textContent;
         if (label === this.node.metadata.label) {
           return;
         }
@@ -561,25 +561,25 @@
           this.inports.push(portDef);
         }.bind(this));
       },
-      checkEnter: function (event, detail, sender) {
+      checkEnter: function (event) {
         if (event.keyCode === 13) {
           event.preventDefault();
-          this.updateValue(event, detail, sender);
+          this.updateValue(event);
         }
       },
-      updateValue: function (event, detail, sender) {
+      updateValue: function (event) {
         event.preventDefault();
-        var value = this.inputToPort(sender);
-        var name = sender.getAttribute('name');
+        var value = this.inputToPort(event.currentTarget);
+        var name = event.currentTarget.getAttribute('name');
         var port;
         this.inports.forEach(function (p) {
           if (p.name === name) {
             port = p;
           }
         });
-        if (port.type !== 'string' && sender.value === '') {
+        if (port.type !== 'string' && event.currentTarget.value === '') {
           // Empty string should remove number, object, array IIPs
-          this.removeValue(event, detail, sender);
+          this.removeValue(event);
           return;
         }
         var validatePortValue = function (type, value) {
@@ -613,14 +613,14 @@
           } else {
             setPortValue(value);
           }
-          Polymer.dom(Polymer.dom(Polymer.dom(sender).parentNode).parentNode).classList.remove('error');
+          Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.remove('error');
         } else {
-          Polymer.dom(Polymer.dom(Polymer.dom(sender).parentNode).parentNode).classList.add('error');
+          Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.add('error');
         }
       },
-      scrubStart: function (event, detail, sender) {
-        if (sender.value === null) {
-          sender.value = 0;
+      scrubStart: function (event) {
+        if (event.currentTarget.value === null) {
+          event.currentTarget.value = 0;
         }
       },
       // This need to work with the journal
@@ -630,11 +630,11 @@
       },
       // this.graph.endTransaction('iipscrub');
       // this.scrubbing = false;
-      removeValue: function (event, detail, sender) {
+      removeValue: function (event) {
         event.preventDefault();
-        var name = sender.getAttribute('data-port');
+        var name = event.currentTarget.getAttribute('data-port');
         if (!name) {
-          name = sender.getAttribute('name');
+          name = event.currentTarget.getAttribute('name');
         }
         this.graph.removeInitial(this.node.id, name);
         this.inports.forEach(function (port) {
@@ -642,11 +642,11 @@
             port.value = null;
           }
         });
-        Polymer.dom(Polymer.dom(Polymer.dom(sender).parentNode).parentNode).classList.remove('error');
+        Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.remove('error');
       },
-      sendBang: function (event, detail, sender) {
+      sendBang: function (event) {
         event.preventDefault();
-        var name = sender.getAttribute('name');
+        var name = event.currentTarget.getAttribute('name');
         this.graph.startTransaction('bang');
         this.graph.removeInitial(this.node.id, name);
         this.graph.addInitial(true, this.node.id, name);

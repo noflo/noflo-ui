@@ -166,7 +166,7 @@
         this.canUndo = this.graph.journal.canUndo();
         this.canRedo = this.graph.journal.canRedo();
       },
-      undo: function (event, data, sender) {
+      undo: function (event) {
         if (event) {
           event.preventDefault();
         }
@@ -176,7 +176,7 @@
         this.graph.journal.undo();
         this.checkState();
       },
-      redo: function (event, data, sender) {
+      redo: function (event) {
         if (event) {
           event.preventDefault();
         }
@@ -186,7 +186,7 @@
         this.graph.journal.redo();
         this.checkState();
       },
-      autolayout: function (event, data, sender) {
+      autolayout: function (event) {
         if (event) {
           event.preventDefault();
         }

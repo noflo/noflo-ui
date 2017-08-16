@@ -178,20 +178,20 @@
           }
         }
       },
-      setRoute: function (event, detail, sender) {
+      setRoute: function (event) {
         event.preventDefault();
-        var route = parseInt(sender.getAttribute('name'), 10);
+        var route = parseInt(event.currentTarget.getAttribute('name'), 10);
         this.graph.startTransaction('changeroute');
         this.edges.forEach(function (edge) {
           this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, { route: route });
         }.bind(this));
         this.graph.endTransaction('changeroute');
       },
-      setSecure: function (event, detail, sender) {
+      setSecure: function (event) {
         event.preventDefault();
         this.toggleSecure(true);
       },
-      setUnsecure: function (event, detail, sender) {
+      setUnsecure: function (event) {
         event.preventDefault();
         this.toggleSecure(false);
       },

@@ -177,15 +177,15 @@
           observer: 'viewChanged'
         }
       },
-      checkUpdateName: function (event, detail, sender) {
+      checkUpdateName: function (event) {
         if (event.keyCode === 13) {
           // Enter
           event.preventDefault();
-          this.updateName(event, detail, sender);
+          this.updateName(event);
         }
       },
-      updateName: function (event, detail, sender) {
-        this.set('graph.name', Polymer.dom(sender).textContent);
+      updateName: function (event) {
+        this.set('graph.name', Polymer.dom(event.target).textContent);
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
@@ -344,8 +344,8 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      setView: function (event, details, sender) {
-        this.view = sender.id;
+      setView: function (event) {
+        this.view = event.target.id;
       },
       hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' },

@@ -356,7 +356,7 @@
         this.search = null;
         this.blur();
       },
-      switchSearch: function (event, detail, sender) {
+      switchSearch: function (event) {
         if (event.keyIdentifier === 'U+0009') {
           event.preventDefault();
           this.searchLibrary = !this.searchLibrary;

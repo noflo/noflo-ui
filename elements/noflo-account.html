@@ -313,9 +313,9 @@
         logout: function () {
           this.fire('logout', true);
         },
-        relogin: function (event, details, sender) {
+        relogin: function (event) {
           event.preventDefault();
-          var scope = sender.getAttribute('data-scope');
+          var scope = event.currentTarget.getAttribute('data-scope');
           this.fire('relogin', scope);
         },
         userChanged: function () {

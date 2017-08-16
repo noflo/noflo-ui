@@ -422,13 +422,13 @@
           }.bind(this), 1);
         }
       },
-      deleteProject: function (event, details, sender) {
+      deleteProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'deleteProject');
         }
-        var id = sender.getAttribute('data-id');
+        var id = event.currentTarget.getAttribute('data-id');
         var matches = this.projects.filter(function (proj) {
           if (proj.id === id) {
             return true;
@@ -440,13 +440,13 @@
         }
         this.fire('deleteProject', matches[0]);
       },
-      downloadProject: function (event, details, sender) {
+      downloadProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
         if (!this.githubToken) {
           return;
         }
-        var repo = sender.getAttribute('data-repo');
+        var repo = event.currentTarget.getAttribute('data-repo');
         var repoParts = repo.split('/');
         var repoId = repoParts[1];
         var branch = 'master';
@@ -576,14 +576,14 @@
         this.set('$.mainaccount.gridToken', this.gridToken);
         setTimeout(this.fetchRuntimes.bind(this), 100);
       },
-      openProject: function (event, details, sender) {
+      openProject: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         var project = null;
         this.localProjects.forEach(function (p) {
-          if (p.id === sender.getAttribute('data-id')) {
+          if (p.id === event.currentTarget.getAttribute('data-id')) {
             project = p;
           }
         });
@@ -592,27 +592,27 @@
         }
         this.fire('openProject', project);
       },
-      openRuntime: function (event, details, sender) {
+      openRuntime: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (sender.getAttribute('data-protocol') === 'iframe') {
+        if (event.currentTarget.getAttribute('data-protocol') === 'iframe') {
           return;
         }
         this.fire('hash', [
           'runtime',
-          sender.getAttribute('data-id')
+          event.currentTarget.getAttribute('data-id')
         ]);
       },
-      openExample: function (event, details, sender) {
+      openExample: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.fire('hash', [
           'gist',
-          sender.getAttribute('data-id')
+          event.currentTarget.getAttribute('data-id')
         ]);
       },
       newProject: function (event) {
