@@ -152,9 +152,9 @@
               repo: event.detail.project.repo,
               project: event.detail.project
             });
-            this.$.main.projects.push(event.detail.project);
+            this.push('$.main.projects', event.detail.project);
             this.$.main.checkProject(event.detail.project);
-            this.ctx.projects.push(event.detail.project);
+            this.push('ctx.projects', event.detail.project);
           }.bind(this), 2);
         }.bind(this));
         this.$.main.addEventListener('fetchRuntimes', function (event) {
@@ -226,8 +226,8 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
-          this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
+          this.splice('$.main.projects', this.$.main.projects.indexOf(event.detail), 1);
+          this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.project.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
@@ -244,8 +244,8 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
-          this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
+          this.splice('$.main.projects', this.$.main.projects.indexOf(event.detail), 1);
+          this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
@@ -274,8 +274,8 @@
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
-            this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
+            this.splice('$.main.projects', this.$.main.projects.indexOf(project), 1);
+            this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {
@@ -296,8 +296,8 @@
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
-            this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
+            this.splice('$.main.projects', this.$.main.projects.indexOf(project), 1);
+            this.splice('$.main.localProjects', this.$.main.localProjects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {

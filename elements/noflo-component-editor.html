@@ -117,7 +117,7 @@
               project: this.component.project,
               type: 'spec'
             };
-            this.project.specs.push(this.spec);
+            this.push('project.specs', this.spec);
           }
         }
         this.set('style.display', 'block');

@@ -169,14 +169,14 @@
         event.preventDefault();
         var edge;
         while (this.edges.length) {
-          edge = this.edges.pop();
+          edge = this.pop('edges');
           edge.selected = false;
         }
       },
       remove: function (event) {
         event.preventDefault();
         while (this.edges.length) {
-          var edge = this.edges.pop();
+          var edge = this.pop('edges');
           if (Polymer.dom(edge).parentNode) {
             Polymer.dom(Polymer.dom(edge).parentNode).removeChild(edge);
           }

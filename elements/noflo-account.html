@@ -325,16 +325,16 @@
           if (!this.user.plan || this.user.plan.type === 'free') {
             if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
               // User is on free plan but hasn't granted repo access
-              this.askForScope = ['public_repo'];
+              this.set('askForScope', ['public_repo']);
             }
             return;
           }
           if (!this.user.github.scopes || this.user.github.scopes.indexOf('repo') === -1) {
             // User is on paid plan but hasn't granted repo access
-            this.askForScope = ['repo'];
+            this.set('askForScope', ['repo']);
             if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
               // Allow paid users to limit repo access to only public if they want
-              this.askForScope.push('public_repo');
+              this.push('askForScope', 'public_repo');
             }
           }
         },

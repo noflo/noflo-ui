@@ -114,18 +114,18 @@
           address: 'myapp.herokuapps.com'
         };
         if (type == 'noflo-browser') {
-          this.available.push(launchNewBrowserRuntime);
-          this.available.push(customIframeRuntime);
+          this.push('available', launchNewBrowserRuntime);
+          this.push('available', customIframeRuntime);
         }
         if (type == 'imgflo') {
-          this.available.push(launchImgfloHerokuRuntime);
+          this.push('available', launchImgfloHerokuRuntime);
         }
         this.runtimes.forEach(function (rt) {
           if (!rt.type) {
             return;
           }
           if ((rt.type == type || type === 'all') && this.available.indexOf(rt) === -1) {
-            this.available.push(rt);
+            this.push('available', rt);
           }
         }.bind(this));
         this.available.forEach(this.checkRuntimeSeen.bind(this));
@@ -142,7 +142,7 @@
         if (runtime.seenHoursAgo / 24 > 31) {
           // We haven't seen this runtime in over a month, don't show it
           var index = this.available.indexOf(runtime);
-          this.available.splice(index, 1);
+          this.splice('available', index, 1);
         }
       },
       selectRuntime: function (event) {

@@ -209,7 +209,7 @@
             this.project.graphs.forEach(function (graph) {
               graph.nodes.forEach(function (node) {
                 if (node.component === this.graph.name || node.component === this.project.id + '/' + this.graph.name) {
-                  this.inGraph.push(graph);
+                  this.push('inGraph', graph);
                 }
               }.bind(this));
             }.bind(this));
@@ -228,7 +228,7 @@
               project: this.project.id,
               type: 'spec'
             };
-            this.project.specs.push(this.spec);
+            this.push('project.specs', this.spec);
           }
         }
         this.prepareHtmlEditor();

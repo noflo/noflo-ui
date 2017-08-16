@@ -434,9 +434,9 @@
           body: message,
           icon: 'app/$NOFLO_THEME-64.png'
         });
-        this.notifications.push(notification);
+        this.push('notifications', notification);
         notification.addEventListener('close', function () {
-          this.notifications.splice(this.notifications.indexOf(notification), 1);
+          this.splice('notifications', this.notifications.indexOf(notification), 1);
         }.bind(this), false);
       },
       getRuntimeIcon: function (runtime) {

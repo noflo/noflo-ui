@@ -228,13 +228,13 @@
           // Make sure unique
           var index = this.animatedEdges.indexOf(edge);
           if (index === -1) {
-            this.animatedEdges.push(edge);
+            this.push('animatedEdges', edge);
           }
         },
         unanimateEdge: function (edge) {
           var index = this.animatedEdges.indexOf(edge);
           if (index >= 0) {
-            this.animatedEdges.splice(index, 1);
+            this.splice('animatedEdges', index, 1);
           }
         },
         addErrorNode: function (id) {

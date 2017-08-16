@@ -100,11 +100,11 @@
           var edge, node;
           // Clear selections on Esc
           while (this.edges.length) {
-            edge = this.edges.pop();
+            edge = this.pop('edges');
             edge.selected = false;
           }
           while (this.nodes.length) {
-            node = this.nodes.pop();
+            node = this.pop('nodes');
             node.selected = false;
           }
         },

@@ -150,11 +150,11 @@
         this.set('operation.push', []);
         var checkOps = function (entry) {
           if (this.chosen[entry.path] === 'push') {
-            this.operation.push.push(entry);
+            this.push('operation.push', entry);
             return;
           }
           if (this.chosen[entry.path] === 'pull') {
-            this.operation.pull.push(entry);
+            this.push('operation.pull', entry);
             return;
           }
         }.bind(this);
