@@ -43,7 +43,11 @@ window.addEventListener('WebComponentsReady', function() {
           return;
         }
         n.on('process-error', function (err) {
-          console.error(err.error);
+          if (typeof console.error === 'function') {
+            console.error(err.error);
+          } else {
+            console.log(err.error);
+          }
         });
         return callback();
       });
