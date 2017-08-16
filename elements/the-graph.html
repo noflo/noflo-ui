@@ -164,8 +164,9 @@
           });
           this.themeChanged();
         },
-        themeChanged: function () {
-          this.set('$.svgcontainer.className', 'the-graph-' + this.theme);
+        themeChanged: function (newTheme, previousTheme) {
+          Polymer.dom(this.$.svgcontainer).classList.remove('the-graph-' + previousTheme);
+          Polymer.dom(this.$.svgcontainer).classList.add('the-graph-' + newTheme);
         },
         graphChanged: function (newGraph, oldGraph) {
           if (oldGraph && oldGraph.removeListener) {

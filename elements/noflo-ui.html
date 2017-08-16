@@ -138,6 +138,10 @@
             scopes: [event.detail]
           });
         }.bind(this));
+        this.$.main.addEventListener('theme', function (event) {
+          this.$.grapheditor.theme = event.detail;
+          this.$.componenteditor.theme = event.detail;
+        }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));

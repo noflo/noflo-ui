@@ -103,7 +103,8 @@
           theme: {
             type: String,
             value: 'dark',
-            notify: true
+            notify: true,
+            observer: 'themeChanged'
           },
           width: {
             type: Number,
@@ -179,6 +180,9 @@
         heightChanged: function () {
           this.set('style.height', this.height + 'px');
           this.notifyViewChanged();
+        },
+        themeChanged: function () {
+          this.$.graph.theme = this.theme;
         },
         graphChanged: function () {
           if (!this.graph) {
