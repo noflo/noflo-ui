@@ -26,7 +26,9 @@
         <label>
           Type
           <select id="type" value="{{type::input}}">
-            <option value="{{t}}" template="" repeat="{{_computeRepeat(availableTypes, t)}}">{{t}}</option>
+            <template is="dom-repeat" items="{{availableTypes}}" as="type">
+            <option value="{{type}}">{{type}}</option>
+            </template>
           </select>
         </label>
         <label>
