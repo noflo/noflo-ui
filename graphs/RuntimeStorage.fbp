@@ -10,26 +10,12 @@ Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
-# Send all projects to the UI
-'' -> START CreateRuntimesCtx(objects/CreateObject)
-CreateRuntimesCtx OUT -> CONTEXT SetRuntimes(ui/SetToContext)
-'runtimes' -> KEY SetRuntimes
-LoadData(ui/LoadRuntimeData) RUNTIMES -> RUNTIMES EnsureLocal(ui/EnsureLocalRuntimes)
-EnsureLocal RUNTIMES -> VALUE SetRuntimes CONTEXT -> IN MergeContext
-
 # Add runtime connection to an existing context
 Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
 # Add compatible runtimes to already-populated contexts
-EnsureLocal RUNTIMES -> RUNTIMES FindRuntimes(ui/FindRuntimes)
-FindRuntimes CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
+FindRuntimes(ui/FindRuntimes) CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 ProjectRuntime CONTEXT -> IN MergeContextPreSubscribe(core/Merge)
-
-# Build direct runtime context
-EnsureLocal RUNTIMES -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
-Dispatch OUT[0] -> IN PopulateRuntimeData
-PopulateRuntimeData OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
-DirectRuntime CONTEXT -> IN MergeContextPreSubscribe
 
 # Get components list when connecting to new runtime
 ProjectRuntime RUNTIME -> RUNTIME UpdateLibrary(ui/UpdateComponentLibrary)

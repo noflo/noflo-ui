@@ -65,14 +65,13 @@
     <content></content>
     {{message}}
     <template if="{{isError}}">
-      <a href="{{baseURI}}#" class="button">go home</a>
+      <a href="#" class="button">go home</a>
     </template>
   </template>
   <script>
     Polymer('noflo-alert', {
       message: "",
       isError: false,
-      baseURI: window.location.href.split('?')[0],
       offerHTTPS: false,
       isErrorChanged: function () {
         if (this.isError) {

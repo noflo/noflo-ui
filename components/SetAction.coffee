@@ -20,6 +20,7 @@ exports.getComponent = ->
     setTimeout ->
       out.beginGroup part for part in actionParts
       out.send
+        action: c.params.action
         payload: data
       out.endGroup() for part in actionParts
       callback()

@@ -90,6 +90,51 @@ Once it is built and the server is running you can access the UI at `http://loca
 
 In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
 
+
+### Architecture
+
+On high level, the noflo-ui architecture follows [Redux](http://redux.js.org/) conventions adapted to NoFlo. Here is how the main data flow looks like:
+
+```fbp
+Store OUT -> IN Middleware     # Store sends actions together with application state to middleware
+Middleware NEW -> ACTION Store # Middleware can trigger new actions
+Middleware PASS -> IN Reduce   # Actions go from middleware to reducers
+Reduce OUT -> STATE Store      # Reducers produce a new state object that gets sent to store
+Reduce OUT -> STATE View       # State also goes to the view
+View ACTION -> ACTION Store    # View can trigger actions
+```
+
+The actual flow is more detailed. You can view and edit it in `graphs/main.fbp`.
+
+**Note:** the priciples outlined below are the architecture we're aiming towards. We're refactoring parts of the system to fit this architecture as we modify them. All new functionality should be implemented following this architecture.
+
+#### Store
+
+The Store component keeps track of the latest application state. When it receives new actions, it sends the out to the middleware and reducer chain together with the latest application state.
+
+#### Middleware
+
+noflo-ui middleware are components or graphs that can interact with particular actions. Each action passes through the chain of middlewares, and each middleware has two options on dealing with an action:
+
+1. Pass the action along without modifying it
+2. Capture the action and trigger new action(s)
+
+Middleware are where side effects related to the application state are handled. This can include talking to external web services, FBP runtime communications, and loading or saving data to the local IndexedDB. Middleware do receive the current application state and can read from it, but they only manipulate state by the way of creating new actions.
+
+Some middleware can also act as [generators](http://bergie.iki.fi/blog/noflo-process-api/#generator-components), creating new actions based on external input.
+
+The middleware approach is explained further in [this blog post](http://bergie.iki.fi/blog/redux-middleware-noflo/).
+
+#### Reducers
+
+The job of the reducers is to receive actions and make changes to application state. The reducers must in effect be pure functions, where the same input state and action combination always produces the same new state.
+
+#### View
+
+The application's view layer is implemented as [Polymer](https://www.polymer-project.org/) elements. The application view receives the state object produced by the reducers.
+
+User interactions in the application view must not make direct state changes. Instead, the application view can trigger new actions by firing Polymer events. These then get processed by the middleware and reducers, causing the state to change.
+
 ## Authentication and custom URLs
 
 NoFlo UI is using GitHub for authentication. We have a default application configured to work at `http://localhost:9999`. If you want to serve your NoFlo UI from a different URL, you need to register your own [OAuth application](https://github.com/settings/applications/new) with them. Make sure to match GitHub's [redirect URL policy](https://developer.github.com/v3/oauth/#redirect-urls).

@@ -1,0 +1,47 @@
+INPORT=Dispatch.IN:IN
+OUTPORT=DeleteProject.KEY:PROJECT
+OUTPORT=DeleteGraph.KEY:GRAPH
+OUTPORT=DeleteComponent.KEY:COMPONENT
+OUTPORT=DeleteSpec.KEY:SPEC
+OUTPORT=DeleteRuntime.KEY:RUNTIME
+OUTPORT=Errors.OUT:ERROR
+
+'storage:delete:project,storage:delete:graph,storage:delete:component,storage:delete:spec,storage:delete:runtime' -> ROUTES Dispatch(ui/DispatchAction)
+
+# Removing projects
+'db' -> KEYS GetProjectsDb(ui/GetActionValues) VALUES[0] -> DB DeleteProject(ui/Delete)
+'projects' -> STRING ProjectsStore(strings/SendString)
+Dispatch HANDLE[0] -> IN GetProjectsDb
+GetProjectsDb OUT -> IN ProjectsStore OUT -> STORE DeleteProject
+GetProjectsDb OUT -> ITEM DeleteProject ERROR -> IN Errors(core/Merge)
+
+# Removing graphs
+'db' -> KEYS GetGraphsDb(ui/GetActionValues) VALUES[0] -> DB DeleteGraph(ui/Delete)
+'graphs' -> STRING GraphsStore(strings/SendString)
+Dispatch HANDLE[1] -> IN GetGraphsDb
+GetGraphsDb OUT -> IN GraphsStore OUT -> STORE DeleteGraph
+GetGraphsDb OUT -> ITEM DeleteGraph ERROR -> IN Errors
+
+# Removing components
+'db' -> KEYS GetComponentsDb(ui/GetActionValues) VALUES[0] -> DB DeleteComponent(ui/Delete)
+'components' -> STRING ComponentsStore(strings/SendString)
+Dispatch HANDLE[2] -> IN GetComponentsDb
+GetComponentsDb OUT -> IN ComponentsStore OUT -> STORE DeleteComponent
+GetComponentsDb OUT -> ITEM DeleteComponent ERROR -> IN Errors
+
+# Removing specs
+'db' -> KEYS GetSpecsDb(ui/GetActionValues) VALUES[0] -> DB DeleteSpec(ui/Delete)
+'specs' -> STRING SpecsStore(strings/SendString)
+Dispatch HANDLE[3] -> IN GetSpecsDb
+GetSpecsDb OUT -> IN SpecsStore OUT -> STORE DeleteSpec
+GetSpecsDb OUT -> ITEM DeleteSpec ERROR -> IN Errors
+
+# Removing runtimes
+'db' -> KEYS GetRuntimesDb(ui/GetActionValues) VALUES[0] -> DB DeleteRuntime(ui/Delete)
+'runtimes' -> STRING RuntimesStore(strings/SendString)
+Dispatch HANDLE[4] -> IN GetRuntimesDb OUT
+GetRuntimesDb OUT -> IN RuntimesStore OUT -> STORE DeleteRuntime
+GetRuntimesDb OUT -> ITEM DeleteRuntime ERROR -> IN Errors
+
+# Here we treat unknown actions as errors
+Dispatch PASS -> IN Errors(core/Merge)

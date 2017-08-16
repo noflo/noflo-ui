@@ -1,7 +1,7 @@
 <polymer-element name="noflo-library" attributes="editor">
   <script>
     Polymer('noflo-library', {
-      _search: null,
+      search: null,
       editor: null,
       graphs: [],
       project: null,
@@ -36,12 +36,8 @@
 
         graph.endTransaction('addnode');
       },
-      search: function (obj) {
-        this._search = obj;
-        if (!this._search) {
-          return;
-        }
-        if (typeof this._search.search !== 'string') {
+      searchChanged: function () {
+        if (typeof this.search !== 'string') {
           return;
         }
         if (!this.editor) {
@@ -51,49 +47,62 @@
         if (!library) {
           return;
         }
-        Object.keys(library).forEach(function (name) {
-          var match = false;
-          var component = this.editor.getComponent(name);
-          if (this._search.search === '') {
+        var search = this.search.toLowerCase();
+        var components = Object.keys(library).map(function (name) {
+          return this.editor.getComponent(name);
+        }.bind(this));
+        var matching = components.filter(function (component) {
+          // First find all components matching the search
+          if (search === '') {
             // Empty search, all components match
-            match = true;
-          } else {
-            if (name.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
-              // Component name matches
-              match = true;
-            }
-            if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(this._search.search.toLowerCase()) !== -1) {
-              // Component description matches
-              match = true;
-            }
+            return true;
           }
-          if (!match) {
-            return;
+          if (component.name.toLowerCase().indexOf(search) !== -1) {
+            // Component name matches
+            return true;
           }
-          if (component.subgraph && this.project) {
-            var nameParts = component.name.split('/');
-            if (nameParts[0] === this.project.id) {
-              for (var i = 0; i < this.graphs.length; i++) {
-                if (this.graphs[i].name === nameParts[1] || this.graphs[i].properties.id === nameParts[1]) {
-                  // Prevent circular dependencies
-                  return;
-                }
+          if (typeof component.description === 'string' && component.description.toLowerCase().indexOf(search) !== -1) {
+            // Component description matches
+            return true;
+          }
+          return false;
+        }.bind(this)).filter(function (component) {
+          // Then filter out components we're not supposed to use
+          if (!component.subgraph) {
+            // Elementary components can always be used
+            return true;
+          }
+          if (!component.project) {
+            // Components from other projects can always be used
+            return true;
+          }
+          var nameParts = component.name.split('/');
+          if (nameParts[0] === this.project.id) {
+            for (var i = 0; i < this.graphs.length; i++) {
+              if (this.graphs[i].properties.name === nameParts[1] || this.graphs[i].id === nameParts[1]) {
+                // Prevent circular dependencies
+                return false;
               }
             }
           }
-          // timeout required because events fired by polymer that are received
-          // by graph router need to clean up before the graph receives another event
-          window.setTimeout(function () {
-            this.fire('result', {
+          return true;
+        }.bind(this));
+
+        // timeout required because events fired by polymer that are received
+        // by graph router need to clean up before the graph receives another event
+        window.setTimeout(function () {
+          var addNode = this.addNode.bind(this);
+          this.fire('result', matching.map(function (component) {
+            return {
               label: component.name,
               icon: component.icon || 'cog',
               description: component.description,
               action: function () {
-                this.addNode(component);
-              }.bind(this)
-            });
-          }.bind(this), 0);
-        }.bind(this));
+                addNode(component);
+              }
+            };
+          }));
+        }.bind(this), 0);
       }
     });
   </script>

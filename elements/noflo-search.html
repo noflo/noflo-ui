@@ -255,7 +255,10 @@
         }.bind(this));
       },
       libraryResults: function (result) {
-        this.searchLibraryResults.push(result);
+        this.searchLibraryResults.length = 0;
+        for (var i = 0; i < result.length; i++) {
+          this.searchLibraryResults.push(result[i]);
+        }
       },
       graphResults: function (result) {
         this.searchGraphResults.push(result);

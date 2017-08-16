@@ -96,6 +96,7 @@
       dontAutoHideAlert: false,
       emitEvent: function (event, payload) {
         this.fire(event, {
+          action: event,
           state: this.ctx,
           payload: payload
         });
@@ -120,7 +121,7 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('project:save:project', event.detail.project);
+          this.emitEvent('storage:save:project', event.detail.project);
           setTimeout(function () {
             this.emitEvent('github:sync:pull', {
               repo: event.detail.project.repo,
@@ -135,13 +136,13 @@
           this.emitEvent('flowhub:runtimes:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
           this.emitEvent('flowhub:runtimes:register', event.detail);
         }.bind(this));
         this.$.main.addEventListener('newproject', function (event) {
-          this.emitEvent('project:save:project', event.detail);
+          this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.main.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
@@ -150,7 +151,7 @@
           this.openProject(event.detail);
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {
@@ -162,7 +163,7 @@
           this.emitEvent('runtime:connect', newCtx);
         }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:runtime', event.detail);
+          this.emitEvent('storage:save:runtime', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.emitEvent('context:edges', event.detail);
@@ -171,15 +172,15 @@
           this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:project', event.detail);
+          this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
-          this.emitEvent('project:save:graph', event.detail);
+          this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
@@ -191,15 +192,15 @@
         this.$.project.addEventListener('deleteProject', function (event) {
           this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
@@ -209,25 +210,25 @@
         this.$.main.addEventListener('deleteProject', function (event) {
           this.emitEvent('application:hash', []);
           event.detail.graphs.forEach(function (graph) {
-            this.emitEvent('project:delete:graph', graph);
+            this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
           event.detail.components.forEach(function (component) {
-            this.emitEvent('project:delete:component', component);
+            this.emitEvent('storage:delete:component', component);
           }.bind(this));
           event.detail.specs.forEach(function (spec) {
-            this.emitEvent('project:delete:spec', spec);
+            this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
-          this.emitEvent('project:delete:project', event.detail);
+          this.emitEvent('storage:delete:project', event.detail);
           this.$.main.projects.splice(this.$.main.projects.indexOf(event.detail), 1);
           this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
-          this.emitEvent('project:save:component', event.detail);
+          this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
@@ -246,10 +247,10 @@
           if (project && project.graphs.indexOf(event.detail) !== -1) {
             project.graphs.splice(project.graphs.indexOf(event.detail), 1);
           }
-          this.emitEvent('project:delete:graph', event.detail);
+          this.emitEvent('storage:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
@@ -268,10 +269,10 @@
           if (index !== -1) {
             project.components.splice(index, 1);
           }
-          this.emitEvent('project:delete:component', component);
+          this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
-            this.emitEvent('project:delete:project', project);
+            this.emitEvent('storage:delete:project', project);
             this.$.main.projects.splice(this.$.main.projects.indexOf(project), 1);
             this.$.main.localProjects.splice(this.$.main.localProjects.indexOf(project), 1);
             // Go home
@@ -281,7 +282,7 @@
           }
         }.bind(this));
         this.$.search.addEventListener('specschanged', function (event) {
-          this.emitEvent('project:save:spec', event.detail);
+          this.emitEvent('storage:save:spec', event.detail);
           this.triggerTests();
         }.bind(this));
         this.$.library.editor = this.$.grapheditor;
@@ -310,49 +311,20 @@
         for (var key in context) {
           this.ctx[key] = context[key];
         }
+
         if (context.projects) {
           this.$.main.projects = context.projects;
         }
         if (context.db) {
           this.$.journal.db = context.db;
         }
-        if (context.persisted) {
-          if (context.persisted.type === 'runtimes' || context.persisted.type === 'projects') {
-            // For now we only handle runtimes and projects through action loop
-            switch (context.persisted.action) {
-                case 'save':
-                  if (context.persisted.type === 'runtimes') {
-                    require('noflo-ui/collections').addToList(this.ctx.runtimes, context.persisted.entity);
-                    // Update examples list based on available runtimes
-                    this.$.main.runtimesChanged();
-                  }
-                  if (context.persisted.type === 'projects') {
-                    require('noflo-ui/collections').addToList(this.ctx.projects, context.persisted.entity);
-                    // Update examples list
-                    this.$.main.addExamplesForRuntimes();
-                    if (!this.ctx.project) {
-                      // Redirect user to the newly-created project
-                      this.openProject(context.persisted.entity);
-                    }
-                  }
-                  break;
-            }
-          }
-        }
         if (context.runtimes) {
-          if (!Array.isArray(context.runtimes)) {
-            // Newly saved individual runtime, add to runtime list
-            require('noflo-ui/collections').addToList(this.ctx.runtimes, context.runtimes);
-            return;
-          }
           this.$.main.runtimes = context.runtimes;
           this.$.project.runtimes = context.runtimes;
           this.$.search.runtimes = context.runtimes;
         }
         if (context.search !== undefined) {
-          this.$.library.search({
-            search: this.ctx.search
-          });
+          this.$.library.search = this.ctx.search;
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
@@ -537,33 +509,13 @@
         });
       },
       openProject: function (project) {
-        if (!project.graphs.length) {
-          if (project.components.length) {
-            // No graphs in this project, but there are components
-            this.emitEvent('application:hash', [
-              'project',
-              project.id,
-              'component',
-              project.components[0].name
-            ]);
+        var projects = require('noflo-ui/projects');
+        projects.getProjectHash(project, function (err, hash) {
+          if (err) {
             return;
           }
-          setTimeout(function () {
-            // Wait for graphs to be populated
-            if (!project.graphs.length && !project.components.length) {
-              // Still no graphs/components
-              return;
-            }
-            this.openProject(project);
-          }.bind(this), 100);
-          return;
-        }
-        var main = project.main || project.graphs[0].properties.id;
-        this.emitEvent('application:hash', [
-          'project',
-          project.id,
-          main
-        ]);
+          this.emitEvent('application:hash', hash);
+        }.bind(this));
       }
     });
   </script>

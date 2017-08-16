@@ -1,42 +1,30 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 
-try
-  microflo = require 'microflo'
-catch e
-  console.log e
+iframeAddress = 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
 
 ensureOneIframeRuntime = (runtimes) ->
-  filtered = []
-  iframeRuntime = null
   for runtime in runtimes
-    if runtime.protocol is 'iframe'
-      unless iframeRuntime
-        iframeRuntime = runtime
-        filtered.push runtime
-    else
-      filtered.push runtime
-  unless iframeRuntime
-    iframeRuntime =
-      label: 'NoFlo HTML5 environment'
-      id: uuid()
-      protocol: 'iframe'
-      address: 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
-      type: 'noflo-browser'
-    filtered.push iframeRuntime
-  iframeRuntime.seen = Date.now()
-  return filtered
+    # Check that we don't have the iframe runtime already
+    return if runtime.protocol is 'iframe' and runtime.address is iframeAddress
+  iframeRuntime =
+    label: 'NoFlo HTML5 environment'
+    id: uuid()
+    protocol: 'iframe'
+    address: 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+    type: 'noflo-browser'
+    seen: Date.now()
+  return iframeRuntime
 
 ensureMicroFloRuntimePerSerialDevice = (runtimes, callback) ->
-  return callback runtimes unless microflo
-  return callback runtimes unless microflo.serial.isSupported()
+  try
+    microflo = require 'microflo'
+  catch e
+    return callback e
+  return callback null unless microflo.serial.isSupported()
 
   microflo.serial.listDevices (devices) ->
-    # Remove old
-    isMicroFloSerial = (rt) ->
-      return rt.protocol == 'microflo' && rt.address.indexOf('serial://') != -1
-    newRuntimes = runtimes.filter (rt) -> not isMicroFloSerial rt
-    # Add new
+    newRuntimes = []
     for device in devices
       rt =
         label: device
@@ -44,24 +32,28 @@ ensureMicroFloRuntimePerSerialDevice = (runtimes, callback) ->
         protocol: 'microflo'
         address: 'serial://'+device
         type: 'microflo'
-        seen: new Date().toString()
+        seen: Date.now()
       newRuntimes.push rt
     return callback newRuntimes
 
 exports.getComponent = ->
   c = new noflo.Component
-  c.inPorts.add 'runtimes',
+  c.inPorts.add 'in',
     datatype: 'array'
-  c.outPorts.add 'runtimes',
-    datatype: 'array'
+  c.outPorts.add 'out',
+    datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    in: 'runtimes'
-    out: 'runtimes'
-  , (data, groups, out) ->
-
-    runtimesWithOneIframe = ensureOneIframeRuntime data
-    ensureMicroFloRuntimePerSerialDevice runtimesWithOneIframe, (runtimes) ->
-      out.send runtimes
-
-  c
+    async: true
+    forwardGroups: false
+  , (data, groups, out, callback) ->
+    data = [] unless data
+    iframeRuntime = ensureOneIframeRuntime data
+    if iframeRuntime
+      out.send iframeRuntime
+    ensureMicroFloRuntimePerSerialDevice data, (err, runtimes) ->
+      console.log err if err
+      return callback() unless runtimes
+      for runtime in runtimes
+        out.send runtime
+      do callback

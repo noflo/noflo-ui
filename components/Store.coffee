@@ -3,16 +3,21 @@ debug = require('debug') 'noflo-ui:state'
 
 exports.getComponent = ->
   c = new noflo.Component
-  c.inPorts.add 'in',
+  c.inPorts.add 'action',
     datatype: 'all'
+  c.inPorts.add 'state',
+    datatype: 'object'
   c.outPorts.add 'pass',
     datatype: 'object'
+
+  c.inPorts.state.on 'data', (state) ->
+    c.state = state
 
   c.state = {}
   c.shutdown = ->
     c.state = {}
   noflo.helpers.WirePattern c,
-    in: 'in'
+    in: 'action'
     out: 'pass'
     forwardGroups: true
     async: true
@@ -26,6 +31,7 @@ exports.getComponent = ->
     state = data?.state or c.state
     payload = data?.payload or data
     out.send
+      action: groups.join ':'
       state: state
       payload: payload
     do callback

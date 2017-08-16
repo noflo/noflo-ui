@@ -36,9 +36,14 @@ describe 'URL Middleware', ->
       mw.receivePass action, payload, done
       mw.send action, payload
   describe 'receiving a noflo:ready action', ->
-    it 'should send application:url and main:open actions', (done) ->
+    it 'should send application:url action', (done) ->
       checkUrl = (data) ->
         chai.expect(data).to.equal window.location.href
+      mw.receivePass 'noflo:ready', true, ->
+        mw.receiveAction 'application:url', checkUrl, done
+      mw.send 'noflo:ready', true
+  describe 'receiving a storage:ready action', ->
+    it 'should send main:open action and pass storage:ready', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
           route: 'main'
@@ -47,14 +52,14 @@ describe 'URL Middleware', ->
           graph: null
           component: null
           nodes: []
-      mw.receiveAction 'application:url', checkUrl, ->
+      mw.receivePass 'storage:ready', true, ->
         mw.receiveAction 'main:open', checkOpen, done
-      mw.send 'noflo:ready', true
+      mw.send 'storage:ready', true
   describe 'on hash change to a project URL', ->
-    it 'should send project:open action', (done) ->
+    it 'should send storage:open action', (done) ->
       checkOpen = (data) ->
         chai.expect(data).to.eql
-          route: 'project'
+          route: 'storage'
           runtime: null
           project: 'noflo-ui'
           graph: 'noflo-ui_graphs_main'
@@ -62,7 +67,7 @@ describe 'URL Middleware', ->
           nodes: [
             'UserStorage'
           ]
-      mw.receiveAction 'project:open', checkOpen, done
+      mw.receiveAction 'storage:open', checkOpen, done
       window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage'
   describe 'on hash change to a old-style example URL', ->
     it 'should send application:redirect action', (done) ->
