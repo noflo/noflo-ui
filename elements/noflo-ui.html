@@ -313,7 +313,7 @@
         this.set('$.packets.panel', this.$.context.$.context);
         this.set('$.search.panel', this.$.context.$.context);
       },
-      context: function (context) {
+      updated: function (context) {
         if (context.state) {
           switch (context.state) {
           case 'error':
