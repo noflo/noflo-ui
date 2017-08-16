@@ -1,6 +1,5 @@
-<polymer-element name="noflo-search-graph-results" attributes="editor results search">
-  <template>
-    <style>
+<dom-module id="noflo-search-graph-results">
+  <style>
       .search-results-header h1 {
         color: hsla(188, 15%, 60%, 0.8);
         padding-left: 25px;
@@ -76,9 +75,10 @@
       }
 
     </style>
+  <template>
     <ul class="search-results-list">
-      <template repeat="{{result, index in results}}">
-        <li class="search-results-item" data-index="{{index}}" on-click="{{clicked}}">
+      <template is="dom-repeat" items="{{results}}" as="result" index-as="index">
+        <li class="search-results-item" on-click="clicked" data-index$="{{index}}">
           <i class="fa fa-cog"></i>
           <h2>{{result.metadata.label}}</h2>
           <p>{{result.component}}</p>
@@ -87,10 +87,27 @@
     </ul>
   </template>
   <script>
-    Polymer('noflo-search-graph-results', {
-      editor: null,
-      results: [],
-      search: '',
+    Polymer({
+      is: 'noflo-search-graph-results',
+      properties: {
+        editor: {
+          value: null,
+          notify: true
+        },
+        results: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'resultsChanged'
+        },
+        search: {
+          type: String,
+          value: '',
+          notify: true
+        }
+      },
       detached: function () {
         this.editor = null;
       },
@@ -98,11 +115,11 @@
         if (!this.editor)
           return;
         if (!this.search || this.search.length < 1) {
-          this.editor.displaySelectionGroup = true;
-          this.editor.selectedNodes = [];
+          this.set('editor.displaySelectionGroup', true);
+          this.set('editor.selectedNodes', []);
         } else if (this.results) {
-          this.editor.displaySelectionGroup = (this.results.length > 0 ? false : true);
-          this.editor.selectedNodes = this.results;
+          this.set('editor.displaySelectionGroup', this.results.length > 0 ? false : true);
+          this.set('editor.selectedNodes', this.results);
         }
       },
       clicked: function (event, details, sender) {
@@ -112,11 +129,11 @@
         if (!result) {
           return;
         }
-        this.editor.displaySelectionGroup = true;
-        this.editor.selectedNodes = [ result ];
+        this.set('editor.displaySelectionGroup', true);
+        this.set('editor.selectedNodes', [result]);
         this.editor.focusNode(result);
         this.fire('resultclick', result);
       }
     });
   </script>
-</polymer-element>
+</dom-module>

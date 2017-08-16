@@ -1,6 +1,5 @@
-<polymer-element name="noflo-account-settings" attributes="user gridToken plan theme" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-account-settings">
+  <style>
       .plan strong {
         text-transform: uppercase;
         color: black;
@@ -35,64 +34,81 @@
         cursor: pointer;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1>Account settings for {{user.name}}</h1>
+  <template>
+    <div class="modal-container" on-click="bgClick">
+      <h1>Account settings for <span>{{user.name}}</span></h1>
       <form>
         <label>
           User Identifier
-          <input type="text" readonly value="{{user.id}}">
+          <input type="text" readonly="" value="{{user.id::input}}">
         </label>
         <label>
           Flowhub plan
           <div class="plan">
-            You're currently using <strong class="{{plan}}">{{plan}}</strong> plan.
+            You're currently using <strong class$="{{plan}}">{{plan}}</strong> plan.
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github.username}}">
-              <input type="hidden" name="password" value="{{gridToken}}">
+              <input type="hidden" name="username" value="{{user.github.username::input}}">
+              <input type="hidden" name="password" value="{{gridToken::input}}">
               <input type="submit" id="cta" value="Manage subscription">
             </form>
           </div>
-          <template if="{{statusText}}">
+          <template is="dom-if" if="{{statusText}}">
             <div class="statustext">
               <span>{{statusText}}</span>
-              <template if="{{requestLogin}}">
-                <button class="relogin" on-click="{{relogin}}">Login</button>
+              <template is="dom-if" if="{{requestLogin}}">
+                <button class="relogin" on-click="relogin">Login</button>
               </template>
             </div>
           </template>
         </label>
         <label>
           Theme
-          <select name="type" value="{{theme}}">
+          <select name="type" value="{{theme::input}}">
             <option value="dark">Lazer</option>
             <option value="light">Tube</option>
           </select>
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}">Save</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send">Save</button>
+          <a on-click="close">Cancel</a>
         </div>
       </form>
     </div>
   </template>
   <script>
-    Polymer('noflo-account-settings', {
-      user: null,
-      newPlan: '',
-      theme: '',
-      gridToken: '',
+    Polymer({
+      is: 'noflo-account-settings',
+      properties: {
+        gridToken: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        newPlan: {
+          type: String,
+          value: ''
+        },
+        plan: { notify: true },
+        theme: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        user: {
+          value: null,
+          notify: true
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       send: function (event) {
         event.preventDefault();
         event.stopPropagation();
-        this.fire('updated', {
-          theme: this.theme
-        });
+        this.fire('updated', { theme: this.theme });
         this.close();
       },
       bgClick: function (event) {
@@ -100,11 +116,13 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>

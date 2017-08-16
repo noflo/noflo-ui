@@ -1,74 +1,100 @@
-<polymer-element name="noflo-project-sync" class="modal-content" on-click="{{close}}">
+<dom-module id="noflo-project-sync">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1>Synchronize with <i class="fa fa-github"></i> {{operation.repo}}</h1>
-      <template if="{{statusText}}">
+    <div class="modal-container" on-click="bgClick">
+      <h1>Synchronize with <i class="fa fa-github"></i> <span>{{operation.repo}}</span></h1>
+      <template is="dom-if" if="{{statusText}}">
         <div>{{statusText}}</div>
       </template>
       <form>
         <table>
-          <template repeat="{{entry in operation.conflict}}">
+          <template is="dom-repeat" items="{{operation.conflict}}" as="entry">
           <tr>
             <th>{{entry.path}}</th>
             <td>
-              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
-                <option value="push">&#xf093; push</option>
-                <option value="pull">&#xf019; pull</option>
-                <option value="noop" selected>&#xf05e; ignore</option>
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="choose">
+                <option value="push"> push</option>
+                <option value="pull"> pull</option>
+                <option value="noop" selected=""> ignore</option>
               </select>
             </td>
           </tr>
           </template>
-          <template repeat="{{entry in operation.push}}">
+          <template is="dom-repeat" items="{{operation.push}}" as="entry">
           <tr>
             <th>{{entry.path}}</th>
             <td>
-              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
-                <option value="push">&#xf093; push</option>
-                <option value="noop" selected>&#xf05e; ignore</option>
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="choose">
+                <option value="push"> push</option>
+                <option value="noop" selected=""> ignore</option>
               </select>
             </td>
           </tr>
           </template>
-          <template repeat="{{entry in operation.pull}}">
+          <template is="dom-repeat" items="{{operation.pull}}" as="entry">
           <tr>
             <th>{{entry.path}}</th>
             <td>
-              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="{{choose}}">
-                <option value="pull">&#xf019; pull</option>
-                <option value="noop">&#xf05e; ignore</option>
+              <select name="{{entry.path}}" style="font-family: FontAwesome,SourceCodePro,Helvetica,Arial,sans-serif;" on-change="choose">
+                <option value="pull"> pull</option>
+                <option value="noop"> ignore</option>
               </select>
             </td>
           </tr>
           </template>
         </table>
-        <template if="{{hasPush}}">
+        <template is="dom-if" if="{{hasPush}}">
           <label>
             <span>Commit message</span>
-            <input type="text" value="{{message}}" required>
+            <input type="text" value="{{message::input}}" required="">
           </label>
         </template>
         <div class="toolbar">
-          <button on-click="{{send}}" class="{{ { disabled: !hasOp } | tokenList }}">Synchronize</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send" class$="{{_computeClass(hasOp)}}">Synchronize</button>
+          <a on-click="close">Cancel</a>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-project-sync', {
-      operation: {
-        repo: '',
-        push: [],
-        pull: [],
-        conflict: [],
-        noop: []
+    Polymer({
+      is: 'noflo-project-sync',
+      properties: {
+        chosen: {
+          type: Object,
+          value: function () {
+            return {};
+          }
+        },
+        hasOp: {
+          type: Boolean,
+          value: true
+        },
+        hasPush: {
+          type: Boolean,
+          value: false
+        },
+        message: {
+          type: String,
+          value: ''
+        },
+        operation: {
+          type: Object,
+          value: function () {
+            return {
+              repo: '',
+              push: [],
+              pull: [],
+              conflict: [],
+              noop: []
+            };
+          },
+          observer: 'operationChanged'
+        },
+        statusText: {
+          type: String,
+          value: ''
+        }
       },
-      statusText: '',
-      chosen: {},
-      hasPush: false,
-      hasOp: true,
-      message: '',
       operationChanged: function () {
         this.chosen = {};
         if (!this.operation.push.length && !this.operation.pull.length && !this.operation.conflict.length) {
@@ -87,7 +113,7 @@
         }.bind(this));
       },
       choose: function (event, detail, sender) {
-        this.chosen[sender.name] = sender.value;
+        this.set('chosen' + ('.' + sender.name), sender.value);
         var pushes = false;
         var ops = false;
         for (var name in this.chosen) {
@@ -103,10 +129,10 @@
         this.hasOp = ops;
       },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       send: function (event) {
         if (event) {
@@ -115,13 +141,12 @@
         if (this.hasPush && !this.message) {
           return;
         }
-
         var originalConflicts = this.operation.conflict;
         var originalPushes = this.operation.push;
         var originalPulls = this.operation.pull;
-        this.operation.conflict = [];
-        this.operation.pull = [];
-        this.operation.push = [];
+        this.set('operation.conflict', []);
+        this.set('operation.pull', []);
+        this.set('operation.push', []);
         var checkOps = function (entry) {
           if (this.chosen[entry.path] === 'push') {
             this.operation.push.push(entry);
@@ -135,8 +160,7 @@
         originalConflicts.forEach(checkOps);
         originalPushes.forEach(checkOps);
         originalPulls.forEach(checkOps);
-        this.operation.message = this.message;
-
+        this.set('operation.message', this.message);
         this.fire('sync', this.operation);
         this.close();
       },
@@ -145,12 +169,26 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' },
+      _computeClass: function (hasOp) {
+        return this.tokenList({ disabled: !hasOp });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>
 

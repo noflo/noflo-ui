@@ -1,6 +1,5 @@
-<polymer-element name="noflo-component-editor" attributes="component width height">
-  <template>
-    <style type="text/css">
+<dom-module id="noflo-component-editor">
+  <style type="text/css">
       :host {
         background-color: black;
         overflow: hidden;
@@ -38,10 +37,11 @@
         text-align: right;
       }
     </style>
-    <link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css">
-    <link rel="stylesheet" href="../node_modules/codemirror/addon/lint/lint.css">
-    <link rel="stylesheet" href="../node_modules/codemirror/theme/mdn-like.css">
-    <link rel="stylesheet" href="../css/codemirror-noflo.css">
+  <link rel="import" type="css" href="../node_modules/codemirror/lib/codemirror.css">
+  <link rel="import" type="css" href="../node_modules/codemirror/addon/lint/lint.css">
+  <link rel="import" type="css" href="../node_modules/codemirror/theme/mdn-like.css">
+  <link rel="import" type="css" href="../css/codemirror-noflo.css">
+  <template>
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>
@@ -50,20 +50,41 @@
       <h1>Tests</h1>
       <div id="tests_editor"></div>
     </section>
-    </script>
+    
   </template>
-
   <script>
-    Polymer('noflo-component-editor', {
-      component: null,
-      spec: null,
-      project: null,
-      width: null,
-      height: null,
-      codeEditor: null,
-      testsEditor: null,
-      runtime: null,
-      theme: 'dark',
+    Polymer({
+      is: 'noflo-component-editor',
+      properties: {
+        codeEditor: { value: null },
+        component: {
+          value: null,
+          notify: true,
+          observer: 'componentChanged'
+        },
+        height: {
+          value: null,
+          notify: true,
+          observer: 'heightChanged'
+        },
+        project: { value: null },
+        runtime: { value: null },
+        spec: {
+          value: null,
+          observer: 'specChanged'
+        },
+        testsEditor: { value: null },
+        theme: {
+          type: String,
+          value: 'dark',
+          observer: 'themeChanged'
+        },
+        width: {
+          value: null,
+          notify: true,
+          observer: 'widthChanged'
+        }
+      },
       ready: function () {
         this.componentChanged();
         var self = this;
@@ -77,10 +98,9 @@
       },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
-          this.style.display = 'none';
+          this.set('style.display', 'none');
           return;
         }
-
         this.spec = null;
         if (this.project) {
           this.project.specs.forEach(function (spec) {
@@ -100,14 +120,11 @@
             this.project.specs.push(this.spec);
           }
         }
-
-        this.style.display = 'block';
-        this.$.code_editor.innerHTML = '';
-
+        this.set('style.display', 'block');
+        this.set('$.code_editor.innerHTML', '');
         if (!this.component.code) {
-          this.component.code = this.getExampleCode();
+          this.set('component.code', this.getExampleCode());
         }
-
         codeOptions = this.getMirrorOptions(this.component, this.component.code);
         this.codeEditor = CodeMirror(this.$.code_editor, codeOptions);
         this.codeEditor.on('change', function () {
@@ -118,7 +135,7 @@
         this.setSize();
       },
       specChanged: function () {
-        this.$.tests_editor.innerHTML = '';
+        this.set('$.tests_editor.innerHTML', '');
         if (!this.spec) {
           return;
         }
@@ -146,7 +163,7 @@
           readOnly: component.project ? false : 'nocursor'
         };
         var canLint = function (language) {
-          return (language === 'javascript' || language === 'coffeescript');
+          return language === 'javascript' || language === 'coffeescript';
         };
         if (canLint(component.language) && !options.readOnly) {
           options.gutters = ['CodeMirror-lint-markers'];
@@ -166,8 +183,9 @@
         } else if (language === 'c++') {
           return 'text/x-c++src';
         } else if (language === 'supercollider') {
-          return 'text/x-stsrc'; // smalltalk-like
+          return 'text/x-stsrc';
         }
+        // smalltalk-like
         return 'clike';
       },
       getMirrorTheme: function () {
@@ -187,14 +205,13 @@
         if (!runtimeType) {
           console.log('WARNING: Unknown runtime type');
         }
-
         var runtimeInfo = require('noflo-ui/runtimeinfo');
         var info = runtimeInfo[runtimeType];
         var language = this.component.language;
         if (language == 'es6') {
           language = 'es2015';
         }
-        var template = "";
+        var template = '';
         if (info && info.componenttemplates && info.componenttemplates[this.component.language]) {
           template = info.componenttemplates[this.component.language];
         }
@@ -231,4 +248,4 @@
       }
     });
   </script>
-</polymer-element>
+</dom-module>

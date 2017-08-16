@@ -1,6 +1,5 @@
-<polymer-element name="noflo-type-selector" attributes="runtimes type">
-  <template>
-    <style>
+<dom-module id="noflo-type-selector">
+  <style>
       :host {
         top: calc(50% - 220px) !important;
       }
@@ -70,36 +69,53 @@
         top: 9px;
       }
     </style>
+  <template>
     <ul class="types">
-      <template repeat="{{availtype in available}}">
-      <li on-click="{{selectType}}" data-id="{{availtype.id}}" class="{{ { selected: type == availtype.id } | tokenList }}">
+      <template is="dom-repeat" items="{{available}}" as="availtype">
+      <li on-click="selectType" data-id$="{{availtype.id}}" class$="{{_computeClass(availtype, type)}}">
         <h2>{{availtype.label}}</h2>
-        <i class="fa fa-{{availtype.icon}}"></i>
-        <template if="{{availtype.runtimes.length === 1}}">
-        <p>{{availtype.runtimes.length}} runtime</p>
+        <i class$="{{_computeClass2(availtype)}}"></i>
+        <template is="dom-if" if="{{_computeIf(availtype)}}">
+        <p><span>{{availtype.runtimes.length}}</span> runtime</p>
         </template>
-        <template if="{{availtype.runtimes.length > 1}}">
-        <p>{{availtype.runtimes.length}} runtimes</p>
+        <template is="dom-if" if="{{_computeIf2(availtype)}}">
+        <p><span>{{availtype.runtimes.length}}</span> runtimes</p>
         </template>
       </li>
       </template>
     </ul>
     </template>
-  </template>
   <script>
-    Polymer('noflo-type-selector', {
-      type: 'noflo-nodejs',
-      available: [],
-      runtimes: [],
+    Polymer({
+      is: 'noflo-type-selector',
+      properties: {
+        available: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        runtimes: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'runtimesChanged'
+        },
+        type: {
+          type: String,
+          value: 'noflo-nodejs',
+          notify: true
+        }
+      },
       runtimesChanged: function () {
-        this.available = [
-          {
+        this.available = [{
             id: 'all',
             label: 'Multi-platform',
             icon: 'asterisk',
             runtimes: []
-          }
-        ];
+          }];
         this.runtimes.forEach(function (rt) {
           if (!rt.type) {
             return;
@@ -144,7 +160,28 @@
         }
         this.available.push(availType);
         return availType;
+      },
+      _computeClass: function (availtype, type) {
+        return this.tokenList({ selected: type == availtype.id });
+      },
+      _computeClass2: function (availtype) {
+        return 'fa fa-' + availtype.icon;
+      },
+      _computeIf: function (availtype) {
+        return availtype.runtimes.length === 1;
+      },
+      _computeIf2: function (availtype) {
+        return availtype.runtimes.length > 1;
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

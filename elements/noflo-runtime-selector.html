@@ -1,8 +1,7 @@
 <link rel="import" href="noflo-runtime-browserdebug.html">
 <link rel="import" href="noflo-runtime-customiframe.html">
-<polymer-element name="noflo-runtime-selector" attributes="graph" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-runtime-selector">
+  <style>
       ul.runtimes {
         padding: 0px;
         margin-top: 36px;
@@ -61,58 +60,65 @@
         color: hsl(189, 50%, 80%);
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1>Select runtime for {{graph.name}}</h1>
-      <template if="{{available.length}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
+      <h1>Select runtime for <span>{{graph.name}}</span></h1>
+      <template is="dom-if" if="{{available.length}}">
         <ul class="runtimes">
-          <template repeat="{{runtime in available}}">
-          <li on-click="{{selectRuntime}}" data-id="{{runtime.id}}" class="{{runtime.type}}">
+          <template is="dom-repeat" items="{{available}}" as="runtime">
+          <li on-click="selectRuntime" data-id$="{{runtime.id}}" class$="{{runtime.type}}">
             <h2>{{runtime.label}}</h2>
-            <p>{{runtime.address}}.<br />Seen {{runtime.seenHoursAgo}}h ago</p>
+            <p><span>{{runtime.address}}</span>.<br>Seen <span>{{runtime.seenHoursAgo}}</span>h ago</p>
           </li>
           </template>
         </ul>
       </template>
-      <template if="{{!available.length}}">
+      <template is="dom-if" if="{{!available.length}}">
         <p>No compatible runtimes available.</p>
       </template>
       <div class="toolbar">
-        <button on-click="{{close}}">Cancel</button>
+        <button on-click="close">Cancel</button>
       </div>
     </div>
   </template>
   <script>
-    Polymer('noflo-runtime-selector', {
-      available: [],
+    Polymer({
+      is: 'noflo-runtime-selector',
+      properties: {
+        available: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        graph: { notify: true }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
         var type = this.graph.properties.environment.type;
-
         // Insert button to launch new runtime for noflo-browser
         var launchNewBrowserRuntime = {
           id: 'new-browser-runtime',
           label: 'Launch new runtime',
-          address: "WebRTC"
+          address: 'WebRTC'
         };
         var customIframeRuntime = {
           id: 'custom-iframe-address',
           label: 'Custom iframe URL',
-          address: "myapp.html"
+          address: 'myapp.html'
         };
         var launchImgfloHerokuRuntime = {
           id: 'imgflo-heroku-new',
           label: 'New imgflo app on Heroku',
-          address: "myapp.herokuapps.com"
+          address: 'myapp.herokuapps.com'
         };
-
         if (type == 'noflo-browser') {
           this.available.push(launchNewBrowserRuntime);
           this.available.push(customIframeRuntime);
         }
         if (type == 'imgflo') {
-           this.available.push(launchImgfloHerokuRuntime);
+          this.available.push(launchImgfloHerokuRuntime);
         }
-
         this.runtimes.forEach(function (rt) {
           if (!rt.type) {
             return;
@@ -124,18 +130,18 @@
         this.available.forEach(this.checkRuntimeSeen.bind(this));
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       // similiar to in noflo-main.html
       checkRuntimeSeen: function (runtime) {
         if (!runtime.seen) {
           runtime.seen = Date.now();
         }
-        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60*60*1000));
-        if ((runtime.seenHoursAgo / 24) > 31) {
+        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
+        if (runtime.seenHoursAgo / 24 > 31) {
           // We haven't seen this runtime in over a month, don't show it
           var index = this.available.indexOf(runtime);
-          this.available.splice(index,1);
+          this.available.splice(index, 1);
         }
       },
       selectRuntime: function (event, details, sender) {
@@ -152,7 +158,7 @@
           return;
         } else if (id == 'imgflo-heroku-new') {
           this.close();
-          this.deployHeroku("https://github.com/jonnor/imgflo");
+          this.deployHeroku('https://github.com/jonnor/imgflo');
         }
         this.runtimes.forEach(function (runtime) {
           if (runtime.id === id) {
@@ -163,27 +169,27 @@
       },
       debugOnDevice: function () {
         this.debugOnDeviceModal = document.createElement('noflo-runtime-browserdebug');
-        this.debugOnDeviceModal.graph = this.graph;
+        this.set('debugOnDeviceModal.graph', this.graph);
         this.debugOnDeviceModal.addEventListener('runtime', function (event) {
           var runtime = event.detail;
           this.fire('runtime', runtime);
         }.bind(this));
-        document.body.appendChild(this.debugOnDeviceModal);
+        Polymer.dom(document.body).appendChild(this.debugOnDeviceModal);
       },
       addIframeRuntime: function () {
         this.addIframeModal = document.createElement('noflo-runtime-customiframe');
-        this.addIframeModal.graph = this.graph;
+        this.set('addIframeModal.graph', this.graph);
         this.addIframeModal.addEventListener('runtime', function (event) {
           var runtime = event.detail;
           this.fire('runtime', runtime);
         }.bind(this));
-        document.body.appendChild(this.addIframeModal);
+        Polymer.dom(document.body).appendChild(this.addIframeModal);
       },
       deployHeroku: function (template) {
         // Send user over to Heroku
         // The deployed runtime will then have a link which takes them back to Flowhub
         // TODO: inform the user about this process
-        var baseUrl = "https://dashboard.heroku.com/new?template=";
+        var baseUrl = 'https://dashboard.heroku.com/new?template=';
         document.location.href = baseUrl + encodeURIComponent(template);
       },
       bgClick: function (event) {
@@ -191,11 +197,13 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>

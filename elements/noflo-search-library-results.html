@@ -1,6 +1,5 @@
-<polymer-element name="noflo-search-library-results" attributes="results search">
-  <template>
-    <style>
+<dom-module id="noflo-search-library-results">
+  <style>
       .search-results-header h1 {
         color: hsla(188, 15%, 60%, 0.8);
         padding-left: 25px;
@@ -76,10 +75,11 @@
       }
 
     </style>
+  <template>
     <ul class="search-results-list">
-      <template repeat="{{result, index in results}}">
-        <li class="search-results-item" data-index="{{index}}" on-click="{{clicked}}">
-          <i class="fa fa-{{result.icon}}"></i>
+      <template is="dom-repeat" items="{{results}}" as="result" index-as="index">
+        <li class="search-results-item" on-click="clicked" data-index$="{{index}}">
+          <i class$="{{_computeClass(result)}}"></i>
           <h2>{{result.label}}</h2>
           <p>{{result.description}}</p>
         </li>
@@ -87,9 +87,22 @@
     </ul>
   </template>
   <script>
-    Polymer('noflo-search-library-results', {
-      results: [],
-      search: '',
+    Polymer({
+      is: 'noflo-search-library-results',
+      properties: {
+        results: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true
+        },
+        search: {
+          type: String,
+          value: '',
+          notify: true
+        }
+      },
       clicked: function (event, details, sender) {
         event.preventDefault();
         var index = sender.getAttribute('data-index');
@@ -99,7 +112,10 @@
         }
         this.fire('resultclick', result);
         result.action();
+      },
+      _computeClass: function (result) {
+        return 'fa fa-' + result.icon;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

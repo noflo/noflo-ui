@@ -1,35 +1,55 @@
 <link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-graph" attributes="project runtimes" class="modal-content" on-click="{{close}}">
+<dom-module id="noflo-new-graph">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
+    <div class="modal-container" on-click="bgClick">
       <h1>Create new graph</h1>
       <form>
         <label>
           Graph name
-          <input type="text" value="{{name}}" placeholder="MyCoolGraph" required>
+          <input type="text" value="{{name::input}}" placeholder="MyCoolGraph" required="">
         </label>
         <label>
           Type
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
+          <a on-click="close">Cancel</a>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-new-graph', {
-      name: '',
-      project: '',
-      runtimes: [],
-      type: 'noflo-browser',
+    Polymer({
+      is: 'noflo-new-graph',
+      properties: {
+        name: {
+          type: String,
+          value: '',
+          observer: 'nameChanged'
+        },
+        project: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        runtimes: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true
+        },
+        type: {
+          type: String,
+          value: 'noflo-browser'
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       nameChanged: function () {
         var duplicates = [];
@@ -61,10 +81,8 @@
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
           project: this.project.id,
-          id: this.project.id+'/'+this.name,
-          environment: {
-            type: this.type
-          }
+          id: this.project.id + '/' + this.name,
+          environment: { type: this.type }
         });
         this.fire('new', graph);
         this.close();
@@ -74,11 +92,25 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' },
+      _computeClass: function (canSend) {
+        return this.tokenList({ disabled: !canSend });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

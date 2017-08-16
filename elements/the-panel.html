@@ -1,6 +1,5 @@
-<polymer-element name="the-panel" attributes="edge size handle open automatic" on-click="{{handleClicked}}">
-  <template>
-    <style>
+<dom-module id="the-panel">
+  <style>
       @host {
         :scope {
           position: fixed;
@@ -8,17 +7,46 @@
         }
       }
     </style>
+  <template>
     <content select="header"></content>
     <content select="main"></content>
     <content select="footer"></content>
   </template>
   <script>
-    Polymer('the-panel', {
-      edge: 'left',
-      size: 200,
-      handle: 0,
-      automatic: true,
-      open: false,
+    Polymer({
+      is: 'the-panel',
+      properties: {
+        automatic: {
+          type: Boolean,
+          value: true,
+          notify: true,
+          observer: 'automaticChanged'
+        },
+        edge: {
+          type: String,
+          value: 'left',
+          notify: true,
+          observer: 'edgeChanged'
+        },
+        handle: {
+          type: Number,
+          value: 0,
+          notify: true,
+          observer: 'handleChanged'
+        },
+        open: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: 'openChanged'
+        },
+        size: {
+          type: Number,
+          value: 200,
+          notify: true,
+          observer: 'sizeChanged'
+        }
+      },
       toggleOpen: function (open) {
         this.open = open;
         this.updateVisibility();
@@ -51,13 +79,13 @@
         }
       },
       getHeader: function () {
-        return this.querySelector('header');
+        return Polymer.dom(this).querySelector('header');
       },
       getMain: function () {
-        return this.querySelector('main');
+        return Polymer.dom(this).querySelector('main');
       },
       getFooter: function () {
-        return this.querySelector('footer');
+        return Polymer.dom(this).querySelector('footer');
       },
       handleClicked: function (event) {
         if (this.automatic) {
@@ -100,30 +128,37 @@
       },
       getSizeDimensions: function () {
         switch (this.edge) {
-          case 'left':
-          case 'right':
-            return ['width', 'height'];
-          case 'top':
-          case 'bottom':
-            return ['height', 'width'];
+        case 'left':
+        case 'right':
+          return [
+            'width',
+            'height'
+          ];
+        case 'top':
+        case 'bottom':
+          return [
+            'height',
+            'width'
+          ];
         }
       },
       cleanUpLocation: function () {
-        this.style.left = '';
-        this.style.right = '';
-        this.style.top = '';
-        this.style.bottom = '';
+        this.set('style.left', '');
+        this.set('style.right', '');
+        this.set('style.top', '');
+        this.set('style.bottom', '');
       },
       updateVisibility: function () {
         var sizeDimensions = this.getSizeDimensions();
-        this.style[sizeDimensions[1]] = '100%';
-        this.style[sizeDimensions[0]] = this.size + 'px';
+        this.set('style' + ('.' + sizeDimensions[1]), '100%');
+        this.set('style' + ('.' + sizeDimensions[0]), this.size + 'px');
         var outside = 0;
         if (!this.open) {
           outside = (this.size - this.handle) * -1;
         }
-        this.style[this.getPositionDimension()] = outside + 'px';
-      }
+        this.set('style' + ('.' + this.getPositionDimension()), outside + 'px');
+      },
+      listeners: { click: 'handleClicked' }
     });
   </script>
-</polymer-element>
+</dom-module>

@@ -1,9 +1,8 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <link rel="import" href="noflo-runtime-testdetails.html">
-<polymer-element name="noflo-runtime" attributes="runtimes" class="gpu">
-  <template>
-    <style>
+<dom-module id="noflo-runtime">
+  <style>
       :host {
         position: fixed;
         right: 36px;
@@ -126,50 +125,88 @@
         margin-top: 18px;
       }
     </style>
-    <template if="{{runtime}}">
-      <i id="runtime_icon" class="fa fa-{{icon}}"></i>
-      <div id="address" class="{{ { online: online } | tokenList }}">
-        <button title="Connect/Disconnect" on-click="{{reconnect}}"><i class="fa fa-refresh"></i></button>
+  <template>
+    <template is="dom-if" if="{{runtime}}">
+      <i id="runtime_icon" class$="{{_computeClass(icon)}}"></i>
+      <div id="address" class$="{{_computeClass2(online)}}">
+        <button title="Connect/Disconnect" on-click="reconnect"><i class="fa fa-refresh"></i></button>
         <h2>{{runtime.definition.address}}</h2>
-        <button title="Change Runtime" on-click="{{clearRuntime}}" class="clear"><i class="fa fa-exchange"></i></button>
+        <button title="Change Runtime" on-click="clearRuntime" class="clear"><i class="fa fa-exchange"></i></button>
       </div>
-      <div id="teststatus" on-click="{{showTestDetails}}"></div>
+      <div id="teststatus" on-click="showTestDetails"></div>
       <div id="runcontrol">
-        <template if="{{online}}">
-          <template if="{{execution.running}}">
-            <button title="Stop" class="stop" on-click="{{stop}}"><i class="fa fa-pause"></i></button>
+        <template is="dom-if" if="{{online}}">
+          <template is="dom-if" if="{{execution.running}}">
+            <button title="Stop" class="stop" on-click="stop"><i class="fa fa-pause"></i></button>
           </template>
-          <template if="{{execution.running == false}}">
-            <button title="Start" class="start" on-click="{{start}}"><i class="fa fa-play"></i></button>
+          <template is="dom-if" if="{{_computeIf2(execution)}}">
+            <button title="Start" class="start" on-click="start"><i class="fa fa-play"></i></button>
           </template>
           <h2>{{execution.label}}</h2>
         </template>
       </div>
     </template>
-    <template if="{{graph && !runtime}}">
+    <template is="dom-if" if="{{_computeIf(graph, runtime)}}">
       <div id="select">
-        <button on-click="{{selectRuntime}}" class="select">Select runtime</button>
+        <button on-click="selectRuntime" class="select">Select runtime</button>
       </div>
     </template>
   </template>
   <script>
-    Polymer('noflo-runtime', {
-      graph: null,
-      runtime: null,
-      runtimes: [],
-      suites: [],
-      online: false,
-      execution: {
-        label: 'not started',
-        running: false
+    Polymer({
+      is: 'noflo-runtime',
+      properties: {
+        card: { value: null },
+        execution: {
+          type: Object,
+          value: function () {
+            return {
+              label: 'not started',
+              running: false
+            };
+          }
+        },
+        graph: {
+          value: null,
+          observer: 'graphChanged'
+        },
+        notifications: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        online: {
+          type: Boolean,
+          value: false
+        },
+        panel: { value: null },
+        runtime: {
+          value: null,
+          observer: 'runtimeChanged'
+        },
+        runtimes: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true
+        },
+        suites: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        wasConnected: {
+          type: Boolean,
+          value: false
+        }
       },
-      card: null,
-      panel: null,
-      wasConnected: false,
       clearRuntime: function () {
         for (var i = 0; i < this.runtimes.length; i++) {
           if (this.runtimes[i].graph === this.graph.properties.id) {
-            this.runtimes[i].graph = null;
+            this.set('runtimes' + ('.' + i) + '.graph', null);
             this.fire('changed', this.runtimes[i]);
           }
         }
@@ -179,12 +216,12 @@
       graphChanged: function () {
         this.wasConnected = false;
         if (this.card) {
-          this.card.parentNode.removeChild(this.card);
+          Polymer.dom(Polymer.dom(this.card).parentNode).removeChild(this.card);
           this.card = null;
         }
         if (this.runtimeSelector) {
-          if (this.runtimeSelector.parentNode) {
-            this.runtimeSelector.parentNode.removeChild(this.runtimeSelector);
+          if (Polymer.dom(this.runtimeSelector).parentNode) {
+            Polymer.dom(Polymer.dom(this.runtimeSelector).parentNode).removeChild(this.runtimeSelector);
           }
           this.runtimeSelector = null;
         }
@@ -194,37 +231,32 @@
       },
       runtimeChanged: function () {
         this.online = false;
-        this.execution.running = false;
-        this.execution.label = 'not started';
-
+        this.set('execution.running', false);
+        this.set('execution.label', 'not started');
         this.icon = this.getRuntimeIcon(this.runtime);
-
         if (this.panel) {
-          this.panel.open = false;
+          this.set('panel.open', false);
         }
-
         if (!this.runtime) {
           return;
         }
         this.runtime.setMain(this.graph);
         if (this.graph && this.runtime.isConnected && this.runtime.isConnected()) {
           this.online = true;
-          this.runtime.sendNetwork('getstatus', {
-            graph: this.graph.name || this.graph.properties.id
-          });
+          this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
         }
-        this.runtime.on('execution', function(status) {
+        this.runtime.on('execution', function (status) {
           if (status.running) {
             this.execution.running = true;
           } else {
             this.execution.running = false;
           }
           if (!status.started) {
-            this.execution.label = "not started";
+            this.execution.label = 'not started';
           } else if (status.started && !status.running) {
-            this.execution.label = "finished";
+            this.execution.label = 'finished';
           } else if (status.started && status.running) {
-            this.execution.label = "running";
+            this.execution.label = 'running';
           }
         }.bind(this));
         this.runtime.on('status', function (status) {
@@ -290,9 +322,7 @@
         if (!container) {
           return;
         }
-        React.render(fbpSpec.ui.widgets.TestStatus({
-          suites: this.suites
-        }), container);
+        React.render(fbpSpec.ui.widgets.TestStatus({ suites: this.suites }), container);
       },
       showTestDetails: function () {
         if (!this.suites || !this.suites.length) {
@@ -300,23 +330,23 @@
         }
         var details = document.createElement('noflo-runtime-testdetails');
         details.suites = this.suites;
-        document.body.appendChild(details);
+        Polymer.dom(document.body).appendChild(details);
       },
       showCard: function () {
         if (this.card || !this.panel) {
           return;
         }
         this.card = document.createElement('the-card');
-        this.card.type = 'noflo-runtime-preview';
+        this.set('card.type', 'noflo-runtime-preview');
         // Move the preview element of the runtime into the card
         var preview = document.createElement('noflo-preview');
-        preview.classList.add('the-card-content');
+        Polymer.dom(preview).classList.add('the-card-content');
         preview.runtime = this.runtime;
-        preview.returnTo = this.parentNode;
-        this.card.appendChild(preview);
+        preview.returnTo = Polymer.dom(this).parentNode;
+        Polymer.dom(this.card).appendChild(preview);
         this.card.addTo(this.panel.getMain());
         if (this.runtime.definition.protocol === 'iframe') {
-          this.panel.open = true;
+          this.set('panel.open', true);
         }
       },
       hideCard: function () {
@@ -324,19 +354,19 @@
           return;
         }
         var el = this.runtime.getElement();
-        this.card.parentNode.removeChild(this.card);
+        Polymer.dom(Polymer.dom(this.card).parentNode).removeChild(this.card);
         this.card = null;
       },
       selectRuntime: function () {
         if (!this.graph) {
           return;
         }
-        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+        if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.runtimeSelector = document.createElement('noflo-runtime-selector');
-        this.runtimeSelector.graph = this.graph;
-        this.runtimeSelector.runtimes = this.runtimes;
+        this.set('runtimeSelector.graph', this.graph);
+        this.set('runtimeSelector.runtimes', this.runtimes);
         this.runtimeSelector.addEventListener('runtime', function (event) {
           var runtime = event.detail;
           runtime.graph = this.graph.properties.id;
@@ -344,16 +374,16 @@
           this.fire('changed', runtime);
           this.fire('runtime', runtime);
         }.bind(this));
-        document.body.appendChild(this.runtimeSelector);
+        Polymer.dom(document.body).appendChild(this.runtimeSelector);
       },
       canNotify: function () {
-        return ("Notification" in window);
+        return 'Notification' in window;
       },
       allowedToNotify: function () {
         if (!this.canNotify()) {
           return false;
         }
-        if (Notification.permission === "denied") {
+        if (Notification.permission === 'denied') {
           return false;
         }
         return true;
@@ -369,13 +399,12 @@
         if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
           Notification.requestPermission(function (permission) {
             // Whatever the user answers, we make sure we store the information
-            if(!('permission' in Notification)) {
+            if (!('permission' in Notification)) {
               Notification.permission = permission;
             }
           });
         }
       },
-      notifications: [],
       notify: function (title, message) {
         if (!this.allowedToNotify()) {
           if (!console || !console.log) {
@@ -408,24 +437,46 @@
           return 'cog';
         }
         switch (runtime.definition.type) {
-          case 'noflo-browser':
-            return 'html5';
-          case 'noflo-nodejs':
-            return 'cloud';
-          case 'noflo-gnome':
-            return 'desktop';
-          case 'noflo-gnome':
-            return 'desktop';
-          case 'microflo':
-            return 'lightbulb-o';
-          case 'javafbp':
-            return 'android';
-          case 'imgflo':
-            return 'picture-o';
-          case 'sndflo':
-            return 'music';
+        case 'noflo-browser':
+          return 'html5';
+        case 'noflo-nodejs':
+          return 'cloud';
+        case 'noflo-gnome':
+          return 'desktop';
+        case 'noflo-gnome':
+          return 'desktop';
+        case 'microflo':
+          return 'lightbulb-o';
+        case 'javafbp':
+          return 'android';
+        case 'imgflo':
+          return 'picture-o';
+        case 'sndflo':
+          return 'music';
         }
+      },
+      hostAttributes: { 'class': 'gpu' },
+      _computeIf: function (graph, runtime) {
+        return graph && !runtime;
+      },
+      _computeClass: function (icon) {
+        return 'fa fa-' + icon;
+      },
+      _computeClass2: function (online) {
+        return this.tokenList({ online: online });
+      },
+      _computeIf2: function (execution) {
+        return execution.running == false;
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

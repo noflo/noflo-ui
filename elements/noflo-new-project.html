@@ -1,47 +1,64 @@
 <link rel="import" href="noflo-type-selector.html">
-<polymer-element name="noflo-new-project" attributes="runtimes" class="modal-content" on-click="{{close}}">
-  <style>
-    :host {
-      background-color: red;
-    }
-  </style>
+<dom-module id="noflo-new-project">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
+    <div class="modal-container" on-click="bgClick">
       <h1>Create new project</h1>
       <form>
         <label>
           Project label
-          <input type="text" value="{{name}}" placeholder="My Cool Project" required>
+          <input type="text" value="{{name::input}}" placeholder="My Cool Project" required="">
         </label>
         <label>
           Project namespace
-          <input type="text" value="{{namespace}}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly>
+          <input type="text" value="{{namespace::input}}" placeholder="my-project" autocapitalize="off" autocorrect="off" readonly="">
         </label>
         <label>
           Primary Type
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
+          <a on-click="close">Cancel</a>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-new-project', {
-      projectId: '',
-      name: '',
-      namespace: '',
-      type: 'noflo-browser',
-      runtimes: null,
-      projects: null,
-      canSend: false,
+    Polymer({
+      is: 'noflo-new-project',
+      properties: {
+        canSend: {
+          type: Boolean,
+          value: false
+        },
+        name: {
+          type: String,
+          value: '',
+          observer: 'nameChanged'
+        },
+        namespace: {
+          type: String,
+          value: ''
+        },
+        projectId: {
+          type: String,
+          value: ''
+        },
+        projects: { value: null },
+        runtimes: {
+          value: null,
+          notify: true
+        },
+        type: {
+          type: String,
+          value: 'noflo-browser'
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       produceNamespace: function (namespace) {
         return namespace.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
@@ -81,11 +98,25 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' },
+      _computeClass: function (canSend) {
+        return this.tokenList({ disabled: !canSend });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

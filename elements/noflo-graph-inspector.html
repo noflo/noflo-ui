@@ -1,8 +1,7 @@
 <link rel="import" href="noflo-type-selector.html">
 
-<polymer-element name="noflo-graph-inspector" attributes="graph" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-graph-inspector">
+  <style>
       textarea {
         height: 144px;
       }
@@ -65,100 +64,138 @@
         cursor: default;
       }
     </style>
-    <link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css">
-    <link rel="stylesheet" href="../node_modules/codemirror/theme/mdn-like.css">
-    <link rel="stylesheet" href="../css/codemirror-noflo.css">
+  <link rel="import" type="css" href="../node_modules/codemirror/lib/codemirror.css">
+  <link rel="import" type="css" href="../node_modules/codemirror/theme/mdn-like.css">
+  <link rel="import" type="css" href="../css/codemirror-noflo.css">
+  <template>
 
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1 on-keydown="{{checkUpdateName}}" on-blur="{{updateName}}" contenteditable>{{graph.name}}</h1>
-      <template if="{{downloadUrl}}">
-        <a href="{{downloadUrl}}" id="download" download="{{graph.name}}.json"><i class="fa fa-download"></i></a>
+    <div class="modal-container" on-click="bgClick">
+      <h1 on-keydown="checkUpdateName" on-blur="updateName" contenteditable="">{{graph.name}}</h1>
+      <template is="dom-if" if="{{downloadUrl}}">
+        <a id="download" download="{{_computeDownload(graph)}}" href$="{{downloadUrl}}"><i class="fa fa-download"></i></a>
       </template>
-      <template if="{{isMain}}">
-      <p>Main graph of project {{project.name}}.</p>
+      <template is="dom-if" if="{{isMain}}">
+      <p>Main graph of project <span>{{project.name}}</span>.</p>
       </template>
-      <template if="{{inGraph.length}}">
+      <template is="dom-if" if="{{inGraph.length}}">
       <p>Used as subgraph in
-      <template repeat="{{parent in inGraph}}">
-        <a href="#project/{{project.id}}/{{parent.properties.id}}">
-          {{parent.name}}
+      <template is="dom-repeat" items="{{inGraph}}" as="parent">
+        <a href$="{{_computeHref(parent, project)}}">
+          <span>{{parent.name}}</span>
         </a>
       </template>
       .</p>
       </template>
       <ul class="tabs">
-        <li id="properties" on-click="{{setView}}" class="{{ {selected: view == 'properties' } | tokenList }}">Properties</li>
-        <template if="{{type == 'noflo-browser'}}">
-        <li id="html" on-click="{{setView}}" class="{{ {selected: view == 'html' } | tokenList }}">HTML</li>
+        <li id="properties" on-click="setView" class$="{{_computeClass(view)}}">Properties</li>
+        <template is="dom-if" if="{{_computeIf(type)}}">
+        <li id="html" on-click="setView" class$="{{_computeClass5(view)}}">HTML</li>
         </template>
-        <template if="{{spec}}">
-        <li id="tests" on-click="{{setView}}" class="{{ {selected: view == 'tests' } | tokenList }}">Tests</li>
+        <template is="dom-if" if="{{spec}}">
+        <li id="tests" on-click="setView" class$="{{_computeClass6(view)}}">Tests</li>
         </template>
       </ul>
-      <div class="{{ {hidden: view != 'properties' } | tokenList }}">
+      <div class$="{{_computeClass2(view)}}">
       <label>
         <span>Description</span>
-        <input type="text" value="{{description}}">
+        <input type="text" value="{{description::input}}">
       </label>
       <label>
         <span>Icon <a href="http://fontawesome.io/icons/" target="_blank"><i class="fa fa-question-circle"></i></a></span>
-        <input type="text" value="{{icon}}">
+        <input type="text" value="{{icon::input}}">
       </label>
       <label>
         <span>Type</span>
         <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
       </label>
       </div>
-      <div class="{{ {hidden: view != 'html' } | tokenList }}">
+      <div class$="{{_computeClass3(view)}}">
       <label id="html_editor">
         <span>Preview contents</span>
       </label>
       </div>
-      <div class="{{ {hidden: view != 'tests' } | tokenList }}">
+      <div class$="{{_computeClass4(view)}}">
       <label id="tests_editor">
         <span>Tests</span>
       </label>
       </div>
       <div class="toolbar">
-        <button on-click="{{save}}">Save</button>
-        <a on-click="{{close}}">Cancel</a>
-        <button class="delete" on-click="{{delete}}">Delete</button>
+        <button on-click="save">Save</button>
+        <a on-click="close">Cancel</a>
+        <button class="delete" on-click="delete">Delete</button>
       </div>
     </div>
   </template>
   <script>
-    Polymer('noflo-graph-inspector', {
-      description: '',
-      icon: '',
-      type: '',
-      preview: '',
-      view: 'properties',
-      graph: null,
-      project: null,
-      runtimes: [],
-      isMain: false,
-      inGraph: [],
-      downloadUrl: '',
+    Polymer({
+      is: 'noflo-graph-inspector',
+      properties: {
+        description: {
+          type: String,
+          value: ''
+        },
+        downloadUrl: {
+          type: String,
+          value: ''
+        },
+        graph: {
+          value: null,
+          notify: true
+        },
+        icon: {
+          type: String,
+          value: ''
+        },
+        inGraph: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        isMain: {
+          type: Boolean,
+          value: false
+        },
+        preview: {
+          type: String,
+          value: ''
+        },
+        project: { value: null },
+        runtimes: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        type: {
+          type: String,
+          value: ''
+        },
+        view: {
+          type: String,
+          value: 'properties',
+          observer: 'viewChanged'
+        }
+      },
       checkUpdateName: function (event, detail, sender) {
-        if (event.keyCode===13) { // Enter
+        if (event.keyCode === 13) {
+          // Enter
           event.preventDefault();
           this.updateName(event, detail, sender);
         }
       },
       updateName: function (event, detail, sender) {
-        this.graph.name = sender.textContent;
+        this.set('graph.name', Polymer.dom(sender).textContent);
       },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
         if (!this.graph) {
           return;
         }
-
         this.description = this.graph.properties.description;
         this.icon = this.graph.properties.icon || '';
         this.type = this.graph.properties.environment.type;
         this.view = 'properties';
-
         this.inGraph = [];
         this.isMain = false;
         if (this.project) {
@@ -205,9 +242,7 @@
           delete graph.properties.project;
           delete graph.properties.id;
         }
-        var blob = new Blob([JSON.stringify(graph, null, 4)], {
-          type: "application/json"
-        });
+        var blob = new Blob([JSON.stringify(graph, null, 4)], { type: 'application/json' });
         try {
           this.downloadUrl = URL.createObjectURL(blob);
         } catch (e) {
@@ -215,7 +250,7 @@
         }
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       viewChanged: function () {
         if (this.view === 'html' && this.htmlEditor) {
@@ -257,12 +292,13 @@
         if (language === 'coffeescript' || language === 'javascript' || language === 'yaml') {
           return language;
         } else if (language === 'c') {
-          return 'text/x-csrc';  
+          return 'text/x-csrc';
         } else if (language === 'c++') {
           return 'text/x-c++src';
         } else if (language === 'supercollider') {
-          return 'text/x-stsrc'; // smalltalk-like
+          return 'text/x-stsrc';
         }
+        // smalltalk-like
         return 'clike';
       },
       save: function () {
@@ -271,16 +307,16 @@
         }
         var env = JSON.parse(JSON.stringify(this.graph.properties.environment));
         if (this.htmlEditor) {
-            this.preview = this.htmlEditor.getValue();
-            env.content = this.preview;
+          this.preview = this.htmlEditor.getValue();
+          env.content = this.preview;
         }
         if (this.testsEditor && this.spec) {
-            var specCode = this.testsEditor.getValue();
-            if (specCode !== this.spec.code) {
-              this.spec.code = specCode;
-              this.spec.changed = true;
-              this.fire('specschanged', this.spec);
-            }
+          var specCode = this.testsEditor.getValue();
+          if (specCode !== this.spec.code) {
+            this.set('spec.code', specCode);
+            this.set('spec.changed', true);
+            this.fire('specschanged', this.spec);
+          }
         }
         env.type = this.type;
         this.graph.setProperties({
@@ -303,14 +339,52 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
       setView: function (event, details, sender) {
         this.view = sender.id;
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' },
+      _computeClass: function (view) {
+        return this.tokenList({ selected: view == 'properties' });
+      },
+      _computeIf: function (type) {
+        return type == 'noflo-browser';
+      },
+      _computeClass2: function (view) {
+        return this.tokenList({ hidden: view != 'properties' });
+      },
+      _computeClass3: function (view) {
+        return this.tokenList({ hidden: view != 'html' });
+      },
+      _computeClass4: function (view) {
+        return this.tokenList({ hidden: view != 'tests' });
+      },
+      _computeDownload: function (graph) {
+        return graph.name + '.json';
+      },
+      _computeHref: function (parent, project) {
+        return '#project/' + project.id + '/' + parent.properties.id;
+      },
+      _computeClass5: function (view) {
+        return this.tokenList({ selected: view == 'html' });
+      },
+      _computeClass6: function (view) {
+        return this.tokenList({ selected: view == 'tests' });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

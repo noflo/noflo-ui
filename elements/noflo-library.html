@@ -1,39 +1,48 @@
-<polymer-element name="noflo-library" attributes="editor">
+<dom-module id="noflo-library">
   <script>
-    Polymer('noflo-library', {
-      search: null,
-      editor: null,
-      graphs: [],
-      project: null,
+    Polymer({
+      is: 'noflo-library',
+      properties: {
+        editor: {
+          value: null,
+          notify: true
+        },
+        graphs: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        project: { value: null },
+        search: {
+          value: null,
+          observer: 'searchChanged'
+        }
+      },
       addNode: function (component) {
         var componentName = component.name;
-        var num = 60466176; // 36^5
+        var num = 60466176;
+        // 36^5
         num = Math.floor(Math.random() * num);
         var id = componentName + '_' + num.toString(36);
-
         // TODO fix with pan
         var pan = this.editor.$.graph.getPan();
         var scale = this.editor.$.graph.getScale();
-
         var graph = this.editor.graph;
-
         graph.startTransaction('addnode');
-
         var nameParts = componentName.split('/');
         graph.addNode(id, componentName, {
           label: nameParts[nameParts.length - 1],
           x: (-pan[0] + 334) / scale,
           y: (-pan[1] + 100) / scale
         });
-
         // Add IIPs for default values
-        component.inports.forEach( function (port) {
+        component.inports.forEach(function (port) {
           var value = port.default;
           if (value !== undefined) {
             graph.addInitial(value, id, port.name);
           }
         });
-
         graph.endTransaction('addnode');
       },
       searchChanged: function () {
@@ -87,7 +96,6 @@
           }
           return true;
         }.bind(this));
-
         // timeout required because events fired by polymer that are received
         // by graph router need to clean up before the graph receives another event
         window.setTimeout(function () {
@@ -106,4 +114,4 @@
       }
     });
   </script>
-</polymer-element>
+</dom-module>

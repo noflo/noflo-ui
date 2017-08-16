@@ -1,6 +1,5 @@
-<polymer-element name="noflo-project-inspector" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-project-inspector">
+  <style>
       button.delete {
         position: absolute;
         right: 36px;
@@ -8,59 +7,85 @@
         color: hsla( 0, 98%, 46%, .8) !important;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1>{{project.name}} settings</h1>
-      <template if="{{errorText}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
+      <h1><span>{{project.name}}</span> settings</h1>
+      <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
       <form>
-        <template if="{{!$NOFLO_OFFLINE_MODE}}">
+        <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
           <label>
             <span>GitHub repository</span>
-            <input type="text" value="{{repo}}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required>
+            <input type="text" value="{{repo::input}}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required="">
           </label>
         </template>
         <label>
           <span>Project label</span>
-          <input type="text" value="{{name}}" placeholder="My Cool Project" required>
+          <input type="text" value="{{name::input}}" placeholder="My Cool Project" required="">
         </label>
         <label>
           <span>Project namespace</span>
-          <input type="text" value="{{namespace}}" placeholder="my-cool-project" required>
+          <input type="text" value="{{namespace::input}}" placeholder="my-cool-project" required="">
         </label>
         <label>
           <span>Main graph</span>
-          <select name="type" value="{{main}}">
-            <template repeat="{{graph in project.graphs}}">
+          <select name="type" value="{{main::input}}">
+            <template is="dom-repeat" items="{{project.graphs}}" as="graph">
             <option value="{{graph.properties.id}}">{{graph.name}}</option>
             </template>
           </select>
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}">Save</button>
-          <a on-click="{{close}}">Cancel</a>
-          <template if="{{!$NOFLO_OFFLINE_MODE}}">
+          <button on-click="send">Save</button>
+          <a on-click="close">Cancel</a>
+          <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
             <a href="https://github.com/new" target="_blank">New Repository</a>
           </template>
-          <button class="delete" on-click="{{delete}}">Delete</button>
+          <button class="delete" on-click="delete">Delete</button>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-project-inspector', {
-      token: '',
-      errorText: '',
-      originalRepo: '',
-      repo: '',
-      name: '',
-      namespace: '',
-      main: '',
+    Polymer({
+      is: 'noflo-project-inspector',
+      properties: {
+        errorText: {
+          type: String,
+          value: ''
+        },
+        main: {
+          type: String,
+          value: ''
+        },
+        name: {
+          type: String,
+          value: ''
+        },
+        namespace: {
+          type: String,
+          value: ''
+        },
+        originalRepo: {
+          type: String,
+          value: ''
+        },
+        project: { observer: 'projectChanged' },
+        repo: {
+          type: String,
+          value: ''
+        },
+        token: {
+          type: String,
+          value: ''
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       projectChanged: function () {
         this.originalRepo = this.project.repo;
@@ -123,8 +148,7 @@
         this.errorText = '';
         this.createProject(function (err) {
           if (err) {
-            this.errorText = err +
-                '\nNote: You must create new repositories manually using [New Repository]';
+            this.errorText = err + '\nNote: You must create new repositories manually using [New Repository]';
             return;
           }
           this.updateProject();
@@ -143,11 +167,13 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      hostAttributes: { 'class': 'modal-content' },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>
