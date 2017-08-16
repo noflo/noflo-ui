@@ -52,10 +52,9 @@ module.exports = ->
           'browser/noflo-ui.js': ['./app/main.js']
 
     # Vulcanization compiles the Polymer elements into a HTML file
-    vulcanize:
-      app:
-        files:
-          'index.html': 'index.dist.html'
+    exec:
+      vulcanize:
+        command: './node_modules/.bin/polymer-bundler --inline-css --strip-comments index.dist.html > index.html'
 
     # CoffeeScript compilation of tests
     coffee:
@@ -423,7 +422,7 @@ module.exports = ->
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-noflo-browser'
-  @loadNpmTasks 'grunt-vulcanize'
+  @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
@@ -456,7 +455,7 @@ module.exports = ->
     'noflo_browser'
     'copy:themes'
     'uglify'
-    'vulcanize'
+    'exec:vulcanize'
     'string-replace:app'
     'compress'
   ]
