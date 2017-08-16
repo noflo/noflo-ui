@@ -238,7 +238,9 @@
           type: Array,
           value: function () {
             return [];
-          }
+          },
+          notify: true,
+          observer: 'searchGraphResultsChanged'
         },
         searchLibrary: {
           type: Boolean,
@@ -248,7 +250,9 @@
           type: Array,
           value: function () {
             return [];
-          }
+          },
+          notify: true,
+          observer: 'searchLibraryResultsChanged'
         }
       },
       componentChanged: function () {
@@ -297,20 +301,14 @@
           }
         }.bind(this));
       },
-      libraryResults: function (result) {
-        this.set('searchLibraryResults.length', 0);
-        for (var i = 0; i < result.length; i++) {
-          this.searchLibraryResults.push(result[i]);
-        }
+      libraryResults: function (results) {
+        this.set('searchLibraryResults', []);
+        this.set('searchLibraryResults', results);
       },
       graphResults: function (result) {
-        this.searchGraphResults.push(result);
+        this.push('searchGraphResults', result);
       },
       attached: function () {
-        this.componentsObserver = new ArrayObserver(this.searchLibraryResults);
-        this.componentsObserver.open(this.libraryResultsModified.bind(this));
-        this.processesObserver = new ArrayObserver(this.searchGraphResults);
-        this.processesObserver.open(this.graphResultsModified.bind(this));
         this.blur();
       },
       focus: function () {
@@ -339,15 +337,9 @@
         this.blur();
       },
       clearResults: function () {
-        this.set('searchGraphResults.length', 0);
-        this.set('searchLibraryResults.length', 0);
+        this.set('searchGraphResults', []);
+        this.set('searchLibraryResults', []);
       },
-      // while (this.searchGraphResults.length) {
-      //   this.searchGraphResults.pop();
-      // }
-      // while (this.searchLibraryResults.length) {
-      //   this.searchLibraryResults.pop();
-      // }
       clearSearch: function () {
         if (this.resultsCard) {
           Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
@@ -379,20 +371,23 @@
           ga('send', 'event', 'search', 'input', 'newSearch');
         }
         if (this.resultsCard) {
-          this.set('resultsCard.children' + ('.' + 0) + '.search', this.search);
+          this.set('resultsCard.children.0.search', this.search);
           this.set('resultsCard.search', this.search);
         }
         var event = this.searchLibrary ? 'search:library' : 'search:graph';
         this.fire(event, { search: this.search });
       },
-      libraryResultsModified: function () {
-        if (!this.searchLibrary)
+      searchLibraryResultsChanged: function () {
+        if (!this.searchLibrary) {
           return;
+        }
         if (this.resultsCard && this.resultsCard.type !== 'noflo-search-library-results') {
           Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
           this.resultsCard = null;
         }
         if (this.resultsCard || this.search === null) {
+          this.set('resultsCard.children.0.results', []);
+          this.set('resultsCard.children.0.results', this.searchLibraryResults);
           return;
         }
         if (this.searchLibraryResults.length === 0) {
@@ -414,14 +409,17 @@
         Polymer.dom(this.resultsCard).appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
-      graphResultsModified: function () {
-        if (this.searchLibrary)
+      searchGraphResultsChanged: function () {
+        if (this.searchLibrary) {
           return;
+        }
         if (this.resultsCard && this.resultsCard.type !== 'noflo-search-graph-results') {
           Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
           this.resultsCard = null;
         }
         if (this.resultsCard || this.search === null) {
+          this.set('resultsCard.children.0.results', []);
+          this.set('resultsCard.children.0.results', this.searchGraphResults);
           return;
         }
         if (this.searchGraphResults.length === 0) {
