@@ -11,7 +11,7 @@ var exported = {
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),
   'noflo-ui/collections': require('../src/collections.coffee'),
   'noflo-ui/projects': require('../src/projects.coffee'),
-  'the-graph': require('the-graph'),
+  'the-graph': require('the-graph')
 };
 
 window.TheGraph = exported['the-graph']; // expected by the-graph Polymer elements
