@@ -88,11 +88,11 @@
             notify: true
           },
           offsetX: {
-            value: null,
+            value: 0,
             notify: true
           },
           offsetY: {
-            value: null,
+            value: 0,
             notify: true
           },
           pan: {
@@ -192,7 +192,7 @@
             ReactDOM.unmountComponentAtNode(this.$.svgcontainer);
           }
           // Setup app
-          this.set('$.svgcontainer.innerHTML', '');
+          Polymer.dom(this.$.svgcontainer).innerHTML = '';
           this.appView = ReactDOM.render(window.TheGraph.App({
             graph: this.graph,
             width: this.width,

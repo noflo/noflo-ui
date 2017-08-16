@@ -2,7 +2,7 @@
 
 <dom-module id="the-graph-editor">
   <template>
-    <the-graph id="graph" name="{{graph.properties.name}}" graph="{{graph}}" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selectednodes="{{selectedNodes}}" errornodes="{{errorNodes}}" selectededges="{{selectedEdges}}" animatededges="{{animatedEdges}}" displayselectiongroup="{{displaySelectionGroup}}" forceselection="{{forceSelection}}">
+    <the-graph id="graph" name="{{graph.properties.name}}" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selectednodes="{{selectedNodes}}" errornodes="{{errorNodes}}" selectededges="{{selectedEdges}}" animatededges="{{animatedEdges}}" displayselectiongroup="{{displaySelectionGroup}}" forceselection="{{forceSelection}}">
     </the-graph>
   </template>
   <script>
@@ -51,6 +51,7 @@
           },
           graph: {
             value: null,
+            notify: true,
             observer: 'graphChanged'
           },
           grid: {
@@ -181,12 +182,14 @@
         },
         graphChanged: function () {
           if (!this.graph) {
+            this.set('$.graph.graph', this.graph);
             return;
           }
           if (typeof this.graph.addNode !== 'function') {
             throw new Error('.graph property of the-graph-editor must be a fbp-graph instance (since the-graph 0.8)');
           }
           this.buildInitialLibrary(this.graph);
+          this.set('$.graph.graph', this.graph);
         },
         buildInitialLibrary: function (graph) {
           /*if (Object.keys(this.$.graph.library).length !== 0) {
