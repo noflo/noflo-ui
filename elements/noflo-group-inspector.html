@@ -69,6 +69,7 @@
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
         this.name = this.group;
         this.description = this.groupdescription;
       },
@@ -104,7 +105,6 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' }
     });
   </script>

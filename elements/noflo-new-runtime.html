@@ -132,6 +132,7 @@
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
@@ -154,7 +155,6 @@
           this.fire('addRuntime', event.detail);
         }.bind(this));
       },
-      hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' },
       _computeClass: function (runtime) {
         return 'fa fa-' + runtime.icon;

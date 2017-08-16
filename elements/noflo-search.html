@@ -310,6 +310,7 @@
         this.push('searchGraphResults', result);
       },
       attached: function () {
+        Polymer.dom(this).classList.add('gpu');
         this.blur();
       },
       focus: function () {
@@ -488,7 +489,6 @@
         }.bind(this));
         Polymer.dom(document.body).appendChild(this.componentInspector);
       },
-      hostAttributes: { 'class': 'gpu' },
       _computeIf: function (component, readonly) {
         return !readonly && (!component || !component.name);
       },

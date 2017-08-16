@@ -95,6 +95,7 @@
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
         var type = this.graph.properties.environment.type;
         // Insert button to launch new runtime for noflo-browser
         var launchNewBrowserRuntime = {
@@ -202,7 +203,6 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' }
     });
   </script>

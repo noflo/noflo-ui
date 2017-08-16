@@ -135,6 +135,9 @@
           value: ''
         }
       },
+      attached: function () {
+        Polymer.dom(this).classList.add('the-card-content');
+      },
       detached: function () {
         if (this.frameReq) {
           window.cancelAnimationFrame(this.frameReq);
@@ -219,7 +222,6 @@
         }
         this.set('$.events.scrollTop', this.$.events.scrollHeight);
       },
-      hostAttributes: { 'class': 'the-card-content' },
       _computeClass: function (route) {
         return 'connection route' + route;
       }

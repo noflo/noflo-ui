@@ -91,6 +91,7 @@
         },
         attached: function () {
           Polymer.dom(document.getElementById('container')).classList.add('blur');
+          Polymer.dom(this).classList.add('modal-content');
         },
         detached: function () {
           Polymer.dom(document.getElementById('container')).classList.remove('blur');
@@ -135,7 +136,6 @@
           this.fire('new', runtime);
           this.close();
         },
-        hostAttributes: { 'class': 'modal-content' },
         listeners: { click: 'close' },
         _computeRepeat: function (availableTypes, t) {
           return t in availableTypes;

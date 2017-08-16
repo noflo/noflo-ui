@@ -192,6 +192,7 @@
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
         if (!this.graph) {
           return;
         }
@@ -350,7 +351,6 @@
       setView: function (event) {
         this.view = event.currentTarget.id;
       },
-      hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' },
       _computeClass: function (view) {
         return this.tokenList({ selected: view == 'properties' });

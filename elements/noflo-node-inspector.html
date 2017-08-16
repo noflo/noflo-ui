@@ -430,6 +430,9 @@
           value: 20
         }
       },
+      attached: function () {
+        Polymer.dom(this).classList.add('the-card-content');
+      },
       nodeChanged: function () {
         this.updatePorts();
         this.label = this.node.metadata.label;
@@ -689,7 +692,6 @@
         this.set('$.errorEvents.scrollTop', this.$.errorEvents.scrollHeight);
         this.lastErrorLog = this.errorLog.length;
       },
-      hostAttributes: { 'class': 'the-card-content' },
       _computeIf: function (node) {
         return node.label != node.component;
       },

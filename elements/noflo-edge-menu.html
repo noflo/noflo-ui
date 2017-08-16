@@ -149,6 +149,10 @@
           value: false
         }
       },
+      attached: function () {
+        Polymer.dom(this).classList.add('the-card-content');
+        Polymer.dom(this).classList.add('sticky-head');
+      },
       edgesChanged: function () {
         if (!this.edges.length) {
           return;
@@ -205,7 +209,6 @@
         this.graph.endTransaction('changesecure');
         this.secure = secure;
       },
-      hostAttributes: { 'class': 'the-card-content sticky-head' },
       _computeIf: function (edges) {
         return edges.length > 1;
       },

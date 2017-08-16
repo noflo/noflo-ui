@@ -130,6 +130,7 @@
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
@@ -174,7 +175,6 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' },
       _computeClass: function (hasOp) {
         return this.tokenList({ disabled: !hasOp });

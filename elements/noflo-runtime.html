@@ -207,6 +207,9 @@
           value: false
         }
       },
+      attached: function () {
+        Polymer.dom(this).classList.add('gpu');
+      },
       clearRuntime: function () {
         for (var i = 0; i < this.runtimes.length; i++) {
           if (this.runtimes[i].graph === this.graph.properties.id) {
@@ -459,7 +462,6 @@
           return 'music';
         }
       },
-      hostAttributes: { 'class': 'gpu' },
       _computeIf: function (graph, runtime) {
         return graph && !runtime;
       },
