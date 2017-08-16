@@ -185,7 +185,7 @@
         }
       },
       updateName: function (event) {
-        this.set('graph.name', Polymer.dom(event.target).textContent);
+        this.set('graph.name', Polymer.dom(event.currentTarget).textContent);
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
@@ -345,7 +345,7 @@
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
       setView: function (event) {
-        this.view = event.target.id;
+        this.view = event.currentTarget.id;
       },
       hostAttributes: { 'class': 'modal-content' },
       listeners: { click: 'close' },
