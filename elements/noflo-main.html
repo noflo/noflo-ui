@@ -485,7 +485,7 @@
         this.fire('fetchRemote', this.gridToken);
       },
       githubProjects: function (projects) {
-        this.remoteProjects = [];
+        this.set('remoteProjects', []);
         projects.forEach(function (remoteProject) {
           for (var i = 0; i < this.localProjects.length; i++) {
             if (this.localProjects[i].repo === remoteProject.repo) {
@@ -497,7 +497,14 @@
         }.bind(this));
       },
       projectsChanged: function () {
+        // Add projects to local
         this.projects.forEach(this.checkProject.bind(this));
+        // Remove missing ones from localProjects
+        this.localProjects.forEach(function (local) {
+          if (!this.projects.indexOf(local)) {
+            this.splice('localProjects', this.localProjects.indexOf(local), 1);
+          };
+        }.bind(this));
       },
       runtimesChanged: function () {
         this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
@@ -637,7 +644,6 @@
           event.detail.main = graphId;
           this.fire('newgraph', graph);
           this.fire('newproject', event.detail);
-          this.checkProject(event.detail);
         }.bind(this));
       },
       newRepository: function (event) {
@@ -713,6 +719,7 @@
         }
         if (this.localProjects.indexOf(project) === -1) {
           this.push('localProjects', project);
+          /*
           this.localProjects.sort(function (a, b) {
             if (!a.name) {
               a.name = a.id || 'Unknown project';
@@ -722,6 +729,7 @@
             }
             return a.name.localeCompare(b.name);
           });
+          */
         }
       },
       _computeIf: function (projectList) {
@@ -731,6 +739,9 @@
         return projectList === 'github';
       },
       _computeIf3: function (project) {
+        if (!project) {
+          return false;
+        }
         return project.graphs.length || project.components.length;
       },
       _computeIf4: function (project) {
