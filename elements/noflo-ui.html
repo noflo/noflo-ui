@@ -347,6 +347,18 @@
           if (this.clearContextFirst.indexOf(key) !== -1) {
             // Clear arrays first so Polymer knows there are changes
             this.set('ctx' + ('.' + key), context[key].slice(0));
+            if (key === 'projects') {
+              // Projects are complex objects that need a full notify
+              for (var i = 0; i < this.ctx.projects.length; i++) {
+                var project = this.ctx.projects[i];
+                this.set('ctx.projects' + ('.' + i), {});
+                this.set('ctx.projects' + ('.' + i), project);
+                if (this.ctx.project && this.ctx.project.id === project.id) {
+                  this.set('ctx.project', {});
+                  this.set('ctx.project', project);
+                }
+              }
+            }
             continue;
           }
           this.set('ctx' + ('.' + key), context[key]);
