@@ -166,7 +166,7 @@
       clear: function () {
         this.log.clear();
         this.lastlog = 0;
-        this.set('$.events.innerHTML', '');
+        Polymer.dom(this.$.events).innerHTML = '';
       },
       animate: function () {
         if (!this.log) {
@@ -220,7 +220,7 @@
         while (this.$.events.childElementCount > this.showlogs) {
           Polymer.dom(this.$.events).removeChild(Polymer.dom(this.$.events).firstChild);
         }
-        this.set('$.events.scrollTop', this.$.events.scrollHeight);
+        Polymer.dom('$.events').scrollTop = this.$.events.scrollHeight;
       },
       _computeClass: function (route) {
         return 'connection route' + route;
