@@ -217,7 +217,7 @@
             this.fire('changed', this.runtimes[i]);
           }
         }
-        this.runtime = null;
+        this.set('runtime', null);
         this.graphChanged();
       },
       graphChanged: function () {
@@ -237,10 +237,14 @@
         }
       },
       runtimeChanged: function () {
-        this.online = false;
+        if (this.runtime && this.runtime.isConnected && this.runtime.isConnected()) {
+          this.set('online', true);
+        } else {
+          this.set('online', false);
+        }
         this.set('execution.running', false);
         this.set('execution.label', 'not started');
-        this.icon = this.getRuntimeIcon(this.runtime);
+        this.set('icon', this.getRuntimeIcon(this.runtime));
         if (this.panel) {
           this.set('panel.open', false);
         }
@@ -249,7 +253,6 @@
         }
         this.runtime.setMain(this.graph);
         if (this.graph && this.runtime.isConnected && this.runtime.isConnected()) {
-          this.online = true;
           this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
         }
         this.runtime.on('execution', function (status) {
@@ -267,7 +270,7 @@
           }
         }.bind(this));
         this.runtime.on('status', function (status) {
-          this.online = status.online;
+          this.set('online', status.online);
           if (!this.online) {
             this.hideCard();
             this.set('execution.running', false);
