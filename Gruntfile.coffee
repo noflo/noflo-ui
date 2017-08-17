@@ -369,7 +369,7 @@ module.exports = ->
     connect:
       server:
         options:
-          port: 9999
+          port: 9998
           hostname: '*' # Allow connection from mobile
           livereload: false
 
@@ -392,18 +392,18 @@ module.exports = ->
       unit:
         options:
           reporter: 'spec'
-          urls: ['http://localhost:9999/spec/tests.html']
+          urls: ['http://localhost:9998/spec/tests.html']
           failWithOutput: true
       browser:
         options:
           reporter: 'spec'
-          urls: ['http://localhost:9999/spec/browser/tests.html']
+          urls: ['http://localhost:9998/spec/browser/tests.html']
 
     # BDD tests on browser
     'saucelabs-mocha':
       all:
         options:
-          urls: ['http://127.0.0.1:9999/spec/browser/tests.html']
+          urls: ['http://127.0.0.1:9998/spec/browser/tests.html']
           browsers: [
             browserName: 'googlechrome'
             version: '55'
