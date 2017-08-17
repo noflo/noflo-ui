@@ -350,7 +350,8 @@
         for (var key in context) {
           if (this.clearContextFirst.indexOf(key) !== -1) {
             // Clear arrays first so Polymer knows there are changes
-            this.set('ctx' + ('.' + key), []);
+            this.set('ctx' + ('.' + key), context[key].slice(0));
+            continue;
           }
           this.set('ctx' + ('.' + key), context[key]);
         }
