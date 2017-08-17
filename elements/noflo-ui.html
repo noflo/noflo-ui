@@ -244,7 +244,6 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.splice('ctx.projects', this.ctx.projects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.project.addEventListener('hash', function (event) {
           this.emitEvent('application:hash', event.detail);
@@ -261,7 +260,6 @@
             this.emitEvent('storage:delete:spec', spec);
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
-          this.splice('ctx.projects', this.ctx.projects.indexOf(event.detail), 1);
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
@@ -283,14 +281,10 @@
         }.bind(this));
         this.$.search.addEventListener('deleteGraph', function (event) {
           var project = this.ctx.project;
-          if (project && project.graphs.indexOf(event.detail) !== -1) {
-            this.splice('ctx.project.graphs', project.graphs.indexOf(event.detail), 1);
-          }
           this.emitEvent('storage:delete:graph', event.detail);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.splice('ctx.projects', this.ctx.projects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {
@@ -303,15 +297,10 @@
             return;
           }
           var component = event.detail;
-          var index = project.components.indexOf(component);
-          if (index !== -1) {
-            this.splice('ctx.project.components', index, 1);
-          }
           this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
-            this.splice('ctx.projects', this.ctx.projects.indexOf(project), 1);
             // Go home
             this.emitEvent('application:hash', []);
           } else {
