@@ -119,7 +119,7 @@
         this.project.graphs.forEach(function (graph) {
           if (graph.id === this.main && graph.properties.environment.runtime) {
             type = graph.properties.environment.runtime;
-            this.project.mainGraph = graph;
+            this.set('project.mainGraph', graph);
           }
         }.bind(this));
         var type = this.project.type;
