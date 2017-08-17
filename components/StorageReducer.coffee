@@ -79,7 +79,18 @@ exports.getComponent = ->
       when 'storage:stored:runtime'
         state = {}
         state.runtimes = data.state.runtimes or []
-        collections.addToList state.runtimes, data.payload
+        collections.addToList state.runtimes, data.payload, (a, b) ->
+          unless a.seen
+            return 1
+          unless b.seen
+            return -1
+          aSeen = new Date a.seen
+          bSeen = new Date b.seen
+          if a.seen > b.seen
+            return -1
+          if b.seen > a.seen
+            return 1
+          0
         out.out.send state
         do callback
       else

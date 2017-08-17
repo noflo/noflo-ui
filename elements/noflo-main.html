@@ -720,17 +720,6 @@
         }
         if (this.localProjects.indexOf(project) === -1) {
           this.push('localProjects', project);
-          /*
-          this.localProjects.sort(function (a, b) {
-            if (!a.name) {
-              a.name = a.id || 'Unknown project';
-            }
-            if (!b.name) {
-              b.name = b.id || 'Unknown project';
-            }
-            return a.name.localeCompare(b.name);
-          });
-          */
         }
       },
       _computeIf: function (projectList) {

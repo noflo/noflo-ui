@@ -1,4 +1,4 @@
-exports.addToList = (list, entity) ->
+exports.addToList = (list, entity, sort) ->
   found = false
   for existing in list
     if existing is entity
@@ -13,6 +13,14 @@ exports.addToList = (list, entity) ->
       break
   return if found
   list.push entity
+  unless sort
+    # Keep lists in alphabetical order
+    sort = (a, b) ->
+      aName = a.properties?.name or a.name or a.id or 'Unknown'
+      bName = b.properties?.name or b.name or b.id or 'Unknown'
+      aName.localeCompare bName
+  # Sort the list on desired criteria
+  list.sort sort
   return
 
 exports.removeFromList = (list, entity) ->
