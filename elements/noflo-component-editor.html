@@ -97,49 +97,49 @@
           this.set('style.display', 'none');
           return;
         }
-        this.spec = null;
+        this.set('spec', null);
         if (this.project) {
           this.project.specs.forEach(function (spec) {
             if (spec.name === this.component.name) {
-              this.spec = spec;
+              this.set('spec', spec);
             }
           }.bind(this));
           if (!this.spec) {
-            this.spec = {
+            this.set('spec', {
               name: this.component.name,
               changed: false,
               code: '',
               language: 'yaml',
               project: this.component.project,
               type: 'spec'
-            };
+            });
             this.push('project.specs', this.spec);
           }
         }
         this.set('style.display', 'block');
-        this.set('$.code_editor.innerHTML', '');
+        Polymer.dom(this.$.code_editor).innerHTML = '';
         if (!this.component.code) {
           this.set('component.code', this.getExampleCode());
         }
         codeOptions = this.getMirrorOptions(this.component, this.component.code);
         this.codeEditor = CodeMirror(this.$.code_editor, codeOptions);
         this.codeEditor.on('change', function () {
-          this.component.code = this.codeEditor.getValue();
-          this.component.changed = true;
+          this.set('component.code', this.codeEditor.getValue());
+          this.set('component.changed', true);
           this.debouncedComponentChange();
         }.bind(this));
         this.setSize();
       },
       specChanged: function () {
-        this.set('$.tests_editor.innerHTML', '');
+        Polymer.dom(this.$.tests_editor).innerHTML = '';
         if (!this.spec) {
           return;
         }
         testOptions = this.getMirrorOptions(this.spec, this.spec.code);
         this.testsEditor = CodeMirror(this.$.tests_editor, testOptions);
         this.testsEditor.on('change', function () {
-          this.spec.code = this.testsEditor.getValue();
-          this.spec.changed = true;
+          this.set('spec.code', this.testsEditor.getValue());
+          this.set('spec.changed', true);
           this.debouncedSpecChange();
         }.bind(this));
         this.setSize();
