@@ -703,7 +703,7 @@
               this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', graph.properties.id);
               this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', graph);
             }
-          });
+          }.bind(this));
           if (!project.main && project.graphs.length) {
             var main = project.graphs[0];
             this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', main.properties.id);
