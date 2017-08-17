@@ -282,6 +282,9 @@
         this.$.search.addEventListener('deleteGraph', function (event) {
           var project = this.ctx.project;
           this.emitEvent('storage:delete:graph', event.detail);
+          if (project && project.graphs.indexOf(event.detail) !== -1) {
+            this.splice('ctx.project.graphs', project.graphs.indexOf(event.detail), 1);
+          }
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
@@ -297,6 +300,10 @@
             return;
           }
           var component = event.detail;
+          var index = project.components.indexOf(component);
+          if (index !== -1) {
+            this.splice('ctx.project.components', index, 1);
+          }
           this.emitEvent('storage:delete:component', component);
           if (!project.graphs.length && !project.components.length) {
             // Empty project, remove
