@@ -189,9 +189,9 @@
             }
             this.ensureLog(id);
             var inspector = document.createElement('noflo-edge-inspector');
-            inspector.edge = edge;
             inspector.log = this.logs[id];
             inspector.graph = this.currentgraph;
+            inspector.edge = edge;
             this.edgeInspectors[id] = document.createElement('the-card');
             this.edgeInspectors[id].type = 'edge-inspector';
             Polymer.dom(this.edgeInspectors[id]).appendChild(inspector);

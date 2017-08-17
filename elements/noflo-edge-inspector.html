@@ -220,7 +220,7 @@
         while (this.$.events.childElementCount > this.showlogs) {
           Polymer.dom(this.$.events).removeChild(Polymer.dom(this.$.events).firstChild);
         }
-        Polymer.dom('$.events').scrollTop = this.$.events.scrollHeight;
+        Polymer.dom(this.$.events).scrollTop = this.$.events.scrollHeight;
       },
       _computeClass: function (route) {
         return 'connection route' + route;
