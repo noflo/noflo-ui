@@ -218,12 +218,6 @@
         }
         this.fire('component', this.component);
       },
-      clear: function () {
-        this.project = null;
-        this.splice('graphs', 0, this.graphs.length);
-        this.splice('nodes', 0, this.nodes.length);
-        this.splice('edges', 0, this.edges.length);
-      },
       group: function (graph, itemKey, item) {
         if (this.readonly) {
           return;
