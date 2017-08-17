@@ -78,13 +78,13 @@
     <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}"></noflo-library>
-    <noflo-context id="context" nodes="{{ctx.nodes}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}"></noflo-context>
+    <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}"></noflo-context>
     <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatibleRuntimes}}" graph="{{ctx.graph}}"></noflo-runtime>
     <noflo-journal id="journal" db="{{ctx.db}}" graph="{{ctx.graph}}"></noflo-journal>
     <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}" user="{{ctx.user}}"></noflo-project>
-    <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" graph="{{ctx.graph}}"></noflo-packets>
+    <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" currentgraph="{{ctx.graph}}"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
     <button id="asproject" on-click="editAsProject">Edit as project</button>
   </template>
