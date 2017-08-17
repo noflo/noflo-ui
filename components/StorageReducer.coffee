@@ -56,15 +56,6 @@ exports.getComponent = ->
           id: data.payload
         out.out.send state
         do callback
-      when 'storage:removed:graph'
-        state = {}
-        state.projects = data.state.projects or []
-        project = findProject data.payload, state.projects
-        return callback() unless project
-        collections.removeFromList project.graphs,
-          id: data.payload
-        out.out.send state
-        do callback
       when 'storage:stored:graph'
         state = {}
         state.projects = data.state.projects or []
@@ -72,6 +63,16 @@ exports.getComponent = ->
         unless project
           return callback new Error "No project found for graph #{data.payload.properties.id}"
         collections.addToList project.graphs, data.payload
+        out.out.send state
+        do callback
+      when 'storage:removed:graph'
+        state = {}
+        state.projects = data.state.projects or []
+        project = findProject data.payload, state.projects
+        return callback() unless project
+        collections.removeFromList project.graphs,
+          properties:
+            id: data.payload
         out.out.send state
         do callback
       when 'storage:stored:component'

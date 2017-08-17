@@ -4,7 +4,9 @@ exports.addToList = (list, entity, sort) ->
     if existing is entity
       # Entity is already in list as-is, skip
       return
-    if existing.id is entity.id
+    existingId = existing.properties?.id or existing.id
+    entityId = entity.properties?.id or entity.id
+    if existingId is entityId
       # id match, replace
       for key of entity
         continue unless entity.hasOwnProperty(key)
@@ -29,7 +31,9 @@ exports.removeFromList = (list, entity) ->
     if existing is entity
       index = idx
       continue
-    if existing.id is entity.id
+    existingId = existing.properties?.id or existing.id
+    entityId = entity.properties?.id or entity.id
+    if existingId is entityId
       index = idx
       continue
   return if index is null
