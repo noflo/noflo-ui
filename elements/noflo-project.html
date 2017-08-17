@@ -293,12 +293,12 @@
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('updated', function (event) {
           Object.keys(event.detail).forEach(function (property) {
-            this.project[property] = event.detail[property];
+            this.set('project' + ('.' + property), event.detail[property]);
           }.bind(this));
           if (this.project.repo) {
-            delete this.project.gist;
+            this.set('project.gist', null);
             if (!this.project.branch) {
-              this.project.branch = 'master';
+              this.set('project.branch', 'master');
             }
           }
           // Send only the data we actually want to store
