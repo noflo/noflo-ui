@@ -13,9 +13,10 @@ RegistryProjectsAction OUT -> IN NewActions(core/Merge)
 RegistryErrorAction OUT -> IN NewActions
 
 # Fetching list of user's registered runtimes
-'user' -> KEYS GetUserStateFetch(ui/GetActionValues)
+'user,runtimes' -> KEYS GetUserStateFetch(ui/GetActionValues)
 Dispatch HANDLE[0] -> IN GetUserStateFetch
 GetUserStateFetch VALUES[0] -> USER GetRuntimes(ui/GetRemoteRuntimes)
+GetUserStateFetch VALUES[1] -> RUNTIMES GetRuntimes
 GetRuntimes RUNTIME -> IN RuntimeSaveAction
 GetRuntimes ERROR -> IN RegistryErrorAction
 
