@@ -507,6 +507,10 @@
           // Non-persistent runtime, don't show
           return false;
         }
+        if (runtime.protocol === 'opener' && !window.opener) {
+          // Can't use opener runtimes if opener is not defined
+          return false;
+        }
         runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
         if (runtime.seenHoursAgo / 24 > 31) {
           // We haven't seen this runtime in over a month, don't show it
