@@ -340,13 +340,13 @@
           <label><span title="{{port.name}}">{{port.label}}</span>
 
             <template is="dom-if" if="{{_computeIf2(port)}}">
-              <button name="{{port.name}}" on-click="sendBang"><i class="fa fa-bolt"></i></button>
+              <button data-name$="{{port.name}}" on-click="sendBang"><i class="fa fa-bolt"></i></button>
             </template>
             <template is="dom-if" if="{{_computeIf3(port)}}">
-              <input type="checkbox" name="{{port.name}}" checked="{{port.value}}" on-change="updateValue" data-type$="{{port.type}}">
+              <input type="checkbox" data-name$="{{port.name}}" checked="{{port.value}}" on-change="updateValue" data-type$="{{port.type}}">
             </template>
             <template is="dom-if" if="{{port.values}}">
-              <select name="{{port.name}}" on-change="updateValue" value="{{port.value::input}}" data-type$="{{port.type}}">
+              <select data-name$="{{port.name}}" on-change="updateValue" value="{{port.value::input}}" data-type$="{{port.type}}">
                 <option></option>
                 <template is="dom-repeat" items="{{port.values}}" as="value">
                   <option value="[[value]]" selected$="{{_computeSelected(port, value)}}">{{value}}</option>
@@ -355,18 +355,18 @@
             </template>
             <template is="dom-if" if="{{_computeIf4(port)}}">
               <number-scrubber data-name$="{{port.name}}" value="{{port.value}}" step="1" data-type="int" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
-              <input type="text" data-type="int" name="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
+              <input type="text" data-type="int" data-name$="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
             </template>
             <template is="dom-if" if="{{_computeIf5(port)}}">
               <number-scrubber data-name$="{{port.name}}" value="{{port.value}}" step="0.01" data-type="number" on-scrubstart="scrubStart" on-scrub="updateValue" on-scrubend="scrubEnd">#</number-scrubber>
-              <input type="text" data-type="number" name="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
+              <input type="text" data-type="number" data-name$="{{port.name}}" value="{{port.value::input}}" on-change="updateValue" on-keydown="checkEnter">
             </template>
             <template is="dom-if" if="{{_computeIf6(port)}}">
-              <input type="{{port.inputType}}" name="{{port.name}}" value="{{port.value::input}}" autocapitalize="off" autocorrect="off" on-keydown="checkEnter" on-change="updateValue" data-type$="{{port.type}}">
+              <input type="{{port.inputType}}" data-name$="{{port.name}}" value="{{port.value::input}}" autocapitalize="off" autocorrect="off" on-keydown="checkEnter" on-change="updateValue" data-type$="{{port.type}}">
             </template>
             <template is="dom-if" if="{{_computeIf7(port)}}">
-              <input type="text" name="{{port.name}}" data-type="string" on-change="updateValue">
-              <input type="file" name="{{port.name}}" on-change="updateValue" data-type$="{{port.type}}">
+              <input type="text" data-name$="{{port.name}}" data-type="string" on-change="updateValue">
+              <input type="file" data-name$="{{port.name}}" on-change="updateValue" data-type$="{{port.type}}">
             </template>
             <template is="dom-if" if="{{_computeIf8(port)}}">
               <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}"><i class="fa fa-ban"></i></button>
