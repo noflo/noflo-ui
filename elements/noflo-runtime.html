@@ -139,7 +139,7 @@
           <template is="dom-if" if="{{execution.running}}">
             <button title="Stop" class="stop" on-click="stop"><i class="fa fa-pause"></i></button>
           </template>
-          <template is="dom-if" if="{{_computeIf2(execution)}}">
+          <template is="dom-if" if="{{!execution.running}}">
             <button title="Start" class="start" on-click="start"><i class="fa fa-play"></i></button>
           </template>
           <h2>{{execution.label}}</h2>
@@ -254,24 +254,24 @@
         }
         this.runtime.on('execution', function (status) {
           if (status.running) {
-            this.execution.running = true;
+            this.set('execution.running', true);
           } else {
-            this.execution.running = false;
+            this.set('execution.running', false);
           }
           if (!status.started) {
-            this.execution.label = 'not started';
+            this.set('execution.label', 'not started');
           } else if (status.started && !status.running) {
-            this.execution.label = 'finished';
+            this.set('execution.label', 'finished');
           } else if (status.started && status.running) {
-            this.execution.label = 'running';
+            this.set('execution.label', 'running');
           }
         }.bind(this));
         this.runtime.on('status', function (status) {
           this.online = status.online;
           if (!this.online) {
             this.hideCard();
-            this.execution.running = false;
-            this.execution.label = 'not started';
+            this.set('execution.running', false);
+            this.set('execution.label', 'not started');
             if (this.panel) {
               this.panel.open = false;
             }
