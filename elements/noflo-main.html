@@ -501,7 +501,7 @@
         this.projects.forEach(this.checkProject.bind(this));
         // Remove missing ones from localProjects
         this.localProjects.forEach(function (local) {
-          if (!this.projects.indexOf(local)) {
+          if (this.projects.indexOf(local) === -1) {
             this.splice('localProjects', this.localProjects.indexOf(local), 1);
           }
         }.bind(this));
