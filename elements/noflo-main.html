@@ -174,10 +174,10 @@
       <section id="projects">
         <h2>Projects
           <template is="dom-if" if="{{_computeIf(projectList)}}">
-          <small>{{localProjects.length}}</small>
+          <small>{{projects.length}}</small>
           </template>
           <template is="dom-if" if="{{_computeIf2(projectList)}}">
-          <small>{{remoteProjects.length}}</small>
+          <small>{{numberOfRemoteProjects(remoteProjects)}}</small>
           </template>
           <template is="dom-if" if="{{_computeIf2(projectList)}}">
           <button on-click="fetchGithub"><i id="fetchgithub" class="fa fa-refresh"></i></button>
@@ -201,7 +201,7 @@
             <h2>New project</h2>
             <button id="newproject" on-click="newProject">Create</button>
           </li>
-          <template is="dom-repeat" items="{{localProjects}}" as="project">
+          <template is="dom-repeat" items="{{projects}}" as="project">
             <li on-click="openProject" data-id$="{{project.id}}">
               <the-graph-thumb graph="{{project.mainGraph}}" width="200" height="120"></the-graph-thumb>
               <h2>{{project.name}}</h2>
@@ -230,7 +230,7 @@
             </form>
           </li>
           </template>
-          <template is="dom-repeat" items="{{remoteProjects}}" as="project">
+          <template is="dom-repeat" items="{{remoteProjects}}" as="project" filter="filterRemoteProjects">
             <li class="remote">
               <h2>{{project.repo}}</h2>
               <template is="dom-if" if="{{project.private}}">
@@ -250,7 +250,7 @@
       </section>
     <section id="runtimes">
       <h2>
-        Runtimes <small><span>{{userRuntimes.length}}</span> / <span>{{runtimes.length}}</span></small>
+        Runtimes <small><span>{{numberOfAvailableRuntimes(runtimes)}}</span> / <span>{{runtimes.length}}</span></small>
         <template is="dom-if" if="{{user}}">
         <button on-click="fetchRuntimes"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
         </template>
@@ -261,7 +261,7 @@
           <button on-click="newRuntime">Register</button>
         </li>
 
-        <template is="dom-repeat" items="{{userRuntimes}}" as="runtime">
+        <template is="dom-repeat" items="{{runtimes}}" as="runtime" filter="filterAvailableRuntimes">
           <li on-click="openRuntime" data-id$="{{runtime.id}}" data-protocol$="{{runtime.protocol}}" class$="{{_computeClass2(runtime)}}">
             <h2>{{runtime.label}}</h2>
             <p><span>{{runtime.address}}</span>. Seen <span>{{runtime.seenHoursAgo}}</span>h ago</p>
@@ -322,13 +322,6 @@
             ];
           }
         },
-        localProjects: {
-          type: Array,
-          value: function () {
-            return [];
-          },
-          notify: true
-        },
         open: {
           type: Boolean,
           value: true,
@@ -348,29 +341,25 @@
           value: function () {
             return [];
           },
+          notify: true,
           observer: 'projectsChanged'
         },
         remoteProjects: {
           type: Array,
           value: function () {
             return [];
-          }
+          },
+          notify: true
         },
         runtimes: {
           type: Array,
           value: function () {
             return [];
           },
-          observer: 'runtimesChanged'
-        },
-        user: { value: null },
-        userRuntimes: {
-          type: Array,
-          value: function () {
-            return [];
-          },
+          observer: 'runtimesChanged',
           notify: true
-        }
+        },
+        user: { value: null }
       },
       attached: function () {
         this.openChanged();
@@ -417,7 +406,7 @@
         }
         event.preventDefault();
         this.projectList = 'github';
-        if (this.remoteProjects.length === 0) {
+        if (!this.remoteProjects || this.remoteProjects.length === 0) {
           setTimeout(function () {
             this.fetchGithub();
           }.bind(this), 1);
@@ -485,49 +474,45 @@
         }
         this.fire('fetchRemote', this.gridToken);
       },
-      githubProjects: function (projects) {
-        this.set('remoteProjects', []);
-        projects.forEach(function (remoteProject) {
-          for (var i = 0; i < this.localProjects.length; i++) {
-            if (this.localProjects[i].repo === remoteProject.repo) {
-              // We already have this project checked out
-              return;
-            }
+      numberOfRemoteProjects: function (remoteProjects) {
+        return remoteProjects.filter(this.filterRemoteProjects.bind(this)).length;
+      },
+      filterRemoteProjects: function (remoteProject) {
+        if (!this.projects) {
+          return true;
+        }
+        for (var i = 0; i < this.projects.length; i++) {
+          if (this.projects[i].repo === remoteProject.repo) {
+            // We already have this project checked out
+            return false;
           }
-          this.push('remoteProjects', remoteProject);
-        }.bind(this));
+        }
+        return true;
       },
       projectsChanged: function () {
         // Add projects to local
         this.projects.forEach(this.checkProject.bind(this));
-        // Remove missing ones from localProjects
-        this.localProjects.forEach(function (local) {
-          if (this.projects.indexOf(local) === -1) {
-            this.splice('localProjects', this.localProjects.indexOf(local), 1);
-          }
-        }.bind(this));
       },
       runtimesChanged: function () {
-        this.runtimes.forEach(this.checkRuntimeSeen.bind(this));
         this.addExamplesForRuntimes();
       },
-      checkRuntimeSeen: function (runtime) {
+      numberOfAvailableRuntimes: function (runtimes) {
+        return runtimes.filter(this.filterAvailableRuntimes.bind(this)).length;
+      },
+      filterAvailableRuntimes: function (runtime) {
+        if (!runtime) {
+          return false;
+        }
         if (!runtime.seen) {
-          if (runtime.protocol === 'iframe' || runtime.protocol === 'microflo') {
-            runtime.seen = Date.now();
-          } else {
-            // Non-persistent runtime, don't show
-            return;
-          }
+          // Non-persistent runtime, don't show
+          return false;
         }
         runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
         if (runtime.seenHoursAgo / 24 > 31) {
           // We haven't seen this runtime in over a month, don't show it
-          return;
+          return false;
         }
-        if (this.userRuntimes.indexOf(runtime) === -1) {
-          this.push('userRuntimes', runtime);
-        }
+        return true;
       },
       addExamplesForRuntimes: function () {
         // Add examples for all current runtimes
@@ -590,7 +575,7 @@
           return;
         }
         var project = null;
-        this.localProjects.forEach(function (p) {
+        this.projects.forEach(function (p) {
           if (p.id === event.currentTarget.getAttribute('data-id')) {
             project = p;
           }
@@ -681,8 +666,6 @@
         Polymer.dom(document.body).appendChild(this.runtimeAdd);
         this.runtimeAdd.addEventListener('new', function (event) {
           var runtime = event.detail;
-          this.push('userRuntimes', runtime);
-          this.push('runtimes', runtime);
         }.bind(this));
       },
       checkProject: function (project) {
@@ -707,6 +690,7 @@
                 this.checkProject(project);
               }.bind(this), 5);
             }.bind(this));
+            return;
           }
           // Find a suitable main graph
           project.graphs.forEach(function (graph) {
@@ -718,9 +702,6 @@
             project.main = project.graphs[0].properties.id;
           }
         }
-        if (this.localProjects.indexOf(project) === -1) {
-          this.push('localProjects', project);
-        }
       },
       _computeIf: function (projectList) {
         return projectList === 'local';
@@ -729,12 +710,15 @@
         return projectList === 'github';
       },
       _computeIf3: function (project) {
-        if (!project) {
+        if (!project || !project.graphs || !project.components) {
           return false;
         }
         return project.graphs.length || project.components.length;
       },
       _computeIf4: function (project) {
+        if (!project || !project.graphs || !project.components) {
+          return true;
+        }
         return !project.graphs.length && !project.components.length;
       },
       _computeIf5: function (plan) {

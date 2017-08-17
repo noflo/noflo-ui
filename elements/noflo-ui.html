@@ -75,7 +75,7 @@
       }
     </style>
   <template>
-    <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}"></noflo-main>
+    <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}"></noflo-library>
     <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}"></noflo-context>
@@ -128,7 +128,15 @@
           notify: true
         }
       },
-      clearContextFirst: ['graphs', 'runtimes', 'projects', 'edges', 'nodes', 'compatibleRuntimes'],
+      clearContextFirst: [
+        'graphs',
+        'runtimes',
+        'projects',
+        'edges',
+        'nodes',
+        'compatibleRuntimes',
+        'remoteProjects'
+      ],
       emitEvent: function (event, payload) {
         this.fire(event, {
           action: event,
@@ -371,10 +379,6 @@
         }
         if (context.syncOperation !== undefined) {
           this.$.project.confirm(context.syncOperation);
-          return;
-        }
-        if (context.remoteProjects !== undefined) {
-          this.$.main.githubProjects(context.remoteProjects);
           return;
         }
         if (context.clearLibrary) {
