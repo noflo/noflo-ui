@@ -503,7 +503,7 @@
         this.localProjects.forEach(function (local) {
           if (!this.projects.indexOf(local)) {
             this.splice('localProjects', this.localProjects.indexOf(local), 1);
-          };
+          }
         }.bind(this));
       },
       runtimesChanged: function () {
