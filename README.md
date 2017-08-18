@@ -68,19 +68,15 @@ Go to the checkout folder and run:
 
     $ npm install
 
-You also need the [Grunt](http://gruntjs.com/) build tool:
-
-    $ sudo npm install -g grunt-cli
-
 This will provide you with all the needed development dependencies. Now you can build a new version by running:
 
-    $ grunt build
+    $ npm run build
 
 You have to run this command as an administrator on Windows.
 
 If you prefer, you can also start a watcher process that will do a rebuild whenever one of the files changes:
 
-    $ grunt watch
+    $ npm run watch
 
 Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
