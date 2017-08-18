@@ -71,7 +71,9 @@
   },
   "scripts": {
     "test": "grunt test",
-    "start": "./node_modules/.bin/simple-server . 9999"
+    "start": "simple-server . 9999",
+    "build": "grunt build",
+    "watch": "grunt watch"
   },
   "keywords": [
     "noflo",
