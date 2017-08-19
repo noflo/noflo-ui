@@ -3,8 +3,13 @@ NoFlo UI ChangeLog
 
 ## 0.21.0 (git master)
 
+Bugfixes:
+
+* Fixed iOS support
+
 Internal changes:
 
+* Updated noflo-ui to [Polymer 1.0](https://www.polymer-project.org/)
 * Switched to [the-graph 0.10](https://github.com/flowhub/the-graph/blob/master/CHANGES.md#0100-2017-june-28) which no longer depends on Polymer
 * GitHub communications are now done using a Redux-style middleware
 * IndexedDB operations are now done using a Redux-style middleware
