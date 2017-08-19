@@ -71,6 +71,7 @@
   },
   "scripts": {
     "test": "grunt test",
+    "crossbrowser": "grunt crossbrowser",
     "start": "simple-server . 9999",
     "build": "grunt build",
     "watch": "grunt watch"
