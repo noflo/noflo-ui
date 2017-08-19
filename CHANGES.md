@@ -8,6 +8,9 @@ Internal changes:
 * Switched to [the-graph 0.10](https://github.com/flowhub/the-graph/blob/master/CHANGES.md#0100-2017-june-28) which no longer depends on Polymer
 * GitHub communications are now done using a Redux-style middleware
 * IndexedDB operations are now done using a Redux-style middleware
+* noflo-ui build now uses locally-installed grunt
+  - to run the test suite, run `npm run test`
+  - to make a local build, run `npm run build`
 
 ## 0.20.3 (2017 August 10)
 
