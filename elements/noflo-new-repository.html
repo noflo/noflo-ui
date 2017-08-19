@@ -1,38 +1,51 @@
-<polymer-element name="noflo-new-repository" attributes="runtimes" class="modal-content" on-click="{{close}}">
-  <style>
-    :host {
-      background-color: red;
-    }
-  </style>
+<dom-module id="noflo-new-repository">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
+    <div class="modal-container" on-click="bgClick">
       <h1>Add a new repository</h1>
-      <template if="{{errorText}}">
+      <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
       <form>
         <label>
           GitHub repository name
-          <input type="text" value="{{repo}}" placeholder="username/repository" required>
+          <input type="text" value="{{repo::input}}" placeholder="username/repository" required="">
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Add</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send" class$="{{_computeClass(canSend)}}">Add</button>
+          <a on-click="close">Cancel</a>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-new-repository', {
-      token: '',
-      errorText: '',
-      repo: '',
-      canSend: false,
+    Polymer({
+      is: 'noflo-new-repository',
+      properties: {
+        canSend: {
+          type: Boolean,
+          value: false
+        },
+        errorText: {
+          type: String,
+          value: ''
+        },
+        repo: {
+          type: String,
+          value: '',
+          observer: 'repoChanged'
+        },
+        runtimes: { notify: true },
+        token: {
+          type: String,
+          value: ''
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       repoChanged: function () {
         this.canSend = false;
@@ -93,11 +106,24 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      listeners: { click: 'close' },
+      _computeClass: function (canSend) {
+        return this.tokenList({ disabled: !canSend });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

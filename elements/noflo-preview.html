@@ -1,6 +1,5 @@
-<polymer-element name="noflo-preview" attributes="runtime maximized">
-  <template>
-    <style>
+<dom-module id="noflo-preview">
+  <style>
       :host {
         padding: 0px;
         height: none;
@@ -63,40 +62,57 @@
         height: 100%;
       }
     </style>
+  <template>
     <header>
       <h1>Preview</h1>
     </header>
     <ul class="toolbar toolbar2right">
-      <template if="{{!maximized}}">
-        <li><button class="blue-button" on-click="{{maximizeToggle}}"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
+      <template is="dom-if" if="{{!maximized}}">
+        <li><button class="blue-button" on-click="maximizeToggle"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
       </template>
-      <template if="{{maximized}}">
-        <li><button class="blue-button" on-click="{{maximizeToggle}}"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
+      <template is="dom-if" if="{{maximized}}">
+        <li><button class="blue-button" on-click="maximizeToggle"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
       </template>
     </ul>
-    <div id="preview" class="{{ { maximized: maximized } | tokenList }}"></div>
+    <div id="preview" class$="{{_computeClass(maximized)}}"></div>
   </template>
   <script>
-    Polymer('noflo-preview', {
-      runtime: null,
-      returnTo: null,
-      maximized: false,
+    Polymer({
+      is: 'noflo-preview',
+      properties: {
+        maximized: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: 'maximizedChanged'
+        },
+        returnTo: { value: null },
+        runtime: {
+          value: null,
+          notify: true,
+          observer: 'runtimeChanged'
+        }
+      },
       attached: function () {
       },
-      button: function (event, data, sender) {
+      button: function (event) {
         event.preventDefault();
-        var action = sender.getAttribute('data-action');
+        var action = event.currentTarget.getAttribute('data-action');
         this[action]();
       },
-      maximizedChanged: function() {
+      maximizedChanged: function () {
         if (this.maximized) {
-          this.classList.add('maximized');
-          this.parentNode.classList.add('maximized');
-          this.$.preview.classList.add('maximized');
+          Polymer.dom(this).classList.add('maximized');
+          if (Polymer.dom(this).parentNode) {
+            Polymer.dom(Polymer.dom(this).parentNode).classList.add('maximized');
+          }
+          Polymer.dom(this.$.preview).classList.add('maximized');
         } else {
-          this.classList.remove('maximized');
-          this.parentNode.classList.remove('maximized');
-          this.$.preview.classList.remove('maximized');
+          Polymer.dom(this).classList.remove('maximized');
+          if (Polymer.dom(this).parentNode) {
+            Polymer.dom(Polymer.dom(this).parentNode).classList.remove('maximized');
+          }
+          Polymer.dom(this.$.preview).classList.remove('maximized');
         }
         this.fire('maximized', this.maximized);
       },
@@ -104,12 +120,15 @@
         this.maximized = !this.maximized;
       },
       runtimeChanged: function () {
+        if (!this.runtime) {
+          return;
+        }
         // Capture runtime container to here
         var element = this.runtime.getElement();
         if (!element) {
           return;
         }
-        this.$.preview.appendChild(element);
+        Polymer.dom(this.$.preview).appendChild(element);
       },
       detached: function () {
         if (!this.runtime || !this.returnTo) {
@@ -120,8 +139,20 @@
           return;
         }
         // Return runtime element to main container
-        this.returnTo.appendChild(element);
+        Polymer.dom(this.returnTo).appendChild(element);
+      },
+      _computeClass: function (maximized) {
+        return this.tokenList({ maximized: maximized });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

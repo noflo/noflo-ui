@@ -1,6 +1,5 @@
-<polymer-element name="noflo-component-inspector" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-component-inspector">
+  <style>
       button.delete {
         position: absolute;
         right: 36px;
@@ -8,29 +7,40 @@
         color: hsla( 0, 98%, 46%, .8) !important;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
-      <h1>{{component.name}} settings</h1>
-      <template if="{{errorText}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
+      <h1><span>{{component.name}}</span> settings</h1>
+      <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
       <form>
         <div class="toolbar">
           <!-- <button on-click="{{send}}">Save</button> -->
-          <a on-click="{{close}}">Cancel</a>
-          <button class="delete" on-click="{{delete}}">Delete</button>
+          <a on-click="close">Cancel</a>
+          <button class="delete" on-click="delete">Delete</button>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-component-inspector', {
-      component: null,
-      errorText: '',
+    Polymer({
+      is: 'noflo-component-inspector',
+      properties: {
+        component: {
+          value: null,
+          observer: 'componentChanged'
+        },
+        errorText: {
+          type: String,
+          value: ''
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       componentChanged: function () {
       },
@@ -47,11 +57,12 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>

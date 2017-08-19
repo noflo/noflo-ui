@@ -1,6 +1,8 @@
-<polymer-element name="the-card-stack" attributes="type">
+<dom-module id="the-card-stack">
   <script>
-    Polymer('the-card-stack', {
+    Polymer({
+      is: 'the-card-stack',
+      properties: { type: { notify: true } },
       enteredView: function () {
         this.observeChanges();
       },
@@ -20,9 +22,9 @@
       },
       updateVisibility: function () {
         if (this.childElementCount === 0) {
-          this.parentNode.removeChild(this);
+          Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
         }
       }
     });
   </script>
-</polymer-element>
+</dom-module>

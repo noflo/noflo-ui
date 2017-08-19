@@ -1,15 +1,15 @@
-<polymer-element name="noflo-new-component" attributes="project" class="modal-content" on-click="{{close}}">
+<dom-module id="noflo-new-component">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
+    <div class="modal-container" on-click="bgClick">
       <h1>Create new component</h1>
       <form>
         <label>
           Component name
-          <input type="text" value="{{name}}" placeholder="MyCoolComponent" required>
+          <input type="text" value="{{name::input}}" placeholder="MyCoolComponent" required="">
         </label>
         <label>
           Language
-          <select name="type" value="{{language}}">
+          <select name="type" value="{{language::input}}">
             <option value="coffeescript">CoffeeScript</option>
             <option value="javascript">JavaScript</option>
             <option value="es2015">ES2015 (Babel)</option>
@@ -21,29 +21,47 @@
           </select>
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}" class="{{ { disabled: !canSend } | tokenList }}">Create</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
+          <a on-click="close">Cancel</a>
         </div>
-      </div>
-    </form>
+      </form></div>
+    
   </template>
   <script>
-    Polymer('noflo-new-component', {
-      name: '',
-      project: '',
-      language: 'coffeescript',
-      canSend: false,
+    Polymer({
+      is: 'noflo-new-component',
+      properties: {
+        canSend: {
+          type: Boolean,
+          value: false
+        },
+        language: {
+          type: String,
+          value: 'coffeescript'
+        },
+        name: {
+          type: String,
+          value: '',
+          observer: 'nameChanged'
+        },
+        project: {
+          type: String,
+          value: '',
+          notify: true
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       nameChanged: function () {
         var duplicates = [];
         if (this.name) {
           // Same regexp as used by the FBP language parser
-          this.name = this.name.replace(/[^a-zA-Z0-9]+/g, "_");
+          this.name = this.name.replace(/[^a-zA-Z0-9]+/g, '_');
         }
         if (this.project) {
           duplicates = this.project.components.filter(function (component) {
@@ -83,11 +101,24 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      listeners: { click: 'close' },
+      _computeClass: function (canSend) {
+        return this.tokenList({ disabled: !canSend });
+      },
+      tokenList: function (obj) {
+        var pieces = [];
+        for (var key in obj) {
+          if (obj[key]) {
+            pieces.push(key);
+          }
+        }
+        return pieces.join(' ');
       }
     });
   </script>
-</polymer-element>
+</dom-module>

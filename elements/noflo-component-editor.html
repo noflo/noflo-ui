@@ -1,6 +1,5 @@
-<polymer-element name="noflo-component-editor" attributes="component width height">
-  <template>
-    <style type="text/css">
+<dom-module id="noflo-component-editor">
+  <style type="text/css">
       :host {
         background-color: black;
         overflow: hidden;
@@ -38,10 +37,7 @@
         text-align: right;
       }
     </style>
-    <link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css">
-    <link rel="stylesheet" href="../node_modules/codemirror/addon/lint/lint.css">
-    <link rel="stylesheet" href="../node_modules/codemirror/theme/mdn-like.css">
-    <link rel="stylesheet" href="../css/codemirror-noflo.css">
+  <template>
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>
@@ -50,20 +46,41 @@
       <h1>Tests</h1>
       <div id="tests_editor"></div>
     </section>
-    </script>
+    
   </template>
-
   <script>
-    Polymer('noflo-component-editor', {
-      component: null,
-      spec: null,
-      project: null,
-      width: null,
-      height: null,
-      codeEditor: null,
-      testsEditor: null,
-      runtime: null,
-      theme: 'dark',
+    Polymer({
+      is: 'noflo-component-editor',
+      properties: {
+        codeEditor: { value: null },
+        component: {
+          value: null,
+          notify: true,
+          observer: 'componentChanged'
+        },
+        height: {
+          value: null,
+          notify: true,
+          observer: 'heightChanged'
+        },
+        project: { value: null },
+        runtime: { value: null },
+        spec: {
+          value: null,
+          observer: 'specChanged'
+        },
+        testsEditor: { value: null },
+        theme: {
+          type: String,
+          value: 'dark',
+          observer: 'themeChanged'
+        },
+        width: {
+          value: null,
+          notify: true,
+          observer: 'widthChanged'
+        }
+      },
       ready: function () {
         this.componentChanged();
         var self = this;
@@ -77,56 +94,52 @@
       },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
-          this.style.display = 'none';
+          this.set('style.display', 'none');
           return;
         }
-
-        this.spec = null;
+        this.set('spec', null);
         if (this.project) {
           this.project.specs.forEach(function (spec) {
             if (spec.name === this.component.name) {
-              this.spec = spec;
+              this.set('spec', spec);
             }
           }.bind(this));
           if (!this.spec) {
-            this.spec = {
+            this.set('spec', {
               name: this.component.name,
               changed: false,
               code: '',
               language: 'yaml',
               project: this.component.project,
               type: 'spec'
-            };
-            this.project.specs.push(this.spec);
+            });
+            this.push('project.specs', this.spec);
           }
         }
-
-        this.style.display = 'block';
-        this.$.code_editor.innerHTML = '';
-
+        this.set('style.display', 'block');
+        Polymer.dom(this.$.code_editor).innerHTML = '';
         if (!this.component.code) {
-          this.component.code = this.getExampleCode();
+          this.set('component.code', this.getExampleCode());
         }
-
         codeOptions = this.getMirrorOptions(this.component, this.component.code);
         this.codeEditor = CodeMirror(this.$.code_editor, codeOptions);
         this.codeEditor.on('change', function () {
-          this.component.code = this.codeEditor.getValue();
-          this.component.changed = true;
+          this.set('component.code', this.codeEditor.getValue());
+          this.set('component.changed', true);
           this.debouncedComponentChange();
         }.bind(this));
         this.setSize();
       },
       specChanged: function () {
-        this.$.tests_editor.innerHTML = '';
+        Polymer.dom(this.$.tests_editor).innerHTML = '';
         if (!this.spec) {
           return;
         }
         testOptions = this.getMirrorOptions(this.spec, this.spec.code);
         this.testsEditor = CodeMirror(this.$.tests_editor, testOptions);
         this.testsEditor.on('change', function () {
-          this.spec.code = this.testsEditor.getValue();
-          this.spec.changed = true;
+          this.set('spec.code', this.testsEditor.getValue());
+          this.set('spec.changed', true);
           this.debouncedSpecChange();
         }.bind(this));
         this.setSize();
@@ -146,7 +159,7 @@
           readOnly: component.project ? false : 'nocursor'
         };
         var canLint = function (language) {
-          return (language === 'javascript' || language === 'coffeescript');
+          return language === 'javascript' || language === 'coffeescript';
         };
         if (canLint(component.language) && !options.readOnly) {
           options.gutters = ['CodeMirror-lint-markers'];
@@ -166,8 +179,9 @@
         } else if (language === 'c++') {
           return 'text/x-c++src';
         } else if (language === 'supercollider') {
-          return 'text/x-stsrc'; // smalltalk-like
+          return 'text/x-stsrc';
         }
+        // smalltalk-like
         return 'clike';
       },
       getMirrorTheme: function () {
@@ -187,14 +201,13 @@
         if (!runtimeType) {
           console.log('WARNING: Unknown runtime type');
         }
-
         var runtimeInfo = require('noflo-ui/runtimeinfo');
         var info = runtimeInfo[runtimeType];
         var language = this.component.language;
         if (language == 'es6') {
           language = 'es2015';
         }
-        var template = "";
+        var template = '';
         if (info && info.componenttemplates && info.componenttemplates[this.component.language]) {
           template = info.componenttemplates[this.component.language];
         }
@@ -231,4 +244,4 @@
       }
     });
   </script>
-</polymer-element>
+</dom-module>

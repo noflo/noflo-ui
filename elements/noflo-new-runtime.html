@@ -1,7 +1,6 @@
 <link rel="import" href="noflo-add-runtime.html">
-<polymer-element name="noflo-new-runtime" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-new-runtime">
+  <style>
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -71,7 +70,8 @@
         text-decoration: none;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
       <h1>Register new runtime</h1>
       <p>
       $NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="http://noflojs.org/documentation/protocol/" target="_blank">FBP protocol</a>.
@@ -79,10 +79,10 @@
       Here are some other popular ones:
       </p>
       <ul class="runtimes">
-      <template repeat="{{runtime in runtimes}}">
-      <li class="{{runtime.name}}">
-        <a href="{{runtime.url}}" target="_blank">
-          <i class="fa fa-{{runtime.icon}}"></i>
+      <template is="dom-repeat" items="{{runtimes}}" as="runtime">
+      <li class$="{{runtime.name}}">
+        <a target="_blank" href$="{{runtime.url}}">
+          <i class$="{{_computeClass(runtime)}}"></i>
           <h2>{{runtime.label}}</h2>
           <p>{{runtime.description}}</p>
         </a>
@@ -93,8 +93,8 @@
       Most runtimes provide a link that connects to them in $NOFLO_APP_TITLE live mode at start-up. You can also add a runtime manually.
       </p>
       <div class="toolbar">
-        <button on-click="{{addRuntime}}">Add manually</button>
-        <button on-click="{{close}}">Close</button>
+        <button on-click="addRuntime">Add manually</button>
+        <button on-click="close">Close</button>
       </div>
     </div>
   </template>
@@ -108,46 +108,57 @@
       Object.keys(rtInfo.runtimetypes).forEach(function (runtimeType) {
         var info = rtInfo.runtimetypes[runtimeType];
         var def = {
-            name: runtimeType,
-            label: info.shortname,
-            icon: info.icon,
-            description: info.description,
-            url: info.helpurl,
+          name: runtimeType,
+          label: info.shortname,
+          icon: info.icon,
+          description: info.description,
+          url: info.helpurl
         };
         if (!runtimeTypes[runtimeType]) {
-            // Avoid duplicates
-            runtimeTypes[runtimeType] = def;
-            runtimes.push(def);
+          // Avoid duplicates
+          runtimeTypes[runtimeType] = def;
+          runtimes.push(def);
         }
       });
     });
-
-    Polymer('noflo-new-runtime', {
-      runtimes: runtimes,
+    Polymer({
+      is: 'noflo-new-runtime',
+      properties: {
+        runtimes: {
+          value: function () {
+            return runtimes;
+          }
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       bgClick: function (event) {
         // Don't close if clicking within container
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
       addRuntime: function (event) {
         event.preventDefault();
         this.runtimeAdd = document.createElement('noflo-add-runtime');
-        document.body.appendChild(this.runtimeAdd);
-        this.runtimeAdd.addEventListener('new', function(event) {
-            this.fire("addRuntime", event.detail);
+        Polymer.dom(document.body).appendChild(this.runtimeAdd);
+        this.runtimeAdd.addEventListener('new', function (event) {
+          this.fire('addRuntime', event.detail);
         }.bind(this));
+      },
+      listeners: { click: 'close' },
+      _computeClass: function (runtime) {
+        return 'fa fa-' + runtime.icon;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

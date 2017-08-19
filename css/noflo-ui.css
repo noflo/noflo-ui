@@ -25,7 +25,9 @@ body #loading {
   width: 400px;
   color: white;
   text-align: center;
+  top: -webkit-calc(50% - 18px);
   top: calc(50% - 18px);
+  left: -webkit-calc(50% - 200px);
   left: calc(50% - 200px);
   font-size: 36px;
   position: fixed;
@@ -34,7 +36,9 @@ body #loading {
 body.loading #loading {
   display: block;
   opacity: 1;
+  top: -webkit-calc(50% - 18px);
   top: calc(50% - 18px);
+  left: -webkit-calc(50% - 200px);
   left: calc(50% - 200px);
   font-size: 36px;
   animation: pulsate 2s ease-in-out;
@@ -226,4 +230,426 @@ the-graph-nav {
   -webkit-border-radius: 5px;
   border-radius: 5px;
   background-color: hsl(0, 0%, 0%);
+}
+
+html h1,
+html h2,
+html h3 {
+  font-weight: normal;
+}
+
+html input:focus,
+html select:focus,
+html textarea:focus,
+html button:focus,
+html h1,
+html h2,
+html h3,
+html div,
+html a,
+html p,
+html div {
+  outline:none;
+}
+
+html th {
+  text-align: left;
+}
+
+html div.error {
+  color: hsla( 0, 98%, 46%, .8);
+}
+
+html the-panel {
+  background-color: hsla(0, 0%, 0%, 0.98) !important;
+  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+  position: fixed;
+  border: 0px solid hsla(190, 90%, 80%, 0.3);
+  box-sizing: border-box;
+}
+html the-panel#account {
+  top: 0px;
+  border-right-width: 1px;
+}
+html the-panel#account:before {
+  font-family: FontAwesome;
+  content: '\f03a';
+  color: hsl(189, 50%, 80%);
+  position: absolute;
+  text-align: center;
+  right: 0px;
+  width: 36px;
+  top: 50%;
+  top: -webkit-calc(50% - 7px);
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0.25;
+  transition: opacity 0.3s ease-in-out;
+}
+html the-panel#account:not([open]):before {
+  cursor: e-resize;
+  opacity: 1;
+}
+html the-panel#account header,
+html the-panel#account main {
+  display: block;
+  margin-left: 36px;
+  margin-right: 36px;
+}
+html the-panel#account header h1 {
+  text-align: center;
+  border-bottom: 1px solid hsl(189, 50%, 80%);
+  height: 36px;
+  line-height: 36px;
+  font-size: 17px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+html the-panel#account main ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+html the-panel#account main ul li {
+  line-height: 36px;
+  min-height: 36px;
+}
+html the-panel#account main ul li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+}
+html the-panel#account main ul li a i {
+  float: right;
+  line-height: 36px;
+  color: hsl(189, 50%, 80%);
+  margin-right: 4px;
+}
+
+
+
+html the-panel#fixed {
+  padding-left: 36px;
+  padding-top: 72px;
+  top: 0px;
+  border-left-width: 1px;
+}
+html the-panel#fixed:before {
+  font-family: FontAwesome;
+  content: '\f06e';
+  color: hsl(189, 50%, 80%);
+  position: absolute;
+  text-align: center;
+  left: 0px;
+  width: 36px;
+  top: 50%;
+  top: -webkit-calc(50% - 7px);
+  top: calc(50% - 7px);
+  font-size: 17px;
+  opacity: 0.25;
+  transition: opacity 0.3s ease-in-out;
+}
+html the-panel#fixed:not([open]):before {
+  opacity: 1;
+  cursor: w-resize;
+}
+html the-panel#fixed footer {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+}
+
+html the-card .the-card-content {
+  display: block;
+  margin: 0px;
+  padding: 10px 10px 10px;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  border-bottom: 1px hsla(190, 100%, 30%, 0.1) solid;
+  border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
+  background-color: hsla(0, 0%, 0%, 0.99) !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+}
+
+html the-card[type="noflo-runtime-preview"] {
+  padding: 0px;
+  width: -webkit-calc(72px * 4);
+  width: calc(72px * 4);
+  overflow: hidden;
+}
+
+html the-card.maximized {
+  background-color: hsla(0, 0%, 0%, 0.99);
+  width: -webkit-calc(100% - 36px);
+  width: calc(100% - 36px);
+  height: -webkit-calc(100% - 36px);
+  height: calc(100% - 36px);
+  max-height: none;
+  position: fixed;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  top: 72px;
+  left: 36px;
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+  z-index: 3;
+  border: none;
+}
+html the-card.maximized .the-card-content {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+html the-card-stack .sticky-head {
+  background-color: hsla(0, 0%, 5%, 0.99) !important;
+  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+  background-size: -webkit-calc(100% - 1px) 100%;
+  background-size: calc(100% - 1px) 100%;
+  background-position: 0px;
+}
+
+html the-card-stack .sticky-head h1 {
+  font-size:15px;
+}
+
+html the-card button {
+  width: 36px;
+  height: 36px;
+  font-size: 10px;
+  background-color: transparent;
+  border: none;
+  color: white;
+  text-align: center;
+}
+
+html the-card h1 {
+  font-size: 12px;
+  line-height: 36px;
+  margin: 0px;
+  margin-bottom: 0px;
+  text-shadow: 0 1px hsl(0, 0%, 0%);
+  text-align: left;
+}
+
+html the-card header h1 {
+  display: block;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: -webkit-calc(72px * 3 - 1px);
+  width: calc(72px * 3 - 1px);
+  height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html the-card header h1.clear {
+  cursor: pointer;
+}
+html the-card header h2 {
+  line-height: 36px;
+  width: 72px;
+  height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin: 0px;
+  text-align: right;
+  font-size: 10px;
+  color: hsla(190, 100%, 80%, 0.8);
+  display: block;
+  cursor: default;
+}
+html the-card header {
+  height: 36px;
+}
+
+html the-card ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+html the-card textarea {
+  width: 100%;
+  min-height: 100px;
+  max-height: -webkit-calc(72px * 4);
+  max-height: calc(72px * 4);
+}
+
+html the-card ul li {
+  display: block;
+  padding: 0px;
+  margin: 0px;
+}
+html the-card ul.toolbar2right {
+  width: 180px;
+  display: block;
+  position: absolute;
+  right: 36px;
+  top: 10px;
+  text-align: right;
+}
+html the-card ul.toolbar li {
+  float: left;
+  display: block;
+  width: -webkit-calc(100%/2);
+  width: calc(100%/2);
+  height: 36px;
+  text-align: center;
+  margin: 0px;
+  margin-right: 0px;
+}
+html the-card ul.toolbar2right li {
+  float: right;
+  width: auto;
+}
+html the-card ul.toolbar li * {
+  line-height: 36px;
+}
+html the-card ul.toolbar li button {
+  width:100%;
+  height:100%;
+}
+
+html .red-button {
+  background-color: hsla(0, 100%, 20%, 0.2);
+  color: hsl(0, 100%, 65%);
+}
+html .blue-button {
+  background-color: hsla(190, 100%, 20%, 0.2);
+  color: hsl(190, 100%, 65%);
+}
+
+
+/*
+html the-card ul li h2 {
+  font-size: 10px;
+  margin: 0px;
+}
+html the-card ul li i {
+  margin-right: 5px;
+}
+html the-card ul li p {
+  margin: 0px;
+  margin-top: 10px;
+  padding: 0px;
+  font-size: 8px;
+}
+*/
+
+.modal-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: hsla(192, 25%, 92%, 0.1);
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+}
+
+.modal-container {
+  background-color: hsl(192, 25%, 92%);
+  color: black;
+  display: block;
+  position: absolute;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  top: 36px;
+  width: -webkit-calc(72px * 9);
+  width: calc(72px * 9);
+  left: -webkit-calc(50% - 72px * 4.5);
+  left: calc(50% - 72px * 4.5);
+  z-index: 5;
+  padding: 36px;
+  box-sizing: border-box;
+  border-radius: 3px;
+  box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
+}
+
+.modal-content h1 {
+  font-size: 17px;
+  line-height: 36px;
+}
+.modal-content label {
+  display: block;
+  font-size: 13px;
+  margin-top: 17px;
+  color: black;
+  line-height: 17px;
+}
+.modal-content label > span {
+  line-height: 17px;
+}
+html .modal-content input,
+html .modal-content select,
+html .modal-content textarea {
+  display: block;
+  font-size: 17px;
+  background-color: rgba(0, 42, 51, 0.498039);
+  background-image: none;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  color: white;
+  border-radius: 3px;
+  padding: 3px;
+  border: none;
+  margin: 0px;
+  width: 100%;
+  box-sizing: border-box;
+}
+html .modal-content select {
+  background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pg0KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE2LjAuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPg0KPCFET0NUWVBFIHN2ZyBQVUJMSUMgIi0vL1czQy8vRFREIFNWRyAxLjEvL0VOIiAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiIHk9IjBweCINCgkgd2lkdGg9IjMwNnB4IiBoZWlnaHQ9IjMwNnB4IiB2aWV3Qm94PSIwIDAgMzA2IDMwNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzA2IDMwNjsiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPGc+DQoJPGcgaWQ9ImV4cGFuZC1tb3JlIj4NCgkJPHBvbHlnb24gcG9pbnRzPSIyNzAuMyw1OC42NSAxNTMsMTc1Ljk1IDM1LjcsNTguNjUgMCw5NC4zNSAxNTMsMjQ3LjM1IDMwNiw5NC4zNSAJCSIvPg0KCTwvZz4NCjwvZz4NCjxnPg0KPC9nPg0KPGc+DQo8L2c+DQo8Zz4NCjwvZz4NCjxnPg0KPC9nPg0KPGc+DQo8L2c+DQo8Zz4NCjwvZz4NCjxnPg0KPC9nPg0KPGc+DQo8L2c+DQo8Zz4NCjwvZz4NCjxnPg0KPC9nPg0KPGc+DQo8L2c+DQo8Zz4NCjwvZz4NCjxnPg0KPC9nPg0KPGc+DQo8L2c+DQo8Zz4NCjwvZz4NCjwvc3ZnPg0K);
+  background-repeat: no-repeat;
+  background-position: 98% 50%;
+  background-size: 8px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+html .modal-content div.CodeMirror {
+  border: 1px solid hsl(189, 47%, 6%);
+  border-radius: 3px;
+}
+
+html .modal-content .toolbar {
+  display: block;
+  line-height: 36px;
+  margin-top: 36px;
+}
+html .modal-content .toolbar button {
+  background-color: transparent;
+  color: hsl(190, 100%, 30%);
+  border: 1px solid hsl(190, 100%, 30%);
+  font-size: 13px;
+  border-radius: 3px;
+  font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
+  margin: 0px;
+}
+html .modal-content .toolbar button.disabled {
+  opacity: 0.1;
+}
+html .modal-content .toolbar a {
+  font-size: 13px;
+  color: hsl(190, 100%, 30%);
+  text-decoration: none;
+  height: 36px;
+  padding-left: 36px;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+html polymer-element.modal-content {
+  display: none;
 }

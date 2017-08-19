@@ -49,6 +49,13 @@ exports.getComponent = ->
         collections.addToList state.projects, project
         out.out.send state
         do callback
+      when 'storage:removed:project'
+        state = {}
+        state.projects = data.state.projects or []
+        collections.removeFromList state.projects,
+          id: data.payload
+        out.out.send state
+        do callback
       when 'storage:stored:graph'
         state = {}
         state.projects = data.state.projects or []
@@ -58,6 +65,16 @@ exports.getComponent = ->
         collections.addToList project.graphs, data.payload
         out.out.send state
         do callback
+      when 'storage:removed:graph'
+        state = {}
+        state.projects = data.state.projects or []
+        project = findProject data.payload, state.projects
+        return callback() unless project
+        collections.removeFromList project.graphs,
+          properties:
+            id: data.payload
+        out.out.send state
+        do callback
       when 'storage:stored:component'
         state = {}
         state.projects = data.state.projects or []
@@ -65,6 +82,24 @@ exports.getComponent = ->
         unless project
           return callback new Error "No project found for component #{data.payload.id}"
         collections.addToList project.components, data.payload
+        out.out.send state
+        do callback
+      when 'storage:removed:component'
+        state = {}
+        state.projects = data.state.projects or []
+        project = findProject data.payload, state.projects
+        return callback() unless project
+        collections.removeFromList project.components,
+          id: data.payload
+        out.out.send state
+        do callback
+      when 'storage:removed:spec'
+        state = {}
+        state.projects = data.state.projects or []
+        project = findProject data.payload, state.projects
+        return callback() unless project
+        collections.removeFromList project.specs,
+          id: data.payload
         out.out.send state
         do callback
       when 'storage:stored:spec'
@@ -79,7 +114,18 @@ exports.getComponent = ->
       when 'storage:stored:runtime'
         state = {}
         state.runtimes = data.state.runtimes or []
-        collections.addToList state.runtimes, data.payload
+        collections.addToList state.runtimes, data.payload, (a, b) ->
+          unless a.seen
+            return 1
+          unless b.seen
+            return -1
+          aSeen = new Date a.seen
+          bSeen = new Date b.seen
+          if a.seen > b.seen
+            return -1
+          if b.seen > a.seen
+            return 1
+          0
         out.out.send state
         do callback
       else

@@ -2,7 +2,7 @@
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # Application state updates
 State(ui/State) STATE -> STATE StoreDispatch
-State STATE -> CONTEXT AppView
+State UPDATED -> UPDATED AppView
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
 StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)
@@ -31,8 +31,7 @@ Dispatch OUT[6] -> IN CleanContext(ui/CleanAction) OUT -> IN ContextStorage(ui/C
 Dispatch MISSED -> IN CleanErrors(ui/CleanAction) OUT -> IN ShowErrors(core/Output)
 
 # Base data to UI
-UserReducer USER -> USER AppView
-UserReducer CONTEXT -> IN STATE
+UserReducer CONTEXT -> IN State
 
 # Pass local and GH contexts to runtime storage for remote node handling
 StorageReducer PROJECTCONTEXT -> CONTEXT RuntimeStorage

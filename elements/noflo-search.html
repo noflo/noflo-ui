@@ -4,9 +4,8 @@
 <link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-component-inspector.html">
 
-<polymer-element name="noflo-search" class="gpu" attributes="editor results graphs component readonly">
-  <template>
-    <style>
+<dom-module id="noflo-search">
+  <style>
       :host {
         background-color: hsl(187, 45%, 5%);
         position: fixed;
@@ -164,69 +163,112 @@
       }
 
     </style>
-    <div id="breadcrumb" on-click="{{focus}}">
-      <template if="{{!readonly && (!component || !component.name)}}">
+  <template>
+    <div id="breadcrumb" on-click="focus">
+      <template is="dom-if" if="{{_computeIf(component, readonly)}}">
       <i class="fa fa-search"></i>
       </template>
       <h1 title="Search">
-        <template if="{{project && parentPath}}">
-        <a href="#project/{{project.id}}{{parentPath}}" id="parentlink" title="Back"><i class="fa fa-angle-left"></i></a>
+        <template is="dom-if" if="{{_computeIf2(parentPath, project)}}">
+        <a id="parentlink" title="Back" href$="{{_computeHref(parentPath, project)}}"><i class="fa fa-angle-left"></i></a>
         </template>
-        <template if="{{graph && (!component || !component.name)}}">
-        {{graph.name}}
+        <template is="dom-if" if="{{_computeIf3(component, graph)}}">
+        <span>{{graph.name}}</span>
         </template>
-        <template if="{{component && component.name}}">
-        {{component.name}}
+        <template is="dom-if" if="{{_computeIf4(component)}}">
+        <span>{{component.name}}</span>
         </template>
       </h1>
-      <template if="{{!readonly && graph && (!component || !component.name)}}">
-      <button on-click="{{showGraphInspector}}" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
+      <template is="dom-if" if="{{_computeIf5(component, graph, readonly)}}">
+      <button on-click="showGraphInspector" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{!readonly && !graph && component && component.name}}">
-      <button on-click="{{showComponentInspector}}" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
+      <template is="dom-if" if="{{_computeIf6(component, graph, readonly)}}">
+      <button on-click="showComponentInspector" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
       </template>
-      <template if="{{readonly || (component && component.readonly) || (graph && graph.properties.readonly)}}">
+      <template is="dom-if" if="{{_computeIf7(component, graph, readonly)}}">
       <i id="readonly" class="fa fa-lock"></i>
       </template>
     </div>
-    <input id="search" placeholder="Search components" on-keydown="{{switchSearch}}" value="{{search}}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech>
-    <button id="clear" on-click="{{clearSearch}}" title="Clear search"><i class="fa fa-times"></i></button>
+    <input id="search" placeholder="Search components" on-keydown="switchSearch" value="{{search::input}}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech="">
+    <button id="clear" on-click="clearSearch" title="Clear search"><i class="fa fa-times"></i></button>
   </template>
   <script>
-    Polymer('noflo-search', {
-      menuCard: null,
-      resultsCard: null,
-      searchLibraryResults: [],
-      searchGraphResults: [],
-      search: null,
-      parentPath: '',
-      graph: null,
-      graphs: [],
-      component: null,
-      editor: null,
-      panel: null,
-      runtimes: [],
-      graphInspector: null,
-      searchLibrary: true,
+    Polymer({
+      is: 'noflo-search',
+      properties: {
+        component: {
+          value: null,
+          notify: true,
+          observer: 'componentChanged'
+        },
+        editor: {
+          value: null,
+          notify: true
+        },
+        graph: { value: null },
+        graphInspector: { value: null },
+        graphs: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'graphsChanged'
+        },
+        menuCard: { value: null },
+        panel: { value: null },
+        parentPath: {
+          type: String,
+          value: ''
+        },
+        project: { value: null },
+        readonly: { notify: true },
+        results: { notify: true },
+        resultsCard: { value: null },
+        runtimes: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        search: {
+          value: null,
+          observer: 'searchChanged'
+        },
+        searchGraphResults: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'searchGraphResultsChanged'
+        },
+        searchLibrary: {
+          type: Boolean,
+          value: true
+        },
+        searchLibraryResults: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'searchLibraryResultsChanged'
+        }
+      },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
           // Component nullified, ensure we recount graphs
           this.graphsChanged();
           return;
         }
-        this.graph = null;
         this.updateParentPath();
       },
       graphsChanged: function () {
-        if ((!this.graphs || !this.graphs.length) || (this.component && this.component.name)) {
-          this.graph = null;
-        } else {
-          this.graph = this.graphs[this.graphs.length - 1];
-        }
         this.updateParentPath();
         if (this.graphInspector) {
-          if (this.graphInspector.parentNode) {
-            this.graphInspector.parentNode.removeChild(this.graphInspector);
+          if (Polymer.dom(this.graphInspector).parentNode) {
+            Polymer.dom(Polymer.dom(this.graphInspector).parentNode).removeChild(this.graphInspector);
           }
           this.graphInspector = null;
         }
@@ -254,20 +296,15 @@
           }
         }.bind(this));
       },
-      libraryResults: function (result) {
-        this.searchLibraryResults.length = 0;
-        for (var i = 0; i < result.length; i++) {
-          this.searchLibraryResults.push(result[i]);
-        }
+      libraryResults: function (results) {
+        this.set('searchLibraryResults', []);
+        this.set('searchLibraryResults', results);
       },
       graphResults: function (result) {
-        this.searchGraphResults.push(result);
+        this.push('searchGraphResults', result);
       },
       attached: function () {
-        this.componentsObserver = new ArrayObserver(this.searchLibraryResults);
-        this.componentsObserver.open(this.libraryResultsModified.bind(this));
-        this.processesObserver = new ArrayObserver(this.searchGraphResults);
-        this.processesObserver.open(this.graphResultsModified.bind(this));
+        Polymer.dom(this).classList.add('gpu');
         this.blur();
       },
       focus: function () {
@@ -277,7 +314,7 @@
         if (this.component && this.component.name) {
           return;
         }
-        this.classList.remove('overlay');
+        Polymer.dom(this).classList.remove('overlay');
         this.$.search.focus();
         if (this.search === null) {
           // Show all
@@ -286,45 +323,39 @@
       },
       blur: function () {
         this.clearResults();
-        this.classList.add('overlay');
+        Polymer.dom(this).classList.add('overlay');
       },
       toggle: function () {
-        if (this.classList.contains('overlay')) {
+        if (Polymer.dom(this).classList.contains('overlay')) {
           this.focus();
           return;
         }
         this.blur();
       },
       clearResults: function () {
-        this.searchGraphResults.length = 0;
-        this.searchLibraryResults.length = 0;
-        // while (this.searchGraphResults.length) {
-        //   this.searchGraphResults.pop();
-        // }
-        // while (this.searchLibraryResults.length) {
-        //   this.searchLibraryResults.pop();
-        // }
+        this.set('searchGraphResults', []);
+        this.set('searchLibraryResults', []);
       },
       clearSearch: function () {
         if (this.resultsCard) {
-          this.resultsCard.parentNode.removeChild(this.resultsCard);
+          Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
           this.resultsCard = null;
         }
         this.search = null;
         this.blur();
       },
-      switchSearch: function (event, detail, sender) {
+      switchSearch: function (event) {
         if (event.keyIdentifier === 'U+0009') {
           event.preventDefault();
           this.searchLibrary = !this.searchLibrary;
           if (this.searchLibrary) {
-            this.$.search.classList.add('components');
-            this.$.search.classList.remove('processes');
-            this.$.search.placeholder = 'Search components';
+            Polymer.dom(this.$.search).classList.add('components');
+            Polymer.dom(this.$.search).classList.remove('processes');
+            this.set('$.search.placeholder', 'Search components');
           } else {
-            this.$.search.classList.add('processes');
-            this.$.search.classList.remove('components');
-            this.$.search.placeholder = 'Search processes';
+            Polymer.dom(this.$.search).classList.add('processes');
+            Polymer.dom(this.$.search).classList.remove('components');
+            this.set('$.search.placeholder', 'Search processes');
           }
           this.searchChanged();
         }
@@ -332,34 +363,32 @@
       },
       searchChanged: function () {
         this.clearResults();
-
         if (this.search && typeof ga === 'function') {
           ga('send', 'event', 'search', 'input', 'newSearch');
         }
-
         if (this.resultsCard) {
-          this.resultsCard.children[0].search = this.search;
-          this.resultsCard.search = this.search;
+          this.set('resultsCard.children.0.search', this.search);
+          this.set('resultsCard.search', this.search);
         }
         var event = this.searchLibrary ? 'search:library' : 'search:graph';
-        this.fire(event, {
-          search: this.search
-        });
+        this.fire(event, { search: this.search });
       },
-      libraryResultsModified: function () {
-        if (!this.searchLibrary)
+      searchLibraryResultsChanged: function () {
+        if (!this.searchLibrary) {
           return;
-        if (this.resultsCard &&
-            this.resultsCard.type !== 'noflo-search-library-results') {
-          this.resultsCard.parentNode.removeChild(this.resultsCard);
+        }
+        if (this.resultsCard && this.resultsCard.type !== 'noflo-search-library-results') {
+          Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
           this.resultsCard = null;
         }
         if (this.resultsCard || this.search === null) {
+          this.set('resultsCard.children.0.results', []);
+          this.set('resultsCard.children.0.results', this.searchLibraryResults);
           return;
         }
         if (this.searchLibraryResults.length === 0) {
           if (this.resultsCard) {
-            this.resultsCard.parentNode.removeChild(this.resultsCard);
+            Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
             this.resultsCard = null;
           }
           return;
@@ -371,26 +400,27 @@
         results.addEventListener('resultclick', function () {
           this.clearSearch();
         }.bind(this));
-
         this.resultsCard = document.createElement('the-card');
-        this.resultsCard.type = 'noflo-search-library-results';
-        this.resultsCard.appendChild(results);
+        this.set('resultsCard.type', 'noflo-search-library-results');
+        Polymer.dom(this.resultsCard).appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
-      graphResultsModified: function () {
-        if (this.searchLibrary)
+      searchGraphResultsChanged: function () {
+        if (this.searchLibrary) {
           return;
-        if (this.resultsCard &&
-            this.resultsCard.type !== 'noflo-search-graph-results') {
-          this.resultsCard.parentNode.removeChild(this.resultsCard);
+        }
+        if (this.resultsCard && this.resultsCard.type !== 'noflo-search-graph-results') {
+          Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
           this.resultsCard = null;
         }
         if (this.resultsCard || this.search === null) {
+          this.set('resultsCard.children.0.results', []);
+          this.set('resultsCard.children.0.results', this.searchGraphResults);
           return;
         }
         if (this.searchGraphResults.length === 0) {
           if (this.resultsCard) {
-            this.resultsCard.parentNode.removeChild(this.resultsCard);
+            Polymer.dom(Polymer.dom(this.resultsCard).parentNode).removeChild(this.resultsCard);
             this.resultsCard = null;
           }
           return;
@@ -403,10 +433,9 @@
         results.addEventListener('resultclick', function () {
           this.clearSearch();
         }.bind(this));
-
         this.resultsCard = document.createElement('the-card');
-        this.resultsCard.type = 'noflo-search-graph-results';
-        this.resultsCard.appendChild(results);
+        this.set('resultsCard.type', 'noflo-search-graph-results');
+        Polymer.dom(this.resultsCard).appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
       showGraphInspector: function (event) {
@@ -417,43 +446,67 @@
         if (this.graphs.length === 0) {
           return;
         }
-        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+        if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         if (typeof ga === 'function') {
           ga('send', 'event', 'search', 'click', 'graphProperties');
         }
         this.graphInspector = document.createElement('noflo-graph-inspector');
-        this.graphInspector.graph = this.graph;
-        this.graphInspector.project = this.project;
-        this.graphInspector.runtimes = this.runtimes;
+        this.set('graphInspector.graph', this.graph);
+        this.set('graphInspector.project', this.project);
+        this.set('graphInspector.runtimes', this.runtimes);
         this.graphInspector.addEventListener('delete', function (event) {
           this.fire('deleteGraph', event.detail);
         }.bind(this));
         this.graphInspector.addEventListener('specschanged', function (event) {
           this.fire('specschanged', event.detail);
         }.bind(this));
-        document.body.appendChild(this.graphInspector);
+        Polymer.dom(document.body).appendChild(this.graphInspector);
       },
       showComponentInspector: function (event) {
         if (event) {
           event.stopPropagation();
           event.preventDefault();
         }
-        if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+        if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         if (typeof ga === 'function') {
           ga('send', 'event', 'search', 'click', 'componentProperties');
         }
         this.componentInspector = document.createElement('noflo-component-inspector');
-        this.componentInspector.component = this.component;
-        this.componentInspector.project = this.project;
+        this.set('componentInspector.component', this.component);
+        this.set('componentInspector.project', this.project);
         this.componentInspector.addEventListener('delete', function (event) {
           this.fire('deleteComponent', event.detail);
         }.bind(this));
-        document.body.appendChild(this.componentInspector);
+        Polymer.dom(document.body).appendChild(this.componentInspector);
+      },
+      _computeIf: function (component, readonly) {
+        return !readonly && (!component || !component.name);
+      },
+      _computeIf2: function (parentPath, project) {
+        return project && parentPath;
+      },
+      _computeIf3: function (component, graph) {
+        return graph && (!component || !component.name);
+      },
+      _computeIf4: function (component) {
+        return component && component.name;
+      },
+      _computeIf5: function (component, graph, readonly) {
+        return !readonly && graph && (!component || !component.name);
+      },
+      _computeIf6: function (component, graph, readonly) {
+        return !readonly && !graph && component && component.name;
+      },
+      _computeIf7: function (component, graph, readonly) {
+        return readonly || component && component.readonly || graph && graph.properties.readonly;
+      },
+      _computeHref: function (parentPath, project) {
+        return '#project/' + project.id + parentPath;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

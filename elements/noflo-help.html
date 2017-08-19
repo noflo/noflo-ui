@@ -1,6 +1,5 @@
-<polymer-element name="noflo-help" attributes="visible headline text">
-  <template>
-    <style>
+<dom-module id="noflo-help">
+  <style>
       :host {
         position: fixed;
         display: block;
@@ -43,15 +42,33 @@
         text-decoration: none;
       }
     </style>
+  <template>
     <h1>{{headline}}</h1>
     <p id="help-text"></p>
     <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">Docs <i class="fa fa-question-circle"></i></a>
   </template>
   <script>
-    Polymer('noflo-help', {
-      visible: false,
-      headline: '',
-      text: '',
+    Polymer({
+      is: 'noflo-help',
+      properties: {
+        headline: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        text: {
+          type: String,
+          value: '',
+          notify: true,
+          observer: 'textChanged'
+        },
+        visible: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: 'visibleChanged'
+        }
+      },
       attached: function () {
         this.visibleChanged();
         this.addEventListener('click', function (event) {
@@ -75,14 +92,14 @@
       },
       visibleChanged: function () {
         if (this.visible) {
-          this.style.bottom = '0px';
+          this.set('style.bottom', '0px');
         } else {
-          this.style.bottom = '-' + (this.offsetHeight + 2) + 'px';
+          this.set('style.bottom', '-' + (this.offsetHeight + 2) + 'px');
         }
       },
       textChanged: function () {
-        this.$['help-text'].innerHTML = this.text;
+        this.set('$.help-text.innerHTML', this.text);
       }
     });
   </script>
-</polymer-element>
+</dom-module>

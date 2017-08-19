@@ -1,6 +1,5 @@
-<polymer-element name="noflo-alert" attributes="message isError offerHTTPS">
-  <template>
-    <style>
+<dom-module id="noflo-alert">
+  <style>
       :host {
         text-align: center;
         background-color: hsl(35, 98%, 46%);
@@ -52,34 +51,54 @@
         }
       }
     </style>
-    <template if="{{isError}}">
+  <template>
+    <template is="dom-if" if="{{isError}}">
       <i class="fa fa-warning"></i>
     </template>
-    <template if="{{!isError && !offerHTTPS}}">
+    <template is="dom-if" if="{{_computeIf(isError, offerHTTPS)}}">
       <i class="fa fa-spinner fa-spin"></i>
     </template>
-    <template if="{{offerHTTPS}}">
+    <template is="dom-if" if="{{offerHTTPS}}">
       <i class="fa fa-lock"></i>
       This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="https://docs.flowhub.io/article/75-security-with-https-and-wss">about</a>
     </template>
     <content></content>
-    {{message}}
-    <template if="{{isError}}">
+    <span>{{message}}</span>
+    <template is="dom-if" if="{{isError}}">
       <a href="#" class="button">go home</a>
     </template>
   </template>
   <script>
-    Polymer('noflo-alert', {
-      message: "",
-      isError: false,
-      offerHTTPS: false,
+    Polymer({
+      is: 'noflo-alert',
+      properties: {
+        isError: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: 'isErrorChanged'
+        },
+        message: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        offerHTTPS: {
+          type: Boolean,
+          value: false,
+          notify: true
+        }
+      },
       isErrorChanged: function () {
         if (this.isError) {
-          this.classList.add('error');
+          Polymer.dom(this).classList.add('error');
         } else {
-          this.classList.remove('error');
+          Polymer.dom(this).classList.remove('error');
         }
+      },
+      _computeIf: function (isError, offerHTTPS) {
+        return !isError && !offerHTTPS;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

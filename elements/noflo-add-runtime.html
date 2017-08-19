@@ -1,6 +1,5 @@
-<polymer-element name="noflo-add-runtime" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-add-runtime">
+  <style>
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -8,89 +7,117 @@
         font-size: 11px;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
       <h1>Add new runtime</h1>
       <form>
         <label>
           Runtime name 
-          <input type="text" value="{{name}}" placeholder="New local runtime" required>
+          <input type="text" value="{{name::input}}" placeholder="New local runtime" required="">
         </label>
         <label>
           IP address
-          <input type="text" value="{{address}}" placeholder="127.0.0.1" required>
+          <input type="text" value="{{address::input}}" placeholder="127.0.0.1" required="">
         </label>
         <label>
           Port
-          <input type="text" data-type="int" value="{{port}}" placeholder="3569" required>
+          <input type="text" data-type="int" value="{{port::input}}" placeholder="3569" required="">
         </label>
         <label>
           Type
-          <select id="type" value="{{type}}">
-            <option value="{{t}}" template repeat="{{t in availableTypes}}">{{t}}</option>
+          <select id="type" value="{{type::input}}">
+            <template is="dom-repeat" items="{{availableTypes}}" as="type">
+            <option value="{{type}}">{{type}}</option>
+            </template>
           </select>
         </label>
         <label>
           Secret
-          <input type="text" value="{{secret}}" placeholder="secret-string" required>
+          <input type="text" value="{{secret::input}}" placeholder="secret-string" required="">
         </label>
         <div class="toolbar">
-          <button on-click="{{create}}" class="{{ { disabled: !canCreate } | tokenList }}">Create</button>
-          <a on-click="{{close}}">Cancel</a>
+          <button on-click="create" class$="{{_computeClass(canCreate)}}">Create</button>
+          <a on-click="close">Cancel</a>
         </div>
       </form>
     </div>
   </template>
   <script>
-    (function() {
-      Polymer('noflo-add-runtime', {
-        name: '',
-        address: 'localhost',
-        port: '3569',
-        secret: '',
-        canCreate: false,
-        type: '',
-        observe: {
-          name: 'validate',
-          address: 'validate',
-          port: 'validate',
-          type: 'validate',
+    (function () {
+      Polymer({
+        is: 'noflo-add-runtime',
+        properties: {
+          address: {
+            type: String,
+            value: 'localhost',
+            observer: 'validate'
+          },
+          availableTypes: {
+            type: Array,
+            value: function () {
+              return [
+                '',
+                'custom',
+                'noflo-nodejs',
+                'microflo',
+                'javafbp',
+                'imgflo',
+                'sndflo',
+                'msgflo'
+              ];
+            }
+          },
+          canCreate: {
+            type: Boolean,
+            value: false
+          },
+          name: {
+            type: String,
+            value: '',
+            observer: 'validate'
+          },
+          port: {
+            type: String,
+            value: '3569',
+            observer: 'validate'
+          },
+          secret: {
+            type: String,
+            value: ''
+          },
+          type: {
+            type: String,
+            value: '',
+            observer: 'validate'
+          }
         },
-        availableTypes: [
-          '',
-          'custom',
-          'noflo-nodejs',
-          'microflo',
-          'javafbp',
-          'imgflo',
-          'sndflo',
-          'msgflo'
-        ],
         attached: function () {
-          document.getElementById('container').classList.add('blur');
+          Polymer.dom(document.getElementById('container')).classList.add('blur');
+          Polymer.dom(this).classList.add('modal-content');
         },
         detached: function () {
-          document.getElementById('container').classList.remove('blur');
+          Polymer.dom(document.getElementById('container')).classList.remove('blur');
         },
         bgClick: function (event) {
           // Don't close if clicking within container
           event.stopPropagation();
         },
-        validate: function (oldValue, newValue) {
+        validate: function (newValue, oldValue) {
           if (this.name && this.address && this.port && this.type) {
             this.canCreate = true;
           }
         },
         close: function () {
-          if (!this.parentNode) {
+          if (!Polymer.dom(this).parentNode) {
             return;
           }
-          this.parentNode.removeChild(this);
+          Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
         },
         createUUID: function () {
-          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-              var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
-              return v.toString(16);
-              });
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c === 'x' ? r : r & 3 | 8;
+            return v.toString(16);
+          });
         },
         create: function (event) {
           if (event) {
@@ -103,15 +130,31 @@
             type: this.type,
             seen: new Date().toString(),
             protocol: 'websocket',
-            address: 'ws://'+ this.address + ':' + this.port,
+            address: 'ws://' + this.address + ':' + this.port,
             description: '',
             secret: this.secret,
             icon: 'cloud'
           };
-          this.fire("new", runtime);
+          this.fire('new', runtime);
           this.close();
+        },
+        listeners: { click: 'close' },
+        _computeRepeat: function (availableTypes, t) {
+          return t in availableTypes;
+        },
+        _computeClass: function (canCreate) {
+          return this.tokenList({ disabled: !canCreate });
+        },
+        tokenList: function (obj) {
+          var pieces = [];
+          for (var key in obj) {
+            if (obj[key]) {
+              pieces.push(key);
+            }
+          }
+          return pieces.join(' ');
         }
       });
-    })();
+    }());
   </script>
-</polymer-element>
+</dom-module>

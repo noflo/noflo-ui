@@ -1,6 +1,5 @@
-<polymer-element name="noflo-runtime-testdetails" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-runtime-testdetails">
+  <style>
       #testlisting ul {
         padding: 0px;
       }
@@ -37,34 +36,43 @@
         list-style: square;
       }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
       <div id="testlisting"></div>
       <div class="toolbar">
-        <button on-click="{{close}}">Close</button>
+        <button on-click="close">Close</button>
       </div>
     </div>
   </template>
   <script>
-    (function() {
-      Polymer('noflo-runtime-testdetails', {
-        suites: [],
+    (function () {
+      Polymer({
+        is: 'noflo-runtime-testdetails',
+        properties: {
+          suites: {
+            type: Array,
+            value: function () {
+              return [];
+            }
+          }
+        },
         attached: function () {
-          document.getElementById('container').classList.add('blur');
+          Polymer.dom(document.getElementById('container')).classList.add('blur');
+          Polymer.dom(this).classList.add('modal-content');
           var fbpSpec = require('fbp-spec');
-          React.render(fbpSpec.ui.widgets.TestsListing({
-            suites: this.suites
-          }), this.$.testlisting);
+          React.render(fbpSpec.ui.widgets.TestsListing({ suites: this.suites }), this.$.testlisting);
         },
         detached: function () {
-          document.getElementById('container').classList.remove('blur');
+          Polymer.dom(document.getElementById('container')).classList.remove('blur');
         },
         close: function () {
-          if (!this.parentNode) {
+          if (!Polymer.dom(this).parentNode) {
             return;
           }
-          this.parentNode.removeChild(this);
-        }
+          Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+        },
+        listeners: { click: 'close' }
       });
-    })();
+    }());
   </script>
-</polymer>
+</dom-module>

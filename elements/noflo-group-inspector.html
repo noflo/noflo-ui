@@ -1,53 +1,80 @@
-<polymer-element name="noflo-group-inspector" attributes="graph group groupdescription nodes" class="modal-content" on-click="{{close}}">
+<dom-module id="noflo-group-inspector">
   <template>
-    <div class="modal-container" on-click="{{bgClick}}">
+    <div class="modal-container" on-click="bgClick">
       <h1>
-        <template if="{{group}}">
-        {{group}}
+        <template is="dom-if" if="{{group}}">
+        <span>{{group}}</span>
         </template>
-        <template if="{{!group}}">
+        <template is="dom-if" if="{{!group}}">
         New
         </template>
-        group containing {{nodes.length}} nodes
+        group containing <span>{{nodes.length}}</span> nodes
       </h1>
       <form>
         <label>
           Group name
-          <input type="text" value="{{name}}" placeholder="processing" required>
+          <input type="text" value="{{name::input}}" placeholder="processing" required="">
         </label>
         <label>
           Group description
-          <input type="text" value="{{description}}" placeholder="The nodes that process things" required>
+          <input type="text" value="{{description::input}}" placeholder="The nodes that process things" required="">
         </label>
         <div class="toolbar">
-          <button on-click="{{send}}">
-            <template if="{{group}}">
+          <button on-click="send">
+            <template is="dom-if" if="{{group}}">
             Rename
             </template>
-            <template if="{{!group}}">
+            <template is="dom-if" if="{{!group}}">
             Create
             </template>
           </button>
-          <a on-click="{{close}}">Cancel</a>
+          <a on-click="close">Cancel</a>
         </div>
       </form>
     </div>
   </template>
   <script>
-    Polymer('noflo-group-inspector', {
-      name: '',
-      description: '',
-      graph: null,
-      nodes: [],
-      group: '',
-      groupdescription: '',
+    Polymer({
+      is: 'noflo-group-inspector',
+      properties: {
+        description: {
+          type: String,
+          value: ''
+        },
+        graph: {
+          value: null,
+          notify: true
+        },
+        group: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        groupdescription: {
+          type: String,
+          value: '',
+          notify: true
+        },
+        name: {
+          type: String,
+          value: ''
+        },
+        nodes: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
-        this.name =  this.group;
-        this.description =  this.groupdescription;
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
+        this.name = this.group;
+        this.description = this.groupdescription;
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       send: function (event) {
         if (event) {
@@ -61,14 +88,10 @@
             this.graph.renameGroup(this.group, this.name);
           }
           if (this.description !== this.groupdescription) {
-            this.graph.setGroupMetadata(this.group, {
-              description: this.description
-            });
+            this.graph.setGroupMetadata(this.group, { description: this.description });
           }
         } else {
-        this.graph.addGroup(this.name, this.nodes, {
-          description: this.description
-        });
+          this.graph.addGroup(this.name, this.nodes, { description: this.description });
         }
         this.close();
       },
@@ -77,11 +100,12 @@
         event.stopPropagation();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>

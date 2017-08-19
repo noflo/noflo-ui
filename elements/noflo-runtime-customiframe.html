@@ -1,6 +1,5 @@
-<polymer-element name="noflo-runtime-customiframe" attributes="graph" class="modal-content" on-click="{{close}}">
-  <template>
-    <style>
+<dom-module id="noflo-runtime-customiframe">
+  <style>
     #runtimeLink {
       width: 100%;
     }
@@ -12,39 +11,55 @@
       clear: both;
     }
     </style>
-    <div class="modal-container" on-click="{{bgClick}}">
+  <template>
+    <div class="modal-container" on-click="bgClick">
       <h1>Open noflo-browser runtime in preview area</h1>
       <label>
         <span>Base application</span>
-        <input type="url" value="{{runtimeUrl}}" on-change="{{generateRuntimeInfo}}">
+        <input type="url" value="{{runtimeUrl::input}}" on-change="generateRuntimeInfo">
       </label>
       <div class="toolbar">
-        <button on-click="{{close}}">Cancel</button>
-        <button on-click="{{connectRuntime}}">Connect</button>
+        <button on-click="close">Cancel</button>
+        <button on-click="connectRuntime">Connect</button>
       </div>
     </div>
   </template>
   <script>
-    Polymer('noflo-runtime-customiframe', {
-      runtimeUrl: 'https://noflojs.org/noflo-browser/everything.html',
-      runtime: {},
+    Polymer({
+      is: 'noflo-runtime-customiframe',
+      properties: {
+        graph: { notify: true },
+        runtime: {
+          type: Object,
+          value: function () {
+            return {};
+          }
+        },
+        runtimeUrl: {
+          type: String,
+          value: 'https://noflojs.org/noflo-browser/everything.html'
+        }
+      },
       attached: function () {
-        document.getElementById('container').classList.add('blur');
+        Polymer.dom(document.getElementById('container')).classList.add('blur');
+        Polymer.dom(this).classList.add('modal-content');
         this.generateRuntimeInfo();
       },
       detached: function () {
-        document.getElementById('container').classList.remove('blur');
+        Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       generateRuntimeInfo: function () {
-        var id = require('uuid')(); // TODO: make a hash of the URL instead??
+        var id = require('uuid')();
+        // TODO: make a hash of the URL instead??
         var params = '?fbp_noload=true&fbp_protocol=iframe';
-        var address = this.runtimeUrl+params;
+        var address = this.runtimeUrl + params;
         var runtime = {
           id: id,
           seenHoursAgo: 1,
-          user: "3f3a8187-0931-4611-8963-239c0dff1932", // FIXME: correct
-          label: "noflo-browser iframe",
-          description: "running in iframe",
+          user: '3f3a8187-0931-4611-8963-239c0dff1932',
+          // FIXME: correct
+          label: 'noflo-browser iframe',
+          description: 'running in iframe',
           graph: this.graph.properties.id,
           protocol: 'iframe',
           type: 'noflo-browser',
@@ -57,15 +72,16 @@
         event.stopPropagation();
       },
       connectRuntime: function () {
-          this.fire('runtime', this.runtime);
-          this.close();
+        this.fire('runtime', this.runtime);
+        this.close();
       },
       close: function () {
-        if (!this.parentNode) {
+        if (!Polymer.dom(this).parentNode) {
           return;
         }
-        this.parentNode.removeChild(this);
-      }
+        Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      listeners: { click: 'close' }
     });
   </script>
-</polymer-element>
+</dom-module>

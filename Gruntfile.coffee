@@ -3,13 +3,6 @@ module.exports = ->
   @initConfig
     pkg: @file.readJSON 'package.json'
 
-    'bower-install-simple':
-      deps:
-        options:
-          interactive: false
-          forceLatest: false
-          directory: 'bower_components'
-
     # Browser build of NoFlo
     noflo_browser:
       options:
@@ -59,12 +52,9 @@ module.exports = ->
           'browser/noflo-ui.js': ['./app/main.js']
 
     # Vulcanization compiles the Polymer elements into a HTML file
-    vulcanize:
-      app:
-        options:
-          csp: true
-        files:
-          'index.html': 'index.dist.html'
+    exec:
+      vulcanize:
+        command: 'node_modules/.bin/polymer-bundler --strip-comments index.dist.html > index.html'
 
     # CoffeeScript compilation of tests
     coffee:
@@ -98,10 +88,6 @@ module.exports = ->
       build: [
         'browser'
       ]
-      dependencies: [
-        'bower_components'
-        'components/*/'
-      ]
       dist: [
         'dist'
       ]
@@ -131,7 +117,7 @@ module.exports = ->
         files:
           './dev.html': './index.dist.html'
           './index.html': './index.html'
-          './browser/noflo-ui.js': './browser/noflo-ui.js'
+          './browser/noflo-ui.min.js': './browser/noflo-ui.min.js'
           './index.js': './index.js'
           './config.xml': './config.dist.xml'
           './manifest.json': './manifest.dist.json'
@@ -262,8 +248,8 @@ module.exports = ->
           dest: '/'
         ,
           src: [
-            'bower_components/polymer/*.js'
-            'bower_components/polymer/*.map'
+            'node_modules/@polymer/polymer/*.js'
+            'node_modules/@polymer/polymer/*.map'
             'node_modules/codemirror/**/*.js'
             'node_modules/codemirror/addon/lint/lint.css'
             'node_modules/codemirror/lib/*.css'
@@ -283,8 +269,9 @@ module.exports = ->
             'node_modules/react-dom/dist/*.js'
             'node_modules/rtc/dist/rtc.min.js'
             'node_modules/rtc/dist/rtc.min.js.map'
+            'node_modules/observe-js/src/observe.js'
             'node_modules/the-graph/themes/*.css'
-            'node_modules/webcomponents.js/webcomponents.min.js'
+            'node_modules/webcomponents.js/webcomponents-lite.min.js'
           ]
           expand: true
           dest: '/'
@@ -394,7 +381,7 @@ module.exports = ->
             "../node_modules/react/dist/react-with-addons.js"
             "../node_modules/react-dom/dist/react-dom.js"
             "../node_modules/hammerjs/hammer.min.js"
-            "../browser/<%=pkg.name%>.js"
+            "../browser/<%=pkg.name%>.min.js"
             "./utils/middleware.js"
             "../node_modules/sinon/pkg/sinon.js"
           ]
@@ -434,9 +421,8 @@ module.exports = ->
           detailedError: true
 
   # Grunt plugins used for building
-  @loadNpmTasks 'grunt-bower-install-simple'
   @loadNpmTasks 'grunt-noflo-browser'
-  @loadNpmTasks 'grunt-vulcanize'
+  @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
@@ -466,12 +452,11 @@ module.exports = ->
     'clean'
   ]
   @registerTask 'build', [
-    'bower-install-simple'
     'noflo_browser'
     'copy:themes'
-    'vulcanize'
-    'string-replace:app'
     'uglify'
+    'exec:vulcanize'
+    'string-replace:app'
     'compress'
   ]
   @registerTask 'rebuild', [

@@ -1,6 +1,5 @@
-<polymer-element name="noflo-edge-menu" attributes="edges" class="the-card-content sticky-head">
-  <template>
-    <style>
+<dom-module id="noflo-edge-menu">
+  <style>
       ul.toolbar2right {
         right: 0px !important;
       }
@@ -97,29 +96,63 @@
       .routes button.route10:hover  { background-color: hsla(335, 98%, 46%, 1); }
       
     </style>
+  <template>
     <header>
-      <h1 class="clear" on-click="{{clear}}">{{ edges.length}} <template if="{{edges.length > 1}}">Edges</template><template if="{{edges.length == 1}}">Edge</template></h1>    
+      <h1 class="clear" on-click="clear"><span>{{ edges.length}}</span> <template is="dom-if" if="{{_computeIf(edges)}}">Edges</template><template is="dom-if" if="{{_computeIf2(edges)}}">Edge</template></h1>    
     </header>
     <ul class="toolbar toolbar2right">
-      <template if="{{secure}}">
-        <li><button class="blue-button" on-click="{{setUnsecure}}"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
+      <template is="dom-if" if="{{secure}}">
+        <li><button class="blue-button" on-click="setUnsecure"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
       </template>
-      <template if="{{!secure}}">
-        <li><button class="blue-button" on-click="{{setSecure}}"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
+      <template is="dom-if" if="{{!secure}}">
+        <li><button class="blue-button" on-click="setSecure"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
       </template>
     </ul>
     <ul class="routes">
-      <template repeat="{{route in routes}}">
-        <li><button name="{{route}}" class="route{{route}}" on-click="{{setRoute}}"></button></li>
+      <template is="dom-repeat" items="{{routes}}" as="route">
+        <li><button name="{{route}}" on-click="setRoute" class$="{{_computeClass(route)}}"></button></li>
       </template>
     </ul>    
   </template>
   <script>
-    Polymer('noflo-edge-menu', {
-      edges: [],
-      graph: null,
-      routes: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10],
-      secure: false,
+    Polymer({
+      is: 'noflo-edge-menu',
+      properties: {
+        edges: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          notify: true,
+          observer: 'edgesChanged'
+        },
+        graph: { value: null },
+        routes: {
+          type: Array,
+          value: function () {
+            return [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              9,
+              10
+            ];
+          }
+        },
+        secure: {
+          type: Boolean,
+          value: false
+        }
+      },
+      attached: function () {
+        Polymer.dom(this).classList.add('the-card-content');
+        Polymer.dom(this).classList.add('sticky-head');
+      },
       edgesChanged: function () {
         if (!this.edges.length) {
           return;
@@ -135,38 +168,34 @@
       clear: function (event) {
         event.preventDefault();
         var edge;
-        while(this.edges.length) {
-          edge = this.edges.pop();
+        while (this.edges.length) {
+          edge = this.pop('edges');
           edge.selected = false;
         }
       },
       remove: function (event) {
         event.preventDefault();
-        while(this.edges.length) {
-          var edge = this.edges.pop();
-          if (edge.parentNode) {
-            edge.parentNode.removeChild(edge);
+        while (this.edges.length) {
+          var edge = this.pop('edges');
+          if (Polymer.dom(edge).parentNode) {
+            Polymer.dom(Polymer.dom(edge).parentNode).removeChild(edge);
           }
         }
       },
-      setRoute: function (event, detail, sender) {
+      setRoute: function (event) {
         event.preventDefault();
-        var route = parseInt(sender.getAttribute('name'), 10);
+        var route = parseInt(event.currentTarget.getAttribute('name'), 10);
         this.graph.startTransaction('changeroute');
-
         this.edges.forEach(function (edge) {
-          this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, {
-            route: route
-          });
+          this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, { route: route });
         }.bind(this));
-
         this.graph.endTransaction('changeroute');
       },
-      setSecure: function (event, detail, sender) {
+      setSecure: function (event) {
         event.preventDefault();
         this.toggleSecure(true);
       },
-      setUnsecure: function (event, detail, sender) {
+      setUnsecure: function (event) {
         event.preventDefault();
         this.toggleSecure(false);
       },
@@ -179,7 +208,16 @@
         }.bind(this));
         this.graph.endTransaction('changesecure');
         this.secure = secure;
+      },
+      _computeIf: function (edges) {
+        return edges.length > 1;
+      },
+      _computeIf2: function (edges) {
+        return edges.length == 1;
+      },
+      _computeClass: function (route) {
+        return 'route' + route;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

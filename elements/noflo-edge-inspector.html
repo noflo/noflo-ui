@@ -1,6 +1,5 @@
-<polymer-element name="noflo-edge-inspector" attributes="edge graph showlogs" class="the-card-content">
-  <template>
-    <style>
+<dom-module id="noflo-edge-inspector">
+  <style>
       h1 {
         white-space: nowrap;
         overflow: hidden;
@@ -85,30 +84,69 @@
         background-color: hsla(0, 0%, 0%, 0.7);
       }
     </style>
-    <h1>{{sourceNode}} <span class="connection route{{route}}">{{sourcePort}} &#10142; {{targetPort}}</span> {{targetNode}}</h1>
-    <button id="clear" on-click="{{clear}}" title="Clear log"><i class="fa fa-ban"></i></button>
+  <template>
+    <h1><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    <button id="clear" on-click="clear" title="Clear log"><i class="fa fa-ban"></i></button>
     <ul id="events">
     </ul>
   </template>
   <script>
-    Polymer('noflo-edge-inspector', {
-      lastlog: 0,
-      showlogs: 20,
-      edge: null,
-      log: null,
-      graph: null,
-      sourceNode: '',
-      sourcePort: '',
-      targetNode: '',
-      targetPort: '',
-      route: 0,
-      frameReq: null,
+    Polymer({
+      is: 'noflo-edge-inspector',
+      properties: {
+        edge: {
+          value: null,
+          notify: true,
+          observer: 'edgeChanged'
+        },
+        frameReq: { value: null },
+        graph: {
+          value: null,
+          notify: true
+        },
+        lastlog: {
+          type: Number,
+          value: 0
+        },
+        log: { value: null },
+        route: {
+          type: Number,
+          value: 0
+        },
+        showlogs: {
+          type: Number,
+          value: 20,
+          notify: true
+        },
+        sourceNode: {
+          type: String,
+          value: ''
+        },
+        sourcePort: {
+          type: String,
+          value: ''
+        },
+        targetNode: {
+          type: String,
+          value: ''
+        },
+        targetPort: {
+          type: String,
+          value: ''
+        }
+      },
+      attached: function () {
+        Polymer.dom(this).classList.add('the-card-content');
+      },
       detached: function () {
         if (this.frameReq) {
           window.cancelAnimationFrame(this.frameReq);
         }
       },
       edgeChanged: function () {
+        if (!this.edge) {
+          return;
+        }
         var src = this.edge.from;
         var tgt = this.edge.to;
         this.sourceNode = this.nodeLabel(src.node);
@@ -128,7 +166,7 @@
       clear: function () {
         this.log.clear();
         this.lastlog = 0;
-        this.$.events.innerHTML = '';
+        Polymer.dom(this.$.events).innerHTML = '';
       },
       animate: function () {
         if (!this.log) {
@@ -155,7 +193,7 @@
             continue;
           }
           li = document.createElement('li');
-          li.classList.add(item.type);
+          Polymer.dom(li).classList.add(item.type);
           if (item.group) {
             content = document.createTextNode(item.group);
           } else {
@@ -163,10 +201,10 @@
             if (typeof item.data === 'object') {
               cleaned = JSON.stringify(item.data, null, 2);
               if (typeof item.data.type !== 'undefined' && item.data.type === 'previewurl') {
-                var separator = (item.data.url.indexOf('?') !== -1) ? '&' : '?';
+                var separator = item.data.url.indexOf('?') !== -1 ? '&' : '?';
                 content = document.createElement('img');
                 content.src = item.data.url + separator + 'timestamp=' + new Date().getTime();
-                content.classList.add('previewimg');
+                Polymer.dom(content).classList.add('previewimg');
               } else {
                 content = document.createTextNode(cleaned);
               }
@@ -174,16 +212,19 @@
               content = document.createTextNode(cleaned);
             }
           }
-          li.appendChild(content);
-          fragment.appendChild(li);
+          Polymer.dom(li).appendChild(content);
+          Polymer.dom(fragment).appendChild(li);
         }
-        this.$.events.appendChild(fragment);
+        Polymer.dom(this.$.events).appendChild(fragment);
         // Scroll to bottom
         while (this.$.events.childElementCount > this.showlogs) {
-          this.$.events.removeChild(this.$.events.firstChild);
+          Polymer.dom(this.$.events).removeChild(Polymer.dom(this.$.events).firstChild);
         }
-        this.$.events.scrollTop = this.$.events.scrollHeight;
+        Polymer.dom(this.$.events).scrollTop = this.$.events.scrollHeight;
+      },
+      _computeClass: function (route) {
+        return 'connection route' + route;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

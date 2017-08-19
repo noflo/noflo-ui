@@ -1,14 +1,22 @@
-<polymer-element name="noflo-menu">
+<dom-module id="noflo-menu">
   <template>
     <ul class="toolbar2right">
-      <template repeat="{{button in buttons}}">
-        <li><button on-click="{{clicked}}" id="{{button.id}}"><i class="fa fa-{{button.icon}}"></i> {{label}}</button></li>
+      <template is="dom-repeat" items="{{buttons}}" as="button">
+        <li><button on-click="clicked" id="{{button.id}}"><i class$="{{_computeClass(button)}}"></i> <span>{{button.label}}</span></button></li>
       </template>
     </ul>
   </template>
   <script>
-    Polymer('noflo-menu', {
-      buttons: [],
+    Polymer({
+      is: 'noflo-menu',
+      properties: {
+        buttons: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        }
+      },
       clicked: function (event, detail, sender) {
         event.preventDefault();
         this.buttons.forEach(function (button) {
@@ -22,7 +30,10 @@
           }
           button.action();
         }.bind(this));
+      },
+      _computeClass: function (button) {
+        return 'fa fa-' + button.icon;
       }
     });
   </script>
-</polymer-element>
+</dom-module>

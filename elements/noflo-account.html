@@ -1,7 +1,6 @@
 <link rel="import" href="noflo-account-settings.html">
-<polymer-element name="noflo-account" attributes="avatar user plan">
-  <template>
-    <style>
+<dom-module id="noflo-account">
+  <style>
       :host {
         background-color: hsla(0, 0%, 0%, 0.98) !important;
         display: block;
@@ -159,6 +158,7 @@
         cursor: pointer;
       }
     </style>
+  <template>
     <nav>
     <section class="app">
       <div class="logo $NOFLO_THEME"><img src="../app/$NOFLO_THEME-72.png"></div>
@@ -172,64 +172,64 @@
       </div>
     </section>
     <section class="user">
-    <template if="{{user}}">
-      <div class="{{plan}}">
-        <template if="{{avatar}}">
+    <template is="dom-if" if="{{user}}">
+      <div class$="{{plan}}">
+        <template is="dom-if" if="{{avatar}}">
           <div class="avatar"><img src="{{avatar}}"></div>
         </template>
         <h1>
-          {{user.github.username}}
+          <span>{{user.github.username}}</span>
           <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-            <input type="hidden" name="username" value="{{user.github.username}}">
-            <input type="hidden" name="password" value="{{gridToken}}">
-            <input type="submit" id="plan" value="{{plan}}">
+            <input type="hidden" name="username" value="{{user.github.username::input}}">
+            <input type="hidden" name="password" value="{{gridToken::input}}">
+            <input type="submit" id="plan" value="{{plan::input}}">
           </form>
         </h1>
         <div class="toolbar">
           <a href="https://docs.flowhub.io" target="_blank">Docs</a>
-          <a on-click="{{openSettings}}">Settings</a>
-          <button on-click="{{logout}}">Logout</button>
+          <a on-click="openSettings">Settings</a>
+          <button on-click="logout">Logout</button>
         </div>
       </div>
     </template>
-    <template if="{{!user}}">
+    <template is="dom-if" if="{{!user}}">
       <div class="toolbar">
-        <a id="loginbutton" class="login" on-click="{{login}}">Login</a>
+        <a id="loginbutton" class="login" on-click="login">Login</a>
       </div>
     </template>
     </section>
     </nav>
-    <template if="{{user}}">
-      <template if="{{askForScope.length}}">
+    <template is="dom-if" if="{{user}}">
+      <template is="dom-if" if="{{askForScope.length}}">
         <div class="banner">
           To be able to synchronize your GitHub projects, $NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
           <div>
             Grant access to:
-            <template repeat="{{scope in askForScope}}">
-              <template if="{{scope === 'public_repo'}}">
-                <button on-click="{{relogin}}" data-scope="{{scope}}">Public repositories only</button>
+            <template is="dom-repeat" items="{{askForScope}}" as="scope">
+              <template is="dom-if" if="{{_computeIf2(scope)}}">
+                <button on-click="relogin" data-scope$="{{scope}}">Public repositories only</button>
               </template>
-              <template if="{{scope === 'repo'}}">
-                <button on-click="{{relogin}}" data-scope="{{scope}}">Public and private repositories</button>
+              <template is="dom-if" if="{{_computeIf3(scope)}}">
+                <button on-click="relogin" data-scope$="{{scope}}">Public and private repositories</button>
               </template>
             </template>
           </div>
         </div>
       </template>
-      <template if="{{plan === 'free' && !askForScope.length}}">
+      <template is="dom-if" if="{{_computeIf(askForScope, plan)}}">
         <div class="banner">
           You're using a free Flowhub plan. Upgrade to Pro to access your private projects on GitHub.
           <div>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github.username}}">
-              <input type="hidden" name="password" value="{{gridToken}}">
+              <input type="hidden" name="username" value="{{user.github.username::input}}">
+              <input type="hidden" name="password" value="{{gridToken::input}}">
               <input type="submit" id="cta" value="Upgrade now">
             </form>
           </div>
         </div>
       </template>
     </template>
-    <template if="{{!user}}">
+    <template is="dom-if" if="{{!user}}">
       <div class="banner">
         Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
       </div>
@@ -267,45 +267,77 @@
           chrome.storage.sync.remove(key);
         };
       }
-
-      Polymer('noflo-account', {
-        user: null,
-        askForScope: [],
-        plan: 'free',
-        gridToken: '',
-        githubToken: '',
-        avatar: '',
-        theme: 'dark',
-        help: null,
-        runtime: null,
+      Polymer({
+        is: 'noflo-account',
+        properties: {
+          askForScope: {
+            type: Array,
+            value: function () {
+              return [];
+            }
+          },
+          avatar: {
+            type: String,
+            value: '',
+            notify: true
+          },
+          githubToken: {
+            type: String,
+            value: ''
+          },
+          gridToken: {
+            type: String,
+            value: ''
+          },
+          help: { value: null },
+          plan: {
+            type: String,
+            value: 'free',
+            notify: true
+          },
+          runtime: { value: null },
+          theme: {
+            type: String,
+            value: 'dark',
+            observer: 'themeChanged'
+          },
+          user: {
+            value: null,
+            notify: true,
+            observer: 'userChanged'
+          }
+        },
         login: function () {
           this.fire('login', true);
         },
         logout: function () {
           this.fire('logout', true);
         },
-        relogin: function (event, details, sender) {
+        relogin: function (event) {
           event.preventDefault();
-          var scope = sender.getAttribute('data-scope');
+          var scope = event.currentTarget.getAttribute('data-scope');
           this.fire('relogin', scope);
         },
         userChanged: function () {
           if (!this.user) {
             return;
           }
+          if (!this.user.github) {
+            return;
+          }
           if (!this.user.plan || this.user.plan.type === 'free') {
             if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
               // User is on free plan but hasn't granted repo access
-              this.askForScope = ['public_repo'];
+              this.set('askForScope', ['public_repo']);
             }
             return;
           }
           if (!this.user.github.scopes || this.user.github.scopes.indexOf('repo') === -1) {
             // User is on paid plan but hasn't granted repo access
-            this.askForScope = ['repo'];
+            this.set('askForScope', ['repo']);
             if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
               // Allow paid users to limit repo access to only public if they want
-              this.askForScope.push('public_repo');
+              this.push('askForScope', 'public_repo');
             }
           }
         },
@@ -316,10 +348,10 @@
             }
             this.theme = definedTheme;
           }.bind(this));
-          document.body.classList.add(this.theme);
+          Polymer.dom(document.body).classList.add(this.theme);
         },
         openSettings: function () {
-          if (document.querySelectorAll('.modal-content:not(polymer-element)').length) {
+          if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
             return;
           }
           var dialog = document.createElement('noflo-account-settings');
@@ -327,18 +359,28 @@
           dialog.theme = this.theme;
           dialog.plan = this.plan;
           dialog.user = this.user;
-          document.body.appendChild(dialog);
+          Polymer.dom(document.body).appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.theme = event.detail.theme;
-            storage.set('flowhub-theme', this.theme, function () {});
+            storage.set('flowhub-theme', this.theme, function () {
+            });
           }.bind(this));
         },
-        themeChanged: function (oldTheme, newTheme) {
+        themeChanged: function (newTheme, oldTheme) {
           this.fire('theme', this.theme);
-          document.body.classList.remove(oldTheme);
-          document.body.classList.add(newTheme);
+          Polymer.dom(document.body).classList.remove(oldTheme);
+          Polymer.dom(document.body).classList.add(newTheme);
+        },
+        _computeIf: function (askForScope, plan) {
+          return plan === 'free' && !askForScope.length;
+        },
+        _computeIf2: function (scope) {
+          return scope === 'public_repo';
+        },
+        _computeIf3: function (scope) {
+          return scope === 'repo';
         }
       });
-    })();
+    }());
   </script>
-  </polymer-element>
+</dom-module>

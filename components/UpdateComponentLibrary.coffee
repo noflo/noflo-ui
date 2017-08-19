@@ -29,7 +29,6 @@ exports.getComponent = ->
       def = payload.componentDefinition
       c.outPorts.out.send
         componentDefinition: def
-        clearLibrary: false
       return unless def.runtime
       c.components[def.runtime] = {} unless c.components[def.runtime]
 
@@ -55,7 +54,6 @@ exports.getComponent = ->
       for name, def of c.runtime.components
         c.outPorts.out.send
           componentDefinition: def
-          clearLibrary: false
 
   c.outPorts.add 'out',
     datatype: 'object'

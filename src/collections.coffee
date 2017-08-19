@@ -1,10 +1,12 @@
-exports.addToList = (list, entity) ->
+exports.addToList = (list, entity, sort) ->
   found = false
   for existing in list
     if existing is entity
       # Entity is already in list as-is, skip
       return
-    if existing.id is entity.id
+    existingId = existing.properties?.id or existing.id
+    entityId = entity.properties?.id or entity.id
+    if existingId is entityId
       # id match, replace
       for key of entity
         continue unless entity.hasOwnProperty(key)
@@ -13,6 +15,14 @@ exports.addToList = (list, entity) ->
       break
   return if found
   list.push entity
+  unless sort
+    # Keep lists in alphabetical order
+    sort = (a, b) ->
+      aName = a.properties?.name or a.name or a.id or 'Unknown'
+      bName = b.properties?.name or b.name or b.id or 'Unknown'
+      aName.localeCompare bName
+  # Sort the list on desired criteria
+  list.sort sort
   return
 
 exports.removeFromList = (list, entity) ->
@@ -21,7 +31,9 @@ exports.removeFromList = (list, entity) ->
     if existing is entity
       index = idx
       continue
-    if existing.id is entity.id
+    existingId = existing.properties?.id or existing.id
+    entityId = entity.properties?.id or entity.id
+    if existingId is entityId
       index = idx
       continue
   return if index is null

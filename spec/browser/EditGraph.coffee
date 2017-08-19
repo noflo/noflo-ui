@@ -12,12 +12,12 @@ describe 'Editing a graph', ->
   describe 'initially', ->
     it 'should have a graph editor available', ->
       ui = doc.querySelector 'noflo-ui'
-      editor = ui.shadowRoot.querySelector 'the-graph-editor'
-      chai.expect(editor.shadowRoot).to.exist
-      graph = editor.shadowRoot.querySelector 'the-graph'
+      editor = doc.querySelector 'the-graph-editor'
+      chai.expect(editor).to.exist
+      graph = doc.querySelector 'the-graph-editor the-graph'
       chai.expect(graph).to.exist
     it 'should have no nodes in the graph editor', ->
-      nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
+      nodes = doc.querySelectorAll 'the-graph g.nodes g.node'
       chai.expect(nodes.length).to.equal 0
 
   describe.skip 'help screen', ->
@@ -36,7 +36,7 @@ describe 'Editing a graph', ->
   describe 'runtime', ->
     runtime = null
     it 'should be available as an element', ->
-      runtime = ui.shadowRoot.querySelector 'noflo-runtime'
+      runtime = doc.querySelector 'noflo-runtime'
     it 'should have the IFRAME runtime selected', ->
       chai.expect(runtime.runtime).to.be.an 'object'
     it 'should connect automatically to the IFRAME provider', (done) ->
@@ -54,12 +54,12 @@ describe 'Editing a graph', ->
   describe 'component search', ->
     search = null
     it 'should initially show the breadcrumb', ->
-      search = ui.shadowRoot.querySelector 'noflo-search'
+      search = doc.querySelector 'noflo-search'
       chai.expect(search).to.exist
       chai.expect(search.classList.contains('overlay')).to.equal true
     it 'when clicked it should show the search input', (done) ->
       @timeout 10000
-      breadcrumb = search.shadowRoot.querySelector '#breadcrumb'
+      breadcrumb = doc.querySelector 'noflo-search #breadcrumb'
       chai.expect(breadcrumb).to.exist
       setTimeout ->
         Syn.click breadcrumb
@@ -83,7 +83,7 @@ describe 'Editing a graph', ->
       setTimeout checkResults, 1000
     it 'should narrow them down when something is written', (done) ->
       @timeout 10000
-      input = search.shadowRoot.querySelector '#search'
+      input = doc.querySelector 'noflo-search #search'
       Syn.click(input)
       .type 'GetEle'
 
@@ -95,16 +95,16 @@ describe 'Editing a graph', ->
       setTimeout checkResults, 1000
     it 'should add a node when result is clicked', (done) ->
       @timeout 7000
-      context = ui.shadowRoot.querySelector 'noflo-context'
+      context = doc.querySelector 'noflo-context'
       chai.expect(context).to.exist
-      results = context.shadowRoot.querySelector 'noflo-search-library-results'
+      results = doc.querySelector 'noflo-context noflo-search-library-results'
       chai.expect(results).to.exist
       setTimeout ->
-        getelement = results.shadowRoot.querySelector 'li'
+        getelement = doc.querySelector 'noflo-search-library-results li'
         chai.expect(getelement).to.exist
         Syn.click getelement
         setTimeout ->
-          nodes = graph.shadowRoot.querySelectorAll 'g.nodes g.node'
+          nodes = doc.querySelectorAll 'the-graph g.nodes g.node'
           chai.expect(nodes.length).to.equal 1
           done()
         , 3000
