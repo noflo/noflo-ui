@@ -10,6 +10,10 @@ Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
 Dispatch MISSED -> IN ShowErrors(core/Output)
 
+# Build direct runtime context
+Dispatch OUT[0] -> CONTEXT DirectRuntime(ui/DirectRuntime)
+DirectRuntime CONTEXT -> IN MergeContextPreSubscribe(core/Merge)
+
 # Add runtime connection to an existing context
 Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
