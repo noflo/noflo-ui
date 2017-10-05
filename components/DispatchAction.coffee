@@ -31,24 +31,17 @@ exports.getComponent = ->
   c.inPorts.routes.on 'data', (data) ->
     routes = data
 
-  groups = []
   sentTo = null
   sentToIdx = null
-  c.inPorts.in.on 'begingroup', (group) ->
-    groups.push group
   c.inPorts.in.on 'data', (data) ->
     handled = routes.split ','
-    handler = findHandler groups, handled
+    handler = findHandler data.action.split(':'), handled
     if handler is -1
       sentTo = c.outPorts.pass
     else
       sentTo = c.outPorts.handle
       sentToIdx = handler
-    sentTo.beginGroup grp, sentToIdx for grp in groups
     sentTo.send data, sentToIdx
-    sentTo.endGroup sentToIdx for grp in groups
-  c.inPorts.in.on 'endgroup', (group) ->
-    grp = groups.pop()
   c.inPorts.in.on 'disconnect', ->
     return unless sentTo
     sentTo.disconnect sentToIdx
