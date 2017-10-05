@@ -26,6 +26,8 @@ exports.getComponent = ->
   c.outPorts.add 'handle',
     datatype: 'all'
     addressable: true
+  c.outPorts.add 'handling',
+    datatype: 'integer'
 
   routes = ''
   c.inPorts.routes.on 'data', (data) ->
@@ -39,6 +41,7 @@ exports.getComponent = ->
     if handler is -1
       sentTo = c.outPorts.pass
     else
+      c.outPorts.handling.send handler
       sentTo = c.outPorts.handle
       sentToIdx = handler
     sentTo.send data, sentToIdx
