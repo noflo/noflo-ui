@@ -5,17 +5,16 @@ OUTPORT=MergeContext.OUT:CONTEXT
 OUTPORT=UpdateLibrary.RUNTIME:NEW
 
 # Route requests
-'open,connect,sendGraph,sendComponent,runTests' -> ROUTES Dispatch(routers/GroupRouter)
-Dispatch ROUTE -> START Loading(ui/CreateLoadingContext)
+'runtime:open,runtime:connect,runtime:sendGraph,runtime:sendComponent,runtime:runTests' -> ROUTES Dispatch(ui/DispatchAction)
+Dispatch HANDLING -> START Loading(ui/CreateLoadingContext)
 Loading OUT -> IN MergeContext(core/Merge)
-Dispatch MISSED -> IN ShowErrors(core/Output)
 
 # Build direct runtime context
-Dispatch OUT[0] -> CONTEXT DirectRuntime(ui/DirectRuntime)
+Dispatch HANDLE[0] -> IN CleanDirectContext(ui/CleanAction) OUT -> CONTEXT DirectRuntime(ui/DirectRuntime)
 DirectRuntime CONTEXT -> IN MergeContextPreSubscribe(core/Merge)
 
 # Add runtime connection to an existing context
-Dispatch OUT[1] -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
+Dispatch HANDLE[1] -> IN CleanProjectContext(ui/CleanAction) OUT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
 
 # Add compatible runtimes to already-populated contexts
 FindRuntimes(ui/FindRuntimes) CONTEXT -> CONTEXT ProjectRuntime(ui/ProjectRuntime)
@@ -49,15 +48,15 @@ ListenProcessErrors MESSAGE -> MESSAGE ProcessErrorToContext
 ProcessErrorToContext OUT -> IN MergeContext
 
 # Sending newly-created graphs and components to runtime
-Dispatch OUT[2] -> GRAPH SendNewGraph(runtime/SendGraph)
+Dispatch HANDLE[2] -> IN CleanNewGraph(ui/CleanAction) OUT -> GRAPH SendNewGraph(runtime/SendGraph)
 ProjectRuntime CONNECTED -> RUNTIME SendNewGraph
 DirectRuntime RUNTIME -> RUNTIME SendNewGraph
-Dispatch OUT[3] -> COMPONENT SendNewComponent(runtime/SendComponent)
+Dispatch HANDLE[3] -> IN CleanNewComponent(ui/CleanAction) OUT -> COMPONENT SendNewComponent(runtime/SendComponent)
 ProjectRuntime CONNECTED -> RUNTIME SendNewComponent
 DirectRuntime RUNTIME -> RUNTIME SendNewComponent
 
 # Running fbp-spec tests on the runtime
-Dispatch OUT[4] -> IN RunTests(ui/RunTests)
+Dispatch HANDLE[4] -> IN CleanTests(ui/CleanAction) OUT -> IN RunTests(ui/RunTests)
 ProjectRuntime CONNECTED -> RUNTIME RunTests
 DirectRuntime RUNTIME -> RUNTIME RunTests
 RunTests CONTEXT -> IN MergeContext

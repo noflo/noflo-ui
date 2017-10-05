@@ -1,29 +1,28 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'edges,nodes,search_library$,search_graph,search_library_result,graph' -> ROUTES Dispatch(routers/GroupRouter)
-Dispatch MISSED -> IN ShowErrors(core/Output)
+'context:edges,context:nodes,context:search_library,context:search_graph,context:search_library_result,context:graph' -> ROUTES Dispatch(ui/DispatchAction)
 
 # Selected edges
-Dispatch OUT[0] -> IN SplitEdges(core/Split) OUT -> START CreateEdgeCtx(objects/CreateObject)
+Dispatch HANDLE[0] -> IN CleanEdges(ui/CleanAction) OUT -> START CreateEdgeCtx(objects/CreateObject)
 CreateEdgeCtx OUT -> CONTEXT SetEdges(ui/SetToContext)
 'edges' -> KEY SetEdges
-SplitEdges OUT -> VALUE SetEdges CONTEXT -> IN MergeContext(core/Merge)
+CleanEdges OUT -> VALUE SetEdges CONTEXT -> IN MergeContext(core/Merge)
 
 # Selected nodes
-Dispatch OUT[1] -> IN SplitNodes(core/Split) OUT -> START CreateNodeCtx(objects/CreateObject)
+Dispatch HANDLE[1] -> IN CleanNodes(ui/CleanAction) OUT -> START CreateNodeCtx(objects/CreateObject)
 CreateNodeCtx OUT -> CONTEXT SetNodes(ui/SetToContext)
 'nodes' -> KEY SetNodes
-SplitNodes OUT -> VALUE SetNodes CONTEXT -> IN MergeContext
+CleanNodes OUT -> VALUE SetNodes CONTEXT -> IN MergeContext
 
 # Search passes through directly for now
-Dispatch OUT[2] -> IN MergeContext
+Dispatch HANDLE[2] -> IN CleanSearch(ui/CleanAction) OUT -> IN MergeContext
 
 # Search results pass through directly for now
-Dispatch OUT[4] -> IN MergeContext
+Dispatch HANDLE[4] -> IN CleanSearchResults(ui/CleanAction) OUT -> IN MergeContext
 
 # Search nodes in the graph
-Dispatch OUT[5] -> IN GetGraph(objects/GetObjectKey)
+Dispatch HANDLE[5] -> IN CleanGraph(ui/CleanAction) OUT -> IN GetGraph(objects/GetObjectKey)
 'graph' -> KEY GetGraph
 GetGraph OUT -> GRAPH FindNodesInGraph(ui/FindNodesInGraph)
 Dispatch OUT[3] -> IN GetSearchTerm(objects/GetObjectKey)
