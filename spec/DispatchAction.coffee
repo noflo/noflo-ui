@@ -40,12 +40,10 @@ describe 'DispatchAction component', ->
 
   sendAction = (action, payload, state) ->
     parts = action.split ':'
-    ins.beginGroup part for part in parts
     ins.send
       action: action
       payload: payload
       state: state
-    ins.endGroup() for part in parts
 
   describe 'receiving a unhandled action', ->
     it 'should send it to PASS', (done) ->
