@@ -85,7 +85,7 @@ describe 'DispatchAction component', ->
         chai.expect(data.state).to.equal expected.state
         done()
       sendAction 'foo:baz', expected.payload, expected.state
-    it 'should send it to correct handler also with deeper action paths', (done) ->
+    it.skip 'should send it to correct handler also with deeper action paths', (done) ->
       routes.send 'bar:baz,foo:*'
       expected =
         payload: [1, 2]

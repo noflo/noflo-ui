@@ -20,14 +20,15 @@ RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Dispatch(ui/DispatchAction)
-'user:*,main:*,storage:*,github:*,flowhub:*,runtime:*,context:*' -> ROUTES Dispatch
+'user:*,main:*,storage:*,storage:*:*,github:*,flowhub:*,runtime:*,context:*' -> ROUTES Dispatch
 Dispatch HANDLE[0] -> IN UserReducer(ui/UserReducer)
 Dispatch HANDLE[1] -> START MainContext(ui/CreateContext)
 Dispatch HANDLE[2] -> IN StorageReducer(ui/StorageReducer)
-Dispatch HANDLE[3] -> IN GithubReducer(ui/GithubReducer)
-Dispatch HANDLE[4] -> IN RegistryReducer(ui/RegistryReducer)
-Dispatch HANDLE[5] -> IN RuntimeStorage(ui/RuntimeStorage)
-Dispatch HANDLE[6] -> IN ContextStorage(ui/ContextStorage)
+Dispatch HANDLE[3] -> IN StorageReducer(ui/StorageReducer)
+Dispatch HANDLE[4] -> IN GithubReducer(ui/GithubReducer)
+Dispatch HANDLE[5] -> IN RegistryReducer(ui/RegistryReducer)
+Dispatch HANDLE[6] -> IN RuntimeStorage(ui/RuntimeStorage)
+Dispatch HANDLE[7] -> IN ContextStorage(ui/ContextStorage)
 Dispatch PASS -> IN ShowErrors(core/Output)
 
 # Base data to UI
