@@ -25,7 +25,7 @@ Dispatch HANDLE[4] -> IN CleanSearchResults(ui/CleanAction) OUT -> IN MergeConte
 Dispatch HANDLE[5] -> IN CleanGraph(ui/CleanAction) OUT -> IN GetGraph(objects/GetObjectKey)
 'graph' -> KEY GetGraph
 GetGraph OUT -> GRAPH FindNodesInGraph(ui/FindNodesInGraph)
-Dispatch OUT[3] -> IN GetSearchTerm(objects/GetObjectKey)
+Dispatch HANDLE[3] -> IN GetSearchTerm(objects/GetObjectKey)
 'search' -> KEY GetSearchTerm
 GetSearchTerm OUT -> SEARCH FindNodesInGraph
 FindNodesInGraph NODES -> NODES NodesToContext(ui/SearchGraphNodeToContext)
