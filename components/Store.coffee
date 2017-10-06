@@ -22,7 +22,7 @@ exports.getComponent = ->
     forwardGroups: false
     async: true
   , (data, groups, out, callback) ->
-    if typeof data is 'object' and data.payload and data.action
+    if data and typeof data is 'object' and data.payload and data.action
       # New-style action object
       if data.state
         # Keep track of last state
