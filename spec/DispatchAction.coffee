@@ -85,3 +85,16 @@ describe 'DispatchAction component', ->
         chai.expect(data.state).to.equal expected.state
         done()
       sendAction 'foo:baz', expected.payload, expected.state
+    it 'should send it to correct handler also with deeper action paths', (done) ->
+      routes.send 'bar:baz,foo:*'
+      expected =
+        payload: [1, 2]
+        state:
+          hello: 'world'
+      pass.on 'data', (data) ->
+        done new Error 'Received pass'
+      handle[1].on 'data', (data) ->
+        chai.expect(data.payload).to.equal expected.payload
+        chai.expect(data.state).to.equal expected.state
+        done()
+      sendAction 'foo:baz:hello:world', expected.payload, expected.state
