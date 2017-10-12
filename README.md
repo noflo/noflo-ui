@@ -10,14 +10,21 @@ Check the [project ChangeLog](https://github.com/noflo/noflo-ui/blob/master/CHAN
 
 ## Hosted version
 
-[Flowhub](http://flowhub.io) is a hosted and commercially supported version of the NoFlo Development Environment.
+[Flowhub](http://app.flowhub.io) is a hosted and commercially supported version of the NoFlo Development Environment.
 It is free to use for open source projects, and for private projects if you do not need Github integration.
 
 If you just want to create applications, we recommend that you use this version instead of building your own from source.
 
 <a href="http://app.flowhub.io"><img alt="Start Flowhub webapp" src="https://flowhub.io/assets/app-web.svg" width="400"></a>
 
-Please read more from <http://flowhub.io/documentation/>. See also the [available support channels](http://noflojs.org/support/).
+Please read more from <http://flowhub.io/documentation/>.
+
+## Support
+
+[![Flowhub logo](https://flowhub.io/assets/banner-github.png)](https://flowhub.io)
+
+noflo-ui is a part of [Flowhub](https://flowhub.io), a platform for building robust [IoT systems](https://flowhub.io/iot) and web services.<br>
+We offer an [Integrated Development Environment](https://app.flowhub.io) and [consulting services](https://flowhub.io/consulting).
 
 ## FBP systems support
 
