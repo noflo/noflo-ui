@@ -23,10 +23,14 @@ Dispatch HANDLE[4] -> IN CleanSearchResults(ui/CleanAction) OUT -> IN MergeConte
 
 # Search nodes in the graph
 Dispatch HANDLE[5] -> IN CleanGraph(ui/CleanAction) OUT -> IN GetGraph(objects/GetObjectKey)
-'graph' -> KEY GetGraph
+'graph' -> STRING SendGraphKey(strings/SendString) OUT -> KEY GetGraph
+CleanGraph OUT -> IN SendGraphKey
 GetGraph OUT -> GRAPH FindNodesInGraph(ui/FindNodesInGraph)
-Dispatch HANDLE[3] -> IN GetSearchTerm(objects/GetObjectKey)
-'search' -> KEY GetSearchTerm
+
+Dispatch HANDLE[3] -> IN CleanSearchterm(ui/CleanAction) OUT -> IN GetSearchTerm(objects/GetObjectKey)
+'search' -> STRING SendSearchKey(strings/SendString) OUT -> KEY GetSearchTerm
+CleanSearchterm OUT -> IN SendSearchKey
+
 GetSearchTerm OUT -> SEARCH FindNodesInGraph
 FindNodesInGraph NODES -> NODES NodesToContext(ui/SearchGraphNodeToContext)
 NodesToContext CONTEXT -> IN MergeContext

@@ -32,7 +32,7 @@
     "noflo-graph": "~0.2.0",
     "noflo-indexeddb": "~0.2.2",
     "noflo-interaction": "~0.2.2",
-    "noflo-objects": "~0.2.0",
+    "noflo-objects": "~0.3.0",
     "noflo-polymer": "~1.0.1",
     "noflo-runtime": "~0.3.15",
     "noflo-runtime-base": "^0.8.2",
