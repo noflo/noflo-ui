@@ -2,15 +2,15 @@ INPORT=Dispatch.IN:IN
 OUTPORT=Merge.OUT:USER
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'projects,error' -> ROUTES Dispatch(routers/GroupRouter)
+'flowhub:projects,flowhub:error' -> ROUTES Dispatch(ui/DispatchAction)
 
 # Set remote projects list to state
-Dispatch OUT[0] -> IN MergeOps(core/Repeat)
+Dispatch HANDLE[0] -> IN CleanOps(ui/CleanAction)
 'remoteProjects' -> KEY OpsToContext(ui/SetToContext)
-MergeOps OUT -> VALUE OpsToContext
-MergeOps OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT OpsToContext
+CleanOps OUT -> VALUE OpsToContext
+CleanOps OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT OpsToContext
 OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 
 # Convert Flowhub errors to context errors
-Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+Dispatch HANDLE[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeContext

@@ -1,15 +1,15 @@
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'info,error' -> ROUTES Dispatch(routers/GroupRouter)
+'user:info,user:error' -> ROUTES Dispatch(ui/DispatchAction)
 
 # Normalize user information
-Dispatch OUT[0] -> IN MergeUser(core/Merge)
+Dispatch HANDLE[0] -> IN CleanUser(ui/CleanAction)
 'user' -> KEY UserToContext(ui/SetToContext)
-MergeUser OUT -> VALUE UserToContext
-MergeUser OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT UserToContext
+CleanUser OUT -> VALUE UserToContext
+CleanUser OUT -> START CreateCtx(ui/CreateEmptyContext) OUT -> CONTEXT UserToContext
 UserToContext CONTEXT -> IN MergeContext(core/Merge)
 
 # Convert user errors to context errors
-Dispatch OUT[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
+Dispatch HANDLE[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeContext(core/Merge)

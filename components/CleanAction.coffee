@@ -6,7 +6,7 @@ exports.getComponent = ->
   c.inPorts.add 'in',
     datatype: 'object'
   c.outPorts.add 'out',
-    datatype: 'object'
+    datatype: 'all'
   noflo.helpers.WirePattern c,
     async: true
     forwardGroups: true

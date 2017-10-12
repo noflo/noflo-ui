@@ -19,19 +19,27 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'action'
     out: 'pass'
-    forwardGroups: true
+    forwardGroups: false
     async: true
   , (data, groups, out, callback) ->
-    if data?.state
-      # Keep track of last state
-      c.state = data.state
-    else
-      # Warn of actions that don't contain state
-      debug "#{groups.join(':')} was sent without state, using previous state"
-    state = data?.state or c.state
-    payload = data?.payload or data
+    if data and typeof data is 'object' and data.payload and data.action
+      # New-style action object
+      if data.state
+        # Keep track of last state
+        c.state = data.state
+      else
+        debug "#{data.action} was sent without state, using previous state"
+      out.send
+        action: data.action
+        state: data.state or c.state
+        payload: data.payload
+      do callback
+      return
+    # Old-style action with only payload, and action defined by brackets
+    action = groups.join ':'
+    debug "#{action} was sent in legacy payload-only format"
     out.send
-      action: groups.join ':'
-      state: state
-      payload: payload
+      action: action
+      state: c.state
+      payload: data
     do callback

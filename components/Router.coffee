@@ -109,11 +109,9 @@ exports.getComponent = ->
       out.redirect.send "##{ctx.url}"
       return callback()
 
-    out.route.beginGroup ctx.route
-    out.route.beginGroup ctx.subroute
+    action = "#{ctx.route}:#{ctx.subroute}"
     delete ctx.subroute
     out.route.send
+      action: action
       payload: ctx
-    out.route.endGroup()
-    out.route.endGroup()
     callback()
