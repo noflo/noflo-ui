@@ -2,7 +2,7 @@
 
 The NoFlo Development Environment is an offline-capable, client-side web application
 that helps users to build and run flow-based programs built with FBP compatible systems such as [NoFlo](http://noflojs.org/),
-[imgflo](https://imgflo.org) and [MicroFlo](https://microflo.org).
+[MsgFlo](https://msgflo.org), [imgflo](https://imgflo.org) and [MicroFlo](https://microflo.org).
 The NoFlo Development Environment is available under the [MIT license](https://github.com/noflo/noflo-ui/blob/master/LICENSE-MIT).
 
 This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/).
