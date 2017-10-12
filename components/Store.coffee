@@ -18,7 +18,9 @@ exports.getComponent = ->
   c.process (input, output) ->
     if input.hasData 'state'
       c.state = input.getData 'state'
-      output.done()
+      setTimeout ->
+        output.done()
+      , 1
       return
     return unless input.hasStream 'action'
     packets = []
