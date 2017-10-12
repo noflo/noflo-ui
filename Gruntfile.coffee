@@ -54,7 +54,7 @@ module.exports = ->
     # Vulcanization compiles the Polymer elements into a HTML file
     exec:
       vulcanize:
-        command: 'node_modules/.bin/polymer-bundler --strip-comments index.dist.html > index.html'
+        command: 'node_modules/.bin/polymer-bundler index.dist.html > index.html'
         cwd: __dirname
 
     # CoffeeScript compilation of tests
