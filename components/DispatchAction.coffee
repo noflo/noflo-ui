@@ -32,7 +32,8 @@ exports.getComponent = ->
     return unless input.hasData 'routes', 'in'
     [routes, data] = input.getData 'routes', 'in'
     unless data?.action
-      output.done new Error 'No action provided in payload'
+      output.sendDone
+        pass: data
       return
     handled = routes.split ','
     handler = findHandler data.action.split(':'), handled
