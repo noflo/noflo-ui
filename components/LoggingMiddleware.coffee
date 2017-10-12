@@ -19,7 +19,7 @@ exports.getComponent = ->
     forwardGroups: true
     async: true
   , (data, groups, out, callback) ->
-    action = groups.join ':'
+    action = data.action
     debugAction action
     debugActionFull action, data.payload
 
