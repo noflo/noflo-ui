@@ -4,12 +4,13 @@ generateId = (project, entry) ->
   id = "#{project.id}/#{entry.path.substr(0, entry.path.lastIndexOf('.'))}"
   id.replace /[\/\s\.]/g, '_'
 
-handleGraph = (sha, content, entry, project, out) ->
+handleGraph = (sha, content, entry, project, out, callback) ->
   # Start by loading the graph object
   method = 'loadJSON'
   method = 'loadFBP' if entry.remote.language is 'fbp'
   content = JSON.parse content if entry.remote.language is 'json'
   noflo.graph[method] content, (err, graph) ->
+    return callback err if err
     # Properties that need to be changed for both cases
     graph.properties = {} unless graph.properties
     graph.properties.sha = sha
@@ -23,6 +24,7 @@ handleGraph = (sha, content, entry, project, out) ->
       # Ensure the graph is marked as not changed since SHA
       entry.local.properties.changed = false
       out.send entry.local
+      do callback
       return
 
     graph.properties.name = entry.remote.name
@@ -32,13 +34,15 @@ handleGraph = (sha, content, entry, project, out) ->
     graph.properties.environment.type = project.type unless graph.properties.environment.type
     project.graphs.push graph
     out.send graph
+    do callback
 
-handleComponent = (sha, content, entry, project, out) ->
+handleComponent = (sha, content, entry, project, out, callback) ->
   if entry.local
     entry.local.code = content
     entry.local.sha = sha
     entry.local.changed = false
     out.send entry.local
+    do callback
     return
   newEntry =
     id: generateId project, entry
@@ -50,13 +54,15 @@ handleComponent = (sha, content, entry, project, out) ->
     changed: false
   project.components.push newEntry
   out.send newEntry
+  do callback
 
-handleSpec = (sha, content, entry, project, out) ->
+handleSpec = (sha, content, entry, project, out, callback) ->
   if entry.local
     entry.local.code = content
     entry.local.sha = sha
     entry.local.changed = false
     out.send entry.local
+    do callback
     return
   newEntry =
     id: generateId project, entry
@@ -69,6 +75,7 @@ handleSpec = (sha, content, entry, project, out) ->
     changed: false
   project.specs.push newEntry
   out.send newEntry
+  do callback
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -92,25 +99,24 @@ exports.getComponent = ->
     in: 'blob'
     params: 'operation'
     out: ['graph', 'component', 'spec']
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     sha = data.sha
     content = data.content.replace /\s/g, ''
     content = decodeURIComponent escape atob content if data.encoding is 'base64'
 
     unless c.params.operation.pull?.length
-      return c.error new Error 'Operation does not provide any pull entries'
+      return callback new Error 'Operation does not provide any pull entries'
 
     for entry in c.params.operation.pull
       continue unless entry.remote?.sha is sha
       try
         if entry.type is 'graph'
-          return handleGraph sha, content, entry, c.params.operation.project, out.graph
+          return handleGraph sha, content, entry, c.params.operation.project, out.graph, callback
         if entry.type is 'spec'
-          return handleSpec sha, content, entry, c.params.operation.project, out.spec
-        return handleComponent sha, content, entry, c.params.operation.project, out.component
+          return handleSpec sha, content, entry, c.params.operation.project, out.spec, callback
+        return handleComponent sha, content, entry, c.params.operation.project, out.component, callback
       catch e
-        return c.error e
+        return callback e
 
-    c.error new Error "No entry found for #{groups[groups.length - 2]} blob #{sha}"
-
-  c
+    callback new Error "No entry found for #{groups[groups.length - 2]} blob #{sha}"

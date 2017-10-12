@@ -16,8 +16,8 @@ exports.getComponent = ->
     in: ['context', 'value']
     params: 'key'
     out: 'context'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     data.context[c.params.key] = data.value
     out.send data.context
-
-  c
+    do callback

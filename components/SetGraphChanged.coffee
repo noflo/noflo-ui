@@ -11,8 +11,12 @@ exports.getComponent = ->
     in: 'in'
     out: 'out'
     forwardGroups: true
-  , (data, groups, out) ->
-    return out.send data unless data.properties
+    async: true
+  , (data, groups, out, callback) ->
+    unless data.properties
+      out.send data
+      do callback
+      return
     data.properties.changed = true
     out.send data
-  c
+    do callback

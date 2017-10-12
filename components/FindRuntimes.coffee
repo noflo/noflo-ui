@@ -31,18 +31,22 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'context'
     out: 'context'
-  , (ctx, groups, out) ->
+    async: true
+  , (ctx, groups, out, callback) ->
     rts = ctx.runtimes or []
     unless ctx.graphs?.length
       unless ctx.component
         out.send ctx
+        do callback
         return
       componentType = getComponentType ctx.component
       unless componentType
         out.send ctx
+        do callback
         return
       ctx.compatibleRuntimes = findCompatible componentType, rts
       out.send ctx
+      do callback
       return
 
     graph = ctx.graphs[0]
@@ -57,4 +61,4 @@ exports.getComponent = ->
       ctx.compatibleRuntimes = findCompatible graphType, rts
       out.send ctx
 
-  c
+    do callback

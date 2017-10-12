@@ -16,11 +16,14 @@ exports.getComponent = ->
     in: 'in'
     out: ['out', 'repository', 'sha']
     forwardGroups: true
-  , (data, groups, out) ->
-    return if data.pull.length is 0
+    async: true
+  , (data, groups, out, callback) ->
+    return callback() if data.pull.length is 0
     out.out.send data
 
     for entry in data.pull
       continue unless entry.remote
       out.repository.send data.repo
       out.sha.send entry.remote.sha
+
+    do callback

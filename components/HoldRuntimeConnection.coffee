@@ -35,11 +35,13 @@ exports.getComponent = ->
     in: 'context'
     params: ['runtime', 'requiregraphs']
     out: ['connect', 'context']
-  , (context, groups, out) ->
+    async: true
+  , (context, groups, out, callback) ->
     requireGraphs = String(c.params.requiregraphs) is 'true'
     if requireGraphs and not context.graphs?.length and not context.remote?.length and not context.component
       if not context.runtime or context.runtime.canDo
         out.context.send context
+        do callback
         return
     context.runtime = findRuntime context
     if context.runtime
@@ -47,11 +49,13 @@ exports.getComponent = ->
         # Already connected
         context.runtime = c.params.runtime
         out.context.send context
+        do callback
         return
       # No matching active runtime connection, we need to connect
-      return out.connect.send context
+      out.connect.send context
+      do callback
+      return
 
     # No chosen runtime, present option to user
     out.context.send context
-
-  c
+    do callback

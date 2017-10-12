@@ -13,12 +13,14 @@ exports.getComponent = () ->
     in: 'search'
     params: ['graph']
     out: 'nodes'
-  , (search, groups, out) ->
-    return unless search?
-    return unless c.params.graph
+    async: true
+  , (search, groups, out, callback) ->
+    return callback() unless search?
+    return callback() unless c.params.graph
 
     if search.length < 1
       out.send null
+      do callback
       return
 
     term = search.toLowerCase()
@@ -26,6 +28,4 @@ exports.getComponent = () ->
       name = node.metadata.label.toLowerCase()
       if name.indexOf(term) >= 0
         out.send node
-
-
-  c
+    do callback

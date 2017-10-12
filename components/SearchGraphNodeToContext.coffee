@@ -10,9 +10,9 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'nodes'
     out: 'context'
-  , (nodes, groups, out) ->
+    async: true
+  , (nodes, groups, out, callback) ->
     ctx =
       searchGraphResult: nodes
     out.send ctx
-
-  c
+    do callback

@@ -19,9 +19,9 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'start'
     out: 'out'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     ctx = buildContext()
     ctx.state = 'ok'
     out.send ctx
-
-  c
+    do callback
