@@ -19,9 +19,7 @@ class Middleware
     @actionIn = noflo.internalSocket.createSocket()
     @instance.inPorts.in.attach @actionIn
     @actionIn.port = 'in'
-    @instance.start()
-    @instance.network.once 'start', ->
-      callback null
+    @instance.start callback
 
   before: (callback) ->
     loader = new noflo.ComponentLoader @baseDir

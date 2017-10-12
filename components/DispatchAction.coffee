@@ -28,32 +28,22 @@ exports.getComponent = ->
     addressable: true
   c.outPorts.add 'handling',
     datatype: 'integer'
-
-  routes = ''
-  c.inPorts.routes.on 'data', (data) ->
-    routes = data
-
-  sentTo = null
-  sentToIdx = null
-  c.inPorts.in.on 'data', (data) ->
+  c.process (input, output) ->
+    return unless input.hasData 'routes', 'in'
+    [routes, data] = input.getData 'routes', 'in'
+    unless data?.action
+      output.sendDone
+        pass: data
+      return
     handled = routes.split ','
     handler = findHandler data.action.split(':'), handled
     if handler is -1
-      sentTo = c.outPorts.pass
-    else
-      c.outPorts.handling.send handler
-      sentTo = c.outPorts.handle
-      sentToIdx = handler
-    sentTo.send data, sentToIdx
-  c.inPorts.in.on 'disconnect', ->
-    return unless sentTo
-    sentTo.disconnect sentToIdx
-    sentTo = null
-    sentToIdx = null
-
-  c.shutdown = ->
-    sentTo = null
-    sentToIdx = null
-    routes = ''
-
-  return c
+      output.sendDone
+        pass: data
+      return
+    output.send
+      handling: handler
+    output.send
+      handle: new noflo.IP 'data', data,
+        index: handler
+    output.done()

@@ -14,11 +14,11 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'context'
     out: ['runtime', 'graph', 'out']
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     if data.runtime
       out.runtime.send data.runtime
     if data.graphs?.length
       out.graph.send data.graphs[data.graphs.length - 1]
     out.out.send data
-
-  c
+    do callback

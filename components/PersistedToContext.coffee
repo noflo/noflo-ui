@@ -19,10 +19,12 @@ exports.getComponent = ->
     in: ['entity', 'original', 'type']
     params: ['action']
     out: 'context'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     out.send
       state: 'ok'
       persisted:
         type: data.type
         action: c.params.action
         entity: data.original
+    do callback

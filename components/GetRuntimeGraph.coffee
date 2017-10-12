@@ -12,17 +12,19 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'context'
     out: 'context'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     unless data.runtime
-      return c.error new Error 'No runtime available'
+      return callback new Error 'No runtime available'
     unless data.runtime.definition
-      return c.error new Error 'Runtime has no definition available'
+      return callback new Error 'Runtime has no definition available'
 
     if data.runtime.definition.graph
       data.remote = [] unless data.remote
       if data.remote.indexOf(data.runtime.definition.graph) is -1
         data.remote.unshift data.runtime.definition.graph
       out.send data
+      do callback
       return
 
     # No graph available, prepare empty
@@ -35,5 +37,4 @@ exports.getComponent = ->
         type: data.runtime.definition.type
       data.graphs.unshift emptyGraph
     out.send data
-
-  c
+    do callback

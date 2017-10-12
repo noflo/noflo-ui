@@ -10,9 +10,9 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'packet'
     out: 'out'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     ctx =
       packet: data
     out.send ctx
-
-  c
+    do callback

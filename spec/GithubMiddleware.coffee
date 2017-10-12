@@ -58,6 +58,15 @@ describe 'GitHub Middleware', ->
         graph: 'abc123'
       state = {}
       expected = [
+        id: 'abc123'
+        gist: 'abc123'
+        main: 'abc123_noflo'
+        name: 'Hello world'
+        type: 'noflo-browser'
+        graphs: []
+        components: []
+        specs: []
+      ,
         caseSensitive: false
         properties:
           name: 'Hello world'
@@ -70,15 +79,6 @@ describe 'GitHub Middleware', ->
         groups: []
         processes: {}
         connections: []
-      ,
-        id: 'abc123'
-        gist: 'abc123'
-        main: 'abc123_noflo'
-        name: 'Hello world'
-        type: 'noflo-browser'
-        graphs: []
-        components: []
-        specs: []
       ]
       check = (data) ->
         # Convert graph object to JSON for comparison
@@ -87,9 +87,9 @@ describe 'GitHub Middleware', ->
           chai.expect(data.graphs.length).to.equal 1
           data.graphs.pop()
         chai.expect(data).to.eql expected.shift()
-      mw.receiveAction 'storage:save:graph', check, (err) ->
+      mw.receiveAction 'storage:save:project', check, (err) ->
         return done err if err
-        mw.receiveAction 'storage:save:project', check, done
+        mw.receiveAction 'storage:save:graph', check, done
       mw.send action, payload, state
 
       gistData =

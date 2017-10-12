@@ -36,7 +36,6 @@ describe 'DispatchAction component', ->
     for handler, idx in handle
       c.outPorts.handle.detach handler, idx
     handle = []
-    c.shutdown()
 
   sendAction = (action, payload, state) ->
     parts = action.split ':'

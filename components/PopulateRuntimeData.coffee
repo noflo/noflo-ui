@@ -48,13 +48,16 @@ exports.getComponent = ->
     in: 'in'
     params: ['runtimes']
     out: 'out'
-  , (route, groups, out) ->
+    async: true
+  , (route, groups, out, callback) ->
     # Match to local data
     ctx = buildContext()
     ctx.runtime = findRuntime route.runtime, c.params.runtimes
-    return sendError out, new Error 'No runtime found'  unless ctx.runtime
+    unless ctx.runtime
+      sendError out, new Error 'No runtime found'
+      do callback
+      return
     ctx.remote = route.nodes
     ctx.state = 'loading'
     out.send ctx
-    
-  c
+    do callback

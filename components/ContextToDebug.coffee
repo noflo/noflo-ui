@@ -14,10 +14,12 @@ exports.getComponent = ->
     in: 'context'
     out: 'context'
     forwardGroup: true
-  , (context, groups, out) ->
+    async: true
+  , (context, groups, out, callback) ->
     c.removeListener context
     c.addListener context.runtime, context.graphs?[0]
     out.send context
+    do callback
 
   c.setRuntimeDebug = (enable) ->
     return unless c.runtime.canDo 'protocol:network'

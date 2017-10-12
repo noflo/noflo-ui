@@ -46,8 +46,9 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'in'
     out: ['out', 'repository', 'tree', 'basetree', 'parentcommits', 'message', 'ref']
-  , (data, groups, out) ->
-    return unless data.push?.length
+    async: true
+  , (data, groups, out, callback) ->
+    return callback() unless data.push?.length
 
     out.out.send data
     out.basetree.send data.tree
@@ -56,3 +57,4 @@ exports.getComponent = ->
     out.parentcommits.send [data.commit]
     out.message.send data.message
     out.ref.send data.ref
+    do callback

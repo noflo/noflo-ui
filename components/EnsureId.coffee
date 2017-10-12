@@ -18,7 +18,8 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: 'in'
     out: ['out', 'id']
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     if data.properties
       # Graph
       if data.properties.id
@@ -26,21 +27,23 @@ exports.getComponent = ->
         data.id = data.properties.id
         out.out.send data
         out.id.send data.id
+        do callback
         return
       id = randomString()
       data.properties.id = id
       data.id = id
       out.out.send data
       out.id.send data.id
+      do callback
       return
 
     # Other types
     if data.id
       out.out.send data
       out.id.send data.id
+      do callback
       return
     data.id = randomString()
     out.out.send data
     out.id.send data.id
-
-  c
+    do callback

@@ -12,11 +12,11 @@ exports.getComponent = ->
   noflo.helpers.WirePattern c,
     in: ['process', 'message']
     out: 'out'
-  , (data, groups, out) ->
+    async: true
+  , (data, groups, out, callback) ->
     ctx =
       error:
         process: data.process
         message: data.message
     out.send ctx
-
-  c
+    do callback
