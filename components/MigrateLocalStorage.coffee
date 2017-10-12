@@ -2,29 +2,30 @@ noflo = require 'noflo'
 
 # @runtime noflo-browser
 
+getGraphs = ->
+  graphIds = localStorage.getItem 'noflo-ui-graphs'
+  graphs = []
+  return graphs unless graphIds
+  ids = graphIds.split ','
+  for id in ids
+    graph = getGraph id
+    continue unless graph
+    graphs.push graph
+  return graphs
+
+getGraph = (id) ->
+  json = localStorage.getItem id
+  return unless json
+  graph = JSON.parse json
+  graph.id = id
+  graph.project = ''
+  return graph
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'graphstore',
     datatype: 'object'
 
-  getGraphs = ->
-    graphIds = localStorage.getItem 'noflo-ui-graphs'
-    graphs = []
-    return graphs unless graphIds
-    ids = graphIds.split ','
-    for id in ids
-      graph = getGraph id
-      continue unless graph
-      graphs.push graph
-    return graphs
-
-  getGraph = (id) ->
-    json = localStorage.getItem id
-    return unless json
-    graph = JSON.parse json
-    graph.id = id
-    graph.project = ''
-    return graph
 
   c.process (input, output) ->
     return unless input.hasData 'graphstore'
