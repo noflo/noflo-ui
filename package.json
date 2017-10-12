@@ -30,7 +30,7 @@
     "noflo-dom": "~0.1.0",
     "noflo-github": "~0.0.15",
     "noflo-graph": "~0.1.1",
-    "noflo-indexeddb": "~0.1.2",
+    "noflo-indexeddb": "~0.2.1",
     "noflo-interaction": "~0.1.1",
     "noflo-objects": "~0.2.0",
     "noflo-polymer": "~1.0.1",
