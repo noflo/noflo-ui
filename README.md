@@ -26,7 +26,7 @@ Please read more from <http://flowhub.io/documentation/>.
 noflo-ui is a part of [Flowhub](https://flowhub.io), a platform for building robust [IoT systems](https://flowhub.io/iot) and web services.<br>
 We offer an [Integrated Development Environment](https://app.flowhub.io) and [consulting services](https://flowhub.io/consulting).
 
-## FBP systems support
+## Usage with different FBP systems
 
 Even though the UI itself is built with NoFlo, it isn't talking directly with NoFlo for running and building graphs.
 Instead, it is utilizing the [FBP Network Protocol](https://flowbased.github.io/fbp-protocol/) which enables it to talk to *any* compatible FBP system.
