@@ -7,7 +7,7 @@ updateRuntime = _.debounce (runtime, output) ->
   output.send
     runtime:
       action: 'storage:save:runtime'
-      payload: runtime.runtime
+      payload: runtime.runtime.definition
   # Deactivate all running contexts
   while runtime.contexts.length
     ctx = runtime.contexts.shift()
@@ -46,7 +46,7 @@ exports.getComponent = ->
         output.send
           out:
             clearLibrary: true
-        c.runtimes[def.runtime].runtime.components = {}
+        c.runtimes[def.runtime].runtime.definition.components = {}
         c.runtimes[def.runtime].updated = true
 
       # Send updated component definition out
@@ -62,7 +62,7 @@ exports.getComponent = ->
         return
 
       # Add this component to the listing
-      c.runtimes[def.runtime].runtime.components[def.name] = def
+      c.runtimes[def.runtime].runtime.definition.components[def.name] = def
 
       # Add this activation context so it can be deactivated
       c.runtimes[def.runtime].contexts.push context
@@ -89,13 +89,13 @@ exports.getComponent = ->
         updated: false
         contexts: []
 
-      unless typeof payload.components is 'object'
+      unless typeof payload.definition.components is 'object'
         # No cached component information available
         output.done()
         return
 
       # Send previously cached components to have a starting point
-      for name, def of payload.components
+      for name, def of payload.definition.components
         output.send
           out:
             componentDefinition: def
