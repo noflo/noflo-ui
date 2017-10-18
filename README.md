@@ -8,6 +8,21 @@ The NoFlo Development Environment is available under the [MIT license](https://g
 This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/).
 Check the [project ChangeLog](https://github.com/noflo/noflo-ui/blob/master/CHANGES.md) for new features and other changes.
 
+## Via Docker
+A Dockerfile has been provided that can be used to easily build/run the NoFlo UI.
+
+### Build
+```bash
+docker build -t noflo-ui .
+```
+
+### Run
+```bash
+docker run -d -it -p 9999:9999 noflo-ui
+```
+
+You should then be able to access the NoFlo UI on http://localhost:9999/index.html
+
 ## Hosted version
 
 [Flowhub](http://app.flowhub.io) is a hosted and commercially supported version of the NoFlo Development Environment.
