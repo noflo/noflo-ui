@@ -21,7 +21,7 @@ docker build -t noflo-ui .
 docker run -d -it -p 9999:9999 noflo-ui
 ```
 
-You should then be able to access the NoFlo UI on http://localhost:9999/index.html
+Once it is built and the server is running you can access the UI at http://localhost:9999/index.html
 
 ## Hosted version
 
