@@ -368,6 +368,9 @@
         return graph.name + '.json';
       },
       _computeHref: function (parent, project) {
+        if (!project) {
+          return '#';
+        }
         return '#project/' + project.id + '/' + parent.properties.id;
       },
       _computeClass5: function (view) {

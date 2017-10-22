@@ -1,5 +1,5 @@
 noflo = require 'noflo'
-debug = require('debug') 'noflo-ui:state'
+debug = require('debug') 'noflo-ui:store'
 
 exports.getComponent = ->
   c = new noflo.Component

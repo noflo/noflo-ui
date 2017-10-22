@@ -1,7 +1,7 @@
 INPORT=Token.IN:TOKEN
-INPORT=GetRepoToPrepare.IN:PREPARE
+INPORT=RepoToPrepare.IN:PREPARE
 INPORT=DoSync.IN:SYNC
-INPORT=GetPullRepo.IN:PULL
+INPORT=PullRepo.IN:PULL
 OUTPORT=MergeOps.OUT:OPERATION
 OUTPORT=UpdatedComponent.OUT:COMPONENT
 OUTPORT=UpdatedGraph.OUT:GRAPH
@@ -9,12 +9,15 @@ OUTPORT=UpdatedSpec.OUT:SPEC
 OUTPORT=Errors.OUT:ERROR
 
 # Preparation for sync: check local and remote situation
-'repo' -> KEY GetRepoToPrepare(objects/GetObjectKey)
+'repo' -> STRING SendRepoKey(strings/SendString) OUT -> KEY GetRepoToPrepare(objects/GetObjectKey)
+RepoToPrepare(core/Split) OUT -> IN GetRepoToPrepare
+RepoToPrepare OUT -> IN SendRepoKey
 Token(core/Repeat) OUT -> TOKEN GetReference(github/GetReference)
 GetRepoToPrepare OUT -> REPOSITORY GetReference
 GetReference REFERENCE -> REFERENCE CheckSyncState(ui/CheckSyncState)
-'project' -> KEY GetProject(objects/GetObjectKey)
+'project' -> STRING SendProjectKey(strings/SendString) OUT -> KEY GetProject(objects/GetObjectKey)
 GetRepoToPrepare OBJECT -> IN GetProject OUT -> PROJECT CheckSyncState
+GetRepoToPrepare OBJECT -> IN SendProjectKey
 Token OUT -> TOKEN CheckSyncState
 GetReference ERROR -> IN Errors(core/Merge)
 CheckSyncState ERROR -> IN Errors
@@ -49,8 +52,9 @@ PreparePush REPOSITORY -> REPOSITORY CreateTree
 CreateTree OUT -> TREE UpdateFromTree
 PreparePush REPOSITORY -> REPOSITORY UpdateFromTree
 Token OUT -> TOKEN UpdateFromTree
-'sha' -> KEY GetTreeSha(objects/GetObjectKey)
+'sha' -> STRING SendTreeSha(strings/SendString) OUT -> KEY GetTreeSha(objects/GetObjectKey)
 CreateTree OUT -> IN GetTreeSha
+CreateTree OUT -> IN SendTreeSha
 GetTreeSha OUT -> TREE CreateCommit(github/CreateCommit)
 Token OUT -> TOKEN CreateCommit
 PreparePush MESSAGE -> MESSAGE CreateCommit
@@ -72,12 +76,15 @@ CreateCommit ERROR -> IN Errors
 UpdateReference ERROR -> IN Errors
 
 # Pull-only sync, no decision needed
-'repo' -> KEY GetPullRepo(objects/GetObjectKey)
+'repo' -> STRING SendPullRepo(strings/SendString) OUT -> KEY GetPullRepo(objects/GetObjectKey)
+PullRepo(core/Split) OUT -> IN GetPullRepo
+PullRepo OUT -> IN SendPullRepo
 Token(core/Repeat) OUT -> TOKEN GetPullReference(github/GetReference)
 GetPullRepo OUT -> REPOSITORY GetPullReference
 GetPullReference REFERENCE -> REFERENCE CheckPullState(ui/CheckSyncState)
-'project' -> KEY GetPullProject(objects/GetObjectKey)
+'project' -> STRING SendPullProject(strings/SendString) OUT -> KEY GetPullProject(objects/GetObjectKey)
 GetPullRepo OBJECT -> IN GetPullProject OUT -> PROJECT CheckPullState
+GetPullRepo OBJECT -> IN SendPullProject
 Token OUT -> TOKEN CheckPullState
 GetPullReference ERROR -> IN Errors
 CheckPullState REMOTE -> IN DoSync

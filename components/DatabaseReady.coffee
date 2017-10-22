@@ -4,7 +4,8 @@ exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
     datatype: 'bang'
-    process: (event, payload) ->
-      return unless event is 'data'
-      window.nofloDBReady = true
-  c
+  c.process (input, output) ->
+    return unless input.hasData 'in'
+    input.getData 'in'
+    window.nofloDBReady = true
+    output.done()

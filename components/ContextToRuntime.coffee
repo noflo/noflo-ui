@@ -1,21 +1,18 @@
 noflo = require 'noflo'
 _ = require 'underscore'
 
-sendContext = (context, out) ->
+sendContext = (context, callback) ->
   if context.project
     sendProject context.project, context.runtime
-    out.send context
-    out.disconnect()
+    do callback
     return
 
   if context.graphs?.length
     sendGraph null, graph, context.runtime for graph in context.graphs
-    out.send context
-    out.disconnect()
+    do callback
     return
 
-  out.send context
-  out.disconnect()
+  do callback
 
 sendProject = (project, runtime) ->
   namespace = project.namespace or project.id
@@ -95,36 +92,62 @@ sendGraph = (namespace, graph, runtime, project) ->
         port: priv.port
         graph: graphId
 
-currentContext = null
-
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'context',
     datatype: 'object'
-    process: (event, payload) ->
-      return unless event is 'data'
-      return unless payload.runtime
-      if currentContext?.runtime and currentContext.graphs[0] isnt payload.graphs[0] and sender
-        currentContext.runtime.removeListener 'capabilities', sender
-        if currentContext.runtime is payload.runtime
-          # Same runtime, different graph. Reconnect to clear caches
-          currentContext.runtime.reconnect()
-        else
-          # Different runtime, different graph. Disconnect old runtime connection
-          currentContext.runtime.disconnect()
-
-      send = _.debounce sendContext, 300, true
-
-      # Prepare to send data
-      currentContext = payload
-      send payload, c.outPorts.context if payload.runtime.isConnected()
-      sender = ->
-        return unless currentContext is payload
-        send payload, c.outPorts.context
-
-      payload.runtime.on 'capabilities', sender
-
   c.outPorts.add 'context',
     datatype: 'object'
 
-  c
+  c.current = null
+
+  unsubscribe = ->
+    return unless c.current
+    c.current.runtime.removeListener 'capabilities', c.current.sender
+    c.current.ctx.deactivate()
+    c.current = null
+
+  c.tearDown = (callback) ->
+    do unsubscribe
+    do callback
+
+  c.process (input, output, context) ->
+    return unless input.hasData 'context'
+    payload = input.getData 'context'
+    unless payload.runtime
+      # No runtime associated with the context, unsubscribe previous
+      unsubscribe()
+      output.done()
+      return
+    if c.current?.runtime and c.current?.payload?.graphs[0] isnt payload.graphs[0]
+      # We have an existing runtime connection, with different main graph
+      if c.current.runtime is payload.runtime
+        # Same runtime, different graph. Reconnect to clear caches
+        c.current.runtime.removeListener 'capabilities', c.current.sender
+        c.current.runtime.reconnect()
+      else
+        # Different runtime, different graph. Disconnect old runtime connection
+        c.current.runtime.disconnect()
+        do unsubscribe
+
+    # Prepare to send data
+    send = _.debounce sendContext, 300, true
+    c.current =
+      runtime: payload.runtime
+      payload: payload
+      ctx: context
+      sender: ->
+        return unless c.current.payload is payload
+        send payload, ->
+          output.send
+            context: payload
+
+    if payload.runtime.isConnected()
+      # We're already connected, send context to runtime right away
+      send payload, ->
+        output.send
+          context: payload
+
+    # If runtime reconnects, we need to re-send the context in case
+    # runtime doesn't have persistent state
+    payload.runtime.on 'capabilities', c.current.sender
