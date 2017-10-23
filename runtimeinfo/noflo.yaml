@@ -111,9 +111,9 @@ examples:
   canvas:
     label: 'Canvas pattern'
     id: 'dc0414ecf989b4b130b119e948653350'
-  yinyang:
-    label: 'Yin-yang'
-    id: 'a1096a406131e109f836'
+  counter:
+    label: 'Click counter'
+    id: '38471e33458d644e907f4637434f5bbf'
   delaunaymasks:
     label: 'Delaunay masks'
     id: 'f6d1141de2833e45fb3c'
