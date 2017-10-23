@@ -3,7 +3,7 @@ runtimetypes:
     shortname: NoFlo for Browser
     icon: html5
     description: 'Build client-side browser applications'
-    helpurl: 'https://github.com/noflo/noflo-browser#readme'
+    helpurl: 'https://github.com/noflo/noflo-browser-app#readme'
   'noflo-nodejs':
     shortname: NoFlo for Node.js
     icon: cloud
