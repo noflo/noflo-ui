@@ -120,7 +120,7 @@ examples:
     ssl: true
   reacttodo:
     label: 'React TODO list'
-    id: '1d42f66f5cc4614df935'
+    id: 'c111454c9fd2f74d37d1e8a4e739adfd'
   webaudio:
     label: 'Web Audio'
     id: '6724a6eb8a1aaf351866e7a43c3ecd43'
