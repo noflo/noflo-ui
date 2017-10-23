@@ -103,14 +103,14 @@ componenttemplates:
 examples:
   clock:
     label: 'Animated clock'
-    id: '7135158'
+    id: '86a28c01d66cd8bf672f4e0a3e1ba851'
   camtopalette:
     label: 'Cam to palette'
     id: '3c0ffdf17195649a2d57'
     ssl: true
   canvas:
     label: 'Canvas pattern'
-    id: '1319c76fe006fb34c9c9'
+    id: 'dc0414ecf989b4b130b119e948653350'
   yinyang:
     label: 'Yin-yang'
     id: 'a1096a406131e109f836'
