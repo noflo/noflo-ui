@@ -295,7 +295,7 @@
           this.graphView.setAnimatedEdges(this.animatedEdges);
         },
         emitChanged: function (_, event) {
-          this.fire('changed', this);
+          this.fire('changed', this.graph);
         },
         autolayoutChanged: function () {
           if (!this.graph) {
