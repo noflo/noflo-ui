@@ -111,6 +111,7 @@ exports.getComponent = ->
     do unsubscribe
     do callback
 
+  c.forwardBrackets = {}
   c.process (input, output, context) ->
     return unless input.hasData 'context'
     payload = input.getData 'context'
