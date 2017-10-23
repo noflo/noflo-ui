@@ -114,6 +114,9 @@ examples:
   counter:
     label: 'Click counter'
     id: '38471e33458d644e907f4637434f5bbf'
+  draganddrop:
+    label: 'Drag-and-drop physics'
+    id: '026a7bc8f1b482f56ad336c9d72dd72f'
   delaunaymasks:
     label: 'Delaunay masks'
     id: 'f6d1141de2833e45fb3c'
