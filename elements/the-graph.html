@@ -246,7 +246,7 @@
         },
         onNodeSelection: function (itemKey, item, toggle) {
           if (itemKey === undefined) {
-            this.selectedNodes = [];
+            this.set('selectedNodes', []);
           } else if (toggle) {
             var index = this.selectedNodes.indexOf(item);
             var isSelected = index !== -1;
@@ -259,6 +259,7 @@
             this.set('selectedNodes', [item]);
           }
           this.fire('nodes', this.selectedNodes);
+          this.selectedNodesChanged();
         },
         selectedNodesChanged: function () {
           this.set('selectedNodesHash', {});
