@@ -6,6 +6,7 @@ NoFlo UI ChangeLog
 Internal changes:
 
 * Upgraded noflo-ui to run on NoFlo 0.8
+* Removed all usage of deprecated NoFlo APIs
 * Switched actions to use a property instead of bracket IPs
 
 ## 0.21.0 (2017 August 23)
