@@ -106,7 +106,7 @@ examples:
     id: '86a28c01d66cd8bf672f4e0a3e1ba851'
   camtopalette:
     label: 'Cam to palette'
-    id: '3c0ffdf17195649a2d57'
+    id: 'efd306b5846c236998a63c535ceebed1'
     ssl: true
   canvas:
     label: 'Canvas pattern'
@@ -119,7 +119,7 @@ examples:
     id: '026a7bc8f1b482f56ad336c9d72dd72f'
   delaunaymasks:
     label: 'Delaunay masks'
-    id: 'f6d1141de2833e45fb3c'
+    id: 'd6c1fa7b4b9d437564e954f338d970b9'
     ssl: true
   reacttodo:
     label: 'React TODO list'
