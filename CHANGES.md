@@ -3,6 +3,15 @@ NoFlo UI ChangeLog
 
 ## 0.22.0 (git master)
 
+New features:
+
+* Updated NoFlo browser demos
+
+Bugfixes:
+
+* Fixed multiple selection of nodes in graph editor
+* Fixed auto-scrolling of packets list in edge inspector
+
 Internal changes:
 
 * Upgraded noflo-ui to run on NoFlo 0.8

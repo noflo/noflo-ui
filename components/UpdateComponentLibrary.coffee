@@ -31,6 +31,7 @@ exports.getComponent = ->
   c.tearDown = (callback) ->
     c.runtimes = {}
     do callback
+  c.forwardBrackets = {}
   c.process (input, output, context) ->
     if input.hasData 'in'
       # New or updated component definition from runtime
