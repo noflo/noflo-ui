@@ -3,6 +3,10 @@ NoFlo UI ChangeLog
 
 ## 0.22.0 (git master)
 
+New features:
+
+* Updated NoFlo browser demos
+
 Bugfixes:
 
 * Fixed multiple selection of nodes in graph editor
