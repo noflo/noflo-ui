@@ -3,7 +3,7 @@ runtimetypes:
     shortname: NoFlo for Browser
     icon: html5
     description: 'Build client-side browser applications'
-    helpurl: 'https://github.com/noflo/noflo-browser#readme'
+    helpurl: 'https://github.com/noflo/noflo-browser-app#readme'
   'noflo-nodejs':
     shortname: NoFlo for Node.js
     icon: cloud
@@ -103,24 +103,27 @@ componenttemplates:
 examples:
   clock:
     label: 'Animated clock'
-    id: '7135158'
+    id: '86a28c01d66cd8bf672f4e0a3e1ba851'
   camtopalette:
     label: 'Cam to palette'
-    id: '3c0ffdf17195649a2d57'
+    id: 'efd306b5846c236998a63c535ceebed1'
     ssl: true
   canvas:
     label: 'Canvas pattern'
-    id: '1319c76fe006fb34c9c9'
-  yinyang:
-    label: 'Yin-yang'
-    id: 'a1096a406131e109f836'
+    id: 'dc0414ecf989b4b130b119e948653350'
+  counter:
+    label: 'Click counter'
+    id: '38471e33458d644e907f4637434f5bbf'
+  draganddrop:
+    label: 'Drag-and-drop physics'
+    id: '026a7bc8f1b482f56ad336c9d72dd72f'
   delaunaymasks:
     label: 'Delaunay masks'
-    id: 'f6d1141de2833e45fb3c'
+    id: 'd6c1fa7b4b9d437564e954f338d970b9'
     ssl: true
   reacttodo:
     label: 'React TODO list'
-    id: '1d42f66f5cc4614df935'
+    id: 'c111454c9fd2f74d37d1e8a4e739adfd'
   webaudio:
     label: 'Web Audio'
-    id: '04847249319d2326fa92'
+    id: '6724a6eb8a1aaf351866e7a43c3ecd43'

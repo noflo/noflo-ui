@@ -40,11 +40,7 @@ SubscribeGraph RUNTIME -> RUNTIME ListenNetwork(runtime/ListenNetwork)
 SubscribeGraph GRAPH -> GRAPH ListenNetwork
 ListenNetwork PACKET -> PACKET PacketToContext(ui/PacketToContext)
 PacketToContext OUT -> IN MergeContext
-
-# Listen to runtime process error events
-SubscribeGraph RUNTIME -> RUNTIME ListenProcessErrors(runtime/ListenProcessErrors)
-ListenProcessErrors PROCESS -> PROCESS ProcessErrorToContext(ui/ProcessErrorToContext)
-ListenProcessErrors MESSAGE -> MESSAGE ProcessErrorToContext
+ListenNetwork PROCESSERROR -> ERROR ProcessErrorToContext(ui/ProcessErrorToContext)
 ProcessErrorToContext OUT -> IN MergeContext
 
 # Sending newly-created graphs and components to runtime

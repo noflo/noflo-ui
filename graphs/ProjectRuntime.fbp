@@ -8,8 +8,9 @@ HoldConnection(ui/HoldRuntimeConnection) CONTEXT -> IN ConnectedContext(core/Mer
 'true' -> REQUIREGRAPHS HoldConnection
 
 # If not, the connect
-'runtime' -> KEY GetDefinition(objects/GetObjectKey)
+'runtime' -> STRING SendRuntimeKey(strings/SendString) OUT -> KEY GetDefinition(objects/GetObjectKey)
 HoldConnection CONNECT -> IN GetDefinition
+HoldConnection CONNECT -> IN SendRuntimeKey
 GetDefinition OUT -> DEFINITION Connect(runtime/ConnectRuntime)
 '10000' -> TIMEOUT Connect
 'body' -> SELECTOR GetParent(dom/GetElement) ELEMENT -> ELEMENT Connect

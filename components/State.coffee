@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+debug = require('debug') 'noflo-ui:state'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -17,6 +18,8 @@ exports.getComponent = ->
     forwardGroups: false
   , (data, groups, out, callback) ->
     for key, val of data
+      continue if c.state[key] is val
+      debug "#{key} changed", c.state[key], val
       c.state[key] = val
     out.state.send c.state
     out.updated.send data

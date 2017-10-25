@@ -16,9 +16,7 @@ exports.getComponent = ->
     forwardGroups: false
     async: true
   , (data, groups, out, callback) ->
-    setTimeout ->
-      out.send
-        action: c.params.action
-        payload: data
-      callback()
-    , 1
+    out.send
+      action: c.params.action
+      payload: data
+    callback()

@@ -1,11 +1,21 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.22.0 (git master)
+## 0.22.0 (2017 October 24)
+
+New features:
+
+* Updated NoFlo browser demos
+
+Bugfixes:
+
+* Fixed multiple selection of nodes in graph editor
+* Fixed auto-scrolling of packets list in edge inspector
 
 Internal changes:
 
 * Upgraded noflo-ui to run on NoFlo 0.8
+* Removed all usage of deprecated NoFlo APIs
 * Switched actions to use a property instead of bracket IPs
 
 ## 0.21.0 (2017 August 23)
