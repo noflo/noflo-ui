@@ -56,9 +56,7 @@ exports.getComponent = ->
         do callback
         return
       # Update user information based on remote data
-      out.updated.beginGroup data['grid-token']
       out.updated.send userData
-      out.updated.endGroup()
       do callback
       return
     req.open 'GET', "$NOFLO_OAUTH_SERVICE_USER$NOFLO_OAUTH_ENDPOINT_USER", true

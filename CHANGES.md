@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.22.1 (2017 October 26)
+
+Bugfixes:
+
+* Fixed GitHub tab not opening
+
 ## 0.22.0 (2017 October 24)
 
 New features:
