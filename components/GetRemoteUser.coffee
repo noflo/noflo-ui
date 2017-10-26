@@ -29,9 +29,7 @@ exports.getComponent = ->
         userData = JSON.parse req.responseText
       catch e
         return callback e
-      out.beginGroup token
       out.send userData
-      out.endGroup()
       do callback
       return
     req.open 'GET', "$NOFLO_OAUTH_SERVICE_USER$NOFLO_OAUTH_ENDPOINT_USER", true

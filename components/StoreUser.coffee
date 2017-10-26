@@ -48,7 +48,6 @@ exports.getComponent = ->
     async: true
   , (user, groups, out, callback) ->
 
-    token = groups.pop()
     plan = user.plan?.type or 'free'
     githubToken = user.github?.token or ''
     githubUsername = user.github?.username or ''
@@ -56,7 +55,7 @@ exports.getComponent = ->
     downloadAvatar user.avatar, (err, avatar) ->
       userData =
         'grid-avatar': avatar
-        'grid-token': token
+        'grid-token': githubToken
         'grid-user': JSON.stringify user
         'github-token': githubToken
         'github-username': githubUsername
