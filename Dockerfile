@@ -1,9 +1,11 @@
-FROM node:boron
+FROM node:boron-alpine
+
+RUN apk add --update git
 
 # Install dependencies
 WORKDIR /data
 COPY package.json /data
-RUN npm install
+RUN npm install && npm cache clean
 
 # Build from source
 COPY . /data
