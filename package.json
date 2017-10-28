@@ -17,7 +17,7 @@
   "dependencies": {
     "@polymer/polymer": "^1.2.5-npm-test.2",
     "codemirror": "^5.22.2",
-    "coffeelint": "^1.15.7",
+    "coffeelint": "^2.0.7",
     "debug": "^3.0.0",
     "fbp": "~1.5.0",
     "fbp-spec": "~0.2.0",
