@@ -73,7 +73,7 @@
     "puppeteer": "^0.12.0",
     "simple-server": "^1.0.1",
     "sinon": "^4.0.0",
-    "syn": "^0.10.0",
+    "syn": "^0.13.0",
     "uglifyjs-webpack-plugin": "^1.0.1",
     "webpack": "^3.8.1",
     "yaml-loader": "^0.5.0"
