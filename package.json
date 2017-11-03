@@ -19,7 +19,7 @@
     "codemirror": "^5.22.2",
     "coffeelint": "^1.15.7",
     "debug": "^3.0.0",
-    "fbp": "~1.5.0",
+    "fbp": "~1.6.0",
     "fbp-spec": "~0.2.0",
     "flowhub-registry": "^0.1.0",
     "font-awesome": "^4.6.3",
