@@ -29,7 +29,7 @@
     "noflo-core": "~0.4.0",
     "noflo-dom": "~0.2.0",
     "noflo-github": "~0.0.15",
-    "noflo-graph": "~0.2.0",
+    "noflo-graph": "~0.3.0",
     "noflo-indexeddb": "~0.2.2",
     "noflo-interaction": "~0.2.2",
     "noflo-objects": "~0.3.0",
