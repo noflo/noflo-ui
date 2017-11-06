@@ -19,26 +19,6 @@ ensureOneIframeRuntime = (runtimes) ->
     seen: Date.now()
   return iframeRuntime
 
-ensureMicroFloRuntimePerSerialDevice = (runtimes, callback) ->
-  try
-    microflo = require 'microflo'
-  catch e
-    return callback e
-  return callback null unless microflo.serial.isSupported()
-
-  microflo.serial.listDevices (devices) ->
-    newRuntimes = []
-    for device in devices
-      rt =
-        label: device
-        id: uuid()
-        protocol: 'microflo'
-        address: 'serial://'+device
-        type: 'microflo'
-        seen: Date.now()
-      newRuntimes.push rt
-    return callback newRuntimes
-
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
@@ -54,9 +34,4 @@ exports.getComponent = ->
     iframeRuntime = ensureOneIframeRuntime data
     if iframeRuntime
       out.send iframeRuntime
-    ensureMicroFloRuntimePerSerialDevice data, (err, runtimes) ->
-      console.log err if err
-      return callback() unless runtimes
-      for runtime in runtimes
-        out.send runtime
-      do callback
+    do callback
