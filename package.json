@@ -37,7 +37,7 @@
     "noflo-runtime": "~0.6.0",
     "noflo-runtime-base": "^0.9.2",
     "noflo-runtime-webrtc": "~0.8.0",
-    "noflo-strings": "~0.3.1",
+    "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
     "rtc": "^3.4.0",
     "the-graph": "^0.10.2",
