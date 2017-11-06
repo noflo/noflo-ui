@@ -25,7 +25,7 @@ window.require = function (moduleName) {
 
 window.addEventListener('WebComponentsReady', function() {
   var noflo = require('noflo');
-  var runtime = require('noflo-runtime-webrtc');
+  var runtime = require('noflo-runtime-postmessage');
 
   var baseDir = '/noflo-ui';
   var mainGraph = require('../graphs/main.fbp');
