@@ -35,7 +35,7 @@
     "noflo-objects": "~0.3.0",
     "noflo-polymer": "~1.0.1",
     "noflo-runtime": "~0.5.1",
-    "noflo-runtime-base": "^0.8.2",
+    "noflo-runtime-base": "^0.9.2",
     "noflo-runtime-webrtc": "~0.8.0",
     "noflo-strings": "~0.3.1",
     "observe-js": "^0.5.7",
