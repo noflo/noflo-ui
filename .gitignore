@@ -9,7 +9,6 @@
 /spec/browser/*.js
 /spec/utils/*.js
 /spec/*.xml
-/spec/tests.html
 /dist/
 /gh-pages/
 *.zip
@@ -24,3 +23,4 @@ config.xml
 sauce_connect.log
 *~
 themes/
+npm-debug.log
