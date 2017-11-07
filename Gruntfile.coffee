@@ -18,8 +18,6 @@ module.exports = ->
       spec:
         options:
           bare: true
-          transpile:
-            presets: ['es2015']
         expand: true
         cwd: 'spec'
         src: '*.coffee'
@@ -28,8 +26,6 @@ module.exports = ->
       spec_utils:
         options:
           bare: true
-          transpile:
-            presets: ['es2015']
         expand: true
         cwd: 'spec/utils'
         src: '*.coffee'
@@ -38,8 +34,6 @@ module.exports = ->
       spec_browser:
         options:
           bare: true
-          transpile:
-            presets: ['es2015']
         expand: true
         cwd: 'spec/browser'
         src: '*.coffee'
@@ -248,91 +242,17 @@ module.exports = ->
         message: 'Updating web version to <%= pkg.version %>'
       src: '**/*'
 
-
-    # Coding standards
-    coffeelint:
-      app:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: [
-          'Gruntfile.coffee'
-          'src/*.coffee'
-          'src/**/*.coffee'
-          'components/*.coffee'
-        ]
-      spec:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: 'spec/*.coffee'
-      spec_sub:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: 'spec/**/*.coffee'
-
-
-    inlinelint:
-      options:
-        strict: false,
-        newcap: false,
-        "globals": { "Polymer": true }
-      all:
-        src: ['elements/*.html']
-
     watch:
       spec:
         files: 'spec/*.coffee'
-        tasks: ['coffeelint:spec', 'coffee:spec']
+        tasks: ['coffee:spec']
         options:
           livereload: false
       spec_browser:
         files: 'spec/browser/*.coffee'
-        tasks: ['coffeelint:spec_browser', 'coffee:spec_browser']
+        tasks: ['coffee:spec_browser']
         options:
           livereload: false
-
-    # Web server for the browser tests
-    connect:
-      server:
-        options:
-          port: 9999
-          hostname: '*' # Allow connection from mobile
-          livereload: false
-
-    # BDD tests on browser
-    mocha_phantomjs:
-      unit:
-        options:
-          reporter: 'spec'
-          urls: ['http://localhost:9999/spec/tests.html']
-          failWithOutput: true
-      browser:
-        options:
-          reporter: 'spec'
-          urls: ['http://localhost:9999/spec/browser/tests.html']
-
-    # BDD tests on browser
-    'saucelabs-mocha':
-      all:
-        options:
-          urls: ['http://127.0.0.1:9999/spec/browser/tests.html']
-          browsers: [
-            browserName: 'googlechrome'
-            version: '55'
-          ,
-            browserName: 'safari'
-            version: '10'
-          ,
-            browserName: 'internet explorer'
-            version: '11'
-          ]
-          build: process.env.TRAVIS_JOB_ID
-          testname: 'NoFlo UI browser tests'
-          tunnelTimeout: 5
-          concurrency: 1
-          detailedError: true
 
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-webpack'
@@ -349,11 +269,7 @@ module.exports = ->
   # Grunt plugins used for testing
   @loadNpmTasks 'grunt-contrib-watch'
   @loadNpmTasks 'grunt-contrib-coffee'
-  @loadNpmTasks 'grunt-mocha-phantomjs'
-  @loadNpmTasks 'grunt-saucelabs'
-  @loadNpmTasks 'grunt-coffeelint'
   @loadNpmTasks 'grunt-contrib-connect'
-  @loadNpmTasks 'grunt-lint-inline'
 
   # For automatic building when working on browser libraries
   @loadNpmTasks 'grunt-contrib-watch'
@@ -375,20 +291,8 @@ module.exports = ->
     'nuke'
     'build'
   ]
-  @registerTask 'test', [
-    'coffeelint'
-    'inlinelint'
-    'build'
-    'coffee'
-    'connect'
-    'mocha_phantomjs'
-  ]
-  @registerTask 'crossbrowser', [
-    'test'
-    'saucelabs-mocha'
-  ]
   @registerTask 'default', [
-    'test'
+    'build'
   ]
   @registerTask 'pages', [
     'build'
@@ -403,6 +307,5 @@ module.exports = ->
     'coffee:spec'
     'coffee:spec_utils'
     'coffee:spec_browser'
-    'connect:server'
     'watch'
   ]
