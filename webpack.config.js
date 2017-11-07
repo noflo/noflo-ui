@@ -85,7 +85,6 @@ module.exports = {
   },
   externals: {
     'canvas': 'commonjs canvas', // Required by noflo-image
-    'coffee-script': 'commonjs coffee-script', // Required by noflo-image
   },
   resolve: {
     extensions: [".coffee", ".js"],
