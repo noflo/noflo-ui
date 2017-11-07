@@ -200,32 +200,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: [
-            'node_modules/@polymer/polymer/*.js'
-            'node_modules/@polymer/polymer/*.map'
-            'node_modules/codemirror/**/*.js'
-            'node_modules/codemirror/addon/lint/lint.css'
-            'node_modules/codemirror/lib/*.css'
-            'node_modules/codemirror/theme/mdn-like.css'
-            'node_modules/coffee-script/extras/*.js'
-            'node_modules/coffeelint/lib/coffeelint.js'
-            'node_modules/jshint/dist/jshint.js'
-            'node_modules/font-awesome/css/*.css'
-            'node_modules/font-awesome/**/*.woff'
-            'node_modules/font-awesome/**/*.ttf'
-            'node_modules/font-awesome/**/*.svg'
-            'node_modules/hammerjs/hammer.min.js'
-            'node_modules/hammerjs/hammer.min.js.map'
-            'node_modules/klayjs/klay.js'
-            'node_modules/klayjs-noflo/klay-noflo.js'
-            'node_modules/react/dist/*.js'
-            'node_modules/react-dom/dist/*.js'
-            'node_modules/rtc/dist/rtc.min.js'
-            'node_modules/rtc/dist/rtc.min.js.map'
-            'node_modules/observe-js/src/observe.js'
-            'node_modules/the-graph/themes/*.css'
-            'node_modules/webcomponents.js/webcomponents-lite.min.js'
-          ]
+          src: require './externals.conf.js'
           expand: true
           dest: '/'
         ,
