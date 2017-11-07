@@ -39,7 +39,7 @@ module.exports = function(config) {
     });
   });
 
-  config.set({
+  const configuration = {
     basePath: '',
     frameworks: ['mocha', 'chai'],
     files,
@@ -62,5 +62,41 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  })
+  };
+
+  // If we're on Travis we also try to test with real browsers
+  if (process.env.TRAVIS) {
+
+    // The browsers we want to test
+    configuration.customLaunchers = {
+      sl_safari: {
+        base: 'SauceLabs',
+        browserName: 'safari',
+        version: '11',
+      },
+      sl_chrome: {
+        base: 'SauceLabs',
+        browserName: 'googlechrome',
+      },
+    };
+    configuration.browsers = Object.keys(configuration.customLaunchers);
+
+    // Sauce labs settings
+    configuration.sauceLabs = {
+      // Needs to be false since Travis sets up the connection for us
+      startConnect: false,
+      tunnelIdentifier: process.env.TRAVIS_JOB_NUMBER,
+      username: process.env.SAUCE_USERNAME,
+      accessKey: process.env.SAUCE_ACCESS_KEY,
+      testName: 'NoFlo UI browser tests',
+      build: `Travis ${process.env.TRAVIS_BUILD_NUMBER} (${process.env.TRAVIS_BUILD_ID})`,
+      recordScreenshots: false,
+      public: 'public',
+    };
+
+    configuration.captureTimeout = 0;
+
+  }
+
+  config.set(configuration);
 }

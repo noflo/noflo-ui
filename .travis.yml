@@ -5,9 +5,6 @@ node_js:
 install:
 - npm install
 - npm run build
-script:
-- npm run pretest
-- npm run crossbrowser
 addons:
   sauce_connect: true
 env:

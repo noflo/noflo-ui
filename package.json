@@ -81,7 +81,6 @@
   "scripts": {
     "pretest": "coffeelint -f .coffeelint.json -r components",
     "test": "karma start",
-    "crossbrowser": "karma start karma.conf-ci.js",
     "start": "simple-server . 9999",
     "build": "grunt build",
     "watch": "grunt watch"
