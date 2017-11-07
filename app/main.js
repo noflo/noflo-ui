@@ -1,10 +1,7 @@
 var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
-  coffeescript: require('coffeescript'),
-  'child_process': null,
   'uuid': require('uuid'),
-  'flowhub-registry': require('flowhub-registry'),
   'fbp-protocol-client': require('fbp-protocol-client'),
   'fbp-spec': require('fbp-spec'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
