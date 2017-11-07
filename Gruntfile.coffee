@@ -13,39 +13,6 @@ module.exports = ->
         command: 'node_modules/.bin/polymer-bundler index.dist.html > index.html'
         cwd: __dirname
 
-    # CoffeeScript compilation of tests
-    coffee:
-      spec:
-        options:
-          bare: true
-          transpile:
-            presets: ['es2015']
-        expand: true
-        cwd: 'spec'
-        src: '*.coffee'
-        dest: 'spec'
-        ext: '.js'
-      spec_utils:
-        options:
-          bare: true
-          transpile:
-            presets: ['es2015']
-        expand: true
-        cwd: 'spec/utils'
-        src: '*.coffee'
-        dest: 'spec/utils'
-        ext: '.js'
-      spec_browser:
-        options:
-          bare: true
-          transpile:
-            presets: ['es2015']
-        expand: true
-        cwd: 'spec/browser'
-        src: '*.coffee'
-        dest: 'spec/browser'
-        ext: '.js'
-
     # Directory cleaning
     clean:
       build: [
@@ -200,32 +167,7 @@ module.exports = ->
           expand: true
           dest: '/'
         ,
-          src: [
-            'node_modules/@polymer/polymer/*.js'
-            'node_modules/@polymer/polymer/*.map'
-            'node_modules/codemirror/**/*.js'
-            'node_modules/codemirror/addon/lint/lint.css'
-            'node_modules/codemirror/lib/*.css'
-            'node_modules/codemirror/theme/mdn-like.css'
-            'node_modules/coffee-script/extras/*.js'
-            'node_modules/coffeelint/lib/coffeelint.js'
-            'node_modules/jshint/dist/jshint.js'
-            'node_modules/font-awesome/css/*.css'
-            'node_modules/font-awesome/**/*.woff'
-            'node_modules/font-awesome/**/*.ttf'
-            'node_modules/font-awesome/**/*.svg'
-            'node_modules/hammerjs/hammer.min.js'
-            'node_modules/hammerjs/hammer.min.js.map'
-            'node_modules/klayjs/klay.js'
-            'node_modules/klayjs-noflo/klay-noflo.js'
-            'node_modules/react/dist/*.js'
-            'node_modules/react-dom/dist/*.js'
-            'node_modules/rtc/dist/rtc.min.js'
-            'node_modules/rtc/dist/rtc.min.js.map'
-            'node_modules/observe-js/src/observe.js'
-            'node_modules/the-graph/themes/*.css'
-            'node_modules/webcomponents.js/webcomponents-lite.min.js'
-          ]
+          src: require './externals.conf.js'
           expand: true
           dest: '/'
         ,
@@ -273,92 +215,6 @@ module.exports = ->
         message: 'Updating web version to <%= pkg.version %>'
       src: '**/*'
 
-
-    # Coding standards
-    coffeelint:
-      app:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: [
-          'Gruntfile.coffee'
-          'src/*.coffee'
-          'src/**/*.coffee'
-          'components/*.coffee'
-        ]
-      spec:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: 'spec/*.coffee'
-      spec_sub:
-        options:
-          max_line_length:
-            level: "ignore"
-        src: 'spec/**/*.coffee'
-
-
-    inlinelint:
-      options:
-        strict: false,
-        newcap: false,
-        "globals": { "Polymer": true }
-      all:
-        src: ['elements/*.html']
-
-    watch:
-      spec:
-        files: 'spec/*.coffee'
-        tasks: ['coffeelint:spec', 'coffee:spec']
-        options:
-          livereload: false
-      spec_browser:
-        files: 'spec/browser/*.coffee'
-        tasks: ['coffeelint:spec_browser', 'coffee:spec_browser']
-        options:
-          livereload: false
-
-    # Web server for the browser tests
-    connect:
-      server:
-        options:
-          port: 9999
-          hostname: '*' # Allow connection from mobile
-          livereload: false
-
-    # BDD tests on browser
-    mocha_phantomjs:
-      unit:
-        options:
-          reporter: 'spec'
-          urls: ['http://localhost:9999/spec/tests.html']
-          failWithOutput: true
-      browser:
-        options:
-          reporter: 'spec'
-          urls: ['http://localhost:9999/spec/browser/tests.html']
-
-    # BDD tests on browser
-    'saucelabs-mocha':
-      all:
-        options:
-          urls: ['http://127.0.0.1:9999/spec/browser/tests.html']
-          browsers: [
-            browserName: 'googlechrome'
-            version: '55'
-          ,
-            browserName: 'safari'
-            version: '10'
-          ,
-            browserName: 'internet explorer'
-            version: '11'
-          ]
-          build: process.env.TRAVIS_JOB_ID
-          testname: 'NoFlo UI browser tests'
-          tunnelTimeout: 5
-          concurrency: 1
-          detailedError: true
-
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-webpack'
   @loadNpmTasks 'grunt-exec'
@@ -370,20 +226,6 @@ module.exports = ->
   @loadNpmTasks 'grunt-contrib-compress'
   @loadNpmTasks 'grunt-zip'
   @loadNpmTasks 'grunt-gh-pages'
-
-  # Grunt plugins used for testing
-  @loadNpmTasks 'grunt-contrib-watch'
-  @loadNpmTasks 'grunt-contrib-coffee'
-  @loadNpmTasks 'grunt-mocha-phantomjs'
-  @loadNpmTasks 'grunt-saucelabs'
-  @loadNpmTasks 'grunt-coffeelint'
-  @loadNpmTasks 'grunt-contrib-connect'
-  @loadNpmTasks 'grunt-lint-inline'
-
-  # For automatic building when working on browser libraries
-  @loadNpmTasks 'grunt-contrib-watch'
-  @loadNpmTasks 'grunt-contrib-connect'
-
 
   # Our local tasks
   @registerTask 'nuke', [
@@ -400,20 +242,8 @@ module.exports = ->
     'nuke'
     'build'
   ]
-  @registerTask 'test', [
-    'coffeelint'
-    'inlinelint'
-    'build'
-    'coffee'
-    'connect'
-    'mocha_phantomjs'
-  ]
-  @registerTask 'crossbrowser', [
-    'test'
-    'saucelabs-mocha'
-  ]
   @registerTask 'default', [
-    'test'
+    'build'
   ]
   @registerTask 'pages', [
     'build'
@@ -421,13 +251,4 @@ module.exports = ->
     'unzip'
     'string-replace:analytics'
     'gh-pages'
-  ]
-  @registerTask 'spec', [
-    'coffeelint:spec'
-    'coffeelint:spec_sub'
-    'coffee:spec'
-    'coffee:spec_utils'
-    'coffee:spec_browser'
-    'connect:server'
-    'watch'
   ]

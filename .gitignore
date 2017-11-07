@@ -5,10 +5,6 @@
 /preview/browser/
 /components/*/
 /preview/components/*/
-/spec/*.js
-/spec/browser/*.js
-/spec/utils/*.js
-/spec/*.xml
 /dist/
 /gh-pages/
 *.zip
