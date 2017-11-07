@@ -12,10 +12,11 @@ describe 'Runtime Middleware', ->
   runtime = null
   before (done) ->
     @timeout 4000
-    fixtures = document.getElementById 'fixtures'
+    fixtures = document.createElement 'div'
+    document.body.appendChild fixtures
     transport = require('fbp-protocol-client').getTransport 'iframe'
     runtime = new transport
-      address: 'mockruntime.html'
+      address: '/base/spec/mockruntime.html'
     runtime.setParentElement fixtures
     window.runtime = runtime
 
