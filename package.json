@@ -81,7 +81,7 @@
     "yaml-loader": "^0.5.0"
   },
   "scripts": {
-    "pretest": "coffeelint -r components",
+    "pretest": "coffeelint -f .coffeelint.json -r components",
     "test": "karma start",
     "start": "simple-server . 9999",
     "build": "grunt build",
