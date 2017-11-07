@@ -30,7 +30,8 @@ module.exports = function(config) {
   config.set({
     reporters,
     customLaunchers,
-    browsers: Object.keys(customLaunchers),
+    browsers: config.browsers.concat(Object.keys(customLaunchers)),
     captureTimeout: 120000,
+    concurrency: 3,
   });
 }

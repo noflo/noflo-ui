@@ -5,8 +5,8 @@ node_js:
 before_script:
 - npm run build
 script:
-- npm test
-- npm run saucelabs
+- npm run pretest
+- npm run crossbrowser
 env:
   global:
   - secure: HCMrykhJlLO2TJOYCPuBjiUoG3fYs22W7VvjMEHJrDDupQvGnQXCiDoriwz/V4ssdaUWqykwY885QLuJFbkxSSTpv51Ge5O/sJIMwjCflaoksMvVopEqIA54ykv743O/CkFMeydscuaMVGi63/NojpnXpz9N0p+0ZwJCU3z83Ro=
