@@ -43,6 +43,6 @@ module.exports = function(config) {
       public: 'public'
     },
     captureTimeout: 120000,
-    concurrency: 1,
+    concurrency: 3,
   });
 }
