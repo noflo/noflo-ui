@@ -1,7 +1,7 @@
 var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
-  'coffee-script': require('coffee-script'),
+  coffeescript: require('coffeescript'),
   'child_process': null,
   'uuid': require('uuid'),
   'flowhub-registry': require('flowhub-registry'),
