@@ -32,6 +32,8 @@ module.exports = function(config) {
     customLaunchers,
     browsers: config.browsers.concat(Object.keys(customLaunchers)),
     sauceLabs: {
+      startConnect: false,
+      tunnelIdentifier: process.env['TRAVIS_JOB_NUMBER'],
       testName: 'NoFlo UI browser tests',
       recordScreenshots: false,
       connectOptions: {
