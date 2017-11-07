@@ -13,33 +13,6 @@ module.exports = ->
         command: 'node_modules/.bin/polymer-bundler index.dist.html > index.html'
         cwd: __dirname
 
-    # CoffeeScript compilation of tests
-    coffee:
-      spec:
-        options:
-          bare: true
-        expand: true
-        cwd: 'spec'
-        src: '*.coffee'
-        dest: 'spec'
-        ext: '.js'
-      spec_utils:
-        options:
-          bare: true
-        expand: true
-        cwd: 'spec/utils'
-        src: '*.coffee'
-        dest: 'spec/utils'
-        ext: '.js'
-      spec_browser:
-        options:
-          bare: true
-        expand: true
-        cwd: 'spec/browser'
-        src: '*.coffee'
-        dest: 'spec/browser'
-        ext: '.js'
-
     # Directory cleaning
     clean:
       build: [
@@ -242,18 +215,6 @@ module.exports = ->
         message: 'Updating web version to <%= pkg.version %>'
       src: '**/*'
 
-    watch:
-      spec:
-        files: 'spec/*.coffee'
-        tasks: ['coffee:spec']
-        options:
-          livereload: false
-      spec_browser:
-        files: 'spec/browser/*.coffee'
-        tasks: ['coffee:spec_browser']
-        options:
-          livereload: false
-
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-webpack'
   @loadNpmTasks 'grunt-exec'
@@ -265,16 +226,6 @@ module.exports = ->
   @loadNpmTasks 'grunt-contrib-compress'
   @loadNpmTasks 'grunt-zip'
   @loadNpmTasks 'grunt-gh-pages'
-
-  # Grunt plugins used for testing
-  @loadNpmTasks 'grunt-contrib-watch'
-  @loadNpmTasks 'grunt-contrib-coffee'
-  @loadNpmTasks 'grunt-contrib-connect'
-
-  # For automatic building when working on browser libraries
-  @loadNpmTasks 'grunt-contrib-watch'
-  @loadNpmTasks 'grunt-contrib-connect'
-
 
   # Our local tasks
   @registerTask 'nuke', [
@@ -300,12 +251,4 @@ module.exports = ->
     'unzip'
     'string-replace:analytics'
     'gh-pages'
-  ]
-  @registerTask 'spec', [
-    'coffeelint:spec'
-    'coffeelint:spec_sub'
-    'coffee:spec'
-    'coffee:spec_utils'
-    'coffee:spec_browser'
-    'watch'
   ]
