@@ -5,10 +5,13 @@ module.exports = {
   output: {
     path: __dirname,
     filename: 'browser/noflo-ui.min.js',
+    sourceMapFilename: 'browser/noflo-ui.min.js.map',
   },
   devtool: 'source-map',
   plugins: [
-    new UglifyJSPlugin()
+    new UglifyJSPlugin({
+      sourceMap: true,
+    })
   ],
   module: {
     rules: [
@@ -51,6 +54,7 @@ module.exports = {
           {
             loader: 'coffee-loader',
             options: {
+              sourceMap: true,
               transpile: {
                 presets: ['es2015']
               }
