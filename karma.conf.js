@@ -95,6 +95,9 @@ module.exports = function(config) {
     };
 
     configuration.captureTimeout = 0;
+    configuration.browserDisconnectTimeout = 180000;
+    configuration.browserDisconnectTolerance = 1;
+    configuration.browserNoActivityTimeout = 180000;
 
   }
 
