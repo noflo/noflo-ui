@@ -31,6 +31,15 @@ module.exports = function(config) {
     reporters,
     customLaunchers,
     browsers: config.browsers.concat(Object.keys(customLaunchers)),
+    sauceLabs: {
+      testName: 'NoFlo UI browser tests',
+      recordScreenshots: false,
+      connectOptions: {
+        port: 5757,
+        logfile: 'sauce_connect.log'
+      },
+      public: 'public'
+    },
     captureTimeout: 120000,
     concurrency: 3,
   });
