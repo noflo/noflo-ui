@@ -36,10 +36,6 @@ module.exports = function(config) {
       tunnelIdentifier: process.env['TRAVIS_JOB_NUMBER'],
       testName: 'NoFlo UI browser tests',
       recordScreenshots: false,
-      connectOptions: {
-        port: 5757,
-        logfile: 'sauce_connect.log'
-      },
       public: 'public'
     },
     captureTimeout: 120000,
