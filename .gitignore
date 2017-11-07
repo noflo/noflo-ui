@@ -9,7 +9,6 @@
 /spec/browser/*.js
 /spec/utils/*.js
 /spec/*.xml
-/spec/tests.html
 /dist/
 /gh-pages/
 *.zip

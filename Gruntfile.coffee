@@ -4,64 +4,8 @@ module.exports = ->
     pkg: @file.readJSON 'package.json'
 
     # Browser build of NoFlo
-    noflo_browser:
-      options:
-        graph: 'ui/main'
-        manifest:
-          runtimes: [
-            'noflo'
-          ]
-          discover: true
-          recursive: true
-          subdirs: false
-        baseDir: './'
-        webpack:
-          externals:
-            'repl': 'commonjs repl' # somewhere inside coffee-script
-            'module': 'commonjs module' # somewhere inside coffee-script
-            'child_process': 'commonjs child_process' # somewhere inside coffee-script
-            'jison': 'commonjs jison'
-            'should': 'commonjs should' # used by tests in octo
-            'express': 'commonjs express' # used by tests in octo
-            'highlight': 'commonjs highlight' # used by octo?
-            'microflo-emscripten': 'commonjs microflo-emscripten' # optional?
-            'acorn': 'commonjs acorn' # optional?
-          module:
-            rules: [
-              test: /noflo([\\]+|\/)lib([\\]+|\/)(.*)\.js$|noflo([\\]+|\/)components([\\]+|\/)(.*)\.js$|fbp-graph([\\]+|\/)lib([\\]+|\/)(.*)\.js$|noflo-runtime-([a-z]+)([\\]+|\/)(.*).js$/
-              use: [
-                loader: 'babel-loader'
-                options:
-                  presets: ['es2015']
-              ]
-            ,
-              test: /\.coffee$/
-              use: [
-                loader: 'coffee-loader'
-                options:
-                  transpile:
-                    presets: ['es2015']
-              ]
-            ,
-              test: /\.fbp$/
-              use: ["fbp-loader"]
-            ,
-              test: /\.yaml$/
-              use: [
-                "json-loader"
-                "yaml-include-loader"
-              ]
-            ]
-          resolve:
-            extensions: [".coffee", ".js", ".json"]
-          node:
-            fs: "empty"
-        ignores: [
-          /bin\/coffee/
-        ]
-      main:
-        files:
-          'browser/noflo-ui.js': ['./app/main.js']
+    webpack:
+      build: require './webpack.config.js'
 
     # Vulcanization compiles the Polymer elements into a HTML file
     exec:
@@ -121,15 +65,6 @@ module.exports = ->
       specs: [
         'spec/*.js'
       ]
-
-    # JavaScript minification for the browser
-    uglify:
-      options:
-        report: 'min'
-        sourceMap: true
-      noflo:
-        files:
-          './browser/noflo-ui.min.js': ['./browser/noflo-ui.js']
 
     'string-replace':
       app:
@@ -259,7 +194,6 @@ module.exports = ->
           archive: 'noflo-<%= pkg.version %>.zip'
         files: [
           src: [
-            'browser/noflo-ui.js'
             'browser/noflo-ui.min.js'
             'browser/noflo-ui.min.js.map'
          ]
@@ -392,20 +326,6 @@ module.exports = ->
           hostname: '*' # Allow connection from mobile
           livereload: false
 
-    # Generate runner.html
-    noflo_browser_mocha:
-      all:
-        options:
-          scripts: [
-            "../node_modules/react/dist/react-with-addons.js"
-            "../node_modules/react-dom/dist/react-dom.js"
-            "../node_modules/hammerjs/hammer.min.js"
-            "../browser/<%=pkg.name%>.min.js"
-            "./utils/middleware.js"
-            "../node_modules/sinon/pkg/sinon.js"
-          ]
-        files:
-          'spec/tests.html': ['spec/*.js']
     # BDD tests on browser
     mocha_phantomjs:
       unit:
@@ -440,9 +360,8 @@ module.exports = ->
           detailedError: true
 
   # Grunt plugins used for building
-  @loadNpmTasks 'grunt-noflo-browser'
+  @loadNpmTasks 'grunt-webpack'
   @loadNpmTasks 'grunt-exec'
-  @loadNpmTasks 'grunt-contrib-uglify'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
   @loadNpmTasks 'grunt-contrib-copy'
@@ -471,9 +390,8 @@ module.exports = ->
     'clean'
   ]
   @registerTask 'build', [
-    'noflo_browser'
+    'webpack'
     'copy:themes'
-    'uglify'
     'exec:vulcanize'
     'string-replace:app'
     'compress'
@@ -487,7 +405,6 @@ module.exports = ->
     'inlinelint'
     'build'
     'coffee'
-    'noflo_browser_mocha'
     'connect'
     'mocha_phantomjs'
   ]
