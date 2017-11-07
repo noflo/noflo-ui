@@ -23,7 +23,7 @@ describe 'Project Creation Dialog', ->
     chai.expect(dialogs.length).to.equal 0
   describe 'Opening and closing the dialog', ->
     it 'clicking the button should show the dialog', (done) ->
-      Syn.click button
+      syn.click button
       setTimeout ->
         dialogs = doc.querySelectorAll 'noflo-new-project'
         chai.expect(dialogs.length).to.equal 1
@@ -36,7 +36,7 @@ describe 'Project Creation Dialog', ->
       chai.expect(submit.classList.contains('disabled')).to.equal true
     it 'clicking the cancel button should close the dialog', (done) ->
       cancel = doc.querySelector 'noflo-new-project .toolbar a'
-      Syn.click cancel
+      syn.click cancel
       setTimeout ->
         dialogs = doc.querySelectorAll 'noflo-new-project'
         chai.expect(dialogs.length).to.equal 0
@@ -44,7 +44,7 @@ describe 'Project Creation Dialog', ->
       , 10
   describe 'Creating a project', ->
     it 'clicking the button should show the dialog again', (done) ->
-      Syn.click button
+      syn.click button
       setTimeout ->
         dialogs = doc.querySelectorAll 'noflo-new-project'
         chai.expect(dialogs.length).to.equal 1
@@ -55,9 +55,9 @@ describe 'Project Creation Dialog', ->
       @timeout 3000
       inputs = doc.querySelectorAll 'noflo-new-project input'
       chai.expect(inputs.length).to.equal 2
-      Syn.click(inputs[0])
+      syn.click(inputs[0])
       .type('foo')
-      Syn.click(inputs[1])
+      syn.click(inputs[1])
       .type('Foo')
       setTimeout ->
         submit = doc.querySelector 'noflo-new-project .toolbar button'
@@ -67,7 +67,7 @@ describe 'Project Creation Dialog', ->
     it 'should redirect to the project after clicking submit', (done) ->
       @timeout 3000
       submit = doc.querySelector 'noflo-new-project .toolbar button'
-      Syn.click submit
+      syn.click submit
       setTimeout ->
         chai.expect(win.location.hash.indexOf('project/')).to.not.equal -1
         done()

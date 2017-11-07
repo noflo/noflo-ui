@@ -27,7 +27,7 @@ describe 'Deleting a graph', ->
       settingsButton = doc.querySelector 'noflo-search #graphinspector'
       chai.expect(settingsButton).to.exist
       setTimeout ->
-        Syn.click settingsButton
+        syn.click settingsButton
         setTimeout ->
           modal = doc.querySelector 'noflo-graph-inspector'
           chai.expect(modal).to.exist
@@ -41,7 +41,7 @@ describe 'Deleting a graph', ->
       deleteButton = doc.querySelector 'noflo-graph-inspector .delete'
       chai.expect(deleteButton).to.exist
       setTimeout ->
-        Syn.click deleteButton
+        syn.click deleteButton
         setTimeout ->
           hash = win.location.hash
           # workaround for ie

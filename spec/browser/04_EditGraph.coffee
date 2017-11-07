@@ -27,7 +27,7 @@ describe 'Editing a graph', ->
       chai.expect(help).to.exist
       chai.expect(help.visible).to.equal true
     it 'should go away after a click', (done) ->
-      Syn.click help
+      syn.click help
       setTimeout ->
         chai.expect(help.visible).to.equal false
         done()
@@ -62,7 +62,7 @@ describe 'Editing a graph', ->
       breadcrumb = doc.querySelector 'noflo-search #breadcrumb'
       chai.expect(breadcrumb).to.exist
       setTimeout ->
-        Syn.click breadcrumb
+        syn.click breadcrumb
         setTimeout ->
           chai.expect(search.classList.contains('overlay')).to.equal false
           done()
@@ -84,7 +84,7 @@ describe 'Editing a graph', ->
     it 'should narrow them down when something is written', (done) ->
       @timeout 10000
       input = doc.querySelector 'noflo-search #search'
-      Syn.click(input)
+      syn.click(input)
       .type 'GetEle'
 
       checkResults = ->
@@ -102,7 +102,7 @@ describe 'Editing a graph', ->
       setTimeout ->
         getelement = doc.querySelector 'noflo-search-library-results li'
         chai.expect(getelement).to.exist
-        Syn.click getelement
+        syn.click getelement
         setTimeout ->
           nodes = doc.querySelectorAll 'the-graph g.nodes g.node'
           chai.expect(nodes.length).to.equal 1

@@ -14,11 +14,18 @@ describe 'NoFlo UI initialization', ->
         name: 'Test User'
         avatar: 'https://secure.gravatar.com/avatar/995f27ce7205a79c55d4e44223cd6de0'
 
-    iframe = document.getElementById 'app'
-    iframe.src = '../../index.html'
+    iframe = document.createElement 'iframe'
+    iframe.id = 'app'
+    document.body.appendChild iframe
+    iframe.src = '/base/index.html'
+    iframe.style.width = '800px'
+    iframe.style.height = '600px'
+    iframe.style.position = 'fixed'
+    iframe.style.top = '100px'
     iframe.onload = ->
       win = iframe.contentWindow
       doc = iframe.contentDocument
+      console.log document.getElementById 'app'
       setTimeout ->
         done()
       , 5000
