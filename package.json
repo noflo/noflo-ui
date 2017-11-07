@@ -70,6 +70,7 @@
     "grunt-zip": "^0.17.0",
     "json-loader": "^0.5.7",
     "mocha": "^4.0.0",
+    "noflo-component-loader": "^0.1.2",
     "polymer-bundler": "^3.0.1",
     "simple-server": "^1.0.1",
     "sinon": "^4.0.0",
