@@ -1,6 +1,18 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.23.0 (git master)
+
+New features:
+
+* noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker
+
+Internal changes:
+
+* Updated noflo-ui to run on NoFlo 1.0
+* Builds are done directly with webpack now, instead of via grunt-noflo-browser
+* Switched tests from PhantomJS to Karma and Chrome Headless
+
 ## 0.22.1 (2017 October 26)
 
 Bugfixes:
