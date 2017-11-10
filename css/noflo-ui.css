@@ -41,9 +41,7 @@ body #loading {
   width: 400px;
   color: white;
   text-align: center;
-  top: -webkit-calc(50% - 18px);
   top: calc(50% - 18px);
-  left: -webkit-calc(50% - 200px);
   left: calc(50% - 200px);
   font-size: 36px;
   position: fixed;
@@ -52,9 +50,7 @@ body #loading {
 body.loading #loading {
   display: block;
   opacity: 1;
-  top: -webkit-calc(50% - 18px);
   top: calc(50% - 18px);
-  left: -webkit-calc(50% - 200px);
   left: calc(50% - 200px);
   font-size: 36px;
   animation: pulsate 2s ease-in-out;
@@ -289,9 +285,7 @@ html div.error {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   top: 36px;
-  width: -webkit-calc(72px * 9);
   width: calc(72px * 9);
-  left: -webkit-calc(50% - 72px * 4.5);
   left: calc(50% - 72px * 4.5);
   z-index: 5;
   padding: 36px;
