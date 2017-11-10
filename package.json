@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@polymer/polymer": "^1.2.5-npm-test.2",
+    "@polymer/polymer": "^2.1.0",
     "codemirror": "^5.22.2",
     "debug": "^3.0.0",
     "fbp": "~1.6.0",
