@@ -5,6 +5,8 @@
 /preview/browser/
 /components/*/
 /preview/components/*/
+/elements/codemirror-styles.html
+/elements/the-graph-styles.html
 /dist/
 /gh-pages/
 *.zip

@@ -1,9 +1,17 @@
 <link rel="import" href="noflo-type-selector.html">
 <link rel="import" href="noflo-icon.html">
 <link rel="import" href="noflo-modal-styles.html">
+<link rel="import" href="codemirror-styles.html">
 <dom-module id="noflo-graph-inspector">
   <template>
-    <style include="noflo-modal-styles">
+    <style include="noflo-modal-styles codemirror-styles">
+      .CodeMirror {
+        height: 100%;
+        cursor: text;
+      }
+      .CodeMirror-scroll {
+        height: 100%;
+      }
       textarea {
         height: 144px;
       }
@@ -276,10 +284,10 @@
           return;
         }
         this.htmlEditor = CodeMirror(this.$.html_editor, {
-          lineNumbers: true,
+          lineNumbers: false,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
-          theme: 'mdn-like'
+          theme: 'mdn-like',
         });
       },
       prepareTestsEditor: function () {
@@ -287,7 +295,7 @@
           return;
         }
         this.testsEditor = CodeMirror(this.$.tests_editor, {
-          lineNumbers: true,
+          lineNumbers: false,
           value: this.spec.code || '',
           mode: this.getMirrorMode(this.spec.language),
           theme: 'mdn-like'
