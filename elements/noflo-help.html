@@ -72,7 +72,7 @@
       attached: function () {
         this.visibleChanged();
         this.addEventListener('click', function (event) {
-          if (unwrap(event).target.tagName === 'A') {
+          if (event.target.tagName === 'A') {
             return;
           }
           event.preventDefault();
