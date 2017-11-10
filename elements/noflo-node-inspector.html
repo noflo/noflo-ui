@@ -1,8 +1,9 @@
 <link rel="import" href="number-scrubber.html">
 <link rel="import" href="noflo-icon.html">
+<link rel="import" href="the-card-styles.html">
 <dom-module id="noflo-node-inspector">
   <template>
-    <style>
+    <style include="the-card-styles">
       .ports {
         margin-bottom: 8px;
       }
@@ -370,7 +371,7 @@
               <input type="file" data-name$="{{port.name}}" on-change="updateValue" data-type$="{{port.type}}">
             </template>
             <template is="dom-if" if="{{_computeIf8(port)}}">
-              <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}">
+              <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}" title="Clear data">
                 <noflo-icon icon="ban"></noflo-icon>
               </button>
             </template>

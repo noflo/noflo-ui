@@ -1,7 +1,19 @@
 <link rel="import" href="noflo-icon.html">
+<link rel="import" href="the-card-styles.html">
 <dom-module id="noflo-edge-menu">
   <template>
-    <style>
+    <style include="the-card-styles">
+      :host {
+        display: block;
+        background-color: var(--noflo-ui-background) !important;
+        color: var(--noflo-ui-text);
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-size: calc(100% - 1px) 100%;
+        background-position: 0px;
+      }
+      h1 {
+        font-size:15px;
+      }
       ul.toolbar2right {
         right: 0px !important;
       }
@@ -103,14 +115,14 @@
     <ul class="toolbar toolbar2right">
       <template is="dom-if" if="{{secure}}">
         <li>
-          <button class="blue-button" on-click="setUnsecure">
+          <button class="blue-button" on-click="setUnsecure" title="Set as visible">
             <noflo-icon icon="lock"></noflo-icon>&nbsp;Secure
           </button>
         </li>
       </template>
       <template is="dom-if" if="{{!secure}}">
         <li>
-          <button class="blue-button" on-click="setSecure">
+          <button class="blue-button" on-click="setSecure" title="Set as hidden">
             <noflo-icon icon="unlock"></noflo-icon>&nbsp;Visible
           </button>
         </li>

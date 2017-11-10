@@ -11,6 +11,7 @@ html, body {
 body {
   --noflo-ui-background: hsla(0, 0%, 0%, 0.98);
   --noflo-ui-text: hsl(192, 25%, 92%);
+  --noflo-ui-text-hightlight: hsl(185,100%,75%);
   --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 80%);
   --noflo-ui-base-unit: 72px;
@@ -18,6 +19,7 @@ body {
 body.light {
   --noflo-ui-background: hsl(192, 25%, 92%);
   --noflo-ui-text: hsla(0, 0%, 0%, 0.98);
+  --noflo-ui-text-hightlight: hsl(185,100%,15%);
   --noflo-ui-border: hsla(190, 90%, 8%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 8%);
 }
@@ -163,16 +165,6 @@ h1, h2, h3 {
   -transform: translateZ(0);
 }
 
-/*
- * z-indexes:
- *
- * Modal dialogs: 5
- * Main screen: 4
- * Panels: 3
- * Context cards & runtime controls: 2
- * Workspace chrome: 1
- * Workspace: 0
- */
 @font-face {
   font-family: "SourceCodePro";
   src: url("SourceCodePro-Regular.otf.woff") format('woff');
@@ -268,189 +260,14 @@ html div.error {
   color: hsla( 0, 98%, 46%, .8);
 }
 
-html the-card .the-card-content {
-  display: block;
-  margin: 0px;
-  padding: 10px 10px 10px;
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
-  border-bottom: 1px hsla(190, 100%, 30%, 0.1) solid;
-  border-right: 1px hsla(190, 100%, 30%, 0.1) solid;
-  background-color: hsla(0, 0%, 0%, 0.99) !important;
-  overflow-x: hidden;
-  overflow-y: auto;
-  position: relative;
-}
-
-html the-card[type="noflo-runtime-preview"] {
-  padding: 0px;
-  width: -webkit-calc(72px * 4);
-  width: calc(72px * 4);
-  overflow: hidden;
-}
-
-html the-card.maximized {
-  background-color: hsla(0, 0%, 0%, 0.99);
-  width: -webkit-calc(100% - 36px);
-  width: calc(100% - 36px);
-  height: -webkit-calc(100% - 36px);
-  height: calc(100% - 36px);
-  max-height: none;
-  position: fixed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  top: 72px;
-  left: 36px;
-  transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
-  z-index: 3;
-  border: none;
-}
-html the-card.maximized .the-card-content {
-  width: 100%;
-  height: 100%;
-  max-height: none;
-}
-html the-card-stack .sticky-head {
-  background-color: hsla(0, 0%, 5%, 0.99) !important;
-  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-  background-size: -webkit-calc(100% - 1px) 100%;
-  background-size: calc(100% - 1px) 100%;
-  background-position: 0px;
-}
-
-html the-card-stack .sticky-head h1 {
-  font-size:15px;
-}
-
-html the-card button {
-  width: 36px;
-  height: 36px;
-  font-size: 10px;
-  background-color: transparent;
-  border: none;
-  color: white;
-  text-align: center;
-}
-
-html the-card h1 {
-  font-size: 12px;
-  line-height: 36px;
-  margin: 0px;
-  margin-bottom: 0px;
-  text-shadow: 0 1px hsl(0, 0%, 0%);
-  text-align: left;
-}
-
-html the-card header h1 {
-  display: block;
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: -webkit-calc(72px * 3 - 1px);
-  width: calc(72px * 3 - 1px);
-  height: 36px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-html the-card header h1.clear {
-  cursor: pointer;
-}
-html the-card header h2 {
-  line-height: 36px;
-  width: 72px;
-  height: 36px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  margin: 0px;
-  text-align: right;
-  font-size: 10px;
-  color: hsla(190, 100%, 80%, 0.8);
-  display: block;
-  cursor: default;
-}
-html the-card header {
-  height: 36px;
-}
-
-html the-card ul {
-  margin: 0px;
-  padding: 0px;
-  list-style: none;
-}
-
-html the-card textarea {
-  width: 100%;
-  min-height: 100px;
-  max-height: -webkit-calc(72px * 4);
-  max-height: calc(72px * 4);
-}
-
-html the-card ul li {
-  display: block;
-  padding: 0px;
-  margin: 0px;
-}
-html the-card ul.toolbar2right {
-  width: 180px;
-  display: block;
-  position: absolute;
-  right: 36px;
-  top: 10px;
-  text-align: right;
-}
-html the-card ul.toolbar li {
-  float: left;
-  display: block;
-  width: -webkit-calc(100%/2);
-  width: calc(100%/2);
-  height: 36px;
-  text-align: center;
-  margin: 0px;
-  margin-right: 0px;
-}
-html the-card ul.toolbar2right li {
-  float: right;
-  width: auto;
-}
-html the-card ul.toolbar li * {
-  line-height: 36px;
-}
-html the-card ul.toolbar li button {
-  width:100%;
-  height:100%;
-}
-
-html .red-button {
+.red-button {
   background-color: hsla(0, 100%, 20%, 0.2);
   color: hsl(0, 100%, 65%);
 }
-html .blue-button {
+.blue-button {
   background-color: hsla(190, 100%, 20%, 0.2);
   color: hsl(190, 100%, 65%);
 }
-
-
-/*
-html the-card ul li h2 {
-  font-size: 10px;
-  margin: 0px;
-}
-html the-card ul li i {
-  margin-right: 5px;
-}
-html the-card ul li p {
-  margin: 0px;
-  margin-top: 10px;
-  padding: 0px;
-  font-size: 8px;
-}
-*/
 
 .modal-content {
   position: absolute;

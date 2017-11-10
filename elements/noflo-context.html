@@ -60,6 +60,24 @@
         bottom: 0px;
         right: 0px;
       }
+      the-panel#fixed the-card {
+        padding: 0px;
+        width: calc(72px * 4);
+        overflow: hidden;
+      }
+      the-panel#fixed the-card.maximized {
+        background-color: hsla(0, 0%, 0%, 0.99);
+        width: calc(100% - 36px);
+        height: calc(100% - 36px);
+        max-height: none;
+        position: fixed;
+        transform: translateZ(0);
+        top: 72px;
+        left: 36px;
+        transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+        z-index: 3;
+        border: none;
+      }
     </style>
     <section id="contextsection"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36">
