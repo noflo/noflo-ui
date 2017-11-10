@@ -16,6 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@polymer/polymer": "^2.2.0",
+    "@webcomponents/webcomponentsjs": "^1.0.17",
     "codemirror": "^5.22.2",
     "debug": "^3.0.0",
     "fbp": "~1.6.0",
@@ -39,8 +40,7 @@
     "observe-js": "^0.5.7",
     "rtc": "^3.4.0",
     "the-graph": "^0.10.2",
-    "uuid": "^3.0.1",
-    "webcomponents.js": "^0.7.24"
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
