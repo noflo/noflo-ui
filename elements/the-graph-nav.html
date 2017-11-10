@@ -94,41 +94,6 @@
           this.set('style.cursor', 'move');
           this.set('style.width', this.width + 'px');
           this.set('style.height', this.height + 'px');
-          // HACK way to make PolymerGestures work for now
-          if (window.PolymerGestures) {
-            var noop = function () {
-            };
-            window.PolymerGestures.addEventListener(this, 'track', noop);
-            window.PolymerGestures.addEventListener(this, 'trackend', noop);
-            window.PolymerGestures.addEventListener(this, 'tap', noop);
-          }
-          // Pan graph by dragging map
-          this.addEventListener('track', function (event) {
-            // Don't pan underlying elements
-            event.stopPropagation();
-            var x = -this.viewrectangle[0];
-            var y = -this.viewrectangle[1];
-            var panscale = this.thumbscale / this.scale;
-            x -= event.ddx / panscale;
-            y -= event.ddy / panscale;
-            var panTo = {
-              x: Math.round(x),
-              y: Math.round(y)
-            };
-            // Update our estimates locally, since update from outside might be delayed
-            this.viewrectangle[0] = -panTo.x;
-            this.viewrectangle[1] = -panTo.y;
-            this.fire('panto', panTo);
-            event.preventTap();
-          }.bind(this));
-          this.addEventListener('trackend', function (event) {
-            // Don't pan graph
-            event.stopPropagation();
-          }.bind(this));
-          // Tap to fit
-          this.addEventListener('tap', function () {
-            this.fire('triggerfit');
-          });
         },
         viewChanged: function (_, view) {
           if (!view) {
