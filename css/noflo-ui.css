@@ -110,14 +110,6 @@ button {
   border: 0;
 }
 
-/* Wat... can't change input selection colors in Chrome?
-*::selection {
-  background-color: black;
-  background: black;
-  color:red;
-}
-*/
-
 #bugreport {
   color: hsl(189, 50%, 80%);
   position: fixed;
@@ -228,31 +220,31 @@ the-graph-nav {
   background-color: hsl(0, 0%, 0%);
 }
 
-html h1,
-html h2,
-html h3 {
+h1,
+h2,
+h3 {
   font-weight: normal;
 }
 
-html input:focus,
-html select:focus,
-html textarea:focus,
-html button:focus,
-html h1,
-html h2,
-html h3,
-html div,
-html a,
-html p,
-html div {
+input:focus,
+select:focus,
+textarea:focus,
+button:focus,
+h1,
+h2,
+h3,
+div,
+a,
+p,
+div {
   outline:none;
 }
 
-html th {
+th {
   text-align: left;
 }
 
-html div.error {
+div.error {
   color: hsla( 0, 98%, 46%, .8);
 }
 
