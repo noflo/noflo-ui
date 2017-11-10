@@ -9,7 +9,7 @@ html, body {
 }
 
 body {
-  --noflo-ui-background: hsl(187, 45%, 5%);
+  --noflo-ui-background: hsla(0, 0%, 0%, 0.98);
   --noflo-ui-text: hsl(192, 25%, 92%);
   --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 80%);
@@ -17,9 +17,9 @@ body {
 }
 body.light {
   --noflo-ui-background: hsl(192, 25%, 92%);
+  --noflo-ui-text: hsla(0, 0%, 0%, 0.98);
   --noflo-ui-border: hsla(190, 90%, 8%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 8%);
-  --noflo-ui-text: hsl(187, 45%, 5%);
 }
 
 body {
