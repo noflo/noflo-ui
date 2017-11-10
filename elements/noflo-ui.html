@@ -138,10 +138,7 @@
         'remoteProjects'
       ],
       emitEvent: function (event, payload) {
-        this.fire(event, {
-          action: event,
-          payload: payload
-        });
+        this.fire(event, payload);
       },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
