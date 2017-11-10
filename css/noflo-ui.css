@@ -164,14 +164,6 @@ h1, h2, h3 {
 }
 
 /*
- * Colors:
- *
- * Regular background: hsl(187, 45%, 8%)
- * Workspace background: hsl(189, 47%, 6)
- * Darker elements: hsl(189, 50%, 80%)
- * Lighter elements: white
- * Default grid is 36x36
- *
  * z-indexes:
  *
  * Modal dialogs: 5
@@ -275,37 +267,6 @@ html th {
 
 html div.error {
   color: hsla( 0, 98%, 46%, .8);
-}
-
-html the-panel#fixed {
-  padding-left: 36px;
-  padding-top: 72px;
-  top: 0px;
-  border-left-width: 1px;
-}
-html the-panel#fixed:before {
-  font-family: FontAwesome;
-  content: '\f06e';
-  color: hsl(189, 50%, 80%);
-  position: absolute;
-  text-align: center;
-  left: 0px;
-  width: 36px;
-  top: 50%;
-  top: -webkit-calc(50% - 7px);
-  top: calc(50% - 7px);
-  font-size: 17px;
-  opacity: 0.25;
-  transition: opacity 0.3s ease-in-out;
-}
-html the-panel#fixed:not([open]):before {
-  opacity: 1;
-  cursor: w-resize;
-}
-html the-panel#fixed footer {
-  position: absolute;
-  bottom: 0px;
-  right: 0px;
 }
 
 html the-card .the-card-content {

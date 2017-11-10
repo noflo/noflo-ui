@@ -23,6 +23,40 @@
         -webkit-overflow-scrolling: touch;
         overflow-x: visible;
       }
+      the-panel {
+        background-color: var(--noflo-ui-background) !important;
+        transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+        position: fixed;
+        border: 0px solid var(--noflo-ui-border);
+        padding-top: 72px;
+        top: 0px;
+        border-left-width: 1px;
+        height: 100vh;
+      }
+      the-panel:before {
+        font-family: FontAwesome;
+        content: '\f06e';
+        color: hsl(189, 50%, 80%);
+        position: absolute;
+        text-align: center;
+        left: 0px;
+        width: 36px;
+        top: 50%;
+        top: -webkit-calc(50% - 7px);
+        top: calc(50% - 7px);
+        font-size: 17px;
+        opacity: 0.25;
+        transition: opacity 0.3s ease-in-out;
+      }
+      the-panel:not([open]):before {
+        opacity: 1;
+        cursor: w-resize;
+      }
+      the-panel footer {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+      }
     </style>
     <section id="contextsection"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36">
