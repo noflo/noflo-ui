@@ -343,6 +343,7 @@
               this.push('askForScope', 'public_repo');
             }
           }
+          this.fire('theme', this.theme);
         },
         attached: function () {
           storage.get('flowhub-theme', function (definedTheme) {
@@ -350,6 +351,7 @@
               return;
             }
             this.theme = definedTheme;
+            this.fire('theme', this.theme);
           }.bind(this));
           Polymer.dom(document.body).classList.add(this.theme);
         },
