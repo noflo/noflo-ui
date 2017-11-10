@@ -65,6 +65,9 @@ body noflo-ui {
   -moz-transition: opacity 0.3s ease-in;
   -ms-transition: opacity 0.3s ease-in;
   -o-transition: opacity 0.3s ease-in;
+  display: block;
+  width: 100vw;
+  height: 100vh;
 }
 body.loading noflo-ui {
   opacity: 0;
