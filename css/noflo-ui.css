@@ -11,10 +11,14 @@ html, body {
 body {
   --noflo-ui-background: hsl(187, 45%, 5%);
   --noflo-ui-text: hsl(192, 25%, 92%);
+  --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
+  --noflo-ui-border-highlight: hsl(190, 90%, 80%);
   --noflo-ui-base-unit: 72px;
 }
 body.light {
   --noflo-ui-background: hsl(192, 25%, 92%);
+  --noflo-ui-border: hsla(190, 90%, 8%, 0.3);
+  --noflo-ui-border-highlight: hsl(190, 90%, 8%);
   --noflo-ui-text: hsl(187, 45%, 5%);
 }
 
@@ -272,76 +276,6 @@ html th {
 html div.error {
   color: hsla( 0, 98%, 46%, .8);
 }
-
-html the-panel {
-  background-color: hsla(0, 0%, 0%, 0.98) !important;
-  transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
-  position: fixed;
-  border: 0px solid hsla(190, 90%, 80%, 0.3);
-  box-sizing: border-box;
-}
-html the-panel#account {
-  top: 0px;
-  border-right-width: 1px;
-}
-html the-panel#account:before {
-  font-family: FontAwesome;
-  content: '\f03a';
-  color: hsl(189, 50%, 80%);
-  position: absolute;
-  text-align: center;
-  right: 0px;
-  width: 36px;
-  top: 50%;
-  top: -webkit-calc(50% - 7px);
-  top: calc(50% - 7px);
-  font-size: 17px;
-  opacity: 0.25;
-  transition: opacity 0.3s ease-in-out;
-}
-html the-panel#account:not([open]):before {
-  cursor: e-resize;
-  opacity: 1;
-}
-html the-panel#account header,
-html the-panel#account main {
-  display: block;
-  margin-left: 36px;
-  margin-right: 36px;
-}
-html the-panel#account header h1 {
-  text-align: center;
-  border-bottom: 1px solid hsl(189, 50%, 80%);
-  height: 36px;
-  line-height: 36px;
-  font-size: 17px;
-  white-space: nowrap;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-html the-panel#account main ul {
-  margin: 0px;
-  padding: 0px;
-  list-style: none;
-}
-html the-panel#account main ul li {
-  line-height: 36px;
-  min-height: 36px;
-}
-html the-panel#account main ul li a {
-  color: white;
-  text-decoration: none;
-  display: block;
-  cursor: pointer;
-}
-html the-panel#account main ul li a i {
-  float: right;
-  line-height: 36px;
-  color: hsl(189, 50%, 80%);
-  margin-right: 4px;
-}
-
-
 
 html the-panel#fixed {
   padding-left: 36px;

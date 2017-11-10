@@ -80,9 +80,40 @@
         text-align: left;
         white-space: nowrap;
       }
+      header h1 {
+        text-align: center;
+        height: 36px;
+        line-height: 36px;
+        font-size: 17px;
+        white-space: nowrap;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      main ul {
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+      }
+      main ul li {
+        line-height: 36px;
+        min-height: 36px;
+      }
+      main ul li a {
+        color: var(--noflo-ui-text);
+        text-decoration: none;
+        display: block;
+        cursor: pointer;
+      }
+      main ul li a i {
+        float: right;
+        line-height: 36px;
+        color: var(--noflo-ui-border);
+        margin-right: 4px;
+      }
       main {
         overflow-y: auto;
         max-height: calc(100% - 72px);
+        padding-left: 36px;
       }
       main.repo {
         max-height: calc(100% - 72px * 2);
@@ -104,7 +135,36 @@
         height: 72;
         transition: background-color 0.3s ease-in-out;
       }
-      the-panel#account[open] footer {
+      the-panel {
+        background-color: var(--noflo-ui-background) !important;
+        transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+        position: fixed;
+        border: 0px solid var(--noflo-ui-border);
+        box-sizing: border-box;
+        top: 0px;
+        border-right-width: 1px;
+        height: 100vh;
+      }
+      the-panel:before {
+        font-family: FontAwesome;
+        content: '\f03a';
+        color: var(--noflo-ui-border-highlight);
+        position: absolute;
+        text-align: center;
+        right: 0px;
+        width: 36px;
+        top: 50%;
+        top: -webkit-calc(50% - 7px);
+        top: calc(50% - 7px);
+        font-size: 17px;
+        opacity: 0.25;
+        transition: opacity 0.3s ease-in-out;
+      }
+      the-panel:not([open]):before {
+        cursor: e-resize;
+        opacity: 1;
+      }
+      #account[open] footer {
         background-color: hsl(190, 90%, 45%);
       }
       footer h1 {
