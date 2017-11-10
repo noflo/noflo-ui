@@ -1,5 +1,5 @@
 <link rel="import" href="noflo-type-selector.html">
-
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-graph-inspector">
   <template>
     <style>
@@ -68,7 +68,9 @@
     <div class="modal-container" on-click="bgClick">
       <h1 on-keydown="checkUpdateName" on-blur="updateName" contenteditable="">{{graph.name}}</h1>
       <template is="dom-if" if="{{downloadUrl}}">
-        <a id="download" download="{{_computeDownload(graph)}}" href$="{{downloadUrl}}"><i class="fa fa-download"></i></a>
+        <a id="download" download="{{_computeDownload(graph)}}" href$="{{downloadUrl}}">
+          <noflo-icon icon="download"></noflo-icon>
+        </a>
       </template>
       <template is="dom-if" if="{{isMain}}">
       <p>Main graph of project <span>{{project.name}}</span>.</p>
@@ -97,7 +99,9 @@
         <input type="text" value="{{description::input}}">
       </label>
       <label>
-        <span>Icon <a href="http://fontawesome.io/icons/" target="_blank"><i class="fa fa-question-circle"></i></a></span>
+        <span>Icon <a href="http://fontawesome.io/icons/" target="_blank">
+          <noflo-icon icon="question-circle"></noflo-icon>
+        </a></span>
         <input type="text" value="{{icon::input}}">
       </label>
       <label>

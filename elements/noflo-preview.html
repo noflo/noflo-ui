@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-preview">
   <template>
     <style>
@@ -68,10 +69,18 @@
     </header>
     <ul class="toolbar toolbar2right">
       <template is="dom-if" if="{{!maximized}}">
-        <li><button class="blue-button" on-click="maximizeToggle"><i class="fa fa-arrows-alt"></i>&nbsp;Maximize</button></li>
+        <li>
+          <button class="blue-button" on-click="maximizeToggle">
+            <noflo-icon icon="arrows-alt"></noflo-icon>&nbsp;Maximize
+          </button>
+        </li>
       </template>
       <template is="dom-if" if="{{maximized}}">
-        <li><button class="blue-button" on-click="maximizeToggle"><i class="fa fa-arrow-right"></i>&nbsp;Minimize</button></li>
+        <li>
+          <button class="blue-button" on-click="maximizeToggle">
+            <noflo-icon icon="arrow-right"></noflo-icon>&nbsp;Minimize
+          </button>
+        </li>
       </template>
     </ul>
     <div id="preview" class$="{{_computeClass(maximized)}}"></div>

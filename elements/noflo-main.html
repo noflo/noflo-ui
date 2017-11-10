@@ -3,6 +3,7 @@
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
   <template>
     <style>
@@ -170,7 +171,9 @@
           <small>{{numberOfRemoteProjects(remoteProjects)}}</small>
           </template>
           <template is="dom-if" if="{{_computeIf2(projectList)}}">
-          <button on-click="fetchGithub"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+          <button on-click="fetchGithub">
+            <noflo-icon id="fetchgithub" icon="refresh"></noflo-icon>
+          </button>
           </template>
         </h2>
         <ul class="tabs">
@@ -199,7 +202,9 @@
               <p><span>{{project.graphs.length}}</span>&nbsp;graphs, <span>{{project.components.length}}</span>&nbsp;components</p>
               </template>
               <template is="dom-if" if="{{_computeIf4(project)}}">
-              <button on-click="deleteProject" data-id$="{{project.id}}"><i class="fa fa-trash-o"></i></button>
+              <button on-click="deleteProject" data-id$="{{project.id}}">
+                <noflo-icon icon="trash-o"></noflo-icon>
+              </button>
               </template>
             </li>
           </template>
@@ -226,12 +231,16 @@
               <template is="dom-if" if="{{project.private}}">
               <p>Private repository</p>
                 <template is="dom-if" if="{{_computeIf6(plan)}}">
-                <button on-click="downloadProject" data-repo$="{{project.repo}}"><i class="fa fa-cloud-download"></i></button>
+                <button on-click="downloadProject" data-repo$="{{project.repo}}">
+                  <noflo-icon icon="cloud-download"></noflo-icon>
+                </button>
                 </template>
               </template>
               <template is="dom-if" if="{{!project.private}}">
               <p>Public repository</p>
-              <button on-click="downloadProject" data-repo$="{{project.repo}}"><i class="fa fa-cloud-download"></i></button>
+              <button on-click="downloadProject" data-repo$="{{project.repo}}">
+                <noflo-icon icon="cloud-download"></noflo-icon>
+              </button>
               </template>
             </li>
           </template>
@@ -242,7 +251,9 @@
       <h2>
         Runtimes <small><span>{{numberOfAvailableRuntimes(runtimes)}}</span> / <span>{{runtimes.length}}</span></small>
         <template is="dom-if" if="{{user}}">
-        <button on-click="fetchRuntimes"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
+        <button on-click="fetchRuntimes">
+          <noflo-icon id="fetchruntimes" icon="refresh"></noflo-icon>
+        </button>
         </template>
       </h2>
       <ul class="projects">

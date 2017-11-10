@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-add-runtime.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-new-runtime">
   <template>
     <style>
@@ -82,7 +83,7 @@
       <template is="dom-repeat" items="{{runtimes}}" as="runtime">
       <li class$="{{runtime.name}}">
         <a target="_blank" href$="{{runtime.url}}">
-          <i class$="{{_computeClass(runtime)}}"></i>
+          <noflo-icon icon="{{ runtime.icon }}" fallback="cog"></noflo-icon>
           <h2>{{runtime.label}}</h2>
           <p>{{runtime.description}}</p>
         </a>
@@ -155,10 +156,7 @@
           this.fire('addRuntime', event.detail);
         }.bind(this));
       },
-      listeners: { click: 'close' },
-      _computeClass: function (runtime) {
-        return 'fa fa-' + runtime.icon;
-      }
+      listeners: { click: 'close' }
     });
   </script>
 </dom-module>

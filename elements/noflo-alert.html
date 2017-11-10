@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-alert">
   <template>
     <style>
@@ -54,13 +55,13 @@
       }
     </style>
     <template is="dom-if" if="{{isError}}">
-      <i class="fa fa-warning"></i>
+      <noflo-icon icon="warning"></noflo-icon>
     </template>
     <template is="dom-if" if="{{_computeIf(isError, offerHTTPS)}}">
-      <i class="fa fa-spinner fa-spin"></i>
+      <noflo-icon icon="spinner" class="fa-spin"></noflo-icon>
     </template>
     <template is="dom-if" if="{{offerHTTPS}}">
-      <i class="fa fa-lock"></i>
+      <noflo-icon icon="lock"></noflo-icon>
       This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="https://docs.flowhub.io/article/75-security-with-https-and-wss">about</a>
     </template>
     <slot>

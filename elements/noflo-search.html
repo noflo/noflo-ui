@@ -3,7 +3,7 @@
 <link rel="import" href="noflo-search-library-results.html">
 <link rel="import" href="noflo-graph-inspector.html">
 <link rel="import" href="noflo-component-inspector.html">
-
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-search">
   <template>
     <style>
@@ -74,7 +74,7 @@
         text-decoration: none;
         padding-right: 9px;
       }
-      #breadcrumb i.fa-search {
+      #breadcrumb noflo-icon.fa-search {
         position: absolute;
         line-height: 72px;
         right: 54px;
@@ -159,11 +159,13 @@
     </style>
     <div id="breadcrumb" on-click="focus">
       <template is="dom-if" if="{{_computeIf(component, readonly)}}">
-      <i class="fa fa-search"></i>
+      <noflo-icon class="fa-search" icon="search"></noflo-icon>
       </template>
       <h1 title="Search">
         <template is="dom-if" if="{{_computeIf2(parentPath, project)}}">
-        <a id="parentlink" title="Back" href$="{{_computeHref(parentPath, project)}}"><i class="fa fa-angle-left"></i></a>
+        <a id="parentlink" title="Back" href$="{{_computeHref(parentPath, project)}}">
+          <noflo-icon icon="angle-left"></noflo-icon>
+        </a>
         </template>
         <template is="dom-if" if="{{_computeIf3(component, graph)}}">
         <span>{{graph.name}}</span>
@@ -173,17 +175,23 @@
         </template>
       </h1>
       <template is="dom-if" if="{{_computeIf5(component, graph, readonly)}}">
-      <button on-click="showGraphInspector" id="graphinspector" title="Graph properties"><i class="fa fa-cog"></i></button>
+      <button on-click="showGraphInspector" id="graphinspector" title="Graph properties">
+        <noflo-icon icon="cog"></noflo-icon>
+      </button>
       </template>
       <template is="dom-if" if="{{_computeIf6(component, graph, readonly)}}">
-      <button on-click="showComponentInspector" id="componentinspector" title="Component properties"><i class="fa fa-cog"></i></button>
+      <button on-click="showComponentInspector" id="componentinspector" title="Component properties">
+        <noflo-icon icon="cog"></noflo-icon>
+      </button>
       </template>
       <template is="dom-if" if="{{_computeIf7(component, graph, readonly)}}">
-      <i id="readonly" class="fa fa-lock"></i>
+      <noflo-icon icon="lock"></noflo-icon>
       </template>
     </div>
     <input id="searchinput" placeholder="Search components" on-keydown="switchSearch" value="{{search::input}}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech="">
-    <button id="clear" on-click="clearSearch" title="Clear search"><i class="fa fa-times"></i></button>
+    <button id="clear" on-click="clearSearch" title="Clear search">
+      <noflo-icon icon="times"></noflo-icon>
+    </button>
   </template>
   <script>
     Polymer({

@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-search-library-results">
   <template>
     <style>
@@ -46,6 +47,7 @@
         text-align: center;
         padding: 0;
         margin: 0;
+        font: normal normal normal 14px/1 FontAwesomeSVG;
       }
       .search-results-item h2 {
         position: absolute;
@@ -78,9 +80,9 @@
     <ul class="search-results-list">
       <template is="dom-repeat" items="{{results}}" as="result" index-as="index">
         <li class="search-results-item" on-click="clicked" data-index$="{{index}}">
-          <i class$="{{_computeClass(result)}}"></i>
-          <h2>{{result.label}}</h2>
-          <p>{{result.description}}</p>
+          <i><noflo-icon icon="[[result.icon]]" fallback="cog"></noflo-icon></i>
+          <h2>[[result.label]]</h2>
+          <p>[[result.description]]</p>
         </li>
       </template>
     </ul>
@@ -111,9 +113,6 @@
         }
         this.fire('resultclick', result);
         result.action();
-      },
-      _computeClass: function (result) {
-        return 'fa fa-' + result.icon;
       }
     });
   </script>

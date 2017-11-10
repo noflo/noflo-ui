@@ -8,6 +8,7 @@ var exported = {
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),
   'noflo-ui/collections': require('../src/collections.coffee'),
   'noflo-ui/projects': require('../src/projects.coffee'),
+  'noflo-ui/icons': require('../src/icons.coffee'),
   'the-graph': require('the-graph')
 };
 

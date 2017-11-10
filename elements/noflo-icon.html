@@ -1,0 +1,41 @@
+<dom-module id="noflo-icon">
+  <template>
+    <style>
+    :host {
+      display: inline-block;
+      font: normal normal normal 14px/1 FontAwesomeSVG;
+      font-size: inherit;
+      text-rendering: auto;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    </style>
+    [[_getIcon()]]
+  </template>
+  <script>
+  class NoFloIcon extends Polymer.Element {
+    static get is() {
+      return 'noflo-icon';
+    }
+    static get properties() {
+      return {
+        icon: {
+          type: String
+        },
+        fallback: {
+          type: String
+        },
+      };
+    }
+    constructor() {
+      super();
+      this.icons = require('noflo-ui/icons');
+    }
+    _getIcon() {
+      const result = this.icons(this.icon, this.fallback);
+      return result;
+    }
+  }
+  customElements.define(NoFloIcon.is, NoFloIcon);
+  </script>
+</dom-module>

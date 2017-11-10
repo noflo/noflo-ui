@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-edge-inspector">
   <template>
     <style>
@@ -89,7 +90,9 @@
       }
     </style>
     <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
-    <button id="clear" on-click="clear" title="Clear log"><i class="fa fa-ban"></i></button>
+    <button id="clear" on-click="clear" title="Clear log">
+      <noflo-icon icon="ban"></noflo-icon>
+    </button>
     <ul id="events">
     </ul>
   </template>

@@ -4,6 +4,7 @@
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
 <link rel="import" href="noflo-project-sync.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-project">
   <template>
     <style>
@@ -208,9 +209,19 @@
       </header>
       <main class$="{{_computeClass(project)}}">
         <ul>
-          <li><a on-click="openHome"><i class="fa fa-home"></i>Home</a></li>
+          <li>
+            <a on-click="openHome">
+              <noflo-icon icon="home"></noflo-icon>
+              Home
+            </a>
+          </li>
           <template is="dom-if" if="{{project}}">
-          <li><a on-click="openSettings"><i class="fa fa-cog"></i>Settings</a></li>
+          <li>
+            <a on-click="openSettings">
+              <noflo-icon icon="cog"></noflo-icon>
+              Settings
+            </a>
+          </li>
           </template>
         </ul>
         <template is="dom-if" if="{{project}}">
@@ -238,10 +249,10 @@
           <li on-click="openComponent" data-id$="{{component.name}}">
             <h2>{{component.name}}</h2>
             <template is="dom-if" if="{{_computeIf(component)}}">
-            <i class="fa fa-coffee"></i>
+            <noflo-icon icon="coffee"></noflo-icon>
             </template>
             <template is="dom-if" if="{{_computeIf2(component)}}">
-            <i class="fa fa-code"></i>
+            <noflo-icon icon="code"></noflo-icon>
             </template>
           </li>
           </template>
@@ -251,9 +262,12 @@
       </main>
       <template is="dom-if" if="{{project.repo}}">
       <footer slot="footer">
-        <h1 title="{{project.repo}}"><i class="fa fa-github"></i> <span>{{project.repo}}</span></h1>
+        <h1 title="{{project.repo}}">
+          <noflo-icon icon="github"></noflo-icon>
+          <span>{{project.repo}}</span>
+        </h1>
         <button on-click="synchronize">
-          <i class="fa fa-cloud-upload"></i>
+          <noflo-icon icon="cloud-upload"></noflo-icon>
           <span>Synchronize</span>
         </button>
       </footer>

@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-edge-menu">
   <template>
     <style>
@@ -101,10 +102,18 @@
     </header>
     <ul class="toolbar toolbar2right">
       <template is="dom-if" if="{{secure}}">
-        <li><button class="blue-button" on-click="setUnsecure"><i class="fa fa-lock"></i>&nbsp;Secure</button></li>
+        <li>
+          <button class="blue-button" on-click="setUnsecure">
+            <noflo-icon icon="lock"></noflo-icon>&nbsp;Secure
+          </button>
+        </li>
       </template>
       <template is="dom-if" if="{{!secure}}">
-        <li><button class="blue-button" on-click="setSecure"><i class="fa fa-unlock"></i>&nbsp;Visible</button></li>
+        <li>
+          <button class="blue-button" on-click="setSecure">
+            <noflo-icon icon="unlock"></noflo-icon>&nbsp;Visible
+          </button>
+        </li>
       </template>
     </ul>
     <ul class="routes">

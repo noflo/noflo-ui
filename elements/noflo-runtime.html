@@ -1,10 +1,10 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <link rel="import" href="noflo-runtime-testdetails.html">
-<link rel="import" href="noflo-icons.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-runtime">
   <template>
-    <style include="noflo-icons">
+    <style>
       :host {
         display: block;
         padding-left: 18px;
@@ -122,20 +122,20 @@
       }
     </style>
     <template is="dom-if" if="{{runtime}}">
-      <i id="runtime_icon" class$="{{_computeClass(icon)}}"></i>
+      <noflo-icon id="runtime_icon" icon="{{icon}}"></noflo-icon>
       <div id="address" class$="{{_computeClass2(online)}}">
-        <button title="Connect/Disconnect" on-click="reconnect"><i class="fa fa-refresh"></i></button>
+        <button title="Connect/Disconnect" on-click="reconnect"><noflo-icon icon="refresh"></noflo-icon></button>
         <h2>{{runtime.definition.address}}</h2>
-        <button title="Change Runtime" on-click="clearRuntime" class="clear"><i class="fa fa-exchange"></i></button>
+        <button title="Change Runtime" on-click="clearRuntime" class="clear"><noflo-icon icon="exchange"></noflo-icon></button>
       </div>
       <div id="teststatus" on-click="showTestDetails"></div>
       <div id="runcontrol">
         <template is="dom-if" if="{{online}}">
           <template is="dom-if" if="{{execution.running}}">
-            <button title="Stop" class="stop" on-click="stop"><i class="fa fa-pause"></i></button>
+            <button title="Stop" class="stop" on-click="stop"><noflo-icon icon="pause"></noflo-icon></button>
           </template>
           <template is="dom-if" if="{{!execution.running}}">
-            <button title="Start" class="start" on-click="start"><i class="fa fa-play"></i></button>
+            <button title="Start" class="start" on-click="start"><noflo-icon icon="play"></noflo-icon></button>
           </template>
           <h2>{{execution.label}}</h2>
         </template>
@@ -462,9 +462,6 @@
       },
       _computeIf: function (graph, runtime) {
         return graph && !runtime;
-      },
-      _computeClass: function (icon) {
-        return 'fa fa-' + icon;
       },
       _computeClass2: function (online) {
         return this.tokenList({ online: online });

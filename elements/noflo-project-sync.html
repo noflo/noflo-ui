@@ -1,7 +1,8 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-project-sync">
   <template>
     <div class="modal-container" on-click="bgClick">
-      <h1>Synchronize with <i class="fa fa-github"></i> <span>{{operation.repo}}</span></h1>
+      <h1>Synchronize with <noflo-icon icon="github"></noflo-icon> <span>{{operation.repo}}</span></h1>
       <template is="dom-if" if="{{statusText}}">
         <div>{{statusText}}</div>
       </template>

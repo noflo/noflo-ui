@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-help">
   <template>
     <style>
@@ -40,7 +41,9 @@
     </style>
     <h1>{{headline}}</h1>
     <p id="help-text"></p>
-    <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">Docs <i class="fa fa-question-circle"></i></a>
+    <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">
+      Docs <noflo-icon icon="question-circle"></noflo-icon>
+    </a>
   </template>
   <script>
     Polymer({
