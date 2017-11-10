@@ -107,6 +107,12 @@
           type: Boolean,
           value: false
         },
+        theme: {
+          type: String,
+          value: 'dark',
+          notify: true,
+          observer: 'themeChanged'
+        },
         panel: { notify: true },
         returnTo: { value: null }
       },
@@ -212,6 +218,9 @@
           return;
         }
         this.editor.triggerAutolayout();
+      },
+      themeChanged: function (newTheme, previousTheme) {
+        this.$.nav.theme = newTheme;
       },
       hidenavChanged: function () {
         if (this.hidenav) {
