@@ -18,5 +18,5 @@ module.exports = [
   'node_modules/react-dom/dist/react-dom.min.js',
   'node_modules/observe-js/src/observe.js',
   'node_modules/the-graph/themes/*.css',
-  'node_modules/webcomponents.js/webcomponents-lite.min.js',
+  'node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js',
 ];
