@@ -11,7 +11,7 @@ html, body {
 body {
   --noflo-ui-background: hsla(0, 0%, 0%, 0.98);
   --noflo-ui-text: hsl(192, 25%, 92%);
-  --noflo-ui-text-hightlight: hsl(185,100%,75%);
+  --noflo-ui-text-highlight: hsl(185,100%,75%);
   --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 80%);
   --noflo-ui-base-unit: 72px;
@@ -19,7 +19,7 @@ body {
 body.light {
   --noflo-ui-background: hsl(192, 25%, 92%);
   --noflo-ui-text: hsla(0, 0%, 0%, 0.98);
-  --noflo-ui-text-hightlight: hsl(185,100%,15%);
+  --noflo-ui-text-highlight: hsl(185,100%,15%);
   --noflo-ui-border: hsla(190, 90%, 8%, 0.3);
   --noflo-ui-border-highlight: hsl(190, 90%, 8%);
 }
@@ -39,7 +39,7 @@ body #loading {
   -o-transition: opacity 0.3s ease-in;
   z-index: -1;
   width: 400px;
-  color: white;
+  color: var(--noflo-ui-text-highlight);
   text-align: center;
   top: calc(50% - 18px);
   left: calc(50% - 200px);
@@ -173,8 +173,8 @@ h1, h2, h3 {
 }
 
 html, body, button {
-  background-color: hsl(187, 45%, 5%);
-  color: #ffffff;
+  background-color: var(--noflo-ui-background);
+  color: var(--noflo-ui-text);
   font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
   margin: 0;
   padding: 0;

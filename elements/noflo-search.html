@@ -8,22 +8,22 @@
   <template>
     <style>
       :host {
-        background-color: hsl(187, 45%, 5%);
+        background-color: var(--noflo-ui-background);
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
-        color: white;
+        color: var(--noflo-ui-text);
         font-size: 10px;
         white-space: nowrap;
       }
       input {
-        background-color: hsl(187, 45%, 5%);
+        background-color: var(--noflo-ui-background);
         background-image: none;
         font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         border: none;
         padding: 0px;
         padding-right: 10px;
         padding-left: 10px;
-        color: white;
+        color: var(--noflo-ui-text);
         width: 245px;
         height: 36px;
         display: inline;
@@ -40,7 +40,7 @@
         font-size: 10px;
         background-color: transparent;
         border: none;
-        color: white;
+        color: var(--noflo-ui-text);
         text-align: center;
         cursor: pointer;
       }
@@ -62,15 +62,15 @@
         display: none;
         /*box-sizing: border-box;*/
 
-        background-color: hsla(0, 0%, 0%, 0.98) !important;
-        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-color: var(--noflo-ui-background) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, var(--noflo-ui-background) 1px);
         background-size: calc(100% - 1px);
         background-position: 0px;
-        border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
+        border-bottom: 1px var(--noflo-ui-border) solid;
 
       }
       #breadcrumb a#parentlink {
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
         text-decoration: none;
         padding-right: 9px;
       }
@@ -79,7 +79,7 @@
         line-height: 72px;
         right: 54px;
         font-size: 15px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
         cursor: text;
       }
       #clear,
@@ -93,10 +93,10 @@
         display: block;
         height: 72px;
         font-size: 15px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
       }
       #clear {
-        color: hsl(189, 50%, 50%);
+        color: var(--noflo-ui-border-highlight);
       }
       #breadcrumb h1 {
         display: inline-block;
@@ -115,39 +115,37 @@
         display: none;
       }
       #searchinput {
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         display: block;
         position: absolute;
         top: 0px;
         left: 0px;
-        background-color: hsl(192, 25%, 92%);
-        color: black;
-        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         border: none;
         padding: 0px;
         padding-right: 54px;
         padding-left: 18px;
         width: calc(72px * 3 - 1px);
         height: 71px;
-        /*box-sizing: border-box;*/
         font-size: 12px;
         display: inline;
-        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, var(--noflo-ui-background) 1px);
         background-size: calc(100% - 1px);
         background-position: 0px;
-        border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
-        border-right: 1px hsla(190, 90%, 80%, 0.08) solid;
+        border-bottom: 1px var(--noflo-ui-border) solid;
+        border-right: 1px var(--noflo-ui-border) solid;
         border-radius: none;
       }
       #searchinput #speech {
-        color: hsl(190, 90%, 45%);
+        color: var(--noflo-ui-text-highlight);
       }
 
       #searchinput.components {
-        background-color: hsl(192, 25%, 92%);
+        background-color: var(--noflo-ui-text);
         transition: background-color 0.3s linear;
       }
       #searchinput.components::-webkit-input-placeholder {
         color: hsl(190, 90%, 45%);
+        color: var(--noflo-ui-text-highlight);
       }
       #searchinput.processes {
         background-color: hsl(161, 79%, 68%);

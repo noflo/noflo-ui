@@ -2,7 +2,7 @@
   <template>
     <style>
       .search-results-header h1 {
-        color: hsla(188, 15%, 60%, 0.8);
+        color: var(--noflo-ui-border);
         padding-left: 25px;
         font-size: 12px !important;
       }
@@ -23,8 +23,8 @@
         list-style: none;
         margin: 0;
         padding: 0;
-        background-color: black;
-        border-right: 1px solid hsla(190, 90%, 80%, 0.3);
+        background-color: var(--noflo-ui-background);
+        border-right: 1px solid var(--noflo-ui-border);
       }
 
       .search-results-item {
@@ -38,7 +38,7 @@
         padding-right: 12px !important;
       }
       .search-results-item i {
-        color: hsla(191, 100%, 92%, 0.898039);
+        color: var(--noflo-ui-text-highlight);
         position: absolute;
         top: 18px;
         left: 0;
@@ -48,6 +48,7 @@
         margin: 0;
       }
       .search-results-item h2 {
+        color: var(--noflo-ui-text-highlight);
         position: absolute;
         margin: 0;
         display: block;
@@ -71,8 +72,8 @@
         height: auto;
         line-height: calc(36px / 3);
         font-size: 10px;
-        color: hsla(188, 15%, 60%, 0.8);
-        text-shadow: hsl(0, 0%, 0%) 0px 1px 1px;
+        color: var(--noflo-ui-text);
+        text-shadow: var(--noflo-ui-background) 0px 1px 1px;
       }
     </style>
     <ul class="search-results-list">

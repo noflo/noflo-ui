@@ -10,13 +10,13 @@
         bottom: 0;
         width: 288px;
         height: 180px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
         box-sizing: border-box;
-        background-color: hsla(0, 0%, 0%, 0.98) !important;
-        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        background-color: var(--noflo-ui-background) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, var(--noflo-ui-background) 1px);
         background-size: calc(100% - 1px);
         background-position: 0px -1px;
-        border-top: 1px solid hsla(190, 90%, 80%, 0.3);
+        border-top: 1px solid var(--noflo-ui-border);
       }
 
       #controls button {
@@ -25,7 +25,8 @@
         background-color: transparent;
         font-size: 14px;
         width: 72px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
+        cursor: pointer;
       }
       #controls button.undo {
         position: absolute;
