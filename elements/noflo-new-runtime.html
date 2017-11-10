@@ -1,8 +1,9 @@
 <link rel="import" href="noflo-add-runtime.html">
 <link rel="import" href="noflo-icon.html">
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-new-runtime">
   <template>
-    <style>
+    <style include="noflo-modal-styles">
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -64,7 +65,7 @@
         color: hsl(189, 50%, 80%);
         text-decoration: none;
       }
-      ul.runtimes li a i.fa {
+      ul.runtimes li a noflo-icon {
         font-size: 72px;
         position: absolute;
         right: -8px;

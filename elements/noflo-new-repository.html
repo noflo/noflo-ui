@@ -1,5 +1,8 @@
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-new-repository">
   <template>
+    <style include="noflo-modal-styles">
+    </style>
     <div class="modal-container" on-click="bgClick">
       <h1>Add a new repository</h1>
       <template is="dom-if" if="{{errorText}}">

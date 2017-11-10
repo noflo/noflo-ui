@@ -1,6 +1,9 @@
 <link rel="import" href="noflo-icon.html">
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-project-sync">
   <template>
+    <style include="noflo-modal-styles">
+    </style>
     <div class="modal-container" on-click="bgClick">
       <h1>Synchronize with <noflo-icon icon="github"></noflo-icon> <span>{{operation.repo}}</span></h1>
       <template is="dom-if" if="{{statusText}}">
