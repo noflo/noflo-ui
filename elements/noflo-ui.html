@@ -12,6 +12,16 @@
 <dom-module id="noflo-ui">
   <template>
     <style>
+      /*
+       * z-indexes:
+       *
+       * Modal dialogs: 5
+       * Main screen: 4
+       * Panels: 3
+       * Context cards & runtime controls: 2
+       * Workspace chrome: 1
+       * Workspace: 0
+       */
       :host {
         display: block;
       }
@@ -52,7 +62,14 @@
         top: 0px;
         right: 36px;
         width: 288px;
-        z-index: 2;
+        z-index: 3;
+      }
+      noflo-journal {
+        position: fixed;
+        bottom: 0px;
+        right: 36px;
+        width: 288px;
+        z-index: 3;
       }
 
       #alert {
