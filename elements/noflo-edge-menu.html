@@ -98,7 +98,7 @@
     </style>
   <template>
     <header>
-      <h1 class="clear" on-click="clear"><span>{{ edges.length}}</span> <template is="dom-if" if="{{_computeIf(edges)}}">Edges</template><template is="dom-if" if="{{_computeIf2(edges)}}">Edge</template></h1>    
+      <h1 slot="header" class="clear" on-click="clear"><span>{{ edges.length}}</span> <template is="dom-if" if="{{_computeIf(edges)}}">Edges</template><template is="dom-if" if="{{_computeIf2(edges)}}">Edge</template></h1>
     </header>
     <ul class="toolbar toolbar2right">
       <template is="dom-if" if="{{secure}}">

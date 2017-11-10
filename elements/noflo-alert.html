@@ -62,7 +62,7 @@
       <i class="fa fa-lock"></i>
       This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="https://docs.flowhub.io/article/75-security-with-https-and-wss">about</a>
     </template>
-    <content></content>
+    <slot>
     <span>{{message}}</span>
     <template is="dom-if" if="{{isError}}">
       <a href="#" class="button">go home</a>

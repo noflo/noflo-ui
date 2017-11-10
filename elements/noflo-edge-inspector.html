@@ -85,7 +85,7 @@
       }
     </style>
   <template>
-    <h1><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
     <button id="clear" on-click="clear" title="Clear log"><i class="fa fa-ban"></i></button>
     <ul id="events">
     </ul>

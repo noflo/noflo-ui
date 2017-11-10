@@ -100,7 +100,7 @@
         height: 72;
         transition: background-color 0.3s ease-in-out;
       }
-      the-panel#account[open] ::shadow footer {
+      the-panel#account[open] footer {
         background-color: hsl(190, 90%, 45%);
       }
       footer h1 {
@@ -135,7 +135,7 @@
     </style>
   <template>
     <the-panel id="account" edge="left" size="324" handle="36">
-      <header>
+      <header slot="header">
         <template is="dom-if" if="{{project}}">
         <h1>{{project.name}}</h1>
         </template>
@@ -187,7 +187,7 @@
         </template>
       </main>
       <template is="dom-if" if="{{project.repo}}">
-      <footer>
+      <footer slot="footer">
         <h1 title="{{project.repo}}"><i class="fa fa-github"></i> <span>{{project.repo}}</span></h1>
         <button on-click="synchronize">
           <i class="fa fa-cloud-upload"></i>
