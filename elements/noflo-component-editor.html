@@ -1,7 +1,8 @@
 <dom-module id="noflo-component-editor">
-  <style type="text/css">
+  <template>
+    <style>
       :host {
-        background-color: black;
+        background-color: var(--noflo-ui-background);
         overflow: hidden;
       }
       .CodeMirror {
@@ -31,13 +32,12 @@
         padding-left: 36px;
         font-size: 14px;
         text-transform: uppercase;
-        color: white;
+        color: var(--noflo-ui-text);
       }
       #code h1 {
         text-align: right;
       }
     </style>
-  <template>
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>

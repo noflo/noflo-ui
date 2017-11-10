@@ -9,6 +9,16 @@ html, body {
 }
 
 body {
+  --noflo-ui-background: hsl(187, 45%, 5%);
+  --noflo-ui-text: hsl(192, 25%, 92%);
+  --noflo-ui-base-unit: 72px;
+}
+body.light {
+  --noflo-ui-background: hsl(192, 25%, 92%);
+  --noflo-ui-text: hsl(187, 45%, 5%);
+}
+
+body {
   /* iOS don't clash with our hold behavior */
   -webkit-user-select: none;                /* disable cut copy paste */
   -webkit-touch-callout: none;              /* disable callout, image save panel */

@@ -1,8 +1,10 @@
 <link rel="import" href="noflo-account-settings.html">
 <dom-module id="noflo-account">
-  <style>
+  <template>
+    <style>
       :host {
-        background-color: hsla(0, 0%, 0%, 0.98) !important;
+        background-color: var(--noflo-ui-background) !important;
+        color: var(--noflo-ui-text);
         display: block;
         padding-top: 18px;
         width: 100%;
@@ -22,6 +24,8 @@
       }
       section.app .logo {
         margin-right: 18px;
+        width: 72px;
+        height: 72px;
       }
       section.app .logo img {
         width: 72px;
@@ -97,7 +101,7 @@
         cursor: pointer;
         border: none;
         background-color: transparent;
-        color: white;
+        color: var(--noflo-ui-text);
       }
       section.user .toolbar a.login::before {
         content: ' ';
@@ -118,7 +122,7 @@
         background: hsla(190, 98%, 46%, .8);
         line-height: 18px;
         border-radius: 3px;
-        color: white;
+        color: var(--noflo-ui-text);
         font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
         box-sizing: border-box;
         transition: background-color 0.2s ease-in;
@@ -126,8 +130,8 @@
       section.user .toolbar a.login:hover,
       section.user .toolbar a.login:focus,
       section.user .toolbar a.login:active {
-        background-color: hsla(187, 31%, 6%, .4) !important;
-        color: white !important;
+        background-color: var(--noflo-ui-background) !important;
+        color: var(--noflo-ui-text) !important;
         outline: 0;
       }
       div.banner {
@@ -137,7 +141,7 @@
         padding-right: 72px;
       }
       div.banner a {
-        color: white;
+        color: var(--noflo-ui-text);
         cursor: pointer;
       }
       div.banner div {
@@ -145,8 +149,8 @@
       }
       div.banner button {
         display: inline-block;
-        color: black;
-        background-color: hsl(192, 25%, 92%);
+        color: var(--noflo-ui-background);
+        background-color: var(--noflo-ui-text);
         border: none;
         font-size: 13px;
         border-radius: 3px;
@@ -157,18 +161,17 @@
         margin: 0px;
         cursor: pointer;
       }
-    </style>
-  <template>
+      </style>
     <nav>
     <section class="app">
       <div class="logo $NOFLO_THEME"><img src="../app/$NOFLO_THEME-72.png"></div>
       <div class="name">
-      <h1>
-        $NOFLO_APP_NAME
-      </h1>
-      <h2>
-        v$NOFLO_APP_VERSION
-      </h2>
+        <h1>
+          $NOFLO_APP_NAME
+        </h1>
+        <h2>
+          v$NOFLO_APP_VERSION
+        </h2>
       </div>
     </section>
     <section class="user">

@@ -88,7 +88,8 @@
         overflow: hidden;
         display: inline-block;
         text-align: center;
-        background-color: hsla(0, 0%, 0%, .98);
+        background-color: var(--noflo-ui-background);
+        color: var(--noflo-ui-text);
         border-radius: 3px;
         margin-right: 18px;
         margin-left: 18px;
@@ -98,8 +99,8 @@
       }
       ul.projects li.add,
       ul.projects li.plan {
-        background-color: hsl(192, 25%, 92%);
-        color: black;
+        background-color: var(--noflo-ui-text);
+        color: var(--noflo-ui-background);
         cursor: default;
       }
       ul.projects li.remote {
@@ -164,11 +165,10 @@
         font-size: 9px;
       }
       ul.projects li a {
-        color: black;
+        color: var(--noflo-ui-background);
         text-decoration: none;
       }
     </style>
-  <template>
     <noflo-account id="mainaccount" user="{{user}}" avatar="{{avatar}}" plan="{{plan}}"></noflo-account>  
     <div id="loginrequired"></div>
       <section id="projects">
