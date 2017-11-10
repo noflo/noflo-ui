@@ -136,10 +136,7 @@
           }
           var x = view.pan[0];
           var y = view.pan[1];
-          this.set('viewrectangle' + ('.' + 0), -x);
-          this.set('viewrectangle' + ('.' + 1), -y);
-          this.set('viewrectangle' + ('.' + 2), view.width);
-          this.set('viewrectangle' + ('.' + 3), view.height);
+          this.viewrectangle = [-x, -y, view.width, view.height];
           this.scale = view.scale;
         },
         themeChanged: function () {
