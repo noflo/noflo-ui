@@ -1,7 +1,8 @@
 <link rel="import" href="the-graph-nav.html">
 
 <dom-module id="noflo-journal">
-  <style>
+  <template>
+    <style>
       #controls {
         display: block;
         position: fixed;
@@ -51,7 +52,6 @@
         top: 0;
       }
     </style>
-  <template>
     <div id="controls">
       <the-graph-nav id="nav" width="288" height="144" graph="{{graph}}" hide="{{hidenav}}"></the-graph-nav>
 

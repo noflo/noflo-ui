@@ -1,5 +1,6 @@
 <dom-module id="noflo-component-inspector">
-  <style>
+  <template>
+    <style>
       button.delete {
         position: absolute;
         right: 36px;
@@ -7,7 +8,6 @@
         color: hsla( 0, 98%, 46%, .8) !important;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1><span>{{component.name}}</span> settings</h1>
       <template is="dom-if" if="{{errorText}}">

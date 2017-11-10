@@ -1,7 +1,8 @@
 <link rel="import" href="noflo-runtime-browserdebug.html">
 <link rel="import" href="noflo-runtime-customiframe.html">
 <dom-module id="noflo-runtime-selector">
-  <style>
+  <template>
+    <style>
       ul.runtimes {
         padding: 0px;
         margin-top: 36px;
@@ -60,7 +61,6 @@
         color: hsl(189, 50%, 80%);
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Select runtime for <span>{{graph.name}}</span></h1>
       <template is="dom-if" if="{{available.length}}">

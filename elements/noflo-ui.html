@@ -10,15 +10,30 @@
 <link rel="import" href="noflo-packets.html">
 <link rel="import" href="noflo-alert.html">
 <dom-module id="noflo-ui">
-  <style>
-      #grapheditor {
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      noflo-main {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow-y: scroll;
+        z-index: 4;
+      }
+
+      the-graph-editor {
         position: fixed;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
       }
-      #componenteditor {
+      noflo-component-editor {
         position: fixed;
         top: 0;
         bottom: 0;
@@ -74,7 +89,6 @@
         opacity: 0;
       }
     </style>
-  <template>
     <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}"></noflo-library>

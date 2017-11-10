@@ -1,6 +1,8 @@
 <dom-module id="noflo-alert">
-  <style>
+  <template>
+    <style>
       :host {
+        display: block;
         text-align: center;
         background-color: hsl(35, 98%, 46%);
         color: white;
@@ -51,7 +53,6 @@
         }
       }
     </style>
-  <template>
     <template is="dom-if" if="{{isError}}">
       <i class="fa fa-warning"></i>
     </template>

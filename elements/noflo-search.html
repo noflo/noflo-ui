@@ -5,7 +5,8 @@
 <link rel="import" href="noflo-component-inspector.html">
 
 <dom-module id="noflo-search">
-  <style>
+  <template>
+    <style>
       :host {
         background-color: hsl(187, 45%, 5%);
         -webkit-transform: translateZ(0);
@@ -155,9 +156,7 @@
       #searchinput.processes::-webkit-input-placeholder {
         color: hsl(190, 90%, 45%);
       }
-
     </style>
-  <template>
     <div id="breadcrumb" on-click="focus">
       <template is="dom-if" if="{{_computeIf(component, readonly)}}">
       <i class="fa fa-search"></i>

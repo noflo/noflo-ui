@@ -1,5 +1,9 @@
 <dom-module id="noflo-edge-inspector">
-  <style>
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
       h1 {
         white-space: nowrap;
         overflow: hidden;
@@ -84,7 +88,6 @@
         background-color: hsla(0, 0%, 0%, 0.7);
       }
     </style>
-  <template>
     <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
     <button id="clear" on-click="clear" title="Clear log"><i class="fa fa-ban"></i></button>
     <ul id="events">

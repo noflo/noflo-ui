@@ -1,5 +1,9 @@
 <dom-module id="noflo-add-runtime">
-  <style>
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -7,7 +11,6 @@
         font-size: 11px;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Add new runtime</h1>
       <form>

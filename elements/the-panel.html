@@ -1,5 +1,6 @@
 <dom-module id="the-panel">
-  <style>
+  <template>
+    <style>
       @host {
         :scope {
           position: fixed;
@@ -7,7 +8,6 @@
         }
       }
     </style>
-  <template>
     <slot name="header"></slot>
     <slot></slot>
     <slot name="footer"></slot>

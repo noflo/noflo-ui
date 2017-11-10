@@ -1,5 +1,6 @@
 <dom-module id="noflo-type-selector">
-  <style>
+  <template>
+    <style>
       :host {
         top: calc(50% - 220px) !important;
       }
@@ -69,7 +70,6 @@
         top: 9px;
       }
     </style>
-  <template>
     <ul class="types">
       <template is="dom-repeat" items="{{available}}" as="availtype">
       <li on-click="selectType" data-id$="{{availtype.id}}" class$="{{_computeClass(availtype, type)}}">

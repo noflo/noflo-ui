@@ -1,7 +1,8 @@
 <link rel="import" href="noflo-type-selector.html">
 
 <dom-module id="noflo-graph-inspector">
-  <style>
+  <template>
+    <style>
       textarea {
         height: 144px;
       }
@@ -64,8 +65,6 @@
         cursor: default;
       }
     </style>
-  <template>
-
     <div class="modal-container" on-click="bgClick">
       <h1 on-keydown="checkUpdateName" on-blur="updateName" contenteditable="">{{graph.name}}</h1>
       <template is="dom-if" if="{{downloadUrl}}">

@@ -1,5 +1,6 @@
 <dom-module id="noflo-edge-menu">
-  <style>
+  <template>
+    <style>
       ul.toolbar2right {
         right: 0px !important;
       }
@@ -94,9 +95,7 @@
       .routes  button.route8:hover  { background-color: hsla(285, 98%, 46%, 1); }
       .routes  button.route9:hover  { background-color: hsla(310, 98%, 46%, 1); }
       .routes button.route10:hover  { background-color: hsla(335, 98%, 46%, 1); }
-      
     </style>
-  <template>
     <header>
       <h1 slot="header" class="clear" on-click="clear"><span>{{ edges.length}}</span> <template is="dom-if" if="{{_computeIf(edges)}}">Edges</template><template is="dom-if" if="{{_computeIf2(edges)}}">Edge</template></h1>
     </header>

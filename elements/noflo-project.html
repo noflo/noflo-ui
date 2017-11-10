@@ -5,7 +5,11 @@
 <link rel="import" href="noflo-project-inspector.html">
 <link rel="import" href="noflo-project-sync.html">
 <dom-module id="noflo-project">
-  <style>
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
       h2 {
         font-size: 16px;
         line-height: 36px;
@@ -133,7 +137,6 @@
         opacity: 0.5;
       }
     </style>
-  <template>
     <the-panel id="account" edge="left" size="324" handle="36">
       <header slot="header">
         <template is="dom-if" if="{{project}}">

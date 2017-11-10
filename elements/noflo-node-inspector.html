@@ -1,7 +1,8 @@
 <link rel="import" href="number-scrubber.html">
 
 <dom-module id="noflo-node-inspector">
-  <style>
+  <template>
+    <style>
       .ports {
         margin-bottom: 8px;
       }
@@ -325,9 +326,7 @@
         line-height: 36px;
         background-color: hsla(0, 0%, 0%, 0.7);
       }
-
     </style>
-  <template>
     <header>
       <h1 on-keydown="checkUpdateLabel" on-blur="updateLabel" contenteditable="">{{label}}</h1>
       <template is="dom-if" if="{{_computeIf(node)}}">

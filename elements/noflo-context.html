@@ -4,8 +4,12 @@
 <link rel="import" href="the-card.html">
 <link rel="import" href="the-panel.html">
 <dom-module id="noflo-context">
-  <style>
-      #context {
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      #contextsection {
         position: fixed;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
@@ -20,8 +24,7 @@
         overflow-x: visible;
       }
     </style>
-  <template>
-    <section id="context"></section>
+    <section id="contextsection"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36">
       <header slot="header"></header>
       <main></main>
@@ -89,7 +92,7 @@
         }
       },
       attached: function () {
-        this.contextBar = this.$.context;
+        this.contextBar = this.$.contextsection;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {
             this.clearSelection();
@@ -114,7 +117,7 @@
       },
       getpanel: function () {
         this.fire('toolpanel', this.$.fixed);
-        this.fire('contextpanel', this.$.context);
+        this.fire('contextpanel', this.$.contextsection);
       },
       editorChanged: function () {
         if (!this.editor) {

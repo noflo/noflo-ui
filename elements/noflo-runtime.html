@@ -2,23 +2,17 @@
 <link rel="import" href="noflo-runtime-selector.html">
 <link rel="import" href="noflo-runtime-testdetails.html">
 <dom-module id="noflo-runtime">
-  <style>
+  <template>
+    <style>
       :host {
-        position: fixed;
-        right: 36px;
         padding-left: 18px;
         box-sizing: border-box;
-        top: 0;
         color: hsl(189, 50%, 80%);
-        width: 288px;
-        height: 72px;
         background-color: hsla(0, 0%, 0%, 0.98) !important;
         background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
         background-size: calc(100% - 1px);
         background-position: 0px;
         border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
-        overflow: hidden;
-        z-index: 2;
       }
 
       #runtime_icon {
@@ -125,7 +119,6 @@
         margin-top: 18px;
       }
     </style>
-  <template>
     <template is="dom-if" if="{{runtime}}">
       <i id="runtime_icon" class$="{{_computeClass(icon)}}"></i>
       <div id="address" class$="{{_computeClass2(online)}}">

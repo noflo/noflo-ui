@@ -1,5 +1,6 @@
 <dom-module id="noflo-search-graph-results">
-  <style>
+  <template>
+    <style>
       .search-results-header h1 {
         color: hsla(188, 15%, 60%, 0.8);
         padding-left: 25px;
@@ -73,9 +74,7 @@
         color: hsla(188, 15%, 60%, 0.8);
         text-shadow: hsl(0, 0%, 0%) 0px 1px 1px;
       }
-
     </style>
-  <template>
     <ul class="search-results-list">
       <template is="dom-repeat" items="{{results}}" as="result" index-as="index">
         <li class="search-results-item" on-click="clicked" data-index$="{{index}}">

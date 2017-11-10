@@ -1,5 +1,9 @@
 <dom-module id="noflo-account-settings">
-  <style>
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
       .plan strong {
         text-transform: uppercase;
         color: black;
@@ -34,7 +38,6 @@
         cursor: pointer;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Account settings for <span>{{user.name}}</span></h1>
       <form>

@@ -6,7 +6,8 @@
 --><html><head><link rel="import" href="the-graph-thumb.html">
 
 <dom-module id="the-graph-nav">
-  <style>
+  <template>
+    <style>
       #thumb, 
       #outcanvas {
         position: absolute;
@@ -24,7 +25,6 @@
         border-style: dotted;
       }
     </style>
-  <template>
     <the-graph-thumb id="thumb" graph="{{graph}}" thumbrectangle="{{thumbrectangle}}" width="{{width}}" height="{{height}}" thumbscale="{{thumbscale}}" theme="{{theme}}">
     </the-graph-thumb>
     <canvas id="outcanvas" width="{{width}}" height="{{height}}" style="position:absolute;top:0;left:0;"></canvas>
