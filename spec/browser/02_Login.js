@@ -7,15 +7,17 @@ describe('Login', function() {
   before(function() {
     const iframe = document.getElementById('app');
     win = iframe.contentWindow;
-    return doc = iframe.contentDocument;
+    doc = iframe.contentDocument;
   });
-  it('should find noflo-ui', () => ui = doc.querySelector('noflo-ui'));
-  it('should find noflo-main', function() {
-    main = doc.querySelector('noflo-main');
-    return chai.expect(main).to.exist;
+  it('should find noflo-ui', () => {
+    ui = doc.querySelector('noflo-ui')
   });
   it('should find noflo-main', function() {
-    mainaccount = doc.querySelector('noflo-main #mainaccount');
-    return chai.expect(mainaccount).to.exist;
+    main = ui.shadowRoot.querySelector('noflo-main');
+    chai.expect(main).to.exist;
+  });
+  it('should find noflo-main', function() {
+    mainaccount = main.shadowRoot.querySelector('#mainaccount');
+    chai.expect(mainaccount).to.exist;
   });
 });
