@@ -1,5 +1,7 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-help">
-  <style>
+  <template>
+    <style>
       :host {
         position: fixed;
         display: block;
@@ -8,15 +10,10 @@
         width: 100%;
         transition: bottom 0.3s ease-in-out;
         z-index: 6;
-        background-color: hsl(192, 25%, 92%);
+        background-color: var(--noflo-ui-text);
         padding: 36px 72px 18px 72px;
-        color: black;
-        /*
-        background-image: radial-gradient(2px at 0px 0px, hsl(190, 80%, 30%) 1px, hsla(0, 0%, 0%, 0) 1.1px);
-        background-size: 36px 36px;
-        background-position: 50% 0px;
-        */
-        box-shadow: hsl(189, 47%, 6%) 0px 0px 2px;
+        color: var(--noflo-ui-background);
+        box-shadow: var(--noflo-ui-background) 0px 0px 2px;
         box-sizing: border-box;
 
         overflow: auto;
@@ -42,10 +39,11 @@
         text-decoration: none;
       }
     </style>
-  <template>
     <h1>{{headline}}</h1>
     <p id="help-text"></p>
-    <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">Docs <i class="fa fa-question-circle"></i></a>
+    <a id="docslink" href="http://flowhub.io/documentation" title="Documentation, getting started" target="_blank">
+      Docs <noflo-icon icon="question-circle"></noflo-icon>
+    </a>
   </template>
   <script>
     Polymer({
@@ -72,7 +70,7 @@
       attached: function () {
         this.visibleChanged();
         this.addEventListener('click', function (event) {
-          if (unwrap(event).target.tagName === 'A') {
+          if (event.target.tagName === 'A') {
             return;
           }
           event.preventDefault();

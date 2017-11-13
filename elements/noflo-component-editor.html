@@ -1,7 +1,9 @@
+<link rel="import" href="codemirror-styles.html">
 <dom-module id="noflo-component-editor">
-  <style type="text/css">
+  <template>
+    <style include="codemirror-styles">
       :host {
-        background-color: black;
+        background-color: var(--noflo-ui-background);
         overflow: hidden;
       }
       .CodeMirror {
@@ -18,7 +20,7 @@
         height: 100%;
         position: absolute;
         left: 0px;
-        top: 72px;
+        top: 36px;
       }
       #tests {
         left: auto;
@@ -31,13 +33,12 @@
         padding-left: 36px;
         font-size: 14px;
         text-transform: uppercase;
-        color: white;
+        color: var(--noflo-ui-text);
       }
       #code h1 {
         text-align: right;
       }
     </style>
-  <template>
     <section id="code">
       <h1>Implementation</h1>
       <div id="code_editor"></div>

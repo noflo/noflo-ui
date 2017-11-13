@@ -4,8 +4,13 @@
 <link rel="import" href="noflo-new-component.html">
 <link rel="import" href="noflo-project-inspector.html">
 <link rel="import" href="noflo-project-sync.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-project">
-  <style>
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
       h2 {
         font-size: 16px;
         line-height: 36px;
@@ -33,8 +38,8 @@
         cursor: pointer;
       }
       ul.graphs li.add {
-        background-color: hsl(192, 25%, 92%);
-        color: black;
+        background-color: var(--noflo-ui-text);
+        color: var(--noflo-ui-background);
         cursor: default;
       }
       ul.graphs li the-graph-thumb {
@@ -43,7 +48,7 @@
         left: 100px;
         top: -20px;
       }
-      ul.graphs li i.fa {
+      ul.graphs li noflo-icon {
         display: block;
         position: absolute;
         right: 17px;
@@ -76,9 +81,40 @@
         text-align: left;
         white-space: nowrap;
       }
+      header h1 {
+        text-align: center;
+        height: 36px;
+        line-height: 36px;
+        font-size: 17px;
+        white-space: nowrap;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      main ul {
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+      }
+      main ul li {
+        line-height: 36px;
+        min-height: 36px;
+      }
+      main ul li a {
+        color: var(--noflo-ui-text);
+        text-decoration: none;
+        display: block;
+        cursor: pointer;
+      }
+      main ul li a i {
+        float: right;
+        line-height: 36px;
+        color: var(--noflo-ui-border);
+        margin-right: 4px;
+      }
       main {
         overflow-y: auto;
         max-height: calc(100% - 72px);
+        padding-left: 36px;
       }
       main.repo {
         max-height: calc(100% - 72px * 2);
@@ -100,7 +136,37 @@
         height: 72;
         transition: background-color 0.3s ease-in-out;
       }
-      the-panel#account[open] ::shadow footer {
+      the-panel {
+        background-color: var(--noflo-ui-background) !important;
+        transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+        position: fixed;
+        border: 0px solid var(--noflo-ui-border);
+        box-sizing: border-box;
+        top: 0px;
+        border-right-width: 1px;
+        height: 100vh;
+        padding-right: 36px;
+        z-index: 3;
+      }
+      the-panel:before {
+        font-family: FontAwesomeSVG;
+        content: '\f03a';
+        color: var(--noflo-ui-border-highlight);
+        position: absolute;
+        text-align: center;
+        right: 0px;
+        width: 36px;
+        top: 50%;
+        top: calc(50% - 7px);
+        font-size: 17px;
+        opacity: 0.25;
+        transition: opacity 0.3s ease-in-out;
+      }
+      the-panel:not([open]):before {
+        cursor: e-resize;
+        opacity: 1;
+      }
+      #account[open] footer {
         background-color: hsl(190, 90%, 45%);
       }
       footer h1 {
@@ -133,9 +199,8 @@
         opacity: 0.5;
       }
     </style>
-  <template>
     <the-panel id="account" edge="left" size="324" handle="36">
-      <header>
+      <header slot="header">
         <template is="dom-if" if="{{project}}">
         <h1>{{project.name}}</h1>
         </template>
@@ -145,9 +210,19 @@
       </header>
       <main class$="{{_computeClass(project)}}">
         <ul>
-          <li><a on-click="openHome"><i class="fa fa-home"></i>Home</a></li>
+          <li>
+            <a on-click="openHome">
+              <noflo-icon icon="home"></noflo-icon>
+              Home
+            </a>
+          </li>
           <template is="dom-if" if="{{project}}">
-          <li><a on-click="openSettings"><i class="fa fa-cog"></i>Settings</a></li>
+          <li>
+            <a on-click="openSettings">
+              <noflo-icon icon="cog"></noflo-icon>
+              Settings
+            </a>
+          </li>
           </template>
         </ul>
         <template is="dom-if" if="{{project}}">
@@ -175,10 +250,10 @@
           <li on-click="openComponent" data-id$="{{component.name}}">
             <h2>{{component.name}}</h2>
             <template is="dom-if" if="{{_computeIf(component)}}">
-            <i class="fa fa-coffee"></i>
+            <noflo-icon icon="coffee"></noflo-icon>
             </template>
             <template is="dom-if" if="{{_computeIf2(component)}}">
-            <i class="fa fa-code"></i>
+            <noflo-icon icon="code"></noflo-icon>
             </template>
           </li>
           </template>
@@ -187,10 +262,13 @@
         </template>
       </main>
       <template is="dom-if" if="{{project.repo}}">
-      <footer>
-        <h1 title="{{project.repo}}"><i class="fa fa-github"></i> <span>{{project.repo}}</span></h1>
+      <footer slot="footer">
+        <h1 title="{{project.repo}}">
+          <noflo-icon icon="github"></noflo-icon>
+          <span>{{project.repo}}</span>
+        </h1>
         <button on-click="synchronize">
-          <i class="fa fa-cloud-upload"></i>
+          <noflo-icon icon="cloud-upload"></noflo-icon>
           <span>Synchronize</span>
         </button>
       </footer>

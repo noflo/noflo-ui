@@ -113,8 +113,6 @@
             setTimeout(this.redrawGraph.bind(this), 500);
             return;
           }
-          // Need the actual context, not polymer-wrapped one
-          context = unwrap(context);
           var properties = {
             width: this.width,
             height: this.height,

@@ -1,5 +1,10 @@
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-add-runtime">
-  <style>
+  <template>
+    <style include="noflo-modal-styles">
+      :host {
+        display: block;
+      }
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -7,7 +12,6 @@
         font-size: 11px;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Add new runtime</h1>
       <form>

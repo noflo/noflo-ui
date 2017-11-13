@@ -1,5 +1,8 @@
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-group-inspector">
   <template>
+    <style include="noflo-modal-styles">
+    </style>
     <div class="modal-container" on-click="bgClick">
       <h1>
         <template is="dom-if" if="{{group}}">

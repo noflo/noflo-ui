@@ -3,28 +3,19 @@
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
-  <style>
+  <template>
+    <style>
       :host {
         background-color: hsl(190, 90%, 45%);
-        display: block;
-        z-index: 4;
-        position: fixed;
-        top: 0px;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
-        overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
-        height: 100%;
-        width: 100%;
         transition: height 1s ease-in-out;
+        display: block;
       }
       section {
-        /*
-        background-image: radial-gradient(1px at 0px 0px, hsl(210, 78%, 10%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
-        background-position: 50% 0px;
-        background-size: 36px 36px;
-        */
         display: block;
         position: relative;
         padding-left: 72px;
@@ -88,7 +79,8 @@
         overflow: hidden;
         display: inline-block;
         text-align: center;
-        background-color: hsla(0, 0%, 0%, .98);
+        background-color: var(--noflo-ui-background);
+        color: var(--noflo-ui-text);
         border-radius: 3px;
         margin-right: 18px;
         margin-left: 18px;
@@ -98,8 +90,8 @@
       }
       ul.projects li.add,
       ul.projects li.plan {
-        background-color: hsl(192, 25%, 92%);
-        color: black;
+        background-color: var(--noflo-ui-text);
+        color: var(--noflo-ui-background);
         cursor: default;
       }
       ul.projects li.remote {
@@ -164,11 +156,10 @@
         font-size: 9px;
       }
       ul.projects li a {
-        color: black;
+        color: var(--noflo-ui-background);
         text-decoration: none;
       }
     </style>
-  <template>
     <noflo-account id="mainaccount" user="{{user}}" avatar="{{avatar}}" plan="{{plan}}"></noflo-account>  
     <div id="loginrequired"></div>
       <section id="projects">
@@ -180,7 +171,9 @@
           <small>{{numberOfRemoteProjects(remoteProjects)}}</small>
           </template>
           <template is="dom-if" if="{{_computeIf2(projectList)}}">
-          <button on-click="fetchGithub"><i id="fetchgithub" class="fa fa-refresh"></i></button>
+          <button on-click="fetchGithub">
+            <noflo-icon id="fetchgithub" icon="refresh"></noflo-icon>
+          </button>
           </template>
         </h2>
         <ul class="tabs">
@@ -209,7 +202,9 @@
               <p><span>{{project.graphs.length}}</span>&nbsp;graphs, <span>{{project.components.length}}</span>&nbsp;components</p>
               </template>
               <template is="dom-if" if="{{_computeIf4(project)}}">
-              <button on-click="deleteProject" data-id$="{{project.id}}"><i class="fa fa-trash-o"></i></button>
+              <button on-click="deleteProject" data-id$="{{project.id}}">
+                <noflo-icon icon="trash-o"></noflo-icon>
+              </button>
               </template>
             </li>
           </template>
@@ -236,12 +231,16 @@
               <template is="dom-if" if="{{project.private}}">
               <p>Private repository</p>
                 <template is="dom-if" if="{{_computeIf6(plan)}}">
-                <button on-click="downloadProject" data-repo$="{{project.repo}}"><i class="fa fa-cloud-download"></i></button>
+                <button on-click="downloadProject" data-repo$="{{project.repo}}">
+                  <noflo-icon icon="cloud-download"></noflo-icon>
+                </button>
                 </template>
               </template>
               <template is="dom-if" if="{{!project.private}}">
               <p>Public repository</p>
-              <button on-click="downloadProject" data-repo$="{{project.repo}}"><i class="fa fa-cloud-download"></i></button>
+              <button on-click="downloadProject" data-repo$="{{project.repo}}">
+                <noflo-icon icon="cloud-download"></noflo-icon>
+              </button>
               </template>
             </li>
           </template>
@@ -252,7 +251,9 @@
       <h2>
         Runtimes <small><span>{{numberOfAvailableRuntimes(runtimes)}}</span> / <span>{{runtimes.length}}</span></small>
         <template is="dom-if" if="{{user}}">
-        <button on-click="fetchRuntimes"><i id="fetchruntimes" class="fa fa-refresh"></i></button>
+        <button on-click="fetchRuntimes">
+          <noflo-icon id="fetchruntimes" icon="refresh"></noflo-icon>
+        </button>
         </template>
       </h2>
       <ul class="projects">

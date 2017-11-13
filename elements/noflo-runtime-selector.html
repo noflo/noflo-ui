@@ -1,7 +1,9 @@
 <link rel="import" href="noflo-runtime-browserdebug.html">
 <link rel="import" href="noflo-runtime-customiframe.html">
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-runtime-selector">
-  <style>
+  <template>
+    <style include="noflo-modal-styles">
       ul.runtimes {
         padding: 0px;
         margin-top: 36px;
@@ -9,6 +11,8 @@
         margin-right: -9px;
         margin-bottom: 18px;
         list-style: none;
+        max-height: 60vh;
+        overflow-y: scroll;
       }
       ul.runtimes li {
         width: 274px;
@@ -60,7 +64,6 @@
         color: hsl(189, 50%, 80%);
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Select runtime for <span>{{graph.name}}</span></h1>
       <template is="dom-if" if="{{available.length}}">

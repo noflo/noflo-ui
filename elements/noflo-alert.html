@@ -1,6 +1,9 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-alert">
-  <style>
+  <template>
+    <style>
       :host {
+        display: block;
         text-align: center;
         background-color: hsl(35, 98%, 46%);
         color: white;
@@ -51,18 +54,17 @@
         }
       }
     </style>
-  <template>
     <template is="dom-if" if="{{isError}}">
-      <i class="fa fa-warning"></i>
+      <noflo-icon icon="warning"></noflo-icon>
     </template>
     <template is="dom-if" if="{{_computeIf(isError, offerHTTPS)}}">
-      <i class="fa fa-spinner fa-spin"></i>
+      <noflo-icon icon="spinner" class="fa-spin"></noflo-icon>
     </template>
     <template is="dom-if" if="{{offerHTTPS}}">
-      <i class="fa fa-lock"></i>
+      <noflo-icon icon="lock"></noflo-icon>
       This app is available securely at <a href="https://app.flowhub.io/">https://app.flowhub.io/</a> - <a href="https://docs.flowhub.io/article/75-security-with-https-and-wss">about</a>
     </template>
-    <content></content>
+    <slot>
     <span>{{message}}</span>
     <template is="dom-if" if="{{isError}}">
       <a href="#" class="button">go home</a>

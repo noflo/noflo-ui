@@ -1,5 +1,7 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-type-selector">
-  <style>
+  <template>
+    <style>
       :host {
         top: calc(50% - 220px) !important;
       }
@@ -62,19 +64,18 @@
         overflow: hidden;
         color: hsl(189, 50%, 80%);
       }
-      ul.types li i {
+      ul.types li noflo-icon {
         font-size: 72px;
         position: absolute;
         right: -8px;
         top: 9px;
       }
     </style>
-  <template>
     <ul class="types">
       <template is="dom-repeat" items="{{available}}" as="availtype">
       <li on-click="selectType" data-id$="{{availtype.id}}" class$="{{_computeClass(availtype, type)}}">
         <h2>{{availtype.label}}</h2>
-        <i class$="{{_computeClass2(availtype)}}"></i>
+        <noflo-icon icon="{{availtype.icon}}"></noflo-icon>
         <template is="dom-if" if="{{_computeIf(availtype)}}">
         <p><span>{{availtype.runtimes.length}}</span> runtime</p>
         </template>
@@ -166,9 +167,6 @@
       },
       _computeClass: function (availtype, type) {
         return this.tokenList({ selected: type == availtype.id });
-      },
-      _computeClass2: function (availtype) {
-        return 'fa fa-' + availtype.icon;
       },
       _computeIf: function (availtype) {
         return availtype.runtimes.length === 1;

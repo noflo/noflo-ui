@@ -4,8 +4,12 @@
 <link rel="import" href="the-card.html">
 <link rel="import" href="the-panel.html">
 <dom-module id="noflo-context">
-  <style>
-      #context {
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      #contextsection {
         position: fixed;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
@@ -19,13 +23,66 @@
         -webkit-overflow-scrolling: touch;
         overflow-x: visible;
       }
+      the-panel {
+        background-color: var(--noflo-ui-background) !important;
+        transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+        position: fixed;
+        border: 0px solid var(--noflo-ui-border);
+        box-sizing: border-box;
+        padding-top: 72px;
+        top: 0px;
+        border-left-width: 1px;
+        height: 100vh;
+        padding-left: 36px;
+        z-index: 3;
+      }
+      the-panel:before {
+        font-family: FontAwesomeSVG;
+        content: '\f06e';
+        color: var(--noflo-ui-border-highlight);
+        position: absolute;
+        text-align: center;
+        left: 0px;
+        width: 36px;
+        top: 50%;
+        top: calc(50% - 7px);
+        font-size: 17px;
+        opacity: 0.25;
+        transition: opacity 0.3s ease-in-out;
+      }
+      the-panel:not([open]):before {
+        opacity: 1;
+        cursor: w-resize;
+      }
+      the-panel footer {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+      }
+      the-panel#fixed the-card {
+        padding: 0px;
+        width: calc(72px * 4);
+        overflow: hidden;
+      }
+      the-panel#fixed the-card.maximized {
+        background-color: var(--noflo-ui-background);
+        width: calc(100% - 36px);
+        height: calc(100% - 36px);
+        max-height: none;
+        position: fixed;
+        transform: translateZ(0);
+        top: 72px;
+        left: 36px;
+        transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
+        z-index: 3;
+        border: none;
+      }
     </style>
-  <template>
-    <section id="context"></section>
+    <section id="contextsection"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36">
-      <header></header>
+      <header slot="header"></header>
       <main></main>
-      <footer></footer>
+      <footer slot="footer"></footer>
     </the-panel>
   </template>
   <script>
@@ -89,7 +146,7 @@
         }
       },
       attached: function () {
-        this.contextBar = this.$.context;
+        this.contextBar = this.$.contextsection;
         window.addEventListener('keyup', function (e) {
           if (e.keyCode === 27) {
             this.clearSelection();
@@ -114,7 +171,7 @@
       },
       getpanel: function () {
         this.fire('toolpanel', this.$.fixed);
-        this.fire('contextpanel', this.$.context);
+        this.fire('contextpanel', this.$.contextsection);
       },
       editorChanged: function () {
         if (!this.editor) {

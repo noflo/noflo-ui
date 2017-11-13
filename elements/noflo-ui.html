@@ -10,22 +10,70 @@
 <link rel="import" href="noflo-packets.html">
 <link rel="import" href="noflo-alert.html">
 <dom-module id="noflo-ui">
-  <style>
-      #grapheditor {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+  <template>
+    <style>
+      /*
+       * z-indexes:
+       *
+       * Modal dialogs: 5
+       * Main screen: 4
+       * Panels: 3
+       * Context cards & runtime controls: 2
+       * Workspace chrome: 1
+       * Workspace: 0
+       */
+      :host {
+        display: block;
       }
-      #componenteditor {
+
+      noflo-main {
         position: fixed;
         top: 0;
-        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow-y: scroll;
+        z-index: 4;
+      }
+      the-graph-editor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+      noflo-component-editor {
+        position: fixed;
+        top: 0;
         left: 36px;
-        right: 0;
+        height: 100vh;
+        right: 36px;
         z-index: 0;
       }
+      noflo-search {
+        position: fixed;
+        top: 0px;
+        left: 36px;
+        width: 288px;
+        height: 72px;
+        z-index: 2;
+      }
+      noflo-runtime {
+        position: fixed;
+        top: 0px;
+        right: 36px;
+        width: 288px;
+        height: 72px;
+        z-index: 3;
+      }
+      noflo-journal {
+        position: fixed;
+        bottom: 0px;
+        right: 36px;
+        width: 288px;
+        z-index: 3;
+      }
+
       #alert {
         box-sizing: border-box;
         position: fixed;
@@ -74,7 +122,6 @@
         opacity: 0;
       }
     </style>
-  <template>
     <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
     <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}"></noflo-library>
@@ -138,10 +185,7 @@
         'remoteProjects'
       ],
       emitEvent: function (event, payload) {
-        this.fire(event, {
-          action: event,
-          payload: payload
-        });
+        this.fire(event, payload);
       },
       ready: function () {
         this.$.main.addEventListener('logout', function (event) {
@@ -162,6 +206,7 @@
         this.$.main.addEventListener('theme', function (event) {
           this.$.grapheditor.theme = event.detail;
           this.$.componenteditor.theme = event.detail;
+          this.$.journal.theme = event.detail;
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.emitEvent('flowhub:projects:fetch', event.detail);
@@ -327,8 +372,8 @@
         this.set('$.packets.editor', this.$.grapheditor);
         this.set('$.search.editor', this.$.grapheditor);
         this.set('$.runtime.panel', this.$.context.$.fixed);
-        this.set('$.packets.panel', this.$.context.$.context);
-        this.set('$.search.panel', this.$.context.$.context);
+        this.set('$.packets.panel', this.$.context.$.contextsection);
+        this.set('$.search.panel', this.$.context.$.contextsection);
       },
       updated: function (context) {
         if (context.state) {

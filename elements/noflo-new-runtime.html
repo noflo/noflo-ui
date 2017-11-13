@@ -1,6 +1,9 @@
 <link rel="import" href="noflo-add-runtime.html">
+<link rel="import" href="noflo-icon.html">
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-new-runtime">
-  <style>
+  <template>
+    <style include="noflo-modal-styles">
       a {
         color: hsl(190, 100%, 30%);
       }
@@ -62,7 +65,7 @@
         color: hsl(189, 50%, 80%);
         text-decoration: none;
       }
-      ul.runtimes li a i.fa {
+      ul.runtimes li a noflo-icon {
         font-size: 72px;
         position: absolute;
         right: -8px;
@@ -70,11 +73,10 @@
         text-decoration: none;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1>Register new runtime</h1>
       <p>
-      $NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="http://noflojs.org/documentation/protocol/" target="_blank">FBP protocol</a>.
+      $NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="https://flowbased.github.io/fbp-protocol/" target="_blank">FBP protocol</a>.
       $NOFLO_APP_TITLE comes with a bundled <a href="http://noflojs.org" target="_blank">NoFlo</a> runtime for the browser.
       Here are some other popular ones:
       </p>
@@ -82,7 +84,7 @@
       <template is="dom-repeat" items="{{runtimes}}" as="runtime">
       <li class$="{{runtime.name}}">
         <a target="_blank" href$="{{runtime.url}}">
-          <i class$="{{_computeClass(runtime)}}"></i>
+          <noflo-icon icon="{{ runtime.icon }}" fallback="cog"></noflo-icon>
           <h2>{{runtime.label}}</h2>
           <p>{{runtime.description}}</p>
         </a>
@@ -155,10 +157,7 @@
           this.fire('addRuntime', event.detail);
         }.bind(this));
       },
-      listeners: { click: 'close' },
-      _computeClass: function (runtime) {
-        return 'fa fa-' + runtime.icon;
-      }
+      listeners: { click: 'close' }
     });
   </script>
 </dom-module>

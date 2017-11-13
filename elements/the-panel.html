@@ -1,16 +1,14 @@
 <dom-module id="the-panel">
-  <style>
-      @host {
-        :scope {
-          position: fixed;
-          overflow: hidden;
-        }
+  <template>
+    <style>
+      :host {
+        position: fixed;
+        overflow: hidden;
       }
     </style>
-  <template>
-    <content select="header"></content>
-    <content select="main"></content>
-    <content select="footer"></content>
+    <slot name="header"></slot>
+    <slot></slot>
+    <slot name="footer"></slot>
   </template>
   <script>
     Polymer({

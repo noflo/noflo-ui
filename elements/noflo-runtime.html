@@ -1,24 +1,20 @@
 <link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <link rel="import" href="noflo-runtime-testdetails.html">
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-runtime">
-  <style>
+  <template>
+    <style>
       :host {
-        position: fixed;
-        right: 36px;
+        display: block;
         padding-left: 18px;
         box-sizing: border-box;
-        top: 0;
-        color: hsl(189, 50%, 80%);
-        width: 288px;
-        height: 72px;
-        background-color: hsla(0, 0%, 0%, 0.98) !important;
-        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, hsla(0, 0%, 0%, 0) 1px);
+        color: var(--noflo-ui-text);
+        background-color: var(--noflo-ui-background) !important;
+        background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, var(--noflo-ui-background) 1px);
         background-size: calc(100% - 1px);
         background-position: 0px;
-        border-bottom: 1px hsla(190, 90%, 80%, 0.3) solid;
-        overflow: hidden;
-        z-index: 2;
+        border-bottom: 1px var(--noflo-ui-border) solid;
       }
 
       #runtime_icon {
@@ -26,7 +22,7 @@
         right: 8px;
         top: 0px;
         font-size: 72px;
-        color: hsl(189, 11%, 10%);
+        color: hsla(185, 100%, 75%, 0.1);
       }
 
       #teststatus {
@@ -72,7 +68,7 @@
         font-size: 10px;
         background-color: transparent;
         border: none;
-        color: white;
+        color: var(--noflo-ui-text-highlight);
         text-align: center;
         cursor: pointer;
       }
@@ -82,7 +78,7 @@
         left: 54px;
         width: 180px;
         top: 0px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text);
       }
 
       #address, #address button {
@@ -94,7 +90,7 @@
       #address button.clear {
         position: absolute;
         right: 0px;
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
       }
 
       #runcontrol h2 {
@@ -103,7 +99,7 @@
         top: 36px;
       }
       #runcontrol button {
-        color: hsl(189, 50%, 80%);
+        color: var(--noflo-ui-text-highlight);
       }
 
       #select {
@@ -125,22 +121,21 @@
         margin-top: 18px;
       }
     </style>
-  <template>
     <template is="dom-if" if="{{runtime}}">
-      <i id="runtime_icon" class$="{{_computeClass(icon)}}"></i>
+      <noflo-icon id="runtime_icon" icon="{{icon}}"></noflo-icon>
       <div id="address" class$="{{_computeClass2(online)}}">
-        <button title="Connect/Disconnect" on-click="reconnect"><i class="fa fa-refresh"></i></button>
+        <button title="Connect/Disconnect" on-click="reconnect"><noflo-icon icon="refresh"></noflo-icon></button>
         <h2>{{runtime.definition.address}}</h2>
-        <button title="Change Runtime" on-click="clearRuntime" class="clear"><i class="fa fa-exchange"></i></button>
+        <button title="Change Runtime" on-click="clearRuntime" class="clear"><noflo-icon icon="exchange"></noflo-icon></button>
       </div>
       <div id="teststatus" on-click="showTestDetails"></div>
       <div id="runcontrol">
         <template is="dom-if" if="{{online}}">
           <template is="dom-if" if="{{execution.running}}">
-            <button title="Stop" class="stop" on-click="stop"><i class="fa fa-pause"></i></button>
+            <button title="Stop" class="stop" on-click="stop"><noflo-icon icon="pause"></noflo-icon></button>
           </template>
           <template is="dom-if" if="{{!execution.running}}">
-            <button title="Start" class="start" on-click="start"><i class="fa fa-play"></i></button>
+            <button title="Start" class="start" on-click="start"><noflo-icon icon="play"></noflo-icon></button>
           </template>
           <h2>{{execution.label}}</h2>
         </template>
@@ -467,9 +462,6 @@
       },
       _computeIf: function (graph, runtime) {
         return graph && !runtime;
-      },
-      _computeClass: function (icon) {
-        return 'fa fa-' + icon;
       },
       _computeClass2: function (online) {
         return this.tokenList({ online: online });

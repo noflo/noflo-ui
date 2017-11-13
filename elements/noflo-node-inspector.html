@@ -1,7 +1,9 @@
 <link rel="import" href="number-scrubber.html">
-
+<link rel="import" href="noflo-icon.html">
+<link rel="import" href="the-card-styles.html">
 <dom-module id="noflo-node-inspector">
-  <style>
+  <template>
+    <style include="the-card-styles">
       .ports {
         margin-bottom: 8px;
       }
@@ -325,9 +327,7 @@
         line-height: 36px;
         background-color: hsla(0, 0%, 0%, 0.7);
       }
-
     </style>
-  <template>
     <header>
       <h1 on-keydown="checkUpdateLabel" on-blur="updateLabel" contenteditable="">{{label}}</h1>
       <template is="dom-if" if="{{_computeIf(node)}}">
@@ -340,7 +340,9 @@
           <label><span title="{{port.name}}">{{port.label}}</span>
 
             <template is="dom-if" if="{{_computeIf2(port)}}">
-              <button data-name$="{{port.name}}" on-click="sendBang"><i class="fa fa-bolt"></i></button>
+              <button data-name$="{{port.name}}" on-click="sendBang">
+                <noflo-icon icon="bolt"></noflo-icon>
+              </button>
             </template>
             <template is="dom-if" if="{{_computeIf3(port)}}">
               <input type="checkbox" data-name$="{{port.name}}" checked="{{port.value}}" on-change="updateValue" data-type$="{{port.type}}">
@@ -369,7 +371,9 @@
               <input type="file" data-name$="{{port.name}}" on-change="updateValue" data-type$="{{port.type}}">
             </template>
             <template is="dom-if" if="{{_computeIf8(port)}}">
-              <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}"><i class="fa fa-ban"></i></button>
+              <button class="remove-value" on-click="removeValue" data-port$="{{port.name}}" title="Clear data">
+                <noflo-icon icon="ban"></noflo-icon>
+              </button>
             </template>
 
           </label>
@@ -379,7 +383,9 @@
         </li>
       </template>
       <li>
-        <button id="clear" on-click="clearErrors" title="Clear Error Log"><i class="fa fa-ban"></i></button>
+        <button id="clear" on-click="clearErrors" title="Clear Error Log">
+          <noflo-icon icon="ban"></noflo-icon>
+        </button>
       </li>
       <ul id="errorEvents">
       </ul>

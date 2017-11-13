@@ -148,13 +148,6 @@ module.exports = ->
             </script>"
           ]
 
-    copy:
-      themes:
-        expand: true
-        flatten: true
-        src: ['./node_modules/the-graph/themes/*.css']
-        dest: './themes/'
-
     compress:
       app:
         options:
@@ -199,7 +192,6 @@ module.exports = ->
         ,
           src: [
             'css/*'
-            'themes/*'
           ]
           expand: true
           dest: '/'
@@ -215,12 +207,23 @@ module.exports = ->
         message: 'Updating web version to <%= pkg.version %>'
       src: '**/*'
 
+    sharedstylecomponent:
+      'elements/the-graph-styles.html': [
+        'node_modules/the-graph/themes/the-graph-dark.css'
+        'node_modules/the-graph/themes/the-graph-light.css'
+      ]
+      'elements/codemirror-styles.html': [
+        'node_modules/codemirror/addon/lint/lint.css'
+        'node_modules/codemirror/lib/codemirror.css'
+        'node_modules/codemirror/theme/mdn-like.css'
+        'css/codemirror-noflo.css'
+      ]
+
   # Grunt plugins used for building
   @loadNpmTasks 'grunt-webpack'
   @loadNpmTasks 'grunt-exec'
   @loadNpmTasks 'grunt-contrib-clean'
   @loadNpmTasks 'grunt-string-replace'
-  @loadNpmTasks 'grunt-contrib-copy'
 
   # Grunt plugins used for mobile app building
   @loadNpmTasks 'grunt-contrib-compress'
@@ -228,12 +231,36 @@ module.exports = ->
   @loadNpmTasks 'grunt-gh-pages'
 
   # Our local tasks
+  grunt = @
+  @registerMultiTask 'sharedstylecomponent', 'Combine CSS files into a Polymer shared style element', ->
+    path = require 'path'
+    sources = @data.map (file) ->
+      grunt.file.read file
+    template = """
+<!-- Generated from <%= files %> -->
+<dom-module id="<%= id %>">
+  <template>
+    <style>
+      <%= sources %>
+    </style>
+  </template>
+</dom-module>
+    """
+    id = path.basename @target, path.extname @target
+    result = grunt.template.process template,
+      data:
+        id: id
+        files: @data.join ', '
+        sources: sources.join '\n'
+    grunt.file.write @target, result
+    grunt.log.writeln "Generated #{@target} from #{@data.join(', ')}"
+
   @registerTask 'nuke', [
     'clean'
   ]
   @registerTask 'build', [
     'webpack'
-    'copy:themes'
+    'sharedstylecomponent'
     'exec:vulcanize'
     'string-replace:app'
     'compress'

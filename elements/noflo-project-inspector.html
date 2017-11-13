@@ -1,5 +1,7 @@
+<link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-project-inspector">
-  <style>
+  <template>
+    <style include="noflo-modal-styles">
       button.delete {
         position: absolute;
         right: 36px;
@@ -7,7 +9,6 @@
         color: hsla( 0, 98%, 46%, .8) !important;
       }
     </style>
-  <template>
     <div class="modal-container" on-click="bgClick">
       <h1><span>{{project.name}}</span> settings</h1>
       <template is="dom-if" if="{{errorText}}">

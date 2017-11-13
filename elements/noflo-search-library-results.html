@@ -1,7 +1,9 @@
+<link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-search-library-results">
-  <style>
+  <template>
+    <style>
       .search-results-header h1 {
-        color: hsla(188, 15%, 60%, 0.8);
+        color: var(--noflo-ui-border);
         padding-left: 25px;
         font-size: 12px !important;
       }
@@ -22,8 +24,8 @@
         list-style: none;
         margin: 0;
         padding: 0;
-        background-color: black;
-        border-right: 1px solid hsla(190, 90%, 80%, 0.3);
+        background-color: var(--noflo-ui-background);
+        border-right: 1px solid var(--noflo-ui-border);
       }
 
       .search-results-item {
@@ -37,7 +39,7 @@
         padding-right: 12px !important;
       }
       .search-results-item i {
-        color: hsla(191, 100%, 92%, 0.898039);
+        color: var(--noflo-ui-text-highlight);
         position: absolute;
         top: 18px;
         left: 0;
@@ -45,8 +47,10 @@
         text-align: center;
         padding: 0;
         margin: 0;
+        font: normal normal normal 14px/1 FontAwesomeSVG;
       }
       .search-results-item h2 {
+        color: var(--noflo-ui-text-highlight);
         position: absolute;
         margin: 0;
         display: block;
@@ -70,18 +74,16 @@
         height: auto;
         line-height: calc(36px / 3);
         font-size: 10px;
-        color: hsla(188, 15%, 60%, 0.8);
-        text-shadow: hsl(0, 0%, 0%) 0px 1px 1px;
+        color: var(--noflo-ui-text);
+        text-shadow: var(--noflo-ui-background) 0px 1px 1px;
       }
-
     </style>
-  <template>
     <ul class="search-results-list">
       <template is="dom-repeat" items="{{results}}" as="result" index-as="index">
         <li class="search-results-item" on-click="clicked" data-index$="{{index}}">
-          <i class$="{{_computeClass(result)}}"></i>
-          <h2>{{result.label}}</h2>
-          <p>{{result.description}}</p>
+          <i><noflo-icon icon="[[result.icon]]" fallback="cog"></noflo-icon></i>
+          <h2>[[result.label]]</h2>
+          <p>[[result.description]]</p>
         </li>
       </template>
     </ul>
@@ -112,9 +114,6 @@
         }
         this.fire('resultclick', result);
         result.action();
-      },
-      _computeClass: function (result) {
-        return 'fa fa-' + result.icon;
       }
     });
   </script>

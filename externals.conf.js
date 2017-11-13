@@ -1,12 +1,8 @@
 module.exports = [            
   'node_modules/@polymer/polymer/*.js',
   'node_modules/codemirror/**/*.js',
-  'node_modules/codemirror/addon/lint/lint.css',
-  'node_modules/codemirror/lib/*.css',
-  'node_modules/codemirror/theme/mdn-like.css',
   'node_modules/coffeelint/lib/coffeelint.js',
   'node_modules/jshint/dist/jshint.js',
-  'node_modules/font-awesome/css/*.css',
   'node_modules/font-awesome/**/*.woff',
   'node_modules/font-awesome/**/*.ttf',
   'node_modules/font-awesome/**/*.svg',
@@ -17,6 +13,5 @@ module.exports = [
   'node_modules/react/dist/react-with-addons.min.js',
   'node_modules/react-dom/dist/react-dom.min.js',
   'node_modules/observe-js/src/observe.js',
-  'node_modules/the-graph/themes/*.css',
-  'node_modules/webcomponents.js/webcomponents-lite.min.js',
+  'node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js',
 ];

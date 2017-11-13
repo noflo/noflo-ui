@@ -1,8 +1,8 @@
 <link rel="import" href="the-card-stack.html">
 <dom-module id="the-card">
   <template>
-    <content select="h1"></content>
-    <content></content>
+    <slot name="header"></slot>
+    <slot></slot>
   </template>
   <script>
     Polymer({
