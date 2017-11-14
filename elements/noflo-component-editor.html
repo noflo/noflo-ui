@@ -87,6 +87,8 @@
         var self = this;
         var _ = require('underscore');
         this.debouncedComponentChange = _.debounce(function () {
+          delete self.component.icon;
+          delete self.component.description;
           self.fire('changed', self.component);
         }, 1500);
         this.debouncedSpecChange = _.debounce(function () {
