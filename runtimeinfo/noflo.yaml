@@ -70,10 +70,10 @@ componenttemplates:
         output.done()
 
   es2015: |
-    import noflo from 'noflo';
+    const noflo = require('noflo');
 
-    export var getComponent = function() {
-      var c = new noflo.Component();
+    exports.getComponent = () => {
+      const c = new noflo.Component();
       c.description = '<%= description %>';
       c.icon = '<%= icon %>';
       c.inPorts.add('in', {
@@ -83,13 +83,13 @@ componenttemplates:
       c.outPorts.add('out', {
         datatype: 'all'
       });
-      c.process(function (input, output) {
+      c.process((input, output) => {
         // Check preconditions on input data
         if (!input.hasData('in')) {
           return;
         }
         // Read packets we need to process
-        var data = input.getData('in');
+        const data = input.getData('in');
         // Process data and send output
         output.send({
           out: data
