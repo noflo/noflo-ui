@@ -119,19 +119,12 @@
         req.send(payload);
       },
       updateProject: function () {
-        this.project.graphs.forEach(function (graph) {
-          if (graph.id === this.main && graph.properties.environment.runtime) {
-            type = graph.properties.environment.runtime;
-            this.set('project.mainGraph', graph);
-          }
-        }.bind(this));
-        var type = this.project.type;
         this.fire('updated', {
           id: this.project.id,
           name: this.name,
           namespace: this.namespace,
           main: this.main,
-          type: type,
+          type: this.project.type,
           repo: this.repo
         });
         this.close();

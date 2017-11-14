@@ -19,14 +19,9 @@
         <label>
           Language
           <select name="type" value="{{language::input}}">
-            <option value="coffeescript">CoffeeScript</option>
-            <option value="javascript">JavaScript</option>
-            <option value="es2015">ES2015 (Babel)</option>
-            <option value="c">C</option>
-            <option value="c++">C++</option>
-            <option value="supercollider">SuperCollider</option>
-            <option value="python">Python</option>
-            <option value="yaml">YAML</option>
+            <template is="dom-repeat" items="{{languages}}" as="lang">
+            <option value="[[lang.id]" selected$="[[_languageSelected(lang, language)]]">[[lang.label]]</option>
+            </template>
           </select>
         </label>
         <label>
@@ -51,7 +46,52 @@
         },
         language: {
           type: String,
-          value: 'coffeescript'
+          value: ''
+        },
+        type: {
+          type: String,
+          value: '',
+          notify: true,
+          observer: 'typeChanged'
+        },
+        languages: {
+          type: Array,
+          value: function () {
+            return [
+              {
+                id: 'c',
+                label: 'C'
+              },
+              {
+                id: 'c++',
+                label: 'C++'
+              },
+              {
+                id: 'coffeescript',
+                label: 'CoffeeScript'
+              },
+              {
+                id: 'es2015',
+                label: 'ES2015 (modern JavaScript)'
+              },
+              {
+                id: 'javascript',
+                label: 'JavaScript'
+              },
+              {
+                id: 'python',
+                label: 'Python'
+              },
+              {
+                id: 'supercollider',
+                label: 'SuperCollider'
+              },
+              {
+                id: 'yaml',
+                label: 'YAML'
+              },
+            ];
+          }
         },
         name: {
           type: String,
@@ -68,8 +108,10 @@
           notify: true
         },
         project: {
-          type: String,
-          value: '',
+          type: Object,
+          value: function() {
+            return {};
+          },
           notify: true
         }
       },
@@ -79,6 +121,33 @@
       },
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
+      },
+      typeChanged: function () {
+        console.log(this.type);
+        if (!this.type) {
+          // No type defined, keep full list
+          return;
+        }
+        var runtimeInfo = require('noflo-ui/runtimeinfo')[this.type];
+        if (!runtimeInfo || !runtimeInfo.componenttemplates) {
+          // We don't know what languages the runtime supports, so keep full list
+          return;
+        }
+
+        // Filter list of languages to the ones supported by the runtime
+        var allLanguages = this.languages;
+        this.languages = allLanguages.filter(function (lang) {
+          if (!runtimeInfo.componenttemplates[lang.id]) {
+            return false;
+          }
+          return true;
+        });
+        if (!this.languages.length) {
+          // Default back to all
+          this.languages = allLanguages;
+        }
+        // Default to first language if runtime has no preference
+        this.language = runtimeInfo.preferredlanguage || this.languages[0].id;
       },
       nameChanged: function () {
         var duplicates = [];
@@ -140,6 +209,12 @@
       listeners: { click: 'close' },
       _computeClass: function (canSend) {
         return this.tokenList({ disabled: !canSend });
+      },
+      _languageSelected(lang, selected) {
+        if (lang.id === selected) {
+          return true;
+        }
+        return false;
       },
       tokenList: function (obj) {
         var pieces = [];

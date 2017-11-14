@@ -323,6 +323,11 @@
         var dialog = document.createElement('noflo-new-graph');
         dialog.project = this.project;
         dialog.runtimes = this.runtimes;
+        if (this.graph && this.graph.properties.environment) {
+          dialog.type = this.graph.properties.environment.type || this.project.type;
+        } else {
+          dialog.type = this.project.type;
+        }
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var graph = event.detail;
@@ -341,6 +346,11 @@
         }
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project;
+        if (this.graph && this.graph.properties.environment) {
+          dialog.type = this.graph.properties.environment.type || this.project.type;
+        } else {
+          dialog.type = this.project.type;
+        }
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var component = event.detail;
@@ -379,6 +389,13 @@
               this.set('project.branch', 'master');
             }
           }
+          this.project.graphs.forEach(function (graph) {
+            if (graph.properties.id === this.project.main) {
+              type = graph.properties.environment.type;
+              this.set('project.mainGraph', graph);
+              this.set('project.type', type);
+            }
+          }.bind(this));
           // Send only the data we actually want to store
           this.fire('changed', this.project);
         }.bind(this));
