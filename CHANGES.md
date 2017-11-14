@@ -16,6 +16,7 @@ Bugfixes:
 * Fixed issue with identifying which subgraphs of a project can be sent to runtime
 * Fixed issue with component library allowing creation of circular dependencies (graphs using themselves as subgraph)
 * Fixed subgraph creation dialog
+* Fixed a race condition with initial data loading that might cause some components not to show up in their projects
 
 Internal changes:
 
