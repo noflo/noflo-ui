@@ -19,14 +19,9 @@
         <label>
           Language
           <select name="type" value="{{language::input}}">
-            <option value="coffeescript">CoffeeScript</option>
-            <option value="javascript">JavaScript</option>
-            <option value="es2015">ES2015 (Babel)</option>
-            <option value="c">C</option>
-            <option value="c++">C++</option>
-            <option value="supercollider">SuperCollider</option>
-            <option value="python">Python</option>
-            <option value="yaml">YAML</option>
+            <template is="dom-repeat" items="{{languages}}" as="lang">
+            <option value="[[lang.id]" selected$="[[_languageSelected(lang, language)]]">[[lang.label]]</option>
+            </template>
           </select>
         </label>
         <label>
@@ -51,7 +46,46 @@
         },
         language: {
           type: String,
-          value: 'coffeescript'
+          value: ''
+        },
+        languages: {
+          type: Array,
+          value: function () {
+            return [
+              {
+                id: 'c',
+                label: 'C'
+              },
+              {
+                id: 'c++',
+                label: 'C++'
+              },
+              {
+                id: 'coffeescript',
+                label: 'CoffeeScript'
+              },
+              {
+                id: 'es2015',
+                label: 'ES2015 (modern JavaScript)'
+              },
+              {
+                id: 'javascript',
+                label: 'JavaScript'
+              },
+              {
+                id: 'python',
+                label: 'Python'
+              },
+              {
+                id: 'supercollider',
+                label: 'SuperCollider'
+              },
+              {
+                id: 'yaml',
+                label: 'YAML'
+              },
+            ];
+          }
         },
         name: {
           type: String,
@@ -140,6 +174,12 @@
       listeners: { click: 'close' },
       _computeClass: function (canSend) {
         return this.tokenList({ disabled: !canSend });
+      },
+      _languageSelected(lang, selected) {
+        if (lang.id === selected) {
+          return true;
+        }
+        return false;
       },
       tokenList: function (obj) {
         var pieces = [];
