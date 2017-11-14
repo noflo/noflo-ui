@@ -48,6 +48,12 @@
           type: String,
           value: ''
         },
+        type: {
+          type: String,
+          value: '',
+          notify: true,
+          observer: 'typeChanged'
+        },
         languages: {
           type: Array,
           value: function () {
@@ -106,8 +112,7 @@
           value: function() {
             return {};
           },
-          notify: true,
-          observer: 'projectChanged'
+          notify: true
         }
       },
       attached: function () {
@@ -117,12 +122,13 @@
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
-      projectChanged: function () {
-        if (!this.project.type) {
-          // No type defined for project, keep full list
+      typeChanged: function () {
+        console.log(this.type);
+        if (!this.type) {
+          // No type defined, keep full list
           return;
         }
-        var runtimeInfo = require('noflo-ui/runtimeinfo')[this.project.type];
+        var runtimeInfo = require('noflo-ui/runtimeinfo')[this.type];
         if (!runtimeInfo || !runtimeInfo.componenttemplates) {
           // We don't know what languages the runtime supports, so keep full list
           return;

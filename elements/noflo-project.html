@@ -341,6 +341,11 @@
         }
         var dialog = document.createElement('noflo-new-component');
         dialog.project = this.project;
+        if (this.graph && this.graph.properties.environment) {
+          dialog.type = this.graph.properties.environment.type || this.project.type;
+        } else {
+          dialog.type = this.project.type;
+        }
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var component = event.detail;
