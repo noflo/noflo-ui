@@ -9,6 +9,7 @@ New features:
 * Tube, the noflo-ui light theme, now works more consistently across the app
 * Component and graph creation now includes a visual icon picker
 * We now prevent graphs and components inside a project from using overlapping names
+* Programming language selection when creating components is now filtered by runtime type
 
 Bugfixes:
 
