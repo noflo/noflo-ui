@@ -11,6 +11,7 @@
     </style>
     <div class="modal-container" on-click="bgClick">
       <h1><span>{{project.name}}</span> settings</h1>
+      <div class="modal-content">
       <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
@@ -37,16 +38,17 @@
             </template>
           </select>
         </label>
-        <div class="toolbar">
-          <button on-click="send">Save</button>
-          <a on-click="close">Cancel</a>
-          <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
-            <a href="https://github.com/new" target="_blank">New Repository</a>
-          </template>
-          <button class="delete" on-click="delete">Delete</button>
-        </div>
-      </form></div>
-    
+        </form>
+      </div>
+      <div class="toolbar">
+        <button on-click="send">Save</button>
+        <a on-click="close">Cancel</a>
+        <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
+          <a href="https://github.com/new" target="_blank">New Repository</a>
+        </template>
+        <button class="delete" on-click="delete">Delete</button>
+      </div>
+      </div>
   </template>
   <script>
     Polymer({

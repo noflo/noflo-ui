@@ -29,11 +29,22 @@
         box-sizing: border-box;
         border-radius: 3px;
         box-shadow: var(--noflo-ui-background) 0px 0px 2px;
+        overflow-y: scroll;
+      }
+      .modal-content {
+        max-height: calc(100vh - 252px);
+        overflow-y: scroll;
+        overflow-x: hidden;
+        padding-bottom: 18px;
+        box-sizing: border-box;
       }
 
       h1 {
         font-size: 17px;
         line-height: 36px;
+        margin: 0px;
+        padding: 0px;
+        margin-bottom: 18px;
       }
       label {
         display: block;
@@ -81,7 +92,7 @@
       .toolbar {
         display: block;
         line-height: 36px;
-        margin-top: 36px;
+        margin-top: 18px;
       }
       .toolbar button {
         background-color: transparent;

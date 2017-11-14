@@ -6,13 +6,11 @@
     <style include="noflo-modal-styles">
       ul.runtimes {
         padding: 0px;
-        margin-top: 36px;
         margin-left: -9px;
         margin-right: -9px;
-        margin-bottom: 18px;
         list-style: none;
-        max-height: 60vh;
-        overflow-y: scroll;
+        margin-top: 18px;
+        margin-bottom: 18px;
       }
       ul.runtimes li {
         width: 274px;
@@ -67,7 +65,7 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Select runtime for <span>{{graph.name}}</span></h1>
       <template is="dom-if" if="{{available.length}}">
-        <ul class="runtimes">
+        <ul class="runtimes modal-content">
           <template is="dom-repeat" items="{{available}}" as="runtime">
           <li on-click="selectRuntime" data-id$="{{runtime.id}}" class$="{{runtime.type}}">
             <h2>{{runtime.label}}</h2>

@@ -7,6 +7,7 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Create new graph</h1>
       <form>
+        <div class="modal-content">
         <label>
           Graph name
           <input type="text" value="{{name::input}}" placeholder="MyCoolGraph" required="">
@@ -15,6 +16,7 @@
           Type
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
+        </div>
         <div class="toolbar">
           <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
           <a on-click="close">Cancel</a>

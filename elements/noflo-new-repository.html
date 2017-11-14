@@ -5,6 +5,7 @@
     </style>
     <div class="modal-container" on-click="bgClick">
       <h1>Add a new repository</h1>
+      <div class="modal-content">
       <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
@@ -13,11 +14,13 @@
           GitHub repository name
           <input type="text" value="{{repo::input}}" placeholder="username/repository" required="">
         </label>
-        <div class="toolbar">
-          <button on-click="send" class$="{{_computeClass(canSend)}}">Add</button>
-          <a on-click="close">Cancel</a>
-        </div>
-      </form></div>
+      </form>
+      </div>
+      <div class="toolbar">
+        <button on-click="send" class$="{{_computeClass(canSend)}}">Add</button>
+        <a on-click="close">Cancel</a>
+      </div>
+    </div>
     
   </template>
   <script>

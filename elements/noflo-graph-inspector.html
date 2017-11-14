@@ -81,6 +81,7 @@
           <noflo-icon icon="download"></noflo-icon>
         </a>
       </template>
+      <div class="modal-content">
       <template is="dom-if" if="{{isMain}}">
       <p>Main graph of project <span>{{project.name}}</span>.</p>
       </template>
@@ -127,6 +128,7 @@
       <label id="tests_editor">
         <span>Tests</span>
       </label>
+      </div>
       </div>
       <div class="toolbar">
         <button on-click="save">Save</button>

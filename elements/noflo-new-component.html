@@ -6,6 +6,7 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Create new component</h1>
       <form>
+        <div class="modal-content">
         <label>
           Component name
           <input type="text" value="{{name::input}}" placeholder="MyCoolComponent" required="">
@@ -23,12 +24,13 @@
             <option value="yaml">YAML</option>
           </select>
         </label>
+        </div>
         <div class="toolbar">
           <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
           <a on-click="close">Cancel</a>
         </div>
-      </form></div>
-    
+      </form>
+    </div>
   </template>
   <script>
     Polymer({

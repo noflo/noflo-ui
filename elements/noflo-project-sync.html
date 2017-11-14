@@ -6,6 +6,7 @@
     </style>
     <div class="modal-container" on-click="bgClick">
       <h1>Synchronize with <noflo-icon icon="github"></noflo-icon> <span>{{operation.repo}}</span></h1>
+      <div class="modal-content">
       <template is="dom-if" if="{{statusText}}">
         <div>{{statusText}}</div>
       </template>
@@ -52,12 +53,13 @@
             <input type="text" value="{{message::input}}" required="">
           </label>
         </template>
-        <div class="toolbar">
-          <button on-click="send" class$="{{_computeClass(hasOp)}}">Synchronize</button>
-          <a on-click="close">Cancel</a>
-        </div>
-      </form></div>
-    
+      </form>
+      </div>
+      <div class="toolbar">
+        <button on-click="send" class$="{{_computeClass(hasOp)}}">Synchronize</button>
+        <a on-click="close">Cancel</a>
+      </div>
+    </div>
   </template>
   <script>
     Polymer({
