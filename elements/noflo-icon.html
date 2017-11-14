@@ -32,7 +32,7 @@
       this.icons = require('noflo-ui/icons');
     }
     _getIcon() {
-      const result = this.icons(this.icon, this.fallback);
+      const result = this.icons.getIcon(this.icon, this.fallback);
       return result;
     }
   }
