@@ -14,6 +14,10 @@
           <input type="text" value="{{name::input}}" placeholder="MyCoolGraph" required="">
         </label>
         <label>
+          Graph description
+          <input type="text" value="{{description::input}}" placeholder="Do something interesting">
+        </label>
+        <label>
           Type
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
@@ -41,6 +45,10 @@
           type: String,
           value: '',
           observer: 'nameChanged'
+        },
+        description: {
+          type: String,
+          value: '',
         },
         project: {
           type: String,
@@ -100,6 +108,7 @@
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
+          description: this.description,
           project: this.project.id,
           id: this.project.id + '/' + this.name,
           icon: this.icon,
