@@ -320,7 +320,8 @@
           graph.startTransaction('newsubgraph');
           graph.setProperties({
             id: currentGraph.properties.project + '/' + graph.name.replace(' ', '_'),
-            project: currentGraph.properties.project
+            project: currentGraph.properties.project,
+            main: false
           });
           // Copy nodes
           item.nodes.forEach(function (id) {
