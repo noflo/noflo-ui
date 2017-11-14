@@ -1,4 +1,5 @@
 <link rel="import" href="noflo-type-selector.html">
+<link rel="import" href="noflo-icon-selector.html">
 <link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-new-graph">
   <template>
@@ -7,14 +8,24 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Create new graph</h1>
       <form>
+        <div class="modal-content">
         <label>
           Graph name
           <input type="text" value="{{name::input}}" placeholder="MyCoolGraph" required="">
         </label>
         <label>
+          Graph description
+          <input type="text" value="{{description::input}}" placeholder="Do something interesting">
+        </label>
+        <label>
           Type
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
+        <label>
+          Icon
+          <noflo-icon-selector selected="{{icon}}"></noflo-icon-selector>
+        </label>
+        </div>
         <div class="toolbar">
           <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
           <a on-click="close">Cancel</a>
@@ -35,9 +46,15 @@
           value: '',
           observer: 'nameChanged'
         },
-        project: {
+        description: {
           type: String,
           value: '',
+        },
+        project: {
+          type: Object,
+          value: function () {
+            return {};
+          },
           notify: true
         },
         runtimes: {
@@ -50,6 +67,11 @@
         type: {
           type: String,
           value: 'noflo-browser'
+        },
+        icon: {
+          type: String,
+          value: 'cog',
+          notify: true
         }
       },
       attached: function () {
@@ -62,12 +84,21 @@
       nameChanged: function () {
         var duplicates = [];
         if (this.project) {
+          if (!this.project.graphs || !this.project.components) {
+            return;
+          }
           duplicates = this.project.graphs.filter(function (graph) {
             if (graph.name === this.name) {
               return true;
             }
             return false;
           }.bind(this));
+          duplicates = duplicates.concat(this.project.components.filter(function (component) {
+            if (component.name === this.name) {
+              return true;
+            }
+            return false;
+          }.bind(this)));
         }
         if (this.name && this.project && !duplicates.length) {
           this.canSend = true;
@@ -88,8 +119,10 @@
         var noflo = require('noflo');
         var graph = new noflo.Graph(this.name);
         graph.setProperties({
+          description: this.description,
           project: this.project.id,
           id: this.project.id + '/' + this.name,
+          icon: this.icon,
           environment: { type: this.type }
         });
         this.fire('new', graph);

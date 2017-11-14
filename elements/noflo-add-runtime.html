@@ -15,6 +15,7 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Add new runtime</h1>
       <form>
+        <div class="modal-content">
         <label>
           Runtime name 
           <input type="text" value="{{name::input}}" placeholder="New local runtime" required="">
@@ -39,6 +40,7 @@
           Secret
           <input type="text" value="{{secret::input}}" placeholder="secret-string" required="">
         </label>
+        </div>
         <div class="toolbar">
           <button on-click="create" class$="{{_computeClass(canCreate)}}">Create</button>
           <a on-click="close">Cancel</a>
