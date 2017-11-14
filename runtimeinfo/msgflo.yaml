@@ -14,7 +14,7 @@ componenttemplates:
       def __init__(self, role):
         d = {
           'component': '<%= namespace %>/<%= name %>',
-          'label': 'Repeat input data without change',
+          'label': '<%= description %>',
           'icon': '<%= icon %>',
           'inports': [
             { 'id': 'in', 'type': 'any' },
@@ -43,7 +43,7 @@ componenttemplates:
       definition =
         component: '<%= namespace %>/<%= name %>'
         icon: '<%= icon %>'
-        label: 'Repeats in data without changes'
+        label: '<%= description %>'
         inports: [
           id: 'in'
           type: 'any'
@@ -69,7 +69,7 @@ componenttemplates:
       var definition = {
         component: '<%= namespace %>/<%= name %>',
         icon: '<%= icon %>',
-        label: 'Repeats in data without changes',
+        label: '<%= description %>',
         inports: [
           {
             id: 'in',
@@ -93,7 +93,7 @@ componenttemplates:
   yaml: |
     # Declare MsgFlo participant on behalf of code which does not send discovery message by itself
     component: '<%= namespace %>/<%= name %>'
-    label: Open the door
+    label: '<%= description %>'
     icon: '<%= icon %>'
     inports:
       open:

@@ -13,6 +13,10 @@
           <input type="text" value="{{name::input}}" placeholder="MyCoolComponent" required="">
         </label>
         <label>
+          Component description
+          <input type="text" value="{{description::input}}" placeholder="Do something interesting">
+        </label>
+        <label>
           Language
           <select name="type" value="{{language::input}}">
             <option value="coffeescript">CoffeeScript</option>
@@ -53,6 +57,10 @@
           type: String,
           value: '',
           observer: 'nameChanged'
+        },
+        description: {
+          type: String,
+          value: '',
         },
         icon: {
           type: String,
@@ -104,6 +112,7 @@
         }
         this.fire('new', {
           name: this.name,
+          description: this.description,
           language: this.language,
           icon: this.icon,
           project: this.project.id,
