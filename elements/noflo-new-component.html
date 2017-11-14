@@ -102,9 +102,12 @@
           notify: true
         },
         project: {
-          type: String,
-          value: '',
-          notify: true
+          type: Object,
+          value: function() {
+            return {};
+          },
+          notify: true,
+          observer: 'projectChanged'
         }
       },
       attached: function () {
@@ -113,6 +116,32 @@
       },
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
+      },
+      projectChanged: function () {
+        if (!this.project.type) {
+          // No type defined for project, keep full list
+          return;
+        }
+        var runtimeInfo = require('noflo-ui/runtimeinfo')[this.project.type];
+        if (!runtimeInfo || !runtimeInfo.componenttemplates) {
+          // We don't know what languages the runtime supports, so keep full list
+          return;
+        }
+
+        // Filter list of languages to the ones supported by the runtime
+        var allLanguages = this.languages;
+        this.languages = allLanguages.filter(function (lang) {
+          if (!runtimeInfo.componenttemplates[lang.id]) {
+            return false;
+          }
+          return true;
+        });
+        if (!this.languages.length) {
+          // Default back to all
+          this.languages = allLanguages;
+        }
+        // Default to first language if runtime has no preference
+        this.language = runtimeInfo.preferredlanguage || this.languages[0].id;
       },
       nameChanged: function () {
         var duplicates = [];
