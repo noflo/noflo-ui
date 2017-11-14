@@ -10,7 +10,7 @@
       -moz-osx-font-smoothing: grayscale;
     }
     </style>
-    [[_getIcon()]]
+    [[_getIcon(icon, fallback)]]
   </template>
   <script>
   class NoFloIcon extends Polymer.Element {
@@ -31,8 +31,8 @@
       super();
       this.icons = require('noflo-ui/icons');
     }
-    _getIcon() {
-      const result = this.icons.getIcon(this.icon, this.fallback);
+    _getIcon(icon, fallback) {
+      const result = this.icons.getIcon(icon, fallback);
       return result;
     }
   }
