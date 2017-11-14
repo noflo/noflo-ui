@@ -19,7 +19,7 @@ sendProject = (project, runtime) ->
   if project.components
     sendComponent namespace, component, runtime for component in project.components
   if project.graphs
-    sendGraph namespace, graph, runtime, project for graph in project.graphs
+    sendGraph namespace, graph, runtime for graph in project.graphs
 
 sendComponent = (namespace, component, runtime) ->
   return unless component.code
@@ -38,7 +38,7 @@ sendComponent = (namespace, component, runtime) ->
     code: component.code
     tests: component.tests
 
-sendGraph = (namespace, graph, runtime, project) ->
+sendGraph = (namespace, graph, runtime) ->
   if graph.properties.environment?.type
     return unless graph.properties.environment.type in ['all', runtime.definition.type]
 
@@ -49,7 +49,7 @@ sendGraph = (namespace, graph, runtime, project) ->
     id: graphId
     name: graph.name
     library: namespace
-    main: (not project or graph.properties.id is project.main)
+    main: graph.properties.main or false
     icon: graph.properties.icon or ''
     description: graph.properties.description or ''
   for node in graph.nodes
