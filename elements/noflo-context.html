@@ -313,7 +313,7 @@
         var dialog = document.createElement('noflo-new-graph');
         dialog.runtimes = this.runtimes;
         dialog.type = currentGraph.properties.environment.type;
-        dialog.project = currentGraph.properties.project;
+        dialog.project = this.project;
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('new', function (event) {
           var graph = event.detail;

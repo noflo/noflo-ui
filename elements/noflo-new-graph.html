@@ -51,8 +51,10 @@
           value: '',
         },
         project: {
-          type: String,
-          value: '',
+          type: Object,
+          value: function () {
+            return {};
+          },
           notify: true
         },
         runtimes: {
@@ -82,7 +84,7 @@
       nameChanged: function () {
         var duplicates = [];
         if (this.project) {
-          if (!this.project || !this.project.graphs) {
+          if (!this.project.graphs) {
             return;
           }
           duplicates = this.project.graphs.filter(function (graph) {
