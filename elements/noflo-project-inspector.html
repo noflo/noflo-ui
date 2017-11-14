@@ -33,7 +33,7 @@
           <span>Main graph</span>
           <select name="type" value="{{main::input}}">
             <template is="dom-repeat" items="{{project.graphs}}" as="graph">
-            <option value="{{graph.properties.id}}">{{graph.name}}</option>
+              <option value="{{graph.properties.id}}" selected$="[[_mainSelected(graph.properties.id, main)]]">{{graph.name}}</option>
             </template>
           </select>
         </label>
@@ -174,7 +174,13 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      listeners: { click: 'close' }
+      listeners: { click: 'close' },
+      _mainSelected: function(graphId, main) {
+        if (graphId === main) {
+          return true;
+        }
+        return false;
+      }
     });
   </script>
 </dom-module>
