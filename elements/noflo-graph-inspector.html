@@ -1,5 +1,6 @@
 <link rel="import" href="noflo-type-selector.html">
 <link rel="import" href="noflo-icon.html">
+<link rel="import" href="noflo-icon-selector.html">
 <link rel="import" href="noflo-modal-styles.html">
 <link rel="import" href="codemirror-styles.html">
 <dom-module id="noflo-graph-inspector">
@@ -109,10 +110,8 @@
         <input type="text" value="{{description::input}}">
       </label>
       <label>
-        <span>Icon <a href="http://fontawesome.io/icons/" target="_blank">
-          <noflo-icon icon="question-circle"></noflo-icon>
-        </a></span>
-        <input type="text" value="{{icon::input}}">
+        Icon
+        <noflo-icon-selector selected="{{icon}}"></noflo-icon-selector>
       </label>
       <label>
         <span>Type</span>
@@ -208,7 +207,7 @@
           return;
         }
         this.description = this.graph.properties.description;
-        this.icon = this.graph.properties.icon || '';
+        this.icon = this.graph.properties.icon || 'cog';
         this.type = this.graph.properties.environment.type;
         this.view = 'properties';
         this.inGraph = [];
