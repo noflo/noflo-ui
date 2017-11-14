@@ -6,10 +6,12 @@ NoFlo UI ChangeLog
 New features:
 
 * noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker
+* Tube, the noflo-ui light theme, now works more consistently across the app
 
 Internal changes:
 
 * Updated noflo-ui to run on NoFlo 1.0
+* Updated noflo-ui to run on Polymer 2.x
 * Builds are done directly with webpack now, instead of via grunt-noflo-browser
 * Switched tests from PhantomJS to Karma and Chrome Headless
 
