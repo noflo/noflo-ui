@@ -14,7 +14,7 @@ runtimetypes:
     icon: desktop
     description: 'Build GNOME desktop applications'
     helpurl: 'https://github.com/noflo/noflo-gnome#readme'
-
+preferredlanguage: es2015
 componenttemplates:
   javascript: |
     var noflo = require('noflo');
