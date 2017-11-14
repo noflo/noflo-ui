@@ -43,8 +43,17 @@ exports.getComponent = ->
         state = {}
         project = data.payload
         project.graphs = [] unless project.graphs
+        if data.state.storedGraphs
+          project.graphs = data.state.storedGraphs.filter (item) ->
+            item.properties.project is project.id
         project.components = [] unless project.components
+        if data.state.components
+          project.components = data.state.components.filter (item) ->
+            item.project is project.id
         project.specs = [] unless project.specs
+        if data.state.specs
+          project.specs = data.state.specs.filter (item) ->
+            item.project is project.id
         state.projects = data.state.projects or []
         collections.addToList state.projects, project
         out.out.send state
@@ -58,18 +67,29 @@ exports.getComponent = ->
         do callback
       when 'storage:stored:graph'
         state = {}
+        state.storedGraphs = data.state.storedGraphs or []
+        collections.addToList state.storedGraphs, data.payload
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          return callback new Error "No project found for graph #{data.payload.properties.id}"
+          out.out.send state
+          do callback
+          return
         collections.addToList project.graphs, data.payload
         out.out.send state
         do callback
       when 'storage:removed:graph'
         state = {}
+        state.storedGraphs = data.state.storedGraphs or []
+        collections.removeFromList state.storedGraphs,
+          properties:
+            id: data.payload
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
-        return callback() unless project
+        unless project
+          out.out.send state
+          do callback
+          return
         collections.removeFromList project.graphs,
           properties:
             id: data.payload
@@ -77,38 +97,58 @@ exports.getComponent = ->
         do callback
       when 'storage:stored:component'
         state = {}
+        state.components = data.state.components or []
+        collections.addToList state.components, data.payload
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          return callback new Error "No project found for component #{data.payload.id}"
+          out.out.send state
+          do callback
+          return
         collections.addToList project.components, data.payload
         out.out.send state
         do callback
       when 'storage:removed:component'
         state = {}
-        state.projects = data.state.projects or []
-        project = findProject data.payload, state.projects
-        return callback() unless project
-        collections.removeFromList project.components,
+        state.components = data.state.components or []
+        collections.removeFromList state.components,
           id: data.payload
-        out.out.send state
-        do callback
-      when 'storage:removed:spec'
-        state = {}
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
-        return callback() unless project
-        collections.removeFromList project.specs,
+        unless project
+          out.out.send state
+          do callback
+          return
+        collections.removeFromList project.components,
           id: data.payload
         out.out.send state
         do callback
       when 'storage:stored:spec'
         state = {}
+        state.specs = data.state.specs or []
+        collections.addToList state.specs, data.payload
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          return callback new Error "No project found for spec #{data.payload.id}"
+          out.out.send state
+          do callback
+          return
         collections.addToList project.specs, data.payload
+        out.out.send state
+        do callback
+      when 'storage:removed:spec'
+        state = {}
+        state.specs = data.state.specs or []
+        collections.removeFromList state.specs,
+          id: data.payload
+        state.projects = data.state.projects or []
+        project = findProject data.payload, state.projects
+        unless project
+          out.out.send state
+          do callback
+          return
+        collections.removeFromList project.specs,
+          id: data.payload
         out.out.send state
         do callback
       when 'storage:stored:runtime'
