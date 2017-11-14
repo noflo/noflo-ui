@@ -379,6 +379,13 @@
               this.set('project.branch', 'master');
             }
           }
+          this.project.graphs.forEach(function (graph) {
+            if (graph.properties.id === this.project.main) {
+              type = graph.properties.environment.type;
+              this.set('project.mainGraph', graph);
+              this.set('project.type', type);
+            }
+          }.bind(this));
           // Send only the data we actually want to store
           this.fire('changed', this.project);
         }.bind(this));
