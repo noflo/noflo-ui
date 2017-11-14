@@ -1,3 +1,4 @@
+<link rel="import" href="noflo-icon-selector.html">
 <link rel="import" href="noflo-modal-styles.html">
 <dom-module id="noflo-new-component">
   <template>
@@ -24,6 +25,10 @@
             <option value="yaml">YAML</option>
           </select>
         </label>
+        <label>
+          Icon
+          <noflo-icon-selector selected="{{icon}}"></noflo-icon-selector>
+        </label>
         </div>
         <div class="toolbar">
           <button on-click="send" class$="{{_computeClass(canSend)}}">Create</button>
@@ -48,6 +53,11 @@
           type: String,
           value: '',
           observer: 'nameChanged'
+        },
+        icon: {
+          type: String,
+          value: 'cog',
+          notify: true
         },
         project: {
           type: String,
@@ -95,6 +105,7 @@
         this.fire('new', {
           name: this.name,
           language: this.language,
+          icon: this.icon,
           project: this.project.id,
           code: '',
           tests: ''
