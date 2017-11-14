@@ -8,21 +8,6 @@ The NoFlo Development Environment is available under the [MIT license](https://g
 This project was made possible by [1205 Kickstarter backers](http://noflojs.org/kickstarter/).
 Check the [project ChangeLog](https://github.com/noflo/noflo-ui/blob/master/CHANGES.md) for new features and other changes.
 
-## Via Docker
-A Dockerfile has been provided that can be used to easily build/run the NoFlo UI.
-
-### Build
-```bash
-docker build -t noflo-ui .
-```
-
-### Run
-```bash
-docker run -d -it -p 9999:9999 noflo-ui
-```
-
-Once it is built and the server is running you can access the UI at http://localhost:9999/index.html
-
 ## Hosted version
 
 [Flowhub](http://app.flowhub.io) is a hosted and commercially supported version of the NoFlo Development Environment.
@@ -79,6 +64,23 @@ One can *optionally* add component templates, syntax highlighting and a 'get sta
 ## Development of NoFlo UI
 
 Only necessary if you want to hack on NoFlo UI itself. Not neccesary for making apps with FBP.
+
+### Via Docker
+A Dockerfile has been provided that can be used to easily build/run the NoFlo UI.
+
+#### Build
+```bash
+docker build -t noflo-ui .
+```
+
+#### Run
+```bash
+docker run -d -it -p 9999:9999 noflo-ui
+```
+
+Once it is built and the server is running you can access the UI at http://localhost:9999/index.html
+
+### Directly
 
 To be able to work on the NoFlo UI you need:
 
