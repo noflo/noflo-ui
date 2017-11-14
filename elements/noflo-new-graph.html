@@ -84,7 +84,7 @@
       nameChanged: function () {
         var duplicates = [];
         if (this.project) {
-          if (!this.project.graphs) {
+          if (!this.project.graphs || !this.project.components) {
             return;
           }
           duplicates = this.project.graphs.filter(function (graph) {
@@ -93,6 +93,12 @@
             }
             return false;
           }.bind(this));
+          duplicates = duplicates.concat(this.project.components.filter(function (component) {
+            if (component.name === this.name) {
+              return true;
+            }
+            return false;
+          }.bind(this)));
         }
         if (this.name && this.project && !duplicates.length) {
           this.canSend = true;
