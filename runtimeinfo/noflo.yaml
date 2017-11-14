@@ -22,7 +22,7 @@ componenttemplates:
     exports.getComponent = function() {
       var c = new noflo.Component();
       c.description = 'Forwards packets and metadata in the same way it receives them';
-      c.icon = 'forward';
+      c.icon = '<%= icon %>';
       c.inPorts.add('in', {
         datatype: 'all',
         description: 'Packet to forward'
@@ -52,7 +52,7 @@ componenttemplates:
     exports.getComponent = ->
       c = new noflo.Component
       c.description = 'Forwards packets and metadata in the same way it receives them'
-      c.icon = 'forward'
+      c.icon = '<%= icon %>'
       c.inPorts.add 'in',
         datatype: 'all'
         description: 'Packet to forward'
@@ -75,7 +75,7 @@ componenttemplates:
     export var getComponent = function() {
       var c = new noflo.Component();
       c.description = 'Forwards packets and metadata in the same way it receives them';
-      c.icon = 'forward';
+      c.icon = '<%= icon %>';
       c.inPorts.add('in', {
         datatype: 'all',
         description: 'Packet to forward'

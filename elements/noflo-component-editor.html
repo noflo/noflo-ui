@@ -218,7 +218,8 @@
           var templateFunc = _.template(template);
           template = templateFunc({
             namespace: this.project.namespace || this.project.id,
-            name: this.component.name
+            name: this.component.name,
+            icon: this.component.icon
           });
         }
         return template;

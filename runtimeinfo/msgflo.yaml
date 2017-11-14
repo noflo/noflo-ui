@@ -15,7 +15,7 @@ componenttemplates:
         d = {
           'component': '<%= namespace %>/<%= name %>',
           'label': 'Repeat input data without change',
-          'icon': 'star-o',
+          'icon': '<%= icon %>',
           'inports': [
             { 'id': 'in', 'type': 'any' },
           ],
@@ -42,7 +42,7 @@ componenttemplates:
 
       definition =
         component: '<%= namespace %>/<%= name %>'
-        icon: 'file-word-o'
+        icon: '<%= icon %>'
         label: 'Repeats in data without changes'
         inports: [
           id: 'in'
@@ -68,7 +68,7 @@ componenttemplates:
     var <%= name %> = function(client, role) {
       var definition = {
         component: '<%= namespace %>/<%= name %>',
-        icon: 'file-word-o',
+        icon: '<%= icon %>',
         label: 'Repeats in data without changes',
         inports: [
           {
@@ -94,7 +94,7 @@ componenttemplates:
     # Declare MsgFlo participant on behalf of code which does not send discovery message by itself
     component: '<%= namespace %>/<%= name %>'
     label: Open the door
-    icon: lightbulb-o
+    icon: '<%= icon %>'
     inports:
       open:
         queue: /bitraf/door/#ROLE/open
