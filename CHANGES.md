@@ -7,6 +7,14 @@ New features:
 
 * noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker
 * Tube, the noflo-ui light theme, now works more consistently across the app
+* Component and graph creation now includes a visual icon picker
+* We now prevent graphs and components inside a project from using overlapping names
+
+Bugfixes:
+
+* Fixed issue with identifying which subgraphs of a project can be sent to runtime
+* Fixed issue with component library allowing creation of circular dependencies (graphs using themselves as subgraph)
+* Fixed subgraph creation dialog
 
 Internal changes:
 
