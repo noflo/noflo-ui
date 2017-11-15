@@ -439,21 +439,11 @@
         }
         var repo = event.currentTarget.getAttribute('data-repo');
         var repoParts = repo.split('/');
-        var repoId = repoParts[1];
         var branch = 'master';
-        var dupes = this.projects.filter(function (proj) {
-          if (proj.id === repoId) {
-            return true;
-          }
-          return false;
-        });
-        if (dupes.length) {
-          repoId = repo.replace('/', '_');
-        }
         var project = {
-          id: repoId,
+          id: require('uuid').v4(),
           name: repo,
-          namespace: repoId.replace(/^noflo-/, ''),
+          namespace: repoParts[1].replace(/^noflo-/, ''),
           repo: repo,
           branch: branch,
           graphs: [],
