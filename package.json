@@ -21,7 +21,7 @@
     "debug": "^3.0.0",
     "fbp": "~1.6.0",
     "fbp-spec": "~0.4.1",
-    "flowhub-registry": "^0.1.0",
+    "flowhub-registry": "^0.1.2",
     "font-awesome": "^4.6.3",
     "jshint": "^2.9.2",
     "noflo": "~1.0.0",
