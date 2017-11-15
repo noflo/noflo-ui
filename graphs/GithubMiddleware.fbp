@@ -16,7 +16,11 @@ OUTPORT=NewActions.OUT:NEW
 'github:error' -> ACTION ErrorAction(ui/SetAction) OUT -> IN NewActions
 
 # Downloading a GitHub project
-Dispatch HANDLE[0] -> IN ErrorAction
+Dispatch HANDLE[0] -> IN CheckRepo(ui/CheckRepoExists)
+# If it already exists, redirect
+CheckRepo EXISTING -> IN ApplicationRedirectAction
+# If not, pull as a new project
+CheckRepo NEW -> IN GetPullToken
 
 # Downloading a gist example
 # First check if we already have a local version of the gist
