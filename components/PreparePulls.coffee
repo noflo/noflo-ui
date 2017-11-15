@@ -1,4 +1,24 @@
 noflo = require 'noflo'
+uuid = require 'uuid'
+
+sendPulls = (pulls, repo, scope, output, callback) ->
+  unless pulls.length
+    do callback
+    return
+  entry = pulls.shift()
+  unless entry.remote
+    sendPulls pulls, repo, scope, output, callback
+    return
+  output.send
+    repository: new noflo.IP 'data', repo,
+      scope: scope
+    sha: new noflo.IP 'data', entry.remote.sha,
+      scope: scope
+  # Don't fire all requests at once, some of them may get
+  # cancelled by server
+  setTimeout ->
+    sendPulls pulls, repo, scope, output, callback
+  , 100
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -11,19 +31,21 @@ exports.getComponent = ->
     datatype: 'string'
   c.outPorts.add 'sha',
     datatype: 'string'
+  c.process (input, output) ->
+    return unless input.hasData 'in'
+    data = input.getData 'in'
+    return output.done() if data.pull.length is 0
+    scope = uuid.v4()
+    output.send
+      out: new noflo.IP 'data', data,
+        scope: scope
 
-  noflo.helpers.WirePattern c,
-    in: 'in'
-    out: ['out', 'repository', 'sha']
-    forwardGroups: true
-    async: true
-  , (data, groups, out, callback) ->
-    return callback() if data.pull.length is 0
-    out.out.send data
-
-    for entry in data.pull
-      continue unless entry.remote
-      out.repository.send data.repo
-      out.sha.send entry.remote.sha
-
-    do callback
+    output.send
+      sha: new noflo.IP 'openBracket', scope,
+        scope: scope
+    pulls = data.pull.slice 0
+    sendPulls pulls, data.repo, scope, output, ->
+      output.send
+        sha: new noflo.IP 'closeBracket', scope,
+          scope: scope
+      output.done()
