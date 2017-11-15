@@ -519,6 +519,9 @@
         if (this.dontAutoHideAlert) {
           return;
         }
+        if(!Polymer.dom(this.$.alert).classList.contains('show')) {
+          return;
+        }
         window.setTimeout(function () {
           this.hideAlert();
         }.bind(this), 1300);
