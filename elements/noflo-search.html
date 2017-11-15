@@ -183,7 +183,9 @@
       </button>
       </template>
       <template is="dom-if" if="{{_computeIf7(component, graph, readonly)}}">
-      <noflo-icon icon="lock"></noflo-icon>
+      <button title="Read-only" id="readonly">
+        <noflo-icon icon="lock"></noflo-icon>
+      </button>
       </template>
     </div>
     <input id="searchinput" placeholder="Search components" on-keydown="switchSearch" value="{{search::input}}" type="text" autocapitalize="off" autocorrect="off" x-webkit-speech="">
