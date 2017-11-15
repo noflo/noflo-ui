@@ -115,13 +115,25 @@ describe('GitHub Middleware', function() {
         }
       };
 
-      mock.respondWith('GET', "https://api.github.com/gists/abc123?page=1&per_page=30", [
-        200
-        ,
-        {'Content-Type': 'application/json'}
-        , JSON.stringify(gistData)
+      mock.respondWith('GET', "https://api.github.com/rate_limit?page=1&per_page=30", [
+        200, {
+          'Content-Type': 'application/json'
+        }, JSON.stringify({
+          rate: {
+            remaining: 59
+          }
+        })
       ]);
-      return (mock.respond)();
+      mock.respondWith('GET', "https://api.github.com/gists/abc123?page=1&per_page=30", [
+        200,
+        {
+          'Content-Type': 'application/json'
+        }, JSON.stringify(gistData)
+      ]);
+      mock.respond();
+      setTimeout(function () {
+        mock.respond();
+      }, 10);
     });
   });
 });
