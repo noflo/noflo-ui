@@ -7,6 +7,9 @@ exports.getComponent = ->
   c.icon = 'key'
   c.inPorts.add 'in',
     datatype: 'object'
+  c.inPorts.add 'limit',
+    datatype: 'int'
+    default: 50
   c.outPorts.add 'token',
     datatype: 'string'
   c.outPorts.add 'out',
@@ -16,6 +19,7 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern c,
     in: 'in'
+    params: ['limit']
     out: ['token', 'out']
     async: true
   , (data, groups, out, callback) ->
@@ -27,7 +31,8 @@ exports.getComponent = ->
     request = api.get '/rate_limit'
     request.on 'success', (res) ->
       remaining = res.body.rate?.remaining or 0
-      if remaining < 50
+      limit = if c.params.limit then parseInt(c.params.limit) else 50
+      if remaining < limit
         if token
           callback new Error 'GitHub API access rate limited, try again later'
           return
