@@ -21,6 +21,7 @@ Dispatch HANDLE[0] -> IN CheckRepo(ui/CheckRepoExists)
 CheckRepo EXISTING -> IN ApplicationRedirectAction
 # If not, pull as a new project
 CheckRepo NEW -> IN GetPullToken
+CheckRepo OPENMAIN -> IN ApplicationRedirectAction
 
 # Downloading a gist example
 # First check if we already have a local version of the gist

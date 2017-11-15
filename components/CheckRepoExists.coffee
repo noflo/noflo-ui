@@ -39,6 +39,8 @@ exports.getComponent = ->
     datatype: 'array'
   c.outPorts.add 'new',
     datatype: 'object'
+  c.outPorts.add 'openmain',
+    datatype: 'array'
   c.process (input, output) ->
     return unless input.hasData 'in'
     data = input.getData 'in'
@@ -46,6 +48,7 @@ exports.getComponent = ->
       # No local projects, pass
       output.sendDone
         new: payloadToProject data
+        openmain: []
       return
 
     existing = data.state.projects.filter (project) ->
@@ -58,6 +61,7 @@ exports.getComponent = ->
     unless existing.length
       output.sendDone
         new: payloadToProject data
+        openmain: []
       return
 
     hash = [
