@@ -9,6 +9,7 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'pass',
     datatype: 'object'
+    scoped: false
 
   c.state = {}
   c.tearDown = (callback) ->
