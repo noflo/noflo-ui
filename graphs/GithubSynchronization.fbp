@@ -36,12 +36,12 @@ Token OUT -> TOKEN GetBlob(github/GetBlob)
 PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
 PreparePulls REPOSITORY -> REPOSITORY GetBlob
 PreparePulls SHA -> SHA GetBlob
-GetBlob OUT -> BLOB BlobToEntry
+GetBlob OUT -> IN[0] CompletePulls(flow/Race) OUT -> BLOB BlobToEntry
+GetBlob ERROR -> ERROR CompletePulls ERROR -> IN Errors
 BlobToEntry COMPONENT -> IN UpdatedComponent(core/Merge)
 BlobToEntry GRAPH -> IN UpdatedGraph(core/Merge)
 BlobToEntry SPEC -> IN UpdatedSpec(core/Merge)
 BlobToEntry ERROR -> IN Errors
-GetBlob ERROR -> IN Errors
 
 # Then push local changes
 DoSync OUT -> IN PreparePush(ui/PreparePush)
