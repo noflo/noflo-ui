@@ -4,6 +4,7 @@ _ = require 'underscore'
 # Debounce runtime saving so we don't do it more often than needed
 updateRuntime = _.debounce (runtime, output) ->
   # Send updated runtime definition to storage
+  runtime.runtime.definition.seen = Date.now()
   output.send
     runtime:
       action: 'storage:save:runtime'
