@@ -9,7 +9,9 @@ handleGraph = (sha, content, entry, project, callback) ->
   method = 'loadFBP' if entry.remote.language is 'fbp'
   content = JSON.parse content if entry.remote.language is 'json'
   noflo.graph[method] content, (err, graph) ->
-    return callback err if err
+    if err
+      callback new Error "Failed to load #{entry.remote.name}: #{err.message}"
+      return
     # Properties that need to be changed for both cases
     graph.properties = {} unless graph.properties
     graph.properties.sha = sha
