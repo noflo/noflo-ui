@@ -7,6 +7,8 @@ OUTPORT=UpdatedComponent.OUT:COMPONENT
 OUTPORT=UpdatedGraph.OUT:GRAPH
 OUTPORT=UpdatedSpec.OUT:SPEC
 OUTPORT=BlobToEntry.PROJECT:PROJECT
+OUTPORT=Loading.OUT:LOADING
+OUTPORT=Ready.OUT:READY
 OUTPORT=Errors.OUT:ERROR
 
 # Preparation for sync: check local and remote situation
@@ -41,6 +43,7 @@ GetBlob ERROR -> ERROR CompletePulls ERROR -> IN Errors
 BlobToEntry COMPONENT -> IN UpdatedComponent(core/Merge)
 BlobToEntry GRAPH -> IN UpdatedGraph(core/Merge)
 BlobToEntry SPEC -> IN UpdatedSpec(core/Merge)
+BlobToEntry PROJECT -> IN Ready(core/Repeat)
 BlobToEntry ERROR -> IN Errors
 
 # Then push local changes
@@ -78,7 +81,8 @@ UpdateReference ERROR -> IN Errors
 
 # Pull-only sync, no decision needed
 'repo' -> STRING SendPullRepo(strings/SendString) OUT -> KEY GetPullRepo(objects/GetObjectKey)
-PullRepo(core/Split) OUT -> IN GetPullRepo
+PullRepo(core/Split) OUT -> IN Loading(core/Repeat)
+PullRepo OUT -> IN GetPullRepo
 PullRepo OUT -> IN SendPullRepo
 Token(core/Repeat) OUT -> TOKEN GetPullReference(github/GetReference)
 GetPullRepo OUT -> REPOSITORY GetPullReference
