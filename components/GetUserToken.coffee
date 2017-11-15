@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+octo = require 'octo'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -18,6 +19,24 @@ exports.getComponent = ->
     out: ['token', 'out']
     async: true
   , (data, groups, out, callback) ->
-    out.token.send data.state?.user?['github-token'] or null
-    out.out.send data.payload
-    do callback
+    token = data.state?.user?['github-token'] or null
+
+    # Check that user has some API calls remaining
+    api = octo.api()
+    api.token token if token
+    request = api.get '/rate_limit'
+    request.on 'success', (res) ->
+      remaining = res.body.rate?.remaining or 0
+      if remaining < 50
+        if token
+          callback new Error 'GitHub API access rate limited, try again later'
+          return
+        callback new Error 'GitHub API access rate limited. Please log in to increase the limit'
+        return
+      out.token.send token
+      out.out.send data.payload
+      do callback
+    request.on 'error', (err) ->
+      error = err.error or err.body
+      callback new Error "Failed to communicate with GitHub: #{error}"
+    do request
