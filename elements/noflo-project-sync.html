@@ -21,7 +21,7 @@
             <td>
               <select name="{{file.path}}" on-change="choose">
                 <template is="dom-repeat" items="{{file.operations}}" as="op">
-                <option value="[[op]]" selected$="[[_isSelectedOp(file, op)]]">[[op]]</option>
+                <option value="[[op]]" selected$="[[_isSelectedOp(file, op)]]">[[_getOperationLabel(op)]]</option>
                 </template>
               </select>
             </td>
@@ -210,6 +210,18 @@
           }
         }
         return pieces.join(' ');
+      },
+      _getOperationLabel(op) {
+        if (op === 'push') {
+          return 'Push';
+        }
+        if (op === 'pull') {
+          return 'Pull';
+        }
+        if (op === 'noop') {
+          return 'Ignore';
+        }
+        return op;
       },
       _isSelectedOp(file, op) {
         if (op === file.operation) {
