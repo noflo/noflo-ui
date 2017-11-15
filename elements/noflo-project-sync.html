@@ -69,7 +69,8 @@
           type: Object,
           value: function () {
             return {};
-          }
+          },
+          notify: true
         },
         hasOp: {
           type: Boolean,
@@ -102,24 +103,28 @@
         }
       },
       operationChanged: function () {
-        this.chosen = {};
         if (!this.operation.push.length && !this.operation.pull.length && !this.operation.conflict.length) {
           this.statusText = 'All changes have been synchronized';
           this.hasOp = false;
         }
         this.hasPush = false;
+        var chosen = {}
         this.operation.conflict.forEach(function (entry) {
-          this.chosen[entry.path] = 'noop';
+          chosen[this.getIdForPath(entry.path)] = 'noop';
         }.bind(this));
         this.operation.push.forEach(function (entry) {
-          this.chosen[entry.path] = 'noop';
+          chosen[this.getIdForPath(entry.path)] = 'noop';
         }.bind(this));
         this.operation.pull.forEach(function (entry) {
-          this.chosen[entry.path] = 'pull';
+          chosen[this.getIdForPath(entry.path)] = 'pull';
         }.bind(this));
+        this.chosen = chosen;
+      },
+      getIdForPath: function (path) {
+        return path.replace(/\./g, '_');
       },
       choose: function (event) {
-        this.set('chosen' + ('.' + event.currentTarget.name), event.currentTarget.value);
+        this.set('chosen.' + event.currentTarget.name, event.currentTarget.value);
         var pushes = false;
         var ops = false;
         for (var name in this.chosen) {
@@ -155,11 +160,11 @@
         this.set('operation.pull', []);
         this.set('operation.push', []);
         var checkOps = function (entry) {
-          if (this.chosen[entry.path] === 'push') {
+          if (this.chosen[this.getIdForPath(entry.path)] === 'push') {
             this.push('operation.push', entry);
             return;
           }
-          if (this.chosen[entry.path] === 'pull') {
+          if (this.chosen[this.getIdForPath(entry.path)] === 'pull') {
             this.push('operation.pull', entry);
             return;
           }
