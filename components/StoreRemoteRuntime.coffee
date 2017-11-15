@@ -35,7 +35,7 @@ exports.getComponent = ->
     data.secret = null unless data.secret
     rt = new registry.Runtime data,
       host: '$NOFLO_REGISTRY_SERVICE'
-    rt.register c.param.user['grid-token'], (err) ->
+    rt.register c.params.user['grid-token'], (err) ->
       return callback err if err
       out.send data
       do callback
