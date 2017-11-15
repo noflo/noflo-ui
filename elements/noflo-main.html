@@ -434,25 +434,13 @@
       downloadProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
-        if (!this.githubToken) {
-          return;
-        }
         var repo = event.currentTarget.getAttribute('data-repo');
         var repoParts = repo.split('/');
         var branch = 'master';
-        var project = {
-          id: require('uuid').v4(),
-          name: repo,
-          namespace: repoParts[1].replace(/^noflo-/, ''),
-          repo: repo,
-          branch: branch,
-          graphs: [],
-          components: [],
-          specs: []
-        };
         this.fire('downloadProject', {
-          project: project,
-          token: this.githubToken
+          org: repoParts[0],
+          repo: repoParts[1],
+          branch: 'master'
         });
         this.openLocal();
       },
