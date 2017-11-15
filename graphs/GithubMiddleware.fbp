@@ -33,10 +33,12 @@ CheckGist EXISTING -> IN ApplicationRedirectAction
 CheckGist NEW -> IN GetGistToken(ui/GetUserToken)
 '1' -> LIMIT GetGistToken
 GetGistToken TOKEN -> TOKEN GetGist(ui/GistToProject)
+GetGistToken OUT -> IN GithubLoadingAction
 GetGistToken OUT -> IN GetGist
 GetGistToken ERROR -> IN ErrorAction
 GetGist GRAPH -> IN SaveGraphAction
 GetGist COMPONENT -> IN SaveComponentAction
+GetGist PROJECT -> IN GithubReadyAction
 GetGist PROJECT -> IN SaveProjectAction
 GetGist ERROR -> IN ErrorAction
 
