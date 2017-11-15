@@ -212,13 +212,10 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('storage:save:project', event.detail.project);
-          setTimeout(function () {
-            this.emitEvent('github:sync:pull', {
-              repo: event.detail.project.repo,
-              project: event.detail.project
-            });
-          }.bind(this), 2);
+          this.emitEvent('github:sync:pull', {
+            repo: event.detail.project.repo,
+            project: event.detail.project
+          });
         }.bind(this));
         this.$.main.addEventListener('fetchRuntimes', function (event) {
           this.emitEvent('flowhub:runtimes:fetch', event.detail);
