@@ -453,7 +453,7 @@
         var project = {
           id: repoId,
           name: repo,
-          namespace: repoId,
+          namespace: repoId.replace(/^noflo-/, ''),
           repo: repo,
           branch: branch,
           graphs: [],
