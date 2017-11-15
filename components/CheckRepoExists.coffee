@@ -17,6 +17,15 @@ payloadToProject = (data) ->
     repo: data.payload.repo
   data
 
+openMainPayload = ->
+  data =
+    route: 'main'
+    runtime: null
+    project: null
+    graph: null
+    component: null
+    nodes: []
+
 findGraph = (name, project) ->
   base = path.basename name, path.extname name
   for graph in project.graphs
@@ -47,8 +56,8 @@ exports.getComponent = ->
     unless data.state?.projects?.length
       # No local projects, pass
       output.sendDone
+        openmain: openMainPayload()
         new: payloadToProject data
-        openmain: []
       return
 
     existing = data.state.projects.filter (project) ->
@@ -60,8 +69,8 @@ exports.getComponent = ->
       true
     unless existing.length
       output.sendDone
+        openmain: openMainPayload()
         new: payloadToProject data
-        openmain: []
       return
 
     hash = [
