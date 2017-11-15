@@ -6,6 +6,7 @@ OUTPORT=MergeOps.OUT:OPERATION
 OUTPORT=UpdatedComponent.OUT:COMPONENT
 OUTPORT=UpdatedGraph.OUT:GRAPH
 OUTPORT=UpdatedSpec.OUT:SPEC
+OUTPORT=BlobToEntry.PROJECT:PROJECT
 OUTPORT=Errors.OUT:ERROR
 
 # Preparation for sync: check local and remote situation

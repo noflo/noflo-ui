@@ -44,6 +44,7 @@ GetSyncToken ERROR -> IN ErrorAction
 GithubSynchronization GRAPH -> IN SaveGraphAction
 GithubSynchronization COMPONENT -> IN SaveComponentAction
 GithubSynchronization SPEC -> IN SaveSpecAction
+GithubSynchronization PROJECT -> IN SaveProjectAction
 
 # Pulling a GitHub project
 Dispatch HANDLE[4] -> IN GetPullToken(ui/GetUserToken)
