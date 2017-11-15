@@ -28,7 +28,7 @@
     "noflo-core": "~0.5.0",
     "noflo-dom": "~0.3.0",
     "noflo-flow": "^0.6.0",
-    "noflo-github": "~0.1.0",
+    "noflo-github": "~0.1.1",
     "noflo-graph": "~0.3.0",
     "noflo-indexeddb": "~0.3.1",
     "noflo-interaction": "~0.3.0",
