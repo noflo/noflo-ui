@@ -260,6 +260,7 @@
           this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('changed', function (event) {
+          event.detail.properties.changed = true;
           this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
