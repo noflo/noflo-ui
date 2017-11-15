@@ -54,6 +54,7 @@ buildContext = (url) ->
       routeData.route = 'github'
       [owner, repo] = urlParts.splice 0, 2
       routeData.repo = "#{owner}/#{repo}"
+      routeData.branch = 'master'
       return routeData unless urlParts.length
       if urlParts[0] is 'tree'
         # Opening a particular branch
