@@ -43,8 +43,10 @@ GetGist ERROR -> IN ErrorAction
 # Preparing to synchronize with GitHub
 Dispatch HANDLE[2] -> IN GetPrepareToken(ui/GetUserToken)
 GetPrepareToken TOKEN -> TOKEN GithubSynchronization(ui/GithubSynchronization)
+GetPrepareToken OUT -> IN GithubLoadingAction
 GetPrepareToken OUT -> PREPARE GithubSynchronization
 GetPrepareToken ERROR -> IN ErrorAction
+GithubSynchronization OPERATION -> IN GithubReadyAction
 GithubSynchronization OPERATION -> IN GithubOperationAction
 GithubSynchronization ERROR -> IN ErrorAction
 
