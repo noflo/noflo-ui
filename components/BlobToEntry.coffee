@@ -1,6 +1,7 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 collections = require '../src/collections'
+projects = require '../src/projects'
 
 handleGraph = (sha, content, entry, project, callback) ->
   # Start by loading the graph object
@@ -144,5 +145,9 @@ exports.getComponent = ->
       res = {}
       res[entity.type] = entity.entity
       output.send res
+
+    # Since this is a new checkout, set project main graph
+    operation.project.main = projects.findMainGraph operation.project
+
     output.sendDone
       project: operation.project
