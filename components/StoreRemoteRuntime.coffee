@@ -7,6 +7,7 @@ exports.getComponent = ->
     datatype: 'object'
   c.inPorts.add 'user',
     datatype: 'object'
+    required: true
   c.outPorts.add 'out',
     datatype: 'object'
   c.outPorts.add 'error',
