@@ -32,9 +32,10 @@ exports.getComponent = ->
       return
 
     data.user = c.params.user['grid-user']?.id
+    data.secret = null unless data.secret
     rt = new registry.Runtime data,
       host: '$NOFLO_REGISTRY_SERVICE'
-    rt.register (err) ->
+    rt.register c.param.user['grid-token'], (err) ->
       return callback err if err
       out.send data
       do callback
