@@ -18,8 +18,6 @@ exports.getComponent = ->
     out: ['token', 'out']
     async: true
   , (data, groups, out, callback) ->
-    unless data.state?.user?['github-token']
-      return callback new Error "GitHub operations require logging in"
-    out.token.send data.state.user['github-token']
+    out.token.send data.state?.user?['github-token'] or null
     out.out.send data.payload
     do callback
