@@ -30,6 +30,8 @@ exports.getProjectHash = (project, callback) ->
     return
   # Open main graph, or the first graph
   main = project.main or project.graphs[0].properties.id
+  unless main
+    return callback new Error "Unable find a main graph for project #{project.id}"
   callback null, [
     'project'
     project.id
