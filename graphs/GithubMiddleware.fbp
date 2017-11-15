@@ -30,7 +30,11 @@ Dispatch HANDLE[1] -> IN CheckGist(ui/CheckGistExists)
 # If it already exists, redirect
 CheckGist EXISTING -> IN ApplicationRedirectAction
 # If not, download as new project
-CheckGist NEW -> IN GetGist(ui/GistToProject)
+CheckGist NEW -> IN GetGistToken(ui/GetUserToken)
+'1' -> LIMIT GetGistToken
+GetGistToken TOKEN -> TOKEN GetGist(ui/GistToProject)
+GetGistToken OUT -> IN GetGist
+GetGistToken ERROR -> IN ErrorAction
 GetGist GRAPH -> IN SaveGraphAction
 GetGist COMPONENT -> IN SaveComponentAction
 GetGist PROJECT -> IN SaveProjectAction
