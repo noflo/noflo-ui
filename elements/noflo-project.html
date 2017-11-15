@@ -400,6 +400,7 @@
           this.fire('changed', this.project);
         }.bind(this));
         dialog.addEventListener('delete', function (event) {
+          this.$.account.toggleOpen(false);
           this.fire('deleteProject', event.detail);
         }.bind(this));
       },
@@ -410,6 +411,7 @@
           this.project.id,
           id
         ]);
+        this.$.account.toggleOpen(false);
       },
       gotoComponent: function (id) {
         this.$.account.toggleOpen(false);
@@ -419,6 +421,7 @@
           'component',
           id
         ]);
+        this.$.account.toggleOpen(false);
       },
       openGraph: function (event) {
         event.preventDefault();
@@ -450,6 +453,7 @@
           repo: this.project.repo,
           project: this.project
         });
+        this.$.account.toggleOpen(false);
       },
       confirm: function (operation) {
         var dialog = document.createElement('noflo-project-sync');
