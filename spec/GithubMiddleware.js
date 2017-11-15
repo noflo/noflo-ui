@@ -50,20 +50,21 @@ describe('GitHub Middleware', function() {
     });
     it('should send save events for new gist', function(done) {
       const action = 'github:gist';
-      const payload =
-        {graph: 'abc123'};
+      const payload = {
+        graph: 'abc123'
+      };
       const state = {};
-      const expected = [{
-        id: 'abc123',
-        gist: 'abc123',
-        main: 'abc123_noflo',
-        name: 'Hello world',
-        type: 'noflo-browser',
-        graphs: [],
-        components: [],
-        specs: []
-      }
-        , {
+      const expected = [
+        {
+          id: 'abc123',
+          gist: 'abc123',
+          main: 'abc123_noflo',
+          name: 'Hello world',
+          type: 'noflo-browser',
+          graphs: [],
+          components: [],
+          specs: []
+        }, {
           caseSensitive: false,
           properties: {
             name: 'Hello world',
@@ -89,9 +90,13 @@ describe('GitHub Middleware', function() {
         }
         return chai.expect(data).to.eql(expected.shift());
       };
-      mw.receiveAction('storage:save:project', check, function(err) {
-        if (err) { return done(err); }
-        return mw.receiveAction('storage:save:graph', check, done);
+      mw.receiveAction('github:loading', function () {}, function (err) {
+        mw.receiveAction('github:ready', function () {}, function (err) {
+          mw.receiveAction('storage:save:project', check, function(err) {
+            if (err) { return done(err); }
+            return mw.receiveAction('storage:save:graph', check, done);
+          });
+        });
       });
       mw.send(action, payload, state);
 
