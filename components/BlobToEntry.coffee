@@ -1,5 +1,6 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
+collections = require '../src/collections'
 
 handleGraph = (sha, content, entry, project, callback) ->
   # Start by loading the graph object
@@ -20,6 +21,7 @@ handleGraph = (sha, content, entry, project, callback) ->
       entry.local.endTransaction sha
       # Ensure the graph is marked as not changed since SHA
       entry.local.properties.changed = false
+      collections.addToList project.graphs, entry.local
       callback null, entry.local
       return
 
@@ -28,6 +30,7 @@ handleGraph = (sha, content, entry, project, callback) ->
     graph.properties.id = uuid.v4()
     graph.properties.environment = {} unless graph.properties.environment
     graph.properties.environment.type = project.type unless graph.properties.environment.type
+    collections.addToList project.graphs, graph
     callback null, graph
     do callback
 
@@ -36,6 +39,7 @@ handleComponent = (sha, content, entry, project, callback) ->
     entry.local.code = content
     entry.local.sha = sha
     entry.local.changed = false
+    collections.addToList project.components, entry.local
     callback null, entry.local
     return
   newEntry =
@@ -46,6 +50,7 @@ handleComponent = (sha, content, entry, project, callback) ->
     language: entry.remote.language
     sha: sha
     changed: false
+  collections.addToList project.components, newEntry
   callback null, newEntry
 
 handleSpec = (sha, content, entry, project, callback) ->
@@ -53,6 +58,7 @@ handleSpec = (sha, content, entry, project, callback) ->
     entry.local.code = content
     entry.local.sha = sha
     entry.local.changed = false
+    collections.addToList project.specs, entry.local
     callback null, entry.local
     return
   newEntry =
@@ -64,6 +70,7 @@ handleSpec = (sha, content, entry, project, callback) ->
     language: entry.remote.language
     sha: sha
     changed: false
+  collections.addToList project.specs, newEntry
   callback null, newEntry
 
 exports.getComponent = ->
@@ -137,7 +144,5 @@ exports.getComponent = ->
       res = {}
       res[entity.type] = entity.entity
       output.send res
-    setTimeout ->
-      output.sendDone
-        project: operation.project
-    , 10
+    output.sendDone
+      project: operation.project
