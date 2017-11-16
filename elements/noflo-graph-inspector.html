@@ -9,8 +9,6 @@
       .CodeMirror {
         height: 100%;
         cursor: text;
-        margin-left: -2px;
-        margin-right: -2px;
       }
       .CodeMirror-scroll {
         height: 100%;
@@ -271,13 +269,15 @@
       viewChanged: function () {
         if (this.view === 'html' && this.htmlEditor) {
           setTimeout(function () {
-            this.htmlEditor.setSize(576, 288);
+            this.htmlEditor.setSize(576 - 4, 288);
+            this.htmlEditor.refresh();
             this.htmlEditor.focus();
           }.bind(this), 1);
         }
         if (this.view === 'tests' && this.testsEditor) {
           setTimeout(function () {
-            this.testsEditor.setSize(576, 288);
+            this.testsEditor.setSize(576 - 4, 288);
+            this.testsEditor.refresh();
             this.testsEditor.focus();
           }.bind(this), 1);
         }
@@ -287,7 +287,7 @@
           return;
         }
         this.htmlEditor = CodeMirror(this.$.html_editor, {
-          lineNumbers: false,
+          lineNumbers: true,
           lineWrapping: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
@@ -299,7 +299,7 @@
           return;
         }
         this.testsEditor = CodeMirror(this.$.tests_editor, {
-          lineNumbers: false,
+          lineNumbers: true,
           lineWrapping: true,
           value: this.spec.code || '',
           mode: this.getMirrorMode(this.spec.language),
