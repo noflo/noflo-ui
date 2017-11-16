@@ -236,13 +236,15 @@
         if (!this.width || !this.height) {
           return;
         }
-        var width = (this.width - 80) / 2;
+        var width = (this.width - 90) / 2;
         var height = this.height - 102;
         if (this.codeEditor) {
           this.codeEditor.setSize(width, height);
+          this.codeEditor.refresh();
         }
         if (this.testsEditor) {
           this.testsEditor.setSize(width, height);
+          this.testsEditor.refresh();
         }
       }
     });

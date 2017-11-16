@@ -269,13 +269,15 @@
       viewChanged: function () {
         if (this.view === 'html' && this.htmlEditor) {
           setTimeout(function () {
-            this.htmlEditor.setSize(576, 288);
+            this.htmlEditor.setSize(576 - 4, 288);
+            this.htmlEditor.refresh();
             this.htmlEditor.focus();
           }.bind(this), 1);
         }
         if (this.view === 'tests' && this.testsEditor) {
           setTimeout(function () {
-            this.testsEditor.setSize(576, 288);
+            this.testsEditor.setSize(576 - 4, 288);
+            this.testsEditor.refresh();
             this.testsEditor.focus();
           }.bind(this), 1);
         }
@@ -285,7 +287,7 @@
           return;
         }
         this.htmlEditor = CodeMirror(this.$.html_editor, {
-          lineNumbers: false,
+          lineNumbers: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
           theme: 'mdn-like',
@@ -296,7 +298,7 @@
           return;
         }
         this.testsEditor = CodeMirror(this.$.tests_editor, {
-          lineNumbers: false,
+          lineNumbers: true,
           value: this.spec.code || '',
           mode: this.getMirrorMode(this.spec.language),
           theme: 'mdn-like'
