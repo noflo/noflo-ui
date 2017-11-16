@@ -28,6 +28,7 @@ exports.getComponent = ->
     addressable: true
   c.outPorts.add 'handling',
     datatype: 'integer'
+  c.forwardBrackets = {}
   c.process (input, output) ->
     return unless input.hasData 'routes', 'in'
     [routes, data] = input.getData 'routes', 'in'
@@ -43,7 +44,6 @@ exports.getComponent = ->
       return
     output.send
       handling: handler
-    output.send
       handle: new noflo.IP 'data', data,
         index: handler
     output.done()
