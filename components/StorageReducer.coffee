@@ -182,5 +182,11 @@ exports.getComponent = ->
         collections.addToList state.runtimes, data.payload, collections.sortBySeen
         out.out.send state
         do callback
+      when 'storage:error'
+        state =
+          state: 'error'
+          error: data.payload
+        out.out.send state
+        do callback
       else
         do callback
