@@ -3,9 +3,9 @@ noflo = require 'noflo'
 getData = (input, port) ->
   return input.getStream(port).filter((ip) ->
     # Drop brackets at this stage
-    return false if ip.type is 'data'
+    return false unless ip.type is 'data'
     # Drop 'empty' result
-    return false if ip.data is true
+    return false if not ip.data or ip.data is true
     true
   ).map (ip) ->
     ip.data
