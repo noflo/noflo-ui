@@ -11,6 +11,7 @@ OUTPORT=NewActions.OUT:NEW
 'storage:save:component' -> ACTION SaveComponentAction(ui/SetAction) OUT -> IN NewActions
 'storage:save:spec' -> ACTION SaveSpecAction(ui/SetAction) OUT -> IN NewActions
 'storage:save:project' -> ACTION SaveProjectAction(ui/SetAction) OUT -> IN NewActions
+'github:sync:pull' -> ACTION GithubPullAction(ui/SetAction) OUT -> IN NewActions
 'github:operation' -> ACTION GithubOperationAction(ui/SetAction) OUT -> IN NewActions
 'github:loading' -> ACTION GithubLoadingAction(ui/SetAction) OUT -> IN NewActions
 'github:ready' -> ACTION GithubReadyAction(ui/SetAction) OUT -> IN NewActions
@@ -22,7 +23,7 @@ Dispatch HANDLE[0] -> IN CheckRepo(ui/CheckRepoExists)
 CheckRepo EXISTING -> IN ApplicationRedirectAction
 # If not, pull as a new project
 CheckRepo OPENMAIN -> IN OpenMainAction
-CheckRepo NEW -> IN GetPullToken
+CheckRepo NEW -> IN GithubPullAction
 
 # Downloading a gist example
 # First check if we already have a local version of the gist

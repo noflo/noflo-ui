@@ -4,7 +4,7 @@ uuid = require 'uuid'
 
 payloadToProject = (data) ->
   repoParts = data.payload.repo.split '/'
-  data.payload =
+  payload =
     project:
       id: uuid.v4()
       name: data.payload.repo
@@ -15,7 +15,7 @@ payloadToProject = (data) ->
       components: []
       specs: []
     repo: data.payload.repo
-  data
+  payload
 
 openMainPayload = ->
   data =

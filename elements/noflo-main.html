@@ -440,7 +440,7 @@
         this.fire('downloadProject', {
           org: repoParts[0],
           repo: repoParts[1],
-          branch: 'master'
+          branch: branch
         });
         this.openLocal();
       },
@@ -621,9 +621,15 @@
           return;
         }
         var dialog = document.createElement('noflo-new-repository');
-        dialog.token = this.gridToken;
         dialog.addEventListener('new', function (event) {
-          this.fetchGithub();
+          var repo = event.detail;
+          var repoParts = repo.split('/');
+          var branch = 'master';
+          this.fire('downloadProject', {
+            org: repoParts[0],
+            repo: repoParts[1],
+            branch: branch
+          });
         }.bind(this));
         Polymer.dom(document.body).appendChild(dialog);
       },
