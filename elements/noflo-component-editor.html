@@ -154,7 +154,6 @@
       getMirrorOptions: function (component, value) {
         var options = {
           lineNumbers: true,
-          lineWrapping: true,
           value: value || '',
           mode: this.getMirrorMode(component.language),
           theme: this.getMirrorTheme(),
@@ -241,9 +240,11 @@
         var height = this.height - 102;
         if (this.codeEditor) {
           this.codeEditor.setSize(width, height);
+          this.codeEditor.refresh();
         }
         if (this.testsEditor) {
           this.testsEditor.setSize(width, height);
+          this.testsEditor.refresh();
         }
       }
     });
