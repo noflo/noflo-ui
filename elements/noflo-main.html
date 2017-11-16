@@ -630,6 +630,9 @@
             repo: repoParts[1],
             branch: branch
           });
+          setTimeout(function () {
+            this.openLocal();
+          }.bind(this), 1);
         }.bind(this));
         Polymer.dom(document.body).appendChild(dialog);
       },
