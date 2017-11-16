@@ -9,6 +9,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:db' -> ACTION StorageDbAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:ready' -> ACTION StorageReadyAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:load:all' -> ACTION StorageInitialLoadAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
+'storage:stored:initial' -> ACTION StorageInitialDataAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:stored:project' -> ACTION StorageProjectAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:stored:graph' -> ACTION StorageGraphAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:stored:component' -> ACTION StorageComponentAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
@@ -33,11 +34,7 @@ PrepareStorage ERROR -> IN StorageErrorAction
 
 # Loading data from the DB
 Dispatch HANDLE[1] -> IN LoadData(ui/LoadData)
-LoadData PROJECT -> IN StorageProjectAction
-LoadData GRAPH -> IN StorageGraphAction
-LoadData COMPONENT -> IN StorageComponentAction
-LoadData SPEC -> IN StorageSpecAction
-LoadData RUNTIME -> IN StorageRuntimeAction
+LoadData COMPLETE -> IN StorageInitialDataAction
 LoadData COMPLETE -> IN StorageReadyAction
 LoadData ERROR -> IN StorageErrorAction
 

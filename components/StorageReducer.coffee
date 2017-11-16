@@ -39,6 +39,19 @@ exports.getComponent = ->
         ctx.runtimes = state.runtimes
         out.projectcontext.send ctx
         do callback
+      when 'storage:stored:initial'
+        state = data.payload
+        state.storedGraphs = state.graphs
+        delete state.graphs
+        for project in state.projects
+          project.graphs = state.storedGraphs.filter (item) ->
+            item.properties.project is project.id
+          project.components = state.components.filter (item) ->
+            item.project is project.id
+          project.specs = state.specs.filter (item) ->
+            item.project is project.id
+        out.out.send state
+        do callback
       when 'storage:stored:project'
         state = {}
         project = data.payload
