@@ -9,6 +9,8 @@
       .CodeMirror {
         height: 100%;
         cursor: text;
+        margin-left: -2px;
+        margin-right: -2px;
       }
       .CodeMirror-scroll {
         height: 100%;
@@ -286,6 +288,7 @@
         }
         this.htmlEditor = CodeMirror(this.$.html_editor, {
           lineNumbers: false,
+          lineWrapping: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
           theme: 'mdn-like',
@@ -297,6 +300,7 @@
         }
         this.testsEditor = CodeMirror(this.$.tests_editor, {
           lineNumbers: false,
+          lineWrapping: true,
           value: this.spec.code || '',
           mode: this.getMirrorMode(this.spec.language),
           theme: 'mdn-like'
