@@ -43,5 +43,7 @@ exports.getComponent = ->
       do callback
     request.on 'error', (err) ->
       error = err.error or err.body
+      unless error
+        return callback new Error 'Failed to communicate with GitHub. Try again later'
       callback new Error "Failed to communicate with GitHub: #{error}"
     do request
