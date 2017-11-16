@@ -50,11 +50,15 @@ describe('Storage Middleware', function() {
         {db: idb});
     })
   );
-  describe('receiving a storage:load:components action', () =>
-    it('should send a storage:stored:component action', function(done) {
-      const action = 'storage:load:components';
-      const check = data => chai.expect(data).to.eql(component);
-      mw.receiveAction('storage:stored:component', check, done);
+  describe('receiving a storage:load:all action', () =>
+    it('should send a storage:stored:initial action', function(done) {
+      const action = 'storage:load:all';
+      const check = (data) => {
+        chai.expect(data).to.be.an('object');
+        chai.expect(data).to.have.all.keys('projects', 'graphs', 'components', 'specs', 'runtimes');
+        chai.expect(data.components[0]).to.eql(component);
+      };
+      mw.receiveAction('storage:stored:initial', check, done);
       return mw.send(action, {},
         {db: idb});
     })

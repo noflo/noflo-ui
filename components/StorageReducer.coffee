@@ -39,6 +39,31 @@ exports.getComponent = ->
         ctx.runtimes = state.runtimes
         out.projectcontext.send ctx
         do callback
+      when 'storage:stored:initial'
+        state = data.payload
+
+        # Rename graphs list
+        state.storedGraphs = state.graphs
+        delete state.graphs
+
+        # Ensure consistent order
+        state.projects.sort collections.sortByName
+        state.storedGraphs.sort collections.sortByName
+        state.components.sort collections.sortByName
+        state.specs.sort collections.sortByName
+        state.runtimes.sort collections.sortBySeen
+
+        # Update project graphs etc
+        for project in state.projects
+          project.graphs = state.storedGraphs.filter (item) ->
+            item.properties.project is project.id
+          project.components = state.components.filter (item) ->
+            item.project is project.id
+          project.specs = state.specs.filter (item) ->
+            item.project is project.id
+
+        out.out.send state
+        do callback
       when 'storage:stored:project'
         state = {}
         project = data.payload
@@ -154,18 +179,7 @@ exports.getComponent = ->
       when 'storage:stored:runtime'
         state = {}
         state.runtimes = data.state.runtimes or []
-        collections.addToList state.runtimes, data.payload, (a, b) ->
-          unless a.seen
-            return 1
-          unless b.seen
-            return -1
-          aSeen = new Date a.seen
-          bSeen = new Date b.seen
-          if a.seen > b.seen
-            return -1
-          if b.seen > a.seen
-            return 1
-          0
+        collections.addToList state.runtimes, data.payload, collections.sortBySeen
         out.out.send state
         do callback
       else

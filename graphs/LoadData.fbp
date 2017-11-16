@@ -4,7 +4,7 @@ OUTPORT=ConvertGraph.OUT:GRAPH
 OUTPORT=LoadComponents.ITEM:COMPONENT
 OUTPORT=LoadSpecs.ITEM:SPEC
 OUTPORT=Runtimes.OUT:RUNTIME
-OUTPORT=LoadAllRuntimes.COMPLETE:COMPLETE
+OUTPORT=Collect.OUT:COMPLETE
 OUTPORT=Errors.OUT:ERROR
 
 'storage:load:projects,storage:load:graphs,storage:load:components,storage:load:specs,storage:load:runtimes,storage:load:all' -> ROUTES Dispatch(ui/DispatchAction)
@@ -53,6 +53,18 @@ SplitAction OUT -> IN GetSpecsDb
 SplitAction OUT -> IN GetAllRuntimesDb OUT -> IN AllRuntimesStore
 AllRuntimesStore OUT -> STORE LoadAllRuntimes ERROR -> IN Errors
 LoadAllRuntimes ITEM -> IN Runtimes
+
+# Collect all query results into an object
+LoadProjects ITEM -> PROJECT Collect(ui/CollectInitialData)
+LoadProjects EMPTY -> PROJECT Collect
+ConvertGraph OUT -> GRAPH Collect
+LoadGraphs EMPTY -> GRAPH Collect
+LoadComponents ITEM -> COMPONENT Collect
+LoadComponents EMPTY -> COMPONENT Collect
+LoadSpecs ITEM -> SPEC Collect
+LoadSpecs EMPTY -> SPEC Collect
+Runtimes OUT -> RUNTIME Collect
+LoadAllRuntimes EMPTY -> RUNTIME Collect
 
 # Here we treat unknown actions as errors
 Dispatch PASS -> IN Errors(core/Merge)
