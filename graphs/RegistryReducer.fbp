@@ -1,5 +1,4 @@
 INPORT=Dispatch.IN:IN
-OUTPORT=Merge.OUT:USER
 OUTPORT=MergeContext.OUT:CONTEXT
 
 'flowhub:projects,flowhub:error' -> ROUTES Dispatch(ui/DispatchAction)

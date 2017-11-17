@@ -19,7 +19,7 @@
     "@webcomponents/webcomponentsjs": "^1.0.17",
     "codemirror": "^5.22.2",
     "debug": "^3.0.0",
-    "fbp": "~1.6.0",
+    "fbp": "~1.7.0",
     "fbp-spec": "~0.4.1",
     "flowhub-registry": "^0.1.2",
     "font-awesome": "^4.6.3",

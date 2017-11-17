@@ -35,5 +35,5 @@ Collect CONTEXT -> IN MergeContext(core/Merge)
 
 # Error handling
 Connect ERROR -> IN ShowErrors(core/Output)
-Collect ERROR -> ERROR ErrorToCtx
+Collect ERROR -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeContext

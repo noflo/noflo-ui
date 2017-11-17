@@ -1,4 +1,3 @@
-INPORT=LoadData.DB:DB
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT
@@ -27,7 +26,7 @@ ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
 ListComponents OUT -> IN UpdateLibrary
 UpdateLibrary OUT -> IN MergeContext
-ListComponents ERROR -> IN ShowErrors
+ListComponents ERROR -> IN ShowErrors(core/Output)
 
 # Graph change subscription
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
@@ -57,5 +56,3 @@ ProjectRuntime CONNECTED -> RUNTIME RunTests
 DirectRuntime RUNTIME -> RUNTIME RunTests
 RunTests CONTEXT -> IN MergeContext
 RunTests ERROR -> IN ShowErrors
-
-LoadData ERROR -> IN ShowErrors
