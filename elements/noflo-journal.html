@@ -98,6 +98,11 @@
           notify: true,
           observer: 'graphChanged'
         },
+        component: {
+          value: null,
+          notify: true,
+          observer: 'componentChanged'
+        },
         hidenav: {
           type: Boolean,
           value: false,
@@ -147,6 +152,13 @@
       dbChanged: function () {
         this.checkState();
         this.connectJournal();
+      },
+      componentChanged: function () {
+        if (this.component && this.component.name) {
+          this.hidenav = true;
+        } else {
+          this.hidenav = false;
+        }
       },
       connectJournal: function () {
         if (!this.graph || !this.graph.on || !this.db) {

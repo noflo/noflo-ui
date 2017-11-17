@@ -160,7 +160,7 @@
           readOnly: component.project ? false : 'nocursor'
         };
         var canLint = function (language) {
-          return language === 'javascript';
+          return false;
         };
         if (canLint(component.language) && !options.readOnly) {
           options.gutters = ['CodeMirror-lint-markers'];

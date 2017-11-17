@@ -151,6 +151,7 @@ createPath = (type, entity) ->
   switch entity.language
     when 'coffeescript' then return "#{componentDir}/#{name}." + 'coffee'
     when 'javascript' then return "#{componentDir}/#{name}.js"
+    when 'es2015' then return "#{componentDir}/#{name}.js"
     when 'c++' then return "#{componentDir}/#{name}.hpp"
     when 'python' then return "#{componentDir}/#{name}.py"
     else return "#{componentDir}/#{name}.#{entity.language}"
