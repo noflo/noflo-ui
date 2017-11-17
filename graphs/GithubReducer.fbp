@@ -1,5 +1,4 @@
 INPORT=Dispatch.IN:IN
-OUTPORT=Merge.OUT:USER
 OUTPORT=MergeContext.OUT:CONTEXT
 
 'github:operation,github:error,github:loading,github:ready' -> ROUTES Dispatch(ui/DispatchAction)
