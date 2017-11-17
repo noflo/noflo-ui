@@ -1,6 +1,7 @@
 noflo = require 'noflo'
 debugAction = require('debug') 'noflo-ui:action'
 debugActionFull = require('debug') 'noflo-ui:action:full'
+debugError = require('debug') 'noflo-ui:error'
 
 sendEvent = (label, action = 'click', category = 'menu') ->
   return unless typeof window.ga is 'function'
@@ -22,6 +23,9 @@ exports.getComponent = ->
     action = data.action
     debugAction action
     debugActionFull action, data.payload
+
+    if action.match /:error$/
+      debugError data.payload
 
     switch action
       when 'user:login'

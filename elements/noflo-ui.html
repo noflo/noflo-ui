@@ -212,13 +212,13 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('storage:save:project', event.detail.project);
-          setTimeout(function () {
-            this.emitEvent('github:sync:pull', {
-              repo: event.detail.project.repo,
-              project: event.detail.project
-            });
-          }.bind(this), 2);
+          this.emitEvent('application:hash', [
+            'github',
+            event.detail.org,
+            event.detail.repo,
+            'tree',
+            event.detail.branch
+          ]);
         }.bind(this));
         this.$.main.addEventListener('fetchRuntimes', function (event) {
           this.emitEvent('flowhub:runtimes:fetch', event.detail);
@@ -260,6 +260,7 @@
           this.emitEvent('context:nodes', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('changed', function (event) {
+          event.detail.properties.changed = true;
           this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
@@ -516,6 +517,9 @@
       },
       hideAlertSoon: function () {
         if (this.dontAutoHideAlert) {
+          return;
+        }
+        if(!Polymer.dom(this.$.alert).classList.contains('show')) {
           return;
         }
         window.setTimeout(function () {

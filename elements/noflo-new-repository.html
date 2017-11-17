@@ -6,9 +6,6 @@
     <div class="modal-container" on-click="bgClick">
       <h1>Add a new repository</h1>
       <div class="modal-content">
-      <template is="dom-if" if="{{errorText}}">
-        <div class="error">{{errorText}}</div>
-      </template>
       <form>
         <label>
           GitHub repository name
@@ -30,10 +27,6 @@
         canSend: {
           type: Boolean,
           value: false
-        },
-        errorText: {
-          type: String,
-          value: ''
         },
         repo: {
           type: String,
@@ -66,27 +59,6 @@
           this.canSend = true;
         }
       },
-      createProject: function (callback) {
-        var req = new XMLHttpRequest();
-        req.onreadystatechange = function () {
-          if (req.readyState !== 4) {
-            return;
-          }
-          if (req.status !== 200 && req.status !== 201) {
-            var errorResp = JSON.parse(req.responseText);
-            return callback(errorResp.message);
-          }
-          return callback(null);
-        };
-        var payload = JSON.stringify({
-          repo: this.repo,
-          active: false
-        });
-        req.open('POST', '$NOFLO_REGISTRY_SERVICE/projects', true);
-        req.setRequestHeader('Authorization', 'Bearer ' + this.token);
-        req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-        req.send(payload);
-      },
       send: function (event) {
         if (event) {
           event.preventDefault();
@@ -97,15 +69,8 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'newRepository');
         }
-        this.errorText = '';
-        this.createProject(function (err) {
-          if (err) {
-            this.errorText = err;
-            return;
-          }
-          this.fire('new', this.repo);
-          this.close();
-        }.bind(this));
+        this.fire('new', this.repo);
+        this.close();
       },
       bgClick: function (event) {
         // Don't close if clicking within container

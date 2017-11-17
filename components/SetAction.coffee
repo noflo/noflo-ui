@@ -10,6 +10,7 @@ exports.getComponent = ->
     datatype: 'all'
   c.outPorts.add 'out',
     datatype: 'all'
+    scoped: false
 
   noflo.helpers.WirePattern c,
     params: ['action']

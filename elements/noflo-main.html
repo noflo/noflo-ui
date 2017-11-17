@@ -434,35 +434,13 @@
       downloadProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
-        if (!this.githubToken) {
-          return;
-        }
         var repo = event.currentTarget.getAttribute('data-repo');
         var repoParts = repo.split('/');
-        var repoId = repoParts[1];
         var branch = 'master';
-        var dupes = this.projects.filter(function (proj) {
-          if (proj.id === repoId) {
-            return true;
-          }
-          return false;
-        });
-        if (dupes.length) {
-          repoId = repo.replace('/', '_');
-        }
-        var project = {
-          id: repoId,
-          name: repo,
-          namespace: repoId,
-          repo: repo,
-          branch: branch,
-          graphs: [],
-          components: [],
-          specs: []
-        };
         this.fire('downloadProject', {
-          project: project,
-          token: this.githubToken
+          org: repoParts[0],
+          repo: repoParts[1],
+          branch: branch
         });
         this.openLocal();
       },
@@ -643,9 +621,18 @@
           return;
         }
         var dialog = document.createElement('noflo-new-repository');
-        dialog.token = this.gridToken;
         dialog.addEventListener('new', function (event) {
-          this.fetchGithub();
+          var repo = event.detail;
+          var repoParts = repo.split('/');
+          var branch = 'master';
+          this.fire('downloadProject', {
+            org: repoParts[0],
+            repo: repoParts[1],
+            branch: branch
+          });
+          setTimeout(function () {
+            this.openLocal();
+          }.bind(this), 1);
         }.bind(this));
         Polymer.dom(document.body).appendChild(dialog);
       },

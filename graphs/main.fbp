@@ -12,11 +12,11 @@ UrlMiddleware PASS -> IN StorageMiddleware(ui/StorageMiddleware)
 StorageMiddleware NEW -> ACTION StoreDispatch
 StorageMiddleware PASS -> IN UserMiddleware(ui/UserMiddleware)
 UserMiddleware NEW -> ACTION StoreDispatch
-UserMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
-GithubMiddleware NEW -> ACTION StoreDispatch
-GithubMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
+UserMiddleware PASS -> IN RegistryMiddleware(ui/RegistryMiddleware)
 RegistryMiddleware NEW -> ACTION StoreDispatch
-RegistryMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
+RegistryMiddleware PASS -> IN GithubMiddleware(ui/GithubMiddleware)
+GithubMiddleware NEW -> ACTION StoreDispatch
+GithubMiddleware PASS -> IN RuntimeMiddleware(ui/RuntimeMiddleware)
 RuntimeMiddleware NEW -> ACTION StoreDispatch
 # Once middlewares have processed event, pass to stores
 RuntimeMiddleware PASS -> IN Dispatch(ui/DispatchAction)

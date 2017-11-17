@@ -54,6 +54,7 @@ buildContext = (url) ->
       routeData.route = 'github'
       [owner, repo] = urlParts.splice 0, 2
       routeData.repo = "#{owner}/#{repo}"
+      routeData.branch = 'master'
       return routeData unless urlParts.length
       if urlParts[0] is 'tree'
         # Opening a particular branch
@@ -64,10 +65,10 @@ buildContext = (url) ->
         # Opening a particular file
         urlParts.shift()
         routeData.branch = urlParts.shift()
-        if routeData[0] is 'graphs'
-          routeData.graph = routeData[1]
-        if routeData[0] is 'components'
-          routeData.component = routeData[1]
+        if urlParts[0] is 'graphs'
+          routeData.graph = urlParts[1]
+        if urlParts[0] is 'components'
+          routeData.component = urlParts[1]
       return routeData
     when 'runtime'
       # Graph running on a remote runtime

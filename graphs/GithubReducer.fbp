@@ -2,7 +2,7 @@ INPORT=Dispatch.IN:IN
 OUTPORT=Merge.OUT:USER
 OUTPORT=MergeContext.OUT:CONTEXT
 
-'github:operation,github:error' -> ROUTES Dispatch(ui/DispatchAction)
+'github:operation,github:error,github:loading,github:ready' -> ROUTES Dispatch(ui/DispatchAction)
 
 # Set synchronization action to state
 Dispatch HANDLE[0] -> IN CleanOps(ui/CleanAction)
@@ -14,3 +14,11 @@ OpsToContext CONTEXT -> IN MergeContext(core/Merge)
 # Convert GitHub errors to context errors
 Dispatch HANDLE[1] -> ERROR ErrorToCtx(ui/ErrorToContext)
 ErrorToCtx OUT -> IN MergeContext
+
+# Set state to loading
+Dispatch HANDLE[2] -> START Loading(ui/CreateLoadingContext)
+Loading OUT -> IN MergeContext
+
+# Set state to ready
+Dispatch HANDLE[3] -> START Ready(ui/CreateEmptyContext)
+Ready OUT -> IN MergeContext

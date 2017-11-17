@@ -9,6 +9,7 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'pass',
     datatype: 'object'
+    scoped: false
 
   c.state = {}
   c.tearDown = (callback) ->
@@ -21,19 +22,13 @@ exports.getComponent = ->
       output.done()
       return
     return unless input.hasStream 'action'
-    packets = []
-    brackets = []
-    input.getStream('action').forEach (ip) ->
-      if ip.type is 'openBracket'
-        brackets.push ip.data
-      if ip.type is 'closeBracket'
-        brackets.pop()
-      if ip.type is 'data'
-        packets.push
-          data: ip.data
-          brackets: brackets.slice 0
-    for packet in packets
-      data = packet.data
+    packets = input.getStream('action').filter((ip) ->
+      ip.type is 'data'
+    ).map (ip) -> ip.data
+    for data in packets
+      unless data.action
+        console.error 'Received action without expected payload', data
+        output.done()
       if data and typeof data is 'object' and data.payload and data.action
         # New-style action object
         if data.state
@@ -47,13 +42,5 @@ exports.getComponent = ->
             state: c.state
             payload: data.payload
         continue
-      # Old-style action with only payload, and action defined by brackets
-      action = packet.brackets.join ':'
-      debug "#{action} was sent in legacy payload-only format"
-      output.send
-        pass:
-          action: action
-          state: c.state
-          payload: data
     output.done()
     return

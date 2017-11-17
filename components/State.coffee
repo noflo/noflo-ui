@@ -11,6 +11,9 @@ exports.getComponent = ->
   c.outPorts.add 'updated',
     datatype: 'object'
   c.state = {}
+  c.tearDown = (callback) ->
+    c.state = {}
+    do callback
   noflo.helpers.WirePattern c,
     in: 'in'
     out: ['state', 'updated']

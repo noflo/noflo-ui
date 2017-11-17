@@ -68,15 +68,15 @@ exports.getComponent = ->
         state = {}
         project = data.payload
         project.graphs = [] unless project.graphs
-        if data.state.storedGraphs
+        if data.state.storedGraphs and not project.graphs.length
           project.graphs = data.state.storedGraphs.filter (item) ->
             item.properties.project is project.id
         project.components = [] unless project.components
-        if data.state.components
+        if data.state.components and not project.components.length
           project.components = data.state.components.filter (item) ->
             item.project is project.id
         project.specs = [] unless project.specs
-        if data.state.specs
+        if data.state.specs and not project.specs.length
           project.specs = data.state.specs.filter (item) ->
             item.project is project.id
         state.projects = data.state.projects or []
@@ -180,6 +180,12 @@ exports.getComponent = ->
         state = {}
         state.runtimes = data.state.runtimes or []
         collections.addToList state.runtimes, data.payload, collections.sortBySeen
+        out.out.send state
+        do callback
+      when 'storage:error'
+        state =
+          state: 'error'
+          error: data.payload
         out.out.send state
         do callback
       else
