@@ -5,7 +5,7 @@ NoFlo UI ChangeLog
 
 New features:
 
-* noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker
+* noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker. We also provide automated builds [on Docker Hub](https://hub.docker.com/r/flowhub/noflo-ui/)
 * Tube, the noflo-ui light theme, now works more consistently across the app
 * Component and graph creation now includes a visual icon picker
 * We now prevent graphs and components inside a project from using overlapping names

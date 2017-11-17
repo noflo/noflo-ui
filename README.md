@@ -66,7 +66,7 @@ One can *optionally* add component templates, syntax highlighting and a 'get sta
 Only necessary if you want to hack on NoFlo UI itself. Not neccesary for making apps with FBP.
 
 ### Via Docker
-A Dockerfile has been provided that can be used to easily build/run the NoFlo UI.
+A Dockerfile has been provided that can be used to easily build/run the NoFlo UI. You can also get an automatically built image [from Docker Hub](https://hub.docker.com/r/flowhub/noflo-ui/).
 
 #### Build
 ```bash
