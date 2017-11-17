@@ -56,5 +56,3 @@ ProjectRuntime CONNECTED -> RUNTIME RunTests
 DirectRuntime RUNTIME -> RUNTIME RunTests
 RunTests CONTEXT -> IN MergeContext
 RunTests ERROR -> IN ShowErrors
-
-LoadData ERROR -> IN ShowErrors
