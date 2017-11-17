@@ -6,10 +6,16 @@ NoFlo UI ChangeLog
 New features:
 
 * noflo-ui now ships with a Dockerfile, allowing you to build and run the IDE with Docker. We also provide automated builds [on Docker Hub](https://hub.docker.com/r/flowhub/noflo-ui/)
+* It is now possible to open projects from GitHub in noflo-ui by simply using a URL. Here are some examples:
+  - <https://app.flowhub.io/#github/c-base/ingress-table> -- opens the main graph of the repository `master` branch
+  - <https://app.flowhub.io/#github/c-base/ingress-table/blob/master/graphs/FetchData.json> -- opens the selected graph from the repository `master` branch
+  - <https://app.flowhub.io/#github/c-base/ingress-table/blob/master/components/DetectAttack.coffee> -- opens the selected component from the repository `master` branch
 * Tube, the noflo-ui light theme, now works more consistently across the app
 * Component and graph creation now includes a visual icon picker
 * We now prevent graphs and components inside a project from using overlapping names
 * Programming language selection when creating components is now filtered by runtime type
+* Pulling a repository from GitHub now opens it after the project has been successfully downloaded
+* GitHub operations now check API rate limits before proceeding
 
 Bugfixes:
 
@@ -18,6 +24,10 @@ Bugfixes:
 * Fixed subgraph creation dialog
 * Fixed a race condition with initial data loading that might cause some components not to show up in their projects
 * Fixed code editor contents sometimes overlapping line numbers
+* When synchronizing a repository with GitHub, the operation selector for files now reflects the real selected option
+* Graph modifications are now correctly picked up as something that can be pushed to GitHub
+* Introduced throttling to GitHub pull operations to prevent browser canceling some of them
+* If a graph pulled from GitHub can't be parsed, the error message includes the name of the failing graph
 
 Internal changes:
 
