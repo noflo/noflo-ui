@@ -26,7 +26,7 @@ ProjectRuntime RUNTIME -> RUNTIME ListComponents(runtime/ListComponents)
 DirectRuntime RUNTIME -> RUNTIME ListComponents
 ListComponents OUT -> IN UpdateLibrary
 UpdateLibrary OUT -> IN MergeContext
-ListComponents ERROR -> IN ShowErrors
+ListComponents ERROR -> IN ShowErrors(core/Output)
 
 # Graph change subscription
 MergeContextPreSubscribe OUT -> CONTEXT SubscribeGraph(ui/SubscribeGraph)
