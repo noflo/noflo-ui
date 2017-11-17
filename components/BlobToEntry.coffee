@@ -2,6 +2,7 @@ noflo = require 'noflo'
 uuid = require 'uuid'
 collections = require '../src/collections'
 projects = require '../src/projects'
+_ = require 'underscore'
 
 handleGraph = (sha, content, entry, project, callback) ->
   # Start by loading the graph object
@@ -110,6 +111,9 @@ exports.getComponent = ->
     unless operation.pull?.length
       output.done new Error 'Operation does not provide any pull entries'
       return
+    unless _.isArray blobs
+      # Only one received
+      blobs = [blobs]
 
     entities = []
     errors = []
