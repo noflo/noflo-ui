@@ -1,6 +1,14 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.23.1 (2017 November 17)
+
+Bugfixes:
+
+* Graph minimap hides when viewing component source code
+* Fixed broken GitHub pull when received a single file
+* Dropped jslint to save 1MB of download, and because it doesn't work correctly with ES6
+
 ## 0.23.0 (2017 November 17)
 
 New features:
