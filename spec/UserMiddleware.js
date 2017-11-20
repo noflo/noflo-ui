@@ -45,6 +45,16 @@ describe('User Middleware', function() {
         id: 1,
         name: 'Henri Bergius'
       };
+      const newUserData = {
+        id: 1,
+        name: 'Henri Bergius',
+        github: {
+          scopes: ['repo']
+        },
+        plan: {
+          type: 'backer'
+        }
+      };
       const userToken = 'oh3h8f89h28hyf98yf24g34g';
       let mock = null;
       beforeEach(function() {
@@ -70,24 +80,20 @@ describe('User Middleware', function() {
       it('should pass it out as-is and send updated user:info when token is valid', function(done) {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
-        const newUserData = {
-          id: 1,
-          name: 'Henri Bergius',
-          github: {
-            scopes: ['repo']
-          },
-          plan: {
-            type: 'backer'
-          }
-        };
+        // We first send cached, then actual
+        expected = [userData, newUserData];
         const check = function(data) {
           // Check payload sent to UI
-          chai.expect(data['flowhub-user']).to.eql(newUserData);
-          // Check data stored in cache
-          const cached = JSON.parse(localStorage.getItem('flowhub-user'));
-          return chai.expect(cached).to.eql(newUserData);
+          chai.expect(data['flowhub-user']).to.eql(expected.shift());
+          if (!expected.length) {
+            // Check data stored in cache
+            const cached = JSON.parse(localStorage.getItem('flowhub-user'));
+            chai.expect(cached).to.eql(newUserData);
+          }
         };
-        mw.receiveAction('user:info', check, done);
+        mw.receiveAction('user:info', check, () => {
+          mw.receiveAction('user:info', check, done);
+        });
         mw.send(action, payload);
         mock.respondWith('GET', "https://api.flowhub.io/user", [
           200
@@ -101,7 +107,16 @@ describe('User Middleware', function() {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
         const check = function(data) {};
-        mw.receiveAction('user:logout', check, done);
+        // We first send cached, then logout
+        mw.receiveAction('user:info', (data) => {
+          if (originalUser) {
+            chai.expect(data['flowhub-user']).to.eql(JSON.parse(originalUser));
+          } else {
+            chai.expect(data['flowhub-user']).to.eql(null);
+          }
+        }, () => {
+          mw.receiveAction('user:logout', check, done);
+        });
         mw.send(action, payload);
         mock.respondWith('GET', "https://api.flowhub.io/user", [
           401
@@ -109,7 +124,7 @@ describe('User Middleware', function() {
           {'Content-Type': 'application/json'}
           , JSON.stringify(userData)
         ]);
-        return (mock.respond)();
+        (mock.respond)();
       });
     });
     describe('without user and with OAuth error in URL', () =>
