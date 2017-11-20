@@ -3,6 +3,7 @@
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
+<link rel="import" href="noflo-runtime-card.html">
 <link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
   <template>
@@ -255,8 +256,7 @@
 
         <template is="dom-repeat" items="[[runtimes]]" as="runtime" filter="filterAvailableRuntimes">
           <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]" class$="[[_runtimeClass(runtime)]]">
-            <h2>[[runtime.label]]</h2>
-            <p><span>[[runtime.address]]</span>. Seen <span>[[runtime.seenHoursAgo]]</span>h ago</p>
+            <noflo-runtime-card runtime="[[runtime]]"></noflo-runtime-card>
           </li>
         </template>
       </ul>
