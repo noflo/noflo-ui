@@ -189,6 +189,9 @@
         this.fire(event, payload);
       },
       ready: function () {
+        this.$.main.addEventListener('userUpdated', function (event) {
+          this.emitEvent('user:update', event.detail);
+        }.bind(this));
         this.$.main.addEventListener('logout', function (event) {
           this.emitEvent('user:logout', true);
         }.bind(this));
@@ -417,7 +420,7 @@
           }
           Polymer.dom(document.body).classList.remove('dark');
           Polymer.dom(document.body).classList.remove('light');
-          Polymer.dom(document.body).classList.add(this.theme);
+          Polymer.dom(document.body).classList.add(context.user['flowhub-theme']);
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
