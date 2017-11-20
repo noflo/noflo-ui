@@ -305,6 +305,7 @@
           }
           var dialog = document.createElement('noflo-account-settings');
           dialog.user = this.user;
+          dialog.theme = this.theme;
           Polymer.dom(document.body).appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
             this.fire('userUpdated', event.detail);

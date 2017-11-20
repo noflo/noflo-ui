@@ -123,13 +123,13 @@
         opacity: 0;
       }
     </style>
-    <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
-    <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
+    <noflo-main id="main" theme="[[theme]]" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
+    <the-graph-editor id="grapheditor" theme="[[theme]]" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}"></noflo-library>
     <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}" runtimes="{{ctx.runtimes}}"></noflo-context>
     <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatibleRuntimes}}" graph="{{ctx.graph}}"></noflo-runtime>
-    <noflo-journal id="journal" db="{{ctx.db}}" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
-    <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
+    <noflo-journal id="journal" db="{{ctx.db}}" theme="[[theme]]" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
+    <noflo-component-editor id="componenteditor" theme="[[theme]]" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-project>
     <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" currentgraph="{{ctx.graph}}"></noflo-packets>
@@ -158,6 +158,12 @@
               nodes: [],
             };
           }
+        },
+        theme: {
+          type: String,
+          value: 'dark',
+          notify: true,
+          observer: 'themeChanged'
         },
         dontAutoHideAlert: {
           type: Boolean,
@@ -412,15 +418,7 @@
           this.set('ctx' + ('.' + key), context[key]);
         }
         if (context.user && context.user['flowhub-theme']) {
-          this.$.grapheditor.theme = event.detail;
-          this.$.componenteditor.theme = event.detail;
-          this.$.journal.theme = event.detail;
-          if (Polymer.dom(document.body).classList.contains(context.user['flowhub-theme'])) {
-            return;
-          }
-          Polymer.dom(document.body).classList.remove('dark');
-          Polymer.dom(document.body).classList.remove('light');
-          Polymer.dom(document.body).classList.add(context.user['flowhub-theme']);
+          this.theme = context.user['flowhub-theme'];
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
@@ -562,7 +560,13 @@
           }
           this.emitEvent('application:hash', hash);
         }.bind(this));
-      }
+      },
+      themeChanged: function (newTheme, oldTheme) {
+        if (oldTheme) {
+          Polymer.dom(document.body).classList.remove(oldTheme);
+        }
+        Polymer.dom(document.body).classList.add(this.theme);
+      },
     });
   </script>
 </dom-module>

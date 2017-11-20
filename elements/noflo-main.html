@@ -160,7 +160,7 @@
         text-decoration: none;
       }
     </style>
-    <noflo-account id="mainaccount" user="[[user]]"></noflo-account>  
+    <noflo-account id="mainaccount" user="[[user]]" theme="[[theme]]"></noflo-account>
     <div id="loginrequired"></div>
       <section id="projects">
         <h2>Projects
@@ -319,6 +319,9 @@
           },
           observer: 'runtimesChanged',
           notify: true
+        },
+        theme: {
+          type: String
         },
         user: {
           type: Object,
