@@ -17,6 +17,8 @@ If you just want to create applications, we recommend that you use this version 
 
 <a href="http://app.flowhub.io"><img alt="Start Flowhub webapp" src="https://flowhub.io/assets/app-web.svg" width="400"></a>
 
+By [subscribing to Flowhub](https://plans.flowhub.io) you directly support NoFlo development, and help us all get to the future of programming faster.
+
 Please read more from <http://flowhub.io/documentation/>.
 
 ## Support
