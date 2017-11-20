@@ -7,7 +7,7 @@ updateRuntime = _.debounce (runtime, output) ->
   runtime.runtime.definition.seen = new Date
   output.send
     runtime:
-      action: 'storage:save:runtime'
+      action: 'flowhub:runtimes:register'
       payload: runtime.runtime.definition
   # Deactivate all running contexts
   while runtime.contexts.length
