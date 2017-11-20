@@ -240,23 +240,12 @@
   </template>
   <script>
     (function () {
-      var storage = {
-        set: function (key, value, callback) {
-          localStorage.setItem(key, value);
-          if (callback) {
-            callback();
-          }
-        },
-        get: function (key, callback) {
-          callback(localStorage.getItem(key));
-        },
-        remove: function (key) {
-          localStorage.removeItem(key);
-        }
-      };
       Polymer({
         is: 'noflo-account',
         properties: {
+          theme: {
+            type: String
+          },
           askForScope: {
             type: Array,
             value: function () {
