@@ -52,9 +52,9 @@
         </label>
         <label>
           Theme
-          <select name="type" value="{{user.flowhub-theme::input}}">
-            <option value="dark" selected$="[[_isSelectedTheme('dark', user.flowhub-theme)]]">Lazer</option>
-            <option value="light" selected$="[[_isSelectedTheme('light', user.flowhub-theme)]]">Tube</option>
+          <select name="type" value="{{theme::input}}">
+            <option value="dark" selected$="[[_isSelectedTheme('dark', theme)]]">Lazer</option>
+            <option value="light" selected$="[[_isSelectedTheme('light', theme)]]">Tube</option>
           </select>
         </label>
         <div class="toolbar">
