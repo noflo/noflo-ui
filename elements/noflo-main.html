@@ -1,8 +1,9 @@
-<link rel="import" href="the-graph-thumb.html">
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
+<link rel="import" href="noflo-project-card.html">
+<link rel="import" href="noflo-runtime-card.html">
 <link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
   <template>
@@ -97,12 +98,6 @@
       ul.projects li.remote {
         cursor: default;
       }
-      ul.projects li the-graph-thumb {
-        display: block;
-        position: absolute;
-        left: 100px;
-        top: -20px;
-      }
       section button,
       section #cta {
         background-color: transparent;
@@ -187,16 +182,7 @@
           </li>
           <template is="dom-repeat" items="[[projects]]" as="project">
             <li on-click="openProject" data-id$="[[project.id]]">
-              <the-graph-thumb graph="[[project.mainGraph]]" width="200" height="120"></the-graph-thumb>
-              <h2>[[project.name]]</h2>
-              <template is="dom-if" if="[[_projectHasContents(project)]]">
-              <p><span>[[project.graphs.length]]</span>&nbsp;graphs, <span>[[project.components.length]]</span>&nbsp;components</p>
-              </template>
-              <template is="dom-if" if="[[!_projectHasContents(project)]]">
-              <button on-click="deleteProject" data-id$="[[project.id]]">
-                <noflo-icon icon="trash-o"></noflo-icon>
-              </button>
-              </template>
+              <noflo-project-card project="[[project]]"></noflo-project-card>
             </li>
           </template>
           </template>
@@ -254,19 +240,18 @@
         </li>
 
         <template is="dom-repeat" items="[[runtimes]]" as="runtime" filter="filterAvailableRuntimes">
-          <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]" class$="[[_runtimeClass(runtime)]]">
-            <h2>[[runtime.label]]</h2>
-            <p><span>[[runtime.address]]</span>. Seen <span>[[runtime.seenHoursAgo]]</span>h ago</p>
+          <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]">
+            <noflo-runtime-card runtime="[[runtime]]"></noflo-runtime-card>
           </li>
         </template>
       </ul>
     </section>
     <section id="examples">
       <h2>
-        Examples <small>[[examples.length]]</small>
+        Examples
       </h2>
       <ul class="projects">
-        <template is="dom-repeat" items="[[examples]]" as="example">
+        <template is="dom-repeat" items="[[_getExamples(projects, runtimes)]]" as="example">
         <li on-click="openExample" class="example" data-id$="[[example.id]]">
           <h2>[[example.label]]</h2>
           <p>[[example.address]]</p>
@@ -279,12 +264,6 @@
     Polymer({
       is: 'noflo-main',
       properties: {
-        examples: {
-          type: Array,
-          value: function () {
-            return [];
-          }
-        },
         help: { value: null },
         open: {
           type: Boolean,
@@ -301,8 +280,7 @@
           value: function () {
             return [];
           },
-          notify: true,
-          observer: 'projectsChanged'
+          notify: true
         },
         remoteProjects: {
           type: Array,
@@ -316,7 +294,6 @@
           value: function () {
             return [];
           },
-          observer: 'runtimesChanged',
           notify: true
         },
         theme: {
@@ -367,24 +344,6 @@
           }.bind(this), 1);
         }
       },
-      deleteProject: function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'deleteProject');
-        }
-        var id = event.currentTarget.getAttribute('data-id');
-        var matches = this.projects.filter(function (proj) {
-          if (proj.id === id) {
-            return true;
-          }
-          return false;
-        });
-        if (!matches.length) {
-          return;
-        }
-        this.fire('deleteProject', matches[0]);
-      },
       downloadProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -422,13 +381,6 @@
         }
         return true;
       },
-      projectsChanged: function () {
-        // Add projects to local
-        this.projects.forEach(this.checkProject.bind(this));
-      },
-      runtimesChanged: function () {
-        this.addExamplesForRuntimes();
-      },
       numberOfAvailableRuntimes: function (runtimes) {
         return runtimes.filter(this.filterAvailableRuntimes.bind(this)).length;
       },
@@ -444,44 +396,59 @@
           // Can't use opener runtimes if opener is not defined
           return false;
         }
-        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
-        if (runtime.seenHoursAgo / 24 > 31) {
-          // We haven't seen this runtime in over a month, don't show it
-          return false;
+        if (typeof runtime.seen !== 'object') {
+          runtime.seen = new Date(runtime.seen);
         }
+        var now = new Date();
+        runtime.seenHoursAgo = Math.floor((now - runtime.seen) / (60 * 60 * 1000));
         return true;
       },
-      addExamplesForRuntimes: function () {
-        // Add examples for all current runtimes
-        var runtimeInfo = require('noflo-ui/runtimeinfo');
-        var runtimeTypesFound = {};
-        var existingGists = this.projects.filter(function (project) {
-          return project.gist ? true : false;
-        }).map(function (project) {
-          return project.gist;
-        });
-        var examplesFound = {};
-        this.examples = [];
-        this.runtimes.forEach(function (runtime) {
-          // If this is the first registry of its type, add examples for it
-          if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
-            var examples = runtimeInfo[runtime.type].examples;
-            Object.keys(examples).forEach(function (key) {
-              if (examples[key].ssl && location.protocol !== 'https:') {
-                // Skip examples that require SSL when on HTTP
-                return;
-              }
-              if (existingGists.indexOf(examples[key].id) !== -1) {
-                // Skip examples we already have downloaded locally
-                return;
-              }
-              if (!examplesFound[key]) {
-                this.push('examples', examples[key]);
-                examplesFound[key] = true;
-              }
-            }.bind(this));
+      _getExamples(projects, runtimes) {
+        var runtimeTypes = [];
+        // Find examples for current runtime types
+        runtimes.forEach(function (runtime) {
+          if (!runtime.type) {
+            return;
           }
-        }.bind(this));
+          if (runtimeTypes.indexOf(runtime.type) === -1) {
+            runtimeTypes.push(runtime.type);
+          }
+        });
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var examples = [];
+        runtimeTypes.forEach(function (type) {
+          if (!runtimeInfo[type]) {
+            return;
+          }
+          var typeExamples = runtimeInfo[type].examples;
+          if (!typeExamples) {
+            return;
+          }
+          Object.keys(typeExamples).forEach(function (key) {
+            if (typeExamples[key].ssl && location.protocol !== 'https:') {
+              // Skip examples that require SSL when on HTTP
+              return;
+            }
+            examples.push(typeExamples[key]);
+          });
+        });
+        var seen = [];
+        return examples.filter(function (example) {
+          if (seen.indexOf(example.id) !== -1) {
+            return false;
+          }
+          seen.push(example.id);
+          var local = projects.filter(function (project) {
+            if (project.gist === example.id) {
+              return true;
+            }
+            return false;
+          });
+          if (!local.length) {
+            return true;
+          }
+          return false;
+        });
       },
       fetchRuntimes: function (event) {
         if (!this._canFlowhub(this.user)) {
@@ -586,53 +553,8 @@
         dialog.user = this.user;
         Polymer.dom(document.body).appendChild(dialog);
       },
-      checkProject: function (project) {
-        if (project.main) {
-          var mainFound = false;
-          project.graphs.forEach(function (graph) {
-            if (graph.properties.id === project.main) {
-              mainFound = true;
-            }
-          });
-          if (!mainFound) {
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', null);
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', null);
-          }
-        }
-        if (!project.main) {
-          if (!project.graphs.length) {
-            // No graphs, wait for them to arrive from GitHub
-            var observer = new ArrayObserver(project.graphs);
-            observer.open(function () {
-              observer.close();
-              setTimeout(function () {
-                this.checkProject(project);
-              }.bind(this), 5);
-            }.bind(this));
-            return;
-          }
-          // Find a suitable main graph
-          project.graphs.forEach(function (graph) {
-            if (graph.name === 'main') {
-              this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', graph.properties.id);
-              this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', graph);
-            }
-          }.bind(this));
-          if (!project.main && project.graphs.length) {
-            var main = project.graphs[0];
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', main.properties.id);
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', main);
-          }
-        }
-      },
       _isLocalProjects: function (projectList) {
         return projectList === 'local';
-      },
-      _projectHasContents: function (project) {
-        if (!project || !project.graphs || !project.components) {
-          return false;
-        }
-        return project.graphs.length || project.components.length;
       },
       _canGithub: function (user) {
         if (user && user['github-token']) {
@@ -654,9 +576,6 @@
       },
       _isFree: function (user) {
         return user['flowhub-plan'] === 'free';
-      },
-      _runtimeClass: function (runtime) {
-        return 'runtime ' + runtime.type;
       },
       _planClass: function (user) {
         return 'plan ' + user['flowhub-plan'];

@@ -315,6 +315,9 @@
           }.bind(this));
           this.emitEvent('storage:delete:project', event.detail);
         }.bind(this));
+        this.$.main.addEventListener('deleteRuntime', function (event) {
+          this.emitEvent('flowhub:runtimes:remove', event.detail);
+        }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
