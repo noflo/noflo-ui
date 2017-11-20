@@ -1,3 +1,6 @@
+# @runtime noflo-browser
+# @icon trash-o
+
 INPORT=Dispatch.IN:IN
 OUTPORT=DeleteProject.KEY:PROJECT
 OUTPORT=DeleteGraph.KEY:GRAPH

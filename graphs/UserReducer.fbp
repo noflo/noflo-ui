@@ -1,3 +1,5 @@
+# @runtime noflo-browser
+# @icon user-circle
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 

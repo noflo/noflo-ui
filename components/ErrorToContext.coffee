@@ -11,6 +11,7 @@ buildContext = ->
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'exclamation-triangle'
   c.inPorts.add 'error',
     datatype: 'object'
   c.outPorts.add 'out',

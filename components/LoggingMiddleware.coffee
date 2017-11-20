@@ -9,6 +9,7 @@ sendEvent = (label, action = 'click', category = 'menu') ->
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'file-text'
   c.inPorts.add 'in',
     datatype: 'all'
   c.outPorts.add 'pass',

@@ -1,3 +1,6 @@
+# @runtime noflo-browser
+# @icon github-alt
+
 INPORT=Token.IN:TOKEN
 INPORT=RepoToPrepare.IN:PREPARE
 INPORT=DoSync.IN:SYNC

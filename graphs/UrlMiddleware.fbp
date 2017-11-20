@@ -1,3 +1,5 @@
+# @runtime noflo-browser
+# @icon slack
 INPORT=Dispatch.IN:IN
 OUTPORT=Passed.OUT:PASS
 OUTPORT=NewActions.OUT:NEW

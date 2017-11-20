@@ -15,6 +15,7 @@ findHandler = (actionParts, routes) ->
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'code-fork'
   c.inPorts.add 'routes',
     datatype: 'string'
     required: true

@@ -3,6 +3,7 @@ debug = require('debug') 'noflo-ui:store'
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'rocket'
   c.inPorts.add 'action',
     datatype: 'all'
   c.inPorts.add 'state',

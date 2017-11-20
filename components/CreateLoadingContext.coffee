@@ -6,6 +6,7 @@ buildContext = ->
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'spinner'
   c.inPorts.add 'start',
     datatype: 'bang'
   c.outPorts.add 'out',

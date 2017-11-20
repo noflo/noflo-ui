@@ -2,6 +2,7 @@ noflo = require 'noflo'
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'indent'
   c.inPorts.add 'context',
     datatype: 'object'
   c.inPorts.add 'key',

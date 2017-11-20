@@ -1,3 +1,6 @@
+# @runtime noflo-browser
+# @icon github
+
 INPORT=Dispatch.IN:IN
 OUTPORT=MergeContext.OUT:CONTEXT
 

@@ -1,3 +1,6 @@
+# @runtime noflo-browser
+# @icon trash
+
 INPORT=Write.DB:DB
 INPORT=Store.IN:STORE
 INPORT=EnsureId.IN:ITEM
