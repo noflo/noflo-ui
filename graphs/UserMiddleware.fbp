@@ -31,6 +31,8 @@ StoreUser REDIRECT -> IN ApplicationRedirectAction
 
 # No grant code in URL, try to load local user data
 CheckQuery PASS -> START LoadUser(ui/LoadUserData)
+# Send cached user information out immediately
+LoadUser USER -> IN UserInfoAction
 # Refresh user information from remote source
 LoadUser USER -> IN RefreshUser(ui/RefreshRemoteUser)
 # If user data hasn't changed pass as-is
