@@ -16,12 +16,10 @@
         <div class="error">{{errorText}}</div>
       </template>
       <form>
-        <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
-          <label>
-            <span>GitHub repository</span>
-            <input type="text" value="{{repo::input}}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required="">
-          </label>
-        </template>
+        <label>
+          <span>GitHub repository</span>
+          <input type="text" value="{{repo::input}}" placeholder="username/my-project" autocapitalize="off" autocorrect="off" required="">
+        </label>
         <label>
           <span>Project label</span>
           <input type="text" value="{{name::input}}" placeholder="My Cool Project" required="">
@@ -43,9 +41,7 @@
       <div class="toolbar">
         <button on-click="send">Save</button>
         <a on-click="close">Cancel</a>
-        <template is="dom-if" if="{{!$NOFLO_OFFLINE_MODE}}">
-          <a href="https://github.com/new" target="_blank">New Repository</a>
-        </template>
+        <a href="https://github.com/new" target="_blank">New Repository</a>
         <button class="delete" on-click="delete">Delete</button>
       </div>
       </div>
@@ -79,10 +75,6 @@
           type: String,
           value: ''
         },
-        token: {
-          type: String,
-          value: ''
-        }
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
@@ -97,26 +89,6 @@
         this.name = this.project.name;
         this.namespace = this.project.namespace || this.project.id;
         this.main = this.project.main;
-      },
-      createProject: function (callback) {
-        var req = new XMLHttpRequest();
-        req.onreadystatechange = function () {
-          if (req.readyState !== 4) {
-            return;
-          }
-          if (req.status !== 200 && req.status !== 201) {
-            return callback(req.responseText);
-          }
-          return callback(null);
-        };
-        var payload = JSON.stringify({
-          repo: this.repo,
-          active: true
-        });
-        req.open('POST', '$NOFLO_REGISTRY_SERVICE/projects', true);
-        req.setRequestHeader('Authorization', 'Bearer ' + this.token);
-        req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-        req.send(payload);
       },
       updateProject: function () {
         this.fire('updated', {
@@ -136,20 +108,7 @@
         if (typeof ga === 'function') {
           ga('send', 'event', 'button', 'click', 'saveProjectProperties');
         }
-        if (!this.repo || this.originalRepo === this.repo) {
-          // No repository changes, save as-is
-          this.updateProject();
-          return;
-        }
-        // Register repository as active
-        this.errorText = '';
-        this.createProject(function (err) {
-          if (err) {
-            this.errorText = err + '\nNote: You must create new repositories manually using [New Repository]';
-            return;
-          }
-          this.updateProject();
-        }.bind(this));
+        this.updateProject();
       },
       delete: function (event) {
         event.preventDefault();
