@@ -29,7 +29,7 @@ exports.getComponent = ->
       'grid-user': 'flowhub-user'
     for key, newKey of deprecated
       val = localStorage.getItem key
-      continue unless key
+      continue unless val
       localStorage.setItem newKey, val
       localStorage.removeItem key
 
