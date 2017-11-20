@@ -240,7 +240,7 @@
         </li>
 
         <template is="dom-repeat" items="[[runtimes]]" as="runtime" filter="filterAvailableRuntimes">
-          <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]" class$="[[_runtimeClass(runtime)]]">
+          <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]">
             <noflo-runtime-card runtime="[[runtime]]"></noflo-runtime-card>
           </li>
         </template>
@@ -248,10 +248,10 @@
     </section>
     <section id="examples">
       <h2>
-        Examples <small>[[examples.length]]</small>
+        Examples
       </h2>
       <ul class="projects">
-        <template is="dom-repeat" items="[[examples]]" as="example">
+        <template is="dom-repeat" items="[[_getExamples(projects, runtimes)]]" as="example">
         <li on-click="openExample" class="example" data-id$="[[example.id]]">
           <h2>[[example.label]]</h2>
           <p>[[example.address]]</p>
@@ -264,12 +264,6 @@
     Polymer({
       is: 'noflo-main',
       properties: {
-        examples: {
-          type: Array,
-          value: function () {
-            return [];
-          }
-        },
         help: { value: null },
         open: {
           type: Boolean,
@@ -300,7 +294,6 @@
           value: function () {
             return [];
           },
-          observer: 'runtimesChanged',
           notify: true
         },
         theme: {
@@ -388,9 +381,6 @@
         }
         return true;
       },
-      runtimesChanged: function () {
-        this.addExamplesForRuntimes();
-      },
       numberOfAvailableRuntimes: function (runtimes) {
         return runtimes.filter(this.filterAvailableRuntimes.bind(this)).length;
       },
@@ -413,37 +403,52 @@
         runtime.seenHoursAgo = Math.floor((now - runtime.seen) / (60 * 60 * 1000));
         return true;
       },
-      addExamplesForRuntimes: function () {
-        // Add examples for all current runtimes
-        var runtimeInfo = require('noflo-ui/runtimeinfo');
-        var runtimeTypesFound = {};
-        var existingGists = this.projects.filter(function (project) {
-          return project.gist ? true : false;
-        }).map(function (project) {
-          return project.gist;
-        });
-        var examplesFound = {};
-        this.examples = [];
-        this.runtimes.forEach(function (runtime) {
-          // If this is the first registry of its type, add examples for it
-          if (!runtimeTypesFound[runtime.type] && runtimeInfo[runtime.type]) {
-            var examples = runtimeInfo[runtime.type].examples;
-            Object.keys(examples).forEach(function (key) {
-              if (examples[key].ssl && location.protocol !== 'https:') {
-                // Skip examples that require SSL when on HTTP
-                return;
-              }
-              if (existingGists.indexOf(examples[key].id) !== -1) {
-                // Skip examples we already have downloaded locally
-                return;
-              }
-              if (!examplesFound[key]) {
-                this.push('examples', examples[key]);
-                examplesFound[key] = true;
-              }
-            }.bind(this));
+      _getExamples(projects, runtimes) {
+        var runtimeTypes = [];
+        // Find examples for current runtime types
+        runtimes.forEach(function (runtime) {
+          if (!runtime.type) {
+            return;
           }
-        }.bind(this));
+          if (runtimeTypes.indexOf(runtime.type) === -1) {
+            runtimeTypes.push(runtime.type);
+          }
+        });
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var examples = [];
+        runtimeTypes.forEach(function (type) {
+          if (!runtimeInfo[type]) {
+            return;
+          }
+          var typeExamples = runtimeInfo[type].examples;
+          if (!typeExamples) {
+            return;
+          }
+          Object.keys(typeExamples).forEach(function (key) {
+            if (typeExamples[key].ssl && location.protocol !== 'https:') {
+              // Skip examples that require SSL when on HTTP
+              return;
+            }
+            examples.push(typeExamples[key]);
+          });
+        });
+        var seen = [];
+        return examples.filter(function (example) {
+          if (seen.indexOf(example.id) !== -1) {
+            return false;
+          }
+          seen.push(example.id);
+          var local = projects.filter(function (project) {
+            if (project.gist === example.id) {
+              return true;
+            }
+            return false;
+          });
+          if (!local.length) {
+            return true;
+          }
+          return false;
+        });
       },
       fetchRuntimes: function (event) {
         if (!this._canFlowhub(this.user)) {
@@ -571,9 +576,6 @@
       },
       _isFree: function (user) {
         return user['flowhub-plan'] === 'free';
-      },
-      _runtimeClass: function (runtime) {
-        return 'runtime ' + runtime.type;
       },
       _planClass: function (user) {
         return 'plan ' + user['flowhub-plan'];
