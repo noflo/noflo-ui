@@ -8,8 +8,8 @@ exports.sortBySeen = (a, b) ->
     return 1
   unless b.seen
     return -1
-  aSeen = if typeof a.seen is 'object' then a.seen else new Date a.seen
-  bSeen = if typeof b.seen is 'object' then b.seen else new Date b.seen
+  a.seen = if typeof a.seen is 'object' then a.seen else new Date a.seen
+  b.seen = if typeof b.seen is 'object' then b.seen else new Date b.seen
   if a.seen > b.seen
     return -1
   if b.seen > a.seen
