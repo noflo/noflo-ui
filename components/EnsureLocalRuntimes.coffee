@@ -7,14 +7,12 @@ ensureOneIframeRuntime = (runtimes) ->
   for runtime in runtimes
     # Check that we don't have the iframe runtime already
     if runtime.protocol is 'iframe' and runtime.address is iframeAddress
-      # Update 'last seen' property
-      runtime.seen = new Date
       return runtime
   iframeRuntime =
     label: 'NoFlo HTML5 environment'
     id: uuid()
     protocol: 'iframe'
-    address: 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+    address: iframeAddress
     type: 'noflo-browser'
     seen: Date.now()
   return iframeRuntime
