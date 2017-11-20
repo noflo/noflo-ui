@@ -5,10 +5,10 @@ describe('NoFlo UI initialization', function() {
   before(function(done) {
     this.timeout(75000);
 
-    if (!localStorage.getItem('grid-token')) {
+    if (!localStorage.getItem('flowhub-token')) {
       // Fake login
-      localStorage.setItem('grid-token', '93c76ec0-d14b-11e3-9c1a-0800200c9a66');
-      localStorage.setItem('grid-user', JSON.stringify({
+      localStorage.setItem('flowhub-token', '93c76ec0-d14b-11e3-9c1a-0800200c9a66');
+      localStorage.setItem('flowhub-user', JSON.stringify({
         uuid: '11eecff0-d14c-11e3-9c1a-0800200c9a66',
         email: 'user@domain.com',
         name: 'Test User',

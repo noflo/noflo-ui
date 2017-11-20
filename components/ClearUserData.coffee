@@ -13,20 +13,14 @@ exports.getComponent = ->
     async: true
   , (ins, groups, out, callback) ->
     keys = [
-      'grid-avatar'
-      'grid-token'
-      'grid-user'
-      'github-token'
-      'github-username'
+      'flowhub-avatar'
       'flowhub-plan'
       'flowhub-theme'
+      'flowhub-token'
+      'flowhub-user'
+      'github-token'
+      'github-username'
     ]
-    if typeof chrome isnt 'undefined' and chrome.storage
-      chrome.storage.sync.remove keys, ->
-        out.send {}
-        do callback
-      return
-
     for key in keys
       localStorage.removeItem key
     newUserInfo = {}

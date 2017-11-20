@@ -123,13 +123,13 @@
         opacity: 0;
       }
     </style>
-    <noflo-main id="main" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
-    <the-graph-editor id="grapheditor" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
+    <noflo-main id="main" theme="[[theme]]" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
+    <the-graph-editor id="grapheditor" theme="[[theme]]" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}"></noflo-library>
     <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}" runtimes="{{ctx.runtimes}}"></noflo-context>
     <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatibleRuntimes}}" graph="{{ctx.graph}}"></noflo-runtime>
-    <noflo-journal id="journal" db="{{ctx.db}}" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
-    <noflo-component-editor id="componenteditor" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
+    <noflo-journal id="journal" db="{{ctx.db}}" theme="[[theme]]" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
+    <noflo-component-editor id="componenteditor" theme="[[theme]]" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-project>
     <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" currentgraph="{{ctx.graph}}"></noflo-packets>
@@ -158,6 +158,12 @@
               nodes: [],
             };
           }
+        },
+        theme: {
+          type: String,
+          value: 'dark',
+          notify: true,
+          observer: 'themeChanged'
         },
         dontAutoHideAlert: {
           type: Boolean,
@@ -189,6 +195,9 @@
         this.fire(event, payload);
       },
       ready: function () {
+        this.$.main.addEventListener('userUpdated', function (event) {
+          this.emitEvent('user:update', event.detail);
+        }.bind(this));
         this.$.main.addEventListener('logout', function (event) {
           this.emitEvent('user:logout', true);
         }.bind(this));
@@ -203,11 +212,6 @@
             url: window.location.href,
             scopes: [event.detail]
           });
-        }.bind(this));
-        this.$.main.addEventListener('theme', function (event) {
-          this.$.grapheditor.theme = event.detail;
-          this.$.componenteditor.theme = event.detail;
-          this.$.journal.theme = event.detail;
         }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.emitEvent('flowhub:projects:fetch', event.detail);
@@ -413,16 +417,8 @@
           }
           this.set('ctx' + ('.' + key), context[key]);
         }
-
-        if (context.user) {
-          this.set('$.main.githubToken', context.user['github-token']);
-          this.set('$.main.gridToken', context.user['grid-token']);
-          this.set('$.main.user', context.user['grid-user']);
-          if (context.user['grid-avatar']) {
-            this.set('$.main.avatar', context.user['grid-avatar']);
-          }
-          this.set('$.main.plan', context.user['flowhub-plan']);
-          this.set('$.project.gridToken', context.user['grid-token']);
+        if (context.user && context.user['flowhub-theme']) {
+          this.theme = context.user['flowhub-theme'];
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
@@ -564,7 +560,13 @@
           }
           this.emitEvent('application:hash', hash);
         }.bind(this));
-      }
+      },
+      themeChanged: function (newTheme, oldTheme) {
+        if (oldTheme) {
+          Polymer.dom(document.body).classList.remove(oldTheme);
+        }
+        Polymer.dom(document.body).classList.add(this.theme);
+      },
     });
   </script>
 </dom-module>

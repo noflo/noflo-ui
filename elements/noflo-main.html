@@ -160,85 +160,76 @@
         text-decoration: none;
       }
     </style>
-    <noflo-account id="mainaccount" user="{{user}}" avatar="{{avatar}}" plan="{{plan}}"></noflo-account>  
-    <div id="loginrequired"></div>
+    <noflo-account id="mainaccount" user="[[user]]" theme="[[theme]]"></noflo-account>
       <section id="projects">
         <h2>Projects
-          <template is="dom-if" if="{{_computeIf(projectList)}}">
-          <small>{{projects.length}}</small>
+          <template is="dom-if" if="[[_isLocalProjects(projectList)]]">
+          <small>[[projects.length]]</small>
           </template>
-          <template is="dom-if" if="{{_computeIf2(projectList)}}">
-          <small>{{numberOfRemoteProjects(remoteProjects)}}</small>
-          </template>
-          <template is="dom-if" if="{{_computeIf2(projectList)}}">
+          <template is="dom-if" if="[[!_isLocalProjects(projectList)]]">
+          <small>[[numberOfRemoteProjects(remoteProjects)]]</small>
           <button on-click="fetchGithub">
             <noflo-icon id="fetchgithub" icon="refresh"></noflo-icon>
           </button>
           </template>
         </h2>
         <ul class="tabs">
-          <template is="dom-if" if="{{_computeIf(projectList)}}">
-            <li class="selected">On device</li>
-            <template is="dom-if" if="{{githubToken}}">
-            <li on-click="openGithub">GitHub</li>
-            </template>
-          </template>
-          <template is="dom-if" if="{{_computeIf2(projectList)}}">
-            <li on-click="openLocal">On device</li>
-            <li class="selected">GitHub</li>
+          <li on-click="openLocal" class$="[[_isSelectedView('local', projectList)]]">On device</li>
+          <template is="dom-if" if="[[_canGithub(user)]]">
+          <li on-click="openGithub" class$="[[_isSelectedView('github', projectList)]]">GitHub</li>
           </template>
         </ul>
         <ul class="projects">
-          <template is="dom-if" if="{{_computeIf(projectList)}}">
+          <template is="dom-if" if="[[_isLocalProjects(projectList)]]">
           <li class="add">
             <h2>New project</h2>
             <button id="newproject" on-click="newProject">Create</button>
           </li>
-          <template is="dom-repeat" items="{{projects}}" as="project">
-            <li on-click="openProject" data-id$="{{project.id}}">
-              <the-graph-thumb graph="{{project.mainGraph}}" width="200" height="120"></the-graph-thumb>
-              <h2>{{project.name}}</h2>
-              <template is="dom-if" if="{{_computeIf3(project)}}">
-              <p><span>{{project.graphs.length}}</span>&nbsp;graphs, <span>{{project.components.length}}</span>&nbsp;components</p>
+          <template is="dom-repeat" items="[[projects]]" as="project">
+            <li on-click="openProject" data-id$="[[project.id]]">
+              <the-graph-thumb graph="[[project.mainGraph]]" width="200" height="120"></the-graph-thumb>
+              <h2>[[project.name]]</h2>
+              <template is="dom-if" if="[[_projectHasContents(project)]]">
+              <p><span>[[project.graphs.length]]</span>&nbsp;graphs, <span>[[project.components.length]]</span>&nbsp;components</p>
               </template>
-              <template is="dom-if" if="{{_computeIf4(project)}}">
-              <button on-click="deleteProject" data-id$="{{project.id}}">
+              <template is="dom-if" if="[[!_projectHasContents(project)]]">
+              <button on-click="deleteProject" data-id$="[[project.id]]">
                 <noflo-icon icon="trash-o"></noflo-icon>
               </button>
               </template>
             </li>
           </template>
           </template>
-          <template is="dom-if" if="{{_computeIf2(projectList)}}">
+          <template is="dom-if" if="[[!_isLocalProjects(projectList)]]">
           <li class="add">
             <h2>Add a repository</h2>
             <button id="newrepository" on-click="newRepository">Add</button>
           </li>
-          <template is="dom-if" if="{{_computeIf5(plan)}}">
-          <li class$="{{_computeClass(plan)}}">
+          <template is="dom-if" if="[[_isFree(user)]]">
+          <li class$="[[_planClass(user)]]">
             <h2>Flowhub free</h2>
             <p>Access only to public GitHub repositories.</p>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github.username::input}}">
-              <input type="hidden" name="password" value="{{gridToken::input}}">
+              <input type="hidden" name="username" value="[[user.github-username]]">
+              <input type="hidden" name="password" value="[[user.flowhub-token]]">
               <input type="submit" id="cta" value="Upgrade">
             </form>
           </li>
           </template>
-          <template is="dom-repeat" items="{{remoteProjects}}" as="project" filter="filterRemoteProjects">
+          <template is="dom-repeat" items="[[remoteProjects]]" as="project" filter="filterRemoteProjects">
             <li class="remote">
-              <h2>{{project.repo}}</h2>
-              <template is="dom-if" if="{{project.private}}">
+              <h2>[[project.repo]]</h2>
+              <template is="dom-if" if="[[project.private]]">
               <p>Private repository</p>
-                <template is="dom-if" if="{{_computeIf6(plan)}}">
-                <button on-click="downloadProject" data-repo$="{{project.repo}}">
+                <template is="dom-if" if="[[!_isFree(user)]]">
+                <button on-click="downloadProject" data-repo$="[[project.repo]]">
                   <noflo-icon icon="cloud-download"></noflo-icon>
                 </button>
                 </template>
               </template>
-              <template is="dom-if" if="{{!project.private}}">
+              <template is="dom-if" if="[[!project.private]]">
               <p>Public repository</p>
-              <button on-click="downloadProject" data-repo$="{{project.repo}}">
+              <button on-click="downloadProject" data-repo$="[[project.repo]]">
                 <noflo-icon icon="cloud-download"></noflo-icon>
               </button>
               </template>
@@ -249,8 +240,8 @@
       </section>
     <section id="runtimes">
       <h2>
-        Runtimes <small><span>{{numberOfAvailableRuntimes(runtimes)}}</span> / <span>{{runtimes.length}}</span></small>
-        <template is="dom-if" if="{{user}}">
+        Runtimes <small><span>[[numberOfAvailableRuntimes(runtimes)]]</span> / <span>[[runtimes.length]]</span></small>
+        <template is="dom-if" if="[[_canFlowhub(user)]]">
         <button on-click="fetchRuntimes">
           <noflo-icon id="fetchruntimes" icon="refresh"></noflo-icon>
         </button>
@@ -262,76 +253,44 @@
           <button on-click="newRuntime">Register</button>
         </li>
 
-        <template is="dom-repeat" items="{{runtimes}}" as="runtime" filter="filterAvailableRuntimes">
-          <li on-click="openRuntime" data-id$="{{runtime.id}}" data-protocol$="{{runtime.protocol}}" class$="{{_computeClass2(runtime)}}">
-            <h2>{{runtime.label}}</h2>
-            <p><span>{{runtime.address}}</span>. Seen <span>{{runtime.seenHoursAgo}}</span>h ago</p>
+        <template is="dom-repeat" items="[[runtimes]]" as="runtime" filter="filterAvailableRuntimes">
+          <li on-click="openRuntime" data-id$="[[runtime.id]]" data-protocol$="[[runtime.protocol]]" class$="[[_runtimeClass(runtime)]]">
+            <h2>[[runtime.label]]</h2>
+            <p><span>[[runtime.address]]</span>. Seen <span>[[runtime.seenHoursAgo]]</span>h ago</p>
           </li>
         </template>
       </ul>
     </section>
-    <div id="loginrequiredChrome">
-      <section id="examples">
-        <h2>
-          Examples <small>{{examples.length}}</small>
-        </h2>
-        <ul class="projects">
-          <template is="dom-repeat" items="{{examples}}" as="example">
-          <li on-click="openExample" class="example" data-id$="{{example.id}}">
-            <h2>{{example.label}}</h2>
-            <p>{{example.address}}</p>
-          </li>
-          </template>
-        </ul>
-      </section>
-    </div>
+    <section id="examples">
+      <h2>
+        Examples <small>[[examples.length]]</small>
+      </h2>
+      <ul class="projects">
+        <template is="dom-repeat" items="[[examples]]" as="example">
+        <li on-click="openExample" class="example" data-id$="[[example.id]]">
+          <h2>[[example.label]]</h2>
+          <p>[[example.address]]</p>
+        </li>
+        </template>
+      </ul>
+    </section>
   </template>
   <script>
     Polymer({
       is: 'noflo-main',
       properties: {
-        avatar: {
-          type: String,
-          value: ''
-        },
-        components: { notify: true },
         examples: {
           type: Array,
           value: function () {
             return [];
           }
         },
-        githubToken: {
-          type: String,
-          value: ''
-        },
-        graphs: { notify: true },
-        gridToken: {
-          type: String,
-          value: '',
-          observer: 'gridTokenChanged'
-        },
         help: { value: null },
-        languages: {
-          type: Array,
-          value: function () {
-            return [
-              'HTML',
-              'JavaScript',
-              'CoffeeScript',
-              'C++'
-            ];
-          }
-        },
         open: {
           type: Boolean,
           value: true,
           notify: true,
           observer: 'openChanged'
-        },
-        plan: {
-          type: String,
-          value: ''
         },
         projectList: {
           type: String,
@@ -360,25 +319,20 @@
           observer: 'runtimesChanged',
           notify: true
         },
-        user: { value: null }
+        theme: {
+          type: String
+        },
+        user: {
+          type: Object,
+          value: function () {
+            return {};
+          },
+          notify: true
+        }
       },
       attached: function () {
         this.openChanged();
-        this.$.mainaccount.addEventListener('login', function (event) {
-          this.fetchRuntimes();
-        }.bind(this));
-        this.$.mainaccount.addEventListener('relogin', function (event) {
-          event.stopPropagation();
-          this.fire('relogin', event.detail);
-        }.bind(this));
-        this.$.mainaccount.addEventListener('theme', function (event) {
-          window.setTimeout(function () {
-            this.fire('theme', event.detail);
-          }.bind(this), 1000);
-        }.bind(this));
         this.help = Polymer.dom(document).querySelector('noflo-help');
-        // Hide projects if not logged in
-        this.gridTokenChanged();
       },
       openChanged: function () {
         if (String(this.open) === 'true') {
@@ -402,7 +356,7 @@
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
-        if (!this.gridToken) {
+        if (!this._canGithub(this.user)) {
           return;
         }
         event.preventDefault();
@@ -448,10 +402,10 @@
         if (event) {
           event.preventDefault();
         }
-        if (!this.githubToken || !this.gridToken) {
+        if (!this._canGithub(this.user)) {
           return;
         }
-        this.fire('fetchRemote', this.gridToken);
+        this.fire('fetchRemote', true);
       },
       numberOfRemoteProjects: function (remoteProjects) {
         return remoteProjects.filter(this.filterRemoteProjects.bind(this)).length;
@@ -530,27 +484,10 @@
         }.bind(this));
       },
       fetchRuntimes: function (event) {
-        if (!this.user) {
+        if (!this._canFlowhub(this.user)) {
           return;
         }
         this.fire('fetchRuntimes', true);
-      },
-      gridTokenChanged: function () {
-        // Hide projects if not logged in
-        // Done like this instead of template if so this.$.fetchruntimes etc work
-        if (this.gridToken) {
-          this.set('$.loginrequired.style.display', 'block');
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            this.set('$.loginrequiredChrome.style.display', 'block');
-          }
-        } else {
-          this.set('$.loginrequired.style.display', 'none');
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            this.set('$.loginrequiredChrome.style.display', 'none');
-          }
-        }
-        this.set('$.mainaccount.gridToken', this.gridToken);
-        setTimeout(this.fetchRuntimes.bind(this), 100);
       },
       openProject: function (event) {
         event.preventDefault();
@@ -649,17 +586,6 @@
         dialog.user = this.user;
         Polymer.dom(document.body).appendChild(dialog);
       },
-      addRuntime: function (event) {
-        event.preventDefault();
-        if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
-          return;
-        }
-        this.runtimeAdd = document.createElement('noflo-add-runtime');
-        Polymer.dom(document.body).appendChild(this.runtimeAdd);
-        this.runtimeAdd.addEventListener('new', function (event) {
-          var runtime = event.detail;
-        }.bind(this));
-      },
       checkProject: function (project) {
         if (project.main) {
           var mainFound = false;
@@ -699,35 +625,41 @@
           }
         }
       },
-      _computeIf: function (projectList) {
+      _isLocalProjects: function (projectList) {
         return projectList === 'local';
       },
-      _computeIf2: function (projectList) {
-        return projectList === 'github';
-      },
-      _computeIf3: function (project) {
+      _projectHasContents: function (project) {
         if (!project || !project.graphs || !project.components) {
           return false;
         }
         return project.graphs.length || project.components.length;
       },
-      _computeIf4: function (project) {
-        if (!project || !project.graphs || !project.components) {
+      _canGithub: function (user) {
+        if (user && user['github-token']) {
           return true;
         }
-        return !project.graphs.length && !project.components.length;
+        return false;
       },
-      _computeIf5: function (plan) {
-        return plan === 'free';
+      _canFlowhub: function (user) {
+        if (user && user['flowhub-token']) {
+          return true;
+        }
+        return false;
       },
-      _computeClass: function (plan) {
-        return 'plan ' + plan;
+      _isSelectedView: function (view, list) {
+        if (list === view) {
+          return 'selected';
+        }
+        return '';
       },
-      _computeIf6: function (plan) {
-        return plan !== 'free';
+      _isFree: function (user) {
+        return user['flowhub-plan'] === 'free';
       },
-      _computeClass2: function (runtime) {
+      _runtimeClass: function (runtime) {
         return 'runtime ' + runtime.type;
+      },
+      _planClass: function (user) {
+        return 'plan ' + user['flowhub-plan'];
       }
     });
   </script>

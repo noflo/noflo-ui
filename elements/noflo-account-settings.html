@@ -37,19 +37,15 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <h1>Account settings for <span>{{user.name}}</span></h1>
+      <h1>Account settings for <span>{{user.flowhub-user.name}}</span></h1>
       <form>
-        <label>
-          User Identifier
-          <input type="text" readonly="" value="{{user.id::input}}">
-        </label>
         <label>
           Flowhub plan
           <div class="plan">
-            You're currently using <strong class$="{{plan}}">{{plan}}</strong> plan.
+            You're currently using <strong class$="{{user.flowhub-plan}}">{{user.flowhub-plan}}</strong> plan.
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github.username::input}}">
-              <input type="hidden" name="password" value="{{gridToken::input}}">
+              <input type="hidden" name="username" value="{{user.github-username::input}}">
+              <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
               <input type="submit" id="cta" value="Manage subscription">
             </form>
           </div>
@@ -57,8 +53,8 @@
         <label>
           Theme
           <select name="type" value="{{theme::input}}">
-            <option value="dark">Lazer</option>
-            <option value="light">Tube</option>
+            <option value="dark" selected$="[[_isSelectedTheme('dark', theme)]]">Lazer</option>
+            <option value="light" selected$="[[_isSelectedTheme('light', theme)]]">Tube</option>
           </select>
         </label>
         <div class="toolbar">
@@ -72,24 +68,16 @@
     Polymer({
       is: 'noflo-account-settings',
       properties: {
-        gridToken: {
-          type: String,
-          value: '',
-          notify: true
-        },
-        newPlan: {
-          type: String,
-          value: ''
-        },
-        plan: { notify: true },
         theme: {
           type: String,
-          value: '',
-          notify: true
         },
         user: {
-          value: null,
-          notify: true
+          type: Object,
+          value: function () {
+            return {}
+          },
+          notify: true,
+          observer: 'userChanged'
         }
       },
       attached: function () {
@@ -102,7 +90,9 @@
       send: function (event) {
         event.preventDefault();
         event.stopPropagation();
-        this.fire('updated', { theme: this.theme });
+        this.fire('updated', {
+          'flowhub-theme': this.theme
+        });
         this.close();
       },
       bgClick: function (event) {
@@ -115,7 +105,13 @@
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
       },
-      listeners: { click: 'close' }
+      listeners: { click: 'close' },
+      userChanged: function () {
+        this.theme = this.user['flowhub-theme'] || 'dark';
+      },
+      _isSelectedTheme: function (theme, current) {
+        return theme === current;
+      }
     });
   </script>
 </dom-module>

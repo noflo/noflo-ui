@@ -14,7 +14,7 @@ exports.getComponent = ->
     out: 'projects'
     async: true
   , (user, groups, out, callback) ->
-    return callback() unless user['grid-token']
+    return callback() unless user['flowhub-token']
     req = new XMLHttpRequest
     req.onreadystatechange = ->
       return unless req.readyState is 4
@@ -28,7 +28,5 @@ exports.getComponent = ->
         return
       callback new Error req.responseText
     req.open 'GET', '$NOFLO_REGISTRY_SERVICE/projects', true
-    req.setRequestHeader 'Authorization', "Bearer #{user['github-token']}"
+    req.setRequestHeader 'Authorization', "Bearer #{user['flowhub-token']}"
     req.send null
-
-  c

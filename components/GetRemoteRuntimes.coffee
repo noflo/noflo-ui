@@ -19,9 +19,9 @@ exports.getComponent = ->
     out: 'runtime'
     async: true
   , (data, groups, out, callback) ->
-    return callback() unless data['grid-token']
+    return callback() unless data['flowhub-token']
     knownRuntimes = c.params.runtimes or []
-    registry.list data['grid-token'],
+    registry.list data['flowhub-token'],
       host: '$NOFLO_REGISTRY_SERVICE'
     , (err, runtimes) ->
       return callback err if err

@@ -292,10 +292,6 @@
           value: null,
           notify: true
         },
-        gridToken: {
-          type: String,
-          value: ''
-        },
         project: {
           value: null,
           notify: true
@@ -377,7 +373,6 @@
           ga('send', 'event', 'button', 'click', 'projectProperties');
         }
         var dialog = document.createElement('noflo-project-inspector');
-        dialog.token = this.gridToken;
         dialog.project = this.project;
         Polymer.dom(document.body).appendChild(dialog);
         dialog.addEventListener('updated', function (event) {

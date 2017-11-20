@@ -27,10 +27,10 @@ describe('Registry Middleware', function() {
       const payload = true;
       const state = {
         user: {
-          'grid-user': {
+          'flowhub-user': {
             id: 'baz'
           },
-          'grid-token': 'abc123'
+          'flowhub-token': 'abc123'
         }
       };
       const runtimes = [
