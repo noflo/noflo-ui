@@ -1,3 +1,5 @@
+# @runtime noflo-browser
+# @icon cogs
 INPORT=Dispatch.IN:IN
 INPORT=FindRuntimes.CONTEXT:CONTEXT
 OUTPORT=MergeContext.OUT:CONTEXT

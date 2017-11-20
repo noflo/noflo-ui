@@ -1,3 +1,4 @@
+# @runtime noflo-browser
 INPORT=Open.NAME:NAME
 OUTPORT=Errors.OUT:ERROR
 OUTPORT=Open.DB:DB

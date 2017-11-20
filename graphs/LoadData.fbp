@@ -1,3 +1,4 @@
+# @runtime noflo-browser
 INPORT=Dispatch.IN:IN
 OUTPORT=LoadProjects.ITEM:PROJECT
 OUTPORT=ConvertGraph.OUT:GRAPH

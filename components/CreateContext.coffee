@@ -11,6 +11,7 @@ buildContext = ->
 
 exports.getComponent = ->
   c = new noflo.Component
+  c.icon = 'file-o'
   c.inPorts.add 'start',
     datatype: 'bang'
   c.outPorts.add 'out',

@@ -35,6 +35,7 @@ exports.getComponent = ->
 
     keys = [
       'flowhub-avatar'
+      'flowhub-debug'
       'flowhub-plan'
       'flowhub-theme'
       'flowhub-token'

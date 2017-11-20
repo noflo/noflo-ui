@@ -1,3 +1,6 @@
+# @runtime noflo-browser
+# @icon code
+
 # Event dispatching
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # Application state updates

@@ -72,24 +72,27 @@ window.addEventListener('WebComponentsReady', function() {
         'component:getsource',
         'component:setsource'
       ];
-      var rt = runtime(null, runtimeOptions, true);
-      rt.start();
-      var ide = 'http://app.flowhub.io';
-      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=webrtc&address='+rt.signaller+'#'+rt.id+'&secret='+secret);
-      var debugLink = document.getElementById('flowhub_debug_url');
-      if (debugLink) {
-        debugLink.href = debugUrl;
-      } else {
-        console.log(debugUrl);
-      }
-      rt.network.on('addnetwork', function () {
-        return callback();
-      });
+      runtimeOptions.label = '$NOFLO_APP_TITLE';
+      runtimeOptions.id = '2b487ea3-287b-43f7-b7eb-806f02b402f9'
+      runtimeOptions.namespace = 'ui';
+      runtimeOptions.repository = 'git+https://github.com/noflo/noflo-ui.git'
+      var debugButton = document.createElement('button');
+      debugButton.id = 'flowhub_debug_url';
+      debugButton.innerText = 'Debug in Flowhub';
+      var ide = 'https://app.flowhub.io';
+      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=opener&address='+window.location.href + '&id=' + runtimeOptions.id);
+      debugButton.setAttribute('href', debugUrl);
+      document.body.appendChild(debugButton);
+      runtime.opener(runtimeOptions, debugButton);
+      return callback();
     });
   };
 
   window.nofloStarted = false;
-  var load = (false) ? loadGraphsDebuggable : loadGraphs;
+  load = loadGraphs;
+  if (String(localStorage.getItem('flowhub-debug')) === 'true') {
+    load = loadGraphsDebuggable;
+  }
   load(function(err) {
     if (err) {
       throw err;
