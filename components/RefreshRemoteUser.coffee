@@ -18,7 +18,7 @@ exports.getComponent = ->
     out: ['pass', 'updated', 'invalid']
     async: true
   , (data, groups, out, callback) ->
-    unless data?['grid-token']
+    unless data?['flowhub-token']
       # If user is not logged in, there is nothing to do
       out.pass.send data
       do callback
@@ -50,7 +50,7 @@ exports.getComponent = ->
         userData = JSON.parse req.responseText
       catch e
         return callback e
-      if JSON.stringify(userData) is JSON.stringify(data['grid-user'])
+      if JSON.stringify(userData) is JSON.stringify(data['flowhub-user'])
         # Local user data is up-to-date
         out.pass.send data
         do callback
@@ -60,5 +60,5 @@ exports.getComponent = ->
       do callback
       return
     req.open 'GET', "$NOFLO_OAUTH_SERVICE_USER$NOFLO_OAUTH_ENDPOINT_USER", true
-    req.setRequestHeader 'Authorization', "Bearer #{data['grid-token']}"
+    req.setRequestHeader 'Authorization', "Bearer #{data['flowhub-token']}"
     req.send null

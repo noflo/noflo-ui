@@ -54,18 +54,18 @@ exports.getComponent = ->
 
     downloadAvatar user.avatar, (err, avatar) ->
       userData =
-        'grid-avatar': avatar
-        'grid-token': githubToken
-        'grid-user': JSON.stringify user
+        'flowhub-avatar': avatar
+        'flowhub-plan': plan
+        'flowhub-token': githubToken
+        'flowhub-user': JSON.stringify user
         'github-token': githubToken
         'github-username': githubUsername
-        'flowhub-plan': plan
 
-      delete userData['grid-avatar'] unless avatar
+      delete userData['flowhub-avatar'] unless avatar
 
       for key, val of userData
         localStorage.setItem key, val
 
-      userData['grid-user'] = user
+      userData['flowhub-user'] = user
       out.user.send userData
       cleanUpUrl out.redirect, callback

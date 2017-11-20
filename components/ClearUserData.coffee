@@ -13,13 +13,12 @@ exports.getComponent = ->
     async: true
   , (ins, groups, out, callback) ->
     keys = [
-      'grid-avatar'
-      'grid-token'
-      'grid-user'
-      'github-token'
-      'github-username'
+      'flowhub-avatar'
       'flowhub-plan'
       'flowhub-theme'
+      'flowhub-user'
+      'github-token'
+      'github-username'
     ]
     for key in keys
       localStorage.removeItem key

@@ -22,20 +22,20 @@ describe('User Middleware', function() {
     let originalUser = null;
     let originalToken = null;
     beforeEach(function() {
-      originalUser = localStorage.getItem('grid-user');
-      originalToken = localStorage.getItem('grid-token');
-      if (originalUser) { localStorage.removeItem('grid-user'); }
-      if (originalToken) { return localStorage.removeItem('grid-token'); }
+      originalUser = localStorage.getItem('flowhub-user');
+      originalToken = localStorage.getItem('flowhub-token');
+      if (originalUser) { localStorage.removeItem('flowhub-user'); }
+      if (originalToken) { return localStorage.removeItem('flowhub-token'); }
     });
     afterEach(function() {
-      if (originalUser) { localStorage.setItem('grid-user', originalUser); }
-      if (originalToken) { return localStorage.setItem('grid-token', originalToken); }
+      if (originalUser) { localStorage.setItem('flowhub-user', originalUser); }
+      if (originalToken) { return localStorage.setItem('flowhub-token', originalToken); }
     });
     describe('without logged in user', () =>
       it('should send out an empty user:info', function(done) {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
-        const check = data => chai.expect(data['grid-user']).to.be.a('null');
+        const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
         mw.receiveAction('user:info', check, done);
         return mw.send(action, payload);
       })
@@ -48,15 +48,15 @@ describe('User Middleware', function() {
       const userToken = 'oh3h8f89h28hyf98yf24g34g';
       let mock = null;
       beforeEach(function() {
-        localStorage.setItem('grid-user', JSON.stringify(userData));
-        localStorage.setItem('grid-token', userToken);
+        localStorage.setItem('flowhub-user', JSON.stringify(userData));
+        localStorage.setItem('flowhub-token', userToken);
         return mock = sinon.fakeServer.create();
       });
       afterEach(() => mock.restore());
       it('should pass it out as-is and send user:info when token is valid', function(done) {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
-        const check = data => chai.expect(data['grid-user']).to.eql(userData);
+        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
         mock.respondWith('GET', "https://api.flowhub.io/user", [
@@ -82,9 +82,9 @@ describe('User Middleware', function() {
         };
         const check = function(data) {
           // Check payload sent to UI
-          chai.expect(data['grid-user']).to.eql(newUserData);
+          chai.expect(data['flowhub-user']).to.eql(newUserData);
           // Check data stored in cache
-          const cached = JSON.parse(localStorage.getItem('grid-user'));
+          const cached = JSON.parse(localStorage.getItem('flowhub-user'));
           return chai.expect(cached).to.eql(newUserData);
         };
         mw.receiveAction('user:info', check, done);
@@ -204,7 +204,7 @@ describe('User Middleware', function() {
       it('should perform a token exchange and update user information without state in URL', function(done) {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}`;
-        const check = data => chai.expect(data['grid-user']).to.eql(userData);
+        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
         mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, req =>
@@ -225,7 +225,7 @@ describe('User Middleware', function() {
       it('should perform a token exchange and update user information with state in URL', function(done) {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
-        const check = data => chai.expect(data['grid-user']).to.eql(userData);
+        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
         mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, req =>
@@ -276,21 +276,21 @@ describe('User Middleware', function() {
       name: 'Henri Bergius'
     };
     before(function() {
-      originalUser = localStorage.getItem('grid-user');
-      return localStorage.setItem('grid-user', JSON.stringify(userData));
+      originalUser = localStorage.getItem('flowhub-user');
+      return localStorage.setItem('flowhub-user', JSON.stringify(userData));
     });
     after(function() {
       if (!originalUser) { return; }
-      return localStorage.setItem('grid-user', originalUser);
+      return localStorage.setItem('flowhub-user', originalUser);
     });
     it('should send empty object as user:info', function(done) {
       const action = 'user:logout';
-      const check = data => chai.expect(data['grid-user']).to.be.a('null');
+      const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
       mw.receiveAction('user:info', check, done);
       return mw.send(action, true);
     });
     it('should have cleared user data', function(done) {
-      chai.expect(localStorage.getItem('grid-user')).to.equal(null);
+      chai.expect(localStorage.getItem('flowhub-user')).to.equal(null);
       return done();
     });
   });

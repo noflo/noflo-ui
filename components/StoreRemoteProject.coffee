@@ -11,7 +11,7 @@ exports.getComponent = ->
   c.process (input, output) ->
     return unless input.hasData 'in'
     data = input.getData 'in'
-    unless data.state?.user?['grid-token']
+    unless data.state?.user?['flowhub-token']
       # User not logged in, public repos may work so pass
       output.sendDone
         out: data
@@ -35,6 +35,6 @@ exports.getComponent = ->
       repo: data.payload.repo
       active: true
     req.open 'POST', '$NOFLO_REGISTRY_SERVICE/projects', true
-    req.setRequestHeader 'Authorization', "Bearer #{data.state.user['grid-token']}"
+    req.setRequestHeader 'Authorization', "Bearer #{data.state.user['flowhub-token']}"
     req.setRequestHeader 'Content-Type', 'application/json;charset=UTF-8'
     req.send payload

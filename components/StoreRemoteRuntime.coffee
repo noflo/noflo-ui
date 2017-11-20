@@ -25,17 +25,17 @@ exports.getComponent = ->
       do callback
       return
 
-    unless c.params?.user?['grid-token']
+    unless c.params?.user?['flowhub-token']
       # User not logged in, persist runtime only locally
       out.send data
       do callback
       return
 
-    data.user = c.params.user['grid-user']?.id
+    data.user = c.params.user['flowhub-user']?.id
     data.secret = null unless data.secret
     rt = new registry.Runtime data,
       host: '$NOFLO_REGISTRY_SERVICE'
-    rt.register c.params.user['grid-token'], (err) ->
+    rt.register c.params.user['flowhub-token'], (err) ->
       return callback err if err
       out.send data
       do callback
