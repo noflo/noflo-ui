@@ -175,17 +175,17 @@
       </div>
     </section>
     <section class="user">
-    <template is="dom-if" if="{{user}}">
-      <div class$="{{plan}}">
-        <template is="dom-if" if="{{avatar}}">
-          <div class="avatar"><img src="{{avatar}}"></div>
+    <template is="dom-if" if="{{user.flowhub-user}}">
+      <div class$="{{user.flowhub-plan}}">
+        <template is="dom-if" if="{{user.flowhub-avatar}}">
+          <div class="avatar"><img src="{{user.flowhub-avatar}}"></div>
         </template>
         <h1>
-          <span>{{user.github.username}}</span>
+          <span>{{user.github-username}}</span>
           <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-            <input type="hidden" name="username" value="{{user.github.username::input}}">
-            <input type="hidden" name="password" value="{{gridToken::input}}">
-            <input type="submit" id="plan" value="{{plan::input}}">
+            <input type="hidden" name="username" value="{{user.github-username::input}}">
+            <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
+            <input type="submit" id="plan" value="{{user.flowhub-plan::input}}">
           </form>
         </h1>
         <div class="toolbar">
@@ -195,14 +195,14 @@
         </div>
       </div>
     </template>
-    <template is="dom-if" if="{{!user}}">
+    <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="toolbar">
         <a id="loginbutton" class="login" on-click="login">Login</a>
       </div>
     </template>
     </section>
     </nav>
-    <template is="dom-if" if="{{user}}">
+    <template is="dom-if" if="{{user.flowhub-user}}">
       <template is="dom-if" if="{{askForScope.length}}">
         <div class="banner">
           To be able to synchronize your GitHub projects, $NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
@@ -219,20 +219,20 @@
           </div>
         </div>
       </template>
-      <template is="dom-if" if="{{_computeIf(askForScope, plan)}}">
+      <template is="dom-if" if="{{_computeIf(askForScope, user.flowhub-plan)}}">
         <div class="banner">
           You're using a free Flowhub plan. Upgrade to Pro to access your private projects on GitHub.
           <div>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github.username::input}}">
-              <input type="hidden" name="password" value="{{gridToken::input}}">
+              <input type="hidden" name="username" value="{{user.github-username::input}}">
+              <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
               <input type="submit" id="cta" value="Upgrade now">
             </form>
           </div>
         </div>
       </template>
     </template>
-    <template is="dom-if" if="{{!user}}">
+    <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="banner">
         Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
       </div>
@@ -263,33 +263,12 @@
               return [];
             }
           },
-          avatar: {
-            type: String,
-            value: '',
-            notify: true
-          },
-          githubToken: {
-            type: String,
-            value: ''
-          },
-          gridToken: {
-            type: String,
-            value: ''
-          },
           help: { value: null },
-          plan: {
-            type: String,
-            value: 'free',
-            notify: true
-          },
-          runtime: { value: null },
-          theme: {
-            type: String,
-            value: 'dark',
-            observer: 'themeChanged'
-          },
           user: {
-            value: null,
+            type: Object,
+            value: function () {
+              return {}
+            },
             notify: true,
             observer: 'userChanged'
           }
@@ -327,38 +306,20 @@
               this.push('askForScope', 'public_repo');
             }
           }
-          this.fire('theme', this.theme);
-        },
-        attached: function () {
-          storage.get('flowhub-theme', function (definedTheme) {
-            if (!definedTheme) {
-              return;
-            }
-            this.theme = definedTheme;
-            this.fire('theme', this.theme);
-          }.bind(this));
-          Polymer.dom(document.body).classList.add(this.theme);
         },
         openSettings: function () {
           if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
             return;
           }
+          if (!this.user['flowhub-user']) {
+            return;
+          }
           var dialog = document.createElement('noflo-account-settings');
-          dialog.gridToken = this.gridToken;
-          dialog.theme = this.theme;
-          dialog.plan = this.plan;
           dialog.user = this.user;
           Polymer.dom(document.body).appendChild(dialog);
           dialog.addEventListener('updated', function (event) {
-            this.theme = event.detail.theme;
-            storage.set('flowhub-theme', this.theme, function () {
-            });
+            this.fire('userUpdated', event.detail);
           }.bind(this));
-        },
-        themeChanged: function (newTheme, oldTheme) {
-          this.fire('theme', this.theme);
-          Polymer.dom(document.body).classList.remove(oldTheme);
-          Polymer.dom(document.body).classList.add(newTheme);
         },
         _computeIf: function (askForScope, plan) {
           return plan === 'free' && !askForScope.length;
