@@ -34,6 +34,9 @@ exports.getComponent = ->
         knownSeen = new Date known.seen
         if rt.runtime.seen.getTime() is knownSeen.getTime() and rt.runtime.address is known.address and rt.runtime.secret is known.secret
           return false
+        # Copy information we only get by connecting
+        rt.runtime.capabilities = known.capabilities
+        rt.runtime.components = known.components
         true
       return callback() unless updateRts.length
       out.beginGroup '$NOFLO_REGISTRY_SERVICE'
