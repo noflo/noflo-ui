@@ -161,7 +161,6 @@
       }
     </style>
     <noflo-account id="mainaccount" user="[[user]]" theme="[[theme]]"></noflo-account>
-    <div id="loginrequired"></div>
       <section id="projects">
         <h2>Projects
           <template is="dom-if" if="[[_isLocalProjects(projectList)]]">
@@ -333,21 +332,7 @@
       },
       attached: function () {
         this.openChanged();
-        this.$.mainaccount.addEventListener('login', function (event) {
-          this.fetchRuntimes();
-        }.bind(this));
-        this.$.mainaccount.addEventListener('relogin', function (event) {
-          event.stopPropagation();
-          this.fire('relogin', event.detail);
-        }.bind(this));
-        this.$.mainaccount.addEventListener('theme', function (event) {
-          window.setTimeout(function () {
-            this.fire('theme', event.detail);
-          }.bind(this), 1000);
-        }.bind(this));
         this.help = Polymer.dom(document).querySelector('noflo-help');
-        // Hide projects if not logged in
-        this.gridTokenChanged();
       },
       openChanged: function () {
         if (String(this.open) === 'true') {
@@ -504,17 +489,6 @@
         }
         this.fire('fetchRuntimes', true);
       },
-      gridTokenChanged: function () {
-        // Hide projects if not logged in
-        // Done like this instead of template if so this.$.fetchruntimes etc work
-        if (this.gridToken) {
-          this.set('$.loginrequired.style.display', 'block');
-        } else {
-          this.set('$.loginrequired.style.display', 'none');
-        }
-        this.set('$.mainaccount.gridToken', this.gridToken);
-        setTimeout(this.fetchRuntimes.bind(this), 100);
-      },
       openProject: function (event) {
         event.preventDefault();
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
@@ -611,17 +585,6 @@
         }.bind(this));
         dialog.user = this.user;
         Polymer.dom(document.body).appendChild(dialog);
-      },
-      addRuntime: function (event) {
-        event.preventDefault();
-        if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
-          return;
-        }
-        this.runtimeAdd = document.createElement('noflo-add-runtime');
-        Polymer.dom(document.body).appendChild(this.runtimeAdd);
-        this.runtimeAdd.addEventListener('new', function (event) {
-          var runtime = event.detail;
-        }.bind(this));
       },
       checkProject: function (project) {
         if (project.main) {
