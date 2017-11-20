@@ -21,12 +21,6 @@ exports.getComponent = ->
       'flowhub-plan'
       'flowhub-theme'
     ]
-    if typeof chrome isnt 'undefined' and chrome.storage
-      chrome.storage.sync.remove keys, ->
-        out.send {}
-        do callback
-      return
-
     for key in keys
       localStorage.removeItem key
     newUserInfo = {}

@@ -254,22 +254,6 @@
           localStorage.removeItem(key);
         }
       };
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        // Chrome App, use their storage API
-        storage.set = function (key, value, callback) {
-          var values = {};
-          values[key] = value;
-          chrome.storage.sync.set(values, callback);
-        };
-        storage.get = function (key, callback) {
-          chrome.storage.sync.get(key, function (items) {
-            callback(items[key]);
-          });
-        };
-        storage.remove = function (key) {
-          chrome.storage.sync.remove(key);
-        };
-      }
       Polymer({
         is: 'noflo-account',
         properties: {

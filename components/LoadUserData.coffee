@@ -31,14 +31,6 @@ exports.getComponent = ->
       'flowhub-plan'
       'flowhub-theme'
     ]
-    if typeof chrome isnt 'undefined' and chrome.storage
-      chrome.storage.sync.get keys, (items) ->
-        validate items, (err, valid) ->
-          return callback err if err
-          out.send valid
-          do callback
-      return
-
     items = {}
     for key in keys
       items[key] = localStorage.getItem key

@@ -63,13 +63,6 @@ exports.getComponent = ->
 
       delete userData['grid-avatar'] unless avatar
 
-      if typeof chrome isnt 'undefined' and chrome.storage
-        chrome.storage.sync.set userData, ->
-          userData['grid-user'] = user
-          out.user.send userData
-          cleanUpUrl out.redirect, callback
-        return
-
       for key, val of userData
         localStorage.setItem key, val
 

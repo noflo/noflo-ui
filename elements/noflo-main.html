@@ -270,21 +270,19 @@
         </template>
       </ul>
     </section>
-    <div id="loginrequiredChrome">
-      <section id="examples">
-        <h2>
-          Examples <small>{{examples.length}}</small>
-        </h2>
-        <ul class="projects">
-          <template is="dom-repeat" items="{{examples}}" as="example">
-          <li on-click="openExample" class="example" data-id$="{{example.id}}">
-            <h2>{{example.label}}</h2>
-            <p>{{example.address}}</p>
-          </li>
-          </template>
-        </ul>
-      </section>
-    </div>
+    <section id="examples">
+      <h2>
+        Examples <small>{{examples.length}}</small>
+      </h2>
+      <ul class="projects">
+        <template is="dom-repeat" items="{{examples}}" as="example">
+        <li on-click="openExample" class="example" data-id$="{{example.id}}">
+          <h2>{{example.label}}</h2>
+          <p>{{example.address}}</p>
+        </li>
+        </template>
+      </ul>
+    </section>
   </template>
   <script>
     Polymer({
@@ -540,14 +538,8 @@
         // Done like this instead of template if so this.$.fetchruntimes etc work
         if (this.gridToken) {
           this.set('$.loginrequired.style.display', 'block');
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            this.set('$.loginrequiredChrome.style.display', 'block');
-          }
         } else {
           this.set('$.loginrequired.style.display', 'none');
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            this.set('$.loginrequiredChrome.style.display', 'none');
-          }
         }
         this.set('$.mainaccount.gridToken', this.gridToken);
         setTimeout(this.fetchRuntimes.bind(this), 100);
