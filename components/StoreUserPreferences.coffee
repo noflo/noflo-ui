@@ -2,6 +2,7 @@ noflo = require 'noflo'
 
 validPreferences = [
   'flowhub-theme'
+  'flowhub-debug'
 ]
 
 exports.getComponent = ->

@@ -57,6 +57,13 @@
             <option value="light" selected$="[[_isSelectedTheme('light', theme)]]">Tube</option>
           </select>
         </label>
+        <label>
+          Debug $NOFLO_APP_TITLE in Flowhub (requires reload)
+          <select name="type" value="{{debug::input}}">
+            <option value="false" selected$="[[_isSelectedDebug('false', debug)]]">Disabled</option>
+            <option value="true" selected$="[[_isSelectedDebug('true', debug)]]">Enabled</option>
+          </select>
+        </label>
         <div class="toolbar">
           <button on-click="send">Save</button>
           <a on-click="close">Cancel</a>
@@ -70,6 +77,10 @@
       properties: {
         theme: {
           type: String,
+        },
+        debug: {
+          type: String,
+          value: 'false'
         },
         user: {
           type: Object,
@@ -91,7 +102,8 @@
         event.preventDefault();
         event.stopPropagation();
         this.fire('updated', {
-          'flowhub-theme': this.theme
+          'flowhub-theme': this.theme,
+          'flowhub-debug': this.debug
         });
         this.close();
       },
@@ -108,9 +120,13 @@
       listeners: { click: 'close' },
       userChanged: function () {
         this.theme = this.user['flowhub-theme'] || 'dark';
+        this.debug = this.user['flowhub-debug'] || 'false';
       },
       _isSelectedTheme: function (theme, current) {
         return theme === current;
+      },
+      _isSelectedDebug: function (value, current) {
+        return value === current;
       }
     });
   </script>
