@@ -1,6 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.24.0 (git master)
+
+New features:
+
+* It is now possible to delete runtimes and projects directly from the main screen
+
+Bugfixes:
+
+* Examples list now updates automatically as runtimes and projects are added or removed
+
 ## 0.23.1 (2017 November 17)
 
 Bugfixes:
