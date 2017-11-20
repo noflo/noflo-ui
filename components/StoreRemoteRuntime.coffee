@@ -24,6 +24,11 @@ exports.getComponent = ->
       out.send data
       do callback
       return
+    if data.protocol is 'iframe' and data.address is 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+      # No need to persist the default NoFlo runtime in registry.
+      out.send data
+      do callback
+      return
 
     unless c.params?.user?['flowhub-token']
       # User not logged in, persist runtime only locally
