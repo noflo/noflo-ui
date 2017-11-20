@@ -69,11 +69,6 @@
         border-bottom: 1px var(--noflo-ui-border) solid;
 
       }
-      #breadcrumb a#parentlink {
-        color: var(--noflo-ui-text-highlight);
-        text-decoration: none;
-        padding-right: 9px;
-      }
       #breadcrumb noflo-icon.fa-search {
         position: absolute;
         line-height: 72px;
@@ -81,6 +76,13 @@
         font-size: 15px;
         color: var(--noflo-ui-text-highlight);
         cursor: text;
+      }
+      #breadcrumb #parentlink {
+        line-height: 72px;
+        display: inline-block;
+        height: 72px;
+        font-size: 15px;
+        color: var(--noflo-ui-text-highlight);
       }
       #clear,
       #breadcrumb #graphinspector,
@@ -156,33 +158,33 @@
       }
     </style>
     <div id="breadcrumb" on-click="focus">
-      <template is="dom-if" if="{{_computeIf(component, readonly)}}">
+      <template is="dom-if" if="{{_canSearch(component, readonly)}}">
       <noflo-icon class="fa-search" icon="search"></noflo-icon>
       </template>
       <h1 title="Search">
-        <template is="dom-if" if="{{_computeIf2(parentPath, project)}}">
-        <a id="parentlink" title="Back" href$="{{_computeHref(parentPath, project)}}">
+        <template is="dom-if" if="{{_canGoBack(project, graphs, component)}}">
+        <button id="parentlink" title="Back" on-click="goBack">
           <noflo-icon icon="angle-left"></noflo-icon>
-        </a>
+        </button>
         </template>
-        <template is="dom-if" if="{{_computeIf3(component, graph)}}">
+        <template is="dom-if" if="{{_isGraph(component, graph)}}">
         <span>{{graph.name}}</span>
         </template>
-        <template is="dom-if" if="{{_computeIf4(component)}}">
+        <template is="dom-if" if="{{_isComponent(component)}}">
         <span>{{component.name}}</span>
         </template>
       </h1>
-      <template is="dom-if" if="{{_computeIf5(component, graph, readonly)}}">
+      <template is="dom-if" if="{{_canInspectGraph(component, graph, readonly)}}">
       <button on-click="showGraphInspector" id="graphinspector" title="Graph properties">
         <noflo-icon icon="cog"></noflo-icon>
       </button>
       </template>
-      <template is="dom-if" if="{{_computeIf6(component, graph, readonly)}}">
+      <template is="dom-if" if="{{_canInspectComponent(component, graph, readonly)}}">
       <button on-click="showComponentInspector" id="componentinspector" title="Component properties">
         <noflo-icon icon="cog"></noflo-icon>
       </button>
       </template>
-      <template is="dom-if" if="{{_computeIf7(component, graph, readonly)}}">
+      <template is="dom-if" if="{{_isReadOnly(component, graph, readonly)}}">
       <button title="Read-only" id="readonly">
         <noflo-icon icon="lock"></noflo-icon>
       </button>
@@ -219,8 +221,10 @@
         menuCard: { value: null },
         panel: { value: null },
         parentPath: {
-          type: String,
-          value: ''
+          type: Array,
+          value: function () {
+            return [];
+          }
         },
         project: { value: null },
         readonly: { notify: true },
@@ -263,10 +267,8 @@
           this.graphsChanged();
           return;
         }
-        this.updateParentPath();
       },
       graphsChanged: function () {
-        this.updateParentPath();
         if (this.graphInspector) {
           if (Polymer.dom(this.graphInspector).parentNode) {
             Polymer.dom(Polymer.dom(this.graphInspector).parentNode).removeChild(this.graphInspector);
@@ -275,27 +277,46 @@
         }
         this.blur();
       },
-      updateParentPath: function () {
-        this.parentPath = '';
+      getParentPath: function (graphs, component) {
+        var parentPath = [];
         if (!this.project) {
-          return;
+          return parentPath;
         }
-        this.graphs.forEach(function (graph, idx) {
-          if (this.graph && idx >= this.graphs.length - 1) {
+        var findNode = function (component, graph) {
+          var matching = graph.nodes.filter(function (node) {
+            if (node.component === component) {
+              // Direct match
+              return true;
+            }
+            if (!this.project) {
+              return false;
+            }
+            if (node.component === this.project.namespace + '/' + component) {
+              return true;
+            }
+            if (node.component === this.project.id + '/' + component) {
+              return true;
+            }
+            return false;
+          }.bind(this));
+          return matching[0];
+        }.bind(this);
+        graphs.forEach(function (graph, idx) {
+          if (!component && idx >= graphs.length - 1) {
             return;
           }
           if (idx === 0) {
-            this.parentPath += '/' + encodeURIComponent(graph.properties.id);
-          } else {
-            var previous = this.graphs[idx - 1];
-            var node = null;
-            previous.nodes.forEach(function (node) {
-              if (node.component === this.project.id + '/' + graph.name || node.component === this.project.id + '/' + graph.properties.id || node.component === graph.name || node.component === graph.properties.id) {
-                this.parentPath += '/' + encodeURIComponent(node.id);
-              }
-            }.bind(this));
+            parentPath.push(graph.properties.id);
+            return;
           }
-        }.bind(this));
+          var previous = graphs[idx - 1];
+          var node = findNode(graph.name, previous);
+          if (!node) {
+            return;
+          }
+          parentPath.push(node.id);
+        });
+        return parentPath;
       },
       libraryResults: function (results) {
         this.set('searchLibraryResults', []);
@@ -439,6 +460,16 @@
         Polymer.dom(this.resultsCard).appendChild(results);
         this.resultsCard.addTo(this.panel, true);
       },
+      goBack: function (event) {
+        if (event) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
+        var path = this.getParentPath(this.graphs, this.component);
+        path.unshift(this.project.id);
+        path.unshift('project');
+        this.fire('hash', path);
+      },
       showGraphInspector: function (event) {
         if (event) {
           event.stopPropagation();
@@ -484,29 +515,32 @@
         }.bind(this));
         Polymer.dom(document.body).appendChild(this.componentInspector);
       },
-      _computeIf: function (component, readonly) {
+      _canSearch: function (component, readonly) {
         return !readonly && (!component || !component.name);
       },
-      _computeIf2: function (parentPath, project) {
-        return project && parentPath;
+      _canGoBack: function (project, graphs, component) {
+        if (!project) {
+          return false;
+        }
+        if (graphs.length > 1 || (graphs.length && component)) {
+          return true;
+        }
+        return false;
       },
-      _computeIf3: function (component, graph) {
+      _isGraph: function (component, graph) {
         return graph && (!component || !component.name);
       },
-      _computeIf4: function (component) {
+      _isComponent: function (component) {
         return component && component.name;
       },
-      _computeIf5: function (component, graph, readonly) {
+      _canInspectGraph: function (component, graph, readonly) {
         return !readonly && graph && (!component || !component.name);
       },
-      _computeIf6: function (component, graph, readonly) {
+      _canInspectComponent: function (component, graph, readonly) {
         return !readonly && !graph && component && component.name;
       },
-      _computeIf7: function (component, graph, readonly) {
+      _isReadOnly: function (component, graph, readonly) {
         return readonly || component && component.readonly || graph && graph.properties.readonly;
-      },
-      _computeHref: function (parentPath, project) {
-        return '#project/' + project.id + parentPath;
       }
     });
   </script>

@@ -333,6 +333,9 @@
         this.$.search.addEventListener('search:graph', function (event) {
           this.emitEvent('context:search_graph', event.detail);
         }.bind(this));
+        this.$.search.addEventListener('hash', function (event) {
+          this.emitEvent('application:hash', event.detail);
+        }.bind(this));
         this.$.library.addEventListener('result', function (event) {
           this.emitEvent('context:search_library_result', { searchLibraryResult: event.detail });
         }.bind(this));
