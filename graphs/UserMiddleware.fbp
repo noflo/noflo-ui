@@ -8,6 +8,7 @@ OUTPORT=NewActions.OUT:NEW
 'user:info' -> ACTION UserInfoAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'user:error' -> ACTION UserErrorAction(ui/SetAction) OUT -> IN NewActions
 'application:redirect' -> ACTION ApplicationRedirectAction(ui/SetAction) OUT -> IN NewActions
+'flowhub:runtimes:fetch' -> ACTION RegistryRuntimesFetch(ui/SetAction) OUT -> IN NewActions
 'user:logout' -> ACTION UserLogoutAction(ui/SetAction) OUT -> IN NewActions
 
 # Start action handling
@@ -22,6 +23,8 @@ ExchangeToken ERROR -> IN UserErrorAction
 GetRemoteUser USER -> USER StoreUser(ui/StoreUser)
 GetRemoteUser ERROR -> IN UserErrorAction
 StoreUser USER -> IN UserInfoAction
+# Fetch runtimes when user changes
+StoreUser USER -> IN RegistryRuntimesFetch
 # In some cases we need to clean up URL after user has been persisted by redirecting
 StoreUser REDIRECT -> IN ApplicationRedirectAction
 
