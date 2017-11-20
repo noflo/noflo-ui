@@ -182,6 +182,13 @@ exports.getComponent = ->
         collections.addToList state.runtimes, data.payload, collections.sortBySeen
         out.out.send state
         do callback
+      when 'storage:removed:runtime'
+        state = {}
+        state.runtimes = data.state.runtimes or []
+        collections.removeFromList state.runtimes,
+          id: data.payload
+        out.out.send state
+        do callback
       when 'storage:error'
         state =
           state: 'error'
