@@ -72,6 +72,7 @@ window.addEventListener('WebComponentsReady', function() {
         'component:getsource',
         'component:setsource'
       ];
+      runtimeOptions.label = '$NOFLO_APP_TITLE';
       runtimeOptions.id = '2b487ea3-287b-43f7-b7eb-806f02b402f9'
       runtimeOptions.namespace = 'ui';
       runtimeOptions.repository = 'git+https://github.com/noflo/noflo-ui.git'
@@ -88,7 +89,10 @@ window.addEventListener('WebComponentsReady', function() {
   };
 
   window.nofloStarted = false;
-  var load = (false) ? loadGraphsDebuggable : loadGraphs;
+  load = loadGraphs;
+  if (String(localStorage.getItem('flowhub-debug')) === 'true') {
+    load = loadGraphsDebuggable;
+  }
   load(function(err) {
     if (err) {
       throw err;
