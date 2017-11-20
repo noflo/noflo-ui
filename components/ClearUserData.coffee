@@ -16,6 +16,7 @@ exports.getComponent = ->
       'flowhub-avatar'
       'flowhub-plan'
       'flowhub-theme'
+      'flowhub-token'
       'flowhub-user'
       'github-token'
       'github-username'
