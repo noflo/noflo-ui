@@ -204,11 +204,6 @@
             scopes: [event.detail]
           });
         }.bind(this));
-        this.$.main.addEventListener('theme', function (event) {
-          this.$.grapheditor.theme = event.detail;
-          this.$.componenteditor.theme = event.detail;
-          this.$.journal.theme = event.detail;
-        }.bind(this));
         this.$.main.addEventListener('fetchRemote', function (event) {
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
@@ -413,16 +408,16 @@
           }
           this.set('ctx' + ('.' + key), context[key]);
         }
-
-        if (context.user) {
-          this.set('$.main.githubToken', context.user['github-token']);
-          this.set('$.main.gridToken', context.user['grid-token']);
-          this.set('$.main.user', context.user['grid-user']);
-          if (context.user['grid-avatar']) {
-            this.set('$.main.avatar', context.user['grid-avatar']);
+        if (context.user && context.user['flowhub-theme']) {
+          this.$.grapheditor.theme = event.detail;
+          this.$.componenteditor.theme = event.detail;
+          this.$.journal.theme = event.detail;
+          if (Polymer.dom(document.body).classList.contains(context.user['flowhub-theme'])) {
+            return;
           }
-          this.set('$.main.plan', context.user['flowhub-plan']);
-          this.set('$.project.gridToken', context.user['grid-token']);
+          Polymer.dom(document.body).classList.remove('dark');
+          Polymer.dom(document.body).classList.remove('light');
+          Polymer.dom(document.body).classList.add(this.theme);
         }
         if (context.searchLibraryResult) {
           this.$.search.libraryResults(this.ctx.searchLibraryResult);
