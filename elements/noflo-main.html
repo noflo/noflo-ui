@@ -1,8 +1,8 @@
-<link rel="import" href="the-graph-thumb.html">
 <link rel="import" href="noflo-account.html">
 <link rel="import" href="noflo-new-project.html">
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
+<link rel="import" href="noflo-project-card.html">
 <link rel="import" href="noflo-runtime-card.html">
 <link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
@@ -98,12 +98,6 @@
       ul.projects li.remote {
         cursor: default;
       }
-      ul.projects li the-graph-thumb {
-        display: block;
-        position: absolute;
-        left: 100px;
-        top: -20px;
-      }
       section button,
       section #cta {
         background-color: transparent;
@@ -188,16 +182,7 @@
           </li>
           <template is="dom-repeat" items="[[projects]]" as="project">
             <li on-click="openProject" data-id$="[[project.id]]">
-              <the-graph-thumb graph="[[project.mainGraph]]" width="200" height="120"></the-graph-thumb>
-              <h2>[[project.name]]</h2>
-              <template is="dom-if" if="[[_projectHasContents(project)]]">
-              <p><span>[[project.graphs.length]]</span>&nbsp;graphs, <span>[[project.components.length]]</span>&nbsp;components</p>
-              </template>
-              <template is="dom-if" if="[[!_projectHasContents(project)]]">
-              <button on-click="deleteProject" data-id$="[[project.id]]">
-                <noflo-icon icon="trash-o"></noflo-icon>
-              </button>
-              </template>
+              <noflo-project-card project="[[project]]"></noflo-project-card>
             </li>
           </template>
           </template>
@@ -301,8 +286,7 @@
           value: function () {
             return [];
           },
-          notify: true,
-          observer: 'projectsChanged'
+          notify: true
         },
         remoteProjects: {
           type: Array,
@@ -367,24 +351,6 @@
           }.bind(this), 1);
         }
       },
-      deleteProject: function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'deleteProject');
-        }
-        var id = event.currentTarget.getAttribute('data-id');
-        var matches = this.projects.filter(function (proj) {
-          if (proj.id === id) {
-            return true;
-          }
-          return false;
-        });
-        if (!matches.length) {
-          return;
-        }
-        this.fire('deleteProject', matches[0]);
-      },
       downloadProject: function (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -421,10 +387,6 @@
           }
         }
         return true;
-      },
-      projectsChanged: function () {
-        // Add projects to local
-        this.projects.forEach(this.checkProject.bind(this));
       },
       runtimesChanged: function () {
         this.addExamplesForRuntimes();
@@ -586,53 +548,8 @@
         dialog.user = this.user;
         Polymer.dom(document.body).appendChild(dialog);
       },
-      checkProject: function (project) {
-        if (project.main) {
-          var mainFound = false;
-          project.graphs.forEach(function (graph) {
-            if (graph.properties.id === project.main) {
-              mainFound = true;
-            }
-          });
-          if (!mainFound) {
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', null);
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', null);
-          }
-        }
-        if (!project.main) {
-          if (!project.graphs.length) {
-            // No graphs, wait for them to arrive from GitHub
-            var observer = new ArrayObserver(project.graphs);
-            observer.open(function () {
-              observer.close();
-              setTimeout(function () {
-                this.checkProject(project);
-              }.bind(this), 5);
-            }.bind(this));
-            return;
-          }
-          // Find a suitable main graph
-          project.graphs.forEach(function (graph) {
-            if (graph.name === 'main') {
-              this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', graph.properties.id);
-              this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', graph);
-            }
-          }.bind(this));
-          if (!project.main && project.graphs.length) {
-            var main = project.graphs[0];
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.main', main.properties.id);
-            this.set('projects' + ('.' + this.projects.indexOf(project)) + '.mainGraph', main);
-          }
-        }
-      },
       _isLocalProjects: function (projectList) {
         return projectList === 'local';
-      },
-      _projectHasContents: function (project) {
-        if (!project || !project.graphs || !project.components) {
-          return false;
-        }
-        return project.graphs.length || project.components.length;
       },
       _canGithub: function (user) {
         if (user && user['github-token']) {
