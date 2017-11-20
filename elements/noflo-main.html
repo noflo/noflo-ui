@@ -444,11 +444,11 @@
           // Can't use opener runtimes if opener is not defined
           return false;
         }
-        runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
-        if (runtime.seenHoursAgo / 24 > 31) {
-          // We haven't seen this runtime in over a month, don't show it
-          return false;
+        if (typeof runtime.seen !== 'object') {
+          runtime.seen = new Date(runtime.seen);
         }
+        var now = new Date();
+        runtime.seenHoursAgo = Math.floor((now - runtime.seen) / (60 * 60 * 1000));
         return true;
       },
       addExamplesForRuntimes: function () {
