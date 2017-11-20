@@ -6,6 +6,7 @@ NoFlo UI ChangeLog
 New features:
 
 * It is now possible to delete runtimes and projects directly from the main screen
+* Users can enable "debug mode" and edit noflo-ui live in Flowhub
 
 Bugfixes:
 
