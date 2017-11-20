@@ -256,3 +256,17 @@ div.error {
   background-color: hsla(190, 100%, 20%, 0.2);
   color: hsl(190, 100%, 65%);
 }
+
+#flowhub_debug_url {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+  font-size; 18px;
+  padding: 9px;
+  z-index: 10;
+  background-color: hsla(190, 100%, 20%, 0.2);
+  color: var(--noflo-ui-text);
+  border-left: 1px solid var(--noflo-ui-background);
+  border-top: 1px solid var(--noflo-ui-background);
+  cursor: pointer;
+}
