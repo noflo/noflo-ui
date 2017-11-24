@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.24.1 (git master)
+
+Bugfixes:
+
+* Fixed opening already-downloaded projects via GitHub URL even if they don't have a main graph defined
+
 ## 0.24.0 (2017 November 24)
 
 New features:

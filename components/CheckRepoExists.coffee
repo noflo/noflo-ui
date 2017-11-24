@@ -1,6 +1,7 @@
 noflo = require 'noflo'
 path = require 'path'
 uuid = require 'uuid'
+projects = require '../src/projects'
 
 payloadToProject = (data) ->
   repoParts = data.payload.repo.split '/'
@@ -73,22 +74,27 @@ exports.getComponent = ->
         new: payloadToProject data
       return
 
-    hash = [
-      'project'
-      existing[0].id
-      existing[0].main
-    ]
+    projects.getProjectHash existing[0], (err, hash) ->
+      unless hash
+        hash = [
+          'project'
+          existing[0].id
+          existing[0].main
+        ]
 
-    if data.payload.component
-      # Particular component requested
-      component = findComponent data.payload.component, existing[0]
-      if component
-        hash[2] = 'component'
-        hash[3] = component
-    if data.payload.graph
-      # Particular graph requested
-      graph = findGraph data.payload.graph, existing[0]
-      hash[2] = graph if graph
+      if data.payload.component
+        # Particular component requested
+        component = findComponent data.payload.component, existing[0]
+        if component
+          hash[2] = 'component'
+          hash[3] = component
+      if data.payload.graph
+        # Particular graph requested
+        graph = findGraph data.payload.graph, existing[0]
+        if graph
+          delete hash[3]
+          hash[2] = graph
 
-    output.sendDone
-      existing: hash
+      output.sendDone
+        existing: hash
+    return
