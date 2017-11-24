@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.24.2 (2017 November 24)
+
+New features:
+
+* If project doesn't have graphs set to be main either by name or metadata, the first graph will be selected as default `main` when downloading from GitHub
+
 ## 0.24.1 (2017 November 24)
 
 Bugfixes:
