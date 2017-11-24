@@ -210,17 +210,17 @@
           <div>
             Grant access to:
             <template is="dom-repeat" items="{{askForScope}}" as="scope">
-              <template is="dom-if" if="{{_computeIf2(scope)}}">
+              <template is="dom-if" if="{{_ifPublicScope(scope)}}">
                 <button on-click="relogin" data-scope$="{{scope}}">Public repositories only</button>
               </template>
-              <template is="dom-if" if="{{_computeIf3(scope)}}">
+              <template is="dom-if" if="{{_ifPrivateScope(scope)}}">
                 <button on-click="relogin" data-scope$="{{scope}}">Public and private repositories</button>
               </template>
             </template>
           </div>
         </div>
       </template>
-      <template is="dom-if" if="{{_computeIf(askForScope, user.flowhub-plan)}}">
+      <template is="dom-if" if="{{_ifFreePlan(askForScope, user.flowhub-plan)}}">
         <div class="banner">
           You're using a free Flowhub plan. Upgrade to Pro to access your private projects on GitHub.
           <div>
@@ -312,13 +312,13 @@
             this.fire('userUpdated', event.detail);
           }.bind(this));
         },
-        _computeIf: function (askForScope, plan) {
+        _ifFreePlan: function (askForScope, plan) {
           return plan === 'free' && !askForScope.length;
         },
-        _computeIf2: function (scope) {
+        _ifPublicScope: function (scope) {
           return scope === 'public_repo';
         },
-        _computeIf3: function (scope) {
+        _ifPrivateScope: function (scope) {
           return scope === 'repo';
         }
       });
