@@ -8,7 +8,8 @@ exports.findMainGraph = (project) ->
   for graph in project.graphs
     return graph.properties.id if graph.name is 'main'
     return graph.properties.id if graph.properties.main
-  return null
+  # No suitable graph found, use first
+  return project.graphs[0].properties.id
 
 exports.getProjectHash = (project, callback) ->
   unless project.graphs.length
