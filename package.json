@@ -31,7 +31,7 @@
     "noflo-graph": "~0.3.0",
     "noflo-indexeddb": "~0.3.1",
     "noflo-interaction": "~0.3.0",
-    "noflo-objects": "~0.4.0",
+    "noflo-objects": "~0.5.0",
     "noflo-polymer": "~2.0.1",
     "noflo-runtime": "~0.6.0",
     "noflo-runtime-base": "^0.9.2",
