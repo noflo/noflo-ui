@@ -3,6 +3,7 @@
 <link rel="import" href="noflo-new-repository.html">
 <link rel="import" href="noflo-new-runtime.html">
 <link rel="import" href="noflo-project-card.html">
+<link rel="import" href="noflo-repo-card.html">
 <link rel="import" href="noflo-runtime-card.html">
 <link rel="import" href="noflo-icon.html">
 <dom-module id="noflo-main">
@@ -203,22 +204,8 @@
           </li>
           </template>
           <template is="dom-repeat" items="[[remoteProjects]]" as="project" filter="filterRemoteProjects">
-            <li class="remote">
-              <h2>[[project.repo]]</h2>
-              <template is="dom-if" if="[[project.private]]">
-              <p>Private repository</p>
-                <template is="dom-if" if="[[!_isFree(user)]]">
-                <button on-click="downloadProject" data-repo$="[[project.repo]]">
-                  <noflo-icon icon="cloud-download"></noflo-icon>
-                </button>
-                </template>
-              </template>
-              <template is="dom-if" if="[[!project.private]]">
-              <p>Public repository</p>
-              <button on-click="downloadProject" data-repo$="[[project.repo]]">
-                <noflo-icon icon="cloud-download"></noflo-icon>
-              </button>
-              </template>
+            <li class="remote" on-click="downloadProject" data-repo$="[[project.repo]]">
+              <noflo-repo-card project="[[project]]"></noflo-repo-card>
             </li>
           </template>
           </template>

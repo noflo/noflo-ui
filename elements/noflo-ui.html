@@ -318,6 +318,13 @@
         this.$.main.addEventListener('deleteRuntime', function (event) {
           this.emitEvent('flowhub:runtimes:remove', event.detail);
         }.bind(this));
+        this.$.main.addEventListener('deleteRepo', function (event) {
+          this.emitEvent('flowhub:projects:remove', event.detail);
+          if (this.ctx.remoteProjects) {
+            // Since remote projects are not updated via normal flow, we can directly remove it from view
+            this.splice('ctx.remoteProjects', this.ctx.remoteProjects.indexOf(event.detail), 1);
+          }
+        }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
           this.emitEvent('runtime:sendComponent', event.detail);
