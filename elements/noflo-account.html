@@ -148,6 +148,7 @@
         margin-top: 18px;
       }
       div.banner button,
+      div.banner a.cta,
       div.banner input[type="submit"] {
         display: inline-block;
         color: var(--noflo-ui-background);
@@ -159,8 +160,13 @@
         height: 36px;
         padding-left: 36px;
         padding-right: 36px;
+        padding-top: 1px;
+        padding-bottom: 1px;
+        line-height: 36px;
         margin: 0px;
         cursor: pointer;
+        font-size: 13px;
+        text-decoration: none;
       }
       </style>
     <nav>
@@ -222,12 +228,12 @@
       </template>
       <template is="dom-if" if="{{_ifFreePlan(askForScope, user.flowhub-plan)}}">
         <div class="banner">
-          You're using a free Flowhub plan. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
+          You're using a free Flowhub plan. This week we're offering 50% off Flowhub plans with code <em>noflo10</em>. Lock in your discount!
           <div>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
               <input type="hidden" name="username" value="{{user.github-username::input}}">
               <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
-              <input type="submit" id="cta" value="Upgrade now">
+              <input type="submit" id="cta" value="Subscribe now">
             </form>
           </div>
         </div>
@@ -235,7 +241,10 @@
     </template>
     <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="banner">
-        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
+        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. This week we're offering 50% off Flowhub plans with code <em>noflo10</em>. Lock in your discount!
+        <div>
+          <a class="cta" href="https://plans.flowhub.io">Subscribe now</a>
+        </div>
       </div>
     </template>
   </template>
