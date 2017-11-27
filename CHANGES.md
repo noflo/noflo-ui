@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.25.0 (git master)
+
+New features:
+
+* It is now possible to de-register remote GitHub repositories from noflo-ui
+
 ## 0.24.2 (2017 November 24)
 
 New features:
