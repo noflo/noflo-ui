@@ -228,7 +228,7 @@
       </template>
       <template is="dom-if" if="{{_ifFreePlan(askForScope, user.flowhub-plan)}}">
         <div class="banner">
-          You're using a free Flowhub plan. This week we're offering 50% off Flowhub plans with code <em>noflo10</em>. Lock in your discount!
+          You're using a free Flowhub plan. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
           <div>
             <form method="post" action="https://plans.flowhub.io/auth/flowhub">
               <input type="hidden" name="username" value="{{user.github-username::input}}">
@@ -241,7 +241,7 @@
     </template>
     <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="banner">
-        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. This week we're offering 50% off Flowhub plans with code <em>noflo10</em>. Lock in your discount!
+        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
         <div>
           <a class="cta" href="https://plans.flowhub.io">Subscribe now</a>
         </div>
