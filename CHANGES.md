@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.26.0 (git master)
+
+Internal changes:
+
+* Updated the-graph to 0.11 and React to 15.x
+
 ## 0.25.0 (2017 November 27)
 
 New features:
