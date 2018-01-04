@@ -12,6 +12,9 @@ var exported = {
   'the-graph': require('the-graph')
 };
 
+
+window.React = require('react');
+window.ReactDOM = require('react-dom');
 window.TheGraph = exported['the-graph']; // expected by the-graph Polymer elements
 
 window.require = function (moduleName) {
