@@ -18,8 +18,6 @@ module.exports = [
   'node_modules/hammerjs/hammer.min.js.map',
   'node_modules/klayjs/klay.js',
   'node_modules/klayjs-noflo/klay-noflo.js',
-  'node_modules/react/dist/react-with-addons.min.js',
-  'node_modules/react-dom/dist/react-dom.min.js',
   'node_modules/observe-js/src/observe.js',
   'node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js',
 ];
