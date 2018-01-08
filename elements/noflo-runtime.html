@@ -229,6 +229,7 @@
         }
         if (this.runtime && this.graph) {
           this.runtime.setMain(this.graph);
+          this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
         }
       },
       runtimeChanged: function () {
@@ -243,10 +244,12 @@
         if (this.panel) {
           this.set('panel.open', false);
         }
-        if (!this.runtime || !this.graph) {
+        if (!this.runtime) {
           return;
         }
-        this.runtime.setMain(this.graph);
+        if (this.graph) {
+          this.runtime.setMain(this.graph);
+        }
         if (this.graph && this.runtime.isConnected && this.runtime.isConnected()) {
           this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
         }
