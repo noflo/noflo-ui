@@ -16,13 +16,11 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'out',
     datatype: 'object'
-  c.outPorts.add 'projectcontext',
-    datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
 
   noflo.helpers.WirePattern c,
-    out: ['out', 'projectcontext']
+    out: 'out'
     forwardGroups: false
     async: true
   , (data, groups, out, callback) ->
@@ -30,14 +28,10 @@ exports.getComponent = ->
       when 'storage:db'
         state = data.state or {}
         state.db = data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:opened'
-        out.out.send data.payload
-        state = data.state or {}
-        ctx = data.payload
-        ctx.runtimes = state.runtimes
-        out.projectcontext.send ctx
+        out.send data.payload
         do callback
       when 'storage:stored:initial'
         state = data.payload
@@ -62,7 +56,7 @@ exports.getComponent = ->
           project.specs = state.specs.filter (item) ->
             item.project is project.id
 
-        out.out.send state
+        out.send state
         do callback
       when 'storage:stored:project'
         state = {}
@@ -81,14 +75,14 @@ exports.getComponent = ->
             item.project is project.id
         state.projects = data.state.projects or []
         collections.addToList state.projects, project
-        out.out.send state
+        out.send state
         do callback
       when 'storage:removed:project'
         state = {}
         state.projects = data.state.projects or []
         collections.removeFromList state.projects,
           id: data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:stored:graph'
         state = {}
@@ -97,11 +91,11 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.addToList project.graphs, data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:removed:graph'
         state = {}
@@ -112,13 +106,13 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.removeFromList project.graphs,
           properties:
             id: data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:stored:component'
         state = {}
@@ -127,11 +121,11 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.addToList project.components, data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:removed:component'
         state = {}
@@ -141,12 +135,12 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.removeFromList project.components,
           id: data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:stored:spec'
         state = {}
@@ -155,11 +149,11 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.addToList project.specs, data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:removed:spec'
         state = {}
@@ -169,31 +163,31 @@ exports.getComponent = ->
         state.projects = data.state.projects or []
         project = findProject data.payload, state.projects
         unless project
-          out.out.send state
+          out.send state
           do callback
           return
         collections.removeFromList project.specs,
           id: data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:stored:runtime'
         state = {}
         state.runtimes = data.state.runtimes or []
         collections.addToList state.runtimes, data.payload, collections.sortBySeen
-        out.out.send state
+        out.send state
         do callback
       when 'storage:removed:runtime'
         state = {}
         state.runtimes = data.state.runtimes or []
         collections.removeFromList state.runtimes,
           id: data.payload
-        out.out.send state
+        out.send state
         do callback
       when 'storage:error'
         state =
           state: 'error'
           error: data.payload
-        out.out.send state
+        out.send state
         do callback
       else
         do callback

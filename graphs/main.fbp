@@ -36,9 +36,6 @@ Dispatch PASS -> IN ShowErrors(core/Output)
 
 # Base data to UI
 UserReducer CONTEXT -> IN State
-
-# Pass local and GH contexts to runtime storage for remote node handling
-StorageReducer PROJECTCONTEXT -> CONTEXT RuntimeStorage
 GithubReducer CONTEXT -> CONTEXT RuntimeStorage
 RegistryReducer CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
