@@ -30,7 +30,7 @@ Dispatch HANDLE[2] -> IN StorageReducer(ui/StorageReducer)
 Dispatch HANDLE[3] -> IN StorageReducer(ui/StorageReducer)
 Dispatch HANDLE[4] -> IN GithubReducer(ui/GithubReducer)
 Dispatch HANDLE[5] -> IN RegistryReducer(ui/RegistryReducer)
-Dispatch HANDLE[7] -> IN RuntimeReducer(ui/RuntimeReducer)
+Dispatch HANDLE[6] -> IN RuntimeReducer(ui/RuntimeReducer)
 Dispatch HANDLE[7] -> IN ContextStorage(ui/ContextStorage)
 Dispatch PASS -> IN ShowErrors(core/Output)
 
