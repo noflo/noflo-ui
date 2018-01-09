@@ -34,16 +34,15 @@ Dispatch HANDLE[6] -> IN RuntimeStorage(ui/RuntimeStorage)
 Dispatch HANDLE[7] -> IN ContextStorage(ui/ContextStorage)
 Dispatch PASS -> IN ShowErrors(core/Output)
 
-# Base data to UI
-UserReducer CONTEXT -> IN State
-GithubReducer CONTEXT -> CONTEXT RuntimeStorage
-RegistryReducer CONTEXT -> CONTEXT RuntimeStorage
 # Pass ready contexts to the UI
+UserReducer CONTEXT -> IN State
+GithubReducer CONTEXT -> IN State
+RegistryReducer CONTEXT -> IN State
 StorageReducer OUT -> IN State
 MainContext OUT -> IN State
 RuntimeStorage CONTEXT -> IN State
-RuntimeStorage NEW -> ACTION StoreDispatch
 ContextStorage CONTEXT -> IN State
+RuntimeStorage NEW -> ACTION StoreDispatch
 
 # Start the app
 'noflo-ui' -> SELECTOR AppView
