@@ -30,7 +30,7 @@ Dispatch HANDLE[2] -> IN StorageReducer(ui/StorageReducer)
 Dispatch HANDLE[3] -> IN StorageReducer(ui/StorageReducer)
 Dispatch HANDLE[4] -> IN GithubReducer(ui/GithubReducer)
 Dispatch HANDLE[5] -> IN RegistryReducer(ui/RegistryReducer)
-Dispatch HANDLE[6] -> IN RuntimeStorage(ui/RuntimeStorage)
+Dispatch HANDLE[7] -> IN RuntimeReducer(ui/RuntimeReducer)
 Dispatch HANDLE[7] -> IN ContextStorage(ui/ContextStorage)
 Dispatch PASS -> IN ShowErrors(core/Output)
 
@@ -40,9 +40,7 @@ GithubReducer CONTEXT -> IN State
 RegistryReducer CONTEXT -> IN State
 StorageReducer OUT -> IN State
 MainContext OUT -> IN State
-RuntimeStorage CONTEXT -> IN State
 ContextStorage CONTEXT -> IN State
-RuntimeStorage NEW -> ACTION StoreDispatch
 
 # Start the app
 'noflo-ui' -> SELECTOR AppView
