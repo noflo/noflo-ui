@@ -20,7 +20,7 @@
           Language
           <select name="type" value="{{language::input}}">
             <template is="dom-repeat" items="{{languages}}" as="lang">
-            <option value="[[lang.id]" selected$="[[_languageSelected(lang, language)]]">[[lang.label]]</option>
+            <option value="[[lang.id]]" selected$="[[_languageSelected(lang, language)]]">[[lang.label]]</option>
             </template>
           </select>
         </label>
