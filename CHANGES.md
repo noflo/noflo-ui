@@ -3,6 +3,11 @@ NoFlo UI ChangeLog
 
 ## 0.26.0 (git master)
 
+Bugfixes:
+
+* The running status of FBP runtimes accessed in live mode is now shown correctly
+* GitHub scopes dialog on main screen shows up again when user hasn't authorized necessary scopes for GitHub synchronization
+
 Internal changes:
 
 * Updated the-graph to 0.11 and React to 15.x
