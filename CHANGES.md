@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.26.0 (git master)
+## 0.26.0 (2018 January 11)
 
 Bugfixes:
 
