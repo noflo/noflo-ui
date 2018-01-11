@@ -284,23 +284,23 @@
           this.fire('relogin', scope);
         },
         userChanged: function () {
-          if (!this.user) {
+          if (!this.user || !this.user['flowhub-user']) {
             return;
           }
-          if (!this.user.github) {
+          if (!this.user['flowhub-user'].github) {
             return;
           }
-          if (!this.user.plan || this.user.plan.type === 'free') {
-            if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
+          if (!this.user['flowhub-user'].plan || this.user['flowhub-user'].plan.type === 'free') {
+            if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('public_repo') === -1) {
               // User is on free plan but hasn't granted repo access
               this.set('askForScope', ['public_repo']);
             }
             return;
           }
-          if (!this.user.github.scopes || this.user.github.scopes.indexOf('repo') === -1) {
+          if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('repo') === -1) {
             // User is on paid plan but hasn't granted repo access
             this.set('askForScope', ['repo']);
-            if (!this.user.github.scopes || this.user.github.scopes.indexOf('public_repo') === -1) {
+            if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('public_repo') === -1) {
               // Allow paid users to limit repo access to only public if they want
               this.push('askForScope', 'public_repo');
             }
