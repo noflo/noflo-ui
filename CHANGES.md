@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.26.1 (2018 January 11)
+
+Bugfixes:
+
+* Fixed _New component_ dialog setting a wrong language
+
 ## 0.26.0 (2018 January 11)
 
 Bugfixes:
