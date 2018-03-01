@@ -72,7 +72,7 @@
     "noflo-component-loader": "^0.3.0",
     "polymer-bundler": "^3.0.1",
     "puppeteer": "^1.0.0",
-    "simple-server": "^1.0.1",
+    "serve": "^6.4.9",
     "sinon": "^4.0.0",
     "syn": "^0.13.0",
     "uglifyjs-webpack-plugin": "^1.0.1",
@@ -82,7 +82,7 @@
   "scripts": {
     "pretest": "coffeelint -f .coffeelint.json -r components",
     "test": "karma start",
-    "start": "simple-server . 9999",
+    "start": "serve -p 9999",
     "build": "grunt build",
     "watch": "grunt watch"
   },
