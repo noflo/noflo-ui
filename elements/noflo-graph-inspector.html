@@ -180,6 +180,11 @@
         spec: {
           value: null
         },
+        theme: {
+          type: String,
+          value: 'dark',
+          observer: 'themeChanged'
+        },
         type: {
           type: String,
           value: ''
@@ -282,6 +287,19 @@
           }.bind(this), 1);
         }
       },
+      getMirrorTheme: function () {
+        if (this.theme === 'light') {
+          return 'mdn-like';
+        }
+        return 'noflo';
+      },
+      themeChanged: function () {
+        if (!this.htmlEditor || !this.testsEditor) {
+          return;
+        }
+        this.htmlEditor.setOption('theme', this.getMirrorTheme());
+        this.testsEditor.setOption('theme', this.getMirrorTheme());
+      },
       prepareHtmlEditor: function () {
         if (this.type !== 'noflo-browser') {
           return;
@@ -290,7 +308,7 @@
           lineNumbers: true,
           value: this.graph.properties.environment.content || '',
           language: 'htmlmixed',
-          theme: 'mdn-like',
+          theme: this.getMirrorTheme(),
         });
       },
       prepareTestsEditor: function () {
@@ -301,7 +319,7 @@
           lineNumbers: true,
           value: this.spec.code || '',
           mode: this.getMirrorMode(this.spec.language),
-          theme: 'mdn-like'
+          theme:this.getMirrorTheme(),
         });
       },
       getMirrorMode: function (language) {
