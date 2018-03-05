@@ -10,7 +10,7 @@ html, body {
 
 body {
   --noflo-ui-background: hsla(0, 0%, 0%, 0.98);
-  --noflo-ui-background-shadow: hsla(0, 0%, 0%, 0.4);
+  --noflo-ui-background-shadow: hsla(0, 0%, 0%, 0.5);
   --noflo-ui-text: hsl(192, 25%, 92%);
   --noflo-ui-text-highlight: hsl(185,100%,75%);
   --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
