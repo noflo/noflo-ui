@@ -1,6 +1,14 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.0 (git master)
+
+Internal changes:
+
+* Switched `npm start` from unmaintained simple-server to http-server
+* Switched build to more efficient webpack 4.x
+* Now loading external JavaScript/CSS dependencies from `browser/vendor` directory instead of `node_modules`
+
 ## 0.26.1 (2018 January 11)
 
 Bugfixes:
