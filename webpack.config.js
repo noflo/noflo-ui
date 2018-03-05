@@ -1,5 +1,3 @@
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
-
 module.exports = {
   entry: './app/main.js',
   output: {
@@ -8,11 +6,6 @@ module.exports = {
     sourceMapFilename: 'browser/noflo-ui.min.js.map',
   },
   devtool: 'source-map',
-  plugins: [
-    new UglifyJSPlugin({
-      sourceMap: true,
-    })
-  ],
   module: {
     rules: [
       {
