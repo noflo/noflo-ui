@@ -35,7 +35,7 @@
     "noflo-polymer": "~2.0.1",
     "noflo-runtime": "~0.6.0",
     "noflo-runtime-base": "^0.10.0",
-    "noflo-runtime-postmessage": "^0.9.0",
+    "noflo-runtime-postmessage": "^0.10.0",
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
     "react": "^15.6.0",
