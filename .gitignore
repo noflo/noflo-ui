@@ -22,3 +22,4 @@ sauce_connect.log
 *~
 themes/
 npm-debug.log
+package-lock.json
