@@ -23,6 +23,11 @@ exports.getComponent = ->
             graphs: data.payload.graphs
             component: data.payload.component
         return
+      when 'runtime:component'
+        output.sendDone
+          context:
+            componentDefinition: data.payload.component
+        return
       when 'runtime:error'
         state =
           state: 'error'

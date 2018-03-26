@@ -16,6 +16,9 @@ exports.getComponent = ->
     description: 'Get client instance for a route definition'
     datatype: 'object'
     addressable: true
+  c.outPorts.add 'instance',
+    description: 'Client instance when created'
+    datatype: 'object'
   c.outPorts.add 'out',
     description: 'Route runtime client was matched for'
     datatype: 'object'
@@ -44,6 +47,8 @@ exports.getComponent = ->
       .then((clients) ->
         for client in clients
           c.clients[client.definition.id] = client
+          output.send
+            instance: client
         return clients
       )
       .then((() -> output.done()), (err) -> output.done(err))
@@ -55,6 +60,8 @@ exports.getComponent = ->
       fbpClient(data.payload)
       .then((client) ->
         c.clients[client.definition.id] = client
+        output.send
+          instance: client
         return client
       )
       .then((() ->
