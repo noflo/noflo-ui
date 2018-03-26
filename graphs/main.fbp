@@ -38,6 +38,7 @@ Dispatch PASS -> IN ShowErrors(core/Output)
 UserReducer CONTEXT -> IN State
 GithubReducer CONTEXT -> IN State
 RegistryReducer CONTEXT -> IN State
+RuntimeReducer CONTEXT -> IN State
 StorageReducer OUT -> IN State
 MainContext OUT -> IN State
 ContextReducer CONTEXT -> IN State
