@@ -7,7 +7,7 @@ ensureOneIframeRuntime = (runtimes) ->
   for runtime in runtimes
     # Check that we don't have the iframe runtime already
     if runtime.protocol is 'iframe' and runtime.address is iframeAddress
-      return runtime
+      return null
   iframeRuntime =
     label: 'NoFlo HTML5 environment'
     id: uuid()
