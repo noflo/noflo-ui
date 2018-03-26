@@ -449,11 +449,14 @@
           this.$.project.confirm(context.syncOperation);
           return;
         }
-        if (context.clearLibrary) {
+        if (context.componentLibrary) {
           for (var libKey in this.$.grapheditor.$.graph.library) {
             delete this.$.grapheditor.$.graph.library[libKey];
           }
-          this.set('ctx.clearLibrary', false);
+          context.componentLibrary.forEach(function (def) {
+            this.$.grapheditor.registerComponent(def);
+          }.bind(this));
+          this.set('ctx.componentLibrary', null);
         }
         if (context.componentDefinition !== undefined && context.componentDefinition) {
           this.$.grapheditor.registerComponent(this.ctx.componentDefinition);

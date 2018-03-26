@@ -462,12 +462,9 @@
         registerComponent: function (definition, generated) {
           var component = this.library[definition.name];
           var def = definition;
-          if (component) {
-            if (generated) {
-              // Don't override real one with generated dummy
-              return;
-            }
-            def = TheGraph.library.mergeComponentDefinition(component, definition);
+          if (component && generated) {
+            // Don't override real one with generated dummy
+            return;
           }
           this.set('library' + ('.' + definition.name), def);
           // So changes are rendered

@@ -24,6 +24,10 @@ exports.getComponent = ->
             graphs: data.payload.graphs
             component: data.payload.component
         return
+      when 'runtime:components'
+        output.sendDone
+          context:
+            componentLibrary: data.payload.components.map componentForLibrary
       when 'runtime:component'
         output.sendDone
           context:
