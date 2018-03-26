@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+{ componentForLibrary } = require '../src/runtime'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -26,7 +27,7 @@ exports.getComponent = ->
       when 'runtime:component'
         output.sendDone
           context:
-            componentDefinition: data.payload.component
+            componentDefinition: componentForLibrary data.payload.component
         return
       when 'runtime:error'
         state =

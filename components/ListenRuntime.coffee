@@ -22,6 +22,8 @@ exports.getComponent = ->
   c.outPorts.add 'status',
     description: 'Runtime status change'
     datatype: 'object'
+  c.outPorts.add 'components',
+    datatype: 'object'
   c.outPorts.add 'component',
     datatype: 'object'
   c.outPorts.add 'error',
@@ -29,8 +31,9 @@ exports.getComponent = ->
   c.clients = {}
   unsubscribe = (id) ->
     return unless c.clients[id]
-    c.clients[id].client.removeListener c.clients[id].status
-    c.clients[id].client.removeListener c.clients[id].signal
+    c.clients[id].client.removeListener c.clients[id].onConnected
+    c.clients[id].client.transport.removeListener c.clients[id].onStatus
+    c.clients[id].client.removeListener c.clients[id].onSignal
     c.clients[id].context.deactivate()
     delete c.clients[id]
   c.tearDown = (callback) ->
@@ -47,13 +50,29 @@ exports.getComponent = ->
     c.clients[client.definition.id] =
       context: context
       client: client
-      status: (status) ->
+      onConnected: () ->
+        return unless client.canSend('component', 'list')
+        client.protocol.component.list()
+          .then(((components) ->
+            output.send
+              components:
+                components: components
+                runtime: client.definition.id
+          ), ((err) ->
+            err.runtime = client.definition.id
+            output.send
+              error:
+                payload: err
+          ))
+
+      onStatus: (status) ->
         output.send
           status:
             status: status
             runtime: client.definition.id
-      signal: (signal) ->
+      onSignal: (signal) ->
         handleSignal signal, client.definition.id, output
 
-    client.transport.on 'status', c.clients[client.definition.id].status
-    client.on 'signal', c.clients[client.definition.id].signal
+    client.on 'connected', c.clients[client.definition.id].onConnected
+    client.transport.on 'status', c.clients[client.definition.id].onStatus
+    client.on 'signal', c.clients[client.definition.id].onSignal

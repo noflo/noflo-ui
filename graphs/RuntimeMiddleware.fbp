@@ -17,6 +17,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'runtime:opened' -> ACTION RuntimeOpenedAction(ui/SetAction) OUT -> IN NewActions
 'runtime:opening' -> ACTION RuntimeOpeningAction(ui/SetAction) OUT -> IN NewActions
 'runtime:status' -> ACTION RuntimeStatusAction(ui/SetAction) OUT -> IN NewActions
+'runtime:components' -> ACTION RuntimeComponentsAction(ui/SetAction) OUT -> IN NewActions
 'runtime:component' -> ACTION RuntimeComponentAction(ui/SetAction) OUT -> IN NewActions
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
 
@@ -62,6 +63,7 @@ GetClient ERROR -> IN RuntimeErrorAction
 # Listen for runtime changes
 GetClient INSTANCE -> IN ListenRuntime(ui/ListenRuntime)
 ListenRuntime STATUS -> IN RuntimeStatusAction
+ListenRuntime COMPONENTS -> IN RuntimeComponentsAction
 ListenRuntime COMPONENT -> IN RuntimeComponentAction
 ListenRuntime ERROR -> IN RuntimeErrorAction
 
