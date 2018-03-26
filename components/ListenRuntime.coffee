@@ -31,9 +31,9 @@ exports.getComponent = ->
   c.clients = {}
   unsubscribe = (id) ->
     return unless c.clients[id]
-    c.clients[id].client.removeListener c.clients[id].onConnected
-    c.clients[id].client.transport.removeListener c.clients[id].onStatus
-    c.clients[id].client.removeListener c.clients[id].onSignal
+    c.clients[id].client.removeListener 'connected', c.clients[id].onConnected
+    c.clients[id].client.transport.removeListener 'status', c.clients[id].onStatus
+    c.clients[id].client.removeListener 'signal', c.clients[id].onSignal
     c.clients[id].context.deactivate()
     delete c.clients[id]
   c.tearDown = (callback) ->
@@ -44,35 +44,38 @@ exports.getComponent = ->
     return unless input.hasData 'in'
     client = input.getData 'in'
 
-    # Unsubscribe previous instance
-    unsubscribe client.definition.id
+    id = client.definition.id
 
-    c.clients[client.definition.id] =
+    # Unsubscribe previous instance
+    unsubscribe id
+
+    c.clients[id] =
       context: context
       client: client
       onConnected: () ->
         return unless client.canSend('component', 'list')
-        client.protocol.component.list()
-          .then(((components) ->
-            output.send
-              components:
-                components: components
-                runtime: client.definition.id
-          ), ((err) ->
-            err.runtime = client.definition.id
-            output.send
-              error:
-                payload: err
-          ))
-
+        setTimeout ->
+          client.protocol.component.list()
+            .then(((components) ->
+              output.send
+                components:
+                  components: components
+                  runtime: id
+            ), ((err) ->
+              err.runtime = id
+              output.send
+                error:
+                  payload: err
+            ))
+        , 1
       onStatus: (status) ->
         output.send
           status:
             status: status
-            runtime: client.definition.id
+            runtime: id
       onSignal: (signal) ->
-        handleSignal signal, client.definition.id, output
+        handleSignal signal, id, output
 
-    client.on 'connected', c.clients[client.definition.id].onConnected
-    client.transport.on 'status', c.clients[client.definition.id].onStatus
-    client.on 'signal', c.clients[client.definition.id].onSignal
+    client.on 'connected', c.clients[id].onConnected
+    client.transport.on 'status', c.clients[id].onStatus
+    client.on 'signal', c.clients[id].onSignal
