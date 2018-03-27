@@ -47,6 +47,7 @@ exports.getComponent = ->
     c.clients[id].client.removeListener 'connected', c.clients[id].onConnected
     c.clients[id].client.transport.removeListener 'status', c.clients[id].onStatus
     c.clients[id].client.removeListener 'signal', c.clients[id].onSignal
+    c.clients[id].client.removeListener 'protocolError', c.clients[id].onProtocolError
     c.clients[id].context.deactivate()
     delete c.clients[id]
   c.tearDown = (callback) ->
@@ -88,7 +89,11 @@ exports.getComponent = ->
             runtime: id
       onSignal: (signal) ->
         handleSignal signal, id, output
+      onProtocolError: (err) ->
+        output.send
+          error: err
 
     client.on 'connected', c.clients[id].onConnected
     client.transport.on 'status', c.clients[id].onStatus
     client.on 'signal', c.clients[id].onSignal
+    client.on 'protocolError', c.clients[id].onProtocolError
