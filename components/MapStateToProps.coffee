@@ -1,5 +1,20 @@
 noflo = require 'noflo'
 
+# Build up display model of runtime from runtime definition and status
+populateRuntime = (state) ->
+  unless state.runtime?.id
+    return null
+  state.runtimeStatuses = {} unless state.runtimeStatuses
+  state.runtimeExecutions = {} unless state.runtimeExecutions
+  runtime =
+    definition: state.runtime
+    status: state.runtimeStatuses[state.runtime.id] or {}
+    execution: state.runtimeExecutions[state.runtime.id] or {
+      running: false
+      label: 'not started'
+    }
+  return runtime
+
 exports.getComponent = ->
   c = new noflo.Component
   c.description = 'Map application state to UI properties'
@@ -17,13 +32,19 @@ exports.getComponent = ->
     props = {}
     Object.keys(updated).forEach (key) ->
       switch key
-        when 'runtime'
-          # FIXME: We can't pass runtime until Polymer side is fixed
-          return
         when 'componentLibraries'
           # Filter UI components to current runtime
           if state.runtime?.id
             props.componentLibrary = updated[key][state.runtime.id] or []
+          return
+        when 'runtime'
+          props.runtime = populateRuntime state
+          return
+        when 'runtimeStatuses'
+          props.runtime = populateRuntime state
+          return
+        when 'runtimeExecutions'
+          props.runtime = populateRuntime state
           return
         else
           props[key] = updated[key]

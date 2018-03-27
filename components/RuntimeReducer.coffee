@@ -40,6 +40,12 @@ exports.getComponent = ->
           context:
             componentLibraries: componentLibraries
         return
+      when 'runtime:status'
+        runtimeStatuses = data.state.runtimeStatuses or {}
+        runtimeStatuses[data.payload.runtime] = data.payload.status
+        output.sendDone
+          context:
+            runtimeStatuses: runtimeStatuses
       when 'runtime:error'
         state =
           state: 'error'

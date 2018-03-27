@@ -123,25 +123,25 @@
     </style>
     <template is="dom-if" if="{{runtime}}">
       <noflo-icon id="runtime_icon" icon="{{icon}}"></noflo-icon>
-      <div id="address" class$="{{_computeClass2(online)}}">
+      <div id="address" class$="{{_computeOnlineClass(runtime.status.online)}}">
         <button title="Connect/Disconnect" on-click="reconnect"><noflo-icon icon="refresh"></noflo-icon></button>
         <h2>{{runtime.definition.address}}</h2>
         <button title="Change Runtime" on-click="clearRuntime" class="clear"><noflo-icon icon="exchange"></noflo-icon></button>
       </div>
       <div id="teststatus" on-click="showTestDetails"></div>
       <div id="runcontrol">
-        <template is="dom-if" if="{{online}}">
-          <template is="dom-if" if="{{execution.running}}">
+        <template is="dom-if" if="{{runtime.status.online}}">
+          <template is="dom-if" if="{{runtime.execution.running}}">
             <button title="Stop" class="stop" on-click="stop"><noflo-icon icon="pause"></noflo-icon></button>
           </template>
-          <template is="dom-if" if="{{!execution.running}}">
+          <template is="dom-if" if="{{!runtime.execution.running}}">
             <button title="Start" class="start" on-click="start"><noflo-icon icon="play"></noflo-icon></button>
           </template>
-          <h2>{{execution.label}}</h2>
+          <h2>{{runtime.execution.label}}</h2>
         </template>
       </div>
     </template>
-    <template is="dom-if" if="{{_computeIf(graph, runtime)}}">
+    <template is="dom-if" if="{{!runtime}}">
       <div id="select">
         <button on-click="selectRuntime" class="select">Select runtime</button>
       </div>
@@ -156,15 +156,6 @@
           value: 'asterisk'
         },
         card: { value: null },
-        execution: {
-          type: Object,
-          value: function () {
-            return {
-              label: 'not started',
-              running: false
-            };
-          }
-        },
         graph: {
           value: null,
           observer: 'graphChanged'
@@ -174,10 +165,6 @@
           value: function () {
             return [];
           }
-        },
-        online: {
-          type: Boolean,
-          value: false
         },
         panel: { value: null },
         runtime: {
@@ -206,12 +193,6 @@
         Polymer.dom(this).classList.add('gpu');
       },
       clearRuntime: function () {
-        for (var i = 0; i < this.runtimes.length; i++) {
-          if (this.runtimes[i].graph === this.graph.properties.id) {
-            this.set('runtimes' + ('.' + i) + '.graph', null);
-            this.fire('changed', this.runtimes[i]);
-          }
-        }
         this.set('runtime', null);
         this.graphChanged();
       },
@@ -227,101 +208,43 @@
           }
           this.runtimeSelector = null;
         }
-        if (this.runtime && this.graph) {
-          this.runtime.setMain(this.graph);
-          this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
-        }
       },
       runtimeChanged: function () {
-        if (this.runtime && this.runtime.isConnected && this.runtime.isConnected()) {
-          this.set('online', true);
-        } else {
-          this.set('online', false);
-        }
-        this.set('execution.running', false);
-        this.set('execution.label', 'not started');
         this.set('icon', this.getRuntimeIcon(this.runtime));
-        if (this.panel) {
-          this.set('panel.open', false);
-        }
         if (!this.runtime) {
           return;
         }
-        if (this.graph) {
-          this.runtime.setMain(this.graph);
-        }
-        if (this.graph && this.runtime.isConnected && this.runtime.isConnected()) {
-          this.runtime.sendNetwork('getstatus', { graph: this.graph.name || this.graph.properties.id });
-        }
-        this.runtime.on('execution', function (status) {
-          if (status.running) {
-            this.set('execution.running', true);
-          } else {
-            this.set('execution.running', false);
-          }
-          if (!status.started) {
-            this.set('execution.label', 'not started');
-          } else if (status.started && !status.running) {
-            this.set('execution.label', 'finished');
-          } else if (status.started && status.running) {
-            this.set('execution.label', 'running');
-          }
-        }.bind(this));
-        this.runtime.on('status', function (status) {
-          this.set('online', status.online);
-          if (!this.online) {
-            this.hideCard();
-            this.set('execution.running', false);
-            this.set('execution.label', 'not started');
-            if (this.panel) {
-              this.panel.open = false;
-            }
-          }
-        }.bind(this));
-        this.runtime.on('network', function (message) {
-          if (message.command === 'error') {
-            this.notify('Error', message.payload.message);
-            return;
-          }
-        }.bind(this));
       },
       start: function (event) {
         event.preventDefault();
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'startRuntime');
-        }
-        this.requestNotificationPermission();
-        if (this.card) {
-          this.runtime.start();
+        if (!this.runtime || !this.graph) {
           return;
         }
-        if (this.runtime.getType() === 'iframe') {
-          this.runtime.once('capabilities', function () {
-            this.runtime.setMain(this.graph);
-            setTimeout(function () {
-              this.runtime.start();
-            }.bind(this), 1);
-          }.bind(this));
-          this.showCard();
-          return;
-        }
+        this.fire('start', {
+          runtime: this.runtime.definition.id,
+          graph: this.graph,
+        });
         this.showCard();
-        this.runtime.start();
       },
       stop: function (event) {
         if (event) {
           event.preventDefault();
         }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'stopRuntime');
+        if (!this.runtime || !this.graph) {
+          return;
         }
-        this.runtime.stop();
+        this.fire('stop', {
+          runtime: this.runtime.definition.id,
+          graph: this.graph,
+        });
       },
       reconnect: function (event) {
         if (event) {
           event.preventDefault();
         }
-        this.runtime.reconnect();
+        this.fire('reconnect', {
+          runtime: this.runtime.definition.id
+        });
       },
       showTests: function (suites) {
         var fbpSpec = require('fbp-spec');
@@ -361,6 +284,7 @@
         if (!this.card) {
           return;
         }
+        return;
         var el = this.runtime.getElement();
         Polymer.dom(Polymer.dom(this.card).parentNode).removeChild(this.card);
         this.card = null;
@@ -463,14 +387,8 @@
           return 'music';
         }
       },
-      _computeIf: function (graph, runtime) {
-        return graph && !runtime;
-      },
-      _computeClass2: function (online) {
+      _computeOnlineClass: function (online) {
         return this.tokenList({ online: online });
-      },
-      _computeIf2: function (execution) {
-        return execution.running == false;
       },
       tokenList: function (obj) {
         var pieces = [];

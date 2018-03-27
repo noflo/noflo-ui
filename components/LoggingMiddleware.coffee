@@ -39,6 +39,10 @@ exports.getComponent = ->
         sendEvent 'pullGist', 'navigation', 'url'
       when 'main:open'
         sendEvent 'openHome', 'navigation', 'url'
+      when 'runtime:start'
+        sendEvent 'startRuntime', 'click', 'button'
+      when 'runtime:stop'
+        sendEvent 'stopRuntime', 'click', 'button'
 
     out.send data
     do callback

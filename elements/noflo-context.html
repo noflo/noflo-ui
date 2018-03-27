@@ -432,16 +432,13 @@
           }
         }
         // Otherwise we check if Runtime can get it for us
-        if (!this.runtime) {
+        if (!this.runtime.definition || !this.runtime.definition.capabilities) {
           return false;
         }
-        if (!this.runtime.canDo) {
+        if (this.runtime.definition.capabilities.indexOf('component:getsource') === -1) {
           return false;
         }
-        if (this.runtime.canDo('component:getsource') && this.runtime.isConnected()) {
-          return true;
-        }
-        return false;
+        return this.runtime.status.online;
       }
     });
   </script>

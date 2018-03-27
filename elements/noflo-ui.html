@@ -536,7 +536,7 @@
         }.bind(this), 1300);
       },
       showEditAsProject: function (enable) {
-        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || !this.ctx.runtime.canDo('protocol:network')) {
+        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
           // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
           enable = false;
         }
@@ -552,7 +552,7 @@
         if (this.ctx.project) {
           return;
         }
-        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || !this.ctx.runtime.canDo('protocol:network')) {
+        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
           return;
         }
         if (typeof ga === 'function') {
