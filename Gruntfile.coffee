@@ -255,10 +255,16 @@ module.exports = ->
   @registerTask 'nuke', [
     'clean'
   ]
-  @registerTask 'build', [
+  @registerTask 'build_noflo', [
     'webpack'
+  ]
+  @registerTask 'build_polymer', [
     'sharedstylecomponent'
     'exec:vulcanize'
+  ]
+  @registerTask 'build', [
+    'build_noflo'
+    'build_polymer'
     'string-replace:app'
     'compress'
   ]
