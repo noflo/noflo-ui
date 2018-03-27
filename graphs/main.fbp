@@ -5,7 +5,9 @@
 AppView(polymer/noflo-ui) EVENT -> ACTION StoreDispatch(ui/Store)
 # Application state updates
 State(ui/State) STATE -> STATE StoreDispatch
-State UPDATED -> UPDATED AppView
+State(ui/State) STATE -> STATE MapStateToProps(ui/MapStateToProps)
+State UPDATED -> UPDATED MapStateToProps
+MapStateToProps PROPS -> UPDATED AppView
 # First we send the events to middlewares, and allow them
 # to either pass along or generate new events
 StoreDispatch PASS -> IN Logger(ui/LoggingMiddleware)
