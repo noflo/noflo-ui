@@ -37,12 +37,12 @@ OpenLiveMode OUT -> IN RuntimeOpenedAction
 OpenLiveMode ERROR -> IN RuntimeErrorAction
 
 # Send selected edges to runtime
-'runtime,graphs[0]' -> KEYS GetEdgeState(ui/GetActionValues)
-Dispatch HANDLE[1] -> IN GetEdgeState
-GetEdgeState VALUES[0] -> RUNTIME SendEdges(runtime/SendEdges)
-GetEdgeState VALUES[1] -> GRAPH SendEdges
-GetEdgeState OUT -> EDGES SendEdges
-SendEdges OUT -> IN ContextEdgesAction
+#'runtime,graphs[0]' -> KEYS GetEdgeState(ui/GetActionValues)
+#Dispatch HANDLE[1] -> IN GetEdgeState
+#GetEdgeState VALUES[0] -> RUNTIME SendEdges(runtime/SendEdges)
+#GetEdgeState VALUES[1] -> GRAPH SendEdges
+#GetEdgeState OUT -> EDGES SendEdges
+#SendEdges OUT -> IN ContextEdgesAction
 
 # Create a project based on data on runtime side
 Dispatch HANDLE[2] -> IN RuntimeToProject(ui/RuntimeToProject)
