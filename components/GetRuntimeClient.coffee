@@ -13,7 +13,17 @@ ensureInstance = (definition, clients, output) ->
     output.send
       instance: client
     return client unless client.definition.id
-    clients[definition.id] = client
+
+    clientId = definition.id
+    clients[clientId] = client
+
+    unless client.isConnected()
+      # Since we're not connected, the ID may change once we do
+      client.once 'connected', ->
+        return if client.definition.id is clientId
+        delete clients[clientId]
+        clients[client.definition.id] = client
+
     return client
   )
 
