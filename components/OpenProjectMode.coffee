@@ -1,9 +1,12 @@
 noflo = require 'noflo'
 { getGraphType, getComponentType, getRemoteNodes } = require '../src/runtime'
 
-sendGraphs = (client, graphs) ->
+sendGraphs = (client, graphs, currentGraphs) ->
   compatible = graphs.filter (g) -> getGraphType(g) is client.definition.type
-  Promise.all(compatible.map((g) -> client.protocol.graph.send(g)))
+  Promise.all(compatible.map((g) ->
+    main = if g is currentGraphs[0] then true else false
+    client.protocol.graph.send(g, main)
+  ))
 
 sendComponents = (client, components, namespace) ->
   compatible = components.filter (c) -> getComponentType(c) is client.definition.type
@@ -45,7 +48,7 @@ exports.getComponent = ->
         sendComponents client, route.project.components, route.project.namespace
       )
       .then(() ->
-        sendGraphs client, route.project.graphs
+        sendGraphs client, route.project.graphs, route.graphs
       )
       .then(() ->
         getRemoteNodes client, route
