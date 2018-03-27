@@ -22,8 +22,8 @@ exports.addToList = (list, entity, sort) ->
     if existing is entity
       # Entity is already in list as-is, skip
       return
-    existingId = existing.properties?.id or existing.id
-    entityId = entity.properties?.id or entity.id
+    existingId = existing.properties?.id or existing.id or existing.name
+    entityId = entity.properties?.id or entity.id or entity.name
     if existingId is entityId
       # id match, replace
       for key of entity

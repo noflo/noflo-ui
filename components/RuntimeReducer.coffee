@@ -1,5 +1,6 @@
 noflo = require 'noflo'
 { componentForLibrary } = require '../src/runtime'
+collections = require '../src/collections'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -23,15 +24,21 @@ exports.getComponent = ->
             state: 'ok'
             graphs: data.payload.graphs
             component: data.payload.component
+            runtime: data.payload.runtime
         return
       when 'runtime:components'
+        componentLibraries = data.state.componentLibraries or {}
+        componentLibraries[data.payload.runtime] = data.payload.components.map componentForLibrary
         output.sendDone
           context:
-            componentLibrary: data.payload.components.map componentForLibrary
+            componentLibraries: componentLibraries
       when 'runtime:component'
+        componentLibraries = data.state.componentLibraries or {}
+        componentLibraries[data.payload.runtime] = componentLibraries[data.payload.runtime] or []
+        collections.addToList componentLibraries[data.payload.runtime], componentForLibrary data.payload.component
         output.sendDone
           context:
-            componentDefinition: componentForLibrary data.payload.component
+            componentLibraries: componentLibraries
         return
       when 'runtime:error'
         state =

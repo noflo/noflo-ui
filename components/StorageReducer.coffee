@@ -31,8 +31,6 @@ exports.getComponent = ->
         out.send state
         do callback
       when 'storage:opened'
-        # FIXME: We can't pass runtime until Polymer side is fixed
-        delete data.payload.runtime
         out.send data.payload
         do callback
       when 'storage:stored:initial'
