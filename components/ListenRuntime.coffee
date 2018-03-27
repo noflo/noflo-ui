@@ -22,6 +22,25 @@ handleSignal = (signal, rtId, output) ->
       output.send
         stopped:
           status: signal.payload
+          runtime: rtId
+    when 'network:begingroup'
+      output.send
+        packet:
+          type: 'openBracket'
+          packet: signal.payload
+          runtime: rtId
+    when 'network:data'
+      output.send
+        packet:
+          type: 'data'
+          packet: signal.payload
+          runtime: rtId
+    when 'network:endgroup'
+      output.send
+        packet:
+          type: 'closeBracket'
+          packet: signal.payload
+          runtime: rtId
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -38,6 +57,8 @@ exports.getComponent = ->
   c.outPorts.add 'started',
     datatype: 'object'
   c.outPorts.add 'stopped',
+    datatype: 'object'
+  c.outPorts.add 'packet',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'

@@ -20,6 +20,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'runtime:components' -> ACTION RuntimeComponentsAction(ui/SetAction) OUT -> IN NewActions
 'runtime:component' -> ACTION RuntimeComponentAction(ui/SetAction) OUT -> IN NewActions
 'runtime:started' -> ACTION RuntimeStartedAction(ui/SetAction) OUT -> IN NewActions
+'runtime:packet' -> ACTION RuntimePacketAction(ui/SetAction) OUT -> IN NewActions
 'runtime:stopped' -> ACTION RuntimeStoppedAction(ui/SetAction) OUT -> IN NewActions
 'storage:opened' -> ACTION StorageOpenedAction(ui/SetAction) OUT -> IN Passed
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
@@ -84,6 +85,7 @@ ListenRuntime COMPONENTS -> IN RuntimeComponentsAction
 ListenRuntime COMPONENT -> IN RuntimeComponentAction
 ListenRuntime STARTED -> IN RuntimeStartedAction
 ListenRuntime STOPPED -> IN RuntimeStoppedAction
+ListenRuntime PACKET -> IN RuntimePacketAction
 ListenRuntime ERROR -> IN RuntimeErrorAction
 
 # Update fbp-clients based on new runtime information
