@@ -458,10 +458,6 @@
           }.bind(this));
           this.set('ctx.componentLibrary', null);
         }
-        if (context.componentDefinition !== undefined && context.componentDefinition) {
-          this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
-          this.set('ctx.componentDefinition', null);
-        }
         if (this.ctx.suites) {
           this.$.runtime.showTests(this.ctx.suites);
         }
