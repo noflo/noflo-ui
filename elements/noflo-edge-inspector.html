@@ -173,9 +173,8 @@
         return node.split('_')[0];
       },
       clear: function () {
-        this.log.clear();
-        this.lastlog = 0;
         Polymer.dom(this.$.events).innerHTML = '';
+        this.fire('clear', this.edge);
       },
       animate: function () {
         if (!this.log) {
@@ -183,21 +182,18 @@
         }
         // TODO top-level animation loop
         this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
-        if (this.log.length <= this.lastlog) {
+        if (this.log[this.log.length - 1] == this.lastlog) {
           return;
         }
         this.renderLogs();
-        this.lastlog = this.log.length;
+        this.lastlog = this.log[this.log.length - 1];
       },
       renderLogs: function () {
-        var first = this.lastlog;
+        var first = this.log.indexOf(this.lastlog);
         var i, item, li, content;
-        if (this.log.length - this.lastlog > this.showlogs) {
-          first = this.log.length - this.showlogs;
-        }
         var fragment = document.createDocumentFragment();
         for (i = first; i < this.log.length; i++) {
-          item = this.log.get(i);
+          item = this.log[i];
           if (!item) {
             continue;
           }
