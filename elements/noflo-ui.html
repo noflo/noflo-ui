@@ -258,6 +258,15 @@
         this.$.runtime.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:runtime', event.detail);
         }.bind(this));
+        this.$.runtime.addEventListener('start', function (event) {
+          this.emitEvent('runtime:start', event.detail);
+        }.bind(this));
+        this.$.runtime.addEventListener('stop', function (event) {
+          this.emitEvent('runtime:stop', event.detail);
+        }.bind(this));
+        this.$.runtime.addEventListener('reconnect', function (event) {
+          this.emitEvent('runtime:reconnect', event.detail);
+        }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.emitEvent('context:edges', event.detail);
         }.bind(this));

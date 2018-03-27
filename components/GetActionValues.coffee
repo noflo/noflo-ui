@@ -39,7 +39,6 @@ exports.getComponent = ->
         output.send
           values: new noflo.IP 'data', value,
             index: idx
-
     output.sendDone
       state: data.state or {}
       out: data.payload or data

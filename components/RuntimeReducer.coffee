@@ -46,6 +46,23 @@ exports.getComponent = ->
         output.sendDone
           context:
             runtimeStatuses: runtimeStatuses
+      when 'runtime:started'
+        runtimeExecutions = data.state.runtimeExecutions or {}
+        runtimeExecutions[data.payload.runtime] = data.payload.status
+        runtimeExecutions[data.payload.runtime].label = 'running'
+        unless data.payload.status.running
+          runtimeExecutions[data.payload.runtime].label = 'finished'
+        output.sendDone
+          context:
+            runtimeExecutions: runtimeExecutions
+      when 'runtime:stopped'
+        runtimeExecutions = data.state.runtimeExecutions or {}
+        runtimeExecutions[data.payload.runtime] = data.payload.status
+        runtimeExecutions[data.payload.runtime].running = false
+        runtimeExecutions[data.payload.runtime].label = 'not running'
+        output.sendDone
+          context:
+            runtimeExecutions: runtimeExecutions
       when 'runtime:error'
         state =
           state: 'error'

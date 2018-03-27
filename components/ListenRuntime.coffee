@@ -13,6 +13,15 @@ handleSignal = (signal, rtId, output) ->
         component:
           component: signal.payload
           runtime: rtId
+    when 'network:started'
+      output.send
+        started:
+          status: signal.payload
+          runtime: rtId
+    when 'network:stopped'
+      output.send
+        stopped:
+          status: signal.payload
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -25,6 +34,10 @@ exports.getComponent = ->
   c.outPorts.add 'components',
     datatype: 'object'
   c.outPorts.add 'component',
+    datatype: 'object'
+  c.outPorts.add 'started',
+    datatype: 'object'
+  c.outPorts.add 'stopped',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
