@@ -1,5 +1,6 @@
 noflo = require 'noflo'
 fbpGraph = require 'fbp-graph'
+{ loadGraph } = require '../src/runtime'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -36,13 +37,7 @@ exports.getComponent = ->
           name: def.graph
         )
       )
-      .then((graphDefinition) -> new Promise((resolve, reject) ->
-        method = if graphDefinition.language is 'json' then 'loadJSON' else 'loadFBP'
-        fbpGraph.graph[method] graphDefinition.code, (err, instance) ->
-          return reject err if err
-          resolve instance
-        return
-      ))
+      .then(loadGraph)
       .then((graphInstance) ->
         state.graphs.push graphInstance
       )

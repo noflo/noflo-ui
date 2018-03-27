@@ -44,22 +44,29 @@ exports.getRemoteNodes = (client, route) ->
       return client.protocol.component.getsource(
         name: matchedNode.component
       )
-      .then((source) -> new Promise (resolve, reject) ->
+      .then((source) ->
         if source.language not in ['json', 'fbp']
           route.component = source
-          resolve(source)
-          return
-        method = if source.language is 'json' then 'loadJSON' else 'loadFBP'
-        fbpGraph.graph[method] source.code, (err, instance) ->
-          if err
-            reject err
-            return
-          route.graphs.push = instance
-          resolve instance
-          return
+          return Promise.resolve(source)
+        return exports.loadGraph(source)
+          .then((instance) ->
+            route.graphs.push instance
+            Promise.resolve instance
+          )
       )
   ), Promise.resolve(route.graphs[route.graphs.length - 1]))
   .then(() ->
     route.remote = []
     return route
   )
+
+exports.loadGraph = (source) -> new Promise (resolve, reject) ->
+  switch source.language
+    when 'json' then method = 'loadJSON'
+    when 'fbp' then method = 'loadFBP'
+    else
+      return reject new Error "Unknown format #{source.language} for graph #{source.name}"
+  method = if source.language is 'json' then 'loadJSON' else 'loadFBP'
+  fbpGraph.graph[method] source.code, (err, instance) ->
+    return reject err if err
+    resolve instance
