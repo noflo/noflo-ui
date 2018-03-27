@@ -1,4 +1,5 @@
 noflo = require 'noflo'
+CircularBuffer = require 'circular-buffer'
 { componentForLibrary } = require '../src/runtime'
 collections = require '../src/collections'
 
@@ -63,6 +64,15 @@ exports.getComponent = ->
         output.sendDone
           context:
             runtimeExecutions: runtimeExecutions
+      when 'runtime:packet'
+        runtimePackets = data.state.runtimePackets or {}
+        unless runtimePackets[data.payload.runtime]
+          # TODO: Make packet buffer size configurable?
+          runtimePackets[data.payload.runtime] = new CircularBuffer 400
+        runtimePackets[data.payload.runtime].enq data.payload.packet
+        output.sendDone
+          context:
+            runtimePackets: runtimePackets
       when 'runtime:error'
         state =
           state: 'error'

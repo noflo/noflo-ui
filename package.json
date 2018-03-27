@@ -17,6 +17,7 @@
   "dependencies": {
     "@polymer/polymer": "^2.2.0",
     "@webcomponents/webcomponentsjs": "^1.0.17",
+    "circular-buffer": "^1.0.2",
     "codemirror": "^5.22.2",
     "debug": "^3.0.0",
     "fbp": "~1.7.0",

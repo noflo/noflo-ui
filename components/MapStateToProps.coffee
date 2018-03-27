@@ -46,6 +46,12 @@ exports.getComponent = ->
         when 'runtimeExecutions'
           props.runtime = populateRuntime state
           return
+        when 'runtimePackets'
+          return unless updated.runtimePackets[state.runtime.id]
+          packets = updated.runtimePackets[state.runtime.id].toarray()
+          packets.reverse()
+          props.packets = packets.filter (p) -> p.graph is (state.graphs[0].name or state.graphs[0].properties.id)
+          return
         else
           props[key] = updated[key]
     output.sendDone
