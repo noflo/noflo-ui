@@ -101,7 +101,7 @@ exports.getComponent = ->
         break
 
       if type is 'runtime'
-        ctx.remote.push currentGraph
+        ctx.remote.push nodeId
         continue
 
       ctx.graphs.push currentGraph
