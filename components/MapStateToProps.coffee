@@ -47,6 +47,7 @@ exports.getComponent = ->
           props.runtime = populateRuntime state
           return
         when 'runtimePackets'
+          return unless state.runtime?.id
           return unless updated.runtimePackets[state.runtime.id]
           packets = updated.runtimePackets[state.runtime.id].toarray()
           packets.reverse()
