@@ -17,6 +17,32 @@ sendComponents = (client, components, namespace) ->
     code: c.code
   )))
 
+# Scope iframe runtimes to project
+ensureIframe = (client, project) ->
+  client.definition.querySelector = "iframe[data-runtime='#{client.definition.id}'][data-project='#{project.id}']"
+  iframe = document.body.querySelector client.definition.querySelector
+  unless iframe
+    # No iframe for this runtime/project combination yet, create
+    iframe = document.createElement 'iframe'
+    iframe.setAttribute 'sandbox', 'allow-scripts allow-same-origin allow-forms'
+    iframe.setAttribute 'data-runtime', client.definition.id
+    iframe.setAttribute 'data-project', project.id
+    document.body.appendChild iframe
+  unless client.transport.iframe
+    # Client has not been connected yet
+    client.transport.iframe = iframe
+    return Promise.resolve()
+  if iframe is client.transport.iframe
+    # We were already connected to this one
+    return Promise.resolve()
+  # We were connected to another iframe
+  # Disconnect and set new
+  return client.disconnect()
+    .then(() ->
+      client.iframe = iframe
+      Promise.resolve()
+    )
+
 exports.getComponent = ->
   c = new noflo.Component
   c.inPorts.add 'in',
@@ -39,11 +65,13 @@ exports.getComponent = ->
     output.send
       out: route
 
-    if client.definition.protocol is 'iframe' and not client.transport.iframe
-      # FIXME: We'll want to make this configurable
-      client.transport.setParentElement document.body
-
-    client.connect()
+    Promise.resolve()
+      .then(() ->
+        unless client.definition.protocol is 'iframe'
+          return Promise.resolve()
+        ensureIframe(client, route.project)
+      )
+      .then(() -> client.connect())
       .then(() ->
         sendComponents client, route.project.components, route.project.namespace
       )
