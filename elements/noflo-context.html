@@ -63,7 +63,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 10px;
+        font-size: 15px;
         width: 100%;
       }
       the-panel#fixed main {
@@ -74,6 +74,8 @@
       }
       the-panel#fixed main ul {
         -webkit-overflow-scrolling: touch;
+        margin-top: 0px;
+        padding-top: 0px;
         margin-left: 0px;
         padding-left: 0px;
         width: 252px;
@@ -96,6 +98,10 @@
       the-panel#fixed main li.protocolerror {
         color: hsl(  0,  98%, 46%);
       }
+      the-panel#fixed main li pre {
+        color: rgba(179, 222, 230, 0.5);
+        font-size: 8px;
+      }
       the-panel#fixed main li.output {
         color: var(--noflo-ui-text);
       }
@@ -114,6 +120,7 @@
             </template>
             <template is="dom-if" if="[[_ifEventIsError(event)]]">
               {{ event.payload.message }}
+              <template is="dom-if" if="[[_ifEventHasStack(event)]]"><pre>{{ event.payload.stack }}</pre></template>
             </template>
             <template is="dom-if" if="[[_ifEventIsOutput(event)]]">
               {{ event.payload.message }}
@@ -494,10 +501,13 @@
         return this.runtime.status.online;
       },
       _ifEventIsPlain: function (event) {
-        return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror'].indexOf(event.type) === -1);
+        return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) === -1);
       },
       _ifEventIsError: function (event) {
-        return (['error', 'processerror', 'networkerror'].indexOf(event.type) !== -1);
+        return (['error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) !== -1);
+      },
+      _ifEventHasStack: function (event) {
+        return (['error', 'processerror', 'networkerror'].indexOf(event.type) !== -1 && event.payload.stack && event.payload.stack.length);
       },
       _ifEventIsOutput: function (event) {
         return (event.type === 'output' && event.payload.message);
