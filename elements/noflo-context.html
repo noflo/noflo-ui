@@ -38,7 +38,7 @@
       }
       the-panel:before {
         font-family: FontAwesomeSVG;
-        content: '\f06e';
+        content: '\f188';
         color: var(--noflo-ui-border-highlight);
         position: absolute;
         text-align: center;
@@ -59,29 +59,72 @@
         bottom: 0px;
         right: 0px;
       }
-      the-panel#fixed the-card {
-        padding: 0px;
-        width: calc(72px * 4);
+      the-panel#fixed header h1 {
+        white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 10px;
+        width: 100%;
       }
-      the-panel#fixed the-card.maximized {
-        background-color: var(--noflo-ui-background);
-        width: calc(100% - 36px);
-        height: calc(100% - 36px);
-        max-height: none;
-        position: fixed;
-        transform: translateZ(0);
-        top: 72px;
-        left: 36px;
-        transition: height 0.3s ease-in-out, width 0.3s ease-in-out;
-        z-index: 3;
-        border: none;
+      the-panel#fixed main {
+        height: calc(100% - 72px);
+        overflow-y: scroll;
+        overflow-x: hidden;
+        width: calc(72px * 4);
+      }
+      the-panel#fixed main ul {
+        -webkit-overflow-scrolling: touch;
+        margin-left: 0px;
+        padding-left: 0px;
+        width: 252px;
+      }
+      the-panel#fixed main li {
+        font-size: 10px;
+        line-height: 14px;
+        margin-left: 0px;
+        padding-left: 0px;
+        margin-bottom: 0px;
+        color: var(--noflo-ui-text-highlight);
+        margin-bottom: 4px;
+        padding-bottom: 2px;
+        border-bottom: 1px hsla(190, 100%, 30%, 0.4) solid;
+        list-style: none;
+      }
+      the-panel#fixed main li.error,
+      the-panel#fixed main li.processerror,
+      the-panel#fixed main li.networkerror,
+      the-panel#fixed main li.protocolerror {
+        color: hsl(  0,  98%, 46%);
+      }
+      the-panel#fixed main li.output {
+        color: var(--noflo-ui-text);
       }
     </style>
     <section id="contextsection"></section>
     <the-panel id="fixed" edge="right" size="324" handle="36">
-      <header slot="header"></header>
-      <main></main>
+      <header slot="header">
+        <h1>Runtime events</h1>
+      </header>
+      <main id="fixedmain">
+        <ul>
+        <template is="dom-repeat" items="[[events]]" as="event">
+          <li class$="{{ event.type }}">
+            <template is="dom-if" if="[[_ifEventIsPlain(event)]]">
+              {{ event.type }}
+            </template>
+            <template is="dom-if" if="[[_ifEventIsError(event)]]">
+              {{ event.payload.message }}
+            </template>
+            <template is="dom-if" if="[[_ifEventIsOutput(event)]]">
+              {{ event.payload.message }}
+            </template>
+            <template is="dom-if" if="[[_ifEventIsStopStart(event)]]">
+              {{ event.payload.graph }} {{ event.type }}
+            </template>
+          </li>
+        </template>
+        </ul>
+      </main>
       <footer slot="footer"></footer>
     </the-panel>
   </template>
@@ -102,6 +145,13 @@
             return [];
           },
           observer: 'edgesChanged'
+        },
+        events: {
+          type: Array,
+          value: function () {
+            return [];
+          },
+          observer: 'eventsChanged'
         },
         editor: {
           value: null,
@@ -265,6 +315,9 @@
       },
       edgesChanged: function () {
         this.fire('edges', this.edges);
+      },
+      eventsChanged: function () {
+        this.$.fixedmain.scrollTop = this.$.fixedmain.scrollHeight;
       },
       componentChanged: function () {
         if (this.component && typeof this.component === 'object' && !this.component.name) {
@@ -439,6 +492,18 @@
           return false;
         }
         return this.runtime.status.online;
+      },
+      _ifEventIsPlain: function (event) {
+        return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror'].indexOf(event.type) === -1);
+      },
+      _ifEventIsError: function (event) {
+        return (['error', 'processerror', 'networkerror'].indexOf(event.type) !== -1);
+      },
+      _ifEventIsOutput: function (event) {
+        return (event.type === 'output' && event.payload.message);
+      },
+      _ifEventIsStopStart: function (event) {
+        return (['stopped', 'started'].indexOf(event.type) !== -1 && event.payload.graph);
       }
     });
   </script>
