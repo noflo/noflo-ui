@@ -27,19 +27,20 @@ ensureIframe = (client, project) ->
     iframe.setAttribute 'sandbox', 'allow-scripts allow-same-origin allow-forms'
     iframe.setAttribute 'data-runtime', client.definition.id
     iframe.setAttribute 'data-project', project.id
+    iframe.className = 'iframe-runtime'
     document.body.appendChild iframe
   unless client.transport.iframe
     # Client has not been connected yet
     client.transport.iframe = iframe
     return Promise.resolve()
-  if iframe is client.transport.iframe
+  if client.transport.iframe is iframe
     # We were already connected to this one
     return Promise.resolve()
   # We were connected to another iframe
   # Disconnect and set new
   return client.disconnect()
     .then(() ->
-      client.iframe = iframe
+      client.transport.iframe = iframe
       Promise.resolve()
     )
 
@@ -79,9 +80,9 @@ exports.getComponent = ->
         sendGraphs client, route.project.graphs, route.graphs
       )
       .then(() ->
-        unless client.definition.protocol is 'iframe'
-          return Promise.resolve()
         unless route.graphs?.length
+          return Promise.resolve()
+        if client.transport.graph is route.graphs[0]
           return Promise.resolve()
         client.transport.setMain(route.graphs[0])
         return Promise.resolve()

@@ -180,7 +180,7 @@ html, body, button {
   padding: 0;
 }
 
-#preview-iframe {
+.iframe-runtime {
   display: none;
   border: none;
   width: 288px;
