@@ -205,9 +205,12 @@
         }
       },
       runtimeChanged: function () {
-        this.set('icon', this.getRuntimeIcon(this.runtime));
         if (!this.runtime) {
           return;
+        }
+        this.set('icon', this.getRuntimeIcon(this.runtime));
+        if (!this.runtime.status || !this.runtime.status.online) {
+          this.hideCard();
         }
       },
       start: function (event) {
