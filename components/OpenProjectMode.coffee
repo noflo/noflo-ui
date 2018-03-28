@@ -79,6 +79,14 @@ exports.getComponent = ->
         sendGraphs client, route.project.graphs, route.graphs
       )
       .then(() ->
+        unless client.definition.protocol is 'iframe'
+          return Promise.resolve()
+        unless route.graphs?.length
+          return Promise.resolve()
+        client.transport.setMain(route.graphs[0])
+        return Promise.resolve()
+      )
+      .then(() ->
         getRemoteNodes client, route
       )
       .then(() ->
