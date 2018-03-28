@@ -1,4 +1,3 @@
-<link rel="import" href="noflo-preview.html">
 <link rel="import" href="noflo-runtime-selector.html">
 <link rel="import" href="noflo-runtime-testdetails.html">
 <link rel="import" href="noflo-icon.html">
@@ -198,10 +197,6 @@
       },
       graphChanged: function () {
         this.wasConnected = false;
-        if (this.card) {
-          Polymer.dom(Polymer.dom(this.card).parentNode).removeChild(this.card);
-          this.card = null;
-        }
         if (this.runtimeSelector) {
           if (Polymer.dom(this.runtimeSelector).parentNode) {
             Polymer.dom(Polymer.dom(this.runtimeSelector).parentNode).removeChild(this.runtimeSelector);
@@ -264,30 +259,23 @@
         Polymer.dom(document.body).appendChild(details);
       },
       showCard: function () {
-        if (this.card || !this.panel) {
-          return;
-        }
-        this.card = document.createElement('the-card');
-        this.set('card.type', 'noflo-runtime-preview');
-        // Move the preview element of the runtime into the card
-        var preview = document.createElement('noflo-preview');
-        Polymer.dom(preview).classList.add('the-card-content');
-        preview.runtime = this.runtime;
-        preview.returnTo = Polymer.dom(this).parentNode;
-        Polymer.dom(this.card).appendChild(preview);
-        this.card.addTo(this.panel.getMain());
-        if (this.runtime.definition.protocol === 'iframe') {
-          this.set('panel.open', true);
-        }
+        this.setIframeVisibility('block');
       },
       hideCard: function () {
-        if (!this.card) {
+        this.setIframeVisibility('none');
+      },
+      setIframeVisibility: function (visibility) {
+        if (!this.runtime || !this.runtime.definition) {
           return;
         }
-        return;
-        var el = this.runtime.getElement();
-        Polymer.dom(Polymer.dom(this.card).parentNode).removeChild(this.card);
-        this.card = null;
+        if (!this.runtime.definition.querySelector) {
+          return;
+        }
+        var iframe = document.body.querySelector(this.runtime.definition.querySelector);
+        if (!iframe) {
+          return;
+        }
+        iframe.style.display = visibility;
       },
       selectRuntime: function () {
         if (!this.graph) {
