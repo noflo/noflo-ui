@@ -32,10 +32,19 @@ exports.getComponent = ->
     props = {}
     Object.keys(updated).forEach (key) ->
       switch key
+        when 'runtime'
+          props.runtime = updated.runtime
+          return if state.runtime?.id
+          # Clear runtime informations from view when disconnected
+          props.componentLibrary = []
+          props.packets = []
+          props.events = []
+          props.edges = []
+          return
         when 'componentLibraries'
           # Filter UI components to current runtime
-          if state.runtime?.id
-            props.componentLibrary = updated[key][state.runtime.id] or []
+          return unless state.runtime?.id
+          props.componentLibrary = updated[key][state.runtime.id] or []
           return
         when 'runtime'
           props.runtime = populateRuntime state
@@ -48,14 +57,18 @@ exports.getComponent = ->
           return
         when 'runtimePackets'
           return unless state.runtime?.id
-          return unless updated.runtimePackets[state.runtime.id]
+          unless updated.runtimePackets[state.runtime.id]
+            props.packets = []
+            return
           packets = updated.runtimePackets[state.runtime.id].toarray()
           packets.reverse()
           props.packets = packets.filter (p) -> p.graph is (state.graphs[0].name or state.graphs[0].properties.id)
           return
         when 'runtimeEvents'
           return unless state.runtime?.id
-          return unless updated.runtimeEvents[state.runtime.id]
+          unless updated.runtimeEvents[state.runtime.id]
+            props.events = []
+            return
           events = updated.runtimeEvents[state.runtime.id].toarray()
           events.reverse()
           props.events = events
