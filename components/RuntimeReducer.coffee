@@ -111,6 +111,11 @@ exports.getComponent = ->
         output.sendDone
           context:
             runtimeEvents: events
+      when 'runtime:protocolerror'
+        events = addRuntimeEvent data.state, data.payload.runtime, 'protocolerror', data.payload
+        output.sendDone
+          context:
+            runtimeEvents: events
       when 'runtime:output'
         events = addRuntimeEvent data.state, data.payload.runtime, 'output', data.payload.output
         output.sendDone

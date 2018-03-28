@@ -88,6 +88,8 @@ exports.getComponent = ->
     datatype: 'object'
   c.outPorts.add 'processerror',
     datatype: 'object'
+  c.outPorts.add 'protocolerror',
+    datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
   c.clients = {}
@@ -140,7 +142,7 @@ exports.getComponent = ->
       onProtocolError: (err) ->
         err.runtime = id
         output.send
-          error: err
+          protocolerror: err
 
     client.on 'connected', c.clients[id].onConnected
     client.transport.on 'status', c.clients[id].onStatus
