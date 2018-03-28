@@ -53,6 +53,13 @@ exports.getComponent = ->
           packets.reverse()
           props.packets = packets.filter (p) -> p.graph is (state.graphs[0].name or state.graphs[0].properties.id)
           return
+        when 'runtimeEvents'
+          return unless state.runtime?.id
+          return unless updated.runtimeEvents[state.runtime.id]
+          events = updated.runtimeEvents[state.runtime.id].toarray()
+          events.reverse()
+          props.events = events
+          return
         else
           props[key] = updated[key]
     output.sendDone
