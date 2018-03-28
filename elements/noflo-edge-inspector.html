@@ -43,37 +43,27 @@
         padding-bottom: 2px;
         border-bottom: 1px hsla(190, 100%, 30%, 0.4) solid;
       }
-      ul#events li.connect {
-        border-top: 1px solid #80ff80;
-        height: 3px;
-        margin-bottom: 3px;
-      }
-      ul#events li.begingroup {
+      ul#events li.openBracket {
         color: var(--noflo-ui-border);
       }
-      ul#events li.begingroup:before {
+      ul#events li.openBracket:before {
         display: inline;
         content: '<';
       }
-      ul#events li.begingroup:after {
+      ul#events li.openBracket:after {
         display: inline;
         content: '>';
       }
-      ul#events li.endgroup {
+      ul#events li.closeBracket {
         color: var(--noflo-ui-border);
       }
-      ul#events li.endgroup:before {
+      ul#events li.closeBracket:before {
         display: inline;
         content: '</';
       }
-      ul#events li.endgroup:after {
+      ul#events li.closeBracket:after {
         display: inline;
         content: '>';
-      }
-      ul#events li.disconnect {
-        border-bottom: 1px solid #ff8080;
-        height: 3px;
-        margin-bottom: 3px;
       }
       ul#events img {
         margin: 5px;
@@ -189,7 +179,7 @@
         this.lastlog = this.log[this.log.length - 1];
       },
       renderLogs: function () {
-        var first = this.log.indexOf(this.lastlog);
+        var first = this.log.indexOf(this.lastlog) + 1;
         var i, item, li, content;
         var fragment = document.createDocumentFragment();
         for (i = first; i < this.log.length; i++) {

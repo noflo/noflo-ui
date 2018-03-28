@@ -24,21 +24,21 @@ handleSignal = (signal, rtId, output) ->
           status: signal.payload
           runtime: rtId
     when 'network:begingroup'
+      signal.payload.type = 'openBracket'
       output.send
         packet:
-          type: 'openBracket'
           packet: signal.payload
           runtime: rtId
     when 'network:data'
+      signal.payload.type = 'data'
       output.send
         packet:
-          type: 'data'
           packet: signal.payload
           runtime: rtId
     when 'network:endgroup'
+      signal.payload.type = 'closeBracket'
       output.send
         packet:
-          type: 'closeBracket'
           packet: signal.payload
           runtime: rtId
 
