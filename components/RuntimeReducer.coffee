@@ -44,9 +44,17 @@ exports.getComponent = ->
       when 'runtime:status'
         runtimeStatuses = data.state.runtimeStatuses or {}
         runtimeStatuses[data.payload.runtime] = data.payload.status
+        ctx =
+          runtimeStatuses: runtimeStatuses
+        unless data.payload.status.online
+          # Disconnected, update execution status too
+          runtimeExecutions = data.state.runtimeExecutions or {}
+          runtimeExecutions[data.payload.runtime] = data.payload.status
+          runtimeExecutions[data.payload.runtime].running = false
+          runtimeExecutions[data.payload.runtime].label = 'not running'
+          ctx.runtimeExecutions = runtimeExecutions
         output.sendDone
-          context:
-            runtimeStatuses: runtimeStatuses
+          context: ctx
       when 'runtime:started'
         runtimeExecutions = data.state.runtimeExecutions or {}
         runtimeExecutions[data.payload.runtime] = data.payload.status
