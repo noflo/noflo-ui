@@ -154,16 +154,9 @@
           type: String,
           value: 'asterisk'
         },
-        card: { value: null },
         graph: {
           value: null,
           observer: 'graphChanged'
-        },
-        notifications: {
-          type: Array,
-          value: function () {
-            return [];
-          }
         },
         panel: { value: null },
         runtime: {
@@ -298,62 +291,6 @@
           this.fire('runtime', runtime);
         }.bind(this));
         Polymer.dom(document.body).appendChild(this.runtimeSelector);
-      },
-      canNotify: function () {
-        return 'Notification' in window;
-      },
-      allowedToNotify: function () {
-        if (!this.canNotify()) {
-          return false;
-        }
-        if (Notification.permission === 'denied') {
-          return false;
-        }
-        return true;
-      },
-      requestNotificationPermission: function () {
-        if (!this.canNotify()) {
-          return;
-        }
-        if (!this.allowedToNotify()) {
-          return;
-        }
-        // Don't bug them if they already clicked
-        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-          Notification.requestPermission(function (permission) {
-            // Whatever the user answers, we make sure we store the information
-            if (!('permission' in Notification)) {
-              Notification.permission = permission;
-            }
-          });
-        }
-      },
-      notify: function (title, message) {
-        if (!this.allowedToNotify()) {
-          if (!console || !console.log) {
-            return;
-          }
-          console.log(title + ': ' + message);
-          return;
-        }
-        // Check if notification is duplicate
-        var duplicates = this.notifications.filter(function (n) {
-          if (n.title === title && n.body === message) {
-            return true;
-          }
-          return false;
-        });
-        if (duplicates.length) {
-          return;
-        }
-        var notification = new Notification(title, {
-          body: message,
-          icon: 'app/$NOFLO_THEME-64.png'
-        });
-        this.push('notifications', notification);
-        notification.addEventListener('close', function () {
-          this.splice('notifications', this.notifications.indexOf(notification), 1);
-        }.bind(this), false);
       },
       getRuntimeIcon: function (runtime) {
         if (!runtime || !runtime.definition || !runtime.definition.type) {
