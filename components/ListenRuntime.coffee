@@ -41,6 +41,26 @@ handleSignal = (signal, rtId, output) ->
         packet:
           packet: signal.payload
           runtime: rtId
+    when 'network:output'
+      output.send
+        output:
+          output: signal.payload
+          runtime: rtId
+    when 'network:error'
+      output.send
+        networkerror:
+          error: signal.payload
+          runtime: rtId
+    when 'network:processerror'
+      output.send
+        processerror:
+          error: signal.payload
+          runtime: rtId
+    when 'network:icon'
+      output.send
+        icon:
+          icon: signal.payload
+          runtime: rtId
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -59,6 +79,14 @@ exports.getComponent = ->
   c.outPorts.add 'stopped',
     datatype: 'object'
   c.outPorts.add 'packet',
+    datatype: 'object'
+  c.outPorts.add 'output',
+    datatype: 'object'
+  c.outPorts.add 'icon',
+    datatype: 'object'
+  c.outPorts.add 'networkerror',
+    datatype: 'object'
+  c.outPorts.add 'processerror',
     datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
@@ -99,8 +127,7 @@ exports.getComponent = ->
             ), ((err) ->
               err.runtime = id
               output.send
-                error:
-                  payload: err
+                error: err
             ))
         , 1
       onStatus: (status) ->
@@ -111,6 +138,7 @@ exports.getComponent = ->
       onSignal: (signal) ->
         handleSignal signal, id, output
       onProtocolError: (err) ->
+        err.runtime = id
         output.send
           error: err
 
