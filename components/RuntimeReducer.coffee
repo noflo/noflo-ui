@@ -148,12 +148,11 @@ exports.getComponent = ->
             runtimeEvents: events
       when 'runtime:error'
         events = addRuntimeEvent data.state, data.payload.runtime, 'error', data.payload
-        state =
-          state: 'error'
-          error: data.payload
-          runtimeEvents: events
         output.sendDone
-          context: state
+          context:
+            runtimeEvents: events
+            state: 'error'
+            error: data.payload
         return
       when 'runtime:clearevents'
         runtimeEvents = filterRuntimeEvents data.state.runtimeEvents, data.payload.runtime, (event) ->

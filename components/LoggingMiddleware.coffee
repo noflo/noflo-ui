@@ -7,6 +7,15 @@ sendEvent = (label, action = 'click', category = 'menu') ->
   return unless typeof window.ga is 'function'
   window.ga 'send', 'event', category, action, label
 
+registerPageView = (hash) ->
+  return unless typeof window.ga is 'function'
+  return unless hash
+  if hash.indexOf('?') isnt -1
+    # Don't send connection details
+    hash = hash.split('?')[0]
+  window.ga 'set', 'page', "#{window.location.pathname}#{window.location.search}##{hash}"
+  window.ga 'send', 'pageview'
+
 exports.getComponent = ->
   c = new noflo.Component
   c.icon = 'file-text'
@@ -29,6 +38,8 @@ exports.getComponent = ->
       debugError data.payload
 
     switch action
+      when 'application:hash'
+        registerPageView data.payload
       when 'user:login'
         sendEvent 'userLogin'
       when 'user:logout'
