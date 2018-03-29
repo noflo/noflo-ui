@@ -228,7 +228,6 @@
             if (this.selectedEdges.length > 0) {
               this.selectedEdges = [];
             }
-            this.fire('edges', this.selectedEdges);
             return;
           }
           if (toggle) {
@@ -245,11 +244,12 @@
           } else {
             this.selectedEdges = [item];
           }
-          this.fire('edges', this.selectedEdges);
         },
         onNodeSelection: function (itemKey, item, toggle) {
           if (itemKey === undefined) {
-            this.set('selectedNodes', []);
+            if (this.selectedNodes.length > 0) {
+              this.selectedNodes = [];
+            }
           } else if (toggle) {
             var index = this.selectedNodes.indexOf(item);
             var isSelected = index !== -1;
@@ -259,10 +259,8 @@
               this.push('selectedNodes', item);
             }
           } else {
-            this.set('selectedNodes', [item]);
+            this.selectedNodes = [item];
           }
-          this.fire('nodes', this.selectedNodes);
-          this.selectedNodesChanged();
         },
         selectedNodesChanged: function () {
           this.set('selectedNodesHash', {});
