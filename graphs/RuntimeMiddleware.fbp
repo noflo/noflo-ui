@@ -27,7 +27,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'runtime:networkerror' -> ACTION RuntimeNetworkErrorAction(ui/SetAction) OUT -> IN NewActions
 'runtime:processerror' -> ACTION RuntimeProcessErrorAction(ui/SetAction) OUT -> IN NewActions
 'runtime:protocolerror' -> ACTION RuntimeProtocolErrorAction(ui/SetAction) OUT -> IN NewActions
-'application:hash' -> ACTION ApplicationHashAction(ui/SetAction) OUT -> IN NewActions
+'application:recreatestate' -> ACTION ApplicationRecreateAction(ui/SetAction) OUT -> IN NewActions
 'storage:opened' -> ACTION StorageOpenedAction(ui/SetAction) OUT -> IN Passed
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
 

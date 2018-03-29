@@ -7,7 +7,7 @@ exports.getComponent = ->
   c.inPorts.add 'client',
     datatype: 'object'
   c.outPorts.add 'out',
-    datatype: 'string'
+    datatype: 'object'
   c.outPorts.add 'error',
     datatype: 'object'
   c.process (input, output) ->
@@ -17,9 +17,7 @@ exports.getComponent = ->
     client.disconnect()
       .then(() -> client.connect())
       .then(() ->
-        # Re-send current hash so we rebuild state completely
-        hash = window.location.href.split('#')[1] or ''
         output.send
-          out: hash
+          out: client.definition
       )
       .then((() -> output.done()), (err) -> output.done(err))
