@@ -27,6 +27,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'runtime:networkerror' -> ACTION RuntimeNetworkErrorAction(ui/SetAction) OUT -> IN NewActions
 'runtime:processerror' -> ACTION RuntimeProcessErrorAction(ui/SetAction) OUT -> IN NewActions
 'runtime:protocolerror' -> ACTION RuntimeProtocolErrorAction(ui/SetAction) OUT -> IN NewActions
+'application:hash' -> ACTION ApplicationHashAction(ui/SetAction) OUT -> IN NewActions
 'storage:opened' -> ACTION StorageOpenedAction(ui/SetAction) OUT -> IN Passed
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
 
@@ -121,3 +122,11 @@ GetClient OUT[4] -> IN StopNetwork(ui/StopNetwork)
 GetClient CLIENT[4] -> CLIENT StopNetwork
 StopNetwork OUT -> IN RuntimeStoppedAction
 StopNetwork ERROR -> IN RuntimeErrorAction
+
+# Runtime reconnection
+Dispatch HANDLE[8] -> IN GetReconnectValues(ui/GetActionValues)
+GetReconnectValues OUT -> IN[5] GetClient
+GetClient OUT[5] -> IN ReconnectRuntime(ui/ReconnectRuntime)
+GetClient CLIENT[5] -> CLIENT ReconnectRuntime
+ReconnectRuntime OUT -> IN ApplicationHashAction
+ReconnectRuntime ERROR -> IN RuntimeErrorAction
