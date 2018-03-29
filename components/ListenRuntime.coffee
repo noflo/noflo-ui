@@ -144,9 +144,10 @@ exports.getComponent = ->
       onSignal: (signal) ->
         handleSignal signal, id, output
       onProtocolError: (err) ->
-        err.runtime = id
         output.send
-          protocolerror: err
+          protocolerror:
+            error: err
+            runtime: id
 
     client.on 'connected', c.clients[id].onConnected
     client.transport.on 'status', c.clients[id].onStatus

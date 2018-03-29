@@ -43,6 +43,16 @@ exports.getComponent = ->
         sendEvent 'startRuntime', 'click', 'button'
       when 'runtime:stop'
         sendEvent 'stopRuntime', 'click', 'button'
+      when 'runtime:output'
+        console.error data.payload.output.message if data.payload.output.message
+      when 'runtime:processerror'
+        console.error data.payload.error.error
+      when 'runtime:networkerror'
+        console.error data.payload.error
+      when 'runtime:protocolerror'
+        console.error data.payload.error
+      when 'runtime:error'
+        console.error data.payload
 
     out.send data
     do callback
