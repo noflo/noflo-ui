@@ -691,11 +691,11 @@
           name = event.currentTarget.getAttribute('name');
         }
         this.graph.removeInitial(this.node.id, name);
-        this.inports.forEach(function (port) {
+        this.inports.forEach(function (port, idx) {
           if (port.name === name) {
-            port.value = null;
+            this.set('inports.'+idx+'.value', null);
           }
-        });
+        }.bind(this));
         Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.remove('error');
       },
       sendBang: function (event) {
