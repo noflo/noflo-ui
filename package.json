@@ -39,7 +39,7 @@
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
     "react": "^15.6.0",
-    "react-dom": "^15.6.0",
+    "react-dom": "^16.3.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.12.0",
     "uuid": "^3.0.1"
