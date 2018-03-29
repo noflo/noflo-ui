@@ -84,7 +84,7 @@ describe('URL Middleware', function() {
     it('should send application:redirect action', function(done) {
       const checkRedirect = data => chai.expect(data).to.eql('#gist/abc123');
       mw.receiveAction('application:redirect', checkRedirect, done);
-      mw.send('application:hash', '#example/abc123');
+      mw.send('application:hash', 'example/abc123');
     })
   );
   describe('on hash change to an gist URL', () =>
@@ -100,7 +100,7 @@ describe('URL Middleware', function() {
           remote: []})
       ;
       mw.receiveAction('github:gist', checkOpen, done);
-      mw.send('application:hash', '#gist/abc123');
+      mw.send('application:hash', 'gist/abc123');
     })
   );
 });

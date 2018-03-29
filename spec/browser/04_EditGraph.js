@@ -50,7 +50,8 @@ describe('Editing a graph', function() {
     });
     it('should connect automatically to the IFRAME provider', function(done) {
       this.timeout(45000);
-      if (runtime.status.online) {
+      if (runtime.runtime.status.online) {
+        chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
         done();
         return;
       }
@@ -58,11 +59,13 @@ describe('Editing a graph', function() {
       var allowedTries = 400;
       var checkOnline = function () {
         if (tries > allowedTries) {
-          chai.expect(runtime.status.online).to.equal(true);
+          chai.expect(runtime.runtime.status.online).to.equal(true);
+          chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
           done();
           return;
         }
-        if (runtime.status.online) {
+        if (runtime.runtime.status.online) {
+          chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
           done();
           return;
         }
