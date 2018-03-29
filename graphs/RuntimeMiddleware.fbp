@@ -85,6 +85,7 @@ GetClient ERROR -> IN RuntimeErrorAction
 
 # Listen for runtime changes
 GetClient INSTANCE -> IN ListenRuntime(ui/ListenRuntime)
+ListenRuntime RUNTIMEUPDATE -> IN RuntimeRegisterAction
 ListenRuntime STATUS -> IN RuntimeStatusAction
 ListenRuntime COMPONENTS -> IN RuntimeComponentsAction
 ListenRuntime COMPONENT -> IN RuntimeComponentAction

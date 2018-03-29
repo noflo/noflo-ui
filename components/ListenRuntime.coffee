@@ -67,6 +67,8 @@ exports.getComponent = ->
   c.inPorts.add 'in',
     description: 'Runtime client instance'
     datatype: 'object'
+  c.outPorts.add 'runtimeupdate',
+    datatype: 'object'
   c.outPorts.add 'status',
     description: 'Runtime status change'
     datatype: 'object'
@@ -133,10 +135,12 @@ exports.getComponent = ->
             ))
         , 1
       onStatus: (status) ->
+        client.definition.seen = new Date
         output.send
           status:
             status: status
             runtime: id
+          runtimeupdate: client.definition
       onSignal: (signal) ->
         handleSignal signal, id, output
       onProtocolError: (err) ->
