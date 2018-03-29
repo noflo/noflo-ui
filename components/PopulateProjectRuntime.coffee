@@ -1,5 +1,5 @@
 noflo = require 'noflo'
-{ getGraphType, getComponentType } = require '../src/runtime'
+{ getGraphType, getComponentType, isDefaultRuntime } = require '../src/runtime'
 
 getType = (context) ->
   if context.graphs.length
@@ -24,8 +24,12 @@ findCurrentRuntime = (context, runtimes) ->
   return context.runtime if context.runtime
   return null unless runtimes.length
   [matched] = runtimes.filter (rt) ->
+    if context.project and rt.project
+      return true if isDefaultRuntime rt
+      return false if rt.project isnt context.project.id
     return true if context.project and rt.project is context.project.id
     return true if rt.protocol is 'iframe'
+    false
   return matched or null
 
 exports.getComponent = ->
