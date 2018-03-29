@@ -72,6 +72,11 @@
         overflow-x: hidden;
         width: calc(72px * 4);
       }
+      the-panel#fixed main p {
+        font-size: 10px;
+        line-height: 14px;
+        color: var(--noflo-ui-text-highlight);
+      }
       the-panel#fixed main ul {
         -webkit-overflow-scrolling: touch;
         margin-top: 0px;
@@ -112,25 +117,30 @@
         <h1>Runtime events</h1>
       </header>
       <main id="fixedmain">
-        <ul>
-        <template is="dom-repeat" items="[[events]]" as="event">
-          <li class$="{{ event.type }}">
-            <template is="dom-if" if="[[_ifEventIsPlain(event)]]">
-              {{ event.type }}
-            </template>
-            <template is="dom-if" if="[[_ifEventIsError(event)]]">
-              {{ event.payload.message }}
-              <template is="dom-if" if="[[_ifEventHasStack(event)]]"><pre>{{ event.payload.stack }}</pre></template>
-            </template>
-            <template is="dom-if" if="[[_ifEventIsOutput(event)]]">
-              {{ event.payload.message }}
-            </template>
-            <template is="dom-if" if="[[_ifEventIsStopStart(event)]]">
-              {{ event.payload.graph }} {{ event.type }}
-            </template>
-          </li>
+        <template is="dom-if" if="[[runtime]]">
+          <ul>
+          <template is="dom-repeat" items="[[events]]" as="event">
+            <li class$="{{ event.type }}">
+              <template is="dom-if" if="[[_ifEventIsPlain(event)]]">
+                {{ event.type }}
+              </template>
+              <template is="dom-if" if="[[_ifEventIsError(event)]]">
+                {{ event.payload.message }}
+                <template is="dom-if" if="[[_ifEventHasStack(event)]]"><pre>{{ event.payload.stack }}</pre></template>
+              </template>
+              <template is="dom-if" if="[[_ifEventIsOutput(event)]]">
+                {{ event.payload.message }}
+              </template>
+              <template is="dom-if" if="[[_ifEventIsStopStart(event)]]">
+                {{ event.payload.graph }} {{ event.type }}
+              </template>
+            </li>
+          </template>
+          </ul>
         </template>
-        </ul>
+        <template is="dom-if" if="[[!runtime]]">
+          <p>Not connected to a runtime.</p>
+        </template>
       </main>
       <footer slot="footer"></footer>
     </the-panel>
