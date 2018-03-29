@@ -1,26 +1,30 @@
 noflo = require 'noflo'
 { getGraphType, getComponentType } = require '../src/runtime'
 
-getType = (project) ->
-  if project.graphs.length
-    graphType = getGraphType project.graphs[0]
+getType = (context) ->
+  if context.graphs.length
+    # Current main graph in view
+    graphType = getGraphType context.graphs[0]
     return graphType if graphType
-  if project.component
-    componentType = getComponentType project.component
+  if context.component
+    # Current component in editor
+    componentType = getComponentType context.component
     return componentType if componentType
-  return project.type
+  return null unless context.project
+  return context.project.type
 
-findCompatibleRuntimes = (project, runtimes) ->
-  projectType = getType project
+findCompatibleRuntimes = (context, runtimes) ->
+  projectType = getType context
   return runtimes.filter (rt) ->
     return true if projectType is 'all'
     return rt.type is projectType
 
-findCurrentRuntime = (project, runtimes) ->
-  return project.runtime if project.runtime
+findCurrentRuntime = (context, runtimes) ->
+  # TODO: Switch runtime if no longer in list of compatible
+  return context.runtime if context.runtime
   return null unless runtimes.length
   [matched] = runtimes.filter (rt) ->
-    return true if rt.project is project.id
+    return true if context.project and rt.project is context.project.id
     return true if rt.protocol is 'iframe'
   return matched or null
 
@@ -37,17 +41,17 @@ exports.getComponent = ->
 
   c.process (input, output) ->
     return unless input.hasData 'in', 'runtimes'
-    [project, runtimes] = input.getData 'in', 'runtimes'
+    [context, runtimes] = input.getData 'in', 'runtimes'
 
-    project.compatible = findCompatibleRuntimes project, runtimes
-    project.runtime = findCurrentRuntime project, project.compatible
+    context.compatible = findCompatibleRuntimes context, runtimes
+    context.runtime = findCurrentRuntime context, context.compatible
 
-    unless project.runtime
+    unless context.runtime
       # No runtime matched, send as-is
       output.sendDone
-        skipped: project
+        skipped: context
       return
 
     output.sendDone
-      out: project
+      out: context
     return
