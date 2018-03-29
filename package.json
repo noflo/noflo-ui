@@ -38,7 +38,7 @@
     "noflo-runtime-postmessage": "^0.10.0",
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
-    "react": "^15.6.0",
+    "react": "^16.3.0",
     "react-dom": "^15.6.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.12.0",
