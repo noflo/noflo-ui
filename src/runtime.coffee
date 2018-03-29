@@ -70,3 +70,8 @@ exports.loadGraph = (source) -> new Promise (resolve, reject) ->
   fbpGraph.graph[method] source.code, (err, instance) ->
     return reject err if err
     resolve instance
+
+exports.isDefaultRuntime = (runtime) ->
+  if runtime.protocol is 'iframe' and runtime.address is 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+    return true
+  return false
