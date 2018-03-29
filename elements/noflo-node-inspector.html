@@ -498,9 +498,7 @@
         if (label === this.node.metadata.label) {
           return;
         }
-        // Change label
         this.graph.startTransaction('rename');
-        this.graph.setNodeMetadata(this.node.id, { label: label });
         // Change id
         var id = label;
         if (id !== this.node.id) {
@@ -513,6 +511,8 @@
           }
           this.graph.renameNode(this.node.id, id);
         }
+        // Change label
+        this.graph.setNodeMetadata(id, { label: label });
         this.graph.endTransaction('rename');
       },
       getPortValue: function (port) {
