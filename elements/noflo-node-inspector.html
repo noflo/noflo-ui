@@ -304,6 +304,22 @@
         content: '*';
       }
 
+      section.errors header {
+        display: flex;
+        justify-content: space-between;
+      }
+      section.errors header h2 {
+        font-size: 14px;
+        line-height: 36px;
+        margin-bottom: 0px;
+        padding-bottom: 0px;
+        position: static;
+        text-align: left;
+      }
+      section.errors ul.toolbar {
+        display: inline-block;
+      }
+
       ul#errorEvents {
         max-height: 140px;
         overflow-x: hidden;
@@ -321,12 +337,6 @@
         margin-bottom: 2px;
         padding-bottom: 2px;
         border-bottom: 1px solid hsla(190, 30%, 2%, 0.4);
-      }
-      button#clear {
-        color: rgb(179, 222, 230);
-        right: 0px;
-        line-height: 36px;
-        background-color: hsla(0, 0%, 0%, 0.7);
       }
     </style>
     <header>
@@ -383,17 +393,25 @@
           </template>
         </li>
       </template>
-      <li>
-        <button id="clear" on-click="clearErrors" title="Clear Error Log">
-          <noflo-icon icon="ban"></noflo-icon>
-        </button>
-      </li>
+    </ul>
+    <template is="dom-if" if="[[errorLog.length]]">
+    <section class="errors">
+      <header>
+        <h2>Errors</h2>
+        <ul class="toolbar">
+          <li>
+            <button id="clear" on-click="clearErrors" class="blue-button" title="Clear Error Log">
+              <noflo-icon icon="ban"></noflo-icon>
+            </button>
+           </li>
+        </ul>
+      </header>
       <ul id="errorEvents">
         <template is="dom-repeat" items="[[errorLog]]" as="event">
           <li>{{ event.payload.error }}</li>
         </template>
       </ul>
-    </ul>
+    </template>
   </template>
   <script>
     Polymer({
@@ -688,8 +706,9 @@
         this.graph.endTransaction('bang');
       },
       clearErrors: function () {
-        // FIXME: Send event
-        this.errorLog = [];
+        this.fire('clear:processerrors', {
+          id: this.node.id
+        });
       },
       _computeIf: function (node) {
         if (!node) {

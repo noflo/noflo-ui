@@ -14,6 +14,17 @@ addRuntimeEvent = (state, runtime, event, payload) ->
     payload: payload
   return runtimeEvents
 
+filterRuntimeEvents = (state, runtime, filter) ->
+  runtimeEvents = state.runtimeEvents or {}
+  return runtimeEvents unless runtime
+  return runtimeEvents unless runtimeEvents[runtime]
+  events = runtimeEvents[runtime].toarray().filter filter
+  events.reverse()
+  delete runtimeEvents[runtime]
+  for event in events
+    addRuntimeEvent state, runtime, event.type, event.payload
+  return runtimeEvents
+
 exports.getComponent = ->
   c = new noflo.Component
   c.icon = 'cogs'
@@ -138,3 +149,15 @@ exports.getComponent = ->
         output.sendDone
           context: state
         return
+      when 'runtime:clearevents'
+        runtimeEvents = filterRuntimeEvents data.state, data.payload.runtime, (event) =>
+          if data.payload.type and event.type isnt data.payload.type
+            return true
+          if data.payload.graph and event.payload.graph isnt data.payload.graph
+            return true
+          if data.payload.id and event.payload.id isnt data.payload.id
+            return true
+          return false
+        output.send
+          context:
+            runtimeEvents: runtimeEvents
