@@ -78,7 +78,9 @@
         background-color: var(--noflo-ui-background);
       }
     </style>
-    <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    <header>
+      <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    </header>
     <ul class="toolbar toolbar2right">
       <li>
         <button id="clear" on-click="clear" class="blue-button" title="Clear log">
@@ -107,7 +109,11 @@
           type: Number,
           value: 0
         },
-        log: { value: null },
+        log: {
+          value: function () {
+            return [];
+          }
+        },
         route: {
           type: Number,
           value: 0
@@ -163,11 +169,12 @@
         return node.split('_')[0];
       },
       clear: function () {
-        Polymer.dom(this.$.events).innerHTML = '';
-        this.fire('clear', this.edge);
+        this.fire('clear:runtimepackets', {
+          edge: this.edge
+        });
       },
       animate: function () {
-        if (!this.log) {
+        if (!this.log || !this.log.length) {
           return;
         }
         // TODO top-level animation loop

@@ -260,6 +260,17 @@
           delete clear.all;
           this.emitEvent('runtime:clearevents', clear);
         }.bind(this));
+        this.$.context.addEventListener('clear:runtimepackets', function (event) {
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          var clear = event.detail;
+          clear.runtime = this.ctx.runtime.definition.id;
+          if (this.ctx.graph) {
+            clear.graph = this.ctx.graph.name || this.ctx.graph.properties.id;
+          }
+          this.emitEvent('runtime:clearpackets', clear);
+        }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {
           var newCtx = {};
           for (var key in this.ctx) {

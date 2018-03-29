@@ -14,16 +14,26 @@ addRuntimeEvent = (state, runtime, event, payload) ->
     payload: payload
   return runtimeEvents
 
-filterRuntimeEvents = (state, runtime, filter) ->
-  runtimeEvents = state.runtimeEvents or {}
+addRuntimePacket = (state, runtime, packet) ->
+  runtimePackets = state.runtimePackets or {}
   return runtimeEvents unless runtime
-  return runtimeEvents unless runtimeEvents[runtime]
-  events = runtimeEvents[runtime].toarray().filter filter
+  unless runtimePackets[runtime]
+    # TODO: Make packet buffer size configurable?
+    runtimePackets[runtime] = new CircularBuffer 400
+  delete packet.runtime
+  runtimePackets[runtime].enq packet
+  return runtimePackets
+
+filterRuntimeEvents = (collection, runtime, filter) ->
+  collection = {} unless collection
+  return collection unless runtime
+  return collection unless collection[runtime]
+  events = collection[runtime].toarray().filter filter
   events.reverse()
-  delete runtimeEvents[runtime]
+  collection[runtime] = new CircularBuffer 400
   for event in events
-    addRuntimeEvent state, runtime, event.type, event.payload
-  return runtimeEvents
+    collection[runtime].enq event
+  return collection
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -112,11 +122,7 @@ exports.getComponent = ->
             runtimeExecutions: runtimeExecutions
             runtimeEvents: events
       when 'runtime:packet'
-        runtimePackets = data.state.runtimePackets or {}
-        unless runtimePackets[data.payload.runtime]
-          # TODO: Make packet buffer size configurable?
-          runtimePackets[data.payload.runtime] = new CircularBuffer 400
-        runtimePackets[data.payload.runtime].enq data.payload.packet
+        runtimePackets = addRuntimePacket data.state, data.payload.runtime, data.payload.packet
         output.sendDone
           context:
             runtimePackets: runtimePackets
@@ -150,7 +156,7 @@ exports.getComponent = ->
           context: state
         return
       when 'runtime:clearevents'
-        runtimeEvents = filterRuntimeEvents data.state, data.payload.runtime, (event) =>
+        runtimeEvents = filterRuntimeEvents data.state.runtimeEvents, data.payload.runtime, (event) ->
           if data.payload.type and event.type isnt data.payload.type
             return true
           if data.payload.graph and event.payload.graph isnt data.payload.graph
@@ -161,3 +167,23 @@ exports.getComponent = ->
         output.send
           context:
             runtimeEvents: runtimeEvents
+      when 'runtime:clearpackets'
+        runtimePackets = filterRuntimeEvents data.state.runtimePackets, data.payload.runtime, (event) ->
+          if data.payload.type and event.type isnt data.payload.type
+            return true
+          if data.payload.graph and event.graph isnt data.payload.graph
+            return true
+          if data.payload.edge?.from
+            return true unless event.src
+            return true if event.src.node isnt data.payload.edge.from.node
+            return true if event.src.port isnt data.payload.edge.from.port
+            # TODO: Check index
+          if data.payload.edge?.to
+            return true unless event.tgt
+            return true if event.tgt.node isnt data.payload.edge.to.node
+            return true if event.tgt.port isnt data.payload.edge.to.port
+            # TODO: Check index
+          return false
+        output.send
+          context:
+            runtimePackets: runtimePackets
