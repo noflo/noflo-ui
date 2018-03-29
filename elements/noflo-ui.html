@@ -296,6 +296,13 @@
           event.detail.properties.changed = true;
           this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
+        this.$.grapheditor.addEventListener('graphChanges', function (event) {
+          this.emitEvent('runtime:sendGraphChanges', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: this.ctx.graph,
+            changes: event.detail
+          });
+        }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
