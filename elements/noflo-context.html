@@ -59,12 +59,46 @@
         bottom: 0px;
         right: 0px;
       }
+      the-panel#fixed header {
+        display: flex;
+        justify-content: space-between;
+        width: calc(72px * 4);
+        padding-right: 36px;
+        box-sizing: border-box;
+      }
+      the-panel#fixed header ul.toolbar {
+        margin: 0px;
+        padding: 0px;
+      }
+      the-panel#fixed header ul.toolbar li {
+        width: calc(100%/2);
+        height: 36px;
+        text-align: center;
+        margin: 0px;
+        margin-right: 0px;
+        list-style: none;
+      }
+      the-panel#fixed header ul.toolbar button {
+        width: 36px;
+        height: 36px;
+        font-size: 10px;
+        background-color: transparent;
+        border: none;
+        color: var(--noflo-ui-text);
+        text-align: center;
+        cursor: pointer;
+      }
       the-panel#fixed header h1 {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 15px;
+        font-weight: normal;
+        line-height: 36px;
         width: 100%;
+        color: var(--noflo-ui-text);
+        padding: 0px;
+        margin: 0px;
       }
       the-panel#fixed main {
         height: calc(100% - 72px);
@@ -115,6 +149,15 @@
     <the-panel id="fixed" edge="right" size="324" handle="36">
       <header slot="header">
         <h1>Runtime events</h1>
+        <template is="dom-if" if="[[events.length]]">
+          <ul class="toolbar">
+            <li>
+              <button id="clear" on-click="clearEvents" class="blue-button" title="Clear Event Log">
+                <noflo-icon icon="ban"></noflo-icon>
+              </button>
+             </li>
+          </ul>
+        </template>
       </header>
       <main id="fixedmain">
         <template is="dom-if" if="[[runtime]]">
@@ -512,6 +555,11 @@
           return false;
         }
         return this.runtime.status.online;
+      },
+      clearEvents: function () {
+        this.fire('clear:runtimeevents', {
+          all: true
+        });
       },
       _ifEventIsPlain: function (event) {
         return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) === -1);

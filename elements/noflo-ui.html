@@ -248,16 +248,16 @@
           this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
-        this.$.context.addEventListener('clear:processerrors', function (event) {
+        this.$.context.addEventListener('clear:runtimeevents', function (event) {
           if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
             return;
           }
           var clear = event.detail;
           clear.runtime = this.ctx.runtime.definition.id;
-          clear.type = 'processerror';
-          if (this.ctx.graph) {
+          if (this.ctx.graph && !clear.all) {
             clear.graph = this.ctx.graph.name || this.ctx.graph.properties.id;
           }
+          delete clear.all;
           this.emitEvent('runtime:clearevents', clear);
         }.bind(this));
         this.$.runtime.addEventListener('runtime', function (event) {

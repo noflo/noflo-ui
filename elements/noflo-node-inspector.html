@@ -309,12 +309,14 @@
         justify-content: space-between;
       }
       section.errors header h2 {
-        font-size: 14px;
+        font-size: 10px;
+        font-weight: normal;
         line-height: 36px;
         margin-bottom: 0px;
         padding-bottom: 0px;
         position: static;
         text-align: left;
+        color: var(--noflo-ui-text);
       }
       section.errors ul.toolbar {
         display: inline-block;
@@ -706,8 +708,9 @@
         this.graph.endTransaction('bang');
       },
       clearErrors: function () {
-        this.fire('clear:processerrors', {
-          id: this.node.id
+        this.fire('clear:runtimeevents', {
+          id: this.node.id,
+          type: 'processerror'
         });
       },
       _computeIf: function (node) {
