@@ -29,6 +29,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'runtime:protocolerror' -> ACTION RuntimeProtocolErrorAction(ui/SetAction) OUT -> IN NewActions
 'application:recreatestate' -> ACTION ApplicationRecreateAction(ui/SetAction) OUT -> IN NewActions
 'storage:opened' -> ACTION StorageOpenedAction(ui/SetAction) OUT -> IN Passed
+'storage:ready' -> ACTION StorageReadyAction(ui/SetAction) OUT -> IN Passed
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
 
 # Open runtime in live mode
@@ -85,6 +86,7 @@ Dispatch HANDLE[4] -> IN GetStoredRuntimes
 GetStoredRuntimes VALUES[0] -> IN EnsureLocalRuntimes(ui/EnsureLocalRuntimes)
 EnsureLocalRuntimes OUT -> IN RuntimeSaveAction
 EnsureLocalRuntimes RUNTIMES -> INITIAL GetClient(ui/GetRuntimeClient)
+GetStoredRuntimes OUT -> IN StorageReadyAction
 GetClient ERROR -> IN RuntimeErrorAction
 
 # Listen for runtime changes
