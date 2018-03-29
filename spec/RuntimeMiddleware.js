@@ -148,6 +148,6 @@ describe('Runtime Middleware', function() {
         chai.expect(msg.payload.edges).to.eql(expectedEdges);
         done();
       });
-    });
+    }).timeout(4000);
   });
 });
