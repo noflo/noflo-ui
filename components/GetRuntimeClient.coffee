@@ -86,9 +86,10 @@ exports.getComponent = ->
       unless route.runtime
         return Promise.reject new Error "No runtime defined"
       runtime = route.runtime
-      if typeof route.runtime is 'string'
+      if typeof runtime is 'string'
         runtime =
-          id: route.runtime
+          id: runtime
+        route.runtime = runtime
       return ensureInstance(runtime, c.clients, output)
       .then((instance) ->
         def =

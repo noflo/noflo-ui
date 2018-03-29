@@ -33,9 +33,11 @@ exports.getComponent = ->
     Object.keys(updated).forEach (key) ->
       switch key
         when 'runtime'
-          props.runtime = updated.runtime
-          return if state.runtime?.id
+          if state.runtime?.id
+            props.runtime = populateRuntime state
+            return
           # Clear runtime informations from view when disconnected
+          props.runtime = updated.runtime
           props.componentLibrary = []
           props.packets = []
           props.events = []
