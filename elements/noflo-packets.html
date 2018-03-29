@@ -21,11 +21,12 @@
           observer: 'edgesChanged'
         },
         editor: { value: null },
-        errorLogs: {
+        events: {
           type: Object,
           value: function () {
-            return {};
-          }
+            return [];
+          },
+          observer: 'eventsChanged'
         },
         packets: {
           type: Array,
@@ -69,31 +70,37 @@
           node.selected = false;
         }
       },
-      processError: function (error) {
-        if (!error.process) {
-          return;
-        }
-        this.ensureErrorLog(error.process);
-        this.errorLogs[error.process].push(error.message);
-        this.editor.addErrorNode(error.process);
-        if (this.nodeInspectors[error.process]) {
-          var inspector = Polymer.dom(this.nodeInspectors[error.process]).childNodes[0];
-          inspector.error();
-        }
-      },
-      updateEditorErrors: function () {
-        this.editor.clearErrorNodes();
-        for (var i in this.errorLogs) {
-          if (this.errorLogs[i].length > 0)
-            this.editor.addErrorNode(i);
-        }
-      },
       edgesChanged: function () {
         if (this.edges.length) {
           this.showEdgeCards();
         } else {
           this.hideEdgeCards();
         }
+      },
+      eventsChanged: function () {
+        // Clear previous state
+        if (this.editor) {
+          this.editor.clearErrorNodes();
+        }
+        Object.keys(this.nodeInspectors).forEach(function (id) {
+          this.nodeInspectors[id].inspector.errorLog = [];
+        }.bind(this));
+
+        if (!this.events) {
+          return;
+        }
+        this.events.forEach(function (event) {
+          if (event.type !== 'processerror' || !event.payload.id) {
+            return;
+          }
+          // TODO: Check that process is in current graph
+          if (this.editor) {
+            this.editor.addErrorNode(event.payload.id);
+          }
+          if (this.nodeInspectors[event.payload.id]) {
+            this.nodeInspectors[event.payload.id].inspector.push('errorLog', event);
+          }
+        }.bind(this));
       },
       genId: function (source, target) {
         var fromStr;
@@ -187,12 +194,6 @@
           this.hideNodeCards();
         }
       },
-      ensureErrorLog: function (id) {
-        if (this.errorLogs[id]) {
-          return;
-        }
-        this.set('errorLogs' + ('.' + id), new CircularBuffer(40, this.updateEditorErrors.bind(this)));
-      },
       showNodeCards: function () {
         this.nodes.forEach(function (node) {
           var id = node.id;
@@ -202,14 +203,22 @@
           if (this.readonly) {
             return;
           }
-          this.ensureErrorLog(id);
           var inspector = document.createElement('noflo-node-inspector');
           inspector.node = node;
           inspector.component = this.editor.getComponent(node.component);
           inspector.graph = this.currentgraph;
-          inspector.errorLog = this.errorLogs[id];
+          inspector.errorLog = this.events.filter(function (event) {
+            if (event.type !== 'processerror') {
+              return false;
+            }
+            if (event.payload.id !== id) {
+              return false;
+            }
+            return true;
+          }.bind(this));
           this.nodeInspectors[id] = document.createElement('the-card');
           this.nodeInspectors[id].type = 'node-inspector';
+          this.nodeInspectors[id].inspector = inspector;
           Polymer.dom(this.nodeInspectors[id]).appendChild(inspector);
           this.nodeInspectors[id].addTo(this.panel);
         }.bind(this));

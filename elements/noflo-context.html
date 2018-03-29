@@ -124,6 +124,9 @@
               <template is="dom-if" if="[[_ifEventIsPlain(event)]]">
                 {{ event.type }}
               </template>
+              <template is="dom-if" if="[[_ifEventIsProcessError(event)]]">
+                {{ event.payload.error }}
+              </template>
               <template is="dom-if" if="[[_ifEventIsError(event)]]">
                 {{ event.payload.message }}
                 <template is="dom-if" if="[[_ifEventHasStack(event)]]"><pre>{{ event.payload.stack }}</pre></template>
@@ -513,11 +516,14 @@
       _ifEventIsPlain: function (event) {
         return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) === -1);
       },
+      _ifEventIsProcessError: function (event) {
+        return (['processerror'].indexOf(event.type) !== -1);
+      },
       _ifEventIsError: function (event) {
-        return (['error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) !== -1);
+        return (['error','networkerror', 'protocolerror'].indexOf(event.type) !== -1);
       },
       _ifEventHasStack: function (event) {
-        return (['error', 'processerror', 'networkerror'].indexOf(event.type) !== -1 && event.payload.stack && event.payload.stack.length);
+        return (['error', 'networkerror'].indexOf(event.type) !== -1 && event.payload.stack && event.payload.stack.length && event.payload.message.indexOf('Runtime sent invalid') === -1);
       },
       _ifEventIsOutput: function (event) {
         return (event.type === 'output' && event.payload.message);

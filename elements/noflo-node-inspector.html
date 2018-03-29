@@ -389,6 +389,9 @@
         </button>
       </li>
       <ul id="errorEvents">
+        <template is="dom-repeat" items="[[errorLog]]" as="event">
+          <li>{{ event.payload.error }}</li>
+        </template>
       </ul>
     </ul>
   </template>
@@ -406,7 +409,6 @@
             return [];
           },
           notify: true,
-          observer: 'errorLogChanged'
         },
         graph: {
           value: null,
@@ -685,41 +687,9 @@
         this.graph.removeInitial(this.node.id, name);
         this.graph.endTransaction('bang');
       },
-      error: function () {
-        this.renderLogs();
-      },
-      errorLogChanged: function () {
-        this.renderLogs();
-      },
       clearErrors: function () {
-        this.errorLog.clear();
-        this.lastErrorLog = 0;
-        this.set('$.errorEvents.innerHTML', '');
-      },
-      renderLogs: function () {
-        var first = this.lastErrorLog;
-        var i, item, li, content;
-        if (this.errorLog.length - this.lastErrorLog > this.showErrorLogs) {
-          first = this.errorLog.length - this.showErrorLogs;
-        }
-        var fragment = document.createDocumentFragment();
-        for (i = first; i < this.errorLog.length; i++) {
-          item = this.errorLog.get(i);
-          if (!item) {
-            continue;
-          }
-          li = document.createElement('li');
-          content = document.createTextNode(item);
-          Polymer.dom(li).appendChild(content);
-          Polymer.dom(fragment).appendChild(li);
-        }
-        Polymer.dom(this.$.errorEvents).appendChild(fragment);
-        // Scroll to bottom
-        while (this.$.errorEvents.childElementCount > this.showErrorLogs) {
-          Polymer.dom(this.$.errorEvents).removeChild(Polymer.dom(this.$.errorEvents).firstChild);
-        }
-        this.set('$.errorEvents.scrollTop', this.$.errorEvents.scrollHeight);
-        this.lastErrorLog = this.errorLog.length;
+        // FIXME: Send event
+        this.errorLog = [];
       },
       _computeIf: function (node) {
         if (!node) {
