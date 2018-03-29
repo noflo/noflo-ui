@@ -55,9 +55,10 @@ exports.getComponent = ->
       when 'runtime:status'
         runtimeStatuses = data.state.runtimeStatuses or {}
         events = data.state.runtimeEvents or {}
-        if runtimeStatuses[data.payload.runtime] or data.payload.status.online
-          event = if data.payload.status.online then 'connected' else 'disconnected'
-          events = addRuntimeEvent data.state, data.payload.runtime, event, data.payload.status
+        if runtimeStatuses[data.payload.runtime]?.online and not data.payload.status.online
+          events = addRuntimeEvent data.state, data.payload.runtime, 'disconnected', data.payload.status
+        if not runtimeStatuses[data.payload.runtime]?.online and data.payload.status.online
+          events = addRuntimeEvent data.state, data.payload.runtime, 'connected', data.payload.status
         runtimeStatuses[data.payload.runtime] = data.payload.status
         ctx =
           runtimeStatuses: runtimeStatuses
@@ -73,21 +74,28 @@ exports.getComponent = ->
           context: ctx
       when 'runtime:started'
         runtimeExecutions = data.state.runtimeExecutions or {}
+        events = data.state.runtimeEvents or {}
+        previousRunning = runtimeExecutions[data.payload.runtime]?.running
         runtimeExecutions[data.payload.runtime] = data.payload.status
         runtimeExecutions[data.payload.runtime].label = 'running'
+        unless previousRunning
+          events = addRuntimeEvent data.state, data.payload.runtime, 'started', data.payload.status
         unless data.payload.status.running
           runtimeExecutions[data.payload.runtime].label = 'finished'
-        events = addRuntimeEvent data.state, data.payload.runtime, 'started', data.payload.status
+          events = addRuntimeEvent data.state, data.payload.runtime, 'stopped', data.payload.status
         output.sendDone
           context:
             runtimeExecutions: runtimeExecutions
             runtimeEvents: events
       when 'runtime:stopped'
         runtimeExecutions = data.state.runtimeExecutions or {}
+        events = data.state.runtimeEvents or {}
+        previousRunning = runtimeExecutions[data.payload.runtime]?.running
         runtimeExecutions[data.payload.runtime] = data.payload.status
         runtimeExecutions[data.payload.runtime].running = false
         runtimeExecutions[data.payload.runtime].label = 'not running'
-        events = addRuntimeEvent data.state, data.payload.runtime, 'stopped', data.payload.status
+        if previousRunning
+          events = addRuntimeEvent data.state, data.payload.runtime, 'stopped', data.payload.status
         output.sendDone
           context:
             runtimeExecutions: runtimeExecutions
