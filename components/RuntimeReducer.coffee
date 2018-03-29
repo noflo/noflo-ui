@@ -126,7 +126,7 @@ exports.getComponent = ->
         output.sendDone
           context:
             runtimeEvents: events
-        console.error data.payload.error
+        console.error data.payload
       when 'runtime:output'
         events = addRuntimeEvent data.state, data.payload.runtime, 'output', data.payload.output
         output.sendDone
@@ -140,5 +140,5 @@ exports.getComponent = ->
           runtimeEvents: events
         output.sendDone
           context: state
-        console.error data.payload.error
+        console.error data.payload
         return
