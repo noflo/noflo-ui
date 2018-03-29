@@ -101,6 +101,12 @@ class Middleware {
     expected.push(`${action} DATA`);
     return this.receive(this.passAction, expected, check, done);
   }
+
+  receivePassCheck(action, check, done) {
+    const expected = [];
+    expected.push(`${action} DATA`);
+    return this.receive(this.passAction, expected, check, done);
+  }
 }
 
 window.middleware = (component, baseDir) => new Middleware(component, baseDir);

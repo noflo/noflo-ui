@@ -1,62 +1,113 @@
 describe('Runtime Middleware', function() {
   const baseDir = 'noflo-ui';
   let mw = null;
-  let runtime = null;
+  let iframe = null;
+  let runtimeDefinition = {
+    id: '7695e97e-79a5-4a22-879d-847ec9592136',
+    protocol: 'iframe',
+    type: 'noflo-nodejs',
+    address: '/base/spec/mockruntime.html',
+    project: '090356f9-dfa6-4b10-b4ea-03038faf68be',
+  };
   before(function(done) {
     this.timeout(4000);
-    const fixtures = document.createElement('div');
-    document.body.appendChild(fixtures);
-    const transport = require('fbp-protocol-client').getTransport('iframe');
-    runtime = new transport({
-      address: '/base/spec/mockruntime.html'});
-    runtime.setParentElement(fixtures);
-    window.runtime = runtime;
-
     mw = window.middleware('ui/RuntimeMiddleware', baseDir);
-    return mw.before(done);
+    mw.before(done);
   });
   beforeEach(() => mw.beforeEach());
-  afterEach(function() {
-    mw.afterEach();
-    return runtime.iframe.contentWindow.clearMessages();
-  });
+  afterEach(() => mw.afterEach());
 
   // Set up a fake runtime connection and test that we can play both ends
-  it('should be able to connect', function(done) {
-    const capabilities = [
-      'protocol:graph',
-      'protocol:component',
-      'protocol:network',
-      'protocol:runtime'
-    ];
-    runtime.connect();
-    runtime.once('capabilities', function(rtCapabilities) {
-      chai.expect(rtCapabilities).to.eql(capabilities);
-      return done();
+  describe('receiving a storage:ready action', () => {
+    it('should pass it out as-is', (done) => {
+      const action = 'storage:ready';
+      const payload = {
+        runtimes: [
+          runtimeDefinition,
+        ],
+      };
+      mw.receivePassCheck(action, (received) => {
+        chai.expect(received.runtimes).to.be.an('array');
+        chai.expect(received.runtimes.length).to.equal(2);
+        chai.expect(received.runtimes[0]).to.eql(runtimeDefinition);
+      }, done);
+      mw.send(action, payload, payload);
     });
-    return runtime.iframe.addEventListener('load', () =>
-      setTimeout(() =>
-        runtime.iframe.contentWindow.handleProtocolMessage(function(msg, send) {
-          chai.expect(msg.protocol).to.equal('runtime');
-          chai.expect(msg.command).to.equal('getruntime');
-          return send('runtime', 'runtime',
-            {capabilities});
-        })
-      
-      , 100)
-    );
   });
-
-  describe('receiving a runtime:connected action', () =>
-    it('should pass it out as-is', function(done) {
-      const action = 'runtime:connected';
-      const payload = runtime;
-      mw.receivePass(action, payload, done);
-      return mw.send(action, payload);
-    })
-  );
-  describe('receiving a context:edges action', () =>
-    it('should send selected edges to the runtime', function(done) {
+  describe('receiving a storage:opened action', () => {
+    it('should connect and pass the storage:opened action', (done) => {
+      const action = 'storage:opened';
+      const payload = {
+        state: 'ok',
+        project: {
+          id: '090356f9-dfa6-4b10-b4ea-03038faf68be',
+          graphs: [],
+          components: [],
+          type: 'noflo-nodejs',
+        },
+        graphs: [],
+        remote: [],
+      };
+      const capabilities = [
+        'protocol:graph',
+        'protocol:component',
+        'protocol:network',
+        'protocol:runtime'
+      ];
+      let tries = 0;
+      let maxTries = 100;
+      const waitForIframe = () => {
+        if (runtimeDefinition.querySelector) {
+          iframe = document.body.querySelector(runtimeDefinition.querySelector);
+          iframe.addEventListener('load', () => {
+            iframe.contentWindow.handleProtocolMessage(function(msg, send) {
+              chai.expect(msg.protocol).to.equal('runtime');
+              chai.expect(msg.command).to.equal('getruntime');
+              send('runtime', 'runtime', {
+                id: runtimeDefinition.id,
+                type: runtimeDefinition.type,
+                capabilities,
+                version: '0.7',
+              });
+              setTimeout(() => {
+                done();
+              }, 1000);
+            });
+          });
+          return;
+        }
+        if (tries >= maxTries) {
+          return done(new Error('No iframe found'));
+        }
+        setTimeout(waitForIframe, 100);
+      };
+      mw.send(action, payload, {
+        runtimes: [
+          runtimeDefinition,
+        ],
+        compatible: [
+          runtimeDefinition,
+        ],
+        projects: [
+          payload.project,
+        ],
+      });
+      waitForIframe();
+    }).timeout(4000);
+    it('should have added properties from runtime to the definition', () => {
+      chai.expect(runtimeDefinition.capabilities).to.be.an('array');
+      chai.expect(runtimeDefinition.version).to.equal('0.7');
+    });
+    it('should have requested components from runtime', () => {
+      iframe.contentWindow.handleProtocolMessage((msg, send) => {
+        chai.expect(msg.protocol).to.equal('component');
+        chai.expect(msg.command).to.equal('list');
+        send('component', 'componentsready', 0);
+      });
+    });
+  });
+  describe('receiving a context:edges action', () => {
+    it('should pass it out as-is', (done) => {
       const sentEdges = [{
         from: {
           node: 'Foo',
@@ -66,8 +117,20 @@ describe('Runtime Middleware', function() {
           node: 'Bar',
           port: 'in'
         }
-      }
-      ];
+      }];
+      mw.receivePassCheck('context:edges', (received) => {
+        chai.expect(received).to.eql(sentEdges);
+      }, done);
+      mw.send('context:edges', sentEdges, {
+        graphs: [
+          {
+             name: 'foo'
+          }
+        ],
+        runtime: runtimeDefinition,
+      });
+    });
+    it('should send selected edges to the runtime', function(done) {
       const expectedEdges = [{
         src: {
           node: 'Foo',
@@ -76,23 +139,15 @@ describe('Runtime Middleware', function() {
         tgt: {
           node: 'Bar',
           port: 'in'
-        }
-      }
-      ];
-      mw.send('context:edges', sentEdges, {
-        graphs: [
-          {name: 'foo'}
-        ],
-        runtime
-      }
-      );
-      return runtime.iframe.contentWindow.handleProtocolMessage(function(msg) {
+        },
+      }];
+      iframe.contentWindow.handleProtocolMessage((msg, send) => {
         chai.expect(msg.protocol).to.equal('network');
         chai.expect(msg.command).to.equal('edges');
         chai.expect(msg.payload.graph).to.equal('foo');
         chai.expect(msg.payload.edges).to.eql(expectedEdges);
-        return done();
+        done();
       });
-    })
-  );
+    });
+  });
 });
