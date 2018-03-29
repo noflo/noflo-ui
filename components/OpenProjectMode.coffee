@@ -9,8 +9,8 @@ sendGraphs = (client, graphs, currentGraphs) ->
   ))
 
 sendComponents = (client, components, namespace) ->
-  compatible = components.filter (c) -> getComponentType(c) is client.definition.type
-  Promise.all(compatible.map((c) -> client.protocol.component.setsource(
+  compatible = components.filter (c) -> getComponentType(c) in [null, client.definition.type]
+  Promise.all(compatible.map((c) -> client.protocol.component.source(
     name: c.name
     language: c.language
     library: namespace or client.definition.namespace
