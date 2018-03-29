@@ -22,7 +22,7 @@ describe('GitHub Middleware', function() {
     let mock = null;
     beforeEach(() => mock = sinon.fakeServer.create());
     afterEach(() => mock.restore());
-    it('should send application:hash for existing gist', function(done) {
+    it('should send application:sethash for existing gist', function(done) {
       const action = 'github:gist';
       const payload =
         {graph: 'abc123'};
@@ -45,7 +45,7 @@ describe('GitHub Middleware', function() {
           'bar_main'
         ])
       ;
-      mw.receiveAction('application:hash', check, done);
+      mw.receiveAction('application:sethash', check, done);
       return mw.send(action, payload, state);
     });
     it('should send save events for new gist', function(done) {

@@ -218,7 +218,7 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('application:hash', [
+          this.emitEvent('application:sethash', [
             'github',
             event.detail.org,
             event.detail.repo,
@@ -239,7 +239,7 @@
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.main.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.main.addEventListener('openProject', function (event) {
           this.openProject(event.detail);
@@ -320,7 +320,7 @@
           this.emitEvent('github:sync:synchronize', event.detail);
         }.bind(this));
         this.$.project.addEventListener('deleteProject', function (event) {
-          this.emitEvent('application:hash', []);
+          this.emitEvent('application:sethash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
@@ -333,10 +333,10 @@
           this.emitEvent('storage:delete:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
-          this.emitEvent('application:hash', []);
+          this.emitEvent('application:sethash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
@@ -374,7 +374,7 @@
           this.emitEvent('context:search_graph', event.detail);
         }.bind(this));
         this.$.search.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.library.addEventListener('result', function (event) {
           this.emitEvent('context:search_library_result', { searchLibraryResult: event.detail });
@@ -389,7 +389,7 @@
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
             // Go home
-            this.emitEvent('application:hash', []);
+            this.emitEvent('application:sethash', []);
           } else {
             this.openProject(project);
           }
@@ -409,7 +409,7 @@
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
             // Go home
-            this.emitEvent('application:hash', []);
+            this.emitEvent('application:sethash', []);
           } else {
             this.openProject(project);
           }
@@ -597,7 +597,7 @@
           if (err) {
             return;
           }
-          this.emitEvent('application:hash', hash);
+          this.emitEvent('application:sethash', hash);
         }.bind(this));
       },
       themeChanged: function (newTheme, oldTheme) {
