@@ -306,7 +306,13 @@
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
           this.emitEvent('storage:save:component', event.detail);
-          this.emitEvent('runtime:sendComponent', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: event.detail
+          });
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.emitEvent('github:sync:prepare', event.detail);
@@ -355,7 +361,13 @@
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
-          this.emitEvent('runtime:sendComponent', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: event.detail
+          });
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
