@@ -8,7 +8,10 @@ ensureInstance = (definition, clients, output) ->
     # Already have a client instance for this one
     return Promise.resolve clients[definition.id]
   definition.secret = '' unless definition.secret
-  return fbpClient(definition)
+  return fbpClient(definition,
+    # Note: we may want to re-enable validation later when most runtimes are compatible
+    skipValidation: true
+  )
   .then((client) ->
     output.send
       instance: client
