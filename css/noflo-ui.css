@@ -10,6 +10,7 @@ html, body {
 
 body {
   --noflo-ui-background: hsla(0, 0%, 0%, 0.98);
+  --noflo-ui-background-shadow: hsla(0, 0%, 0%, 0.5);
   --noflo-ui-text: hsl(192, 25%, 92%);
   --noflo-ui-text-highlight: hsl(185,100%,75%);
   --noflo-ui-border: hsla(190, 90%, 80%, 0.3);
@@ -18,6 +19,7 @@ body {
 }
 body.light {
   --noflo-ui-background: hsl(192, 25%, 92%);
+  --noflo-ui-background-shadow: hsla(192, 25%, 100%, 0.3);
   --noflo-ui-text: hsla(0, 0%, 0%, 0.98);
   --noflo-ui-text-highlight: hsl(185,100%,15%);
   --noflo-ui-border: hsla(190, 90%, 8%, 0.3);

@@ -8,15 +8,15 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: hsla(192, 25%, 92%, 0.1);
+        background-color: var(--noflo-ui-background-shadow);
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
         overflow-x: auto;
       }
 
       .modal-container {
-        background-color: var(--noflo-ui-text);
-        color: var(--noflo-ui-background);
+        background-color: var(--noflo-ui-background);
+        color: var(--noflo-ui-text);
         display: block;
         position: absolute;
         -webkit-transform: translateZ(0);
@@ -29,6 +29,7 @@
         box-sizing: border-box;
         border-radius: 3px;
         box-shadow: var(--noflo-ui-background) 0px 0px 2px;
+        border: 1px solid var(--noflo-ui-text-highlight);
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
       }
@@ -52,7 +53,7 @@
         display: block;
         font-size: 13px;
         margin-top: 17px;
-        color: var(--noflo-ui-background);
+        color: var(--noflo-ui-text);
         line-height: 17px;
       }
       label > span {
@@ -88,7 +89,7 @@
         padding-right: 1em;
       }
       div.CodeMirror {
-        border: 1px solid var(--noflo-ui-background);
+        border: 1px solid var(--noflo-ui-text);
         border-radius: 3px;
       }
 

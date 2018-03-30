@@ -219,6 +219,10 @@
           observer: 'graphsChanged'
         },
         menuCard: { value: null },
+        theme: {
+          type: String,
+          value: 'dark',
+        },
         panel: { value: null },
         parentPath: {
           type: Array,
@@ -488,6 +492,7 @@
         this.set('graphInspector.graph', this.graph);
         this.set('graphInspector.project', this.project);
         this.set('graphInspector.runtimes', this.runtimes);
+        this.set('graphInspector.theme', this.theme);
         this.graphInspector.addEventListener('delete', function (event) {
           this.fire('deleteGraph', event.detail);
         }.bind(this));
