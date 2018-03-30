@@ -146,6 +146,14 @@ exports.getComponent = ->
         output.sendDone
           context:
             runtimeEvents: events
+      when 'runtime:icon'
+        runtimeIcons = data.state.runtimeIcons or {}
+        runtimeIcons[data.payload.runtime] = {} unless runtimeIcons[data.payload.runtime]
+        runtimeIcons[data.payload.runtime][data.payload.icon.graph] = {} unless runtimeIcons[data.payload.runtime][data.payload.icon.graph]
+        runtimeIcons[data.payload.runtime][data.payload.icon.graph][data.payload.icon.id] = data.payload.icon.icon
+        output.sendDone
+          context:
+            runtimeIcons: runtimeIcons
       when 'runtime:error'
         events = addRuntimeEvent data.state, data.payload.runtime, 'error', data.payload
         output.send

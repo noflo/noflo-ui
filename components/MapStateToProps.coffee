@@ -42,6 +42,7 @@ exports.getComponent = ->
           props.packets = []
           props.events = []
           props.edges = []
+          props.icons = {}
           return
         when 'componentLibraries'
           # Filter UI components to current runtime
@@ -74,6 +75,17 @@ exports.getComponent = ->
           events = updated.runtimeEvents[state.runtime.id].toarray()
           events.reverse()
           props.events = events
+          return
+        when 'runtimeIcons'
+          return unless state.runtime?.id
+          props.icons = {}
+          return unless updated.runtimeIcons[state.runtime.id]
+          return unless state.graphs?.length
+          currentGraph = state.graphs[state.graphs.length - 1]
+          graphId = currentGraph.name or currentGraph.properties.id
+          return unless updated.runtimeIcons[state.runtime.id][graphId]
+          for nodeId, icon of updated.runtimeIcons[state.runtime.id][graphId]
+            props.icons[nodeId] = icon
           return
         else
           props[key] = updated[key]
