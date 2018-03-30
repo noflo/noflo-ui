@@ -3,8 +3,20 @@ NoFlo UI ChangeLog
 
 ## 0.27.0 (git master)
 
+New features:
+
+* Modal screens now match the current selected UI theme
+* Errors coming from the runtime now include stack traces if available
+* Errors are shown in the app UI instead of native notification pop-ups
+* Output and errors sent from runtime are now visible in the right-hand bar
+* Runtime output can be cleared with the _Clear_ button in the right-hand bar
+* Permission errors with runtime communication are now visible
+* All messages to and from runtime are now validated against the [FBP Protocol](http://flowbased.github.io/fbp-protocol/) schema, with failures shown in UI
+* All errors coming from runtime are also logged into browser's developer console
+
 Internal changes:
 
+* Switched runtime communications to use the new [fbp-client library](https://github.com/flowbased/fbp-client)
 * Switched `npm start` from unmaintained simple-server to http-server
 * Switched build to more efficient webpack 4.x
 * Now loading external JavaScript/CSS dependencies from `browser/vendor` directory instead of `node_modules`
