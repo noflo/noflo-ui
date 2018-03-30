@@ -94,11 +94,27 @@ describe('Runtime Middleware', function() {
       });
       waitForIframe();
     }).timeout(4000);
-    it('should have added properties from runtime to the definition', () => {
-      chai.expect(runtimeDefinition.capabilities).to.be.an('array');
-      chai.expect(runtimeDefinition.version).to.equal('0.7');
+    it('should have added properties from runtime to the definition', (done) => {
+      nofloWaitFor(() => {
+        if (runtimeDefinition.version) {
+          return true;
+        }
+        return false;
+      }, (err) => {
+        if (err) {
+          done(err);
+          return;
+        }
+        chai.expect(runtimeDefinition.capabilities).to.be.an('array');
+        chai.expect(runtimeDefinition.version).to.equal('0.7');
+        done();
+      });
     });
-    it('should have requested components from runtime', () => {
+    it('should have requested components from runtime', (done) => {
+      mw.receiveAction('runtime:components', (message) => {
+        chai.expect(message.runtime).to.equal(runtimeDefinition.id);
+        chai.expect(message.components).to.eql([]);
+      }, done);
       iframe.contentWindow.handleProtocolMessage((msg, send) => {
         chai.expect(msg.protocol).to.equal('component');
         chai.expect(msg.command).to.equal('list');

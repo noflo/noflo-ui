@@ -28,21 +28,24 @@
          }), window.parent.location.href);
        }, Math.ceil(Math.random() * 10));
      };
-     window.handleProtocolMessage = function (callback, retried) {
-       if (!received.length) {
-         if (!retried) {
-           setTimeout(function () {
-             window.handleProtocolMessage(callback, true)
-           }, 10);
-           return;
-         }
+     window.handleProtocolMessage = function (callback, tries) {
+       var maxTries = 100;
+       if (!tries) {
+         tries = 0;
+       }
+       if (tries > maxTries)  {
          callback(null);
          return;
        }
+       tries++;
+       if (!received.length) {
+         setTimeout(function () {
+           window.handleProtocolMessage(callback, tries)
+         }, 10);
+         return;
+       }
        var msg = received.shift();
-       setTimeout(function () {
-         callback(msg, window.sendProtocolMessage);
-       }, 1);
+       callback(msg, window.sendProtocolMessage);
      };
      window.clearMessages = function () {
        received = [];

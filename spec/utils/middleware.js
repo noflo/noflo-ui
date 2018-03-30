@@ -109,4 +109,20 @@ class Middleware {
   }
 }
 
+window.nofloWaitFor = (condition, callback, maxTries = 100) => {
+  let tries = 0;
+  const checkCondition = () => {
+    if (condition()) {
+      callback();
+      return;
+    }
+    if (tries > maxTries) {
+      callback(new Error('Maximum tries exceeded'));
+    }
+    tries++;
+    setTimeout(checkCondition, 100);
+  };
+  checkCondition();
+};
+
 window.middleware = (component, baseDir) => new Middleware(component, baseDir);
