@@ -297,6 +297,9 @@
           this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('graphChanges', function (event) {
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
           this.emitEvent('runtime:sendGraphChanges', {
             runtime: this.ctx.runtime.definition.id,
             graph: this.ctx.graph,
