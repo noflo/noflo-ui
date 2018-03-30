@@ -2,7 +2,7 @@
 
 <dom-module id="the-graph-editor">
   <template>
-    <the-graph id="graph" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selected-nodes="{{selectedNodes}}" error-nodes="{{errorNodes}}" selected-edges="{{selectedEdges}}" animated-edges="{{animatedEdges}}" display-selection-group="{{displaySelectionGroup}}" force-selection="{{forceSelection}}">
+    <the-graph id="graph" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selected-nodes="{{selectedNodes}}" error-nodes="{{errorNodes}}" selected-edges="{{selectedEdges}}" animated-edges="{{animatedEdges}}" display-selection-group="{{displaySelectionGroup}}" force-selection="{{forceSelection}}" icons="[[icons]]">
     </the-graph>
   </template>
   <script>
@@ -14,6 +14,12 @@
           this.$.graph.getMenuDef = this.getMenuDef;
         },
         properties: {
+          icons: {
+            type: Object,
+            value: function () {
+              return {};
+            }
+          },
           animatedEdges: {
             type: Array,
             value: function () {
@@ -211,9 +217,6 @@
         },
         libraryRefresh: function () {
           this.$.graph.debounceLibraryRefesh();
-        },
-        updateIcon: function (nodeId, icon) {
-          this.$.graph.updateIcon(nodeId, icon);
         },
         rerender: function () {
           this.$.graph.rerender();

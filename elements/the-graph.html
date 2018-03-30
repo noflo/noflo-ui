@@ -11,6 +11,13 @@
       Polymer({
         is: 'the-graph',
         properties: {
+          icons: {
+            type: Object,
+            value: function () {
+              return {};
+            },
+            observer: 'iconsChanged'
+          },
           animatedEdges: {
             type: Array,
             value: function () {
@@ -392,6 +399,14 @@
           }
           this.graphView.setAnimatedEdges(this.animatedEdges);
         },
+        iconsChanged: function () {
+          if (!this.graphView) {
+            return;
+          }
+          Object.keys(this.icons).forEach(function (nodeId) {
+            this.graphView.updateIcon(nodeId, this.icons[nodeId]);
+          }.bind(this));
+        },
         triggerAutolayout: function (event) {
           var graph = this.graph;
           var portInfo = this.graphView ? this.graphView.portInfo : null;
@@ -439,12 +454,6 @@
             return;
           }
           this.appView.setState({ height: this.height });
-        },
-        updateIcon: function (nodeId, icon) {
-          if (!this.graphView) {
-            return;
-          }
-          this.graphView.updateIcon(nodeId, icon);
         },
         rerender: function (options) {
           // This is throttled with rAF internally
