@@ -43,37 +43,27 @@
         padding-bottom: 2px;
         border-bottom: 1px hsla(190, 100%, 30%, 0.4) solid;
       }
-      ul#events li.connect {
-        border-top: 1px solid #80ff80;
-        height: 3px;
-        margin-bottom: 3px;
-      }
-      ul#events li.begingroup {
+      ul#events li.openBracket {
         color: var(--noflo-ui-border);
       }
-      ul#events li.begingroup:before {
+      ul#events li.openBracket:before {
         display: inline;
         content: '<';
       }
-      ul#events li.begingroup:after {
+      ul#events li.openBracket:after {
         display: inline;
         content: '>';
       }
-      ul#events li.endgroup {
+      ul#events li.closeBracket {
         color: var(--noflo-ui-border);
       }
-      ul#events li.endgroup:before {
+      ul#events li.closeBracket:before {
         display: inline;
         content: '</';
       }
-      ul#events li.endgroup:after {
+      ul#events li.closeBracket:after {
         display: inline;
         content: '>';
-      }
-      ul#events li.disconnect {
-        border-bottom: 1px solid #ff8080;
-        height: 3px;
-        margin-bottom: 3px;
       }
       ul#events img {
         margin: 5px;
@@ -88,7 +78,10 @@
         background-color: var(--noflo-ui-background);
       }
     </style>
-    <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    <header>
+      <h1 slot="header"><span>{{sourceNode}}</span> <span class$="{{_computeClass(route)}}"><span>{{sourcePort}}</span> ➞ <span>{{targetPort}}</span></span> <span>{{targetNode}}</span></h1>
+    </header>
+    <template is="dom-if" if="[[log.length]]">
     <ul class="toolbar toolbar2right">
       <li>
         <button id="clear" on-click="clear" class="blue-button" title="Clear log">
@@ -96,7 +89,13 @@
         </button>
       </li>
     </ul>
+    </template>
     <ul id="events">
+      <template is="dom-repeat" items="[[log]]" as="packet">
+        <li class$="{{ packet.type }}">
+          {{ packet.data }}
+        </li>
+      </template>
     </ul>
   </template>
   <script>
@@ -108,24 +107,19 @@
           notify: true,
           observer: 'edgeChanged'
         },
-        frameReq: { value: null },
         graph: {
           value: null,
           notify: true
         },
-        lastlog: {
-          type: Number,
-          value: 0
+        log: {
+          value: function () {
+            return [];
+          },
+          observer: 'logChanged'
         },
-        log: { value: null },
         route: {
           type: Number,
           value: 0
-        },
-        showlogs: {
-          type: Number,
-          value: 20,
-          notify: true
         },
         sourceNode: {
           type: String,
@@ -147,11 +141,6 @@
       attached: function () {
         Polymer.dom(this).classList.add('the-card-content');
       },
-      detached: function () {
-        if (this.frameReq) {
-          window.cancelAnimationFrame(this.frameReq);
-        }
-      },
       edgeChanged: function () {
         if (!this.edge) {
           return;
@@ -163,7 +152,9 @@
         this.targetNode = this.nodeLabel(tgt.node);
         this.targetPort = tgt.port;
         this.route = this.edge.metadata.route;
-        this.animate();
+      },
+      logChanged: function () {
+        this.$.events.scrollTop = this.$.events.scrollHeight;
       },
       nodeLabel: function (node) {
         var extractLibrary = node.split('/');
@@ -173,63 +164,9 @@
         return node.split('_')[0];
       },
       clear: function () {
-        this.log.clear();
-        this.lastlog = 0;
-        Polymer.dom(this.$.events).innerHTML = '';
-      },
-      animate: function () {
-        if (!this.log) {
-          return;
-        }
-        // TODO top-level animation loop
-        this.frameReq = window.requestAnimationFrame(this.animate.bind(this));
-        if (this.log.length <= this.lastlog) {
-          return;
-        }
-        this.renderLogs();
-        this.lastlog = this.log.length;
-      },
-      renderLogs: function () {
-        var first = this.lastlog;
-        var i, item, li, content;
-        if (this.log.length - this.lastlog > this.showlogs) {
-          first = this.log.length - this.showlogs;
-        }
-        var fragment = document.createDocumentFragment();
-        for (i = first; i < this.log.length; i++) {
-          item = this.log.get(i);
-          if (!item) {
-            continue;
-          }
-          li = document.createElement('li');
-          Polymer.dom(li).classList.add(item.type);
-          if (item.group) {
-            content = document.createTextNode(item.group);
-          } else {
-            var cleaned = item.data;
-            if (typeof item.data === 'object') {
-              cleaned = JSON.stringify(item.data, null, 2);
-              if (typeof item.data.type !== 'undefined' && item.data.type === 'previewurl') {
-                var separator = item.data.url.indexOf('?') !== -1 ? '&' : '?';
-                content = document.createElement('img');
-                content.src = item.data.url + separator + 'timestamp=' + new Date().getTime();
-                Polymer.dom(content).classList.add('previewimg');
-              } else {
-                content = document.createTextNode(cleaned);
-              }
-            } else {
-              content = document.createTextNode(cleaned);
-            }
-          }
-          Polymer.dom(li).appendChild(content);
-          Polymer.dom(fragment).appendChild(li);
-        }
-        Polymer.dom(this.$.events).appendChild(fragment);
-        // Scroll to bottom
-        while (this.$.events.childElementCount > this.showlogs) {
-          Polymer.dom(this.$.events).removeChild(Polymer.dom(this.$.events).firstChild);
-        }
-        this.$.events.scrollTop = this.$.events.scrollHeight;
+        this.fire('clear:runtimepackets', {
+          edge: this.edge
+        });
       },
       _computeClass: function (route) {
         return 'connection route' + route;

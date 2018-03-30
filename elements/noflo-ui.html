@@ -126,13 +126,13 @@
     <noflo-main id="main" theme="[[theme]]" runtimes="{{ctx.runtimes}}" projects="{{ctx.projects}}" user="{{ctx.user}}" remote-projects="{{ctx.remoteProjects}}"></noflo-main>
     <the-graph-editor id="grapheditor" theme="[[theme]]" width="{{width}}" height="{{height}}" graph="{{ctx.graph}}"></the-graph-editor>
     <noflo-library id="library" search="{{ctx.search}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}"></noflo-library>
-    <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}" runtimes="{{ctx.runtimes}}"></noflo-context>
-    <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatibleRuntimes}}" graph="{{ctx.graph}}"></noflo-runtime>
+    <noflo-context id="context" nodes="{{ctx.nodes}}" edges="{{ctx.edges}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" graphs="{{ctx.graphs}}" runtimes="{{ctx.runtimes}}" events="[[ctx.events]]"></noflo-context>
+    <noflo-runtime id="runtime" runtime="{{ctx.runtime}}" runtimes="{{ctx.compatible}}" graph="{{ctx.graph}}"></noflo-runtime>
     <noflo-journal id="journal" db="{{ctx.db}}" theme="[[theme]]" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
     <noflo-component-editor id="componenteditor" theme="[[theme]]" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-project>
-    <noflo-packets id="packets" edges="{{ctx.edges}}" nodes="{{ctx.nodes}}" currentgraph="{{ctx.graph}}"></noflo-packets>
+    <noflo-packets id="packets" edges="[[ctx.edges]]" nodes="[[ctx.nodes]]" currentgraph="[[ctx.graph]]" packets="[[ctx.packets]]" events="[[ctx.events]]"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
     <button id="asproject" on-click="editAsProject">Edit as project</button>
   </template>
@@ -154,6 +154,7 @@
               runtime: null,
               runtimes: [],
               compatibleRuntimes: [],
+              packets: [],
               edges: [],
               nodes: [],
             };
@@ -217,7 +218,7 @@
           this.emitEvent('flowhub:projects:fetch', event.detail);
         }.bind(this));
         this.$.main.addEventListener('downloadProject', function (event) {
-          this.emitEvent('application:hash', [
+          this.emitEvent('application:sethash', [
             'github',
             event.detail.org,
             event.detail.repo,
@@ -238,7 +239,7 @@
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.main.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.main.addEventListener('openProject', function (event) {
           this.openProject(event.detail);
@@ -247,16 +248,43 @@
           this.emitEvent('storage:save:graph', event.detail);
           this.emitEvent('runtime:sendGraph', event.detail);
         }.bind(this));
-        this.$.runtime.addEventListener('runtime', function (event) {
-          var newCtx = {};
-          for (var key in this.ctx) {
-            newCtx[key] = this.ctx[key];
+        this.$.context.addEventListener('clear:runtimeevents', function (event) {
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
           }
-          newCtx.runtime = event.detail;
-          this.emitEvent('runtime:connect', newCtx);
+          var clear = event.detail;
+          clear.runtime = this.ctx.runtime.definition.id;
+          if (this.ctx.graph && !clear.all) {
+            clear.graph = this.ctx.graph.name || this.ctx.graph.properties.id;
+          }
+          delete clear.all;
+          this.emitEvent('runtime:clearevents', clear);
+        }.bind(this));
+        this.$.context.addEventListener('clear:runtimepackets', function (event) {
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          var clear = event.detail;
+          clear.runtime = this.ctx.runtime.definition.id;
+          if (this.ctx.graph) {
+            clear.graph = this.ctx.graph.name || this.ctx.graph.properties.id;
+          }
+          this.emitEvent('runtime:clearpackets', clear);
+        }.bind(this));
+        this.$.runtime.addEventListener('switchRuntime', function (event) {
+          this.emitEvent('application:recreatestate', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:runtime', event.detail);
+        }.bind(this));
+        this.$.runtime.addEventListener('start', function (event) {
+          this.emitEvent('runtime:start', event.detail);
+        }.bind(this));
+        this.$.runtime.addEventListener('stop', function (event) {
+          this.emitEvent('runtime:stop', event.detail);
+        }.bind(this));
+        this.$.runtime.addEventListener('reconnect', function (event) {
+          this.emitEvent('runtime:reconnect', event.detail);
         }.bind(this));
         this.$.grapheditor.addEventListener('edges', function (event) {
           this.emitEvent('context:edges', event.detail);
@@ -268,6 +296,13 @@
           event.detail.properties.changed = true;
           this.emitEvent('storage:save:graph', event.detail);
         }.bind(this));
+        this.$.grapheditor.addEventListener('graphChanges', function (event) {
+          this.emitEvent('runtime:sendGraphChanges', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: this.ctx.graph,
+            changes: event.detail
+          });
+        }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
@@ -278,7 +313,13 @@
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
           this.emitEvent('storage:save:component', event.detail);
-          this.emitEvent('runtime:sendComponent', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: event.detail
+          });
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.emitEvent('github:sync:prepare', event.detail);
@@ -287,7 +328,7 @@
           this.emitEvent('github:sync:synchronize', event.detail);
         }.bind(this));
         this.$.project.addEventListener('deleteProject', function (event) {
-          this.emitEvent('application:hash', []);
+          this.emitEvent('application:sethash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
@@ -300,10 +341,10 @@
           this.emitEvent('storage:delete:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.main.addEventListener('deleteProject', function (event) {
-          this.emitEvent('application:hash', []);
+          this.emitEvent('application:sethash', []);
           event.detail.graphs.forEach(function (graph) {
             this.emitEvent('storage:delete:graph', graph);
           }.bind(this));
@@ -327,7 +368,13 @@
         }.bind(this));
         this.$.componenteditor.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:component', event.detail);
-          this.emitEvent('runtime:sendComponent', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: event.detail
+          });
           this.triggerTests();
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
@@ -341,7 +388,7 @@
           this.emitEvent('context:search_graph', event.detail);
         }.bind(this));
         this.$.search.addEventListener('hash', function (event) {
-          this.emitEvent('application:hash', event.detail);
+          this.emitEvent('application:sethash', event.detail);
         }.bind(this));
         this.$.library.addEventListener('result', function (event) {
           this.emitEvent('context:search_library_result', { searchLibraryResult: event.detail });
@@ -356,7 +403,7 @@
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
             // Go home
-            this.emitEvent('application:hash', []);
+            this.emitEvent('application:sethash', []);
           } else {
             this.openProject(project);
           }
@@ -376,7 +423,7 @@
             // Empty project, remove
             this.emitEvent('storage:delete:project', project);
             // Go home
-            this.emitEvent('application:hash', []);
+            this.emitEvent('application:sethash', []);
           } else {
             this.openProject(project);
           }
@@ -439,25 +486,18 @@
         if (context.searchGraphResult) {
           this.$.search.graphResults(this.ctx.searchGraphResult);
         }
-        if (this.ctx.error) {
-          this.$.packets.processError(this.ctx.error);
-        }
-        if (this.ctx.packet) {
-          this.$.packets.packet(this.ctx.packet);
-        }
         if (context.syncOperation !== undefined) {
           this.$.project.confirm(context.syncOperation);
           return;
         }
-        if (context.clearLibrary) {
+        if (context.componentLibrary) {
           for (var libKey in this.$.grapheditor.$.graph.library) {
             delete this.$.grapheditor.$.graph.library[libKey];
           }
-          this.set('ctx.clearLibrary', false);
-        }
-        if (context.componentDefinition !== undefined && context.componentDefinition) {
-          this.$.grapheditor.registerComponent(this.ctx.componentDefinition);
-          this.set('ctx.componentDefinition', null);
+          context.componentLibrary.forEach(function (def) {
+            this.$.grapheditor.registerComponent(def);
+          }.bind(this));
+          this.set('ctx.componentLibrary', null);
         }
         if (this.ctx.suites) {
           this.$.runtime.showTests(this.ctx.suites);
@@ -537,7 +577,7 @@
         }.bind(this), 1300);
       },
       showEditAsProject: function (enable) {
-        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || !this.ctx.runtime.canDo('protocol:network')) {
+        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
           // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
           enable = false;
         }
@@ -553,7 +593,7 @@
         if (this.ctx.project) {
           return;
         }
-        if (!this.ctx.runtime || !this.ctx.runtime.canDo('protocol:graph') || !this.ctx.runtime.canDo('protocol:network')) {
+        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
           return;
         }
         if (typeof ga === 'function') {
@@ -571,7 +611,7 @@
           if (err) {
             return;
           }
-          this.emitEvent('application:hash', hash);
+          this.emitEvent('application:sethash', hash);
         }.bind(this));
       },
       themeChanged: function (newTheme, oldTheme) {

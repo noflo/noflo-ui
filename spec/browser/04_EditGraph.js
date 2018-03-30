@@ -50,19 +50,29 @@ describe('Editing a graph', function() {
     });
     it('should connect automatically to the IFRAME provider', function(done) {
       this.timeout(45000);
-      if (runtime.online) {
-        chai.expect(runtime.online).to.equal(true);
+      if (runtime.runtime.status.online) {
+        chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
         done();
         return;
       }
-
-      runtime.runtime.on('status', function(status) {
-        if (!status.online) {
+      var tries = 0;
+      var allowedTries = 400;
+      var checkOnline = function () {
+        if (tries > allowedTries) {
+          chai.expect(runtime.runtime.status.online).to.equal(true);
+          chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
+          done();
           return;
         }
-        chai.expect(runtime.online).to.equal(true);
-        done();
-      });
+        if (runtime.runtime.status.online) {
+          chai.expect(runtime.runtime.definition.protocol).to.equal('iframe');
+          done();
+          return;
+        }
+        tries++;
+        setTimeout(checkOnline, 100);
+      };
+      setTimeout(checkOnline, 100);
     });
   });
 

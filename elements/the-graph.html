@@ -24,7 +24,6 @@
             type: Boolean,
             value: false,
             notify: true,
-            observer: 'autolayoutChanged'
           },
           autolayouter: { value: null },
           debounceLibraryRefeshTimer: { value: null },
@@ -38,7 +37,12 @@
             type: Boolean,
             value: true
           },
-          emit: { observer: 'emitChanged' },
+          graphChanges: {
+            type: Array,
+            value: function () {
+              return [];
+            }
+          },
           errorNodes: {
             type: Object,
             value: function () {
@@ -171,30 +175,122 @@
             Polymer.dom(this.$.svgcontainer).classList.add('the-graph-' + newTheme);
           }
         },
-        graphChanged: function (newGraph, oldGraph) {
-          if (oldGraph && oldGraph.removeListener) {
-            oldGraph.removeListener('endTransaction', this.emitChanged);
+        graphEvents: [
+          'changeProperties',
+          'addNode',
+          'changeNode',
+          'removeNode',
+          'addEdge',
+          'changeEdge',
+          'removeEdge',
+          'addInitial',
+          'removeInitial',
+          'addGroup',
+          'removeGroup',
+          'changeGroup',
+        ],
+        graphRenameEvents: [
+          'renameInport',
+          'renameOutport',
+          'renameGroup',
+          'renameNode',
+        ],
+        graphPortEvents: [
+          'addInport',
+          'removeInport',
+          'addOutport',
+          'removeOutport',
+        ],
+        subscribeGraph: function (graph) {
+          if (!this.trackGraphChange) {
+            this.trackGraphChange = {};
           }
-          if (!this.graph) {
+          this.graphEvents.forEach(function (event) {
+            this.trackGraphChange[event] = function (payload) {
+              this.graphChanges.push({
+                event: event,
+                payload: payload
+              });
+              if (this.autolayout) {
+                this.triggerAutolayout();
+              }
+            }.bind(this);
+            graph.on(event, this.trackGraphChange[event]);
+          }.bind(this));
+          this.graphRenameEvents.forEach(function (event) {
+            this.trackGraphChange[event] = function (from, to) {
+              this.graphChanges.push({
+                event: event,
+                payload: {
+                  from: from,
+                  to: to
+                }
+              });
+            }.bind(this);
+            graph.on(event, this.trackGraphChange[event]);
+          }.bind(this));
+          this.graphPortEvents.forEach(function (event) {
+            this.trackGraphChange[event] = function (pub, priv) {
+              this.graphChanges.push({
+                event: event,
+                payload: {
+                  public: pub,
+                  node: priv.process,
+                  port: priv.port,
+                  metadata: priv.metadata
+                }
+              });
+            }.bind(this);
+            graph.on(event, this.trackGraphChange[event]);
+          }.bind(this));
+
+          // Send changeset at end of transaction
+          this.trackGraphChange.endTransaction = function () {
+            // Send full graph for storage
+            this.fire('changed', graph);
+            // Send and clear graph change log
+            if (this.graphChanges.length) {
+              this.fire('graphChanges', this.graphChanges);
+              this.graphChanges = [];
+            }
+          }.bind(this);
+          this.graph.on('endTransaction', this.trackGraphChange.endTransaction);
+        },
+        unsubscribeGraph: function (graph) {
+          if (!this.trackGraphChange) {
             return;
           }
-          // Listen for graph changes
-          this.graph.on('endTransaction', this.emitChanged.bind(this));
-          // Listen for autolayout changes
-          if (this.autolayout) {
-            this.graph.on('addNode', this.triggerAutolayout.bind(this));
-            this.graph.on('removeNode', this.triggerAutolayout.bind(this));
-            this.graph.on('addInport', this.triggerAutolayout.bind(this));
-            this.graph.on('removeInport', this.triggerAutolayout.bind(this));
-            this.graph.on('addOutport', this.triggerAutolayout.bind(this));
-            this.graph.on('removeOutport', this.triggerAutolayout.bind(this));
-            this.graph.on('addEdge', this.triggerAutolayout.bind(this));
-            this.graph.on('removeEdge', this.triggerAutolayout.bind(this));
+          var allEvents = this.graphEvents.concat(this.graphRenameEvents, this.graphPortEvents);
+          allEvents.forEach(function (event) {
+            if (!this.trackGraphChange[event]) {
+              return;
+            }
+            graph.removeListener(event, this.trackGraphChange[event]);
+            delete this.trackGraphChange[event];
+          }.bind(this));
+
+          if (this.trackGraphChange.endTransaction) {
+            graph.removeListener('endTransaction', this.trackGraphChange.endTransaction);
+            delete this.trackGraphChange.endTransaction;
           }
+        },
+        graphChanged: function (newGraph, oldGraph) {
+          if (oldGraph && oldGraph.removeListener) {
+            this.unsubscribeGraph(oldGraph);
+          }
+
           if (this.appView) {
             // Remove previous instance
             ReactDOM.unmountComponentAtNode(this.$.svgcontainer);
           }
+
+          if (!this.graph) {
+            return;
+          }
+
+          // Subscribe to graph changes
+          this.subscribeGraph(newGraph);
+
           // Setup app
           Polymer.dom(this.$.svgcontainer).innerHTML = '';
           this.appView = ReactDOM.render(window.TheGraph.App({
@@ -228,7 +324,6 @@
             if (this.selectedEdges.length > 0) {
               this.selectedEdges = [];
             }
-            this.fire('edges', this.selectedEdges);
             return;
           }
           if (toggle) {
@@ -245,11 +340,12 @@
           } else {
             this.selectedEdges = [item];
           }
-          this.fire('edges', this.selectedEdges);
         },
         onNodeSelection: function (itemKey, item, toggle) {
           if (itemKey === undefined) {
-            this.set('selectedNodes', []);
+            if (this.selectedNodes.length > 0) {
+              this.selectedNodes = [];
+            }
           } else if (toggle) {
             var index = this.selectedNodes.indexOf(item);
             var isSelected = index !== -1;
@@ -259,10 +355,8 @@
               this.push('selectedNodes', item);
             }
           } else {
-            this.set('selectedNodes', [item]);
+            this.selectedNodes = [item];
           }
-          this.fire('nodes', this.selectedNodes);
-          this.selectedNodesChanged();
         },
         selectedNodesChanged: function () {
           this.set('selectedNodesHash', {});
@@ -297,34 +391,6 @@
             return;
           }
           this.graphView.setAnimatedEdges(this.animatedEdges);
-        },
-        emitChanged: function (_, event) {
-          this.fire('changed', this.graph);
-        },
-        autolayoutChanged: function () {
-          if (!this.graph) {
-            return;
-          }
-          // Only listen to changes that affect layout
-          if (this.autolayout) {
-            this.graph.on('addNode', this.triggerAutolayout.bind(this));
-            this.graph.on('removeNode', this.triggerAutolayout.bind(this));
-            this.graph.on('addInport', this.triggerAutolayout.bind(this));
-            this.graph.on('removeInport', this.triggerAutolayout.bind(this));
-            this.graph.on('addOutport', this.triggerAutolayout.bind(this));
-            this.graph.on('removeOutport', this.triggerAutolayout.bind(this));
-            this.graph.on('addEdge', this.triggerAutolayout.bind(this));
-            this.graph.on('removeEdge', this.triggerAutolayout.bind(this));
-          } else {
-            this.graph.removeListener('addNode', this.triggerAutolayout);
-            this.graph.removeListener('removeNode', this.triggerAutolayout);
-            this.graph.removeListener('addInport', this.triggerAutolayout);
-            this.graph.removeListener('removeInport', this.triggerAutolayout);
-            this.graph.removeListener('addOutport', this.triggerAutolayout);
-            this.graph.removeListener('removeOutport', this.triggerAutolayout);
-            this.graph.removeListener('addEdge', this.triggerAutolayout);
-            this.graph.removeListener('removeEdge', this.triggerAutolayout);
-          }
         },
         triggerAutolayout: function (event) {
           var graph = this.graph;
@@ -462,12 +528,9 @@
         registerComponent: function (definition, generated) {
           var component = this.library[definition.name];
           var def = definition;
-          if (component) {
-            if (generated) {
-              // Don't override real one with generated dummy
-              return;
-            }
-            def = TheGraph.library.mergeComponentDefinition(component, definition);
+          if (component && generated) {
+            // Don't override real one with generated dummy
+            return;
           }
           this.set('library' + ('.' + definition.name), def);
           // So changes are rendered

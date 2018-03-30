@@ -38,8 +38,19 @@ describe('URL Middleware', function() {
     })
   );
   describe('receiving a storage:ready action', () =>
-    it('should send main:open action and pass storage:ready', function(done) {
-      const checkOpen = data =>
+    it('should send application:hash action and pass storage:ready', function(done) {
+      const checkOpen = (data) => {
+        chai.expect(data).to.equal('');
+      };
+      mw.receivePass('storage:ready', true, () => {
+        mw.receiveAction('application:hash', checkOpen, done)
+      });
+      return mw.send('storage:ready', true);
+    })
+  );
+  describe('receiving a application:hash action with empty payload', () =>
+    it('should send main:open action', function(done) {
+      const checkOpen = (data) => {
         chai.expect(data).to.eql({
           route: 'main',
           runtime: null,
@@ -47,14 +58,14 @@ describe('URL Middleware', function() {
           graph: null,
           component: null,
           nodes: []})
-      ;
-      mw.receivePass('storage:ready', true, () => mw.receiveAction('main:open', checkOpen, done));
-      return mw.send('storage:ready', true);
+      };
+      mw.receiveAction('main:open', checkOpen, done);
+      mw.send('application:hash', '');
     })
   );
   describe('on hash change to a project URL', () =>
     it('should send storage:open action', function(done) {
-      const checkOpen = data =>
+      const checkOpen = (data) => {
         chai.expect(data).to.eql({
           route: 'storage',
           runtime: null,
@@ -64,16 +75,16 @@ describe('URL Middleware', function() {
           nodes: [
             'UserStorage'
           ]})
-      ;
+      };
       mw.receiveAction('storage:open', checkOpen, done);
-      return window.location.hash = '#project/noflo-ui/noflo-ui_graphs_main/UserStorage';
+      mw.send('application:hash', 'project/noflo-ui/noflo-ui_graphs_main/UserStorage');
     })
   );
   describe('on hash change to a old-style example URL', () =>
     it('should send application:redirect action', function(done) {
       const checkRedirect = data => chai.expect(data).to.eql('#gist/abc123');
       mw.receiveAction('application:redirect', checkRedirect, done);
-      return window.location.hash = '#example/abc123';
+      mw.send('application:hash', 'example/abc123');
     })
   );
   describe('on hash change to an gist URL', () =>
@@ -89,7 +100,7 @@ describe('URL Middleware', function() {
           remote: []})
       ;
       mw.receiveAction('github:gist', checkOpen, done);
-      return window.location.hash = '#gist/abc123';
+      mw.send('application:hash', 'gist/abc123');
     })
   );
 });

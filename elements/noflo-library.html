@@ -33,8 +33,8 @@
         var nameParts = componentName.split('/');
         graph.addNode(id, componentName, {
           label: nameParts[nameParts.length - 1],
-          x: (-pan[0] + 334) / scale,
-          y: (-pan[1] + 100) / scale
+          x: Math.floor((-pan[0] + 334) / scale),
+          y: Math.floor((-pan[1] + 100) / scale)
         });
         // Add IIPs for default values
         component.inports.forEach(function (port) {

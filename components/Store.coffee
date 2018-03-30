@@ -29,19 +29,17 @@ exports.getComponent = ->
     for data in packets
       unless data.action
         console.error 'Received action without expected payload', data
-        output.done()
-      if data and typeof data is 'object' and data.payload and data.action
-        # New-style action object
-        if data.state
-          # Keep track of last state
-          c.state = data.state
-        else
-          debug "#{data.action} was sent without state, using previous state"
-        output.send
-          pass:
-            action: data.action
-            state: c.state
-            payload: data.payload
         continue
+      if data.state
+        # Keep track of last state
+        c.state = data.state
+      else
+        debug "#{data.action} was sent without state, using previous state"
+      output.send
+        pass:
+          action: data.action
+          state: c.state
+          payload: data.payload
+      continue
     output.done()
     return

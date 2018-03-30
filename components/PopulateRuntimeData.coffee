@@ -1,21 +1,6 @@
 noflo = require 'noflo'
 uuid = require 'uuid'
 
-buildContext = ->
-  ctx =
-    state: ''
-    project: null
-    runtime: null
-    component: null
-    graphs: []
-    remote: []
-
-sendError = (out, err) ->
-  ctx = buildContext()
-  ctx.state = 'error'
-  ctx.error = err
-  out.send ctx
-
 decodeRuntime = (data) ->
   runtime = {}
   data.split('&').forEach (param) ->
@@ -27,9 +12,7 @@ decodeRuntime = (data) ->
   null
 
 findRuntime = (id, runtimes) ->
-  if typeof id is 'string' and  id.substr(0, 9) is 'endpoint?'
-    return decodeRuntime id.substr 9
-  return unless runtimes
+  return unless runtimes?.length
   for runtime in runtimes
     return runtime if runtime.id is id
   return null
@@ -43,21 +26,30 @@ exports.getComponent = ->
     datatype: 'array'
   c.outPorts.add 'out',
     datatype: 'object'
-
-  noflo.helpers.WirePattern c,
-    in: 'in'
-    params: ['runtimes']
-    out: 'out'
-    async: true
-  , (route, groups, out, callback) ->
-    # Match to local data
-    ctx = buildContext()
-    ctx.runtime = findRuntime route.runtime, c.params.runtimes
-    unless ctx.runtime
-      sendError out, new Error 'No runtime found'
-      do callback
+  c.outPorts.add 'new',
+    datatype: 'object'
+  c.outPorts.add 'error',
+    datatype: 'object'
+  c.process (input, output) ->
+    return unless input.hasData 'in', 'runtimes'
+    [route, runtimes] = input.getData 'in', 'runtimes'
+    unless route.runtime
+      output.done new Error "No runtime defined"
       return
-    ctx.remote = route.nodes
-    ctx.state = 'loading'
-    out.send ctx
-    do callback
+    if typeof route.runtime is 'string' and route.runtime.substr(0, 9) is 'endpoint?'
+      # Decode URL parameters
+      route.runtime = decodeRuntime route.runtime.substr 9
+    # Match to local runtimes
+    persistedRuntime = findRuntime route.runtime, runtimes
+    unless persistedRuntime
+      # This is a new runtime definition, save
+      output.send
+        new: route.runtime
+      output.send
+        out: route
+      output.done()
+      return
+    route.runtime = persistedRuntime
+    output.send
+      out: route
+    output.done()

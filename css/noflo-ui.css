@@ -180,11 +180,17 @@ html, body, button {
   padding: 0;
 }
 
-#preview-iframe {
+.iframe-runtime {
   display: none;
   border: none;
-  width: 300px;
-  height: 300px;
+  width: 288px;
+  height: 288px;
+  box-sizing: border-box;
+  position: fixed;
+  right: 36px;
+  top: 72px;
+  z-index: 2;
+  background-color: var(--noflo-ui-background);
 }
 
 #container > .preview-container {

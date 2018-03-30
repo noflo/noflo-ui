@@ -2,7 +2,6 @@ var exported = {
   noflo: require('noflo'),
   underscore: require('underscore'),
   'uuid': require('uuid'),
-  'fbp-protocol-client': require('fbp-protocol-client'),
   'fbp-spec': require('fbp-spec'),
   'noflo-ui/src/JournalStore': require('../src/JournalStore'),
   'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),

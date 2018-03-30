@@ -18,25 +18,27 @@ exports.getComponent = ->
     datatype: 'object'
   c.inPorts.add 'keys',
     datatype: 'string'
+    control: true
   c.outPorts.add 'values',
     datatype: 'all'
     addressable: yes
   c.outPorts.add 'out',
     datatype: 'object'
-  noflo.helpers.WirePattern c,
-    in: 'in'
-    params: 'keys'
-    out: 'out'
-    async: true
-    forwardGroups: true
-  , (data, groups, out, callback) ->
-    if not c.params.keys or not data.state or not data.payload
-      out.send data.payload or data
-      do callback
-      return
-    keys = c.params.keys.split ','
-    values = getValues keys, data.state
-    for value, idx in values
-      c.outPorts.values.send value, idx
-    out.send data.payload
-    do callback
+  c.outPorts.add 'state',
+    datatype: 'object'
+  c.process (input, output) ->
+    return unless input.hasData 'in'
+    return if input.attached('keys').length and not input.hasData 'keys'
+
+    data = input.getData 'in'
+
+    if input.hasData 'keys'
+      keys = input.getData('keys').split ','
+      values = getValues keys, data.state
+      for value, idx in values
+        output.send
+          values: new noflo.IP 'data', value,
+            index: idx
+    output.sendDone
+      state: data.state or {}
+      out: data.payload or data

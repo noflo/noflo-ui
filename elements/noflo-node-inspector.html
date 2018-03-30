@@ -304,6 +304,24 @@
         content: '*';
       }
 
+      section.errors header {
+        display: flex;
+        justify-content: space-between;
+      }
+      section.errors header h2 {
+        font-size: 10px;
+        font-weight: normal;
+        line-height: 36px;
+        margin-bottom: 0px;
+        padding-bottom: 0px;
+        position: static;
+        text-align: left;
+        color: var(--noflo-ui-text);
+      }
+      section.errors ul.toolbar {
+        display: inline-block;
+      }
+
       ul#errorEvents {
         max-height: 140px;
         overflow-x: hidden;
@@ -321,12 +339,6 @@
         margin-bottom: 2px;
         padding-bottom: 2px;
         border-bottom: 1px solid hsla(190, 30%, 2%, 0.4);
-      }
-      button#clear {
-        color: rgb(179, 222, 230);
-        right: 0px;
-        line-height: 36px;
-        background-color: hsla(0, 0%, 0%, 0.7);
       }
     </style>
     <header>
@@ -383,14 +395,25 @@
           </template>
         </li>
       </template>
-      <li>
-        <button id="clear" on-click="clearErrors" title="Clear Error Log">
-          <noflo-icon icon="ban"></noflo-icon>
-        </button>
-      </li>
-      <ul id="errorEvents">
-      </ul>
     </ul>
+    <template is="dom-if" if="[[errorLog.length]]">
+    <section class="errors">
+      <header>
+        <h2>Errors</h2>
+        <ul class="toolbar">
+          <li>
+            <button id="clear" on-click="clearErrors" class="blue-button" title="Clear Error Log">
+              <noflo-icon icon="ban"></noflo-icon>
+            </button>
+           </li>
+        </ul>
+      </header>
+      <ul id="errorEvents">
+        <template is="dom-repeat" items="[[errorLog]]" as="event">
+          <li>{{ event.payload.error }}</li>
+        </template>
+      </ul>
+    </template>
   </template>
   <script>
     Polymer({
@@ -406,7 +429,6 @@
             return [];
           },
           notify: true,
-          observer: 'errorLogChanged'
         },
         graph: {
           value: null,
@@ -476,9 +498,7 @@
         if (label === this.node.metadata.label) {
           return;
         }
-        // Change label
         this.graph.startTransaction('rename');
-        this.graph.setNodeMetadata(this.node.id, { label: label });
         // Change id
         var id = label;
         if (id !== this.node.id) {
@@ -491,6 +511,8 @@
           }
           this.graph.renameNode(this.node.id, id);
         }
+        // Change label
+        this.graph.setNodeMetadata(id, { label: label });
         this.graph.endTransaction('rename');
       },
       getPortValue: function (port) {
@@ -669,11 +691,11 @@
           name = event.currentTarget.getAttribute('name');
         }
         this.graph.removeInitial(this.node.id, name);
-        this.inports.forEach(function (port) {
+        this.inports.forEach(function (port, idx) {
           if (port.name === name) {
-            port.value = null;
+            this.set('inports.'+idx+'.value', null);
           }
-        });
+        }.bind(this));
         Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.remove('error');
       },
       sendBang: function (event) {
@@ -685,41 +707,11 @@
         this.graph.removeInitial(this.node.id, name);
         this.graph.endTransaction('bang');
       },
-      error: function () {
-        this.renderLogs();
-      },
-      errorLogChanged: function () {
-        this.renderLogs();
-      },
       clearErrors: function () {
-        this.errorLog.clear();
-        this.lastErrorLog = 0;
-        this.set('$.errorEvents.innerHTML', '');
-      },
-      renderLogs: function () {
-        var first = this.lastErrorLog;
-        var i, item, li, content;
-        if (this.errorLog.length - this.lastErrorLog > this.showErrorLogs) {
-          first = this.errorLog.length - this.showErrorLogs;
-        }
-        var fragment = document.createDocumentFragment();
-        for (i = first; i < this.errorLog.length; i++) {
-          item = this.errorLog.get(i);
-          if (!item) {
-            continue;
-          }
-          li = document.createElement('li');
-          content = document.createTextNode(item);
-          Polymer.dom(li).appendChild(content);
-          Polymer.dom(fragment).appendChild(li);
-        }
-        Polymer.dom(this.$.errorEvents).appendChild(fragment);
-        // Scroll to bottom
-        while (this.$.errorEvents.childElementCount > this.showErrorLogs) {
-          Polymer.dom(this.$.errorEvents).removeChild(Polymer.dom(this.$.errorEvents).firstChild);
-        }
-        this.set('$.errorEvents.scrollTop', this.$.errorEvents.scrollHeight);
-        this.lastErrorLog = this.errorLog.length;
+        this.fire('clear:runtimeevents', {
+          id: this.node.id,
+          type: 'processerror'
+        });
       },
       _computeIf: function (node) {
         if (!node) {

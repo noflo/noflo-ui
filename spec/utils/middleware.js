@@ -101,6 +101,28 @@ class Middleware {
     expected.push(`${action} DATA`);
     return this.receive(this.passAction, expected, check, done);
   }
+
+  receivePassCheck(action, check, done) {
+    const expected = [];
+    expected.push(`${action} DATA`);
+    return this.receive(this.passAction, expected, check, done);
+  }
 }
+
+window.nofloWaitFor = (condition, callback, maxTries = 100) => {
+  let tries = 0;
+  const checkCondition = () => {
+    if (condition()) {
+      callback();
+      return;
+    }
+    if (tries > maxTries) {
+      callback(new Error('Maximum tries exceeded'));
+    }
+    tries++;
+    setTimeout(checkCondition, 100);
+  };
+  checkCondition();
+};
 
 window.middleware = (component, baseDir) => new Middleware(component, baseDir);

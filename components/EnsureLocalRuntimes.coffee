@@ -7,7 +7,7 @@ ensureOneIframeRuntime = (runtimes) ->
   for runtime in runtimes
     # Check that we don't have the iframe runtime already
     if runtime.protocol is 'iframe' and runtime.address is iframeAddress
-      return runtime
+      return null
   iframeRuntime =
     label: 'NoFlo HTML5 environment'
     id: uuid()
@@ -23,13 +23,19 @@ exports.getComponent = ->
     datatype: 'array'
   c.outPorts.add 'out',
     datatype: 'object'
+  c.outPorts.add 'runtimes',
+    datatype: 'array'
 
   noflo.helpers.WirePattern c,
+    out: ['out', 'runtimes']
     async: true
     forwardGroups: false
-  , (data, groups, out, callback) ->
-    data = [] unless data
-    iframeRuntime = ensureOneIframeRuntime data
+  , (runtimes, groups, out, callback) ->
+    runtimes = [] unless runtimes
+    iframeRuntime = ensureOneIframeRuntime runtimes
     if iframeRuntime
-      out.send iframeRuntime
+      # Added iframe runtime
+      out.out.send iframeRuntime
+      runtimes.push iframeRuntime
+    out.runtimes.send runtimes
     do callback

@@ -1,5 +1,6 @@
 noflo = require 'noflo'
 registry = require 'flowhub-registry'
+{ isDefaultRuntime } = require '../src/runtime'
 
 exports.getComponent = ->
   c = new noflo.Component
@@ -24,7 +25,7 @@ exports.getComponent = ->
       out.send data
       do callback
       return
-    if data.protocol is 'iframe' and data.address is 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe'
+    if isDefaultRuntime data
       # No need to persist the default NoFlo runtime in registry.
       out.send data
       do callback
