@@ -87,9 +87,15 @@
         var self = this;
         var _ = require('underscore');
         this.debouncedComponentChange = _.debounce(function () {
+          if (!self.component) {
+            return;
+          }
           self.fire('changed', self.component);
         }, 1500);
         this.debouncedSpecChange = _.debounce(function () {
+          if (!self.spec) {
+            return;
+          }
           self.fire('specschanged', self.spec);
         }, 1500);
       },
