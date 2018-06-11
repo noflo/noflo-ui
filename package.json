@@ -74,7 +74,7 @@
     "noflo-component-loader": "^0.3.0",
     "polymer-bundler": "^3.0.1",
     "puppeteer": "^1.0.0",
-    "sinon": "^5.0.0",
+    "sinon": "^6.0.0",
     "syn": "^0.13.0",
     "webpack": "^4.0.0",
     "yaml-loader": "^0.5.0"
