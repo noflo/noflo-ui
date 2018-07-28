@@ -606,7 +606,7 @@
         }
       },
       updatePorts: function () {
-        this.inports = [];
+        this.set('inports', []);
         if (!this.component || !this.graph) {
           return;
         }
@@ -658,6 +658,8 @@
           this.graph.addInitial(value, this.node.id, name);
           if (!this.scrubbing) {
             this.graph.endTransaction('iipchange');
+            // Force Polymer to update view
+            this.updatePorts();
           }
         }.bind(this);
         if (validatePortValue(port.type, value)) {
@@ -688,19 +690,15 @@
         event.preventDefault();
         var name = event.currentTarget.getAttribute('data-port');
         if (!name) {
-          name = event.currentTarget.getAttribute('name');
+          name = event.currentTarget.getAttribute('data-name');
         }
         this.graph.removeInitial(this.node.id, name);
-        this.inports.forEach(function (port, idx) {
-          if (port.name === name) {
-            this.set('inports.'+idx+'.value', null);
-          }
-        }.bind(this));
         Polymer.dom(Polymer.dom(Polymer.dom(event.currentTarget).parentNode).parentNode).classList.remove('error');
+        this.updatePorts();
       },
       sendBang: function (event) {
         event.preventDefault();
-        var name = event.currentTarget.getAttribute('name');
+        var name = event.currentTarget.getAttribute('data-name');
         this.graph.startTransaction('bang');
         this.graph.removeInitial(this.node.id, name);
         this.graph.addInitial(true, this.node.id, name);
