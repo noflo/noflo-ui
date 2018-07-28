@@ -14,6 +14,11 @@ New features:
 * All messages to and from runtime are now validated against the [FBP Protocol](http://flowbased.github.io/fbp-protocol/) schema, with failures shown in UI
 * All errors coming from runtime are also logged into browser's developer console
 
+Bugfixes:
+
+* Fixed node inspector updating of values
+* Fixed editing of node and graph names in Safari
+
 Internal changes:
 
 * Switched runtime communications to use the new [fbp-client library](https://github.com/flowbased/fbp-client)
