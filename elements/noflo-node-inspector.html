@@ -4,6 +4,18 @@
 <dom-module id="noflo-node-inspector">
   <template>
     <style include="the-card-styles">
+      .editable-title {
+        line-height: 36px;
+        margin: 0px;
+        padding: 0px;
+        background-color: var(--noflo-ui-background-shadow);
+        color: var(--noflo-ui-text);
+        border: 0px;
+        display: block;
+        font-family: "SourceCodePro",Helvetica,Arial,sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+      }
       .ports {
         margin-bottom: 8px;
       }
@@ -342,7 +354,7 @@
       }
     </style>
     <header>
-      <h1 on-keydown="checkUpdateLabel" on-blur="updateLabel" contenteditable="">{{label}}</h1>
+      <input type="text" on-keydown="checkUpdateLabel" on-blur="updateLabel" class="editable-title" value="{{label}}" />
       <template is="dom-if" if="{{_computeIf(node)}}">
         <h2>{{node.component}}</h2>
       </template>
@@ -494,7 +506,7 @@
       },
       updateLabel: function (event) {
         // Check if we need to make change
-        var label = Polymer.dom(event.currentTarget).textContent;
+        var label = event.currentTarget.value;
         if (label === this.node.metadata.label) {
           return;
         }

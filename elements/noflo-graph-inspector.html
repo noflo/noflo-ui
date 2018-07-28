@@ -16,6 +16,15 @@
       textarea {
         height: 144px;
       }
+      .editable-title {
+        font-size: 17px;
+        line-height: 36px;
+        margin: 0px;
+        padding: 0px;
+        margin-bottom: 18px;
+        background-color: var(--noflo-ui-background-shadow);
+        color: var(--noflo-ui-text);
+      }
       p {
         font-size: 13px;
         line-height: 18px;
@@ -76,7 +85,7 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <h1 on-keydown="checkUpdateName" on-blur="updateName" contenteditable="">{{graph.name}}</h1>
+      <input type="text" on-keydown="checkUpdateName" on-blur="updateName" class="editable-title" value="{{graph.name}}" />
       <template is="dom-if" if="{{downloadUrl}}">
         <a id="download" download="{{_computeDownload(graph)}}" href$="{{downloadUrl}}">
           <noflo-icon icon="download"></noflo-icon>
@@ -203,7 +212,7 @@
         }
       },
       updateName: function (event) {
-        this.set('graph.name', Polymer.dom(event.currentTarget).textContent);
+        this.set('graph.name', event.currentTarget.value);
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
