@@ -11,6 +11,8 @@ ensureInstance = (definition, clients, output) ->
   return fbpClient(definition,
     # Note: we may want to re-enable validation later when most runtimes are compatible
     skipValidation: true
+    # Increased connection timeout due to browser runtimes occasionally taking longer to evaluate
+    connectionTimeout: 3000
   )
   .then((client) ->
     output.send
