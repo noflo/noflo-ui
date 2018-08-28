@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
+    "babel-loader": "^8.0.0",
     "babel-preset-es2015": "^6.24.1",
     "chai": "^4.0.1",
     "coffee-loader": "^0.9.0",
