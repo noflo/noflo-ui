@@ -19,7 +19,7 @@
     "@webcomponents/webcomponentsjs": "^1.0.17",
     "circular-buffer": "^1.0.2",
     "codemirror": "^5.22.2",
-    "debug": "^3.0.0",
+    "debug": "^4.0.0",
     "fbp": "~1.7.0",
     "fbp-client": "^0.3.2",
     "fbp-spec": "~0.6.0",
