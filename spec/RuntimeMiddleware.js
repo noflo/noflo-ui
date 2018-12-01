@@ -74,7 +74,7 @@ describe('Runtime Middleware', function() {
               }, 1000);
             });
           };
-          if (typeof iframe.contentWindow.handleProtocolMessage === 'function') {
+          if (iframe.contentWindow && typeof iframe.contentWindow.handleProtocolMessage === 'function') {
             callIframe();
             return;
           }
