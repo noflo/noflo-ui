@@ -1,4 +1,4 @@
-module.exports = [            
+module.exports = [
   'browser/vendor/codemirror/lib/codemirror.js',
   'browser/vendor/codemirror/mode/xml.js',
   'browser/vendor/codemirror/mode/javascript.js',

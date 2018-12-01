@@ -26,11 +26,11 @@ module.exports = {
               },
               runtimes: [
                 'noflo',
-                'noflo-browser'
+                'noflo-browser',
               ],
-            }
-          }
-        ]
+            },
+          },
+        ],
       },
       {
         test: /noflo([\\]+|\/)lib([\\]+|\/)(.*)\.js$|noflo([\\]+|\/)components([\\]+|\/)(.*)\.js$|fbp-graph([\\]+|\/)lib([\\]+|\/)(.*)\.js$|noflo-runtime-([a-z]+)([\\]+|\/)(.*).js$/,
@@ -39,9 +39,9 @@ module.exports = {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env'],
-            }
-          }
-        ]
+            },
+          },
+        ],
       },
       {
         test: /\.coffee$/,
@@ -52,31 +52,31 @@ module.exports = {
               sourceMap: true,
               transpile: {
                 presets: ['@babel/preset-env'],
-              }
-            }
-          }
-        ]
+              },
+            },
+          },
+        ],
       },
       {
         test: /\.fbp$/,
         use: [
-          'fbp-loader'
-        ]
+          'fbp-loader',
+        ],
       },
       {
         test: /\.yaml$/,
         use: [
           'json-loader',
-          'yaml-loader'
-        ]
-      }
-    ]
+          'yaml-loader',
+        ],
+      },
+    ],
   },
   externals: {
-    'canvas': 'commonjs canvas', // Required by noflo-image
+    canvas: 'commonjs canvas', // Required by noflo-image
   },
   resolve: {
-    extensions: [".coffee", ".js"],
+    extensions: ['.coffee', '.js'],
   },
   plugins: [
     new CopyWebpackPlugin([

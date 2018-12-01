@@ -2,7 +2,7 @@ const externals = require('./externals.conf.js');
 
 process.env.CHROME_BIN = require('puppeteer').executablePath();
 
-module.exports = function(config) {
+module.exports = function (config) {
   const files = [
     'node_modules/sinon/pkg/sinon.js',
     'node_modules/react/dist/react-with-addons.min.js',
@@ -60,7 +60,7 @@ module.exports = function(config) {
       },
     },
     singleRun: true,
-    concurrency: Infinity
+    concurrency: Infinity,
   };
 
   if (process.env.TRAVIS) {
@@ -68,4 +68,4 @@ module.exports = function(config) {
   }
 
   config.set(configuration);
-}
+};
