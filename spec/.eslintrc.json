@@ -1,0 +1,17 @@
+{
+  "extends": "airbnb-base",
+  "plugins": [
+    "mocha"
+  ],
+  "env": {
+    "mocha": true
+  },
+  "globals": {
+    "chrome": false,
+    "document": false,
+    "localStorage": false,
+    "window": false,
+    "chai": false,
+    "sinon": false
+  }
+}
