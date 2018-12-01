@@ -59,7 +59,7 @@ describe('Runtime Middleware', function() {
       const waitForIframe = () => {
         if (runtimeDefinition.querySelector) {
           iframe = document.body.querySelector(runtimeDefinition.querySelector);
-          iframe.addEventListener('load', () => {
+          const callIframe = () => {
             iframe.contentWindow.handleProtocolMessage(function(msg, send) {
               chai.expect(msg.protocol).to.equal('runtime');
               chai.expect(msg.command).to.equal('getruntime');
@@ -73,7 +73,12 @@ describe('Runtime Middleware', function() {
                 done();
               }, 1000);
             });
-          });
+          };
+          if (typeof iframe.contentWindow.handleProtocolMessage === 'function') {
+            callIframe();
+            return;
+          }
+          iframe.addEventListener('load', callIframe);
           return;
         }
         if (tries >= maxTries) {
