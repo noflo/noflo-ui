@@ -42,6 +42,7 @@
     "react-dom": "^15.6.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.12.0",
+    "underscore": "^1.9.1",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
@@ -56,6 +57,7 @@
     "eslint": "^5.9.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-mocha": "^5.2.0",
     "fbp-loader": "^0.1.2",
     "grunt": "^1.0.1",
     "grunt-contrib-clean": "^1.0.0",
@@ -82,8 +84,8 @@
     "yaml-loader": "^0.5.0"
   },
   "scripts": {
-    "lint": "eslint *.js components/*.js spec/*.js app/*.js",
-    "lint-fix": "eslint --fix *.js components/*.js spec/*.js app/*.js",
+    "lint": "eslint *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
+    "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
     "pretest": "coffeelint -f .coffeelint.json -r components",
     "test": "karma start",
     "start": "http-server . -p 9999 -s -c-1",
