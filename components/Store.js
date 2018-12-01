@@ -1,26 +1,26 @@
 const noflo = require('noflo');
 const debug = require('debug')('noflo-ui:store');
+const debugError = require('debug')('noflo-ui:store:error');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.icon = 'rocket';
   c.inPorts.add('action',
-    {datatype: 'all'});
+    { datatype: 'all' });
   c.inPorts.add('state',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('pass', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
 
   c.state = {};
-  c.tearDown = function(callback) {
+  c.tearDown = (callback) => {
     c.state = {};
-    return callback();
+    callback();
   };
   c.forwardBrackets = {};
-  return c.process(function(input, output) {
+  return c.process((input, output) => {
     if (input.hasData('state')) {
       c.state = input.getData('state');
       output.done();
@@ -28,10 +28,10 @@ exports.getComponent = function() {
     }
     if (!input.hasStream('action')) { return; }
     const packets = input.getStream('action').filter(ip => ip.type === 'data').map(ip => ip.data);
-    for (let data of Array.from(packets)) {
+    packets.forEach((data) => {
       if (!data.action) {
-        console.error('Received action without expected payload', data);
-        continue;
+        debugError('Received action without expected payload', data);
+        return;
       }
       if (data.state) {
         // Keep track of last state
@@ -43,11 +43,10 @@ exports.getComponent = function() {
         pass: {
           action: data.action,
           state: c.state,
-          payload: data.payload
-        }
+          payload: data.payload,
+        },
       });
-      continue;
-    }
+    });
     output.done();
   });
 };

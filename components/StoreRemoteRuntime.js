@@ -2,27 +2,26 @@ const noflo = require('noflo');
 const registry = require('flowhub-registry');
 const { isDefaultRuntime } = require('../src/runtime');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('user', {
     datatype: 'object',
-    required: true
-  }
-  );
+    required: true,
+  });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     params: 'user',
     out: 'out',
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     if (['opener', 'microflo'].includes(data.protocol)) {
       // These are transient runtimes, no need to persist on Registry
       out.send(data);
@@ -36,25 +35,25 @@ exports.getComponent = function() {
       return;
     }
 
-    if (!__guard__(c.params != null ? c.params.user : undefined, x => x['flowhub-token'])) {
+    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
       // User not logged in, persist runtime only locally
       out.send(data);
       callback();
       return;
     }
 
-    data.user = c.params.user['flowhub-user'] != null ? c.params.user['flowhub-user'].id : undefined;
-    if (!data.secret) { data.secret = null; }
+    const d = data;
+    d.user = c.params.user['flowhub-user'] != null ? c.params.user['flowhub-user'].id : undefined;
+    if (!data.secret) { d.secret = null; }
     const rt = new registry.Runtime(data,
-      {host: '$NOFLO_REGISTRY_SERVICE'});
-    return rt.register(c.params.user['flowhub-token'], function(err) {
-      if (err) { return callback(err); }
+      { host: '$NOFLO_REGISTRY_SERVICE' });
+    rt.register(c.params.user['flowhub-token'], (err) => {
+      if (err) {
+        callback(err);
+        return;
+      }
       out.send(data);
-      return callback();
+      callback();
     });
   });
 };
-
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

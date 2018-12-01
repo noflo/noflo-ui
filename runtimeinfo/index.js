@@ -1,10 +1,17 @@
+const msgflo = require('./msgflo.yaml');
+const sndflo = require('./sndflo.yaml');
+const imgflo = require('./imgflo.yaml');
+const noflo = require('./noflo.yaml');
+const javafbp = require('./javafbp.yaml');
+const microflo = require('./microflo.yaml');
+
 const info = {
-  msgflo: require('./msgflo.yaml'),
-  sndflo: require('./sndflo.yaml'),
-  imgflo: require('./imgflo.yaml'),
-  noflo: require('./noflo.yaml'),
-  javafbp: require('./javafbp.yaml'),
-  microflo: require('./microflo.yaml'),
+  msgflo,
+  sndflo,
+  imgflo,
+  noflo,
+  javafbp,
+  microflo,
 };
 
 info['noflo-browser'] = info.noflo;

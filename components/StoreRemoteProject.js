@@ -1,25 +1,26 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
-  return c.process(function(input, output) {
+    { datatype: 'object' });
+  return c.process((input, output) => {
     if (!input.hasData('in')) { return; }
     const data = input.getData('in');
-    if (!__guard__(data.state != null ? data.state.user : undefined, x => x['flowhub-token'])) {
+    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
       // User not logged in, public repos may work so pass
-      output.sendDone({
-        out: data});
+      output.sendDone({ out: data });
       return;
     }
-    const req = new XMLHttpRequest;
-    req.onreadystatechange = function() {
-      if (req.readyState !== 4) { return; }
+    const req = new XMLHttpRequest();
+    req.onreadystatechange = () => {
+      if (req.readyState !== 4) {
+        return;
+      }
       if (![200, 201].includes(req.status)) {
         // Repository not available
         let { message } = JSON.parse(req.responseText);
@@ -31,20 +32,15 @@ exports.getComponent = function() {
         return;
       }
       // Repository registered, let sync happen
-      output.sendDone({
-        out: data});
+      output.sendDone({ out: data });
     };
     const payload = JSON.stringify({
       repo: data.payload.repo,
-      active: true
+      active: true,
     });
     req.open('POST', '$NOFLO_REGISTRY_SERVICE/projects', true);
     req.setRequestHeader('Authorization', `Bearer ${data.state.user['flowhub-token']}`);
     req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-    return req.send(payload);
+    req.send(payload);
   });
 };
-
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

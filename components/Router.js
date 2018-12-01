@@ -1,7 +1,6 @@
 const noflo = require('noflo');
 
-const buildContext = function(url) {
-  let ctx;
+const buildContext = (url) => {
   const routeData = {
     route: '',
     subroute: 'open',
@@ -9,7 +8,7 @@ const buildContext = function(url) {
     project: null,
     graph: null,
     component: null,
-    nodes: []
+    nodes: [],
   };
 
   if (url === '') {
@@ -20,38 +19,38 @@ const buildContext = function(url) {
   const urlParts = url.split('/').map(part => decodeURIComponent(part));
   const route = urlParts.shift();
   switch (route) {
-    case 'project':
+    case 'project': {
       // Locally stored project
       routeData.route = 'storage';
       routeData.project = urlParts.shift();
       if ((urlParts[0] === 'component') && (urlParts.length === 2)) {
         // Opening a component from the project
-        routeData.component = urlParts[1];
+        [, routeData.component] = urlParts;
         return routeData;
       }
       // Opening a graph from the project
       routeData.graph = urlParts.shift();
       routeData.nodes = urlParts;
       return routeData;
-      break;
-    case 'example':
-      return ctx = {
+    }
+    case 'example': {
+      return {
         route: 'redirect',
-        url: `gist/${urlParts.join('/')}`
+        url: `gist/${urlParts.join('/')}`,
       };
-      break;
-    case 'gist':
+    }
+    case 'gist': {
       // Example graph to be fetched from gists
       routeData.route = 'github';
       routeData.subroute = 'gist';
       routeData.graph = urlParts.shift();
       routeData.remote = urlParts;
       return routeData;
-      break;
-    case 'github':
+    }
+    case 'github': {
       // Project to download and open from GitHub
       routeData.route = 'github';
-      var [owner, repo] = Array.from(urlParts.splice(0, 2));
+      const [owner, repo] = urlParts.splice(0, 2);
       routeData.repo = `${owner}/${repo}`;
       routeData.branch = 'master';
       if (!urlParts.length) { return routeData; }
@@ -66,66 +65,68 @@ const buildContext = function(url) {
         urlParts.shift();
         routeData.branch = urlParts.shift();
         if (urlParts[0] === 'graphs') {
-          routeData.graph = urlParts[1];
+          [, routeData.graph] = urlParts;
         }
         if (urlParts[0] === 'components') {
-          routeData.component = urlParts[1];
+          [, routeData.component] = urlParts;
         }
       }
       return routeData;
-      break;
-    case 'runtime':
+    }
+    case 'runtime': {
       // Graph running on a remote runtime
       routeData.route = 'runtime';
       routeData.runtime = urlParts.shift();
       routeData.nodes = urlParts;
       return routeData;
-      break;
+    }
+    default: {
+      // No route matched, redirect to main screen
+      return {
+        route: 'redirect',
+        url: '',
+      };
+    }
   }
-
-  // No route matched, redirect to main screen
-  return ctx = {
-    route: 'redirect',
-    url: ''
-  };
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('route',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('redirect',
-    {datatype: 'string'});
+    { datatype: 'string' });
   c.outPorts.add('missed',
-    {datatype: 'bang'});
+    { datatype: 'bang' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     out: ['route', 'redirect', 'missed'],
     forwardGroups: false,
-    async: true
-  }
-  , function(action, groups, out, callback) {
+    async: true,
+  },
+  (action, groups, out, callback) => {
     const ctx = buildContext(action.payload);
     if (!ctx) {
-      out.missed.send({
-        payload: ctx});
-      return callback();
+      out.missed.send({ payload: ctx });
+      callback();
+      return;
     }
 
     if (ctx.route === 'redirect') {
       out.redirect.send(`#${ctx.url}`);
-      return callback();
+      callback();
+      return;
     }
 
-    action = `${ctx.route}:${ctx.subroute}`;
+    const newAction = `${ctx.route}:${ctx.subroute}`;
     delete ctx.subroute;
     out.route.send({
-      action,
-      payload: ctx
+      newAction,
+      payload: ctx,
     });
-    return callback();
+    callback();
   });
 };

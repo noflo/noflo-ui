@@ -7,6 +7,7 @@ module.exports = {
     filename: 'browser/noflo-ui.min.js',
     sourceMapFilename: 'browser/noflo-ui.min.js.map',
   },
+  mode: 'production',
   devtool: 'source-map',
   module: {
     rules: [

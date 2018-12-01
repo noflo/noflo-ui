@@ -1,42 +1,46 @@
 const noflo = require('noflo');
 
-const validate = function(items, callback) {
-  if (!items['flowhub-user']) { return callback(null, items); }
+const validate = (i, callback) => {
+  const items = i;
+  if (!items['flowhub-user']) {
+    callback(null, items);
+    return;
+  }
   try {
     items['flowhub-user'] = JSON.parse(items['flowhub-user']);
   } catch (e) {
-    return callback(e);
+    callback(e);
+    return;
   }
-  return callback(null, items);
+  callback(null, items);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('start',
-    {datatype: 'bang'});
-  c.outPorts.add('user', () => ({datatype: 'object'}));
-  c.outPorts.add('error', () => ({datatype: 'object'}));
+    { datatype: 'bang' });
+  c.outPorts.add('user', () => ({ datatype: 'object' }));
+  c.outPorts.add('error', () => ({ datatype: 'object' }));
 
   return noflo.helpers.WirePattern(c, {
     in: 'start',
     out: 'user',
-    async: true
-  }
-  , function(ins, groups, out, callback) {
+    async: true,
+  },
+  (ins, groups, out, callback) => {
     // Handle obsolete keys
-    let key;
     const deprecated = {
       'grid-avatar': 'flowhub-avatar',
       'grid-token': 'flowhub-token',
-      'grid-user': 'flowhub-user'
+      'grid-user': 'flowhub-user',
     };
-    for (key in deprecated) {
+    Object.keys(deprecated).forEach((key) => {
       const newKey = deprecated[key];
       const val = localStorage.getItem(key);
-      if (!val) { continue; }
+      if (!val) { return; }
       localStorage.setItem(newKey, val);
       localStorage.removeItem(key);
-    }
+    });
 
     const keys = [
       'flowhub-avatar',
@@ -46,17 +50,20 @@ exports.getComponent = function() {
       'flowhub-token',
       'flowhub-user',
       'github-token',
-      'github-username'
+      'github-username',
     ];
     const items = {};
-    for (key of Array.from(keys)) {
+    keys.forEach((key) => {
       items[key] = localStorage.getItem(key);
-    }
+    });
 
-    return validate(items, function(err, valid) {
-      if (err) { return callback(err); }
+    validate(items, (err, valid) => {
+      if (err) {
+        callback(err);
+        return;
+      }
       out.send(valid);
-      return callback();
+      callback();
     });
   });
 };

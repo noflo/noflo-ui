@@ -1,11 +1,11 @@
 const noflo = require('noflo');
 const octo = require('octo');
 
-const githubGet = function(url, token, callback) {
+const githubGet = function (url, token, callback) {
   const api = octo.api();
   api.token(token);
   const request = api.get(url);
-  request.on('success', function(res) {
+  request.on('success', (res) => {
     if (!res.body) {
       callback(new Error('No result received'));
       return;
@@ -20,39 +20,38 @@ const getTree = (repo, tree, token, callback) => githubGet(`/repos/${repo}/git/t
 
 const getCommit = (repo, sha, token, callback) => githubGet(`/repos/${repo}/git/commits/${sha}`, token, callback);
 
-const processGraphsTree = function(tree, objects, prefix) {
+const processGraphsTree = function (tree, objects, prefix) {
   if (!tree) { return; }
-  let graphs = tree.tree.filter(function(entry) {
+  let graphs = tree.tree.filter((entry) => {
     if (entry.type !== 'blob') { return false; }
     if (!entry.path.match('.*\.(fbp|json)$')) { return false; }
     return true;
   });
-  graphs = graphs.filter(function(entry) {
+  graphs = graphs.filter((entry) => {
     // If we have .json and .fbp for same graph, .json wins
     if (entry.path.indexOf('.fbp') === -1) { return true; }
     const jsonVersion = entry.path.replace('\.fbp', '.json');
-    for (let g of Array.from(graphs)) {
+    for (const g of Array.from(graphs)) {
       if (g.path === jsonVersion) { return false; }
     }
     return true;
   });
-  return objects.graphs = objects.graphs.concat(graphs.map(function(entry) {
+  return objects.graphs = objects.graphs.concat(graphs.map((entry) => {
     entry.name = entry.path.substr(0, entry.path.indexOf('.'));
     entry.language = entry.path.substr(entry.path.lastIndexOf('.') + 1);
     entry.fullPath = `${prefix}${entry.path}`;
     return entry;
-  })
-  );
+  }));
 };
 
-const processComponentsTree = function(tree, objects, prefix) {
+const processComponentsTree = function (tree, objects, prefix) {
   if (!tree) { return; }
-  const components = tree.tree.filter(function(entry) {
+  const components = tree.tree.filter((entry) => {
     if (entry.type !== 'blob') { return false; }
     if (!entry.path.match('.*\.(coffee|js|hpp|c|py)$')) { return false; }
     return true;
   });
-  return objects.components = objects.components.concat(components.map(function(entry) {
+  return objects.components = objects.components.concat(components.map((entry) => {
     entry.name = entry.path.substr(0, entry.path.indexOf('.'));
     const language = entry.path.substr(entry.path.lastIndexOf('.') + 1);
     switch (language) {
@@ -65,18 +64,17 @@ const processComponentsTree = function(tree, objects, prefix) {
     }
     entry.fullPath = `${prefix}${entry.path}`;
     return entry;
-  })
-  );
+  }));
 };
 
-const processSpecsTree = function(tree, objects, prefix) {
+const processSpecsTree = function (tree, objects, prefix) {
   if (!tree) { return; }
-  const specs = tree.tree.filter(function(entry) {
+  const specs = tree.tree.filter((entry) => {
     if (entry.type !== 'blob') { return false; }
     if (!entry.path.match('.*\.(yaml|coffee)$')) { return false; }
     return true;
   });
-  return objects.specs = objects.specs.concat(specs.map(function(entry) {
+  return objects.specs = objects.specs.concat(specs.map((entry) => {
     entry.name = entry.path.substr(0, entry.path.indexOf('.'));
     entry.type = 'spec';
     const language = entry.path.substr(entry.path.lastIndexOf('.') + 1);
@@ -86,97 +84,93 @@ const processSpecsTree = function(tree, objects, prefix) {
     }
     entry.fullPath = `${prefix}${entry.path}`;
     return entry;
-  })
-  );
+  }));
 };
 
-const getRemoteObjects = (repo, sha, token, callback) =>
-  getCommit(repo, sha, token, function(err, commit) {
+const getRemoteObjects = (repo, sha, token, callback) => getCommit(repo, sha, token, (err, commit) => {
+  if (err) { return callback(err); }
+  if (!commit) {
+    return callback(new Error(`No commit found for ${repo} ${sha}`));
+  }
+  return getTree(repo, commit.tree.sha, token, (err, rootTree) => {
     if (err) { return callback(err); }
-    if (!commit) {
-      return callback(new Error(`No commit found for ${repo} ${sha}`));
+
+    let graphsSha = null;
+    let componentsSha = null;
+    let specsSha = null;
+    const remoteObjects = {
+      tree: commit.tree.sha,
+      graphs: [],
+      components: [],
+      specs: [],
+    };
+    for (const entry of Array.from(rootTree.tree)) {
+      if ((entry.path === 'fbp.json') && (entry.type === 'blob')) {
+        return callback(new Error('fbp.json support is pending standardization'));
+      }
+      if ((entry.path === 'graphs') && (entry.type === 'tree')) {
+        graphsSha = entry.sha;
+        continue;
+      }
+      if ((entry.path === 'components') && (entry.type === 'tree')) {
+        componentsSha = entry.sha;
+        continue;
+      }
+      if ((entry.path === 'spec') && (entry.type === 'tree')) {
+        specsSha = entry.sha;
+        continue;
+      }
     }
-    return getTree(repo, commit.tree.sha, token, function(err, rootTree) {
-      if (err) { return callback(err); }
 
-      let graphsSha = null;
-      let componentsSha = null;
-      let specsSha = null;
-      const remoteObjects = {
-        tree: commit.tree.sha,
-        graphs: [],
-        components: [],
-        specs: []
-      };
-      for (let entry of Array.from(rootTree.tree)) {
-        if ((entry.path === 'fbp.json') && (entry.type === 'blob')) {
-          return callback(new Error('fbp.json support is pending standardization'));
-        }
-        if ((entry.path === 'graphs') && (entry.type === 'tree')) {
-          graphsSha = entry.sha;
-          continue;
-        }
-        if ((entry.path === 'components') && (entry.type === 'tree')) {
-          componentsSha = entry.sha;
-          continue;
-        }
-        if ((entry.path === 'spec') && (entry.type === 'tree')) {
-          specsSha = entry.sha;
-          continue;
-        }
-      }
-
-      if (graphsSha) {
-        getTree(repo, graphsSha, token, function(err, graphsTree) {
-          if (err) { return callback(err); }
-          processGraphsTree(graphsTree, remoteObjects, 'graphs/');
-          if (!componentsSha) { return callback(null, remoteObjects); }
-          return getTree(repo, componentsSha, token, function(err, componentsTree) {
-            if (err) { return callback(err); }
-            processComponentsTree(componentsTree, remoteObjects, 'components/');
-            if (!specsSha) { return callback(null, remoteObjects); }
-            return getTree(repo, specsSha, token, function(err, specsTree) {
-              if (err) { return callback(err); }
-              processSpecsTree(specsTree, remoteObjects, 'spec/');
-              return callback(null, remoteObjects);
-            });
-          });
-        });
-        return;
-      }
-
-      if (componentsSha) {
-        getTree(repo, componentsSha, token, function(err, componentsTree) {
+    if (graphsSha) {
+      getTree(repo, graphsSha, token, (err, graphsTree) => {
+        if (err) { return callback(err); }
+        processGraphsTree(graphsTree, remoteObjects, 'graphs/');
+        if (!componentsSha) { return callback(null, remoteObjects); }
+        return getTree(repo, componentsSha, token, (err, componentsTree) => {
           if (err) { return callback(err); }
           processComponentsTree(componentsTree, remoteObjects, 'components/');
           if (!specsSha) { return callback(null, remoteObjects); }
-          return getTree(repo, specsSha, token, function(err, specsTree) {
+          return getTree(repo, specsSha, token, (err, specsTree) => {
             if (err) { return callback(err); }
             processSpecsTree(specsTree, remoteObjects, 'spec/');
             return callback(null, remoteObjects);
           });
         });
-        return;
-      }
+      });
+      return;
+    }
 
-      if (specsSha) {
-        getTree(repo, specsSha, token, function(err, specsTree) {
+    if (componentsSha) {
+      getTree(repo, componentsSha, token, (err, componentsTree) => {
+        if (err) { return callback(err); }
+        processComponentsTree(componentsTree, remoteObjects, 'components/');
+        if (!specsSha) { return callback(null, remoteObjects); }
+        return getTree(repo, specsSha, token, (err, specsTree) => {
           if (err) { return callback(err); }
           processSpecsTree(specsTree, remoteObjects, 'spec/');
           return callback(null, remoteObjects);
         });
-        return;
-      }
+      });
+      return;
+    }
 
-      // No graphs or components on the remote
-      return callback(null, remoteObjects);
-    });
-  })
-;
+    if (specsSha) {
+      getTree(repo, specsSha, token, (err, specsTree) => {
+        if (err) { return callback(err); }
+        processSpecsTree(specsTree, remoteObjects, 'spec/');
+        return callback(null, remoteObjects);
+      });
+      return;
+    }
 
+    // No graphs or components on the remote
+    return callback(null, remoteObjects);
+  });
+});
 const normalizeName = name => name.replace(/\s/g, '_');
 
-const createPath = function(type, entity) {
+const createPath = function (type, entity) {
   const name = normalizeName(entity.name);
   if (type === 'graph') {
     return `graphs/${name}.json`;
@@ -193,60 +187,52 @@ const createPath = function(type, entity) {
   }
 };
 
-const addToPull = (type, local, remote, operations) =>
-  operations.pull.push({
-    path: remote.fullPath,
-    type,
-    local,
-    remote
-  })
-;
-const addToPush = (type, local, remote, operations) =>
-  operations.push.push({
-    path: (remote != null ? remote.fullPath : undefined) || createPath(type, local),
-    type,
-    local,
-    remote
-  })
-;
-const addToConflict = (type, local, remote, operations) =>
-  operations.conflict.push({
-    path: remote.fullPath,
-    type,
-    local,
-    remote
-  })
-;
-
-exports.getComponent = function() {
-  const c = new noflo.Component;
+const addToPull = (type, local, remote, operations) => operations.pull.push({
+  path: remote.fullPath,
+  type,
+  local,
+  remote,
+});
+const addToPush = (type, local, remote, operations) => operations.push.push({
+  path: (remote != null ? remote.fullPath : undefined) || createPath(type, local),
+  type,
+  local,
+  remote,
+});
+const addToConflict = (type, local, remote, operations) => operations.conflict.push({
+  path: remote.fullPath,
+  type,
+  local,
+  remote,
+});
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('reference',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('project',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('token', {
     datatype: 'string',
-    required: true
-  }
-  );
+    required: true,
+  });
   c.outPorts.add('noop',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('local',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('remote',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('both',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   noflo.helpers.WirePattern(c, {
     in: ['reference', 'project'],
     params: 'token',
     out: ['noop', 'local', 'remote', 'both'],
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     const operations = {
       repo: data.project.repo,
       project: data.project,
@@ -254,16 +240,17 @@ exports.getComponent = function() {
       commit: data.reference.object.sha,
       push: [],
       pull: [],
-      conflict: []
+      conflict: [],
     };
 
-    return getRemoteObjects(operations.repo, operations.commit, c.params.token, function(err, objects) {
-      let matching, remoteComponent, remoteGraph, remoteSpec;
+    return getRemoteObjects(operations.repo, operations.commit, c.params.token, (err, objects) => {
+      let matching; let remoteComponent; let remoteGraph; let
+        remoteSpec;
       if (err) { return callback(err); }
       operations.tree = objects.tree;
 
       for (remoteGraph of Array.from(objects.graphs)) {
-        matching = data.project.graphs.filter(function(localGraph) {
+        matching = data.project.graphs.filter((localGraph) => {
           if (localGraph.properties.sha === remoteGraph.sha) { return true; }
           if (normalizeName(localGraph.name) === remoteGraph.name) { return true; }
           return false;
@@ -285,7 +272,7 @@ exports.getComponent = function() {
         addToConflict('graph', matching[0], remoteGraph, operations);
       }
 
-      let localOnly = data.project.graphs.filter(function(localGraph) {
+      let localOnly = data.project.graphs.filter((localGraph) => {
         let notPushed = true;
         for (remoteGraph of Array.from(objects.graphs)) {
           if (localGraph.properties.sha === remoteGraph.sha) { notPushed = false; }
@@ -293,10 +280,10 @@ exports.getComponent = function() {
         }
         return notPushed;
       });
-      for (let localGraph of Array.from(localOnly)) { addToPush('graph', localGraph, null, operations); }
+      for (const localGraph of Array.from(localOnly)) { addToPush('graph', localGraph, null, operations); }
 
       for (remoteComponent of Array.from(objects.components)) {
-        matching = data.project.components.filter(function(localComponent) {
+        matching = data.project.components.filter((localComponent) => {
           if (localComponent.sha === remoteComponent.sha) { return true; }
           if (normalizeName(localComponent.name) === remoteComponent.name) { return true; }
           return false;
@@ -318,7 +305,7 @@ exports.getComponent = function() {
         addToConflict('component', matching[0], remoteComponent, operations);
       }
 
-      localOnly = data.project.components.filter(function(localComponent) {
+      localOnly = data.project.components.filter((localComponent) => {
         if (!localComponent.code.length) { return false; }
         let notPushed = true;
         for (remoteComponent of Array.from(objects.components)) {
@@ -327,10 +314,10 @@ exports.getComponent = function() {
         }
         return notPushed;
       });
-      for (let localComponent of Array.from(localOnly)) { addToPush('component', localComponent, null, operations); }
+      for (const localComponent of Array.from(localOnly)) { addToPush('component', localComponent, null, operations); }
 
       for (remoteSpec of Array.from(objects.specs)) {
-        matching = data.project.specs.filter(function(localSpec) {
+        matching = data.project.specs.filter((localSpec) => {
           if (localSpec.sha === remoteSpec.sha) { return true; }
           if (normalizeName(localSpec.name) === remoteSpec.name) { return true; }
           return false;
@@ -352,7 +339,7 @@ exports.getComponent = function() {
         addToConflict('spec', matching[0], remoteSpec, operations);
       }
 
-      localOnly = data.project.specs.filter(function(localSpec) {
+      localOnly = data.project.specs.filter((localSpec) => {
         if (!localSpec.code.length) { return false; }
         let notPushed = true;
         for (remoteSpec of Array.from(objects.specs)) {
@@ -361,7 +348,7 @@ exports.getComponent = function() {
         }
         return notPushed;
       });
-      for (let localSpec of Array.from(localOnly)) { addToPush('spec', localSpec, null, operations); }
+      for (const localSpec of Array.from(localOnly)) { addToPush('spec', localSpec, null, operations); }
 
       if (operations.conflict.length) {
         out.both.send(operations);

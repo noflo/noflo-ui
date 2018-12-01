@@ -1,16 +1,16 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   return noflo.helpers.WirePattern(c, {
     async: true,
-    forwardGroups: false
-  }
-  , function(data, groups, out, callback) {
+    forwardGroups: false,
+  },
+  (data, groups, out, callback) => {
     out.send({
       id: data.id,
       name: data.name,
@@ -19,7 +19,7 @@ exports.getComponent = function() {
       repo: data.repo,
       branch: data.branch,
       gist: data.gist,
-      main: data.main
+      main: data.main,
     });
     return callback();
   });

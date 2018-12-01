@@ -3,7 +3,7 @@ const path = require('path');
 const uuid = require('uuid');
 const projects = require('../src/projects');
 
-const payloadToProject = function(data) {
+const payloadToProject = function (data) {
   const repoParts = data.payload.repo.split('/');
   const payload = {
     project: {
@@ -14,14 +14,14 @@ const payloadToProject = function(data) {
       branch: data.payload.branch,
       graphs: [],
       components: [],
-      specs: []
+      specs: [],
     },
-    repo: data.payload.repo
+    repo: data.payload.repo,
   };
   return payload;
 };
 
-const openMainPayload = function() {
+const openMainPayload = function () {
   let data;
   return data = {
     route: 'main',
@@ -29,51 +29,51 @@ const openMainPayload = function() {
     project: null,
     graph: null,
     component: null,
-    nodes: []
+    nodes: [],
   };
 };
 
-const findGraph = function(name, project) {
+const findGraph = function (name, project) {
   const base = path.basename(name, path.extname(name));
-  for (let graph of Array.from(project.graphs)) {
+  for (const graph of Array.from(project.graphs)) {
     if (graph.name !== base) { continue; }
     return graph.properties.id;
   }
   return null;
 };
 
-const findComponent = function(name, project) {
+const findComponent = function (name, project) {
   const base = path.basename(name, path.extname(name));
-  for (let component of Array.from(project.components)) {
+  for (const component of Array.from(project.components)) {
     if (component.name !== base) { continue; }
     return component.name;
   }
   return null;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('existing',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.outPorts.add('new',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('openmain',
-    {datatype: 'array'});
-  return c.process(function(input, output) {
+    { datatype: 'array' });
+  return c.process((input, output) => {
     if (!input.hasData('in')) { return; }
     const data = input.getData('in');
     if (!__guard__(data.state != null ? data.state.projects : undefined, x => x.length)) {
       // No local projects, pass
       output.sendDone({
         openmain: openMainPayload(),
-        new: payloadToProject(data)
+        new: payloadToProject(data),
       });
       return;
     }
 
-    const existing = data.state.projects.filter(function(project) {
+    const existing = data.state.projects.filter((project) => {
       if (project.repo !== data.payload.repo) { return false; }
       if ((data.payload.branch === 'master') && !project.branch) {
         // master is default
@@ -85,17 +85,17 @@ exports.getComponent = function() {
     if (!existing.length) {
       output.sendDone({
         openmain: openMainPayload(),
-        new: payloadToProject(data)
+        new: payloadToProject(data),
       });
       return;
     }
 
-    projects.getProjectHash(existing[0], function(err, hash) {
+    projects.getProjectHash(existing[0], (err, hash) => {
       if (!hash) {
         hash = [
           'project',
           existing[0].id,
-          existing[0].main
+          existing[0].main,
         ];
       }
 
@@ -116,8 +116,7 @@ exports.getComponent = function() {
         }
       }
 
-      return output.sendDone({
-        existing: hash});
+      return output.sendDone({ existing: hash });
     });
   });
 };

@@ -1,7 +1,7 @@
-describe('GitHub Middleware', function() {
+describe('GitHub Middleware', () => {
   let mw = null;
   const baseDir = 'noflo-ui';
-  before(function(done) {
+  before(function (done) {
     this.timeout(4000);
     mw = window.middleware('ui/GithubMiddleware', baseDir);
     return mw.before(done);
@@ -9,49 +9,43 @@ describe('GitHub Middleware', function() {
   beforeEach(() => mw.beforeEach());
   afterEach(() => mw.afterEach());
 
-  describe('receiving a runtime:connect action', () =>
-    it('should pass it out as-is', function(done) {
-      const action = 'runtime:connect';
-      const payload =
-        {hello: 'world'};
-      mw.receivePass(action, payload, done);
-      return mw.send(action, payload);
-    })
-  );
-  describe('receiving a github:gist action', function() {
+  describe('receiving a runtime:connect action', () => it('should pass it out as-is', (done) => {
+    const action = 'runtime:connect';
+    const payload = { hello: 'world' };
+    mw.receivePass(action, payload, done);
+    return mw.send(action, payload);
+  }));
+  describe('receiving a github:gist action', () => {
     let mock = null;
     beforeEach(() => mock = sinon.fakeServer.create());
     afterEach(() => mock.restore());
-    it('should send application:sethash for existing gist', function(done) {
+    it('should send application:sethash for existing gist', (done) => {
       const action = 'github:gist';
-      const payload =
-        {graph: 'abc123'};
+      const payload = { graph: 'abc123' };
       const state = {
         projects: [{
           id: 'foo',
-          main: 'foo_main'
-        }
-          , {
-            id: 'bar',
-            gist: 'abc123',
-            main: 'bar_main'
-          }
-        ]
+          main: 'foo_main',
+        },
+        {
+          id: 'bar',
+          gist: 'abc123',
+          main: 'bar_main',
+        },
+        ],
       };
-      const check = data =>
-        chai.expect(data).to.eql([
-          'project',
-          'bar',
-          'bar_main'
-        ])
-      ;
+      const check = data => chai.expect(data).to.eql([
+        'project',
+        'bar',
+        'bar_main',
+      ]);
       mw.receiveAction('application:sethash', check, done);
       return mw.send(action, payload, state);
     });
-    it('should send save events for new gist', function(done) {
+    it('should send save events for new gist', (done) => {
       const action = 'github:gist';
       const payload = {
-        graph: 'abc123'
+        graph: 'abc123',
       };
       const state = {};
       const expected = [
@@ -63,25 +57,25 @@ describe('GitHub Middleware', function() {
           type: 'noflo-browser',
           graphs: [],
           components: [],
-          specs: []
+          specs: [],
         }, {
           caseSensitive: false,
           properties: {
             name: 'Hello world',
             environment: {
-              type: 'noflo-browser'
+              type: 'noflo-browser',
             },
             project: 'abc123',
-            id: 'abc123_noflo'
+            id: 'abc123_noflo',
           },
           inports: {},
           outports: {},
           groups: [],
           processes: {},
-          connections: []
-        }
+          connections: [],
+        },
       ];
-      const check = function(data) {
+      const check = function (data) {
         // Convert graph object to JSON for comparison
         if (data.toJSON) { data = data.toJSON(); }
         if (data.graphs) {
@@ -90,9 +84,9 @@ describe('GitHub Middleware', function() {
         }
         return chai.expect(data).to.eql(expected.shift());
       };
-      mw.receiveAction('github:loading', function () {}, function (err) {
-        mw.receiveAction('github:ready', function () {}, function (err) {
-          mw.receiveAction('storage:save:project', check, function(err) {
+      mw.receiveAction('github:loading', () => {}, (err) => {
+        mw.receiveAction('github:ready', () => {}, (err) => {
+          mw.receiveAction('storage:save:project', check, (err) => {
             if (err) { return done(err); }
             return mw.receiveAction('storage:save:graph', check, done);
           });
@@ -107,31 +101,31 @@ describe('GitHub Middleware', function() {
               properties: {
                 name: 'Hello world',
                 environment: {
-                  type: 'noflo-browser'
-                }
-              }
-            })
-          }
-        }
+                  type: 'noflo-browser',
+                },
+              },
+            }),
+          },
+        },
       };
 
-      mock.respondWith('GET', "https://api.github.com/rate_limit?page=1&per_page=30", [
+      mock.respondWith('GET', 'https://api.github.com/rate_limit?page=1&per_page=30', [
         200, {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         }, JSON.stringify({
           rate: {
-            remaining: 59
-          }
-        })
+            remaining: 59,
+          },
+        }),
       ]);
-      mock.respondWith('GET', "https://api.github.com/gists/abc123?page=1&per_page=30", [
+      mock.respondWith('GET', 'https://api.github.com/gists/abc123?page=1&per_page=30', [
         200,
         {
-          'Content-Type': 'application/json'
-        }, JSON.stringify(gistData)
+          'Content-Type': 'application/json',
+        }, JSON.stringify(gistData),
       ]);
       mock.respond();
-      setTimeout(function () {
+      setTimeout(() => {
         mock.respond();
       }, 10);
     });

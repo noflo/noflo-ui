@@ -1,7 +1,7 @@
 const noflo = require('noflo');
 const uuid = require('uuid');
 
-var sendPulls = function(pulls, repo, scope, output, callback) {
+const sendPulls = (pulls, repo, scope, output, callback) => {
   if (!pulls.length) {
     callback();
     return;
@@ -13,48 +13,51 @@ var sendPulls = function(pulls, repo, scope, output, callback) {
   }
   output.send({
     repository: new noflo.IP('data', repo,
-      {scope}),
+      { scope }),
     sha: new noflo.IP('data', entry.remote.sha,
-      {scope})
+      { scope }),
   });
   // Don't fire all requests at once, some of them may get
   // cancelled by server
-  return setTimeout(() => sendPulls(pulls, repo, scope, output, callback)
-  , 100);
+  setTimeout(() => sendPulls(pulls, repo, scope, output, callback),
+    100);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.description = 'Prepare a set of blob fetching requests for an operations object';
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('repository',
-    {datatype: 'string'});
+    { datatype: 'string' });
   c.outPorts.add('sha',
-    {datatype: 'string'});
-  return c.process(function(input, output) {
+    { datatype: 'string' });
+  return c.process((input, output) => {
     if (!input.hasData('in')) { return; }
     const data = input.getData('in');
-    if (data.pull.length === 0) { return output.done(); }
+    if (data.pull.length === 0) {
+      output.done();
+      return;
+    }
     const scope = uuid.v4();
     output.send({
       out: new noflo.IP('data', data,
-        {scope})
+        { scope }),
     });
 
     output.send({
       sha: new noflo.IP('openBracket', scope,
-        {scope})
+        { scope }),
     });
     const pulls = data.pull.slice(0);
-    return sendPulls(pulls, data.repo, scope, output, function() {
+    sendPulls(pulls, data.repo, scope, output, () => {
       output.send({
         sha: new noflo.IP('closeBracket', scope,
-          {scope})
+          { scope }),
       });
-      return output.done();
+      output.done();
     });
   });
 };

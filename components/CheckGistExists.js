@@ -1,19 +1,19 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('existing',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.outPorts.add('new',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   return noflo.helpers.WirePattern(c, {
     out: ['existing', 'new'],
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     if (!__guard__(data.state != null ? data.state.projects : undefined, x => x.length)) {
       // No local projects, pass
       out.new.send(data);
@@ -31,7 +31,7 @@ exports.getComponent = function() {
     out.existing.send([
       'project',
       existing[0].id,
-      existing[0].main
+      existing[0].main,
     ]);
     return callback();
   });

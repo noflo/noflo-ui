@@ -1,15 +1,15 @@
-describe('Runtime Middleware', function() {
+describe('Runtime Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;
   let iframe = null;
-  let runtimeDefinition = {
+  const runtimeDefinition = {
     id: '7695e97e-79a5-4a22-879d-847ec9592136',
     protocol: 'iframe',
     type: 'noflo-nodejs',
     address: '/base/spec/mockruntime.html',
     project: '090356f9-dfa6-4b10-b4ea-03038faf68be',
   };
-  before(function(done) {
+  before(function (done) {
     this.timeout(4000);
     mw = window.middleware('ui/RuntimeMiddleware', baseDir);
     mw.before(done);
@@ -52,15 +52,15 @@ describe('Runtime Middleware', function() {
         'protocol:graph',
         'protocol:component',
         'protocol:network',
-        'protocol:runtime'
+        'protocol:runtime',
       ];
-      let tries = 0;
-      let maxTries = 100;
+      const tries = 0;
+      const maxTries = 100;
       const waitForIframe = () => {
         if (runtimeDefinition.querySelector) {
           iframe = document.body.querySelector(runtimeDefinition.querySelector);
           const callIframe = () => {
-            iframe.contentWindow.handleProtocolMessage(function(msg, send) {
+            iframe.contentWindow.handleProtocolMessage((msg, send) => {
               chai.expect(msg.protocol).to.equal('runtime');
               chai.expect(msg.command).to.equal('getruntime');
               send('runtime', 'runtime', {
@@ -132,12 +132,12 @@ describe('Runtime Middleware', function() {
       const sentEdges = [{
         from: {
           node: 'Foo',
-          port: 'out'
+          port: 'out',
         },
         to: {
           node: 'Bar',
-          port: 'in'
-        }
+          port: 'in',
+        },
       }];
       mw.receivePassCheck('context:edges', (received) => {
         chai.expect(received).to.eql(sentEdges);
@@ -145,21 +145,21 @@ describe('Runtime Middleware', function() {
       mw.send('context:edges', sentEdges, {
         graphs: [
           {
-             name: 'foo'
-          }
+            name: 'foo',
+          },
         ],
         runtime: runtimeDefinition,
       });
     });
-    it('should send selected edges to the runtime', function(done) {
+    it('should send selected edges to the runtime', (done) => {
       const expectedEdges = [{
         src: {
           node: 'Foo',
-          port: 'out'
+          port: 'out',
         },
         tgt: {
           node: 'Bar',
-          port: 'in'
+          port: 'in',
         },
       }];
       iframe.contentWindow.handleProtocolMessage((msg, send) => {

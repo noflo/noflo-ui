@@ -1,7 +1,7 @@
 const noflo = require('noflo');
 const { getGraphType, getComponentType, isDefaultRuntime } = require('../src/runtime');
 
-const getType = function(context) {
+const getType = (context) => {
   if (context.graphs.length) {
     // Current main graph in view
     const graphType = getGraphType(context.graphs[0]);
@@ -16,19 +16,19 @@ const getType = function(context) {
   return context.project.type;
 };
 
-const findCompatibleRuntimes = function(context, runtimes) {
+const findCompatibleRuntimes = (context, runtimes) => {
   const projectType = getType(context);
-  return runtimes.filter(function(rt) {
+  return runtimes.filter((rt) => {
     if (projectType === 'all') { return true; }
     return rt.type === projectType;
   });
 };
 
-const findCurrentRuntime = function(context, runtimes) {
+const findCurrentRuntime = (context, runtimes) => {
   // TODO: Switch runtime if no longer in list of compatible
   if (context.runtime) { return context.runtime; }
   if (!runtimes.length) { return null; }
-  const [matched] = Array.from(runtimes.filter(function(rt) {
+  const [matched] = Array.from(runtimes.filter((rt) => {
     if (context.project && rt.project) {
       if (isDefaultRuntime(rt)) { return true; }
       if (rt.project !== context.project.id) { return false; }
@@ -40,32 +40,30 @@ const findCurrentRuntime = function(context, runtimes) {
   return matched || null;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('runtimes',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('skipped',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
-  return c.process(function(input, output) {
+  return c.process((input, output) => {
     if (!input.hasData('in', 'runtimes')) { return; }
-    const [context, runtimes] = Array.from(input.getData('in', 'runtimes'));
+    const [context, runtimes] = input.getData('in', 'runtimes');
 
     context.compatible = findCompatibleRuntimes(context, runtimes);
     context.runtime = findCurrentRuntime(context, context.compatible);
 
     if (!context.runtime) {
       // No runtime matched, send as-is
-      output.sendDone({
-        skipped: context});
+      output.sendDone({ skipped: context });
       return;
     }
 
-    output.sendDone({
-      out: context});
+    output.sendDone({ out: context });
   });
 };

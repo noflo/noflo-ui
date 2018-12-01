@@ -1,25 +1,24 @@
 const noflo = require('noflo');
 
-const buildContext = function() {
+const buildContext = function () {
   let ctx;
-  return ctx =
-    {state: ''};
+  return ctx = { state: '' };
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.icon = 'spinner';
   c.inPorts.add('start',
-    {datatype: 'bang'});
+    { datatype: 'bang' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'start',
     out: 'out',
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     const ctx = buildContext();
     ctx.state = 'loading';
     out.send(ctx);

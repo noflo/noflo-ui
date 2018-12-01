@@ -1,7 +1,8 @@
 const noflo = require('noflo');
 
 // Build up display model of runtime from runtime definition and status
-const populateRuntime = function(state) {
+const populateRuntime = (s) => {
+  const state = s;
   if (!(state.runtime != null ? state.runtime.id : undefined)) {
     return null;
   }
@@ -12,34 +13,32 @@ const populateRuntime = function(state) {
     status: state.runtimeStatuses[state.runtime.id] || {},
     execution: state.runtimeExecutions[state.runtime.id] || {
       running: false,
-      label: 'not started'
-    }
+      label: 'not started',
+    },
   };
   return runtime;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.description = 'Map application state to UI properties';
   c.inPorts.add('state', {
     datatype: 'object',
-    description: 'Full application state'
-  }
-  );
+    description: 'Full application state',
+  });
   c.inPorts.add('updated', {
     datatype: 'object',
-    description: 'Updated application state values'
-  }
-  );
+    description: 'Updated application state values',
+  });
   c.outPorts.add('props',
-    {datatype: 'object'});
-  return c.process(function(input, output) {
+    { datatype: 'object' });
+  return c.process((input, output) => {
     if (!input.hasData('state', 'updated')) { return; }
     const [state, updated] = Array.from(input.getData('state', 'updated'));
     const props = {};
-    Object.keys(updated).forEach(function(key) {
+    Object.keys(updated).forEach((key) => {
       switch (key) {
-        case 'runtime':
+        case 'runtime': {
           if (state.runtime != null ? state.runtime.id : undefined) {
             props.runtime = populateRuntime(state);
             return;
@@ -52,57 +51,63 @@ exports.getComponent = function() {
           props.edges = [];
           props.icons = {};
           return;
-        case 'componentLibraries':
+        }
+        case 'componentLibraries': {
           // Filter UI components to current runtime
           if (!(state.runtime != null ? state.runtime.id : undefined)) { return; }
           props.componentLibrary = updated[key][state.runtime.id] || [];
           return;
-        case 'runtime':
+        }
+        case 'runtimeStatuses': {
           props.runtime = populateRuntime(state);
           return;
-        case 'runtimeStatuses':
+        }
+        case 'runtimeExecutions': {
           props.runtime = populateRuntime(state);
           return;
-        case 'runtimeExecutions':
-          props.runtime = populateRuntime(state);
-          return;
-        case 'runtimePackets':
+        }
+        case 'runtimePackets': {
           if (!(state.runtime != null ? state.runtime.id : undefined)) { return; }
           if (!updated.runtimePackets[state.runtime.id]) {
             props.packets = [];
             return;
           }
-          var packets = updated.runtimePackets[state.runtime.id].toarray();
+          const packets = updated.runtimePackets[state.runtime.id].toarray();
           packets.reverse();
-          props.packets = packets.filter(p => p.graph === (state.graphs[0].name || state.graphs[0].properties.id));
+          props.packets = packets.filter(p => p.graph === (state.graphs[0].name
+            || state.graphs[0].properties.id));
           return;
-        case 'runtimeEvents':
+        }
+        case 'runtimeEvents': {
           if (!(state.runtime != null ? state.runtime.id : undefined)) { return; }
           if (!updated.runtimeEvents[state.runtime.id]) {
             props.events = [];
             return;
           }
-          var events = updated.runtimeEvents[state.runtime.id].toarray();
+          const events = updated.runtimeEvents[state.runtime.id].toarray();
           events.reverse();
           props.events = events;
           return;
-        case 'runtimeIcons':
+        }
+        case 'runtimeIcons': {
           if (!(state.runtime != null ? state.runtime.id : undefined)) { return; }
           props.icons = {};
           if (!updated.runtimeIcons[state.runtime.id]) { return; }
           if (!(state.graphs != null ? state.graphs.length : undefined)) { return; }
-          var currentGraph = state.graphs[state.graphs.length - 1];
-          var graphId = currentGraph.name || currentGraph.properties.id;
+          const currentGraph = state.graphs[state.graphs.length - 1];
+          const graphId = currentGraph.name || currentGraph.properties.id;
           if (!updated.runtimeIcons[state.runtime.id][graphId]) { return; }
-          for (let nodeId in updated.runtimeIcons[state.runtime.id][graphId]) {
+          updated.runtimeIcons[state.runtime.id][graphId].forEach((nodeId) => {
             const icon = updated.runtimeIcons[state.runtime.id][graphId][nodeId];
             props.icons[nodeId] = icon;
-          }
+          });
           return;
-        default:
-          return props[key] = updated[key];
-      }});
-    return output.sendDone({
-      props});
+        }
+        default: {
+          props[key] = updated[key];
+        }
+      }
+    });
+    output.sendDone({ props });
   });
 };

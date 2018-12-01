@@ -1,11 +1,11 @@
 const noflo = require('noflo');
 const uuid = require('uuid');
 
-const decodeRuntime = function(data) {
+const decodeRuntime = (data) => {
   const runtime = {};
-  data.split('&').forEach(function(param) {
+  data.split('&').forEach((param) => {
     const [key, value] = Array.from(param.split('='));
-    return runtime[key] = value;
+    runtime[key] = value;
   });
   if (runtime.protocol && runtime.address) {
     runtime.id = runtime.id || uuid.v4();
@@ -14,34 +14,34 @@ const decodeRuntime = function(data) {
   return null;
 };
 
-const findRuntime = function(id, runtimes) {
-  if (!(runtimes != null ? runtimes.length : undefined)) { return; }
-  for (let runtime of Array.from(runtimes)) {
-    if (runtime.id === id) { return runtime; }
+const findRuntime = (id, runtimes) => {
+  if (!(runtimes != null ? runtimes.length : undefined)) { return null; }
+  const matching = runtimes.filter(rt => rt.id === id);
+  if (matching.length) {
+    return matching[0];
   }
   return null;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('runtimes', {
     required: true,
-    datatype: 'array'
-  }
-  );
+    datatype: 'array',
+  });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('new',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
-  return c.process(function(input, output) {
+    { datatype: 'object' });
+  return c.process((input, output) => {
     if (!input.hasData('in', 'runtimes')) { return; }
     const [route, runtimes] = Array.from(input.getData('in', 'runtimes'));
     if (!route.runtime) {
-      output.done(new Error("No runtime defined"));
+      output.done(new Error('No runtime defined'));
       return;
     }
     if ((typeof route.runtime === 'string') && (route.runtime.substr(0, 9) === 'endpoint?')) {
@@ -52,16 +52,13 @@ exports.getComponent = function() {
     const persistedRuntime = findRuntime(route.runtime, runtimes);
     if (!persistedRuntime) {
       // This is a new runtime definition, save
-      output.send({
-        new: route.runtime});
-      output.send({
-        out: route});
+      output.send({ new: route.runtime });
+      output.send({ out: route });
       output.done();
       return;
     }
     route.runtime = persistedRuntime;
-    output.send({
-      out: route});
-    return output.done();
+    output.send({ out: route });
+    output.done();
   });
 };

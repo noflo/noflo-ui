@@ -1,35 +1,33 @@
 const noflo = require('noflo');
-const registry = require('flowhub-registry');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('user', {
     datatype: 'object',
-    required: true
-  }
-  );
+    required: true,
+  });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     params: 'user',
     out: 'out',
-    async: true
-  }
-  , function(data, groups, out, callback) {
-    if (!__guard__(c.params != null ? c.params.user : undefined, x => x['flowhub-token'])) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
+    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
       // User not logged in, persist runtime only locally
       out.send(data);
       callback();
       return;
     }
-    const req = new XMLHttpRequest;
-    req.onreadystatechange = function() {
+    const req = new XMLHttpRequest();
+    req.onreadystatechange = () => {
       if (req.readyState !== 4) { return; }
       if (![200, 201, 404].includes(req.status)) {
         // Repository not available
@@ -46,10 +44,6 @@ exports.getComponent = function() {
     };
     req.open('DELETE', `$NOFLO_REGISTRY_SERVICE/projects/${data.id}`, true);
     req.setRequestHeader('Authorization', `Bearer ${c.params.user['flowhub-token']}`);
-    return req.send();
+    req.send();
   });
 };
-
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

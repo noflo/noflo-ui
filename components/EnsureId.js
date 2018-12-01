@@ -1,28 +1,28 @@
 const noflo = require('noflo');
 
-const randomString = function(num) {
+const randomString = function (num) {
   if (num == null) {
     num = 60466176; // 36^5
   }
-  num = Math.floor( Math.random() * num );
+  num = Math.floor(Math.random() * num);
   return num.toString(36);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('id',
-    {datatype: 'string'});
+    { datatype: 'string' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     out: ['out', 'id'],
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     let id;
     if (data.properties) {
       // Graph

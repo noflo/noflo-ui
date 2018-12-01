@@ -2,24 +2,24 @@ const urlParser = require('url');
 const qs = require('querystring');
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = function () {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'all'});
+    { datatype: 'all' });
   c.outPorts.add('pass',
-    {datatype: 'all'});
+    { datatype: 'all' });
   c.outPorts.add('code',
-    {datatype: 'string'});
+    { datatype: 'string' });
   c.outPorts.add('error',
-    {datatype: 'string'});
+    { datatype: 'string' });
 
   return noflo.helpers.WirePattern(c, {
     in: ['in'],
     out: ['pass', 'code'],
     forwardGroups: true,
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     // Check the URL for a OAuth grant code
     if (typeof data.payload !== 'string') {
       return callback(new Error('URL must be a string'));

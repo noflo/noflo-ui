@@ -3,15 +3,15 @@ const uuid = require('uuid');
 const url = require('url');
 const path = require('path');
 
-const isComponentInProject = function(namespace, componentName) {
+const isComponentInProject = (namespace, componentName) => {
   if (componentName.indexOf('/') === -1) { return true; }
-  const [library, component] = Array.from(componentName.split('/'));
+  const [library] = componentName.split('/');
   return library === namespace;
 };
 
-var fetchSources = function(components, runtime, sources, callback) {
+const fetchSources = (components, runtime, sources, callback) => {
   if (!components.length) { return callback(null, sources); }
-  var handleMessage = function(msg) {
+  const handleMessage = (msg) => {
     if (msg.command === 'error') {
       callback(new Error(msg.payload.message));
       return;
@@ -22,51 +22,53 @@ var fetchSources = function(components, runtime, sources, callback) {
       return;
     }
     // We got unrelated message, subscribe again
-    return runtime.once('component', handleMessage);
+    runtime.once('component', handleMessage);
   };
   runtime.once('component', handleMessage);
   const component = components.shift();
   return runtime.sendComponent('getsource',
-    {name: component});
+    { name: component });
 };
 
-const fetchFromLibrary = function(namespace, runtime, callback) {
+const fetchFromLibrary = (namespace, runtime, callback) => {
   if (!namespace) { return callback(null, []); }
   if (!runtime.isConnected()) { return callback(null, []); }
   if (!runtime.canDo('component:getsource')) { return callback(null, []); }
   if (!runtime.definition.components) { return callback(null, []); }
-  const components = Object.keys(runtime.definition.components).filter(componentName => isComponentInProject(namespace, componentName));
+  const components = Object.keys(runtime.definition.components).filter(
+    componentName => isComponentInProject(namespace, componentName),
+  );
   return fetchSources(components, runtime, [], callback);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('project',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('graph',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('component',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('runtime',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     out: ['project', 'graph', 'component', 'runtime'],
     forwardGroups: false,
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     const project = {
       id: uuid.v4(),
       namespace: __guard__(data.payload.runtime != null ? data.payload.runtime.definition : undefined, x => x.namespace),
       graphs: [],
       components: [],
-      specs: []
+      specs: [],
     };
     if (project.namespace) { project.name = project.namespace; }
 
@@ -90,16 +92,17 @@ exports.getComponent = function() {
     if (data.payload.component) { components.push(data.payload.component); }
 
     // Add components and graphs from library
-    return fetchFromLibrary(project.namespace, data.payload.runtime, function(err, sources) {
-      let component, graph;
+    return fetchFromLibrary(project.namespace, data.payload.runtime, (err, sources) => {
+      let component; let
+        graph;
       if (err) { return callback(err); }
-      const projectGraphs = sources.filter(c => c.language === 'json');
-      for (let graphDef of Array.from(projectGraphs)) {
-        noflo.graph.loadJSON(graphDef, function(err, graph) {
+      const projectGraphs = sources.filter(component => component.language === 'json');
+      projectGraphs.forEach((graphDef) => {
+        noflo.graph.loadJSON(graphDef, (err, graph) => {
           if (err) { return; }
           return graphs.push(graph);
         });
-      }
+      });
 
       components = components.concat(sources.filter(c => c.language !== 'json'));
 
@@ -107,7 +110,7 @@ exports.getComponent = function() {
         graph.name = graph.name.split('/').pop();
         graph.setProperties({
           id: `${project.id}/${(graph.properties != null ? graph.properties.id : undefined) || graph.name}`,
-          project: project.id
+          project: project.id,
         });
         if (!project.main) { project.main = graph.properties.id; }
         if (!project.name) { project.name = graph.name; }
@@ -124,7 +127,7 @@ exports.getComponent = function() {
 
       // Associate runtime with project for auto-connecting
       data.payload.runtime.definition.project = project.id;
-      data.payload.runtime.definition.seen = new Date;
+      data.payload.runtime.definition.seen = new Date();
       if (!data.payload.runtime.definition.label) {
         data.payload.runtime.definition.label = `${project.name} runtime`;
       }

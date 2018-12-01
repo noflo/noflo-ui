@@ -1,9 +1,10 @@
 const noflo = require('noflo');
 const CircularBuffer = require('circular-buffer');
+const debug = require('debug')('noflo-ui:reducer:runtime');
 const { componentForLibrary } = require('../src/runtime');
 const collections = require('../src/collections');
 
-const addRuntimeEvent = function(state, runtime, event, payload) {
+const addRuntimeEvent = (state, runtime, event, payload) => {
   const runtimeEvents = state.runtimeEvents || {};
   if (!runtime) { return runtimeEvents; }
   if (!runtimeEvents[runtime]) {
@@ -12,14 +13,15 @@ const addRuntimeEvent = function(state, runtime, event, payload) {
   }
   runtimeEvents[runtime].enq({
     type: event,
-    payload
+    payload,
   });
   return runtimeEvents;
 };
 
-const addRuntimePacket = function(state, runtime, packet) {
+const addRuntimePacket = (state, runtime, p) => {
+  const packet = p;
   const runtimePackets = state.runtimePackets || {};
-  if (!runtime) { return runtimeEvents; }
+  if (!runtime) { return runtimePackets; }
   if (!runtimePackets[runtime]) {
     // TODO: Make packet buffer size configurable?
     runtimePackets[runtime] = new CircularBuffer(400);
@@ -29,94 +31,108 @@ const addRuntimePacket = function(state, runtime, packet) {
   return runtimePackets;
 };
 
-const filterRuntimeEvents = function(collection, runtime, filter) {
-  if (!collection) { collection = {}; }
+const filterRuntimeEvents = (coll, runtime, filter) => {
+  const collection = coll || {};
   if (!runtime) { return collection; }
   if (!collection[runtime]) { return collection; }
   const events = collection[runtime].toarray().filter(filter);
   events.reverse();
   collection[runtime] = new CircularBuffer(400);
-  for (let event of Array.from(events)) {
+  events.forEach((event) => {
     collection[runtime].enq(event);
-  }
+  });
   return collection;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.icon = 'cogs';
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('context',
-    {datatype: 'object'});
-  return c.process(function(input, output) {
-    let runtimeExecutions;
+    { datatype: 'object' });
+  return c.process((input, output) => {
     if (!input.hasData('in')) { return; }
     const data = input.getData('in');
     switch (data.action) {
-      case 'runtime:opening':
+      case 'runtime:opening': {
         output.sendDone({
           context: {
-            state: 'loading'
-          }
+            state: 'loading',
+          },
         });
         return;
-      case 'runtime:opened':
+      }
+      case 'runtime:opened': {
         output.sendDone({
           context: {
             state: 'ok',
             graphs: data.payload.graphs,
             component: data.payload.component,
-            runtime: data.payload.runtime
-          }
+            runtime: data.payload.runtime,
+          },
         });
         return;
-      case 'runtime:components':
-        var componentLibraries = data.state.componentLibraries || {};
+      }
+      case 'runtime:components': {
+        const componentLibraries = data.state.componentLibraries || {};
         componentLibraries[data.payload.runtime] = data.payload.components.map(componentForLibrary);
-        return output.sendDone({
-          context: {
-            componentLibraries
-          }
-        });
-      case 'runtime:component':
-        componentLibraries = data.state.componentLibraries || {};
-        componentLibraries[data.payload.runtime] = componentLibraries[data.payload.runtime] || [];
-        collections.addToList(componentLibraries[data.payload.runtime], componentForLibrary(data.payload.component));
         output.sendDone({
           context: {
-            componentLibraries
-          }
+            componentLibraries,
+          },
         });
         return;
-      case 'runtime:status':
-        var runtimeStatuses = data.state.runtimeStatuses || {};
-        var events = data.state.runtimeEvents || {};
-        if ((runtimeStatuses[data.payload.runtime] != null ? runtimeStatuses[data.payload.runtime].online : undefined) && !data.payload.status.online) {
+      }
+      case 'runtime:component': {
+        const componentLibraries = data.state.componentLibraries || {};
+        componentLibraries[data.payload.runtime] = componentLibraries[data.payload.runtime] || [];
+        collections.addToList(
+          componentLibraries[data.payload.runtime],
+          componentForLibrary(data.payload.component),
+        );
+        output.sendDone({
+          context: {
+            componentLibraries,
+          },
+        });
+        return;
+      }
+      case 'runtime:status': {
+        const runtimeStatuses = data.state.runtimeStatuses || {};
+        const runtimeStatus = runtimeStatuses[data.payload.runtime];
+        let events = data.state.runtimeEvents || {};
+        if ((runtimeStatus && runtimeStatus.online)
+          && !data.payload.status.online) {
           events = addRuntimeEvent(data.state, data.payload.runtime, 'disconnected', data.payload.status);
         }
-        if (!(runtimeStatuses[data.payload.runtime] != null ? runtimeStatuses[data.payload.runtime].online : undefined) && data.payload.status.online) {
+        if ((!runtimeStatus || !runtimeStatus.online)
+          && data.payload.status.online) {
           events = addRuntimeEvent(data.state, data.payload.runtime, 'connected', data.payload.status);
         }
         runtimeStatuses[data.payload.runtime] = data.payload.status;
-        var ctx = {
+        const ctx = {
           runtimeStatuses,
-          runtimeEvents: events
+          runtimeEvents: events,
         };
         if (!data.payload.status.online) {
           // Disconnected, update execution status too
-          runtimeExecutions = data.state.runtimeExecutions || {};
+          const runtimeExecutions = data.state.runtimeExecutions || {};
           runtimeExecutions[data.payload.runtime] = data.payload.status;
           runtimeExecutions[data.payload.runtime].running = false;
           runtimeExecutions[data.payload.runtime].label = 'not running';
           ctx.runtimeExecutions = runtimeExecutions;
         }
-        return output.sendDone({
-          context: ctx});
-      case 'runtime:started':
-        runtimeExecutions = data.state.runtimeExecutions || {};
-        events = data.state.runtimeEvents || {};
-        var previousRunning = runtimeExecutions[data.payload.runtime] != null ? runtimeExecutions[data.payload.runtime].running : undefined;
+        output.sendDone({ context: ctx });
+        return;
+      }
+      case 'runtime:started': {
+        const runtimeExecutions = data.state.runtimeExecutions || {};
+        let events = data.state.runtimeEvents || {};
+        let previousRunning;
+        if (runtimeExecutions[data.payload.runtime]) {
+          previousRunning = runtimeExecutions[data.payload.runtime].running;
+        }
         runtimeExecutions[data.payload.runtime] = data.payload.status;
         runtimeExecutions[data.payload.runtime].label = 'running';
         if (!previousRunning) {
@@ -126,132 +142,174 @@ exports.getComponent = function() {
           runtimeExecutions[data.payload.runtime].label = 'finished';
           events = addRuntimeEvent(data.state, data.payload.runtime, 'stopped', data.payload.status);
         }
-        return output.sendDone({
+        output.sendDone({
           context: {
             runtimeExecutions,
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:stopped':
-        runtimeExecutions = data.state.runtimeExecutions || {};
-        events = data.state.runtimeEvents || {};
-        previousRunning = runtimeExecutions[data.payload.runtime] != null ? runtimeExecutions[data.payload.runtime].running : undefined;
+        return;
+      }
+      case 'runtime:stopped': {
+        const runtimeExecutions = data.state.runtimeExecutions || {};
+        let events = data.state.runtimeEvents || {};
+        let previousRunning;
+        if (runtimeExecutions[data.payload.runtime]) {
+          previousRunning = runtimeExecutions[data.payload.runtime].running;
+        }
         runtimeExecutions[data.payload.runtime] = data.payload.status;
         runtimeExecutions[data.payload.runtime].running = false;
         runtimeExecutions[data.payload.runtime].label = 'not running';
         if (previousRunning) {
           events = addRuntimeEvent(data.state, data.payload.runtime, 'stopped', data.payload.status);
         }
-        return output.sendDone({
+        output.sendDone({
           context: {
             runtimeExecutions,
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:packet':
-        var runtimePackets = addRuntimePacket(data.state, data.payload.runtime, data.payload.packet);
-        return output.sendDone({
+        return;
+      }
+      case 'runtime:packet': {
+        const runtimePackets = addRuntimePacket(
+          data.state,
+          data.payload.runtime,
+          data.payload.packet,
+        );
+        output.sendDone({
           context: {
-            runtimePackets
-          }
+            runtimePackets,
+          },
         });
-      case 'runtime:processerror':
-        events = addRuntimeEvent(data.state, data.payload.runtime, 'processerror', data.payload.error);
-        return output.sendDone({
+        return;
+      }
+      case 'runtime:processerror': {
+        const events = addRuntimeEvent(data.state, data.payload.runtime, 'processerror', data.payload.error);
+        output.sendDone({
           context: {
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:networkerror':
-        events = addRuntimeEvent(data.state, data.payload.runtime, 'networkerror', data.payload.error);
-        return output.sendDone({
+        return;
+      }
+      case 'runtime:networkerror': {
+        const events = addRuntimeEvent(data.state, data.payload.runtime, 'networkerror', data.payload.error);
+        output.sendDone({
           context: {
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:protocolerror':
-        events = addRuntimeEvent(data.state, data.payload.runtime, 'protocolerror', data.payload.error);
-        return output.sendDone({
+        return;
+      }
+      case 'runtime:protocolerror': {
+        const events = addRuntimeEvent(data.state, data.payload.runtime, 'protocolerror', data.payload.error);
+        output.sendDone({
           context: {
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:output':
-        events = addRuntimeEvent(data.state, data.payload.runtime, 'output', data.payload.output);
-        return output.sendDone({
+        return;
+      }
+      case 'runtime:output': {
+        const events = addRuntimeEvent(data.state, data.payload.runtime, 'output', data.payload.output);
+        output.sendDone({
           context: {
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
-      case 'runtime:icon':
-        var runtimeIcons = data.state.runtimeIcons || {};
+        return;
+      }
+      case 'runtime:icon': {
+        const runtimeIcons = data.state.runtimeIcons || {};
         if (!runtimeIcons[data.payload.runtime]) { runtimeIcons[data.payload.runtime] = {}; }
-        if (!runtimeIcons[data.payload.runtime][data.payload.icon.graph]) { runtimeIcons[data.payload.runtime][data.payload.icon.graph] = {}; }
-        runtimeIcons[data.payload.runtime][data.payload.icon.graph][data.payload.icon.id] = data.payload.icon.icon;
-        return output.sendDone({
+        if (!runtimeIcons[data.payload.runtime][data.payload.icon.graph]) {
+          runtimeIcons[data.payload.runtime][data.payload.icon.graph] = {};
+        }
+        const icons = runtimeIcons[data.payload.runtime][data.payload.icon.graph];
+        icons[data.payload.icon.id] = data.payload.icon.icon;
+        output.sendDone({
           context: {
-            runtimeIcons
-          }
+            runtimeIcons,
+          },
         });
-      case 'runtime:error':
-        events = addRuntimeEvent(data.state, data.payload.runtime, 'error', data.payload);
+        return;
+      }
+      case 'runtime:error': {
+        const events = addRuntimeEvent(data.state, data.payload.runtime, 'error', data.payload);
         output.send({
           context: {
-            runtimeEvents: events
-          }
+            runtimeEvents: events,
+          },
         });
         output.sendDone({
           context: {
             state: 'error',
-            error: data.payload
-          }
+            error: data.payload,
+          },
         });
         return;
-      case 'runtime:clearevents':
-        var runtimeEvents = filterRuntimeEvents(data.state.runtimeEvents, data.payload.runtime, function(event) {
-          if (data.payload.type && (event.type !== data.payload.type)) {
-            return true;
-          }
-          if (data.payload.graph && (event.payload.graph !== data.payload.graph)) {
-            return true;
-          }
-          if (data.payload.id && (event.payload.id !== data.payload.id)) {
-            return true;
-          }
-          return false;
-        });
-        return output.send({
+      }
+      case 'runtime:clearevents': {
+        const runtimeEvents = filterRuntimeEvents(
+          data.state.runtimeEvents,
+          data.payload.runtime,
+          (event) => {
+            if (data.payload.type && (event.type !== data.payload.type)) {
+              return true;
+            }
+            if (data.payload.graph && (event.payload.graph !== data.payload.graph)) {
+              return true;
+            }
+            if (data.payload.id && (event.payload.id !== data.payload.id)) {
+              return true;
+            }
+            return false;
+          },
+        );
+        output.send({
           context: {
-            runtimeEvents
-          }
+            runtimeEvents,
+          },
         });
-      case 'runtime:clearpackets':
-        runtimePackets = filterRuntimeEvents(data.state.runtimePackets, data.payload.runtime, function(event) {
-          if (data.payload.type && (event.type !== data.payload.type)) {
-            return true;
-          }
-          if (data.payload.graph && (event.graph !== data.payload.graph)) {
-            return true;
-          }
-          if (data.payload.edge != null ? data.payload.edge.from : undefined) {
-            if (!event.src) { return true; }
-            if (event.src.node !== data.payload.edge.from.node) { return true; }
-            if (event.src.port !== data.payload.edge.from.port) { return true; }
-          }
+        return;
+      }
+      case 'runtime:clearpackets': {
+        const runtimePackets = filterRuntimeEvents(
+          data.state.runtimePackets,
+          data.payload.runtime,
+          (event) => {
+            if (data.payload.type && (event.type !== data.payload.type)) {
+              return true;
+            }
+            if (data.payload.graph && (event.graph !== data.payload.graph)) {
+              return true;
+            }
+            if (data.payload.edge != null ? data.payload.edge.from : undefined) {
+              if (!event.src) { return true; }
+              if (event.src.node !== data.payload.edge.from.node) { return true; }
+              if (event.src.port !== data.payload.edge.from.port) { return true; }
+            }
             // TODO: Check index
-          if (data.payload.edge != null ? data.payload.edge.to : undefined) {
-            if (!event.tgt) { return true; }
-            if (event.tgt.node !== data.payload.edge.to.node) { return true; }
-            if (event.tgt.port !== data.payload.edge.to.port) { return true; }
-          }
+            if (data.payload.edge != null ? data.payload.edge.to : undefined) {
+              if (!event.tgt) { return true; }
+              if (event.tgt.node !== data.payload.edge.to.node) { return true; }
+              if (event.tgt.port !== data.payload.edge.to.port) { return true; }
+            }
             // TODO: Check index
-          return false;
-        });
-        return output.send({
+            return false;
+          },
+        );
+        output.send({
           context: {
-            runtimePackets
-          }
+            runtimePackets,
+          },
         });
+        return;
+      }
+      default: {
+        debug(`Unknown action ${data.action}`);
+      }
     }
   });
 };

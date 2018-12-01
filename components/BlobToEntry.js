@@ -3,16 +3,19 @@ const uuid = require('uuid');
 const collections = require('../src/collections');
 const projects = require('../src/projects');
 
-const handleGraph = function(sha, content, entry, project, callback) {
+const handleGraph = (sha, c, e, project, callback) => {
+  let content = c;
+  const entry = e;
   // Start by loading the graph object
   let method = 'loadJSON';
   if (entry.remote.language === 'fbp') { method = 'loadFBP'; }
   if (entry.remote.language === 'json') { content = JSON.parse(content); }
-  return noflo.graph[method](content, function(err, graph) {
+  noflo.graph[method](content, (err, g) => {
     if (err) {
       callback(new Error(`Failed to load ${entry.remote.name}: ${err.message}`));
       return;
     }
+    const graph = g;
     // Properties that need to be changed for both cases
     if (!graph.properties) { graph.properties = {}; }
     graph.properties.sha = sha;
@@ -37,11 +40,12 @@ const handleGraph = function(sha, content, entry, project, callback) {
     if (!graph.properties.environment.type) { graph.properties.environment.type = project.type; }
     collections.addToList(project.graphs, graph);
     callback(null, graph);
-    return callback();
+    callback();
   });
 };
 
-const handleComponent = function(sha, content, entry, project, callback) {
+const handleComponent = (sha, content, e, project, callback) => {
+  const entry = e;
   if (entry.local) {
     entry.local.code = content;
     entry.local.sha = sha;
@@ -57,13 +61,14 @@ const handleComponent = function(sha, content, entry, project, callback) {
     code: content,
     language: entry.remote.language,
     sha,
-    changed: false
+    changed: false,
   };
   collections.addToList(project.components, newEntry);
-  return callback(null, newEntry);
+  callback(null, newEntry);
 };
 
-const handleSpec = function(sha, content, entry, project, callback) {
+const handleSpec = (sha, content, e, project, callback) => {
+  const entry = e;
   if (entry.local) {
     entry.local.code = content;
     entry.local.sha = sha;
@@ -80,56 +85,49 @@ const handleSpec = function(sha, content, entry, project, callback) {
     code: content,
     language: entry.remote.language,
     sha,
-    changed: false
+    changed: false,
   };
   collections.addToList(project.specs, newEntry);
-  return callback(null, newEntry);
+  callback(null, newEntry);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('blob', {
     datatype: 'array',
-    description: 'Git blob entries'
-  }
-  );
+    description: 'Git blob entries',
+  });
   c.inPorts.add('operation', {
     datatype: 'object',
     description: 'Sync operation',
-    required: true
-  }
-  );
+    required: true,
+  });
   c.outPorts.add('graph', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
   c.outPorts.add('component', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
   c.outPorts.add('spec', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
   c.outPorts.add('project', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
   c.outPorts.add('error', {
     datatype: 'object',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
 
   c.forwardBrackets = {};
-  return c.process(function(input, output) {
+  return c.process((input, output) => {
     if (!input.hasData('operation')) { return; }
     if (!input.hasData('blob')) { return; }
-    const [operation, blobs] = Array.from(input.getData('operation', 'blob'));
+    const [operation, blobs] = input.getData('operation', 'blob');
 
     if (!(operation.pull != null ? operation.pull.length : undefined)) {
       output.done(new Error('Operation does not provide any pull entries'));
@@ -138,55 +136,57 @@ exports.getComponent = function() {
 
     const entities = [];
     const errors = [];
-    blobs.forEach(function(data) {
+    blobs.forEach((data) => {
       const { sha } = data;
       let content = data.content.replace(/\s/g, '');
       if (data.encoding === 'base64') { content = decodeURIComponent(escape(atob(content))); }
 
-      for (let entry of Array.from(operation.pull)) {
-        var method, port;
-        if ((entry.remote != null ? entry.remote.sha : undefined) !== sha) { continue; }
+      operation.pull.forEach((entry) => {
+        if ((entry.remote != null ? entry.remote.sha : undefined) !== sha) { return; }
+        let method;
+        let port;
         switch (entry.type) {
-          case 'graph':
+          case 'graph': {
             method = handleGraph;
             port = 'graph';
             break;
-          case 'spec':
+          }
+          case 'spec': {
             method = handleSpec;
             port = 'spec';
             break;
-          default:
+          }
+          default: {
             method = handleComponent;
             port = 'component';
+          }
         }
-        method(sha, content, entry, operation.project, function(err, entity) {
+        method(sha, content, entry, operation.project, (err, entity) => {
           if (err) {
             errors.push(err);
             return;
           }
-          return entities.push({
+          entities.push({
             type: port,
-            entity
+            entity,
           });
         });
-        return;
-      }
+      });
       errors.push(`No entry found for blob ${sha}`);
     });
     if (errors.length) {
       output.done(errors[0]);
       return;
     }
-    for (let entity of Array.from(entities)) {
+    entities.forEach((entity) => {
       const res = {};
       res[entity.type] = entity.entity;
       output.send(res);
-    }
+    });
 
     // Since this is a new checkout, set project main graph
     operation.project.main = projects.findMainGraph(operation.project);
 
-    return output.sendDone({
-      project: operation.project});
+    output.sendDone({ project: operation.project });
   });
 };
