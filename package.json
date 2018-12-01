@@ -45,9 +45,9 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-preset-es2015": "^6.24.1",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "babel-loader": "^8.0.4",
     "chai": "^4.0.1",
     "coffee-loader": "^0.9.0",
     "coffeelint": "^2.0.7",
