@@ -1,5 +1,7 @@
 const externals = require('./externals.conf.js');
 
+process.env.CHROME_BIN = require('puppeteer').executablePath();
+
 module.exports = function(config) {
   const files = [
     'node_modules/sinon/pkg/sinon.js',
