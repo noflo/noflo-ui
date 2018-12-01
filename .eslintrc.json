@@ -1,8 +1,13 @@
 {
   "extends": "airbnb-base",
   "globals": {
+    "atob": false,
+    "chrome": false,
     "document": false,
+    "FileReader": false,
     "localStorage": false,
-    "window": false
+    "navigator": false,
+    "window": false,
+    "XMLHttpRequest": false
   }
 }
