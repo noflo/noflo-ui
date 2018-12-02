@@ -1,18 +1,15 @@
 const noflo = require('noflo');
 
-const buildContext = function () {
-  let ctx;
-  return ctx = {
-    state: '',
-    project: null,
-    runtime: null,
-    component: null,
-    graphs: [],
-    remote: [],
-  };
-};
+const buildContext = () => ({
+  state: '',
+  project: null,
+  runtime: null,
+  component: null,
+  graphs: [],
+  remote: [],
+});
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.icon = 'file-o';
   c.inPorts.add('start',

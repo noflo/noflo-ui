@@ -1,3 +1,5 @@
+const webpackConfig = require('./webpack.config.js');
+
 module.exports = function () {
   // Project configuration
   this.initConfig({
@@ -5,7 +7,7 @@ module.exports = function () {
 
     // Browser build of NoFlo
     webpack: {
-      build: require('./webpack.config.js'),
+      build: webpackConfig,
     },
 
     // Vulcanization compiles the Polymer elements into a HTML file

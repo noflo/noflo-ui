@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('in',
     { datatype: 'object' });
@@ -14,7 +14,7 @@ exports.getComponent = function () {
     async: true,
   },
   (data, groups, out, callback) => {
-    if (!__guard__(data.state != null ? data.state.projects : undefined, x => x.length)) {
+    if (!data.state || !data.state.projects || !data.state.projects.length) {
       // No local projects, pass
       out.new.send(data);
       callback();
@@ -33,10 +33,6 @@ exports.getComponent = function () {
       existing[0].id,
       existing[0].main,
     ]);
-    return callback();
+    callback();
   });
 };
-
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

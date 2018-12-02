@@ -1,24 +1,23 @@
 const noflo = require('noflo');
 
-const findHandler = function (actionParts, routes) {
+const findHandler = (actionParts, routes) => {
   const normalized = routes.map((route) => {
     if (route.indexOf('*') === -1) {
       // No wildcards here
       return route;
     }
     const routeParts = route.split(':');
-    for (let idx = 0; idx < routeParts.length; idx++) {
-      const part = routeParts[idx];
-      if (part !== '*') { continue; }
-      if (!actionParts[idx]) { continue; }
-      routeParts[idx] = actionParts[idx];
-    }
-    return routeParts.join(':');
+    const expanded = routeParts.map((part, idx) => {
+      if (part !== '*') { return part; }
+      if (!actionParts[idx]) { return part; }
+      return actionParts[idx];
+    });
+    return expanded.join(':');
   });
   return normalized.indexOf(actionParts.join(':'));
 };
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.icon = 'code-fork';
   c.inPorts.add('routes', {
@@ -55,6 +54,6 @@ exports.getComponent = function () {
       handle: new noflo.IP('data', data,
         { index: handler }),
     });
-    return output.done();
+    output.done();
   });
 };

@@ -1,6 +1,7 @@
 const noflo = require('noflo');
 
-const randomString = function (num) {
+const randomString = (base) => {
+  let num = base;
   if (num == null) {
     num = 60466176; // 36^5
   }
@@ -8,7 +9,7 @@ const randomString = function (num) {
   return num.toString(36);
 };
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('in',
     { datatype: 'object' });
@@ -22,8 +23,8 @@ exports.getComponent = function () {
     out: ['out', 'id'],
     async: true,
   },
-  (data, groups, out, callback) => {
-    let id;
+  (d, groups, out, callback) => {
+    const data = d;
     if (data.properties) {
       // Graph
       if (data.properties.id) {
@@ -34,7 +35,7 @@ exports.getComponent = function () {
         callback();
         return;
       }
-      id = randomString();
+      const id = randomString();
       data.properties.id = id;
       data.id = id;
       out.out.send(data);
@@ -53,6 +54,6 @@ exports.getComponent = function () {
     data.id = randomString();
     out.out.send(data);
     out.id.send(data.id);
-    return callback();
+    callback();
   });
 };

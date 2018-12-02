@@ -1,22 +1,26 @@
-exports.findMainGraph = function (project) {
-  let graph;
+exports.findMainGraph = (project) => {
   if (!project.graphs.length) { return null; }
   if (project.main) {
     // Ensure currently set main graph exists
-    for (graph of Array.from(project.graphs)) {
-      if (graph.properties.id === project.main) { return project.main; }
+    const mainFound = project.graphs.find(graph => graph.properties.id === project.main);
+    if (mainFound) {
+      return project.main;
     }
   }
   // No 'main' graph sent, see if we can make a smart choice
-  for (graph of Array.from(project.graphs)) {
-    if (graph.name === 'main') { return graph.properties.id; }
-    if (graph.properties.main) { return graph.properties.id; }
+  const mainCapable = project.graphs.find((graph) => {
+    if (graph.name === 'main') { return true; }
+    if (graph.properties.main) { return true; }
+    return false;
+  });
+  if (mainCapable) {
+    return mainCapable.properties.id;
   }
   // No suitable graph found, use first
   return project.graphs[0].properties.id;
 };
 
-exports.getProjectHash = function (project, callback) {
+exports.getProjectHash = (project, callback) => {
   if (!project.graphs.length) {
     if (project.components.length) {
       // No graphs in this project, but there are components
@@ -41,7 +45,8 @@ exports.getProjectHash = function (project, callback) {
   // Open main graph, or the first graph
   const main = project.main || project.graphs[0].properties.id;
   if (!main) {
-    return callback(new Error(`Unable find a main graph for project ${project.id}`));
+    callback(new Error(`Unable find a main graph for project ${project.id}`));
+    return;
   }
   callback(null, [
     'project',

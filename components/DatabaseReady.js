@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('in',
     { datatype: 'bang' });
@@ -8,6 +8,6 @@ exports.getComponent = function () {
     if (!input.hasData('in')) { return; }
     input.getData('in');
     window.nofloDBReady = true;
-    return output.done();
+    output.done();
   });
 };

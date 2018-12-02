@@ -2,7 +2,7 @@ const urlParser = require('url');
 const qs = require('querystring');
 const noflo = require('noflo');
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('in',
     { datatype: 'all' });

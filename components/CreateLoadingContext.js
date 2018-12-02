@@ -1,11 +1,10 @@
 const noflo = require('noflo');
 
-const buildContext = function () {
-  let ctx;
-  return ctx = { state: '' };
-};
+const buildContext = () => ({
+  state: '',
+});
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.icon = 'spinner';
   c.inPorts.add('start',

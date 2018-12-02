@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('clear',
     { datatype: 'bang' });
@@ -12,7 +12,6 @@ exports.getComponent = function () {
     async: true,
   },
   (ins, groups, out, callback) => {
-    let key;
     const keys = [
       'flowhub-avatar',
       'flowhub-plan',
@@ -22,14 +21,12 @@ exports.getComponent = function () {
       'github-token',
       'github-username',
     ];
-    for (key of Array.from(keys)) {
-      localStorage.removeItem(key);
-    }
     const newUserInfo = {};
-    for (key of Array.from(keys)) {
+    keys.forEach((key) => {
+      localStorage.removeItem(key);
       newUserInfo[key] = null;
-    }
+    });
     out.send(newUserInfo);
-    return callback();
+    callback();
   });
 };

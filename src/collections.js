@@ -1,10 +1,12 @@
-exports.sortByName = function (a, b) {
+exports.sortByName = (a, b) => {
   const aName = (a.properties != null ? a.properties.name : undefined) || a.name || a.id || 'Unknown';
   const bName = (b.properties != null ? b.properties.name : undefined) || b.name || b.id || 'Unknown';
   return aName.localeCompare(bName);
 };
 
-exports.sortBySeen = function (a, b) {
+exports.sortBySeen = (ain, bin) => {
+  const a = ain;
+  const b = bin;
   if (!a.seen) {
     return 1;
   }
@@ -22,7 +24,7 @@ exports.sortBySeen = function (a, b) {
   return 0;
 };
 
-exports.addToList = function (list, entity, sort) {
+exports.addToList = (list, entity, sort = exports.sortByName) => {
   let found = false;
   for (const existing of Array.from(list)) {
     if (existing === entity) {
@@ -43,10 +45,6 @@ exports.addToList = function (list, entity, sort) {
   }
   if (found) { return; }
   list.push(entity);
-  if (!sort) {
-    // Keep lists in alphabetical order
-    sort = exports.sortByName;
-  }
   // Sort the list on desired criteria
   list.sort(sort);
 };

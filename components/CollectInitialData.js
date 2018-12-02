@@ -7,7 +7,8 @@ const getData = (input, port) => input.getStream(port).filter((ip) => {
   if (!ip.data || (ip.data === true)) { return false; }
   return true;
 }).map(ip => ip.data);
-exports.getComponent = function () {
+
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('project',
     { datatype: 'object' });
@@ -30,6 +31,6 @@ exports.getComponent = function () {
       specs: getData(input, 'spec'),
       runtimes: getData(input, 'runtime'),
     };
-    return output.sendDone({ out: result });
+    output.sendDone({ out: result });
   });
 };

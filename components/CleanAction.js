@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 
-exports.getComponent = function () {
+exports.getComponent = () => {
   const c = new noflo.Component();
   c.description = 'Strips state from action payloads for backwards compat';
   c.inPorts.add('in',
@@ -13,6 +13,6 @@ exports.getComponent = function () {
   },
   (data, groups, out, callback) => {
     out.send(data.payload || data);
-    return callback();
+    callback();
   });
 };
