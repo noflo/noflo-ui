@@ -1,70 +1,76 @@
-var exported = {
-  noflo: require('noflo'),
-  underscore: require('underscore'),
-  'uuid': require('uuid'),
-  'fbp-spec': require('fbp-spec'),
-  'noflo-ui/src/JournalStore': require('../src/JournalStore'),
-  'noflo-ui/runtimeinfo': require('../runtimeinfo/index.coffee'),
-  'noflo-ui/collections': require('../src/collections.coffee'),
-  'noflo-ui/projects': require('../src/projects.coffee'),
-  'noflo-ui/icons': require('../src/icons.coffee'),
-  'the-graph': require('the-graph')
+const noflo = require('noflo');
+const underscore = require('underscore');
+const uuid = require('uuid');
+const fbpSpec = require('fbp-spec');
+const theGraph = require('the-graph');
+const runtime = require('noflo-runtime-postmessage');
+const journalStore = require('../src/JournalStore');
+const runtimeInfo = require('../runtimeinfo/index');
+const collections = require('../src/collections');
+const projects = require('../src/projects');
+const icons = require('../src/icons');
+const mainGraph = require('../graphs/main.fbp');
+
+const exported = {
+  noflo,
+  underscore,
+  uuid,
+  'fbp-spec': fbpSpec,
+  'the-graph': theGraph,
+  'noflo-ui/src/JournalStore': journalStore,
+  'noflo-ui/runtimeinfo': runtimeInfo,
+  'noflo-ui/collections': collections,
+  'noflo-ui/projects': projects,
+  'noflo-ui/icons': icons,
 };
 
 
 window.React = require('react');
 window.ReactDOM = require('react-dom');
+
 window.TheGraph = exported['the-graph']; // expected by the-graph Polymer elements
 
 window.require = function (moduleName) {
   if (typeof exported[moduleName] !== 'undefined') {
     return exported[moduleName];
   }
-  throw new Error('Module ' + moduleName + ' not available');
+  throw new Error(`Module ${moduleName} not available`);
 };
 
-window.addEventListener('WebComponentsReady', function() {
-  var noflo = require('noflo');
-  var runtime = require('noflo-runtime-postmessage');
-
-  var baseDir = '/noflo-ui';
-  var mainGraph = require('../graphs/main.fbp');
-
-  var loadGraphs = function(callback) {
-    noflo.graph.loadJSON(mainGraph, function (err, g) {
+window.addEventListener('WebComponentsReady', () => {
+  const loadGraphs = function (callback) {
+    noflo.graph.loadJSON(mainGraph, (err, g) => {
       if (err) {
         callback(err);
         return;
       }
-      g.baseDir = baseDir;
-      noflo.createNetwork(g, function (err, n) {
-        if (err) {
-          callback(err);
+      noflo.createNetwork(g, (err2, n) => {
+        if (err2) {
+          callback(err2);
           return;
         }
-        n.on('process-error', function (err) {
+        n.on('process-error', (processError) => {
           if (typeof console.error === 'function') {
-            console.error(err.error);
+            console.error(processError.error);
           } else {
-            console.log(err.error);
+            console.log(processError.error);
           }
         });
-        return callback();
+        callback();
       });
     });
   };
-  var loadGraphsDebuggable = function(callback) {
-    var secret = Math.random().toString(36).substring(7);
-    noflo.graph.loadJSON(mainGraph, function (err, graph) {
+  const loadGraphsDebuggable = function (callback) {
+    const secret = Math.random().toString(36).substring(7);
+    noflo.graph.loadJSON(mainGraph, (err, graph) => {
       if (err) {
         callback(err);
         return;
       }
-      graph.baseDir = baseDir;
-      var runtimeOptions = {
+      const runtimeOptions = {
         defaultGraph: graph,
         baseDir: graph.baseDir,
-        permissions: {}
+        permissions: {},
       };
       runtimeOptions.permissions[secret] = [
         'protocol:component',
@@ -72,37 +78,37 @@ window.addEventListener('WebComponentsReady', function() {
         'protocol:graph',
         'protocol:network',
         'component:getsource',
-        'component:setsource'
+        'component:setsource',
       ];
       runtimeOptions.label = '$NOFLO_APP_TITLE';
-      runtimeOptions.id = '2b487ea3-287b-43f7-b7eb-806f02b402f9'
+      runtimeOptions.id = '2b487ea3-287b-43f7-b7eb-806f02b402f9';
       runtimeOptions.namespace = 'ui';
-      runtimeOptions.repository = 'git+https://github.com/noflo/noflo-ui.git'
-      var debugButton = document.createElement('button');
+      runtimeOptions.repository = 'git+https://github.com/noflo/noflo-ui.git';
+      const debugButton = document.createElement('button');
       debugButton.id = 'flowhub_debug_url';
       debugButton.innerText = 'Debug in Flowhub';
-      var ide = 'https://app.flowhub.io';
-      var debugUrl = ide+'#runtime/endpoint?'+encodeURIComponent('protocol=opener&address='+window.location.href + '&id=' + runtimeOptions.id);
+      const ide = 'https://app.flowhub.io';
+      const debugUrl = `${ide}#runtime/endpoint?${encodeURIComponent(`protocol=opener&address=${window.location.href}&id=${runtimeOptions.id}`)}`;
       debugButton.setAttribute('href', debugUrl);
       document.body.appendChild(debugButton);
       runtime.opener(runtimeOptions, debugButton);
-      return callback();
+      callback();
     });
   };
 
   window.nofloStarted = false;
-  load = loadGraphs;
+  let load = loadGraphs;
   if (String(localStorage.getItem('flowhub-debug')) === 'true') {
     load = loadGraphsDebuggable;
   }
-  load(function(err) {
+  load((err) => {
     if (err) {
       throw err;
     }
     document.body.classList.remove('loading');
     window.nofloStarted = true;
-    setTimeout(function () {
-      var loader = document.getElementById('loading');
+    setTimeout(() => {
+      const loader = document.getElementById('loading');
       document.body.removeChild(loader);
     }, 400);
   });

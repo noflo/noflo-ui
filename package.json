@@ -38,10 +38,12 @@
     "noflo-runtime-postmessage": "^0.10.0",
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
+    "octo": "git://github.com/bergie/octo.git#patched",
     "react": "^15.6.0",
     "react-dom": "^15.6.0",
     "rtc": "^3.4.0",
     "the-graph": "^0.12.0",
+    "underscore": "^1.9.1",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
@@ -50,9 +52,12 @@
     "babel-loader": "^8.0.4",
     "chai": "^4.0.1",
     "coffee-loader": "^0.9.0",
-    "coffeelint": "^2.0.7",
     "coffeescript": "^2.0.2",
     "copy-webpack-plugin": "^4.5.0",
+    "eslint": "^5.9.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-mocha": "^5.2.0",
     "fbp-loader": "^0.1.2",
     "grunt": "^1.0.1",
     "grunt-contrib-clean": "^1.0.0",
@@ -79,7 +84,8 @@
     "yaml-loader": "^0.5.0"
   },
   "scripts": {
-    "pretest": "coffeelint -f .coffeelint.json -r components",
+    "lint": "eslint *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
+    "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
     "test": "karma start",
     "start": "http-server . -p 9999 -s -c-1",
     "build": "grunt build",
