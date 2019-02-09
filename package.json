@@ -87,6 +87,7 @@
   "scripts": {
     "lint": "eslint *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
     "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js runtimeinfo/*.js",
+    "pretest": "npm run lint",
     "test": "karma start",
     "start": "http-server . -p 9999 -s -c-1",
     "build": "grunt build",
