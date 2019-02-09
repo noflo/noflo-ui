@@ -73,7 +73,10 @@ SendEdges OUT -> IN ContextEdgesAction
 SendEdges ERROR -> IN RuntimeErrorAction
 
 # Create a project based on data on runtime side
-Dispatch HANDLE[3] -> IN RuntimeToProject(ui/RuntimeToProject)
+Dispatch HANDLE[3] -> IN GetRuntimeToProjectValues(ui/GetActionValues)
+GetRuntimeToProjectValues OUT -> IN[3] GetClient
+GetClient OUT[3] -> IN RuntimeToProject(ui/RuntimeToProject)
+GetClient CLIENT[3] -> CLIENT RuntimeToProject(ui/RuntimeToProject)
 RuntimeToProject PROJECT -> IN ProjectSaveAction
 RuntimeToProject GRAPH -> IN GraphSaveAction
 RuntimeToProject COMPONENT -> IN ComponentSaveAction
@@ -111,34 +114,34 @@ GetClient UPDATED -> IN Passed
 
 # Control network start
 Dispatch HANDLE[6] -> IN GetStartValues(ui/GetActionValues)
-GetStartValues OUT -> IN[3] GetClient
-GetClient OUT[3] -> IN StartNetwork(ui/StartNetwork)
-GetClient CLIENT[3] -> CLIENT StartNetwork
+GetStartValues OUT -> IN[4] GetClient
+GetClient OUT[4] -> IN StartNetwork(ui/StartNetwork)
+GetClient CLIENT[4] -> CLIENT StartNetwork
 StartNetwork OUT -> IN RuntimeStartedAction
 StartNetwork ERROR -> IN RuntimeErrorAction
 
 # Control network stop
 Dispatch HANDLE[7] -> IN GetStopValues(ui/GetActionValues)
-GetStopValues OUT -> IN[4] GetClient
-GetClient OUT[4] -> IN StopNetwork(ui/StopNetwork)
-GetClient CLIENT[4] -> CLIENT StopNetwork
+GetStopValues OUT -> IN[5] GetClient
+GetClient OUT[5] -> IN StopNetwork(ui/StopNetwork)
+GetClient CLIENT[5] -> CLIENT StopNetwork
 StopNetwork OUT -> IN RuntimeStoppedAction
 StopNetwork ERROR -> IN RuntimeErrorAction
 
 # Runtime reconnection
 Dispatch HANDLE[8] -> IN GetReconnectValues(ui/GetActionValues)
-GetReconnectValues OUT -> IN[5] GetClient
-GetClient OUT[5] -> IN ReconnectRuntime(ui/ReconnectRuntime)
-GetClient CLIENT[5] -> CLIENT ReconnectRuntime
+GetReconnectValues OUT -> IN[6] GetClient
+GetClient OUT[6] -> IN ReconnectRuntime(ui/ReconnectRuntime)
+GetClient CLIENT[6] -> CLIENT ReconnectRuntime
 ReconnectRuntime OUT -> IN ApplicationRecreateAction
 ReconnectRuntime ERROR -> IN RuntimeErrorAction
 
 # Sending component changes to runtime
 'project' -> KEYS GetComponentValues(ui/GetActionValues)
 Dispatch HANDLE[9] -> IN GetComponentValues
-GetComponentValues OUT -> IN[6] GetClient
-GetClient OUT[6] -> IN SendComponentChanges(ui/SendComponentChanges)
-GetClient CLIENT[6] -> CLIENT SendComponentChanges
+GetComponentValues OUT -> IN[7] GetClient
+GetClient OUT[7] -> IN SendComponentChanges(ui/SendComponentChanges)
+GetClient CLIENT[7] -> CLIENT SendComponentChanges
 GetComponentValues VALUES[0] -> PROJECT SendComponentChanges
 SendComponentChanges OUT -> IN RuntimeComponentAction
 SendComponentChanges ERROR -> IN RuntimeErrorAction
@@ -146,8 +149,8 @@ SendComponentChanges ERROR -> IN RuntimeErrorAction
 # Sending component changes to runtime
 'project' -> KEYS GetGraphChangeValues(ui/GetActionValues)
 Dispatch HANDLE[10] -> IN GetGraphChangeValues
-GetGraphChangeValues OUT -> IN[7] GetClient
-GetClient OUT[7] -> IN SendGraphChanges(ui/SendGraphChanges)
-GetClient CLIENT[7] -> CLIENT SendGraphChanges
+GetGraphChangeValues OUT -> IN[8] GetClient
+GetClient OUT[8] -> IN SendGraphChanges(ui/SendGraphChanges)
+GetClient CLIENT[8] -> CLIENT SendGraphChanges
 GetGraphChangeValues VALUES[0] -> PROJECT SendGraphChanges
 SendGraphChanges ERROR -> IN RuntimeErrorAction
