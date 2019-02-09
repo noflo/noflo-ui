@@ -17,7 +17,9 @@ describe('GitHub Middleware', () => {
   }));
   describe('receiving a github:gist action', () => {
     let mock = null;
-    beforeEach(() => mock = sinon.fakeServer.create());
+    beforeEach(() => {
+      mock = sinon.fakeServer.create();
+    });
     afterEach(() => mock.restore());
     it('should send application:sethash for existing gist', (done) => {
       const action = 'github:gist';
@@ -75,7 +77,8 @@ describe('GitHub Middleware', () => {
           connections: [],
         },
       ];
-      const check = function (data) {
+      const check = function (d) {
+        let data = d;
         // Convert graph object to JSON for comparison
         if (data.toJSON) { data = data.toJSON(); }
         if (data.graphs) {
@@ -85,10 +88,21 @@ describe('GitHub Middleware', () => {
         return chai.expect(data).to.eql(expected.shift());
       };
       mw.receiveAction('github:loading', () => {}, (err) => {
-        mw.receiveAction('github:ready', () => {}, (err) => {
-          mw.receiveAction('storage:save:project', check, (err) => {
-            if (err) { return done(err); }
-            return mw.receiveAction('storage:save:graph', check, done);
+        if (err) {
+          done(err);
+          return;
+        }
+        mw.receiveAction('github:ready', () => {}, (err2) => {
+          if (err2) {
+            done(err2);
+            return;
+          }
+          mw.receiveAction('storage:save:project', check, (err3) => {
+            if (err3) {
+              done(err3);
+              return;
+            }
+            mw.receiveAction('storage:save:graph', check, done);
           });
         });
       });
