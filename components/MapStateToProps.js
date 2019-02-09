@@ -97,7 +97,7 @@ exports.getComponent = () => {
           const currentGraph = state.graphs[state.graphs.length - 1];
           const graphId = currentGraph.name || currentGraph.properties.id;
           if (!updated.runtimeIcons[state.runtime.id][graphId]) { return; }
-          updated.runtimeIcons[state.runtime.id][graphId].forEach((nodeId) => {
+          Object.keys(updated.runtimeIcons[state.runtime.id][graphId]).forEach((nodeId) => {
             const icon = updated.runtimeIcons[state.runtime.id][graphId][nodeId];
             props.icons[nodeId] = icon;
           });

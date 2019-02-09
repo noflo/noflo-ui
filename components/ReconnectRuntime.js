@@ -12,7 +12,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   return c.process((input, output) => {
     if (!input.hasData('in', 'client')) { return; }
-    const [, client] = Array.from(input.getData('in', 'client'));
+    const [, client] = input.getData('in', 'client');
 
     client.disconnect()
       .then(() => client.connect())
