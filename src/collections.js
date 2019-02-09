@@ -29,6 +29,7 @@ exports.addToList = (list, entity, sort = exports.sortByName) => {
   list.forEach((existing) => {
     if (existing === entity) {
       // Entity is already in list as-is, skip
+      found = true;
       return;
     }
     const existingId = (existing.properties != null ? existing.properties.id : undefined)
