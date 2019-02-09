@@ -3,75 +3,67 @@ const uuid = require('uuid');
 const url = require('url');
 const path = require('path');
 
-const isComponentInProject = function(namespace, componentName) {
+const getNamespace = (client) => {
+  if (!client.definition || !client.definition.namespace) {
+    return null;
+  }
+  return client.definition.namespace;
+};
+
+const isComponentInProject = (namespace, componentName) => {
   if (componentName.indexOf('/') === -1) { return true; }
-  const [library, component] = Array.from(componentName.split('/'));
+  const [library] = componentName.split('/');
   return library === namespace;
 };
 
-var fetchSources = function(components, runtime, sources, callback) {
-  if (!components.length) { return callback(null, sources); }
-  var handleMessage = function(msg) {
-    if (msg.command === 'error') {
-      callback(new Error(msg.payload.message));
-      return;
-    }
-    if (msg.command === 'source') {
-      sources.push(msg.payload);
-      fetchSources(components, runtime, sources, callback);
-      return;
-    }
-    // We got unrelated message, subscribe again
-    return runtime.once('component', handleMessage);
-  };
-  runtime.once('component', handleMessage);
-  const component = components.shift();
-  return runtime.sendComponent('getsource',
-    {name: component});
+const fetchFromLibrary = (namespace, client) => {
+  if (!namespace) { return Promise.resolve([]); }
+  return client.connect()
+    .then(() => client.protocol.component.list())
+    .then(components => components
+      .map(component => component.name)
+      .filter(name => isComponentInProject(namespace, name)))
+    .then(components => Promise.all(components.map(name => client
+      .protocol.component.getsource({
+        name,
+      }))));
 };
 
-const fetchFromLibrary = function(namespace, runtime, callback) {
-  if (!namespace) { return callback(null, []); }
-  if (!runtime.isConnected()) { return callback(null, []); }
-  if (!runtime.canDo('component:getsource')) { return callback(null, []); }
-  if (!runtime.definition.components) { return callback(null, []); }
-  const components = Object.keys(runtime.definition.components).filter(componentName => isComponentInProject(namespace, componentName));
-  return fetchSources(components, runtime, [], callback);
-};
-
-exports.getComponent = function() {
-  const c = new noflo.Component;
-  c.inPorts.add('in',
-    {datatype: 'object'});
+exports.getComponent = () => {
+  const c = new noflo.Component();
+  c.inPorts.add('in', {
+    datatype: 'object',
+  });
+  c.inPorts.add('client', {
+    datatype: 'object',
+  });
   c.outPorts.add('project',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('graph',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('component',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('runtime',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['project', 'graph', 'component', 'runtime'],
-    forwardGroups: false,
-    async: true
-  }
-  , function(data, groups, out, callback) {
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'client')) { return; }
+    const [data, client] = input.getData('in', 'client');
     const project = {
       id: uuid.v4(),
-      namespace: __guard__(data.payload.runtime != null ? data.payload.runtime.definition : undefined, x => x.namespace),
+      namespace: getNamespace(client),
       graphs: [],
       components: [],
-      specs: []
+      specs: [],
     };
-    if (project.namespace) { project.name = project.namespace; }
+    if (project.namespace) {
+      project.name = project.namespace;
+    }
 
-    if (__guard__(data.payload.runtime != null ? data.payload.runtime.definition : undefined, x1 => x1.repository) && (typeof data.payload.runtime.definition.repository === 'string')) {
-      const parsed = url.parse(data.payload.runtime.definition.repository);
+    if (client.definition && client.definition.repository) {
+      const parsed = url.parse(client.definition.repository);
       if ((parsed.hostname === 'github.com') && parsed.pathname) {
         const pathname = parsed.pathname.slice(1);
         const org = path.dirname(pathname);
@@ -80,70 +72,74 @@ exports.getComponent = function() {
         project.name = project.repo;
       }
     }
-    if (__guard__(data.payload.runtime != null ? data.payload.runtime.definition : undefined, x2 => x2.repositoryVersion)) {
-      project.branch = data.payload.runtime.definition.repositoryVersion;
+    if (client.definition && client.definition.repositoryVersion) {
+      project.branch = client.definition.repositoryVersion;
     }
 
     // Start with the data we already have
-    const graphs = data.payload.graphs.slice(0);
+    const graphs = data.graphs ? data.graphs.slice(0) : [];
     let components = [];
     if (data.payload.component) { components.push(data.payload.component); }
 
     // Add components and graphs from library
-    return fetchFromLibrary(project.namespace, data.payload.runtime, function(err, sources) {
-      let component, graph;
-      if (err) { return callback(err); }
-      const projectGraphs = sources.filter(c => c.language === 'json');
-      for (let graphDef of Array.from(projectGraphs)) {
-        noflo.graph.loadJSON(graphDef, function(err, graph) {
-          if (err) { return; }
-          return graphs.push(graph);
+    fetchFromLibrary(project.namespace, client)
+      .then((sources) => {
+        const projectGraphs = sources.filter(component => component.language === 'json');
+        projectGraphs.forEach((graphDef) => {
+          noflo.graph.loadJSON(graphDef, (err, graph) => {
+            if (err) { return; }
+            graphs.push(graph);
+          });
         });
-      }
 
-      components = components.concat(sources.filter(c => c.language !== 'json'));
+        components = components.concat(sources.filter(comp => comp.language !== 'json'));
 
-      for (graph of Array.from(graphs)) {
-        graph.name = graph.name.split('/').pop();
-        graph.setProperties({
-          id: `${project.id}/${(graph.properties != null ? graph.properties.id : undefined) || graph.name}`,
-          project: project.id
+        graphs.forEach((g) => {
+          const graph = g;
+          graph.name = graph.name.split('/').pop();
+          graph.setProperties({
+            id: `${project.id}/${(graph.properties != null ? graph.properties.id : undefined) || graph.name}`,
+            project: project.id,
+          });
+          if (!project.main) { project.main = graph.properties.id; }
+          if (!project.name) { project.name = graph.name; }
+          if (graph.properties
+            && graph.properties.environment
+            && graph.properties.environment.type
+            && !project.type) {
+            project.type = graph.properties.environment.type;
+          }
+          project.graphs.push(graph);
         });
-        if (!project.main) { project.main = graph.properties.id; }
-        if (!project.name) { project.name = graph.name; }
-        if (__guard__(graph.properties != null ? graph.properties.environment : undefined, x3 => x3.type) && !project.type) {
-          project.type = graph.properties.environment.type;
+
+        components.forEach((comp) => {
+          const component = comp;
+          component.project = project.id;
+          project.components.push(component);
+        });
+
+        // Associate runtime with project for auto-connecting
+        client.definition.project = project.id;
+        client.definition.seen = new Date();
+        if (!client.definition.label) {
+          client.definition.label = `${project.name} runtime`;
         }
-        project.graphs.push(graph);
-      }
+        output.send({
+          runtime: client.definition,
+          project,
+        });
 
-      for (component of Array.from(components)) {
-        component.project = project.id;
-        project.components.push(component);
-      }
-
-      // Associate runtime with project for auto-connecting
-      data.payload.runtime.definition.project = project.id;
-      data.payload.runtime.definition.seen = new Date;
-      if (!data.payload.runtime.definition.label) {
-        data.payload.runtime.definition.label = `${project.name} runtime`;
-      }
-      out.runtime.send(data.payload.runtime.definition);
-
-      out.project.send(project);
-
-      for (graph of Array.from(project.graphs)) {
-        out.graph.send(graph);
-      }
-      for (component of Array.from(project.components)) {
-        out.component.send(component);
-      }
-
-      return callback();
-    });
+        project.graphs.forEach((graph) => {
+          output.send({
+            graph,
+          });
+        });
+        project.components.forEach((component) => {
+          output.send({
+            component,
+          });
+        });
+        output.done();
+      }, output.done);
   });
 };
-
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
-}

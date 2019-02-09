@@ -1,8 +1,7 @@
-describe('NoFlo UI initialization', function() {
+describe('NoFlo UI initialization', () => {
   let win = null;
-  let doc = null;
   let db = null;
-  before(function(done) {
+  before(function (done) {
     this.timeout(75000);
 
     if (!localStorage.getItem('flowhub-token')) {
@@ -12,9 +11,8 @@ describe('NoFlo UI initialization', function() {
         uuid: '11eecff0-d14c-11e3-9c1a-0800200c9a66',
         email: 'user@domain.com',
         name: 'Test User',
-        avatar: 'https://secure.gravatar.com/avatar/995f27ce7205a79c55d4e44223cd6de0'
-      })
-      );
+        avatar: 'https://secure.gravatar.com/avatar/995f27ce7205a79c55d4e44223cd6de0',
+      }));
     }
 
     const iframe = document.createElement('iframe');
@@ -25,44 +23,44 @@ describe('NoFlo UI initialization', function() {
     iframe.style.height = '600px';
     iframe.style.position = 'fixed';
     iframe.style.top = '100px';
-    return iframe.onload = function() {
+    iframe.onload = () => {
       win = iframe.contentWindow;
-      doc = iframe.contentDocument;
-      return setTimeout(() => done()
-      , 5000);
+      return setTimeout(() => done(),
+        5000);
     };
   });
   after(() => db.close());
 
-  describe('on startup', function() {
-    it('should start the NoFlo process', function(done) {
+  describe('on startup', () => {
+    it('should start the NoFlo process', function (done) {
       this.timeout(75000);
-      var checkNoFlo = function() {
+      const checkNoFlo = () => {
         chai.expect(win.nofloStarted).to.be.a('boolean');
         if (win.nofloDBReady) {
           chai.expect(win.nofloDBReady).to.be.a('boolean');
-          return done();
+          done();
+          return;
         }
-        return setTimeout(checkNoFlo, 1000);
+        setTimeout(checkNoFlo, 1000);
       };
-      return setTimeout(checkNoFlo, 1000);
+      setTimeout(checkNoFlo, 1000);
     });
 
     it('should start with the main screen', () => chai.expect(win.location.hash).to.equal(''));
   });
 
-  describe('NoFlo PrepareStorage', function() {
-    it('should have created the IndexedDB database', function(done) {
+  describe('NoFlo PrepareStorage', () => {
+    it('should have created the IndexedDB database', function (done) {
       this.timeout(4000);
       const indexedDB = win.overrideIndexedDB || win.indexedDB;
       chai.expect(indexedDB).to.exist;
       const req = indexedDB.open('noflo-ui', 4);
       req.onerror = err => done(err);
-      req.onupgradeneeded = function(e) {
+      req.onupgradeneeded = function (e) {
         e.target.transaction.abort();
         return done(new Error('We didn\'t get a ready database'));
       };
-      req.onsuccess = function(event) {
+      req.onsuccess = function (event) {
         db = event.target.result;
         chai.expect(db.name).to.equal('noflo-ui');
         chai.expect(db.version).to.equal(4);

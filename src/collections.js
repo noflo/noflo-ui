@@ -1,10 +1,12 @@
-exports.sortByName = function (a, b) {
+exports.sortByName = (a, b) => {
   const aName = (a.properties != null ? a.properties.name : undefined) || a.name || a.id || 'Unknown';
   const bName = (b.properties != null ? b.properties.name : undefined) || b.name || b.id || 'Unknown';
   return aName.localeCompare(bName);
 };
 
-exports.sortBySeen = function (a, b) {
+exports.sortBySeen = (ain, bin) => {
+  const a = ain;
+  const b = bin;
   if (!a.seen) {
     return 1;
   }
@@ -22,50 +24,45 @@ exports.sortBySeen = function (a, b) {
   return 0;
 };
 
-exports.addToList = function (list, entity, sort) {
+exports.addToList = (list, entity, sort = exports.sortByName) => {
   let found = false;
-  for (const existing of Array.from(list)) {
+  list.forEach((existing) => {
     if (existing === entity) {
       // Entity is already in list as-is, skip
+      found = true;
       return;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined) || existing.id || existing.name;
-    const entityId = (entity.properties != null ? entity.properties.id : undefined) || entity.id || entity.name;
+    const existingId = (existing.properties != null ? existing.properties.id : undefined)
+      || existing.id || existing.name;
+    const entityId = (entity.properties != null ? entity.properties.id : undefined)
+      || entity.id || entity.name;
     if (existingId === entityId) {
       // id match, replace
-      for (const key in entity) {
-        if (!entity.hasOwnProperty(key)) { continue; }
-        existing[key] = entity[key];
-      }
+      const exists = existing;
+      Object.keys(entity).forEach((key) => {
+        exists[key] = entity[key];
+      });
       found = true;
-      break;
     }
-  }
+  });
   if (found) { return; }
   list.push(entity);
-  if (!sort) {
-    // Keep lists in alphabetical order
-    sort = exports.sortByName;
-  }
   // Sort the list on desired criteria
   list.sort(sort);
 };
 
-exports.removeFromList = function (list, entity) {
-  let index = null;
-  for (let idx = 0; idx < list.length; idx++) {
-    const existing = list[idx];
+exports.removeFromList = (list, entity) => {
+  const matched = list.find((existing) => {
     if (existing === entity) {
-      index = idx;
-      continue;
+      return true;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined) || existing.id;
+    const existingId = (existing.properties != null ? existing.properties.id : undefined)
+      || existing.id;
     const entityId = (entity.properties != null ? entity.properties.id : undefined) || entity.id;
-    if (existingId === entityId) {
-      index = idx;
-      continue;
-    }
+    return (existingId === entityId);
+  });
+  if (!matched) {
+    return;
   }
-  if (index === null) { return; }
-  list.splice(index, 1);
+  list.splice(list.indexOf(matched), 1);
 };

@@ -1,30 +1,28 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('action', {
     datatype: 'string',
     required: true,
-    control: true
-  }
-  );
+    control: true,
+  });
   c.inPorts.add('in',
-    {datatype: 'all'});
+    { datatype: 'all' });
   c.outPorts.add('out', {
     datatype: 'all',
-    scoped: false
-  }
-  );
+    scoped: false,
+  });
 
   return noflo.helpers.WirePattern(c, {
     params: ['action'],
     forwardGroups: false,
-    async: true
-  }
-  , function(data, groups, out, callback) {
+    async: true,
+  },
+  (data, groups, out, callback) => {
     out.send({
       action: c.params.action,
-      payload: data
+      payload: data,
     });
     return callback();
   });

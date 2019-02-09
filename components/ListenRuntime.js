@@ -1,146 +1,156 @@
 const noflo = require('noflo');
 
-const handleSignal = function(signal, rtId, output) {
+const handleSignal = (s, rtId, output) => {
+  const signal = s;
   if (signal.command === 'error') {
     signal.payload.runtime = rtId;
     output.send({
       error: {
-        payload: signal.payload
-      }
+        payload: signal.payload,
+      },
     });
   }
 
   switch (`${signal.protocol}:${signal.command}`) {
     case 'component:component':
-      return output.send({
+      output.send({
         component: {
           component: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:started':
-      return output.send({
+      output.send({
         started: {
           status: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:stopped':
-      return output.send({
+      output.send({
         stopped: {
           status: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:begingroup':
       signal.payload.type = 'openBracket';
-      return output.send({
+      output.send({
         packet: {
           packet: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:data':
       signal.payload.type = 'data';
-      return output.send({
+      output.send({
         packet: {
           packet: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:endgroup':
       signal.payload.type = 'closeBracket';
-      return output.send({
+      output.send({
         packet: {
           packet: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:output':
-      return output.send({
+      output.send({
         output: {
           output: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:error':
-      return output.send({
+      output.send({
         networkerror: {
           error: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:processerror':
-      return output.send({
+      output.send({
         processerror: {
           error: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      return;
     case 'network:icon':
-      return output.send({
+      output.send({
         icon: {
           icon: signal.payload,
-          runtime: rtId
-        }
+          runtime: rtId,
+        },
       });
+      break;
+    default:
+      // Unknown signal. Error?
   }
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in', {
     description: 'Runtime client instance',
-    datatype: 'object'
-  }
-  );
+    datatype: 'object',
+  });
   c.outPorts.add('runtimeupdate',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('status', {
     description: 'Runtime status change',
-    datatype: 'object'
-  }
-  );
+    datatype: 'object',
+  });
   c.outPorts.add('components',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('component',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('started',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('stopped',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('packet',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('output',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('icon',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('networkerror',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('processerror',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('protocolerror',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.clients = {};
-  const unsubscribe = function(id) {
+  const unsubscribe = (id) => {
     if (!c.clients[id]) { return; }
     c.clients[id].client.removeListener('connected', c.clients[id].onConnected);
     c.clients[id].client.transport.removeListener('status', c.clients[id].onStatus);
     c.clients[id].client.removeListener('signal', c.clients[id].onSignal);
     c.clients[id].client.removeListener('protocolError', c.clients[id].onProtocolError);
     c.clients[id].context.deactivate();
-    return delete c.clients[id];
+    delete c.clients[id];
   };
-  c.tearDown = function(callback) {
-    for (let id in c.clients) {
-      const client = c.clients[id];
+  c.tearDown = (callback) => {
+    Object.keys(c.clients).forEach((id) => {
       unsubscribe(id);
-    }
-    return callback();
+    });
+    callback();
   };
-  return c.process(function(input, output, context) {
+  return c.process((input, output, context) => {
     if (!input.hasData('in')) { return; }
     const client = input.getData('in');
 
@@ -154,48 +164,47 @@ exports.getComponent = function() {
       client,
       onConnected() {
         if (!client.canSend('component', 'list')) { return; }
-        return setTimeout(() =>
-          client.protocol.component.list()
-            .then((components =>
-              output.send({
-                components: {
-                  components,
-                  runtime: id
-                }})
-            ), (function(err) {
-              err.runtime = id;
-              return output.send({
-                error: err});
-            }))
-        
-        , 1);
+        setTimeout(() => client.protocol.component.list()
+          .then((components => output.send({
+            components: {
+              components,
+              runtime: id,
+            },
+          })
+          ), ((e) => {
+            const err = e;
+            err.runtime = id;
+            output.send({ error: err });
+          })),
+
+        1);
       },
       onStatus(status) {
-        client.definition.seen = new Date;
-        return output.send({
+        client.definition.seen = new Date();
+        output.send({
           status: {
             status,
-            runtime: id
+            runtime: id,
           },
-          runtimeupdate: client.definition
+          runtimeupdate: client.definition,
         });
       },
       onSignal(signal) {
-        return handleSignal(signal, id, output);
+        handleSignal(signal, id, output);
       },
       onProtocolError(err) {
-        return output.send({
+        output.send({
           protocolerror: {
             error: err,
-            runtime: id
-          }
+            runtime: id,
+          },
         });
-      }
+      },
     };
 
     client.on('connected', c.clients[id].onConnected);
     client.transport.on('status', c.clients[id].onStatus);
     client.on('signal', c.clients[id].onSignal);
-    return client.on('protocolError', c.clients[id].onProtocolError);
+    client.on('protocolError', c.clients[id].onProtocolError);
   });
 };

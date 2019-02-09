@@ -6,12 +6,18 @@
   "env": {
     "mocha": true
   },
+  "rules": {
+    "func-names": 0,
+    "no-unused-expressions": 0,
+    "prefer-destructuring": 1
+  },
   "globals": {
     "chrome": false,
     "document": false,
     "localStorage": false,
     "window": false,
     "chai": false,
-    "sinon": false
+    "sinon": false,
+    "syn": false
   }
 }

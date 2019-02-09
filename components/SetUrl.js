@@ -1,17 +1,17 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'string'});
+    { datatype: 'string' });
   c.outPorts.add('out',
-    {datatype: 'bang'});
+    { datatype: 'bang' });
 
   return noflo.helpers.WirePattern(c, {
     async: true,
-    forwardGroups: false
-  }
-  , function(data, groups, out, callback) {
+    forwardGroups: false,
+  },
+  (data, groups, out, callback) => {
     // This will in effect cause a NoFlo network stop as the app
     // redirects to new URL
     window.location.href = data.payload;

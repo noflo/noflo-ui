@@ -1,34 +1,35 @@
 const noflo = require('noflo');
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('client',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('graphs',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.inPorts.add('edges',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.outPorts.add('out',
-    {datatype: 'array'});
+    { datatype: 'array' });
   c.outPorts.add('error',
-    {datatype: 'object'});
-  return c.process(function(input, output) {
+    { datatype: 'object' });
+  return c.process((input, output) => {
     if (!input.hasData('client', 'graphs', 'edges')) { return; }
-    const [client, graphs, edges] = Array.from(input.getData('client', 'graphs', 'edges'));
-    output.send({
-      out: edges});
+    const [client, graphs, edges] = input.getData('client', 'graphs', 'edges');
+    output.send({ out: edges });
     if (!graphs.length) {
-      return output.done(new Error("No graph specified"));
+      output.done(new Error('No graph specified'));
+      return;
     }
     const currentGraph = graphs[graphs.length - 1];
-    return client.protocol.network.edges({
+    client.protocol.network.edges({
       graph: currentGraph.name || currentGraph.properties.id,
-      edges: edges.map(function(e) {
+      edges: edges.map((e) => {
         const edge = {
           src: e.from,
-          tgt: e.to
+          tgt: e.to,
         };
-        return edge;})
+        return edge;
+      }),
     })
       .then((() => output.done()), err => output.done(err));
   });

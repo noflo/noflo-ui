@@ -1,29 +1,30 @@
 const noflo = require('noflo');
 
-const randomString = function(num) {
+const randomString = (base) => {
+  let num = base;
   if (num == null) {
     num = 60466176; // 36^5
   }
-  num = Math.floor( Math.random() * num );
+  num = Math.floor(Math.random() * num);
   return num.toString(36);
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('id',
-    {datatype: 'string'});
+    { datatype: 'string' });
 
   return noflo.helpers.WirePattern(c, {
     in: 'in',
     out: ['out', 'id'],
-    async: true
-  }
-  , function(data, groups, out, callback) {
-    let id;
+    async: true,
+  },
+  (d, groups, out, callback) => {
+    const data = d;
     if (data.properties) {
       // Graph
       if (data.properties.id) {
@@ -34,7 +35,7 @@ exports.getComponent = function() {
         callback();
         return;
       }
-      id = randomString();
+      const id = randomString();
       data.properties.id = id;
       data.id = id;
       out.out.send(data);
@@ -53,6 +54,6 @@ exports.getComponent = function() {
     data.id = randomString();
     out.out.send(data);
     out.id.send(data.id);
-    return callback();
+    callback();
   });
 };

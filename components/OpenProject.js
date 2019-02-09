@@ -1,44 +1,39 @@
 const noflo = require('noflo');
 
-const buildContext = function() {
-  let ctx;
-  return ctx = {
-    state: '',
-    project: null,
-    runtime: null,
-    component: null,
-    graphs: [],
-    remote: []
-  };
+const buildContext = () => ({
+  state: '',
+  project: null,
+  runtime: null,
+  component: null,
+  graphs: [],
+  remote: [],
+});
+
+const findProject = (id, projects) => {
+  if (!projects) { return null; }
+
+  return projects.find(project => project.id === id);
 };
 
-const findProject = function(id, projects) {
-  if (!projects) { return; }
-  for (let project of Array.from(projects)) {
-    if (project.id === id) { return project; }
-  }
-  return null;
+const findGraph = (id, project) => {
+  if (!project.graphs) { return null; }
+  return project.graphs.find((graph) => {
+    if (graph.name === id) { return true; }
+    if (graph.properties.id === id) { return true; }
+    return false;
+  });
 };
 
-const findGraph = function(id, project) {
-  if (!project.graphs) { return; }
-  for (let graph of Array.from(project.graphs)) {
-    if (graph.name === id) { return graph; }
-    if (graph.properties.id === id) { return graph; }
-  }
-  return null;
+const findComponent = (name, project) => {
+  if (!project.components) { return null; }
+  return project.components.find((component) => {
+    if (component.name === name) { return true; }
+    return false;
+  });
 };
 
-const findComponent = function(name, project) {
-  if (!project.components) { return; }
-  for (let component of Array.from(project.components)) {
-    if (component.name === name) { return component; }
-  }
-  return null;
-};
-
-const findByComponent = function(componentName, project) {
-  let [library, name] = Array.from(componentName.split('/'));
+const findByComponent = (componentName, project) => {
+  let [library, name] = componentName.split('/');
 
   if (!name) {
     name = library;
@@ -55,34 +50,37 @@ const findByComponent = function(componentName, project) {
   return ['runtime', componentName];
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
   return noflo.helpers.WirePattern(c, {
     async: true,
-    forwardGroups: false
-  }
-  , function(data, groups, out, callback) {
+    forwardGroups: false,
+  },
+  (data, groups, out, callback) => {
     // Find project
     if (!(data.state.projects != null ? data.state.projects.length : undefined)) {
-      return callback(new Error('No projects found'));
+      callback(new Error('No projects found'));
+      return;
     }
     const ctx = buildContext();
     ctx.project = findProject(data.payload.project, data.state.projects);
     if (!ctx.project) {
-      return callback(new Error(`Project ${data.payload.project} not found`));
+      callback(new Error(`Project ${data.payload.project} not found`));
+      return;
     }
 
     // Find component if needed
     if (data.payload.component) {
       ctx.component = findComponent(data.payload.component, ctx.project);
       if (!ctx.component) {
-        return callback(new Error(`Component ${data.payload.component} not found`));
+        callback(new Error(`Component ${data.payload.component} not found`));
+        return;
       }
       ctx.state = 'ok';
       out.send(ctx);
@@ -93,7 +91,8 @@ exports.getComponent = function() {
     // Find main graph
     const mainGraph = findGraph(data.payload.graph, ctx.project);
     if (!mainGraph) {
-      return callback(new Error(`Graph ${data.payload.graph} not found`));
+      callback(new Error(`Graph ${data.payload.graph} not found`));
+      return;
     }
     ctx.graphs.push(mainGraph);
 
@@ -104,36 +103,38 @@ exports.getComponent = function() {
       const nodeId = data.payload.nodes.shift();
       if (typeof currentGraph !== 'object') {
         ctx.remote.push(nodeId);
-        continue;
-      }
-      const node = currentGraph.getNode(nodeId);
-      if (!node) {
-        return callback(new Error(`Node ${nodeId} not found`));
-      }
-      if (!node.component) {
-        return callback(new Error(`Node ${nodeId} has no component defined`));
-      }
-      [type, currentGraph] = Array.from(findByComponent(node.component, ctx.project));
-
-      if (type === 'component') {
-        ctx.component = currentGraph;
-        if (data.payload.nodes.length) {
-          return callback(new Error(`Component ${nodeId} cannot have subnodes`));
+      } else {
+        const node = currentGraph.getNode(nodeId);
+        if (!node) {
+          callback(new Error(`Node ${nodeId} not found`));
+          return;
         }
-        break;
-      }
+        if (!node.component) {
+          callback(new Error(`Node ${nodeId} has no component defined`));
+          return;
+        }
+        [type, currentGraph] = findByComponent(node.component, ctx.project);
 
-      if (type === 'runtime') {
-        ctx.remote.push(nodeId);
-        continue;
-      }
+        if (type === 'component') {
+          ctx.component = currentGraph;
+          if (data.payload.nodes.length) {
+            callback(new Error(`Component ${nodeId} cannot have subnodes`));
+            return;
+          }
+          break;
+        }
 
-      ctx.graphs.push(currentGraph);
+        if (type === 'runtime') {
+          ctx.remote.push(nodeId);
+        } else {
+          ctx.graphs.push(currentGraph);
+        }
+      }
     }
 
     ctx.state = ctx.remote.length ? 'loading' : 'ok';
     out.send(ctx);
 
-    return callback();
+    callback();
   });
 };

@@ -1,27 +1,30 @@
 const noflo = require('noflo');
 const { getGraphType, getComponentType, getRemoteNodes } = require('../src/runtime');
 
-const sendGraphs = function(client, graphs, currentGraphs) {
+const sendGraphs = (client, graphs, currentGraphs) => {
   const compatible = graphs.filter(g => getGraphType(g) === client.definition.type);
-  return Promise.all(compatible.map(function(g) {
-    const main = g === currentGraphs[0] ? true : false;
+  return Promise.all(compatible.map((g) => {
+    const main = g === currentGraphs[0];
     return client.protocol.graph.send(g, main);
   }));
 };
 
-const sendComponents = function(client, components, namespace) {
-  const compatible = components.filter(function(c) { let needle;
-  return (needle = getComponentType(c), [null, client.definition.type].includes(needle)); });
+const sendComponents = (client, components, namespace) => {
+  const compatible = components.filter(c => [
+    null,
+    client.definition.type,
+  ].includes(getComponentType(c)));
   return Promise.all(compatible.map(c => client.protocol.component.source({
     name: c.name,
     language: c.language,
     library: namespace || client.definition.namespace,
-    code: c.code
-  }) ));
+    code: c.code,
+  })));
 };
 
 // Scope iframe runtimes to project
-const ensureIframe = function(client, project) {
+const ensureIframe = (c, project) => {
+  const client = c;
   client.definition.querySelector = `iframe[data-runtime='${client.definition.id}'][data-project='${project.id}']`;
   let iframe = document.body.querySelector(client.definition.querySelector);
   if (!iframe) {
@@ -45,37 +48,36 @@ const ensureIframe = function(client, project) {
   // We were connected to another iframe
   // Disconnect and set new
   return client.disconnect()
-    .then(function() {
+    .then(() => {
       client.transport.iframe = iframe;
       return Promise.resolve();
     });
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('in',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.inPorts.add('client',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('out',
-    {datatype: 'object'});
+    { datatype: 'object' });
   c.outPorts.add('error',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
-  return c.process(function(input, output) {
+  return c.process((input, output) => {
     if (!input.hasData('in', 'client')) { return; }
-    const [route, client] = Array.from(input.getData('in', 'client'));
+    const [route, client] = input.getData('in', 'client');
 
     if (route.remote != null ? route.remote.length : undefined) {
       // We need to fetch components from runtime, send "loading"
       route.state = 'loading';
     }
     // Send initial state
-    output.send({
-      out: route});
+    output.send({ out: route });
 
-    return Promise.resolve()
-      .then(function() {
+    Promise.resolve()
+      .then(() => {
         if (client.definition.protocol !== 'iframe') {
           return Promise.resolve();
         }
@@ -84,7 +86,7 @@ exports.getComponent = function() {
       .then(() => client.connect())
       .then(() => sendComponents(client, route.project.components, route.project.namespace))
       .then(() => sendGraphs(client, route.project.graphs, route.graphs))
-      .then(function() {
+      .then(() => {
         if (!(route.graphs != null ? route.graphs.length : undefined)) {
           return Promise.resolve();
         }
@@ -95,12 +97,11 @@ exports.getComponent = function() {
         return Promise.resolve();
       })
       .then(() => getRemoteNodes(client, route))
-      .then(function() {
+      .then(() => {
         if (route.state !== 'loading') { return Promise.resolve(); }
         // We fetched things from runtime, update state
         route.state = 'ok';
-        return output.send({
-          out: route});
+        return output.send({ out: route });
       })
       .then((() => output.done()), err => output.done(err));
   });

@@ -2,63 +2,66 @@ const noflo = require('noflo');
 
 // @runtime noflo-browser
 
-const getGraphs = function() {
-  const graphIds = localStorage.getItem('noflo-ui-graphs');
-  const graphs = [];
-  if (!graphIds) { return graphs; }
-  const ids = graphIds.split(',');
-  for (let id of Array.from(ids)) {
-    const graph = getGraph(id);
-    if (!graph) { continue; }
-    graphs.push(graph);
-  }
-  return graphs;
-};
-
-var getGraph = function(id) {
+const getGraph = (id) => {
   const json = localStorage.getItem(id);
-  if (!json) { return; }
+  if (!json) { return null; }
   const graph = JSON.parse(json);
   graph.id = id;
   graph.project = '';
   return graph;
 };
 
-exports.getComponent = function() {
-  const c = new noflo.Component;
+const getGraphs = () => {
+  const graphIds = localStorage.getItem('noflo-ui-graphs');
+  const graphs = [];
+  if (!graphIds) { return graphs; }
+  graphIds.split(',').forEach((id) => {
+    const graph = getGraph(id);
+    if (!graph) { return; }
+    graphs.push(graph);
+  });
+  return graphs;
+};
+
+exports.getComponent = () => {
+  const c = new noflo.Component();
   c.inPorts.add('graphstore',
-    {datatype: 'object'});
+    { datatype: 'object' });
 
-
-  return c.process(function(input, output) {
+  return c.process((input, output) => {
     if (!input.hasData('graphstore')) { return; }
     const store = input.getData('graphstore');
 
     // Don't use localStorage in Chrome App
     if ((typeof chrome !== 'undefined') && chrome.storage) {
-      return output.done();
+      output.done();
+      return;
     }
 
     try {
-      localStorage;
+      localStorage.getItem('noflo');
     } catch (e) {
       // No localStorage support, skip
-      return output.done();
+      output.done();
+      return;
     }
 
     const graphs = getGraphs();
-    if (graphs.length === 0) { return output.done(); }
+    if (graphs.length === 0) {
+      output.done();
+      return;
+    }
     let succeeded = 0;
-    const success = function() {
-      succeeded++;
+    const success = () => {
+      succeeded += 1;
       if (succeeded !== graphs.length) { return; }
       // TODO: Remove from localStorage?
       // localStorage.removeItem 'noflo-ui-graphs'
-      return output.done();
+      output.done();
     };
-    return graphs.forEach(function(graph) {
+    graphs.forEach((graph) => {
       const req = store.put(graph);
-      return req.onsuccess = success;
+      req.onsuccess = success;
     });
   });
 };

@@ -1,3 +1,5 @@
+/* eslint class-methods-use-this: "off" */
+/* eslint no-console: "off" */
 const debugOpenBracket = data => console.log(`< ${data.id} ${data.group}`);
 const debugData = data => console.log(`DATA ${data.id}`);
 const debugCloseBracket = data => console.log(`> ${data.id} ${data.group}`);
@@ -24,15 +26,16 @@ class Middleware {
 
   before(callback) {
     const loader = new noflo.ComponentLoader(this.baseDir);
-    return loader.load(this.component, (err, instance) => {
-      if (err) { return callback(err); }
+    loader.load(this.component, (err, instance) => {
+      if (err) {
+        callback(err);
+        return;
+      }
       if (instance.isReady()) {
         this.attachAndStart(instance, callback);
         return;
       }
-      return instance.once('ready', () => {
-        return this.attachAndStart(instance, callback);
-      });
+      instance.once('ready', () => this.attachAndStart(instance, callback));
     });
   }
 
@@ -42,12 +45,12 @@ class Middleware {
     this.passAction.port = 'pass';
     this.newAction = noflo.internalSocket.createSocket();
     this.instance.outPorts.new.attach(this.newAction);
-    return this.newAction.port = 'new';
+    this.newAction.port = 'new';
   }
 
   afterEach() {
     this.instance.outPorts.pass.detach(this.passAction);
-    return this.instance.outPorts.new.detach(this.newAction);
+    this.instance.outPorts.new.detach(this.newAction);
   }
 
   enableDebug() {
@@ -55,35 +58,36 @@ class Middleware {
     this.instance.network.on('begingroup', debugOpenBracket);
     this.instance.network.on('data', debugData);
     this.instance.network.on('endgroup', debugCloseBracket);
-    return this.debug = true;
+    this.debug = true;
   }
+
   disableDebug() {
     if (!this.debug) { return; }
     this.instance.network.removeListener('begingroup', debugOpenBracket);
     this.instance.network.removeListener('data', debugData);
     this.instance.network.removeListener('endgroup', debugCloseBracket);
-    return this.debug = false;
+    this.debug = false;
   }
 
   send(action, payload, state) {
-    return this.actionIn.send({
+    this.actionIn.send({
       action,
       payload,
-      state
+      state,
     });
   }
 
   receive(socket, expected, check, done) {
     const received = [];
-    var onData = function(data) {
+    const onData = (data) => {
       received.push(`${data.action} DATA`);
       check(data.payload);
       if (!(received.length >= expected.length)) { return; }
       socket.removeListener('data', onData);
       chai.expect(received).to.eql(expected);
-      return done();
+      done();
     };
-    return socket.on('data', onData);
+    socket.on('data', onData);
   }
 
   receiveAction(action, check, done) {
@@ -93,10 +97,8 @@ class Middleware {
   }
 
   receivePass(action, payload, done) {
-    const check = data =>
-      // Strict equality check for passed packets
-      chai.expect(data).to.equal(payload)
-    ;
+    // Strict equality check for passed packets
+    const check = data => chai.expect(data).to.equal(payload);
     const expected = [];
     expected.push(`${action} DATA`);
     return this.receive(this.passAction, expected, check, done);
@@ -119,7 +121,7 @@ window.nofloWaitFor = (condition, callback, maxTries = 100) => {
     if (tries > maxTries) {
       callback(new Error('Maximum tries exceeded'));
     }
-    tries++;
+    tries += 1;
     setTimeout(checkCondition, 100);
   };
   checkCondition();
