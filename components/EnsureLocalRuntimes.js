@@ -39,7 +39,8 @@ exports.getComponent = () => {
     async: true,
     forwardGroups: false,
   },
-  (runtimes = [], groups, out, callback) => {
+  (rts, groups, out, callback) => {
+    const runtimes = rts || [];
     const iframeRuntime = ensureOneIframeRuntime(runtimes);
     if (iframeRuntime) {
       // Added iframe runtime
