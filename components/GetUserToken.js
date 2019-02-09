@@ -26,7 +26,7 @@ exports.getComponent = () => {
   },
   (data, groups, out, callback) => {
     let token;
-    if (data.state || data.state.user || data.state.user['github-token']) {
+    if (data.state && data.state.user && data.state.user['github-token']) {
       token = data.state.user['github-token'];
     }
 
