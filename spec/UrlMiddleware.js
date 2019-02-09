@@ -1,7 +1,7 @@
 describe('URL Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;
-  before((done) => {
+  before(function (done) {
     this.timeout(4000);
     mw = window.middleware('ui/UrlMiddleware', baseDir);
     return mw.before(done);
