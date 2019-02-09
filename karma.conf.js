@@ -1,6 +1,6 @@
 const externals = require('./externals.conf.js');
 
-process.env.CHROME_BIN = require('puppeteer').executablePath();
+process.env.CHROME_BIN = require('puppeteer').executablePath(); // eslint-disable-line
 
 module.exports = function (config) {
   const files = [

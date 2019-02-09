@@ -26,44 +26,42 @@ exports.sortBySeen = (ain, bin) => {
 
 exports.addToList = (list, entity, sort = exports.sortByName) => {
   let found = false;
-  for (const existing of Array.from(list)) {
+  list.forEach((existing) => {
     if (existing === entity) {
       // Entity is already in list as-is, skip
       return;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined) || existing.id || existing.name;
-    const entityId = (entity.properties != null ? entity.properties.id : undefined) || entity.id || entity.name;
+    const existingId = (existing.properties != null ? existing.properties.id : undefined)
+      || existing.id || existing.name;
+    const entityId = (entity.properties != null ? entity.properties.id : undefined)
+      || entity.id || entity.name;
     if (existingId === entityId) {
       // id match, replace
-      for (const key in entity) {
-        if (!entity.hasOwnProperty(key)) { continue; }
-        existing[key] = entity[key];
-      }
+      const exists = existing;
+      Object.keys(entity).forEach((key) => {
+        exists[key] = entity[key];
+      });
       found = true;
-      break;
     }
-  }
+  });
   if (found) { return; }
   list.push(entity);
   // Sort the list on desired criteria
   list.sort(sort);
 };
 
-exports.removeFromList = function (list, entity) {
-  let index = null;
-  for (let idx = 0; idx < list.length; idx++) {
-    const existing = list[idx];
+exports.removeFromList = (list, entity) => {
+  const matched = list.find((existing) => {
     if (existing === entity) {
-      index = idx;
-      continue;
+      return true;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined) || existing.id;
+    const existingId = (existing.properties != null ? existing.properties.id : undefined)
+      || existing.id;
     const entityId = (entity.properties != null ? entity.properties.id : undefined) || entity.id;
-    if (existingId === entityId) {
-      index = idx;
-      continue;
-    }
+    return (existingId === entityId);
+  });
+  if (!matched) {
+    return;
   }
-  if (index === null) { return; }
-  list.splice(index, 1);
+  list.splice(list.indexOf(matched), 1);
 };

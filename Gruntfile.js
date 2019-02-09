@@ -1,4 +1,6 @@
+const path = require('path');
 const webpackConfig = require('./webpack.config.js');
+const externalsConfig = require('./externals.conf.js');
 
 module.exports = function () {
   // Project configuration
@@ -173,14 +175,14 @@ module.exports = function () {
         options: {
           replacements: [{
             pattern: '<!-- $NOFLO_APP_ANALYTICS -->',
-            replacement: process.env.NOFLO_APP_ANALYTICS || '<script> \
-(function(i,s,o,g,r,a,m){i[\'GoogleAnalyticsObject\']=r;i[r]=i[r]||function(){ \
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), \
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) \
-})(window,document,\'script\',\'//www.google-analytics.com/analytics.js\',\'ga\'); \
-ga(\'create\', \'UA-75936-14\', \'noflojs.org\'); \
-ga(\'send\', \'pageview\'); \
-</script>',
+            replacement: process.env.NOFLO_APP_ANALYTICS || `<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-75936-14', 'noflojs.org');
+ga('send', 'pageview');
+</script>`,
           },
           ],
         },
@@ -201,7 +203,7 @@ ga(\'send\', \'pageview\'); \
           dest: '/',
         },
         {
-          src: require('./externals.conf.js'),
+          src: externalsConfig,
           expand: true,
           dest: '/',
         },
@@ -288,7 +290,6 @@ ga(\'send\', \'pageview\'); \
   // Our local tasks
   const grunt = this;
   this.registerMultiTask('sharedstylecomponent', 'Combine CSS files into a Polymer shared style element', function () {
-    const path = require('path');
     const sources = this.data.map(file => grunt.file.read(file));
     const template = `\
 <!-- Generated from <%= files %> -->
