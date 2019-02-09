@@ -1,6 +1,5 @@
-
 describe('DispatchAction component', () => {
-  const noflo = require('noflo');
+  const noflo = require('noflo'); // eslint-disable-line
   const baseDir = 'noflo-ui';
   let c = null;
   let routes = null;
@@ -23,9 +22,9 @@ describe('DispatchAction component', () => {
   beforeEach(() => {
     pass = noflo.internalSocket.createSocket();
     c.outPorts.pass.attach(pass);
-    return (() => {
+    (() => {
       const result = [];
-      for (let idx = 0; idx <= 5; idx++) {
+      for (let idx = 0; idx <= 5; idx += 1) {
         const handler = noflo.internalSocket.createSocket();
         c.outPorts.handle.attach(handler, idx);
         result.push(handle.push(handler));
@@ -36,15 +35,14 @@ describe('DispatchAction component', () => {
   afterEach(() => {
     c.outPorts.pass.detach(pass);
     pass = null;
-    for (let idx = 0; idx < handle.length; idx++) {
+    for (let idx = 0; idx < handle.length; idx += 1) {
       const handler = handle[idx];
       c.outPorts.handle.detach(handler, idx);
     }
-    return handle = [];
+    handle = [];
   });
 
   const sendAction = function (action, payload, state) {
-    const parts = action.split(':');
     return ins.send({
       action,
       payload,
@@ -75,7 +73,7 @@ describe('DispatchAction component', () => {
         hello: 'world',
       },
     };
-    pass.on('data', data => done(new Error('Received pass')));
+    pass.on('data', () => done(new Error('Received pass')));
     handle[1].on('data', (data) => {
       chai.expect(data.payload).to.equal(expected.payload);
       chai.expect(data.state).to.equal(expected.state);
@@ -92,7 +90,7 @@ describe('DispatchAction component', () => {
           hello: 'world',
         },
       };
-      pass.on('data', data => done(new Error('Received pass')));
+      pass.on('data', () => done(new Error('Received pass')));
       handle[1].on('data', (data) => {
         chai.expect(data.payload).to.equal(expected.payload);
         chai.expect(data.state).to.equal(expected.state);
@@ -108,7 +106,7 @@ describe('DispatchAction component', () => {
           hello: 'world',
         },
       };
-      pass.on('data', data => done(new Error('Received pass')));
+      pass.on('data', () => done(new Error('Received pass')));
       handle[1].on('data', (data) => {
         chai.expect(data.payload).to.equal(expected.payload);
         chai.expect(data.state).to.equal(expected.state);

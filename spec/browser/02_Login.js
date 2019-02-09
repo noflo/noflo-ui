@@ -1,22 +1,20 @@
-describe('Login', function() {
-  let win = null;
+describe('Login', () => {
   let doc = null;
   let ui = null;
   let main = null;
   let mainaccount = null;
-  before(function() {
+  before(() => {
     const iframe = document.getElementById('app');
-    win = iframe.contentWindow;
     doc = iframe.contentDocument;
   });
   it('should find noflo-ui', () => {
-    ui = doc.querySelector('noflo-ui')
+    ui = doc.querySelector('noflo-ui');
   });
-  it('should find noflo-main', function() {
+  it('should find noflo-main', () => {
     main = ui.shadowRoot.querySelector('noflo-main');
     chai.expect(main).to.exist;
   });
-  it('should find noflo-main', function() {
+  it('should find noflo-main', () => {
     mainaccount = main.shadowRoot.querySelector('#mainaccount');
     chai.expect(mainaccount).to.exist;
   });

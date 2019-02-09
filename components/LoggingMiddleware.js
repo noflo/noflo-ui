@@ -1,3 +1,4 @@
+/* eslint no-console: "off" */
 const noflo = require('noflo');
 const debugAction = require('debug')('noflo-ui:action');
 const debugActionFull = require('debug')('noflo-ui:action:full');

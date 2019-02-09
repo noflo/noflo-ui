@@ -82,7 +82,8 @@ describe('Runtime Middleware', () => {
           return;
         }
         if (tries >= maxTries) {
-          return done(new Error('No iframe found'));
+          done(new Error('No iframe found'));
+          return;
         }
         setTimeout(waitForIframe, 100);
       };
@@ -100,7 +101,7 @@ describe('Runtime Middleware', () => {
       waitForIframe();
     }).timeout(4000);
     it('should have added properties from runtime to the definition', (done) => {
-      nofloWaitFor(() => {
+      window.nofloWaitFor(() => {
         if (runtimeDefinition.version) {
           return true;
         }
@@ -162,7 +163,7 @@ describe('Runtime Middleware', () => {
           port: 'in',
         },
       }];
-      iframe.contentWindow.handleProtocolMessage((msg, send) => {
+      iframe.contentWindow.handleProtocolMessage((msg) => {
         chai.expect(msg.protocol).to.equal('network');
         chai.expect(msg.command).to.equal('edges');
         chai.expect(msg.payload.graph).to.equal('foo');

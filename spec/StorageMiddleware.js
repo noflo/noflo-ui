@@ -21,7 +21,7 @@ describe('Storage Middleware', () => {
     const payload = null;
     const check = function (data) {
       chai.expect(data.name).to.equal('noflo-ui');
-      return idb = data;
+      idb = data;
     };
     mw.receiveAction('storage:db', check, done);
     return mw.send(action, payload, {});
@@ -37,7 +37,7 @@ describe('Storage Middleware', () => {
     };
     const check = function (data) {
       chai.expect(data).to.eql(comp);
-      return component = data;
+      component = data;
     };
     mw.receiveAction('storage:stored:component', check, done);
     return mw.send(action, comp,

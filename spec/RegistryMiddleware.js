@@ -17,7 +17,9 @@ describe('Registry Middleware', () => {
   }));
   describe('receiving a flowhub:runtimes:fetch action', () => {
     let mock = null;
-    beforeEach(() => mock = sinon.fakeServer.create());
+    beforeEach(() => {
+      mock = sinon.fakeServer.create();
+    });
     afterEach(() => mock.restore());
     it('should send storage:save:runtime for each runtime on server', (done) => {
       const action = 'flowhub:runtimes:fetch';
@@ -34,7 +36,8 @@ describe('Registry Middleware', () => {
         { id: 'foo' },
         { id: 'bar' },
       ];
-      const check = function (data) {
+      const check = function (d) {
+        const data = d;
         const rt = runtimes.shift();
         delete data.seen;
         delete data.registered;
