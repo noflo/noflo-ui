@@ -124,7 +124,7 @@ exports.getComponent = () => {
     const newAction = `${ctx.route}:${ctx.subroute}`;
     delete ctx.subroute;
     out.route.send({
-      newAction,
+      action: newAction,
       payload: ctx,
     });
     callback();
