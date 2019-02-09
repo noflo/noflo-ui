@@ -14,7 +14,7 @@ exports.getComponent = () => {
 
   return c.process((input, output) => {
     if (!input.hasData('in', 'client')) { return; }
-    const [route, client] = Array.from(input.getData('in', 'client'));
+    const [route, client] = input.getData('in', 'client');
 
     const state = {
       state: 'ok',

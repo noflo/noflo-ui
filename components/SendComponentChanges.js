@@ -15,7 +15,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   return c.process((input, output) => {
     if (!input.hasData('in', 'project', 'client')) { return; }
-    const [data, project, client] = Array.from(input.getData('in', 'project', 'client'));
+    const [data, project, client] = input.getData('in', 'project', 'client');
 
     const { component } = data;
     const componentType = getComponentType(component);

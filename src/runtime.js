@@ -44,7 +44,7 @@ exports.getRemoteNodes = (client, r) => {
     if (!(graph.nodes != null ? graph.nodes.length : undefined)) {
       return Promise.reject(new Error(`Node ${graph.name} doesn't contain child nodes`));
     }
-    const [matchedNode] = Array.from(graph.nodes.filter(n => n.id === node));
+    const [matchedNode] = graph.nodes.filter(n => n.id === node);
     if (!matchedNode) {
       return Promise.reject(new Error(`Node ${node} not found in graph ${graph.name || graph.properties.id}`));
     }

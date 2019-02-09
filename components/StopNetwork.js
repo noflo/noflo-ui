@@ -12,7 +12,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   return c.process((input, output) => {
     if (!input.hasData('in', 'client')) { return; }
-    const [data, client] = Array.from(input.getData('in', 'client'));
+    const [data, client] = input.getData('in', 'client');
 
     const graphId = data.graph.name || data.graph.properties.id;
     client.connect()

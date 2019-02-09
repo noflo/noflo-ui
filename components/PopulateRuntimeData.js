@@ -4,7 +4,7 @@ const uuid = require('uuid');
 const decodeRuntime = (data) => {
   const runtime = {};
   data.split('&').forEach((param) => {
-    const [key, value] = Array.from(param.split('='));
+    const [key, value] = param.split('=');
     runtime[key] = value;
   });
   if (runtime.protocol && runtime.address) {
@@ -39,7 +39,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   return c.process((input, output) => {
     if (!input.hasData('in', 'runtimes')) { return; }
-    const [route, runtimes] = Array.from(input.getData('in', 'runtimes'));
+    const [route, runtimes] = input.getData('in', 'runtimes');
     if (!route.runtime) {
       output.done(new Error('No runtime defined'));
       return;

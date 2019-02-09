@@ -34,7 +34,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   return c.process((input, output) => {
     if (!input.hasData('state', 'updated')) { return; }
-    const [state, updated] = Array.from(input.getData('state', 'updated'));
+    const [state, updated] = input.getData('state', 'updated');
     const props = {};
     Object.keys(updated).forEach((key) => {
       switch (key) {

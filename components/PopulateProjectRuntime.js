@@ -28,7 +28,7 @@ const findCurrentRuntime = (context, runtimes) => {
   // TODO: Switch runtime if no longer in list of compatible
   if (context.runtime) { return context.runtime; }
   if (!runtimes.length) { return null; }
-  const [matched] = Array.from(runtimes.filter((rt) => {
+  const [matched] = runtimes.filter((rt) => {
     if (context.project && rt.project) {
       if (isDefaultRuntime(rt)) { return true; }
       if (rt.project !== context.project.id) { return false; }
@@ -36,7 +36,7 @@ const findCurrentRuntime = (context, runtimes) => {
     if (context.project && (rt.project === context.project.id)) { return true; }
     if (rt.protocol === 'iframe') { return true; }
     return false;
-  }));
+  });
   return matched || null;
 };
 

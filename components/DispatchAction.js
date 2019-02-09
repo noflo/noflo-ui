@@ -38,7 +38,7 @@ exports.getComponent = () => {
   c.forwardBrackets = {};
   return c.process((input, output) => {
     if (!input.hasData('routes', 'in')) { return; }
-    const [routes, data] = Array.from(input.getData('routes', 'in'));
+    const [routes, data] = input.getData('routes', 'in');
     if (!(data != null ? data.action : undefined)) {
       output.sendDone({ pass: data });
       return;
