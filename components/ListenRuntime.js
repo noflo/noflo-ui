@@ -154,7 +154,7 @@ exports.getComponent = () => {
     if (!input.hasData('in')) { return; }
     const client = input.getData('in');
 
-    const { id } = client.definition;
+    let { id } = client.definition;
 
     // Unsubscribe previous instance
     unsubscribe(id);
@@ -163,6 +163,12 @@ exports.getComponent = () => {
       context,
       client,
       onConnected() {
+        if (client.definition.id !== id) {
+          c.clients[client.definition.id] = c.clients[id];
+          delete c.clients[id];
+          id = client.definition.id; // eslint-disable-line
+        }
+
         if (!client.canSend('component', 'list')) { return; }
         setTimeout(() => client.protocol.component.list()
           .then((components => output.send({
