@@ -25,6 +25,7 @@ Internal changes:
 * Switched `npm start` from unmaintained simple-server to http-server
 * Switched build to more efficient webpack 4.x
 * Now loading external JavaScript/CSS dependencies from `browser/vendor` directory instead of `node_modules`
+* Converted the noflo-ui codebase from CoffeeScript to ES6 with AirBnB rules
 
 ## 0.26.1 (2018 January 11)
 
