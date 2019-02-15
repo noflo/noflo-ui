@@ -11,7 +11,7 @@ const getNamespace = (client) => {
 };
 
 const isComponentInProject = (namespace, componentName) => {
-  if (componentName.indexOf('/') === -1) { return true; }
+  if (componentName.indexOf('/') === -1 && componentName !== 'Graph') { return true; }
   const [library] = componentName.split('/');
   return library === namespace;
 };
@@ -79,7 +79,7 @@ exports.getComponent = () => {
     // Start with the data we already have
     const graphs = data.graphs ? data.graphs.slice(0) : [];
     let components = [];
-    if (data.payload.component) { components.push(data.payload.component); }
+    if (data.component) { components.push(data.component); }
 
     // Add components and graphs from library
     fetchFromLibrary(project.namespace, client)
