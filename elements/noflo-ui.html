@@ -601,7 +601,7 @@
         this.emitEvent('project:fromruntime', {
           graphs: this.ctx.graphs,
           component: this.ctx.component,
-          runtime: this.ctx.runtime
+          runtime: this.ctx.runtime.definition,
         });
       },
       openProject: function (project) {

@@ -25,7 +25,7 @@ const ensureInstance = (def, c, output) => {
       clients[clientId] = client;
 
       if (!client.isConnected()) {
-      // Since we're not connected, the ID may change once we do
+        // Since we're not connected, the ID may change once we do
         client.once('connected', () => {
           if (client.definition.id === clientId) { return; }
           delete clients[clientId];

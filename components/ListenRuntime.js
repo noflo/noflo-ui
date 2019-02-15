@@ -154,15 +154,28 @@ exports.getComponent = () => {
     if (!input.hasData('in')) { return; }
     const client = input.getData('in');
 
-    const { id } = client.definition;
+    let { id } = client.definition;
 
     // Unsubscribe previous instance
     unsubscribe(id);
+
+    const updateId = () => {
+      if (client.definition.id === id) {
+        return;
+      }
+      c.clients[client.definition.id] = c.clients[id];
+      delete c.clients[id];
+      id = client.definition.id; // eslint-disable-line
+      output.send({
+        runtimeupdate: client.definition,
+      });
+    };
 
     c.clients[id] = {
       context,
       client,
       onConnected() {
+        updateId();
         if (!client.canSend('component', 'list')) { return; }
         setTimeout(() => client.protocol.component.list()
           .then((components => output.send({
@@ -170,16 +183,35 @@ exports.getComponent = () => {
               components,
               runtime: id,
             },
+          })))
+          .then(() => {
+            if (!client.definition.graph) {
+              return Promise.resolve();
+            }
+            // Get the initial network status
+            return client.protocol.network.getstatus({
+              graph: client.definition.graph,
+            })
+              .then((status) => {
+                if (!status.running) {
+                  return;
+                }
+                output.send({
+                  started: {
+                    status,
+                    runtime: id,
+                  },
+                });
+              });
           })
-          ), ((e) => {
+          .catch((e) => {
             const err = e;
             err.runtime = id;
             output.send({ error: err });
-          })),
-
-        1);
+          }), 1);
       },
       onStatus(status) {
+        updateId();
         client.definition.seen = new Date();
         output.send({
           status: {
