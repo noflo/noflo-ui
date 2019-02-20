@@ -92,3 +92,38 @@ exports.isDefaultRuntime = (runtime) => {
   }
   return false;
 };
+
+// Scope iframe runtimes to project
+exports.ensureIframe = (c, project) => {
+  const client = c;
+  if (client.definition.protocol !== 'iframe') {
+    return Promise.resolve();
+  }
+  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}'][data-project='${project.id}']`;
+  let iframe = document.body.querySelector(client.definition.querySelector);
+  if (!iframe) {
+    // No iframe for this runtime/project combination yet, create
+    iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+    iframe.setAttribute('data-runtime', client.definition.id);
+    iframe.setAttribute('data-project', project.id);
+    iframe.className = 'iframe-runtime';
+    document.body.appendChild(iframe);
+  }
+  if (!client.transport.iframe) {
+    // Client has not been connected yet
+    client.transport.iframe = iframe;
+    return Promise.resolve();
+  }
+  if (client.transport.iframe === iframe) {
+    // We were already connected to this one
+    return Promise.resolve();
+  }
+  // We were connected to another iframe
+  // Disconnect and set new
+  return client.disconnect()
+    .then(() => {
+      client.transport.iframe = iframe;
+      return Promise.resolve();
+    });
+};

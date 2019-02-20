@@ -1,5 +1,10 @@
 const noflo = require('noflo');
-const { getGraphType, getComponentType, getRemoteNodes } = require('../src/runtime');
+const {
+  getGraphType,
+  getComponentType,
+  getRemoteNodes,
+  ensureIframe,
+} = require('../src/runtime');
 
 const sendGraphs = (client, graphs, currentGraphs) => {
   const compatible = graphs.filter(g => getGraphType(g) === client.definition.type);
@@ -20,38 +25,6 @@ const sendComponents = (client, components, namespace) => {
     library: namespace || client.definition.namespace,
     code: c.code,
   })));
-};
-
-// Scope iframe runtimes to project
-const ensureIframe = (c, project) => {
-  const client = c;
-  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}'][data-project='${project.id}']`;
-  let iframe = document.body.querySelector(client.definition.querySelector);
-  if (!iframe) {
-    // No iframe for this runtime/project combination yet, create
-    iframe = document.createElement('iframe');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
-    iframe.setAttribute('data-runtime', client.definition.id);
-    iframe.setAttribute('data-project', project.id);
-    iframe.className = 'iframe-runtime';
-    document.body.appendChild(iframe);
-  }
-  if (!client.transport.iframe) {
-    // Client has not been connected yet
-    client.transport.iframe = iframe;
-    return Promise.resolve();
-  }
-  if (client.transport.iframe === iframe) {
-    // We were already connected to this one
-    return Promise.resolve();
-  }
-  // We were connected to another iframe
-  // Disconnect and set new
-  return client.disconnect()
-    .then(() => {
-      client.transport.iframe = iframe;
-      return Promise.resolve();
-    });
 };
 
 exports.getComponent = () => {
@@ -77,12 +50,7 @@ exports.getComponent = () => {
     output.send({ out: route });
 
     Promise.resolve()
-      .then(() => {
-        if (client.definition.protocol !== 'iframe') {
-          return Promise.resolve();
-        }
-        return ensureIframe(client, route.project);
-      })
+      .then(() => ensureIframe(client, route.project))
       .then(() => client.connect())
       .then(() => sendComponents(client, route.project.components, route.project.namespace))
       .then(() => sendGraphs(client, route.project.graphs, route.graphs))
