@@ -1,3 +1,5 @@
+const sinon = require('sinon');
+
 describe('User Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;

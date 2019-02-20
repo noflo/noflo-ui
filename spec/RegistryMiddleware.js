@@ -1,3 +1,5 @@
+const sinon = require('sinon');
+
 describe('Registry Middleware', () => {
   let mw = null;
   const baseDir = 'noflo-ui';
