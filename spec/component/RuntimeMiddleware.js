@@ -1,3 +1,5 @@
+const { middleware, waitFor } = require('../utils/middleware');
+
 describe('Runtime Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;
@@ -11,7 +13,7 @@ describe('Runtime Middleware', () => {
   };
   before(function (done) {
     this.timeout(4000);
-    mw = window.middleware('ui/RuntimeMiddleware', baseDir);
+    mw = middleware('ui/RuntimeMiddleware', baseDir);
     mw.before(done);
   });
   beforeEach(() => mw.beforeEach());
@@ -101,7 +103,7 @@ describe('Runtime Middleware', () => {
       waitForIframe();
     }).timeout(4000);
     it('should have added properties from runtime to the definition', (done) => {
-      window.nofloWaitFor(() => {
+      waitFor(() => {
         if (runtimeDefinition.version) {
           return true;
         }

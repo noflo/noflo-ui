@@ -111,7 +111,7 @@ class Middleware {
   }
 }
 
-window.nofloWaitFor = (condition, callback, maxTries = 100) => {
+exports.waitFor = (condition, callback, maxTries = 100) => {
   let tries = 0;
   const checkCondition = () => {
     if (condition()) {
@@ -127,4 +127,4 @@ window.nofloWaitFor = (condition, callback, maxTries = 100) => {
   checkCondition();
 };
 
-window.middleware = (component, baseDir) => new Middleware(component, baseDir);
+exports.middleware = (component, baseDir) => new Middleware(component, baseDir);

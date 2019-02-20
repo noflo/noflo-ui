@@ -1,3 +1,5 @@
+const { middleware } = require('../utils/middleware');
+
 describe('Storage Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;
@@ -5,7 +7,7 @@ describe('Storage Middleware', () => {
   let component = null;
   before(function (done) {
     this.timeout(4000);
-    mw = window.middleware('ui/StorageMiddleware', baseDir);
+    mw = middleware('ui/StorageMiddleware', baseDir);
     mw.before(done);
   });
   beforeEach(() => mw.beforeEach());

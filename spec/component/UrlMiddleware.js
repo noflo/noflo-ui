@@ -1,9 +1,11 @@
+const { middleware } = require('../utils/middleware');
+
 describe('URL Middleware', () => {
   const baseDir = 'noflo-ui';
   let mw = null;
   before(function (done) {
     this.timeout(4000);
-    mw = window.middleware('ui/UrlMiddleware', baseDir);
+    mw = middleware('ui/UrlMiddleware', baseDir);
     mw.before(done);
   });
   beforeEach(() => mw.beforeEach());
