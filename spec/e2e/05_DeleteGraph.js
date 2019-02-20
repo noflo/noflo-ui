@@ -1,3 +1,5 @@
+const syn = require('syn');
+
 describe('Deleting a graph', () => {
   let win = null;
   let doc = null;

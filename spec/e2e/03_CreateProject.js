@@ -1,3 +1,5 @@
+const syn = require('syn');
+
 describe('Project Creation Dialog', () => {
   let win = null;
   let doc = null;

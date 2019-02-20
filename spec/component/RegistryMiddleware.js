@@ -1,9 +1,12 @@
+const sinon = require('sinon');
+const { middleware } = require('../utils/middleware');
+
 describe('Registry Middleware', () => {
   let mw = null;
   const baseDir = 'noflo-ui';
   before(function (done) {
     this.timeout(4000);
-    mw = window.middleware('ui/RegistryMiddleware', baseDir);
+    mw = middleware('ui/RegistryMiddleware', baseDir);
     mw.before(done);
   });
   beforeEach(() => mw.beforeEach());

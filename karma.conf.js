@@ -1,18 +1,15 @@
 const externals = require('./externals.conf.js');
+const webpackConfig = require('./webpack.config.js');
 
 process.env.CHROME_BIN = require('puppeteer').executablePath(); // eslint-disable-line
 
 module.exports = function (config) {
   const files = [
-    'node_modules/sinon/pkg/sinon.js',
     'node_modules/react/dist/react-with-addons.min.js',
     'node_modules/react-dom/dist/react-dom.min.js',
     'node_modules/hammerjs/hammer.min.js',
-    'node_modules/syn/dist/global/syn.js',
     'browser/noflo-ui.min.js',
-    'spec/utils/*.js',
-    'spec/*.js',
-    'spec/browser/*.js',
+    'spec/index.js',
     {
       pattern: 'spec/mockruntime.html',
       included: false,
@@ -46,7 +43,16 @@ module.exports = function (config) {
     frameworks: ['mocha', 'chai'],
     files,
     exclude: [],
-    preprocessors: {},
+    preprocessors: {
+      'spec/index.js': ['webpack'],
+    },
+    webpack: {
+      module: {
+        rules: webpackConfig.module.rules,
+      },
+      node: webpackConfig.node,
+      mode: 'development',
+    },
     reporters: ['mocha'],
     port: 9876,
     colors: true,

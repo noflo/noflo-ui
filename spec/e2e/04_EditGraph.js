@@ -1,3 +1,5 @@
+const syn = require('syn');
+
 describe('Editing a graph', () => {
   let doc = null;
   let ui = null;

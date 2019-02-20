@@ -16,8 +16,6 @@
     "document": false,
     "localStorage": false,
     "window": false,
-    "chai": false,
-    "sinon": false,
-    "syn": false
+    "chai": false
   }
 }

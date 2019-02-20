@@ -3,7 +3,7 @@
 const debugOpenBracket = data => console.log(`< ${data.id} ${data.group}`);
 const debugData = data => console.log(`DATA ${data.id}`);
 const debugCloseBracket = data => console.log(`> ${data.id} ${data.group}`);
-const noflo = require('noflo');
+const noflo = window.require('noflo');
 
 class Middleware {
   constructor(component, baseDir) {
@@ -111,7 +111,7 @@ class Middleware {
   }
 }
 
-window.nofloWaitFor = (condition, callback, maxTries = 100) => {
+exports.waitFor = (condition, callback, maxTries = 100) => {
   let tries = 0;
   const checkCondition = () => {
     if (condition()) {
@@ -127,4 +127,4 @@ window.nofloWaitFor = (condition, callback, maxTries = 100) => {
   checkCondition();
 };
 
-window.middleware = (component, baseDir) => new Middleware(component, baseDir);
+exports.middleware = (component, baseDir) => new Middleware(component, baseDir);
