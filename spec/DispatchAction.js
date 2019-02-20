@@ -9,14 +9,17 @@ describe('DispatchAction component', () => {
 
   before((done) => {
     const loader = new noflo.ComponentLoader(baseDir);
-    return loader.load('ui/DispatchAction', (err, instance) => {
-      if (err) { return done(err); }
+    loader.load('ui/DispatchAction', (err, instance) => {
+      if (err) {
+        done(err);
+        return;
+      }
       c = instance;
       routes = noflo.internalSocket.createSocket();
       c.inPorts.routes.attach(routes);
       ins = noflo.internalSocket.createSocket();
       c.inPorts.in.attach(ins);
-      return done();
+      done();
     });
   });
   beforeEach(() => {
@@ -29,7 +32,7 @@ describe('DispatchAction component', () => {
         c.outPorts.handle.attach(handler, idx);
         result.push(handle.push(handler));
       }
-      return result;
+      result;
     })();
   });
   afterEach(() => {
@@ -43,44 +46,48 @@ describe('DispatchAction component', () => {
   });
 
   const sendAction = function (action, payload, state) {
-    return ins.send({
+    ins.send({
       action,
       payload,
       state,
     });
   };
 
-  describe('receiving a unhandled action', () => it('should send it to PASS', (done) => {
-    routes.send('foo:bar');
-    const expected = {
-      payload: [1, 2],
-      state: {
-        hello: 'world',
-      },
-    };
-    pass.on('data', (data) => {
-      chai.expect(data.payload).to.equal(expected.payload);
-      chai.expect(data.state).to.equal(expected.state);
-      return done();
+  describe('receiving a unhandled action', () => {
+    it('should send it to PASS', (done) => {
+      routes.send('foo:bar');
+      const expected = {
+        payload: [1, 2],
+        state: {
+          hello: 'world',
+        },
+      };
+      pass.on('data', (data) => {
+        chai.expect(data.payload).to.equal(expected.payload);
+        chai.expect(data.state).to.equal(expected.state);
+        done();
+      });
+      sendAction('foo:baz', expected.payload, expected.state);
     });
-    return sendAction('foo:baz', expected.payload, expected.state);
-  }));
-  describe('receiving a handled action', () => it('should send it to correct handler', (done) => {
-    routes.send('foo:bar,foo:baz');
-    const expected = {
-      payload: [1, 2],
-      state: {
-        hello: 'world',
-      },
-    };
-    pass.on('data', () => done(new Error('Received pass')));
-    handle[1].on('data', (data) => {
-      chai.expect(data.payload).to.equal(expected.payload);
-      chai.expect(data.state).to.equal(expected.state);
-      return done();
+  });
+  describe('receiving a handled action', () => {
+    it('should send it to correct handler', (done) => {
+      routes.send('foo:bar,foo:baz');
+      const expected = {
+        payload: [1, 2],
+        state: {
+          hello: 'world',
+        },
+      };
+      pass.on('data', () => done(new Error('Received pass')));
+      handle[1].on('data', (data) => {
+        chai.expect(data.payload).to.equal(expected.payload);
+        chai.expect(data.state).to.equal(expected.state);
+        done();
+      });
+      sendAction('foo:baz', expected.payload, expected.state);
     });
-    return sendAction('foo:baz', expected.payload, expected.state);
-  }));
+  });
   describe('receiving a handled wildcard action', () => {
     it('should send it to correct handler', (done) => {
       routes.send('bar:baz,foo:*');
@@ -94,9 +101,9 @@ describe('DispatchAction component', () => {
       handle[1].on('data', (data) => {
         chai.expect(data.payload).to.equal(expected.payload);
         chai.expect(data.state).to.equal(expected.state);
-        return done();
+        done();
       });
-      return sendAction('foo:baz', expected.payload, expected.state);
+      sendAction('foo:baz', expected.payload, expected.state);
     });
     it.skip('should send it to correct handler also with deeper action paths', (done) => {
       routes.send('bar:baz,foo:*');
@@ -110,9 +117,9 @@ describe('DispatchAction component', () => {
       handle[1].on('data', (data) => {
         chai.expect(data.payload).to.equal(expected.payload);
         chai.expect(data.state).to.equal(expected.state);
-        return done();
+        done();
       });
-      return sendAction('foo:baz:hello:world', expected.payload, expected.state);
+      sendAction('foo:baz:hello:world', expected.payload, expected.state);
     });
   });
 });

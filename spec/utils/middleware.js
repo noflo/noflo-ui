@@ -21,7 +21,7 @@ class Middleware {
     this.actionIn = noflo.internalSocket.createSocket();
     this.instance.inPorts.in.attach(this.actionIn);
     this.actionIn.port = 'in';
-    return this.instance.start(callback);
+    this.instance.start(callback);
   }
 
   before(callback) {
@@ -93,7 +93,7 @@ class Middleware {
   receiveAction(action, check, done) {
     const expected = [];
     expected.push(`${action} DATA`);
-    return this.receive(this.newAction, expected, check, done);
+    this.receive(this.newAction, expected, check, done);
   }
 
   receivePass(action, payload, done) {
@@ -101,13 +101,13 @@ class Middleware {
     const check = data => chai.expect(data).to.equal(payload);
     const expected = [];
     expected.push(`${action} DATA`);
-    return this.receive(this.passAction, expected, check, done);
+    this.receive(this.passAction, expected, check, done);
   }
 
   receivePassCheck(action, check, done) {
     const expected = [];
     expected.push(`${action} DATA`);
-    return this.receive(this.passAction, expected, check, done);
+    this.receive(this.passAction, expected, check, done);
   }
 }
 

@@ -4,17 +4,19 @@ describe('GitHub Middleware', () => {
   before(function (done) {
     this.timeout(4000);
     mw = window.middleware('ui/GithubMiddleware', baseDir);
-    return mw.before(done);
+    mw.before(done);
   });
   beforeEach(() => mw.beforeEach());
   afterEach(() => mw.afterEach());
 
-  describe('receiving a runtime:connect action', () => it('should pass it out as-is', (done) => {
-    const action = 'runtime:connect';
-    const payload = { hello: 'world' };
-    mw.receivePass(action, payload, done);
-    return mw.send(action, payload);
-  }));
+  describe('receiving a runtime:connect action', () => {
+    it('should pass it out as-is', (done) => {
+      const action = 'runtime:connect';
+      const payload = { hello: 'world' };
+      mw.receivePass(action, payload, done);
+      mw.send(action, payload);
+    });
+  });
   describe('receiving a github:gist action', () => {
     let mock = null;
     beforeEach(() => {
@@ -42,7 +44,7 @@ describe('GitHub Middleware', () => {
         'bar_main',
       ]);
       mw.receiveAction('application:sethash', check, done);
-      return mw.send(action, payload, state);
+      mw.send(action, payload, state);
     });
     it('should send save events for new gist', (done) => {
       const action = 'github:gist';
@@ -85,7 +87,7 @@ describe('GitHub Middleware', () => {
           chai.expect(data.graphs.length).to.equal(1);
           data.graphs.pop();
         }
-        return chai.expect(data).to.eql(expected.shift());
+        chai.expect(data).to.eql(expected.shift());
       };
       mw.receiveAction('github:loading', () => {}, (err) => {
         if (err) {
