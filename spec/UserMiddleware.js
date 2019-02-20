@@ -4,17 +4,19 @@ describe('User Middleware', () => {
   before(function (done) {
     this.timeout(4000);
     mw = window.middleware('ui/UserMiddleware', baseDir);
-    return mw.before(done);
+    mw.before(done);
   });
   beforeEach(() => mw.beforeEach());
   afterEach(() => mw.afterEach());
 
-  describe('receiving a runtime:connect action', () => it('should pass it out as-is', (done) => {
-    const action = 'runtime:connect';
-    const payload = { hello: 'world' };
-    mw.receivePass(action, payload, done);
-    return mw.send(action, payload);
-  }));
+  describe('receiving a runtime:connect action', () => {
+    it('should pass it out as-is', (done) => {
+      const action = 'runtime:connect';
+      const payload = { hello: 'world' };
+      mw.receivePass(action, payload, done);
+      mw.send(action, payload);
+    });
+  });
   describe('receiving application:url action', () => {
     let originalUser = null;
     let originalToken = null;
@@ -28,13 +30,15 @@ describe('User Middleware', () => {
       if (originalUser) { localStorage.setItem('flowhub-user', originalUser); }
       if (originalToken) { localStorage.setItem('flowhub-token', originalToken); }
     });
-    describe('without logged in user', () => it('should send out an empty user:info', (done) => {
-      const action = 'application:url';
-      const payload = 'https://app.flowhub.io';
-      const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
-      mw.receiveAction('user:info', check, done);
-      return mw.send(action, payload);
-    }));
+    describe('without logged in user', () => {
+      it('should send out an empty user:info', (done) => {
+        const action = 'application:url';
+        const payload = 'https://app.flowhub.io';
+        const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
+        mw.receiveAction('user:info', check, done);
+        mw.send(action, payload);
+      });
+    });
     describe('with logged in user', () => {
       const userData = {
         id: 1,
@@ -57,7 +61,9 @@ describe('User Middleware', () => {
         localStorage.setItem('flowhub-token', userToken);
         mock = sinon.fakeServer.create();
       });
-      afterEach(() => mock.restore());
+      afterEach(() => {
+        mock.restore();
+      });
       it('should pass it out as-is and send user:info when token is valid', (done) => {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
@@ -94,7 +100,7 @@ describe('User Middleware', () => {
           { 'Content-Type': 'application/json' },
           JSON.stringify(newUserData),
         ]);
-        return (mock.respond)();
+        (mock.respond)();
       });
       it('should send user:logout when token is invalid', (done) => {
         const action = 'application:url';
@@ -119,13 +125,15 @@ describe('User Middleware', () => {
         (mock.respond)();
       });
     });
-    describe('without user and with OAuth error in URL', () => it('should send the error out', (done) => {
-      const action = 'application:url';
-      const payload = 'https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match';
-      const check = data => chai.expect(data.message).to.contain('The redirect_uri MUST match');
-      mw.receiveAction('user:error', check, done);
-      return mw.send(action, payload);
-    }));
+    describe('without user and with OAuth error in URL', () => {
+      it('should send the error out', (done) => {
+        const action = 'application:url';
+        const payload = 'https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match';
+        const check = data => chai.expect(data.message).to.contain('The redirect_uri MUST match');
+        mw.receiveAction('user:error', check, done);
+        mw.send(action, payload);
+      });
+    });
     describe('without user and with invalid grant code in URL', () => {
       let mock = null;
       let code = null;
@@ -133,7 +141,9 @@ describe('User Middleware', () => {
         code = 'dj0328hf3d9cq3c';
         mock = sinon.fakeServer.create();
       });
-      afterEach(() => mock.restore());
+      afterEach(() => {
+        mock.restore();
+      });
       it('should perform a token exchange and fail', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
@@ -145,7 +155,7 @@ describe('User Middleware', () => {
           { 'Content-Type': 'application/json' },
           JSON.stringify({ error: 'bad_code_foo' }),
         ]);
-        return (mock.respond)();
+        (mock.respond)();
       });
     });
     describe('without user and with grant code in URL yielding invalid API token', () => {
@@ -157,7 +167,9 @@ describe('User Middleware', () => {
         token = 'niov2o3wnnv4ioufuhh92348fh42q9';
         mock = sinon.fakeServer.create();
       });
-      afterEach(() => mock.restore());
+      afterEach(() => {
+        mock.restore();
+      });
       it('should perform a token exchange and fail at user fetch', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
@@ -195,7 +207,9 @@ describe('User Middleware', () => {
         };
         mock = sinon.fakeServer.create();
       });
-      afterEach(() => mock.restore());
+      afterEach(() => {
+        mock.restore();
+      });
       it('should perform a token exchange and update user information without state in URL', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}`;
@@ -224,29 +238,33 @@ describe('User Middleware', () => {
           { 'Content-Type': 'application/json' },
           JSON.stringify(userData)));
         (mock.respond)();
-        return (mock.respond)();
+        (mock.respond)();
       });
     });
   });
   describe('receiving user:login action', () => {
-    describe('with app URL not matching redirect configuration', () => it('should send user:error', (done) => {
-      const action = 'user:login';
-      const check = data => chai.expect(data.message).to.contain('http://localhost:9999');
-      mw.receiveAction('user:error', check, done);
-      return mw.send(action, {
-        url: 'http://example.net',
-        scopes: [],
+    describe('with app URL not matching redirect configuration', () => {
+      it('should send user:error', (done) => {
+        const action = 'user:login';
+        const check = data => chai.expect(data.message).to.contain('http://localhost:9999');
+        mw.receiveAction('user:error', check, done);
+        mw.send(action, {
+          url: 'http://example.net',
+          scopes: [],
+        });
       });
-    }));
-    describe('with app URL matching redirect configuration', () => it('should send application:redirect action with redirect URL', (done) => {
-      const action = 'user:login';
-      const check = data => chai.expect(data).to.contain('https://github.com/login/oauth/authorize');
-      mw.receiveAction('application:redirect', check, done);
-      return mw.send(action, {
-        url: 'http://localhost:9999',
-        scopes: [],
+    });
+    describe('with app URL matching redirect configuration', () => {
+      it('should send application:redirect action with redirect URL', (done) => {
+        const action = 'user:login';
+        const check = data => chai.expect(data).to.contain('https://github.com/login/oauth/authorize');
+        mw.receiveAction('application:redirect', check, done);
+        mw.send(action, {
+          url: 'http://localhost:9999',
+          scopes: [],
+        });
       });
-    }));
+    });
   });
   describe('receiving user:logout action', () => {
     let originalUser = null;
@@ -266,11 +284,11 @@ describe('User Middleware', () => {
       const action = 'user:logout';
       const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
       mw.receiveAction('user:info', check, done);
-      return mw.send(action, true);
+      mw.send(action, true);
     });
     it('should have cleared user data', (done) => {
       chai.expect(localStorage.getItem('flowhub-user')).to.equal(null);
-      return done();
+      done();
     });
   });
 });
