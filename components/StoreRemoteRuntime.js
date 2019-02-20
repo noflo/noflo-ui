@@ -35,7 +35,7 @@ exports.getComponent = () => {
       return;
     }
 
-    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
+    if (!c.params || !c.params.user || !c.params.user['flowhub-token'] || !c.params.user['flowhub-user'] || !c.params.user['flowhub-user'].id) {
       // User not logged in, persist runtime only locally
       out.send(data);
       callback();
@@ -43,10 +43,13 @@ exports.getComponent = () => {
     }
 
     const d = data;
-    d.user = c.params.user['flowhub-user'] != null ? c.params.user['flowhub-user'].id : undefined;
-    if (!data.secret) { d.secret = null; }
-    const rt = new registry.Runtime(data,
-      { host: '$NOFLO_REGISTRY_SERVICE' });
+    d.user = c.params.user['flowhub-user'].id;
+    if (!data.secret) {
+      d.secret = null;
+    }
+    const rt = new registry.Runtime(data, {
+      host: '$NOFLO_REGISTRY_SERVICE',
+    });
     rt.register(c.params.user['flowhub-token'], (err) => {
       if (err) {
         callback(err);
