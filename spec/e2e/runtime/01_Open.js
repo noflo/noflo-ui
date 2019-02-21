@@ -108,5 +108,32 @@ describe('Opening a Runtime', () => {
         done();
       });
     });
+    it('should request a list of components', (done) => {
+      rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+        chai.expect(msg.protocol).to.equal('component');
+        chai.expect(msg.command).to.equal('list');
+        send('component', 'component', {
+          name: 'core/Repeat',
+          description: 'Repeat a packet',
+          icon: 'forward',
+          subgraph: false,
+          inPorts: [
+            {
+              addressable: false,
+              id: 'in',
+              type: 'all',
+            },
+          ],
+          outPorts: [
+            {
+              addressable: false,
+              id: 'in',
+              type: 'all',
+            },
+          ],
+        });
+        done();
+      });
+    });
   });
 });
