@@ -132,6 +132,21 @@ describe('Opening a Runtime', () => {
             },
           ],
         });
+        send('component', 'componentsready', 1);
+        done();
+      });
+    });
+    it('should request the network status', (done) => {
+      rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+        chai.expect(msg.protocol).to.equal('network');
+        chai.expect(msg.command).to.equal('getstatus');
+        chai.expect(msg.payload.graph).to.equal('foo/bar');
+        send({
+          graph: 'foo/bar',
+          label: 'running',
+          running: true,
+          started: true,
+        });
         done();
       });
     });
