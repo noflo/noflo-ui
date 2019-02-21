@@ -19,7 +19,7 @@ describe('Opening a Runtime', () => {
     'component:getsource',
   ];
 
-  before(() => {
+  before('get the app iframe', () => {
     iframe = document.getElementById('app');
   });
 
@@ -141,7 +141,7 @@ describe('Opening a Runtime', () => {
         chai.expect(msg.protocol).to.equal('network');
         chai.expect(msg.command).to.equal('getstatus');
         chai.expect(msg.payload.graph).to.equal('foo/bar');
-        send({
+        send('network', 'status', {
           graph: 'foo/bar',
           label: 'running',
           running: true,
