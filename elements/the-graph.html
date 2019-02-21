@@ -544,6 +544,17 @@
           this.set('library' + ('.' + definition.name), def);
           // So changes are rendered
           this.debounceLibraryRefesh();
+          // Register namespaced components also without their alias
+          if (definition.name.indexOf('/') !== -1) {
+            var parts = definition.name.split('/');
+            if (!parts[1]) {
+              return;
+            }
+            var cloned = JSON.parse(JSON.stringify(definition));
+            cloned.name = parts[1];
+            cloned.unnamespaced = true;
+            this.registerComponent(cloned, false);
+          }
         },
         getComponent: function (name) {
           return this.library[name];
