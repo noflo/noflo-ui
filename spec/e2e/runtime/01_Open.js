@@ -1,5 +1,6 @@
 const qs = require('querystring');
-const { waitForElement } = require('../../utils/ui');
+const syn = require('syn');
+const { waitFor, waitForElement } = require('../../utils/ui');
 
 describe('Opening a Runtime', () => {
   let iframe;
@@ -158,5 +159,61 @@ describe('Opening a Runtime', () => {
         const titles = nodesArray.map(n => n.getAttribute('name'));
         chai.expect(titles).to.eql(['one', 'two']);
       }));
+    it('should show the graph as "running"', () => waitFor(1000) // Seems this one takes sometimes a while to update
+      .then(() => waitForElement('noflo-ui noflo-runtime #runcontrol h2'))
+      .then((runtimestatus) => {
+        chai.expect(runtimestatus.innerHTML).to.equal('running');
+      }));
+    describe('packet inspection', () => {
+      let edgeInspector;
+      before('send a packet', () => {
+        rtIframe.contentWindow.sendProtocolMessage('network', 'data', {
+          data: 'packet one',
+          graph: 'foo/bar',
+          id: 'one() OUT -> IN two()',
+          src: {
+            node: 'one',
+            port: 'out',
+          },
+          tgt: {
+            node: 'two',
+            port: 'in',
+          },
+          type: 'data',
+        });
+      });
+      it('should show edge inspector when clicking on a wire', () => waitForElement('noflo-ui the-graph-editor the-graph g.edges g.edge')
+        .then((edge) => {
+          syn.click(edge);
+        })
+        .then(() => waitForElement('noflo-ui noflo-context section#contextsection the-card noflo-edge-inspector'))
+        .then((element) => {
+          edgeInspector = element;
+        }));
+      it('should send the selected edges to the runtime', (done) => {
+        rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+          chai.expect(msg.protocol).to.equal('network');
+          chai.expect(msg.command).to.equal('edges');
+          chai.expect(msg.payload.graph).to.equal('foo/bar');
+          chai.expect(msg.payload.edges.length).to.equal(1);
+          send('network', 'edges', {
+            ...msg.payload.edges,
+            ...msg.payload.graph,
+          });
+          done();
+        });
+      });
+      it('should show the edge title in the inspector', () => waitForElement('header h1', edgeInspector)
+        .then((edgeTitle) => {
+          chai.expect(edgeTitle.innerText).to.contain('one OUT');
+          chai.expect(edgeTitle.innerText).to.contain('IN two');
+        }));
+      it('should show the first packet in the inspector', () => waitForElement('ul#events', edgeInspector)
+        .then((eventsList) => {
+          const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
+          const packetValues = packets.map(p => p.innerText);
+          chai.expect(packetValues).to.eql(['packet one']);
+        }));
+    });
   });
 });
