@@ -150,5 +150,13 @@ describe('Opening a Runtime', () => {
         done();
       });
     });
+    it('should have opened the graph editor', () => waitForElement('noflo-ui the-graph-editor the-graph g.graph')
+      .then(graphNode => graphNode.querySelectorAll('g.nodes g.node'))
+      .then((nodes) => {
+        const nodesArray = Array.prototype.slice.call(nodes);
+        chai.expect(nodesArray.length).to.equal(2);
+        const titles = nodesArray.map(n => n.getAttribute('name'));
+        chai.expect(titles).to.eql(['one', 'two']);
+      }));
   });
 });
