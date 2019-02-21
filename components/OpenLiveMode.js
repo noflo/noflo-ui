@@ -1,5 +1,6 @@
 const noflo = require('noflo');
-const { loadGraph } = require('../src/runtime');
+const uuid = require('uuid/v4');
+const { loadGraph, ensureIframe } = require('../src/runtime');
 
 exports.getComponent = () => {
   const c = new noflo.Component();
@@ -25,7 +26,11 @@ exports.getComponent = () => {
       runtime: route.runtime,
     };
 
-    client.connect()
+    Promise.resolve()
+      .then(() => ensureIframe(client, {
+        id: uuid(),
+      }))
+      .then(() => client.connect())
       .then((def) => {
         // Start by loading main graph
         if (!def.graph) {
@@ -38,7 +43,10 @@ exports.getComponent = () => {
           name: def.graph,
         });
       })
-      .then(loadGraph)
+      .then(source => loadGraph({
+        ...source,
+        name: client.definition.graph, // Ensure graph gets the name runtime supplied
+      }))
       .then(graphInstance => state.graphs.push(graphInstance))
       .then(() => output.send({ out: state }))
       .then((() => output.done()), err => output.done(err));
