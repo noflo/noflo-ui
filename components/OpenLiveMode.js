@@ -43,7 +43,10 @@ exports.getComponent = () => {
           name: def.graph,
         });
       })
-      .then(loadGraph)
+      .then(source => loadGraph({
+        ...source,
+        name: client.definition.graph, // Ensure graph gets the name runtime supplied
+      }))
       .then(graphInstance => state.graphs.push(graphInstance))
       .then(() => output.send({ out: state }))
       .then((() => output.done()), err => output.done(err));

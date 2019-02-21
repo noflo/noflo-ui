@@ -79,8 +79,10 @@ exports.loadGraph = source => new Promise(((resolve, reject) => {
       return reject(new Error(`Unknown format ${source.language} for graph ${source.name}`));
   }
   method = source.language === 'json' ? 'loadJSON' : 'loadFBP';
-  return fbpGraph.graph[method](source.code, (err, instance) => {
+  return fbpGraph.graph[method](source.code, (err, i) => {
     if (err) { return reject(err); }
+    const instance = i;
+    instance.name = source.name;
     return resolve(instance);
   });
 }));
