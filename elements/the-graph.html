@@ -257,7 +257,9 @@
             this.fire('changed', graph);
             // Send and clear graph change log
             if (this.graphChanges.length) {
-              this.fire('graphChanges', this.graphChanges);
+              if (!this.readonly) {
+                this.fire('graphChanges', this.graphChanges);
+              }
               this.graphChanges = [];
             }
           }.bind(this);
