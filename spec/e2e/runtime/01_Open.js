@@ -19,6 +19,51 @@ describe('Opening a Runtime', () => {
     'protocol:runtime',
     'component:getsource',
   ];
+  const graphDefinition = {
+    caseSensitive: false,
+    properties: {
+      name: 'main',
+      environment: {
+        type: runtimeDefinition.type,
+      },
+    },
+    inports: {},
+    outports: {},
+    groups: [],
+    processes: {
+      one: {
+        component: 'core/Repeat',
+        metadata: {
+          label: 'One',
+          x: 324,
+          y: 108,
+        },
+      },
+      two: {
+        component: 'core/Repeat',
+        metadata: {
+          label: 'Two',
+          x: 504,
+          y: 108,
+        },
+      },
+    },
+    connections: [
+      {
+        src: {
+          process: 'one',
+          port: 'out',
+        },
+        tgt: {
+          process: 'two',
+          port: 'in',
+        },
+        metadata: {
+          route: 4,
+        },
+      },
+    ],
+  };
 
   before('get the app iframe', () => {
     iframe = document.getElementById('app');
@@ -57,51 +102,7 @@ describe('Opening a Runtime', () => {
         chai.expect(msg.command).to.equal('getsource');
         chai.expect(msg.payload.name).to.equal('foo/bar');
         send('component', 'source', {
-          code: JSON.stringify({
-            caseSensitive: false,
-            properties: {
-              name: 'main',
-              environment: {
-                type: runtimeDefinition.type,
-              },
-            },
-            inports: {},
-            outports: {},
-            groups: [],
-            processes: {
-              one: {
-                component: 'core/Repeat',
-                metadata: {
-                  label: 'One',
-                  x: 324,
-                  y: 108,
-                },
-              },
-              two: {
-                component: 'core/Repeat',
-                metadata: {
-                  label: 'Two',
-                  x: 504,
-                  y: 108,
-                },
-              },
-            },
-            connections: [
-              {
-                src: {
-                  process: 'one',
-                  port: 'out',
-                },
-                tgt: {
-                  process: 'two',
-                  port: 'in',
-                },
-                metadata: {
-                  route: 4,
-                },
-              },
-            ],
-          }),
+          code: JSON.stringify(graphDefinition),
           language: 'json',
           library: 'foo',
           name: 'bar',
@@ -144,7 +145,6 @@ describe('Opening a Runtime', () => {
         chai.expect(msg.payload.graph).to.equal('foo/bar');
         send('network', 'status', {
           graph: 'foo/bar',
-          label: 'running',
           running: true,
           started: true,
         });
@@ -183,7 +183,6 @@ describe('Opening a Runtime', () => {
             node: 'two',
             port: 'in',
           },
-          type: 'data',
         });
       });
       it('should show edge inspector when clicking on a wire', () => waitForElement('noflo-ui the-graph-editor the-graph g.edges g.edge')
@@ -201,8 +200,8 @@ describe('Opening a Runtime', () => {
           chai.expect(msg.payload.graph).to.equal('foo/bar');
           chai.expect(msg.payload.edges.length).to.equal(1);
           send('network', 'edges', {
-            ...msg.payload.edges,
-            ...msg.payload.graph,
+            edges: msg.payload.edges,
+            graph: msg.payload.graph,
           });
           done();
         });
