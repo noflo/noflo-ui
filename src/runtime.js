@@ -114,7 +114,7 @@ exports.ensureIframe = (c, project) => {
   if (client.definition.protocol !== 'iframe') {
     return Promise.resolve();
   }
-  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}'][data-project='${project.id}']`;
+  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}']`;
   let iframe = document.body.querySelector(client.definition.querySelector);
   if (!iframe) {
     // No iframe for this runtime/project combination yet, create
