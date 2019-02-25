@@ -2,8 +2,6 @@ const { querySelectorDeep } = require('query-selector-shadow-dom');
 
 exports.getDocument = () => document.getElementById('app').contentDocument;
 
-exports.querySelectorDeep = querySelectorDeep;
-
 exports.waitFor = seconds => new Promise((resolve) => {
   setTimeout(resolve, seconds);
 });

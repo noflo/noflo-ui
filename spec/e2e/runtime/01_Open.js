@@ -19,6 +19,51 @@ describe('Opening a Runtime', () => {
     'protocol:runtime',
     'component:getsource',
   ];
+  const graphDefinition = {
+    caseSensitive: false,
+    properties: {
+      name: 'main',
+      environment: {
+        type: runtimeDefinition.type,
+      },
+    },
+    inports: {},
+    outports: {},
+    groups: [],
+    processes: {
+      one: {
+        component: 'core/Repeat',
+        metadata: {
+          label: 'One',
+          x: 324,
+          y: 108,
+        },
+      },
+      two: {
+        component: 'core/Repeat',
+        metadata: {
+          label: 'Two',
+          x: 504,
+          y: 108,
+        },
+      },
+    },
+    connections: [
+      {
+        src: {
+          process: 'one',
+          port: 'out',
+        },
+        tgt: {
+          process: 'two',
+          port: 'in',
+        },
+        metadata: {
+          route: 4,
+        },
+      },
+    ],
+  };
 
   before('get the app iframe', () => {
     iframe = document.getElementById('app');
@@ -57,51 +102,7 @@ describe('Opening a Runtime', () => {
         chai.expect(msg.command).to.equal('getsource');
         chai.expect(msg.payload.name).to.equal('foo/bar');
         send('component', 'source', {
-          code: JSON.stringify({
-            caseSensitive: false,
-            properties: {
-              name: 'main',
-              environment: {
-                type: runtimeDefinition.type,
-              },
-            },
-            inports: {},
-            outports: {},
-            groups: [],
-            processes: {
-              one: {
-                component: 'core/Repeat',
-                metadata: {
-                  label: 'One',
-                  x: 324,
-                  y: 108,
-                },
-              },
-              two: {
-                component: 'core/Repeat',
-                metadata: {
-                  label: 'Two',
-                  x: 504,
-                  y: 108,
-                },
-              },
-            },
-            connections: [
-              {
-                src: {
-                  process: 'one',
-                  port: 'out',
-                },
-                tgt: {
-                  process: 'two',
-                  port: 'in',
-                },
-                metadata: {
-                  route: 4,
-                },
-              },
-            ],
-          }),
+          code: JSON.stringify(graphDefinition),
           language: 'json',
           library: 'foo',
           name: 'bar',
@@ -144,7 +145,6 @@ describe('Opening a Runtime', () => {
         chai.expect(msg.payload.graph).to.equal('foo/bar');
         send('network', 'status', {
           graph: 'foo/bar',
-          label: 'running',
           running: true,
           started: true,
         });
@@ -158,6 +158,10 @@ describe('Opening a Runtime', () => {
         chai.expect(nodesArray.length).to.equal(2);
         const titles = nodesArray.map(n => n.getAttribute('name'));
         chai.expect(titles).to.eql(['one', 'two']);
+      }));
+    it('should show the graph name in the search bar', () => waitForElement('noflo-ui noflo-search h1 span')
+      .then((searchTitle) => {
+        chai.expect(searchTitle.innerHTML).to.equal('foo/bar');
       }));
     it('should show the graph as "running"', () => waitFor(1000) // Seems this one takes sometimes a while to update
       .then(() => waitForElement('noflo-ui noflo-runtime #runcontrol h2'))
@@ -179,7 +183,6 @@ describe('Opening a Runtime', () => {
             node: 'two',
             port: 'in',
           },
-          type: 'data',
         });
       });
       it('should show edge inspector when clicking on a wire', () => waitForElement('noflo-ui the-graph-editor the-graph g.edges g.edge')
@@ -197,8 +200,8 @@ describe('Opening a Runtime', () => {
           chai.expect(msg.payload.graph).to.equal('foo/bar');
           chai.expect(msg.payload.edges.length).to.equal(1);
           send('network', 'edges', {
-            ...msg.payload.edges,
-            ...msg.payload.graph,
+            edges: msg.payload.edges,
+            graph: msg.payload.graph,
           });
           done();
         });
@@ -213,6 +216,72 @@ describe('Opening a Runtime', () => {
           const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
           const packetValues = packets.map(p => p.innerText);
           chai.expect(packetValues).to.eql(['packet one']);
+        }));
+      it('closing the edge inspector', () => waitForElement('noflo-ui the-graph-editor the-graph svg.app-svg')
+        .then((edge) => {
+          syn.click(edge);
+        }));
+      it('should send the selected edges to the runtime', (done) => {
+        rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+          chai.expect(msg.protocol).to.equal('network');
+          chai.expect(msg.command).to.equal('edges');
+          chai.expect(msg.payload.graph).to.equal('foo/bar');
+          chai.expect(msg.payload.edges).to.eql([]);
+          send('network', 'edges', {
+            edges: msg.payload.edges,
+            graph: msg.payload.graph,
+          });
+          done();
+        });
+      });
+    });
+    describe('opening a node', () => {
+      let nodeMenuOption;
+      it('should show a menu on right click on a node', () => waitForElement('noflo-ui the-graph-editor the-graph g.nodes g.node')
+        .then((node) => {
+          syn.rightClick(node);
+        })
+        .then(() => waitForElement('noflo-ui the-graph-editor the-graph g.context g.context-slice'))
+        .then((element) => {
+          nodeMenuOption = element;
+        }));
+      it('should contain a clickable "open" option', () => {
+        const elementText = nodeMenuOption.querySelector('text.context-arc-icon-label');
+        chai.expect(elementText.innerHTML).to.equal('open');
+        syn.click(nodeMenuOption);
+      });
+      it('should trigger the "loading" indicator', () => waitForElement('noflo-ui noflo-alert.show span')
+        .then((loader) => {
+          chai.expect(loader.innerText).to.equal('loading');
+        }));
+      it('should request source code for the component', (done) => {
+        rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+          chai.expect(msg.protocol).to.equal('component');
+          chai.expect(msg.command).to.equal('getsource');
+          chai.expect(msg.payload.name).to.equal('foo/bar');
+          send('component', 'source', {
+            code: JSON.stringify(graphDefinition),
+            language: 'json',
+            library: 'foo',
+            name: 'bar',
+          });
+          rtIframe.contentWindow.handleProtocolMessage((msg2, send2) => {
+            chai.expect(msg2.protocol).to.equal('component');
+            chai.expect(msg2.command).to.equal('getsource');
+            chai.expect(msg2.payload.name).to.equal('core/Repeat');
+            send2('component', 'source', {
+              code: 'hello, world',
+              language: 'javascript',
+              library: 'core',
+              name: 'Repeat',
+            });
+            done();
+          });
+        });
+      });
+      it('should show the source code in the editor', () => waitForElement('noflo-ui noflo-component-editor #code .CodeMirror-lines')
+        .then((element) => {
+          chai.expect(element.innerText).to.contain('hello, world');
         }));
     });
   });

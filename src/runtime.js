@@ -51,6 +51,19 @@ exports.getRemoteNodes = (client, r) => {
     return client.protocol.component.getsource({
       name: matchedNode.component,
     })
+      .catch((e) => {
+        if (matchedNode.component.indexOf('/') !== -1) {
+          // Already namespaced, pass failure through
+          return Promise.reject(e);
+        }
+        if (!client.definition.namespace) {
+          // No namespace defined, pass failure through
+          return Promise.reject(e);
+        }
+        return client.protocol.component.getsource({
+          name: `${client.definition.namespace}/${matchedNode.component}`,
+        });
+      })
       .then((source) => {
         if (!['json', 'fbp'].includes(source.language)) {
           route.component = source;
@@ -101,7 +114,7 @@ exports.ensureIframe = (c, project) => {
   if (client.definition.protocol !== 'iframe') {
     return Promise.resolve();
   }
-  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}'][data-project='${project.id}']`;
+  client.definition.querySelector = `iframe[data-runtime='${client.definition.id}']`;
   let iframe = document.body.querySelector(client.definition.querySelector);
   if (!iframe) {
     // No iframe for this runtime/project combination yet, create
