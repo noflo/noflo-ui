@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 const uuid = require('uuid/v4');
-const { loadGraph, ensureIframe } = require('../src/runtime');
+const { loadGraph, ensureIframe, getRemoteNodes } = require('../src/runtime');
 
 exports.getComponent = () => {
   const c = new noflo.Component();
@@ -20,7 +20,7 @@ exports.getComponent = () => {
     const state = {
       state: 'ok',
       graphs: [],
-      remote: [],
+      remote: route.nodes || [],
       project: {},
       component: null,
       runtime: route.runtime,
@@ -48,6 +48,7 @@ exports.getComponent = () => {
         name: client.definition.graph, // Ensure graph gets the name runtime supplied
       }))
       .then(graphInstance => state.graphs.push(graphInstance))
+      .then(() => getRemoteNodes(client, state))
       .then(() => output.send({ out: state }))
       .then((() => output.done()), err => output.done(err));
   });
