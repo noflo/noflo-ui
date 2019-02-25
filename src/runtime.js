@@ -51,6 +51,19 @@ exports.getRemoteNodes = (client, r) => {
     return client.protocol.component.getsource({
       name: matchedNode.component,
     })
+      .catch((e) => {
+        if (matchedNode.component.indexOf('/') !== -1) {
+          // Already namespaced, pass failure through
+          return Promise.reject(e);
+        }
+        if (!client.definition.namespace) {
+          // No namespace defined, pass failure through
+          return Promise.reject(e);
+        }
+        return client.protocol.component.getsource({
+          name: `${client.definition.namespace}/${matchedNode.component}`,
+        });
+      })
       .then((source) => {
         if (!['json', 'fbp'].includes(source.language)) {
           route.component = source;
