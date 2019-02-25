@@ -159,6 +159,10 @@ describe('Opening a Runtime', () => {
         const titles = nodesArray.map(n => n.getAttribute('name'));
         chai.expect(titles).to.eql(['one', 'two']);
       }));
+    it('should show the graph name in the search bar', () => waitForElement('noflo-ui noflo-search h1 span')
+      .then((searchTitle) => {
+        chai.expect(searchTitle.innerHTML).to.equal('foo/bar');
+      }));
     it('should show the graph as "running"', () => waitFor(1000) // Seems this one takes sometimes a while to update
       .then(() => waitForElement('noflo-ui noflo-runtime #runcontrol h2'))
       .then((runtimestatus) => {
@@ -214,6 +218,23 @@ describe('Opening a Runtime', () => {
           const packetValues = packets.map(p => p.innerText);
           chai.expect(packetValues).to.eql(['packet one']);
         }));
+      it('closing the edge inspector', () => waitForElement('noflo-ui the-graph-editor the-graph svg.app-svg')
+        .then((edge) => {
+          syn.click(edge);
+        }));
+      it('should send the selected edges to the runtime', (done) => {
+        rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+          chai.expect(msg.protocol).to.equal('network');
+          chai.expect(msg.command).to.equal('edges');
+          chai.expect(msg.payload.graph).to.equal('foo/bar');
+          chai.expect(msg.payload.edges).to.eql([]);
+          send('network', 'edges', {
+            ...msg.payload.edges,
+            ...msg.payload.graph,
+          });
+          done();
+        });
+      });
     });
   });
 });
