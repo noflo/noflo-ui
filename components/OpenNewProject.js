@@ -20,7 +20,7 @@ exports.getComponent = () => {
   (data, groups, out, callback) => {
     out.out.send(data.project);
 
-    if (data.in.state.project) {
+    if (data.in.state.project || data.project.runtime) {
       // We're already in project view, no need to open
       callback();
       return;
