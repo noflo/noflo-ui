@@ -54,7 +54,7 @@ exports.getComponent = () => {
           noflo.graph.loadJSON(file.content, (err, graph) => {
             graph.setProperties({
               project: project.id,
-              id: `${project.id}_${basename}`,
+              id: `${project.id}/${basename}`,
             });
             if (!project.main) { project.main = graph.properties.id; }
             if (!project.name) { project.name = graph.name; }
@@ -73,6 +73,7 @@ exports.getComponent = () => {
           name: basename,
           language: file.language,
           project: project.id,
+          id: `${project.id}/${basename}`,
           code: file.content,
           tests: '',
         };

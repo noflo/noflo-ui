@@ -166,6 +166,7 @@ exports.getComponent = () => {
             components.forEach((comp) => {
               const component = comp;
               component.project = state.project.id;
+              component.id = `${state.project.id}/${component.name}`;
               addToList(state.project.components, component);
             });
           });
