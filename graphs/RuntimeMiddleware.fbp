@@ -52,7 +52,7 @@ OpenLiveMode COMPONENT -> IN ComponentSaveAction
 OpenLiveMode RUNTIME -> IN RuntimeSaveAction
 OpenLiveMode ERROR -> IN RuntimeErrorAction
 
-unConnect runtime associated with project, if any
+# Connect runtime associated with project, if any
 'runtimes' -> KEYS GetProjectRuntimesState(ui/GetActionValues)
 Dispatch HANDLE[1] -> IN GetProjectRuntimesState
 GetProjectRuntimesState VALUES[0] -> RUNTIMES PopulateProjectRuntime(ui/PopulateProjectRuntime)
@@ -77,6 +77,7 @@ GetEdgeState OUT -> EDGES SendEdges
 SendEdges OUT -> IN ContextEdgesAction
 SendEdges ERROR -> IN RuntimeErrorAction
 
+# Handle legacy runtime to project action with a proper error
 Dispatch HANDLE[3] -> IN GetRuntimeToProjectValues(ui/GetActionValues)
 GetRuntimeToProjectValues OUT -> IN[3] GetClient
 GetClient OUT[3] -> IN RuntimeToProject(ui/RuntimeToProject)
