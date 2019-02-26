@@ -3,6 +3,7 @@ const uuid = require('uuid/v4');
 const url = require('url');
 const path = require('path');
 const { loadGraph, ensureIframe, getRemoteNodes } = require('../src/runtime');
+const { addToList } = require('../src/collections');
 
 const getNamespace = (client) => {
   if (!client.definition || !client.definition.namespace) {
@@ -132,8 +133,8 @@ exports.getComponent = () => {
           id: `${state.project.id}/${(graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name}`,
           project: state.project.id,
         });
-        state.graphs.push(graphInstance);
-        state.project.graphs.push(graphInstance);
+        addToList(state.graphs, graphInstance);
+        addToList(state.project.graphs, graphInstance);
         state.project.main = graphInstance.properties.id;
       })
       .then(() => fetchFromLibrary(state.project.namespace, client))
@@ -159,13 +160,13 @@ exports.getComponent = () => {
           })))
           .then((graphs) => {
             graphs.forEach((g) => {
-              state.project.graphs.push(g);
+              addToList(state.project.graphs, g);
             });
             const components = sources.filter(comp => comp.language !== 'json');
             components.forEach((comp) => {
               const component = comp;
               component.project = state.project.id;
-              state.project.components.push(component);
+              addToList(state.project.components, component);
             });
           });
       })
