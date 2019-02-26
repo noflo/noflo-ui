@@ -8,19 +8,34 @@ const decodeRuntime = (data) => {
     runtime[key] = value;
   });
   if (runtime.protocol && runtime.address) {
-    runtime.id = runtime.id || uuid.v4();
     return runtime;
   }
   return null;
 };
 
-const findRuntime = (id, runtimes) => {
-  if (!(runtimes != null ? runtimes.length : undefined)) { return null; }
-  const matching = runtimes.filter(rt => rt.id === id);
-  if (matching.length) {
-    return matching[0];
+const findRuntime = (newRuntime, runtimes) => {
+  if (!runtimes || !runtimes.length) {
+    return null;
   }
-  return null;
+  let runtime = newRuntime;
+  if (typeof newRuntime === 'string') {
+    runtime = {
+      id: newRuntime,
+    };
+  }
+  return runtimes.find((rt) => {
+    if (rt.id === runtime.id) {
+      // Direct UUID match
+      return true;
+    }
+    if (!runtime.id) {
+      // New runtime given without UUID
+      if (runtime.protocol === rt.protocol && runtime.address === rt.address) {
+        return true;
+      }
+    }
+    return false;
+  });
 };
 
 exports.getComponent = () => {
@@ -52,6 +67,12 @@ exports.getComponent = () => {
     const persistedRuntime = findRuntime(route.runtime, runtimes);
     if (!persistedRuntime) {
       // This is a new runtime definition, save
+      if (!route.runtime.id) {
+        // FIXME: We should really only do this once we've connected and we know
+        // if runtime provides UUID or not. Otherwise the UUID will change between
+        // first instantiation and first connection.
+        route.runtime.id = uuid();
+      }
       output.send({ new: route.runtime });
       output.send({ out: route });
       output.done();
