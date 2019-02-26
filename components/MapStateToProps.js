@@ -8,6 +8,7 @@ const populateRuntime = (s) => {
   }
   if (!state.runtimeStatuses) { state.runtimeStatuses = {}; }
   if (!state.runtimeExecutions) { state.runtimeExecutions = {}; }
+  if (!state.componentLibraries) { state.componentLibraries = {}; }
   const runtime = {
     definition: state.runtime,
     status: state.runtimeStatuses[state.runtime.id] || {},
@@ -41,6 +42,7 @@ exports.getComponent = () => {
         case 'runtime': {
           if (state.runtime != null ? state.runtime.id : undefined) {
             props.runtime = populateRuntime(state);
+            props.componentLibrary = state.componentLibraries[state.runtime.id] || [];
             return;
           }
           // Clear runtime informations from view when disconnected
