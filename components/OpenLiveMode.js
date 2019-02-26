@@ -2,7 +2,12 @@ const noflo = require('noflo');
 const uuid = require('uuid/v4');
 const url = require('url');
 const path = require('path');
-const { loadGraph, ensureIframe, getRemoteNodes } = require('../src/runtime');
+const {
+  loadGraph,
+  ensureIframe,
+  getRemoteNodes,
+  getSource,
+} = require('../src/runtime');
 const { addToList } = require('../src/collections');
 
 const getNamespace = (client) => {
@@ -25,10 +30,7 @@ const fetchFromLibrary = (namespace, client) => {
     .then(components => components
       .map(component => component.name)
       .filter(name => isComponentInProject(namespace, name)))
-    .then(components => Promise.all(components.map(name => client
-      .protocol.component.getsource({
-        name,
-      }))));
+    .then(components => Promise.all(components.map(name => getSource(client, name))));
 };
 
 const ensureProject = (client, projects) => {
@@ -120,9 +122,7 @@ exports.getComponent = () => {
         state.project = ensureProject(client, projects);
         updateProjectMetadata(client, state.project);
 
-        return client.protocol.component.getsource({
-          name: def.graph,
-        });
+        return getSource(client, def.graph);
       })
       .then(source => loadGraph({
         ...source,

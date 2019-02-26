@@ -38,6 +38,24 @@ exports.getComponentType = (component) => {
   return null;
 };
 
+exports.getSource = (client, name) => client
+  .protocol.component.getsource({
+    name,
+  })
+  .catch((e) => {
+    if (name.indexOf('/') !== -1) {
+      // Already namespaced, pass failure through
+      return Promise.reject(e);
+    }
+    if (!client.definition.namespace) {
+      // No namespace defined, pass failure through
+      return Promise.reject(e);
+    }
+    return client.protocol.component.getsource({
+      name: `${client.definition.namespace}/${name}`,
+    });
+  });
+
 exports.getRemoteNodes = (client, r) => {
   const route = r;
   return route.remote.reduce(((promise, node) => promise.then((graph) => {
@@ -48,22 +66,7 @@ exports.getRemoteNodes = (client, r) => {
     if (!matchedNode) {
       return Promise.reject(new Error(`Node ${node} not found in graph ${graph.name || graph.properties.id}`));
     }
-    return client.protocol.component.getsource({
-      name: matchedNode.component,
-    })
-      .catch((e) => {
-        if (matchedNode.component.indexOf('/') !== -1) {
-          // Already namespaced, pass failure through
-          return Promise.reject(e);
-        }
-        if (!client.definition.namespace) {
-          // No namespace defined, pass failure through
-          return Promise.reject(e);
-        }
-        return client.protocol.component.getsource({
-          name: `${client.definition.namespace}/${matchedNode.component}`,
-        });
-      })
+    return exports.getSource(client, matchedNode.component)
       .then((source) => {
         if (!['json', 'fbp'].includes(source.language)) {
           route.component = source;
