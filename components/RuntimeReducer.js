@@ -66,10 +66,7 @@ exports.getComponent = () => {
       case 'runtime:opened': {
         output.sendDone({
           context: {
-            state: 'ok',
-            graphs: data.payload.graphs,
-            component: data.payload.component,
-            runtime: data.payload.runtime,
+            ...data.payload,
           },
         });
         return;
