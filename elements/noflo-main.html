@@ -457,6 +457,13 @@
         if (!project) {
           return;
         }
+        if (project.runtime) {
+          this.fire('hash', [
+            'runtime',
+            project.runtime,
+          ]);
+          return;
+        }
         this.fire('openProject', project);
       },
       openRuntime: function (event) {
