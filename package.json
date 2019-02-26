@@ -21,7 +21,7 @@
     "codemirror": "^5.22.2",
     "debug": "^4.0.0",
     "fbp": "~1.7.0",
-    "fbp-client": "^0.3.2",
+    "fbp-client": "^0.4.0",
     "fbp-graph": "^0.3.2",
     "fbp-spec": "~0.6.0",
     "flowhub-registry": "^0.1.3",
