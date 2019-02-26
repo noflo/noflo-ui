@@ -134,7 +134,6 @@
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-project>
     <noflo-packets id="packets" edges="[[ctx.edges]]" nodes="[[ctx.nodes]]" currentgraph="[[ctx.graph]]" packets="[[ctx.packets]]" events="[[ctx.events]]"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
-    <button id="asproject" on-click="editAsProject">Edit as project</button>
   </template>
   <script>
     Polymer({
@@ -524,20 +523,17 @@
         if (this.ctx.graph || this.ctx.component) {
           this.set('$.main.open', false);
           if (!this.ctx.project) {
-            this.showEditAsProject(true);
             this.set('$.grapheditor.readonly', true);
             this.set('$.context.readonly', true);
             this.set('$.packets.readonly', true);
             this.set('$.search.readonly', true);
           } else {
-            this.showEditAsProject(false);
             this.set('$.grapheditor.readonly', false);
             this.set('$.context.readonly', false);
             this.set('$.packets.readonly', false);
             this.set('$.search.readonly', false);
           }
         } else {
-          this.showEditAsProject(false);
           this.set('$.main.open', true);
         }
       },
@@ -574,35 +570,6 @@
         window.setTimeout(function () {
           this.hideAlert();
         }.bind(this), 1300);
-      },
-      showEditAsProject: function (enable) {
-        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
-          // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
-          enable = false;
-        }
-        if (!enable) {
-          this.set('$.asproject.style.visibility', 'hidden');
-          this.set('$.asproject.style.opacity', 0);
-          return;
-        }
-        this.set('$.asproject.style.visibility', 'visible');
-        this.set('$.asproject.style.opacity', 1);
-      },
-      editAsProject: function () {
-        if (this.ctx.project) {
-          return;
-        }
-        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
-          return;
-        }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'editAsProject');
-        }
-        this.emitEvent('project:fromruntime', {
-          graphs: this.ctx.graphs,
-          component: this.ctx.component,
-          runtime: this.ctx.runtime.definition,
-        });
       },
       openProject: function (project) {
         var projects = require('noflo-ui/projects');
