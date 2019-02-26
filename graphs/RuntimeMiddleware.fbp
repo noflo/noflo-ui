@@ -33,21 +33,26 @@ Dispatch PASS -> IN Passed(core/Merge)
 'context:edges' -> ACTION ContextEdgesAction(ui/SetAction) OUT -> IN Passed
 
 # Open runtime in live mode
-'runtimes' -> KEYS GetRuntimesState(ui/GetActionValues)
+'runtimes,projects' -> KEYS GetRuntimesState(ui/GetActionValues)
 Dispatch HANDLE[0] -> IN GetRuntimesState
 GetRuntimesState VALUES[0] -> RUNTIMES PopulateRuntimeData(ui/PopulateRuntimeData)
 GetRuntimesState OUT -> IN PopulateRuntimeData
 PopulateRuntimeData OUT -> IN[0] GetClient
 PopulateRuntimeData OUT -> IN RuntimeOpeningAction
 PopulateRuntimeData NEW -> UPDATED GetClient
-PopulateRuntimeData NEW -> IN RuntimeSaveAction
 PopulateRuntimeData ERROR -> IN RuntimeErrorAction
 GetClient OUT[0] -> IN OpenLiveMode(ui/OpenLiveMode)
+GetRuntimesState VALUES[1] -> PROJECTS OpenLiveMode
 GetClient CLIENT[0] -> CLIENT OpenLiveMode
 OpenLiveMode OUT -> IN RuntimeOpenedAction
+# Create a project based on data on runtime side
+OpenLiveMode PROJECT -> IN ProjectSaveAction
+OpenLiveMode GRAPH -> IN GraphSaveAction
+OpenLiveMode COMPONENT -> IN ComponentSaveAction
+OpenLiveMode RUNTIME -> IN RuntimeSaveAction
 OpenLiveMode ERROR -> IN RuntimeErrorAction
 
-# Connect runtime associated with project, if any
+unConnect runtime associated with project, if any
 'runtimes' -> KEYS GetProjectRuntimesState(ui/GetActionValues)
 Dispatch HANDLE[1] -> IN GetProjectRuntimesState
 GetProjectRuntimesState VALUES[0] -> RUNTIMES PopulateProjectRuntime(ui/PopulateProjectRuntime)
@@ -72,15 +77,10 @@ GetEdgeState OUT -> EDGES SendEdges
 SendEdges OUT -> IN ContextEdgesAction
 SendEdges ERROR -> IN RuntimeErrorAction
 
-# Create a project based on data on runtime side
 Dispatch HANDLE[3] -> IN GetRuntimeToProjectValues(ui/GetActionValues)
 GetRuntimeToProjectValues OUT -> IN[3] GetClient
 GetClient OUT[3] -> IN RuntimeToProject(ui/RuntimeToProject)
 GetClient CLIENT[3] -> CLIENT RuntimeToProject(ui/RuntimeToProject)
-RuntimeToProject PROJECT -> IN ProjectSaveAction
-RuntimeToProject GRAPH -> IN GraphSaveAction
-RuntimeToProject COMPONENT -> IN ComponentSaveAction
-RuntimeToProject RUNTIME -> IN RuntimeRegisterAction
 RuntimeToProject ERROR -> IN RuntimeErrorAction
 
 # Populate local runtimes
