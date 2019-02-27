@@ -66,7 +66,7 @@ const updateProjectMetadata = (client, p) => {
       const org = path.dirname(pathname);
       const repo = path.basename(pathname, path.extname(pathname));
       project.repo = `${org}/${repo}`;
-      project.name = project.repo;
+      project.name = repo;
     }
   }
   if (client.definition.repositoryVersion) {
