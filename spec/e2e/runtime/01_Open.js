@@ -215,12 +215,12 @@ describe('Opening a Runtime', () => {
           done();
         });
       });
-      it('should show the edge title in the inspector', () => waitForElement('header h1', edgeInspector)
+      it('should show the edge title in the inspector', () => waitForElement('header h1', true, edgeInspector)
         .then((edgeTitle) => {
           chai.expect(edgeTitle.innerText).to.contain('one OUT');
           chai.expect(edgeTitle.innerText).to.contain('IN two');
         }));
-      it('should show the first packet in the inspector', () => waitForElement('ul#events', edgeInspector)
+      it('should show the first packet in the inspector', () => waitForElement('ul#events', true, edgeInspector)
         .then((eventsList) => {
           const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
           const packetValues = packets.map(p => p.innerText);
