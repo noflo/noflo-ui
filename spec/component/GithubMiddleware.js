@@ -59,7 +59,7 @@ describe('GitHub Middleware', () => {
         {
           id: 'abc123',
           gist: 'abc123',
-          main: 'abc123_noflo',
+          main: 'abc123/noflo',
           name: 'Hello world',
           type: 'noflo-browser',
           graphs: [],
@@ -73,7 +73,7 @@ describe('GitHub Middleware', () => {
               type: 'noflo-browser',
             },
             project: 'abc123',
-            id: 'abc123_noflo',
+            id: 'abc123/noflo',
           },
           inports: {},
           outports: {},
