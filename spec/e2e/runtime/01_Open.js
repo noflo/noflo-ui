@@ -111,7 +111,7 @@ describe('Opening a Runtime', () => {
       });
     });
     it('should request a list of components', (done) => {
-      rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+      const sendComponents = (msg, send, callback) => {
         chai.expect(msg.protocol).to.equal('component');
         chai.expect(msg.command).to.equal('list');
         send('component', 'component', {
@@ -135,7 +135,16 @@ describe('Opening a Runtime', () => {
           ],
         });
         send('component', 'componentsready', 1);
-        done();
+        callback();
+      };
+      // FIXME: Right now live mode requests component list twice (once in OpenLiveMode
+      // and once in ListenRuntime). Should be made to request once and reuse
+      rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
+        sendComponents(msg, send, () => {
+          rtIframe.contentWindow.handleProtocolMessage((msg2, send2) => {
+            sendComponents(msg2, send2, done);
+          });
+        });
       });
     });
     it('should request the network status', (done) => {
