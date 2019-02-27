@@ -360,6 +360,7 @@
           var component = event.detail;
           this.push('project.components', component);
           this.fire('newcomponent', component);
+          // TODO: Add node to graph
           this.gotoComponent(component.name);
         }.bind(this));
       },
