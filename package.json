@@ -79,7 +79,7 @@
     "mocha": "^6.0.0",
     "noflo-component-loader": "^0.3.0",
     "polymer-bundler": "^3.0.1",
-    "puppeteer": "^1.0.0",
+    "puppeteer": "^2.0.0",
     "query-selector-shadow-dom": "^0.3.2",
     "sinon": "^7.2.4",
     "syn": "^0.13.0",
