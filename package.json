@@ -84,7 +84,7 @@
     "sinon": "^7.2.4",
     "syn": "^0.13.0",
     "webpack": "^4.0.0",
-    "yaml-loader": "^0.5.0"
+    "yaml-loader": "^0.6.0"
   },
   "scripts": {
     "lint": "eslint *.js src/*.js components/*.js app/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
