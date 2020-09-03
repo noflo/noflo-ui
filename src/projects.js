@@ -110,3 +110,19 @@ exports.getProjectHash = (project, callback) => {
     main,
   ]);
 };
+
+exports.isReadOnly = (context) => {
+  if (!context.project) {
+    // If there is no project we must be read-only
+    return true;
+  }
+  if (context.graph && context.project.graphs.indexOf(context.graph) === -1) {
+    // Graph is outside the project, go read-only
+    return true;
+  }
+  if (context.component && context.project.components.indexOf(context.component) === -1) {
+    // Graph is outside the project, go read-only
+    return true;
+  }
+  return false;
+};

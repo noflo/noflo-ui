@@ -523,17 +523,11 @@
         }
         if (this.ctx.graph || this.ctx.component) {
           this.set('$.main.open', false);
-          if (!this.ctx.project) {
-            this.set('$.grapheditor.readonly', true);
-            this.set('$.context.readonly', true);
-            this.set('$.packets.readonly', true);
-            this.set('$.search.readonly', true);
-          } else {
-            this.set('$.grapheditor.readonly', false);
-            this.set('$.context.readonly', false);
-            this.set('$.packets.readonly', false);
-            this.set('$.search.readonly', false);
-          }
+          var isReadOnly = require('noflo-ui/projects').isReadOnly(this.ctx);
+          this.set('$.grapheditor.readonly', isReadOnly);
+          this.set('$.context.readonly', isReadOnly);
+          this.set('$.packets.readonly', isReadOnly);
+          this.set('$.search.readonly', isReadOnly);
         } else {
           this.set('$.main.open', true);
         }
