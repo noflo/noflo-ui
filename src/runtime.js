@@ -1,4 +1,5 @@
 const fbpGraph = require('fbp-graph');
+const { findByComponent } = require('./projects');
 
 const portForLibrary = port => ({
   name: port.id,
@@ -66,6 +67,18 @@ exports.getRemoteNodes = (client, r) => {
     if (!matchedNode) {
       return Promise.reject(new Error(`Node ${node} not found in graph ${graph.name || graph.properties.id}`));
     }
+
+    // Check if the node implementation is available in the local project
+    const [componentType, componentImplementation] = findByComponent(matchedNode.component, route.project)
+    if (componentType === 'graph') {
+      route.graphs.push(componentImplementation);
+      return Promise.resolve(componentImplementation);
+    }
+    if (componentType === 'component') {
+      route.component = componentImplementation;
+      return Promise.resolve(componentImplementation);
+    }
+    // If not, then get from runtime
     return exports.getSource(client, matchedNode.component)
       .then((source) => {
         if (!['json', 'fbp'].includes(source.language)) {
