@@ -470,6 +470,12 @@
           event.preventDefault();
         }
         var path = this.getParentPath(this.graphs, this.component);
+        if (this.project.runtime) {
+          path.unshift(this.project.runtime);
+          path.unshift('runtime');
+          this.fire('hash', path);
+          return;
+        }
         path.unshift(this.project.id);
         path.unshift('project');
         this.fire('hash', path);
