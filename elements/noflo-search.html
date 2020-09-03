@@ -288,6 +288,9 @@
         }
         var findNode = function (component, graph) {
           var matching = graph.nodes.filter(function (node) {
+            if (node.id === component) {
+              return true;
+            }
             if (node.component === component) {
               // Direct match
               return true;
