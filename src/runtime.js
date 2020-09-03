@@ -69,7 +69,10 @@ exports.getRemoteNodes = (client, r) => {
     }
 
     // Check if the node implementation is available in the local project
-    const [componentType, componentImplementation] = findByComponent(matchedNode.component, route.project)
+    const [
+      componentType,
+      componentImplementation,
+    ] = findByComponent(matchedNode.component, route.project);
     if (componentType === 'graph') {
       route.graphs.push(componentImplementation);
       return Promise.resolve(componentImplementation);
