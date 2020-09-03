@@ -316,14 +316,14 @@
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
               var hash = window.location.href.split('#')[1] || '';
-              if (graph.properties.id) {
+              if (graph === this.graphs[0] && graph.properties.id) {
                 var currentGraphId = encodeURIComponent(graph.properties.id);
                 if (hash.indexOf(currentGraphId) === -1) {
                   hash += '/' + currentGraphId;
                 }
               }
               window.location.hash = hash + '/' + encodeURIComponent(item.id);
-            }
+            }.bind(this)
           };
           return localMenu;
         }.bind(this));
