@@ -524,10 +524,10 @@
         if (this.ctx.graph || this.ctx.component) {
           this.set('$.main.open', false);
           var isReadOnly = require('noflo-ui/projects').isReadOnly(this.ctx);
+          this.set('$.search.readonly', isReadOnly);
           this.set('$.grapheditor.readonly', isReadOnly);
           this.set('$.context.readonly', isReadOnly);
           this.set('$.packets.readonly', isReadOnly);
-          this.set('$.search.readonly', isReadOnly);
         } else {
           this.set('$.main.open', true);
         }

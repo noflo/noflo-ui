@@ -87,7 +87,7 @@
       #clear,
       #breadcrumb #graphinspector,
       #breadcrumb #componentinspector,
-      #breadcrumb #readonly {
+      #breadcrumb #readonly-lock {
         position: absolute;
         right: 9px;
         top: 0px;
@@ -185,7 +185,7 @@
       </button>
       </template>
       <template is="dom-if" if="{{_isReadOnly(component, graph, readonly)}}">
-      <button title="Read-only" id="readonly">
+      <button title="Read-only" id="readonly-lock">
         <noflo-icon icon="lock"></noflo-icon>
       </button>
       </template>
@@ -231,7 +231,12 @@
           }
         },
         project: { value: null },
-        readonly: { notify: true },
+        readonly: {
+          type: Boolean,
+          value: true,
+          notify: true,
+          observer: 'readonlyChanged'
+        },
         results: { notify: true },
         resultsCard: { value: null },
         runtimes: {
@@ -263,6 +268,11 @@
           },
           notify: true,
           observer: 'searchLibraryResultsChanged'
+        }
+      },
+      readonlyChanged: function () {
+        if (this.readonly) {
+          this.blur();
         }
       },
       componentChanged: function () {
