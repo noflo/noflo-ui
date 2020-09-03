@@ -1,10 +1,11 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.27.0 (git master)
+## 0.27.0 (2020 September 03)
 
 New features:
 
+* The runtime live mode is now fully editable just like regular projects
 * Modal screens now match the current selected UI theme
 * Errors coming from the runtime now include stack traces if available
 * Errors are shown in the app UI instead of native notification pop-ups
@@ -18,6 +19,7 @@ Bugfixes:
 
 * Fixed node inspector updating of values
 * Fixed editing of node and graph names in Safari
+* Fixed issue with read-only mode not getting triggered correctly
 
 Internal changes:
 
