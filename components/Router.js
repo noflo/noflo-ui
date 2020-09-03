@@ -77,6 +77,12 @@ const buildContext = (url) => {
       // Graph running on a remote runtime
       routeData.route = 'runtime';
       routeData.runtime = urlParts.shift();
+      if ((urlParts[0] === 'component') && (urlParts.length === 2)) {
+        // Opening a component from runtime
+        [, routeData.component] = urlParts;
+        return routeData;
+      }
+      routeData.graph = urlParts.shift();
       routeData.nodes = urlParts;
       return routeData;
     }

@@ -410,22 +410,15 @@
         }.bind(this));
       },
       gotoGraph: function (id) {
+        var urls = require('noflo-ui/urls');
         this.$.account.toggleOpen(false);
-        this.fire('hash', [
-          'project',
-          this.project.id,
-          id
-        ]);
+        this.fire('hash', urls.getGraphHash(id, this.project));
         this.$.account.toggleOpen(false);
       },
       gotoComponent: function (id) {
+        var urls = require('noflo-ui/urls');
         this.$.account.toggleOpen(false);
-        this.fire('hash', [
-          'project',
-          this.project.id,
-          'component',
-          id
-        ]);
+        this.fire('hash', urls.getComponentHash(id, this.project));
         this.$.account.toggleOpen(false);
       },
       openGraph: function (event) {

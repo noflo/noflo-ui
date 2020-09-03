@@ -8,6 +8,11 @@ const {
   getRemoteNodes,
   getSource,
 } = require('../src/runtime');
+const {
+  findGraph,
+  findComponent,
+  findByComponent,
+} = require('../src/projects');
 const { addToList } = require('../src/collections');
 
 const getNamespace = (client) => {
@@ -133,7 +138,6 @@ exports.getComponent = () => {
           id: `${state.project.id}/${(graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name}`,
           project: state.project.id,
         });
-        addToList(state.graphs, graphInstance);
         addToList(state.project.graphs, graphInstance);
         state.project.main = graphInstance.properties.id;
       })
@@ -178,6 +182,20 @@ exports.getComponent = () => {
         if (!client.definition.label) {
           client.definition.label = `${state.project.name} runtime`;
         }
+      })
+      .then(() => {
+        if (route.component) {
+          state.component = findComponent(route.component, state.project);
+          if (!state.component) {
+            throw new Error(`Component ${route.component} not found`);
+          }
+          return;
+        }
+        const mainGraph = findGraph(route.graph || state.project.main, state.project);
+        if (!mainGraph) {
+          throw new Error(`Graph ${route.graph || state.project.main} not found`);
+        }
+        addToList(state.graphs, mainGraph);
       })
       .then(() => getRemoteNodes(client, state))
       .then(() => output.send({

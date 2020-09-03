@@ -9,6 +9,7 @@ const runtimeInfo = require('../runtimeinfo/index');
 const collections = require('../src/collections');
 const projects = require('../src/projects');
 const icons = require('../src/icons');
+const urls = require('../src/urls');
 const mainGraph = require('../graphs/main.fbp');
 
 const exported = {
@@ -22,6 +23,7 @@ const exported = {
   'noflo-ui/collections': collections,
   'noflo-ui/projects': projects,
   'noflo-ui/icons': icons,
+  'noflo-ui/urls': urls,
 };
 
 
