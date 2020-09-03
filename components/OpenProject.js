@@ -3,7 +3,7 @@ const {
   findProject,
   findGraph,
   findComponent,
-  findByComponent
+  findByComponent,
 } = require('../src/projects');
 
 const buildContext = () => ({

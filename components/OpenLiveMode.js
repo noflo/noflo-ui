@@ -11,7 +11,6 @@ const {
 const {
   findGraph,
   findComponent,
-  findByComponent,
 } = require('../src/projects');
 const { addToList } = require('../src/collections');
 
