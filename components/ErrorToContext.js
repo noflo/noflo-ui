@@ -1,14 +1,5 @@
 const noflo = require('noflo');
 
-const buildContext = () => ({
-  state: '',
-  project: null,
-  runtime: null,
-  component: null,
-  graphs: [],
-  remote: [],
-});
-
 exports.getComponent = () => {
   const c = new noflo.Component();
   c.icon = 'exclamation-triangle';
@@ -23,10 +14,10 @@ exports.getComponent = () => {
     async: true,
   },
   (err, groups, out, callback) => {
-    const ctx = buildContext();
-    ctx.state = 'error';
-    ctx.error = err.payload || err;
-    out.send(ctx);
+    out.send({
+      state: 'error',
+      error: err.payload || err,
+    });
     callback();
   });
 };

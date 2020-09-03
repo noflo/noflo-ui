@@ -21,6 +21,7 @@
         display: block;
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
         overflow-x: visible;
       }
       the-panel {
@@ -113,6 +114,7 @@
       }
       the-panel#fixed main ul {
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
         margin-top: 0px;
         padding-top: 0px;
         margin-left: 0px;
@@ -313,10 +315,15 @@
               if (typeof ga === 'function') {
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
-              // Work around Firefox location.hash getter bug #352
               var hash = window.location.href.split('#')[1] || '';
+              if (graph === this.graphs[0] && graph.properties.id) {
+                var currentGraphId = encodeURIComponent(graph.properties.id);
+                if (hash.indexOf(currentGraphId) === -1) {
+                  hash += '/' + currentGraphId;
+                }
+              }
               window.location.hash = hash + '/' + encodeURIComponent(item.id);
-            }
+            }.bind(this)
           };
           return localMenu;
         }.bind(this));

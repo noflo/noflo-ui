@@ -89,6 +89,9 @@
         white-space: nowrap;
         max-width: 100%;
         overflow-x: hidden;
+        text-overflow: ellipsis;
+        padding-left: 36px;
+        box-sizing: border-box;
       }
       main ul {
         margin: 0px;
@@ -114,6 +117,7 @@
       main {
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
         max-height: calc(100% - 72px);
         padding-left: 36px;
       }
@@ -227,6 +231,7 @@
           </template>
         </ul>
         <template is="dom-if" if="{{project}}">
+        <template is="dom-if" if="{{_canGraph(project, runtime)}}">
         <h2>Graphs</h2>
         <ul class="graphs">
           <li class="add">
@@ -240,7 +245,8 @@
           </li>
           </template>
         </ul>
-        <template is="dom-if" if="{{canComponent}}">
+        </template>
+        <template is="dom-if" if="{{_canComponent(project, runtime)}}">
         <h2>Components</h2>
         <ul class="graphs">
           <li class="add">
@@ -280,10 +286,6 @@
     Polymer({
       is: 'noflo-project',
       properties: {
-        canComponent: {
-          type: Boolean,
-          value: true
-        },
         component: {
           value: null,
           notify: true
@@ -353,6 +355,7 @@
           var component = event.detail;
           this.push('project.components', component);
           this.fire('newcomponent', component);
+          // TODO: Add node to graph
           this.gotoComponent(component.name);
         }.bind(this));
       },
@@ -401,22 +404,15 @@
         }.bind(this));
       },
       gotoGraph: function (id) {
+        var urls = require('noflo-ui/urls');
         this.$.account.toggleOpen(false);
-        this.fire('hash', [
-          'project',
-          this.project.id,
-          id
-        ]);
+        this.fire('hash', urls.getGraphHash(id, this.project));
         this.$.account.toggleOpen(false);
       },
       gotoComponent: function (id) {
+        var urls = require('noflo-ui/urls');
         this.$.account.toggleOpen(false);
-        this.fire('hash', [
-          'project',
-          this.project.id,
-          'component',
-          id
-        ]);
+        this.fire('hash', urls.getComponentHash(id, this.project));
         this.$.account.toggleOpen(false);
       },
       openGraph: function (event) {
@@ -475,6 +471,20 @@
       },
       _computeIf2: function (component) {
         return component.language != 'coffeescript';
+      },
+      _canGraph: function (project, runtime) {
+        if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
+          // If we have a runtime connection, only allow creating components if setsource is enabled
+          return this.runtime.definition.capabilities.indexOf('protocol:graph') !== -1;
+        }
+        return true
+      },
+      _canComponent: function (project, runtime) {
+        if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
+          // If we have a runtime connection, only allow creating components if setsource is enabled
+          return this.runtime.definition.capabilities.indexOf('component:setsource') !== -1;
+        }
+        return true
       }
     });
   </script>

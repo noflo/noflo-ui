@@ -34,6 +34,7 @@
         height: 100vh;
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
         z-index: 4;
       }
       the-graph-editor {
@@ -131,10 +132,9 @@
     <noflo-journal id="journal" db="{{ctx.db}}" theme="[[theme]]" graph="{{ctx.graph}}" component="{{ctx.component}}"></noflo-journal>
     <noflo-component-editor id="componenteditor" theme="[[theme]]" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" theme="[[theme]]" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
-    <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-project>
+    <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}" runtime="{{ctx.runtime}}"></noflo-project>
     <noflo-packets id="packets" edges="[[ctx.edges]]" nodes="[[ctx.nodes]]" currentgraph="[[ctx.graph]]" packets="[[ctx.packets]]" events="[[ctx.events]]"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
-    <button id="asproject" on-click="editAsProject">Edit as project</button>
   </template>
   <script>
     Polymer({
@@ -231,6 +231,10 @@
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
           this.emitEvent('flowhub:runtimes:register', event.detail);
@@ -246,7 +250,10 @@
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
-          this.emitEvent('runtime:sendGraph', event.detail);
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.context.addEventListener('clear:runtimeevents', function (event) {
           if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
@@ -305,14 +312,17 @@
             graph: this.ctx.graph,
             changes: event.detail
           });
+          this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
-          this.emitEvent('runtime:sendGraph', event.detail);
-          this.triggerTests();
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
           this.emitEvent('storage:save:component', event.detail);
@@ -523,21 +533,12 @@
         }
         if (this.ctx.graph || this.ctx.component) {
           this.set('$.main.open', false);
-          if (!this.ctx.project) {
-            this.showEditAsProject(true);
-            this.set('$.grapheditor.readonly', true);
-            this.set('$.context.readonly', true);
-            this.set('$.packets.readonly', true);
-            this.set('$.search.readonly', true);
-          } else {
-            this.showEditAsProject(false);
-            this.set('$.grapheditor.readonly', false);
-            this.set('$.context.readonly', false);
-            this.set('$.packets.readonly', false);
-            this.set('$.search.readonly', false);
-          }
+          var isReadOnly = require('noflo-ui/projects').isReadOnly(this.ctx);
+          this.set('$.search.readonly', isReadOnly);
+          this.set('$.grapheditor.readonly', isReadOnly);
+          this.set('$.context.readonly', isReadOnly);
+          this.set('$.packets.readonly', isReadOnly);
         } else {
-          this.showEditAsProject(false);
           this.set('$.main.open', true);
         }
       },
@@ -574,35 +575,6 @@
         window.setTimeout(function () {
           this.hideAlert();
         }.bind(this), 1300);
-      },
-      showEditAsProject: function (enable) {
-        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
-          // Can't toggle if there is no connected runtime, or the runtime doesn't allow editing
-          enable = false;
-        }
-        if (!enable) {
-          this.set('$.asproject.style.visibility', 'hidden');
-          this.set('$.asproject.style.opacity', 0);
-          return;
-        }
-        this.set('$.asproject.style.visibility', 'visible');
-        this.set('$.asproject.style.opacity', 1);
-      },
-      editAsProject: function () {
-        if (this.ctx.project) {
-          return;
-        }
-        if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.status.online) {
-          return;
-        }
-        if (typeof ga === 'function') {
-          ga('send', 'event', 'button', 'click', 'editAsProject');
-        }
-        this.emitEvent('project:fromruntime', {
-          graphs: this.ctx.graphs,
-          component: this.ctx.component,
-          runtime: this.ctx.runtime.definition,
-        });
       },
       openProject: function (project) {
         var projects = require('noflo-ui/projects');

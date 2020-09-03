@@ -64,6 +64,32 @@ describe('Opening a Runtime', () => {
       },
     ],
   };
+  const sendComponents = (msg, send, callback) => {
+    chai.expect(msg.protocol).to.equal('component');
+    chai.expect(msg.command).to.equal('list');
+    send('component', 'component', {
+      name: 'core/Repeat',
+      description: 'Repeat a packet',
+      icon: 'forward',
+      subgraph: false,
+      inPorts: [
+        {
+          addressable: false,
+          id: 'in',
+          type: 'all',
+        },
+      ],
+      outPorts: [
+        {
+          addressable: false,
+          id: 'in',
+          type: 'all',
+        },
+      ],
+    });
+    send('component', 'componentsready', 1);
+    callback();
+  };
 
   before('get the app iframe', () => {
     iframe = document.getElementById('app');
@@ -111,31 +137,14 @@ describe('Opening a Runtime', () => {
       });
     });
     it('should request a list of components', (done) => {
+      // FIXME: Right now live mode requests component list twice (once in OpenLiveMode
+      // and once in ListenRuntime). Should be made to request once and reuse
       rtIframe.contentWindow.handleProtocolMessage((msg, send) => {
-        chai.expect(msg.protocol).to.equal('component');
-        chai.expect(msg.command).to.equal('list');
-        send('component', 'component', {
-          name: 'core/Repeat',
-          description: 'Repeat a packet',
-          icon: 'forward',
-          subgraph: false,
-          inPorts: [
-            {
-              addressable: false,
-              id: 'in',
-              type: 'all',
-            },
-          ],
-          outPorts: [
-            {
-              addressable: false,
-              id: 'in',
-              type: 'all',
-            },
-          ],
+        sendComponents(msg, send, () => {
+          rtIframe.contentWindow.handleProtocolMessage((msg2, send2) => {
+            sendComponents(msg2, send2, done);
+          });
         });
-        send('component', 'componentsready', 1);
-        done();
       });
     });
     it('should request the network status', (done) => {
@@ -206,12 +215,12 @@ describe('Opening a Runtime', () => {
           done();
         });
       });
-      it('should show the edge title in the inspector', () => waitForElement('header h1', edgeInspector)
+      it('should show the edge title in the inspector', () => waitForElement('header h1', true, edgeInspector)
         .then((edgeTitle) => {
           chai.expect(edgeTitle.innerText).to.contain('one OUT');
           chai.expect(edgeTitle.innerText).to.contain('IN two');
         }));
-      it('should show the first packet in the inspector', () => waitForElement('ul#events', edgeInspector)
+      it('should show the first packet in the inspector', () => waitForElement('ul#events', true, edgeInspector)
         .then((eventsList) => {
           const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
           const packetValues = packets.map(p => p.innerText);
@@ -267,15 +276,21 @@ describe('Opening a Runtime', () => {
           });
           rtIframe.contentWindow.handleProtocolMessage((msg2, send2) => {
             chai.expect(msg2.protocol).to.equal('component');
-            chai.expect(msg2.command).to.equal('getsource');
-            chai.expect(msg2.payload.name).to.equal('core/Repeat');
-            send2('component', 'source', {
-              code: 'hello, world',
-              language: 'javascript',
-              library: 'core',
-              name: 'Repeat',
+            chai.expect(msg2.command).to.equal('list');
+            sendComponents(msg2, send2, () => {
+              rtIframe.contentWindow.handleProtocolMessage((msg3, send3) => {
+                chai.expect(msg3.protocol).to.equal('component');
+                chai.expect(msg3.command).to.equal('getsource');
+                chai.expect(msg3.payload.name).to.equal('core/Repeat');
+                send3('component', 'source', {
+                  code: 'hello, world',
+                  language: 'javascript',
+                  library: 'core',
+                  name: 'Repeat',
+                });
+                done();
+              });
             });
-            done();
           });
         });
       });

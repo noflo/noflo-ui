@@ -1,4 +1,5 @@
 const fbpGraph = require('fbp-graph');
+const { findByComponent } = require('./projects');
 
 const portForLibrary = port => ({
   name: port.id,
@@ -38,6 +39,24 @@ exports.getComponentType = (component) => {
   return null;
 };
 
+exports.getSource = (client, name) => client
+  .protocol.component.getsource({
+    name,
+  })
+  .catch((e) => {
+    if (name.indexOf('/') !== -1) {
+      // Already namespaced, pass failure through
+      return Promise.reject(e);
+    }
+    if (!client.definition.namespace) {
+      // No namespace defined, pass failure through
+      return Promise.reject(e);
+    }
+    return client.protocol.component.getsource({
+      name: `${client.definition.namespace}/${name}`,
+    });
+  });
+
 exports.getRemoteNodes = (client, r) => {
   const route = r;
   return route.remote.reduce(((promise, node) => promise.then((graph) => {
@@ -48,22 +67,22 @@ exports.getRemoteNodes = (client, r) => {
     if (!matchedNode) {
       return Promise.reject(new Error(`Node ${node} not found in graph ${graph.name || graph.properties.id}`));
     }
-    return client.protocol.component.getsource({
-      name: matchedNode.component,
-    })
-      .catch((e) => {
-        if (matchedNode.component.indexOf('/') !== -1) {
-          // Already namespaced, pass failure through
-          return Promise.reject(e);
-        }
-        if (!client.definition.namespace) {
-          // No namespace defined, pass failure through
-          return Promise.reject(e);
-        }
-        return client.protocol.component.getsource({
-          name: `${client.definition.namespace}/${matchedNode.component}`,
-        });
-      })
+
+    // Check if the node implementation is available in the local project
+    const [
+      componentType,
+      componentImplementation,
+    ] = findByComponent(matchedNode.component, route.project);
+    if (componentType === 'graph') {
+      route.graphs.push(componentImplementation);
+      return Promise.resolve(componentImplementation);
+    }
+    if (componentType === 'component') {
+      route.component = componentImplementation;
+      return Promise.resolve(componentImplementation);
+    }
+    // If not, then get from runtime
+    return exports.getSource(client, matchedNode.component)
       .then((source) => {
         if (!['json', 'fbp'].includes(source.language)) {
           route.component = source;

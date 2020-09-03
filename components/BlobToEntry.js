@@ -1,5 +1,4 @@
 const noflo = require('noflo');
-const uuid = require('uuid');
 const collections = require('../src/collections');
 const projects = require('../src/projects');
 
@@ -35,7 +34,7 @@ const handleGraph = (sha, c, e, project, callback) => {
 
     graph.properties.name = entry.remote.name;
     graph.name = entry.remote.name;
-    graph.properties.id = uuid.v4();
+    graph.properties.id = `${project.id}/${graph.name}`;
     if (!graph.properties.environment) { graph.properties.environment = {}; }
     if (!graph.properties.environment.type) { graph.properties.environment.type = project.type; }
     collections.addToList(project.graphs, graph);
@@ -55,7 +54,7 @@ const handleComponent = (sha, content, e, project, callback) => {
     return;
   }
   const newEntry = {
-    id: uuid.v4(),
+    id: `${project.id}/${entry.remote.name}`,
     project: project.id,
     name: entry.remote.name,
     code: content,
@@ -78,7 +77,7 @@ const handleSpec = (sha, content, e, project, callback) => {
     return;
   }
   const newEntry = {
-    id: uuid.v4(),
+    id: `${project.id}/${entry.remote.name}`,
     project: project.id,
     type: 'spec',
     name: entry.remote.name,

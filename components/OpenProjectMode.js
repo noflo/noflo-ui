@@ -41,6 +41,10 @@ exports.getComponent = () => {
   return c.process((input, output) => {
     if (!input.hasData('in', 'client')) { return; }
     const [route, client] = input.getData('in', 'client');
+    if (route.project.runtime) {
+      output.done(new Error('Runtime projects must be accessed via runtime'));
+      return;
+    }
 
     if (route.remote != null ? route.remote.length : undefined) {
       // We need to fetch components from runtime, send "loading"

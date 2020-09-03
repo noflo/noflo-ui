@@ -8,7 +8,7 @@ const payloadToProject = (data) => {
   const payload = {
     project: {
       id: uuid.v4(),
-      name: data.payload.repo,
+      name: repoParts[1],
       namespace: repoParts[1].replace(/^noflo-/, ''),
       repo: data.payload.repo,
       branch: data.payload.branch,

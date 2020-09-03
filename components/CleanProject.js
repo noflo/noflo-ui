@@ -15,6 +15,7 @@ exports.getComponent = () => {
       id: data.id,
       name: data.name,
       namespace: data.namespace,
+      runtime: data.runtime,
       type: data.type,
       repo: data.repo,
       branch: data.branch,

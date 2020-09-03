@@ -87,7 +87,7 @@
       #clear,
       #breadcrumb #graphinspector,
       #breadcrumb #componentinspector,
-      #breadcrumb #readonly {
+      #breadcrumb #readonly-lock {
         position: absolute;
         right: 9px;
         top: 0px;
@@ -185,7 +185,7 @@
       </button>
       </template>
       <template is="dom-if" if="{{_isReadOnly(component, graph, readonly)}}">
-      <button title="Read-only" id="readonly">
+      <button title="Read-only" id="readonly-lock">
         <noflo-icon icon="lock"></noflo-icon>
       </button>
       </template>
@@ -231,7 +231,12 @@
           }
         },
         project: { value: null },
-        readonly: { notify: true },
+        readonly: {
+          type: Boolean,
+          value: true,
+          notify: true,
+          observer: 'readonlyChanged'
+        },
         results: { notify: true },
         resultsCard: { value: null },
         runtimes: {
@@ -265,6 +270,11 @@
           observer: 'searchLibraryResultsChanged'
         }
       },
+      readonlyChanged: function () {
+        if (this.readonly) {
+          this.blur();
+        }
+      },
       componentChanged: function () {
         if (!this.component || !this.component.name) {
           // Component nullified, ensure we recount graphs
@@ -288,6 +298,9 @@
         }
         var findNode = function (component, graph) {
           var matching = graph.nodes.filter(function (node) {
+            if (node.id === component) {
+              return true;
+            }
             if (node.component === component) {
               // Direct match
               return true;
@@ -470,6 +483,12 @@
           event.preventDefault();
         }
         var path = this.getParentPath(this.graphs, this.component);
+        if (this.project.runtime) {
+          path.unshift(this.project.runtime);
+          path.unshift('runtime');
+          this.fire('hash', path);
+          return;
+        }
         path.unshift(this.project.id);
         path.unshift('project');
         this.fire('hash', path);

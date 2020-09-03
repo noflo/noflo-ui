@@ -1,4 +1,10 @@
 const noflo = require('noflo');
+const {
+  findProject,
+  findGraph,
+  findComponent,
+  findByComponent,
+} = require('../src/projects');
 
 const buildContext = () => ({
   state: '',
@@ -8,47 +14,6 @@ const buildContext = () => ({
   graphs: [],
   remote: [],
 });
-
-const findProject = (id, projects) => {
-  if (!projects) { return null; }
-
-  return projects.find(project => project.id === id);
-};
-
-const findGraph = (id, project) => {
-  if (!project.graphs) { return null; }
-  return project.graphs.find((graph) => {
-    if (graph.name === id) { return true; }
-    if (graph.properties.id === id) { return true; }
-    return false;
-  });
-};
-
-const findComponent = (name, project) => {
-  if (!project.components) { return null; }
-  return project.components.find((component) => {
-    if (component.name === name) { return true; }
-    return false;
-  });
-};
-
-const findByComponent = (componentName, project) => {
-  let [library, name] = componentName.split('/');
-
-  if (!name) {
-    name = library;
-    library = undefined;
-  }
-
-  const graph = findGraph(name, project);
-  if (graph) { return ['graph', graph]; }
-
-  const component = findComponent(name, project);
-  if (component) { return ['component', component]; }
-
-  // Get from runtime
-  return ['runtime', componentName];
-};
 
 exports.getComponent = () => {
   const c = new noflo.Component();
