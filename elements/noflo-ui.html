@@ -231,6 +231,10 @@
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
           this.emitEvent('flowhub:runtimes:register', event.detail);
@@ -246,7 +250,10 @@
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
-          this.emitEvent('runtime:sendGraph', event.detail);
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.context.addEventListener('clear:runtimeevents', function (event) {
           if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
@@ -305,14 +312,17 @@
             graph: this.ctx.graph,
             changes: event.detail
           });
+          this.triggerTests();
         }.bind(this));
         this.$.project.addEventListener('changed', function (event) {
           this.emitEvent('storage:save:project', event.detail);
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
-          this.emitEvent('runtime:sendGraph', event.detail);
-          this.triggerTests();
+          this.emitEvent('runtime:sendGraph', {
+            runtime: this.ctx.runtime.definition.id,
+            graph: event.detail,
+          });
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {
           this.emitEvent('storage:save:component', event.detail);
