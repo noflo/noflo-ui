@@ -315,8 +315,13 @@
               if (typeof ga === 'function') {
                 ga('send', 'event', 'menu', 'click', 'openNode');
               }
-              // Work around Firefox location.hash getter bug #352
               var hash = window.location.href.split('#')[1] || '';
+              if (graph.properties.id) {
+                var currentGraphId = encodeURIComponent(graph.properties.id);
+                if (hash.indexOf(currentGraphId) === -1) {
+                  hash += '/' + currentGraphId;
+                }
+              }
               window.location.hash = hash + '/' + encodeURIComponent(item.id);
             }
           };
