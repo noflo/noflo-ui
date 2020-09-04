@@ -31,3 +31,5 @@ exports.getGraphHash = (graphId, project) => {
     graphId,
   ];
 };
+
+exports.hashToString = hash => `#${hash.map(part => encodeURIComponent(part)).join('/')}`;

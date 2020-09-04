@@ -329,6 +329,10 @@
           if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
             return;
           }
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: event.detail
+          });
         }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.emitEvent('github:sync:prepare', event.detail);

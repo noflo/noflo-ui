@@ -31,7 +31,7 @@
         <label>
           <span>Main graph</span>
           <select name="type" value="{{main::input}}">
-            <template is="dom-repeat" items="{{project.graphs}}" as="graph">
+            <template is="dom-repeat" items="[[_getMainGraphs(project.graphs)]]" as="graph">
               <option value="{{graph.properties.id}}" selected$="[[_mainSelected(graph.properties.id, main)]]">{{graph.name}}</option>
             </template>
           </select>
@@ -134,6 +134,11 @@
           return true;
         }
         return false;
+      },
+      _getMainGraphs: function (graphs) {
+        return graphs.filter(function (graph) {
+          return graph.properties.main;
+        });
       }
     });
   </script>
