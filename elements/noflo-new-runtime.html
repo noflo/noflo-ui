@@ -139,6 +139,12 @@
         Polymer.dom(this).classList.add('modal-content');
       },
       detached: function () {
+        if (this.runtimeAdd) {
+          if (Polymer.dom(this.runtimeAdd).parentNode) {
+            Polymer.dom(Polymer.dom(this.runtimeAdd).parentNode).removeChild(this.runtimeAdd);
+          }
+          this.runtimeAdd = null;
+        }
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
       },
       bgClick: function (event) {
