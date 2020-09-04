@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.2 (git master)
+
+Bugfixes:
+
+* Pulling repos from GitHub works again
+
 ## 0.27.1 (2020 September 04)
 
 New features:

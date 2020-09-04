@@ -140,38 +140,39 @@ exports.getComponent = () => {
       let content = data.content.replace(/\s/g, '');
       if (data.encoding === 'base64') { content = decodeURIComponent(escape(atob(content))); }
 
-      operation.pull.forEach((entry) => {
-        if ((entry.remote != null ? entry.remote.sha : undefined) !== sha) { return; }
-        let method;
-        let port;
-        switch (entry.type) {
-          case 'graph': {
-            method = handleGraph;
-            port = 'graph';
-            break;
-          }
-          case 'spec': {
-            method = handleSpec;
-            port = 'spec';
-            break;
-          }
-          default: {
-            method = handleComponent;
-            port = 'component';
-          }
+      const entry = operation.pull.find(e => e.remote && e.remote.sha === sha);
+      if (!entry) {
+        errors.push(`No entry found for blob ${sha}`);
+        return;
+      }
+      let method;
+      let port;
+      switch (entry.type) {
+        case 'graph': {
+          method = handleGraph;
+          port = 'graph';
+          break;
         }
-        method(sha, content, entry, operation.project, (err, entity) => {
-          if (err) {
-            errors.push(err);
-            return;
-          }
-          entities.push({
-            type: port,
-            entity,
-          });
+        case 'spec': {
+          method = handleSpec;
+          port = 'spec';
+          break;
+        }
+        default: {
+          method = handleComponent;
+          port = 'component';
+        }
+      }
+      method(sha, content, entry, operation.project, (err, entity) => {
+        if (err) {
+          errors.push(err);
+          return;
+        }
+        entities.push({
+          type: port,
+          entity,
         });
       });
-      errors.push(`No entry found for blob ${sha}`);
     });
     if (errors.length) {
       output.done(errors[0]);
