@@ -45,8 +45,12 @@ GetRemoteProjects PROJECTS -> IN RegistryProjectsAction
 GetRemoteProjects ERROR -> IN RegistryErrorAction
 
 # Registering a remote GitHub repository for pulls
-Dispatch HANDLE[4] -> IN StoreRemoteProject(ui/StoreRemoteProject)
-StoreRemoteProject OUT -> IN Passed
+'user' -> KEYS GetUserStateRepos(ui/GetActionValues)
+Dispatch HANDLE[4] -> IN SplitPullAction(core/Split) OUT -> IN GetUserStateRepos
+SplitPullAction OUT -> DATA SendPullAction(core/Kick) OUT -> IN Passed
+GetUserStateRepos VALUES[0] -> USER StoreRemoteProject(ui/StoreRemoteProject)
+GetUserStateRepos OUT -> IN StoreRemoteProject
+StoreRemoteProject OUT -> IN SendPullAction
 StoreRemoteProject ERROR -> IN RegistryErrorAction
 
 # Preparing a bidirectional GitHub sync

@@ -4,14 +4,17 @@ exports.getComponent = () => {
   const c = new noflo.Component();
   c.inPorts.add('in',
     { datatype: 'object' });
+  c.inPorts.add('user', {
+    datatype: 'object',
+  });
   c.outPorts.add('out',
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
   return c.process((input, output) => {
-    if (!input.hasData('in')) { return; }
-    const data = input.getData('in');
-    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
+    if (!input.hasData('in', 'user')) { return; }
+    const [data, user] = input.getData('in', 'user');
+    if (!user || !user['flowhub-token']) {
       // User not logged in, public repos may work so pass
       output.sendDone({ out: data });
       return;
@@ -35,11 +38,11 @@ exports.getComponent = () => {
       output.sendDone({ out: data });
     };
     const payload = JSON.stringify({
-      repo: data.payload.repo,
+      repo: data.repo,
       active: true,
     });
     req.open('POST', '$NOFLO_REGISTRY_SERVICE/projects', true);
-    req.setRequestHeader('Authorization', `Bearer ${data.state.user['flowhub-token']}`);
+    req.setRequestHeader('Authorization', `Bearer ${user['flowhub-token']}`);
     req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
     req.send(payload);
   });
