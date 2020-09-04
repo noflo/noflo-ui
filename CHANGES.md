@@ -1,6 +1,18 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.1 (2020 September 04)
+
+New features:
+
+* When creating a graph it is possible to decide whether it will be a subgraph or a main graph
+* Component inspector now displays a list of project graphs where the component is in use
+
+Bugfixes:
+
+* Runtime registration works more reliably
+* Main graph handling is more consistent
+
 ## 0.27.0 (2020 September 03)
 
 New features:
