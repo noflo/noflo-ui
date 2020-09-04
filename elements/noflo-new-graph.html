@@ -14,11 +14,18 @@
           <input type="text" value="{{name::input}}" placeholder="MyCoolGraph" required="">
         </label>
         <label>
+          Graph type
+          <select name="type" value="{{mainGraph::input}}">
+            <option value="true" selected$="[[_isSelectedMainGraph('true', mainGraph)]]">Main graph</option>
+            <option value="false" selected$="[[_isSelectedMainGraph('false', mainGraph)]]">Subgraph</option>
+          </select>
+        </label>
+        <label>
           Graph description
           <input type="text" value="{{description::input}}" placeholder="Do something interesting">
         </label>
         <label>
-          Type
+          Runtime
           <noflo-type-selector type="{{type}}" runtimes="{{runtimes}}"></noflo-type-selector>
         </label>
         <label>
@@ -49,6 +56,10 @@
         description: {
           type: String,
           value: '',
+        },
+        mainGraph: {
+          type: String,
+          value: 'false',
         },
         project: {
           type: Object,
@@ -123,6 +134,7 @@
           project: this.project.id,
           id: this.project.id + '/' + this.name,
           icon: this.icon,
+          main: (this.mainGraph === 'true'),
           environment: { type: this.type }
         });
         this.fire('new', graph);
@@ -141,6 +153,9 @@
       listeners: { click: 'close' },
       _computeClass: function (canSend) {
         return this.tokenList({ disabled: !canSend });
+      },
+      _isSelectedMainGraph: function (value, current) {
+        return value === current;
       },
       tokenList: function (obj) {
         var pieces = [];
