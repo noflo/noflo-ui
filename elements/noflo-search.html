@@ -281,15 +281,25 @@
           this.graphsChanged();
           return;
         }
+        this.closeInspectors();
       },
       graphsChanged: function () {
+        this.closeInspectors();
+        this.blur();
+      },
+      closeInspectors: function () {
         if (this.graphInspector) {
           if (Polymer.dom(this.graphInspector).parentNode) {
             Polymer.dom(Polymer.dom(this.graphInspector).parentNode).removeChild(this.graphInspector);
           }
           this.graphInspector = null;
         }
-        this.blur();
+        if (this.componentInspector) {
+          if (Polymer.dom(this.componentInspector).parentNode) {
+            Polymer.dom(Polymer.dom(this.componentInspector).parentNode).removeChild(this.componentInspector);
+          }
+          this.componentInspector = null;
+        }
       },
       getParentPath: function (graphs, component) {
         var parentPath = [];

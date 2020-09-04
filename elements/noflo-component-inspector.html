@@ -2,6 +2,14 @@
 <dom-module id="noflo-component-inspector">
   <template>
     <style include="noflo-modal-styles">
+      p {
+        font-size: 13px;
+        line-height: 18px;
+      }
+      p a, label a {
+        color: rgb(0, 127, 153);
+        text-decoration: none;
+      }
       button.delete {
         position: absolute;
         right: 36px;
@@ -10,7 +18,16 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <h1><span>{{component.name}}</span> settings</h1>
+      <h1><span>{{component.name}}</span></h1>
+      <template is="dom-if" if="{{inGraph.length}}">
+      <p>Used as component in
+      <template is="dom-repeat" items="{{inGraph}}" as="parent">
+        <a href$="{{_computeHref(parent, project)}}">
+          <span>{{parent.name}}</span>
+        </a>
+      </template>
+      </p>
+      </template>
       <template is="dom-if" if="{{errorText}}">
         <div class="error">{{errorText}}</div>
       </template>
@@ -31,6 +48,13 @@
           value: null,
           observer: 'componentChanged'
         },
+        inGraph: {
+          type: Array,
+          value: function () {
+            return [];
+          }
+        },
+        project: { value: null },
         errorText: {
           type: String,
           value: ''
@@ -39,6 +63,16 @@
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
         Polymer.dom(this).classList.add('modal-content');
+        this.inGraph = [];
+        if (this.project) {
+          this.project.graphs.forEach(function (graph) {
+            graph.nodes.forEach(function (node) {
+              if (node.component === this.component.name || node.component === this.project.namespace + '/' + this.component.name) {
+                this.push('inGraph', graph);
+              }
+            }.bind(this));
+          }.bind(this));
+        }
       },
       detached: function () {
         Polymer.dom(document.getElementById('container')).classList.remove('blur');
@@ -62,6 +96,11 @@
           return;
         }
         Polymer.dom(Polymer.dom(this).parentNode).removeChild(this);
+      },
+      _computeHref: function (parent, project) {
+        var urls = require('noflo-ui/urls');
+        var hash = urls.getGraphHash(parent.properties.id, project);
+        return urls.hashToString(hash);
       },
       listeners: { click: 'close' }
     });

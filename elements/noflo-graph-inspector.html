@@ -232,7 +232,7 @@
           } else {
             this.project.graphs.forEach(function (graph) {
               graph.nodes.forEach(function (node) {
-                if (node.component === this.graph.name || node.component === this.project.id + '/' + this.graph.name) {
+                if (node.component === this.graph.name || node.component === this.project.namespace + '/' + this.graph.name) {
                   this.push('inGraph', graph);
                 }
               }.bind(this));
