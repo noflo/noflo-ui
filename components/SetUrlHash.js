@@ -1,4 +1,5 @@
 const noflo = require('noflo');
+const { hashToString } = require('../src/urls');
 
 exports.getComponent = () => {
   const c = new noflo.Component();
@@ -12,7 +13,7 @@ exports.getComponent = () => {
     forwardGroups: false,
   },
   (data, groups, out, callback) => {
-    window.location.hash = `#${data.payload.map(part => encodeURIComponent(part)).join('/')}`;
+    window.location.hash = hashToString(data.payload);
     out.send(true);
     return callback();
   });

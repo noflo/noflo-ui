@@ -93,7 +93,7 @@
       </template>
       <div class="modal-content">
       <template is="dom-if" if="{{isMain}}">
-      <p>Main graph of project <span>{{project.name}}</span>.</p>
+      <p>Main graph in project <span>{{project.name}}</span>.</p>
       </template>
       <template is="dom-if" if="{{inGraph.length}}">
       <p>Used as subgraph in
@@ -102,7 +102,7 @@
           <span>{{parent.name}}</span>
         </a>
       </template>
-      .</p>
+      </p>
       </template>
       <ul class="tabs">
         <li id="properties" on-click="setView" class$="{{_computeClass(view)}}">Properties</li>
@@ -410,10 +410,9 @@
         return graph.name + '.json';
       },
       _computeHref: function (parent, project) {
-        if (!project) {
-          return '#';
-        }
-        return '#project/' + project.id + '/' + parent.properties.id;
+        var urls = require('noflo-ui/urls');
+        var hash = urls.getGraphHash(parent.properties.id, project);
+        return urls.hashToString(hash);
       },
       _computeClass5: function (view) {
         return this.tokenList({ selected: view == 'html' });
