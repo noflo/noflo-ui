@@ -227,7 +227,7 @@
         this.inGraph = [];
         this.isMain = false;
         if (this.project) {
-          if (this.graph.properties.id === this.project.main) {
+          if (this.graph.properties.main) {
             this.isMain = true;
           } else {
             this.project.graphs.forEach(function (graph) {

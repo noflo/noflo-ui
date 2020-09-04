@@ -6,12 +6,9 @@ const {
   ensureIframe,
 } = require('../src/runtime');
 
-const sendGraphs = (client, graphs, currentGraphs) => {
+const sendGraphs = (client, graphs) => {
   const compatible = graphs.filter(g => getGraphType(g) === client.definition.type);
-  return Promise.all(compatible.map((g) => {
-    const main = g === currentGraphs[0];
-    return client.protocol.graph.send(g, main);
-  }));
+  return Promise.all(compatible.map(g => client.protocol.graph.send(g, g.properties.main)));
 };
 
 const sendComponents = (client, components, namespace) => {
@@ -57,7 +54,7 @@ exports.getComponent = () => {
       .then(() => ensureIframe(client, route.project))
       .then(() => client.connect())
       .then(() => sendComponents(client, route.project.components, route.project.namespace))
-      .then(() => sendGraphs(client, route.project.graphs, route.graphs))
+      .then(() => sendGraphs(client, route.project.graphs))
       .then(() => {
         if (!(route.graphs != null ? route.graphs.length : undefined)) {
           return Promise.resolve();

@@ -499,7 +499,8 @@
           graph.setProperties({
             id: graphId,
             project: event.detail.id,
-            environment: { type: event.detail.type }
+            environment: { type: event.detail.type },
+            main: true,
           });
           event.detail.graphs.push(graph);
           event.detail.main = graphId;

@@ -24,7 +24,7 @@ exports.getComponent = () => {
     }
 
     client.connect()
-      .then(() => client.protocol.graph.send(graph, true))
+      .then(() => client.protocol.graph.send(graph, graph.properties.main))
       .then((() => output.sendDone({
         out: data,
       })), err => output.done(err));
