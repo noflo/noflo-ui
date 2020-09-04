@@ -166,9 +166,6 @@ exports.getComponent = () => {
       c.clients[client.definition.id] = c.clients[id];
       delete c.clients[id];
       id = client.definition.id; // eslint-disable-line
-      output.send({
-        runtimeupdate: client.definition,
-      });
     };
 
     c.clients[id] = {
@@ -176,6 +173,9 @@ exports.getComponent = () => {
       client,
       onConnected() {
         updateId();
+        output.send({
+          runtimeupdate: client.definition,
+        });
         if (!client.canSend('component', 'list')) { return; }
         setTimeout(() => client.protocol.component.list()
           .then((components => output.send({
@@ -218,7 +218,6 @@ exports.getComponent = () => {
             status,
             runtime: id,
           },
-          runtimeupdate: client.definition,
         });
       },
       onSignal(signal) {
