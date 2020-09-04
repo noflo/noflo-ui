@@ -466,7 +466,7 @@
           // Create subgraph node
           var initialMetadata = currentGraph.getNode(item.nodes[0]).metadata;
           currentGraph.startTransaction('subgraph');
-          currentGraph.addNode(graph.properties.id, currentGraph.properties.project + '/' + graph.name, {
+          currentGraph.addNode(graph.properties.id, this.project.namespace + '/' + graph.name, {
             label: graph.name,
             x: initialMetadata.x,
             y: initialMetadata.y
