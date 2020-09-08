@@ -59,7 +59,7 @@ These URLs can be shown on command line output, or provided to user via other me
 One can *optionally* add component templates, syntax highlighting and a 'get started' link for new runtimes.
 
 1. Add a new YAML file with runtime info as `./runtimeinfo/myruntime.yaml`. [Example](./runtimeinfo/msgflo.yaml)
-2. Include it in [./runtimeinfo/index.coffee](./runtimeinfo/index.coffee)
+2. Include it in [./runtimeinfo/index.js](./runtimeinfo/index.js)
 3. Commit the changes
 4. Send a [Pull Request](https://github.com/noflo/noflo-ui/pull/new/master), so everyone benefits!
 
