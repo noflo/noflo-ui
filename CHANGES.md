@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.3 (git master)
+
+Bugfixes:
+
+* Node inspectors can now be opened even when there are no events from runtime
+
 ## 0.27.2 (2020 September 08)
 
 Bugfixes:

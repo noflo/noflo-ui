@@ -22,7 +22,7 @@
         },
         editor: { value: null },
         events: {
-          type: Object,
+          type: Array,
           value: function () {
             return [];
           },
@@ -207,15 +207,17 @@
           inspector.node = node;
           inspector.component = this.editor.getComponent(node.component);
           inspector.graph = this.currentgraph;
-          inspector.errorLog = this.events.filter(function (event) {
-            if (event.type !== 'processerror') {
-              return false;
-            }
-            if (event.payload.id !== id) {
-              return false;
-            }
-            return true;
-          }.bind(this));
+          if (this.events) {
+            inspector.errorLog = this.events.filter(function (event) {
+              if (event.type !== 'processerror') {
+                return false;
+              }
+              if (event.payload.id !== id) {
+                return false;
+              }
+              return true;
+            }.bind(this));
+          }
           this.nodeInspectors[id] = document.createElement('the-card');
           this.nodeInspectors[id].type = 'node-inspector';
           this.nodeInspectors[id].inspector = inspector;
