@@ -1,7 +1,7 @@
 NoFlo UI ChangeLog
 ==================
 
-## 0.27.3 (git master)
+## 0.27.3 (2020 September 16)
 
 Bugfixes:
 
