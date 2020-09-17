@@ -177,6 +177,8 @@
       getMirrorMode: function (language) {
         if (language === 'coffeescript' || language === 'javascript') {
           return language;
+        } else if (language === 'typescript') {
+          return 'text/typescript';
         } else if (language === 'yaml') {
           return 'text/x-yaml';
         } else if (language === 'python') {
