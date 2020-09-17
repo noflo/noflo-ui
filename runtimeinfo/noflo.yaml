@@ -78,10 +78,10 @@ componenttemplates:
       c.icon = '<%= icon %>';
       c.inPorts.add('in', {
         datatype: 'all',
-        description: 'Packet to forward'
+        description: 'Packet to forward',
       });
       c.outPorts.add('out', {
-        datatype: 'all'
+        datatype: 'all',
       });
       c.process((input, output) => {
         // Check preconditions on input data
@@ -92,7 +92,7 @@ componenttemplates:
         const data = input.getData('in');
         // Process data and send output
         output.send({
-          out: data
+          out: data,
         });
         // Deactivate
         output.done();
