@@ -1,6 +1,16 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.4 (2020 September 17)
+
+New features:
+
+* NoFlo components can now also be written in TypeScript (when your runtime supports it)
+
+Bugfixes:
+
+* Component sources are sent correctly to runtime upon creation
+
 ## 0.27.3 (2020 September 16)
 
 Bugfixes:
