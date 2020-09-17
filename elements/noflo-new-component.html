@@ -79,6 +79,10 @@
                 label: 'JavaScript'
               },
               {
+                id: 'typescript',
+                label: 'TypeScript'
+              },
+              {
                 id: 'python',
                 label: 'Python'
               },
@@ -191,7 +195,7 @@
           icon: this.icon,
           project: this.project.id,
           id: this.project.id + '/' + this.name,
-          code: '',
+          code: this.getExampleCode(this.language),
           tests: ''
         });
         this.close();
@@ -224,6 +228,32 @@
           }
         }
         return pieces.join(' ');
+      },
+      getExampleCode: function (language) {
+        if (!this.type) {
+          return '';
+        }
+        var runtimeInfo = require('noflo-ui/runtimeinfo');
+        var info = runtimeInfo[this.type];
+        if (language == 'es6') {
+          language = 'es2015';
+        }
+        var template = '';
+        if (info && info.componenttemplates && info.componenttemplates[language]) {
+          template = info.componenttemplates[language];
+        }
+        if (template) {
+          // Allow passing project/component data to template
+          var _ = require('underscore');
+          var templateFunc = _.template(template);
+          template = templateFunc({
+            namespace: this.project.namespace || this.project.id,
+            name: this.name,
+            description: this.description,
+            icon: this.icon
+          });
+        }
+        return template;
       }
     });
   </script>

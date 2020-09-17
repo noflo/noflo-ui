@@ -78,12 +78,42 @@ componenttemplates:
       c.icon = '<%= icon %>';
       c.inPorts.add('in', {
         datatype: 'all',
+        description: 'Packet to forward',
+      });
+      c.outPorts.add('out', {
+        datatype: 'all',
+      });
+      c.process((input, output) => {
+        // Check preconditions on input data
+        if (!input.hasData('in')) {
+          return;
+        }
+        // Read packets we need to process
+        const data = input.getData('in');
+        // Process data and send output
+        output.send({
+          out: data,
+        });
+        // Deactivate
+        output.done();
+      });
+      return c;
+    };
+  typescript: |
+    import { Component } from 'noflo';
+
+    exports.getComponent = (): Component => {
+      const c = new Component();
+      c.description = '<%= description %>';
+      c.icon = '<%= icon %>';
+      c.inPorts.add('in', {
+        datatype: 'all',
         description: 'Packet to forward'
       });
       c.outPorts.add('out', {
         datatype: 'all'
       });
-      c.process((input, output) => {
+      c.process((input, output): void => {
         // Check preconditions on input data
         if (!input.hasData('in')) {
           return;
