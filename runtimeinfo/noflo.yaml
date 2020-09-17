@@ -103,7 +103,7 @@ componenttemplates:
     import { Component } from 'noflo';
 
     exports.getComponent = (): Component => {
-      const c = new noflo.Component();
+      const c = new Component();
       c.description = '<%= description %>';
       c.icon = '<%= icon %>';
       c.inPorts.add('in', {
