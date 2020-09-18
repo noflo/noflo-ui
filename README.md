@@ -1,4 +1,4 @@
-# NoFlo Development Environment [![Build Status](https://secure.travis-ci.org/noflo/noflo-ui.png?branch=master)](http://travis-ci.org/noflo/noflo-ui)
+# NoFlo Development Environment
 
 The NoFlo Development Environment is an offline-capable, client-side web application
 that helps users to build and run flow-based programs built with FBP compatible systems such as [NoFlo](http://noflojs.org/),
