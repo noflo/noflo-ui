@@ -1,9 +1,0 @@
-language: node_js
-sudo: false
-node_js:
-- 'lts/*'
-install:
-- npm install
-- npm run build
-addons:
-  chrome: stable
