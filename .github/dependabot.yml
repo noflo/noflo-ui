@@ -4,6 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: daily
+    ignore:
+      - dependency-name: "@polymer/polymer"
+      - dependency-name: "@webcomponents/webcomponentsjs"
+      - dependency-name: "polymer-bundler"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
