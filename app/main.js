@@ -3,11 +3,12 @@ const underscore = require('underscore');
 const { v4: uuid } = require('uuid');
 const fbpSpec = require('fbp-spec');
 const theGraph = require('the-graph');
-const runtime = require('noflo-runtime-postmessage');
+const postMessageRuntime = require('noflo-runtime-postmessage');
 const journalStore = require('../src/JournalStore');
 const runtimeInfo = require('../runtimeinfo/index');
 const collections = require('../src/collections');
 const projects = require('../src/projects');
+const runtime = require('../src/runtime');
 const icons = require('../src/icons');
 const urls = require('../src/urls');
 const mainGraph = require('../graphs/main.fbp');
@@ -22,6 +23,7 @@ const exported = {
   'noflo-ui/runtimeinfo': runtimeInfo,
   'noflo-ui/collections': collections,
   'noflo-ui/projects': projects,
+  'noflo-ui/runtime': runtime,
   'noflo-ui/icons': icons,
   'noflo-ui/urls': urls,
 };
@@ -93,7 +95,7 @@ window.addEventListener('WebComponentsReady', () => {
       const debugUrl = `${ide}#runtime/endpoint?${encodeURIComponent(`protocol=opener&address=${window.location.href}&id=${runtimeOptions.id}`)}`;
       debugButton.setAttribute('href', debugUrl);
       document.body.appendChild(debugButton);
-      runtime.opener(runtimeOptions, debugButton);
+      postMessageRuntime.opener(runtimeOptions, debugButton);
       callback();
     });
   };
