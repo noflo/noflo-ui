@@ -1,5 +1,5 @@
 const noflo = require('noflo');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const decodeRuntime = (data) => {
   const runtime = {};

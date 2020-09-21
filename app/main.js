@@ -1,6 +1,6 @@
 const noflo = require('noflo');
 const underscore = require('underscore');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 const fbpSpec = require('fbp-spec');
 const theGraph = require('the-graph');
 const runtime = require('noflo-runtime-postmessage');

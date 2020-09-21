@@ -1,5 +1,5 @@
 const noflo = require('noflo');
-const uuid = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const iframeAddress = 'https://noflojs.org/noflo-browser/everything.html?fbp_noload=true&fbp_protocol=iframe';
 

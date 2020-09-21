@@ -1,5 +1,5 @@
 const noflo = require('noflo');
-const uuid = require('uuid/v4');
+const { v4: uuid } = require('uuid');
 const url = require('url');
 const path = require('path');
 const {
@@ -49,7 +49,7 @@ const ensureProject = (client, projects) => {
     return matching;
   }
   const project = {
-    id: uuid.v4(),
+    id: uuid(),
     name: getNamespace(client),
     namespace: getNamespace(client),
     runtime: client.definition.id,
