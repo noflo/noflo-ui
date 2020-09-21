@@ -85,7 +85,7 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <input type="text" on-keydown="checkUpdateName" on-blur="updateName" class="editable-title" value="{{graph.name}}" />
+      <input type="text" on-keydown="checkUpdateName" on-blur="updateName" class="editable-title" value="{{getName(graph)}}" />
       <template is="dom-if" if="{{downloadUrl}}">
         <a id="download" download="{{_computeDownload(graph)}}" href$="{{downloadUrl}}">
           <noflo-icon icon="download"></noflo-icon>
@@ -99,7 +99,7 @@
       <p>Used as subgraph in
       <template is="dom-repeat" items="{{inGraph}}" as="parent">
         <a href$="{{_computeHref(parent, project)}}">
-          <span>{{parent.name}}</span>
+          <span>{{getName(parent)}}</span>
         </a>
       </template>
       </p>
@@ -226,26 +226,28 @@
         this.view = 'properties';
         this.inGraph = [];
         this.isMain = false;
+
+        var collections = require('noflo-ui/collections');
         if (this.project) {
           if (this.graph.properties.main) {
             this.isMain = true;
           } else {
             this.project.graphs.forEach(function (graph) {
               graph.nodes.forEach(function (node) {
-                if (node.component === this.graph.name || node.component === this.project.namespace + '/' + this.graph.name) {
+                if (node.component === collections.unnamespace(this.graph.name) || node.component === collections.namespace(this.graph.name, this.project.namespace)) {
                   this.push('inGraph', graph);
                 }
               }.bind(this));
             }.bind(this));
           }
           this.project.specs.forEach(function (spec) {
-            if (spec.name === this.graph.name) {
+            if (collections.unnamespace(spec.name) === collections.unnamespace(this.graph.name)) {
               this.spec = spec;
             }
           }.bind(this));
           if (!this.spec) {
             this.spec = {
-              name: this.graph.name,
+              name: collections.unnamespace(this.graph.name),
               changed: false,
               code: '',
               language: 'yaml',
@@ -407,7 +409,7 @@
         return this.tokenList({ hidden: view != 'tests' });
       },
       _computeDownload: function (graph) {
-        return graph.name + '.json';
+        return require('noflo-ui/collections').unnamespace(graph.name) + '.json';
       },
       _computeHref: function (parent, project) {
         var urls = require('noflo-ui/urls');
@@ -428,6 +430,10 @@
           }
         }
         return pieces.join(' ');
+      },
+      getName: function (entity) {
+        var collections = require('noflo-ui/collections');
+        return collections.unnamespace(collections.getName(entity));
       }
     });
   </script>
