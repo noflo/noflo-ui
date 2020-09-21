@@ -8,6 +8,7 @@ updates:
       - dependency-name: "@polymer/polymer"
       - dependency-name: "@webcomponents/webcomponentsjs"
       - dependency-name: "polymer-bundler"
+      - dependency-name: "noflo"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
