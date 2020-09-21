@@ -222,7 +222,7 @@
         }
         this.description = this.graph.properties.description;
         this.icon = this.graph.properties.icon || 'cog';
-        this.type = this.graph.properties.environment.type;
+        this.type = require('noflo-ui/runtime').getGraphType(this.graph);
         this.view = 'properties';
         this.inGraph = [];
         this.isMain = false;
