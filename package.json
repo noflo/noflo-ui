@@ -45,7 +45,7 @@
     "rtc": "^3.4.0",
     "the-graph": "^0.13.1",
     "underscore": "^1.9.1",
-    "uuid": "^3.0.1"
+    "uuid": "^8.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
