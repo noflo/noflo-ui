@@ -168,10 +168,10 @@
         </button>
         </template>
         <template is="dom-if" if="{{_isGraph(component, graph)}}">
-        <span>{{graph.name}}</span>
+        <span>{{getName(graph)}}</span>
         </template>
         <template is="dom-if" if="{{_isComponent(component)}}">
-        <span>{{component.name}}</span>
+        <span>{{getName(component)}}</span>
         </template>
       </h1>
       <template is="dom-if" if="{{_canInspectGraph(component, graph, readonly)}}">
@@ -575,6 +575,10 @@
       },
       _isReadOnly: function (component, graph, readonly) {
         return readonly || component && component.readonly || graph && graph.properties.readonly;
+      },
+      getName: function (entity) {
+        var collections = require('noflo-ui/collections');
+        return collections.unnamespace(collections.getName(entity));
       }
     });
   </script>
