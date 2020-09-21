@@ -1,13 +1,13 @@
 const noflo = require('noflo');
 const path = require('path');
-const uuid = require('uuid/v4');
+const uuid = require('uuid');
 const projects = require('../src/projects');
 
 const payloadToProject = (data) => {
   const repoParts = data.payload.repo.split('/');
   const payload = {
     project: {
-      id: uuid(),
+      id: uuid.v4(),
       name: repoParts[1],
       namespace: repoParts[1].replace(/^noflo-/, ''),
       repo: data.payload.repo,

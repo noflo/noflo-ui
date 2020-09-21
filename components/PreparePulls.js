@@ -1,5 +1,5 @@
 const noflo = require('noflo');
-const uuid = require('uuid/v4');
+const uuid = require('uuid');
 
 const sendPulls = (pulls, repo, scope, output, callback) => {
   if (!pulls.length) {
@@ -41,7 +41,7 @@ exports.getComponent = () => {
       output.done();
       return;
     }
-    const scope = uuid();
+    const scope = uuid.v4();
     output.send({
       out: new noflo.IP('data', data,
         { scope }),

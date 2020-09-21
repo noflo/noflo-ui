@@ -71,7 +71,7 @@
       },
       nameChanged: function () {
         this.namespace = this.produceNamespace(this.name);
-        this.projectId = require('uuid')();
+        this.projectId = require('uuid').v4();
         if (this.name && this.namespace && this.projectId) {
           this.canSend = true;
         } else {
