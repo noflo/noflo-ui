@@ -75,7 +75,7 @@
     "karma-chrome-launcher": "^2.2.0",
     "karma-mocha": "^2.0.1",
     "karma-mocha-reporter": "^2.2.5",
-    "karma-webpack": "^3.0.5",
+    "karma-webpack": "^4.0.2",
     "mocha": "^6.0.0",
     "noflo-component-loader": "^0.3.0",
     "polymer-bundler": "^3.0.1",
