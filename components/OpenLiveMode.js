@@ -130,7 +130,7 @@ exports.getComponent = () => {
       })
       .then(source => loadGraph({
         ...source,
-        name: client.definition.graph, // Ensure graph gets the name runtime supplied
+        name: path.basename(client.definition.graph),
       }))
       .then((graphInstance) => {
         graphInstance.setProperties({
