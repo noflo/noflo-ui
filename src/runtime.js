@@ -1,5 +1,18 @@
 const fbpGraph = require('fbp-graph');
 const { findByComponent } = require('./projects');
+const { getName, namespace } = require('./collections');
+
+exports.graphRuntimeIdentifier = (graph, projectNamespace = null) => {
+  if (graph && graph.properties && graph.properties.runtimeName) {
+    // Runtime-supplied identifier, keep stable
+    return graph.properties.runtimeName;
+  }
+  const graphName = getName(graph);
+  if (projectNamespace) {
+    return namespace(graphName, projectNamespace);
+  }
+  return graphName;
+};
 
 const portForLibrary = port => ({
   name: port.id,
