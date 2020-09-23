@@ -12,6 +12,10 @@ const sendGraphs = (client, graphs, namespace = null) => {
   return Promise.all(compatible.map(g => client.protocol.graph.send({
     ...g,
     name: graphRuntimeIdentifier(g, namespace),
+    properties: {
+      ...g.properties,
+      library: namespace,
+    },
   }, g.properties.main)));
 };
 

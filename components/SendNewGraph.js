@@ -29,6 +29,10 @@ exports.getComponent = () => {
       .then(() => client.protocol.graph.send({
         ...graph,
         name: graphRuntimeIdentifier(graph, namespace),
+        properties: {
+          ...graph.properties,
+          library: namespace,
+        },
       }, graph.properties.main))
       .then((() => output.sendDone({
         out: data,
