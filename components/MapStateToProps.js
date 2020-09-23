@@ -1,4 +1,5 @@
 const noflo = require('noflo');
+const { graphRuntimeIdentifier } = require('../src/runtime');
 
 // Build up display model of runtime from runtime definition and status
 const populateRuntime = (s) => {
@@ -76,8 +77,10 @@ exports.getComponent = () => {
           }
           const packets = updated.runtimePackets[state.runtime.id].toarray();
           packets.reverse();
-          props.packets = packets.filter(p => p.graph === (state.graphs[0].name
-            || state.graphs[0].properties.id));
+          const namespace = state.project ? state.project.namespace : null;
+          props.packets = packets.filter(
+            p => p.graph === graphRuntimeIdentifier(state.graphs[0], namespace),
+          );
           return;
         }
         case 'runtimeEvents': {

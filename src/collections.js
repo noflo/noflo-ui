@@ -1,7 +1,31 @@
+const { basename } = require('path');
+
 exports.sortByName = (a, b) => {
-  const aName = (a.properties != null ? a.properties.name : undefined) || a.name || a.id || 'Unknown';
-  const bName = (b.properties != null ? b.properties.name : undefined) || b.name || b.id || 'Unknown';
+  const aName = exports.unnamespace(exports.getName(a));
+  const bName = exports.unnamespace(exports.getName(b));
   return aName.localeCompare(bName);
+};
+
+exports.getName = (obj, allowUnknown = true) => {
+  const name = (obj.properties != null ? obj.properties.name : undefined) || obj.name || obj.id;
+  if (!name && allowUnknown) {
+    return 'Unknown';
+  }
+  return name;
+};
+
+exports.unnamespace = (name) => {
+  if (name.indexOf('/') === -1) {
+    return name;
+  }
+  return basename(name);
+};
+
+exports.namespace = (name, namespace) => {
+  if (name.indexOf('/') !== -1) {
+    return name;
+  }
+  return `${namespace}/${name}`;
 };
 
 exports.sortBySeen = (ain, bin) => {
@@ -32,10 +56,8 @@ exports.addToList = (list, entity, sort = exports.sortByName) => {
       found = true;
       return;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined)
-      || existing.id || existing.name;
-    const entityId = (entity.properties != null ? entity.properties.id : undefined)
-      || entity.id || entity.name;
+    const existingId = exports.unnamespace(exports.getName(existing, false));
+    const entityId = exports.unnamespace(exports.getName(entity, false));
     if (existingId === entityId) {
       // id match, replace
       const exists = existing;
@@ -56,9 +78,8 @@ exports.removeFromList = (list, entity) => {
     if (existing === entity) {
       return true;
     }
-    const existingId = (existing.properties != null ? existing.properties.id : undefined)
-      || existing.id;
-    const entityId = (entity.properties != null ? entity.properties.id : undefined) || entity.id;
+    const existingId = exports.unnamespace(exports.getName(existing, false));
+    const entityId = exports.unnamespace(exports.getName(entity, false));
     return (existingId === entityId);
   });
   if (!matched) {

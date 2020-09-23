@@ -170,7 +170,7 @@ describe('Opening a Runtime', () => {
       }));
     it('should show the graph name in the search bar', () => waitForElement('noflo-ui noflo-search h1 span')
       .then((searchTitle) => {
-        chai.expect(searchTitle.innerHTML).to.equal('foo/bar');
+        chai.expect(searchTitle.innerHTML).to.equal('bar');
       }));
     it('should show the graph as "running"', () => waitFor(1000) // Seems this one takes sometimes a while to update
       .then(() => waitForElement('noflo-ui noflo-runtime #runcontrol h2'))

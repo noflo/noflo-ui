@@ -18,12 +18,12 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <h1><span>{{component.name}}</span></h1>
+      <h1><span>{{getName(component)}}</span></h1>
       <template is="dom-if" if="{{inGraph.length}}">
       <p>Used as component in
       <template is="dom-repeat" items="{{inGraph}}" as="parent">
         <a href$="{{_computeHref(parent, project)}}">
-          <span>{{parent.name}}</span>
+          <span>{{getName(parent)}}</span>
         </a>
       </template>
       </p>
@@ -65,9 +65,10 @@
         Polymer.dom(this).classList.add('modal-content');
         this.inGraph = [];
         if (this.project) {
+          var collections = require('noflo-ui/collections');
           this.project.graphs.forEach(function (graph) {
             graph.nodes.forEach(function (node) {
-              if (node.component === this.component.name || node.component === this.project.namespace + '/' + this.component.name) {
+              if (node.component === collections.unnamespace(this.component.name) || node.component === collections.namespace(this.component.name, this.project.namespace)) {
                 this.push('inGraph', graph);
               }
             }.bind(this));
@@ -102,7 +103,11 @@
         var hash = urls.getGraphHash(parent.properties.id, project);
         return urls.hashToString(hash);
       },
-      listeners: { click: 'close' }
+      listeners: { click: 'close' },
+      getName: function (entity) {
+        var collections = require('noflo-ui/collections');
+        return collections.unnamespace(collections.getName(entity));
+      }
     });
   </script>
 </dom-module>

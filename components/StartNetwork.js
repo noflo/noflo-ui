@@ -1,4 +1,5 @@
 const noflo = require('noflo');
+const { graphRuntimeIdentifier } = require('../src/runtime');
 
 exports.getComponent = () => {
   const c = new noflo.Component();
@@ -14,10 +15,10 @@ exports.getComponent = () => {
     if (!input.hasData('in', 'client')) { return; }
     const [data, client] = input.getData('in', 'client');
 
-    const graphId = data.graph.name || data.graph.properties.id;
+    const namespace = data.project ? data.project.namespace : null;
     client.connect()
       .then(() => client.protocol.network.start({
-        graph: graphId,
+        graph: graphRuntimeIdentifier(data.graph, namespace),
       }))
       .then(status => output.send({
         out: {

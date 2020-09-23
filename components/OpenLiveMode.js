@@ -128,14 +128,13 @@ exports.getComponent = () => {
 
         return getSource(client, def.graph);
       })
-      .then(source => loadGraph({
-        ...source,
-        name: client.definition.graph, // Ensure graph gets the name runtime supplied
-      }))
+      .then(source => loadGraph(source))
       .then((graphInstance) => {
         graphInstance.setProperties({
           id: `${state.project.id}/${(graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name}`,
           project: state.project.id,
+          // Ensure graph communications use the name runtime supplied
+          runtimeName: client.definition.graph,
         });
         addToList(state.project.graphs, graphInstance);
         state.project.main = graphInstance.properties.id;
