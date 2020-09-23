@@ -234,6 +234,7 @@
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
+            project: this.ctx.project,
           });
         }.bind(this));
         this.$.main.addEventListener('newruntime', function (event) {
@@ -253,6 +254,7 @@
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
+            project: this.ctx.project,
           });
         }.bind(this));
         this.$.context.addEventListener('clear:runtimeevents', function (event) {
@@ -285,10 +287,18 @@
           this.emitEvent('storage:save:runtime', event.detail);
         }.bind(this));
         this.$.runtime.addEventListener('start', function (event) {
-          this.emitEvent('runtime:start', event.detail);
+          this.emitEvent('runtime:start', {
+            runtime: event.detail.runtime,
+            graph: event.detail.graph,
+            project: this.ctx.project,
+          });
         }.bind(this));
         this.$.runtime.addEventListener('stop', function (event) {
-          this.emitEvent('runtime:stop', event.detail);
+          this.emitEvent('runtime:stop', {
+            runtime: event.detail.runtime,
+            graph: event.detail.graph,
+            project: this.ctx.project,
+          });
         }.bind(this));
         this.$.runtime.addEventListener('reconnect', function (event) {
           this.emitEvent('runtime:reconnect', event.detail);
@@ -322,6 +332,7 @@
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
+            project: this.ctx.project,
           });
         }.bind(this));
         this.$.project.addEventListener('newcomponent', function (event) {

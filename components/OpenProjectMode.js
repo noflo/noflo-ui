@@ -4,14 +4,18 @@ const {
   getComponentType,
   getRemoteNodes,
   ensureIframe,
+  graphRuntimeIdentifier,
 } = require('../src/runtime');
 
-const sendGraphs = (client, graphs) => {
+const sendGraphs = (client, graphs, namespace = null) => {
   const compatible = graphs.filter(g => getGraphType(g) === client.definition.type);
-  return Promise.all(compatible.map(g => client.protocol.graph.send(g, g.properties.main)));
+  return Promise.all(compatible.map(g => client.protocol.graph.send({
+    ...g,
+    name: graphRuntimeIdentifier(g, namespace),
+  }, g.properties.main)));
 };
 
-const sendComponents = (client, components, namespace) => {
+const sendComponents = (client, components, namespace = null) => {
   const compatible = components.filter(c => [
     null,
     client.definition.type,
@@ -54,7 +58,7 @@ exports.getComponent = () => {
       .then(() => ensureIframe(client, route.project))
       .then(() => client.connect())
       .then(() => sendComponents(client, route.project.components, route.project.namespace))
-      .then(() => sendGraphs(client, route.project.graphs))
+      .then(() => sendGraphs(client, route.project.graphs, route.project.namespace))
       .then(() => {
         if (!(route.graphs != null ? route.graphs.length : undefined)) {
           return Promise.resolve();

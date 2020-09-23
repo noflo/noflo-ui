@@ -1,7 +1,7 @@
 const noflo = require('noflo');
-const { getGraphType } = require('../src/runtime');
+const { getGraphType, graphRuntimeIdentifier } = require('../src/runtime');
 
-const preparePayload = (event, original, graph) => {
+const preparePayload = (event, original, graph, namespace) => {
   const payload = {};
   Object.keys(original).forEach((key) => {
     const val = original[key];
@@ -34,7 +34,7 @@ const preparePayload = (event, original, graph) => {
     }
     payload[key] = val;
   });
-  payload.graph = graph.name || graph.properties.id;
+  payload.graph = graphRuntimeIdentifier(graph, namespace);
   return payload;
 };
 
@@ -53,7 +53,7 @@ exports.getComponent = () => {
   return c.process((input, output) => {
     if (!input.hasData('in', 'project', 'client')) { return; }
     const [data, client] = input.getData('in', 'client');
-    input.getData('project');
+    const project = input.getData('project');
 
     const graphType = getGraphType(data.graph);
     if (graphType && (graphType !== client.definition.type)) {
@@ -71,7 +71,7 @@ exports.getComponent = () => {
 
     client.connect()
       .then(() => Promise.all(relevantChanges.map(change => client.protocol.graph[change.event](
-        preparePayload(change.event, change.payload, data.graph),
+        preparePayload(change.event, change.payload, data.graph, project.namespace),
       ))))
       .then((() => output.done()), err => output.done(err));
   });

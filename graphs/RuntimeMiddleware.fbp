@@ -65,7 +65,7 @@ OpenProjectMode OUT -> IN StorageOpenedAction
 OpenProjectMode ERROR -> IN RuntimeErrorAction
 
 # Send selected edges to runtime
-'graphs' -> KEYS GetEdgeState(ui/GetActionValues)
+'graphs,project' -> KEYS GetEdgeState(ui/GetActionValues)
 Dispatch HANDLE[2] -> IN HasEdgeRuntime(ui/HasActionRuntime)
 HasEdgeRuntime OUT -> IN GetEdgeState
 # If there is no runtime we don't send edges
@@ -73,6 +73,7 @@ HasEdgeRuntime MISSED -> IN Passed
 GetEdgeState STATE -> IN[2] GetClient
 GetClient CLIENT[2] -> CLIENT SendEdges(ui/SendEdges)
 GetEdgeState VALUES[0] -> GRAPHS SendEdges
+GetEdgeState VALUES[1] -> PROJECT SendEdges
 GetEdgeState OUT -> EDGES SendEdges
 SendEdges OUT -> IN ContextEdgesAction
 SendEdges ERROR -> IN RuntimeErrorAction
