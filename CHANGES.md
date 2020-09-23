@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.5 (2020 September 23)
+
+Bugfixes:
+
+* NoFlo UI now uses namespaces more consistently when communicating with a runtime
+
 ## 0.27.4 (2020 September 17)
 
 New features:
