@@ -16,7 +16,7 @@ const preparePath = (type, path) => {
   return path.replace('.fbp', '.json');
 };
 
-const buildTree = entries => entries.map(entry => ({
+const buildTree = (entries) => entries.map((entry) => ({
   path: preparePath(entry.type, entry.path),
   content: prepareContent(entry.type, entry.local),
   mode: '100644',

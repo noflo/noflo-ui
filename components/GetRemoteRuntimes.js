@@ -35,7 +35,7 @@ exports.getComponent = () => {
         }
         const updateRts = runtimes.filter((runtime) => {
           const rt = runtime;
-          const known = knownRuntimes.find(knownRuntime => knownRuntime.id === rt.runtime.id);
+          const known = knownRuntimes.find((knownRuntime) => knownRuntime.id === rt.runtime.id);
           if (!known) { return true; }
           const knownSeen = new Date(known.seen);
           if ((rt.runtime.seen.getTime() === knownSeen.getTime())

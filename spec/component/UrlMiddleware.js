@@ -35,7 +35,7 @@ describe('URL Middleware', () => {
   });
   describe('receiving a noflo:ready action', () => {
     it('should send application:url action', (done) => {
-      const checkUrl = data => chai.expect(data).to.equal(window.location.href);
+      const checkUrl = (data) => chai.expect(data).to.equal(window.location.href);
       mw.receivePass('noflo:ready', true, () => mw.receiveAction('application:url', checkUrl, done));
       mw.send('noflo:ready', true);
     });
@@ -87,14 +87,14 @@ describe('URL Middleware', () => {
   });
   describe('on hash change to a old-style example URL', () => {
     it('should send application:redirect action', (done) => {
-      const checkRedirect = data => chai.expect(data).to.eql('#gist/abc123');
+      const checkRedirect = (data) => chai.expect(data).to.eql('#gist/abc123');
       mw.receiveAction('application:redirect', checkRedirect, done);
       mw.send('application:hash', 'example/abc123');
     });
   });
   describe('on hash change to an gist URL', () => {
     it('should send github:gist action', (done) => {
-      const checkOpen = data => chai.expect(data).to.eql({
+      const checkOpen = (data) => chai.expect(data).to.eql({
         route: 'github',
         runtime: null,
         project: null,

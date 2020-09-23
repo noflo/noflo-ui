@@ -178,7 +178,7 @@ exports.getComponent = () => {
         });
         if (!client.canSend('component', 'list')) { return; }
         setTimeout(() => client.protocol.component.list()
-          .then((components => output.send({
+          .then(((components) => output.send({
             components: {
               components,
               runtime: id,

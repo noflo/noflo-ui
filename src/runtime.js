@@ -14,7 +14,7 @@ exports.graphRuntimeIdentifier = (graph, projectNamespace = null) => {
   return graphName;
 };
 
-const portForLibrary = port => ({
+const portForLibrary = (port) => ({
   name: port.id,
   type: port.type,
   description: port.type,
@@ -23,7 +23,7 @@ const portForLibrary = port => ({
 });
 
 // Covert FBP Protocol component to the-graph library component
-exports.componentForLibrary = component => ({
+exports.componentForLibrary = (component) => ({
   name: component.name,
   icon: component.icon || 'cog',
   description: component.description || '',
@@ -76,7 +76,7 @@ exports.getRemoteNodes = (client, r) => {
     if (!(graph.nodes != null ? graph.nodes.length : undefined)) {
       return Promise.reject(new Error(`Node ${graph.name} doesn't contain child nodes`));
     }
-    const [matchedNode] = graph.nodes.filter(n => n.id === node);
+    const [matchedNode] = graph.nodes.filter((n) => n.id === node);
     if (!matchedNode) {
       return Promise.reject(new Error(`Node ${node} not found in graph ${graph.name || graph.properties.id}`));
     }
@@ -115,7 +115,7 @@ exports.getRemoteNodes = (client, r) => {
     });
 };
 
-exports.loadGraph = source => new Promise(((resolve, reject) => {
+exports.loadGraph = (source) => new Promise(((resolve, reject) => {
   let method;
   switch (source.language) {
     case 'json': method = 'loadJSON'; break;

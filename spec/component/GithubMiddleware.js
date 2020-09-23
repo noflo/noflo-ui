@@ -41,7 +41,7 @@ describe('GitHub Middleware', () => {
         },
         ],
       };
-      const check = data => chai.expect(data).to.eql([
+      const check = (data) => chai.expect(data).to.eql([
         'project',
         'bar',
         'bar_main',

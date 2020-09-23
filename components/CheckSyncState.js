@@ -12,7 +12,7 @@ const githubGet = (url, token, callback) => {
     }
     callback(null, res.body);
   });
-  request.on('error', err => callback(err.body));
+  request.on('error', (err) => callback(err.body));
   request();
 };
 
@@ -32,7 +32,7 @@ const processGraphsTree = (tree, o, prefix) => {
     // If we have .json and .fbp for same graph, .json wins
     if (entry.path.indexOf('.fbp') === -1) { return true; }
     const jsonVersion = entry.path.replace('.fbp', '.json');
-    const jsonFound = graphs.find(g => g.path === jsonVersion);
+    const jsonFound = graphs.find((g) => g.path === jsonVersion);
     if (jsonFound) {
       return false;
     }
@@ -211,7 +211,7 @@ const getRemoteObjects = (repo, sha, token, callback) => getCommit(
   },
 );
 
-const normalizeName = name => name.replace(/\s/g, '_');
+const normalizeName = (name) => name.replace(/\s/g, '_');
 
 const createPath = (type, entity) => {
   const name = normalizeName(entity.name);

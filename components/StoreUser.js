@@ -15,7 +15,7 @@ const downloadAvatar = (avatarUrl, callback) => {
     if (req.status !== 200) {
       return callback(new Error(`Avatar request returned ${req.status}`));
     }
-    fileReader.onload = event => callback(null, event.target.result);
+    fileReader.onload = (event) => callback(null, event.target.result);
     return fileReader.readAsDataURL(req.response);
   };
   req.onerror = () => callback(new Error('Avatar request failed'));

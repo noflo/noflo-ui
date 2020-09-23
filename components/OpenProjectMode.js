@@ -8,8 +8,8 @@ const {
 } = require('../src/runtime');
 
 const sendGraphs = (client, graphs, namespace = null) => {
-  const compatible = graphs.filter(g => getGraphType(g) === client.definition.type);
-  return Promise.all(compatible.map(g => client.protocol.graph.send({
+  const compatible = graphs.filter((g) => getGraphType(g) === client.definition.type);
+  return Promise.all(compatible.map((g) => client.protocol.graph.send({
     ...g,
     name: graphRuntimeIdentifier(g, namespace),
     properties: {
@@ -20,11 +20,11 @@ const sendGraphs = (client, graphs, namespace = null) => {
 };
 
 const sendComponents = (client, components, namespace = null) => {
-  const compatible = components.filter(c => [
+  const compatible = components.filter((c) => [
     null,
     client.definition.type,
   ].includes(getComponentType(c)));
-  return Promise.all(compatible.map(c => client.protocol.component.source({
+  return Promise.all(compatible.map((c) => client.protocol.component.source({
     name: c.name,
     language: c.language,
     library: namespace || client.definition.namespace,
@@ -80,6 +80,6 @@ exports.getComponent = () => {
         route.state = 'ok';
         return output.send({ out: route });
       })
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

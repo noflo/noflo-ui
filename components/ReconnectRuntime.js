@@ -17,6 +17,6 @@ exports.getComponent = () => {
     client.disconnect()
       .then(() => client.connect())
       .then(() => output.send({ out: client.definition }))
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

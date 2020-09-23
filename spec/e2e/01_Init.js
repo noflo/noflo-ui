@@ -55,7 +55,7 @@ describe('NoFlo UI initialization', () => {
       const indexedDB = win.overrideIndexedDB || win.indexedDB;
       chai.expect(indexedDB).to.exist;
       const req = indexedDB.open('noflo-ui', 4);
-      req.onerror = err => done(err);
+      req.onerror = (err) => done(err);
       req.onupgradeneeded = function (e) {
         e.target.transaction.abort();
         return done(new Error('We didn\'t get a ready database'));
