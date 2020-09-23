@@ -27,7 +27,7 @@ exports.getComponent = () => {
       return;
     }
     if (!input.hasStream('action')) { return; }
-    const packets = input.getStream('action').filter(ip => ip.type === 'data').map(ip => ip.data);
+    const packets = input.getStream('action').filter((ip) => ip.type === 'data').map((ip) => ip.data);
     packets.forEach((data) => {
       if (!data.action) {
         debugError('Received action without expected payload', data);

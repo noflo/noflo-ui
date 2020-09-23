@@ -67,7 +67,7 @@ describe('Storage Middleware', () => {
   describe('receiving a storage:delete:component action', () => {
     it('should send a storage:removed:component action', (done) => {
       const action = 'storage:delete:component';
-      const check = data => chai.expect(data).to.equal(component.id);
+      const check = (data) => chai.expect(data).to.equal(component.id);
       mw.receiveAction('storage:removed:component', check, done);
       mw.send(action, component,
         { db: idb });

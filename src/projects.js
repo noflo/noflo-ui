@@ -2,7 +2,7 @@ exports.findMainGraph = (project) => {
   if (!project.graphs.length) { return null; }
   if (project.main) {
     // Ensure currently set main graph exists
-    const mainFound = project.graphs.find(graph => graph.properties.id === project.main);
+    const mainFound = project.graphs.find((graph) => graph.properties.id === project.main);
     if (mainFound) {
       return project.main;
     }
@@ -58,7 +58,7 @@ exports.findByComponent = (componentName, project) => {
 exports.findProject = (id, projects) => {
   if (!projects) { return null; }
 
-  return projects.find(project => project.id === id);
+  return projects.find((project) => project.id === id);
 };
 
 exports.getProjectHash = (project, callback) => {

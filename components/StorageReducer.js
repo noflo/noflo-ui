@@ -7,7 +7,7 @@ const findProject = (entity, projects) => {
   if (!projectId) {
     return null;
   }
-  const matching = projects.filter(p => p.id === projectId);
+  const matching = projects.filter((p) => p.id === projectId);
   if (!matching.length) {
     return null;
   }
@@ -60,10 +60,10 @@ exports.getComponent = () => {
         // Update project graphs etc
         state.projects.forEach((p) => {
           const project = p;
-          project.graphs = state.storedGraphs.filter(item => item.properties.project
+          project.graphs = state.storedGraphs.filter((item) => item.properties.project
             === project.id);
-          project.components = state.components.filter(item => item.project === project.id);
-          project.specs = state.specs.filter(item => item.project === project.id);
+          project.components = state.components.filter((item) => item.project === project.id);
+          project.specs = state.specs.filter((item) => item.project === project.id);
         });
 
         out.send(state);
@@ -75,16 +75,16 @@ exports.getComponent = () => {
         const project = data.payload;
         if (!project.graphs) { project.graphs = []; }
         if (data.state.storedGraphs && !project.graphs.length) {
-          project.graphs = data.state.storedGraphs.filter(item => item.properties.project
+          project.graphs = data.state.storedGraphs.filter((item) => item.properties.project
             === project.id);
         }
         if (!project.components) { project.components = []; }
         if (data.state.components && !project.components.length) {
-          project.components = data.state.components.filter(item => item.project === project.id);
+          project.components = data.state.components.filter((item) => item.project === project.id);
         }
         if (!project.specs) { project.specs = []; }
         if (data.state.specs && !project.specs.length) {
-          project.specs = data.state.specs.filter(item => item.project === project.id);
+          project.specs = data.state.specs.filter((item) => item.project === project.id);
         }
         state.projects = data.state.projects || [];
         collections.addToList(state.projects, project);

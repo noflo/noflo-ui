@@ -36,6 +36,6 @@ exports.getComponent = () => {
       }, graph.properties.main))
       .then((() => output.sendDone({
         out: data,
-      })), err => output.done(err));
+      })), (err) => output.done(err));
   });
 };

@@ -88,7 +88,7 @@ exports.getComponent = () => {
       });
       callback();
     });
-    request.on('error', err => callback(err.error || err.body));
+    request.on('error', (err) => callback(err.error || err.body));
     return request();
   });
 };

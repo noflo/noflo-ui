@@ -290,7 +290,7 @@ ga('send', 'pageview');
   // Our local tasks
   const grunt = this;
   this.registerMultiTask('sharedstylecomponent', 'Combine CSS files into a Polymer shared style element', function () {
-    const sources = this.data.map(file => grunt.file.read(file));
+    const sources = this.data.map((file) => grunt.file.read(file));
     const template = `\
 <!-- Generated from <%= files %> -->
 <dom-module id="<%= id %>">

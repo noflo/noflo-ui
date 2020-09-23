@@ -28,7 +28,6 @@ const exported = {
   'noflo-ui/urls': urls,
 };
 
-
 window.React = require('react');
 window.ReactDOM = require('react-dom');
 

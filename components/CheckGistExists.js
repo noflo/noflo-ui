@@ -21,7 +21,7 @@ exports.getComponent = () => {
       return;
     }
 
-    const existing = data.state.projects.filter(project => project.gist === data.payload.graph);
+    const existing = data.state.projects.filter((project) => project.gist === data.payload.graph);
     if (!existing.length) {
       out.new.send(data);
       callback();

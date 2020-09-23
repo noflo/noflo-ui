@@ -82,8 +82,8 @@ exports.getComponent = () => {
     if (input.hasData('initial')) {
       let runtimes = input.getData('initial');
       if (!runtimes) { runtimes = []; }
-      Promise.all(runtimes.map(def => ensureInstance(def, c.clients, output)))
-        .then((() => output.done()), err => output.done(err));
+      Promise.all(runtimes.map((def) => ensureInstance(def, c.clients, output)))
+        .then((() => output.done()), (err) => output.done(err));
       return;
     }
     if (input.hasData('updated')) {
@@ -95,9 +95,9 @@ exports.getComponent = () => {
         .then((() => {
           output.send({ updated: data });
           return output.done();
-        }), err => output.done(err));
+        }), (err) => output.done(err));
     }
-    const indexesWithData = input.attached('in').filter(idx => input.hasData(['in', idx]));
+    const indexesWithData = input.attached('in').filter((idx) => input.hasData(['in', idx]));
     if (!indexesWithData.length) { return; }
     Promise.all(indexesWithData.map((idx) => {
       const route = input.getData(['in', idx]);
@@ -119,7 +119,7 @@ exports.getComponent = () => {
           return def;
         });
     }))
-      .then(runtimes => (() => {
+      .then((runtimes) => (() => {
         const result = [];
         runtimes.forEach((runtime) => {
           result.push(output.send({
@@ -131,7 +131,7 @@ exports.getComponent = () => {
         });
         return result;
       })())
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
   return c;
 };

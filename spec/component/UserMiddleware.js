@@ -37,7 +37,7 @@ describe('User Middleware', () => {
       it('should send out an empty user:info', (done) => {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
-        const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
+        const check = (data) => chai.expect(data['flowhub-user']).to.be.a('null');
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
       });
@@ -70,7 +70,7 @@ describe('User Middleware', () => {
       it('should pass it out as-is and send user:info when token is valid', (done) => {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io';
-        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
+        const check = (data) => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
         mock.respondWith('GET', 'https://api.flowhub.io/user', [
@@ -132,7 +132,7 @@ describe('User Middleware', () => {
       it('should send the error out', (done) => {
         const action = 'application:url';
         const payload = 'https://app.flowhub.io?error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match';
-        const check = data => chai.expect(data.message).to.contain('The redirect_uri MUST match');
+        const check = (data) => chai.expect(data.message).to.contain('The redirect_uri MUST match');
         mw.receiveAction('user:error', check, done);
         mw.send(action, payload);
       });
@@ -150,7 +150,7 @@ describe('User Middleware', () => {
       it('should perform a token exchange and fail', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
-        const check = data => chai.expect(data.message).to.contain('bad_code_foo');
+        const check = (data) => chai.expect(data.message).to.contain('bad_code_foo');
         mw.receiveAction('user:error', check, done);
         mw.send(action, payload);
         mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, [
@@ -176,13 +176,13 @@ describe('User Middleware', () => {
       it('should perform a token exchange and fail at user fetch', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
-        const check = data => chai.expect(data.message).to.contain('Bad Credentials');
+        const check = (data) => chai.expect(data.message).to.contain('Bad Credentials');
         mw.receiveAction('user:error', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, req => req.respond(200,
+        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
-        mock.respondWith('GET', 'https://api.flowhub.io/user', req => req.respond(401,
+        mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(401,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ message: 'Bad Credentials' })));
         mock.respond();
@@ -216,13 +216,13 @@ describe('User Middleware', () => {
       it('should perform a token exchange and update user information without state in URL', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}`;
-        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
+        const check = (data) => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, req => req.respond(200,
+        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
-        mock.respondWith('GET', 'https://api.flowhub.io/user', req => req.respond(200,
+        mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify(userData)));
         mock.respond();
@@ -231,13 +231,13 @@ describe('User Middleware', () => {
       it('should perform a token exchange and update user information with state in URL', (done) => {
         const action = 'application:url';
         const payload = `https://app.flowhub.io?code=${code}&state=`;
-        const check = data => chai.expect(data['flowhub-user']).to.eql(userData);
+        const check = (data) => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, req => req.respond(200,
+        mock.respondWith('GET', `https://noflo-gate.herokuapp.com/authenticate/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
-        mock.respondWith('GET', 'https://api.flowhub.io/user', req => req.respond(200,
+        mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify(userData)));
         (mock.respond)();
@@ -249,7 +249,7 @@ describe('User Middleware', () => {
     describe('with app URL not matching redirect configuration', () => {
       it('should send user:error', (done) => {
         const action = 'user:login';
-        const check = data => chai.expect(data.message).to.contain('http://localhost:9999');
+        const check = (data) => chai.expect(data.message).to.contain('http://localhost:9999');
         mw.receiveAction('user:error', check, done);
         mw.send(action, {
           url: 'http://example.net',
@@ -260,7 +260,7 @@ describe('User Middleware', () => {
     describe('with app URL matching redirect configuration', () => {
       it('should send application:redirect action with redirect URL', (done) => {
         const action = 'user:login';
-        const check = data => chai.expect(data).to.contain('https://github.com/login/oauth/authorize');
+        const check = (data) => chai.expect(data).to.contain('https://github.com/login/oauth/authorize');
         mw.receiveAction('application:redirect', check, done);
         mw.send(action, {
           url: 'http://localhost:9999',
@@ -285,7 +285,7 @@ describe('User Middleware', () => {
     });
     it('should send empty object as user:info', (done) => {
       const action = 'user:logout';
-      const check = data => chai.expect(data['flowhub-user']).to.be.a('null');
+      const check = (data) => chai.expect(data['flowhub-user']).to.be.a('null');
       mw.receiveAction('user:info', check, done);
       mw.send(action, true);
     });

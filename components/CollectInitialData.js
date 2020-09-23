@@ -6,7 +6,7 @@ const getData = (input, port) => input.getStream(port).filter((ip) => {
   // Drop 'empty' result
   if (!ip.data || (ip.data === true)) { return false; }
   return true;
-}).map(ip => ip.data);
+}).map((ip) => ip.data);
 
 exports.getComponent = () => {
   const c = new noflo.Component();

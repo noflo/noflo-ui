@@ -20,12 +20,12 @@ exports.getComponent = () => {
       .then(() => client.protocol.network.stop({
         graph: graphRuntimeIdentifier(data.graph, namespace),
       }))
-      .then(status => output.send({
+      .then((status) => output.send({
         out: {
           status,
           runtime: client.definition.id,
         },
       }))
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

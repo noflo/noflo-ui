@@ -33,12 +33,12 @@ exports.getComponent = () => {
         code: component.code,
         tests: component.tests,
       }))
-      .then(componentDefinition => output.send({
+      .then((componentDefinition) => output.send({
         out: {
           component: componentDefinition,
           runtime: client.definition.id,
         },
       }))
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

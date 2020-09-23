@@ -31,10 +31,10 @@ const fetchFromLibrary = (namespace, client) => {
   if (!namespace) { return Promise.resolve([]); }
   return client.connect()
     .then(() => client.protocol.component.list())
-    .then(components => components
-      .map(component => component.name)
-      .filter(name => isComponentInProject(namespace, name)))
-    .then(components => Promise.all(components.map(name => getSource(client, name))));
+    .then((components) => components
+      .map((component) => component.name)
+      .filter((name) => isComponentInProject(namespace, name)))
+    .then((components) => Promise.all(components.map((name) => getSource(client, name))));
 };
 
 const ensureProject = (client, projects) => {
@@ -128,7 +128,7 @@ exports.getComponent = () => {
 
         return getSource(client, def.graph);
       })
-      .then(source => loadGraph(source))
+      .then((source) => loadGraph(source))
       .then((graphInstance) => {
         graphInstance.setProperties({
           id: `${state.project.id}/${(graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name}`,
@@ -150,7 +150,7 @@ exports.getComponent = () => {
           }
           return true;
         });
-        return Promise.all(projectGraphs.map(graphDef => loadGraph(graphDef)
+        return Promise.all(projectGraphs.map((graphDef) => loadGraph(graphDef)
           .then((g) => {
             const graph = g;
             graph.name = path.basename(graphDef.name);
@@ -164,7 +164,7 @@ exports.getComponent = () => {
             graphs.forEach((g) => {
               addToList(state.project.graphs, g);
             });
-            const components = sources.filter(comp => comp.language !== 'json');
+            const components = sources.filter((comp) => comp.language !== 'json');
             components.forEach((comp) => {
               const component = comp;
               component.project = state.project.id;
@@ -212,6 +212,6 @@ exports.getComponent = () => {
           });
         });
       })
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

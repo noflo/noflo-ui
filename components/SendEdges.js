@@ -35,6 +35,6 @@ exports.getComponent = () => {
         return edge;
       }),
     })
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };

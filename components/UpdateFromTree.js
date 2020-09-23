@@ -12,7 +12,7 @@ const githubGet = (url, token, callback) => {
     }
     callback(null, res.body);
   });
-  request.on('error', err => callback(err.body));
+  request.on('error', (err) => callback(err.body));
   return request();
 };
 
@@ -58,7 +58,7 @@ const processTree = (basePath, tree, entries, repo, token, out, callback) => {
 
   if (entries.length === 0) { return callback(); }
 
-  return subTrees.forEach(subTree => getTree(repo, subTree.sha, token, (err, sTree) => {
+  return subTrees.forEach((subTree) => getTree(repo, subTree.sha, token, (err, sTree) => {
     if (err) { return callback(err); }
     return processTree(`${subTree.fullPath}/`, sTree, entries, repo, token, out, callback);
   }));

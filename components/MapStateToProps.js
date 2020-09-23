@@ -79,7 +79,7 @@ exports.getComponent = () => {
           packets.reverse();
           const namespace = state.project ? state.project.namespace : null;
           props.packets = packets.filter(
-            p => p.graph === graphRuntimeIdentifier(state.graphs[0], namespace),
+            (p) => p.graph === graphRuntimeIdentifier(state.graphs[0], namespace),
           );
           return;
         }

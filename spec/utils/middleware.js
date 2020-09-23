@@ -1,8 +1,8 @@
 /* eslint class-methods-use-this: "off" */
 /* eslint no-console: "off" */
-const debugOpenBracket = data => console.log(`< ${data.id} ${data.group}`);
-const debugData = data => console.log(`DATA ${data.id}`);
-const debugCloseBracket = data => console.log(`> ${data.id} ${data.group}`);
+const debugOpenBracket = (data) => console.log(`< ${data.id} ${data.group}`);
+const debugData = (data) => console.log(`DATA ${data.id}`);
+const debugCloseBracket = (data) => console.log(`> ${data.id} ${data.group}`);
 const noflo = window.require('noflo');
 
 class Middleware {
@@ -98,7 +98,7 @@ class Middleware {
 
   receivePass(action, payload, done) {
     // Strict equality check for passed packets
-    const check = data => chai.expect(data).to.equal(payload);
+    const check = (data) => chai.expect(data).to.equal(payload);
     const expected = [];
     expected.push(`${action} DATA`);
     this.receive(this.passAction, expected, check, done);

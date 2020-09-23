@@ -140,7 +140,7 @@ exports.getComponent = () => {
       let content = data.content.replace(/\s/g, '');
       if (data.encoding === 'base64') { content = decodeURIComponent(escape(atob(content))); }
 
-      const entry = operation.pull.find(e => e.remote && e.remote.sha === sha);
+      const entry = operation.pull.find((e) => e.remote && e.remote.sha === sha);
       if (!entry) {
         errors.push(`No entry found for blob ${sha}`);
         return;

@@ -32,4 +32,4 @@ exports.getGraphHash = (graphId, project) => {
   ];
 };
 
-exports.hashToString = hash => `#${hash.map(part => encodeURIComponent(part)).join('/')}`;
+exports.hashToString = (hash) => `#${hash.map((part) => encodeURIComponent(part)).join('/')}`;

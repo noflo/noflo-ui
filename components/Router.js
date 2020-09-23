@@ -16,7 +16,7 @@ const buildContext = (url) => {
     return routeData;
   }
 
-  const urlParts = url.split('/').map(part => decodeURIComponent(part));
+  const urlParts = url.split('/').map((part) => decodeURIComponent(part));
   const route = urlParts.shift();
   switch (route) {
     case 'project': {

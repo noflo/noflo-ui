@@ -67,12 +67,12 @@ exports.getComponent = () => {
       const changed = change;
       changed.event = change.event.toLowerCase();
       return changed;
-    }).filter(change => client.protocol.graph[change.event]);
+    }).filter((change) => client.protocol.graph[change.event]);
 
     client.connect()
-      .then(() => Promise.all(relevantChanges.map(change => client.protocol.graph[change.event](
+      .then(() => Promise.all(relevantChanges.map((change) => client.protocol.graph[change.event](
         preparePayload(change.event, change.payload, data.graph, project.namespace),
       ))))
-      .then((() => output.done()), err => output.done(err));
+      .then((() => output.done()), (err) => output.done(err));
   });
 };
