@@ -345,6 +345,9 @@
             component: event.detail
           });
         }.bind(this));
+        this.$.project.addEventListener('newspec', function (event) {
+          this.emitEvent('storage:save:spec', event.detail);
+        }.bind(this));
         this.$.project.addEventListener('sync', function (event) {
           this.emitEvent('github:sync:prepare', event.detail);
         }.bind(this));

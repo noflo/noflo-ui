@@ -358,6 +358,11 @@
           // TODO: Add node to graph
           this.gotoComponent(component.name);
         }.bind(this));
+        dialog.addEventListener('newSpec', function (event) {
+          var spec = event.detail;
+          this.push('project.specs', spec);
+          this.fire('newspec', spec);
+        }.bind(this));
       },
       openHome: function (event) {
         event.preventDefault();
