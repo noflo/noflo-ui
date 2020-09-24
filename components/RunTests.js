@@ -23,7 +23,14 @@ exports.getComponent = () => {
     const [project, client] = input.getData('in', 'client');
 
     const suites = project.specs.filter((s) => s.language === 'yaml' && s.code)
-      .map((s) => fbpSpec.testsuite.loadYAML(s.code))
+      .map((s) => {
+        try {
+          return fbpSpec.testsuite.loadYAML(s.code);
+        } catch (e) {
+          // Ignore YAML errors for now
+          return [];
+        }
+      })
       .reduce((flat, s) => flat.concat(s), []);
 
     if (!suites.length) {
