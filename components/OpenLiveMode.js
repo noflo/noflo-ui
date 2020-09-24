@@ -11,6 +11,7 @@ const {
 const {
   findGraph,
   findComponent,
+  guessLanguage,
 } = require('../src/projects');
 const { addToList } = require('../src/collections');
 
@@ -94,6 +95,8 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('component',
     { datatype: 'object' });
+  c.outPorts.add('spec',
+    { datatype: 'object' });
   c.outPorts.add('runtime',
     { datatype: 'object' });
   c.outPorts.add('error',
@@ -171,6 +174,18 @@ exports.getComponent = () => {
               component.id = `${state.project.id}/${component.name}`;
               addToList(state.project.components, component);
             });
+            const specs = sources.filter((comp) => comp.tests);
+            specs.forEach((comp) => {
+              const spec = {
+                id: `${state.project.id}/${comp.name}`,
+                name: comp.name,
+                code: comp.tests,
+                language: guessLanguage(comp.tests, comp.language),
+                project: state.project.id,
+                type: 'spec',
+              };
+              addToList(state.project.specs, spec);
+            });
           });
       })
       .then(() => {
@@ -209,6 +224,11 @@ exports.getComponent = () => {
         state.project.components.forEach((component) => {
           output.send({
             component,
+          });
+        });
+        state.project.specs.forEach((spec) => {
+          output.send({
+            spec,
           });
         });
       })

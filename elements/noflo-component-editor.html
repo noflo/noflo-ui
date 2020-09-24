@@ -115,7 +115,7 @@
             this.set('spec', {
               name: this.component.name,
               changed: false,
-              code: '',
+              code: this.component.tests || '',
               language: 'yaml',
               project: this.component.project,
               type: 'spec'

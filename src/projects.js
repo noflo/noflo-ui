@@ -126,3 +126,12 @@ exports.isReadOnly = (context) => {
   }
   return false;
 };
+
+exports.guessLanguage = (code, defaultLanguage = 'javascript') => {
+  if (code.indexOf('topic: ') !== -1 && code.indexOf('cases:') !== -1) {
+    // Reasonable guess is that this is an fbp-spec file.
+    // Should probably try parsing YAML to be sure.
+    return 'yaml';
+  }
+  return defaultLanguage;
+};

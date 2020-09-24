@@ -11,6 +11,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:save:project' -> ACTION ProjectSaveAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:save:graph' -> ACTION GraphSaveAction(ui/SetAction) OUT -> IN NewActions
 'storage:save:component' -> ACTION ComponentSaveAction(ui/SetAction) OUT -> IN NewActions
+'storage:save:spec' -> ACTION SpecSaveAction(ui/SetAction) OUT -> IN NewActions
 'flowhub:runtimes:register' -> ACTION RuntimeRegisterAction(ui/SetAction) OUT -> IN NewActions
 'storage:save:runtime' -> ACTION RuntimeSaveAction(ui/SetAction) OUT -> IN NewActions
 'runtime:error' -> ACTION RuntimeErrorAction(ui/SetAction) OUT -> IN NewActions
@@ -49,6 +50,7 @@ OpenLiveMode OUT -> IN RuntimeOpenedAction
 OpenLiveMode PROJECT -> IN ProjectSaveAction
 OpenLiveMode GRAPH -> IN GraphSaveAction
 OpenLiveMode COMPONENT -> IN ComponentSaveAction
+OpenLiveMode SPEC -> IN SpecSaveAction
 OpenLiveMode RUNTIME -> IN RuntimeSaveAction
 OpenLiveMode ERROR -> IN RuntimeErrorAction
 
