@@ -1,6 +1,14 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.6 (2020 September 24)
+
+New features:
+
+* Component specs received from a runtime are now shown in the UI
+* Component spec changes are transmitted back to the runtime
+* Newly-created components get a generated basic fbp-spec template
+
 ## 0.27.5 (2020 September 23)
 
 Bugfixes:
