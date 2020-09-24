@@ -189,14 +189,22 @@
           ga('send', 'event', 'button', 'click', 'newComponent');
         }
         this.fire('new', {
+          id: this.project.id + '/' + this.name,
           name: this.name,
           description: this.description,
           language: this.language,
           icon: this.icon,
           project: this.project.id,
-          id: this.project.id + '/' + this.name,
           code: this.getExampleCode(this.language),
           tests: ''
+        });
+        this.fire('newSpec', {
+          id: this.project.id + '/' + this.name,
+          name: this.name,
+          code: this.getExampleSpec(),
+          language: 'yaml',
+          project: this.project.id,
+          type: 'spec',
         });
         this.close();
       },
@@ -254,6 +262,21 @@
           });
         }
         return template;
+      },
+      getExampleSpec: function () {
+        var fbpSpec = '';
+        fbpSpec += 'name: ' + this.name + ' component\n';
+        fbpSpec += 'topic: ' + (this.project.namespace || this.project.id) + '/' + this.name + '\n';
+        fbpSpec += 'cases:\n';
+        fbpSpec += '  -\n';
+        fbpSpec += '    name: with an input packet\n';
+        fbpSpec += '    assertion: should send the same packet out\n';
+        fbpSpec += '    inputs:\n';
+        fbpSpec += '      in: true\n';
+        fbpSpec += '    expect:\n';
+        fbpSpec += '      out:\n';
+        fbpSpec += '        equals: true\n';
+        return fbpSpec;
       }
     });
   </script>

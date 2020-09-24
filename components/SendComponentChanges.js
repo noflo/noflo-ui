@@ -25,13 +25,21 @@ exports.getComponent = () => {
       return;
     }
 
+    let tests = component.tests || '';
+    project.specs.forEach((spec) => {
+      if (spec.name !== component.name) {
+        return;
+      }
+      tests = spec.code;
+    });
+
     client.connect()
       .then(() => client.protocol.component.source({
         name: component.name,
         language: component.language,
         library: (project != null ? project.namespace : undefined) || client.definition.namespace,
         code: component.code,
-        tests: component.tests,
+        tests,
       }))
       .then((componentDefinition) => output.send({
         out: {
