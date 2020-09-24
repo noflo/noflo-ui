@@ -55,7 +55,7 @@
     "coffee-loader": "^1.0.0",
     "coffeescript": "^2.0.2",
     "copy-webpack-plugin": "^6.1.1",
-    "eslint": "^5.9.0",
+    "eslint": "^7.9.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-mocha": "^6.3.0",
