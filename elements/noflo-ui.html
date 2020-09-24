@@ -403,6 +403,10 @@
         }.bind(this));
         this.$.componenteditor.addEventListener('specschanged', function (event) {
           this.emitEvent('storage:save:spec', event.detail);
+          this.emitEvent('runtime:sendComponent', {
+            runtime: this.ctx.runtime.definition.id,
+            component: this.ctx.component
+          });
           this.triggerTests();
         }.bind(this));
         this.$.search.addEventListener('search:library', function (event) {
