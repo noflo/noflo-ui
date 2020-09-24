@@ -232,6 +232,14 @@ exports.getComponent = () => {
         });
         return;
       }
+      case 'runtime:testsuites': {
+        output.sendDone({
+          context: {
+            suites: data.payload,
+          },
+        });
+        return;
+      }
       case 'runtime:error': {
         const events = addRuntimeEvent(data.state, data.payload.runtime, 'error', data.payload);
         output.send({
