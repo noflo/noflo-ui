@@ -1,6 +1,20 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.7 (2020 September 25)
+
+New features:
+
+* fbp-spec test suites in a project get automatically executed against runtime when something is modified in the project
+* fbp-spec suites are loaded and displayed when a project is opened
+* fbp-spec executions are also shown in the runtime events screen
+
+Bugfixes:
+
+* Runtime selector works again
+* Fixed project deletion not updating the UI
+* Errors transmitted by runtime are again shown in the runtime events screen
+
 ## 0.27.6 (2020 September 24)
 
 New features:
