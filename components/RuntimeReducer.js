@@ -143,10 +143,6 @@ exports.getComponent = () => {
       case 'runtime:stopped': {
         const runtimeExecutions = data.state.runtimeExecutions || {};
         let events = data.state.runtimeEvents || {};
-        let previousRunning;
-        if (runtimeExecutions[data.payload.runtime]) {
-          previousRunning = runtimeExecutions[data.payload.runtime].running;
-        }
         runtimeExecutions[data.payload.runtime] = data.payload.status;
         runtimeExecutions[data.payload.runtime].running = false;
         runtimeExecutions[data.payload.runtime].label = 'not running';
