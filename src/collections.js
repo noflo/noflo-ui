@@ -7,6 +7,12 @@ exports.sortByName = (a, b) => {
 };
 
 exports.getName = (obj, allowUnknown = true) => {
+  if (!obj) {
+    if (allowUnknown) {
+      return 'Unknown';
+    }
+    return null;
+  }
   const name = (obj.properties != null ? obj.properties.name : undefined) || obj.name || obj.id;
   if (!name && allowUnknown) {
     return 'Unknown';
