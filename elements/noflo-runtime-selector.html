@@ -92,12 +92,23 @@
             return [];
           }
         },
-        graph: { notify: true }
+        graph: { notify: true },
+        component: { notify: true },
       },
       attached: function () {
         Polymer.dom(document.getElementById('container')).classList.add('blur');
         Polymer.dom(this).classList.add('modal-content');
-        var type = this.graph.properties.environment.type;
+        var type;
+        var runtimelib = require('noflo-ui/runtime');
+        if (this.component) {
+          type = runtimelib.getComponentType(this.component);
+        }
+        if (this.graph) {
+          type = runtimelib.getGraphType(this.graph);
+        }
+        if (!type) {
+          type = 'all';
+        }
         // Insert button to launch new runtime for noflo-browser
         var launchNewBrowserRuntime = {
           id: 'new-browser-runtime',
@@ -122,12 +133,7 @@
           this.push('available', launchImgfloHerokuRuntime);
         }
         this.runtimes.forEach(function (rt) {
-          if (!rt.type) {
-            return;
-          }
-          if ((rt.type == type || type === 'all') && this.available.indexOf(rt) === -1) {
-            this.push('available', rt);
-          }
+          this.push('available', rt);
         }.bind(this));
         this.available.forEach(this.checkRuntimeSeen.bind(this));
       },

@@ -12,7 +12,9 @@ const getType = (context) => {
     const componentType = getComponentType(context.component);
     if (componentType) { return componentType; }
   }
-  if (!context.project) { return null; }
+  if (!context.project || !context.project.type) {
+    return 'all';
+  }
   return context.project.type;
 };
 

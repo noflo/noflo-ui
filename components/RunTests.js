@@ -20,7 +20,8 @@ exports.getComponent = () => {
     if (!input.hasData('in', 'client')) {
       return;
     }
-    const [project, client] = input.getData('in', 'client');
+    const [data, client] = input.getData('in', 'client');
+    const { project } = data;
 
     const suites = project.specs.filter((s) => s.language === 'yaml' && s.code)
       .map((s) => {

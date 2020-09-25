@@ -158,6 +158,10 @@
           value: null,
           observer: 'graphChanged'
         },
+        component: {
+          value: null,
+          observer: 'graphChanged'
+        },
         panel: { value: null },
         iframe: { value: null },
         runtime: {
@@ -287,18 +291,24 @@
         iframe.style.display = visibility;
       },
       selectRuntime: function () {
-        if (!this.graph) {
+        if (!this.graph && !this.component) {
           return;
         }
         if (Polymer.dom(document).querySelectorAll('.modal-content:not(polymer-element)').length) {
           return;
         }
         this.runtimeSelector = document.createElement('noflo-runtime-selector');
-        this.set('runtimeSelector.graph', this.graph);
         this.set('runtimeSelector.runtimes', this.runtimes);
+        this.set('runtimeSelector.graph', this.graph);
+        this.set('runtimeSelector.component', this.component);
         this.runtimeSelector.addEventListener('runtime', function (event) {
           var runtime = event.detail;
-          runtime.project = this.graph.properties.project;
+          if (this.graph) {
+            runtime.project = this.graph.properties.project;
+          }
+          if (this.component) {
+            runtime.project = this.component.project;
+          }
           this.fire('changed', runtime);
           setTimeout(function () {
             this.fire('switchRuntime', runtime.id);
