@@ -12,6 +12,7 @@ function TestStatus(props) {
       state.total += 1;
       if (suite.skip || testCase.skip) {
         state.skipped += 1;
+        return;
       }
       if (testCase.passed === true) {
         state.passed += 1;

@@ -84,8 +84,8 @@ exports.removeFromList = (list, entity) => {
     if (existing === entity) {
       return true;
     }
-    const existingId = exports.unnamespace(exports.getName(existing, false));
-    const entityId = exports.unnamespace(exports.getName(entity, false));
+    const existingId = existing.properties ? existing.properties.id : existing.id;
+    const entityId = entity.properties ? entity.properties.id : entity.id;
     return (existingId === entityId);
   });
   if (!matched) {

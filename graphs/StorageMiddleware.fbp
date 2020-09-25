@@ -24,6 +24,7 @@ Dispatch PASS -> IN Passed(core/Merge)
 'storage:removed:runtime' -> ACTION RemovedRuntimeAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:error' -> ACTION StorageErrorAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'storage:opened' -> ACTION StorageOpenAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
+'runtime:loadTests' -> ACTION RuntimeLoadTestsAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 'application:sethash' -> ACTION ApplicationHashAction(ui/SetAction) OUT -> IN NewActions(core/Merge)
 
 # Prepare IndexedDB database
@@ -65,4 +66,5 @@ DeleteData ERROR -> IN StorageErrorAction
 # Open a local project
 Dispatch HANDLE[4] -> IN OpenProject(ui/OpenProject)
 OpenProject OUT -> IN StorageOpenAction
+OpenProject OUT -> IN RuntimeLoadTestsAction
 OpenProject ERROR -> IN StorageErrorAction
