@@ -174,7 +174,7 @@ SendNewGraph ERROR -> IN RuntimeErrorAction
 'project' -> KEYS GetLoadTestsValues(ui/GetActionValues)
 Dispatch HANDLE[12] -> IN GetLoadTestsValues
 GetLoadTestsValues OUT -> IN LoadTests(ui/LoadTests)
-LoadTests OUT -> IN RuntimeTestSuitesAction
+LoadTests OUT -> IN Async(core/RepeatAsync) OUT -> IN RuntimeTestSuitesAction
 LoadTests ERROR -> IN RuntimeErrorAction
 
 # Executing fbp-spec tests against the runtime
