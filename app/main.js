@@ -11,6 +11,8 @@ const projects = require('../src/projects');
 const runtime = require('../src/runtime');
 const icons = require('../src/icons');
 const urls = require('../src/urls');
+const { default: TestStatusWidget } = require('../src/components/TestStatus');
+const { default: TestStatusDetailedWidget } = require('../src/components/TestStatusDetailed');
 const mainGraph = require('../graphs/main.fbp');
 
 const exported = {
@@ -26,6 +28,8 @@ const exported = {
   'noflo-ui/runtime': runtime,
   'noflo-ui/icons': icons,
   'noflo-ui/urls': urls,
+  'noflo-ui/components/TestStatus': TestStatusWidget,
+  'noflo-ui/components/TestStatusDetailed': TestStatusDetailedWidget,
 };
 
 window.React = require('react');

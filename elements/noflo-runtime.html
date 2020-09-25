@@ -245,13 +245,10 @@
         });
       },
       showTests: function (suites) {
-        var fbpSpec = require('fbp-spec');
         this.suites = suites;
+        var TestStatus = require('noflo-ui/components/TestStatus');
         var container = this.shadowRoot.getElementById('teststatus');
-        if (!container) {
-          return;
-        }
-        React.render(fbpSpec.ui.widgets.TestStatus({ suites: this.suites }), container);
+        ReactDOM.render(TestStatus({ suites: this.suites }), container);
       },
       showTestDetails: function () {
         if (!this.suites || !this.suites.length) {
