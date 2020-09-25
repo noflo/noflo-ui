@@ -126,19 +126,12 @@ exports.getComponent = () => {
       case 'runtime:started': {
         const runtimeExecutions = data.state.runtimeExecutions || {};
         let events = data.state.runtimeEvents || {};
-        let previousRunning;
-        if (runtimeExecutions[data.payload.runtime]) {
-          previousRunning = runtimeExecutions[data.payload.runtime].running;
-        }
         runtimeExecutions[data.payload.runtime] = data.payload.status;
         runtimeExecutions[data.payload.runtime].label = 'running';
-        if (!previousRunning) {
-          events = addRuntimeEvent(data.state, data.payload.runtime, 'started', data.payload.status);
-        }
         if (!data.payload.status.running) {
           runtimeExecutions[data.payload.runtime].label = 'finished';
-          events = addRuntimeEvent(data.state, data.payload.runtime, 'stopped', data.payload.status);
         }
+        events = addRuntimeEvent(data.state, data.payload.runtime, `started ${data.payload.status.graph}`, data.payload.status);
         output.sendDone({
           context: {
             runtimeExecutions,
@@ -157,9 +150,7 @@ exports.getComponent = () => {
         runtimeExecutions[data.payload.runtime] = data.payload.status;
         runtimeExecutions[data.payload.runtime].running = false;
         runtimeExecutions[data.payload.runtime].label = 'not running';
-        if (previousRunning) {
-          events = addRuntimeEvent(data.state, data.payload.runtime, 'stopped', data.payload.status);
-        }
+        events = addRuntimeEvent(data.state, data.payload.runtime, `stopped ${data.payload.status.graph}`, data.payload.status);
         output.sendDone({
           context: {
             runtimeExecutions,
@@ -241,7 +232,11 @@ exports.getComponent = () => {
         return;
       }
       case 'runtime:error': {
-        const events = addRuntimeEvent(data.state, data.payload.runtime, 'error', data.payload);
+        let runtimeId = data.payload.runtime;
+        if (!runtimeId && data.state.runtime) {
+          runtimeId = data.state.runtime.id;
+        }
+        const events = addRuntimeEvent(data.state, runtimeId, 'error', data.payload);
         output.send({
           context: {
             runtimeEvents: events,
