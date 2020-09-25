@@ -582,7 +582,13 @@
         }
       },
       triggerTests: function () {
-        this.emitEvent('runtime:runTests', this.ctx.project || this.$.project.project);
+        if (!this.ctx.runtime) {
+          return;
+        }
+        this.emitEvent('runtime:runTests', {
+          project: this.ctx.project,
+          runtime: this.ctx.runtime.definition
+        });
       },
       hideAlert: function () {
         Polymer.dom(this.$.alert).classList.remove('show');
