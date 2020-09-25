@@ -11,12 +11,16 @@
       li .suite-header label {
         display: inline !important;
         padding-right: 1em;
+        color: var(--noflo-ui-text-highlight);
       }
       li.testsuite {
         margin-bottom: 1em;
       }
       li {
         list-style: none;
+      }
+      li.testsuite li {
+        margin-left: 28px;
       }
       li label {
         display: inline;
@@ -26,8 +30,9 @@
         padding-left: 8px;
       }
       li label.error {
-        padding-left: 8px;
+        margin-bottom: 8px;
         font-style: italic;
+        display: block;
       }
       li.pass {
         color: hsl(135, 98%, 46%);
@@ -39,7 +44,9 @@
       }
     </style>
     <div class="modal-container" on-click="bgClick">
-      <div id="testlisting"></div>
+      <div class="modal-content">
+        <div id="testlisting"></div>
+      </div>
       <div class="toolbar">
         <button on-click="close">Close</button>
       </div>
@@ -60,8 +67,9 @@
         attached: function () {
           Polymer.dom(document.getElementById('container')).classList.add('blur');
           Polymer.dom(this).classList.add('modal-content');
-          var fbpSpec = require('fbp-spec');
-          React.render(fbpSpec.ui.widgets.TestsListing({ suites: this.suites }), this.$.testlisting);
+          var TestStatusDetailed = require('noflo-ui/components/TestStatusDetailed');
+          var container = this.shadowRoot.getElementById('testlisting');
+          ReactDOM.render(TestStatusDetailed({ suites: this.suites }), container);
         },
         detached: function () {
           Polymer.dom(document.getElementById('container')).classList.remove('blur');

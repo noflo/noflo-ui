@@ -1,5 +1,5 @@
 {
-  "extends": "airbnb-base",
+  "extends": "airbnb",
   "globals": {
     "atob": false,
     "chrome": false,
@@ -9,5 +9,10 @@
     "navigator": false,
     "window": false,
     "XMLHttpRequest": false
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    }
   }
 }

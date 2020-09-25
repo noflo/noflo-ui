@@ -59,6 +59,13 @@ module.exports = {
         ],
       },
       {
+        test: /\.jsx$/,
+        loader: 'babel-loader',
+        query: {
+          presets: ['@babel/preset-react', '@babel/preset-env'],
+        },
+      },
+      {
         test: /\.fbp$/,
         use: [
           'fbp-loader',
@@ -77,7 +84,7 @@ module.exports = {
     canvas: 'commonjs canvas', // Required by noflo-image
   },
   resolve: {
-    extensions: ['.coffee', '.js'],
+    extensions: ['.coffee', '.js', '.jsx'],
   },
   plugins: [
     new CopyWebpackPlugin({
