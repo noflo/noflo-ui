@@ -1,14 +1,14 @@
 import React from 'react';
 
 function stateToClass(testCase, suite) {
+  if (testCase.skip || suite.skip) {
+    return 'skip';
+  }
   if (testCase.passed === true) {
     return 'pass';
   }
   if (testCase.passed === false) {
     return 'fail';
-  }
-  if (testCase.skip || suite.skip) {
-    return 'skip';
   }
   return 'pending';
 }
