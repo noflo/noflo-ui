@@ -231,6 +231,9 @@
         }.bind(this));
         this.$.main.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
@@ -251,6 +254,9 @@
         }.bind(this));
         this.$.context.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
@@ -329,6 +335,9 @@
         }.bind(this));
         this.$.project.addEventListener('newgraph', function (event) {
           this.emitEvent('storage:save:graph', event.detail);
+          if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
+            return;
+          }
           this.emitEvent('runtime:sendGraph', {
             runtime: this.ctx.runtime.definition.id,
             graph: event.detail,
