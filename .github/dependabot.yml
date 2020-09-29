@@ -10,6 +10,7 @@ updates:
       - dependency-name: "polymer-bundler"
       - dependency-name: "noflo"
       - dependency-name: "noflo-runtime-base"
+      - dependency-name: "noflo-runtime-postmessage"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
