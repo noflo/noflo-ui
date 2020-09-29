@@ -21,7 +21,7 @@
     "codemirror": "^5.57.0",
     "debug": "^4.0.0",
     "fbp": "~1.7.0",
-    "fbp-client": "^0.4.0",
+    "fbp-client": "^0.4.2",
     "fbp-graph": "^0.4.0",
     "fbp-spec": "~0.6.8",
     "flowhub-registry": "^0.1.3",
@@ -42,7 +42,6 @@
     "octo": "git+https://github.com/bergie/octo.git#patched",
     "react": "^15.6.0",
     "react-dom": "^15.6.0",
-    "rtc": "^3.4.0",
     "the-graph": "^0.13.1",
     "underscore": "^1.9.1",
     "uuid": "^8.3.0"
