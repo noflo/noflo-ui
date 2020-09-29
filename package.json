@@ -36,7 +36,7 @@
     "noflo-objects": "~0.7.0",
     "noflo-polymer": "~2.0.1",
     "noflo-runtime-base": "^0.10.0",
-    "noflo-runtime-postmessage": "^0.10.0",
+    "noflo-runtime-postmessage": "^0.11.0",
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
     "octo": "git+https://github.com/bergie/octo.git#patched",
