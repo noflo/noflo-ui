@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.8 (2020 September 30)
+
+Bugfixes:
+
+* Updated fbp-protocol-client to fix messaging issue with "opener" runtimes
+
 ## 0.27.7 (2020 September 25)
 
 New features:
