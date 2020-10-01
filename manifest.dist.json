@@ -1,5 +1,5 @@
 {
-  "name": "$NOFLO_APP_NAME",
+  "name": "$NOFLO_APP_NAME_Org_NOFLO",
   "description": "$NOFLO_APP_DESCRIPTION",
   "version": "$NOFLO_APP_VERSION",
   "app": {
