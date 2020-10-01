@@ -7,7 +7,7 @@
       "scripts": ["app/background.js"]
     }
   },
-  "permissions": [
+  "permissions":[
     "$NOFLO_OAUTH_GATE/",
     "$NOFLO_REGISTRY_SERVICE/",
     "https://api.github.com/",
