@@ -1,6 +1,12 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.9 (2020 October 02)
+
+Bugfixes:
+
+* Updated fbp-protocol-client to improve WebRTC runtime compatibility
+
 ## 0.27.8 (2020 September 30)
 
 Bugfixes:
