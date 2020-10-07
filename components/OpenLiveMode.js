@@ -13,7 +13,10 @@ const {
   findComponent,
   guessLanguage,
 } = require('../src/projects');
-const { addToList } = require('../src/collections');
+const {
+  addToList,
+  unnamespace,
+} = require('../src/collections');
 
 const getNamespace = (client) => {
   if (!client.definition || !client.definition.namespace) {
@@ -134,7 +137,7 @@ exports.getComponent = () => {
       .then((source) => loadGraph(source))
       .then((graphInstance) => {
         graphInstance.setProperties({
-          id: `${state.project.id}/${(graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name}`,
+          id: `${state.project.id}/${unnamespace((graphInstance.properties != null ? graphInstance.properties.id : undefined) || graphInstance.name)}`,
           project: state.project.id,
           // Ensure graph communications use the name runtime supplied
           runtimeName: client.definition.graph,
@@ -156,9 +159,9 @@ exports.getComponent = () => {
         return Promise.all(projectGraphs.map((graphDef) => loadGraph(graphDef)
           .then((g) => {
             const graph = g;
-            graph.name = path.basename(graphDef.name);
+            graph.name = unnamespace(graphDef.name);
             graph.setProperties({
-              id: `${state.project.id}/${(graph.properties != null ? graph.properties.id : undefined) || graph.name}`,
+              id: `${state.project.id}/${unnamespace((graph.properties != null ? graph.properties.id : undefined) || graph.name)}`,
               project: state.project.id,
             });
             return graph;
