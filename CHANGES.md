@@ -1,6 +1,14 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.27.10 (2020 October 07)
+
+Bugfixes:
+
+* WebRTC runtime addresses are shown in a nicer way
+* Projects connected to an `opener` runtime can only be clicked when we have an opener context
+* More consistent handling of graph IDs in live mode
+
 ## 0.27.9 (2020 October 02)
 
 Bugfixes:
