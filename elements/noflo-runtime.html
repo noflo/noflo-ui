@@ -124,7 +124,7 @@
       <noflo-icon id="runtime_icon" icon="{{icon}}"></noflo-icon>
       <div id="address" class$="{{_computeOnlineClass(runtime.status.online)}}">
         <button title="Connect/Disconnect" on-click="reconnect"><noflo-icon icon="refresh"></noflo-icon></button>
-        <h2>{{runtime.definition.address}}</h2>
+        <h2>{{_produceAddress(runtime)}}</h2>
         <button title="Change Runtime" on-click="clearRuntime" class="clear"><noflo-icon icon="exchange"></noflo-icon></button>
       </div>
       <div id="teststatus" on-click="showTestDetails"></div>
@@ -341,6 +341,15 @@
       },
       _computeOnlineClass: function (online) {
         return this.tokenList({ online: online });
+      },
+      _produceAddress: function (runtime) {
+        if (!runtime.definition) {
+          return '';
+        }
+        if (runtime.definition.protocol === 'webrtc') {
+          return 'WebRTC P2P ' + runtime.definition.id;
+        }
+        return runtime.definition.address;
       },
       tokenList: function (obj) {
         var pieces = [];

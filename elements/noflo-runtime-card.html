@@ -20,7 +20,7 @@
     </ul>
     </template>
     <h2>[[runtime.label]]</h2>
-    <p><span>[[runtime.address]]</span>. Seen <span>[[runtime.seenHoursAgo]]</span>h ago</p>
+    <p><span>[[_produceAddress(runtime)]]</span>. Seen <span>[[runtime.seenHoursAgo]]</span>h ago</p>
   </template>
   <script>
   class NoFloRuntimeCard extends Polymer.Element {
@@ -80,6 +80,12 @@
         });
       });
       return icon;
+    }
+    _produceAddress(runtime) {
+      if (runtime.protocol === 'webrtc') {
+        return 'WebRTC P2P ' + runtime.id;
+      }
+      return runtime.address;
     }
     _menuOpenChanged() {
       if (this.menuopen) {
