@@ -72,7 +72,20 @@ exports.getComponent = () => {
     client.connect()
       .then(() => Promise.all(relevantChanges.map((change) => client.protocol.graph[change.event](
         preparePayload(change.event, change.payload, data.graph, project.namespace),
-      ))))
+      ).catch((e) => {
+        if (e.message === 'Requested graph not found') {
+          // Runtime doesn't know about the graph we're changing, send the whole thing
+          return client.protocol.graph.send({
+            ...data.graph,
+            name: graphRuntimeIdentifier(data.graph, project.namespace),
+            properties: {
+              ...data.graph.properties,
+              library: project.namespace,
+            },
+          }, data.graph.properties.main);
+        }
+        return Promise.reject(e);
+      }))))
       .then((() => output.done()), (err) => output.done(err));
   });
 };
