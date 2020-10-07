@@ -458,6 +458,18 @@
         if (!project) {
           return;
         }
+        if (project.runtime) {
+          var matchingRuntime = this.runtimes.filter(this.filterAvailableRuntimes).filter(function (rt) {
+            if (rt.id === project.runtime) {
+              return true;
+            }
+            return false;
+          });
+          if (!matchingRuntime.length) {
+            // Runtime for this project is not available
+            return;
+          }
+        }
         this.fire('openProject', project);
       },
       openRuntime: function (event) {
