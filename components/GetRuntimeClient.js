@@ -15,7 +15,7 @@ const ensureInstance = (def, c, output) => {
     // Note: we may want to re-enable validation later when most runtimes are compatible
     skipValidation: true,
     // Increased connection timeout due to browser runtimes occasionally taking longer to evaluate
-    connectionTimeout: 3000,
+    connectionTimeout: 5000,
   })
     .then((client) => {
       output.send({ instance: client });
