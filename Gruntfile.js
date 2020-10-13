@@ -253,15 +253,6 @@ ga('send', 'pageview');
       dist: 'noflo-<%= pkg.version %>.zip',
     },
 
-    'gh-pages': {
-      options: {
-        base: 'dist',
-        clone: 'gh-pages',
-        message: 'Updating web version to <%= pkg.version %>',
-      },
-      src: '**/*',
-    },
-
     sharedstylecomponent: {
       'elements/the-graph-styles.html': [
         'node_modules/the-graph/themes/the-graph-dark.css',
@@ -285,7 +276,6 @@ ga('send', 'pageview');
   // Grunt plugins used for mobile app building
   this.loadNpmTasks('grunt-contrib-compress');
   this.loadNpmTasks('grunt-zip');
-  this.loadNpmTasks('grunt-gh-pages');
 
   // Our local tasks
   const grunt = this;
@@ -341,6 +331,5 @@ ga('send', 'pageview');
     'clean:dist',
     'unzip',
     'string-replace:analytics',
-    'gh-pages',
   ]);
 };

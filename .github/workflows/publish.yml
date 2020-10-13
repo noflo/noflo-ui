@@ -1,0 +1,36 @@
+name: Publish on GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.3
+      - uses: actions/setup-node@v2.1.1
+        with:
+          node-version: 12
+      - name: install build dependencies
+      - run: npm install
+      - run: npm run build
+      - run: npm test
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.3
+      - uses: actions/setup-node@v2.1.1
+        with:
+          node-version: 12
+      - name: install build dependencies
+      - run: npm install
+      - run: npm run build:pages
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: false
+          cname: ui.noflojs.org
