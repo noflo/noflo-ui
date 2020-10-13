@@ -1,0 +1,40 @@
+{
+  "name": "NoFlo UI",
+  "description": "Flow-Based Programming Environment",
+  "version": "0.27.10",
+  "app": {
+    "background": {
+      "scripts": ["app/background.js"]
+    }
+  },
+  "permissions": [
+    "https://noflo-gate.herokuapp.com/",
+    "https://api.flowhub.io/",
+    "https://api.github.com/",
+    "https://github.com/",
+    "https://secure.gravatar.com/",
+    "storage",
+    "unlimitedStorage",
+    "serial",
+    "identity"
+  ],
+  "icons": {
+    "16": "app/noflo-16.png",
+    "36": "app/noflo-36.png",
+    "48": "app/noflo-48.png",
+    "57": "app/noflo-57.png",
+    "60": "app/noflo-60.png",
+    "64": "app/noflo-64.png",
+    "72": "app/noflo-72.png",
+    "78": "app/noflo-78.png",
+    "96": "app/noflo-96.png",
+    "114": "app/noflo-114.png",
+    "120": "app/noflo-120.png",
+    "128": "app/noflo-128.png",
+    "144": "app/noflo-144.png",
+    "152": "app/noflo-152.png",
+    "170": "app/noflo-170.png",
+    "200": "app/noflo-200.png",
+    "250": "app/noflo-250.png"
+  }
+}
