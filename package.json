@@ -28,7 +28,7 @@
     "font-awesome": "^4.6.3",
     "noflo": "~1.1.0",
     "noflo-core": "~0.6.0",
-    "noflo-flow": "^0.7.0",
+    "noflo-flow": "^0.8.0",
     "noflo-github": "~0.1.1",
     "noflo-graph": "~0.3.0",
     "noflo-indexeddb": "~0.3.1",
