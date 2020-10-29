@@ -15,8 +15,8 @@ module.exports = function () {
     // Vulcanization compiles the Polymer elements into a HTML file
     exec: {
       vulcanize: {
-        command: 'node_modules/.bin/polymer-bundler index.dist.html > index.html',
-        cwd: __dirname,
+        command: 'polymer-bundler ../../index.dist.html > ../../index.html',
+        cwd: __dirname + '/node_modules/.bin/',
       },
     },
 
