@@ -171,10 +171,10 @@
       </style>
     <nav>
     <section class="app">
-      <div class="logo noflo"><img src="../app/noflo-72.png"></div>
+      <div class="logo $NOFLO_THEME"><img src="../app/$NOFLO_THEME-72.png"></div>
       <div class="name">
         <h1>
-          NoFlo UI
+          $NOFLO_APP_NAME
         </h1>
         <h2>
           v$NOFLO_APP_VERSION
@@ -212,7 +212,7 @@
     <template is="dom-if" if="{{user.flowhub-user}}">
       <template is="dom-if" if="{{askForScope.length}}">
         <div class="banner">
-          To be able to synchronize your GitHub projects, NoFlo Development Environment needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
+          To be able to synchronize your GitHub projects, $NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
           <div>
             Grant access to:
             <template is="dom-repeat" items="{{askForScope}}" as="scope">
@@ -241,7 +241,7 @@
     </template>
     <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="banner">
-        Logging into NoFlo Development Environment enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
+        Logging into $NOFLO_APP_TITLE enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
         <div>
           <a class="cta" href="https://plans.flowhub.io">Subscribe now</a>
         </div>

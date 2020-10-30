@@ -514,14 +514,14 @@
         if (!this.help) {
           return;
         }
-        this.set('help.headline', 'NoFlo Development Environment graph editor');
+        this.set('help.headline', '$NOFLO_APP_TITLE graph editor');
         this.set('help.text', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
       },
       showHelp: function (graph) {
         if (!this.help) {
           return;
         }
-        this.help.show('NoFlo Development Environment graph editor', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
+        this.help.show('$NOFLO_APP_TITLE graph editor', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
         graph.once('addNode', function () {
           this.help.close();
         }.bind(this));
