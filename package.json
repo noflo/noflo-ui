@@ -41,7 +41,7 @@
     "observe-js": "^0.5.7",
     "octo": "git+https://github.com/bergie/octo.git#patched",
     "react": "^16.14.0",
-    "react-dom": "^16.14.0",
+    "react-dom": "^17.0.1",
     "the-graph": "^0.13.1",
     "underscore": "^1.9.1",
     "uuid": "^8.3.0"
