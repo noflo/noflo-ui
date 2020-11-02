@@ -40,7 +40,7 @@
     "noflo-strings": "~0.4.0",
     "observe-js": "^0.5.7",
     "octo": "git+https://github.com/bergie/octo.git#patched",
-    "react": "^16.14.0",
+    "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "the-graph": "^0.13.1",
     "underscore": "^1.9.1",
