@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { v4 as uuid } from 'uuid';
 import './noflo-type-selector';
 import './noflo-modal-styles';
 
@@ -77,7 +78,7 @@ Polymer({
 
   nameChanged() {
     this.namespace = this.produceNamespace(this.name);
-    this.projectId = require('uuid')();
+    this.projectId = uuid();
     if (this.name && this.namespace && this.projectId) {
       this.canSend = true;
     } else {

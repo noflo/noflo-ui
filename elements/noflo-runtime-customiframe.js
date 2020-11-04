@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { v4 as uuid } from 'uuid';
 import './noflo-modal-styles';
 
 Polymer({
@@ -56,7 +57,7 @@ Polymer({
   },
 
   generateRuntimeInfo() {
-    const id = require('uuid')();
+    const id = uuid();
     // TODO: make a hash of the URL instead??
     const params = '?fbp_noload=true&fbp_protocol=iframe';
     const address = this.runtimeUrl + params;

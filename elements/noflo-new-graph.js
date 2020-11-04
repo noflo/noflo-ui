@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import noflo from 'noflo';
 import './noflo-type-selector';
 import './noflo-icon-selector';
 import './noflo-modal-styles';
@@ -133,7 +134,6 @@ Polymer({
     if (typeof ga === 'function') {
       ga('send', 'event', 'button', 'click', 'newGraph');
     }
-    const noflo = require('noflo');
     const graph = new noflo.Graph(this.name);
     graph.setProperties({
       description: this.description,

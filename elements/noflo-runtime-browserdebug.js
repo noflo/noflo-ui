@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { v4 as uuid } from 'uuid';
 import './noflo-modal-styles';
 
 Polymer({
@@ -69,7 +70,7 @@ Polymer({
 
   generateRuntimeInfo() {
     const signaller = 'https://api.flowhub.io';
-    const id = require('uuid')();
+    const id = uuid();
     const address = `${signaller}#${id}`;
     const params = `?fbp_noload=true&fbp_protocol=webrtc&fbp_address=${encodeURIComponent(address)}`;
     const runtime = {
