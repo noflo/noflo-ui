@@ -588,6 +588,7 @@ Polymer({
       this.registerComponent({
         ...definition,
         name: unnamespaced,
+        unnamespaced: true,
       }, false);
     }
   },
