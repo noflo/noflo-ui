@@ -300,12 +300,12 @@ Polymer({
     if (!this.editor) {
       return;
     }
-    const emptyOnReadOnly = function (defaultMenu, options) {
+    const emptyOnReadOnly = (defaultMenu) => {
       if (this.readonly) {
         return {};
       }
       return defaultMenu;
-    }.bind(this);
+    };
     this.editor.addMenuCallback('main', emptyOnReadOnly);
     this.editor.addMenuCallback('edge', emptyOnReadOnly);
     this.editor.addMenuCallback('node', (defaultMenu, options) => {
@@ -319,7 +319,7 @@ Polymer({
       localMenu.n4 = {
         icon: 'arrow-circle-o-up',
         iconLabel: 'open',
-        action: function (graph, itemKey, item) {
+        action: (graph, itemKey, item) => {
           if (typeof ga === 'function') {
             ga('send', 'event', 'menu', 'click', 'openNode');
           }
@@ -331,7 +331,7 @@ Polymer({
             }
           }
           window.location.hash = `${hash}/${encodeURIComponent(item.id)}`;
-        }.bind(this),
+        },
       };
       return localMenu;
     });
@@ -341,54 +341,60 @@ Polymer({
       if (this.readonly) {
         return emptyOnReadOnly(defaultMenu, options);
       }
-      defaultMenu.n4 = {
-        icon: 'pencil-square-o',
-        iconLabel: 'rename',
-        action: function (graph, itemKey, item) {
-          const dialog = document.createElement('noflo-exported-inspector');
-          dialog.graph = this.graphs[this.graphs.length - 1];
-          dialog.publicport = itemKey;
-          dialog.privateport = item;
-          dialog.direction = 'input';
-          PolymerDom(document.body).appendChild(dialog);
-        }.bind(this),
+      return {
+        ...defaultMenu,
+        n4: {
+          icon: 'pencil-square-o',
+          iconLabel: 'rename',
+          action: (graph, itemKey, item) => {
+            const dialog = document.createElement('noflo-exported-inspector');
+            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.publicport = itemKey;
+            dialog.privateport = item;
+            dialog.direction = 'input';
+            PolymerDom(document.body).appendChild(dialog);
+          },
+        },
       };
-      return defaultMenu;
     });
     this.editor.addMenuCallback('graphOutport', (defaultMenu, options) => {
       if (this.readonly) {
         return emptyOnReadOnly(defaultMenu, options);
       }
-      defaultMenu.n4 = {
-        icon: 'pencil-square-o',
-        iconLabel: 'rename',
-        action: function (graph, itemKey, item) {
-          const dialog = document.createElement('noflo-exported-inspector');
-          dialog.graph = this.graphs[this.graphs.length - 1];
-          dialog.publicport = itemKey;
-          dialog.privateport = item;
-          dialog.direction = 'output';
-          PolymerDom(document.body).appendChild(dialog);
-        }.bind(this),
+      return {
+        ...defaultMenu,
+        n4: {
+          icon: 'pencil-square-o',
+          iconLabel: 'rename',
+          action: (graph, itemKey, item) => {
+            const dialog = document.createElement('noflo-exported-inspector');
+            dialog.graph = this.graphs[this.graphs.length - 1];
+            dialog.publicport = itemKey;
+            dialog.privateport = item;
+            dialog.direction = 'output';
+            PolymerDom(document.body).appendChild(dialog);
+          },
+        },
       };
-      return defaultMenu;
     });
     this.editor.addMenuCallback('group', emptyOnReadOnly);
     this.editor.addMenuCallback('selection', (defaultMenu, options) => {
       if (this.readonly) {
         return emptyOnReadOnly(defaultMenu, options);
       }
-      defaultMenu.e4 = {
-        icon: 'sitemap',
-        iconLabel: 'graph',
-        action: this.subgraph.bind(this),
+      return {
+        ...defaultMenu,
+        e4: {
+          icon: 'sitemap',
+          iconLabel: 'graph',
+          action: this.subgraph.bind(this),
+        },
+        w4: {
+          icon: 'square-o',
+          iconLabel: 'group',
+          action: this.group.bind(this),
+        },
       };
-      defaultMenu.w4 = {
-        icon: 'square-o',
-        iconLabel: 'group',
-        action: this.group.bind(this),
-      };
-      return defaultMenu;
     });
   },
 
@@ -484,7 +490,7 @@ Polymer({
         x: initialMetadata.x,
         y: initialMetadata.y,
       });
-      const subgraphPort = function (node, port) {
+      const subgraphPort = (node, port) => {
         const portName = `${node}.${port}`;
         return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4').toLowerCase();
       };
@@ -517,7 +523,6 @@ Polymer({
       }, 5);
       // Editor deselect, hide node inspectors
       if (this.editor) {
-        console.log('noflo-context: set selected nodes');
         this.editor.selectedNodes = [];
       }
     });

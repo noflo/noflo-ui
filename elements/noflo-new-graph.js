@@ -171,11 +171,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

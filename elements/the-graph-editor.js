@@ -136,25 +136,25 @@ Polymer({
   },
 
   addPlugin(name, plugin) {
-    this.set('plugins' + `.${name}`, plugin);
+    this.set(`plugins.${name}`, plugin);
     plugin.register(this);
   },
 
   addMenu(type, options) {
     // options: icon, label
-    this.set('menus' + `.${type}`, options);
+    this.set(`menus.${type}`, options);
   },
 
   addMenuCallback(type, callback) {
     if (!this.menus[type]) {
       return;
     }
-    this.set('menus' + `.${type}` + '.callback', callback);
+    this.set(`menus.${type}.callback`, callback);
   },
 
   addMenuAction(type, direction, options) {
     if (!this.menus[type]) {
-      this.set('menus' + `.${type}`, {});
+      this.set(`menus.${type}`, {});
     }
     const menu = this.menus[type];
     menu[direction] = options;
@@ -264,12 +264,12 @@ Polymer({
   },
 
   addErrorNode(id) {
-    this.set('errorNodes' + `.${id}`, true);
+    this.set(`errorNodes.${id}`, true);
     this.updateErrorNodes();
   },
 
   removeErrorNode(id) {
-    this.set('errorNodes' + `.${id}`, false);
+    this.set(`errorNodes.${id}`, false);
     this.updateErrorNodes();
   },
 

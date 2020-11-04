@@ -59,6 +59,7 @@ Polymer({
         return;
       }
       if (matched[2] !== this.repo) {
+        // eslint-disable-next-line prefer-destructuring
         this.repo = matched[2];
       }
       this.canSend = true;
@@ -99,11 +100,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

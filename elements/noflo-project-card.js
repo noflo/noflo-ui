@@ -103,7 +103,7 @@ class NoFloProjectCard extends PolymerElement {
 
   _getMainGraph(main) {
     if (!main) {
-      return;
+      return null;
     }
     const mains = this.project.graphs.filter((graph) => {
       if (graph.properties.id !== main) {

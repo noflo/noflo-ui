@@ -335,8 +335,8 @@ Polymer({
       dialog.type = this.project.type;
     }
     PolymerDom(document.body).appendChild(dialog);
-    dialog.addEventListener('new', (event) => {
-      const graph = event.detail;
+    dialog.addEventListener('new', (ev) => {
+      const graph = ev.detail;
       this.push('project.graphs', graph);
       this.fire('newgraph', graph);
       this.gotoGraph(graph.properties.id);
@@ -359,15 +359,15 @@ Polymer({
       dialog.type = this.project.type;
     }
     PolymerDom(document.body).appendChild(dialog);
-    dialog.addEventListener('new', (event) => {
-      const component = event.detail;
+    dialog.addEventListener('new', (ev) => {
+      const component = ev.detail;
       this.push('project.components', component);
       this.fire('newcomponent', component);
       // TODO: Add node to graph
       this.gotoComponent(component.name);
     });
-    dialog.addEventListener('newSpec', (event) => {
-      const spec = event.detail;
+    dialog.addEventListener('newSpec', (ev) => {
+      const spec = ev.detail;
       this.push('project.specs', spec);
       this.fire('newspec', spec);
     });
@@ -393,9 +393,9 @@ Polymer({
     const dialog = document.createElement('noflo-project-inspector');
     dialog.project = this.project;
     PolymerDom(document.body).appendChild(dialog);
-    dialog.addEventListener('updated', (event) => {
-      Object.keys(event.detail).forEach((property) => {
-        this.set('project' + `.${property}`, event.detail[property]);
+    dialog.addEventListener('updated', (ev) => {
+      Object.keys(ev.detail).forEach((property) => {
+        this.set(`project.${property}`, ev.detail[property]);
       });
       if (this.project.repo) {
         this.set('project.gist', null);
@@ -405,7 +405,7 @@ Polymer({
       }
       this.project.graphs.forEach((graph) => {
         if (graph.properties.id === this.project.main) {
-          type = graph.properties.environment.type;
+          const { type } = graph.properties.environment;
           this.set('project.mainGraph', graph);
           this.set('project.type', type);
         }
@@ -413,9 +413,9 @@ Polymer({
       // Send only the data we actually want to store
       this.fire('changed', this.project);
     });
-    dialog.addEventListener('delete', (event) => {
+    dialog.addEventListener('delete', (ev) => {
       this.$.account.toggleOpen(false);
-      this.fire('deleteProject', event.detail);
+      this.fire('deleteProject', ev.detail);
     });
   },
 
@@ -495,7 +495,7 @@ Polymer({
     return component.language !== 'coffeescript';
   },
 
-  _canGraph(project, runtime) {
+  _canGraph() {
     if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
       // If we have a runtime connection, only allow creating components if setsource is enabled
       return this.runtime.definition.capabilities.indexOf('protocol:graph') !== -1;
@@ -503,7 +503,7 @@ Polymer({
     return true;
   },
 
-  _canComponent(project, runtime) {
+  _canComponent() {
     if (this.runtime && this.runtime.definition && this.runtime.definition.capabilities) {
       // If we have a runtime connection, only allow creating components if setsource is enabled
       return this.runtime.definition.capabilities.indexOf('component:setsource') !== -1;

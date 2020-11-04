@@ -246,11 +246,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 
@@ -259,12 +259,13 @@ Polymer({
       return '';
     }
     const info = runtimeInfo[this.type];
-    if (language == 'es6') {
-      language = 'es2015';
+    let lang = language;
+    if (lang === 'es6') {
+      lang = 'es2015';
     }
     let template = '';
-    if (info && info.componenttemplates && info.componenttemplates[language]) {
-      template = info.componenttemplates[language];
+    if (info && info.componenttemplates && info.componenttemplates[lang]) {
+      template = info.componenttemplates[lang];
     }
     if (template) {
       // Allow passing project/component data to template

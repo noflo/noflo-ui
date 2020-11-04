@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { unnamespace } from '../src/collections';
 import './noflo-icon';
 import './the-card-styles';
 
@@ -165,11 +166,7 @@ Polymer({
   },
 
   nodeLabel(node) {
-    const extractLibrary = node.split('/');
-    if (extractLibrary.length > 1) {
-      node = extractLibrary[1];
-    }
-    return node.split('_')[0];
+    return unnamespace(node).split('_')[0];
   },
 
   clear() {

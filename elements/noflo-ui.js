@@ -206,10 +206,10 @@ Polymer({
     this.$.main.addEventListener('userUpdated', (event) => {
       this.emitEvent('user:update', event.detail);
     });
-    this.$.main.addEventListener('logout', (event) => {
+    this.$.main.addEventListener('logout', () => {
       this.emitEvent('user:logout', true);
     });
-    this.$.main.addEventListener('login', (event) => {
+    this.$.main.addEventListener('login', () => {
       this.emitEvent('user:login', {
         url: window.location.href,
         scopes: [],
@@ -323,8 +323,9 @@ Polymer({
       this.emitEvent('context:nodes', event.detail);
     });
     this.$.grapheditor.addEventListener('changed', (event) => {
-      event.detail.properties.changed = true;
-      this.emitEvent('storage:save:graph', event.detail);
+      const ev = event;
+      ev.detail.properties.changed = true;
+      this.emitEvent('storage:save:graph', ev.detail);
     });
     this.$.grapheditor.addEventListener('graphChanges', (event) => {
       if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {

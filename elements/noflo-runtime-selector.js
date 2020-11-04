@@ -129,11 +129,11 @@ Polymer({
       label: 'New imgflo app on Heroku',
       address: 'myapp.herokuapps.com',
     };
-    if (type == 'noflo-browser') {
+    if (type === 'noflo-browser') {
       this.push('available', launchNewBrowserRuntime);
       this.push('available', customIframeRuntime);
     }
-    if (type == 'imgflo') {
+    if (type === 'imgflo') {
       this.push('available', launchImgfloHerokuRuntime);
     }
     this.runtimes.forEach((rt) => {
@@ -149,9 +149,13 @@ Polymer({
   // similiar to in noflo-main.html
   checkRuntimeSeen(runtime) {
     if (!runtime.seen) {
+      // eslint-disable-next-line no-param-reassign
       runtime.seen = Date.now();
     }
-    runtime.seenHoursAgo = Math.floor((Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000));
+    // eslint-disable-next-line no-param-reassign
+    runtime.seenHoursAgo = Math.floor(
+      (Date.now() - new Date(runtime.seen).getTime()) / (60 * 60 * 1000),
+    );
     if (runtime.seenHoursAgo / 24 > 31) {
       // We haven't seen this runtime in over a month, don't show it
       const index = this.available.indexOf(runtime);
@@ -161,17 +165,17 @@ Polymer({
 
   selectRuntime(event) {
     const id = event.currentTarget.getAttribute('data-id');
-    if (id == 'new-browser-runtime') {
+    if (id === 'new-browser-runtime') {
       // Launch new runtime instead of connect to existing
       this.close();
       this.debugOnDevice();
       return;
-    } if (id == 'custom-iframe-address') {
+    } if (id === 'custom-iframe-address') {
       // Add new iframe runtime for given address
       this.close();
       this.addIframeRuntime();
       return;
-    } if (id == 'imgflo-heroku-new') {
+    } if (id === 'imgflo-heroku-new') {
       this.close();
       this.deployHeroku('https://github.com/jonnor/imgflo');
     }

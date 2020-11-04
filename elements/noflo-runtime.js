@@ -304,6 +304,7 @@ Polymer({
   },
 
   setIframeVisibility(iframe, visibility) {
+    // eslint-disable-next-line no-param-reassign
     iframe.style.display = visibility;
   },
 
@@ -345,8 +346,6 @@ Polymer({
         return 'cloud';
       case 'noflo-gnome':
         return 'desktop';
-      case 'noflo-gnome':
-        return 'desktop';
       case 'microflo':
         return 'lightbulb-o';
       case 'javafbp':
@@ -355,6 +354,8 @@ Polymer({
         return 'picture-o';
       case 'sndflo':
         return 'music';
+      default:
+        return 'cog';
     }
   },
 
@@ -374,11 +375,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

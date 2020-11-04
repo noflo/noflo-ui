@@ -87,8 +87,8 @@
     "yaml-loader": "^0.6.0"
   },
   "scripts": {
-    "lint": "eslint *.js src/*.js components/*.js app/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
-    "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
+    "lint": "eslint *.js src/*.js components/*.js app/*.js elements/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
+    "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js elements/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
     "pretest": "npm run lint",
     "test": "karma start",
     "start": "http-server . -p 9999 -s -c-1",

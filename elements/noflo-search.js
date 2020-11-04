@@ -298,13 +298,15 @@ Polymer({
   closeInspectors() {
     if (this.graphInspector) {
       if (PolymerDom(this.graphInspector).parentNode) {
-        PolymerDom(PolymerDom(this.graphInspector).parentNode).removeChild(this.graphInspector);
+        PolymerDom(PolymerDom(this.graphInspector).parentNode)
+          .removeChild(this.graphInspector);
       }
       this.graphInspector = null;
     }
     if (this.componentInspector) {
       if (PolymerDom(this.componentInspector).parentNode) {
-        PolymerDom(PolymerDom(this.componentInspector).parentNode).removeChild(this.componentInspector);
+        PolymerDom(PolymerDom(this.componentInspector).parentNode)
+          .removeChild(this.componentInspector);
       }
       this.componentInspector = null;
     }
@@ -315,28 +317,28 @@ Polymer({
     if (!this.project) {
       return parentPath;
     }
-    const findNode = function (component, graph) {
+    const findNode = (comp, graph) => {
       const matching = graph.nodes.filter((node) => {
-        if (node.id === component) {
+        if (node.id === comp) {
           return true;
         }
-        if (node.component === component) {
+        if (node.component === comp) {
           // Direct match
           return true;
         }
         if (!this.project) {
           return false;
         }
-        if (node.component === `${this.project.namespace}/${component}`) {
+        if (node.component === `${this.project.namespace}/${comp}`) {
           return true;
         }
-        if (node.component === `${this.project.id}/${component}`) {
+        if (node.component === `${this.project.id}/${comp}`) {
           return true;
         }
         return false;
       });
       return matching[0];
-    }.bind(this);
+    };
     graphs.forEach((graph, idx) => {
       if (!component && idx >= graphs.length - 1) {
         return;
@@ -545,11 +547,11 @@ Polymer({
     this.set('graphInspector.project', this.project);
     this.set('graphInspector.runtimes', this.runtimes);
     this.set('graphInspector.theme', this.theme);
-    this.graphInspector.addEventListener('delete', (event) => {
-      this.fire('deleteGraph', event.detail);
+    this.graphInspector.addEventListener('delete', (ev) => {
+      this.fire('deleteGraph', ev.detail);
     });
-    this.graphInspector.addEventListener('specschanged', (event) => {
-      this.fire('specschanged', event.detail);
+    this.graphInspector.addEventListener('specschanged', (ev) => {
+      this.fire('specschanged', ev.detail);
     });
     PolymerDom(document.body).appendChild(this.graphInspector);
   },
@@ -568,8 +570,8 @@ Polymer({
     this.componentInspector = document.createElement('noflo-component-inspector');
     this.set('componentInspector.component', this.component);
     this.set('componentInspector.project', this.project);
-    this.componentInspector.addEventListener('delete', (event) => {
-      this.fire('deleteComponent', event.detail);
+    this.componentInspector.addEventListener('delete', (ev) => {
+      this.fire('deleteComponent', ev.detail);
     });
     PolymerDom(document.body).appendChild(this.componentInspector);
   },
@@ -605,7 +607,7 @@ Polymer({
   },
 
   _isReadOnly(component, graph, readonly) {
-    return readonly || component && component.readonly || graph && graph.properties.readonly;
+    return readonly || (component && component.readonly) || (graph && graph.properties.readonly);
   },
 
   getName(entity) {
