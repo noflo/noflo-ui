@@ -14,7 +14,8 @@
   "rules": {
     "no-underscore-dangle": 0,
     "class-methods-use-this": 0,
-    "camelcase": 1
+    "camelcase": 1,
+    "react/no-render-return-value": 1
   },
   "parserOptions": {
     "ecmaFeatures": {
