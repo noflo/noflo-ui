@@ -1,14 +1,20 @@
 {
   "extends": "airbnb",
+  "env": {
+    "browser": true
+  },
   "globals": {
-    "atob": false,
     "chrome": false,
-    "document": false,
-    "FileReader": false,
-    "localStorage": false,
-    "navigator": false,
-    "window": false,
-    "XMLHttpRequest": false
+    "klayNoflo": false,
+    "CodeMirror": false,
+    "ReactDOM": false,
+    "TheGraph": false,
+    "ga": false
+  },
+  "rules": {
+    "no-underscore-dangle": 0,
+    "class-methods-use-this": 0,
+    "camelcase": 1
   },
   "parserOptions": {
     "ecmaFeatures": {

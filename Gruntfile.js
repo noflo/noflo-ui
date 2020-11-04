@@ -12,14 +12,6 @@ module.exports = function () {
       build: webpackConfig,
     },
 
-    // Vulcanization compiles the Polymer elements into a HTML file
-    exec: {
-      vulcanize: {
-        command: `${path.resolve(__dirname, './node_modules/.bin/polymer-bundler')} index.dist.html > index.html`,
-        cwd: __dirname,
-      },
-    },
-
     // Directory cleaning
     clean: {
       build: [
@@ -32,12 +24,15 @@ module.exports = function () {
         './index.js',
         './index.html',
         './dev.html',
+        './manifest.json',
+        './manifest.webapp.json',
+        './config.xml',
       ],
       themes: [
         'themes',
       ],
-      specs: [
-        'spec/*.js',
+      zip: [
+        './*.zip',
       ],
     },
 
@@ -254,11 +249,11 @@ ga('send', 'pageview');
     },
 
     sharedstylecomponent: {
-      'elements/the-graph-styles.html': [
+      'elements/the-graph-styles.js': [
         'node_modules/the-graph/themes/the-graph-dark.css',
         'node_modules/the-graph/themes/the-graph-light.css',
       ],
-      'elements/codemirror-styles.html': [
+      'elements/codemirror-styles.js': [
         'node_modules/codemirror/addon/lint/lint.css',
         'node_modules/codemirror/lib/codemirror.css',
         'node_modules/codemirror/theme/mdn-like.css',
@@ -282,14 +277,19 @@ ga('send', 'pageview');
   this.registerMultiTask('sharedstylecomponent', 'Combine CSS files into a Polymer shared style element', function () {
     const sources = this.data.map((file) => grunt.file.read(file));
     const template = `\
-<!-- Generated from <%= files %> -->
+/**
+ * Generated from <%= files %>
+ */
+const $_documentContainer = document.createElement('template');
+$_documentContainer.innerHTML = \`
 <dom-module id="<%= id %>">
   <template>
     <style>
       <%= sources %>
     </style>
   </template>
-</dom-module>\
+</dom-module>\`;
+document.head.appendChild($_documentContainer.content);
 `;
     const id = path.basename(this.target, path.extname(this.target));
     const result = grunt.template.process(template, {
@@ -311,11 +311,10 @@ ga('send', 'pageview');
   ]);
   this.registerTask('build_polymer', [
     'sharedstylecomponent',
-    'exec:vulcanize',
   ]);
   this.registerTask('build', [
-    'build_noflo',
     'build_polymer',
+    'build_noflo',
     'string-replace:app',
     'compress',
   ]);

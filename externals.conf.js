@@ -18,5 +18,5 @@ module.exports = [
   'browser/vendor/klayjs/klay.js',
   'browser/vendor/klayjs-noflo/klay-noflo.js',
   'browser/vendor/observe-js/observe.js',
-  'browser/vendor/webcomponentsjs/webcomponents-lite.js',
+  'browser/vendor/webcomponentsjs/*.js',
 ];
