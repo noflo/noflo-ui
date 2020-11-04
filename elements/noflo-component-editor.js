@@ -133,7 +133,7 @@ Polymer({
     if (!this.component.code) {
       this.set('component.code', this.getExampleCode());
     }
-    codeOptions = this.getMirrorOptions(this.component, this.component.code);
+    const codeOptions = this.getMirrorOptions(this.component, this.component.code);
     this.codeEditor = CodeMirror(this.$.code_editor, codeOptions);
     this.codeEditor.on('change', () => {
       this.set('component.code', this.codeEditor.getValue());
@@ -148,7 +148,7 @@ Polymer({
     if (!this.spec) {
       return;
     }
-    testOptions = this.getMirrorOptions(this.spec, this.spec.code);
+    const testOptions = this.getMirrorOptions(this.spec, this.spec.code);
     this.testsEditor = CodeMirror(this.$.tests_editor, testOptions);
     this.testsEditor.on('change', () => {
       this.set('spec.code', this.testsEditor.getValue());
