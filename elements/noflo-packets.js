@@ -162,7 +162,8 @@ Polymer({
         }
       });
       if (!found) {
-        PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode).removeChild(this.edgeInspectors[id]);
+        PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode)
+          .removeChild(this.edgeInspectors[id]);
         delete this.edgeInspectors[id];
       }
     });
@@ -184,10 +185,11 @@ Polymer({
       PolymerDom(PolymerDom(this.edgeMenu).parentNode).removeChild(this.edgeMenu);
       this.edgeMenu = null;
     }
-    for (const id in this.edgeInspectors) {
-      PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode).removeChild(this.edgeInspectors[id]);
+    Object.keys(this.edgeInspectors).forEach((id) => {
+      PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode)
+        .removeChild(this.edgeInspectors[id]);
       delete this.edgeInspectors[id];
-    }
+    });
   },
   nodesChanged() {
     if (this.nodes.length) {
@@ -235,15 +237,17 @@ Polymer({
         }
       });
       if (!found) {
-        PolymerDom(PolymerDom(this.nodeInspectors[id]).parentNode).removeChild(this.nodeInspectors[id]);
+        PolymerDom(PolymerDom(this.nodeInspectors[id]).parentNode)
+          .removeChild(this.nodeInspectors[id]);
         delete this.nodeInspectors[id];
       }
     });
   },
   hideNodeCards() {
-    for (const id in this.nodeInspectors) {
-      PolymerDom(PolymerDom(this.nodeInspectors[id]).parentNode).removeChild(this.nodeInspectors[id]);
+    Object.keys(this.nodeInspectors).forEach((id) => {
+      PolymerDom(PolymerDom(this.nodeInspectors[id]).parentNode)
+        .removeChild(this.nodeInspectors[id]);
       delete this.nodeInspectors[id];
-    }
+    });
   },
 });

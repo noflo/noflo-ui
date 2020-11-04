@@ -1,4 +1,5 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
+import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
 import TestStatusDetailed from '../src/components/TestStatusDetailed';
 import './noflo-modal-styles';
 

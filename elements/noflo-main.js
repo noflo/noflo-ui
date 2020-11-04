@@ -1,7 +1,7 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
-import runtimeInfo from '../runtimeinfo';
 import noflo from 'noflo';
+import runtimeInfo from '../runtimeinfo';
 import './noflo-account';
 import './noflo-new-project';
 import './noflo-new-repository';

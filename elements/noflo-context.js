@@ -425,7 +425,7 @@ Polymer({
     graph.groups.forEach((grp) => {
       const grpNodes = JSON.parse(JSON.stringify(grp.nodes));
       grpNodes.sort();
-      if (grpNodes.join(',') == selectedNodes.join(',')) {
+      if (grpNodes.join(',') === selectedNodes.join(',')) {
         group = grp.name;
         description = grp.metadata.description;
       }
@@ -555,9 +555,11 @@ Polymer({
 
   canGetSource(component) {
     const componentParts = component.split('/');
-    if (componentParts.length > 1 && this.project && this.libraryMatch(componentParts.shift(), this.project)) {
+    if (componentParts.length > 1
+      && this.project
+      && this.libraryMatch(componentParts.shift(), this.project)) {
       // Local component, see if it is available
-      for (i = 0; i < this.project.graphs.length; i++) {
+      for (let i = 0; i < this.project.graphs.length; i += 1) {
         if (this.project.graphs[i].name === componentParts[0]) {
           return true;
         }
@@ -565,7 +567,7 @@ Polymer({
           return true;
         }
       }
-      for (i = 0; i < this.project.components.length; i++) {
+      for (let i = 0; i < this.project.components.length; i += 1) {
         if (this.project.components[i].name === componentParts[0]) {
           return true;
         }

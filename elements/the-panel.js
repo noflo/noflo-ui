@@ -158,6 +158,8 @@ Polymer({
           'height',
           'width',
         ];
+      default:
+        throw new Error(`Unknown edge ${this.edge}`);
     }
   },
 
@@ -170,13 +172,13 @@ Polymer({
 
   updateVisibility() {
     const sizeDimensions = this.getSizeDimensions();
-    this.set('style' + `.${sizeDimensions[1]}`, '100%');
-    this.set('style' + `.${sizeDimensions[0]}`, `${this.size}px`);
+    this.set(`style.${sizeDimensions[1]}`, '100%');
+    this.set(`style.${sizeDimensions[0]}`, `${this.size}px`);
     let outside = 0;
     if (!this.open) {
       outside = (this.size - this.handle) * -1;
     }
-    this.set('style' + `.${this.getPositionDimension()}`, `${outside}px`);
+    this.set(`style.${this.getPositionDimension()}`, `${outside}px`);
   },
 
   listeners: { click: 'handleClicked' },

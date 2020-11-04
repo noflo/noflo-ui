@@ -21,7 +21,7 @@ Polymer({
 
   addTo(parent, prepend) {
     const stacks = parent.getElementsByTagName('the-card-stack');
-    for (let i = 0; i < stacks.length; i++) {
+    for (let i = 0; i < stacks.length; i += 1) {
       if (stacks[i].type === this.type) {
         PolymerDom(stacks[i]).appendChild(this);
         return;

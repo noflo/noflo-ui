@@ -488,11 +488,11 @@ Polymer({
   },
 
   _computeIf(component) {
-    return component.language == 'coffeescript';
+    return component.language === 'coffeescript';
   },
 
   _computeIf2(component) {
-    return component.language != 'coffeescript';
+    return component.language !== 'coffeescript';
   },
 
   _canGraph(project, runtime) {

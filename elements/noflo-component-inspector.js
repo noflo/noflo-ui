@@ -1,4 +1,4 @@
-import { Polymer,html } from '@polymer/polymer/polymer-legacy';
+import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import collections from '../src/collections';
 import urls from '../src/urls';
 import './noflo-modal-styles';

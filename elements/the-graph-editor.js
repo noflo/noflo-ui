@@ -129,10 +129,10 @@ Polymer({
   },
 
   detached() {
-    for (const name in this.plugins) {
+    Object.keys(this.plugins).forEach((name) => {
       this.plugins[name].unregister(this);
       delete this.plugins[name];
-    }
+    });
   },
 
   addPlugin(name, plugin) {

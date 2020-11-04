@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { v4 as uuid } from 'uuid';
 import './noflo-modal-styles';
 
 Polymer({
@@ -128,18 +129,14 @@ Polymer({
   },
 
   createUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0; const
-        v = c === 'x' ? r : r & 3 | 8;
-      return v.toString(16);
-    });
+    return uuid();
   },
 
   create(event) {
     if (event) {
       event.preventDefault();
     }
-    runtime = {
+    const runtime = {
       name: this.name,
       label: this.name,
       id: this.createUUID(),
@@ -167,11 +164,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

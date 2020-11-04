@@ -405,7 +405,8 @@ Polymer({
     this.$.main.addEventListener('deleteRepo', (event) => {
       this.emitEvent('flowhub:projects:remove', event.detail);
       if (this.ctx.remoteProjects) {
-        // Since remote projects are not updated via normal flow, we can directly remove it from view
+        // Since remote projects are not updated via normal flow, we can
+        // directly remove it from view
         this.splice('ctx.remoteProjects', this.ctx.remoteProjects.indexOf(event.detail), 1);
       }
     });
@@ -492,39 +493,45 @@ Polymer({
   updated(context) {
     if (context.state) {
       switch (context.state) {
-        case 'error':
+        case 'error': {
           this.showError(context);
           break;
-        case 'ok':
+        }
+        case 'ok': {
           this.hideAlertSoon();
           break;
-        case 'loading':
+        }
+        case 'loading': {
           this.showProgress(context);
           break;
+        }
+        default: {
+          break;
+        }
       }
     }
 
     // Update local state with incoming data
-    for (const key in context) {
+    Object.keys(context).forEach((key) => {
       if (this.clearContextFirst.indexOf(key) !== -1) {
         // Clear arrays first so Polymer knows there are changes
-        this.set('ctx' + `.${key}`, context[key].slice(0));
+        this.set(`ctx.${key}`, context[key].slice(0));
         if (key === 'projects') {
           // Projects are complex objects that need a full notify
-          for (let i = 0; i < this.ctx.projects.length; i++) {
+          for (let i = 0; i < this.ctx.projects.length; i += 1) {
             const project = this.ctx.projects[i];
-            this.set('ctx.projects' + `.${i}`, {});
-            this.set('ctx.projects' + `.${i}`, project);
+            this.set(`ctx.projects.${i}`, {});
+            this.set(`ctx.projects.${i}`, project);
             if (this.ctx.project && this.ctx.project.id === project.id) {
               this.set('ctx.project', {});
               this.set('ctx.project', project);
             }
           }
         }
-        continue;
+        return;
       }
-      this.set('ctx' + `.${key}`, context[key]);
-    }
+      this.set(`ctx.${key}`, context[key]);
+    });
     if (context.user && context.user['flowhub-theme']) {
       this.theme = context.user['flowhub-theme'];
     }
@@ -539,9 +546,9 @@ Polymer({
       return;
     }
     if (context.componentLibrary) {
-      for (const libKey in this.$.grapheditor.$.graph.library) {
+      Object.keys(this.$.grapheditor.$.graph.library).forEach((libKey) => {
         delete this.$.grapheditor.$.graph.library[libKey];
-      }
+      });
       context.componentLibrary.forEach((def) => {
         this.$.grapheditor.registerComponent(def);
       });
