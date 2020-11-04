@@ -5,8 +5,8 @@ process.env.CHROME_BIN = require('puppeteer').executablePath(); // eslint-disabl
 
 module.exports = function (config) {
   const files = [
-    'node_modules/react/dist/react-with-addons.min.js',
-    'node_modules/react-dom/dist/react-dom.min.js',
+    'node_modules/react/umd/react.production.min.js',
+    'node_modules/react-dom/umd/react-dom.production.min.js',
     'node_modules/hammerjs/hammer.min.js',
     'browser/noflo-ui.min.js',
     'spec/index.js',

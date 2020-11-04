@@ -643,4 +643,3 @@ Polymer({
     PolymerDom(document.body).classList.add(this.theme);
   },
 });
-console.log('after');
