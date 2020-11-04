@@ -5,9 +5,6 @@ updates:
     schedule:
       interval: daily
     ignore:
-      - dependency-name: "@polymer/polymer"
-      - dependency-name: "@webcomponents/webcomponentsjs"
-      - dependency-name: "polymer-bundler"
       - dependency-name: "noflo"
       - dependency-name: "noflo-runtime-base"
       - dependency-name: "noflo-runtime-postmessage"
