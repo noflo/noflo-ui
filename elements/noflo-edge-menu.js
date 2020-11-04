@@ -183,7 +183,7 @@ Polymer({
       return;
     }
     this.secure = true;
-    for (let i = 0; i < this.edges.length; i++) {
+    for (let i = 0; i < this.edges.length; i += 1) {
       if (!this.edges[i].metadata.secure) {
         this.secure = false;
         return;
@@ -215,7 +215,15 @@ Polymer({
     const route = parseInt(event.currentTarget.getAttribute('name'), 10);
     this.graph.startTransaction('changeroute');
     this.edges.forEach((edge) => {
-      this.graph.setEdgeMetadata(edge.from.node, edge.from.port, edge.to.node, edge.to.port, { route });
+      this.graph.setEdgeMetadata(
+        edge.from.node,
+        edge.from.port,
+        edge.to.node,
+        edge.to.port,
+        {
+          route,
+        },
+      );
     });
     this.graph.endTransaction('changeroute');
   },
@@ -246,7 +254,7 @@ Polymer({
   },
 
   _computeIf2(edges) {
-    return edges.length == 1;
+    return edges.length === 1;
   },
 
   _computeClass(route) {

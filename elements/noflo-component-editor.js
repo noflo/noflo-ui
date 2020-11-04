@@ -174,9 +174,7 @@ Polymer({
       theme: this.getMirrorTheme(),
       readOnly: component.project ? false : 'nocursor',
     };
-    const canLint = function (language) {
-      return false;
-    };
+    const canLint = () => false;
     if (canLint(component.language) && !options.readOnly) {
       options.gutters = ['CodeMirror-lint-markers'];
       options.lint = true;
@@ -220,11 +218,11 @@ Polymer({
       runtimeType = this.project.type;
     }
     if (!runtimeType) {
-      console.log('WARNING: Unknown runtime type');
+      return '';
     }
     const info = runtimeInfo[runtimeType];
     let { language } = this.component;
-    if (language == 'es6') {
+    if (language === 'es6') {
       language = 'es2015';
     }
     let template = '';

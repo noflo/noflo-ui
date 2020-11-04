@@ -374,7 +374,7 @@ Polymer({
     if (!this.projects) {
       return true;
     }
-    for (let i = 0; i < this.projects.length; i++) {
+    for (let i = 0; i < this.projects.length; i += 1) {
       if (this.projects[i].repo === remoteProject.repo) {
         // We already have this project checked out
         return false;
@@ -400,9 +400,11 @@ Polymer({
       return false;
     }
     if (typeof runtime.seen !== 'object') {
+      // eslint-disable-next-line no-param-reassign
       runtime.seen = new Date(runtime.seen);
     }
     const now = new Date();
+    // eslint-disable-next-line no-param-reassign
     runtime.seenHoursAgo = Math.floor((now - runtime.seen) / (60 * 60 * 1000));
     return true;
   },
@@ -428,7 +430,7 @@ Polymer({
         return;
       }
       Object.keys(typeExamples).forEach((key) => {
-        if (typeExamples[key].ssl && location.protocol !== 'https:') {
+        if (typeExamples[key].ssl && window.location.protocol !== 'https:') {
           // Skip examples that require SSL when on HTTP
           return;
         }
@@ -454,7 +456,7 @@ Polymer({
     });
   },
 
-  fetchRuntimes(event) {
+  fetchRuntimes() {
     if (!this._canFlowhub(this.user)) {
       return;
     }
@@ -524,19 +526,20 @@ Polymer({
     dialog.projects = this.projects;
     dialog.runtimes = this.runtimes;
     PolymerDom(document.body).appendChild(dialog);
-    dialog.addEventListener('new', (event) => {
+    dialog.addEventListener('new', (ev) => {
+      const project = ev.detail;
       const graph = new noflo.Graph('main');
-      const graphId = `${event.detail.id}/main`;
+      const graphId = `${project.id}/main`;
       graph.setProperties({
         id: graphId,
-        project: event.detail.id,
-        environment: { type: event.detail.type },
+        project: project.id,
+        environment: { type: project.type },
         main: true,
       });
-      event.detail.graphs.push(graph);
-      event.detail.main = graphId;
+      project.graphs.push(graph);
+      project.main = graphId;
       this.fire('newgraph', graph);
-      this.fire('newproject', event.detail);
+      this.fire('newproject', project);
     });
   },
 
@@ -546,8 +549,8 @@ Polymer({
       return;
     }
     const dialog = document.createElement('noflo-new-repository');
-    dialog.addEventListener('new', (event) => {
-      const repo = event.detail;
+    dialog.addEventListener('new', (ev) => {
+      const repo = ev.detail;
       const repoParts = repo.split('/');
       const branch = 'master';
       this.fire('downloadProject', {
@@ -568,9 +571,8 @@ Polymer({
       return;
     }
     const dialog = document.createElement('noflo-new-runtime');
-    dialog.addEventListener('addRuntime', (event) => {
-      const runtime = event.detail;
-      this.fire('newruntime', event.detail);
+    dialog.addEventListener('addRuntime', (ev) => {
+      this.fire('newruntime', ev.detail);
     });
     dialog.user = this.user;
     PolymerDom(document.body).appendChild(dialog);

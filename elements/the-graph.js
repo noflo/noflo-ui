@@ -1,5 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import { unnamespace } from '../src/collections';
 import './the-graph-styles';
 
 Polymer({
@@ -220,7 +221,7 @@ Polymer({
       this.trackGraphChange = {};
     }
     this.graphEvents.forEach((event) => {
-      this.trackGraphChange[event] = function (payload) {
+      this.trackGraphChange[event] = (payload) => {
         this.graphChanges.push({
           event,
           payload,
@@ -228,11 +229,11 @@ Polymer({
         if (this.autolayout) {
           this.triggerAutolayout();
         }
-      }.bind(this);
+      };
       graph.on(event, this.trackGraphChange[event]);
     });
     this.graphRenameEvents.forEach((event) => {
-      this.trackGraphChange[event] = function (from, to) {
+      this.trackGraphChange[event] = (from, to) => {
         this.graphChanges.push({
           event,
           payload: {
@@ -240,11 +241,11 @@ Polymer({
             to,
           },
         });
-      }.bind(this);
+      };
       graph.on(event, this.trackGraphChange[event]);
     });
     this.graphPortEvents.forEach((event) => {
-      this.trackGraphChange[event] = function (pub, priv) {
+      this.trackGraphChange[event] = (pub, priv) => {
         this.graphChanges.push({
           event,
           payload: {
@@ -254,12 +255,12 @@ Polymer({
             metadata: priv.metadata,
           },
         });
-      }.bind(this);
+      };
       graph.on(event, this.trackGraphChange[event]);
     });
 
     // Send changeset at end of transaction
-    this.trackGraphChange.endTransaction = function () {
+    this.trackGraphChange.endTransaction = () => {
       // Send full graph for storage
       this.fire('changed', graph);
       // Send and clear graph change log
@@ -269,7 +270,7 @@ Polymer({
         }
         this.graphChanges = [];
       }
-    }.bind(this);
+    };
     this.graph.on('endTransaction', this.trackGraphChange.endTransaction);
   },
 
@@ -334,8 +335,8 @@ Polymer({
   },
 
   onPanScale(x, y, scale) {
-    this.set('pan' + `.${0}`, x);
-    this.set('pan' + `.${1}`, y);
+    this.set(`pan.${0}`, x);
+    this.set(`pan.${1}`, y);
     this.scale = scale;
   },
 
@@ -383,7 +384,7 @@ Polymer({
   selectedNodesChanged() {
     this.set('selectedNodesHash', {});
     const selectedNodesHash = {};
-    for (let i = 0, len = this.selectedNodes.length; i < len; i++) {
+    for (let i = 0, len = this.selectedNodes.length; i < len; i += 1) {
       selectedNodesHash[this.selectedNodes[i].id] = true;
     }
     this.set('selectedNodesHash', selectedNodesHash);
@@ -428,7 +429,7 @@ Polymer({
     });
   },
 
-  triggerAutolayout(event) {
+  triggerAutolayout() {
     const { graph } = this;
     const portInfo = this.graphView ? this.graphView.portInfo : null;
     // Calls the autolayouter
@@ -578,19 +579,17 @@ Polymer({
       // Don't override real one with generated dummy
       return;
     }
-    this.set('library' + `.${definition.name}`, def);
+    this.set(`library.${definition.name}`, def);
     // So changes are rendered
     this.debounceLibraryRefesh();
     // Register namespaced components also without their alias
     if (definition.name.indexOf('/') !== -1) {
-      const parts = definition.name.split('/');
-      if (!parts[1]) {
-        return;
-      }
-      const cloned = JSON.parse(JSON.stringify(definition));
-      cloned.name = parts[1];
-      cloned.unnamespaced = true;
-      this.registerComponent(cloned, false);
+      const unnamespaced = unnamespace(definition.name);
+      this.registerComponent({
+        ...definition,
+        name: unnamespaced,
+        unnamespaced: true,
+      }, false);
     }
   },
 

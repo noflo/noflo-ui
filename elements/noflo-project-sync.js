@@ -89,7 +89,9 @@ Polymer({
   },
 
   operationChanged() {
-    if (!this.operation.push.length && !this.operation.pull.length && !this.operation.conflict.length) {
+    if (!this.operation.push.length
+      && !this.operation.pull.length
+      && !this.operation.conflict.length) {
       this.statusText = 'All changes have been synchronized';
       this.hasOp = false;
     }
@@ -156,7 +158,7 @@ Polymer({
     this.set('operation.conflict', []);
     this.set('operation.pull', []);
     this.set('operation.push', []);
-    const checkOps = function (entry) {
+    const checkOps = (entry) => {
       this.files.forEach((file) => {
         if (file.path !== entry.path) {
           return;
@@ -168,7 +170,7 @@ Polymer({
           this.push('operation.pull', entry);
         }
       });
-    }.bind(this);
+    };
     originalConflicts.forEach(checkOps);
     originalPushes.forEach(checkOps);
     originalPulls.forEach(checkOps);
@@ -218,11 +220,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 

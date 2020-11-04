@@ -242,7 +242,8 @@ Polymer({
       } else {
         this.project.graphs.forEach((graph) => {
           graph.nodes.forEach((node) => {
-            if (node.component === collections.unnamespace(this.graph.name) || node.component === collections.namespace(this.graph.name, this.project.namespace)) {
+            if (node.component === collections.unnamespace(this.graph.name)
+            || node.component === collections.namespace(this.graph.name, this.project.namespace)) {
               this.push('inGraph', graph);
             }
           });
@@ -285,7 +286,7 @@ Polymer({
     try {
       this.downloadUrl = URL.createObjectURL(blob);
     } catch (e) {
-
+      // Ignore URL failure
     }
   },
 
@@ -417,23 +418,23 @@ Polymer({
   listeners: { click: 'close' },
 
   _computeClass(view) {
-    return this.tokenList({ selected: view == 'properties' });
+    return this.tokenList({ selected: view === 'properties' });
   },
 
   _computeIf(type) {
-    return type == 'noflo-browser';
+    return type === 'noflo-browser';
   },
 
   _computeClass2(view) {
-    return this.tokenList({ hidden: view != 'properties' });
+    return this.tokenList({ hidden: view !== 'properties' });
   },
 
   _computeClass3(view) {
-    return this.tokenList({ hidden: view != 'html' });
+    return this.tokenList({ hidden: view !== 'html' });
   },
 
   _computeClass4(view) {
-    return this.tokenList({ hidden: view != 'tests' });
+    return this.tokenList({ hidden: view !== 'tests' });
   },
 
   _computeDownload(graph) {
@@ -446,20 +447,20 @@ Polymer({
   },
 
   _computeClass5(view) {
-    return this.tokenList({ selected: view == 'html' });
+    return this.tokenList({ selected: view === 'html' });
   },
 
   _computeClass6(view) {
-    return this.tokenList({ selected: view == 'tests' });
+    return this.tokenList({ selected: view === 'tests' });
   },
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 

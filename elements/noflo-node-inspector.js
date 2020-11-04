@@ -541,7 +541,7 @@ Polymer({
   getPortValue(port) {
     let value;
     this.graph.initializers.forEach((iip) => {
-      if (iip.to.node == this.node.id && iip.to.port === port) {
+      if (iip.to.node === this.node.id && iip.to.port === port) {
         value = iip.from.data;
       }
     });
@@ -553,13 +553,13 @@ Polymer({
     let route = 'X';
     Object.keys(this.graph.inports).forEach((name) => {
       const inport = this.graph.inports[name];
-      if (inport.process == this.node.id && inport.port == port) {
+      if (inport.process === this.node.id && inport.port === port) {
         connected = true;
         route = 2;
       }
     });
     this.graph.edges.forEach((edge) => {
-      if (edge.to.node == this.node.id && edge.to.port == port) {
+      if (edge.to.node === this.node.id && edge.to.port === port) {
         connected = true;
         route = edge.metadata.route || 0;
       }
@@ -594,6 +594,7 @@ Polymer({
         portDef.inputType = 'number';
         break;
       case 'all':
+      default:
         portDef.inputType = 'text';
         break;
     }
@@ -610,7 +611,6 @@ Polymer({
         } catch (e) {
           return input.value;
         }
-        break;
       case 'boolean':
         return input.checked;
       case 'number':
@@ -620,10 +620,10 @@ Polymer({
       case 'date':
         return new Date(input.value);
       case 'uri':
-        return function (callback) {
+        return (callback) => {
           const reader = new FileReader();
-          reader.onload = function () {
-            return callback(reader.result);
+          reader.onload = () => {
+            callback(reader.result);
           };
           reader.readAsDataURL(input.files[0]);
         };
@@ -665,21 +665,22 @@ Polymer({
       this.removeValue(event);
       return;
     }
-    const validatePortValue = function (type, value) {
+    const validatePortValue = (type, val) => {
       switch (type) {
         case 'number':
         case 'int':
-          return value !== '' && !isNaN(value);
+          return val !== '' && !Number.isNaN(val);
         case 'object':
-          return value instanceof Object;
+          return val instanceof Object;
         case 'array':
-          return value instanceof Array;
+          return val instanceof Array;
         case 'date':
-          return value instanceof Date;
+          return val instanceof Date;
+        default:
+          return true;
       }
-      return true;
     };
-    const setPortValue = function (value) {
+    const setPortValue = () => {
       if (!this.scrubbing) {
         this.graph.startTransaction('iipchange');
       }
@@ -690,7 +691,7 @@ Polymer({
         // Force Polymer to update view
         this.updatePorts();
       }
-    }.bind(this);
+    };
     if (validatePortValue(port.type, value)) {
       if (typeof value === 'function') {
         // async callback
@@ -706,6 +707,7 @@ Polymer({
 
   scrubStart(event) {
     if (event.currentTarget.value === null) {
+      // eslint-disable-next-line no-param-reassign
       event.currentTarget.value = 0;
     }
   },
@@ -750,7 +752,7 @@ Polymer({
     if (!node) {
       return true;
     }
-    return node.label != node.component;
+    return node.label !== node.component;
   },
 
   _computeClass(port) {
@@ -758,34 +760,34 @@ Polymer({
   },
 
   _computeIf2(port) {
-    return port.type == 'bang';
+    return port.type === 'bang';
   },
 
   _computeIf3(port) {
-    return port.type == 'boolean';
+    return port.type === 'boolean';
   },
 
   _computeIf4(port) {
-    return port.type == 'int' && !port.values;
+    return port.type === 'int' && !port.values;
   },
 
   _computeIf5(port) {
-    return port.type == 'number' && !port.values;
+    return port.type === 'number' && !port.values;
   },
 
   _computeIf6(port) {
-    return port.type != 'bang' && port.type != 'boolean' && port.type != 'int' && port.type != 'number' && port.type != 'uri' && !port.values;
+    return port.type !== 'bang' && port.type !== 'boolean' && port.type !== 'int' && port.type !== 'number' && port.type !== 'uri' && !port.values;
   },
 
   _computeIf7(port) {
-    return port.type == 'uri';
+    return port.type === 'uri';
   },
 
   _computeIf8(port) {
-    return port.type != 'bang' && port.value != undefined;
+    return port.type !== 'bang' && port.value !== undefined;
   },
 
   _computeSelected(port, value) {
-    return port.value == value;
+    return port.value === value;
   },
 });

@@ -295,7 +295,7 @@ document.head.appendChild($_documentContainer.content);
     const result = grunt.template.process(template, {
       data: {
         id,
-        files: this.data.join(', '),
+        files: this.data.map((f) => path.basename(f)).join(', '),
         sources: sources.join('\n'),
       },
     });

@@ -169,8 +169,8 @@ Polymer({
     event.preventDefault();
     this.runtimeAdd = document.createElement('noflo-add-runtime');
     PolymerDom(document.body).appendChild(this.runtimeAdd);
-    this.runtimeAdd.addEventListener('new', (event) => {
-      this.fire('addRuntime', event.detail);
+    this.runtimeAdd.addEventListener('new', (ev) => {
+      this.fire('addRuntime', ev.detail);
     });
   },
 

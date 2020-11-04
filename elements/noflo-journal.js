@@ -130,7 +130,7 @@ Polymer({
     this.klay = true;
   },
 
-  editorChanged(newEditor, oldEditor) {
+  editorChanged(newEditor) {
     if (!newEditor) {
       return;
     }
@@ -142,7 +142,7 @@ Polymer({
     });
     nav.addEventListener('panto', (e) => {
       const pan = e.detail;
-      if (pan.x != editor.pan[0] || pan.y != editor.pan[1]) {
+      if (pan.x !== editor.pan[0] || pan.y !== editor.pan[1]) {
         editor.pan[0] = pan.x;
         editor.pan[1] = pan.y;
       }
@@ -244,7 +244,7 @@ Polymer({
     this.editor.triggerAutolayout();
   },
 
-  themeChanged(newTheme, previousTheme) {
+  themeChanged(newTheme) {
     this.$.nav.theme = newTheme;
   },
 
@@ -266,11 +266,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

@@ -115,7 +115,7 @@ Polymer({
     event.stopPropagation();
   },
 
-  validate(newValue, oldValue) {
+  validate() {
     if (this.name && this.address && this.port && this.type) {
       this.canCreate = true;
     }

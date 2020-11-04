@@ -71,7 +71,11 @@ Polymer({
     if (this.project) {
       this.project.graphs.forEach((graph) => {
         graph.nodes.forEach((node) => {
-          if (node.component === collections.unnamespace(this.component.name) || node.component === collections.namespace(this.component.name, this.project.namespace)) {
+          if (node.component === collections.unnamespace(this.component.name)
+            || node.component === collections.namespace(
+              this.component.name,
+              this.project.namespace,
+            )) {
             this.push('inGraph', graph);
           }
         });

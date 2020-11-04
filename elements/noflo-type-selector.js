@@ -138,7 +138,7 @@ Polymer({
   },
 
   getByType(type) {
-    for (let i = 0; i < this.available.length; i++) {
+    for (let i = 0; i < this.available.length; i += 1) {
       if (this.available[i].id === type) {
         return this.available[i];
       }
@@ -173,7 +173,7 @@ Polymer({
   },
 
   _computeClass(availtype, type) {
-    return this.tokenList({ selected: type == availtype.id });
+    return this.tokenList({ selected: type === availtype.id });
   },
 
   _computeIf(availtype) {
@@ -186,11 +186,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });

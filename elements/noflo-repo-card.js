@@ -107,7 +107,7 @@ class NoFloRepoCard extends PolymerElement {
     this.menuicon = 'ellipsis-v';
   }
 
-  getRepoIcon(project) {
+  getRepoIcon() {
     return 'github';
   }
 }

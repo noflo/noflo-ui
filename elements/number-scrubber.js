@@ -65,7 +65,7 @@ Polymer({
     },
   },
 
-  onTrackStart(event) {
+  onTrackStart() {
     // Don't select
     document.body.style.webkitUserSelect = 'none';
     document.body.style.MozUserSelect = 'none';
@@ -84,7 +84,6 @@ Polymer({
     if (this.value === undefined) {
       return;
     }
-    const lastValue = this.value;
     let delta = event.dx;
     if (this.distance > 1) {
       delta = Math.round(delta / this.distance);
@@ -100,10 +99,10 @@ Polymer({
     if (this.mod !== 0) {
       newValue %= this.mod;
     }
-    if (isFinite(this.min)) {
+    if (Number.isFinite(this.min)) {
       newValue = Math.max(newValue, this.min);
     }
-    if (isFinite(this.max)) {
+    if (Number.isFinite(this.max)) {
       newValue = Math.min(newValue, this.max);
     }
     // Stupid JS numbers
@@ -116,7 +115,7 @@ Polymer({
     }
   },
 
-  onTrackEnd(event) {
+  onTrackEnd() {
     // Reset select
     document.body.style.webkitUserSelect = 'auto';
     document.body.style.MozUserSelect = 'auto';

@@ -85,8 +85,9 @@ Polymer({
       }
       const nameParts = component.name.split('/');
       if (nameParts[0] === this.project.id || nameParts[0] === this.project.namespace) {
-        for (let i = 0; i < this.graphs.length; i++) {
-          if (this.graphs[i].name === nameParts[1] || this.graphs[i].properties.id === nameParts[1]) {
+        for (let i = 0; i < this.graphs.length; i += 1) {
+          if (this.graphs[i].name === nameParts[1]
+            || this.graphs[i].properties.id === nameParts[1]) {
             // Prevent circular dependencies
             return false;
           }

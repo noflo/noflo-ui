@@ -73,7 +73,7 @@ Polymer({
   },
 
   produceNamespace(namespace) {
-    return namespace.toLowerCase().replace(/[\s\/\._]/g, '-').replace('--', '-').replace(/[^a-z0-9\-]/g, '');
+    return namespace.toLowerCase().replace(/[\s/._]/g, '-').replace('--', '-').replace(/[^a-z0-9-]/g, '');
   },
 
   nameChanged() {
@@ -128,11 +128,11 @@ Polymer({
 
   tokenList(obj) {
     const pieces = [];
-    for (const key in obj) {
+    Object.keys(obj).forEach((key) => {
       if (obj[key]) {
         pieces.push(key);
       }
-    }
+    });
     return pieces.join(' ');
   },
 });
