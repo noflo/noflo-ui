@@ -90,33 +90,8 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: 'node_modules/@polymer/polymer/*.html',
-          to: 'browser/vendor/polymer',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/@polymer/polymer/lib/elements/*.html',
-          to: 'browser/vendor/polymer/lib/elements',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/@polymer/polymer/lib/legacy/*.html',
-          to: 'browser/vendor/polymer/lib/legacy',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/@polymer/polymer/lib/mixins/*.html',
-          to: 'browser/vendor/polymer/lib/mixins',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/@polymer/polymer/lib/utils/*.html',
-          to: 'browser/vendor/polymer/lib/utils',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/noflo-polymer/noflo-polymer/noflo-polymer.html',
-          to: 'browser/vendor/noflo-polymer/noflo-polymer.html',
+          from: 'index.dist.html',
+          to: 'index.html',
         },
         {
           from: 'node_modules/codemirror/lib/codemirror.js',
@@ -188,8 +163,9 @@ module.exports = {
           to: 'browser/vendor/observe-js/observe.js',
         },
         {
-          from: 'node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js',
-          to: 'browser/vendor/webcomponentsjs/webcomponents-lite.js',
+          from: 'node_modules/@webcomponents/webcomponentsjs/webcomponents-*.js',
+          to: 'browser/vendor/webcomponentsjs/',
+          flatten: true,
         },
       ],
     }),

@@ -12,14 +12,6 @@ module.exports = function () {
       build: webpackConfig,
     },
 
-    // Vulcanization compiles the Polymer elements into a HTML file
-    exec: {
-      vulcanize: {
-        command: `${path.resolve(__dirname, './node_modules/.bin/polymer-bundler')} index.dist.html > index.html`,
-        cwd: __dirname,
-      },
-    },
-
     // Directory cleaning
     clean: {
       build: [
@@ -32,12 +24,15 @@ module.exports = function () {
         './index.js',
         './index.html',
         './dev.html',
+        './manifest.json',
+        './manifest.webapp.json',
+        './config.xml',
       ],
       themes: [
         'themes',
       ],
-      specs: [
-        'spec/*.js',
+      zip: [
+        './*.zip',
       ],
     },
 
@@ -311,7 +306,6 @@ ga('send', 'pageview');
   ]);
   this.registerTask('build_polymer', [
     'sharedstylecomponent',
-    'exec:vulcanize',
   ]);
   this.registerTask('build', [
     'build_noflo',

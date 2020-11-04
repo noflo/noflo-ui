@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@polymer/polymer": "^2.2.0",
+    "@polymer/polymer": "^3.0.0",
     "@webcomponents/webcomponentsjs": "^1.0.17",
     "circular-buffer": "^1.0.2",
     "codemirror": "^5.57.0",
