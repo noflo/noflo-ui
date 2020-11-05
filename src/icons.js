@@ -1,5 +1,7 @@
+const TheGraph = require('the-graph');
+
 exports.getIcon = (iconName, fallback = '') => {
-  const iconMap = window.TheGraph != null ? window.TheGraph.FONT_AWESOME : undefined;
+  const iconMap = TheGraph.FONT_AWESOME;
   if (!iconMap) {
     return iconName;
   }
@@ -11,7 +13,7 @@ exports.getIcon = (iconName, fallback = '') => {
 };
 
 exports.getIcons = () => {
-  const iconMap = window.TheGraph != null ? window.TheGraph.FONT_AWESOME : undefined;
+  const iconMap = TheGraph.FONT_AWESOME;
   if (!iconMap) {
     return {};
   }

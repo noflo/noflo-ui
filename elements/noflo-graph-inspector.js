@@ -1,5 +1,17 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import CodeMirror from 'codemirror';
+import 'codemirror/mode/xml/xml';
+import 'codemirror/mode/javascript/javascript';
+import 'codemirror/mode/css/css';
+import 'codemirror/mode/vbscript/vbscript';
+import 'codemirror/mode/coffeescript/coffeescript';
+import 'codemirror/mode/clike/clike';
+import 'codemirror/mode/htmlmixed/htmlmixed';
+import 'codemirror/mode/smalltalk/smalltalk';
+import 'codemirror/mode/yaml/yaml';
+import 'codemirror/mode/python/python';
+
 import collections from '../src/collections';
 import urls from '../src/urls';
 import runtime from '../src/runtime';
