@@ -1,5 +1,7 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import ReactDOM from 'react-dom';
+import TheGraph from 'the-graph';
 import { unnamespace } from '../src/collections';
 import './the-graph-styles';
 
@@ -312,7 +314,7 @@ Polymer({
 
     // Setup app
     PolymerDom(this.$.svgcontainer).innerHTML = '';
-    this.appView = ReactDOM.render(window.TheGraph.App({
+    this.appView = ReactDOM.render(TheGraph.App({
       graph: this.graph,
       width: this.width,
       minZoom: this.minZoom,

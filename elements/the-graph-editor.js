@@ -1,4 +1,5 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
+import TheGraph from 'the-graph';
 import './the-graph';
 
 Polymer({

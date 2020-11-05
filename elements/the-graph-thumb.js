@@ -3,6 +3,7 @@
 * Autoscales the render to fit, and exposes the scale as thumbscale, thumbrectangle, viewrectangle
 */
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
+import TheGraph from 'the-graph';
 
 Polymer({
   _template: html`

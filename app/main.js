@@ -4,10 +4,6 @@ const mainGraph = require('../graphs/main.fbp');
 require('../elements/noflo-polymer');
 require('../elements/noflo-ui');
 
-window.React = require('react');
-window.ReactDOM = require('react-dom');
-window.TheGraph = require('the-graph'); // expected by the-graph Polymer elements
-
 const exported = {
   noflo,
 };
