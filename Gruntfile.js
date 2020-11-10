@@ -12,36 +12,12 @@ module.exports = function () {
       build: webpackConfig,
     },
 
-    // Directory cleaning
-    clean: {
-      build: [
-        'browser',
-      ],
-      dist: [
-        'dist',
-      ],
-      files: [
-        './index.js',
-        './index.html',
-        './dev.html',
-        './manifest.json',
-        './manifest.webapp.json',
-        './config.xml',
-      ],
-      themes: [
-        'themes',
-      ],
-      zip: [
-        './*.zip',
-      ],
-    },
-
     'string-replace': {
       app: {
         files: {
-          './index.html': './index.html',
+          './browser/index.html': './browser/index.html',
           './browser/noflo-ui.min.js': './browser/noflo-ui.min.js',
-          './manifest.json': './manifest.dist.json',
+          './browser/manifest.json': './manifest.dist.json',
         },
         options: {
           replacements: [{
@@ -200,8 +176,7 @@ ga('send', 'pageview');
         },
         {
           src: [
-            'index.js',
-            'index.html',
+            'browser/index.html',
           ],
           expand: true,
           dest: '/',
@@ -213,14 +188,8 @@ ga('send', 'pageview');
         },
         {
           src: [
-            'manifest.json',
-            'manifest.webapp.json',
+            'browser/manifest.json',
           ],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: ['config.xml'],
           expand: true,
           dest: '/',
         },
@@ -260,8 +229,6 @@ ga('send', 'pageview');
 
   // Grunt plugins used for building
   this.loadNpmTasks('grunt-webpack');
-  this.loadNpmTasks('grunt-exec');
-  this.loadNpmTasks('grunt-contrib-clean');
   this.loadNpmTasks('grunt-string-replace');
 
   // Grunt plugins used for mobile app building
@@ -299,9 +266,6 @@ document.head.appendChild($_documentContainer.content);
     return grunt.log.writeln(`Generated ${this.target} from ${this.data.join(', ')}`);
   });
 
-  this.registerTask('nuke', [
-    'clean',
-  ]);
   this.registerTask('build_noflo', [
     'webpack',
   ]);
@@ -323,7 +287,6 @@ document.head.appendChild($_documentContainer.content);
   ]);
   return this.registerTask('pages', [
     'build',
-    'clean:dist',
     'unzip',
     'string-replace:analytics',
   ]);
