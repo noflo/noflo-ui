@@ -1,6 +1,5 @@
 const path = require('path');
 const webpackConfig = require('./webpack.config.js');
-const externalsConfig = require('./externals.conf.js');
 
 module.exports = function () {
   // Project configuration
