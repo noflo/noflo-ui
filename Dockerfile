@@ -1,15 +1,16 @@
-FROM node:boron-alpine
+FROM node:lts-alpine as builder
 
-RUN apk add --update git
+RUN apk add --update git python
 
 # Install dependencies
 WORKDIR /data
-COPY package.json /data
-RUN npm install && npm cache clean
+COPY . /data
+RUN npm install
 
 # Build from source
-COPY . /data
 RUN npm run build
 
-EXPOSE 9999
-CMD [ "npm", "start" ]
+# Set up server image
+FROM nginx
+
+COPY --from=builder /data/browser /usr/share/nginx/html
