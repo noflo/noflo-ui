@@ -1,6 +1,6 @@
-const noflo = require('noflo');
+const { journal } = require('fbp-graph');
 
-class IDBJournalStore extends noflo.journal.JournalStore {
+class IDBJournalStore extends journal.JournalStore {
   constructor(graph, db) {
     super(graph);
     this.db = db;

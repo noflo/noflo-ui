@@ -1,6 +1,6 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
-import noflo from 'noflo';
+import { Graph } from 'fbp-graph';
 import runtimeInfo from '../runtimeinfo';
 import './noflo-account';
 import './noflo-new-project';
@@ -528,7 +528,7 @@ Polymer({
     PolymerDom(document.body).appendChild(dialog);
     dialog.addEventListener('new', (ev) => {
       const project = ev.detail;
-      const graph = new noflo.Graph('main');
+      const graph = new Graph('main');
       const graphId = `${project.id}/main`;
       graph.setProperties({
         id: graphId,

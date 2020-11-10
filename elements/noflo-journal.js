@@ -1,5 +1,5 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
-import noflo from 'noflo';
+import { Journal } from 'fbp-graph';
 import { IDBJournalStore } from '../src/JournalStore';
 import './the-graph-nav';
 import './noflo-icon';
@@ -194,7 +194,7 @@ Polymer({
     // Initialize persistent journal whenever needed
     const store = new IDBJournalStore(this.graph, this.db);
     store.init(() => {
-      this.graph.journal = new noflo.Journal(this.graph, undefined, store);
+      this.graph.journal = new Journal(this.graph, undefined, store);
       this.checkState();
       this.graph.journal.store.on('transaction', () => {
         this.checkState();
