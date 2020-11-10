@@ -1,9 +1,12 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const WebpackPwaManifest = require('webpack-pwa-manifest');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { EnvironmentPlugin } = require('webpack');
 const path = require('path');
 const pkg = require('./package.json');
+
+const theme = process.env.NOFLO_THEME || 'noflo';
 
 module.exports = {
   entry: {
@@ -101,13 +104,9 @@ module.exports = {
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new HtmlWebpackPlugin({
-      filename: 'index.html',
-      template: 'index.dist.html',
-    }),
     new EnvironmentPlugin({
       // UI theming
-      NOFLO_THEME: 'noflo',
+      NOFLO_THEME: theme,
       NOFLO_APP_NAME: 'NoFlo UI',
       NOFLO_APP_TITLE: 'NoFlo Development Environment',
       NOFLO_APP_LOADING: 'Preparing NoFlo UI...',
@@ -133,6 +132,37 @@ module.exports = {
       NOFLO_REGISTRY_SERVICE: 'https://api.flowhub.io',
       // Analytics
       NOFLO_APP_ANALYTICS: '',
+    }),
+    new WebpackPwaManifest({
+      name: process.env.NOFLO_APP_TITLE || 'NoFlo Development Environment',
+      short_name: process.env.NOFLO_APP_NAME || 'NoFlo UI',
+      description: process.env.NOFLO_APP_DESCRIPTION || 'Flow-Based Programming Environment',
+      version: process.env.NOFLO_APP_VERSION,
+      lang: 'en-US',
+      theme_color: '#071112',
+      background_color: '#071112',
+      orientation: 'landscape',
+      display: 'standalone',
+      categories: [
+        'devtools',
+      ],
+      icons: [
+        36,
+        48,
+        72,
+        96,
+        144,
+        192,
+      ].map((width) => ({
+        src: `app/${theme}-${width}.png`,
+        sizes: [width],
+      })),
+      ios: false,
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: 'index.dist.html',
+      inject: 'head',
     }),
     new CopyWebpackPlugin({
       patterns: [
