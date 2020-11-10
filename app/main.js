@@ -2,16 +2,6 @@ const noflo = require('noflo');
 const postMessageRuntime = require('noflo-runtime-postmessage');
 const mainGraph = require('../graphs/main.fbp');
 
-const exported = {
-  noflo,
-};
-window.require = function (moduleName) {
-  if (typeof exported[moduleName] !== 'undefined') {
-    return exported[moduleName];
-  }
-  throw new Error(`Module ${moduleName} not available`);
-};
-
 window.addEventListener('WebComponentsReady', () => {
   const loadGraphs = function (callback) {
     noflo.graph.loadJSON(mainGraph, (err, g) => {

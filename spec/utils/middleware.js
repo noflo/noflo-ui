@@ -3,7 +3,7 @@
 const debugOpenBracket = (data) => console.log(`< ${data.id} ${data.group}`);
 const debugData = (data) => console.log(`DATA ${data.id}`);
 const debugCloseBracket = (data) => console.log(`> ${data.id} ${data.group}`);
-const noflo = window.require('noflo');
+const noflo = require('noflo');
 
 class Middleware {
   constructor(component, baseDir) {
