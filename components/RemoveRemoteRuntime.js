@@ -28,8 +28,9 @@ exports.getComponent = () => {
       return;
     }
 
-    const rt = new registry.Runtime(data,
-      { host: '$NOFLO_REGISTRY_SERVICE' });
+    const rt = new registry.Runtime(data, {
+      host: process.env.NOFLO_REGISTRY_SERVICE,
+    });
     rt.del(c.params.user['flowhub-token'], (err) => {
       if (err) { return callback(err); }
       out.send(data);

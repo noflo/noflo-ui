@@ -48,7 +48,7 @@ exports.getComponent = () => {
       d.secret = null;
     }
     const rt = new registry.Runtime(data, {
-      host: '$NOFLO_REGISTRY_SERVICE',
+      host: process.env.NOFLO_REGISTRY_SERVICE,
     });
     rt.register(c.params.user['flowhub-token'], (err) => {
       if (err) {

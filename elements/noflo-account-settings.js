@@ -61,7 +61,7 @@ Polymer({
           </select>
         </label>
         <label>
-          Debug \$NOFLO_APP_TITLE in Flowhub (requires reload)
+          Debug [[env.NOFLO_APP_TITLE]] in Flowhub (requires reload)
           <select name="type" value="{{debug::input}}">
             <option value="false" selected\$="[[_isSelectedDebug('false', debug)]]">Disabled</option>
             <option value="true" selected\$="[[_isSelectedDebug('true', debug)]]">Enabled</option>
@@ -92,6 +92,14 @@ Polymer({
       },
       notify: true,
       observer: 'userChanged',
+    },
+    env: {
+      type: Object,
+      value() {
+        return {
+          NOFLO_APP_TITLE: process.env.NOFLO_APP_TITLE,
+        };
+      },
     },
   },
 

@@ -22,7 +22,7 @@ class NoFloRepoCard extends PolymerElement {
       <template is="dom-if" if="[[project.repo]]">
       <li><button on-click="openGithub">View on GitHub</button></li>
       </template>
-      <li><button on-click="deleteRepo">Remove from \$NOFLO_APP_NAME</button></li>
+      <li><button on-click="deleteRepo">Remove from [[env.NOFLO_APP_NAME]]</button></li>
     </ul>
     </template>
     <h2>[[project.repo]]</h2>
@@ -56,6 +56,14 @@ class NoFloRepoCard extends PolymerElement {
         type: Object,
         value() {
           return {};
+        },
+      },
+      env: {
+        type: Object,
+        value() {
+          return {
+            NOFLO_APP_NAME: process.env.NOFLO_APP_NAME,
+          };
         },
       },
     };

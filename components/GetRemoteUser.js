@@ -39,7 +39,7 @@ exports.getComponent = () => {
       out.send(userData);
       callback();
     };
-    req.open('GET', '$NOFLO_OAUTH_SERVICE_USER$NOFLO_OAUTH_ENDPOINT_USER', true);
+    req.open('GET', `${process.env.NOFLO_OAUTH_SERVICE_USER}${process.env.NOFLO_OAUTH_ENDPOINT_USER}`, true);
     req.setRequestHeader('Authorization', `Bearer ${token}`);
     req.send(null);
   });

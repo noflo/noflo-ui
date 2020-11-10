@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>$NOFLO_APP_TITLE v$NOFLO_APP_VERSION</title>
+    <title><%= process.env.NOFLO_APP_TITLE %> v<%= process.env.NOFLO_APP_VERSION %></title>
     <link href="https://github.com/noflo/noflo-ui" rel="source" />
-    <meta name="description" content="$NOFLO_APP_DESCRIPTION">
+    <meta name="description" content="<%= process.env.NOFLO_APP_DESCRIPTION %>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -12,25 +12,24 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#071112">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="app/$NOFLO_THEME-60.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="app/$NOFLO_THEME-120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="app/$NOFLO_THEME-144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="app/$NOFLO_THEME-152.png">
-    <link rel="icon" sizes="192x192" href="app/$NOFLO_THEME-192.png">
-    <link rel="icon" sizes="128x128" href="app/$NOFLO_THEME-128.png">
-    <link rel="shortcut icon" href="$NOFLO_THEME.ico" />
-    <!-- $NOFLO_APP_ANALYTICS -->
+    <link rel="apple-touch-icon" href="app/<%= process.env.NOFLO_THEME %>-60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="app/<%= process.env.NOFLO_THEME %>-120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="app/<%= process.env.NOFLO_THEME %>-144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="app/<%= process.env.NOFLO_THEME %>-152.png">
+    <link rel="icon" sizes="192x192" href="app/<%= process.env.NOFLO_THEME %>-192.png">
+    <link rel="icon" sizes="128x128" href="app/<%= process.env.NOFLO_THEME %>-128.png">
+    <link rel="shortcut icon" href="<%= process.env.NOFLO_THEME %>.ico" />
+    <%= process.env.NOFLO_APP_ANALYTICS %>
 
     <script src="vendor/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="vendor/klayjs-noflo/klay-noflo.js"></script>
-    <script src="vendor/hammerjs/hammer.min.js"></script>
 
     <link rel="stylesheet" href="css/noflo-ui.css">
 
     <noflo-polymer name="noflo-ui" inports="updated width height" outports="event"></noflo-polymer>
   </head>
-  <body class="$NOFLO_THEME loading">
-    <div id="loading">$NOFLO_APP_LOADING</div>
+  <body class="<%= process.env.NOFLO_THEME %> loading">
+    <div id="loading"><%= process.env.NOFLO_APP_LOADING %></div>
     <noflo-ui id="container"></noflo-ui>
   </body>
 </html>

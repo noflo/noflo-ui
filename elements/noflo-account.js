@@ -174,13 +174,13 @@ Polymer({
       </style>
     <nav>
     <section class="app">
-      <div class="logo \$NOFLO_THEME"><img src="../app/\$NOFLO_THEME-72.png"></div>
+      <div class="logo [[env.NOFLO_THEME]]"><img src="../app/[[env.NOFLO_THEME]]-72.png"></div>
       <div class="name">
         <h1>
-          \$NOFLO_APP_NAME
+          [[env.NOFLO_APP_NAME]]
         </h1>
         <h2>
-          v\$NOFLO_APP_VERSION
+          v[[env.NOFLO_APP_VERSION]]
         </h2>
       </div>
     </section>
@@ -215,7 +215,7 @@ Polymer({
     <template is="dom-if" if="{{user.flowhub-user}}">
       <template is="dom-if" if="{{askForScope.length}}">
         <div class="banner">
-          To be able to synchronize your GitHub projects, \$NOFLO_APP_TITLE needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
+          To be able to synchronize your GitHub projects, [[env.NOFLO_APP_TITLE]] needs repository access permissions. <a href="https://docs.flowhub.io/github-integration/" target="_blank">Read more</a>
           <div>
             Grant access to:
             <template is="dom-repeat" items="{{askForScope}}" as="scope">
@@ -244,7 +244,7 @@ Polymer({
     </template>
     <template is="dom-if" if="{{!user.flowhub-user}}">
       <div class="banner">
-        Logging into \$NOFLO_APP_TITLE enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
+        Logging into [[env.NOFLO_APP_TITLE]] enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
         <div>
           <a class="cta" href="https://plans.flowhub.io">Subscribe now</a>
         </div>
@@ -272,6 +272,17 @@ Polymer({
       },
       notify: true,
       observer: 'userChanged',
+    },
+    env: {
+      type: Object,
+      value() {
+        return {
+          NOFLO_THEME: process.env.NOFLO_THEME,
+          NOFLO_APP_NAME: process.env.NOFLO_APP_NAME,
+          NOFLO_APP_TITLE: process.env.NOFLO_APP_TITLE,
+          NOFLO_APP_VERSION: process.env.NOFLO_APP_VERSION,
+        };
+      },
     },
   },
 

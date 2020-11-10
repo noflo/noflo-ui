@@ -27,7 +27,9 @@ exports.getComponent = () => {
     }
     const knownRuntimes = c.params.runtimes || [];
     registry.list(data['flowhub-token'],
-      { host: '$NOFLO_REGISTRY_SERVICE' },
+      {
+        host: process.env.NOFLO_REGISTRY_SERVICE,
+      },
       (err, runtimes) => {
         if (err) {
           callback(err);
@@ -51,7 +53,7 @@ exports.getComponent = () => {
           callback();
           return;
         }
-        out.beginGroup('$NOFLO_REGISTRY_SERVICE');
+        out.beginGroup(process.env.NOFLO_REGISTRY_SERVICE);
         updateRts.forEach((rt) => {
           out.send(rt.runtime);
         });

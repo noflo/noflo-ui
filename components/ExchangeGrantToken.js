@@ -62,27 +62,20 @@ exports.getComponent = () => {
   (data, groups, out, callback) => {
     // Configuration, built-in
     const params = {
-      redirect: '$NOFLO_OAUTH_CLIENT_REDIRECT',
-      clientid: '$NOFLO_OAUTH_CLIENT_ID',
-      clientsecret: '$NOFLO_OAUTH_CLIENT_SECRET',
-      token_server: '$NOFLO_OAUTH_PROVIDER',
-      token_endpoint: '$NOFLO_OAUTH_ENDPOINT_TOKEN',
-      gatekeeper_server: '$NOFLO_OAUTH_GATE',
-      gatekeeper_endpoint: '$NOFLO_OAUTH_ENDPOINT_AUTHENTICATE',
+      redirect: process.env.NOFLO_OAUTH_CLIENT_REDIRECT,
+      clientid: process.env.NOFLO_OAUTH_CLIENT_ID,
+      clientsecret: process.env.NOFLO_OAUTH_CLIENT_SECRET,
+      token_server: process.env.NOFLO_OAUTH_PROVIDER,
+      token_endpoint: process.env.NOFLO_OAUTH_ENDPOINT_TOKEN,
+      gatekeeper_server: process.env.NOFLO_OAUTH_GATE,
+      gatekeeper_endpoint: process.env.NOFLO_OAUTH_ENDPOINT_AUTHENTICATE,
     };
 
-    if ((window.location.protocol === 'https:') && '$NOFLO_OAUTH_SSL_CLIENT_ID') {
-      params.redirect = '$NOFLO_OAUTH_SSL_CLIENT_REDIRECT';
-      params.clientid = '$NOFLO_OAUTH_SSL_CLIENT_ID';
-      params.clientsecret = '$NOFLO_OAUTH_SSL_CLIENT_SECRET';
-      params.gatekeeper_endpoint = '$NOFLO_OAUTH_SSL_ENDPOINT_AUTHENTICATE';
-    }
-
-    if ((typeof chrome !== 'undefined') && chrome.identity) {
-      params.redirect = '$NOFLO_OAUTH_CHROME_CLIENT_REDIRECT';
-      params.clientid = '$NOFLO_OAUTH_CHROME_CLIENT_ID';
-      params.clientsecret = '$NOFLO_OAUTH_CHROME_CLIENT_SECRET';
-      params.gatekeeper_endpoint = '$NOFLO_OAUTH_CHROME_ENDPOINT_AUTHENTICATE';
+    if ((window.location.protocol === 'https:') && process.env.NOFLO_OAUTH_SSL_CLIENT_ID) {
+      params.redirect = process.env.NOFLO_OAUTH_SSL_CLIENT_REDIRECT;
+      params.clientid = process.env.NOFLO_OAUTH_SSL_CLIENT_ID;
+      params.clientsecret = process.env.NOFLO_OAUTH_SSL_CLIENT_SECRET;
+      params.gatekeeper_endpoint = process.env.NOFLO_OAUTH_SSL_ENDPOINT_AUTHENTICATE;
     }
 
     // TODO: "loading" action?

@@ -1,7 +1,9 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { EnvironmentPlugin } = require('webpack');
 const path = require('path');
+const pkg = require('./package.json');
 
 module.exports = {
   entry: {
@@ -103,8 +105,42 @@ module.exports = {
       filename: 'index.html',
       template: 'index.dist.html',
     }),
+    new EnvironmentPlugin({
+      // UI theming
+      NOFLO_THEME: 'noflo',
+      NOFLO_APP_NAME: 'NoFlo UI',
+      NOFLO_APP_TITLE: 'NoFlo Development Environment',
+      NOFLO_APP_LOADING: 'Preparing NoFlo UI...',
+      NOFLO_ORGANIZATION: 'NoFlo Community',
+      NOFLO_WEBSITE: 'https://noflojs.org',
+      NOFLO_APP_DESCRIPTION: 'Flow-Based Programming Environment',
+      NOFLO_APP_VERSION: pkg.version,
+      // GitHub login
+      NOFLO_USER_LOGIN_ENABLED: true,
+      NOFLO_OAUTH_PROVIDER: 'https://github.com',
+      NOFLO_OAUTH_GATE: 'https://noflo-gate.herokuapp.com',
+      NOFLO_OAUTH_SERVICE_USER: 'https://api.flowhub.io',
+      NOFLO_OAUTH_CLIENT_ID: '46fe25abef8d07e6dc2d',
+      NOFLO_OAUTH_CLIENT_REDIRECT: 'http://localhost:9999',
+      NOFLO_OAUTH_CLIENT_SECRET: null,
+      NOFLO_OAUTH_SSL_CLIENT_ID: '',
+      NOFLO_OAUTH_SSL_CLIENT_REDIRECT: '',
+      NOFLO_OAUTH_SSL_CLIENT_SECRET: null,
+      NOFLO_OAUTH_SSL_ENDPOINT_AUTHENTICATE: '/authenticate/ssl',
+      NOFLO_OAUTH_ENDPOINT_AUTHORIZE: '/login/oauth/access_token',
+      NOFLO_OAUTH_ENDPOINT_USER: '/user',
+      // Runtime registry
+      NOFLO_REGISTRY_SERVICE: 'https://api.flowhub.io',
+      // Analytics
+      NOFLO_APP_ANALYTICS: '',
+    }),
     new CopyWebpackPlugin({
       patterns: [
+        {
+          from: 'noflo.ico',
+          to: 'noflo.ico',
+          flatten: true,
+        },
         {
           from: 'css/noflo-ui.css',
           to: 'css/noflo-ui.css',
@@ -113,6 +149,11 @@ module.exports = {
         {
           from: 'css/*.woff',
           to: 'css',
+          flatten: true,
+        },
+        {
+          from: 'app/*.png',
+          to: 'app',
           flatten: true,
         },
         {

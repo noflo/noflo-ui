@@ -36,7 +36,7 @@ exports.getComponent = () => {
       }
       callback(new Error(req.responseText));
     };
-    req.open('GET', '$NOFLO_REGISTRY_SERVICE/projects', true);
+    req.open('GET', `${process.env.NOFLO_REGISTRY_SERVICE}/projects`, true);
     req.setRequestHeader('Authorization', `Bearer ${user['flowhub-token']}`);
     req.send(null);
   });
