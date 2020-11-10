@@ -126,7 +126,9 @@ module.exports = {
       NOFLO_OAUTH_SSL_CLIENT_REDIRECT: '',
       NOFLO_OAUTH_SSL_CLIENT_SECRET: null,
       NOFLO_OAUTH_SSL_ENDPOINT_AUTHENTICATE: '/authenticate/ssl',
-      NOFLO_OAUTH_ENDPOINT_AUTHORIZE: '/login/oauth/access_token',
+      NOFLO_OAUTH_ENDPOINT_AUTHORIZE: '/login/oauth/authorize',
+      NOFLO_OAUTH_ENDPOINT_TOKEN: '/login/oauth/access_token',
+      NOFLO_OAUTH_ENDPOINT_AUTHENTICATE: '/authenticate',
       NOFLO_OAUTH_ENDPOINT_USER: '/user',
       // Runtime registry
       NOFLO_REGISTRY_SERVICE: 'https://api.flowhub.io',
