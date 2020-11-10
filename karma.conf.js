@@ -14,7 +14,7 @@ module.exports = function (config) {
       watched: true,
     },
     {
-      pattern: 'index.html',
+      pattern: 'browser/index.html',
       included: false,
       served: true,
       watched: true,
