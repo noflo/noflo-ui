@@ -12,63 +12,6 @@ module.exports = function () {
       build: webpackConfig,
     },
 
-    compress: {
-      app: {
-        options: {
-          archive: 'noflo-<%= pkg.version %>.zip',
-        },
-        files: [{
-          src: [
-            'browser/noflo-ui.min.js',
-            'browser/noflo-ui.min.js.map',
-          ],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: externalsConfig,
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: [
-            'browser/index.html',
-          ],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: ['app/*'],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: [
-            'browser/manifest.json',
-          ],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: [`${process.env.NOFLO_THEME || 'noflo'}.ico`],
-          expand: true,
-          dest: '/',
-        },
-        {
-          src: [
-            'css/*',
-          ],
-          expand: true,
-          dest: '/',
-        },
-        ],
-      },
-    },
-
-    unzip: {
-      dist: 'noflo-<%= pkg.version %>.zip',
-    },
-
     sharedstylecomponent: {
       'elements/the-graph-styles.js': [
         'node_modules/the-graph/themes/the-graph-dark.css',
@@ -85,10 +28,6 @@ module.exports = function () {
 
   // Grunt plugins used for building
   this.loadNpmTasks('grunt-webpack');
-
-  // Grunt plugins used for mobile app building
-  this.loadNpmTasks('grunt-contrib-compress');
-  this.loadNpmTasks('grunt-zip');
 
   // Our local tasks
   const grunt = this;
@@ -130,7 +69,6 @@ document.head.appendChild($_documentContainer.content);
   this.registerTask('build', [
     'build_polymer',
     'build_noflo',
-    'compress',
   ]);
   this.registerTask('rebuild', [
     'nuke',
@@ -139,8 +77,7 @@ document.head.appendChild($_documentContainer.content);
   this.registerTask('default', [
     'build',
   ]);
-  return this.registerTask('pages', [
+  this.registerTask('pages', [
     'build',
-    'unzip',
   ]);
 };
