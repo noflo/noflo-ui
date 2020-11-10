@@ -1,6 +1,17 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.28.0 (git master)
+
+Internal changes:
+
+* Web Components are now modern JavaScript running on Polymer 3.x
+* App build is now made out of multiple chunks to separate UI widgets and UI logic from each other
+* Docker build of noflo-ui is now a multi-stage build to reduce image size
+* Preview build of the latest noflo-ui `master` is now available in https://noflojs.org/noflo-ui
+* Local development is now faster via `npm run dev`, powered by Webpack Dev Server
+* Builds no longer include a zip file of noflo-ui. If a zip file is needed, simply grab the contents of the `browser` folder
+
 ## 0.27.10 (2020 October 07)
 
 Bugfixes:
