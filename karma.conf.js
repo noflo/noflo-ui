@@ -21,8 +21,7 @@ module.exports = function (config) {
     },
   ];
   const serveExternals = externals.slice(0);
-  serveExternals.push('themes/*.css');
-  serveExternals.push('css/*.css');
+  serveExternals.push('browser/css/*.css');
   serveExternals.forEach((pattern) => {
     if (files.indexOf(pattern) !== -1) {
       return;
