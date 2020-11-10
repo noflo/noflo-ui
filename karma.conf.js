@@ -5,7 +5,6 @@ process.env.CHROME_BIN = require('puppeteer').executablePath(); // eslint-disabl
 
 module.exports = function (config) {
   const files = [
-    'node_modules/hammerjs/hammer.min.js',
     'browser/*.min.js',
     'spec/index.js',
     {

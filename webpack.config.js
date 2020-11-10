@@ -121,14 +121,6 @@ module.exports = {
           flatten: true,
         },
         {
-          from: 'node_modules/hammerjs/hammer.min.js',
-          to: 'vendor/hammerjs/hammer.min.js',
-        },
-        {
-          from: 'node_modules/hammerjs/hammer.min.js.map',
-          to: 'vendor/hammerjs/hammer.min.js.map',
-        },
-        {
           from: 'node_modules/klayjs/klay.js',
           to: 'vendor/klayjs/klay.js',
         },
