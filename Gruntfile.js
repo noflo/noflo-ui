@@ -39,13 +39,9 @@ module.exports = function () {
     'string-replace': {
       app: {
         files: {
-          './dev.html': './index.dist.html',
           './index.html': './index.html',
           './browser/noflo-ui.min.js': './browser/noflo-ui.min.js',
-          './index.js': './index.js',
-          './config.xml': './config.dist.xml',
           './manifest.json': './manifest.dist.json',
-          './manifest.webapp.json': './manifest.dist.webapp.json',
         },
         options: {
           replacements: [{

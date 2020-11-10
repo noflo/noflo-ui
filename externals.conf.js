@@ -6,6 +6,5 @@ module.exports = [
   'browser/vendor/hammerjs/hammer.min.js.map',
   'browser/vendor/klayjs/klay.js',
   'browser/vendor/klayjs-noflo/klay-noflo.js',
-  'browser/vendor/observe-js/observe.js',
   'browser/vendor/webcomponentsjs/*.js',
 ];
