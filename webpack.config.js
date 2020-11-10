@@ -213,4 +213,9 @@ module.exports = {
     child_process: 'empty',
     fs: 'empty',
   },
+  devServer: {
+    contentBase: path.resolve(__dirname, './browser'),
+    compress: true,
+    port: 9999,
+  },
 };
