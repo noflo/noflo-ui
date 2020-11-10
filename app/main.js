@@ -1,8 +1,6 @@
 const noflo = require('noflo');
 const postMessageRuntime = require('noflo-runtime-postmessage');
 const mainGraph = require('../graphs/main.fbp');
-require('../elements/noflo-polymer');
-require('../elements/noflo-ui');
 
 const exported = {
   noflo,

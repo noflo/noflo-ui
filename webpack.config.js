@@ -1,11 +1,20 @@
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  entry: './app/main.js',
+  entry: {
+    backend: './app/main.js',
+    ui: './elements/noflo-ui',
+  },
   output: {
     path: __dirname,
-    filename: 'browser/noflo-ui.min.js',
-    sourceMapFilename: 'browser/noflo-ui.min.js.map',
+    filename: 'browser/[name].[contenthash].min.js',
+    sourceMapFilename: 'browser/[name].[contenthash].min.js.map',
+  },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+    },
   },
   mode: 'production',
   devtool: 'source-map',
@@ -87,56 +96,12 @@ module.exports = {
     extensions: ['.coffee', '.js', '.jsx'],
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: 'index.dist.html',
+    }),
     new CopyWebpackPlugin({
       patterns: [
-        {
-          from: 'index.dist.html',
-          to: 'index.html',
-        },
-        {
-          from: 'node_modules/codemirror/lib/codemirror.js',
-          to: 'browser/vendor/codemirror/lib/codemirror.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/xml/xml.js',
-          to: 'browser/vendor/codemirror/mode/xml.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/javascript/javascript.js',
-          to: 'browser/vendor/codemirror/mode/javascript.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/css/css.js',
-          to: 'browser/vendor/codemirror/mode/css.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/vbscript/vbscript.js',
-          to: 'browser/vendor/codemirror/mode/vbscript.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/coffeescript/coffeescript.js',
-          to: 'browser/vendor/codemirror/mode/coffeescript.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/clike/clike.js',
-          to: 'browser/vendor/codemirror/mode/clike.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
-          to: 'browser/vendor/codemirror/mode/htmlmixed.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/smalltalk/smalltalk.js',
-          to: 'browser/vendor/codemirror/mode/smalltalk.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/yaml/yaml.js',
-          to: 'browser/vendor/codemirror/mode/yaml.js',
-        },
-        {
-          from: 'node_modules/codemirror/mode/python/python.js',
-          to: 'browser/vendor/codemirror/mode/python.js',
-        },
         {
           from: 'node_modules/font-awesome/fonts/*',
           to: 'browser/vendor/font-awesome',
@@ -157,10 +122,6 @@ module.exports = {
         {
           from: 'node_modules/klayjs-noflo/klay-noflo.js',
           to: 'browser/vendor/klayjs-noflo/klay-noflo.js',
-        },
-        {
-          from: 'node_modules/observe-js/src/observe.js',
-          to: 'browser/vendor/observe-js/observe.js',
         },
         {
           from: 'node_modules/@webcomponents/webcomponentsjs/webcomponents-*.js',
