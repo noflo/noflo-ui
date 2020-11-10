@@ -7,9 +7,9 @@ module.exports = {
     ui: './elements/noflo-ui',
   },
   output: {
-    path: __dirname,
-    filename: 'browser/[name].[contenthash].min.js',
-    sourceMapFilename: 'browser/[name].[contenthash].min.js.map',
+    path: path.resolve(__dirname, './browser/'),
+    filename: '[name].[contenthash].min.js',
+    sourceMapFilename: '[name].[contenthash].min.js.map',
   },
   optimization: {
     splitChunks: {
@@ -96,6 +96,7 @@ module.exports = {
     extensions: ['.coffee', '.js', '.jsx'],
   },
   plugins: [
+    new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'index.dist.html',
@@ -103,29 +104,39 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         {
+          from: 'css/noflo-ui.css',
+          to: 'css/noflo-ui.css',
+          flatten: true,
+        },
+        {
+          from: 'css/*.woff',
+          to: 'css',
+          flatten: true,
+        },
+        {
           from: 'node_modules/font-awesome/fonts/*',
-          to: 'browser/vendor/font-awesome',
+          to: 'vendor/font-awesome',
           flatten: true,
         },
         {
           from: 'node_modules/hammerjs/hammer.min.js',
-          to: 'browser/vendor/hammerjs/hammer.min.js',
+          to: 'vendor/hammerjs/hammer.min.js',
         },
         {
           from: 'node_modules/hammerjs/hammer.min.js.map',
-          to: 'browser/vendor/hammerjs/hammer.min.js.map',
+          to: 'vendor/hammerjs/hammer.min.js.map',
         },
         {
           from: 'node_modules/klayjs/klay.js',
-          to: 'browser/vendor/klayjs/klay.js',
+          to: 'vendor/klayjs/klay.js',
         },
         {
           from: 'node_modules/klayjs-noflo/klay-noflo.js',
-          to: 'browser/vendor/klayjs-noflo/klay-noflo.js',
+          to: 'vendor/klayjs-noflo/klay-noflo.js',
         },
         {
           from: 'node_modules/@webcomponents/webcomponentsjs/webcomponents-*.js',
-          to: 'browser/vendor/webcomponentsjs/',
+          to: 'vendor/webcomponentsjs/',
           flatten: true,
         },
       ],

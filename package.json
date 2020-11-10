@@ -92,7 +92,7 @@
     "lint-fix": "eslint --fix *.js src/*.js components/*.js app/*.js elements/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
     "pretest": "npm run lint",
     "test": "karma start",
-    "start": "http-server . -p 9999 -s -c-1",
+    "start": "http-server browser/ -p 9999 -s -c-1",
     "build": "grunt build",
     "build:pages": "grunt pages",
     "watch": "grunt watch"
