@@ -102,8 +102,8 @@ Polymer({
       <h1>Register new runtime</h1>
       <div class="modal-content">
       <p>
-      \$NOFLO_APP_TITLE supports all flow-based programming runtimes that are compatible with the <a href="https://flowbased.github.io/fbp-protocol/" target="_blank">FBP protocol</a>.
-      \$NOFLO_APP_TITLE comes with a bundled <a href="http://noflojs.org" target="_blank">NoFlo</a> runtime for the browser.
+      [[env.NOFLO_APP_TITLE]] supports all flow-based programming runtimes that are compatible with the <a href="https://flowbased.github.io/fbp-protocol/" target="_blank">FBP protocol</a>.
+      [[env.NOFLO_APP_TITLE]] comes with a bundled <a href="http://noflojs.org" target="_blank">NoFlo</a> runtime for the browser.
       Here are some other popular ones:
       </p>
       <ul class="runtimes">
@@ -118,7 +118,7 @@ Polymer({
       </template>
       </ul>
       <p>
-      Most runtimes provide a link that connects to them in \$NOFLO_APP_TITLE live mode at start-up. You can also add a runtime manually.
+      Most runtimes provide a link that connects to them in [[env.NOFLO_APP_TITLE]] live mode at start-up. You can also add a runtime manually.
       </p>
       </div>
       <div class="toolbar">
@@ -134,6 +134,14 @@ Polymer({
     runtimes: {
       value() {
         return runtimes;
+      },
+    },
+    env: {
+      type: Object,
+      value() {
+        return {
+          NOFLO_APP_TITLE: process.env.NOFLO_APP_TITLE,
+        };
       },
     },
   },

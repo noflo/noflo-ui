@@ -103,7 +103,7 @@ describe('Opening a Runtime', () => {
         id: runtimeDefinition.id,
         secret: runtimeDefinition.secret,
       });
-      iframe.src = `/base/index.html#runtime/endpoint?${endpointUrl}`;
+      iframe.src = `/base/browser/index.html#runtime/endpoint?${endpointUrl}`;
       return waitForElement(`iframe.iframe-runtime[data-runtime='${runtimeDefinition.id}']`)
         .then(element => new Promise((resolve) => {
           rtIframe = element;

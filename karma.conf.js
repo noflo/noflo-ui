@@ -5,10 +5,7 @@ process.env.CHROME_BIN = require('puppeteer').executablePath(); // eslint-disabl
 
 module.exports = function (config) {
   const files = [
-    'node_modules/react/umd/react.production.min.js',
-    'node_modules/react-dom/umd/react-dom.production.min.js',
-    'node_modules/hammerjs/hammer.min.js',
-    'browser/noflo-ui.min.js',
+    'browser/*.min.js',
     'spec/index.js',
     {
       pattern: 'spec/mockruntime.html',
@@ -17,15 +14,14 @@ module.exports = function (config) {
       watched: true,
     },
     {
-      pattern: 'index.html',
+      pattern: 'browser/index.html',
       included: false,
       served: true,
       watched: true,
     },
   ];
   const serveExternals = externals.slice(0);
-  serveExternals.push('themes/*.css');
-  serveExternals.push('css/*.css');
+  serveExternals.push('browser/css/*.css');
   serveExternals.forEach((pattern) => {
     if (files.indexOf(pattern) !== -1) {
       return;
@@ -47,10 +43,7 @@ module.exports = function (config) {
       'spec/index.js': ['webpack'],
     },
     webpack: {
-      module: {
-        rules: webpackConfig.module.rules,
-      },
-      node: webpackConfig.node,
+      ...webpackConfig,
       mode: 'development',
     },
     reporters: ['mocha'],

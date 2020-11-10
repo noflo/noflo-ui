@@ -41,7 +41,7 @@ exports.getComponent = () => {
       repo: data.repo,
       active: true,
     });
-    req.open('POST', '$NOFLO_REGISTRY_SERVICE/projects', true);
+    req.open('POST', `${process.env.NOFLO_REGISTRY_SERVICE}/projects`, true);
     req.setRequestHeader('Authorization', `Bearer ${user['flowhub-token']}`);
     req.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
     req.send(payload);

@@ -1,6 +1,7 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
 import projects from '../src/projects';
+import './noflo-polymer';
 import './noflo-main';
 import './the-graph-editor';
 import './noflo-library';

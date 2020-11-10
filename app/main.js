@@ -1,18 +1,6 @@
 const noflo = require('noflo');
 const postMessageRuntime = require('noflo-runtime-postmessage');
 const mainGraph = require('../graphs/main.fbp');
-require('../elements/noflo-polymer');
-require('../elements/noflo-ui');
-
-const exported = {
-  noflo,
-};
-window.require = function (moduleName) {
-  if (typeof exported[moduleName] !== 'undefined') {
-    return exported[moduleName];
-  }
-  throw new Error(`Module ${moduleName} not available`);
-};
 
 window.addEventListener('WebComponentsReady', () => {
   const loadGraphs = function (callback) {
@@ -57,7 +45,7 @@ window.addEventListener('WebComponentsReady', () => {
         'component:getsource',
         'component:setsource',
       ];
-      runtimeOptions.label = '$NOFLO_APP_TITLE';
+      runtimeOptions.label = process.env.NOFLO_APP_TITLE;
       runtimeOptions.id = '2b487ea3-287b-43f7-b7eb-806f02b402f9';
       runtimeOptions.namespace = 'ui';
       runtimeOptions.repository = 'git+https://github.com/noflo/noflo-ui.git';

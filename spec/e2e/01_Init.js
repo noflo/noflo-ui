@@ -18,7 +18,7 @@ describe('NoFlo UI initialization', () => {
     const iframe = document.createElement('iframe');
     iframe.id = 'app';
     document.body.appendChild(iframe);
-    iframe.src = '/base/index.html';
+    iframe.src = '/base/browser/index.html';
     iframe.style.width = '800px';
     iframe.style.height = '600px';
     iframe.style.position = 'fixed';

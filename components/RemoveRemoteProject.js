@@ -42,7 +42,7 @@ exports.getComponent = () => {
       // Repository registered, let sync happen
       out.send(data);
     };
-    req.open('DELETE', `$NOFLO_REGISTRY_SERVICE/projects/${data.id}`, true);
+    req.open('DELETE', `${process.env.NOFLO_REGISTRY_SERVICE}/projects/${data.id}`, true);
     req.setRequestHeader('Authorization', `Bearer ${c.params.user['flowhub-token']}`);
     req.send();
   });

@@ -533,7 +533,7 @@ Polymer({
     if (!this.help) {
       return;
     }
-    this.set('help.headline', '$NOFLO_APP_TITLE graph editor');
+    this.set('help.headline', `${process.env.NOFLO_APP_TITLE} graph editor`);
     this.set('help.text', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
   },
 
@@ -541,7 +541,7 @@ Polymer({
     if (!this.help) {
       return;
     }
-    this.help.show('$NOFLO_APP_TITLE graph editor', 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
+    this.help.show(`${process.env.NOFLO_APP_TITLE} graph editor`, 'Here you can edit your Flow-Based graphs and run them. To add nodes, search for components using the search area on the top-left corner.');
     graph.once('addNode', () => {
       this.help.close();
     });

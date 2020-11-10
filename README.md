@@ -100,17 +100,17 @@ This will provide you with all the needed development dependencies. Now you can 
 
 You have to run this command as an administrator on Windows.
 
-If you prefer, you can also start a watcher process that will do a rebuild whenever one of the files changes:
-
-    $ npm run watch
-
 Serve the UI using a webserver, then open the URL it in a web browser. Example:
 
     $ npm start
 
+If you prefer, you can instead start a webpack dev server process that will do a rebuild whenever one of the files changes:
+
+    $ npm run dev
+
 Once it is built and the server is running you can access the UI at `http://localhost:9999/index.html`
 
-In addition to this project, the other repository of interest is the [the-graph](https://github.com/the-grid/the-graph) graph editor widget used for editing flows.
+In addition to this project, the other repository of interest is the [the-graph](https://github.com/flowhub/the-graph) graph editor widget used for editing flows.
 
 
 ### Architecture
