@@ -43,10 +43,7 @@ module.exports = function (config) {
       'spec/index.js': ['webpack'],
     },
     webpack: {
-      module: {
-        rules: webpackConfig.module.rules,
-      },
-      node: webpackConfig.node,
+      ...webpackConfig,
       mode: 'development',
     },
     reporters: ['mocha'],
