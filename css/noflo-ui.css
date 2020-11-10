@@ -166,10 +166,10 @@ h1, h2, h3 {
 }
 @font-face {
   font-family: 'FontAwesomeSVG';
-  src: url('../browser/vendor/font-awesome/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg'),
-    url('../browser/vendor/font-awesome/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
-    url('../browser/vendor/font-awesome/fontawesome-webfont.woff?v=4.0.3') format('woff'),
-    url('../browser/vendor/font-awesome/fontawesome-webfont.ttf?v=4.0.3') format('truetype');
+  src: url('../vendor/font-awesome/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg'),
+    url('../vendor/font-awesome/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
+    url('../vendor/font-awesome/fontawesome-webfont.woff?v=4.0.3') format('woff'),
+    url('../vendor/font-awesome/fontawesome-webfont.ttf?v=4.0.3') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
