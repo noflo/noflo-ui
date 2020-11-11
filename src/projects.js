@@ -124,6 +124,18 @@ exports.isReadOnly = (context) => {
     // Graph is outside the project, go read-only
     return true;
   }
+  if (context.graph
+    && context.runtime
+    && context.runtime.definition
+    && context.runtime.definition.capabilities) {
+    return (context.runtime.definition.capabilities.indexOf('protocol:graph') === -1);
+  }
+  if (context.component
+    && context.runtime
+    && context.runtime.definition
+    && context.runtime.definition.capabilities) {
+    return (context.runtime.definition.capabilities.indexOf('component:setsource') === -1);
+  }
   return false;
 };
 
