@@ -98,7 +98,7 @@ Polymer({
     <ul id="events">
       <template is="dom-repeat" items="[[log]]" as="packet">
         <li class\$="{{ packet.type }}">
-          {{ packet.data }}
+          {{ _renderData(packet.data) }}
         </li>
       </template>
     </ul>
@@ -177,5 +177,9 @@ Polymer({
 
   _computeClass(route) {
     return `connection route${route}`;
+  },
+
+  _renderData(data) {
+    return JSON.stringify(data);
   },
 });
