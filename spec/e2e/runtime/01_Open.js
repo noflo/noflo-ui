@@ -224,7 +224,7 @@ describe('Opening a Runtime', () => {
         .then((eventsList) => {
           const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
           const packetValues = packets.map(p => p.innerText);
-          chai.expect(packetValues).to.eql(['packet one']);
+          chai.expect(packetValues).to.eql(['"packet one"']);
         }));
       it('closing the edge inspector', () => waitForElement('noflo-ui the-graph-editor the-graph svg.app-svg')
         .then((edge) => {
