@@ -5,27 +5,6 @@ import './noflo-modal-styles';
 Polymer({
   _template: html`
     <style include="noflo-modal-styles">
-      .plan strong {
-        text-transform: uppercase;
-        color: black;
-        background-color: hsl(190, 90%, 45%);
-        text-decoration: none;
-        padding: 2px;
-        border-radius: 2px;
-      }
-      .plan .free,
-      .plan .backer {
-        background-color: hsl(135, 98%, 46%);
-      }
-      .plan .pro {
-        background-color: hsl(160, 98%, 46%);
-      }
-      .plan .supporter {
-        background-color: hsl(185, 98%, 46%);
-      }
-      .plan form {
-        display: inline;
-      }
       #cta {
         display: inline;
         width: auto;
@@ -42,17 +21,6 @@ Polymer({
     <div class="modal-container" on-click="bgClick">
       <h1>Account settings for <span>{{user.flowhub-user.name}}</span></h1>
       <form>
-        <label>
-          Flowhub plan
-          <div class="plan">
-            You're currently using <strong class\$="{{user.flowhub-plan}}">{{user.flowhub-plan}}</strong> plan.
-            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github-username::input}}">
-              <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
-              <input type="submit" id="cta" value="Manage subscription">
-            </form>
-          </div>
-        </label>
         <label>
           Theme
           <select name="type" value="{{theme::input}}">

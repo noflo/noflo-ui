@@ -59,34 +59,9 @@ Polymer({
         height: 18px;
         display: inline-block;
       }
-      section.user h1,
-      section.user form {
+      section.user h1 {
         display: inline;
         line-height: 36px;
-      }
-      section.user #plan {
-        display: inline-block;
-        font-size: 8px;
-        text-transform: uppercase;
-        vertical-align: super;
-        color: black;
-        background-color: hsl(185, 98%, 46%);
-        border: none;
-        line-height: 10px;
-        text-decoration: none;
-        padding: 2px;
-        border-radius: 2px;
-        cursor: pointer;
-      }
-      section.user .free #plan,
-      section.user .backer #plan {
-        background-color: hsl(135, 98%, 46%);
-      }
-      section.user .pro #plan {
-        background-color: hsl(160, 98%, 46%);
-      }
-      section.user .supporter #plan {
-        background-color: hsl(185, 98%, 46%);
       }
       section.user .toolbar {
         line-height: 36px;
@@ -186,17 +161,12 @@ Polymer({
     </section>
     <section class="user">
     <template is="dom-if" if="{{user.flowhub-user}}">
-      <div class\$="{{user.flowhub-plan}}">
+      <div>
         <template is="dom-if" if="{{user.flowhub-avatar}}">
           <div class="avatar"><img src="{{user.flowhub-avatar}}"></div>
         </template>
         <h1>
           <span>{{user.github-username}}</span>
-          <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-            <input type="hidden" name="username" value="{{user.github-username::input}}">
-            <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
-            <input type="submit" id="plan" value="{{user.flowhub-plan::input}}">
-          </form>
         </h1>
         <div class="toolbar">
           <a href="https://docs.flowhub.io" target="_blank">Docs</a>
@@ -229,26 +199,7 @@ Polymer({
           </div>
         </div>
       </template>
-      <template is="dom-if" if="{{_ifFreePlan(askForScope, user.flowhub-plan)}}">
-        <div class="banner">
-          You're using a free Flowhub plan. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
-          <div>
-            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="{{user.github-username::input}}">
-              <input type="hidden" name="password" value="{{user.flowhub-token::input}}">
-              <input type="submit" id="cta" value="Subscribe now">
-            </form>
-          </div>
-        </div>
-      </template>
     </template>
-    <template is="dom-if" if="{{!user.flowhub-user}}">
-      <div class="banner">
-        Logging into [[env.NOFLO_APP_TITLE]] enables you to synchronize projects with Github. By subscribing to Flowhub you directly support NoFlo development, and help us all get to the future of programming faster.
-        <div>
-          <a class="cta" href="https://plans.flowhub.io">Subscribe now</a>
-        </div>
-      </div>
     </template>
 `,
 
@@ -307,15 +258,8 @@ Polymer({
     if (!this.user['flowhub-user'].github) {
       return;
     }
-    if (!this.user['flowhub-user'].plan || this.user['flowhub-user'].plan.type === 'free') {
-      if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('public_repo') === -1) {
-        // User is on free plan but hasn't granted repo access
-        this.set('askForScope', ['public_repo']);
-      }
-      return;
-    }
     if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('repo') === -1) {
-      // User is on paid plan but hasn't granted repo access
+      // User hasn't granted repo access
       this.set('askForScope', ['repo']);
       if (!this.user['flowhub-user'].github.scopes || this.user['flowhub-user'].github.scopes.indexOf('public_repo') === -1) {
         // Allow paid users to limit repo access to only public if they want
@@ -338,10 +282,6 @@ Polymer({
     dialog.addEventListener('updated', (event) => {
       this.fire('userUpdated', event.detail);
     });
-  },
-
-  _ifFreePlan(askForScope, plan) {
-    return plan === 'free' && !askForScope.length;
   },
 
   _ifPublicScope(scope) {
