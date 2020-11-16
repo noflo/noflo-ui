@@ -96,8 +96,7 @@ Polymer({
         position: relative;
         cursor: pointer;
       }
-      ul.projects li.add,
-      ul.projects li.plan {
+      ul.projects li.add {
         background-color: var(--noflo-ui-text);
         color: var(--noflo-ui-background);
         cursor: default;
@@ -153,10 +152,6 @@ Polymer({
         overflow: hidden;
         color: hsl(189, 11%, 50%);
       }
-      ul.projects li.plan p {
-        width: 100px;
-        font-size: 9px;
-      }
       ul.projects li a {
         color: var(--noflo-ui-background);
         text-decoration: none;
@@ -198,17 +193,6 @@ Polymer({
             <h2>Add a repository</h2>
             <button id="newrepository" on-click="newRepository">Add</button>
           </li>
-          <template is="dom-if" if="[[_isFree(user)]]">
-          <li class\$="[[_planClass(user)]]">
-            <h2>Flowhub free</h2>
-            <p>Access only to public GitHub repositories.</p>
-            <form method="post" action="https://plans.flowhub.io/auth/flowhub">
-              <input type="hidden" name="username" value="[[user.github-username]]">
-              <input type="hidden" name="password" value="[[user.flowhub-token]]">
-              <input type="submit" id="cta" value="Upgrade">
-            </form>
-          </li>
-          </template>
           <template is="dom-repeat" items="[[remoteProjects]]" as="project" filter="filterRemoteProjects">
             <li class="remote" on-click="downloadProject" data-repo\$="[[project.repo]]">
               <noflo-repo-card project="[[project]]"></noflo-repo-card>
@@ -601,13 +585,5 @@ Polymer({
       return 'selected';
     }
     return '';
-  },
-
-  _isFree(user) {
-    return user['flowhub-plan'] === 'free';
-  },
-
-  _planClass(user) {
-    return `plan ${user['flowhub-plan']}`;
   },
 });
