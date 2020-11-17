@@ -4,7 +4,7 @@ import './the-graph';
 
 Polymer({
   _template: html`
-    <the-graph id="graph" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selected-nodes="{{selectedNodes}}" error-nodes="{{errorNodes}}" selected-edges="{{selectedEdges}}" animated-edges="{{animatedEdges}}" display-selection-group="{{displaySelectionGroup}}" force-selection="{{forceSelection}}" icons="[[icons]]">
+    <the-graph id="graph" menus="{{menus}}" width="{{width}}" height="{{height}}" pan="{{pan}}" scale="{{scale}}" autolayout="{{autolayout}}" readonly="{{readonly}}" theme="{{theme}}" selected-nodes="{{selectedNodes}}" error-nodes="{{errorNodes}}" selected-edges="{{selectedEdges}}" animated-edges="[[animatedEdges]]" display-selection-group="{{displaySelectionGroup}}" force-selection="{{forceSelection}}" icons="[[icons]]">
     </the-graph>
 `,
 
@@ -253,14 +253,14 @@ Polymer({
     // Make sure unique
     const index = this.animatedEdges.indexOf(edge);
     if (index === -1) {
-      this.push('animatedEdges', edge);
+      this.set('animatedEdges', [...this.animatedEdges, edge]);
     }
   },
 
   unanimateEdge(edge) {
     const index = this.animatedEdges.indexOf(edge);
-    if (index >= 0) {
-      this.splice('animatedEdges', index, 1);
+    if (index !== -1) {
+      this.set('animatedEdges', this.animatedEdges.filter((e, idx) => idx !== index));
     }
   },
 

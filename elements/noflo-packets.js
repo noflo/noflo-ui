@@ -58,6 +58,7 @@ Polymer({
         this.clearSelection();
       }
     });
+    this.edgeAnimator = null;
   },
   clearSelection() {
     let edge; let
@@ -179,6 +180,36 @@ Polymer({
         return (packetId === id);
       });
     });
+    if (this.edgeAnimator) {
+      return;
+    }
+    this.edgeAnimator = window.setTimeout(this.animatePacketEdges.bind(this), 1);
+  },
+  animatePacketEdges() {
+    this.edgeAnimator = null;
+    if (!this.editor || !this.currentGraph) {
+      return;
+    }
+    // Animate edges of last 20 packets
+    const lastEdges = this.packets
+      .slice(-20)
+      .filter((ip) => ip.src)
+      .map((ip) => this.currentGraph.edges.find((e) => (e.from.node === ip.src.node
+        && e.from.port === ip.src.port
+        && e.to.node === ip.tgt.node
+        && e.to.port === ip.tgt.port)))
+      .reduce((edges, edge) => {
+        const existing = edges.find((e) => (e.from.node === edge.from.node
+          && e.from.port === edge.from.port
+          && e.to.node === edge.to.node
+          && e.to.port === edge.to.port));
+        if (existing) {
+          return edges;
+        }
+        edges.push(edge);
+        return edges;
+      }, []);
+    this.editor.set('animatedEdges', lastEdges);
   },
   hideEdgeCards() {
     if (this.edgeMenu) {
