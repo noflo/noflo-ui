@@ -7,7 +7,7 @@ import './noflo-edge-inspector';
 Polymer({
   is: 'noflo-packets',
   properties: {
-    currentgraph: { value: null },
+    currentGraph: { value: null },
     edgeInspectors: {
       type: Object,
       value() {
@@ -129,7 +129,7 @@ Polymer({
     } else if (!this.readonly) {
       const menu = document.createElement('noflo-edge-menu');
       menu.edges = this.edges;
-      menu.graph = this.currentgraph;
+      menu.graph = this.currentGraph;
       this.edgeMenu = document.createElement('the-card');
       this.set('edgeMenu.type', 'edge-menu');
       this.set('edgeMenu.dialog', menu);
@@ -146,7 +146,7 @@ Polymer({
         const packetId = this.genId(packet.src, packet.tgt);
         return (packetId === id);
       });
-      inspector.graph = this.currentgraph;
+      inspector.graph = this.currentGraph;
       inspector.edge = edge;
       this.edgeInspectors[id] = document.createElement('the-card');
       this.edgeInspectors[id].type = 'edge-inspector';
@@ -241,7 +241,7 @@ Polymer({
       const inspector = document.createElement('noflo-node-inspector');
       inspector.node = node;
       inspector.component = this.editor.getComponent(node.component);
-      inspector.graph = this.currentgraph;
+      inspector.graph = this.currentGraph;
       if (this.events) {
         inspector.errorLog = this.events.filter((event) => {
           if (event.type !== 'processerror') {
