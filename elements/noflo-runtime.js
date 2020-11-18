@@ -355,6 +355,8 @@ Polymer({
         return 'picture-o';
       case 'sndflo':
         return 'music';
+      case 'flowtrace-replay':
+        return 'pause-circle';
       default:
         return 'cog';
     }

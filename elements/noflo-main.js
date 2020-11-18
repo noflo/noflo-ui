@@ -161,7 +161,7 @@ Polymer({
       <section id="projects">
         <h2>Projects
           <template is="dom-if" if="[[_isLocalProjects(projectList)]]">
-          <small>[[projects.length]]</small>
+          <small>[[numberOfLocalProjects(projects)]]</small>
           </template>
           <template is="dom-if" if="[[!_isLocalProjects(projectList)]]">
           <small>[[numberOfRemoteProjects(remoteProjects)]]</small>
@@ -182,7 +182,7 @@ Polymer({
             <h2>New project</h2>
             <button id="newproject" on-click="newProject">Create</button>
           </li>
-          <template is="dom-repeat" items="[[projects]]" as="project">
+          <template is="dom-repeat" items="[[projects]]" as="project" filter="filterLocalProjects">
             <li on-click="openProject" data-id\$="[[project.id]]">
               <noflo-project-card project="[[project]]"></noflo-project-card>
             </li>
@@ -367,6 +367,17 @@ Polymer({
     return true;
   },
 
+  numberOfLocalProjects(projects) {
+    return projects.filter(this.filterLocalProjects.bind(this)).length;
+  },
+
+  filterLocalProjects(project) {
+    if (project.type === 'flowtrace-replay') {
+      return false;
+    }
+    return true;
+  },
+
   numberOfAvailableRuntimes(runtimes) {
     return runtimes.filter(this.filterAvailableRuntimes.bind(this)).length;
   },
@@ -377,6 +388,10 @@ Polymer({
     }
     if (!runtime.seen) {
       // Non-persistent runtime, don't show
+      return false;
+    }
+    if (runtime.type === 'flowtrace-replay') {
+      // Flowtrace runtimes don't make sense to show
       return false;
     }
     if (runtime.protocol === 'opener' && !window.opener) {
