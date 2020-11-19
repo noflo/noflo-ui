@@ -9,14 +9,37 @@ const {
 
 const sendGraphs = (client, graphs, namespace = null) => {
   const compatible = graphs.filter((g) => getGraphType(g) === client.definition.type);
-  return Promise.all(compatible.map((g) => client.protocol.graph.send({
-    ...g,
-    name: graphRuntimeIdentifier(g, namespace),
-    properties: {
-      ...g.properties,
-      library: namespace,
-    },
-  }, g.properties.main)));
+  compatible.sort((a, b) => {
+    if (a.properties.main) {
+      return 1;
+    }
+    if (b.properties.main) {
+      return -1;
+    }
+    const aName = graphRuntimeIdentifier(a, namespace);
+    const bName = graphRuntimeIdentifier(b, namespace);
+    const inA = a.nodes.find((n) => n.component === bName);
+    if (inA) {
+      // Send b first
+      return 1;
+    }
+    const inB = b.nodes.find((n) => n.component === aName);
+    if (inB) {
+      // Send a first
+      return -1;
+    }
+    return 0;
+  });
+  return compatible.reduce((chain, g) => chain
+    .then(() => client
+      .protocol.graph.send({
+        ...g,
+        name: graphRuntimeIdentifier(g, namespace),
+        properties: {
+          ...g.properties,
+          library: namespace,
+        },
+      }, g.properties.main)), Promise.resolve([]));
 };
 
 const sendComponents = (client, components, namespace = null) => {
