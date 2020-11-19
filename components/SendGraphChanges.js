@@ -16,6 +16,9 @@ const preparePayload = (event, original, graph, namespace) => {
     if ((key === 'metadata') && ['removenode', 'removeedge', 'removeinitial', 'removeinport', 'removeoutport', 'removegroup'].includes(event)) {
       return;
     }
+    if (key === 'nodes' && ['changegroup', 'removegroup'].includes(event)) {
+      return;
+    }
     if (['node', 'port'].includes(key) && ['removeinport', 'removeoutport'].includes(event)) {
       return;
     }

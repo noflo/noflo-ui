@@ -260,15 +260,13 @@ Polymer({
     this.$.main.addEventListener('openProject', (event) => {
       this.openProject(event.detail);
     });
-    this.$.context.addEventListener('newgraph', (event) => {
-      this.emitEvent('storage:save:graph', event.detail);
+    this.$.context.addEventListener('newsubgraph', (event) => {
       if (!this.ctx.runtime || !this.ctx.runtime.definition || !this.ctx.runtime.definition.id) {
         return;
       }
-      this.emitEvent('runtime:sendGraph', {
+      this.emitEvent('runtime:sendSubgraph', {
+        ...event.detail,
         runtime: this.ctx.runtime.definition.id,
-        graph: event.detail,
-        project: this.ctx.project,
       });
     });
     this.$.context.addEventListener('clear:runtimeevents', (event) => {

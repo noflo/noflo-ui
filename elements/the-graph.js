@@ -372,13 +372,18 @@ Polymer({
       if (this.selectedNodes.length > 0) {
         this.selectedNodes = [];
       }
-    } else if (toggle) {
+      return;
+    }
+    if (toggle) {
       const index = this.selectedNodes.indexOf(item);
       const isSelected = index !== -1;
+      const shallowClone = this.selectedNodes.slice();
       if (isSelected) {
-        this.splice('selectedNodes', index, 1);
+        shallowClone.splice(index, 1);
+        this.selectedNodes = shallowClone;
       } else {
-        this.push('selectedNodes', item);
+        shallowClone.push(item);
+        this.selectedNodes = shallowClone;
       }
     } else {
       this.selectedNodes = [item];
@@ -388,9 +393,9 @@ Polymer({
   selectedNodesChanged() {
     this.set('selectedNodesHash', {});
     const selectedNodesHash = {};
-    for (let i = 0, len = this.selectedNodes.length; i < len; i += 1) {
-      selectedNodesHash[this.selectedNodes[i].id] = true;
-    }
+    this.selectedNodes.forEach((item) => {
+      selectedNodesHash[item.id] = true;
+    });
     this.set('selectedNodesHash', selectedNodesHash);
     this.fire('nodes', this.selectedNodes);
   },
