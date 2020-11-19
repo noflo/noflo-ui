@@ -456,71 +456,16 @@ Polymer({
     dialog.runtimes = this.runtimes;
     dialog.type = currentGraph.properties.environment.type;
     dialog.project = this.project;
+    dialog.mainGraph = 'false';
     PolymerDom(document.body).appendChild(dialog);
     dialog.addEventListener('new', (event) => {
-      const graph = event.detail;
-      graph.startTransaction('newsubgraph');
-      graph.setProperties({
-        id: `${currentGraph.properties.project}/${graph.name.replace(' ', '_')}`,
-        project: currentGraph.properties.project,
-        main: false,
+      // Register new subgraph
+      this.fire('newsubgraph', {
+        currentGraph,
+        subgraph: event.detail,
+        nodes: item.nodes,
+        project: this.project,
       });
-      // Copy nodes
-      item.nodes.forEach((id) => {
-        const node = currentGraph.getNode(id);
-        graph.addNode(node.id, node.component, node.metadata);
-      });
-      // Copy edges between nodes
-      currentGraph.edges.forEach((edge) => {
-        if (graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
-          graph.addEdge(edge.from.node, edge.from.port, edge.to.node, edge.to.port, edge.metadata);
-        }
-      });
-      // Move IIPs to subgraph as well
-      currentGraph.initializers.forEach((iip) => {
-        if (graph.getNode(iip.to.node)) {
-          graph.addInitial(iip.from.data, iip.to.node, iip.to.port, iip.metadata);
-        }
-      });
-      // Create subgraph node
-      const initialMetadata = currentGraph.getNode(item.nodes[0]).metadata;
-      currentGraph.startTransaction('subgraph');
-      currentGraph.addNode(graph.properties.id, `${this.project.namespace}/${graph.name}`, {
-        label: graph.name,
-        x: initialMetadata.x,
-        y: initialMetadata.y,
-      });
-      const subgraphPort = (node, port) => {
-        const portName = `${node}.${port}`;
-        return portName.replace(/(.*)\/(.*)(_.*)\.(.*)/, '$2_$4').toLowerCase();
-      };
-      // Reconnect external edges to subgraph node
-      currentGraph.edges.forEach((edge) => {
-        // Edge from outside the new subgraph to a subgraph port
-        if (!graph.getNode(edge.from.node) && graph.getNode(edge.to.node)) {
-          // Create exported inport
-          const inport = subgraphPort(edge.to.node, edge.to.port);
-          graph.addInport(inport, edge.to.node, edge.to.port);
-          currentGraph.addEdge(edge.from.node, edge.from.port, graph.properties.id, inport);
-        }
-        // Edge from subgraph port to the outside
-        if (graph.getNode(edge.from.node) && !graph.getNode(edge.to.node)) {
-          const outport = subgraphPort(edge.from.node, edge.from.port);
-          graph.addOutport(outport, edge.from.node, edge.from.port);
-          currentGraph.addEdge(graph.properties.id, outport, edge.to.node, edge.to.port);
-        }
-      });
-      // Remove the selected nodes
-      item.nodes.forEach((id) => {
-        currentGraph.removeNode(id);
-      });
-      // Emit new subgraph so that it can be stored
-      graph.endTransaction('newsubgraph');
-      this.fire('newgraph', graph);
-      // End the transaction on the main graph
-      setTimeout(() => {
-        currentGraph.endTransaction('subgraph');
-      }, 5);
       // Editor deselect, hide node inspectors
       if (this.editor) {
         this.editor.selectedNodes = [];
