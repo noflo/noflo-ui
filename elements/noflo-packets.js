@@ -1,7 +1,7 @@
 import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
 import ReactDOM from 'react-dom';
-import RuntimeEvents from '../src/components/RuntimeEvents'
+import RuntimeEvents from '../src/components/RuntimeEvents';
 import './noflo-node-inspector';
 import './noflo-edge-menu';
 import './the-panel';
@@ -338,6 +338,9 @@ Polymer({
     if (newPackets.length && !oldPackets.length) {
       // Show packet inspector when first packets arrive
       this.showPackets = true;
+    }
+    if (!newPackets.length && oldPackets.length) {
+      this.showPackets = false;
     }
   },
   updatePacketInspector() {
