@@ -181,7 +181,7 @@ Polymer({
       the-panel#fixed main .cell .edge .route7 { color: hsl(210,  98%, 46%); }
       the-panel#fixed main .cell .edge .route8 { color: hsl(285,  98%, 46%); }
       the-panel#fixed main .cell .edge .route9 { color: hsl(310,  98%, 46%); }
-      the-panel#fixed main .cell .edge .route10 {color: hsl(335,  98%, 46%);
+      the-panel#fixed main .cell .edge .route10 { color: hsl(335,  98%, 46%); }
     </style>
     <the-panel id="fixed" edge="bottom" size="324" handle="36" open={{showPackets}}>
       <main id="fixedmain">
