@@ -138,7 +138,7 @@ Polymer({
     <noflo-component-editor id="componenteditor" theme="[[theme]]" width="{{width}}" height="{{height}}" runtime="{{ctx.runtime}}" project="{{ctx.project}}" component="{{ctx.component}}"></noflo-component-editor>
     <noflo-search id="search" theme="[[theme]]" runtimes="{{ctx.runtimes}}" project="{{ctx.project}}" graph="{{ctx.graph}}" component="{{ctx.component}}" graphs="{{ctx.graphs}}"></noflo-search>
     <noflo-project id="project" runtimes="{{ctx.runtimes}}" graph="{{ctx.graph}}" project="{{ctx.project}}" component="{{ctx.component}}" runtime="{{ctx.runtime}}"></noflo-project>
-    <noflo-packets id="packets" edges="[[ctx.edges]]" nodes="[[ctx.nodes]]" currentgraph="[[ctx.graph]]" packets="[[ctx.packets]]" events="[[ctx.events]]"></noflo-packets>
+    <noflo-packets id="packets" edges="[[ctx.edges]]" nodes="[[ctx.nodes]]" currentgraph="[[ctx.graph]]" packets="[[ctx.packets]]" events="[[ctx.events]]" width="[[width]]"></noflo-packets>
     <noflo-alert id="alert" on-click="hideAlert"></noflo-alert>
 `,
 
