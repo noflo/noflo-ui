@@ -198,7 +198,7 @@ describe('Opening a Runtime', () => {
         .then((edge) => {
           syn.click(edge);
         })
-        .then(() => waitForElement('noflo-ui noflo-context section#contextsection the-card noflo-edge-inspector'))
+        .then(() => waitForElement('noflo-ui noflo-packets the-panel#fixed main'))
         .then((element) => {
           edgeInspector = element;
         }));
@@ -215,16 +215,11 @@ describe('Opening a Runtime', () => {
           done();
         });
       });
-      it('should show the edge title in the inspector', () => waitForElement('header h1', true, edgeInspector)
-        .then((edgeTitle) => {
-          chai.expect(edgeTitle.innerText).to.contain('one OUT');
-          chai.expect(edgeTitle.innerText).to.contain('IN two');
-        }));
-      it('should show the first packet in the inspector', () => waitForElement('ul#events', true, edgeInspector)
-        .then((eventsList) => {
-          const packets = Array.prototype.slice.call(eventsList.querySelectorAll('li.data'));
-          const packetValues = packets.map(p => p.innerText);
-          chai.expect(packetValues).to.eql(['"packet one"']);
+      it('should show the first packet in the inspector', () => waitForElement('div.row-wrapper', true, edgeInspector)
+        .then(() => {
+          const packets = Array.prototype.slice.call(edgeInspector.querySelectorAll('dd.packet-data'));
+          const packetValues = packets.map((p) => p.innerText);
+          chai.expect(packetValues).to.eql(['packet one']);
         }));
       it('closing the edge inspector', () => waitForElement('noflo-ui the-graph-editor the-graph svg.app-svg')
         .then((edge) => {
