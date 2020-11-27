@@ -1,19 +1,196 @@
-import { Polymer } from '@polymer/polymer/polymer-legacy';
+import { Polymer, html } from '@polymer/polymer/polymer-legacy';
 import { dom as PolymerDom } from '@polymer/polymer/lib/legacy/polymer.dom';
+import ReactDOM from 'react-dom';
+import RuntimeEvents from '../src/components/RuntimeEvents'
 import './noflo-node-inspector';
 import './noflo-edge-menu';
-import './noflo-edge-inspector';
+import './the-panel';
 
 Polymer({
+  _template: html`
+    <style>
+      :host {
+        display: block;
+      }
+      the-panel {
+        background-color: var(--noflo-ui-background) !important;
+        transition: left 0.3s ease-in-out, bottom 0.3s ease-in-out, right 0.3s ease-in-out, top 0.3s ease-in-out, width 0.1s ease-in-out;
+        position: fixed;
+        border: 0px solid var(--noflo-ui-border);
+        box-sizing: border-box;
+        padding-left: 7px;
+        padding-right: 7px;
+        bottom: 0px;
+        border-top-width: 1px;
+        height: 100vh;
+        padding-top: 36px;
+        z-index: 3;
+      }
+      the-panel:before {
+        font-family: FontAwesomeSVG;
+        content: '\\f16c';
+        color: var(--noflo-ui-border-highlight);
+        position: absolute;
+        text-align: center;
+        top: 0px;
+        height: 36px;
+        line-height: 36px;
+        left: 50%;
+        left: calc(50% - 7px);
+        font-size: 17px;
+        opacity: 0.25;
+        transition: opacity 0.3s ease-in-out;
+      }
+      the-panel:not([open]):before {
+        opacity: 1;
+        cursor: n-resize;
+      }
+      the-panel#fixed main {
+        height: 288px;
+      }
+      the-panel#fixed main div.cell {
+      }
+      the-panel#fixed main .react-fluid-table .cell,
+      the-panel#fixed main .react-fluid-table .header-cell {
+        box-sizing: border-box;
+        display: flex;
+        padding: 7px;
+      }
+      the-panel#fixed main .react-fluid-table-container {
+        will-change: height;
+      }
+      the-panel#fixed main .sticky-header {
+        position: sticky;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1;
+      }
+      the-panel#fixed main .row-wrapper {
+        display: nline-block;
+      }
+      the-panel#fixed main .react-fluid-table-header {
+        display: flex;
+        border-bottom: 1px solid var(--noflo-ui-border);
+        background-color: var(--noflo-ui-background);
+        z-index: 2;
+      }
+      the-panel#fixed main .header-cell {
+        align-items: baseline;
+      }
+      the-panel#fixed main .header-cell-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 14px;
+        color: var(--noflo-ui-text-highlight);
+      }
+      the-panel#fixed main .header-cell-arrow {
+        width: 0;
+        height: 0;
+        margin-left: 4px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+      }
+      the-panel#fixed main .header-cell-arrow.asc {
+      }
+      the-panel#fixed main .header-cell-arrow.desc {
+      }
+      the-panel#fixed main .react-fluid-table-row {
+      }
+      the-panel#fixed main .react-fluid-table-row .hidden {
+        display: none;
+      }
+      the-panel#fixed main .react-fluid-table-row .packet-details {
+        color: var(--noflo-ui-text);
+        background-color: var(--noflo-ui-background);
+        box-shadow: var(--noflo-ui-background) 0px 0px 2px;
+        border: 1px solid var(--noflo-ui-text-highlight);
+        /* This is a workaround for react-fluid-table not recalculating on expand, most likely due to Shadow DOM */
+        position: absolute;
+        z-index: 1;
+        right: 7px;
+        width: max(60%, 288px);
+        height: 144px;
+        overflow-y: auto;
+      }
+      the-panel#fixed main .react-fluid-table-row .packet-details dl {
+        margin: 0px;
+        padding: 7px;
+        font-size: 10px;
+      }
+      the-panel#fixed main .react-fluid-table-row .packet-details dt {
+        font-weight: bold;
+      }
+      the-panel#fixed main .react-fluid-table-row .packet-details dd {
+        margin: 0px;
+      }
+      the-panel#fixed main .react-fluid-table-row .packet-details dd.packet-data {
+        white-space: pre-wrap;
+      }
+      the-panel#fixed main .row-container {
+        display: flex;
+      }
+      the-panel#fixed main .cell {
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 10px;
+        line-height: 14px;
+        color: var(--noflo-ui-text);
+      }
+      the-panel#fixed main .cell .expander {
+        cursor: pointer;
+        height: 1em;
+        width: 1em;
+        color: var(--noflo-ui-text-highlight);
+      }
+      the-panel#fixed main .cell .edge {
+        font-weight: bold;
+      }
+      the-panel#fixed main .cell .edge .subgraph {
+        margin-right: 7px;
+        color: var(--noflo-ui-border);
+      }
+      the-panel#fixed main .cell .edge .source span {
+        margin-right: 7px;
+      }
+      the-panel#fixed main .cell .edge .target span {
+        margin-left: 7px;
+      }
+      the-panel#fixed main .cell .edge .port-id {
+        text-transform: uppercase;
+      }
+      the-panel#fixed main .cell .edge .arrow {
+        margin-left: 7px;
+        margin-right: 7px;
+      }
+      the-panel#fixed main .cell .edge .connection {
+        color: var(--noflo-ui-text-highlight);
+      }
+      the-panel#fixed main .cell .edge .route0 { color: #fff; }
+      the-panel#fixed main .cell .edge .route1 { color: hsl(  0,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route2 { color: hsl( 35,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route3 { color: hsl( 60,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route4 { color: hsl(135,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route5 { color: hsl(160,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route6 { color: hsl(185,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route7 { color: hsl(210,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route8 { color: hsl(285,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route9 { color: hsl(310,  98%, 46%); }
+      the-panel#fixed main .cell .edge .route10 {color: hsl(335,  98%, 46%);
+    </style>
+    <the-panel id="fixed" edge="bottom" size="324" handle="36" open={{showPackets}}>
+      <main id="fixedmain">
+      </main>
+    </the-panel>
+  `,
   is: 'noflo-packets',
   properties: {
     currentgraph: { value: null },
-    edgeInspectors: {
-      type: Object,
-      value() {
-        return {};
-      },
-    },
     edges: {
       type: Array,
       value() {
@@ -50,6 +227,17 @@ Polymer({
       observer: 'nodesChanged',
     },
     panel: { value: null },
+    showPackets: {
+      type: Boolean,
+      value: false,
+      notify: true,
+    },
+    width: {
+      type: Number,
+      value: 800,
+      notify: true,
+      observer: 'widthChanged',
+    },
     readonly: { notify: true },
   },
   attached() {
@@ -58,6 +246,7 @@ Polymer({
         this.clearSelection();
       }
     });
+    this.frameRequest = null;
   },
   clearSelection() {
     let edge; let
@@ -72,12 +261,20 @@ Polymer({
       node.selected = false;
     }
   },
-  edgesChanged() {
+  edgesChanged(newEdges, oldEdges) {
     if (this.edges.length) {
       this.showEdgeCards();
     } else {
       this.hideEdgeCards();
     }
+    this.updatePacketInspector();
+    if (newEdges.length && !oldEdges.length && this.packets.length) {
+      // Show packet inspector when selecting an edge
+      this.showPackets = true;
+    }
+  },
+  widthChanged() {
+    this.updatePacketInspector();
   },
   eventsChanged() {
     // Clear previous state
@@ -135,49 +332,49 @@ Polymer({
       PolymerDom(this.edgeMenu).appendChild(menu);
       this.edgeMenu.addTo(this.panel);
     }
-    this.edges.forEach((edge) => {
-      const id = this.genEdgeId(edge);
-      if (this.edgeInspectors[id]) {
-        return;
-      }
-      const inspector = document.createElement('noflo-edge-inspector');
-      inspector.log = this.packets.filter((packet) => {
-        const packetId = this.genId(packet.src, packet.tgt);
-        return (packetId === id);
-      });
-      inspector.graph = this.currentgraph;
-      inspector.edge = edge;
-      this.edgeInspectors[id] = document.createElement('the-card');
-      this.edgeInspectors[id].type = 'edge-inspector';
-      this.edgeInspectors[id].inspector = inspector;
-      PolymerDom(this.edgeInspectors[id]).appendChild(inspector);
-      this.edgeInspectors[id].addTo(this.panel);
-    });
-    let found;
-    Object.keys(this.edgeInspectors).forEach((id) => {
-      found = false;
-      this.edges.forEach((edge) => {
-        if (this.genEdgeId(edge) === id) {
-          found = true;
-        }
-      });
-      if (!found) {
-        PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode)
-          .removeChild(this.edgeInspectors[id]);
-        delete this.edgeInspectors[id];
-      }
-    });
   },
-  packetsChanged() {
-    this.edges.forEach((edge) => {
-      const id = this.genEdgeId(edge);
-      if (!this.edgeInspectors[id] || !this.edgeInspectors[id].inspector) {
-        return;
-      }
-      this.edgeInspectors[id].inspector.log = this.packets.filter((packet) => {
-        const packetId = this.genId(packet.src, packet.tgt);
-        return (packetId === id);
-      });
+  packetsChanged(newPackets, oldPackets) {
+    this.updatePacketInspector();
+    if (newPackets.length && !oldPackets.length) {
+      // Show packet inspector when first packets arrive
+      this.showPackets = true;
+    }
+  },
+  updatePacketInspector() {
+    if (this.frameRequest) {
+      return;
+    }
+    this.frameRequest = requestAnimationFrame(() => {
+      this.frameRequest = null;
+      const edgeIds = this.currentgraph
+        ? this.currentgraph.edges.map((e) => this.genEdgeId(e)) : [];
+      const selectedEdgeIds = this.edges.map((e) => this.genEdgeId(e));
+      const packets = this.packets
+        .map((p, idx) => {
+          const packetId = this.genId(p.src, p.tgt);
+          let packetEdge;
+          if (this.currentgraph && edgeIds.indexOf(packetId) !== -1) {
+            packetEdge = this.currentgraph.edges[edgeIds.indexOf(packetId)];
+          }
+          return {
+            ...p,
+            rowId: `${idx + 1}`,
+            id: packetId,
+            edge: packetEdge,
+          };
+        })
+        .filter((p) => {
+          if (!selectedEdgeIds.length) {
+            // Show all packets when no edges are selected
+            return true;
+          }
+          return (selectedEdgeIds.indexOf(p.id) !== -1);
+        });
+      const container = this.shadowRoot.getElementById('fixedmain');
+      ReactDOM.render(RuntimeEvents({
+        packets,
+        width: container.offsetWidth, // TODO: Update on resize
+      }), container);
     });
   },
   hideEdgeCards() {
@@ -185,11 +382,6 @@ Polymer({
       PolymerDom(PolymerDom(this.edgeMenu).parentNode).removeChild(this.edgeMenu);
       this.edgeMenu = null;
     }
-    Object.keys(this.edgeInspectors).forEach((id) => {
-      PolymerDom(PolymerDom(this.edgeInspectors[id]).parentNode)
-        .removeChild(this.edgeInspectors[id]);
-      delete this.edgeInspectors[id];
-    });
   },
   nodesChanged() {
     if (this.nodes.length) {
