@@ -18,7 +18,12 @@
     <link rel="icon" sizes="192x192" href="app/<%= process.env.NOFLO_THEME %>-192.png">
     <link rel="icon" sizes="128x128" href="app/<%= process.env.NOFLO_THEME %>-128.png">
     <link rel="shortcut icon" href="<%= process.env.NOFLO_THEME %>.ico" />
-    <%= process.env.NOFLO_APP_ANALYTICS %>
+    <script>
+      window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+      ga('create', '<%= process.env.NOFLO_ANALYTICS_ID %>', 'auto');
+      ga('send', 'pageview');
+    </script>
+    <script async src='https://www.google-analytics.com/analytics.js'></script>
 
     <script src="vendor/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="vendor/klayjs-noflo/klay-noflo.js"></script>
