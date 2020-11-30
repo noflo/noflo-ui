@@ -149,7 +149,9 @@ Polymer({
       </style>
     <nav>
     <section class="app">
-      <div class="logo [[env.NOFLO_THEME]]"><img src="app/[[env.NOFLO_THEME]]-72.png"></div>
+      <div class="logo">
+        <img src="app/[[env.NOFLO_THEME]]-72.png">
+      </div>
       <div class="name">
         <h1>
           [[env.NOFLO_APP_NAME]]
