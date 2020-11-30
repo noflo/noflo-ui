@@ -22,6 +22,7 @@ module.exports = {
     splitChunks: {
       chunks: 'all',
     },
+    runtimeChunk: 'single',
   },
   mode: 'production',
   devtool: 'source-map',
