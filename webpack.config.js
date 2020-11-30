@@ -2,6 +2,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { GenerateSW: GenerateServiceWorker } = require('workbox-webpack-plugin');
 const { EnvironmentPlugin } = require('webpack');
 const path = require('path');
 const pkg = require('./package.json');
@@ -208,6 +209,9 @@ module.exports = {
           flatten: true,
         },
       ],
+    }),
+    new GenerateServiceWorker({
+      maximumFileSizeToCacheInBytes: 1000000000,
     }),
   ],
   node: {
