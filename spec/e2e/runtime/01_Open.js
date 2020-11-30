@@ -216,11 +216,15 @@ describe('Opening a Runtime', () => {
         });
       });
       it('should show the first packet in the inspector', () => waitForElement('div.row-wrapper', true, edgeInspector)
-        .then(() => {
-          const packets = Array.prototype.slice.call(edgeInspector.querySelectorAll('dd.packet-data'));
-          const packetValues = packets.map((p) => p.innerText);
-          chai.expect(packetValues).to.eql(['packet one']);
-        }));
+        .then(() => new Promise((resolve) => {
+          // Packet rendering is async, so we need to be async as well
+          setTimeout(() => {
+            const packets = Array.prototype.slice.call(edgeInspector.querySelectorAll('dd.packet-data'));
+            const packetValues = packets.map((p) => p.innerText);
+            chai.expect(packetValues).to.eql(['packet one']);
+            resolve();
+          }, 100);
+        })));
       it('closing the edge inspector', () => waitForElement('noflo-ui the-graph-editor the-graph svg.app-svg')
         .then((edge) => {
           syn.click(edge);
