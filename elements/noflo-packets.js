@@ -48,7 +48,9 @@ Polymer({
       the-panel#fixed main {
         height: 288px;
       }
-      the-panel#fixed main div.cell {
+      the-panel#fixed main .react-fluid-table .cell {
+        user-select: text;
+        -webkit-user-select: text;
       }
       the-panel#fixed main .react-fluid-table .cell,
       the-panel#fixed main .react-fluid-table .header-cell {
@@ -128,6 +130,8 @@ Polymer({
       }
       the-panel#fixed main .react-fluid-table-row .packet-details dd.packet-data {
         white-space: pre-wrap;
+        user-select: text;
+        -webkit-user-select: text;
       }
       the-panel#fixed main .row-container {
         display: flex;
