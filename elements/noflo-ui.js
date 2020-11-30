@@ -13,6 +13,7 @@ import './noflo-search';
 import './noflo-project';
 import './noflo-packets';
 import './noflo-alert';
+import '../css/noflo-ui.css';
 
 Polymer({
   _template: html`
