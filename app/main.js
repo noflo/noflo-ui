@@ -78,3 +78,7 @@ window.addEventListener('WebComponentsReady', () => {
     }, 400);
   });
 });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}

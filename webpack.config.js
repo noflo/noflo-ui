@@ -2,6 +2,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { GenerateSW: GenerateServiceWorker } = require('workbox-webpack-plugin');
 const { EnvironmentPlugin } = require('webpack');
 const path = require('path');
 const pkg = require('./package.json');
@@ -95,6 +96,25 @@ module.exports = {
           'yaml-loader',
         ],
       },
+      {
+        test: /\.css$/i,
+        use: [
+          'style-loader',
+          'css-loader',
+        ],
+      },
+      {
+        test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[name].[ext]',
+              outputPath: 'fonts/',
+            },
+          },
+        ],
+      },
     ],
   },
   externals: {
@@ -175,23 +195,8 @@ module.exports = {
           flatten: true,
         },
         {
-          from: 'css/noflo-ui.css',
-          to: 'css/noflo-ui.css',
-          flatten: true,
-        },
-        {
-          from: 'css/*.woff',
-          to: 'css',
-          flatten: true,
-        },
-        {
           from: 'app/*.png',
           to: 'app',
-          flatten: true,
-        },
-        {
-          from: 'node_modules/font-awesome/fonts/*',
-          to: 'vendor/font-awesome',
           flatten: true,
         },
         {
@@ -208,6 +213,9 @@ module.exports = {
           flatten: true,
         },
       ],
+    }),
+    new GenerateServiceWorker({
+      maximumFileSizeToCacheInBytes: 1000000000,
     }),
   ],
   node: {
