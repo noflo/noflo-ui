@@ -339,11 +339,11 @@ Polymer({
   },
   packetsChanged(newPackets, oldPackets) {
     this.updatePacketInspector();
-    if (newPackets.length && !oldPackets.length) {
+    if (newPackets && newPackets.length && (!oldPackets || !oldPackets.length)) {
       // Show packet inspector when first packets arrive
       this.showPackets = true;
     }
-    if (!newPackets.length && oldPackets.length) {
+    if ((!newPackets || !newPackets.length) && oldPackets && oldPackets.length) {
       this.showPackets = false;
     }
   },
