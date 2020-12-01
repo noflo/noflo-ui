@@ -1,6 +1,13 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.29.0 (git master)
+
+New features:
+
+* Packet inspection has been changed to a unified timeline showing packets from all edges (including subgraphs). Select edges in the graph to filter the list
+* The IDE now ships with a caching-enabled Service Worker, which should make the web app a proper PWA with offline support
+
 ## 0.28.0 (2020 November 26)
 
 Internal changes:
