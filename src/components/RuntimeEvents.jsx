@@ -3,6 +3,16 @@ import { Table } from 'react-fluid-table';
 import EdgeId from './EdgeId';
 
 function PacketData({ row, multiLine = false }) {
+  if (row.type === 'openBracket' || row.type === 'closeBracket') {
+    return (
+      <span
+        className={row.type}
+        title={row.type}
+      >
+        {row.group}
+      </span>
+    );
+  }
   switch (typeof row.data) {
     case 'number':
     case 'string': {
