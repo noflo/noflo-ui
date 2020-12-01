@@ -146,6 +146,28 @@ Polymer({
         line-height: 14px;
         color: var(--noflo-ui-text);
       }
+      the-panel#fixed main .cell .openBracket {
+        color: var(--noflo-ui-border);
+      }
+      the-panel#fixed main .cell .openBracket:before {
+        display: inline;
+        content: '<';
+      }
+      the-panel#fixed main .cell .openBracket:after {
+        display: inline;
+        content: '>';
+      }
+      the-panel#fixed main .cell .closeBracket {
+        color: var(--noflo-ui-border);
+      }
+      the-panel#fixed main .cell .closeBracket:before {
+        display: inline;
+        content: '</';
+      }
+      the-panel#fixed main .cell .closeBracket:after {
+        display: inline;
+        content: '>';
+      }
       the-panel#fixed main .cell .expander {
         cursor: pointer;
         height: 1em;
@@ -339,11 +361,11 @@ Polymer({
   },
   packetsChanged(newPackets, oldPackets) {
     this.updatePacketInspector();
-    if (newPackets.length && !oldPackets.length) {
+    if (newPackets && newPackets.length && (!oldPackets || !oldPackets.length)) {
       // Show packet inspector when first packets arrive
       this.showPackets = true;
     }
-    if (!newPackets.length && oldPackets.length) {
+    if ((!newPackets || !newPackets.length) && oldPackets && oldPackets.length) {
       this.showPackets = false;
     }
   },
