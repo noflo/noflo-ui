@@ -189,10 +189,14 @@ html, body, button {
   height: 288px;
   box-sizing: border-box;
   position: fixed;
-  right: 36px;
+  right: 0px;
   top: 72px;
   z-index: 2;
-  background-color: var(--noflo-ui-background);
+  background-color: var(--noflo-ui-background) !important;
+  background-image: radial-gradient(1px at 0px 0px, hsl(210, 50%, 60%) 0.5px, var(--noflo-ui-background) 1px);
+  background-size: calc(100% - 1px);
+  background-position: 0px;
+  border-bottom: 1px var(--noflo-ui-border) solid;
 }
 
 #container > .preview-container {

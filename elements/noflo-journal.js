@@ -8,12 +8,14 @@ Polymer({
   _template: html`
     <style>
       #controls {
-        display: block;
+        display: flex;
+        justify-content: space-between;
+        flex-direction: row;
         position: fixed;
-        right: 36px;
-        bottom: 0;
+        right: 0px;
+        bottom: 36px;
         width: 288px;
-        height: 180px;
+        height: 144px;
         color: var(--noflo-ui-text-highlight);
         box-sizing: border-box;
         background-color: var(--noflo-ui-background) !important;
@@ -22,44 +24,28 @@ Polymer({
         background-position: 0px -1px;
         border-top: 1px solid var(--noflo-ui-border);
       }
+      #controls #buttons {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
 
       #controls button {
         line-height: 36px;
         border: none;
         background-color: transparent;
         font-size: 14px;
-        width: 72px;
+        width: 36px;
         color: var(--noflo-ui-text-highlight);
         cursor: pointer;
-      }
-      #controls button.undo {
-        position: absolute;
-        left: 0;
-        bottom: 0;
-      }
-      #controls button.redo {
-        position: absolute;
-        right: 0;
-        bottom: 0;
       }
       #controls button.disabled {
         color: rgba(179, 222, 230, 0.2);
       }
-      #controls button.autolayout {
-        position: absolute;
-        left: calc(50% - 18px);
-        bottom: 0;
-      }
-
-      #nav {
-        position: absolute;
-        left: 0;
-        top: 0;
-      }
     </style>
     <div id="controls">
-      <the-graph-nav id="nav" width="288" height="144" graph="{{graph}}" hide="{{hidenav}}"></the-graph-nav>
-
+      <the-graph-nav id="nav" width="252" height="144" graph="{{graph}}" hide="{{hidenav}}"></the-graph-nav>
+      <div id="buttons">
       <template is="dom-if" if="{{graph}}">
         <button title="Undo" on-click="undo" class\$="{{_computeClass(canUndo)}}">
           <noflo-icon icon="undo"></noflo-icon>
@@ -73,6 +59,7 @@ Polymer({
           <noflo-icon icon="repeat"></noflo-icon>
         </button>
       </template>
+      </div>
     </div>
 `,
 
@@ -250,9 +237,9 @@ Polymer({
 
   hidenavChanged() {
     if (this.hidenav) {
-      this.set('$.controls.style.height', '36px');
+      this.set('$.controls.style.width', '36px');
     } else {
-      this.set('$.controls.style.height', '180px');
+      this.set('$.controls.style.width', '288px');
     }
   },
 

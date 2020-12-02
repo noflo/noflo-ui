@@ -63,138 +63,8 @@ Polymer({
         bottom: 0px;
         right: 0px;
       }
-      the-panel#fixed header {
-        display: flex;
-        justify-content: space-between;
-        width: calc(72px * 4);
-        padding-right: 36px;
-        box-sizing: border-box;
-      }
-      the-panel#fixed header ul.toolbar {
-        margin: 0px;
-        padding: 0px;
-      }
-      the-panel#fixed header ul.toolbar li {
-        width: calc(100%/2);
-        height: 36px;
-        text-align: center;
-        margin: 0px;
-        margin-right: 0px;
-        list-style: none;
-      }
-      the-panel#fixed header ul.toolbar button {
-        width: 36px;
-        height: 36px;
-        font-size: 10px;
-        background-color: transparent;
-        border: none;
-        color: var(--noflo-ui-text);
-        text-align: center;
-        cursor: pointer;
-      }
-      the-panel#fixed header h1 {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 15px;
-        font-weight: normal;
-        line-height: 36px;
-        width: 100%;
-        color: var(--noflo-ui-text);
-        padding: 0px;
-        margin: 0px;
-      }
-      the-panel#fixed main {
-        height: calc(100% - 72px);
-        overflow-y: scroll;
-        overflow-x: hidden;
-        width: calc(72px * 4);
-      }
-      the-panel#fixed main p {
-        font-size: 10px;
-        line-height: 14px;
-        color: var(--noflo-ui-text-highlight);
-      }
-      the-panel#fixed main ul {
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        margin-top: 0px;
-        padding-top: 0px;
-        margin-left: 0px;
-        padding-left: 0px;
-        width: 252px;
-      }
-      the-panel#fixed main li {
-        font-size: 10px;
-        line-height: 14px;
-        margin-left: 0px;
-        padding-left: 0px;
-        margin-bottom: 0px;
-        color: var(--noflo-ui-text-highlight);
-        margin-bottom: 4px;
-        padding-bottom: 2px;
-        border-bottom: 1px hsla(190, 100%, 30%, 0.4) solid;
-        list-style: none;
-      }
-      the-panel#fixed main li.error,
-      the-panel#fixed main li.processerror,
-      the-panel#fixed main li.networkerror,
-      the-panel#fixed main li.protocolerror {
-        color: hsl(  0,  98%, 46%);
-      }
-      the-panel#fixed main li pre {
-        color: rgba(179, 222, 230, 0.5);
-        font-size: 8px;
-      }
-      the-panel#fixed main li.output {
-        color: var(--noflo-ui-text);
-      }
     </style>
     <section id="contextsection"></section>
-    <the-panel id="fixed" edge="right" size="324" handle="36">
-      <header slot="header">
-        <h1>Runtime events</h1>
-        <template is="dom-if" if="[[events.length]]">
-          <ul class="toolbar">
-            <li>
-              <button id="clear" on-click="clearEvents" class="blue-button" title="Clear Event Log">
-                <noflo-icon icon="ban"></noflo-icon>
-              </button>
-             </li>
-          </ul>
-        </template>
-      </header>
-      <main id="fixedmain">
-        <template is="dom-if" if="[[runtime]]">
-          <ul>
-          <template is="dom-repeat" items="[[events]]" as="event">
-            <li class\$="{{ event.type }}">
-              <template is="dom-if" if="[[_ifEventIsPlain(event)]]">
-                {{ event.type }}
-              </template>
-              <template is="dom-if" if="[[_ifEventIsProcessError(event)]]">
-                {{ event.payload.error }}
-              </template>
-              <template is="dom-if" if="[[_ifEventIsError(event)]]">
-                {{ event.payload.message }}
-                <template is="dom-if" if="[[_ifEventHasStack(event)]]"><pre>{{ event.payload.stack }}</pre></template>
-              </template>
-              <template is="dom-if" if="[[_ifEventIsOutput(event)]]">
-                {{ event.payload.message }}
-              </template>
-              <template is="dom-if" if="[[_ifEventIsStopStart(event)]]">
-                {{ event.payload.graph }} {{ event.type }}
-              </template>
-            </li>
-          </template>
-          </ul>
-        </template>
-        <template is="dom-if" if="[[!runtime]]">
-          <p>Not connected to a runtime.</p>
-        </template>
-      </main>
-      <footer slot="footer"></footer>
-    </the-panel>
 `,
 
   is: 'noflo-context',
@@ -213,13 +83,6 @@ Polymer({
         return [];
       },
       observer: 'edgesChanged',
-    },
-    events: {
-      type: Array,
-      value() {
-        return [];
-      },
-      observer: 'eventsChanged',
     },
     editor: {
       value: null,
@@ -292,7 +155,6 @@ Polymer({
   },
 
   getpanel() {
-    this.fire('toolpanel', this.$.fixed);
     this.fire('contextpanel', this.$.contextsection);
   },
 
@@ -400,10 +262,6 @@ Polymer({
 
   edgesChanged() {
     this.fire('edges', this.edges);
-  },
-
-  eventsChanged() {
-    this.$.fixedmain.scrollTop = this.$.fixedmain.scrollHeight;
   },
 
   componentChanged() {
@@ -531,35 +389,5 @@ Polymer({
       return false;
     }
     return this.runtime.status.online;
-  },
-
-  clearEvents() {
-    this.fire('clear:runtimeevents', {
-      all: true,
-    });
-  },
-
-  _ifEventIsPlain(event) {
-    return (['stopped', 'started', 'output', 'error', 'processerror', 'networkerror', 'protocolerror'].indexOf(event.type) === -1);
-  },
-
-  _ifEventIsProcessError(event) {
-    return (['processerror'].indexOf(event.type) !== -1);
-  },
-
-  _ifEventIsError(event) {
-    return (['error', 'networkerror', 'protocolerror'].indexOf(event.type) !== -1);
-  },
-
-  _ifEventHasStack(event) {
-    return (['error', 'networkerror'].indexOf(event.type) !== -1 && event.payload.stack && event.payload.stack.length && event.payload.message.indexOf('Runtime sent invalid') === -1);
-  },
-
-  _ifEventIsOutput(event) {
-    return (event.type === 'output' && event.payload.message);
-  },
-
-  _ifEventIsStopStart(event) {
-    return (['stopped', 'started'].indexOf(event.type) !== -1 && event.payload.graph);
   },
 });
