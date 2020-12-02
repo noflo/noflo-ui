@@ -190,8 +190,8 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: 'noflo.ico',
-          to: 'noflo.ico',
+          from: 'app/*.ico',
+          to: 'app',
           flatten: true,
         },
         {
