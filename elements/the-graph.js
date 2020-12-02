@@ -339,8 +339,7 @@ Polymer({
   },
 
   onPanScale(x, y, scale) {
-    this.set(`pan.${0}`, x);
-    this.set(`pan.${1}`, y);
+    this.pan = [x, y];
     this.scale = scale;
   },
 
