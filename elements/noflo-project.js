@@ -123,11 +123,11 @@ Polymer({
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        max-height: calc(100% - 72px);
+        max-height: calc(100% - 72px - 43px);
         padding-left: 36px;
       }
       main.repo {
-        max-height: calc(100% - 72px * 2);
+        max-height: calc(100% - 72px * 2 - 43px);
       }
       main::-webkit-scrollbar {
         display: none;
@@ -136,7 +136,7 @@ Polymer({
         background-color: transparent;
         display: block;
         position: absolute;
-        bottom: 0px;
+        bottom: 43px;
         left: 0px;
         padding-left: 36px;
         width: 325px;
