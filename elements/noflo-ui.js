@@ -69,7 +69,7 @@ Polymer({
       noflo-runtime {
         position: fixed;
         top: 0px;
-        right: 36px;
+        right: 0px;
         width: 288px;
         height: 72px;
         z-index: 3;
