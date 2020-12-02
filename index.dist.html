@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title><%= process.env.NOFLO_APP_TITLE %> v<%= process.env.NOFLO_APP_VERSION %></title>
+    <%= htmlWebpackPlugin.tags.headTags %>
     <link href="https://github.com/noflo/noflo-ui" rel="source" />
     <meta name="description" content="<%= process.env.NOFLO_APP_DESCRIPTION %>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
@@ -27,11 +28,11 @@
 
     <script src="vendor/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="vendor/klayjs-noflo/klay-noflo.js"></script>
-
-    <noflo-polymer name="noflo-ui" inports="updated width height" outports="event"></noflo-polymer>
   </head>
   <body class="<%= process.env.NOFLO_THEME %> loading">
     <div id="loading"><%= process.env.NOFLO_APP_LOADING %></div>
+    <noflo-polymer name="noflo-ui" inports="updated width height" outports="event"></noflo-polymer>
     <noflo-ui id="container"></noflo-ui>
+    <%= htmlWebpackPlugin.tags.bodyTags %>
   </body>
 </html>

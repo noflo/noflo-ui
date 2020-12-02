@@ -185,7 +185,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'index.dist.html',
-      inject: 'head',
+      inject: false,
     }),
     new CopyWebpackPlugin({
       patterns: [
