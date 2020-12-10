@@ -22,7 +22,7 @@
     "debug": "^4.0.0",
     "fbp": "~1.8.0",
     "fbp-client": "^0.4.3",
-    "fbp-graph": "^0.6.1",
+    "fbp-graph": "^0.7.0",
     "fbp-spec": "~0.8.0",
     "flowhub-registry": "^0.2.0",
     "font-awesome": "^4.6.3",
