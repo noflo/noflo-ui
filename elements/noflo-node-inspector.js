@@ -421,7 +421,7 @@ Polymer({
             <button id="clear" on-click="clearErrors" class="blue-button" title="Clear Error Log">
               <noflo-icon icon="ban"></noflo-icon>
             </button>
-           </li>
+          </li>
         </ul>
       </header>
       <ul id="errorEvents">

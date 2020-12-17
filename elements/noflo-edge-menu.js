@@ -44,8 +44,8 @@ Polymer({
         width: 100%;
         height: 100%;
         -webkit-box-sizing: border-box;
-           -mox-box-sizing: border-box;
-                box-sizing: border-box;
+        -mox-box-sizing: border-box;
+        box-sizing: border-box;
         border: none;
       }
 
