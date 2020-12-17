@@ -12,7 +12,7 @@ Polymer({
         cursor: ew-resize;
 
         display: inline-block;
-        text-align: center;      
+        text-align: center;
       }
     </style>
 `,

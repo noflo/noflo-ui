@@ -50,10 +50,10 @@ Polymer({
       }
 
       /* Hide spinners */
-      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-inner-spin-button,
       input[type=number]::-webkit-outer-spin-button {
-        -webkit-appearance: none; 
-        margin: 0; 
+        -webkit-appearance: none;
+        margin: 0;
       }
       input[type=number] {
         -moz-appearance:textfield;
@@ -112,8 +112,8 @@ Polymer({
       ul.ports li span.route8  { background-color: hsl(285, 98%, 46%); }
       ul.ports li span.route9  { background-color: hsl(310, 98%, 46%); }
       ul.ports li span.route10 { background-color: hsl(335, 98%, 46%); }
-      
-      
+
+
       ul.ports li input {
         -webkit-box-sizing: border-box;
         -moz-box-sizing: border-box;
@@ -151,64 +151,64 @@ Polymer({
         max-width: 110px;
       }
 
-      ul.ports li  input, 
-      ul.ports li  button  { 
-        background-color: hsla(  0,  0%, 30%, 0.35); 
+      ul.ports li  input,
+      ul.ports li  button  {
+        background-color: hsla(  0,  0%, 30%, 0.35);
         color:             hsl(  0,  0%, 90%);
       }
-      
-      ul.ports li:nth-child(even) input, 
+
+      ul.ports li:nth-child(even) input,
       ul.ports li:nth-child(even) button {
         background-color: hsla(210, 100%, 20%, .1);
       }
-      ul.ports li:nth-child(odd) input, 
+      ul.ports li:nth-child(odd) input,
       ul.ports li:nth-child(odd) button {
         background-color: hsla(190, 100%, 20%, .1);
       }
 
-      ul.ports li.route0  input, 
-      ul.ports li.route0  button  { 
-        background-color: hsla(  0,  0%, 30%, 0.35); 
+      ul.ports li.route0  input,
+      ul.ports li.route0  button  {
+        background-color: hsla(  0,  0%, 30%, 0.35);
       }
-      ul.ports li.route1  input, 
-      ul.ports li.route1  button  { 
-        background-color: hsla(  0, 98%, 20%, 0.35); 
+      ul.ports li.route1  input,
+      ul.ports li.route1  button  {
+        background-color: hsla(  0, 98%, 20%, 0.35);
       }
-      ul.ports li.route2  input, 
-      ul.ports li.route2  button  { 
-        background-color: hsla( 35, 98%, 20%, 0.35); 
+      ul.ports li.route2  input,
+      ul.ports li.route2  button  {
+        background-color: hsla( 35, 98%, 20%, 0.35);
       }
-      ul.ports li.route3  input, 
-      ul.ports li.route3  button  { 
-        background-color: hsla( 60, 98%, 20%, 0.35); 
+      ul.ports li.route3  input,
+      ul.ports li.route3  button  {
+        background-color: hsla( 60, 98%, 20%, 0.35);
       }
-      ul.ports li.route4  input, 
-      ul.ports li.route4  button  { 
-        background-color: hsla(135, 98%, 20%, 0.35); 
+      ul.ports li.route4  input,
+      ul.ports li.route4  button  {
+        background-color: hsla(135, 98%, 20%, 0.35);
       }
-      ul.ports li.route5  input, 
-      ul.ports li.route5  button  { 
-        background-color: hsla(160, 98%, 20%, 0.35); 
+      ul.ports li.route5  input,
+      ul.ports li.route5  button  {
+        background-color: hsla(160, 98%, 20%, 0.35);
       }
-      ul.ports li.route6  input, 
-      ul.ports li.route6  button  { 
-        background-color: hsla(185, 98%, 20%, 0.35); 
+      ul.ports li.route6  input,
+      ul.ports li.route6  button  {
+        background-color: hsla(185, 98%, 20%, 0.35);
       }
-      ul.ports li.route7  input, 
-      ul.ports li.route7  button  { 
-        background-color: hsla(210, 98%, 20%, 0.35); 
+      ul.ports li.route7  input,
+      ul.ports li.route7  button  {
+        background-color: hsla(210, 98%, 20%, 0.35);
       }
-      ul.ports li.route8  input, 
-      ul.ports li.route8  button  { 
-        background-color: hsla(285, 98%, 20%, 0.35); 
+      ul.ports li.route8  input,
+      ul.ports li.route8  button  {
+        background-color: hsla(285, 98%, 20%, 0.35);
       }
-      ul.ports li.route9  input, 
-      ul.ports li.route9  button  { 
-        background-color: hsla(310, 98%, 20%, 0.35); 
+      ul.ports li.route9  input,
+      ul.ports li.route9  button  {
+        background-color: hsla(310, 98%, 20%, 0.35);
       }
-      ul.ports li.route10 input, 
-      ul.ports li.route10 button  { 
-        background-color: hsla(335, 98%, 20%, 0.35); 
+      ul.ports li.route10 input,
+      ul.ports li.route10 button  {
+        background-color: hsla(335, 98%, 20%, 0.35);
       }
 
 
@@ -216,10 +216,10 @@ Polymer({
         background-color: rgb(121, 18, 18);
         border: 1px solid red;
       }
-      
-      
-      ul.ports li         label > span { color: hsl(  0,  0%, 75%);}  
-      ul.ports li.route0  label > span { color: hsl(  0,  0%,100%);}  
+
+
+      ul.ports li         label > span { color: hsl(  0,  0%, 75%);}
+      ul.ports li.route0  label > span { color: hsl(  0,  0%,100%);}
       ul.ports li.route1  label > span { color: hsl(  0, 98%, 46%);}
       ul.ports li.route2  label > span { color: hsl( 35, 98%, 46%);}
       ul.ports li.route3  label > span { color: hsl( 60, 98%, 46%);}
@@ -230,58 +230,58 @@ Polymer({
       ul.ports li.route8  label > span { color: hsl(285, 98%, 46%);}
       ul.ports li.route9  label > span { color: hsl(310, 98%, 46%);}
       ul.ports li.route10 label > span { color: hsl(335, 98%, 46%);}
-      
-      
 
-      ul.ports  li        input, 
+
+
+      ul.ports  li        input,
       ul.ports  li        button {
-        border-left: 1px solid hsla(  0,  0%, 75%, 0.5); 
+        border-left: 1px solid hsla(  0,  0%, 75%, 0.5);
       }
-      ul.ports  li.route0 input, 
+      ul.ports  li.route0 input,
       ul.ports  li.route0 button {
-        border-left: 1px solid hsla(  0,  0%,100%, 0.5); 
+        border-left: 1px solid hsla(  0,  0%,100%, 0.5);
       }
-      ul.ports  li.route1 input, 
+      ul.ports  li.route1 input,
       ul.ports  li.route1 button {
         border-left: 1px solid hsla(  0, 98%, 46%, 0.5);
       }
-      ul.ports  li.route2 input, 
+      ul.ports  li.route2 input,
       ul.ports  li.route2 button {
         border-left: 1px solid hsla( 35, 98%, 46%, 0.5);
       }
-      ul.ports  li.route3 input, 
+      ul.ports  li.route3 input,
       ul.ports  li.route3 button {
         border-left: 1px solid hsla( 60, 98%, 46%, 0.5);
       }
-      ul.ports  li.route4 input, 
+      ul.ports  li.route4 input,
       ul.ports  li.route4 button {
         border-left: 1px solid hsla(135, 98%, 46%, 0.5);
       }
-      ul.ports  li.route5 input, 
+      ul.ports  li.route5 input,
       ul.ports  li.route5 button {
         border-left: 1px solid hsla(160, 98%, 46%, 0.5);
       }
-      ul.ports  li.route6 input, 
+      ul.ports  li.route6 input,
       ul.ports  li.route6 button {
         border-left: 1px solid hsla(185, 98%, 46%, 0.5);
       }
-      ul.ports  li.route7 input, 
+      ul.ports  li.route7 input,
       ul.ports  li.route7 button {
         border-left: 1px solid hsla(210, 98%, 46%, 0.5);
       }
-      ul.ports  li.route8 input, 
+      ul.ports  li.route8 input,
       ul.ports  li.route8 button {
         border-left: 1px solid hsla(285, 98%, 46%, 0.5);
       }
-      ul.ports  li.route9 input, 
+      ul.ports  li.route9 input,
       ul.ports  li.route9 button {
         border-left: 1px solid hsla(310, 98%, 46%, 0.5);
       }
-      ul.ports li.route10 input, 
+      ul.ports li.route10 input,
       ul.ports li.route10 button {
         border-left: 1px solid hsla(335, 98%, 46%, 0.5);
       }
-      
+
       number-scrubber,
       ul.ports li label span:before {
         display: inline;
@@ -293,14 +293,14 @@ Polymer({
         text-transform: uppercase;
         opacity: 0.5;
         width: 36px;
-        text-align: center;      
+        text-align: center;
       }
 
       number-scrubber {
         z-index: 5;
         height: 36px;
       }
-      
+
       ul.ports li.port-type-color label span:before,
       ul.ports li.port-type-int label span:before,
       ul.ports li.port-type-number label span:before {
@@ -421,7 +421,7 @@ Polymer({
             <button id="clear" on-click="clearErrors" class="blue-button" title="Clear Error Log">
               <noflo-icon icon="ban"></noflo-icon>
             </button>
-           </li>
+          </li>
         </ul>
       </header>
       <ul id="errorEvents">

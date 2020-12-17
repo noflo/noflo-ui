@@ -11,7 +11,7 @@ import './the-graph-thumb';
 Polymer({
   _template: html`
     <style>
-      #thumb, 
+      #thumb,
       #outcanvas {
         position: absolute;
         top: 0;

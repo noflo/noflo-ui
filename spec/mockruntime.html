@@ -5,51 +5,51 @@
   </head>
   <body>
     <script>
-     var received = [];
-     window.addEventListener('message', function (message) {
-       var data;
-       if (typeof message.data === 'string') {
-         data = JSON.parse(message.data);
-       } else {
-         data = message.data;
-       }
-       if (!data.protocol || !data.command) {
-         return;
-       }
-       received.push(data);
-     });
-     window.sendProtocolMessage = function (protocol, command, payload) {
-       // Simulate some network delay
-       setTimeout(function () {
-         window.parent.postMessage(JSON.stringify({
-           protocol: protocol,
-           command: command,
-           payload: payload
-         }), window.parent.location.href);
-       }, Math.ceil(Math.random() * 10));
-     };
-     window.handleProtocolMessage = function (callback, tries) {
-       var maxTries = 100;
-       if (!tries) {
-         tries = 0;
-       }
-       if (tries > maxTries)  {
-         callback(null);
-         return;
-       }
-       tries++;
-       if (!received.length) {
-         setTimeout(function () {
-           window.handleProtocolMessage(callback, tries)
-         }, 10);
-         return;
-       }
-       var msg = received.shift();
-       callback(msg, window.sendProtocolMessage);
-     };
-     window.clearMessages = function () {
-       received = [];
-     };
+      var received = [];
+      window.addEventListener('message', function (message) {
+        var data;
+        if (typeof message.data === 'string') {
+          data = JSON.parse(message.data);
+        } else {
+          data = message.data;
+        }
+        if (!data.protocol || !data.command) {
+          return;
+        }
+        received.push(data);
+      });
+      window.sendProtocolMessage = function (protocol, command, payload) {
+        // Simulate some network delay
+        setTimeout(function () {
+          window.parent.postMessage(JSON.stringify({
+            protocol: protocol,
+            command: command,
+            payload: payload
+          }), window.parent.location.href);
+        }, Math.ceil(Math.random() * 10));
+      };
+      window.handleProtocolMessage = function (callback, tries) {
+        var maxTries = 100;
+        if (!tries) {
+          tries = 0;
+        }
+        if (tries > maxTries)  {
+          callback(null);
+          return;
+        }
+        tries++;
+        if (!received.length) {
+          setTimeout(function () {
+            window.handleProtocolMessage(callback, tries)
+          }, 10);
+          return;
+        }
+        var msg = received.shift();
+        callback(msg, window.sendProtocolMessage);
+      };
+      window.clearMessages = function () {
+        received = [];
+      };
     </script>
   </body>
 </html>
