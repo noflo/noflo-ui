@@ -21,7 +21,7 @@ Polymer({
       <form>
         <div class="modal-content">
         <label>
-          Runtime name 
+          Runtime name
           <input type="text" value="{{name::input}}" placeholder="New local runtime" required="">
         </label>
         <label>

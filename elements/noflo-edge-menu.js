@@ -52,54 +52,54 @@ Polymer({
       .routes button {
         width: 25px !important;
         height: 20px !important;
-        background-color: hsla(  0, 98%, 100%, .8); 
+        background-color: hsla(  0, 98%, 100%, .8);
         border: 1px solid hsl(  0, 98%, 46%);
       }
-      .routes button.route0  { 
-        background-color: hsla(  0, 98%, 100%, .8); 
-        border-color:      hsl(  0, 98%, 46%); 
+      .routes button.route0  {
+        background-color: hsla(  0, 98%, 100%, .8);
+        border-color:      hsl(  0, 98%, 46%);
       }
-      .routes button.route1  { 
-        background-color: hsla(  0, 98%, 46%, .8); 
-        border-color:      hsl(  0, 98%, 46%); 
+      .routes button.route1  {
+        background-color: hsla(  0, 98%, 46%, .8);
+        border-color:      hsl(  0, 98%, 46%);
       }
-      .routes button.route2  { 
-        background-color: hsla( 35, 98%, 46%, .8); 
-        border-color:      hsl( 35, 98%, 46%); 
+      .routes button.route2  {
+        background-color: hsla( 35, 98%, 46%, .8);
+        border-color:      hsl( 35, 98%, 46%);
       }
-      .routes button.route3  { 
-        background-color: hsla( 60, 98%, 46%, .8); 
-        border-color:      hsl( 60, 98%, 46%); 
+      .routes button.route3  {
+        background-color: hsla( 60, 98%, 46%, .8);
+        border-color:      hsl( 60, 98%, 46%);
       }
-      .routes button.route4  { 
-        background-color: hsla(135, 98%, 46%, .8); 
-        border-color:      hsl(135, 98%, 46%); 
+      .routes button.route4  {
+        background-color: hsla(135, 98%, 46%, .8);
+        border-color:      hsl(135, 98%, 46%);
       }
-      .routes button.route5  { 
-        background-color: hsla(160, 98%, 46%, .8); 
+      .routes button.route5  {
+        background-color: hsla(160, 98%, 46%, .8);
         border-color:      hsl(160, 98%, 46%);
       }
-      .routes button.route6  { 
-        background-color: hsla(185, 98%, 46%, .8); 
+      .routes button.route6  {
+        background-color: hsla(185, 98%, 46%, .8);
         border-color:      hsl(185, 98%, 46%);
       }
-      .routes button.route7  { 
-        background-color: hsla(210, 98%, 46%, .8); 
+      .routes button.route7  {
+        background-color: hsla(210, 98%, 46%, .8);
         border-color:      hsl(210, 98%, 46%);
       }
-      .routes button.route8  { 
-        background-color: hsla(285, 98%, 46%, .8); 
+      .routes button.route8  {
+        background-color: hsla(285, 98%, 46%, .8);
         border-color:      hsl(285, 98%, 46%);
       }
-      .routes button.route9  { 
-        background-color: hsla(310, 98%, 46%, .8); 
+      .routes button.route9  {
+        background-color: hsla(310, 98%, 46%, .8);
         border-color:      hsl(310, 98%, 46%);
       }
-      .routes button.route10 { 
-        background-color: hsla(335, 98%, 46%, .8); 
+      .routes button.route10 {
+        background-color: hsla(335, 98%, 46%, .8);
         border-color:      hsl(335, 98%, 46%);
       }
-      
+
       .routes  button.route0:hover  { background-color: hsla(  0, 98%, 100%, 1); }
       .routes  button.route1:hover  { background-color: hsla(  0, 98%, 46%, 1); }
       .routes  button.route2:hover  { background-color: hsla( 35, 98%, 46%, 1); }
@@ -135,7 +135,7 @@ Polymer({
       <template is="dom-repeat" items="{{routes}}" as="route">
         <li><button name="{{route}}" on-click="setRoute" class\$="{{_computeClass(route)}}"></button></li>
       </template>
-    </ul>    
+    </ul>
 `,
 
   is: 'noflo-edge-menu',
