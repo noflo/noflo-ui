@@ -8,13 +8,11 @@ exports.getComponent = () => {
   c.outPorts.add('out',
     { datatype: 'bang' });
 
-  return noflo.helpers.WirePattern(c, {
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
-    window.location.hash = hashToString(data.payload);
-    out.send(true);
-    return callback();
+  return c.process((input, output) => {
+    const { payload } = input.getData('in');
+    window.location.hash = hashToString(payload);
+    output.sendDone({
+      out: true,
+    });
   });
 };

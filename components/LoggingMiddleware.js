@@ -33,13 +33,8 @@ exports.getComponent = () => {
   c.outPorts.add('pass',
     { datatype: 'all' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: 'pass',
-    forwardGroups: true,
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     const { action } = data;
     debugAction(action);
     debugActionFull(action, data.payload);
@@ -92,7 +87,8 @@ exports.getComponent = () => {
         // Ignored action
     }
 
-    out.send(data);
-    callback();
+    output.sendDone({
+      pass: data,
+    });
   });
 };

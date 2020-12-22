@@ -7,6 +7,7 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.inPorts.add('key', {
     datatype: 'string',
+    control: true,
     required: true,
   });
   c.inPorts.add('value',
@@ -14,16 +15,14 @@ exports.getComponent = () => {
   c.outPorts.add('context',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: ['context', 'value'],
-    params: 'key',
-    out: 'context',
-    async: true,
-  },
-  (d, groups, out, callback) => {
-    const data = d;
-    data.context[c.params.key] = data.value;
-    out.send(data.context);
-    callback();
+  return c.process((input, output) => {
+    if (!input.hasData('context', 'key', 'value')) {
+      return;
+    }
+    const [context, key, value] = input.getData('context', 'key', 'value');
+    context[key] = value;
+    output.sendDone({
+      context,
+    });
   });
 };

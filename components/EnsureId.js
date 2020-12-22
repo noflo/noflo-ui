@@ -18,42 +18,41 @@ exports.getComponent = () => {
   c.outPorts.add('id',
     { datatype: 'string' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['out', 'id'],
-    async: true,
-  },
-  (d, groups, out, callback) => {
-    const data = d;
+  return c.process((input, output) => {
+    const data = input.getData('in');
     if (data.properties) {
       // Graph
       if (data.properties.id) {
         // We already have an ID
         data.id = data.properties.id;
-        out.out.send(data);
-        out.id.send(data.id);
-        callback();
+        output.sendDone({
+          out: data,
+          id: data.id,
+        });
         return;
       }
       const id = randomString();
       data.properties.id = id;
       data.id = id;
-      out.out.send(data);
-      out.id.send(data.id);
-      callback();
+      output.sendDone({
+        out: data,
+        id: data.id,
+      });
       return;
     }
 
     // Other types
     if (data.id) {
-      out.out.send(data);
-      out.id.send(data.id);
-      callback();
+      output.sendDone({
+        out: data,
+        id: data.id,
+      });
       return;
     }
     data.id = randomString();
-    out.out.send(data);
-    out.id.send(data.id);
-    callback();
+    output.sendDone({
+      out: data,
+      id: data.id,
+    });
   });
 };
