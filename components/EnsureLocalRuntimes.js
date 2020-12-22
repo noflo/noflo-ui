@@ -34,20 +34,18 @@ exports.getComponent = () => {
   c.outPorts.add('runtimes',
     { datatype: 'array' });
 
-  return noflo.helpers.WirePattern(c, {
-    out: ['out', 'runtimes'],
-    async: true,
-    forwardGroups: false,
-  },
-  (rts, groups, out, callback) => {
-    const runtimes = rts || [];
+  return c.process((input, output) => {
+    const runtimes = input.getData('in') || [];
     const iframeRuntime = ensureOneIframeRuntime(runtimes);
     if (iframeRuntime) {
       // Added iframe runtime
-      out.out.send(iframeRuntime);
+      output.send({
+        out: iframeRuntime,
+      });
       runtimes.push(iframeRuntime);
     }
-    out.runtimes.send(runtimes);
-    callback();
+    output.sendDone({
+      runtimes,
+    });
   });
 };
