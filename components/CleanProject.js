@@ -6,22 +6,20 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('out',
     { datatype: 'object' });
-  return noflo.helpers.WirePattern(c, {
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
-    out.send({
-      id: data.id,
-      name: data.name,
-      namespace: data.namespace,
-      runtime: data.runtime,
-      type: data.type,
-      repo: data.repo,
-      branch: data.branch,
-      gist: data.gist,
-      main: data.main,
+  return c.process((input, output) => {
+    const data = input.getData('in');
+    output.sendDone({
+      out: {
+        id: data.id,
+        name: data.name,
+        namespace: data.namespace,
+        runtime: data.runtime,
+        type: data.type,
+        repo: data.repo,
+        branch: data.branch,
+        gist: data.gist,
+        main: data.main,
+      },
     });
-    callback();
   });
 };

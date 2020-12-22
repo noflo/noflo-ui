@@ -13,34 +13,35 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'string' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: ['in'],
-    out: ['pass', 'code'],
-    forwardGroups: true,
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     // Check the URL for a OAuth grant code
     if (typeof data.payload !== 'string') {
-      return callback(new Error('URL must be a string'));
+      output.done(new Error('URL must be a string'));
+      return;
     }
     const url = urlParser.parse(data.payload);
     if (!url.query) {
       // No query params, pass out as-is
-      out.pass.send(data);
-      return callback();
+      output.sendDone({
+        pass: data,
+      });
+      return;
     }
     const queryParams = qs.parse(url.query);
     if (queryParams.error && queryParams.error_description) {
-      callback(new Error(queryParams.error_description));
+      output.done(new Error(queryParams.error_description));
+      return;
     }
     if (!queryParams.code) {
       // We don't care about other query parameters
-      out.pass.send(data);
-      return callback();
+      output.sendDone({
+        pass: data,
+      });
     }
     // Send code for verification
-    out.code.send(queryParams.code);
-    return callback();
+    output.sendDone({
+      code: queryParams.code,
+    });
   });
 };

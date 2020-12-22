@@ -258,6 +258,7 @@ exports.getComponent = () => {
   c.inPorts.add('token', {
     datatype: 'string',
     required: true,
+    control: true,
   });
   c.outPorts.add('noop',
     { datatype: 'object' });
@@ -270,32 +271,30 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  noflo.helpers.WirePattern(c, {
-    in: ['reference', 'project'],
-    params: 'token',
-    out: ['noop', 'local', 'remote', 'both'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    if (!input.hasData('reference', 'project', 'token')) {
+      return;
+    }
+    const [reference, project, token] = input.getData('reference', 'project', 'token');
     const operations = {
-      repo: data.project.repo,
-      project: data.project,
-      ref: data.reference.ref,
-      commit: data.reference.object.sha,
+      repo: project.repo,
+      project,
+      ref: reference.ref,
+      commit: reference.object.sha,
       push: [],
       pull: [],
       conflict: [],
     };
 
-    getRemoteObjects(operations.repo, operations.commit, c.params.token, (err, objects) => {
+    getRemoteObjects(operations.repo, operations.commit, token, (err, objects) => {
       if (err) {
-        callback(err);
+        output.done(err);
         return;
       }
       operations.tree = objects.tree;
 
       objects.graphs.forEach((remoteGraph) => {
-        const matching = data.project.graphs.filter((localGraph) => {
+        const matching = project.graphs.filter((localGraph) => {
           if (localGraph.properties.sha === remoteGraph.sha) { return true; }
           if (normalizeName(localGraph.name) === remoteGraph.name) { return true; }
           return false;
@@ -317,7 +316,7 @@ exports.getComponent = () => {
         addToConflict('graph', matching[0], remoteGraph, operations);
       });
 
-      let localOnly = data.project.graphs.filter((localGraph) => {
+      let localOnly = project.graphs.filter((localGraph) => {
         let notPushed = true;
         objects.graphs.forEach((remoteGraph) => {
           if (localGraph.properties.sha === remoteGraph.sha) { notPushed = false; }
@@ -330,7 +329,7 @@ exports.getComponent = () => {
       });
 
       objects.components.forEach((remoteComponent) => {
-        const matching = data.project.components.filter((localComponent) => {
+        const matching = project.components.filter((localComponent) => {
           if (localComponent.sha === remoteComponent.sha) { return true; }
           if (normalizeName(localComponent.name) === remoteComponent.name) { return true; }
           return false;
@@ -352,7 +351,7 @@ exports.getComponent = () => {
         addToConflict('component', matching[0], remoteComponent, operations);
       });
 
-      localOnly = data.project.components.filter((localComponent) => {
+      localOnly = project.components.filter((localComponent) => {
         if (!localComponent.code.length) { return false; }
         let notPushed = true;
         objects.components.forEach((remoteComponent) => {
@@ -366,7 +365,7 @@ exports.getComponent = () => {
       });
 
       objects.specs.forEach((remoteSpec) => {
-        const matching = data.project.specs.filter((localSpec) => {
+        const matching = project.specs.filter((localSpec) => {
           if (localSpec.sha === remoteSpec.sha) { return true; }
           if (normalizeName(localSpec.name) === remoteSpec.name) { return true; }
           return false;
@@ -388,7 +387,7 @@ exports.getComponent = () => {
         addToConflict('spec', matching[0], remoteSpec, operations);
       });
 
-      localOnly = data.project.specs.filter((localSpec) => {
+      localOnly = project.specs.filter((localSpec) => {
         if (!localSpec.code.length) { return false; }
         let notPushed = true;
         objects.specs.forEach((remoteSpec) => {
@@ -402,33 +401,36 @@ exports.getComponent = () => {
       });
 
       if (operations.conflict.length) {
-        out.both.send(operations);
-        callback();
+        output.sendDone({
+          both: operations,
+        });
         return;
       }
 
       if (operations.push.length && operations.pull.length) {
-        out.both.send(operations);
-        callback();
+        output.sendDone({
+          both: operations,
+        });
         return;
       }
 
       if (operations.push.length) {
-        out.local.send(operations);
-        callback();
+        output.sendDone({
+          local: operations,
+        });
         return;
       }
 
       if (operations.pull.length) {
-        out.remote.send(operations);
-        callback();
+        output.sendDone({
+          remote: operations,
+        });
         return;
       }
 
-      out.noop.send(operations);
-      callback();
+      output.sendDone({
+        noop: operations,
+      });
     });
   });
-
-  return c;
 };
