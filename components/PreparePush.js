@@ -42,21 +42,20 @@ exports.getComponent = () => {
   c.outPorts.add('ref',
     { datatype: 'string' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['out', 'repository', 'tree', 'basetree', 'parentcommits', 'message', 'ref'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    if (!(data.push != null ? data.push.length : undefined)) { return callback(); }
-
-    out.out.send(data);
-    out.basetree.send(data.tree);
-    out.tree.send(buildTree(data.push));
-    out.repository.send(data.repo);
-    out.parentcommits.send([data.commit]);
-    out.message.send(data.message);
-    out.ref.send(data.ref);
-    return callback();
+  return c.process((input, output) => {
+    const data = input.getData('in');
+    if (!(data.push != null ? data.push.length : undefined)) {
+      output.done();
+      return;
+    }
+    output.sendDone({
+      out: data,
+      basetree: data.tree,
+      tree: buildTree(data.push),
+      repository: data.repo,
+      parentcommits: [data.commit],
+      message: data.message,
+      ref: data.ref,
+    });
   });
 };

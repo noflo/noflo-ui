@@ -17,17 +17,12 @@ const validate = (i, callback) => {
 
 exports.getComponent = () => {
   const c = new noflo.Component();
-  c.inPorts.add('start',
-    { datatype: 'bang' });
-  c.outPorts.add('user', () => ({ datatype: 'object' }));
-  c.outPorts.add('error', () => ({ datatype: 'object' }));
+  c.inPorts.add('start', { datatype: 'bang' });
+  c.outPorts.add('user', { datatype: 'object' });
+  c.outPorts.add('error', { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'start',
-    out: 'user',
-    async: true,
-  },
-  (ins, groups, out, callback) => {
+  return c.process((input, output) => {
+    input.getData('start');
     // Handle obsolete keys
     const deprecated = {
       'grid-avatar': 'flowhub-avatar',
@@ -37,7 +32,9 @@ exports.getComponent = () => {
     Object.keys(deprecated).forEach((key) => {
       const newKey = deprecated[key];
       const val = localStorage.getItem(key);
-      if (!val) { return; }
+      if (!val) {
+        return;
+      }
       localStorage.setItem(newKey, val);
       localStorage.removeItem(key);
     });
@@ -59,11 +56,12 @@ exports.getComponent = () => {
 
     validate(items, (err, valid) => {
       if (err) {
-        callback(err);
+        output.done(err);
         return;
       }
-      out.send(valid);
-      callback();
+      output.sendDone({
+        user: valid,
+      });
     });
   });
 };

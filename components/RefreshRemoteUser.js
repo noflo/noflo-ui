@@ -12,24 +12,21 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
-
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['pass', 'updated', 'invalid'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     if (!data || !data['flowhub-token']) {
       // If user is not logged in, there is nothing to do
-      out.pass.send(data);
-      callback();
+      output.sendDone({
+        pass: data,
+      });
       return;
     }
 
     if (!navigator.onLine) {
       // When offline we can't refresh
-      out.pass.send(data);
-      callback();
+      output.sendDone({
+        pass: data,
+      });
       return;
     }
 
@@ -40,34 +37,37 @@ exports.getComponent = () => {
       if (req.readyState !== 4) { return; }
       if (req.status === 401) {
         // We have invalid token, clear local user data
-        out.invalid.send(data);
-        callback();
+        output.sendDone({
+          invalid: data,
+        });
         return;
       }
       if (req.status !== 200) {
         try {
           const resData = JSON.parse(req.responseText);
-          callback(new Error(resData.message || `User fetching failed with ${req.status}`));
+          output.done(new Error(resData.message || `User fetching failed with ${req.status}`));
         } catch (error) {
-          callback(new Error(req.responseText));
+          output.done(new Error(req.responseText));
         }
         return;
       }
       try {
         userData = JSON.parse(req.responseText);
       } catch (error) {
-        callback(error);
+        output.done(error);
         return;
       }
       if (JSON.stringify(userData) === JSON.stringify(data['flowhub-user'])) {
         // Local user data is up-to-date
-        out.pass.send(data);
-        callback();
+        output.sendDone({
+          pass: data,
+        });
         return;
       }
       // Update user information based on remote data
-      out.updated.send(userData);
-      callback();
+      output.sendDone({
+        updated: userData,
+      });
     };
     req.open('GET', `${process.env.NOFLO_OAUTH_SERVICE_USER}${process.env.NOFLO_OAUTH_ENDPOINT_USER}`, true);
     req.setRequestHeader('Authorization', `Bearer ${data['flowhub-token']}`);
