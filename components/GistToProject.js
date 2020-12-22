@@ -80,15 +80,17 @@ exports.getComponent = () => {
         };
         project.components.push(component);
       });
+      const graphs = [...project.graphs];
+      const components = [...project.components];
       output.send({
         project,
       });
-      project.graphs.forEach((graph) => {
+      graphs.forEach((graph) => {
         output.send({
           graph,
         });
       });
-      project.components.forEach((component) => {
+      components.forEach((component) => {
         output.send({
           components: component,
         });
