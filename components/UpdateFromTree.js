@@ -18,7 +18,7 @@ const githubGet = (url, token, callback) => {
 
 const getTree = (repo, tree, token, callback) => githubGet(`/repos/${repo}/git/trees/${tree}`, token, callback);
 
-const processTree = (basePath, tree, entries, repo, token, out, callback) => {
+const processTree = (basePath, tree, entries, repo, token, output) => {
   const subTrees = [];
   const handled = [];
   tree.tree.forEach((treeEntry) => {
@@ -38,17 +38,23 @@ const processTree = (basePath, tree, entries, repo, token, out, callback) => {
         localEntry.local.properties.sha = entry.sha;
         localEntry.local.properties.changed = false;
         handled.push(localEntry);
-        out.graph.send(localEntry.local);
+        output.send({
+          graph: localEntry.local,
+        });
         return;
       }
       localEntry.local.sha = entry.sha;
       localEntry.local.changed = false;
       handled.push(localEntry);
       if (localEntry.type === 'spec') {
-        out.spec.send(localEntry.local);
+        output.send({
+          spec: localEntry.local,
+        });
         return;
       }
-      out.component.send(localEntry.local);
+      output.send({
+        component: localEntry.local,
+      });
     });
   });
 
@@ -56,11 +62,17 @@ const processTree = (basePath, tree, entries, repo, token, out, callback) => {
     entries.splice(entries.indexOf(found), 1);
   });
 
-  if (entries.length === 0) { return callback(); }
+  if (entries.length === 0) {
+    output.done();
+    return;
+  }
 
-  return subTrees.forEach((subTree) => getTree(repo, subTree.sha, token, (err, sTree) => {
-    if (err) { return callback(err); }
-    return processTree(`${subTree.fullPath}/`, sTree, entries, repo, token, out, callback);
+  subTrees.forEach((subTree) => getTree(repo, subTree.sha, token, (err, sTree) => {
+    if (err) {
+      output.done(err);
+      return;
+    }
+    processTree(`${subTree.fullPath}/`, sTree, entries, repo, token, output);
   }));
 };
 
@@ -76,6 +88,7 @@ exports.getComponent = () => {
     datatype: 'string',
     description: 'GitHub API token',
     required: true,
+    control: true,
   });
   c.outPorts.add('graph',
     { datatype: 'object' });
@@ -86,18 +99,19 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  noflo.helpers.WirePattern(c, {
-    in: ['in', 'tree', 'repository'],
-    params: 'token',
-    out: ['graph', 'component', 'spec'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    if (!data.tree.tree) { return callback(); }
-    if (!(data.in.push != null ? data.in.push.length : undefined)) { return callback(); }
-
-    return processTree('', data.tree, data.in.push, data.repository, c.params.token, out, callback);
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'tree', 'repository', 'token')) {
+      return;
+    }
+    const [operation, tree, repository, token] = input.getData('in', 'tree', 'repository', 'token');
+    if (!tree.tree) {
+      output.done();
+      return;
+    }
+    if (!(operation.push != null ? operation.push.length : undefined)) {
+      output.done();
+      return;
+    }
+    processTree('', tree, operation.push, repository, token, output);
   });
-
-  return c;
 };

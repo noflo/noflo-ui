@@ -9,54 +9,57 @@ exports.getComponent = () => {
   c.inPorts.add('user', {
     datatype: 'object',
     required: true,
+    control: true,
   });
   c.outPorts.add('out',
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    params: 'user',
-    out: 'out',
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.processs((input, output) => {
+    if (!input.hasData('in', 'user')) {
+      return;
+    }
+    const [data, user] = input.getData('in', 'user');
     if (['opener', 'microflo'].includes(data.protocol)) {
       // These are transient runtimes, no need to persist on Registry
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
       return;
     }
     if (isDefaultRuntime(data)) {
       // No need to persist the default NoFlo runtime in registry.
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
       return;
     }
 
-    if (!c.params || !c.params.user || !c.params.user['flowhub-token'] || !c.params.user['flowhub-user'] || !c.params.user['flowhub-user'].id) {
+    if (!user || !user['flowhub-token'] || !user['flowhub-user'] || !user['flowhub-user'].id) {
       // User not logged in, persist runtime only locally
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
       return;
     }
 
     const d = data;
-    d.user = c.params.user['flowhub-user'].id;
+    d.user = user['flowhub-user'].id;
     if (!data.secret) {
       d.secret = null;
     }
     const rt = new registry.Runtime(data, {
       host: process.env.NOFLO_REGISTRY_SERVICE,
     });
-    rt.register(c.params.user['flowhub-token'], (err) => {
+    rt.register(user['flowhub-token'], (err) => {
       if (err) {
-        callback(err);
+        output.done(err);
         return;
       }
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
     });
   });
 };

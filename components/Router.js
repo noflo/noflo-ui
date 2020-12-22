@@ -107,32 +107,32 @@ exports.getComponent = () => {
   c.outPorts.add('missed',
     { datatype: 'bang' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['route', 'redirect', 'missed'],
-    forwardGroups: false,
-    async: true,
-  },
-  (action, groups, out, callback) => {
-    const ctx = buildContext(action.payload);
+  return c.process((input, output) => {
+    const { payload } = input.getData('in');
+    const ctx = buildContext(payload);
     if (!ctx) {
-      out.missed.send({ payload: ctx });
-      callback();
+      output.sendDone({
+        missed: {
+          payload: ctx,
+        },
+      });
       return;
     }
 
     if (ctx.route === 'redirect') {
-      out.redirect.send(`#${ctx.url}`);
-      callback();
+      output.sendDone({
+        redirect: `#${ctx.url}`,
+      });
       return;
     }
 
     const newAction = `${ctx.route}:${ctx.subroute}`;
     delete ctx.subroute;
-    out.route.send({
-      action: newAction,
-      payload: ctx,
+    output.sendDone({
+      route: {
+        action: newAction,
+        payload: ctx,
+      },
     });
-    callback();
   });
 };

@@ -6,15 +6,11 @@ exports.getComponent = () => {
     { datatype: 'array' });
   c.outPorts.add('context',
     { datatype: 'object' });
-
-  return noflo.helpers.WirePattern(c, {
-    in: 'nodes',
-    out: 'context',
-    async: true,
-  },
-  (nodes, groups, out, callback) => {
+  return c.process((input, output) => {
+    const nodes = input.getData('nodes');
     const ctx = { searchGraphResult: nodes };
-    out.send(ctx);
-    callback();
+    output.sendDone({
+      context: ctx,
+    });
   });
 };
