@@ -2,42 +2,38 @@ const noflo = require('noflo');
 
 exports.getComponent = () => {
   const c = new noflo.Component();
-  c.inPorts.add('graph',
-    { datatype: 'object' });
-  c.inPorts.add('search',
-    { datatype: 'string' });
-  c.outPorts.add('nodes',
-    { datatype: 'object' });
+  c.inPorts.add('graph', {
+    datatype: 'object',
+    control: true,
+  });
+  c.inPorts.add('search', {
+    datatype: 'string',
+  });
+  c.outPorts.add('nodes', {
+    datatype: 'object',
+  });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'search',
-    params: ['graph'],
-    out: 'nodes',
-    async: true,
-  },
-  (search, groups, out, callback) => {
-    if (search == null) {
-      callback();
+  return c.process((input, output) => {
+    if (!input.hasData('search', 'graph')) {
       return;
     }
-    if (!c.params.graph) {
-      callback();
-      return;
-    }
-
+    const [search, graph] = input.getData('search', 'graph');
     if (search.length < 1) {
-      out.send(null);
-      callback();
+      output.sendDone({
+        nodes: null,
+      });
       return;
     }
 
     const term = search.toLowerCase();
-    c.params.graph.nodes.forEach((node) => {
+    graph.nodes.forEach((node) => {
       const name = node.metadata.label.toLowerCase();
       if (name.indexOf(term) >= 0) {
-        out.send(node);
+        output.send({
+          nodes: node,
+        });
       }
     });
-    callback();
+    output.done();
   });
 };

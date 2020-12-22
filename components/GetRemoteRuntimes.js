@@ -8,31 +8,30 @@ exports.getComponent = () => {
   c.inPorts.add('runtimes', {
     datatype: 'array',
     required: true,
+    control: true,
   });
   c.outPorts.add('runtime',
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    params: ['runtimes'],
-    in: 'user',
-    out: 'runtime',
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    if (!data['flowhub-token']) {
-      callback();
+  return c.process((input, output) => {
+    if (!input.hasData('user', 'runtimes')) {
       return;
     }
-    const knownRuntimes = c.params.runtimes || [];
+    const [data, localRuntimes] = input.getData('user', 'runtimes');
+    if (!data['flowhub-token']) {
+      output.done();
+      return;
+    }
+    const knownRuntimes = localRuntimes || [];
     registry.list(data['flowhub-token'],
       {
         host: process.env.NOFLO_REGISTRY_SERVICE,
       },
       (err, runtimes) => {
         if (err) {
-          callback(err);
+          output.done(err);
           return;
         }
         const updateRts = runtimes.filter((runtime) => {
@@ -50,15 +49,20 @@ exports.getComponent = () => {
           return true;
         });
         if (!updateRts.length) {
-          callback();
+          output.done();
           return;
         }
-        out.beginGroup(process.env.NOFLO_REGISTRY_SERVICE);
-        updateRts.forEach((rt) => {
-          out.send(rt.runtime);
+        output.send({
+          runtime: new noflo.IP('openBracket', process.env.NOFLO_REGISTRY_SERVICE),
         });
-        out.endGroup();
-        callback();
+        updateRts.forEach((rt) => {
+          output.send({
+            runtime: rt.runtime,
+          });
+        });
+        output.sendDone({
+          runtime: new noflo.IP('closeBracket', process.env.NOFLO_REGISTRY_SERVICE),
+        });
       });
   });
 };
