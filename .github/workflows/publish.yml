@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v2.1.4
         with:
           node-version: 12
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npm test
   deploy:
@@ -24,8 +24,8 @@ jobs:
       - uses: actions/setup-node@v2.1.4
         with:
           node-version: 12
-      - run: npm install
-      - run: "npm run build"
+      - run: npm ci
+      - run: npm run build
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
