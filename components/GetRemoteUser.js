@@ -11,21 +11,17 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'token',
-    out: 'user',
-    async: true,
-  },
-  (token, groups, out, callback) => {
+  return c.process((input, output) => {
+    const token = input.getData('token');
     const req = new XMLHttpRequest();
     req.onreadystatechange = () => {
       if (req.readyState !== 4) { return; }
       if (req.status !== 200) {
         try {
           const data = JSON.parse(req.responseText);
-          callback(new Error(data.message || `User fetching failed with ${req.status}`));
+          output.done(new Error(data.message || `User fetching failed with ${req.status}`));
         } catch (err) {
-          callback(new Error(req.responseText));
+          output.done(new Error(req.responseText));
         }
         return;
       }
@@ -33,11 +29,12 @@ exports.getComponent = () => {
       try {
         userData = JSON.parse(req.responseText);
       } catch (e) {
-        callback(e);
+        output.done(e);
         return;
       }
-      out.send(userData);
-      callback();
+      output.sendDone({
+        user: userData,
+      });
     };
     req.open('GET', `${process.env.NOFLO_OAUTH_SERVICE_USER}${process.env.NOFLO_OAUTH_ENDPOINT_USER}`, true);
     req.setRequestHeader('Authorization', `Bearer ${token}`);

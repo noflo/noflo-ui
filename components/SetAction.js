@@ -14,16 +14,16 @@ exports.getComponent = () => {
     scoped: false,
   });
 
-  return noflo.helpers.WirePattern(c, {
-    params: ['action'],
-    forwardGroups: false,
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    out.send({
-      action: c.params.action,
-      payload: data,
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'action')) {
+      return;
+    }
+    const [action, payload] = input.getData('action', 'in');
+    output.sendDone({
+      out: {
+        action,
+        payload,
+      },
     });
-    return callback();
   });
 };

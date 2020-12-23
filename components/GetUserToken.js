@@ -10,6 +10,7 @@ exports.getComponent = () => {
   c.inPorts.add('limit', {
     datatype: 'int',
     default: 50,
+    control: true,
   });
   c.outPorts.add('token',
     { datatype: 'string' });
@@ -18,13 +19,11 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    params: ['limit'],
-    out: ['token', 'out'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'limit')) {
+      return;
+    }
+    const [data, rateLimit] = input.getData('in', 'limit');
     let token;
     if (data.state && data.state.user && data.state.user['github-token']) {
       token = data.state.user['github-token'];
@@ -36,26 +35,27 @@ exports.getComponent = () => {
     const request = api.get('/rate_limit');
     request.on('success', (res) => {
       const remaining = (res.body.rate != null ? res.body.rate.remaining : undefined) || 0;
-      const limit = c.params.limit ? parseInt(c.params.limit, 10) : 50;
+      const limit = rateLimit ? parseInt(rateLimit, 10) : 50;
       if (remaining < limit) {
         if (token) {
-          callback(new Error('GitHub API access rate limited, try again later'));
+          output.done(new Error('GitHub API access rate limited, try again later'));
           return;
         }
-        callback(new Error('GitHub API access rate limited. Please log in to increase the limit'));
+        output.done(new Error('GitHub API access rate limited. Please log in to increase the limit'));
         return;
       }
-      out.token.send(token);
-      out.out.send(data.payload);
-      callback();
+      output.sendDone({
+        token,
+        out: data.payload,
+      });
     });
     request.on('error', (err) => {
       const error = err.error || err.body;
       if (!error) {
-        callback(new Error('Failed to communicate with GitHub. Try again later'));
+        output.done(new Error('Failed to communicate with GitHub. Try again later'));
         return;
       }
-      callback(new Error(`Failed to communicate with GitHub: ${error}`));
+      output.done(new Error(`Failed to communicate with GitHub: ${error}`));
     });
     request();
   });

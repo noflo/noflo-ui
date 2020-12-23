@@ -23,20 +23,17 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
-  return noflo.helpers.WirePattern(c, {
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     // Find project
     if (!(data.state.projects != null ? data.state.projects.length : undefined)) {
-      callback(new Error('No projects found'));
+      output.done(new Error('No projects found'));
       return;
     }
     const ctx = buildContext();
     ctx.project = findProject(data.payload.project, data.state.projects);
     if (!ctx.project) {
-      callback(new Error(`Project ${data.payload.project} not found`));
+      output.done(new Error(`Project ${data.payload.project} not found`));
       return;
     }
 
@@ -44,19 +41,20 @@ exports.getComponent = () => {
     if (data.payload.component) {
       ctx.component = findComponent(data.payload.component, ctx.project);
       if (!ctx.component) {
-        callback(new Error(`Component ${data.payload.component} not found`));
+        output.done(new Error(`Component ${data.payload.component} not found`));
         return;
       }
       ctx.state = 'ok';
-      out.send(ctx);
-      callback();
+      output.sendDone({
+        out: ctx,
+      });
       return;
     }
 
     // Find main graph
     const mainGraph = findGraph(data.payload.graph, ctx.project);
     if (!mainGraph) {
-      callback(new Error(`Graph ${data.payload.graph} not found`));
+      output.done(new Error(`Graph ${data.payload.graph} not found`));
       return;
     }
     ctx.graphs.push(mainGraph);
@@ -71,11 +69,11 @@ exports.getComponent = () => {
       } else {
         const node = currentGraph.getNode(nodeId);
         if (!node) {
-          callback(new Error(`Node ${nodeId} not found`));
+          output.done(new Error(`Node ${nodeId} not found`));
           return;
         }
         if (!node.component) {
-          callback(new Error(`Node ${nodeId} has no component defined`));
+          output.done(new Error(`Node ${nodeId} has no component defined`));
           return;
         }
         [type, currentGraph] = findByComponent(node.component, ctx.project);
@@ -83,7 +81,7 @@ exports.getComponent = () => {
         if (type === 'component') {
           ctx.component = currentGraph;
           if (data.payload.nodes.length) {
-            callback(new Error(`Component ${nodeId} cannot have subnodes`));
+            output.done(new Error(`Component ${nodeId} cannot have subnodes`));
             return;
           }
           break;
@@ -98,8 +96,8 @@ exports.getComponent = () => {
     }
 
     ctx.state = ctx.remote.length ? 'loading' : 'ok';
-    out.send(ctx);
-
-    callback();
+    output.sendDone({
+      out: ctx,
+    });
   });
 };

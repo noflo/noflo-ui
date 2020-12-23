@@ -7,23 +7,23 @@ exports.getComponent = () => {
   c.inPorts.add('user', {
     datatype: 'object',
     required: true,
+    control: true,
   });
   c.outPorts.add('out',
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    params: 'user',
-    out: 'out',
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'user')) {
+      return;
+    }
+    const [data, user] = input.getData('in', 'user');
+    if (!user || !user['flowhub-token']) {
       // User not logged in, persist runtime only locally
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
       return;
     }
     const req = new XMLHttpRequest();
@@ -36,14 +36,16 @@ exports.getComponent = () => {
           // JSON inside JSON, nice
           ({ message } = JSON.parse(message));
         }
-        callback(new Error(message));
+        output.done(new Error(message));
         return;
       }
       // Repository registered, let sync happen
-      out.send(data);
+      output.sendDone({
+        out: data,
+      });
     };
     req.open('DELETE', `${process.env.NOFLO_REGISTRY_SERVICE}/projects/${data.id}`, true);
-    req.setRequestHeader('Authorization', `Bearer ${c.params.user['flowhub-token']}`);
+    req.setRequestHeader('Authorization', `Bearer ${user['flowhub-token']}`);
     req.send();
   });
 };

@@ -23,24 +23,21 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
-
-  return noflo.helpers.WirePattern(c, {
-    out: 'out',
-    forwardGroups: false,
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     switch (data.action) {
       case 'storage:db': {
         const state = data.state || {};
         state.db = data.payload;
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:opened': {
-        out.send(data.payload);
-        callback();
+        output.sendDone({
+          out: data.payload,
+        });
         return;
       }
       case 'storage:stored:initial': {
@@ -66,8 +63,9 @@ exports.getComponent = () => {
           project.specs = state.specs.filter((item) => item.project === project.id);
         });
 
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:stored:project': {
@@ -88,8 +86,9 @@ exports.getComponent = () => {
         }
         state.projects = data.state.projects || [];
         collections.addToList(state.projects, project);
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:removed:project': {
@@ -97,8 +96,9 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         collections.removeFromList(state.projects,
           { id: data.payload });
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:stored:graph': {
@@ -108,13 +108,15 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.addToList(project.graphs, data.payload);
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:removed:graph': {
@@ -128,8 +130,9 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.removeFromList(project.graphs, {
@@ -137,8 +140,9 @@ exports.getComponent = () => {
             id: data.payload,
           },
         });
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:stored:component': {
@@ -148,13 +152,15 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.addToList(project.components, data.payload);
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:removed:component': {
@@ -165,14 +171,16 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.removeFromList(project.components,
           { id: data.payload });
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:stored:spec': {
@@ -182,13 +190,15 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.addToList(project.specs, data.payload);
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:removed:spec': {
@@ -199,22 +209,25 @@ exports.getComponent = () => {
         state.projects = data.state.projects || [];
         const project = findProject(data.payload, state.projects);
         if (!project) {
-          out.send(state);
-          callback();
+          output.sendDone({
+            out: state,
+          });
           return;
         }
         collections.removeFromList(project.specs,
           { id: data.payload });
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:stored:runtime': {
         const state = {};
         state.runtimes = data.state.runtimes || [];
         collections.addToList(state.runtimes, data.payload, collections.sortBySeen);
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:removed:runtime': {
@@ -222,8 +235,9 @@ exports.getComponent = () => {
         state.runtimes = data.state.runtimes || [];
         collections.removeFromList(state.runtimes,
           { id: data.payload });
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       case 'storage:error': {
@@ -231,12 +245,13 @@ exports.getComponent = () => {
           state: 'error',
           error: data.payload,
         };
-        out.send(state);
-        callback();
+        output.sendDone({
+          out: state,
+        });
         return;
       }
       default: {
-        callback();
+        output.done();
       }
     }
   });

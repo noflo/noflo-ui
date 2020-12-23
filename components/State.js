@@ -15,21 +15,20 @@ exports.getComponent = () => {
     c.state = {};
     callback();
   };
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    out: ['state', 'updated'],
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    if (!input.hasData('in')) {
+      return;
+    }
+    const data = input.getData('in');
     Object.keys(data).forEach((key) => {
       const val = data[key];
       if (c.state[key] === val) { return; }
       debug(`${key} changed`, c.state[key], val);
       c.state[key] = val;
     });
-    out.state.send(c.state);
-    out.updated.send(data);
-    return callback();
+    output.sendDone({
+      state: c.state,
+      updated: data,
+    });
   });
 };

@@ -6,13 +6,10 @@ exports.getComponent = () => {
     { datatype: 'bang' });
   c.outPorts.add('out',
     { datatype: 'string' });
-
-  return noflo.helpers.WirePattern(c, {
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
-    out.send(window.location.href);
-    return callback();
+  return c.process((input, output) => {
+    input.getData('in');
+    output.sendDone({
+      out: window.location.href,
+    });
   });
 };

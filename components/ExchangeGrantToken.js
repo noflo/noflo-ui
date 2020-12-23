@@ -54,12 +54,8 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'code',
-    out: 'token',
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('code');
     // Configuration, built-in
     const params = {
       redirect: process.env.NOFLO_OAUTH_CLIENT_REDIRECT,
@@ -82,12 +78,17 @@ exports.getComponent = () => {
 
     // Perform token exchange
     return exchangeToken(data, params, (err, token) => {
-      if (err) { return callback(err); }
-      if (!token) {
-        return callback(new Error('OAuth token exchange didn\'t return a token'));
+      if (err) {
+        output.done(err);
+        return;
       }
-      out.send(token);
-      return callback();
+      if (!token) {
+        output.done(new Error('OAuth token exchange didn\'t return a token'));
+        return;
+      }
+      output.sendDone({
+        token,
+      });
     });
   });
 };

@@ -12,15 +12,12 @@ exports.getComponent = () => {
   c.outPorts.add('out',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'start',
-    out: 'out',
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    input.getData('start');
     const ctx = buildContext();
     ctx.state = 'loading';
-    out.send(ctx);
-    return callback();
+    output.sendDone({
+      out: ctx,
+    });
   });
 };

@@ -8,33 +8,36 @@ exports.getComponent = () => {
   c.inPorts.add('user', {
     datatype: 'object',
     required: true,
+    control: true,
   });
   c.outPorts.add('out',
     { datatype: 'object' });
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    params: 'user',
-    out: 'out',
-    async: true,
-  },
-  (data, groups, out, callback) => {
-    if (!c.params || !c.params.user || !c.params.user['flowhub-token']) {
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'user')) {
+      return;
+    }
+    const [data, user] = input.getData('in', 'user');
+    if (!user || !user['flowhub-token']) {
       // User not logged in, persist runtime only locally
-      out.send(data);
-      callback();
+      output.sendDone({
+        out: data,
+      });
       return;
     }
 
     const rt = new registry.Runtime(data, {
       host: process.env.NOFLO_REGISTRY_SERVICE,
     });
-    rt.del(c.params.user['flowhub-token'], (err) => {
-      if (err) { return callback(err); }
-      out.send(data);
-      return callback();
+    rt.del(user['flowhub-token'], (err) => {
+      if (err) {
+        output.done(err);
+      }
+      output.sendDone({
+        out: data,
+      });
     });
   });
 };

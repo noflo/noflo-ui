@@ -34,13 +34,10 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    out: ['codeurl', 'redirect'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    const data = input.getData('in');
     if (!isRedirectValid(data.payload.url)) {
-      callback(new Error(`App URL must match GitHub app configuration ${process.env.NOFLO_OAUTH_CLIENT_REDIRECT}`));
+      output.done(new Error(`App URL must match GitHub app configuration ${process.env.NOFLO_OAUTH_CLIENT_REDIRECT}`));
       return;
     }
 
@@ -52,7 +49,8 @@ exports.getComponent = () => {
     if ((window.location.protocol === 'https:') && process.env.NOFLO_OAUTH_SSL_CLIENT_ID) {
       params.client = process.env.NOFLO_OAUTH_SSL_CLIENT_ID;
     }
-    out.redirect.send(getUrl(params));
-    callback();
+    output.sendDone({
+      redirect: getUrl(params),
+    });
   });
 };

@@ -18,7 +18,7 @@ OUTPORT=Errors.OUT:ERROR
 'repo' -> STRING SendRepoKey(strings/SendString) OUT -> KEY GetRepoToPrepare(objects/GetObjectKey)
 RepoToPrepare(core/Split) OUT -> IN GetRepoToPrepare
 RepoToPrepare OUT -> IN SendRepoKey
-Token(core/Repeat) OUT -> TOKEN GetReference(github/GetReference)
+Token(core/Repeat) OUT -> TOKEN GetReference(ui/GetReference)
 GetRepoToPrepare OUT -> REPOSITORY GetReference
 GetReference REFERENCE -> REFERENCE CheckSyncState(ui/CheckSyncState)
 'project' -> STRING SendProjectKey(strings/SendString) OUT -> KEY GetProject(objects/GetObjectKey)
@@ -37,7 +37,7 @@ CheckSyncState BOTH -> IN MergeOps
 # Actual synchronization operation(s)
 # First pull changes in
 DoSync(core/Repeat) OUT -> IN PreparePulls(ui/PreparePulls)
-Token OUT -> TOKEN GetBlob(github/GetBlob)
+Token OUT -> TOKEN GetBlob(ui/GetBlob)
 PreparePulls OUT -> OPERATION BlobToEntry(ui/BlobToEntry)
 PreparePulls REPOSITORY -> REPOSITORY GetBlob
 PreparePulls SHA -> SHA GetBlob
@@ -52,7 +52,7 @@ BlobToEntry ERROR -> IN Errors
 # Then push local changes
 DoSync OUT -> IN PreparePush(ui/PreparePush)
 PreparePush OUT -> IN UpdateFromTree(ui/UpdateFromTree)
-PreparePush BASETREE -> BASE CreateTree(github/CreateTree)
+PreparePush BASETREE -> BASE CreateTree(ui/CreateTree)
 Token OUT -> TOKEN CreateTree
 PreparePush TREE -> TREE CreateTree
 PreparePush REPOSITORY -> REPOSITORY CreateTree
@@ -62,13 +62,13 @@ Token OUT -> TOKEN UpdateFromTree
 'sha' -> STRING SendTreeSha(strings/SendString) OUT -> KEY GetTreeSha(objects/GetObjectKey)
 CreateTree OUT -> IN GetTreeSha
 CreateTree OUT -> IN SendTreeSha
-GetTreeSha OUT -> TREE CreateCommit(github/CreateCommit)
+GetTreeSha OUT -> TREE CreateCommit(ui/CreateCommit)
 Token OUT -> TOKEN CreateCommit
 PreparePush MESSAGE -> MESSAGE CreateCommit
 PreparePush PARENTCOMMITS -> PARENTS CreateCommit
 PreparePush REPOSITORY -> REPOSITORY CreateCommit
 
-CreateCommit OUT -> COMMIT UpdateReference(github/UpdateReference)
+CreateCommit OUT -> COMMIT UpdateReference(ui/UpdateReference)
 PreparePush REF -> REFERENCE UpdateReference
 Token OUT -> TOKEN UpdateReference
 PreparePush REPOSITORY -> REPOSITORY UpdateReference
@@ -87,7 +87,7 @@ UpdateReference ERROR -> IN Errors
 PullRepo(core/Split) OUT -> IN Loading(core/Repeat)
 PullRepo OUT -> IN GetPullRepo
 PullRepo OUT -> IN SendPullRepo
-Token(core/Repeat) OUT -> TOKEN GetPullReference(github/GetReference)
+Token(core/Repeat) OUT -> TOKEN GetPullReference(ui/GetReference)
 GetPullRepo OUT -> REPOSITORY GetPullReference
 GetPullReference REFERENCE -> REFERENCE CheckPullState(ui/CheckSyncState)
 'project' -> STRING SendPullProject(strings/SendString) OUT -> KEY GetPullProject(objects/GetObjectKey)

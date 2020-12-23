@@ -22,24 +22,25 @@ const downloadAvatar = (avatarUrl, callback) => {
   req.send();
 };
 
-const cleanUpUrl = (out, callback) => {
+const cleanUpUrl = (output) => {
   const url = urlParser.parse(window.location.href);
   // Clear query params, if any
   delete url.search;
   const newUrl = urlParser.format(url);
   if (newUrl === url) {
-    callback();
+    output.done();
     return;
   }
   if (window.history != null ? window.history.replaceState : undefined) {
     // We can manipulate URL without reloading page
     window.history.replaceState({}, 'clear', url.pathname);
-    callback();
+    output.done();
     return;
   }
   // Old-school redirect
-  out.send(newUrl);
-  callback();
+  output.sendDone({
+    redirect: newUrl,
+  });
 };
 
 exports.getComponent = () => {
@@ -50,13 +51,8 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('redirect',
     { datatype: 'string' });
-
-  return noflo.helpers.WirePattern(c, {
-    in: 'user',
-    out: ['user', 'redirect'],
-    async: true,
-  },
-  (user, groups, out, callback) => {
+  return c.process((input, output) => {
+    const user = input.getData('user');
     const plan = (user.plan != null ? user.plan.type : undefined) || 'free';
     const githubToken = (user.github != null ? user.github.token : undefined) || '';
     const githubUsername = (user.github != null ? user.github.username : undefined) || '';
@@ -79,8 +75,10 @@ exports.getComponent = () => {
       });
 
       userData['flowhub-user'] = user;
-      out.user.send(userData);
-      cleanUpUrl(out.redirect, callback);
+      output.send({
+        user: userData,
+      });
+      cleanUpUrl(output);
     });
   });
 };

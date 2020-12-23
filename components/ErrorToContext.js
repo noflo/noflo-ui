@@ -8,16 +8,13 @@ exports.getComponent = () => {
   c.outPorts.add('out',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'error',
-    out: 'out',
-    async: true,
-  },
-  (err, groups, out, callback) => {
-    out.send({
-      state: 'error',
-      error: err.payload || err,
+  return c.process((input, output) => {
+    const err = input.getData('error');
+    output.sendDone({
+      out: {
+        state: 'error',
+        error: err.payload || err,
+      },
     });
-    callback();
   });
 };

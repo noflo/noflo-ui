@@ -11,6 +11,7 @@ exports.getComponent = () => {
   c.inPorts.add('token', {
     datatype: 'string',
     required: true,
+    control: true,
   });
   c.outPorts.add('graph',
     { datatype: 'object' });
@@ -21,16 +22,16 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'in',
-    params: ['token'],
-    out: ['graph', 'component', 'project'],
-    async: true,
-  },
-  (data, groups, out, callback) => {
+  return c.process((input, output) => {
+    if (!input.hasData('in')) {
+      return;
+    }
     const api = octo.api();
-    if (c.params.token) { api.token(c.params.token); }
+    if (input.hasData('token')) {
+      api.token(input.getData('token'));
+    }
 
+    const data = input.getData('in');
     const project = {
       id: data.graph,
       gist: data.graph,
@@ -42,7 +43,7 @@ exports.getComponent = () => {
     const request = api.get(`/gists/${data.graph}`);
     request.on('success', (res) => {
       if (!(res.body != null ? res.body.files : undefined)) {
-        callback(new Error(`Gist ${data.gist} didn't provide any files`));
+        output.done(new Error(`Gist ${data.gist} didn't provide any files`));
         return;
       }
       project.name = res.body.description;
@@ -64,7 +65,7 @@ exports.getComponent = () => {
               && !project.type) {
               project.type = graph.properties.environment.type;
             }
-            return project.graphs.push(graph);
+            project.graphs.push(graph);
           });
           return;
         }
@@ -79,16 +80,24 @@ exports.getComponent = () => {
         };
         project.components.push(component);
       });
-      out.project.send(project);
-      project.graphs.forEach((graph) => {
-        out.graph.send(graph);
+      const graphs = [...project.graphs];
+      const components = [...project.components];
+      output.send({
+        project,
       });
-      project.components.forEach((component) => {
-        out.components.send(component);
+      graphs.forEach((graph) => {
+        output.send({
+          graph,
+        });
       });
-      callback();
+      components.forEach((component) => {
+        output.send({
+          components: component,
+        });
+      });
+      output.done();
     });
-    request.on('error', (err) => callback(err.error || err.body));
-    return request();
+    request.on('error', (err) => output.done(err.error || err.body));
+    request();
   });
 };

@@ -7,12 +7,10 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('out',
     { datatype: 'all' });
-  return noflo.helpers.WirePattern(c, {
-    async: true,
-    forwardGroups: true,
-  },
-  (data, groups, out, callback) => {
-    out.send(data.payload || data);
-    callback();
+  return c.process((input, output) => {
+    const data = input.getData('in');
+    output.sendDone({
+      out: data.payload || data,
+    });
   });
 };

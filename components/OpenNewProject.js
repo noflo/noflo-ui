@@ -11,26 +11,30 @@ exports.getComponent = () => {
     { datatype: 'object' });
   c.outPorts.add('hash',
     { datatype: 'array' });
-  return noflo.helpers.WirePattern(c, {
-    in: ['in', 'project'],
-    out: ['out', 'hash'],
-    async: true,
-    forwardGroups: false,
-  },
-  (data, groups, out, callback) => {
-    out.out.send(data.project);
+  return c.process((input, output) => {
+    if (!input.hasData('in', 'project')) {
+      return;
+    }
+    const [data, project] = input.getData('in', 'project');
+    output.send({
+      out: project,
+    });
 
-    if (data.in.state.project || data.project.runtime) {
+    if (data.state.project || project.runtime) {
       // We're already in project view, no need to open
-      callback();
+      output.done();
       return;
     }
 
     // Generate hash to open newly-created project
-    projects.getProjectHash(data.project, (err, hash) => {
-      if (err) { return callback(); }
-      out.hash.send(hash);
-      return callback();
+    projects.getProjectHash(project, (err, hash) => {
+      if (err) {
+        output.done();
+        return;
+      }
+      output.sendDone({
+        hash,
+      });
     });
   });
 };

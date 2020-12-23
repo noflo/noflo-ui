@@ -9,14 +9,10 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return noflo.helpers.WirePattern(c, {
-    in: 'user',
-    out: 'projects',
-    async: true,
-  },
-  (user, groups, out, callback) => {
+  return c.process((input, output) => {
+    const user = input.getData('user');
     if (!user['flowhub-token']) {
-      callback();
+      output.done();
       return;
     }
     const req = new XMLHttpRequest();
@@ -27,14 +23,15 @@ exports.getComponent = () => {
         try {
           projects = JSON.parse(req.responseText);
         } catch (e) {
-          callback(e);
+          output.done(e);
           return;
         }
-        out.send(projects);
-        callback();
+        output.sendDone({
+          projects,
+        });
         return;
       }
-      callback(new Error(req.responseText));
+      output.done(new Error(req.responseText));
     };
     req.open('GET', `${process.env.NOFLO_REGISTRY_SERVICE}/projects`, true);
     req.setRequestHeader('Authorization', `Bearer ${user['flowhub-token']}`);
