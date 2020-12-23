@@ -9,38 +9,36 @@ const handleGraph = (sha, c, e, project, callback) => {
   let method = 'loadJSON';
   if (entry.remote.language === 'fbp') { method = 'loadFBP'; }
   if (entry.remote.language === 'json') { content = JSON.parse(content); }
-  noflo.graph[method](content, (err, g) => {
-    if (err) {
+  noflo.graph[method](content)
+    .then((g) => {
+      const graph = g;
+      // Properties that need to be changed for both cases
+      if (!graph.properties) { graph.properties = {}; }
+      graph.properties.sha = sha;
+      graph.properties.changed = false;
+      graph.properties.project = project.id;
+
+      if (entry.local) {
+        entry.local.startTransaction(sha);
+        noflo.graph.mergeResolveTheirs(entry.local, graph);
+        entry.local.endTransaction(sha);
+        // Ensure the graph is marked as not changed since SHA
+        entry.local.properties.changed = false;
+        collections.addToList(project.graphs, entry.local);
+        callback(null, entry.local);
+        return;
+      }
+
+      graph.properties.name = entry.remote.name;
+      graph.name = entry.remote.name;
+      graph.properties.id = `${project.id}/${graph.name}`;
+      if (!graph.properties.environment) { graph.properties.environment = {}; }
+      if (!graph.properties.environment.type) { graph.properties.environment.type = project.type; }
+      collections.addToList(project.graphs, graph);
+      callback(null, graph);
+    }, (err) => {
       callback(new Error(`Failed to load ${entry.remote.name}: ${err.message}`));
-      return;
-    }
-    const graph = g;
-    // Properties that need to be changed for both cases
-    if (!graph.properties) { graph.properties = {}; }
-    graph.properties.sha = sha;
-    graph.properties.changed = false;
-    graph.properties.project = project.id;
-
-    if (entry.local) {
-      entry.local.startTransaction(sha);
-      noflo.graph.mergeResolveTheirs(entry.local, graph);
-      entry.local.endTransaction(sha);
-      // Ensure the graph is marked as not changed since SHA
-      entry.local.properties.changed = false;
-      collections.addToList(project.graphs, entry.local);
-      callback(null, entry.local);
-      return;
-    }
-
-    graph.properties.name = entry.remote.name;
-    graph.name = entry.remote.name;
-    graph.properties.id = `${project.id}/${graph.name}`;
-    if (!graph.properties.environment) { graph.properties.environment = {}; }
-    if (!graph.properties.environment.type) { graph.properties.environment.type = project.type; }
-    collections.addToList(project.graphs, graph);
-    callback(null, graph);
-    callback();
-  });
+    });
 };
 
 const handleComponent = (sha, content, e, project, callback) => {

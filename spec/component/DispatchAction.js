@@ -7,20 +7,16 @@ describe('DispatchAction component', () => {
   let pass = null;
   let handle = [];
 
-  before((done) => {
+  before(() => {
     const loader = new noflo.ComponentLoader(baseDir);
-    loader.load('ui/DispatchAction', (err, instance) => {
-      if (err) {
-        done(err);
-        return;
-      }
-      c = instance;
-      routes = noflo.internalSocket.createSocket();
-      c.inPorts.routes.attach(routes);
-      ins = noflo.internalSocket.createSocket();
-      c.inPorts.in.attach(ins);
-      done();
-    });
+    return loader.load('ui/DispatchAction')
+      .then((instance) => {
+        c = instance;
+        routes = noflo.internalSocket.createSocket();
+        c.inPorts.routes.attach(routes);
+        ins = noflo.internalSocket.createSocket();
+        c.inPorts.in.attach(ins);
+      });
   });
   beforeEach(() => {
     pass = noflo.internalSocket.createSocket();
