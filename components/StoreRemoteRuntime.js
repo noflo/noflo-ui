@@ -16,7 +16,7 @@ exports.getComponent = () => {
   c.outPorts.add('error',
     { datatype: 'object' });
 
-  return c.processs((input, output) => {
+  return c.process((input, output) => {
     if (!input.hasData('in', 'user')) {
       return;
     }
