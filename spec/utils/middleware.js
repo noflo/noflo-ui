@@ -26,17 +26,14 @@ class Middleware {
 
   before(callback) {
     const loader = new noflo.ComponentLoader(this.baseDir);
-    loader.load(this.component, (err, instance) => {
-      if (err) {
-        callback(err);
-        return;
-      }
-      if (instance.isReady()) {
-        this.attachAndStart(instance, callback);
-        return;
-      }
-      instance.once('ready', () => this.attachAndStart(instance, callback));
-    });
+    return loader.load(this.component)
+      .then((instance) => {
+        if (instance.isReady()) {
+          this.attachAndStart(instance, callback);
+          return;
+        }
+        instance.once('ready', () => this.attachAndStart(instance, callback));
+      }, callback);
   }
 
   beforeEach() {
