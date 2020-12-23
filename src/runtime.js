@@ -115,22 +115,22 @@ exports.getRemoteNodes = (client, r) => {
     });
 };
 
-exports.loadGraph = (source) => new Promise(((resolve, reject) => {
+exports.loadGraph = (source) => {
   let method;
   switch (source.language) {
     case 'json': method = 'loadJSON'; break;
     case 'fbp': method = 'loadFBP'; break;
     default:
-      return reject(new Error(`Unknown format ${source.language} for graph ${source.name}`));
+      return Promise.reject(new Error(`Unknown format ${source.language} for graph ${source.name}`));
   }
   method = source.language === 'json' ? 'loadJSON' : 'loadFBP';
-  return fbpGraph.graph[method](source.code, (err, i) => {
-    if (err) { return reject(err); }
-    const instance = i;
-    instance.name = source.name;
-    return resolve(instance);
-  });
-}));
+  return fbpGraph.graph[method](source.code)
+    .then((i) => {
+      const instance = i;
+      instance.name = source.name;
+      return instance;
+    });
+};
 
 exports.isDefaultRuntime = (runtime) => {
   if ((runtime.protocol === 'iframe')

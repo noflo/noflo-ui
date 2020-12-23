@@ -47,27 +47,27 @@ exports.getComponent = () => {
         return;
       }
       project.name = res.body.description;
-      Object.keys(res.body.files).forEach((name) => {
+      Promise.all(Object.keys(res.body.files).map((name) => {
         const file = res.body.files[name];
         const basename = path.basename(name, path.extname(name));
         if (path.extname(name) === '.json') {
           // JSON graph
-          noflo.graph.loadJSON(file.content, (err, graph) => {
-            graph.setProperties({
-              project: project.id,
-              id: `${project.id}/${basename}`,
+          return noflo.graph.loadJSON(file.content)
+            .then((graph) => {
+              graph.setProperties({
+                project: project.id,
+                id: `${project.id}/${basename}`,
+              });
+              if (!project.main) { project.main = graph.properties.id; }
+              if (!project.name) { project.name = graph.name; }
+              if (graph.properties
+                && graph.properties.environment
+                && graph.properties.environment.type
+                && !project.type) {
+                project.type = graph.properties.environment.type;
+              }
+              project.graphs.push(graph);
             });
-            if (!project.main) { project.main = graph.properties.id; }
-            if (!project.name) { project.name = graph.name; }
-            if (graph.properties
-              && graph.properties.environment
-              && graph.properties.environment.type
-              && !project.type) {
-              project.type = graph.properties.environment.type;
-            }
-            project.graphs.push(graph);
-          });
-          return;
         }
         // Component
         const component = {
@@ -79,23 +79,26 @@ exports.getComponent = () => {
           tests: '',
         };
         project.components.push(component);
-      });
-      const graphs = [...project.graphs];
-      const components = [...project.components];
-      output.send({
-        project,
-      });
-      graphs.forEach((graph) => {
-        output.send({
-          graph,
+        return Promise.resolve();
+      }))
+        .then(() => {
+          const graphs = [...project.graphs];
+          const components = [...project.components];
+          output.send({
+            project,
+          });
+          graphs.forEach((graph) => {
+            output.send({
+              graph,
+            });
+          });
+          components.forEach((component) => {
+            output.send({
+              components: component,
+            });
+          });
+          output.done();
         });
-      });
-      components.forEach((component) => {
-        output.send({
-          components: component,
-        });
-      });
-      output.done();
     });
     request.on('error', (err) => output.done(err.error || err.body));
     request();
