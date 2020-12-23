@@ -5,7 +5,7 @@ RUN apk add --update git python
 # Install dependencies
 WORKDIR /data
 COPY . /data
-RUN npm install
+RUN npm ci
 
 # Build from source
 RUN npm run build
