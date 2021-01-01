@@ -18,7 +18,7 @@
     "@polymer/polymer": "^3.0.0",
     "@webcomponents/webcomponentsjs": "^2.5.0",
     "circular-buffer": "^1.0.2",
-    "codemirror": "^5.57.0",
+    "codemirror": "^5.59.1",
     "debug": "^4.0.0",
     "fbp": "~1.8.0",
     "fbp-client": "^0.4.3",
