@@ -153,7 +153,7 @@ describe('User Middleware', () => {
         const check = (data) => chai.expect(data.message).to.contain('bad_code_foo');
         mw.receiveAction('user:error', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://api.flowhub.io/auth/github/development/${code}`, [
+        mock.respondWith('GET', `https://api.flowhub.io/auth/github/token/development/${code}`, [
           402,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ error: 'bad_code_foo' }),
@@ -179,7 +179,7 @@ describe('User Middleware', () => {
         const check = (data) => chai.expect(data.message).to.contain('Bad Credentials');
         mw.receiveAction('user:error', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://api.flowhub.io/auth/github/development/${code}`, (req) => req.respond(200,
+        mock.respondWith('GET', `https://api.flowhub.io/auth/github/token/development/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
         mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(401,
@@ -219,7 +219,7 @@ describe('User Middleware', () => {
         const check = (data) => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://api.flowhub.io/auth/github/development/${code}`, (req) => req.respond(200,
+        mock.respondWith('GET', `https://api.flowhub.io/auth/github/token/development/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
         mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(200,
@@ -234,7 +234,7 @@ describe('User Middleware', () => {
         const check = (data) => chai.expect(data['flowhub-user']).to.eql(userData);
         mw.receiveAction('user:info', check, done);
         mw.send(action, payload);
-        mock.respondWith('GET', `https://api.flowhub.io/auth/github/development/${code}`, (req) => req.respond(200,
+        mock.respondWith('GET', `https://api.flowhub.io/auth/github/token/development/${code}`, (req) => req.respond(200,
           { 'Content-Type': 'application/json' },
           JSON.stringify({ token })));
         mock.respondWith('GET', 'https://api.flowhub.io/user', (req) => req.respond(200,
