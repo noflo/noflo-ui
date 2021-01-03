@@ -1,6 +1,18 @@
 NoFlo UI ChangeLog
 ==================
 
+## 0.29.1 (2021 January 03)
+
+New features:
+
+* Using Flowhub's API service for OAuth token exchange
+
+Internal changes:
+
+* Dependencies now utilize a package lockfile
+* Now using NoFlo 1.4
+* No longer depending on legacy noflo-github components
+
 ## 0.29.0 (2020 December 02)
 
 New features:
