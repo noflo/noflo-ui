@@ -84,7 +84,7 @@
     "style-loader": "^2.0.0",
     "syn": "^0.15.0",
     "webpack": "^4.46.0",
-    "webpack-cli": "^4.4.0",
+    "webpack-cli": "^4.5.0",
     "webpack-dev-server": "^3.11.2",
     "webpack-pwa-manifest": "^4.2.0",
     "workbox-webpack-plugin": "^6.1.0",
