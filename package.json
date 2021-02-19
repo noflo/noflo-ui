@@ -67,7 +67,7 @@
     "file-loader": "^6.2.0",
     "grunt": "^1.0.1",
     "grunt-webpack": "^4.0.2",
-    "html-webpack-plugin": "^4.5.1",
+    "html-webpack-plugin": "^4.5.2",
     "http-server": "^0.12.3",
     "json-loader": "^0.5.7",
     "karma": "^6.1.1",
