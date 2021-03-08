@@ -76,7 +76,7 @@
     "karma-mocha": "^2.0.1",
     "karma-mocha-reporter": "^2.2.5",
     "karma-webpack": "^4.0.2",
-    "mocha": "^8.3.0",
+    "mocha": "^8.3.1",
     "noflo-component-loader": "^0.4.1",
     "puppeteer": "^8.0.0",
     "query-selector-shadow-dom": "^1.0.0",
