@@ -61,7 +61,7 @@
     "eslint-config-airbnb": "^18.1.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jsx-a11y": "^6.3.1",
-    "eslint-plugin-mocha": "^8.0.0",
+    "eslint-plugin-mocha": "^8.1.0",
     "eslint-plugin-react": "^7.22.0",
     "fbp-loader": "^0.1.2",
     "file-loader": "^6.2.0",
