@@ -65,7 +65,7 @@
     "eslint-plugin-react": "^7.22.0",
     "fbp-loader": "^0.1.2",
     "file-loader": "^6.2.0",
-    "grunt": "^1.0.1",
+    "grunt": "^1.5.3",
     "grunt-webpack": "^4.0.2",
     "html-webpack-plugin": "^4.5.2",
     "http-server": "^0.12.3",
