@@ -1,0 +1,38 @@
+{
+  "name": "flow-editor",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "prebuild-vendors": "node utils/generate-noflo-loader.js",
+    "build-vendors": " tsdown --config tsdown.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "npx serve -l 3000 ."
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.4",
+    "noflo": "^1.5.2",
+    "noflo-core": "^0.6.1",
+    "wgpu-matrix": "^3.4.2"
+  },
+  "devDependencies": {
+    "noflo-component-loader": "^0.4.1",
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3"
+  },
+  "esinstall": {
+    "install": [
+      "noflo"
+    ],
+    "installOptions": {
+      "dest": "vendor",
+      "polyfillNode": true
+    }
+  },
+  "copyVendors": {
+    "wgpu-matrix": "dist/3.x/wgpu-matrix.module.js"
+  }
+}

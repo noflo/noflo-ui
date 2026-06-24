@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "noflo": "./vendor/NoFlo.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import noflo from './vendor/NoFlo.js';
+      import Repeat from './vendor/Repeat.js';
+      import Output from './vendor/Output.js';
+      const loader = new noflo.ComponentLoader();
+      await loader.listComponents();
+      await loader.registerComponent('core', 'Repeat', Repeat);
+      await loader.registerComponent('core', 'Output', Output);
+      const graph = noflo.createGraph('linecount');
+      graph
+        .addNode('Foo', 'core/Repeat')
+        .addNode('Bar', 'core/Output')
+        .addEdge('Foo', 'out', 'Bar', 'in')
+        .addInitial('Hello world', 'Foo', 'in');
+      const network = await noflo.createNetwork(graph, {
+        componentLoader: loader,
+      });
+    </script>
+  </body>
+</html>
