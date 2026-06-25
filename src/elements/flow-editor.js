@@ -289,7 +289,7 @@ export class FlowEditor extends HTMLElement {
 
         const [col, row] = key.split(",").map(Number);
 
-        ctx.fillStyle = `rgba(130, 200, 100, ${heat * 0.6})`;
+        ctx.fillStyle = `rgba(188, 207, 92, ${heat * 0.6})`;
         // Scale coordinates down to fit the smaller canvas
         ctx.fillRect(
           (col * gridSize + 8000) / 20,
