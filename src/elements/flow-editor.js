@@ -83,7 +83,7 @@ export class FlowEditor extends HTMLElement {
           background-color: var(--ui-bg);
 
           /* Base Variables (Cyberpunk Dark) */
-          --ui-bg: #0a0a0a;
+          --ui-bg: rgb(20, 27, 35);
           --dot-color: #444;
           --node-stroke-width: 2px;
           --edge-width: 4px;
@@ -126,32 +126,36 @@ export class FlowEditor extends HTMLElement {
         /* CYBERPUNK AGES */
         :host([data-theme="cyberpunk"].state-abstract),
         :host([data-theme="cyberpunk"]) flow-node.state-abstract {
-          --node-bg: #1a1a1a;
-          --node-border: #333;
+          --node-bg: rgb(58, 63, 72);
+          --node-border: rgb(20, 27, 35);
           --node-glow: transparent;
-          --flow-color: #222;
+          --flow-color: rgb(58, 63, 72);
           --flow-dash: 0;
         }
         :host([data-theme="cyberpunk"].state-golden),
         :host([data-theme="cyberpunk"]) flow-node.state-golden {
-          --node-border: var(--color-1);
-          --node-glow: hsla(var(--hue-1), 100%, 60%, 0.4);
-          --flow-color: var(--node-border);
+          --node-bg: rgb(62, 82, 93);
+          --node-border: rgb(176, 235, 236);
+          --node-glow: rgba(176, 235, 236, 0.4);
+          --flow-color: rgb(176, 235, 236);
           --flow-dash: 0;
+        }
+        :host([data-theme="cyberpunk"].state-golden) {
+          --ui-bg: rgb(31, 41, 49);
         }
         :host([data-theme="cyberpunk"].state-offline),
         :host([data-theme="cyberpunk"]) flow-node.state-offline {
-          --node-bg: #111;
-          --node-border: #222;
+          --node-bg: rgb(62, 76, 82);
+          --node-border: rgb(101, 114, 125);
           --node-glow: transparent;
-          --flow-color: #1a1a1a;
+          --flow-color: rgb(101, 114, 125);
         }
         :host([data-theme="cyberpunk"].state-crashed),
         :host([data-theme="cyberpunk"]) flow-node.state-crashed {
-          --node-border: #ff0000;
-          --node-bg: #200;
-          --node-glow: #ff0000;
-          --flow-color: #ff0000;
+          --node-border: rgb(226, 150, 133);
+          --node-bg: rgb(77, 60, 59);
+          --node-glow: rgb(226, 150, 133);
+          --flow-color: rgb(226, 150, 133);
         }
 
         /* TUBE AGES */
@@ -287,7 +291,7 @@ export class FlowEditor extends HTMLElement {
 
         const [col, row] = key.split(",").map(Number);
 
-        ctx.fillStyle = `rgba(188, 207, 92, ${heat * 0.6})`;
+        ctx.fillStyle = `rgba(79, 67, 43, ${heat * 0.6})`;
         // Scale coordinates down to fit the smaller canvas
         ctx.fillRect(
           (col * gridSize + 8000) / 20,
