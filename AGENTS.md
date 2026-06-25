@@ -11,7 +11,7 @@ Read `SPEC.md` before doing any planning or work.
 
 ## Work documents
 
-Technical work is planned using work documents (in Markdown) that are managed [using rngit](https://reticulum.network/manual/git.html#work-documents) in <rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui>.
+Technical work is planned using work documents (in Markdown) that are managed [using rngit](https://reticulum.network/manual/git.html#work-documents) in <rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui>. Commands to read work documents:
 
 - List work documents: `rngit work rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui list`.
 - Read work document: `rngit work rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui view -d N` (where `N` is the document number from the work documents list)
