@@ -120,6 +120,7 @@ export class FlowEditor extends HTMLElement {
           --node-text: #333;
           --node-icon: #777;
           --edge-width: 8px;
+          --node-stroke-width: 8px;
           --node-ring-inset: 0px;
 
           /* Authentic Tube Colors */
