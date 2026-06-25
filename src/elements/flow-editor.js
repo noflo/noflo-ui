@@ -61,10 +61,10 @@ export class FlowEditor extends HTMLElement {
         }
         #svg-layer, #heatmap-canvas {
           position: absolute;
-          top: -10000px;
-          left: -10000px;
-          width: 20000px;
-          height: 20000px;
+          top: -8000px;
+          left: -8000px;
+          width: 16000px;
+          height: 16000px;
           pointer-events: none;
         }
         #svg-layer {
@@ -111,7 +111,7 @@ export class FlowEditor extends HTMLElement {
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#dot-grid)" />
-          <g id="edges-group" transform="translate(10000, 10000)"></g>
+          <g id="edges-group" transform="translate(8000, 8000)"></g>
         </svg>
         <div id="node-layer"></div>
       </div>
@@ -123,8 +123,8 @@ export class FlowEditor extends HTMLElement {
     this.nodeLayer = this.shadowRoot.getElementById('node-layer');
     
     // Using a reasonably large canvas size to avoid browser limits
-    this.heatmapCanvas.width = 20000;
-    this.heatmapCanvas.height = 20000;
+    this.heatmapCanvas.width = 16000;
+    this.heatmapCanvas.height = 16000;
     
     this.startHeatmapLoop();
     this.updateTransform();
@@ -146,7 +146,7 @@ export class FlowEditor extends HTMLElement {
         const [col, row] = key.split(',').map(Number);
         
         ctx.fillStyle = `rgba(130, 200, 100, ${heat * 0.6})`;
-        ctx.fillRect(col * gridSize + 10000, row * gridSize + 10000, gridSize, gridSize);
+        ctx.fillRect(col * gridSize + 8000, row * gridSize + 8000, gridSize, gridSize);
 
         this.activityMap.set(key, heat - 0.1);
       }
