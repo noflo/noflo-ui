@@ -27,8 +27,8 @@ export class FlowNode extends HTMLElement {
     this.render();
   }
 
-  setPorts(inCount, outCount) {
-    this.renderPorts(inCount, outCount);
+  setPorts(inCount, outCount, inLabels = [], outLabels = []) {
+    this.renderPorts(inCount, outCount, inLabels, outLabels);
   }
 
   render() {
@@ -65,17 +65,25 @@ export class FlowNode extends HTMLElement {
           transition: opacity 0.2s;
         }
         
-        /* Semantic Zooming: hide text when zoomed out */
-        @container style(--zoom-scale < 0.5) {
-          .node-label {
+        /* Semantic Zooming: Stage 1 - Hide everything but node circle and edges */
+        @container style(--zoom-scale < 0.2) {
+          .port, .node-label, .port-label {
             opacity: 0;
             pointer-events: none;
           }
         }
 
-        /* Hide ports when zoomed out very far */
-        @container style(--zoom-scale < 0.2) {
-          .port {
+        /* Stage 2 - Show ports */
+        @container style(--zoom-scale < 0.4) {
+          .node-label, .port-label {
+            opacity: 0;
+            pointer-events: none;
+          }
+        }
+
+        /* Stage 3 - Show node labels */
+        @container style(--zoom-scale < 0.8) {
+          .port-label {
             opacity: 0;
             pointer-events: none;
           }
@@ -93,6 +101,16 @@ export class FlowNode extends HTMLElement {
           border-radius: 50%;
           z-index: 2;
           cursor: crosshair;
+          transition: opacity 0.2s;
+        }
+        .port-label {
+          position: absolute;
+          font-size: 10px;
+          color: #666;
+          white-space: nowrap;
+          pointer-events: none;
+          z-index: 2;
+          transition: opacity 0.2s;
         }
         .port:hover {
           background-color: #007bff;
@@ -111,21 +129,21 @@ export class FlowNode extends HTMLElement {
     this.renderPorts(1, 1);
   }
 
-  renderPorts(inCount, outCount) {
+  renderPorts(inCount, outCount, inLabels = [], outLabels = []) {
     if (!this.portsContainer) return;
     this.portsContainer.innerHTML = '';
 
     // Inports (left side: PI/2 to 3PI/2)
     for (let i = 0; i < inCount; i++) {
-      this.createPort(i, inCount, false);
+      this.createPort(i, inCount, false, inLabels[i] || `in${i}`);
     }
     // Outports (right side: -PI/2 to PI/2)
     for (let i = 0; i < outCount; i++) {
-      this.createPort(i, outCount, true);
+      this.createPort(i, outCount, true, outLabels[i] || `out${i}`);
     }
   }
 
-  createPort(index, totalPorts, isOutport) {
+  createPort(index, totalPorts, isOutport, labelText) {
     const port = document.createElement('div');
     port.className = `port ${isOutport ? 'port-out' : 'port-in'}`;
     
@@ -136,7 +154,19 @@ export class FlowNode extends HTMLElement {
     port.style.left = `${this.radius + pos.x - 6}px`;
     port.style.top = `${this.radius + pos.y - 6}px`;
     
+    const label = document.createElement('div');
+    label.className = 'port-label';
+    label.textContent = labelText;
+    
+    label.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
+    label.style.top = `${this.radius + pos.y}px`;
+    label.style.transform = isOutport 
+      ? 'translateY(-50%)' 
+      : 'translate(-100%, -50%)';
+    label.style.textAlign = isOutport ? 'left' : 'right';
+
     this.portsContainer.appendChild(port);
+    this.portsContainer.appendChild(label);
   }
 
   calculatePortPosition(radius, index, totalPorts, isOutport) {
