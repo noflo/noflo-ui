@@ -646,9 +646,10 @@ export class FlowEditor extends HTMLElement {
   }
 
   addNode(name, x, y, inPorts = 1, outPorts = 1) {
+    const snapped = this.snapToGrid(x, y);
     const node = document.createElement('flow-node');
     node.textContent = name;
-    node.position = { x, y };
+    node.position = snapped;
     node.setPorts(inPorts, outPorts);
     this.nodeLayer.appendChild(node);
     return node;
