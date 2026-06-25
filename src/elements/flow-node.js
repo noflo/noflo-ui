@@ -119,20 +119,19 @@ export class FlowNode extends HTMLElement {
           max-width: 100px;
         }
         
-        /* Semantic Zooming: Stage 1 - Hide everything but node circle and edges */
-        @container style(--zoom-scale < 0.2) {
-          .port, .node-info {
-            opacity: 0;
-            pointer-events: none;
-          }
+        /* Semantic Zooming: Use clamp() to create a binary switch based on --zoom-scale */
+        .node-component, .port-label {
+          opacity: clamp(0, (var(--zoom-scale) - 0.6) * 100, 1);
+          pointer-events: none;
         }
 
-        /* Stage 2 - Show ports */
-        @container style(--zoom-scale < 0.4) {
-          .node-info {
-            opacity: 0;
-            pointer-events: none;
-          }
+        .node-name {
+          opacity: clamp(0, (var(--zoom-scale) - 0.5) * 100, 1);
+          pointer-events: none;
+        }
+
+        .port {
+          opacity: clamp(0, (var(--zoom-scale) - 0.2) * 100, 1);
         }
         :host([selected]) {
           transform: scale(1.15);
