@@ -108,7 +108,7 @@ export class FlowEditor extends HTMLElement {
         <svg id="svg-layer">
           <defs>
             <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              <circle cx="0" cy="0" r="1.5" fill="#ccc" />
+              <circle cx="40" cy="40" r="1.5" fill="#ccc" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#dot-grid)" />
