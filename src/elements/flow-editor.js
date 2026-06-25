@@ -348,11 +348,26 @@ export class FlowEditor extends HTMLElement {
         clearTimeout(this.stillnessTimer);
         this.stillnessTimer = null;
       }
-    } else if (!this.ghostNode && !this.stillnessTimer) {
+    } else if (!this.ghostNode && !this.stillnessTimer && this.hasSpaceForNode(mouseX, mouseY)) {
       this.stillnessTimer = setTimeout(() => {
         this.showGhostNode(mouseX, mouseY);
       }, 200);
     }
+  }
+
+  hasSpaceForNode(x, y) {
+    const nodes = this.shadowRoot.querySelectorAll('flow-node');
+    const nodeRadius = 40;
+    const margin = 20;
+    const minDistance = (nodeRadius * 2) + margin;
+
+    for (const node of nodes) {
+      const pos = node.position;
+      // pos.x/y is the top-left corner, so we add 40 to get the center
+      const dist = Math.hypot(x - (pos.x + 40), y - (pos.y + 40));
+      if (dist < minDistance) return false;
+    }
+    return true;
   }
 
   showGhostNode(x, y) {
