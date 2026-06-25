@@ -49,14 +49,14 @@ export class FlowEditor extends HTMLElement {
 
   _syncWithBody() {
     const theme = document.body.getAttribute("data-theme") || "cyberpunk";
-    const age = document.body.getAttribute("data-age");
+    const age = document.body.getAttribute("data-age") || "abstract";
 
     if (this.getAttribute("data-theme") !== theme) {
       this.setAttribute("data-theme", theme);
     }
 
     // Handle age class
-    const ageClass = age ? `state-${age}` : "";
+    const ageClass = `state-${age}`;
 
     // Always remove existing state-xxx classes first
     const stateClasses = Array.from(this.classList).filter((cls) =>
@@ -66,9 +66,7 @@ export class FlowEditor extends HTMLElement {
       this.classList.remove(cls);
     });
 
-    if (age) {
-      this.classList.add(ageClass);
-    }
+    this.classList.add(ageClass);
   }
 
   render() {
