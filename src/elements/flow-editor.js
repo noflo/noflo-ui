@@ -32,8 +32,43 @@ export class FlowEditor extends HTMLElement {
   }
 
   connectedCallback() {
+    this._syncWithBody();
     this.render();
     this.setupInteractions();
+
+    // Observe changes on body
+    this._bodyObserver = new MutationObserver(() => this._syncWithBody());
+    this._bodyObserver.observe(document.body, { attributes: true });
+  }
+
+  disconnectedCallback() {
+    if (this._bodyObserver) {
+      this._bodyObserver.disconnect();
+    }
+  }
+
+  _syncWithBody() {
+    const theme = document.body.getAttribute("data-theme") || "cyberpunk";
+    const age = document.body.getAttribute("data-age");
+
+    if (this.getAttribute("data-theme") !== theme) {
+      this.setAttribute("data-theme", theme);
+    }
+
+    // Handle age class
+    const ageClass = age ? `state-${age}` : "";
+
+    // Always remove existing state-xxx classes first
+    const stateClasses = Array.from(this.classList).filter((cls) =>
+      cls.startsWith("state-"),
+    );
+    stateClasses.forEach((cls) => {
+      this.classList.remove(cls);
+    });
+
+    if (age) {
+      this.classList.add(ageClass);
+    }
   }
 
   render() {
@@ -91,26 +126,30 @@ export class FlowEditor extends HTMLElement {
         }
 
         /* CYBERPUNK AGES */
-        :host([data-theme="cyberpunk"].state-abstract) {
+        :host([data-theme="cyberpunk"].state-abstract),
+        :host([data-theme="cyberpunk"]) flow-node.state-abstract {
           --node-bg: #1a1a1a;
           --node-border: #333;
           --node-glow: transparent;
           --flow-color: #222;
           --flow-dash: 0;
         }
-        :host([data-theme="cyberpunk"].state-golden) {
+        :host([data-theme="cyberpunk"].state-golden),
+        :host([data-theme="cyberpunk"]) flow-node.state-golden {
           --node-border: var(--color-1);
           --node-glow: hsla(var(--hue-1), 100%, 60%, 0.4);
           --flow-color: var(--node-border);
           --flow-dash: 10, 15;
         }
-        :host([data-theme="cyberpunk"].state-offline) {
+        :host([data-theme="cyberpunk"].state-offline),
+        :host([data-theme="cyberpunk"]) flow-node.state-offline {
           --node-bg: #111;
           --node-border: #222;
           --node-glow: transparent;
           --flow-color: #1a1a1a;
         }
-        :host([data-theme="cyberpunk"].state-crashed) {
+        :host([data-theme="cyberpunk"].state-crashed),
+        :host([data-theme="cyberpunk"]) flow-node.state-crashed {
           --node-border: #ff0000;
           --node-bg: #200;
           --node-glow: #ff0000;
@@ -118,22 +157,26 @@ export class FlowEditor extends HTMLElement {
         }
 
         /* TUBE AGES */
-        :host([data-theme="tube"].state-abstract) {
+        :host([data-theme="tube"].state-abstract),
+        :host([data-theme="tube"]) flow-node.state-abstract {
           --node-bg: #fff;
           --node-border: #ccc;
           --flow-color: #ccc;
         }
-        :host([data-theme="tube"].state-golden) {
+        :host([data-theme="tube"].state-golden),
+        :host([data-theme="tube"]) flow-node.state-golden {
           --node-border: var(--color-piccadilly);
           --node-bg: #fff;
           --flow-color: var(--color-piccadilly);
         }
-        :host([data-theme="tube"].state-offline) {
+        :host([data-theme="tube"].state-offline),
+        :host([data-theme="tube"]) flow-node.state-offline {
           --node-bg: #fff;
           --node-border: #ddd;
           --flow-color: #ddd;
         }
-        :host([data-theme="tube"].state-crashed) {
+        :host([data-theme="tube"].state-crashed),
+        :host([data-theme="tube"]) flow-node.state-crashed {
           --node-bg: #ff0;
           --node-border: #000;
           --flow-color: #f00;
@@ -211,7 +254,6 @@ export class FlowEditor extends HTMLElement {
               <circle cx="40" cy="40" r="1" fill="var(--dot-color)" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="var(--ui-bg)" />
           <rect width="100%" height="100%" fill="url(#dot-grid)" />
           <g id="edges-group" transform="translate(8000, 8000)"></g>
         </svg>

@@ -71,23 +71,11 @@
       <script>
         // biome-ignore lint/correctness/noUnusedVariables: Biome doesn't see onclicks
         function setTheme(theme) {
-          const editor = document.querySelector('flow-editor');
-          if (editor) {
-            editor.setAttribute('data-theme', theme);
-          }
+          document.body.setAttribute('data-theme', theme);
         }
         // biome-ignore lint/correctness/noUnusedVariables: Biome doesn't see onclicks
         function setAge(age) {
-          const editor = document.querySelector('flow-editor');
-          if (editor) {
-            // Get current theme to avoid losing it when overwriting className
-            const theme = editor.getAttribute('data-theme') || 'cyberpunk';
-            editor.className = `state-${age}`;
-            // Re-apply theme attribute because changing className might sometimes behave unexpectedly
-            // in some environments, although it shouldn't affect attributes.
-            // But more importantly, we want to make sure the editor has the right attribute.
-            editor.setAttribute('data-theme', theme);
-          }
+          document.body.setAttribute('data-age', age);
         }
       </script>
       <div class="control-group">
