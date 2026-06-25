@@ -19,7 +19,7 @@ Eventually we also want to be able to:
 - Utilize work documents associated with the project (via rngit)
 - Version control and make releases (via rngit)
 
-The main view is a zoomable flow editor. Upon first launch, a "main graph" is created to orchestrate discovered runtimes, components, and projects. Offline runtimes appear as stopped/dead nodes, with related runtimes grouped visually.
+The home view is a zoomable flow editor. Upon first launch, a "home graph" is created to orchestrate discovered runtimes, components, and projects. Offline runtimes appear as stopped/dead nodes, with related runtimes grouped visually.
 
 Visual interactions will enable connecting and disconnecting prots on the various nodes. You can also move a set of nodes to its own subgraph, and easily add new nodes by just dragging from a port to the empty canvas.
 
@@ -114,4 +114,4 @@ Technical work is planned using work documents (in Markdown) that are managed [u
 
 - ✅ **Always**: create a branch for any major change set, run tests after every change set
 - ⚠️ **Ask first**: adding dependencies, modify CI config
-- 🚫 **Never**: AI agents may not make commits on their own 
+- 🚫 **Never**: AI agents may not make commits on their own
