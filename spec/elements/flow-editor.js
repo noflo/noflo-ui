@@ -1,0 +1,17 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+
+import './utils/register.js';
+
+import { FlowEditor } from '../../src/elements/flow-editor.js';
+
+describe('FlowEditor Web Component', async (t) => {
+  it('should render', async () => {
+    // Arrange: Create element and attach it to the mocked DOM
+    const el = document.createElement('flow-editor');
+    document.body.appendChild(el);
+
+    // Teardown: Clean up DOM state
+    document.body.removeChild(el);
+  });
+});
