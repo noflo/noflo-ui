@@ -81,6 +81,7 @@ export class FlowEditor extends HTMLElement {
         }
         #heatmap-canvas {
           z-index: 0;
+          image-rendering: pixelated;
         }
         .grid-pattern {
           fill: url(#grid);
@@ -122,16 +123,16 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = this.shadowRoot.getElementById('edges-group');
     this.nodeLayer = this.shadowRoot.getElementById('node-layer');
     
-    // Using a reasonably large canvas size to avoid browser limits
-    this.heatmapCanvas.width = 16000;
-    this.heatmapCanvas.height = 16000;
+    // Using a smaller canvas and scaling it up for performance
+    this.heatmapCanvas.width = 800;
+    this.heatmapCanvas.height = 800;
     
     this.startHeatmapLoop();
     this.updateTransform();
   }
 
   startHeatmapLoop() {
-    const gridSize = 20;
+    const gridSize = 40;
     const ctx = this.heatmapCanvas.getContext('2d');
 
     setInterval(() => {
@@ -146,7 +147,8 @@ export class FlowEditor extends HTMLElement {
         const [col, row] = key.split(',').map(Number);
         
         ctx.fillStyle = `rgba(130, 200, 100, ${heat * 0.6})`;
-        ctx.fillRect(col * gridSize + 8000, row * gridSize + 8000, gridSize, gridSize);
+        // Scale coordinates down to fit the smaller canvas
+        ctx.fillRect((col * gridSize + 8000) / 20, (row * gridSize + 8000) / 20, 2, 2);
 
         this.activityMap.set(key, heat - 0.1);
       }
@@ -154,7 +156,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   recordActivity(worldX, worldY) {
-    const gridSize = 20;
+    const gridSize = 40;
     const col = Math.floor(worldX / gridSize);
     const row = Math.floor(worldY / gridSize);
     const key = `${col},${row}`;
