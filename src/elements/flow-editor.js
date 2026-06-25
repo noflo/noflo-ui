@@ -286,6 +286,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   startWireDrag(e, port) {
+    this.viewport.setPointerCapture(e.pointerId);
     this.isDraggingWire = true;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
     this.dragPort = port;
@@ -311,11 +312,40 @@ export class FlowEditor extends HTMLElement {
   }
 
   completeWireDrag(e) {
-    const target = e.target;
-    const clickedPort = target.closest('.port');
+    let clickedPort = null;
+    let minDist = Infinity;
+    const threshold = 20; // px
+
+    // Search all nodes for the closest port
+    const nodes = this.shadowRoot.querySelectorAll('flow-node');
+    nodes.forEach(node => {
+      const ports = node.shadowRoot.querySelectorAll('.port');
+      ports.forEach(port => {
+        const rect = port.getBoundingClientRect();
+        const dx = e.clientX - (rect.left + rect.width / 2);
+        const dy = e.clientY - (rect.top + rect.height / 2);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist && dist < threshold) {
+          minDist = dist;
+          clickedPort = port;
+        }
+      });
+    });
     
     if (clickedPort && clickedPort !== this.dragPort) {
-      this.addEdge(this.dragPort, clickedPort);
+      const startPort = this.dragPort;
+      const endPort = clickedPort;
+      
+      const startIsOut = startPort.classList.contains('port-out');
+      const endIsOut = endPort.classList.contains('port-out');
+
+      if (startIsOut && !endIsOut) {
+        this.addEdge(startPort, endPort);
+      } else if (!startIsOut && endIsOut) {
+        this.addEdge(endPort, startPort);
+      } else {
+        console.warn('Cannot connect ports of the same type (both in or both out)');
+      }
     }
 
     if (this.activeWire) {
@@ -334,6 +364,12 @@ export class FlowEditor extends HTMLElement {
   }
 
   addEdge(portA, portB) {
+    // portA must be outport, portB must be inport
+    if (!portA.classList.contains('port-out') || !portB.classList.contains('port-in')) {
+      console.error('Invalid connection: expected outport -> inport');
+      return;
+    }
+
     // Enforcement: ArrayPorts allow only one connection
     if (portA.dataset.portType === 'array') {
       const existing = this.edges?.filter(e => e.portA === portA);
@@ -355,34 +391,43 @@ export class FlowEditor extends HTMLElement {
     path.setAttribute('stroke-width', '2');
     path.setAttribute('fill', 'none');
     
+    this.updatePathData(path, portA, portB);
+    this.edgesGroup.appendChild(path);
+    
+    this.edges = this.edges || [];
+    this.edges.push({ path, portA, portB });
+  }
+
+  updatePathData(path, portA, portB) {
     const posA = this.getPortPosition(portA);
     const posB = this.getPortPosition(portB);
     
-    // Simple cubic bezier for the wire
-    const cp1x = posA.x + (posB.x - posA.x) / 2;
+    // Improved cubic bezier for a smoother "swoosh"
+    const dx = Math.abs(posB.x - posA.x) * 0.5;
+    const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
     const cp1y = posA.y;
-    const cp2x = posA.x + (posB.x - posA.x) / 2;
+    const cp2x = posB.x + (posB.x > posA.x ? -dx : dx);
     const cp2y = posB.y;
     
     path.setAttribute('d', `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`);
-    this.edgesGroup.appendChild(path);
-    
-    // Store the edge for updates
-    this.edges = this.edges || [];
-    this.edges.push({ path, portA, portB });
   }
 
   updateEdges() {
     if (!this.edges) return;
     this.edges.forEach(edge => {
-      const posA = this.getPortPosition(edge.portA);
-      const posB = this.getPortPosition(edge.portB);
-      const cp1x = posA.x + (posB.x - posA.x) / 2;
-      const cp1y = posA.y;
-      const cp2x = posA.x + (posB.x - posA.x) / 2;
-      const cp2y = posB.y;
-      edge.path.setAttribute('d', `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`);
+      this.updatePathData(edge.path, edge.portA, edge.portB);
     });
+  }
+
+  connectNodes(nodeA, portAName, nodeB, portBName) {
+    const portA = nodeA.shadowRoot.querySelector(`.port[data-port-name="${portAName}"]`);
+    const portB = nodeB.shadowRoot.querySelector(`.port[data-port-name="${portBName}"]`);
+    
+    if (portA && portB) {
+      this.addEdge(portA, portB);
+    } else {
+      console.warn(`Could not connect ${portAName} to ${portBName}`);
+    }
   }
 
   addNode(name, x, y, inPorts = 1, outPorts = 1) {

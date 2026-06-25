@@ -29,12 +29,12 @@ async function init() {
     app.appendChild(editor);
     
     // Add some sample nodes
-    editor.addNode('Source', 100, 200, 
+    const source = editor.addNode('Source', 100, 200, 
       [], 
       [{ type: 'regular', name: 'out' }]
     );
     
-    editor.addNode('Filter', 300, 100, 
+    const filter = editor.addNode('Filter', 300, 100, 
       [{ type: 'regular', name: 'in' }], 
       [
         { type: 'regular', name: 'out' },
@@ -42,25 +42,37 @@ async function init() {
       ]
     );
     
-    editor.addNode('Splitter', 300, 300, 
+    const splitter = editor.addNode('Splitter', 300, 300, 
       [{ type: 'regular', name: 'in' }], 
       [{ type: 'array', name: 'out', size: 3 }]
     );
     
-    editor.addNode('Aggregator', 500, 300, 
+    const aggregator = editor.addNode('Aggregator', 500, 300, 
       [{ type: 'array', name: 'in', size: 3 }], 
       [{ type: 'regular', name: 'out' }]
     );
     
-    editor.addNode('Logger', 700, 100, 
+    const logger = editor.addNode('Logger', 700, 100, 
       [{ type: 'regular', name: 'in' }], 
       []
     );
     
-    editor.addNode('Sink', 700, 300, 
+    const sink = editor.addNode('Sink', 700, 300, 
       [{ type: 'regular', name: 'in' }], 
       []
     );
+
+    // Initial connections
+    editor.connectNodes(source, 'out', filter, 'in');
+    editor.connectNodes(source, 'out', splitter, 'in');
+    
+    editor.connectNodes(filter, 'out', logger, 'in');
+    
+    // Connect only some ArrayPorts to allow testing
+    editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`);
+    editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`);
+    
+    editor.connectNodes(aggregator, 'out', sink, 'in');
     
     editor.fitNodesToViewport();
   }
