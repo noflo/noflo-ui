@@ -1,70 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <style>
-      @font-face {
-        font-family: SourceCodePro;
-        src: url('./vendor/SourceCodePro-Regular.otf.woff2');
-      }
-      body, html {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        font-family: SourceCodePro, monospace;
-      }
-      #app {
-        width: 100%;
-        height: 100%;
-      }
-      #controls {
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        z-index: 1000;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 10px;
-        border-radius: 8px;
-        color: white;
-        font-family: sans-serif;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        border: 1px solid #444;
-      }
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .control-label {
-        font-size: 12px;
-        font-weight: bold;
-        text-transform: uppercase;
-        color: #aaa;
-      }
-      .button-row {
-        display: flex;
-        gap: 5px;
-        flex-wrap: wrap;
-      }
-      button {
-        cursor: pointer;
-        background: #333;
-        color: white;
-        border: 1px solid #555;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      button:hover {
-        background: #444;
-      }
-      button:active {
-        background: #222;
-      }
-    </style>
+    <title>NoFlo UI</title>
+    <link rel="stylesheet" href="./src/main.css" />
   </head>
   <body>
     <div id="controls">
