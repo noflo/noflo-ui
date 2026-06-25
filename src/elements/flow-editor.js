@@ -25,6 +25,7 @@ export class FlowEditor extends HTMLElement {
     this.didPinch = false;
     this.lastPinchCenter = null;
     this.lastPinchDistance = 0;
+    this.activityMap = new Map();
   }
 
   connectedCallback() {
@@ -72,6 +73,15 @@ export class FlowEditor extends HTMLElement {
           height: 100000px;
           z-index: 2;
         }
+        #heatmap-canvas {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100000px;
+          height: 100000px;
+          pointer-events: none;
+          z-index: 0;
+        }
         .grid-pattern {
           fill: url(#grid);
         }
@@ -93,6 +103,7 @@ export class FlowEditor extends HTMLElement {
         }
       </style>
       <div id="viewport">
+        <canvas id="heatmap-canvas"></canvas>
         <svg id="svg-layer">
           <defs>
             <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -106,10 +117,49 @@ export class FlowEditor extends HTMLElement {
       </div>
     `;
     this.viewport = this.shadowRoot.getElementById('viewport');
+    this.heatmapCanvas = this.shadowRoot.getElementById('heatmap-canvas');
     this.svgLayer = this.shadowRoot.getElementById('svg-layer');
     this.edgesGroup = this.shadowRoot.getElementById('edges-group');
     this.nodeLayer = this.shadowRoot.getElementById('node-layer');
+    
+    this.heatmapCanvas.width = 100000;
+    this.heatmapCanvas.height = 100000;
+    
+    this.startHeatmapLoop();
     this.updateTransform();
+  }
+
+  startHeatmapLoop() {
+    const gridSize = 20;
+    const ctx = this.heatmapCanvas.getContext('2d');
+
+    setInterval(() => {
+      ctx.clearRect(0, 0, this.heatmapCanvas.width, this.heatmapCanvas.height);
+
+      for (let [key, heat] of this.activityMap.entries()) {
+        if (heat <= 0.05) {
+          this.activityMap.delete(key);
+          continue;
+        }
+
+        const [col, row] = key.split(',').map(Number);
+        
+        ctx.fillStyle = `rgba(130, 200, 100, ${heat * 0.6})`;
+        ctx.fillRect(col * gridSize, row * gridSize, gridSize, gridSize);
+
+        this.activityMap.set(key, heat - 0.1);
+      }
+    }, 500);
+  }
+
+  recordActivity(worldX, worldY) {
+    const gridSize = 20;
+    const col = Math.floor(worldX / gridSize);
+    const row = Math.floor(worldY / gridSize);
+    const key = `${col},${row}`;
+
+    const currentHeat = this.activityMap.get(key) || 0;
+    this.activityMap.set(key, Math.min(currentHeat + 0.25, 1.0));
   }
 
   updateTransform() {
