@@ -74,15 +74,26 @@ export class FlowNode extends HTMLElement {
           width: 80px;
           height: 80px;
           border-radius: 50%;
-          background-color: white;
-          border: 2px solid #333;
+          background-color: #ccc;
           display: flex;
           align-items: center;
           justify-content: center;
           pointer-events: none;
           z-index: 1;
-          overflow: hidden;
           transition: opacity 0.2s;
+          position: relative;
+        }
+        .node-circle::after {
+          content: '';
+          position: absolute;
+          top: 4px;
+          left: 4px;
+          right: 4px;
+          bottom: 4px;
+          border-radius: 50%;
+          border: 2px solid #333;
+          pointer-events: none;
+          z-index: 1;
         }
         .node-content {
           width: 100%;
@@ -138,8 +149,10 @@ export class FlowNode extends HTMLElement {
           z-index: 10;
         }
         :host([selected]) .node-circle {
-          border-color: #007bff;
           box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.3);
+        }
+        :host([selected]) .node-circle::after {
+          border-color: #007bff;
         }
         .port {
           position: absolute;
