@@ -30,8 +30,14 @@ async function init() {
     
     // Add some sample nodes
     editor.addNode('Input', 100, 100, 0, 1);
-    editor.addNode('Process 1', 300, 100, 1, 1);
-    editor.addNode('Process 2', 300, 200, 1, 1);
+    editor.addNode('Process 1', 300, 100, 
+      [{ type: 'regular', name: 'in' }], 
+      [{ type: 'array', name: 'out', size: 3 }]
+    );
+    editor.addNode('Process 2', 300, 200, 
+      [{ type: 'array', name: 'in', size: 3 }], 
+      [{ type: 'regular', name: 'out' }]
+    );
     editor.addNode('Output', 500, 150, 2, 0);
     
     editor.fitNodesToViewport();

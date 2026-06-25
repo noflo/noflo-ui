@@ -27,8 +27,16 @@ export class FlowNode extends HTMLElement {
     this.render();
   }
 
-  setPorts(inCount, outCount, inLabels = [], outLabels = []) {
-    this.renderPorts(inCount, outCount, inLabels, outLabels);
+  setPorts(inPorts, outPorts) {
+    // Support legacy number input
+    const processedIn = Array.isArray(inPorts) 
+      ? inPorts 
+      : (typeof inPorts === 'number' ? Array(inPorts).fill({ type: 'regular' }) : []);
+    const processedOut = Array.isArray(outPorts) 
+      ? outPorts 
+      : (typeof outPorts === 'number' ? Array(outPorts).fill({ type: 'regular' }) : []);
+    
+    this.renderPorts(processedIn, processedOut);
   }
 
   render() {
@@ -129,34 +137,70 @@ export class FlowNode extends HTMLElement {
     this.renderPorts(1, 1);
   }
 
-  renderPorts(inCount, outCount, inLabels = [], outLabels = []) {
+  renderPorts(inPorts, outPorts) {
     if (!this.portsContainer) return;
     this.portsContainer.innerHTML = '';
 
+    // Ensure we are working with arrays of configurations
+    const processPorts = (ports) => {
+      if (Array.isArray(ports)) return ports;
+      if (typeof ports === 'number') return Array(ports).fill({ type: 'regular' });
+      return [];
+    };
+
+    const processedIn = processPorts(inPorts);
+    const processedOut = processPorts(outPorts);
+
     // Inports (left side: PI/2 to 3PI/2)
-    for (let i = 0; i < inCount; i++) {
-      this.createPort(i, inCount, false, inLabels[i] || `in${i}`);
-    }
+    processedIn.forEach((portCfg, i) => {
+      this.createPort(i, processedIn.length, false, portCfg);
+    });
     // Outports (right side: -PI/2 to PI/2)
-    for (let i = 0; i < outCount; i++) {
-      this.createPort(i, outCount, true, outLabels[i] || `out${i}`);
-    }
+    processedOut.forEach((portCfg, i) => {
+      this.createPort(i, processedOut.length, true, portCfg);
+    });
   }
 
-  createPort(index, totalPorts, isOutport, labelText) {
-    const port = document.createElement('div');
-    port.className = `port ${isOutport ? 'port-out' : 'port-in'}`;
+  createPort(index, totalPorts, isOutport, cfg) {
+    const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
+    const type = cfg.type || 'regular';
+    const size = cfg.size || 1;
     
     const pos = this.calculatePortPosition(this.radius, index, totalPorts, isOutport);
     
+    if (type === 'regular') {
+      this.addPortElement(pos, isOutport, name, 'regular');
+    } else if (type === 'array') {
+      // Render stacked instances
+      for (let i = 0; i < size; i++) {
+        const instanceName = `${name}[${i}]`;
+        const offset = (i - (size - 1) / 2) * 8; // Vertical stack offset
+        const instancePos = { x: pos.x, y: pos.y + offset };
+        this.addPortElement(instancePos, isOutport, instanceName, 'array');
+      }
+    }
+  }
+
+  addPortElement(pos, isOutport, name, type) {
+    const port = document.createElement('div');
+    port.className = `port ${isOutport ? 'port-out' : 'port-in'}`;
+    if (type === 'array') {
+      port.style.width = '6px';
+      port.style.height = '6px';
+    }
+    
+    port.dataset.portName = name;
+    port.dataset.portType = type;
+    
     // Position is relative to the node's top-left (0,0)
     // Center is at (radius, radius)
-    port.style.left = `${this.radius + pos.x - 6}px`;
-    port.style.top = `${this.radius + pos.y - 6}px`;
+    const radiusOffset = type === 'array' ? 3 : 6;
+    port.style.left = `${this.radius + pos.x - radiusOffset}px`;
+    port.style.top = `${this.radius + pos.y - radiusOffset}px`;
     
     const label = document.createElement('div');
     label.className = 'port-label';
-    label.textContent = labelText;
+    label.textContent = name;
     
     label.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
     label.style.top = `${this.radius + pos.y}px`;

@@ -334,6 +334,22 @@ export class FlowEditor extends HTMLElement {
   }
 
   addEdge(portA, portB) {
+    // Enforcement: ArrayPorts allow only one connection
+    if (portA.dataset.portType === 'array') {
+      const existing = this.edges?.filter(e => e.portA === portA);
+      if (existing && existing.length >= 1) {
+        alert(`ArrayPort ${portA.dataset.portName} already has a connection.`);
+        return;
+      }
+    }
+    if (portB.dataset.portType === 'array') {
+      const existing = this.edges?.filter(e => e.portB === portB);
+      if (existing && existing.length >= 1) {
+        alert(`ArrayPort ${portB.dataset.portName} already has a connection.`);
+        return;
+      }
+    }
+
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('stroke', '#333');
     path.setAttribute('stroke-width', '2');
