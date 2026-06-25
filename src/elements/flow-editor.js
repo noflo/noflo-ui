@@ -26,6 +26,9 @@ export class FlowEditor extends HTMLElement {
     this.lastPinchCenter = null;
     this.lastPinchDistance = 0;
     this.activityMap = new Map();
+    this.panningPointerId = null;
+    this.draggingNodePointerId = null;
+    this.draggingWirePointerId = null;
   }
 
   connectedCallback() {
@@ -56,30 +59,27 @@ export class FlowEditor extends HTMLElement {
         #viewport:active {
           cursor: grabbing;
         }
-        #svg-layer {
+        #svg-layer, #heatmap-canvas {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100000px;
-          height: 100000px;
+          top: -10000px;
+          left: -10000px;
+          width: 20000px;
+          height: 20000px;
           pointer-events: none;
+        }
+        #svg-layer {
           z-index: 1;
+          overflow: visible;
         }
         #node-layer {
           position: absolute;
           top: 0;
           left: 0;
-          width: 100000px;
-          height: 100000px;
+          width: 100%;
+          height: 100%;
           z-index: 2;
         }
         #heatmap-canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100000px;
-          height: 100000px;
-          pointer-events: none;
           z-index: 0;
         }
         .grid-pattern {
@@ -106,12 +106,12 @@ export class FlowEditor extends HTMLElement {
         <canvas id="heatmap-canvas"></canvas>
         <svg id="svg-layer">
           <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ddd" stroke-width="1"/>
+            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="#ccc" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" class="grid-pattern" />
-          <g id="edges-group"></g>
+          <rect width="100%" height="100%" fill="url(#dot-grid)" />
+          <g id="edges-group" transform="translate(10000, 10000)"></g>
         </svg>
         <div id="node-layer"></div>
       </div>
@@ -122,8 +122,9 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = this.shadowRoot.getElementById('edges-group');
     this.nodeLayer = this.shadowRoot.getElementById('node-layer');
     
-    this.heatmapCanvas.width = 100000;
-    this.heatmapCanvas.height = 100000;
+    // Using a reasonably large canvas size to avoid browser limits
+    this.heatmapCanvas.width = 20000;
+    this.heatmapCanvas.height = 20000;
     
     this.startHeatmapLoop();
     this.updateTransform();
@@ -145,7 +146,7 @@ export class FlowEditor extends HTMLElement {
         const [col, row] = key.split(',').map(Number);
         
         ctx.fillStyle = `rgba(130, 200, 100, ${heat * 0.6})`;
-        ctx.fillRect(col * gridSize, row * gridSize, gridSize, gridSize);
+        ctx.fillRect(col * gridSize + 10000, row * gridSize + 10000, gridSize, gridSize);
 
         this.activityMap.set(key, heat - 0.1);
       }
@@ -233,28 +234,27 @@ export class FlowEditor extends HTMLElement {
 
       if (this.activePointers.size === 2) {
         this.handlePinchZoom(e);
-        return;
-      }
+      } else {
+        const dx = e.clientX - this.lastPointerPos.x;
+        const dy = e.clientY - this.lastPointerPos.y;
 
-      const dx = e.clientX - this.lastPointerPos.x;
-      const dy = e.clientY - this.lastPointerPos.y;
-
-      if (this.isPanning) {
-        this.offset.x += dx;
-        this.offset.y += dy;
-        this.updateTransform();
-        this.panDistance += Math.hypot(dx, dy);
-      } else if (this.isDraggingNode && this.selectedNodes.size > 0) {
-        this.selectedNodes.forEach(node => {
-          const pos = node.position;
-          node.position = {
-            x: pos.x + dx / this.zoom,
-            y: pos.y + dy / this.zoom
-          };
-        });
-        this.updateEdges();
-      } else if (this.isDraggingWire) {
-        this.updateWireDrag(e);
+        if (this.isPanning) {
+          this.offset.x += dx;
+          this.offset.y += dy;
+          this.updateTransform();
+          this.panDistance += Math.hypot(dx, dy);
+        } else if (this.isDraggingNode && this.selectedNodes.size > 0) {
+          this.selectedNodes.forEach(node => {
+            const pos = node.position;
+            node.position = {
+              x: pos.x + dx / this.zoom,
+              y: pos.y + dy / this.zoom
+            };
+          });
+          this.updateEdges();
+        } else if (this.isDraggingWire) {
+          this.updateWireDrag(e);
+        }
       }
 
       this.lastPointerPos = { x: e.clientX, y: e.clientY };
@@ -267,19 +267,32 @@ export class FlowEditor extends HTMLElement {
         this.initialPinchDistance = 0;
       }
 
-      if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
-        this.clearSelection();
+      if (e.pointerId === this.panningPointerId) {
+        if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
+          this.clearSelection();
+        }
+        this.isPanning = false;
+        this.panDistance = 0;
+        this.panningPointerId = null;
       }
 
-      this.isPanning = false;
-      this.panDistance = 0;
-      this.didPinch = false;
-      this.lastPinchCenter = null;
-      this.lastPinchDistance = 0;
-      this.isDraggingNode = false;
-      this.isDraggingWire = false;
-      if (this.activeWire) {
-        this.completeWireDrag(e);
+      if (e.pointerId === this.draggingNodePointerId) {
+        this.isDraggingNode = false;
+        this.draggingNodePointerId = null;
+      }
+
+      if (e.pointerId === this.draggingWirePointerId) {
+        this.isDraggingWire = false;
+        this.draggingWirePointerId = null;
+        if (this.activeWire) {
+          this.completeWireDrag(e);
+        }
+      }
+
+      if (this.activePointers.size === 0) {
+        this.didPinch = false;
+        this.lastPinchCenter = null;
+        this.lastPinchDistance = 0;
       }
     });
 
@@ -306,6 +319,7 @@ export class FlowEditor extends HTMLElement {
   startCanvasPan(e) {
     this.viewport.setPointerCapture(e.pointerId);
     this.isPanning = true;
+    this.panningPointerId = e.pointerId;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
   }
 
@@ -380,6 +394,7 @@ export class FlowEditor extends HTMLElement {
     
     node.setPointerCapture(e.pointerId);
     this.isDraggingNode = true;
+    this.draggingNodePointerId = e.pointerId;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
   }
 
@@ -391,6 +406,7 @@ export class FlowEditor extends HTMLElement {
   startWireDrag(e, port) {
     this.viewport.setPointerCapture(e.pointerId);
     this.isDraggingWire = true;
+    this.draggingWirePointerId = e.pointerId;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
     this.dragPort = port;
 

@@ -75,6 +75,29 @@ async function init() {
     editor.connectNodes(aggregator, 'out', sink, 'in');
     
     editor.fitNodesToViewport();
+
+    // Demo: Occasionally record activity for random nodes and edges
+    setInterval(() => {
+      const nodes = Array.from(editor.shadowRoot.querySelectorAll('flow-node'));
+      const edges = editor.edges || [];
+      
+      if (nodes.length === 0) return;
+
+      if (Math.random() > 0.5 || edges.length === 0) {
+        // Random node activity
+        const node = nodes[Math.floor(Math.random() * nodes.length)];
+        editor.recordActivity(node.position.x + 40, node.position.y + 40);
+      } else {
+        // Random edge activity (sampled point along the wire)
+        const edge = edges[Math.floor(Math.random() * edges.length)];
+        const posA = editor.getPortPosition(edge.portA);
+        const posB = editor.getPortPosition(edge.portB);
+        const t = Math.random();
+        const x = posA.x + (posB.x - posA.x) * t;
+        const y = posA.y + (posB.y - posA.y) * t;
+        editor.recordActivity(x, y);
+      }
+    }, 100);
   }
 }
 
