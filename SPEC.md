@@ -95,8 +95,11 @@ Configuration:
 
 ## Commands
 
+- Lint: `npm run lint`: Check code formatting
+- Format code: `npm run format`: Fixes linting and formatting errors that can be dealt with automatically
+- Run tests: `npm test`
 - Serve: `npm run serve`: Start a local development server
-- Vendors: `npm run build-vendors`: build latest vendor modules from `node_modules` into `vendor`
+- Vendors: `npm run build-vendors`: build latest vendor modules from `node_modules` into `vendor`. Only needed when adding/updating dependencies
 
 ## Project structure
 
