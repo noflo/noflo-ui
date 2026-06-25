@@ -18,6 +18,7 @@ export class FlowEditor extends HTMLElement {
     this.initialPinchDistance = 0;
     this.initialZoom = 1.0;
     this.initialOffset = { x: 0, y: 0 };
+    this.selectedNodes = new Set();
   }
 
   connectedCallback() {
@@ -103,9 +104,9 @@ export class FlowEditor extends HTMLElement {
         return;
       }
 
-      const target = e.target;
-      const clickedPort = target.closest('.port');
-      const clickedNode = target.closest('flow-node');
+      const path = e.composedPath();
+      const clickedPort = path.find(el => el.classList && el.classList.contains('port'));
+      const clickedNode = path.find(el => el.tagName === 'FLOW-NODE');
 
       if (clickedPort) {
         e.stopPropagation();
@@ -133,13 +134,14 @@ export class FlowEditor extends HTMLElement {
         this.offset.x += dx;
         this.offset.y += dy;
         this.updateTransform();
-      } else if (this.isDraggingNode && this.selectedNode) {
-        const node = this.selectedNode;
-        const pos = node.position;
-        node.position = {
-          x: pos.x + dx / this.zoom,
-          y: pos.y + dy / this.zoom
-        };
+      } else if (this.isDraggingNode && this.selectedNodes.size > 0) {
+        this.selectedNodes.forEach(node => {
+          const pos = node.position;
+          node.position = {
+            x: pos.x + dx / this.zoom,
+            y: pos.y + dy / this.zoom
+          };
+        });
         this.updateEdges();
       } else if (this.isDraggingWire) {
         this.updateWireDrag(e);
@@ -184,6 +186,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   startCanvasPan(e) {
+    this.viewport.setPointerCapture(e.pointerId);
     this.isPanning = true;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
   }
@@ -229,10 +232,21 @@ export class FlowEditor extends HTMLElement {
   }
 
   startNodeDrag(e, node) {
-    this.selectedNode = node;
+    if (!e.shiftKey) {
+      this.clearSelection();
+    }
+    
+    this.selectedNodes.add(node);
+    node.setAttribute('selected', '');
+    
+    node.setPointerCapture(e.pointerId);
     this.isDraggingNode = true;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
-    node.setAttribute('selected', '');
+  }
+
+  clearSelection() {
+    this.selectedNodes.forEach(node => node.removeAttribute('selected'));
+    this.selectedNodes.clear();
   }
 
   startWireDrag(e, port) {
