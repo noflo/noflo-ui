@@ -50,7 +50,7 @@ export class FlowNode extends HTMLElement {
           justify-content: center;
           cursor: pointer;
           user-select: none;
-          transition: transform 0.2s;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .node-circle {
           width: 100%;
@@ -94,6 +94,10 @@ export class FlowNode extends HTMLElement {
             opacity: 0;
             pointer-events: none;
           }
+        }
+        :host([selected]) {
+          transform: scale(1.15);
+          z-index: 10;
         }
         :host([selected]) .node-circle {
           border-color: #007bff;

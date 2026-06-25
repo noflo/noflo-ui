@@ -21,6 +21,8 @@ export class FlowEditor extends HTMLElement {
     this.selectedNodes = new Set();
     this.ghostNode = null;
     this.stillnessTimer = null;
+    this.panDistance = 0;
+    this.didPinch = false;
   }
 
   connectedCallback() {
@@ -173,6 +175,7 @@ export class FlowEditor extends HTMLElement {
       }
     });
 
+
     window.addEventListener('pointermove', (e) => {
       this.activePointers.set(e.pointerId, e);
 
@@ -188,6 +191,7 @@ export class FlowEditor extends HTMLElement {
         this.offset.x += dx;
         this.offset.y += dy;
         this.updateTransform();
+        this.panDistance += Math.hypot(dx, dy);
       } else if (this.isDraggingNode && this.selectedNodes.size > 0) {
         this.selectedNodes.forEach(node => {
           const pos = node.position;
@@ -211,7 +215,13 @@ export class FlowEditor extends HTMLElement {
         this.initialPinchDistance = 0;
       }
 
+      if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
+        this.clearSelection();
+      }
+
       this.isPanning = false;
+      this.panDistance = 0;
+      this.didPinch = false;
       this.isDraggingNode = false;
       this.isDraggingWire = false;
       if (this.activeWire) {
@@ -246,6 +256,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   startPinchZoom() {
+    this.didPinch = true;
     const pointers = Array.from(this.activePointers.values());
     const p1 = pointers[0];
     const p2 = pointers[1];
