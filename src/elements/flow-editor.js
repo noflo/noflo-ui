@@ -139,7 +139,7 @@ export class FlowEditor extends HTMLElement {
           --node-border: var(--color-1);
           --node-glow: hsla(var(--hue-1), 100%, 60%, 0.4);
           --flow-color: var(--node-border);
-          --flow-dash: 10, 15;
+          --flow-dash: 0;
         }
         :host([data-theme="cyberpunk"].state-offline),
         :host([data-theme="cyberpunk"]) flow-node.state-offline {
