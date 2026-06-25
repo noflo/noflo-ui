@@ -150,10 +150,11 @@ export class FlowNode extends HTMLElement {
           z-index: 10;
         }
         :host([selected]) .node-circle {
-          box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.3);
+          box-shadow: 0 0 15px var(--node-glow), 0 0 30px var(--node-glow);
         }
         :host([selected]) .node-circle::after {
-          border-color: #007bff;
+          border-color: var(--node-border);
+          border-width: 3px;
         }
         .port {
           position: absolute;
