@@ -29,16 +29,38 @@ async function init() {
     app.appendChild(editor);
     
     // Add some sample nodes
-    editor.addNode('Input', 100, 100, 0, 1);
-    editor.addNode('Process 1', 300, 100, 
+    editor.addNode('Source', 100, 200, 
+      [], 
+      [{ type: 'regular', name: 'out' }]
+    );
+    
+    editor.addNode('Filter', 300, 100, 
+      [{ type: 'regular', name: 'in' }], 
+      [
+        { type: 'regular', name: 'out' },
+        { type: 'regular', name: 'error' }
+      ]
+    );
+    
+    editor.addNode('Splitter', 300, 300, 
       [{ type: 'regular', name: 'in' }], 
       [{ type: 'array', name: 'out', size: 3 }]
     );
-    editor.addNode('Process 2', 300, 200, 
+    
+    editor.addNode('Aggregator', 500, 300, 
       [{ type: 'array', name: 'in', size: 3 }], 
       [{ type: 'regular', name: 'out' }]
     );
-    editor.addNode('Output', 500, 150, 2, 0);
+    
+    editor.addNode('Logger', 700, 100, 
+      [{ type: 'regular', name: 'in' }], 
+      []
+    );
+    
+    editor.addNode('Sink', 700, 300, 
+      [{ type: 'regular', name: 'in' }], 
+      []
+    );
     
     editor.fitNodesToViewport();
   }

@@ -10,6 +10,8 @@ export class FlowNode extends HTMLElement {
     this._x = 0;
     this._y = 0;
     this.radius = 40;
+    this._inPorts = 1;
+    this._outPorts = 1;
   }
 
   set position({ x, y }) {
@@ -28,15 +30,12 @@ export class FlowNode extends HTMLElement {
   }
 
   setPorts(inPorts, outPorts) {
-    // Support legacy number input
-    const processedIn = Array.isArray(inPorts) 
-      ? inPorts 
-      : (typeof inPorts === 'number' ? Array(inPorts).fill({ type: 'regular' }) : []);
-    const processedOut = Array.isArray(outPorts) 
-      ? outPorts 
-      : (typeof outPorts === 'number' ? Array(outPorts).fill({ type: 'regular' }) : []);
+    this._inPorts = inPorts;
+    this._outPorts = outPorts;
     
-    this.renderPorts(processedIn, processedOut);
+    if (this.portsContainer) {
+      this.renderPorts(this._inPorts, this._outPorts);
+    }
   }
 
   render() {
@@ -133,8 +132,8 @@ export class FlowNode extends HTMLElement {
       <div id="ports-container"></div>
     `;
     this.portsContainer = this.shadowRoot.getElementById('ports-container');
-    // Default ports if not set
-    this.renderPorts(1, 1);
+    // Render ports based on stored config or defaults
+    this.renderPorts(this._inPorts, this._outPorts);
   }
 
   renderPorts(inPorts, outPorts) {
