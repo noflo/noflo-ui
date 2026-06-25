@@ -7,8 +7,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "lint": "npx @biomejs/biome check src/ spec/",
-    "format": "npx @biomejs/biome check --write src/ spec/",
+    "lint": "npx @biomejs/biome check src/ spec/ index.html",
+    "format": "npx @biomejs/biome check --write src/ spec/ index.html",
     "prebuild-vendors": "node utils/generate-noflo-loader.js",
     "build-vendors": " tsdown --config tsdown.config.js",
     "postbuild-vendors": "cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/SourceCodePro-Regular.otf.woff2",
