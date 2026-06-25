@@ -627,31 +627,11 @@ export class FlowEditor extends HTMLElement {
   }
 
   snapToGrid(x, y) {
-    const S = 80;
-    const H = S / 2;
-    let k = Math.round(x / H);
-    let l = Math.round(y / H);
-
-    if ((k % 2 + 2) % 2 !== (l % 2 + 2) % 2) {
-      const options = [
-        { k: k + 1, l: l },
-        { k: k - 1, l: l },
-        { k: k, l: l + 1 },
-        { k: k, l: l - 1 },
-      ];
-      let minDist = Infinity;
-      let best = options[0];
-      for (const opt of options) {
-        const dist = Math.hypot(x - opt.k * H, y - opt.l * H);
-        if (dist < minDist) {
-          minDist = dist;
-          best = opt;
-        }
-      }
-      k = best.k;
-      l = best.l;
-    }
-    return { x: k * H, y: l * H };
+    const H = 40;
+    return {
+      x: Math.round(x / H) * H,
+      y: Math.round(y / H) * H
+    };
   }
 
   connectNodes(nodeA, portAName, nodeB, portBName) {
