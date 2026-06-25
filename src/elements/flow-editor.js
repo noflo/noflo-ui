@@ -106,8 +106,8 @@ export class FlowEditor extends HTMLElement {
         <canvas id="heatmap-canvas"></canvas>
         <svg id="svg-layer">
           <defs>
-            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.5" fill="#ccc" />
+            <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+              <circle cx="0" cy="0" r="1.5" fill="#ccc" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#dot-grid)" />
@@ -277,6 +277,10 @@ export class FlowEditor extends HTMLElement {
       }
 
       if (e.pointerId === this.draggingNodePointerId) {
+        this.selectedNodes.forEach(node => {
+          node.position = this.snapToGrid(node.position.x, node.position.y);
+        });
+        this.updateEdges();
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
       }
@@ -440,22 +444,22 @@ export class FlowEditor extends HTMLElement {
       }
     } else if (!this.ghostNode && !this.stillnessTimer && this.hasSpaceForNode(mouseX, mouseY)) {
       this.stillnessTimer = setTimeout(() => {
-        this.showGhostNode(mouseX, mouseY);
+        const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
+        this.showGhostNode(snapped.x, snapped.y);
       }, 200);
     }
   }
 
   hasSpaceForNode(x, y) {
+    const snapped = this.snapToGrid(x - 40, y - 40);
     const nodes = this.shadowRoot.querySelectorAll('flow-node');
-    const nodeRadius = 40;
-    const margin = 20;
-    const minDistance = (nodeRadius * 2) + margin;
-
+    
     for (const node of nodes) {
       const pos = node.position;
-      // pos.x/y is the top-left corner, so we add 40 to get the center
-      const dist = Math.hypot(x - (pos.x + 40), y - (pos.y + 40));
-      if (dist < minDistance) return false;
+      // No overlap if max(|dx|, |dy|) >= 80
+      if (Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) < 80) {
+        return false;
+      }
     }
     return true;
   }
@@ -464,8 +468,8 @@ export class FlowEditor extends HTMLElement {
     this.ghostNode = document.createElement('div');
     this.ghostNode.className = 'ghost-node';
     this.ghostNode.textContent = 'new';
-    this.ghostNode.style.left = `${x - 40}px`;
-    this.ghostNode.style.top = `${y - 40}px`;
+    this.ghostNode.style.left = `${x}px`;
+    this.ghostNode.style.top = `${y}px`;
     this.nodeLayer.appendChild(this.ghostNode);
   }
 
@@ -528,10 +532,11 @@ export class FlowEditor extends HTMLElement {
     } else if (this.ghostNode) {
       // Create new node at ghost node position
       const rect = this.getBoundingClientRect();
-      const x = (e.clientX - rect.left - this.offset.x) / this.zoom;
-      const y = (e.clientY - rect.top - this.offset.y) / this.zoom;
+      const mouseX = (e.clientX - rect.left - this.offset.x) / this.zoom;
+      const mouseY = (e.clientY - rect.top - this.offset.y) / this.zoom;
+      const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
       
-      const newNode = this.addNode('New Node', x - 40, y - 40);
+      const newNode = this.addNode('New Node', snapped.x, snapped.y);
       const isOut = this.dragPort.classList.contains('port-out');
       
       // Connect to the first available port of opposite type
@@ -619,6 +624,34 @@ export class FlowEditor extends HTMLElement {
     this.edges.forEach(edge => {
       this.updatePathData(edge.path, edge.portA, edge.portB);
     });
+  }
+
+  snapToGrid(x, y) {
+    const S = 80;
+    const H = S / 2;
+    let k = Math.round(x / H);
+    let l = Math.round(y / H);
+
+    if ((k % 2 + 2) % 2 !== (l % 2 + 2) % 2) {
+      const options = [
+        { k: k + 1, l: l },
+        { k: k - 1, l: l },
+        { k: k, l: l + 1 },
+        { k: k, l: l - 1 },
+      ];
+      let minDist = Infinity;
+      let best = options[0];
+      for (const opt of options) {
+        const dist = Math.hypot(x - opt.k * H, y - opt.l * H);
+        if (dist < minDist) {
+          minDist = dist;
+          best = opt;
+        }
+      }
+      k = best.k;
+      l = best.l;
+    }
+    return { x: k * H, y: l * H };
   }
 
   connectNodes(nodeA, portAName, nodeB, portBName) {
