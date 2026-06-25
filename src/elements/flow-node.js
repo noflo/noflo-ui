@@ -21,6 +21,24 @@ export class FlowNode extends HTMLElement {
     this.style.top = `${y}px`;
   }
 
+  setMetadata({ name, componentName, icon }) {
+    if (name) this.textContent = name;
+    if (componentName) {
+      const compEl = this.shadowRoot.querySelector('.node-component');
+      if (compEl) compEl.textContent = componentName;
+    }
+    if (icon) {
+      const iconEl = this.shadowRoot.querySelector('.node-content');
+      if (iconEl) {
+        if (icon.startsWith('data:image') || icon.startsWith('http')) {
+          iconEl.innerHTML = `<img src="${icon}" style="width: 40px; height: 40px; object-fit: contain;">`;
+        } else {
+          iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
+        }
+      }
+    }
+  }
+
   get position() {
     return { x: this._x, y: this._y };
   }
@@ -44,37 +62,66 @@ export class FlowNode extends HTMLElement {
         :host {
           position: absolute;
           width: 80px;
-          height: 80px;
+          height: 110px;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
           cursor: pointer;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .node-circle {
-          width: 100%;
-          height: 100%;
+          width: 80px;
+          height: 80px;
           border-radius: 50%;
           background-color: white;
           border: 2px solid #333;
           display: flex;
           align-items: center;
           justify-content: center;
-          text-align: center;
-          font-size: 12px;
-          padding: 10px;
-          box-sizing: border-box;
-          overflow: hidden;
-          word-break: break-all;
           pointer-events: none;
           z-index: 1;
+          overflow: hidden;
           transition: opacity 0.2s;
+        }
+        .node-content {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          text-align: center;
+        }
+        .node-info {
+          text-align: center;
+          margin-top: 4px;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .node-name {
+          font-size: 12px;
+          font-weight: bold;
+          color: #333;
+          display: block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100px;
+        }
+        .node-component {
+          font-size: 10px;
+          color: #666;
+          display: block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100px;
         }
         
         /* Semantic Zooming: Stage 1 - Hide everything but node circle and edges */
         @container style(--zoom-scale < 0.2) {
-          .port, .node-label, .port-label {
+          .port, .node-info {
             opacity: 0;
             pointer-events: none;
           }
@@ -82,15 +129,7 @@ export class FlowNode extends HTMLElement {
 
         /* Stage 2 - Show ports */
         @container style(--zoom-scale < 0.4) {
-          .node-label, .port-label {
-            opacity: 0;
-            pointer-events: none;
-          }
-        }
-
-        /* Stage 3 - Show node labels */
-        @container style(--zoom-scale < 0.8) {
-          .port-label {
+          .node-info {
             opacity: 0;
             pointer-events: none;
           }
@@ -129,11 +168,15 @@ export class FlowNode extends HTMLElement {
         }
       </style>
       <div class="node-circle">
-        <div class="node-label">
-          <slot></slot>
-        </div>
+        <div class="node-content"></div>
       </div>
-      <div id="ports-container"></div>
+      <div class="node-info">
+        <span class="node-name">
+          <slot></slot>
+        </span>
+        <span class="node-component"></span>
+      </div>
+      <div id="ports-container" style="position: absolute; top: 0; left: 0; width: 80px; height: 80px;"></div>
     `;
     this.portsContainer = this.shadowRoot.getElementById('ports-container');
     // Render ports based on stored config or defaults
