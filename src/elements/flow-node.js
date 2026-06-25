@@ -165,16 +165,30 @@ export class FlowNode extends HTMLElement {
     const type = cfg.type || 'regular';
     const size = cfg.size || 1;
     
-    const pos = this.calculatePortPosition(this.radius, index, totalPorts, isOutport);
+    const angleRange = Math.PI * 0.5;
+    const centerAngle = isOutport ? 0 : Math.PI;
+    const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
+    const baseAngle = centerAngle + (fraction - 0.5) * angleRange;
     
     if (type === 'regular') {
+      const pos = {
+        x: this.radius * Math.cos(baseAngle),
+        y: this.radius * Math.sin(baseAngle)
+      };
       this.addPortElement(pos, isOutport, name, 'regular');
     } else if (type === 'array') {
-      // Render stacked instances
+      // Use an angular step that makes 12px circles almost touch
+      // Chord length approx 13px -> angle approx 0.32 radians
+      const angularStep = 0.32; 
+      const direction = isOutport ? 1 : -1;
+
       for (let i = 0; i < size; i++) {
         const instanceName = `${name}[${i}]`;
-        const offset = (i - (size - 1) / 2) * 8; // Vertical stack offset
-        const instancePos = { x: pos.x, y: pos.y + offset };
+        const angle = baseAngle + direction * (i - (size - 1) / 2) * angularStep;
+        const instancePos = { 
+          x: this.radius * Math.cos(angle), 
+          y: this.radius * Math.sin(angle) 
+        };
         this.addPortElement(instancePos, isOutport, instanceName, 'array');
       }
     }
@@ -183,19 +197,13 @@ export class FlowNode extends HTMLElement {
   addPortElement(pos, isOutport, name, type) {
     const port = document.createElement('div');
     port.className = `port ${isOutport ? 'port-out' : 'port-in'}`;
-    if (type === 'array') {
-      port.style.width = '6px';
-      port.style.height = '6px';
-    }
     
     port.dataset.portName = name;
     port.dataset.portType = type;
     
-    // Position is relative to the node's top-left (0,0)
-    // Center is at (radius, radius)
-    const radiusOffset = type === 'array' ? 3 : 6;
-    port.style.left = `${this.radius + pos.x - radiusOffset}px`;
-    port.style.top = `${this.radius + pos.y - radiusOffset}px`;
+    // All ports are now 12px (radius 6px)
+    port.style.left = `${this.radius + pos.x - 6}px`;
+    port.style.top = `${this.radius + pos.y - 6}px`;
     
     const label = document.createElement('div');
     label.className = 'port-label';
@@ -213,10 +221,10 @@ export class FlowNode extends HTMLElement {
   }
 
   calculatePortPosition(radius, index, totalPorts, isOutport) {
-    const angleRange = Math.PI;
-    const offset = isOutport ? -Math.PI / 2 : Math.PI / 2;
+    const angleRange = Math.PI * 0.5; // Use 50% of the semicircle for a more compact cluster
+    const centerAngle = isOutport ? 0 : Math.PI;
     const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
-    const angle = offset + (fraction * angleRange);
+    const angle = centerAngle + (fraction - 0.5) * angleRange;
 
     return {
       x: radius * Math.cos(angle),
