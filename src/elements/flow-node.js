@@ -74,7 +74,7 @@ export class FlowNode extends HTMLElement {
           width: 80px;
           height: 80px;
           border-radius: 50%;
-          background-color: #ccc;
+          background-color: var(--node-bg, #ccc);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -82,6 +82,7 @@ export class FlowNode extends HTMLElement {
           z-index: 1;
           transition: opacity 0.2s;
           position: relative;
+          box-shadow: 0 0 10px var(--node-glow, transparent);
         }
         .node-circle::after {
           content: '';
@@ -91,7 +92,7 @@ export class FlowNode extends HTMLElement {
           right: 4px;
           bottom: 4px;
           border-radius: 50%;
-          border: 2px solid #333;
+          border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           pointer-events: none;
           z-index: 1;
         }
@@ -113,7 +114,7 @@ export class FlowNode extends HTMLElement {
         .node-name {
           font-size: 12px;
           font-weight: bold;
-          color: #333;
+          color: var(--node-text, #333);
           display: block;
           white-space: nowrap;
           overflow: hidden;
@@ -122,7 +123,7 @@ export class FlowNode extends HTMLElement {
         }
         .node-component {
           font-size: 10px;
-          color: #666;
+          color: var(--node-subtext, #666);
           display: block;
           white-space: nowrap;
           overflow: hidden;
@@ -158,8 +159,8 @@ export class FlowNode extends HTMLElement {
           position: absolute;
           width: 12px;
           height: 12px;
-          background-color: #333;
-          border: 2px solid white;
+          background-color: var(--node-border, #333);
+          border: 2px solid var(--node-bg, #fff);
           border-radius: 50%;
           z-index: 2;
           cursor: crosshair;
@@ -168,7 +169,7 @@ export class FlowNode extends HTMLElement {
         .port-label {
           position: absolute;
           font-size: 10px;
-          color: #666;
+          color: var(--node-text, #666);
           white-space: nowrap;
           pointer-events: none;
           z-index: 2;

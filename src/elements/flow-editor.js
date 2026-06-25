@@ -44,11 +44,106 @@ export class FlowEditor extends HTMLElement {
           width: 100%;
           height: 100%;
           overflow: hidden;
-          background-color: #f8f9fa;
           position: relative;
           touch-action: none;
           --zoom-scale: 1.0;
+          background-color: var(--ui-bg);
+
+          /* Base Variables (Cyberpunk Dark) */
+          --ui-bg: #0a0a0a;
+          --dot-color: #444;
+          --anim-speed: 1.5s;
+          --node-stroke-width: 2px;
+          --edge-width: 4px;
+          
+          --node-bg: #111;
+          --node-border: #444;
+          --node-glow: transparent;
+          --node-text: #aaa;
+          --node-subtext: #666;
+
+          --flow-color: #333;
+          --flow-dash: 5, 5;
+          --edge-color: #333;
+
+          /* Cyberpunk Hues for sub-flows */
+          --hue-1: 180deg; /* Cyan */
+          --hue-2: 280deg; /* Purple */
+          --color-1: hsl(var(--hue-1), 100%, 50%);
+          --color-2: hsl(var(--hue-2), 100%, 50%);
         }
+
+        /* TUBE THEME OVERRIDES */
+        :host([data-theme="tube"]) {
+          --ui-bg: #F4F4F4;
+          --dot-color: #ccc;
+          --font-family: 'Helvetica Neue', Arial, sans-serif;
+          --node-bg: #FFFFFF;
+          --node-border: #333;
+          --node-glow: transparent;
+          --node-text: #333;
+          --edge-width: 8px;
+          --flow-dash: 20, 30;
+
+          /* Authentic Tube Colors */
+          --color-piccadilly: #003688; /* Flow 1: Blue */
+          --color-central:    #E32017; /* Flow 2: Red */
+          --color-circle:     #FFD300; /* Flow 3: Yellow */
+          --color-district:   #00782A; /* Flow 4: Green */
+        }
+
+        /* CYBERPUNK AGES */
+        :host([data-theme="cyberpunk"].state-abstract) {
+          --node-bg: #1a1a1a;
+          --node-border: #333;
+          --node-glow: transparent;
+          --flow-color: #222;
+          --flow-dash: 0;
+        }
+        :host([data-theme="cyberpunk"].state-golden) {
+          --node-border: var(--color-1);
+          --node-glow: hsla(var(--hue-1), 100%, 60%, 0.4);
+          --flow-color: var(--node-border);
+          --flow-dash: 10, 15;
+        }
+        :host([data-theme="cyberpunk"].state-offline) {
+          --node-bg: #111;
+          --node-border: #222;
+          --node-glow: transparent;
+          --flow-color: #1a1a1a;
+        }
+        :host([data-theme="cyberpunk"].state-crashed) {
+          --node-border: #ff0000;
+          --node-bg: #200;
+          --node-glow: #ff0000;
+          --flow-color: #ff0000;
+        }
+
+        /* TUBE AGES */
+        :host([data-theme="tube"].state-abstract) {
+          --node-bg: #fff;
+          --node-border: #ccc;
+          --flow-color: #ccc;
+          --flow-dash: 1, 4;
+        }
+        :host([data-theme="tube"].state-golden) {
+          --node-border: var(--color-piccadilly);
+          --node-bg: #fff;
+          --flow-color: var(--color-piccadilly);
+          --flow-dash: 20, 30;
+        }
+        :host([data-theme="tube"].state-offline) {
+          --node-bg: #fff;
+          --node-border: #ddd;
+          --flow-color: #ddd;
+          --flow-dash: 2, 2;
+        }
+        :host([data-theme="tube"].state-crashed) {
+          --node-bg: #ff0;
+          --node-border: #000;
+          --flow-color: #f00;
+        }
+
         #viewport {
           width: 100%;
           height: 100%;
@@ -102,19 +197,32 @@ export class FlowEditor extends HTMLElement {
           z-index: 3;
           box-sizing: border-box;
         }
+        .edge-flow {
+          fill: none;
+          stroke: var(--flow-color, var(--edge-color));
+          stroke-width: calc(var(--edge-width, 4px) - 2px);
+          stroke-dasharray: var(--flow-dash);
+          animation: dataFlow var(--anim-speed) linear infinite;
+        }
+
+        @keyframes dataFlow {
+          from { stroke-dashoffset: 25; }
+          to { stroke-dashoffset: 0; }
+        }
       </style>
       <div id="viewport">
         <canvas id="heatmap-canvas"></canvas>
         <svg id="svg-layer">
           <defs>
             <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              <circle cx="40" cy="40" r="1.5" fill="#ccc" />
-              <circle cx="0" cy="0" r="1" fill="#ccc" />
-              <circle cx="40" cy="0" r="1" fill="#ccc" />
-              <circle cx="0" cy="40" r="1" fill="#ccc" />
-              <circle cx="40" cy="40" r="1" fill="#ccc" />
+              <circle cx="40" cy="40" r="1.5" fill="var(--dot-color)" />
+              <circle cx="0" cy="0" r="1" fill="var(--dot-color)" />
+              <circle cx="40" cy="0" r="1" fill="var(--dot-color)" />
+              <circle cx="0" cy="40" r="1" fill="var(--dot-color)" />
+              <circle cx="40" cy="40" r="1" fill="var(--dot-color)" />
             </pattern>
           </defs>
+          <rect width="100%" height="100%" fill="var(--ui-bg)" />
           <rect width="100%" height="100%" fill="url(#dot-grid)" />
           <g id="edges-group" transform="translate(8000, 8000)"></g>
         </svg>
@@ -600,9 +708,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('stroke', '#333');
-    path.setAttribute('stroke-width', '2');
-    path.setAttribute('fill', 'none');
+    path.classList.add('edge-flow');
     
     this.updatePathData(path, portA, portB);
     this.edgesGroup.appendChild(path);
@@ -615,7 +721,7 @@ export class FlowEditor extends HTMLElement {
     const posA = this.getPortPosition(portA);
     const posB = this.getPortPosition(portB);
     
-    // Improved cubic bezier for a smoother "swoosh"
+    // Improved cubic bezier for a smoother \"swoosh\"
     const dx = Math.abs(posB.x - posA.x) * 0.5;
     const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
     const cp1y = posA.y;
@@ -641,8 +747,8 @@ export class FlowEditor extends HTMLElement {
   }
 
   connectNodes(nodeA, portAName, nodeB, portBName) {
-    const portA = nodeA.shadowRoot.querySelector(`.port[data-port-name="${portAName}"]`);
-    const portB = nodeB.shadowRoot.querySelector(`.port[data-port-name="${portBName}"]`);
+    const portA = nodeA.shadowRoot.querySelector(`.port[data-port-name=\"${portAName}\"]`);
+    const portB = nodeB.shadowRoot.querySelector(`.port[data-port-name=\"${portBName}\"]`);
     
     if (portA && portB) {
       this.addEdge(portA, portB);
