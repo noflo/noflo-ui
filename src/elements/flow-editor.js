@@ -292,8 +292,8 @@ export class FlowEditor extends HTMLElement {
     const rect = port.getBoundingClientRect();
     const viewportRect = this.viewport.getBoundingClientRect();
     return {
-      x: (rect.left - viewportRect.left) / this.zoom,
-      y: (rect.top - viewportRect.top) / this.zoom
+      x: (rect.left + rect.width / 2 - viewportRect.left) / this.zoom,
+      y: (rect.top + rect.height / 2 - viewportRect.top) / this.zoom
     };
   }
 
