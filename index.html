@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <style>
       @font-face {
@@ -12,15 +12,101 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        font-family: SourceCodePro;
+        font-family: SourceCodePro, monospace;
       }
       #app {
         width: 100%;
         height: 100%;
       }
+      #controls {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 8px;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border: 1px solid #444;
+      }
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .control-label {
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #aaa;
+      }
+      .button-row {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+      button {
+        cursor: pointer;
+        background: #333;
+        color: white;
+        border: 1px solid #555;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      button:hover {
+        background: #444;
+      }
+      button:active {
+        background: #222;
+      }
     </style>
   </head>
   <body>
+    <div id="controls">
+      <script>
+        // biome-ignore lint/correctness/noUnusedVariables: Biome doesn't see onclicks
+        function setTheme(theme) {
+          const editor = document.querySelector('flow-editor');
+          if (editor) {
+            editor.setAttribute('data-theme', theme);
+          }
+        }
+        // biome-ignore lint/correctness/noUnusedVariables: Biome doesn't see onclicks
+        function setAge(age) {
+          const editor = document.querySelector('flow-editor');
+          if (editor) {
+            // Get current theme to avoid losing it when overwriting className
+            const theme = editor.getAttribute('data-theme') || 'cyberpunk';
+            editor.className = `state-${age}`;
+            // Re-apply theme attribute because changing className might sometimes behave unexpectedly
+            // in some environments, although it shouldn't affect attributes.
+            // But more importantly, we want to make sure the editor has the right attribute.
+            editor.setAttribute('data-theme', theme);
+          }
+        }
+      </script>
+      <div class="control-group">
+        <div class="control-label">Theme</div>
+        <div class="button-row">
+          <button type="button" onclick="setTheme('cyberpunk')">Cyberpunk</button>
+          <button type="button" onclick="setTheme('tube')">Tube Map</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Age</div>
+        <div class="button-row">
+          <button type="button" onclick="setAge('abstract')">Abstract</button>
+          <button type="button" onclick="setAge('golden')">Golden</button>
+          <button type="button" onclick="setAge('offline')">Offline</button>
+          <button type="button" onclick="setAge('crashed')">Crashed</button>
+        </div>
+      </div>
+    </div>
     <div id="app"></div>
     <script type="importmap">
       {

@@ -52,7 +52,6 @@ export class FlowEditor extends HTMLElement {
           /* Base Variables (Cyberpunk Dark) */
           --ui-bg: #0a0a0a;
           --dot-color: #444;
-          --anim-speed: 1.5s;
           --node-stroke-width: 2px;
           --edge-width: 4px;
 
@@ -63,7 +62,7 @@ export class FlowEditor extends HTMLElement {
           --node-subtext: #666;
 
           --flow-color: #333;
-          --flow-dash: 5, 5;
+          --flow-dash: none;
           --edge-color: #333;
 
           /* Cyberpunk Hues for sub-flows */
@@ -83,7 +82,6 @@ export class FlowEditor extends HTMLElement {
           --node-glow: transparent;
           --node-text: #333;
           --edge-width: 8px;
-          --flow-dash: 20, 30;
 
           /* Authentic Tube Colors */
           --color-piccadilly: #003688; /* Flow 1: Blue */
@@ -124,19 +122,16 @@ export class FlowEditor extends HTMLElement {
           --node-bg: #fff;
           --node-border: #ccc;
           --flow-color: #ccc;
-          --flow-dash: 1, 4;
         }
         :host([data-theme="tube"].state-golden) {
           --node-border: var(--color-piccadilly);
           --node-bg: #fff;
           --flow-color: var(--color-piccadilly);
-          --flow-dash: 20, 30;
         }
         :host([data-theme="tube"].state-offline) {
           --node-bg: #fff;
           --node-border: #ddd;
           --flow-color: #ddd;
-          --flow-dash: 2, 2;
         }
         :host([data-theme="tube"].state-crashed) {
           --node-bg: #ff0;
@@ -202,12 +197,6 @@ export class FlowEditor extends HTMLElement {
           stroke: var(--flow-color, var(--edge-color));
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
-          animation: dataFlow var(--anim-speed) linear infinite;
-        }
-
-        @keyframes dataFlow {
-          from { stroke-dashoffset: 25; }
-          to { stroke-dashoffset: 0; }
         }
       </style>
       <div id="viewport">
