@@ -8,9 +8,9 @@ self.onmessage = async (event) => {
   console.log(`[Backend] Received message of type: ${type}`, payload);
 
   switch (type) {
-    case 'INIT':
+    case "INIT":
       // Initialize CRDT and other backend services
-      self.postMessage({ type: 'INIT_DONE', payload: { status: 'ready' } });
+      self.postMessage({ type: "INIT_DONE", payload: { status: "ready" } });
       break;
     default:
       console.warn(`[Backend] Unknown message type: ${type}`);

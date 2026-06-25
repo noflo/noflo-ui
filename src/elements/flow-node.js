@@ -6,7 +6,7 @@
 export class FlowNode extends HTMLElement {
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
+    this.attachShadow({ mode: "open" });
     this._x = 0;
     this._y = 0;
     this.radius = 40;
@@ -24,13 +24,13 @@ export class FlowNode extends HTMLElement {
   setMetadata({ name, componentName, icon }) {
     if (name) this.textContent = name;
     if (componentName) {
-      const compEl = this.shadowRoot.querySelector('.node-component');
+      const compEl = this.shadowRoot.querySelector(".node-component");
       if (compEl) compEl.textContent = componentName;
     }
     if (icon) {
-      const iconEl = this.shadowRoot.querySelector('.node-content');
+      const iconEl = this.shadowRoot.querySelector(".node-content");
       if (iconEl) {
-        if (icon.startsWith('data:image') || icon.startsWith('http')) {
+        if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" style="width: 40px; height: 40px; object-fit: contain;">`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
@@ -50,7 +50,7 @@ export class FlowNode extends HTMLElement {
   setPorts(inPorts, outPorts) {
     this._inPorts = inPorts;
     this._outPorts = outPorts;
-    
+
     if (this.portsContainer) {
       this.renderPorts(this._inPorts, this._outPorts);
     }
@@ -191,19 +191,20 @@ export class FlowNode extends HTMLElement {
       </div>
       <div id="ports-container" style="position: absolute; top: 0; left: 0; width: 80px; height: 80px;"></div>
     `;
-    this.portsContainer = this.shadowRoot.getElementById('ports-container');
+    this.portsContainer = this.shadowRoot.getElementById("ports-container");
     // Render ports based on stored config or defaults
     this.renderPorts(this._inPorts, this._outPorts);
   }
 
   renderPorts(inPorts, outPorts) {
     if (!this.portsContainer) return;
-    this.portsContainer.innerHTML = '';
+    this.portsContainer.innerHTML = "";
 
     // Ensure we are working with arrays of configurations
     const processPorts = (ports) => {
       if (Array.isArray(ports)) return ports;
-      if (typeof ports === 'number') return Array(ports).fill({ type: 'regular' });
+      if (typeof ports === "number")
+        return Array(ports).fill({ type: "regular" });
       return [];
     };
 
@@ -222,59 +223,60 @@ export class FlowNode extends HTMLElement {
 
   createPort(index, totalPorts, isOutport, cfg) {
     const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
-    const type = cfg.type || 'regular';
+    const type = cfg.type || "regular";
     const size = cfg.size || 1;
-    
+
     const angleRange = Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;
     const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
     const baseAngle = centerAngle + (fraction - 0.5) * angleRange;
-    
-    if (type === 'regular') {
+
+    if (type === "regular") {
       const pos = {
         x: this.radius * Math.cos(baseAngle),
-        y: this.radius * Math.sin(baseAngle)
+        y: this.radius * Math.sin(baseAngle),
       };
-      this.addPortElement(pos, isOutport, name, 'regular');
-    } else if (type === 'array') {
+      this.addPortElement(pos, isOutport, name, "regular");
+    } else if (type === "array") {
       // Use an angular step that makes 12px circles almost touch
       // Chord length approx 13px -> angle approx 0.32 radians
-      const angularStep = 0.32; 
+      const angularStep = 0.32;
       const direction = isOutport ? 1 : -1;
 
       for (let i = 0; i < size; i++) {
         const instanceName = `${name}[${i}]`;
-        const angle = baseAngle + direction * (i - (size - 1) / 2) * angularStep;
-        const instancePos = { 
-          x: this.radius * Math.cos(angle), 
-          y: this.radius * Math.sin(angle) 
+        const angle =
+          baseAngle + direction * (i - (size - 1) / 2) * angularStep;
+        const instancePos = {
+          x: this.radius * Math.cos(angle),
+          y: this.radius * Math.sin(angle),
         };
-        this.addPortElement(instancePos, isOutport, instanceName, 'array');
+        this.addPortElement(instancePos, isOutport, instanceName, "array");
       }
     }
   }
 
   addPortElement(pos, isOutport, name, type) {
-    const port = document.createElement('div');
-    port.className = `port ${isOutport ? 'port-out' : 'port-in'}`;
-    
+    const port = document.createElement("div");
+    port.className = `port ${isOutport ? "port-out" : "port-in"}`;
+
     port.dataset.portName = name;
     port.dataset.portType = type;
-    
+
     // All ports are now 12px (radius 6px)
     port.style.left = `${this.radius + pos.x - 6}px`;
     port.style.top = `${this.radius + pos.y - 6}px`;
-    
-    const label = document.createElement('div');
-    label.className = 'port-label';
+
+    const label = document.createElement("div");
+    label.className = "port-label";
     label.textContent = name;
-    
+
     label.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
     label.style.top = `${this.radius + pos.y}px`;
-    label.style.transform = isOutport 
-      ? 'translateY(-50%)' 
-      : 'translate(-100%, -50%)';
-    label.style.textAlign = isOutport ? 'left' : 'right';
+    label.style.transform = isOutport
+      ? "translateY(-50%)"
+      : "translate(-100%, -50%)";
+    label.style.textAlign = isOutport ? "left" : "right";
 
     this.portsContainer.appendChild(port);
     this.portsContainer.appendChild(label);
@@ -288,7 +290,7 @@ export class FlowNode extends HTMLElement {
 
     return {
       x: radius * Math.cos(angle),
-      y: radius * Math.sin(angle)
+      y: radius * Math.sin(angle),
     };
   }
 }

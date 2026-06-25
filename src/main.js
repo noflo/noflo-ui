@@ -2,10 +2,10 @@
  * Main entry point for NoFlo UI
  */
 
-import { FlowEditor } from './elements/flow-editor.js';
-import { FlowNode } from './elements/flow-node.js';
+import { FlowEditor } from "./elements/flow-editor.js";
+import { FlowNode } from "./elements/flow-node.js";
 
-const backend = new Worker('src/backend.js', { type: 'module' });
+const backend = new Worker("src/backend.js", { type: "module" });
 
 backend.onmessage = (event) => {
   const { type, payload } = event.data;
@@ -13,74 +13,92 @@ backend.onmessage = (event) => {
 };
 
 async function init() {
-  console.log('Initializing NoFlo UI...');
-  
+  console.log("Initializing NoFlo UI...");
+
   // Initialize backend
-  backend.postMessage({ type: 'INIT', payload: {} });
+  backend.postMessage({ type: "INIT", payload: {} });
 
   // Register Web Components
-  customElements.define('flow-editor', FlowEditor);
-  customElements.define('flow-node', FlowNode);
+  customElements.define("flow-editor", FlowEditor);
+  customElements.define("flow-node", FlowNode);
 
   // Initial setup
-  const app = document.getElementById('app');
+  const app = document.getElementById("app");
   if (app) {
-    const editor = document.createElement('flow-editor');
+    const editor = document.createElement("flow-editor");
     app.appendChild(editor);
-    
+
     // Add some sample nodes
-    const source = editor.addNode('Source', 100, 200, 
-      [], 
-      [{ type: 'regular', name: 'out' }]
+    const source = editor.addNode(
+      "Source",
+      100,
+      200,
+      [],
+      [{ type: "regular", name: "out" }],
     );
-    
-    const filter = editor.addNode('Filter', 300, 100, 
-      [{ type: 'regular', name: 'in' }], 
+
+    const filter = editor.addNode(
+      "Filter",
+      300,
+      100,
+      [{ type: "regular", name: "in" }],
       [
-        { type: 'regular', name: 'out' },
-        { type: 'regular', name: 'error' }
-      ]
+        { type: "regular", name: "out" },
+        { type: "regular", name: "error" },
+      ],
     );
-    
-    const splitter = editor.addNode('Splitter', 300, 300, 
-      [{ type: 'regular', name: 'in' }], 
-      [{ type: 'array', name: 'out', size: 3 }]
+
+    const splitter = editor.addNode(
+      "Splitter",
+      300,
+      300,
+      [{ type: "regular", name: "in" }],
+      [{ type: "array", name: "out", size: 3 }],
     );
-    
-    const aggregator = editor.addNode('Aggregator', 500, 300, 
-      [{ type: 'array', name: 'in', size: 3 }], 
-      [{ type: 'regular', name: 'out' }]
+
+    const aggregator = editor.addNode(
+      "Aggregator",
+      500,
+      300,
+      [{ type: "array", name: "in", size: 3 }],
+      [{ type: "regular", name: "out" }],
     );
-    
-    const logger = editor.addNode('Logger', 700, 100, 
-      [{ type: 'regular', name: 'in' }], 
-      []
+
+    const logger = editor.addNode(
+      "Logger",
+      700,
+      100,
+      [{ type: "regular", name: "in" }],
+      [],
     );
-    
-    const sink = editor.addNode('Sink', 700, 300, 
-      [{ type: 'regular', name: 'in' }], 
-      []
+
+    const sink = editor.addNode(
+      "Sink",
+      700,
+      300,
+      [{ type: "regular", name: "in" }],
+      [],
     );
 
     // Initial connections
-    editor.connectNodes(source, 'out', filter, 'in');
-    editor.connectNodes(source, 'out', splitter, 'in');
-    
-    editor.connectNodes(filter, 'out', logger, 'in');
-    
+    editor.connectNodes(source, "out", filter, "in");
+    editor.connectNodes(source, "out", splitter, "in");
+
+    editor.connectNodes(filter, "out", logger, "in");
+
     // Connect only some ArrayPorts to allow testing
     editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`);
     editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`);
-    
-    editor.connectNodes(aggregator, 'out', sink, 'in');
-    
+
+    editor.connectNodes(aggregator, "out", sink, "in");
+
     editor.fitNodesToViewport();
 
     // Demo: Occasionally record activity for random nodes and edges
     setInterval(() => {
-      const nodes = Array.from(editor.shadowRoot.querySelectorAll('flow-node'));
+      const nodes = Array.from(editor.shadowRoot.querySelectorAll("flow-node"));
       const edges = editor.edges || [];
-      
+
       if (nodes.length === 0) return;
 
       if (Math.random() > 0.5 || edges.length === 0) {

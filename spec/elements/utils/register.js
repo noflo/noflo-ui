@@ -1,4 +1,4 @@
-import { Window } from 'happy-dom';
+import { Window } from "happy-dom";
 
 const window = new Window();
 
@@ -9,5 +9,5 @@ Object.assign(globalThis, {
   customElements: window.customElements,
   HTMLElement: window.HTMLElement,
   CustomEvent: window.CustomEvent,
-  Node: window.Node
+  Node: window.Node,
 });
