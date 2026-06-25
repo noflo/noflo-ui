@@ -53,8 +53,8 @@ export class FlowEditor extends HTMLElement {
           position: absolute;
           top: 0;
           left: 0;
-          width: 10000px;
-          height: 10000px;
+          width: 100000px;
+          height: 100000px;
           pointer-events: none;
           z-index: 1;
         }
@@ -62,8 +62,8 @@ export class FlowEditor extends HTMLElement {
           position: absolute;
           top: 0;
           left: 0;
-          width: 10000px;
-          height: 10000px;
+          width: 100000px;
+          height: 100000px;
           z-index: 2;
         }
         .grid-pattern {
@@ -93,6 +93,42 @@ export class FlowEditor extends HTMLElement {
   updateTransform() {
     this.viewport.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
     this.style.setProperty('--zoom-scale', this.zoom);
+  }
+
+  fitNodesToViewport() {
+    const nodes = this.shadowRoot.querySelectorAll('flow-node');
+    if (nodes.length === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    nodes.forEach(node => {
+      const pos = node.position;
+      const size = 80; 
+      minX = Math.min(minX, pos.x);
+      minY = Math.min(minY, pos.y);
+      maxX = Math.max(maxX, pos.x + size);
+      maxY = Math.max(maxY, pos.y + size);
+    });
+
+    const padding = 100;
+    const contentWidth = (maxX - minX) + padding * 2;
+    const contentHeight = (maxY - minY) + padding * 2;
+    
+    const rect = this.getBoundingClientRect();
+    const viewportWidth = rect.width;
+    const viewportHeight = rect.height;
+    
+    const zoomX = viewportWidth / contentWidth;
+    const zoomY = viewportHeight / contentHeight;
+    this.zoom = Math.min(zoomX, zoomY, 1.0);
+
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    
+    this.offset.x = (viewportWidth / 2) - (contentCenterX * this.zoom);
+    this.offset.y = (viewportHeight / 2) - (contentCenterY * this.zoom);
+
+    this.updateTransform();
   }
 
   setupInteractions() {

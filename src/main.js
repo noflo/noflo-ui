@@ -33,6 +33,8 @@ async function init() {
     editor.addNode('Process 1', 300, 100, 1, 1);
     editor.addNode('Process 2', 300, 200, 1, 1);
     editor.addNode('Output', 500, 150, 2, 0);
+    
+    editor.fitNodesToViewport();
   }
 }
 
