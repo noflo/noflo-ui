@@ -35,8 +35,8 @@ export class FlowEditor extends HTMLElement {
       <style>
         :host {
           display: block;
-          width: 100vw;
-          height: 100vh;
+          width: 100%;
+          height: 100%;
           overflow: hidden;
           background-color: #f8f9fa;
           position: relative;
