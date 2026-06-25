@@ -102,9 +102,11 @@ Configuration:
 
 - `src/`: application source code
   - `src/elements/`: Web Components
-- `components/`: NoFlo Components
-- `graphs/`: NoFlo graphs
+  - `src/components/`: NoFlo Components
+  - `src/graphs/`: NoFlo graphs
 - `spec/`: unit and integration tests
+  - `spec/elements/`: Web Components tests
+  - `spec/noflo/`: fbp-spec tests for NoFlo graphs and components
 - `docs/`: documentation in Markdown format
 - `vendor/`: vendored library dependencies as ES Modules
 
