@@ -88,7 +88,7 @@
     "webpack-dev-server": "^3.11.2",
     "webpack-pwa-manifest": "^4.2.0",
     "workbox-webpack-plugin": "^6.1.1",
-    "yaml-loader": "^0.6.0"
+    "yaml-loader": "^0.9.0"
   },
   "scripts": {
     "lint": "eslint *.js src/*.js components/*.js app/*.js elements/*.js runtimeinfo/*.js spec/*.js spec/**/*.js",
