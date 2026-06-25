@@ -23,6 +23,8 @@ export class FlowEditor extends HTMLElement {
     this.stillnessTimer = null;
     this.panDistance = 0;
     this.didPinch = false;
+    this.lastPinchCenter = null;
+    this.lastPinchDistance = 0;
   }
 
   connectedCallback() {
@@ -222,6 +224,8 @@ export class FlowEditor extends HTMLElement {
       this.isPanning = false;
       this.panDistance = 0;
       this.didPinch = false;
+      this.lastPinchCenter = null;
+      this.lastPinchDistance = 0;
       this.isDraggingNode = false;
       this.isDraggingWire = false;
       if (this.activeWire) {
@@ -261,9 +265,11 @@ export class FlowEditor extends HTMLElement {
     const p1 = pointers[0];
     const p2 = pointers[1];
     
-    this.initialPinchDistance = this.getDistance(p1, p2);
-    this.initialZoom = this.zoom;
-    this.initialOffset = { ...this.offset };
+    this.lastPinchDistance = this.getDistance(p1, p2);
+    this.lastPinchCenter = {
+      x: (p1.clientX + p2.clientX) / 2,
+      y: (p1.clientY + p2.clientY) / 2
+    };
   }
 
   handlePinchZoom() {
@@ -272,22 +278,40 @@ export class FlowEditor extends HTMLElement {
     const p2 = pointers[1];
     
     const currentDistance = this.getDistance(p1, p2);
-    if (this.initialPinchDistance === 0) return;
+    const currentCenter = {
+      x: (p1.clientX + p2.clientX) / 2,
+      y: (p1.clientY + p2.clientY) / 2
+    };
 
-    const ratio = currentDistance / this.initialPinchDistance;
-    const newZoom = Math.max(0.1, Math.min(5, this.initialZoom * ratio));
-    
-    // Center of pinch
-    const centerX = (p1.clientX + p2.clientX) / 2;
-    const centerY = (p1.clientY + p2.clientY) / 2;
+    if (this.lastPinchDistance === 0) {
+      this.lastPinchDistance = currentDistance;
+      this.lastPinchCenter = currentCenter;
+      return;
+    }
 
-    // Zoom towards center
-    const zoomFactor = newZoom / this.initialZoom;
-    this.offset.x = this.initialOffset.x - (centerX - this.initialOffset.x) * (zoomFactor - 1);
-    this.offset.y = this.initialOffset.y - (centerY - this.initialOffset.y) * (zoomFactor - 1);
+    const prevDistance = this.lastPinchDistance;
+    const prevCenter = this.lastPinchCenter;
+
+    const zoomFactor = currentDistance / prevDistance;
+    const newZoom = Math.max(0.1, Math.min(5, this.zoom * zoomFactor));
+    const actualZoomFactor = newZoom / this.zoom;
+
+    // 1. Zoom around the current center
+    this.offset.x = currentCenter.x - (currentCenter.x - this.offset.x) * actualZoomFactor;
+    this.offset.y = currentCenter.y - (currentCenter.y - this.offset.y) * actualZoomFactor;
     
     this.zoom = newZoom;
+
+    // 2. Pan by the movement of the center
+    const dx = currentCenter.x - prevCenter.x;
+    const dy = currentCenter.y - prevCenter.y;
+    this.offset.x += dx;
+    this.offset.y += dy;
+
     this.updateTransform();
+
+    this.lastPinchCenter = currentCenter;
+    this.lastPinchDistance = currentDistance;
   }
 
   getDistance(p1, p2) {
