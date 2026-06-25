@@ -9,6 +9,7 @@
   "scripts": {
     "prebuild-vendors": "node utils/generate-noflo-loader.js",
     "build-vendors": " tsdown --config tsdown.config.js",
+    "postbuild-vendors": "cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/SourceCodePro-Regular.otf.woff2",
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "npx serve -l 3000 ."
   },
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "noflo-component-loader": "^0.4.1",
+    "source-code-pro": "^2.42.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3"
   },
