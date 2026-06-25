@@ -11,11 +11,14 @@
     "format": "npx @biomejs/biome check --write src/ spec/ index.html",
     "prebuild-vendors": "node utils/generate-noflo-loader.js",
     "build-vendors": " tsdown --config tsdown.config.js",
-    "postbuild-vendors": "cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/SourceCodePro-Regular.otf.woff2",
+    "postbuild-vendors": "npm run sourcecodepro && npm run fontawesome",
+    "sourcecodepro": "cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/SourceCodePro-Regular.otf.woff2",
+    "fontawesome": "cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/fa-solid-900.woff2",
     "test": "node --test spec/elements/*.js",
     "serve": "npx serve -l 3000 ."
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.0",
     "eventemitter3": "^5.0.4",
     "noflo": "^1.5.2",
     "noflo-core": "^0.6.1",
