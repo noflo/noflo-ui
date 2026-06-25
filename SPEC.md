@@ -75,9 +75,12 @@ Viewing a trace:
 - There is a "timeline scrubber" to move back and forth on the trace
 
 Configuration:
-- App configuration screen allows configuring WebRTC signaling servers
-- App configuration screen allows configuring Reticulum identity and interfaces
-- There will likely be some options to enable/disable (like storage to disk)
+- Choosing the app theme
+- Managing list of WebRTC signaling servers to use
+- Managing Reticulum identity and interfaces
+- There will likely be some options to enable/disable
+  - Storing project changes to disk (when implemented)
+  - Disabling UI animations (default from `prefers-reduced-motion`)
 
 ## Tech stack
 
@@ -117,6 +120,9 @@ Technical work is planned using work documents (in Markdown) that are managed [u
 
 ## Boundaries
 
-- ✅ **Always**: create a branch for any major change set, run tests after every change set
-- ⚠️ **Ask first**: adding dependencies, modify CI config
-- 🚫 **Never**: AI agents may not make commits on their own
+- ✅ **Always**: add at least basic test coverage for any new functionality
+- ✅ **Always**: run tests after every change set
+- ✅ **Always**: check and fix linter and formatting issues after every change set
+- ⚠️ **Ask first**: adding dependencies
+
+Additional boundaries for AI Agents can be found from `AGENTS.md`.
