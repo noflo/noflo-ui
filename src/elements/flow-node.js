@@ -67,8 +67,17 @@ export class FlowNode extends HTMLElement {
         
         /* Semantic Zooming: hide text when zoomed out */
         @container style(--zoom-scale < 0.5) {
-          .node-circle {
+          .node-label {
             opacity: 0;
+            pointer-events: none;
+          }
+        }
+
+        /* Hide ports when zoomed out very far */
+        @container style(--zoom-scale < 0.2) {
+          .port {
+            opacity: 0;
+            pointer-events: none;
           }
         }
         :host([selected]) .node-circle {
@@ -91,7 +100,9 @@ export class FlowNode extends HTMLElement {
         }
       </style>
       <div class="node-circle">
-        <slot></slot>
+        <div class="node-label">
+          <slot></slot>
+        </div>
       </div>
       <div id="ports-container"></div>
     `;
