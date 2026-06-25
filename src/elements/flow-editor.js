@@ -84,15 +84,18 @@ export class FlowEditor extends HTMLElement {
 
           /* Base Variables (Cyberpunk Dark) */
           --ui-bg: rgb(20, 27, 35);
+          --heatmap-color: rgb(138, 106, 50);
           --dot-color: #444;
           --node-stroke-width: 2px;
           --edge-width: 4px;
+          --node-ring-inset: 4px;
 
           --node-bg: #111;
           --node-border: #444;
           --node-glow: transparent;
           --node-text: #aaa;
           --node-subtext: #666;
+          --node-icon: rgb(0, 229, 255);
 
           --flow-color: #333;
           --flow-dash: none;
@@ -107,14 +110,17 @@ export class FlowEditor extends HTMLElement {
 
         /* TUBE THEME OVERRIDES */
         :host([data-theme="tube"]) {
-          --ui-bg: #F4F4F4;
+          --ui-bg: white;
+          --heatmap-color: rgb(126, 126, 126);
           --dot-color: #ccc;
           --font-family: 'Helvetica Neue', Arial, sans-serif;
-          --node-bg: #FFFFFF;
-          --node-border: #333;
+          --node-bg: white;
+          --node-border: #777;
           --node-glow: transparent;
           --node-text: #333;
+          --node-icon: #777;
           --edge-width: 8px;
+          --node-ring-inset: 0px;
 
           /* Authentic Tube Colors */
           --color-piccadilly: #003688; /* Flow 1: Blue */
@@ -128,17 +134,21 @@ export class FlowEditor extends HTMLElement {
         :host([data-theme="cyberpunk"]) flow-node.state-abstract {
           --node-bg: rgb(58, 63, 72);
           --node-border: rgb(20, 27, 35);
+          --node-icon: rgb(0, 229, 255);
           --node-glow: transparent;
           --flow-color: rgb(58, 63, 72);
           --flow-dash: 0;
+          --node-ring-inset: 4px;
         }
         :host([data-theme="cyberpunk"].state-golden),
         :host([data-theme="cyberpunk"]) flow-node.state-golden {
           --node-bg: rgb(62, 82, 93);
-          --node-border: rgb(176, 235, 236);
+          --node-border: rgb(0, 229, 255);
+          --node-icon: rgb(0, 229, 255);
           --node-glow: rgba(176, 235, 236, 0.4);
-          --flow-color: rgb(176, 235, 236);
+          --flow-color: rgb(0, 229, 255);
           --flow-dash: 0;
+          --node-ring-inset: 4px;
         }
         :host([data-theme="cyberpunk"].state-golden) {
           --ui-bg: rgb(31, 41, 49);
@@ -147,41 +157,55 @@ export class FlowEditor extends HTMLElement {
         :host([data-theme="cyberpunk"]) flow-node.state-offline {
           --node-bg: rgb(62, 76, 82);
           --node-border: rgb(101, 114, 125);
+          --node-icon: rgb(101, 114, 125);
           --node-glow: transparent;
           --flow-color: rgb(101, 114, 125);
+          --flow-dash: 5,5;
+          --node-ring-inset: 4px;
         }
         :host([data-theme="cyberpunk"].state-crashed),
         :host([data-theme="cyberpunk"]) flow-node.state-crashed {
           --node-border: rgb(226, 150, 133);
           --node-bg: rgb(77, 60, 59);
+          --node-icon: rgb(226, 150, 133);
           --node-glow: rgb(226, 150, 133);
           --flow-color: rgb(226, 150, 133);
+          --flow-dash: 5,5;
+          --node-ring-inset: 4px;
         }
 
         /* TUBE AGES */
         :host([data-theme="tube"].state-abstract),
         :host([data-theme="tube"]) flow-node.state-abstract {
-          --node-bg: #fff;
-          --node-border: #ccc;
-          --flow-color: #ccc;
+          --node-bg: white;
+          --node-border: #777;
+          --node-icon: #777;
+          --flow-color: #777;
+          --flow-dash: 0;
         }
         :host([data-theme="tube"].state-golden),
         :host([data-theme="tube"]) flow-node.state-golden {
-          --node-border: var(--color-piccadilly);
-          --node-bg: #fff;
-          --flow-color: var(--color-piccadilly);
+          --node-bg: white;
+          --node-border: black;
+          --node-icon: black;
+          --flow-color: black;
+          --flow-dash: 0;
         }
         :host([data-theme="tube"].state-offline),
         :host([data-theme="tube"]) flow-node.state-offline {
-          --node-bg: #fff;
-          --node-border: #ddd;
-          --flow-color: #ddd;
+          --node-bg: white;
+          --node-border: #777;
+          --node-icon: #777;
+          --flow-color: #777;
+          --flow-dash: 5,5;
         }
         :host([data-theme="tube"].state-crashed),
         :host([data-theme="tube"]) flow-node.state-crashed {
-          --node-bg: #ff0;
-          --node-border: #000;
-          --flow-color: #f00;
+          --node-bg: white;
+          --node-border: rgb(227, 32, 23);
+          --node-icon: black;
+          --flow-color: #777;
+          --flow-dash: 5,5;
         }
 
         #viewport {
@@ -283,6 +307,8 @@ export class FlowEditor extends HTMLElement {
     setInterval(() => {
       ctx.clearRect(0, 0, this.heatmapCanvas.width, this.heatmapCanvas.height);
 
+      const heatmapColor = getComputedStyle(this).getPropertyValue("--heatmap-color").trim();
+
       for (const [key, heat] of this.activityMap.entries()) {
         if (heat <= 0.05) {
           this.activityMap.delete(key);
@@ -291,7 +317,11 @@ export class FlowEditor extends HTMLElement {
 
         const [col, row] = key.split(",").map(Number);
 
-        ctx.fillStyle = `rgba(79, 67, 43, ${heat * 0.6})`;
+        const color = heatmapColor.startsWith("rgba")
+          ? heatmapColor.replace(/[\d\.]+\)$/, `${heat * 0.6})`)
+          : heatmapColor.replace(/\)$/, `, ${heat * 0.6})`);
+
+        ctx.fillStyle = color;
         // Scale coordinates down to fit the smaller canvas
         ctx.fillRect(
           (col * gridSize + 8000) / 20,

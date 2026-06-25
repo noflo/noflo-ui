@@ -87,10 +87,10 @@ export class FlowNode extends HTMLElement {
         .node-circle::after {
           content: '';
           position: absolute;
-          top: 4px;
-          left: 4px;
-          right: 4px;
-          bottom: 4px;
+          top: var(--node-ring-inset, 4px);
+          left: var(--node-ring-inset, 4px);
+          right: var(--node-ring-inset, 4px);
+          bottom: var(--node-ring-inset, 4px);
           border-radius: 50%;
           border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           pointer-events: none;
@@ -104,6 +104,7 @@ export class FlowNode extends HTMLElement {
           justify-content: center;
           font-size: 24px;
           text-align: center;
+          color: var(--node-icon, inherit);
         }
         .node-info {
           text-align: center;
