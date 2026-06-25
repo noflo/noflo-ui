@@ -19,6 +19,8 @@ export class FlowEditor extends HTMLElement {
     this.initialZoom = 1.0;
     this.initialOffset = { x: 0, y: 0 };
     this.selectedNodes = new Set();
+    this.ghostNode = null;
+    this.stillnessTimer = null;
   }
 
   connectedCallback() {
@@ -68,6 +70,22 @@ export class FlowEditor extends HTMLElement {
         }
         .grid-pattern {
           fill: url(#grid);
+        }
+        .ghost-node {
+          position: absolute;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          border: 2px dashed #aaa;
+          background-color: rgba(255, 255, 255, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          color: #aaa;
+          pointer-events: none;
+          z-index: 3;
+          box-sizing: border-box;
         }
       </style>
       <div id="viewport">
@@ -309,6 +327,51 @@ export class FlowEditor extends HTMLElement {
     const mouseY = (e.clientY - rect.top - this.offset.y) / this.zoom;
 
     this.activeWire.setAttribute('d', `M ${portPos.x} ${portPos.y} L ${mouseX} ${mouseY}`);
+
+    // Ghost node logic for new node creation
+    const dist = Math.hypot(e.clientX - this.lastPointerPos.x, e.clientY - this.lastPointerPos.y);
+    
+    if (this.isOverPort(e.clientX, e.clientY) || dist > 2) {
+      this.removeGhostNode();
+      if (this.stillnessTimer) {
+        clearTimeout(this.stillnessTimer);
+        this.stillnessTimer = null;
+      }
+    } else if (!this.ghostNode && !this.stillnessTimer) {
+      this.stillnessTimer = setTimeout(() => {
+        this.showGhostNode(mouseX, mouseY);
+      }, 200);
+    }
+  }
+
+  showGhostNode(x, y) {
+    this.ghostNode = document.createElement('div');
+    this.ghostNode.className = 'ghost-node';
+    this.ghostNode.textContent = 'new';
+    this.ghostNode.style.left = `${x - 40}px`;
+    this.ghostNode.style.top = `${y - 40}px`;
+    this.nodeLayer.appendChild(this.ghostNode);
+  }
+
+  removeGhostNode() {
+    if (this.ghostNode) {
+      this.nodeLayer.removeChild(this.ghostNode);
+      this.ghostNode = null;
+    }
+  }
+
+  isOverPort(clientX, clientY) {
+    const nodes = this.shadowRoot.querySelectorAll('flow-node');
+    for (const node of nodes) {
+      const ports = node.shadowRoot.querySelectorAll('.port');
+      for (const port of ports) {
+        const rect = port.getBoundingClientRect();
+        const dx = clientX - (rect.left + rect.width / 2);
+        const dy = clientY - (rect.top + rect.height / 2);
+        if (Math.sqrt(dx * dx + dy * dy) < 20) return true;
+      }
+    }
+    return false;
   }
 
   completeWireDrag(e) {
@@ -346,8 +409,31 @@ export class FlowEditor extends HTMLElement {
       } else {
         console.warn('Cannot connect ports of the same type (both in or both out)');
       }
+    } else if (this.ghostNode) {
+      // Create new node at ghost node position
+      const rect = this.getBoundingClientRect();
+      const x = (e.clientX - rect.left - this.offset.x) / this.zoom;
+      const y = (e.clientY - rect.top - this.offset.y) / this.zoom;
+      
+      const newNode = this.addNode('New Node', x - 40, y - 40);
+      const isOut = this.dragPort.classList.contains('port-out');
+      
+      // Connect to the first available port of opposite type
+      const targetPort = newNode.shadowRoot.querySelector(`.port${isOut ? '-in' : '-out'}`);
+      if (targetPort) {
+        if (isOut) {
+          this.addEdge(this.dragPort, targetPort);
+        } else {
+          this.addEdge(targetPort, this.dragPort);
+        }
+      }
     }
 
+    this.removeGhostNode();
+    if (this.stillnessTimer) {
+      clearTimeout(this.stillnessTimer);
+      this.stillnessTimer = null;
+    }
     if (this.activeWire) {
       this.edgesGroup.removeChild(this.activeWire);
       this.activeWire = null;
