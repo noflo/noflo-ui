@@ -517,7 +517,7 @@ export class FlowEditor extends HTMLElement {
       const clickedPort = path.find((el) => el.classList?.contains("port"));
       const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
       const clickedEdge = path.find((el) =>
-        el.classList?.contains("edge-flow"),
+        el.classList?.contains("edge-flow") || el.classList?.contains("edge-hit-area"),
       );
 
       if (clickedPort) {
@@ -528,14 +528,14 @@ export class FlowEditor extends HTMLElement {
         this.startNodeDrag(e, clickedNode);
       } else if (clickedEdge) {
         e.stopPropagation();
-        const edge = this.edges.find((edge) => edge.path === clickedEdge);
+        const edge = this.edges.find((edge) => edge.hitPath === clickedEdge || edge.visualPath === clickedEdge);
         if (edge) {
           if (this.selectedEdges.has(edge)) {
             this.selectedEdges.delete(edge);
-            clickedEdge.removeAttribute("selected");
+            edge.visualPath.removeAttribute("selected");
           } else {
             this.selectedEdges.add(edge);
-            clickedEdge.setAttribute("selected", "");
+            edge.visualPath.setAttribute("selected", "");
           }
           this.dispatchEvent(
             new CustomEvent("selection-changed", {
@@ -704,7 +704,9 @@ export class FlowEditor extends HTMLElement {
     const path = e.composedPath();
     const clickedPort = path.find((el) => el.classList?.contains("port"));
     const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
-    const clickedEdge = path.find((el) => el.classList?.contains("edge-flow"));
+    const clickedEdge = path.find((el) =>
+      el.classList?.contains("edge-flow") || el.classList?.contains("edge-hit-area"),
+    );
 
     const rect = this.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -755,7 +757,9 @@ export class FlowEditor extends HTMLElement {
         this.hideContextMenu();
       });
     } else if (clickedEdge) {
-      const edge = this.edges.find((edge) => edge.path === clickedEdge);
+      const edge = this.edges.find(
+        (edge) => edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
+      );
       if (edge) {
         this.addMenuItem("Remove", () => {
           this.dispatchEvent(
@@ -935,7 +939,7 @@ export class FlowEditor extends HTMLElement {
 
   clearEdgeSelection(emit = true) {
     this.selectedEdges.forEach((edge) => {
-      edge.path.removeAttribute("selected");
+      edge.visualPath.removeAttribute("selected");
     });
     this.selectedEdges.clear();
 
@@ -1147,17 +1151,24 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.classList.add("edge-flow");
+    const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    hitPath.classList.add("edge-hit-area");
+    hitPath.setAttribute("stroke", "transparent");
+    hitPath.setAttribute("stroke-width", "20");
+    hitPath.setAttribute("fill", "none");
 
-    this.updatePathData(path, portA, portB);
-    this.edgesGroup.appendChild(path);
+    const visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    visualPath.classList.add("edge-flow");
+
+    this.updatePathData(hitPath, visualPath, portA, portB);
+    this.edgesGroup.appendChild(hitPath);
+    this.edgesGroup.appendChild(visualPath);
 
     this.edges = this.edges || [];
-    this.edges.push({ path, portA, portB });
+    this.edges.push({ hitPath, visualPath, portA, portB });
   }
 
-  updatePathData(path, portA, portB) {
+  updatePathData(hitPath, visualPath, portA, portB) {
     const posA = this.getPortPosition(portA);
     const posB = this.getPortPosition(portB);
 
@@ -1168,16 +1179,15 @@ export class FlowEditor extends HTMLElement {
     const cp2x = posB.x + (posB.x > posA.x ? -dx : dx);
     const cp2y = posB.y;
 
-    path.setAttribute(
-      "d",
-      `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`,
-    );
+    const d = `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`;
+    hitPath.setAttribute("d", d);
+    visualPath.setAttribute("d", d);
   }
 
   updateEdges() {
     if (!this.edges) return;
     this.edges.forEach((edge) => {
-      this.updatePathData(edge.path, edge.portA, edge.portB);
+      this.updatePathData(edge.hitPath, edge.visualPath, edge.portA, edge.portB);
     });
   }
 
