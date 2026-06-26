@@ -20,6 +20,7 @@ export default defineConfig([
       allowJs: true,
     },
   },
+  /*
   {
     name: 'noflo-core',
     entry: 'node_modules/noflo-core/components/*.js',
@@ -27,7 +28,6 @@ export default defineConfig([
     format: 'esm',
     outDir: 'vendor',
     comments: false,
-    /*
     banner: {
       js: `var require = () => ({}); var util = {};`,
     },
@@ -39,6 +39,6 @@ export default defineConfig([
     alias: {
       'events': 'eventemitter3',
     },
-    */
   },
+  */
 ])

@@ -33,6 +33,9 @@ export class FlowEditor extends HTMLElement {
     this.wasClickOnSelectedNode = false;
     this.clickedNode = null;
     this.heatmapInterval = null;
+    this.deleteArea = null;
+    this.contextMenu = null;
+    this.contentsLayer = null;
   }
 
   connectedCallback() {
@@ -277,10 +280,47 @@ export class FlowEditor extends HTMLElement {
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
         }
-        .edge-flow[selected] {
-          stroke: var(--node-icon);
-          stroke-width: calc(var(--edge-width, 4px) + 2px);
-          filter: drop-shadow(0 0 3px var(--node-icon));
+        .delete-area {
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          width: 80px;
+          height: 80px;
+          border: 3px dashed #ff4444;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ff4444;
+          font-weight: bold;
+          pointer-events: none;
+          z-index: 5;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .delete-area.visible {
+          opacity: 1;
+        }
+        .context-menu {
+          position: absolute;
+          pointer-events: auto;
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          background: var(--node-bg);
+          border: 1px solid var(--node-border);
+          padding: 5px;
+          border-radius: 4px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+          color: var(--node-text);
+        }
+        .context-menu-item {
+          padding: 5px 10px;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .context-menu-item:hover {
+          background: var(--node-border);
         }
       </style>
       <div id="viewport">
@@ -300,12 +340,16 @@ export class FlowEditor extends HTMLElement {
         </svg>
         <div id="node-layer"></div>
       </div>
+      <div id="delete-area" class="delete-area">DELETE</div>
+      <div id="context-menu" class="context-menu" style="display: none;"></div>
     `;
     this.viewport = this.shadowRoot.getElementById("viewport");
     this.heatmapCanvas = this.shadowRoot.getElementById("heatmap-canvas");
     this.svgLayer = this.shadowRoot.getElementById("svg-layer");
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
+    this.deleteArea = this.shadowRoot.getElementById("delete-area");
+    this.contextMenu = this.shadowRoot.getElementById("context-menu");
 
     // Using a smaller canvas and scaling it up for performance
     this.heatmapCanvas.width = 800;
@@ -496,6 +540,13 @@ export class FlowEditor extends HTMLElement {
               };
             });
             this.updateEdges();
+
+            const rect = this.viewport.getBoundingClientRect();
+            if (e.clientX > rect.right - 150 && e.clientY > rect.bottom - 150) {
+              this.deleteArea.classList.add("visible");
+            } else {
+              this.deleteArea.classList.remove("visible");
+            }
           }
         } else if (this.isDraggingWire) {
           this.updateWireDrag(e);
@@ -522,6 +573,16 @@ export class FlowEditor extends HTMLElement {
       }
 
       if (e.pointerId === this.draggingNodePointerId) {
+        if (this.deleteArea.classList.contains("visible")) {
+          this.dispatchEvent(
+            new CustomEvent("node-removal-attempt", {
+              detail: { nodes: Array.from(this.selectedNodes) },
+              bubbles: true,
+              composed: true,
+            }),
+          );
+        }
+
         if (
           !this.isDraggingNode &&
           this.wasClickOnSelectedNode &&
@@ -548,6 +609,7 @@ export class FlowEditor extends HTMLElement {
         this.draggingNodePointerId = null;
         this.wasClickOnSelectedNode = false;
         this.clickedNode = null;
+        this.deleteArea.classList.remove("visible");
       }
 
       if (e.pointerId === this.draggingWirePointerId) {
@@ -587,6 +649,116 @@ export class FlowEditor extends HTMLElement {
       },
       { passive: false },
     );
+
+    this.viewport.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      this.handleContextMenu(e);
+    });
+  }
+
+  handleContextMenu(e) {
+    const path = e.composedPath();
+    const clickedPort = path.find((el) => el.classList?.contains("port"));
+    const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
+    const clickedEdge = path.find((el) => el.classList?.contains("edge-flow"));
+
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    this.showContextMenu(x, y, {
+      clickedPort,
+      clickedNode,
+      clickedEdge,
+    });
+  }
+
+  showContextMenu(x, y, context) {
+    const { _clickedPort, clickedNode, clickedEdge } = context;
+
+    this.contextMenu.innerHTML = "";
+    this.contextMenu.style.display = "flex";
+    this.contextMenu.style.left = `${x}px`;
+    this.contextMenu.style.top = `${y}px`;
+
+    if (clickedNode) {
+      this.addMenuItem("Remove", () => {
+        this.dispatchEvent(
+          new CustomEvent("node-removal-attempt", {
+            detail: { nodes: [clickedNode] },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+        this.hideContextMenu();
+      });
+      this.addMenuItem("Make subgraph", () => {
+        // TODO: implement
+        this.hideContextMenu();
+      });
+      this.addMenuItem("Open", () => {
+        // TODO: implement
+        this.hideContextMenu();
+      });
+    } else if (clickedEdge) {
+      const edge = this.edges.find((edge) => edge.path === clickedEdge);
+      if (edge) {
+        this.addMenuItem("Remove", () => {
+          this.dispatchEvent(
+            new CustomEvent("edge-removal-attempt", {
+              detail: { edge },
+              bubbles: true,
+              composed: true,
+            }),
+          );
+          this.hideContextMenu();
+        });
+      }
+    } else {
+      this.addMenuItem("Add Node", () => {
+        this.dispatchEvent(
+          new CustomEvent("canvas-menu-open", {
+            detail: { x, y, type: "canvas" },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+        this.hideContextMenu();
+      });
+      this.addMenuItem("Close", () => {
+        this.dispatchEvent(
+          new CustomEvent("navigate-up-attempt", {
+            bubbles: true,
+            composed: true,
+          }),
+        );
+        this.hideContextMenu();
+      });
+    }
+
+    // Close menu when clicking outside
+    const closeMenu = (e) => {
+      if (
+        !this.contextMenu.contains(e.target) &&
+        !this.shadowRoot.contains(e.target)
+      ) {
+        this.hideContextMenu();
+        window.removeEventListener("pointerdown", closeMenu);
+      }
+    };
+    window.addEventListener("pointerdown", closeMenu);
+  }
+
+  addMenuItem(text, onClick) {
+    const item = document.createElement("div");
+    item.className = "context-menu-item";
+    item.textContent = text;
+    item.onclick = onClick;
+    this.contextMenu.appendChild(item);
+  }
+
+  hideContextMenu() {
+    this.contextMenu.style.display = "none";
   }
 
   startCanvasPan(e) {
