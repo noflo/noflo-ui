@@ -4,6 +4,7 @@
 
 import { FlowEditor } from "./elements/flow-editor.js";
 import { FlowNode } from "./elements/flow-node.js";
+import { FlowRadialMenu } from "./elements/flow-radial-menu.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
 
@@ -21,6 +22,7 @@ async function init() {
   // Register Web Components
   customElements.define("flow-editor", FlowEditor);
   customElements.define("flow-node", FlowNode);
+  customElements.define("flow-radial-menu", FlowRadialMenu);
 
   // Initial setup
   const app = document.getElementById("app");
