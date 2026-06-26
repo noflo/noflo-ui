@@ -14,7 +14,7 @@
     "postbuild-vendors": "npm run sourcecodepro && npm run fontawesome",
     "sourcecodepro": "mkdir -p vendor/webfonts && cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/webfonts/",
     "fontawesome": "mkdir -p vendor/css && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/css/all.min.css vendor/css/fa-all.min.css",
-    "test": "node --test spec/elements/*.js",
+    "test": "node --test --test-force-exit --test-timeout 5000 spec/elements/*.js",
     "serve": "npx serve -l 3000 ."
   },
   "dependencies": {
