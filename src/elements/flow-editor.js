@@ -46,6 +46,7 @@ export class FlowEditor extends HTMLElement {
     this.contextMenu = null;
     this.contentsLayer = null;
     this.transformLayer = null;
+    this._closeMenuListener = null;
   }
 
   connectedCallback() {
@@ -248,7 +249,7 @@ export class FlowEditor extends HTMLElement {
           width: 100%;
           height: 100%;
           transform-origin: 0 0;
-          pointer-events: none;
+          pointer-events: auto;
         }
         #svg-layer, #heatmap-canvas {
           position: absolute;
@@ -259,7 +260,7 @@ export class FlowEditor extends HTMLElement {
           pointer-events: none;
         }
         #svg-layer {
-          z-index: 1;
+          z-index: 2;
           overflow: visible;
         }
         #node-layer {
@@ -268,7 +269,7 @@ export class FlowEditor extends HTMLElement {
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: 2;
+          z-index: 1;
           pointer-events: auto;
         }
         #heatmap-canvas {
@@ -299,6 +300,7 @@ export class FlowEditor extends HTMLElement {
           stroke: var(--flow-color, var(--edge-color));
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
+          pointer-events: auto;
         }
         .delete-area {
           position: absolute;
@@ -346,6 +348,7 @@ export class FlowEditor extends HTMLElement {
       <div id="viewport">
         <div id="transform-layer">
           <canvas id="heatmap-canvas"></canvas>
+          <div id="node-layer"></div>
           <svg id="svg-layer">
             <defs>
               <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
@@ -359,7 +362,6 @@ export class FlowEditor extends HTMLElement {
             <rect width="100%" height="100%" fill="url(#dot-grid)" />
             <g id="edges-group" transform="translate(8000, 8000)"></g>
           </svg>
-          <div id="node-layer"></div>
         </div>
         <div id="delete-area" class="delete-area">DELETE</div>
       </div>
@@ -716,12 +718,22 @@ export class FlowEditor extends HTMLElement {
   }
 
   showContextMenu(x, y, context) {
-    const { _clickedPort, clickedNode, clickedEdge } = context;
+    const { clickedPort, clickedNode, clickedEdge } = context;
 
     this.contextMenu.innerHTML = "";
     this.contextMenu.style.display = "flex";
     this.contextMenu.style.left = `${x}px`;
     this.contextMenu.style.top = `${y}px`;
+
+    this._closeMenuListener = (e) => {
+      if (
+        !this.contextMenu.contains(e.target) &&
+        !this.shadowRoot.contains(e.target)
+      ) {
+        this.hideContextMenu();
+      }
+    };
+    window.addEventListener("pointerdown", this._closeMenuListener);
 
     if (clickedNode) {
       this.addMenuItem("Remove", () => {
@@ -777,32 +789,25 @@ export class FlowEditor extends HTMLElement {
         this.hideContextMenu();
       });
     }
-
-    // Close menu when clicking outside
-    const closeMenu = (e) => {
-      if (
-        !this.contextMenu.contains(e.target) &&
-        !this.shadowRoot.contains(e.target)
-      ) {
-        this.hideContextMenu();
-        window.removeEventListener("pointerdown", closeMenu);
-      }
-    };
-    window.addEventListener("pointerdown", closeMenu);
   }
 
   addMenuItem(text, onClick) {
     const item = document.createElement("div");
     item.className = "context-menu-item";
     item.textContent = text;
-    item.onclick = () => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
       onClick();
-    };
+    });
     this.contextMenu.appendChild(item);
   }
 
   hideContextMenu() {
     this.contextMenu.style.display = "none";
+    if (this._closeMenuListener) {
+      window.removeEventListener("pointerdown", this._closeMenuListener);
+      this._closeMenuListener = null;
+    }
   }
 
   startCanvasPan(e) {
