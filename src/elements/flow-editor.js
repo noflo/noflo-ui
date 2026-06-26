@@ -273,6 +273,10 @@ export class FlowEditor extends HTMLElement {
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
         }
+        .edge-flow[selected] {
+          stroke: var(--node-icon);
+          stroke-width: calc(var(--edge-width, 4px));
+        }
       </style>
       <div id="viewport">
         <canvas id="heatmap-canvas"></canvas>
@@ -410,6 +414,7 @@ export class FlowEditor extends HTMLElement {
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
       const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
+      const clickedEdge = path.find((el) => el.classList?.contains("edge-flow"));
 
       if (clickedPort) {
         e.stopPropagation();
@@ -417,6 +422,26 @@ export class FlowEditor extends HTMLElement {
       } else if (clickedNode) {
         e.stopPropagation();
         this.startNodeDrag(e, clickedNode);
+      } else if (clickedEdge) {
+        e.stopPropagation();
+        const edge = this.edges.find((edge) => edge.path === clickedEdge);
+        if (edge) {
+          if (this.selectedEdges.has(edge)) {
+            this.clearEdgeSelection();
+          } else {
+            this.clearEdgeSelection(false);
+            this.selectedEdges.add(edge);
+            clickedEdge.setAttribute("selected", "");
+            this.dispatchEvent(new CustomEvent("selection-changed", {
+              detail: {
+                nodes: Array.from(this.selectedNodes),
+                edges: Array.from(this.selectedEdges),
+              },
+              bubbles: true,
+              composed: true,
+            }));
+          }
+        }
       } else {
         this.startCanvasPan(e);
       }
@@ -588,12 +613,26 @@ export class FlowEditor extends HTMLElement {
   }
 
   startNodeDrag(e, node) {
+    const isAlreadySelected = this.selectedNodes.has(node);
+
     if (!e.shiftKey) {
-      this.clearSelection();
+      if (isAlreadySelected) {
+        this.clearSelection();
+        return;
+      }
+      this.clearSelection(false);
     }
 
     this.selectedNodes.add(node);
     node.setAttribute("selected", "");
+    this.dispatchEvent(new CustomEvent("selection-changed", {
+      detail: {
+        nodes: Array.from(this.selectedNodes),
+        edges: Array.from(this.selectedEdges),
+      },
+      bubbles: true,
+      composed: true,
+    }));
 
     node.setPointerCapture(e.pointerId);
     this.isDraggingNode = true;
@@ -601,11 +640,36 @@ export class FlowEditor extends HTMLElement {
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
   }
 
-  clearSelection() {
+  clearSelection(emit = true) {
     this.selectedNodes.forEach((node) => {
       node.removeAttribute("selected");
     });
     this.selectedNodes.clear();
+
+    this.clearEdgeSelection(false);
+
+    if (emit) {
+      this.dispatchEvent(new CustomEvent("selection-changed", {
+        detail: { nodes: [], edges: [] },
+        bubbles: true,
+        composed: true,
+      }));
+    }
+  }
+
+  clearEdgeSelection(emit = true) {
+    this.selectedEdges.forEach((edge) => {
+      edge.path.removeAttribute("selected");
+    });
+    this.selectedEdges.clear();
+
+    if (emit) {
+      this.dispatchEvent(new CustomEvent("selection-changed", {
+        detail: { nodes: Array.from(this.selectedNodes), edges: [] },
+        bubbles: true,
+        composed: true,
+      }));
+    }
   }
 
   startWireDrag(e, port) {
