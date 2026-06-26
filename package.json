@@ -9,11 +9,13 @@
   "scripts": {
     "lint": "npx @biomejs/biome check src/ spec/ index.html",
     "format": "npx @biomejs/biome check --write src/ spec/ index.html",
-    "prebuild-vendors": "node utils/generate-noflo-loader.js",
+    "generate:noflo": "node utils/generate-noflo-loader.js",
+    "generate:fa": "node utils/generate-icon-map.js",
+    "prebuild-vendors": "npm run generate:noflo && npm run generate:fa",
     "build-vendors": " tsdown --config tsdown.config.js",
     "postbuild-vendors": "npm run sourcecodepro && npm run fontawesome",
     "sourcecodepro": "mkdir -p vendor/webfonts && cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/webfonts/",
-    "fontawesome": "mkdir -p vendor/css && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/css/all.min.css vendor/css/fa-all.min.css",
+    "fontawesome": "cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/webfonts/",
     "test": "node --test --test-force-exit --test-timeout 5000 spec/elements/*.js",
     "serve": "npx serve -l 3000 ."
   },
@@ -22,12 +24,12 @@
     "eventemitter3": "^5.0.4",
     "noflo": "^1.5.2",
     "noflo-core": "^0.6.1",
-    "wgpu-matrix": "^3.4.2"
+    "source-code-pro": "^2.42.0"
   },
   "devDependencies": {
     "happy-dom": "^20.10.6",
+    "js-yaml": "^5.1.0",
     "noflo-component-loader": "^0.4.1",
-    "source-code-pro": "^2.42.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3"
   },

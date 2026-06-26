@@ -1,2 +1,3 @@
 .DS_Store
 node_modules/
+utils/icon-map.js

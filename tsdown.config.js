@@ -20,6 +20,14 @@ export default defineConfig([
       allowJs: true,
     },
   },
+  {
+    entry: {
+      'fa-icon-map': './utils/icon-map.js',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+  }
   /*
   {
     name: 'noflo-core',

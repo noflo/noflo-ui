@@ -1,8 +1,10 @@
 /**
  * FlowNode Web Component
  * A circular representation of a NoFlo node.
- * Follows the architecture defined in editor.md.
+ * Follows the architecture defined in SPEC.md and work document #1.
  */
+import icons from '../../vendor/fa-icon-map.js';
+
 export class FlowNode extends HTMLElement {
   constructor() {
     super();
@@ -32,8 +34,9 @@ export class FlowNode extends HTMLElement {
       if (iconEl) {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" style="width: 40px; height: 40px; object-fit: contain;">`;
-        } else if (icon.includes("fa-")) {
-          iconEl.innerHTML = `<i class="${icon}"></i>`;
+        } else if (icon.indexOf("fa-") === 0) {
+          const iconName = icon.substr(3);
+          iconEl.innerHTML = `<i class="node-icon-fa">${icons()[iconName]}</i>`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
         }
@@ -61,8 +64,6 @@ export class FlowNode extends HTMLElement {
   render() {
     this.shadowRoot.innerHTML = `
       <style>
-        @import "vendor/css/fa-all.min.css";
-
         :host {
           position: absolute;
           width: 80px;
@@ -134,6 +135,10 @@ export class FlowNode extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 100px;
+        }
+        .node-icon-fa {
+          font-family: 'Font Awesome 7 Free';
+          font-style: normal;
         }
 
         /* Semantic Zooming: Use clamp() to create a binary switch based on --zoom-scale */
