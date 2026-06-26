@@ -412,6 +412,34 @@ export class FlowEditor extends HTMLElement {
     this.style.setProperty("--zoom-scale", this.zoom);
   }
 
+  clientToGraph(clientX, clientY) {
+    const rect = this.getBoundingClientRect();
+    return this.viewportToGraph(clientX - rect.left, clientY - rect.top);
+  }
+
+  viewportToGraph(viewportX, viewportY) {
+    return {
+      x: (viewportX - this.offset.x) / this.zoom,
+      y: (viewportY - this.offset.y) / this.zoom,
+    };
+  }
+
+  graphToViewport(graphX, graphY) {
+    return {
+      x: graphX * this.zoom + this.offset.x,
+      y: graphY * this.zoom + this.offset.y,
+    };
+  }
+
+  graphToClient(graphX, graphY) {
+    const rect = this.getBoundingClientRect();
+    const viewportPos = this.graphToViewport(graphX, graphY);
+    return {
+      x: viewportPos.x + rect.left,
+      y: viewportPos.y + rect.top,
+    };
+  }
+
   fitNodesToViewport() {
     const nodes = this.shadowRoot.querySelectorAll("flow-node");
     if (nodes.length === 0) return;
@@ -924,9 +952,7 @@ export class FlowEditor extends HTMLElement {
     if (!this.activeWire || !this.dragPort) return;
 
     const portPos = this.getPortPosition(this.dragPort);
-    const rect = this.getBoundingClientRect();
-    const mouseX = (e.clientX - rect.left - this.offset.x) / this.zoom;
-    const mouseY = (e.clientY - rect.top - this.offset.y) / this.zoom;
+    const { x: mouseX, y: mouseY } = this.clientToGraph(e.clientX, e.clientY);
 
     this.activeWire.setAttribute(
       "d",
@@ -1054,9 +1080,7 @@ export class FlowEditor extends HTMLElement {
       }
     } else if (this.ghostNode) {
       // Create new node at ghost node position
-      const rect = this.getBoundingClientRect();
-      const mouseX = (e.clientX - rect.left - this.offset.x) / this.zoom;
-      const mouseY = (e.clientY - rect.top - this.offset.y) / this.zoom;
+      const { x: mouseX, y: mouseY } = this.clientToGraph(e.clientX, e.clientY);
       const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
 
       this.dispatchEvent(
@@ -1081,11 +1105,11 @@ export class FlowEditor extends HTMLElement {
 
   getPortPosition(port) {
     const rect = port.getBoundingClientRect();
-    const viewportRect = this.viewport.getBoundingClientRect();
-    return {
-      x: (rect.left + rect.width / 2 - viewportRect.left) / this.zoom,
-      y: (rect.top + rect.height / 2 - viewportRect.top) / this.zoom,
-    };
+    const componentRect = this.getBoundingClientRect();
+    return this.viewportToGraph(
+      rect.left + rect.width / 2 - componentRect.left,
+      rect.top + rect.height / 2 - componentRect.top,
+    );
   }
 
   addEdge(portA, portB) {
