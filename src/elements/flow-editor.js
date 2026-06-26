@@ -86,6 +86,7 @@ export class FlowEditor extends HTMLElement {
           overflow: hidden;
           position: relative;
           touch-action: none;
+          user-select: none;
           --zoom-scale: 1.0;
           background-color: var(--ui-bg);
 
@@ -222,6 +223,7 @@ export class FlowEditor extends HTMLElement {
           position: relative;
           cursor: grab;
           transform-origin: 0 0;
+          user-select: none;
         }
         #viewport:active {
           cursor: grabbing;
