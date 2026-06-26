@@ -1,9 +1,9 @@
-import assert from "node:assert";
 import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
 import { FlowNode } from "../../src/elements/flow-node.js";
+
 customElements.define("flow-node", FlowNode);
 
 describe("FlowNode Web Component", async () => {

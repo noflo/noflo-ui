@@ -419,7 +419,9 @@ export class FlowEditor extends HTMLElement {
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
       const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
-      const clickedEdge = path.find((el) => el.classList?.contains("edge-flow"));
+      const clickedEdge = path.find((el) =>
+        el.classList?.contains("edge-flow"),
+      );
 
       if (clickedPort) {
         e.stopPropagation();
@@ -438,14 +440,16 @@ export class FlowEditor extends HTMLElement {
             this.selectedEdges.add(edge);
             clickedEdge.setAttribute("selected", "");
           }
-          this.dispatchEvent(new CustomEvent("selection-changed", {
-            detail: {
-              nodes: Array.from(this.selectedNodes),
-              edges: Array.from(this.selectedEdges),
-            },
-            bubbles: true,
-            composed: true,
-          }));
+          this.dispatchEvent(
+            new CustomEvent("selection-changed", {
+              detail: {
+                nodes: Array.from(this.selectedNodes),
+                edges: Array.from(this.selectedEdges),
+              },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         }
       } else {
         this.startCanvasPan(e);
@@ -475,7 +479,10 @@ export class FlowEditor extends HTMLElement {
             };
           });
           this.updateEdges();
-        } else if (this.draggingNodePointerId === e.pointerId && this.selectedNodes.size > 0) {
+        } else if (
+          this.draggingNodePointerId === e.pointerId &&
+          this.selectedNodes.size > 0
+        ) {
           if (Math.hypot(dx, dy) > 3) {
             this.isDraggingNode = true;
           }
@@ -515,17 +522,23 @@ export class FlowEditor extends HTMLElement {
       }
 
       if (e.pointerId === this.draggingNodePointerId) {
-        if (!this.isDraggingNode && this.wasClickOnSelectedNode && this.clickedNode) {
+        if (
+          !this.isDraggingNode &&
+          this.wasClickOnSelectedNode &&
+          this.clickedNode
+        ) {
           this.selectedNodes.delete(this.clickedNode);
           this.clickedNode.removeAttribute("selected");
-          this.dispatchEvent(new CustomEvent("selection-changed", {
-            detail: {
-              nodes: Array.from(this.selectedNodes),
-              edges: Array.from(this.selectedEdges),
-            },
-            bubbles: true,
-            composed: true,
-          }));
+          this.dispatchEvent(
+            new CustomEvent("selection-changed", {
+              detail: {
+                nodes: Array.from(this.selectedNodes),
+                edges: Array.from(this.selectedEdges),
+              },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         }
         this.selectedNodes.forEach((node) => {
           node.position = this.snapToGrid(node.position.x, node.position.y);
@@ -668,14 +681,16 @@ export class FlowEditor extends HTMLElement {
       this.clickedNode = null;
     }
 
-    this.dispatchEvent(new CustomEvent("selection-changed", {
-      detail: {
-        nodes: Array.from(this.selectedNodes),
-        edges: Array.from(this.selectedEdges),
-      },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent("selection-changed", {
+        detail: {
+          nodes: Array.from(this.selectedNodes),
+          edges: Array.from(this.selectedEdges),
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   clearSelection(emit = true) {
@@ -687,11 +702,13 @@ export class FlowEditor extends HTMLElement {
     this.clearEdgeSelection(false);
 
     if (emit) {
-      this.dispatchEvent(new CustomEvent("selection-changed", {
-        detail: { nodes: [], edges: [] },
-        bubbles: true,
-        composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent("selection-changed", {
+          detail: { nodes: [], edges: [] },
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
   }
 
@@ -702,11 +719,13 @@ export class FlowEditor extends HTMLElement {
     this.selectedEdges.clear();
 
     if (emit) {
-      this.dispatchEvent(new CustomEvent("selection-changed", {
-        detail: { nodes: Array.from(this.selectedNodes), edges: [] },
-        bubbles: true,
-        composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent("selection-changed", {
+          detail: { nodes: Array.from(this.selectedNodes), edges: [] },
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
   }
 

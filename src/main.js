@@ -40,11 +40,17 @@ async function init() {
         `.port${isOut ? "-in" : "-out"}`,
       );
       if (targetPort) {
-        if (isOut) {
-          editor.addEdge(startPort, targetPort);
-        } else {
-          editor.addEdge(targetPort, startPort);
-        }
+        // Wait for the next frame to ensure the node is laid out
+        requestAnimationFrame(() => {
+          if (isOut) {
+            editor.addEdge(startPort, targetPort);
+          } else {
+            editor.addEdge(targetPort, startPort);
+          }
+          requestAnimationFrame(() => {
+            editor.updateEdges();
+          });
+        });
       }
     });
 

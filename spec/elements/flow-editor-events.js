@@ -30,24 +30,36 @@ describe("FlowEditor Events", async () => {
 
     // Set up the mock state
     el.dragPort = portA;
-    el.activeWire = el.edgesGroup.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "path");
+    el.activeWire = el.edgesGroup.ownerDocument.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
     el.edgesGroup.appendChild(el.activeWire);
 
     // Mock how it finds ports.
     const originalQuerySelectorAll = el.shadowRoot.querySelectorAll;
     el.shadowRoot.querySelectorAll = (selector) => {
-        if (selector === "flow-node") {
-            return [{
-                shadowRoot: {
-                    querySelectorAll: () => [portB]
-                }
-            }];
-        }
-        return originalQuerySelectorAll.call(el.shadowRoot, selector);
+      if (selector === "flow-node") {
+        return [
+          {
+            shadowRoot: {
+              querySelectorAll: () => [portB],
+            },
+          },
+        ];
+      }
+      return originalQuerySelectorAll.call(el.shadowRoot, selector);
     };
 
     // Mock getBoundingClientRect for portB
-    portB.getBoundingClientRect = () => ({ left: 90, top: 90, width: 20, height: 20, right: 110, bottom: 110 });
+    portB.getBoundingClientRect = () => ({
+      left: 90,
+      top: 90,
+      width: 20,
+      height: 20,
+      right: 110,
+      bottom: 110,
+    });
 
     const mockEvent = {
       clientX: 100,
@@ -81,7 +93,10 @@ describe("FlowEditor Events", async () => {
 
     el.dragPort = document.createElement("div");
     el.dragPort.classList.add("port", "port-out");
-    el.activeWire = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    el.activeWire = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
     el.edgesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     el.shadowRoot.appendChild(el.edgesGroup);
     el.edgesGroup.appendChild(el.activeWire);
