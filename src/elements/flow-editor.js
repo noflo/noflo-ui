@@ -308,7 +308,9 @@ export class FlowEditor extends HTMLElement {
     setInterval(() => {
       ctx.clearRect(0, 0, this.heatmapCanvas.width, this.heatmapCanvas.height);
 
-      const heatmapColor = getComputedStyle(this).getPropertyValue("--heatmap-color").trim();
+      const heatmapColor = getComputedStyle(this)
+        .getPropertyValue("--heatmap-color")
+        .trim();
 
       for (const [key, heat] of this.activityMap.entries()) {
         if (heat <= 0.05) {
@@ -319,7 +321,7 @@ export class FlowEditor extends HTMLElement {
         const [col, row] = key.split(",").map(Number);
 
         const color = heatmapColor.startsWith("rgba")
-          ? heatmapColor.replace(/[\d\.]+\)$/, `${heat * 0.6})`)
+          ? heatmapColor.replace(/[\d.]+\)$/, `${heat * 0.6})`)
           : heatmapColor.replace(/\)$/, `, ${heat * 0.6})`);
 
         ctx.fillStyle = color;

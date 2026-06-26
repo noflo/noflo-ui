@@ -66,7 +66,10 @@ async function init() {
       [{ type: "array", name: "in", size: 3 }],
       [{ type: "regular", name: "out" }],
     );
-    aggregator.setMetadata({ name: "Aggregator", icon: "fa-solid fa-layer-group" });
+    aggregator.setMetadata({
+      name: "Aggregator",
+      icon: "fa-solid fa-layer-group",
+    });
 
     const logger = editor.addNode(
       "Logger",
