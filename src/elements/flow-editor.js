@@ -816,6 +816,10 @@ export class FlowEditor extends HTMLElement {
     item.className = "context-menu-item";
     item.textContent = text;
     item.addEventListener("pointerdown", (e) => {
+      // Prevent menu close listener from acting on these
+      e.stopPropagation();
+    });
+    item.addEventListener("click", (e) => {
       e.stopPropagation();
       onClick();
     });
