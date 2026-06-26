@@ -32,6 +32,8 @@ export class FlowNode extends HTMLElement {
       if (iconEl) {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" style="width: 40px; height: 40px; object-fit: contain;">`;
+        } else if (icon.includes("fa-")) {
+          iconEl.innerHTML = `<i class="${icon}"></i>`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
         }
@@ -59,6 +61,8 @@ export class FlowNode extends HTMLElement {
   render() {
     this.shadowRoot.innerHTML = `
       <style>
+        @import "vendor/css/fa-all.min.css";
+
         :host {
           position: absolute;
           width: 80px;
@@ -131,7 +135,7 @@ export class FlowNode extends HTMLElement {
           text-overflow: ellipsis;
           max-width: 100px;
         }
-        
+
         /* Semantic Zooming: Use clamp() to create a binary switch based on --zoom-scale */
         .node-component, .port-label {
           opacity: clamp(0, (var(--zoom-scale) - 0.6) * 100, 1);
@@ -146,6 +150,11 @@ export class FlowNode extends HTMLElement {
         .port {
           opacity: clamp(0, (var(--zoom-scale) - 0.2) * 100, 1);
         }
+
+        .node-content i {
+          font-size: 32px;
+        }
+
         :host([selected]) {
           transform: scale(1.15);
           z-index: 10;

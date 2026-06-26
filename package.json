@@ -12,8 +12,8 @@
     "prebuild-vendors": "node utils/generate-noflo-loader.js",
     "build-vendors": " tsdown --config tsdown.config.js",
     "postbuild-vendors": "npm run sourcecodepro && npm run fontawesome",
-    "sourcecodepro": "cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/SourceCodePro-Regular.otf.woff2",
-    "fontawesome": "cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/fa-solid-900.woff2",
+    "sourcecodepro": "mkdir -p vendor/webfonts && cp node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2 vendor/webfonts/",
+    "fontawesome": "mkdir -p vendor/css && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2 vendor/webfonts/ && cp node_modules/@fortawesome/fontawesome-free/css/all.min.css vendor/css/fa-all.min.css",
     "test": "node --test spec/elements/*.js",
     "serve": "npx serve -l 3000 ."
   },

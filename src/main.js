@@ -36,6 +36,7 @@ async function init() {
       [],
       [{ type: "regular", name: "out" }],
     );
+    source.setMetadata({ name: "Source", icon: "fa-solid fa-play" });
 
     const filter = editor.addNode(
       "Filter",
@@ -47,6 +48,7 @@ async function init() {
         { type: "regular", name: "error" },
       ],
     );
+    filter.setMetadata({ name: "Filter", icon: "fa-solid fa-filter" });
 
     const splitter = editor.addNode(
       "Splitter",
@@ -55,6 +57,7 @@ async function init() {
       [{ type: "regular", name: "in" }],
       [{ type: "array", name: "out", size: 3 }],
     );
+    splitter.setMetadata({ name: "Splitter", icon: "fa-solid fa-code-branch" });
 
     const aggregator = editor.addNode(
       "Aggregator",
@@ -63,6 +66,7 @@ async function init() {
       [{ type: "array", name: "in", size: 3 }],
       [{ type: "regular", name: "out" }],
     );
+    aggregator.setMetadata({ name: "Aggregator", icon: "fa-solid fa-layer-group" });
 
     const logger = editor.addNode(
       "Logger",
@@ -71,6 +75,7 @@ async function init() {
       [{ type: "regular", name: "in" }],
       [],
     );
+    logger.setMetadata({ name: "Logger", icon: "fa-solid fa-terminal" });
 
     const sink = editor.addNode(
       "Sink",
@@ -79,6 +84,7 @@ async function init() {
       [{ type: "regular", name: "in" }],
       [],
     );
+    sink.setMetadata({ name: "Sink", icon: "fa-solid fa-database" });
 
     // Initial connections
     editor.connectNodes(source, "out", filter, "in");
