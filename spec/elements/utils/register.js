@@ -9,5 +9,6 @@ Object.assign(globalThis, {
   customElements: window.customElements,
   HTMLElement: window.HTMLElement,
   CustomEvent: window.CustomEvent,
+  MutationObserver: window.MutationObserver,
   Node: window.Node,
 });

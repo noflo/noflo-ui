@@ -19,6 +19,7 @@ export class FlowEditor extends HTMLElement {
     this.initialZoom = 1.0;
     this.initialOffset = { x: 0, y: 0 };
     this.selectedNodes = new Set();
+    this.selectedEdges = new Set();
     this.ghostNode = null;
     this.stillnessTimer = null;
     this.panDistance = 0;
@@ -29,6 +30,7 @@ export class FlowEditor extends HTMLElement {
     this.panningPointerId = null;
     this.draggingNodePointerId = null;
     this.draggingWirePointerId = null;
+    this.heatmapInterval = null;
   }
 
   connectedCallback() {
@@ -44,6 +46,9 @@ export class FlowEditor extends HTMLElement {
   disconnectedCallback() {
     if (this._bodyObserver) {
       this._bodyObserver.disconnect();
+    }
+    if (this.heatmapInterval) {
+      clearInterval(this.heatmapInterval);
     }
   }
 
@@ -305,7 +310,8 @@ export class FlowEditor extends HTMLElement {
     const gridSize = 40;
     const ctx = this.heatmapCanvas.getContext("2d");
 
-    setInterval(() => {
+    this.heatmapInterval = setInterval(() => {
+      if (!ctx) return;
       ctx.clearRect(0, 0, this.heatmapCanvas.width, this.heatmapCanvas.height);
 
       const heatmapColor = getComputedStyle(this)
@@ -733,9 +739,21 @@ export class FlowEditor extends HTMLElement {
       const endIsOut = endPort.classList.contains("port-out");
 
       if (startIsOut && !endIsOut) {
-        this.addEdge(startPort, endPort);
+        this.dispatchEvent(
+          new CustomEvent("wire-connection-attempt", {
+            detail: { portA: startPort, portB: endPort },
+            bubbles: true,
+            composed: true,
+          }),
+        );
       } else if (!startIsOut && endIsOut) {
-        this.addEdge(endPort, startPort);
+        this.dispatchEvent(
+          new CustomEvent("wire-connection-attempt", {
+            detail: { portA: endPort, portB: startPort },
+            bubbles: true,
+            composed: true,
+          }),
+        );
       } else {
         console.warn(
           "Cannot connect ports of the same type (both in or both out)",
@@ -748,20 +766,13 @@ export class FlowEditor extends HTMLElement {
       const mouseY = (e.clientY - rect.top - this.offset.y) / this.zoom;
       const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
 
-      const newNode = this.addNode("New Node", snapped.x, snapped.y);
-      const isOut = this.dragPort.classList.contains("port-out");
-
-      // Connect to the first available port of opposite type
-      const targetPort = newNode.shadowRoot.querySelector(
-        `.port${isOut ? "-in" : "-out"}`,
+      this.dispatchEvent(
+        new CustomEvent("node-creation-attempt", {
+          detail: { x: snapped.x, y: snapped.y, startPort: this.dragPort },
+          bubbles: true,
+          composed: true,
+        }),
       );
-      if (targetPort) {
-        if (isOut) {
-          this.addEdge(this.dragPort, targetPort);
-        } else {
-          this.addEdge(targetPort, this.dragPort);
-        }
-      }
     }
 
     this.removeGhostNode();

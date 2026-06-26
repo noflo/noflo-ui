@@ -28,6 +28,26 @@ async function init() {
     const editor = document.createElement("flow-editor");
     app.appendChild(editor);
 
+    editor.addEventListener("wire-connection-attempt", (e) => {
+      editor.addEdge(e.detail.portA, e.detail.portB);
+    });
+
+    editor.addEventListener("node-creation-attempt", (e) => {
+      const { x, y, startPort } = e.detail;
+      const newNode = editor.addNode("New Node", x, y);
+      const isOut = startPort.classList.contains("port-out");
+      const targetPort = newNode.shadowRoot.querySelector(
+        `.port${isOut ? "-in" : "-out"}`,
+      );
+      if (targetPort) {
+        if (isOut) {
+          editor.addEdge(startPort, targetPort);
+        } else {
+          editor.addEdge(targetPort, startPort);
+        }
+      }
+    });
+
     // Add some sample nodes
     const source = editor.addNode(
       "Source",
