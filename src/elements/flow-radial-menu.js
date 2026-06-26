@@ -128,9 +128,9 @@ export class FlowRadialMenu extends HTMLElement {
     const centerY = 90;
 
     const specialAngles = {
-      "Close": 5 * Math.PI / 4,
-      "Remove": Math.PI / 4,
-      "Delete": Math.PI / 4,
+      Close: (5 * Math.PI) / 4,
+      Remove: Math.PI / 4,
+      Delete: Math.PI / 4,
     };
 
     const itemsWithSpecialAngles = [];
@@ -147,48 +147,51 @@ export class FlowRadialMenu extends HTMLElement {
     itemsWithSpecialAngles.sort((a, b) => a.angle - b.angle);
 
     const itemAngles = new Array(count);
-    
+
     itemsWithSpecialAngles.forEach((special) => {
-        const originalIndex = this._items.indexOf(special.item);
-        itemAngles[originalIndex] = special.angle;
+      const originalIndex = this._items.indexOf(special.item);
+      itemAngles[originalIndex] = special.angle;
     });
 
     if (itemsWithoutSpecialAngles.length > 0) {
-        if (itemsWithSpecialAngles.length === 0) {
-            itemsWithoutSpecialAngles.forEach((item, i) => {
-                itemAngles[item.index] = (i / itemsWithoutSpecialAngles.length) * 2 * Math.PI;
-            });
-        } else {
-            const gaps = [];
-            for (let i = 0; i < itemsWithSpecialAngles.length; i++) {
-                const current = itemsWithSpecialAngles[i];
-                const next = itemsWithSpecialAngles[(i + 1) % itemsWithSpecialAngles.length];
-                let angleDiff = next.angle - current.angle;
-                if (angleDiff < 0) angleDiff += 2 * Math.PI;
-                if (itemsWithSpecialAngles.length === 1) angleDiff = 2 * Math.PI;
-                gaps.push({ start: current.angle, end: next.angle, diff: angleDiff });
-            }
-
-            const itemsPerGap = itemsWithoutSpecialAngles.length / gaps.length;
-            let nonSpecialIdx = 0;
-
-            for (let g = 0; g < gaps.length; g++) {
-              const gap = gaps[g];
-              let numInThisGap = Math.floor(itemsPerGap);
-              if (g < (itemsWithoutSpecialAngles.length % gaps.length)) {
-                numInThisGap++;
-              }
-
-              for (let i = 0; i < numInThisGap; i++) {
-                if (nonSpecialIdx < itemsWithoutSpecialAngles.length) {
-                  const item = itemsWithoutSpecialAngles[nonSpecialIdx];
-                  const subAngle = gap.start + (i + 0.5) / (numInThisGap || 1) * gap.diff;
-                  itemAngles[item.index] = subAngle;
-                  nonSpecialIdx++;
-                }
-              }
-            }
+      if (itemsWithSpecialAngles.length === 0) {
+        itemsWithoutSpecialAngles.forEach((item, i) => {
+          itemAngles[item.index] =
+            (i / itemsWithoutSpecialAngles.length) * 2 * Math.PI;
+        });
+      } else {
+        const gaps = [];
+        for (let i = 0; i < itemsWithSpecialAngles.length; i++) {
+          const current = itemsWithSpecialAngles[i];
+          const next =
+            itemsWithSpecialAngles[(i + 1) % itemsWithSpecialAngles.length];
+          let angleDiff = next.angle - current.angle;
+          if (angleDiff < 0) angleDiff += 2 * Math.PI;
+          if (itemsWithSpecialAngles.length === 1) angleDiff = 2 * Math.PI;
+          gaps.push({ start: current.angle, end: next.angle, diff: angleDiff });
         }
+
+        const itemsPerGap = itemsWithoutSpecialAngles.length / gaps.length;
+        let nonSpecialIdx = 0;
+
+        for (let g = 0; g < gaps.length; g++) {
+          const gap = gaps[g];
+          let numInThisGap = Math.floor(itemsPerGap);
+          if (g < itemsWithoutSpecialAngles.length % gaps.length) {
+            numInThisGap++;
+          }
+
+          for (let i = 0; i < numInThisGap; i++) {
+            if (nonSpecialIdx < itemsWithoutSpecialAngles.length) {
+              const item = itemsWithoutSpecialAngles[nonSpecialIdx];
+              const subAngle =
+                gap.start + ((i + 0.5) / (numInThisGap || 1)) * gap.diff;
+              itemAngles[item.index] = subAngle;
+              nonSpecialIdx++;
+            }
+          }
+        }
+      }
     }
 
     this._items.forEach((item, index) => {
@@ -218,6 +221,7 @@ export class FlowRadialMenu extends HTMLElement {
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         item.onClick();
+        this.close();
       });
 
       this.menuElement.appendChild(el);
@@ -261,11 +265,15 @@ export class FlowRadialMenu extends HTMLElement {
       });
 
       if (closestItem) {
-        items.forEach((el) => el.classList.remove("highlighted"));
+        items.forEach((el) => {
+          el.classList.remove("highlighted");
+        });
         closestItem.classList.add("highlighted");
       }
     } else {
-      items.forEach((el) => el.classList.remove("highlighted"));
+      items.forEach((el) => {
+        el.classList.remove("highlighted");
+      });
     }
   }
 

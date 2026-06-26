@@ -1,6 +1,3 @@
-import icons from "../../vendor/fa-icon-map.js";
-import { FlowRadialMenu } from "./flow-radial-menu.js";
-
 /**
  * FlowEditor Web Component
  * A zoomable canvas for editing NoFlo graphs.
@@ -714,6 +711,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   showContextMenu(x, y, context) {
+    // biome-ignore lint/correctness/noUnusedVariables: We will add port menus soon enough
     const { clickedPort, clickedNode, clickedEdge } = context;
 
     const items = [];
