@@ -100,6 +100,11 @@ async function init() {
 
     editor.fitNodesToViewport();
 
+    // Ensure edges are rendered after initial layout
+    requestAnimationFrame(() => {
+      editor.updateEdges();
+    });
+
     // Demo: Occasionally record activity for random nodes and edges
     setInterval(() => {
       const nodes = Array.from(editor.shadowRoot.querySelectorAll("flow-node"));

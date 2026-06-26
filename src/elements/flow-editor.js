@@ -180,7 +180,7 @@ export class FlowEditor extends HTMLElement {
         :host([data-theme="tube"]) flow-node.state-abstract {
           --node-bg: white;
           --node-border: #777;
-          --node-icon: #777;
+          --node-icon: black;
           --flow-color: #777;
           --flow-dash: 0;
         }
