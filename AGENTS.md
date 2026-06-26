@@ -16,6 +16,8 @@ Technical work is planned with work documents (in Markdown) that are managed usi
 - List work documents: `rngit work rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui list`.
 - Read work document: `rngit work rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui view -d N` (where `N` is the document number from the work documents list)
 
+AI agents may not create work documents on their own. Create a markdown file in the root folder of the project and ask user to move it to rngit.
+
 ## Boundaries
 
 - ✅ **Always**: create a branch for any major change set (work document)
