@@ -1,3 +1,5 @@
+import icons from "../../vendor/fa-icon-map.js";
+
 /**
  * FlowEditor Web Component
  * A zoomable canvas for editing NoFlo graphs.
@@ -46,7 +48,10 @@ export class FlowEditor extends HTMLElement {
     this.contextMenu = null;
     this.contentsLayer = null;
     this.transformLayer = null;
+    this._contextMenuItems = [];
     this._closeMenuListener = null;
+    this._activeMenuAngle = 0;
+    this._isMenuOpen = false;
   }
 
   connectedCallback() {
@@ -334,22 +339,64 @@ export class FlowEditor extends HTMLElement {
           position: absolute;
           pointer-events: auto;
           z-index: 100;
-          display: flex;
-          flex-direction: column;
           background: var(--node-bg);
           border: 1px solid var(--node-border);
-          padding: 5px;
-          border-radius: 4px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+          border-radius: 50%;
+          box-shadow: 0 0 20px rgba(0,0,0,0.5);
           color: var(--node-text);
+          width: 180px;
+          height: 180px;
+          transform: translate(-50%, -50%);
+          display: none;
         }
         .context-menu-item {
-          padding: 5px 10px;
+          position: absolute;
           cursor: pointer;
-          white-space: nowrap;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          transition: background 0.2s;
+          text-align: center;
         }
         .context-menu-item:hover {
           background: var(--node-border);
+        }
+        .context-menu-item.highlighted {
+          background: var(--node-border);
+          transform: scale(1.1);
+        }
+        .context-menu-item i {
+          font-size: 20px;
+        }
+        .context-menu-item span {
+          font-size: 10px;
+          margin-top: 2px;
+        }
+        .node-icon-fa {
+          font-family: 'Font Awesome 7 Free';
+          font-style: normal;
+        }
+        .context-menu-item.highlighted {
+          background: var(--node-border);
+          transform: scale(1.1);
+        }
+        .context-menu-item i {
+          font-size: 20px;
+        }
+        .context-menu-item span {
+          font-size: 10px;
+          margin-top: 2px;
+        }
+        .context-menu-item i {
+          font-size: 20px;
+        }
+        .context-menu-item span {
+          font-size: 10px;
+          margin-top: 2px;
         }
       </style>
       <div id="viewport">
@@ -676,7 +723,20 @@ export class FlowEditor extends HTMLElement {
         }
       }
 
+      if (this._isMenuOpen && this.activePointers.size === 1) {
+        this._handleMenuSlide(e);
+      }
+
       if (this.activePointers.size === 0) {
+        if (this._isMenuOpen) {
+          const highlighted = this.contextMenu.querySelector(".context-menu-item.highlighted");
+          if (highlighted) {
+            highlighted.click();
+            this.hideContextMenu();
+          } else if (e.target === this.contextMenu || this.contextMenu.contains(e.target)) {
+            this.hideContextMenu();
+          }
+        }
         this.didPinch = false;
         this.lastPinchCenter = null;
         this.lastPinchDistance = 0;
@@ -733,14 +793,53 @@ export class FlowEditor extends HTMLElement {
     });
   }
 
+  _handleMenuSlide(e) {
+    const rect = this.contextMenu.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+
+    let angle = Math.atan2(dy, dx);
+    if (angle < 0) angle += 2 * Math.PI;
+
+    const dist = Math.hypot(dx, dy);
+    const items = this.contextMenu.querySelectorAll(".context-menu-item");
+
+    if (dist < 90) {
+      let closestItem = null;
+      let minDiff = Infinity;
+
+      items.forEach((el) => {
+        const elAngle = el._angle;
+        let diff = Math.abs(angle - elAngle);
+        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestItem = el;
+        }
+      });
+
+      if (closestItem) {
+        items.forEach((el) => el.classList.remove("highlighted"));
+        closestItem.classList.add("highlighted");
+      }
+    } else {
+      items.forEach((el) => el.classList.remove("highlighted"));
+    }
+  }
+
   showContextMenu(x, y, context) {
-    // biome-ignore lint/correctness/noUnusedVariables: we will soon have port menu too
     const { clickedPort, clickedNode, clickedEdge } = context;
 
     this.contextMenu.innerHTML = "";
     this.contextMenu.style.display = "flex";
     this.contextMenu.style.left = `${x}px`;
     this.contextMenu.style.top = `${y}px`;
+
+    this._contextMenuItems = [];
 
     this._closeMenuListener = (e) => {
       if (
@@ -762,15 +861,15 @@ export class FlowEditor extends HTMLElement {
           }),
         );
         this.hideContextMenu();
-      });
+      }, "trash");
       this.addMenuItem("Make subgraph", () => {
         // TODO: implement
         this.hideContextMenu();
-      });
+      }, "folder-plus");
       this.addMenuItem("Open", () => {
         // TODO: implement
         this.hideContextMenu();
-      });
+      }, "folder-open");
     } else if (clickedEdge) {
       const edge = this.edges.find(
         (edge) =>
@@ -786,7 +885,7 @@ export class FlowEditor extends HTMLElement {
             }),
           );
           this.hideContextMenu();
-        });
+        }, "trash");
       }
     } else {
       this.addMenuItem("Add Node", () => {
@@ -798,7 +897,7 @@ export class FlowEditor extends HTMLElement {
           }),
         );
         this.hideContextMenu();
-      });
+      }, "plus");
       this.addMenuItem("Close", () => {
         this.dispatchEvent(
           new CustomEvent("navigate-up-attempt", {
@@ -807,27 +906,136 @@ export class FlowEditor extends HTMLElement {
           }),
         );
         this.hideContextMenu();
-      });
+      }, "xmark");
     }
+
+    this.renderContextMenu();
+    this._isMenuOpen = true;
   }
 
-  addMenuItem(text, onClick) {
-    const item = document.createElement("div");
-    item.className = "context-menu-item";
-    item.textContent = text;
-    item.addEventListener("pointerdown", (e) => {
-      // Prevent menu close listener from acting on these
-      e.stopPropagation();
+  addMenuItem(text, onClick, icon) {
+    this._contextMenuItems.push({ text, onClick, icon });
+  }
+
+  renderContextMenu() {
+    const count = this._contextMenuItems.length;
+    if (count === 0) return;
+
+    const radius = 60;
+    const centerX = 90;
+    const centerY = 90;
+
+    const specialAngles = {
+      "Close": 5 * Math.PI / 4,
+      "Remove": Math.PI / 4,
+      "Delete": Math.PI / 4,
+    };
+
+    const itemsWithSpecialAngles = [];
+    const itemsWithoutSpecialAngles = [];
+
+    this._contextMenuItems.forEach((item, index) => {
+      if (specialAngles[item.text] !== undefined) {
+        itemsWithSpecialAngles.push({ item, angle: specialAngles[item.text] });
+      } else {
+        itemsWithoutSpecialAngles.push({ item, index });
+      }
     });
-    item.addEventListener("click", (e) => {
-      e.stopPropagation();
-      onClick();
+
+    itemsWithSpecialAngles.sort((a, b) => a.angle - b.angle);
+
+    const itemAngles = new Array(count);
+    
+    itemsWithSpecialAngles.forEach((special) => {
+        const originalIndex = this._contextMenuItems.indexOf(special.item);
+        itemAngles[originalIndex] = special.angle;
     });
-    this.contextMenu.appendChild(item);
+
+    if (itemsWithoutSpecialAngles.length > 0) {
+        if (itemsWithSpecialAngles.length === 0) {
+            itemsWithoutSpecialAngles.forEach((item, i) => {
+                itemAngles[item.index] = (i / itemsWithoutSpecialAngles.length) * 2 * Math.PI;
+            });
+        } else {
+            const gaps = [];
+            for (let i = 0; i < itemsWithSpecialAngles.length; i++) {
+                const current = itemsWithSpecialAngles[i];
+                const next = itemsWithSpecialAngles[(i + 1) % itemsWithSpecialAngles.length];
+                let angleDiff = next.angle - current.angle;
+                if (angleDiff < 0) angleDiff += 2 * Math.PI;
+                if (itemsWithSpecialAngles.length === 1) angleDiff = 2 * Math.PI;
+                gaps.push({ start: current.angle, end: next.angle, diff: angleDiff });
+            }
+
+            const itemsPerGap = itemsWithoutSpecialAngles.length / gaps.length;
+            let nonSpecialIdx = 0;
+
+            for (let g = 0; g < gaps.length; g++) {
+              const gap = gaps[g];
+              let numInThisGap = Math.floor(itemsPerGap);
+              if (g < (itemsWithoutSpecialAngles.length % gaps.length)) {
+                numInThisGap++;
+              }
+
+              for (let i = 0; i < numInThisGap; i++) {
+                if (nonSpecialIdx < itemsWithoutSpecialAngles.length) {
+                  const item = itemsWithoutSpecialAngles[nonSpecialIdx];
+                  const subAngle = gap.start + (i + 0.5) / (numInThisGap || 1) * gap.diff;
+                  itemAngles[item.index] = subAngle;
+                  nonSpecialIdx++;
+                }
+              }
+            }
+        }
+    }
+
+    this._contextMenuItems.forEach((item, index) => {
+      const angle = itemAngles[index];
+      const el = document.createElement("div");
+      el.className = "context-menu-item";
+
+      if (item.icon) {
+        const iconEl = document.createElement("i");
+        const iconChar = icons()[item.icon];
+        if (iconChar) {
+          iconEl.textContent = iconChar;
+          iconEl.className = "node-icon-fa";
+        } else {
+          iconEl.className = `fa-solid fa-${item.icon}`;
+        }
+        el.appendChild(iconEl);
+      }
+
+      const textEl = document.createElement("span");
+      textEl.textContent = item.text;
+      el.appendChild(textEl);
+
+      el.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+      });
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        item.onClick();
+      });
+
+      this.contextMenu.appendChild(el);
+
+      const x = centerX + radius * Math.cos(angle) - 30;
+      const y = centerY + radius * Math.sin(angle) - 30;
+
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el._angle = angle;
+    });
+  }
+
+  addMenuItem(text, onClick, icon) {
+    this._contextMenuItems.push({ text, onClick, icon });
   }
 
   hideContextMenu() {
     this.contextMenu.style.display = "none";
+    this._isMenuOpen = false;
     if (this._closeMenuListener) {
       window.removeEventListener("pointerdown", this._closeMenuListener);
       this._closeMenuListener = null;
