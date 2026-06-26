@@ -54,6 +54,16 @@ async function init() {
       }
     });
 
+    editor.addEventListener("selection-changed", (e) => {
+      console.log("selection", e.detail);
+    });
+    editor.addEventListener("node-removal-attempt", (e) => {
+      console.log("remove node", e.detail);
+    });
+    editor.addEventListener("edge-removal-attempt", (e) => {
+      console.log("remove edge", e.detail);
+    });
+
     // Add some sample nodes
     const source = editor.addNode(
       "Source",

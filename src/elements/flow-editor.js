@@ -4,6 +4,15 @@
  * Follows the architecture defined in editor.md.
  */
 export class FlowEditor extends HTMLElement {
+  static INTEREST_AREA_TYPES = {
+    NONE: "none",
+    DELETE: "delete",
+    SUBGRAPH_MAKE: "subgraph-make",
+    SUBGRAPH_UP: "subgraph-up",
+    PORT: "port",
+    NODE: "node",
+  };
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -36,6 +45,7 @@ export class FlowEditor extends HTMLElement {
     this.deleteArea = null;
     this.contextMenu = null;
     this.contentsLayer = null;
+    this.transformLayer = null;
   }
 
   connectedCallback() {
@@ -225,11 +235,20 @@ export class FlowEditor extends HTMLElement {
           height: 100%;
           position: relative;
           cursor: grab;
-          transform-origin: 0 0;
+          overflow: hidden;
           user-select: none;
         }
         #viewport:active {
           cursor: grabbing;
+        }
+        #transform-layer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          transform-origin: 0 0;
+          pointer-events: none;
         }
         #svg-layer, #heatmap-canvas {
           position: absolute;
@@ -250,6 +269,7 @@ export class FlowEditor extends HTMLElement {
           width: 100%;
           height: 100%;
           z-index: 2;
+          pointer-events: auto;
         }
         #heatmap-canvas {
           z-index: 0;
@@ -282,10 +302,10 @@ export class FlowEditor extends HTMLElement {
         }
         .delete-area {
           position: absolute;
-          bottom: 20px;
-          right: 20px;
-          width: 80px;
-          height: 80px;
+          bottom: 0;
+          right: 0;
+          width: 120px;
+          height: 120px;
           border: 3px dashed #ff4444;
           border-radius: 50%;
           display: flex;
@@ -324,26 +344,29 @@ export class FlowEditor extends HTMLElement {
         }
       </style>
       <div id="viewport">
-        <canvas id="heatmap-canvas"></canvas>
-        <svg id="svg-layer">
-          <defs>
-            <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              <circle cx="40" cy="40" r="1.5" fill="var(--dot-color)" />
-              <circle cx="0" cy="0" r="1" fill="var(--dot-color)" />
-              <circle cx="40" cy="0" r="1" fill="var(--dot-color)" />
-              <circle cx="0" cy="40" r="1" fill="var(--dot-color)" />
-              <circle cx="40" cy="40" r="1" fill="var(--dot-color)" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#dot-grid)" />
-          <g id="edges-group" transform="translate(8000, 8000)"></g>
-        </svg>
-        <div id="node-layer"></div>
+        <div id="transform-layer">
+          <canvas id="heatmap-canvas"></canvas>
+          <svg id="svg-layer">
+            <defs>
+              <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+                <circle cx="40" cy="40" r="1.5" fill="var(--dot-color)" />
+                <circle cx="0" cy="0" r="1" fill="var(--dot-color)" />
+                <circle cx="40" cy="0" r="1" fill="var(--dot-color)" />
+                <circle cx="0" cy="40" r="1" fill="var(--dot-color)" />
+                <circle cx="40" cy="40" r="1" fill="var(--dot-color)" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dot-grid)" />
+            <g id="edges-group" transform="translate(8000, 8000)"></g>
+          </svg>
+          <div id="node-layer"></div>
+        </div>
+        <div id="delete-area" class="delete-area">DELETE</div>
       </div>
-      <div id="delete-area" class="delete-area">DELETE</div>
       <div id="context-menu" class="context-menu" style="display: none;"></div>
     `;
     this.viewport = this.shadowRoot.getElementById("viewport");
+    this.transformLayer = this.shadowRoot.getElementById("transform-layer");
     this.heatmapCanvas = this.shadowRoot.getElementById("heatmap-canvas");
     this.svgLayer = this.shadowRoot.getElementById("svg-layer");
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
@@ -408,7 +431,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   updateTransform() {
-    this.viewport.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
+    this.transformLayer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
     this.style.setProperty("--zoom-scale", this.zoom);
   }
 
@@ -542,15 +565,6 @@ export class FlowEditor extends HTMLElement {
           this.offset.y += dy;
           this.updateTransform();
           this.panDistance += Math.hypot(dx, dy);
-        } else if (this.isDraggingNode && this.selectedNodes.size > 0) {
-          this.selectedNodes.forEach((node) => {
-            const pos = node.position;
-            node.position = {
-              x: pos.x + dx / this.zoom,
-              y: pos.y + dy / this.zoom,
-            };
-          });
-          this.updateEdges();
         } else if (
           this.draggingNodePointerId === e.pointerId &&
           this.selectedNodes.size > 0
@@ -569,8 +583,8 @@ export class FlowEditor extends HTMLElement {
             });
             this.updateEdges();
 
-            const rect = this.viewport.getBoundingClientRect();
-            if (e.clientX > rect.right - 150 && e.clientY > rect.bottom - 150) {
+            const interest = this.getInterestArea(e.clientX, e.clientY);
+            if (interest.type === FlowEditor.INTEREST_AREA_TYPES.DELETE) {
               this.deleteArea.classList.add("visible");
             } else {
               this.deleteArea.classList.remove("visible");
@@ -781,7 +795,9 @@ export class FlowEditor extends HTMLElement {
     const item = document.createElement("div");
     item.className = "context-menu-item";
     item.textContent = text;
-    item.onclick = onClick;
+    item.onclick = () => {
+      onClick();
+    };
     this.contextMenu.appendChild(item);
   }
 
@@ -965,7 +981,9 @@ export class FlowEditor extends HTMLElement {
       e.clientY - this.lastPointerPos.y,
     );
 
-    if (this.isOverPort(e.clientX, e.clientY) || dist > 2) {
+    const interest = this.getInterestArea(e.clientX, e.clientY);
+
+    if (interest.type === FlowEditor.INTEREST_AREA_TYPES.PORT || dist > 2) {
       this.removeGhostNode();
       if (this.stillnessTimer) {
         clearTimeout(this.stillnessTimer);
@@ -1013,20 +1031,6 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer.removeChild(this.ghostNode);
       this.ghostNode = null;
     }
-  }
-
-  isOverPort(clientX, clientY) {
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
-    for (const node of nodes) {
-      const ports = node.shadowRoot.querySelectorAll(".port");
-      for (const port of ports) {
-        const rect = port.getBoundingClientRect();
-        const dx = clientX - (rect.left + rect.width / 2);
-        const dy = clientY - (rect.top + rect.height / 2);
-        if (Math.sqrt(dx * dx + dy * dy) < 20) return true;
-      }
-    }
-    return false;
   }
 
   completeWireDrag(e) {
@@ -1203,5 +1207,85 @@ export class FlowEditor extends HTMLElement {
     node.setPorts(inPorts, outPorts);
     this.nodeLayer.appendChild(node);
     return node;
+  }
+
+  getInterestArea(clientX, clientY) {
+    const rect = this.viewport.getBoundingClientRect();
+
+    // 1. Check Corner Areas
+    if (clientX > rect.right - 180 && clientY > rect.bottom - 180) {
+      return { type: FlowEditor.INTEREST_AREA_TYPES.DELETE, element: null };
+    }
+    if (clientX > rect.right - 180 && clientY < 180) {
+      return {
+        type: FlowEditor.INTEREST_AREA_TYPES.SUBGRAPH_MAKE,
+        element: null,
+      };
+    }
+    if (clientX < 180 && clientY < 180) {
+      return {
+        type: FlowEditor.INTEREST_AREA_TYPES.SUBGRAPH_UP,
+        element: null,
+      };
+    }
+
+    // 2. Check Dynamic Areas
+    // We check these in order of priority.
+    // If dragging a wire, ports are the most important.
+    if (this.isDraggingWire) {
+      const port = this._getNearestPort(clientX, clientY);
+      if (port) {
+        return { type: FlowEditor.INTEREST_AREA_TYPES.PORT, element: port };
+      }
+    }
+
+    // If dragging nodes, other nodes are the most important.
+    if (this.isDraggingNode && this.selectedNodes.size > 0) {
+      const node = this._getNearestNode(clientX, clientY);
+      if (node) {
+        return { type: FlowEditor.INTEREST_AREA_TYPES.NODE, element: node };
+      }
+    }
+
+    return { type: FlowEditor.INTEREST_AREA_TYPES.NONE, element: null };
+  }
+
+  _getNearestPort(clientX, clientY) {
+    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    let nearestPort = null;
+    let minDist = Infinity;
+    const threshold = 20; // px
+
+    for (const node of nodes) {
+      const ports = node.shadowRoot.querySelectorAll(".port");
+      for (const port of ports) {
+        const rect = port.getBoundingClientRect();
+        const dx = clientX - (rect.left + rect.width / 2);
+        const dy = clientY - (rect.top + rect.height / 2);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist && dist < threshold) {
+          minDist = dist;
+          nearestPort = port;
+        }
+      }
+    }
+    return nearestPort;
+  }
+
+  _getNearestNode(clientX, clientY) {
+    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    for (const node of nodes) {
+      if (this.selectedNodes.has(node)) continue;
+      const rect = node.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        return node;
+      }
+    }
+    return null;
   }
 }
