@@ -19,7 +19,8 @@ Technical work is planned with work documents (in Markdown) that are managed usi
 ## Boundaries
 
 - ✅ **Always**: create a branch for any major change set (work document)
-- ✅ **Always**: fix formatting with `npm run format` after any major changes
+- ✅ **Always**: write at least smoketests for any new functionality
+- ✅ **Always**: fix formatting with `npm run format` after any changes to source files or tests
 - ⚠️ **Ask first**: adding dependencies
 - ⚠️ **Ask first**: modify CI config
 - 🚫 **Never**: AI agents may not make commits on their own, instead notify user that there are uncommitted changes to review
