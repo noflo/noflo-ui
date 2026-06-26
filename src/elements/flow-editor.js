@@ -110,6 +110,7 @@ export class FlowEditor extends HTMLElement {
           --dot-color: #444;
           --node-stroke-width: 2px;
           --edge-width: 4px;
+          --edge-hit-width: 60px;
           --node-ring-inset: 4px;
 
           --node-bg: #111;
@@ -300,6 +301,12 @@ export class FlowEditor extends HTMLElement {
           stroke: var(--flow-color, var(--edge-color));
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
+          pointer-events: none;
+        }
+        .edge-hit-area {
+          stroke: transparent;
+          stroke-width: var(--edge-hit-width, 40px);
+          fill: none;
           pointer-events: auto;
         }
         .delete-area {
@@ -1153,9 +1160,6 @@ export class FlowEditor extends HTMLElement {
 
     const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     hitPath.classList.add("edge-hit-area");
-    hitPath.setAttribute("stroke", "transparent");
-    hitPath.setAttribute("stroke-width", "20");
-    hitPath.setAttribute("fill", "none");
 
     const visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     visualPath.classList.add("edge-flow");
