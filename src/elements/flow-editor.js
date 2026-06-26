@@ -1,7 +1,7 @@
 /**
  * FlowEditor Web Component
  * A zoomable canvas for editing NoFlo graphs.
- * Follows the architecture defined in editor.md.
+ * Follows the architecture defined in SPEC.md and work document #1.
  */
 export class FlowEditor extends HTMLElement {
   static INTEREST_AREA_TYPES = {
@@ -523,8 +523,10 @@ export class FlowEditor extends HTMLElement {
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
       const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
-      const clickedEdge = path.find((el) =>
-        el.classList?.contains("edge-flow") || el.classList?.contains("edge-hit-area"),
+      const clickedEdge = path.find(
+        (el) =>
+          el.classList?.contains("edge-flow") ||
+          el.classList?.contains("edge-hit-area"),
       );
 
       if (clickedPort) {
@@ -535,7 +537,10 @@ export class FlowEditor extends HTMLElement {
         this.startNodeDrag(e, clickedNode);
       } else if (clickedEdge) {
         e.stopPropagation();
-        const edge = this.edges.find((edge) => edge.hitPath === clickedEdge || edge.visualPath === clickedEdge);
+        const edge = this.edges.find(
+          (edge) =>
+            edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
+        );
         if (edge) {
           if (this.selectedEdges.has(edge)) {
             this.selectedEdges.delete(edge);
@@ -711,8 +716,10 @@ export class FlowEditor extends HTMLElement {
     const path = e.composedPath();
     const clickedPort = path.find((el) => el.classList?.contains("port"));
     const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
-    const clickedEdge = path.find((el) =>
-      el.classList?.contains("edge-flow") || el.classList?.contains("edge-hit-area"),
+    const clickedEdge = path.find(
+      (el) =>
+        el.classList?.contains("edge-flow") ||
+        el.classList?.contains("edge-hit-area"),
     );
 
     const rect = this.getBoundingClientRect();
@@ -727,6 +734,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   showContextMenu(x, y, context) {
+    // biome-ignore lint/correctness/noUnusedVariables: we will soon have port menu too
     const { clickedPort, clickedNode, clickedEdge } = context;
 
     this.contextMenu.innerHTML = "";
@@ -765,7 +773,8 @@ export class FlowEditor extends HTMLElement {
       });
     } else if (clickedEdge) {
       const edge = this.edges.find(
-        (edge) => edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
+        (edge) =>
+          edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
       );
       if (edge) {
         this.addMenuItem("Remove", () => {
@@ -1158,10 +1167,16 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const hitPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
     hitPath.classList.add("edge-hit-area");
 
-    const visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const visualPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
     visualPath.classList.add("edge-flow");
 
     this.updatePathData(hitPath, visualPath, portA, portB);
@@ -1191,7 +1206,12 @@ export class FlowEditor extends HTMLElement {
   updateEdges() {
     if (!this.edges) return;
     this.edges.forEach((edge) => {
-      this.updatePathData(edge.hitPath, edge.visualPath, edge.portA, edge.portB);
+      this.updatePathData(
+        edge.hitPath,
+        edge.visualPath,
+        edge.portA,
+        edge.portB,
+      );
     });
   }
 

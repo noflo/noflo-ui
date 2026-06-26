@@ -3,7 +3,7 @@
  * A circular representation of a NoFlo node.
  * Follows the architecture defined in SPEC.md and work document #1.
  */
-import icons from '../../vendor/fa-icon-map.js';
+import icons from "../../vendor/fa-icon-map.js";
 
 export class FlowNode extends HTMLElement {
   constructor() {
