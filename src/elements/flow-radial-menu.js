@@ -147,6 +147,7 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   _createIconHtml(icon) {
+    if (icon.startsWith("<")) return icon;
     if (icon.startsWith("data:image") || icon.startsWith("http")) {
       return `<img src="${icon}" style="width: 24px; height: 24px; object-fit: contain;">`;
     }
