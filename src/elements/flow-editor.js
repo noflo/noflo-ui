@@ -29,6 +29,7 @@ export class FlowEditor extends HTMLElement {
     this.initialOffset = { x: 0, y: 0 };
     this.selectedNodes = new Set();
     this.selectedEdges = new Set();
+    this.selectMode = false;
     this.ghostNode = null;
     this.stillnessTimer = null;
     this.panDistance = 0;
@@ -44,6 +45,8 @@ export class FlowEditor extends HTMLElement {
     this.heatmapInterval = null;
     this.deleteArea = null;
     this.radialMenu = null;
+    this.longPressTimer = null;
+    this.selectionChangedOnDown = false;
   }
 
   connectedCallback() {
@@ -506,39 +509,24 @@ export class FlowEditor extends HTMLElement {
           el.classList?.contains("edge-hit-area"),
       );
 
+      const isModifier = e.ctrlKey || e.shiftKey;
+      const isTouch = e.pointerType === "touch";
+      const isMultiple = isModifier || (isTouch && this.selectMode);
+
       if (clickedPort) {
         e.stopPropagation();
         this.startWireDrag(e, clickedPort);
       } else if (clickedNode) {
         e.stopPropagation();
-        this.startNodeDrag(e, clickedNode);
+        this.handleNodeSelection(e, clickedNode, isMultiple);
       } else if (clickedEdge) {
         e.stopPropagation();
-        const edge = this.edges.find(
-          (edge) =>
-            edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
-        );
-        if (edge) {
-          if (this.selectedEdges.has(edge)) {
-            this.selectedEdges.delete(edge);
-            edge.visualPath.removeAttribute("selected");
-          } else {
-            this.selectedEdges.add(edge);
-            edge.visualPath.setAttribute("selected", "");
-          }
-          this.dispatchEvent(
-            new CustomEvent("selection-changed", {
-              detail: {
-                nodes: Array.from(this.selectedNodes),
-                edges: Array.from(this.selectedEdges),
-              },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        }
+        this.handleEdgeSelection(e, clickedEdge, isMultiple);
       } else {
         this.startCanvasPan(e);
+        if (!isModifier && !this.selectMode) {
+          this.clearSelection();
+        }
       }
     });
 
@@ -592,13 +580,20 @@ export class FlowEditor extends HTMLElement {
     window.addEventListener("pointerup", (e) => {
       this.activePointers.delete(e.pointerId);
 
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+
       if (this.activePointers.size < 2) {
         this.initialPinchDistance = 0;
       }
 
       if (e.pointerId === this.panningPointerId) {
         if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
-          this.clearSelection();
+          if (!this.selectMode) {
+            this.clearSelection();
+          }
         }
         this.isPanning = false;
         this.panDistance = 0;
@@ -606,6 +601,13 @@ export class FlowEditor extends HTMLElement {
       }
 
       if (e.pointerId === this.draggingNodePointerId) {
+        const clickedNode = this.clickedNode;
+        const isMultiple = e.ctrlKey || e.shiftKey || this.selectMode;
+
+        if (!this.isDraggingNode) {
+          this.commitNodeSelection(clickedNode, isMultiple);
+        }
+
         if (this.deleteArea.classList.contains("visible")) {
           this.dispatchEvent(
             new CustomEvent("node-removal-attempt", {
@@ -616,33 +618,17 @@ export class FlowEditor extends HTMLElement {
           );
         }
 
-        if (
-          !this.isDraggingNode &&
-          this.wasClickOnSelectedNode &&
-          this.clickedNode
-        ) {
-          this.selectedNodes.delete(this.clickedNode);
-          this.clickedNode.removeAttribute("selected");
-          this.dispatchEvent(
-            new CustomEvent("selection-changed", {
-              detail: {
-                nodes: Array.from(this.selectedNodes),
-                edges: Array.from(this.selectedEdges),
-              },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+        if (this.isDraggingNode) {
+          this.selectedNodes.forEach((node) => {
+            node.position = this.snapToGrid(node.position.x, node.position.y);
+          });
+          this.updateEdges();
         }
-        this.selectedNodes.forEach((node) => {
-          node.position = this.snapToGrid(node.position.x, node.position.y);
-        });
-        this.updateEdges();
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
-        this.wasClickOnSelectedNode = false;
-        this.clickedNode = null;
         this.deleteArea.classList.remove("visible");
+        this.clickedNode = null;
+        this.selectionChangedOnDown = false;
       }
 
       if (e.pointerId === this.draggingWirePointerId) {
@@ -657,6 +643,11 @@ export class FlowEditor extends HTMLElement {
         this.didPinch = false;
         this.lastPinchCenter = null;
         this.lastPinchDistance = 0;
+      }
+
+      // If selection becomes empty, exit select mode
+      if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+        this.selectMode = false;
       }
     });
 
@@ -865,26 +856,69 @@ export class FlowEditor extends HTMLElement {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  startNodeDrag(e, node) {
-    const isAlreadySelected = this.selectedNodes.has(node);
+  handleNodeSelection(e, node, isMultiple) {
+    this.clickedNode = node;
 
-    if (isAlreadySelected) {
-      this.isDraggingNode = false;
-      this.draggingNodePointerId = e.pointerId;
-      this.lastPointerPos = { x: e.clientX, y: e.clientY };
-      this.wasClickOnSelectedNode = true;
-      this.clickedNode = node;
-      node.setPointerCapture(e.pointerId);
+    if (isMultiple) {
+      if (this.selectMode) {
+        this.radialMenu.close();
+      }
+      if (!this.selectedNodes.has(node)) {
+        this.selectedNodes.add(node);
+        node.setAttribute("selected", "");
+        this.selectionChangedOnDown = true;
+      } else {
+        this.selectionChangedOnDown = false;
+      }
     } else {
-      this.selectedNodes.add(node);
-      node.setAttribute("selected", "");
+      if (this.selectedNodes.has(node) && this.selectedNodes.size === 1) {
+        this.selectionChangedOnDown = false;
+      } else {
+        this.clearNodeSelection(false);
+        this.selectedNodes.add(node);
+        node.setAttribute("selected", "");
+        this.selectionChangedOnDown = true;
+      }
+    }
 
-      node.setPointerCapture(e.pointerId);
-      this.isDraggingNode = false;
-      this.draggingNodePointerId = e.pointerId;
-      this.lastPointerPos = { x: e.clientX, y: e.clientY };
-      this.wasClickOnSelectedNode = false;
-      this.clickedNode = null;
+    node.setPointerCapture(e.pointerId);
+    this.draggingNodePointerId = e.pointerId;
+    this.lastPointerPos = { x: e.clientX, y: e.clientY };
+
+    this.dispatchEvent(
+      new CustomEvent("selection-changed", {
+        detail: {
+          nodes: Array.from(this.selectedNodes),
+          edges: Array.from(this.selectedEdges),
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+
+    // Long press for select mode
+    this.longPressTimer = setTimeout(() => {
+      this.selectMode = true;
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      this.showContextMenu(x, y, { clickedNode: node });
+    }, 500);
+  }
+
+  commitNodeSelection(node, isMultiple) {
+    if (this.selectionChangedOnDown) return;
+
+    if (isMultiple) {
+      if (this.selectedNodes.has(node)) {
+        this.selectedNodes.delete(node);
+        node.removeAttribute("selected");
+      }
+    } else {
+      if (this.selectedNodes.has(node) && this.selectedNodes.size === 1) {
+        this.selectedNodes.delete(node);
+        node.removeAttribute("selected");
+      }
     }
 
     this.dispatchEvent(
@@ -899,6 +933,51 @@ export class FlowEditor extends HTMLElement {
     );
   }
 
+  handleEdgeSelection(e, edgeElement, isMultiple) {
+    const edge = this.edges.find(
+      (edge) =>
+        edge.hitPath === edgeElement || edge.visualPath === edgeElement,
+    );
+    if (!edge) return;
+
+    if (isMultiple) {
+      if (this.selectMode) {
+        this.radialMenu.close();
+      }
+      if (this.selectedEdges.has(edge)) {
+        this.selectedEdges.delete(edge);
+        edge.visualPath.removeAttribute("selected");
+      } else {
+        this.selectedEdges.add(edge);
+        edge.visualPath.setAttribute("selected", "");
+      }
+    } else {
+      if (this.selectedEdges.has(edge) && this.selectedEdges.size === 1) {
+        this.selectedEdges.delete(edge);
+        edge.visualPath.removeAttribute("selected");
+      } else {
+        this.clearEdgeSelection(false);
+        this.selectedEdges.add(edge);
+        edge.visualPath.setAttribute("selected", "");
+      }
+    }
+
+    this.dispatchEvent(
+      new CustomEvent("selection-changed", {
+        detail: {
+          nodes: Array.from(this.selectedNodes),
+          edges: Array.from(this.selectedEdges),
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  startNodeDrag(e, node) {
+    // This method is now deprecated in favor of handleNodeSelection
+  }
+
   clearSelection(emit = true) {
     this.selectedNodes.forEach((node) => {
       node.removeAttribute("selected");
@@ -906,6 +985,10 @@ export class FlowEditor extends HTMLElement {
     this.selectedNodes.clear();
 
     this.clearEdgeSelection(false);
+
+    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+      this.selectMode = false;
+    }
 
     if (emit) {
       this.dispatchEvent(
@@ -918,11 +1001,36 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
+  clearNodeSelection(emit = true) {
+    this.selectedNodes.forEach((node) => {
+      node.removeAttribute("selected");
+    });
+    this.selectedNodes.clear();
+
+    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+      this.selectMode = false;
+    }
+
+    if (emit) {
+      this.dispatchEvent(
+        new CustomEvent("selection-changed", {
+          detail: { nodes: [], edges: Array.from(this.selectedEdges) },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
+  }
+
   clearEdgeSelection(emit = true) {
     this.selectedEdges.forEach((edge) => {
       edge.visualPath.removeAttribute("selected");
     });
     this.selectedEdges.clear();
+
+    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+      this.selectMode = false;
+    }
 
     if (emit) {
       this.dispatchEvent(

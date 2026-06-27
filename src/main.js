@@ -5,6 +5,7 @@
 import { FlowEditor } from "./elements/flow-editor.js";
 import { FlowNode } from "./elements/flow-node.js";
 import { FlowRadialMenu } from "./elements/flow-radial-menu.js";
+import { SelectionPills } from "./elements/selection-pills.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
 
@@ -19,14 +20,30 @@ async function init() {
   // Initialize backend
   backend.postMessage({ type: "INIT", payload: {} });
 
+
   // Register Web Components
   customElements.define("flow-editor", FlowEditor);
   customElements.define("flow-node", FlowNode);
   customElements.define("flow-radial-menu", FlowRadialMenu);
+  customElements.define("selection-pills", SelectionPills);
 
   // Initial setup
   const app = document.getElementById("app");
   if (app) {
+    const pills = document.createElement("selection-pills");
+    document.body.appendChild(pills);
+    pills.addEventListener("clear-selection", (e) => {
+      const editor = document.querySelector("flow-editor");
+      if (!editor) return;
+      if (e.detail.type === "nodes") {
+        editor.clearNodeSelection();
+      } else if (e.detail.type === "edges") {
+        editor.clearEdgeSelection();
+      } else {
+        editor.clearSelection();
+      }
+    });
+
     const editor = document.createElement("flow-editor");
     app.appendChild(editor);
 
@@ -58,7 +75,9 @@ async function init() {
 
     editor.addEventListener("selection-changed", (e) => {
       console.log("selection", e.detail);
+      updateSelectionPills(e.detail);
     });
+
     editor.addEventListener("node-removal-attempt", (e) => {
       console.log("remove node", e.detail);
     });
@@ -169,6 +188,15 @@ async function init() {
       }
     }, 100);
   }
+}
+
+function updateSelectionPills(selection) {
+  const pills = document.querySelector("selection-pills");
+  if (!pills) return;
+
+  const { nodes, edges } = selection;
+  pills.setAttribute("nodes-count", nodes.length);
+  pills.setAttribute("edges-count", edges.length);
 }
 
 init().catch(console.error);
