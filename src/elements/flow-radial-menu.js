@@ -36,6 +36,22 @@ export class FlowRadialMenu extends HTMLElement {
           width: 180px;
           height: 180px;
           transform: translate(-50%, -50%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .center-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          background: var(--node-bg);
+          border: 1px solid var(--node-border);
+          pointer-events: none;
+          z-index: 2;
         }
         .context-menu-item {
           position: absolute;
@@ -49,6 +65,7 @@ export class FlowRadialMenu extends HTMLElement {
           border-radius: 50%;
           transition: background 0.2s;
           text-align: center;
+          z-index: 1;
         }
         .context-menu-item:hover {
           background: var(--node-border);
@@ -69,15 +86,27 @@ export class FlowRadialMenu extends HTMLElement {
           font-style: normal;
         }
       </style>
-      <div class="context-menu"></div>
+      <div class="context-menu">
+        <div class="center-icon"></div>
+      </div>
     `;
     this.menuElement = this.shadowRoot.querySelector(".context-menu");
+    this.centerIconElement = this.shadowRoot.querySelector(".center-icon");
   }
 
-  open(x, y, items) {
+  open(x, y, items, centerIcon) {
     this._items = items;
-    this.menuElement.innerHTML = "";
-    this.menuElement.style.display = "block";
+    this.render(); // Reset HTML
+    this.menuElement = this.shadowRoot.querySelector(".context-menu");
+    this.centerIconElement = this.shadowRoot.querySelector(".center-icon");
+
+    if (centerIcon) {
+      this.centerIconElement.innerHTML = this._createIconHtml(centerIcon);
+    } else {
+      this.centerIconElement.innerHTML = "";
+    }
+
+    this.menuElement.style.display = "flex";
     this.style.display = "block";
     this.style.left = `${x}px`;
     this.style.top = `${y}px`;
@@ -105,6 +134,17 @@ export class FlowRadialMenu extends HTMLElement {
     this.renderItems();
   }
 
+  _createIconHtml(icon) {
+    if (icon.startsWith("data:image") || icon.startsWith("http")) {
+      return `<img src="${icon}" style="width: 24px; height: 24px; object-fit: contain;">`;
+    }
+    const iconChar = icons()[icon];
+    if (iconChar) {
+      return `<i class="node-icon-fa">${iconChar}</i>`;
+    }
+    return `<i class="fa-solid fa-${icon}"></i>`;
+  }
+
   close() {
     this.menuElement.style.display = "none";
     this.style.display = "none";
@@ -127,72 +167,41 @@ export class FlowRadialMenu extends HTMLElement {
     const centerX = 90;
     const centerY = 90;
 
-    const specialAngles = {
-      Close: (5 * Math.PI) / 4,
-      Remove: Math.PI / 4,
-      Delete: Math.PI / 4,
+    const ITEM_SECTION_MAP = {
+      'Delete': 3,
+      'Remove': 3,
+      'Close': 5,
+      'Open': 6,
+      'Make subgraph': 7,
     };
 
-    const itemsWithSpecialAngles = [];
-    const itemsWithoutSpecialAngles = [];
+    const itemAngles = new Array(count);
+    const usedSections = new Set();
+
+    // First pass: assigned sections
+    this._items.forEach((item, index) => {
+      const section = ITEM_SECTION_MAP[item.text];
+      if (section !== undefined) {
+        itemAngles[index] = (section + 0.5) * (Math.PI / 4);
+        usedSections.add(section);
+      }
+    });
+
+    // Second pass: fill remaining available sections (3-7)
+    const availableSections = [3, 4, 5, 6, 7].filter(s => !usedSections.has(s));
+    let availIdx = 0;
 
     this._items.forEach((item, index) => {
-      if (specialAngles[item.text] !== undefined) {
-        itemsWithSpecialAngles.push({ item, angle: specialAngles[item.text] });
-      } else {
-        itemsWithoutSpecialAngles.push({ item, index });
-      }
-    });
-
-    itemsWithSpecialAngles.sort((a, b) => a.angle - b.angle);
-
-    const itemAngles = new Array(count);
-
-    itemsWithSpecialAngles.forEach((special) => {
-      const originalIndex = this._items.indexOf(special.item);
-      itemAngles[originalIndex] = special.angle;
-    });
-
-    if (itemsWithoutSpecialAngles.length > 0) {
-      if (itemsWithSpecialAngles.length === 0) {
-        itemsWithoutSpecialAngles.forEach((item, i) => {
-          itemAngles[item.index] =
-            (i / itemsWithoutSpecialAngles.length) * 2 * Math.PI;
-        });
-      } else {
-        const gaps = [];
-        for (let i = 0; i < itemsWithSpecialAngles.length; i++) {
-          const current = itemsWithSpecialAngles[i];
-          const next =
-            itemsWithSpecialAngles[(i + 1) % itemsWithSpecialAngles.length];
-          let angleDiff = next.angle - current.angle;
-          if (angleDiff < 0) angleDiff += 2 * Math.PI;
-          if (itemsWithSpecialAngles.length === 1) angleDiff = 2 * Math.PI;
-          gaps.push({ start: current.angle, end: next.angle, diff: angleDiff });
-        }
-
-        const itemsPerGap = itemsWithoutSpecialAngles.length / gaps.length;
-        let nonSpecialIdx = 0;
-
-        for (let g = 0; g < gaps.length; g++) {
-          const gap = gaps[g];
-          let numInThisGap = Math.floor(itemsPerGap);
-          if (g < itemsWithoutSpecialAngles.length % gaps.length) {
-            numInThisGap++;
-          }
-
-          for (let i = 0; i < numInThisGap; i++) {
-            if (nonSpecialIdx < itemsWithoutSpecialAngles.length) {
-              const item = itemsWithoutSpecialAngles[nonSpecialIdx];
-              const subAngle =
-                gap.start + ((i + 0.5) / (numInThisGap || 1)) * gap.diff;
-              itemAngles[item.index] = subAngle;
-              nonSpecialIdx++;
-            }
-          }
+      if (itemAngles[index] === undefined) {
+        if (availIdx < availableSections.length) {
+          const section = availableSections[availIdx++];
+          itemAngles[index] = (section + 0.5) * (Math.PI / 4);
+        } else {
+          // If we run out of sections, we just place them randomly in available space
+          itemAngles[index] = (3 + Math.random() * 4 + 0.5) * (Math.PI / 4);
         }
       }
-    }
+    });
 
     this._items.forEach((item, index) => {
       const angle = itemAngles[index];
@@ -249,31 +258,30 @@ export class FlowRadialMenu extends HTMLElement {
     const dist = Math.hypot(dx, dy);
     const items = this.menuElement.querySelectorAll(".context-menu-item");
 
-    if (dist < 90) {
-      let closestItem = null;
-      let minDiff = Infinity;
+    // Finger-sized empty area in the middle (~44px diameter, so 22px radius)
+    if (dist < 22) {
+      items.forEach((el) => el.classList.remove("highlighted"));
+      return;
+    }
 
-      items.forEach((el) => {
-        const elAngle = el._angle;
-        let diff = Math.abs(angle - elAngle);
-        if (diff > Math.PI) diff = 2 * Math.PI - diff;
-
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestItem = el;
-        }
-      });
-
-      if (closestItem) {
-        items.forEach((el) => {
-          el.classList.remove("highlighted");
-        });
-        closestItem.classList.add("highlighted");
+    // Map angle to 45-degree section (0-7)
+    const section = Math.floor(angle / (Math.PI / 4));
+    
+    let closestItem = null;
+    items.forEach((el) => {
+      // Check if this item's angle falls into the current section
+      const itemAngle = el._angle;
+      const itemSection = Math.floor(itemAngle / (Math.PI / 4));
+      if (itemSection === section) {
+        closestItem = el;
       }
+    });
+
+    if (closestItem) {
+      items.forEach((el) => el.classList.remove("highlighted"));
+      closestItem.classList.add("highlighted");
     } else {
-      items.forEach((el) => {
-        el.classList.remove("highlighted");
-      });
+      items.forEach((el) => el.classList.remove("highlighted"));
     }
   }
 

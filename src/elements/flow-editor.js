@@ -795,7 +795,7 @@ export class FlowEditor extends HTMLElement {
       });
     }
 
-    this.radialMenu.open(x, y, items);
+    this.radialMenu.open(x, y, items, clickedNode ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML : null);
   }
 
   startCanvasPan(e) {
