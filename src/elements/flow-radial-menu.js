@@ -28,10 +28,6 @@ export class FlowRadialMenu extends HTMLElement {
         }
         .context-menu {
           pointer-events: auto;
-          background: var(--node-bg);
-          border: 1px solid var(--node-border);
-          border-radius: 50%;
-          box-shadow: 0 0 20px rgba(0,0,0,0.5);
           color: var(--node-text);
           width: 180px;
           height: 180px;
@@ -39,6 +35,20 @@ export class FlowRadialMenu extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        .menu-svg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 180px;
+          height: 180px;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .menu-segment {
+          fill: var(--node-bg);
+          stroke: var(--node-border);
+          stroke-width: 1px;
         }
         .center-icon {
           width: 44px;
@@ -87,11 +97,13 @@ export class FlowRadialMenu extends HTMLElement {
         }
       </style>
       <div class="context-menu">
+        <svg class="menu-svg"></svg>
         <div class="center-icon"></div>
       </div>
     `;
     this.menuElement = this.shadowRoot.querySelector(".context-menu");
     this.centerIconElement = this.shadowRoot.querySelector(".center-icon");
+    this.svgElement = this.shadowRoot.querySelector(".menu-svg");
   }
 
   open(x, y, items, centerIcon) {
@@ -197,14 +209,30 @@ export class FlowRadialMenu extends HTMLElement {
           const section = availableSections[availIdx++];
           itemAngles[index] = (section + 0.5) * (Math.PI / 4);
         } else {
-          // If we run out of sections, we just place them randomly in available space
           itemAngles[index] = (3 + Math.random() * 4 + 0.5) * (Math.PI / 4);
         }
       }
     });
 
+    this.svgElement.innerHTML = "";
+
     this._items.forEach((item, index) => {
       const angle = itemAngles[index];
+      const section = Math.floor(angle / (Math.PI / 4));
+      const startAngle = section * (Math.PI / 4);
+      const endAngle = (section + 1) * (Math.PI / 4);
+
+      // Create SVG segment
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const x1 = centerX + 90 * Math.cos(startAngle);
+      const y1 = centerY + 90 * Math.sin(startAngle);
+      const x2 = centerX + 90 * Math.cos(endAngle);
+      const y2 = centerY + 90 * Math.sin(endAngle);
+      
+      path.setAttribute("d", `M ${centerX} ${centerY} L ${x1} ${y1} A 90 90 0 0 1 ${x2} ${y2} Z`);
+      path.setAttribute("class", "menu-segment");
+      this.svgElement.appendChild(path);
+
       const el = document.createElement("div");
       el.className = "context-menu-item";
 
