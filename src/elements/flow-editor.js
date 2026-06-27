@@ -540,6 +540,10 @@ export class FlowEditor extends HTMLElement {
         const dy = e.clientY - this.lastPointerPos.y;
 
         if (this.isPanning) {
+          if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+          }
           this.offset.x += dx;
           this.offset.y += dy;
           this.updateTransform();
@@ -550,6 +554,10 @@ export class FlowEditor extends HTMLElement {
         ) {
           if (Math.hypot(dx, dy) > 3) {
             this.isDraggingNode = true;
+            if (this.longPressTimer) {
+              clearTimeout(this.longPressTimer);
+              this.longPressTimer = null;
+            }
           }
 
           if (this.isDraggingNode) {
@@ -570,6 +578,10 @@ export class FlowEditor extends HTMLElement {
             }
           }
         } else if (this.isDraggingWire) {
+          if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+          }
           this.updateWireDrag(e);
         }
       }
