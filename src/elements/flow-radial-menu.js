@@ -107,6 +107,8 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   open(x, y, items, centerIcon) {
+    this._openX = x;
+    this._openY = y;
     this._items = items;
     this.render(); // Reset HTML
     this.menuElement = this.shadowRoot.querySelector(".context-menu");
@@ -143,6 +145,17 @@ export class FlowRadialMenu extends HTMLElement {
     };
     window.addEventListener("pointermove", this._moveMenuListener);
 
+    this._releaseMenuListener = (e) => {
+      const highlighted = this.menuElement.querySelector(".context-menu-item.highlighted");
+      if (highlighted && highlighted._item) {
+        const item = highlighted._item;
+        this.close(); // Close first to avoid any event conflicts
+        item.onClick();
+      }
+    };
+    window.addEventListener("pointerup", this._releaseMenuListener);
+    window.addEventListener("pointercancel", this._releaseMenuListener);
+
     this.renderItems();
   }
 
@@ -169,6 +182,10 @@ export class FlowRadialMenu extends HTMLElement {
     if (this._moveMenuListener) {
       window.removeEventListener("pointermove", this._moveMenuListener);
       this._moveMenuListener = null;
+    }
+    if (this._releaseMenuListener) {
+      window.removeEventListener("pointerup", this._releaseMenuListener);
+      this._releaseMenuListener = null;
     }
   }
 
@@ -270,13 +287,13 @@ export class FlowRadialMenu extends HTMLElement {
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
       el._angle = angle;
+      el._item = item;
     });
   }
 
   handleSlide(e) {
-    const rect = this.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const centerX = this._openX;
+    const centerY = this._openY;
 
     const dx = e.clientX - centerX;
     const dy = e.clientY - centerY;

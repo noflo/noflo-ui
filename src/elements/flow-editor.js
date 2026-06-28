@@ -333,6 +333,45 @@ export class FlowEditor extends HTMLElement {
         .delete-area.visible {
           opacity: 1;
         }
+        #selection-pills {
+          position: absolute;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 10px;
+          z-index: 10;
+          pointer-events: none;
+        }
+        .selection-pill {
+          pointer-events: auto;
+          background: var(--node-bg);
+          border: 1px solid var(--node-border);
+          color: var(--node-text);
+          padding: 4px 12px;
+          border-radius: 16px;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          cursor: default;
+        }
+        .selection-pill .clear-btn {
+          cursor: pointer;
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: var(--node-border);
+          font-size: 10px;
+          transition: background 0.2s;
+        }
+        .selection-pill .clear-btn:hover {
+          background: #ff4444;
+        }
       </style>
       <div id="viewport">
         <div id="transform-layer">
@@ -353,6 +392,7 @@ export class FlowEditor extends HTMLElement {
           </svg>
         </div>
         <div id="delete-area" class="delete-area">DELETE</div>
+        <div id="selection-pills"></div>
       </div>
     `;
     this.viewport = this.shadowRoot.getElementById("viewport");
@@ -362,9 +402,11 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
     this.deleteArea = this.shadowRoot.getElementById("delete-area");
+    this.selectionPills = this.shadowRoot.getElementById("selection-pills");
 
     // Using a smaller canvas and scaling it up for performance
     this.heatmapCanvas.width = 800;
+    this.heatmapCanvas.height = 800;
     this.heatmapCanvas.height = 800;
 
     this.startHeatmapLoop();
@@ -491,6 +533,41 @@ export class FlowEditor extends HTMLElement {
     this.updateTransform();
   }
 
+  emitSelectionChanged() {
+    this.dispatchEvent(
+      new CustomEvent("selection-changed", {
+        detail: {
+          nodes: Array.from(this.selectedNodes),
+          edges: Array.from(this.selectedEdges),
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    this.updateSelectionPills();
+  }
+
+  updateSelectionPills() {
+    this.selectionPills.innerHTML = "";
+    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) return;
+
+    if (this.selectedNodes.size > 0) {
+      const pill = document.createElement("div");
+      pill.className = "selection-pill";
+      pill.innerHTML = `<span>${this.selectedNodes.size} nodes</span><div class="clear-btn">x</div>`;
+      pill.querySelector(".clear-btn").onclick = () => this.clearNodeSelection();
+      this.selectionPills.appendChild(pill);
+    }
+
+    if (this.selectedEdges.size > 0) {
+      const pill = document.createElement("div");
+      pill.className = "selection-pill";
+      pill.innerHTML = `<span>${this.selectedEdges.size} edges</span><div class="clear-btn">x</div>`;
+      pill.querySelector(".clear-btn").onclick = () => this.clearEdgeSelection();
+      this.selectionPills.appendChild(pill);
+    }
+  }
+
   setupInteractions() {
     this.addEventListener("pointerdown", (e) => {
       this.activePointers.set(e.pointerId, e);
@@ -513,7 +590,7 @@ export class FlowEditor extends HTMLElement {
       const isTouch = e.pointerType === "touch";
       const isMultiple = isModifier || (isTouch && this.selectMode);
 
-      if (clickedPort) {
+      if (clickedPort && e.button === 0) {
         e.stopPropagation();
         this.startWireDrag(e, clickedPort);
       } else if (clickedNode) {
@@ -539,7 +616,7 @@ export class FlowEditor extends HTMLElement {
         const dx = e.clientX - this.lastPointerPos.x;
         const dy = e.clientY - this.lastPointerPos.y;
 
-        if (this.isPanning) {
+        if (this.isPanning && !this.radialMenu.isOpen) {
           if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
@@ -550,7 +627,8 @@ export class FlowEditor extends HTMLElement {
           this.panDistance += Math.hypot(dx, dy);
         } else if (
           this.draggingNodePointerId === e.pointerId &&
-          this.selectedNodes.size > 0
+          this.selectedNodes.size > 0 &&
+          !this.radialMenu.isOpen
         ) {
           if (Math.hypot(dx, dy) > 3) {
             this.isDraggingNode = true;
@@ -577,7 +655,7 @@ export class FlowEditor extends HTMLElement {
               this.deleteArea.classList.remove("visible");
             }
           }
-        } else if (this.isDraggingWire) {
+        } else if (this.isDraggingWire && !this.radialMenu.isOpen) {
           if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
@@ -897,16 +975,7 @@ export class FlowEditor extends HTMLElement {
     this.draggingNodePointerId = e.pointerId;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
 
-    this.dispatchEvent(
-      new CustomEvent("selection-changed", {
-        detail: {
-          nodes: Array.from(this.selectedNodes),
-          edges: Array.from(this.selectedEdges),
-        },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.emitSelectionChanged();
 
     // Long press for select mode
     this.longPressTimer = setTimeout(() => {
@@ -933,16 +1002,7 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    this.dispatchEvent(
-      new CustomEvent("selection-changed", {
-        detail: {
-          nodes: Array.from(this.selectedNodes),
-          edges: Array.from(this.selectedEdges),
-        },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.emitSelectionChanged();
   }
 
   handleEdgeSelection(e, edgeElement, isMultiple) {
@@ -974,16 +1034,7 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    this.dispatchEvent(
-      new CustomEvent("selection-changed", {
-        detail: {
-          nodes: Array.from(this.selectedNodes),
-          edges: Array.from(this.selectedEdges),
-        },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.emitSelectionChanged();
   }
 
   startNodeDrag(e, node) {
@@ -1003,13 +1054,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (emit) {
-      this.dispatchEvent(
-        new CustomEvent("selection-changed", {
-          detail: { nodes: [], edges: [] },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      this.emitSelectionChanged();
     }
   }
 
@@ -1024,13 +1069,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (emit) {
-      this.dispatchEvent(
-        new CustomEvent("selection-changed", {
-          detail: { nodes: [], edges: Array.from(this.selectedEdges) },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      this.emitSelectionChanged();
     }
   }
 
@@ -1045,13 +1084,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (emit) {
-      this.dispatchEvent(
-        new CustomEvent("selection-changed", {
-          detail: { nodes: Array.from(this.selectedNodes), edges: [] },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      this.emitSelectionChanged();
     }
   }
 
