@@ -71,7 +71,7 @@ export class FlowNode extends HTMLElement {
           display: flex;
           flex-direction: column;
           align-items: center;
-          cursor: pointer;
+          cursor: grab;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -179,7 +179,7 @@ export class FlowNode extends HTMLElement {
           border: 2px solid var(--node-bg, #fff);
           border-radius: 50%;
           z-index: 2;
-          cursor: crosshair;
+          cursor: grab;
           transition: opacity 0.2s;
         }
         .port-label {

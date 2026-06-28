@@ -344,12 +344,32 @@ export class FlowEditor extends HTMLElement {
     this.updateTransform();
   }
 
+  getNodeName(node) {
+    return node.getAttribute("name");
+  }
+
+  getEdgeId(edge) {
+    const portA = edge.portA;
+    const portB = edge.portB;
+    const nodeA = portA.closest("noflo-node");
+    const nodeB = portB.closest("noflo-node");
+
+    const nameA = nodeA ? nodeA.getAttribute("name") : "unknown";
+    const nameB = nodeB ? nodeB.getAttribute("name") : "unknown";
+    const portAName = portA.dataset.portName;
+    const portBName = portB.dataset.portName;
+    const portAIdx = portA.dataset.portIndex || "0";
+    const portBIdx = portB.dataset.portIndex || "0";
+
+    return `${nameA}:${portAName}[${portAIdx}]->${nameB}:${portBName}[${portBIdx}]`;
+  }
+
   emitSelectionChanged() {
     this.dispatchEvent(
       new CustomEvent("selection-changed", {
         detail: {
-          nodes: Array.from(this.selectedNodes),
-          edges: Array.from(this.selectedEdges),
+          nodes: Array.from(this.selectedNodes).map((n) => this.getNodeName(n)),
+          edges: Array.from(this.selectedEdges).map((e) => this.getEdgeId(e)),
         },
         bubbles: true,
         composed: true,
@@ -481,18 +501,28 @@ export class FlowEditor extends HTMLElement {
         }
 
         if (this.isDraggingNode) {
+          const movedNodes = [];
           this.selectedNodes.forEach((node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
+            movedNodes.push({
+              name: this.getNodeName(node),
+              position: node.position,
+            });
           });
           this.updateEdges();
+          this.dispatchEvent(
+            new CustomEvent("nodes-moved", {
+              detail: { nodes: movedNodes },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         }
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
         this.clickedNode = null;
         this.selectionChangedOnDown = false;
-      }
-
-      if (e.pointerId === this.draggingWirePointerId) {
+      }      if (e.pointerId === this.draggingWirePointerId) {
         this.isDraggingWire = false;
         this.draggingWirePointerId = null;
         if (this.activeWire) {
@@ -596,6 +626,13 @@ export class FlowEditor extends HTMLElement {
     const items = [];
 
     if (clickedNode) {
+      this.dispatchEvent(
+        new CustomEvent("node-menu-open", {
+          detail: { node: this.getNodeName(clickedNode), x, y },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       items.push({
         text: "Remove",
         onClick: () => {
@@ -612,16 +649,41 @@ export class FlowEditor extends HTMLElement {
       items.push({
         text: "Make subgraph",
         onClick: () => {
-          // TODO: implement
+          this.dispatchEvent(
+            new CustomEvent("create-subgraph-attempt", {
+              detail: { nodes: [clickedNode] },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         },
         icon: "folder-plus",
       });
       items.push({
         text: "Open",
         onClick: () => {
-          // TODO: implement
+          this.dispatchEvent(
+            new CustomEvent("navigate-down-attempt", {
+              detail: { node: this.getNodeName(clickedNode) },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         },
         icon: "folder-open",
+      });
+      items.push({
+        text: "Move up",
+        onClick: () => {
+          this.dispatchEvent(
+            new CustomEvent("move-nodes-up-attempt", {
+              detail: { nodes: [clickedNode] },
+              bubbles: true,
+              composed: true,
+            }),
+          );
+        },
+        icon: "arrow-up-from-bracket",
       });
     } else if (clickedEdge) {
       const edge = this.edges.find(
@@ -629,6 +691,13 @@ export class FlowEditor extends HTMLElement {
           edge.hitPath === clickedEdge || edge.visualPath === clickedEdge,
       );
       if (edge) {
+        this.dispatchEvent(
+          new CustomEvent("edge-menu-open", {
+            detail: { edge: this.getEdgeId(edge), x, y },
+            bubbles: true,
+            composed: true,
+          }),
+        );
         items.push({
           text: "Remove",
           onClick: () => {
@@ -644,6 +713,13 @@ export class FlowEditor extends HTMLElement {
         });
       }
     } else {
+      this.dispatchEvent(
+        new CustomEvent("canvas-menu-open", {
+          detail: { x, y, type: "canvas" },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       items.push({
         text: "Add Node",
         onClick: () => {
@@ -671,7 +747,12 @@ export class FlowEditor extends HTMLElement {
       });
     }
 
-    this.radialMenu.open(x, y, items, clickedNode ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML : null);
+    this.radialMenu.open(
+      x,
+      y,
+      items,
+      clickedNode ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML : null,
+    );
   }
 
   startCanvasPan(e) {
@@ -1157,6 +1238,7 @@ export class FlowEditor extends HTMLElement {
   addNode(name, x, y, inPorts = 1, outPorts = 1) {
     const snapped = this.snapToGrid(x, y);
     const node = document.createElement("noflo-node");
+    node.setAttribute("name", name);
     node.textContent = name;
     node.position = snapped;
     node.setPorts(inPorts, outPorts);
