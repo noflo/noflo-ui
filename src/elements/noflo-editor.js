@@ -904,6 +904,7 @@ export class FlowEditor extends HTMLElement {
         });
       }
     } else {
+      const graphPos = this.viewportToGraph(x, y);
       this.dispatchEvent(
         new CustomEvent("canvas-menu-open", {
           detail: { x, y, type: "canvas" },
@@ -911,18 +912,19 @@ export class FlowEditor extends HTMLElement {
           composed: true,
         }),
       );
-      items.push({
-        text: "Add Node",
-        onClick: () => {
-          const graphPos = this.viewportToGraph(x, y);
-          this.addNode(
-            `Node_${Date.now().toString().slice(-4)}`,
-            graphPos.x,
-            graphPos.y,
-          );
-        },
-        icon: "plus",
-      });
+      if (this.hasSpaceForNode(graphPos.x, graphPos.y, 80)) {
+        items.push({
+          text: "Add Node",
+          onClick: () => {
+            this.addNode(
+              `Node_${Date.now().toString().slice(-4)}`,
+              graphPos.x,
+              graphPos.y,
+            );
+          },
+          icon: "plus",
+        });
+      }
       items.push({
         text: "Close",
         onClick: () => {
