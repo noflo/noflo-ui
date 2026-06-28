@@ -504,16 +504,18 @@ export class FlowEditor extends HTMLElement {
               const pos = node.position;
               const newX = pos.x + dx / this.zoom;
               const newY = pos.y + dy / this.zoom;
+              const size = node.size || 80;
 
               const otherNodes = this.shadowRoot.querySelectorAll("noflo-node, noflo-iip");
               for (const other of otherNodes) {
                 if (this.selectedNodes.has(other)) continue;
                 const otherPos = other.position;
+                const otherSize = other.size || 80;
                 if (
-                  Math.max(
-                    Math.abs(newX - otherPos.x),
-                    Math.abs(newY - otherPos.y),
-                  ) < (other.size || 60)
+                  newX < otherPos.x + otherSize &&
+                  newX + size > otherPos.x &&
+                  newY < otherPos.y + otherSize &&
+                  newY + size > otherPos.y
                 ) {
                   collision = true;
                   break;
@@ -1213,9 +1215,12 @@ export class FlowEditor extends HTMLElement {
 
     for (const node of nodes) {
       const pos = node.position;
+      const otherSize = node.size || 80;
       if (
-        Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) <
-        Math.max(node.size || 60, size)
+        snapped.x < pos.x + otherSize &&
+        snapped.x + size > pos.x &&
+        snapped.y < pos.y + otherSize &&
+        snapped.y + size > pos.y
       ) {
         return false;
       }
