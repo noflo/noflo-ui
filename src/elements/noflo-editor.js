@@ -161,21 +161,45 @@ export class FlowEditor extends HTMLElement {
         .grid-pattern {
           fill: url(#grid);
         }
+        @keyframes ghost-appear {
+          from {
+            transform: scale(0.5);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes ghost-pulse {
+          0%, 100% {
+            box-shadow: 0 0 5px var(--ui-accent);
+            border-color: var(--ui-accent);
+          }
+          50% {
+            box-shadow: 0 0 15px var(--ui-accent);
+            border-color: var(--ui-accent);
+            filter: brightness(1.2);
+          }
+        }
         .ghost-node {
           position: absolute;
           width: var(--ghost-size, 80px);
           height: var(--ghost-size, 80px);
           border-radius: 50%;
-          border: 2px dashed #aaa;
-          background-color: rgba(255, 255, 255, 0.5);
+          border: 2px dashed var(--ui-accent);
+          background-color: rgba(var(--ui-accent), 0.1);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 12px;
-          color: #aaa;
+          font-weight: bold;
+          color: var(--ui-accent);
           pointer-events: none;
           z-index: 3;
           box-sizing: border-box;
+          animation: ghost-appear 0.2s ease-out, ghost-pulse 2s infinite ease-in-out;
+          box-shadow: 0 0 5px var(--ui-accent);
         }
         .edge-flow {
           fill: none;
@@ -1049,29 +1073,34 @@ export class FlowEditor extends HTMLElement {
     this._updatePortHighlights(e.clientX, e.clientY);
 
     // Ghost node logic for new node creation
-    const dist = Math.hypot(
+    const _dist = Math.hypot(
       e.clientX - this.lastPointerPos.x,
       e.clientY - this.lastPointerPos.y,
     );
 
     const interest = this.getInterestArea(e.clientX, e.clientY);
 
-    if (interest.type === FlowEditor.INTEREST_AREA_TYPES.PORT || dist > 2) {
+    if (interest.type === FlowEditor.INTEREST_AREA_TYPES.PORT) {
       this.removeGhostNode();
       if (this.stillnessTimer) {
         clearTimeout(this.stillnessTimer);
         this.stillnessTimer = null;
       }
-    } else if (
-      !this.ghostNode &&
-      !this.stillnessTimer &&
-      this.hasSpaceForNode(mouseX, mouseY)
-    ) {
-      this.stillnessTimer = setTimeout(() => {
-        const size = 80;
-        const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
-        this.showGhostNode(snapped.x, snapped.y, size);
-      }, 200);
+    } else {
+      const size = 80;
+      const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
+
+      if (this.ghostNode) {
+        this.ghostNode.style.left = `${snapped.x}px`;
+        this.ghostNode.style.top = `${snapped.y}px`;
+      } else if (
+        !this.stillnessTimer &&
+        this.hasSpaceForNode(mouseX, mouseY, size)
+      ) {
+        this.stillnessTimer = setTimeout(() => {
+          this.showGhostNode(snapped.x, snapped.y, size);
+        }, 200);
+      }
     }
 
     // Cursor state for wire dragging
@@ -1227,7 +1256,8 @@ export class FlowEditor extends HTMLElement {
     } else if (this.ghostNode) {
       // Create new node at ghost node position
       const { x: mouseX, y: mouseY } = this.clientToGraph(e.clientX, e.clientY);
-      const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
+      const size = 80;
+      const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
       this.dispatchEvent(
         new CustomEvent("node-creation-attempt", {
@@ -1361,7 +1391,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   addNode(name, x, y, inPorts = 1, outPorts = 1, size = 80) {
-    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
+    const snapped = this.snapToGrid(x, y);
     const node = document.createElement("noflo-node");
     node.setAttribute("name", name);
     node.setAttribute("size", size);
