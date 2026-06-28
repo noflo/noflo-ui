@@ -66,7 +66,7 @@ export class FlowNode extends HTMLElement {
   connectedCallback() {
     const sizeAttr = this.getAttribute("size");
     if (sizeAttr) {
-      this.size = parseInt(sizeAttr);
+      this.size = parseInt(sizeAttr, 10);
     }
     this.render();
   }

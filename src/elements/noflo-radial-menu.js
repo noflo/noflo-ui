@@ -152,11 +152,11 @@ export class FlowRadialMenu extends HTMLElement {
     };
     window.addEventListener("pointermove", this._moveMenuListener);
 
-    this._releaseMenuListener = (e) => {
+    this._releaseMenuListener = (_e) => {
       const highlighted = this.menuElement.querySelector(
         ".context-menu-item.highlighted",
       );
-      if (highlighted && highlighted._item) {
+      if (highlighted?._item) {
         const item = highlighted._item;
         this.close(); // Close first to avoid any event conflicts
         item.onClick();
@@ -232,7 +232,7 @@ export class FlowRadialMenu extends HTMLElement {
     );
     let availIdx = 0;
 
-    this._items.forEach((item, index) => {
+    this._items.forEach((_item, index) => {
       if (itemAngles[index] === undefined) {
         if (availIdx < availableSections.length) {
           const section = availableSections[availIdx++];

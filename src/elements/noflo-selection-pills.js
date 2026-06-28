@@ -17,7 +17,7 @@ export class SelectionPills extends HTMLElement {
     return ["nodes-count", "edges-count"];
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
+  attributeChangedCallback(_name, oldValue, newValue) {
     if (oldValue !== newValue) {
       this.updatePills();
     }

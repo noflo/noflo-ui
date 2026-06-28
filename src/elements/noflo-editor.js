@@ -504,7 +504,10 @@ export class FlowEditor extends HTMLElement {
                 if (this.selectedNodes.has(other)) continue;
                 const otherPos = other.position;
                 if (
-                  Math.max(Math.abs(newX - otherPos.x), Math.abs(newY - otherPos.y)) < other.size
+                  Math.max(
+                    Math.abs(newX - otherPos.x),
+                    Math.abs(newY - otherPos.y),
+                  ) < other.size
                 ) {
                   collision = true;
                   break;
@@ -530,7 +533,11 @@ export class FlowEditor extends HTMLElement {
             this.longPressTimer = null;
           }
           this.updateWireDrag(e);
-        } else if (!this.isPanning && !this.isDraggingNode && !this.isDraggingWire) {
+        } else if (
+          !this.isPanning &&
+          !this.isDraggingNode &&
+          !this.isDraggingWire
+        ) {
           // Hover state
           const interest = this.getInterestArea(e.clientX, e.clientY);
           if (interest.type !== FlowEditor.INTEREST_AREA_TYPES.NONE) {
@@ -801,7 +808,11 @@ export class FlowEditor extends HTMLElement {
         text: "Add Node",
         onClick: () => {
           const graphPos = this.viewportToGraph(x, y);
-          this.addNode(`Node_${Date.now().toString().slice(-4)}`, graphPos.x, graphPos.y);
+          this.addNode(
+            `Node_${Date.now().toString().slice(-4)}`,
+            graphPos.x,
+            graphPos.y,
+          );
         },
         icon: "plus",
       });
@@ -958,7 +969,7 @@ export class FlowEditor extends HTMLElement {
     this.emitSelectionChanged();
   }
 
-  handleEdgeSelection(e, edgeElement, isMultiple) {
+  handleEdgeSelection(_e, edgeElement, isMultiple) {
     const edge = this.edges.find(
       (edge) => edge.hitPath === edgeElement || edge.visualPath === edgeElement,
     );
@@ -989,7 +1000,7 @@ export class FlowEditor extends HTMLElement {
     this.emitSelectionChanged();
   }
 
-  startNodeDrag(e, node) {
+  startNodeDrag(_e, _node) {
     // This method is now deprecated in favor of handleNodeSelection
   }
 
@@ -1169,7 +1180,7 @@ export class FlowEditor extends HTMLElement {
       // No overlap if max(|dx|, |dy|) >= max(node.size, size)
       if (
         Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) <
-          Math.max(node.size, size)
+        Math.max(node.size, size)
       ) {
         return false;
       }
@@ -1403,7 +1414,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   getInterestArea(clientX, clientY) {
-    const rect = this.viewport.getBoundingClientRect();
+    const _rect = this.viewport.getBoundingClientRect();
 
     // 2. Check Dynamic Areas
     // We check these in order of priority.

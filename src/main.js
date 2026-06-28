@@ -186,7 +186,10 @@ async function init() {
       if (Math.random() > 0.5 || edges.length === 0) {
         // Random node activity
         const node = nodes[Math.floor(Math.random() * nodes.length)];
-        editor.recordActivity(node.position.x + node.size / 2, node.position.y + node.size / 2);
+        editor.recordActivity(
+          node.position.x + node.size / 2,
+          node.position.y + node.size / 2,
+        );
       } else {
         // Random edge activity (sampled point along the wire)
         const edge = edges[Math.floor(Math.random() * edges.length)];
