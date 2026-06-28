@@ -35,6 +35,9 @@ export class FlowRadialMenu extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
+          background: rgba(var(--ui-bg), 0.7);
+          backdrop-filter: blur(8px);
+          border-radius: 50%;
         }
         .menu-svg {
           position: absolute;
@@ -49,6 +52,7 @@ export class FlowRadialMenu extends HTMLElement {
           fill: var(--node-bg);
           stroke: var(--node-border);
           stroke-width: 1px;
+          transition: fill 0.2s;
         }
         .center-icon {
           width: 44px;
@@ -59,9 +63,10 @@ export class FlowRadialMenu extends HTMLElement {
           justify-content: center;
           font-size: 20px;
           background: var(--node-bg);
-          border: 1px solid var(--node-border);
+          border: 2px solid var(--node-border);
           pointer-events: none;
           z-index: 2;
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
         .context-menu-item {
           position: absolute;
@@ -73,16 +78,17 @@ export class FlowRadialMenu extends HTMLElement {
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          transition: background 0.2s;
+          transition: all 0.2s;
           text-align: center;
           z-index: 1;
+          border: 1px solid transparent;
         }
-        .context-menu-item:hover {
-          background: var(--node-border);
-        }
+        .context-menu-item:hover,
         .context-menu-item.highlighted {
-          background: var(--node-border);
+          background: var(--ui-accent);
+          color: var(--ui-bg);
           transform: scale(1.1);
+          box-shadow: 0 0 15px var(--ui-accent);
         }
         .context-menu-item i {
           font-size: 20px;
@@ -90,6 +96,7 @@ export class FlowRadialMenu extends HTMLElement {
         .context-menu-item span {
           font-size: 10px;
           margin-top: 2px;
+          font-weight: bold;
         }
         .node-icon-fa {
           font-family: 'Font Awesome 7 Free';
@@ -200,9 +207,9 @@ export class FlowRadialMenu extends HTMLElement {
     const ITEM_SECTION_MAP = {
       'Delete': 3,
       'Remove': 3,
-      'Close': 5,
-      'Open': 6,
-      'Make subgraph': 7,
+      'Close': 4,
+      'Open': 5,
+      'Make subgraph': 6,
     };
 
     const itemAngles = new Array(count);

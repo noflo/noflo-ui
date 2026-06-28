@@ -27,15 +27,24 @@ html {
   top: 10px;
   left: 10px;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.7);
   padding: 10px;
-  border-radius: 8px;
-  color: white;
-  font-family: sans-serif;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 1px solid #444;
+  background: var(--ui-bg);
+  color: var(--node-text);
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-radius);
+  font-family: SourceCodePro, monospace;
+  backdrop-filter: blur(8px);
+}
+[data-theme="tube"] #controls {
+  background: white;
+  color: black;
+  border: 3px solid black;
+  border-radius: 0;
+  font-family: sans-serif;
+  backdrop-filter: none;
 }
 .control-group {
   display: flex;
@@ -46,7 +55,10 @@ html {
   font-size: 12px;
   font-weight: bold;
   text-transform: uppercase;
-  color: #aaa;
+  color: var(--node-subtext);
+}
+[data-theme="tube"] .control-label {
+  color: #666;
 }
 .button-row {
   display: flex;
@@ -55,16 +67,192 @@ html {
 }
 button {
   cursor: pointer;
-  background: #333;
-  color: white;
-  border: 1px solid #555;
+  background: var(--node-bg);
+  color: var(--node-text);
+  border: 1px solid var(--node-border);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
   font-size: 12px;
+  transition: all 0.2s;
 }
 button:hover {
-  background: #444;
+  background: var(--ui-accent);
+  color: var(--ui-bg);
 }
-button:active {
-  background: #222;
+[data-theme="tube"] button {
+  border: 2px solid black;
+  border-radius: 0;
+  font-weight: bold;
+}
+[data-theme="tube"] button:hover {
+  background: black;
+  color: white;
+}
+.btn-age {
+  font-weight: bold;
+}
+.btn-abstract {
+  --age-bg: rgb(58, 63, 72);
+  --age-border: rgb(20, 27, 35);
+  --age-text: white;
+}
+.btn-golden {
+  --age-bg: rgb(62, 82, 93);
+  --age-border: rgb(0, 229, 255);
+  --age-text: white;
+}
+.btn-offline {
+  --age-bg: rgb(62, 76, 82);
+  --age-border: rgb(101, 114, 125);
+  --age-text: white;
+}
+.btn-crashed {
+  --age-bg: rgb(77, 60, 59);
+  --age-border: rgb(226, 150, 133);
+  --age-text: white;
+}
+.btn-age {
+  background: var(--age-bg);
+  border-color: var(--age-border);
+  color: var(--age-text);
+}
+[data-theme="tube"] .btn-age {
+  background: white;
+  color: black;
+  border: 2px solid black;
+}
+[data-theme="tube"] .btn-abstract { --age-border: #777; }
+[data-theme="tube"] .btn-golden { --age-border: black; }
+[data-theme="tube"] .btn-offline { --age-border: #777; }
+[data-theme="tube"] .btn-crashed { --age-border: rgb(227, 32, 23); }
+[data-theme="tube"] .btn-age {
+  border-color: var(--age-border);
+}
+
+:root {
+  /* Base Variables (Cyberpunk Dark) */
+  --ui-bg: rgb(20, 27, 35);
+  --heatmap-color: rgb(138, 106, 50);
+  --dot-color: #444;
+  --node-stroke-width: 2px;
+  --edge-width: 4px;
+  --edge-hit-width: 60px;
+  --node-ring-inset: 4px;
+
+  --node-bg: #111;
+  --node-border: #444;
+  --node-glow: transparent;
+  --node-text: #aaa;
+  --node-subtext: #666;
+  --node-icon: rgb(0, 229, 255);
+
+  --flow-color: #333;
+  --flow-dash: none;
+  --edge-color: #333;
+
+  --ui-accent: rgb(0, 229, 255);
+  --ui-panel-border: rgb(58, 63, 72);
+  --ui-radius: 6px;
+
+  /* Cyberpunk Route Palette */
+  --route-0: rgb(224, 247, 250);
+  --route-1: rgb(255, 82, 82);
+  --route-2: rgb(255, 152, 0);
+  --route-3: rgb(198, 255, 0);
+  --route-4: rgb(105, 240, 174);
+  --route-5: rgb(24, 255, 219);
+  --route-6: rgb(0, 229, 255);
+  --route-7: rgb(68, 138, 255);
+  --route-8: rgb(176, 136, 255);
+  --route-9: rgb(255, 64, 129);
+}
+
+[data-theme="tube"] {
+  --ui-bg: white;
+  --heatmap-color: rgb(126, 126, 126);
+  --dot-color: #ccc;
+  --node-bg: white;
+  --node-border: #777;
+  --node-glow: transparent;
+  --node-text: #333;
+  --node-icon: #777;
+  --edge-width: 8px;
+  --node-stroke-width: 8px;
+  --node-ring-inset: 0px;
+  --ui-accent: rgb(0, 0, 0);
+  --ui-panel-border: rgb(0, 0, 0);
+  --ui-radius: 0px;
+
+  /* Tube Route Palette */
+  --route-0: rgb(0, 0, 0);
+  --route-1: rgb(227, 32, 23);
+  --route-2: rgb(238, 124, 14);
+  --route-3: rgb(255, 211, 0);
+  --route-4: rgb(0, 120, 42);
+  --route-5: rgb(0, 164, 167);
+  --route-6: rgb(0, 152, 212);
+  --route-7: rgb(0, 54, 136);
+  --route-8: rgb(105, 80, 161);
+  --route-9: rgb(155, 0, 86);
+}
+
+/* Age Overrides */
+.state-abstract {
+  --node-bg: rgb(58, 63, 72);
+  --node-border: rgb(20, 27, 35);
+  --node-icon: rgb(0, 229, 255);
+  --flow-color: rgb(58, 63, 72);
+}
+[data-theme="tube"].state-abstract {
+  --node-bg: white;
+  --node-border: #777;
+  --node-icon: black;
+  --flow-color: #777;
+}
+
+.state-golden {
+  --node-bg: rgb(62, 82, 93);
+  --node-border: rgb(0, 229, 255);
+  --node-icon: rgb(0, 229, 255);
+  --node-glow: rgba(176, 235, 236, 0.4);
+  --flow-color: rgb(0, 229, 255);
+  --ui-bg: rgb(31, 41, 49);
+}
+[data-theme="tube"].state-golden {
+  --node-bg: white;
+  --node-border: black;
+  --node-icon: black;
+  --flow-color: black;
+  --ui-bg: white;
+}
+
+.state-offline {
+  --node-bg: rgb(62, 76, 82);
+  --node-border: rgb(101, 114, 125);
+  --node-icon: rgb(101, 114, 125);
+  --flow-color: rgb(101, 114, 125);
+  --flow-dash: 5,5;
+}
+[data-theme="tube"].state-offline {
+  --node-bg: white;
+  --node-border: #777;
+  --node-icon: #777;
+  --flow-color: #777;
+  --flow-dash: 5,5;
+}
+
+.state-crashed {
+  --node-bg: rgb(77, 60, 59);
+  --node-border: rgb(226, 150, 133);
+  --node-icon: rgb(226, 150, 133);
+  --node-glow: rgb(226, 150, 133);
+  --flow-color: rgb(226, 150, 133);
+  --flow-dash: 5,5;
+}
+[data-theme="tube"].state-crashed {
+  --node-bg: white;
+  --node-border: rgb(227, 32, 23);
+  --node-icon: black;
+  --flow-color: #777;
+  --flow-dash: 5,5;
 }
