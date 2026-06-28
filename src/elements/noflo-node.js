@@ -212,7 +212,7 @@ export class FlowNode extends HTMLElement {
           transition: opacity 0.2s;
         }
         .port:hover {
-          background-color: #007bff;
+          background-color: var(--ui-accent, #007bff);
           transform: scale(1.2);
         }
         .port-compatible {
