@@ -56,15 +56,14 @@ export class FlowIIP extends HTMLElement {
       <style>
         :host {
           position: absolute;
-          width: var(--iip-size, 60px);
-          height: var(--iip-size, 60px);
+          width: var(--iip-size, 40px);
+          height: var(--iip-size, 40px);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: grab;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          --iip-size: 60px;
         }
         .iip-box {
           width: 100%;

@@ -1454,6 +1454,7 @@ export class FlowEditor extends HTMLElement {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const iip = document.createElement("noflo-iip");
     iip.position = snapped;
+    iip.size = size;
     iip.value = value;
     this.nodeLayer.appendChild(iip);
     return iip;
