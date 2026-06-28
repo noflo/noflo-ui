@@ -218,8 +218,9 @@ function updateSelectionPills(selection) {
   const pills = document.querySelector("noflo-selection-pills");
   if (!pills) return;
 
-  const { nodes, edges } = selection;
+  const { nodes, iips, edges } = selection;
   pills.setAttribute("nodes-count", nodes.length);
+  pills.setAttribute("iips-count", iips?.length || 0);
   pills.setAttribute("edges-count", edges.length);
 }
 

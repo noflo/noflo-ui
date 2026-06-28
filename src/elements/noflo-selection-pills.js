@@ -14,7 +14,7 @@ export class SelectionPills extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["nodes-count", "edges-count"];
+    return ["nodes-count", "iips-count", "edges-count"];
   }
 
   attributeChangedCallback(_name, oldValue, newValue) {
@@ -25,6 +25,7 @@ export class SelectionPills extends HTMLElement {
 
   updatePills() {
     const nodesCount = parseInt(this.getAttribute("nodes-count") || "0", 10);
+    const iipsCount = parseInt(this.getAttribute("iips-count") || "0", 10);
     const edgesCount = parseInt(this.getAttribute("edges-count") || "0", 10);
     const container = this.shadowRoot.querySelector(".pills-container");
 
@@ -34,6 +35,11 @@ export class SelectionPills extends HTMLElement {
 
     if (nodesCount > 0) {
       const pill = this.createPill(`${nodesCount} nodes`, "nodes");
+      container.appendChild(pill);
+    }
+
+    if (iipsCount > 0) {
+      const pill = this.createPill(`${iipsCount} IIPs`, "iips");
       container.appendChild(pill);
     }
 

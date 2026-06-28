@@ -395,10 +395,18 @@ export class FlowEditor extends HTMLElement {
   }
 
   emitSelectionChanged() {
+    const nodes = Array.from(this.selectedNodes).filter(
+      (n) => n.tagName === "NOFLO-NODE",
+    );
+    const iips = Array.from(this.selectedNodes).filter(
+      (n) => n.tagName === "NOFLO-IIP",
+    );
+
     this.dispatchEvent(
       new CustomEvent("selection-changed", {
         detail: {
-          nodes: Array.from(this.selectedNodes).map((n) => this.getNodeName(n)),
+          nodes: nodes.map((n) => this.getNodeName(n)),
+          iips: iips.map((n) => this.getNodeName(n)),
           edges: Array.from(this.selectedEdges).map((e) => this.getEdgeId(e)),
         },
         bubbles: true,
@@ -1472,6 +1480,8 @@ export class FlowEditor extends HTMLElement {
     const size = 40;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const iip = document.createElement("noflo-iip");
+    const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
+    iip.setAttribute("name", id);
     iip.position = snapped;
     iip.size = size;
     iip.value = value;
