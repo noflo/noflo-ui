@@ -124,7 +124,7 @@ export class FlowEditor extends HTMLElement {
           transform-origin: 0 0;
           pointer-events: auto;
         }
-        #svg-layer, #grid-layer, #heatmap-canvas {
+        #svg-layer, #iip-wire-layer, #grid-layer, #heatmap-canvas {
           position: absolute;
           top: -8000px;
           left: -8000px;
@@ -133,7 +133,11 @@ export class FlowEditor extends HTMLElement {
           pointer-events: none;
         }
         #svg-layer {
-          z-index: 3;
+          z-index: 4;
+          overflow: visible;
+        }
+        #iip-wire-layer {
+          z-index: 2;
           overflow: visible;
         }
         #grid-layer {
@@ -145,7 +149,7 @@ export class FlowEditor extends HTMLElement {
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: 2;
+          z-index: 3;
           pointer-events: auto;
         }
         #heatmap-canvas {
@@ -224,6 +228,9 @@ export class FlowEditor extends HTMLElement {
             </defs>
             <rect width="100%" height="100%" fill="url(#dot-grid)" />
           </svg>
+          <svg id="iip-wire-layer">
+            <g id="iip-wires-group" transform="translate(8000, 8000)"></g>
+          </svg>
           <div id="node-layer"></div>
           <svg id="svg-layer">
             <g id="edges-group" transform="translate(8000, 8000)"></g>
@@ -235,6 +242,7 @@ export class FlowEditor extends HTMLElement {
     this.transformLayer = this.shadowRoot.getElementById("transform-layer");
     this.heatmapCanvas = this.shadowRoot.getElementById("heatmap-canvas");
     this.gridLayer = this.shadowRoot.getElementById("grid-layer");
+    this.iipWiresGroup = this.shadowRoot.getElementById("iip-wires-group");
     this.svgLayer = this.shadowRoot.getElementById("svg-layer");
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
@@ -1388,6 +1396,24 @@ export class FlowEditor extends HTMLElement {
     visualPath.setAttribute("d", d);
   }
 
+  updateIIPPathData(hitPath, visualPath, iip, port) {
+    const posA = {
+      x: iip.position.x + iip.size / 2,
+      y: iip.position.y + iip.size / 2,
+    };
+    const posB = this.getPortPosition(port);
+
+    const dx = Math.abs(posB.x - posA.x) * 0.5;
+    const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
+    const cp1y = posA.y;
+    const cp2x = posB.x + (posB.x > posA.x ? -dx : dx);
+    const cp2y = posB.y;
+
+    const d = `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`;
+    hitPath.setAttribute("d", d);
+    visualPath.setAttribute("d", d);
+  }
+
   updateEdges() {
     if (!this.edges) return;
     this.edges.forEach((edge) => {
@@ -1403,14 +1429,7 @@ export class FlowEditor extends HTMLElement {
   updateIIPWires() {
     if (!this.iipWires) return;
     this.iipWires.forEach((wire) => {
-      const posA = {
-        x: wire.iip.position.x + wire.iip.size / 2,
-        y: wire.iip.position.y + wire.iip.size / 2,
-      };
-      const posB = this.getPortPosition(wire.port);
-      const d = `M ${posA.x} ${posA.y} L ${posB.x} ${posB.y}`;
-      wire.hitPath.setAttribute("d", d);
-      wire.visualPath.setAttribute("d", d);
+      this.updateIIPPathData(wire.hitPath, wire.visualPath, wire.iip, wire.port);
     });
   }
 
@@ -1472,20 +1491,11 @@ export class FlowEditor extends HTMLElement {
       "path",
     );
     visualPath.classList.add("edge-flow");
-    visualPath.style.strokeDasharray = "5,5";
 
-    const posA = {
-      x: iip.position.x + iip.size / 2,
-      y: iip.position.y + iip.size / 2,
-    };
-    const posB = this.getPortPosition(port);
+    this.updateIIPPathData(hitPath, visualPath, iip, port);
 
-    const d = `M ${posA.x} ${posA.y} L ${posB.x} ${posB.y}`;
-    hitPath.setAttribute("d", d);
-    visualPath.setAttribute("d", d);
-
-    this.edgesGroup.appendChild(hitPath);
-    this.edgesGroup.appendChild(visualPath);
+    this.iipWiresGroup.appendChild(hitPath);
+    this.iipWiresGroup.appendChild(visualPath);
 
     this.iipWires = this.iipWires || [];
     this.iipWires.push({ hitPath, visualPath, iip, port });
