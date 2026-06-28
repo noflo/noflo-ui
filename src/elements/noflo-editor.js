@@ -43,6 +43,7 @@ export class FlowEditor extends HTMLElement {
     this.radialMenu = null;
     this.longPressTimer = null;
     this.selectionChangedOnDown = false;
+    this.pendingDragPort = null;
   }
 
   connectedCallback() {
@@ -133,7 +134,7 @@ export class FlowEditor extends HTMLElement {
           pointer-events: none;
         }
         #svg-layer {
-          z-index: 4;
+          z-index: 3;
           overflow: visible;
         }
         #iip-wire-layer {
@@ -149,7 +150,7 @@ export class FlowEditor extends HTMLElement {
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: 3;
+          z-index: 4;
           pointer-events: auto;
         }
         #heatmap-canvas {
@@ -449,7 +450,15 @@ export class FlowEditor extends HTMLElement {
           }
         }
 
-        this.startWireDrag(e, clickedPort);
+        this.pendingDragPort = clickedPort;
+        this.viewport.setPointerCapture(e.pointerId);
+        this.longPressTimer = setTimeout(() => {
+          this.pendingDragPort = null;
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          this.showContextMenu(x, y, { clickedPort });
+        }, 500);
       } else if (clickedNode) {
         e.stopPropagation();
         this.handleNodeSelection(e, clickedNode, isMultiple);
@@ -483,6 +492,15 @@ export class FlowEditor extends HTMLElement {
           this.updateTransform();
           this.panDistance += Math.hypot(dx, dy);
           this.viewport.style.cursor = "grabbing";
+        } else if (this.pendingDragPort) {
+          if (Math.hypot(dx, dy) > 3) {
+            if (this.longPressTimer) {
+              clearTimeout(this.longPressTimer);
+              this.longPressTimer = null;
+            }
+            this.startWireDrag(e, this.pendingDragPort);
+            this.pendingDragPort = null;
+          }
         } else if (
           this.draggingNodePointerId === e.pointerId &&
           this.selectedNodes.size > 0 &&
@@ -566,6 +584,7 @@ export class FlowEditor extends HTMLElement {
         clearTimeout(this.longPressTimer);
         this.longPressTimer = null;
       }
+      this.pendingDragPort = null;
 
       if (this.activePointers.size < 2) {
         this.initialPinchDistance = 0;
@@ -712,7 +731,41 @@ export class FlowEditor extends HTMLElement {
     const { clickedPort, clickedNode, clickedEdge } = context;
     const items = [];
 
-    if (clickedNode) {
+    if (clickedPort) {
+      const isInPort = clickedPort.classList.contains("port-in");
+      const isArrayPort = clickedPort.dataset.portType === "array";
+
+      const hasEdge = this.edges?.some(
+        (e) => e.portA === clickedPort || e.portB === clickedPort,
+      );
+      const hasIIP = this.iipWires?.some((w) => w.port === clickedPort);
+      const hasConnection = hasEdge || hasIIP;
+
+      if (isInPort) {
+        const canAddIIP = !isArrayPort || !hasConnection;
+        if (canAddIIP) {
+          items.push({
+            text: "Add IIP",
+            onClick: () => {
+              const pos = this.getPortPosition(clickedPort);
+              const iip = this.addIIP(pos.x, pos.y);
+              this.addIIPWire(iip, clickedPort);
+            },
+            icon: "circle-plus",
+          });
+        }
+      }
+
+      if (hasConnection) {
+        items.push({
+          text: "Disconnect all",
+          onClick: () => {
+            this.disconnectPort(clickedPort);
+          },
+          icon: "link-slash",
+        });
+      }
+    } else if (clickedNode) {
       const isIIP = clickedNode.tagName === "NOFLO-IIP";
       this.dispatchEvent(
         new CustomEvent(isIIP ? "iip-menu-open" : "node-menu-open", {
@@ -1356,6 +1409,32 @@ export class FlowEditor extends HTMLElement {
         this.iipWiresGroup.removeChild(wire.visualPath);
       });
       this.iipWires = this.iipWires.filter((w) => w.iip !== iip);
+    }
+  }
+
+  disconnectPort(port) {
+    // Remove standard edges
+    if (this.edges) {
+      const edgesToRemove = this.edges.filter(
+        (edge) => edge.portA === port || edge.portB === port,
+      );
+      edgesToRemove.forEach((edge) => {
+        this.edgesGroup.removeChild(edge.hitPath);
+        this.edgesGroup.removeChild(edge.visualPath);
+      });
+      this.edges = this.edges.filter(
+        (edge) => edge.portA !== port && edge.portB !== port,
+      );
+    }
+
+    // Remove IIP wires
+    if (this.iipWires) {
+      const wiresToRemove = this.iipWires.filter((wire) => wire.port === port);
+      wiresToRemove.forEach((wire) => {
+        this.iipWiresGroup.removeChild(wire.hitPath);
+        this.iipWiresGroup.removeChild(wire.visualPath);
+      });
+      this.iipWires = this.iipWires.filter((wire) => wire.port !== port);
     }
   }
 
