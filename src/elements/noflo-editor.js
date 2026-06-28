@@ -6,9 +6,6 @@
 export class FlowEditor extends HTMLElement {
   static INTEREST_AREA_TYPES = {
     NONE: "none",
-    DELETE: "delete",
-    SUBGRAPH_MAKE: "subgraph-make",
-    SUBGRAPH_UP: "subgraph-up",
     PORT: "port",
     NODE: "node",
   };
@@ -43,7 +40,6 @@ export class FlowEditor extends HTMLElement {
     this.wasClickOnSelectedNode = false;
     this.clickedNode = null;
     this.heatmapInterval = null;
-    this.deleteArea = null;
     this.radialMenu = null;
     this.longPressTimer = null;
     this.selectionChangedOnDown = false;
@@ -191,27 +187,6 @@ export class FlowEditor extends HTMLElement {
           fill: none;
           pointer-events: auto;
         }
-        .delete-area {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          width: 120px;
-          height: 120px;
-          border: 3px dashed #ff4444;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #ff4444;
-          font-weight: bold;
-          pointer-events: none;
-          z-index: 5;
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-        .delete-area.visible {
-          opacity: 1;
-        }
       </style>
       <div id="viewport">
         <div id="transform-layer">
@@ -231,7 +206,6 @@ export class FlowEditor extends HTMLElement {
             <g id="edges-group" transform="translate(8000, 8000)"></g>
           </svg>
         </div>
-        <div id="delete-area" class="delete-area">DELETE</div>
       </div>
     `;
     this.viewport = this.shadowRoot.getElementById("viewport");
@@ -240,7 +214,6 @@ export class FlowEditor extends HTMLElement {
     this.svgLayer = this.shadowRoot.getElementById("svg-layer");
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
-    this.deleteArea = this.shadowRoot.getElementById("delete-area");
 
     // Using a smaller canvas and scaling it up for performance
     this.heatmapCanvas.width = 800;
@@ -463,13 +436,6 @@ export class FlowEditor extends HTMLElement {
               };
             });
             this.updateEdges();
-
-            const interest = this.getInterestArea(e.clientX, e.clientY);
-            if (interest.type === FlowEditor.INTEREST_AREA_TYPES.DELETE) {
-              this.deleteArea.classList.add("visible");
-            } else {
-              this.deleteArea.classList.remove("visible");
-            }
           }
         } else if (this.isDraggingWire && !this.radialMenu.isOpen) {
           if (this.longPressTimer) {
@@ -514,16 +480,6 @@ export class FlowEditor extends HTMLElement {
           this.commitNodeSelection(clickedNode, isMultiple);
         }
 
-        if (this.deleteArea.classList.contains("visible")) {
-          this.dispatchEvent(
-            new CustomEvent("node-removal-attempt", {
-              detail: { nodes: Array.from(this.selectedNodes) },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        }
-
         if (this.isDraggingNode) {
           this.selectedNodes.forEach((node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
@@ -532,7 +488,6 @@ export class FlowEditor extends HTMLElement {
         }
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
-        this.deleteArea.classList.remove("visible");
         this.clickedNode = null;
         this.selectionChangedOnDown = false;
       }
@@ -1184,23 +1139,6 @@ export class FlowEditor extends HTMLElement {
 
   getInterestArea(clientX, clientY) {
     const rect = this.viewport.getBoundingClientRect();
-
-    // 1. Check Corner Areas
-    if (clientX > rect.right - 180 && clientY > rect.bottom - 180) {
-      return { type: FlowEditor.INTEREST_AREA_TYPES.DELETE, element: null };
-    }
-    if (clientX > rect.right - 180 && clientY < 180) {
-      return {
-        type: FlowEditor.INTEREST_AREA_TYPES.SUBGRAPH_MAKE,
-        element: null,
-      };
-    }
-    if (clientX < 180 && clientY < 180) {
-      return {
-        type: FlowEditor.INTEREST_AREA_TYPES.SUBGRAPH_UP,
-        element: null,
-      };
-    }
 
     // 2. Check Dynamic Areas
     // We check these in order of priority.
