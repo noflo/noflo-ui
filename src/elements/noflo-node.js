@@ -11,9 +11,24 @@ export class FlowNode extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._x = 0;
     this._y = 0;
-    this.radius = 40;
+    this._size = 80;
     this._inPorts = 1;
     this._outPorts = 1;
+  }
+
+  get size() {
+    return this._size;
+  }
+
+  set size(val) {
+    this._size = val;
+    if (this.shadowRoot) {
+      this.style.setProperty("--node-size", `${val}px`);
+    }
+  }
+
+  get radius() {
+    return this._size / 2;
   }
 
   set position({ x, y }) {
@@ -33,7 +48,7 @@ export class FlowNode extends HTMLElement {
       const iconEl = this.shadowRoot.querySelector(".node-content");
       if (iconEl) {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
-          iconEl.innerHTML = `<img src="${icon}" style="width: 40px; height: 40px; object-fit: contain;">`;
+          iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
         } else if (icon.indexOf("fa-") === 0) {
           const iconName = icon.substr(3);
           iconEl.innerHTML = `<i class="node-icon-fa">${icons()[iconName]}</i>`;
@@ -49,6 +64,10 @@ export class FlowNode extends HTMLElement {
   }
 
   connectedCallback() {
+    const sizeAttr = this.getAttribute("size");
+    if (sizeAttr) {
+      this.size = parseInt(sizeAttr);
+    }
     this.render();
   }
 
@@ -66,18 +85,19 @@ export class FlowNode extends HTMLElement {
       <style>
         :host {
           position: absolute;
-          width: 80px;
-          height: 110px;
+          width: var(--node-size, 80px);
+          height: calc(var(--node-size, 80px) + 30px);
           display: flex;
           flex-direction: column;
           align-items: center;
           cursor: grab;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          --node-size: 80px;
         }
         .node-circle {
-          width: 80px;
-          height: 80px;
+          width: var(--node-size, 80px);
+          height: var(--node-size, 80px);
           border-radius: 50%;
           background-color: var(--node-bg, #ccc);
           display: flex;
@@ -107,7 +127,7 @@ export class FlowNode extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 24px;
+          font-size: calc(var(--node-size, 80px) * 0.3);
           text-align: center;
           color: var(--node-icon, inherit);
         }
@@ -125,7 +145,7 @@ export class FlowNode extends HTMLElement {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 100px;
+          max-width: var(--node-size, 80px);
         }
         .node-component {
           font-size: 10px;
@@ -134,7 +154,7 @@ export class FlowNode extends HTMLElement {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 100px;
+          max-width: var(--node-size, 80px);
         }
         .node-icon-fa {
           font-family: 'Font Awesome 7 Free';
@@ -157,7 +177,7 @@ export class FlowNode extends HTMLElement {
         }
 
         .node-content i {
-          font-size: 32px;
+          font-size: calc(var(--node-size, 80px) * 0.4);
         }
 
         :host([selected]) {
@@ -205,6 +225,11 @@ export class FlowNode extends HTMLElement {
           transform: scale(0.5) !important;
           opacity: 0.4 !important;
         }
+        .node-icon-img {
+          width: calc(var(--node-size, 80px) * 0.5);
+          height: calc(var(--node-size, 80px) * 0.5);
+          object-fit: contain;
+        }
       </style>
       <div class="node-circle">
         <div class="node-content"></div>
@@ -215,7 +240,7 @@ export class FlowNode extends HTMLElement {
         </span>
         <span class="node-component"></span>
       </div>
-      <div id="ports-container" style="position: absolute; top: 0; left: 0; width: 80px; height: 80px;"></div>
+      <div id="ports-container" style="position: absolute; top: 0; left: 0; width: var(--node-size, 80px); height: var(--node-size, 80px);"></div>
     `;
     this.portsContainer = this.shadowRoot.getElementById("ports-container");
     // Render ports based on stored config or defaults

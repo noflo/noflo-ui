@@ -145,6 +145,16 @@ async function init() {
     );
     sink.setMetadata({ name: "Sink", icon: "fa-database" });
 
+    const router = editor.addNode(
+      "Router",
+      500,
+      100,
+      [{ type: "regular", name: "in" }],
+      [{ type: "regular", name: "out" }],
+      40,
+    );
+    router.setMetadata({ name: "Router", icon: "fa-route" });
+
     // Initial connections
     editor.connectNodes(source, "out", filter, "in", 0);
     editor.connectNodes(source, "out", splitter, "in", 1);
@@ -176,7 +186,7 @@ async function init() {
       if (Math.random() > 0.5 || edges.length === 0) {
         // Random node activity
         const node = nodes[Math.floor(Math.random() * nodes.length)];
-        editor.recordActivity(node.position.x + 40, node.position.y + 40);
+        editor.recordActivity(node.position.x + node.size / 2, node.position.y + node.size / 2);
       } else {
         // Random edge activity (sampled point along the wire)
         const edge = edges[Math.floor(Math.random() * edges.length)];

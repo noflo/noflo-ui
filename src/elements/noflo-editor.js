@@ -160,8 +160,8 @@ export class FlowEditor extends HTMLElement {
         }
         .ghost-node {
           position: absolute;
-          width: 80px;
-          height: 80px;
+          width: var(--ghost-size, 80px);
+          height: var(--ghost-size, 80px);
           border-radius: 50%;
           border: 2px dashed #aaa;
           background-color: rgba(255, 255, 255, 0.5);
@@ -316,7 +316,7 @@ export class FlowEditor extends HTMLElement {
 
     nodes.forEach((node) => {
       const pos = node.position;
-      const size = 80;
+      const size = node.size;
       minX = Math.min(minX, pos.x);
       minY = Math.min(minY, pos.y);
       maxX = Math.max(maxX, pos.x + size);
@@ -474,7 +474,7 @@ export class FlowEditor extends HTMLElement {
                 if (this.selectedNodes.has(other)) continue;
                 const otherPos = other.position;
                 if (
-                  Math.max(Math.abs(newX - otherPos.x), Math.abs(newY - otherPos.y)) < 80
+                  Math.max(Math.abs(newX - otherPos.x), Math.abs(newY - otherPos.y)) < other.size
                 ) {
                   collision = true;
                   break;
@@ -1062,8 +1062,9 @@ export class FlowEditor extends HTMLElement {
       this.hasSpaceForNode(mouseX, mouseY)
     ) {
       this.stillnessTimer = setTimeout(() => {
-        const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
-        this.showGhostNode(snapped.x, snapped.y);
+        const size = 80;
+        const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
+        this.showGhostNode(snapped.x, snapped.y, size);
       }, 200);
     }
 
@@ -1124,15 +1125,16 @@ export class FlowEditor extends HTMLElement {
     });
   }
 
-  hasSpaceForNode(x, y) {
-    const snapped = this.snapToGrid(x - 40, y - 40);
+  hasSpaceForNode(x, y, size = 80) {
+    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const nodes = this.shadowRoot.querySelectorAll("noflo-node");
 
     for (const node of nodes) {
       const pos = node.position;
-      // No overlap if max(|dx|, |dy|) >= 80
+      // No overlap if max(|dx|, |dy|) >= max(node.size, size)
       if (
-        Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) < 80
+        Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) <
+          Math.max(node.size, size)
       ) {
         return false;
       }
@@ -1140,10 +1142,11 @@ export class FlowEditor extends HTMLElement {
     return true;
   }
 
-  showGhostNode(x, y) {
+  showGhostNode(x, y, size = 80) {
     this.ghostNode = document.createElement("div");
     this.ghostNode.className = "ghost-node";
     this.ghostNode.textContent = "new";
+    this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
     this.ghostNode.style.left = `${x}px`;
     this.ghostNode.style.top = `${y}px`;
     this.nodeLayer.appendChild(this.ghostNode);
@@ -1351,10 +1354,11 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
-  addNode(name, x, y, inPorts = 1, outPorts = 1) {
-    const snapped = this.snapToGrid(x, y);
+  addNode(name, x, y, inPorts = 1, outPorts = 1, size = 80) {
+    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const node = document.createElement("noflo-node");
     node.setAttribute("name", name);
+    node.setAttribute("size", size);
     node.textContent = name;
     node.position = snapped;
     node.setPorts(inPorts, outPorts);
