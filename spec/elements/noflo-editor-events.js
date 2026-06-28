@@ -3,15 +3,15 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowEditor } from "../../src/elements/flow-editor.js";
-import { FlowNode } from "../../src/elements/flow-node.js";
+import { FlowEditor } from "../../src/elements/noflo-editor.js";
+import { FlowNode } from "../../src/elements/noflo-node.js";
 
-customElements.define("flow-editor", FlowEditor);
-customElements.define("flow-node", FlowNode);
+customElements.define("noflo-editor", FlowEditor);
+customElements.define("noflo-node", FlowNode);
 
 describe("FlowEditor Events", async () => {
   it("should emit wire-connection-attempt when a wire is completed", async () => {
-    const el = document.createElement("flow-editor");
+    const el = document.createElement("noflo-editor");
     document.body.appendChild(el);
 
     const eventPromise = new Promise((resolve) => {
@@ -39,7 +39,7 @@ describe("FlowEditor Events", async () => {
     // Mock how it finds ports.
     const originalQuerySelectorAll = el.shadowRoot.querySelectorAll;
     el.shadowRoot.querySelectorAll = (selector) => {
-      if (selector === "flow-node") {
+      if (selector === "noflo-node") {
         return [
           {
             shadowRoot: {
@@ -76,7 +76,7 @@ describe("FlowEditor Events", async () => {
   });
 
   it("should emit node-creation-attempt when a wire is completed on a ghost node", async () => {
-    const el = document.createElement("flow-editor");
+    const el = document.createElement("noflo-editor");
     document.body.appendChild(el);
 
     const eventPromise = new Promise((resolve) => {

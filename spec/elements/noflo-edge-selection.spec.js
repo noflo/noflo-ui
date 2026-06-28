@@ -3,15 +3,15 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowEditor } from "../../src/elements/flow-editor.js";
-import { FlowNode } from "../../src/elements/flow-node.js";
+import { FlowEditor } from "../../src/elements/noflo-editor.js";
+import { FlowNode } from "../../src/elements/noflo-node.js";
 
-customElements.define("flow-editor", FlowEditor);
-customElements.define("flow-node", FlowNode);
+customElements.define("noflo-editor", FlowEditor);
+customElements.define("noflo-node", FlowNode);
 
 describe("FlowEditor Edge Selection", async () => {
   it("should select an edge when clicked", async () => {
-    const el = document.createElement("flow-editor");
+    const el = document.createElement("noflo-editor");
     document.body.appendChild(el);
 
     // Create nodes and connect them

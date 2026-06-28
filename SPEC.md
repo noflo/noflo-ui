@@ -86,7 +86,7 @@ Configuration:
 
 - Standard JavaScript and HTML targeting evergreen browsers (both desktop and mobile)
 - All code is written in standard JavaScript with TypeScript annotations via JsDoc
-- Web Components are used for user interface (no library)
+- Web Components are used for user interface (no library). All of our own Web Components should be prefixed with `noflo-`
 - CRDT is used to keep state (likely Yjs, still a bit open)
 - CRDT is persisted in IndexedDB
 - We need a separation between project data (kept in CRDT), "awareness" data (user/runtime statuses and interaction), and dataflow data (events and packets flowing from a runtime)

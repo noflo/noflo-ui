@@ -23,6 +23,7 @@ AI agents may not create work documents on their own. Create a markdown file in 
 - ✅ **Always**: create a branch for any major change set (work document)
 - ✅ **Always**: write at least smoketests for any new functionality
 - ✅ **Always**: fix formatting with `npm run format` after any changes to source files or tests
+- ✅ **Always**: Use `git mv` instead of `mv' for renaming files
 - ⚠️ **Ask first**: adding dependencies
 - ⚠️ **Ask first**: modify CI config
 - 🚫 **Never**: AI agents may not make commits on their own, instead notify user that there are uncommitted changes to review

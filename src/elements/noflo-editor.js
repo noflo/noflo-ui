@@ -54,7 +54,7 @@ export class FlowEditor extends HTMLElement {
     this.render();
     this.setupInteractions();
 
-    this.radialMenu = document.createElement("flow-radial-menu");
+    this.radialMenu = document.createElement("noflo-radial-menu");
     this.shadowRoot.appendChild(this.radialMenu);
 
     // Observe changes on body
@@ -333,7 +333,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   fitNodesToViewport() {
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     if (nodes.length === 0) return;
 
     let minX = Infinity,
@@ -962,7 +962,7 @@ export class FlowEditor extends HTMLElement {
 
   hasSpaceForNode(x, y) {
     const snapped = this.snapToGrid(x - 40, y - 40);
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
 
     for (const node of nodes) {
       const pos = node.position;
@@ -998,7 +998,7 @@ export class FlowEditor extends HTMLElement {
     const threshold = 20; // px
 
     // Search all nodes for the closest port
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     nodes.forEach((node) => {
       const ports = node.shadowRoot.querySelectorAll(".port");
       ports.forEach((port) => {
@@ -1174,7 +1174,7 @@ export class FlowEditor extends HTMLElement {
 
   addNode(name, x, y, inPorts = 1, outPorts = 1) {
     const snapped = this.snapToGrid(x, y);
-    const node = document.createElement("flow-node");
+    const node = document.createElement("noflo-node");
     node.textContent = name;
     node.position = snapped;
     node.setPorts(inPorts, outPorts);
@@ -1224,7 +1224,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   _getNearestPort(clientX, clientY) {
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     let nearestPort = null;
     let minDist = Infinity;
     const threshold = 20; // px
@@ -1246,7 +1246,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   _getNearestNode(clientX, clientY) {
-    const nodes = this.shadowRoot.querySelectorAll("flow-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     for (const node of nodes) {
       if (this.selectedNodes.has(node)) continue;
       const rect = node.getBoundingClientRect();

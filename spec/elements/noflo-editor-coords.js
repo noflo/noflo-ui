@@ -3,13 +3,13 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowEditor } from "../../src/elements/flow-editor.js";
+import { FlowEditor } from "../../src/elements/noflo-editor.js";
 
-customElements.define("flow-editor", FlowEditor);
+customElements.define("noflo-editor", FlowEditor);
 
 describe("FlowEditor Coordinate Conversions", async () => {
   it("should convert coordinates correctly", async () => {
-    const el = document.createElement("flow-editor");
+    const el = document.createElement("noflo-editor");
     document.body.appendChild(el);
 
     // Mock getBoundingClientRect for the element

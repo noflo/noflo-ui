@@ -2,10 +2,10 @@
  * Main entry point for NoFlo UI
  */
 
-import { FlowEditor } from "./elements/flow-editor.js";
-import { FlowNode } from "./elements/flow-node.js";
-import { FlowRadialMenu } from "./elements/flow-radial-menu.js";
-import { SelectionPills } from "./elements/selection-pills.js";
+import { FlowEditor } from "./elements/noflo-editor.js";
+import { FlowNode } from "./elements/noflo-node.js";
+import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
+import { SelectionPills } from "./elements/noflo-selection-pills.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
 
@@ -22,18 +22,18 @@ async function init() {
 
 
   // Register Web Components
-  customElements.define("flow-editor", FlowEditor);
-  customElements.define("flow-node", FlowNode);
-  customElements.define("flow-radial-menu", FlowRadialMenu);
-  customElements.define("selection-pills", SelectionPills);
+  customElements.define("noflo-editor", FlowEditor);
+  customElements.define("noflo-node", FlowNode);
+  customElements.define("noflo-radial-menu", FlowRadialMenu);
+  customElements.define("noflo-selection-pills", SelectionPills);
 
   // Initial setup
   const app = document.getElementById("app");
   if (app) {
-    const pills = document.createElement("selection-pills");
+    const pills = document.createElement("noflo-selection-pills");
     document.body.appendChild(pills);
     pills.addEventListener("clear-selection", (e) => {
-      const editor = document.querySelector("flow-editor");
+      const editor = document.querySelector("noflo-editor");
       if (!editor) return;
       if (e.detail.type === "nodes") {
         editor.clearNodeSelection();
@@ -44,7 +44,7 @@ async function init() {
       }
     });
 
-    const editor = document.createElement("flow-editor");
+    const editor = document.createElement("noflo-editor");
     app.appendChild(editor);
 
     editor.addEventListener("wire-connection-attempt", (e) => {
@@ -167,7 +167,7 @@ async function init() {
 
     // Demo: Occasionally record activity for random nodes and edges
     setInterval(() => {
-      const nodes = Array.from(editor.shadowRoot.querySelectorAll("flow-node"));
+      const nodes = Array.from(editor.shadowRoot.querySelectorAll("noflo-node"));
       const edges = editor.edges || [];
 
       if (nodes.length === 0) return;
@@ -191,7 +191,7 @@ async function init() {
 }
 
 function updateSelectionPills(selection) {
-  const pills = document.querySelector("selection-pills");
+  const pills = document.querySelector("noflo-selection-pills");
   if (!pills) return;
 
   const { nodes, edges } = selection;
