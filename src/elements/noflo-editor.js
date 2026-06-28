@@ -918,8 +918,8 @@ export class FlowEditor extends HTMLElement {
           onClick: () => {
             this.addNode(
               `Node_${Date.now().toString().slice(-4)}`,
-              graphPos.x,
-              graphPos.y,
+              graphPos.x - 40,
+              graphPos.y - 40,
             );
           },
           icon: "plus",
