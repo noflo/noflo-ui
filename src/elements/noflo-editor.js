@@ -104,12 +104,6 @@ export class FlowEditor extends HTMLElement {
           background-color: var(--ui-bg);
         }
 
-        /* TUBE THEME OVERRIDES - Removed since moved to main.css */
-
-        /* CYBERPUNK AGES - Removed since moved to main.css */
-
-        /* TUBE AGES - Removed since moved to main.css */
-
         #viewport {
           width: 100%;
           height: 100%;
@@ -186,7 +180,7 @@ export class FlowEditor extends HTMLElement {
           position: absolute;
           width: var(--ghost-size, 80px);
           height: var(--ghost-size, 80px);
-          border-radius: 50%;
+          border-radius: var(--ghost-radius, 50%);
           border: 2px dashed var(--ui-accent);
           background-color: rgba(var(--ui-accent), 0.1);
           display: flex;
@@ -245,9 +239,7 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
 
-    // Using a smaller canvas and scaling it up for performance
     this.heatmapCanvas.width = 800;
-    this.heatmapCanvas.height = 800;
     this.heatmapCanvas.height = 800;
 
     this.startHeatmapLoop();
@@ -279,7 +271,6 @@ export class FlowEditor extends HTMLElement {
           : heatmapColor.replace(/\)$/, `, ${heat * 0.6})`);
 
         ctx.fillStyle = color;
-        // Scale coordinates down to fit the smaller canvas
         ctx.fillRect(
           (col * gridSize + 8000) / 20,
           (row * gridSize + 8000) / 20,
@@ -299,6 +290,7 @@ export class FlowEditor extends HTMLElement {
     const key = `${col},${row}`;
 
     const currentHeat = this.activityMap.get(key) || 0;
+    this.// a missing part here
     this.activityMap.set(key, Math.min(currentHeat + 0.25, 1.0));
   }
 
@@ -375,7 +367,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   getNodeName(node) {
-    return node.getAttribute("name");
+    return node.getAttribute("name") || "IIP";
   }
 
   getEdgeId(edge) {
@@ -418,7 +410,7 @@ export class FlowEditor extends HTMLElement {
 
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
-      const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE");
+      const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE" || el.tagName === "NOFLO-IIP");
       const clickedEdge = path.find(
         (el) =>
           el.classList?.contains("edge-flow") ||
@@ -432,7 +424,6 @@ export class FlowEditor extends HTMLElement {
       if (clickedPort && e.button === 0) {
         e.stopPropagation();
 
-        // ArrayPort restriction: ignore drag if already connected
         if (clickedPort.dataset.portType === "array") {
           const hasConnection = this.edges?.some(
             (edge) => edge.portA === clickedPort || edge.portB === clickedPort,
@@ -498,8 +489,7 @@ export class FlowEditor extends HTMLElement {
               const newX = pos.x + dx / this.zoom;
               const newY = pos.y + dy / this.zoom;
 
-              // Check collision against nodes NOT in the selection
-              const otherNodes = this.shadowRoot.querySelectorAll("noflo-node");
+              const otherNodes = this.shadowRoot.querySelectorAll("noflo-node, noflo-iip");
               for (const other of otherNodes) {
                 if (this.selectedNodes.has(other)) continue;
                 const otherPos = other.position;
@@ -507,7 +497,7 @@ export class FlowEditor extends HTMLElement {
                   Math.max(
                     Math.abs(newX - otherPos.x),
                     Math.abs(newY - otherPos.y),
-                  ) < other.size
+                  ) < (other.size || 60)
                 ) {
                   collision = true;
                   break;
@@ -523,6 +513,7 @@ export class FlowEditor extends HTMLElement {
                 node.position = { x, y };
               });
               this.updateEdges();
+              this.updateIIPWires();
             } else {
               this.viewport.style.cursor = "no-drop";
             }
@@ -538,12 +529,11 @@ export class FlowEditor extends HTMLElement {
           !this.isDraggingNode &&
           !this.isDraggingWire
         ) {
-          // Hover state
           const interest = this.getInterestArea(e.clientX, e.clientY);
           if (interest.type !== FlowEditor.INTEREST_AREA_TYPES.NONE) {
             this.viewport.style.cursor = "grab";
           } else {
-            this.viewport.style.cursor = "grab"; // default is grab anyway, but for consistency
+            this.viewport.style.cursor = "grab";
           }
         }
       }
@@ -620,7 +610,6 @@ export class FlowEditor extends HTMLElement {
         this.lastPinchDistance = 0;
       }
 
-      // If selection becomes empty, exit select mode
       if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
         this.selectMode = false;
       }
@@ -636,7 +625,6 @@ export class FlowEditor extends HTMLElement {
         this.zoom *= 1 + delta * zoomSpeed;
         this.zoom = Math.max(0.1, Math.min(5, this.zoom));
 
-        // Zoom toward pointer
         const rect = this.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
@@ -665,9 +653,6 @@ export class FlowEditor extends HTMLElement {
             }),
           );
         } else if (this.selectedEdges.size > 0) {
-          // For edges, we might need to handle it differently since removal
-          // usually takes a single edge or a specific set.
-          // But if multiple are selected, we should probably remove all of them.
           this.selectedEdges.forEach((edge) => {
             this.dispatchEvent(
               new CustomEvent("edge-removal-attempt", {
@@ -685,7 +670,9 @@ export class FlowEditor extends HTMLElement {
   handleContextMenu(e) {
     const path = e.composedPath();
     const clickedPort = path.find((el) => el.classList?.contains("port"));
-    const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE");
+    const clickedNode = path.find(
+      (el) => el.tagName === "NOFLO-NODE" || el.tagName === "NOFLO-IIP",
+    );
     const clickedEdge = path.find(
       (el) =>
         el.classList?.contains("edge-flow") ||
@@ -704,71 +691,112 @@ export class FlowEditor extends HTMLElement {
   }
 
   showContextMenu(x, y, context) {
-    // biome-ignore lint/correctness/noUnusedVariables: We will add port menus soon enough
     const { clickedPort, clickedNode, clickedEdge } = context;
-
     const items = [];
 
     if (clickedNode) {
+      const isIIP = clickedNode.tagName === "NOFLO-IIP";
       this.dispatchEvent(
-        new CustomEvent("node-menu-open", {
+        new CustomEvent(isIIP ? "iip-menu-open" : "node-menu-open", {
           detail: { node: this.getNodeName(clickedNode), x, y },
           bubbles: true,
           composed: true,
         }),
       );
-      items.push({
-        text: "Remove",
-        onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("node-removal-attempt", {
-              detail: { nodes: [clickedNode] },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        },
-        icon: "trash",
-      });
-      items.push({
-        text: "Make subgraph",
-        onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("create-subgraph-attempt", {
-              detail: { nodes: [clickedNode] },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        },
-        icon: "folder-plus",
-      });
-      items.push({
-        text: "Open",
-        onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("navigate-down-attempt", {
-              detail: { node: this.getNodeName(clickedNode) },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        },
-        icon: "folder-open",
-      });
-      items.push({
-        text: "Move up",
-        onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("move-nodes-up-attempt", {
-              detail: { nodes: [clickedNode] },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        },
-        icon: "arrow-up-from-bracket",
-      });
+      if (!isIIP) {
+        items.push({
+          text: "Remove",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("node-removal-attempt", {
+                detail: { nodes: [clickedNode] },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "trash",
+        });
+        items.push({
+          text: "Make subgraph",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("create-subgraph-attempt", {
+                detail: { nodes: [clickedNode] },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "folder-plus",
+        });
+        items.push({
+          text: "Open",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("navigate-down-attempt", {
+                detail: { node: this.getNodeName(clickedNode) },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "folder-open",
+        });
+        items.push({
+          text: "Move up",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("move-nodes-up-attempt", {
+                detail: { nodes: [clickedNode] },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "arrow-up-from-bracket",
+        });
+      } else {
+        items.push({
+          text: "Edit",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("iip-edit-attempt", {
+                detail: { iip: clickedNode },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "pen-to-square",
+        });
+        items.push({
+          text: "Delete",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("iip-removal-attempt", {
+                detail: { iip: clickedNode },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "trash",
+        });
+        items.push({
+          text: "Send now",
+          onClick: () => {
+            this.dispatchEvent(
+              new CustomEvent("iip-send-attempt", {
+                detail: { iip: clickedNode },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          },
+          icon: "paper-plane",
+        });
+      }
     } else if (clickedEdge) {
       const edge = this.edges.find(
         (edge) =>
@@ -884,7 +912,6 @@ export class FlowEditor extends HTMLElement {
     const newZoom = Math.max(0.1, Math.min(5, this.zoom * zoomFactor));
     const actualZoomFactor = newZoom / this.zoom;
 
-    // 1. Zoom around the current center
     this.offset.x =
       currentCenter.x - (currentCenter.x - this.offset.x) * actualZoomFactor;
     this.offset.y =
@@ -892,7 +919,6 @@ export class FlowEditor extends HTMLElement {
 
     this.zoom = newZoom;
 
-    // 2. Pan by the movement of the center
     const dx = currentCenter.x - prevCenter.x;
     const dy = currentCenter.y - prevCenter.y;
     this.offset.x += dx;
@@ -941,7 +967,6 @@ export class FlowEditor extends HTMLElement {
 
     this.emitSelectionChanged();
 
-    // Long press for select mode
     this.longPressTimer = setTimeout(() => {
       this.selectMode = true;
       const rect = this.getBoundingClientRect();
@@ -1001,7 +1026,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   startNodeDrag(_e, _node) {
-    // This method is now deprecated in favor of handleNodeSelection
+    // Deprecated
   }
 
   clearSelection(emit = true) {
@@ -1058,7 +1083,6 @@ export class FlowEditor extends HTMLElement {
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
     this.dragPort = port;
 
-    // Create temporary wire
     this.activeWire = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "path",
@@ -1083,12 +1107,6 @@ export class FlowEditor extends HTMLElement {
 
     this._updatePortHighlights(e.clientX, e.clientY);
 
-    // Ghost node logic for new node creation
-    const _dist = Math.hypot(
-      e.clientX - this.lastPointerPos.x,
-      e.clientY - this.lastPointerPos.y,
-    );
-
     const interest = this.getInterestArea(e.clientX, e.clientY);
 
     if (interest.type === FlowEditor.INTEREST_AREA_TYPES.PORT) {
@@ -1098,23 +1116,26 @@ export class FlowEditor extends HTMLElement {
         this.stillnessTimer = null;
       }
     } else {
-      const size = 80;
+      const isOutPort = this.dragPort.classList.contains("port-out");
+      const size = isOutPort ? 80 : 40;
+      const shape = isOutPort ? "circle" : "square";
       const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
       if (this.ghostNode) {
         this.ghostNode.style.left = `${snapped.x}px`;
         this.ghostNode.style.top = `${snapped.y}px`;
+        this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
+        this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
       } else if (
         !this.stillnessTimer &&
         this.hasSpaceForNode(mouseX, mouseY, size)
       ) {
         this.stillnessTimer = setTimeout(() => {
-          this.showGhostNode(snapped.x, snapped.y, size);
+          this.showGhostNode(snapped.x, snapped.y, size, shape);
         }, 200);
       }
     }
 
-    // Cursor state for wire dragging
     const interestArea = this.getInterestArea(e.clientX, e.clientY);
     if (interestArea.type === FlowEditor.INTEREST_AREA_TYPES.PORT) {
       const port = interestArea.element;
@@ -1147,7 +1168,6 @@ export class FlowEditor extends HTMLElement {
           const isPortOut = port.classList.contains("port-out");
           let isCompatible = isDragOut !== isPortOut;
 
-          // ArrayPort restriction: only one connection allowed
           if (isCompatible && port.dataset.portType === "array") {
             const hasConnection = this.edges?.some(
               (edge) => edge.portA === port || edge.portB === port,
@@ -1173,14 +1193,13 @@ export class FlowEditor extends HTMLElement {
 
   hasSpaceForNode(x, y, size = 80) {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node, noflo-iip");
 
     for (const node of nodes) {
       const pos = node.position;
-      // No overlap if max(|dx|, |dy|) >= max(node.size, size)
       if (
         Math.max(Math.abs(snapped.x - pos.x), Math.abs(snapped.y - pos.y)) <
-        Math.max(node.size, size)
+        Math.max(node.size || 60, size)
       ) {
         return false;
       }
@@ -1188,11 +1207,12 @@ export class FlowEditor extends HTMLElement {
     return true;
   }
 
-  showGhostNode(x, y, size = 80) {
+  showGhostNode(x, y, size = 80, shape = "circle") {
     this.ghostNode = document.createElement("div");
     this.ghostNode.className = "ghost-node";
     this.ghostNode.textContent = "new";
     this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
+    this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
     this.ghostNode.style.left = `${x}px`;
     this.ghostNode.style.top = `${y}px`;
     this.nodeLayer.appendChild(this.ghostNode);
@@ -1203,6 +1223,10 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer.removeChild(this.ghostNode);
       this.ghostNode = null;
     }
+  }
+
+  _clearPortHilight(clientX, clientY) {
+    // This was a typo in a previous edit, should be _clearPortHighlights
   }
 
   _clearPortHighlights() {
@@ -1220,7 +1244,6 @@ export class FlowEditor extends HTMLElement {
     let minDist = Infinity;
     const threshold = 20; // px
 
-    // Search all nodes for the closest port
     const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     nodes.forEach((node) => {
       const ports = node.shadowRoot.querySelectorAll(".port");
@@ -1265,13 +1288,15 @@ export class FlowEditor extends HTMLElement {
         );
       }
     } else if (this.ghostNode) {
-      // Create new node at ghost node position
       const { x: mouseX, y: mouseY } = this.clientToGraph(e.clientX, e.clientY);
-      const size = 80;
+      const isOutPort = this.dragPort.classList.contains("port-out");
+      const size = isOutPort ? 80 : 40;
       const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
+      const eventName = isOutPort ? "node-creation-attempt" : "iip-creation-attempt";
+
       this.dispatchEvent(
-        new CustomEvent("node-creation-attempt", {
+        new CustomEvent(eventName, {
           detail: { x: snapped.x, y: snapped.y, startPort: this.dragPort },
           bubbles: true,
           composed: true,
@@ -1300,7 +1325,6 @@ export class FlowEditor extends HTMLElement {
   }
 
   addEdge(portA, portB, routeId) {
-    // portA must be outport, portB must be inport
     if (
       !portA.classList.contains("port-out") ||
       !portB.classList.contains("port-in")
@@ -1309,7 +1333,6 @@ export class FlowEditor extends HTMLElement {
       return;
     }
 
-    // Enforcement: ArrayPorts allow only one connection
     if (portA.dataset.portType === "array") {
       const existing = this.edges?.filter((e) => e.portA === portA);
       if (existing && existing.length >= 1) {
@@ -1354,7 +1377,6 @@ export class FlowEditor extends HTMLElement {
     const posA = this.getPortPosition(portA);
     const posB = this.getPortPosition(portB);
 
-    // Improved cubic bezier for a smoother \"swoosh\"
     const dx = Math.abs(posB.x - posA.x) * 0.5;
     const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
     const cp1y = posA.y;
@@ -1375,6 +1397,20 @@ export class FlowEditor extends HTMLElement {
         edge.portA,
         edge.portB,
       );
+    });
+  }
+
+  updateIIPWires() {
+    if (!this.iipWires) return;
+    this.iipWires.forEach((wire) => {
+      const posA = {
+        x: wire.iip.position.x + wire.iip.size / 2,
+        y: wire.iip.position.y + wire.iip.size / 2,
+      };
+      const posB = this.getPortPosition(wire.port);
+      const d = `M ${posA.x} ${posA.y} L ${posB.x} ${posB.y}`;
+      wire.hitPath.setAttribute("d", d);
+      wire.visualPath.setAttribute("d", d);
     });
   }
 
@@ -1413,12 +1449,48 @@ export class FlowEditor extends HTMLElement {
     return node;
   }
 
-  getInterestArea(clientX, clientY) {
-    const _rect = this.viewport.getBoundingClientRect();
+  addIIP(x, y, value = "Value") {
+    const size = 40;
+    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
+    const iip = document.createElement("noflo-iip");
+    iip.position = snapped;
+    iip.value = value;
+    this.nodeLayer.appendChild(iip);
+    return iip;
+  }
 
-    // 2. Check Dynamic Areas
-    // We check these in order of priority.
-    // If dragging a wire, ports are the most important.
+  addIIPWire(iip, port) {
+    const hitPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    hitPath.classList.add("edge-hit-area");
+
+    const visualPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    visualPath.classList.add("edge-flow");
+    visualPath.style.strokeDasharray = "5,5";
+
+    const posA = {
+      x: iip.position.x + iip.size / 2,
+      y: iip.position.y + iip.size / 2,
+    };
+    const posB = this.getPortPosition(port);
+
+    const d = `M ${posA.x} ${posA.y} L ${posB.x} ${posB.y}`;
+    hitPath.setAttribute("d", d);
+    visualPath.setAttribute("d", d);
+
+    this.edgesGroup.appendChild(hitPath);
+    this.edgesGroup.appendChild(visualPath);
+
+    this.iipWires = this.iipWires || [];
+    this.iipWires.push({ hitPath, visualPath, iip, port });
+  }
+
+  getInterestArea(clientX, clientY) {
     if (this.isDraggingWire) {
       const port = this._getNearestPort(clientX, clientY);
       if (port) {
@@ -1426,7 +1498,6 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    // If dragging nodes, other nodes are the most important.
     if (this.isDraggingNode && this.selectedNodes.size > 0) {
       const node = this._getNearestNode(clientX, clientY);
       if (node) {
@@ -1441,7 +1512,7 @@ export class FlowEditor extends HTMLElement {
     const nodes = this.shadowRoot.querySelectorAll("noflo-node");
     let nearestPort = null;
     let minDist = Infinity;
-    const threshold = 20; // px
+    const threshold = 20;
 
     for (const node of nodes) {
       const ports = node.shadowRoot.querySelectorAll(".port");
@@ -1460,7 +1531,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   _getNearestNode(clientX, clientY) {
-    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node, noflo-iip");
     for (const node of nodes) {
       if (this.selectedNodes.has(node)) continue;
       const rect = node.getBoundingClientRect();

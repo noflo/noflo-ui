@@ -4,6 +4,7 @@
 
 import { FlowEditor } from "./elements/noflo-editor.js";
 import { FlowNode } from "./elements/noflo-node.js";
+import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
 
@@ -23,6 +24,7 @@ async function init() {
   // Register Web Components
   customElements.define("noflo-editor", FlowEditor);
   customElements.define("noflo-node", FlowNode);
+  customElements.define("noflo-iip", FlowIIP);
   customElements.define("noflo-radial-menu", FlowRadialMenu);
   customElements.define("noflo-selection-pills", SelectionPills);
 
@@ -70,6 +72,14 @@ async function init() {
           });
         });
       }
+    });
+
+    editor.addEventListener("iip-creation-attempt", (e) => {
+      const { x, y, startPort } = e.detail;
+      const newIIP = editor.addIIP(x, y, "Value");
+      requestAnimationFrame(() => {
+        editor.addIIPWire(newIIP, startPort);
+      });
     });
 
     editor.addEventListener("selection-changed", (e) => {
