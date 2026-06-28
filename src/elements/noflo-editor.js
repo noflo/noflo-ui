@@ -401,6 +401,17 @@ export class FlowEditor extends HTMLElement {
 
       if (clickedPort && e.button === 0) {
         e.stopPropagation();
+
+        // ArrayPort restriction: ignore drag if already connected
+        if (clickedPort.dataset.portType === "array") {
+          const hasConnection = this.edges?.some(
+            (edge) => edge.portA === clickedPort || edge.portB === clickedPort,
+          );
+          if (hasConnection) {
+            return;
+          }
+        }
+
         this.startWireDrag(e, clickedPort);
       } else if (clickedNode) {
         e.stopPropagation();
@@ -434,6 +445,7 @@ export class FlowEditor extends HTMLElement {
           this.offset.y += dy;
           this.updateTransform();
           this.panDistance += Math.hypot(dx, dy);
+          this.viewport.style.cursor = "grabbing";
         } else if (
           this.draggingNodePointerId === e.pointerId &&
           this.selectedNodes.size > 0 &&
@@ -448,14 +460,39 @@ export class FlowEditor extends HTMLElement {
           }
 
           if (this.isDraggingNode) {
+            const proposedMoves = [];
+            let collision = false;
+
             this.selectedNodes.forEach((node) => {
               const pos = node.position;
-              node.position = {
-                x: pos.x + dx / this.zoom,
-                y: pos.y + dy / this.zoom,
-              };
+              const newX = pos.x + dx / this.zoom;
+              const newY = pos.y + dy / this.zoom;
+
+              // Check collision against nodes NOT in the selection
+              const otherNodes = this.shadowRoot.querySelectorAll("noflo-node");
+              for (const other of otherNodes) {
+                if (this.selectedNodes.has(other)) continue;
+                const otherPos = other.position;
+                if (
+                  Math.max(Math.abs(newX - otherPos.x), Math.abs(newY - otherPos.y)) < 80
+                ) {
+                  collision = true;
+                  break;
+                }
+              }
+              if (!collision) {
+                proposedMoves.push({ node, x: newX, y: newY });
+              }
             });
-            this.updateEdges();
+
+            if (!collision) {
+              proposedMoves.forEach(({ node, x, y }) => {
+                node.position = { x, y };
+              });
+              this.updateEdges();
+            } else {
+              this.viewport.style.cursor = "no-drop";
+            }
           }
         } else if (this.isDraggingWire && !this.radialMenu.isOpen) {
           if (this.longPressTimer) {
@@ -463,6 +500,14 @@ export class FlowEditor extends HTMLElement {
             this.longPressTimer = null;
           }
           this.updateWireDrag(e);
+        } else if (!this.isPanning && !this.isDraggingNode && !this.isDraggingWire) {
+          // Hover state
+          const interest = this.getInterestArea(e.clientX, e.clientY);
+          if (interest.type !== FlowEditor.INTEREST_AREA_TYPES.NONE) {
+            this.viewport.style.cursor = "grab";
+          } else {
+            this.viewport.style.cursor = "grab"; // default is grab anyway, but for consistency
+          }
         }
       }
 
@@ -725,13 +770,8 @@ export class FlowEditor extends HTMLElement {
       items.push({
         text: "Add Node",
         onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("canvas-menu-open", {
-              detail: { x, y, type: "canvas" },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          const graphPos = this.viewportToGraph(x, y);
+          this.addNode(`Node_${Date.now().toString().slice(-4)}`, graphPos.x, graphPos.y);
         },
         icon: "plus",
       });
@@ -1025,6 +1065,21 @@ export class FlowEditor extends HTMLElement {
         const snapped = this.snapToGrid(mouseX - 40, mouseY - 40);
         this.showGhostNode(snapped.x, snapped.y);
       }, 200);
+    }
+
+    // Cursor state for wire dragging
+    const interestArea = this.getInterestArea(e.clientX, e.clientY);
+    if (interestArea.type === FlowEditor.INTEREST_AREA_TYPES.PORT) {
+      const port = interestArea.element;
+      const isDragOut = this.dragPort.classList.contains("port-out");
+      const portIsOut = port.classList.contains("port-out");
+      if (isDragOut === portIsOut) {
+        this.viewport.style.cursor = "no-drop";
+      } else {
+        this.viewport.style.cursor = "grabbing";
+      }
+    } else {
+      this.viewport.style.cursor = "grabbing";
     }
   }
 
