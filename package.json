@@ -1,9 +1,9 @@
 {
-  "name": "flow-editor",
+  "name": "noflo-ui",
   "version": "1.0.0",
   "description": "",
-  "license": "ISC",
-  "author": "",
+  "license": "EUPL-1.2",
+  "author": "Henri Bergius <henri.bergius@iki.fi>",
   "type": "module",
   "main": "index.js",
   "scripts": {
