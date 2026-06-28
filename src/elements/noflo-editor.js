@@ -539,6 +539,33 @@ export class FlowEditor extends HTMLElement {
       e.preventDefault();
       this.handleContextMenu(e);
     });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (this.selectedNodes.size > 0) {
+          this.dispatchEvent(
+            new CustomEvent("node-removal-attempt", {
+              detail: { nodes: Array.from(this.selectedNodes) },
+              bubbles: true,
+              composed: true,
+            }),
+          );
+        } else if (this.selectedEdges.size > 0) {
+          // For edges, we might need to handle it differently since removal
+          // usually takes a single edge or a specific set.
+          // But if multiple are selected, we should probably remove all of them.
+          this.selectedEdges.forEach((edge) => {
+            this.dispatchEvent(
+              new CustomEvent("edge-removal-attempt", {
+                detail: { edge },
+                bubbles: true,
+                composed: true,
+              }),
+            );
+          });
+        }
+      }
+    });
   }
 
   handleContextMenu(e) {
