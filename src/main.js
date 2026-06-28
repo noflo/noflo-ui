@@ -94,6 +94,25 @@ async function init() {
       console.log("remove edge", e.detail);
     });
 
+    editor.addEventListener("iip-edit-attempt", (e) => {
+      const { iip } = e.detail;
+      const newValue = prompt("Enter new IIP value:", iip.value);
+      if (newValue !== null) {
+        iip.value = newValue;
+      }
+    });
+
+    editor.addEventListener("iip-removal-attempt", (e) => {
+      const { iip } = e.detail;
+      editor.removeIIP(iip);
+    });
+
+    editor.addEventListener("iip-send-attempt", (e) => {
+      const { iip } = e.detail;
+      console.log(`[Main] Sending IIP: ${iip.getAttribute("name")} with value: ${iip.value}`);
+      // In a real app, this would send a message to the backend
+    });
+
     // Add some sample nodes
     const source = editor.addNode(
       "Source",

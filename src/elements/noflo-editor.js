@@ -876,13 +876,17 @@ export class FlowEditor extends HTMLElement {
       });
     }
 
+    const centerContent = clickedNode
+      ? (clickedNode.tagName === "NOFLO-IIP"
+          ? clickedNode.shadowRoot.querySelector(".iip-value")?.textContent
+          : clickedNode.shadowRoot.querySelector(".node-content")?.innerHTML)
+      : null;
+
     this.radialMenu.open(
       x,
       y,
       items,
-      clickedNode
-        ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML
-        : null,
+      centerContent,
     );
   }
 
@@ -1333,6 +1337,25 @@ export class FlowEditor extends HTMLElement {
     if (this.activeWire) {
       this.edgesGroup.removeChild(this.activeWire);
       this.activeWire = null;
+    }
+  }
+
+  removeIIP(iip) {
+    if (!iip) return;
+
+    // Remove from node layer
+    if (iip.parentNode) {
+      iip.parentNode.removeChild(iip);
+    }
+
+    // Remove associated wires
+    if (this.iipWires) {
+      const wiresToRemove = this.iipWires.filter((w) => w.iip === iip);
+      wiresToRemove.forEach((wire) => {
+        this.iipWiresGroup.removeChild(wire.hitPath);
+        this.iipWiresGroup.removeChild(wire.visualPath);
+      });
+      this.iipWires = this.iipWires.filter((w) => w.iip !== iip);
     }
   }
 
