@@ -73,28 +73,42 @@ export class SelectionPills extends HTMLElement {
           gap: 10px;
         }
         .selection-pill {
-          background: rgba(0, 0, 0, 0.8);
-          color: white;
-          padding: 5px 12px;
-          border-radius: 20px;
-          font-family: sans-serif;
-          font-size: 14px;
+          background: var(--node-bg);
+          color: var(--node-text);
+          padding: 4px 12px;
+          border-radius: var(--ui-radius);
+          font-family: SourceCodePro, monospace;
+          font-size: 12px;
           display: flex;
           align-items: center;
           gap: 8px;
           pointer-events: auto;
-          border: 1px solid #444;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+          border: 1px solid var(--node-border);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           cursor: default;
+          transition: all 0.2s;
         }
         .selection-pill .clear-btn {
           cursor: pointer;
-          font-weight: bold;
-          color: #aaa;
-          transition: color 0.2s;
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: var(--node-border);
+          font-size: 10px;
+          transition: background 0.2s;
+          color: var(--node-text);
         }
         .selection-pill .clear-btn:hover {
+          background: #ff4444;
           color: white;
+        }
+        [data-theme="tube"] .selection-pill {
+          border: 2px solid black;
+          border-radius: 0;
+          font-family: sans-serif;
         }
       </style>
       <div class="pills-container"></div>
