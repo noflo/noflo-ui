@@ -323,7 +323,9 @@ export class FlowRadialMenu extends HTMLElement {
 
     // Finger-sized empty area in the middle (~44px diameter, so 22px radius)
     if (dist < 22) {
-      items.forEach((el) => el.classList.remove("highlighted"));
+      items.forEach((el) => {
+        el.classList.remove("highlighted");
+      });
       return;
     }
 
@@ -341,10 +343,14 @@ export class FlowRadialMenu extends HTMLElement {
     });
 
     if (closestItem) {
-      items.forEach((el) => el.classList.remove("highlighted"));
+      items.forEach((el) => {
+        el.classList.remove("highlighted");
+      });
       closestItem.classList.add("highlighted");
     } else {
-      items.forEach((el) => el.classList.remove("highlighted"));
+      items.forEach((el) => {
+        el.classList.remove("highlighted");
+      });
     }
   }
 
