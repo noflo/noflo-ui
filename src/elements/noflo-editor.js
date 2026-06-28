@@ -1249,7 +1249,7 @@ export class FlowEditor extends HTMLElement {
     );
   }
 
-  addEdge(portA, portB) {
+  addEdge(portA, portB, routeId) {
     // portA must be outport, portB must be inport
     if (
       !portA.classList.contains("port-out") ||
@@ -1288,11 +1288,16 @@ export class FlowEditor extends HTMLElement {
     visualPath.classList.add("edge-flow");
 
     this.updatePathData(hitPath, visualPath, portA, portB);
+
+    if (routeId !== undefined) {
+      visualPath.style.setProperty("--flow-color", `var(--route-${routeId})`);
+    }
+
     this.edgesGroup.appendChild(hitPath);
     this.edgesGroup.appendChild(visualPath);
 
     this.edges = this.edges || [];
-    this.edges.push({ hitPath, visualPath, portA, portB });
+    this.edges.push({ hitPath, visualPath, portA, portB, routeId });
   }
 
   updatePathData(hitPath, visualPath, portA, portB) {
@@ -1331,7 +1336,7 @@ export class FlowEditor extends HTMLElement {
     };
   }
 
-  connectNodes(nodeA, portAName, nodeB, portBName) {
+  connectNodes(nodeA, portAName, nodeB, portBName, routeId) {
     const portA = nodeA.shadowRoot.querySelector(
       `.port[data-port-name="${portAName}"]`,
     );
@@ -1340,7 +1345,7 @@ export class FlowEditor extends HTMLElement {
     );
 
     if (portA && portB) {
-      this.addEdge(portA, portB);
+      this.addEdge(portA, portB, routeId);
     } else {
       console.warn(`Could not connect ${portAName} to ${portBName}`);
     }
