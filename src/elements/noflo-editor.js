@@ -395,7 +395,7 @@ export class FlowEditor extends HTMLElement {
 
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
-      const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
+      const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE");
       const clickedEdge = path.find(
         (el) =>
           el.classList?.contains("edge-flow") ||
@@ -589,7 +589,7 @@ export class FlowEditor extends HTMLElement {
   handleContextMenu(e) {
     const path = e.composedPath();
     const clickedPort = path.find((el) => el.classList?.contains("port"));
-    const clickedNode = path.find((el) => el.tagName === "FLOW-NODE");
+    const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE");
     const clickedEdge = path.find(
       (el) =>
         el.classList?.contains("edge-flow") ||
