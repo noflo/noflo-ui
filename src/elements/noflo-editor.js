@@ -299,8 +299,8 @@ export class FlowEditor extends HTMLElement {
     const key = `${col},${row}`;
 
     const currentHeat = this.activityMap.get(key) || 0;
-    this.// a missing part here
-    this.activityMap.set(key, Math.min(currentHeat + 0.25, 1.0));
+    this.this.activityMap // a missing part here
+      .set(key, Math.min(currentHeat + 0.25, 1.0));
   }
 
   updateTransform() {
@@ -427,7 +427,9 @@ export class FlowEditor extends HTMLElement {
 
       const path = e.composedPath();
       const clickedPort = path.find((el) => el.classList?.contains("port"));
-      const clickedNode = path.find((el) => el.tagName === "NOFLO-NODE" || el.tagName === "NOFLO-IIP");
+      const clickedNode = path.find(
+        (el) => el.tagName === "NOFLO-NODE" || el.tagName === "NOFLO-IIP",
+      );
       const clickedEdge = path.find(
         (el) =>
           el.classList?.contains("edge-flow") ||
@@ -524,7 +526,9 @@ export class FlowEditor extends HTMLElement {
               const newY = pos.y + dy / this.zoom;
               const size = node.size || 80;
 
-              const otherNodes = this.shadowRoot.querySelectorAll("noflo-node, noflo-iip");
+              const otherNodes = this.shadowRoot.querySelectorAll(
+                "noflo-node, noflo-iip",
+              );
               for (const other of otherNodes) {
                 if (this.selectedNodes.has(other)) continue;
                 const otherPos = other.position;
@@ -749,10 +753,13 @@ export class FlowEditor extends HTMLElement {
             onClick: () => {
               const pos = this.getPortPosition(clickedPort);
               let searchX = pos.x - 40;
-              let searchY = pos.y;
+              const searchY = pos.y;
 
               // Search for first empty space to the left
-              while (searchX > -8000 && !this.hasSpaceForNode(searchX, searchY, 40)) {
+              while (
+                searchX > -8000 &&
+                !this.hasSpaceForNode(searchX, searchY, 40)
+              ) {
                 searchX -= 40;
               }
 
@@ -940,17 +947,12 @@ export class FlowEditor extends HTMLElement {
     }
 
     const centerContent = clickedNode
-      ? (clickedNode.tagName === "NOFLO-IIP"
-          ? clickedNode.shadowRoot.querySelector(".iip-value")?.textContent
-          : clickedNode.shadowRoot.querySelector(".node-content")?.innerHTML)
+      ? clickedNode.tagName === "NOFLO-IIP"
+        ? clickedNode.shadowRoot.querySelector(".iip-value")?.textContent
+        : clickedNode.shadowRoot.querySelector(".node-content")?.innerHTML
       : null;
 
-    this.radialMenu.open(
-      x,
-      y,
-      items,
-      centerContent,
-    );
+    this.radialMenu.open(x, y, items, centerContent);
   }
 
   startCanvasPan(e) {
@@ -1207,14 +1209,20 @@ export class FlowEditor extends HTMLElement {
       const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
       if (this.ghostNode) {
-        const dist = Math.hypot(mouseX - this.ghostPos.x, mouseY - this.ghostPos.y);
+        const dist = Math.hypot(
+          mouseX - this.ghostPos.x,
+          mouseY - this.ghostPos.y,
+        );
         if (dist > 80) {
           this.removeGhostNode();
         } else {
           this.ghostNode.style.left = `${snapped.x}px`;
           this.ghostNode.style.top = `${snapped.y}px`;
           this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
-          this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
+          this.ghostNode.style.setProperty(
+            "--ghost-radius",
+            shape === "circle" ? "50%" : "8px",
+          );
         }
       } else {
         if (this.stillnessTimer) {
@@ -1309,7 +1317,10 @@ export class FlowEditor extends HTMLElement {
     this.ghostNode.className = "ghost-node";
     this.ghostNode.textContent = "new";
     this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
-    this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
+    this.ghostNode.style.setProperty(
+      "--ghost-radius",
+      shape === "circle" ? "50%" : "8px",
+    );
     this.ghostNode.style.left = `${x}px`;
     this.ghostNode.style.top = `${y}px`;
     this.nodeLayer.appendChild(this.ghostNode);
@@ -1323,7 +1334,7 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
-  _clearPortHilight(clientX, clientY) {
+  _clearPortHilight(_clientX, _clientY) {
     // This was a typo in a previous edit, should be _clearPortHighlights
   }
 
@@ -1391,7 +1402,9 @@ export class FlowEditor extends HTMLElement {
       const size = isOutPort ? 80 : 40;
       const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
-      const eventName = isOutPort ? "node-creation-attempt" : "iip-creation-attempt";
+      const eventName = isOutPort
+        ? "node-creation-attempt"
+        : "iip-creation-attempt";
 
       this.dispatchEvent(
         new CustomEvent(eventName, {
@@ -1564,7 +1577,12 @@ export class FlowEditor extends HTMLElement {
   updateIIPWires() {
     if (!this.iipWires) return;
     this.iipWires.forEach((wire) => {
-      this.updateIIPPathData(wire.hitPath, wire.visualPath, wire.iip, wire.port);
+      this.updateIIPPathData(
+        wire.hitPath,
+        wire.visualPath,
+        wire.iip,
+        wire.port,
+      );
     });
   }
 

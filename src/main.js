@@ -3,8 +3,8 @@
  */
 
 import { FlowEditor } from "./elements/noflo-editor.js";
-import { FlowNode } from "./elements/noflo-node.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
+import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
 
@@ -109,7 +109,9 @@ async function init() {
 
     editor.addEventListener("iip-send-attempt", (e) => {
       const { iip } = e.detail;
-      console.log(`[Main] Sending IIP: ${iip.getAttribute("name")} with value: ${iip.value}`);
+      console.log(
+        `[Main] Sending IIP: ${iip.getAttribute("name")} with value: ${iip.value}`,
+      );
       // In a real app, this would send a message to the backend
     });
 
