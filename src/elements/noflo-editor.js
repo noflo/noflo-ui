@@ -130,7 +130,7 @@ export class FlowEditor extends HTMLElement {
           transform-origin: 0 0;
           pointer-events: auto;
         }
-        #svg-layer, #heatmap-canvas {
+        #svg-layer, #grid-layer, #heatmap-canvas {
           position: absolute;
           top: -8000px;
           left: -8000px;
@@ -139,8 +139,11 @@ export class FlowEditor extends HTMLElement {
           pointer-events: none;
         }
         #svg-layer {
-          z-index: 2;
+          z-index: 3;
           overflow: visible;
+        }
+        #grid-layer {
+          z-index: 1;
         }
         #node-layer {
           position: absolute;
@@ -148,7 +151,7 @@ export class FlowEditor extends HTMLElement {
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: 1;
+          z-index: 2;
           pointer-events: auto;
         }
         #heatmap-canvas {
@@ -191,8 +194,7 @@ export class FlowEditor extends HTMLElement {
       <div id="viewport">
         <div id="transform-layer">
           <canvas id="heatmap-canvas"></canvas>
-          <div id="node-layer"></div>
-          <svg id="svg-layer">
+          <svg id="grid-layer">
             <defs>
               <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
                 <circle cx="40" cy="40" r="1.5" fill="var(--dot-color)" />
@@ -203,6 +205,9 @@ export class FlowEditor extends HTMLElement {
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#dot-grid)" />
+          </svg>
+          <div id="node-layer"></div>
+          <svg id="svg-layer">
             <g id="edges-group" transform="translate(8000, 8000)"></g>
           </svg>
         </div>
@@ -211,6 +216,7 @@ export class FlowEditor extends HTMLElement {
     this.viewport = this.shadowRoot.getElementById("viewport");
     this.transformLayer = this.shadowRoot.getElementById("transform-layer");
     this.heatmapCanvas = this.shadowRoot.getElementById("heatmap-canvas");
+    this.gridLayer = this.shadowRoot.getElementById("grid-layer");
     this.svgLayer = this.shadowRoot.getElementById("svg-layer");
     this.edgesGroup = this.shadowRoot.getElementById("edges-group");
     this.nodeLayer = this.shadowRoot.getElementById("node-layer");
