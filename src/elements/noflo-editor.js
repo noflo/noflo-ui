@@ -1197,17 +1197,25 @@ export class FlowEditor extends HTMLElement {
       const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
 
       if (this.ghostNode) {
-        this.ghostNode.style.left = `${snapped.x}px`;
-        this.ghostNode.style.top = `${snapped.y}px`;
-        this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
-        this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
-      } else if (
-        !this.stillnessTimer &&
-        this.hasSpaceForNode(mouseX, mouseY, size)
-      ) {
-        this.stillnessTimer = setTimeout(() => {
-          this.showGhostNode(snapped.x, snapped.y, size, shape);
-        }, 200);
+        const dist = Math.hypot(mouseX - this.ghostPos.x, mouseY - this.ghostPos.y);
+        if (dist > 80) {
+          this.removeGhostNode();
+        } else {
+          this.ghostNode.style.left = `${snapped.x}px`;
+          this.ghostNode.style.top = `${snapped.y}px`;
+          this.ghostNode.style.setProperty("--ghost-size", `${size}px`);
+          this.ghostNode.style.setProperty("--ghost-radius", shape === "circle" ? "50%" : "8px");
+        }
+      } else {
+        if (this.stillnessTimer) {
+          clearTimeout(this.stillnessTimer);
+          this.stillnessTimer = null;
+        }
+        if (this.hasSpaceForNode(mouseX, mouseY, size)) {
+          this.stillnessTimer = setTimeout(() => {
+            this.showGhostNode(snapped.x, snapped.y, size, shape);
+          }, 500);
+        }
       }
     }
 
@@ -1286,6 +1294,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   showGhostNode(x, y, size = 80, shape = "circle") {
+    this.ghostPos = { x, y };
     this.ghostNode = document.createElement("div");
     this.ghostNode.className = "ghost-node";
     this.ghostNode.textContent = "new";
@@ -1300,6 +1309,7 @@ export class FlowEditor extends HTMLElement {
     if (this.ghostNode) {
       this.nodeLayer.removeChild(this.ghostNode);
       this.ghostNode = null;
+      this.ghostPos = null;
     }
   }
 
