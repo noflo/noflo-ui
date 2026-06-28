@@ -748,7 +748,15 @@ export class FlowEditor extends HTMLElement {
             text: "Add IIP",
             onClick: () => {
               const pos = this.getPortPosition(clickedPort);
-              const iip = this.addIIP(pos.x, pos.y);
+              let searchX = pos.x - 40;
+              let searchY = pos.y;
+
+              // Search for first empty space to the left
+              while (searchX > -8000 && !this.hasSpaceForNode(searchX, searchY, 40)) {
+                searchX -= 40;
+              }
+
+              const iip = this.addIIP(searchX, searchY);
               this.addIIPWire(iip, clickedPort);
             },
             icon: "circle-plus",
