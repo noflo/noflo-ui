@@ -525,6 +525,7 @@ export class FlowEditor extends HTMLElement {
       }      if (e.pointerId === this.draggingWirePointerId) {
         this.isDraggingWire = false;
         this.draggingWirePointerId = null;
+        this._clearPortHighlights();
         if (this.activeWire) {
           this.completeWireDrag(e);
         }
@@ -997,6 +998,8 @@ export class FlowEditor extends HTMLElement {
       `M ${portPos.x} ${portPos.y} L ${mouseX} ${mouseY}`,
     );
 
+    this._updatePortHighlights(e.clientX, e.clientY);
+
     // Ghost node logic for new node creation
     const dist = Math.hypot(
       e.clientX - this.lastPointerPos.x,
@@ -1021,6 +1024,47 @@ export class FlowEditor extends HTMLElement {
         this.showGhostNode(snapped.x, snapped.y);
       }, 200);
     }
+  }
+
+  _updatePortHighlights(clientX, clientY) {
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
+    const isDragOut = this.dragPort.classList.contains("port-out");
+    const highlightThreshold = 100;
+
+    nodes.forEach((node) => {
+      const ports = node.shadowRoot.querySelectorAll(".port");
+      ports.forEach((port) => {
+        const rect = port.getBoundingClientRect();
+        const portCenterX = rect.left + rect.width / 2;
+        const portCenterY = rect.top + rect.height / 2;
+        const dist = Math.hypot(clientX - portCenterX, clientY - portCenterY);
+
+        if (dist < highlightThreshold) {
+          const isPortOut = port.classList.contains("port-out");
+          let isCompatible = isDragOut !== isPortOut;
+
+          // ArrayPort restriction: only one connection allowed
+          if (isCompatible && port.dataset.portType === "array") {
+            const hasConnection = this.edges?.some(
+              (edge) => edge.portA === port || edge.portB === port,
+            );
+            if (hasConnection) {
+              isCompatible = false;
+            }
+          }
+
+          if (isCompatible) {
+            port.classList.add("port-compatible");
+            port.classList.remove("port-incompatible");
+          } else {
+            port.classList.add("port-incompatible");
+            port.classList.remove("port-compatible");
+          }
+        } else {
+          port.classList.remove("port-compatible", "port-incompatible");
+        }
+      });
+    });
   }
 
   hasSpaceForNode(x, y) {
@@ -1053,6 +1097,16 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer.removeChild(this.ghostNode);
       this.ghostNode = null;
     }
+  }
+
+  _clearPortHighlights() {
+    const nodes = this.shadowRoot.querySelectorAll("noflo-node");
+    nodes.forEach((node) => {
+      const ports = node.shadowRoot.querySelectorAll(".port");
+      ports.forEach((port) => {
+        port.classList.remove("port-compatible", "port-incompatible");
+      });
+    });
   }
 
   completeWireDrag(e) {

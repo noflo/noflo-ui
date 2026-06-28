@@ -195,6 +195,16 @@ export class FlowNode extends HTMLElement {
           background-color: #007bff;
           transform: scale(1.2);
         }
+        .port-compatible {
+          background-color: var(--ui-accent, #007bff) !important;
+          transform: scale(1.8) !important;
+          box-shadow: 0 0 10px var(--ui-accent, #007bff);
+          z-index: 10;
+        }
+        .port-incompatible {
+          transform: scale(0.5) !important;
+          opacity: 0.4 !important;
+        }
       </style>
       <div class="node-circle">
         <div class="node-content"></div>
