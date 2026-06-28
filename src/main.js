@@ -20,7 +20,6 @@ async function init() {
   // Initialize backend
   backend.postMessage({ type: "INIT", payload: {} });
 
-
   // Register Web Components
   customElements.define("noflo-editor", FlowEditor);
   customElements.define("noflo-node", FlowNode);
@@ -167,7 +166,9 @@ async function init() {
 
     // Demo: Occasionally record activity for random nodes and edges
     setInterval(() => {
-      const nodes = Array.from(editor.shadowRoot.querySelectorAll("noflo-node"));
+      const nodes = Array.from(
+        editor.shadowRoot.querySelectorAll("noflo-node"),
+      );
       const edges = editor.edges || [];
 
       if (nodes.length === 0) return;

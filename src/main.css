@@ -121,10 +121,18 @@ button:hover {
   color: black;
   border: 2px solid black;
 }
-[data-theme="tube"] .btn-abstract { --age-border: #777; }
-[data-theme="tube"] .btn-golden { --age-border: black; }
-[data-theme="tube"] .btn-offline { --age-border: #777; }
-[data-theme="tube"] .btn-crashed { --age-border: rgb(227, 32, 23); }
+[data-theme="tube"] .btn-abstract {
+  --age-border: #777;
+}
+[data-theme="tube"] .btn-golden {
+  --age-border: black;
+}
+[data-theme="tube"] .btn-offline {
+  --age-border: #777;
+}
+[data-theme="tube"] .btn-crashed {
+  --age-border: rgb(227, 32, 23);
+}
 [data-theme="tube"] .btn-age {
   border-color: var(--age-border);
 }
@@ -231,14 +239,14 @@ button:hover {
   --node-border: rgb(101, 114, 125);
   --node-icon: rgb(101, 114, 125);
   --flow-color: rgb(101, 114, 125);
-  --flow-dash: 5,5;
+  --flow-dash: 5, 5;
 }
 [data-theme="tube"].state-offline {
   --node-bg: white;
   --node-border: #777;
   --node-icon: #777;
   --flow-color: #777;
-  --flow-dash: 5,5;
+  --flow-dash: 5, 5;
 }
 
 .state-crashed {
@@ -247,12 +255,12 @@ button:hover {
   --node-icon: rgb(226, 150, 133);
   --node-glow: rgb(226, 150, 133);
   --flow-color: rgb(226, 150, 133);
-  --flow-dash: 5,5;
+  --flow-dash: 5, 5;
 }
 [data-theme="tube"].state-crashed {
   --node-bg: white;
   --node-border: rgb(227, 32, 23);
   --node-icon: black;
   --flow-color: #777;
-  --flow-dash: 5,5;
+  --flow-dash: 5, 5;
 }

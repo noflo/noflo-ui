@@ -48,11 +48,13 @@ export class SelectionPills extends HTMLElement {
     pill.className = "selection-pill";
     pill.innerHTML = `<span>${text}</span><span class="clear-btn">x</span>`;
     pill.querySelector(".clear-btn").onclick = () => {
-      this.dispatchEvent(new CustomEvent("clear-selection", {
-        detail: { type },
-        bubbles: true,
-        composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent("clear-selection", {
+          detail: { type },
+          bubbles: true,
+          composed: true,
+        }),
+      );
     };
     return pill;
   }

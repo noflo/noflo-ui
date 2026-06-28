@@ -522,7 +522,8 @@ export class FlowEditor extends HTMLElement {
         this.draggingNodePointerId = null;
         this.clickedNode = null;
         this.selectionChangedOnDown = false;
-      }      if (e.pointerId === this.draggingWirePointerId) {
+      }
+      if (e.pointerId === this.draggingWirePointerId) {
         this.isDraggingWire = false;
         this.draggingWirePointerId = null;
         this._clearPortHighlights();
@@ -752,7 +753,9 @@ export class FlowEditor extends HTMLElement {
       x,
       y,
       items,
-      clickedNode ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML : null,
+      clickedNode
+        ? clickedNode.shadowRoot.querySelector(".node-content").innerHTML
+        : null,
     );
   }
 
@@ -887,8 +890,7 @@ export class FlowEditor extends HTMLElement {
 
   handleEdgeSelection(e, edgeElement, isMultiple) {
     const edge = this.edges.find(
-      (edge) =>
-        edge.hitPath === edgeElement || edge.visualPath === edgeElement,
+      (edge) => edge.hitPath === edgeElement || edge.visualPath === edgeElement,
     );
     if (!edge) return;
 

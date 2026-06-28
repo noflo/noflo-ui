@@ -153,7 +153,9 @@ export class FlowRadialMenu extends HTMLElement {
     window.addEventListener("pointermove", this._moveMenuListener);
 
     this._releaseMenuListener = (e) => {
-      const highlighted = this.menuElement.querySelector(".context-menu-item.highlighted");
+      const highlighted = this.menuElement.querySelector(
+        ".context-menu-item.highlighted",
+      );
       if (highlighted && highlighted._item) {
         const item = highlighted._item;
         this.close(); // Close first to avoid any event conflicts
@@ -205,11 +207,11 @@ export class FlowRadialMenu extends HTMLElement {
     const centerY = 90;
 
     const ITEM_SECTION_MAP = {
-      'Delete': 3,
-      'Remove': 3,
-      'Close': 4,
-      'Open': 5,
-      'Make subgraph': 6,
+      Delete: 3,
+      Remove: 3,
+      Close: 4,
+      Open: 5,
+      "Make subgraph": 6,
     };
 
     const itemAngles = new Array(count);
@@ -225,7 +227,9 @@ export class FlowRadialMenu extends HTMLElement {
     });
 
     // Second pass: fill remaining available sections (3-7)
-    const availableSections = [3, 4, 5, 6, 7].filter(s => !usedSections.has(s));
+    const availableSections = [3, 4, 5, 6, 7].filter(
+      (s) => !usedSections.has(s),
+    );
     let availIdx = 0;
 
     this._items.forEach((item, index) => {
@@ -248,13 +252,19 @@ export class FlowRadialMenu extends HTMLElement {
       const endAngle = (section + 1) * (Math.PI / 4);
 
       // Create SVG segment
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
       const x1 = centerX + 90 * Math.cos(startAngle);
       const y1 = centerY + 90 * Math.sin(startAngle);
       const x2 = centerX + 90 * Math.cos(endAngle);
       const y2 = centerY + 90 * Math.sin(endAngle);
-      
-      path.setAttribute("d", `M ${centerX} ${centerY} L ${x1} ${y1} A 90 90 0 0 1 ${x2} ${y2} Z`);
+
+      path.setAttribute(
+        "d",
+        `M ${centerX} ${centerY} L ${x1} ${y1} A 90 90 0 0 1 ${x2} ${y2} Z`,
+      );
       path.setAttribute("class", "menu-segment");
       this.svgElement.appendChild(path);
 
@@ -319,7 +329,7 @@ export class FlowRadialMenu extends HTMLElement {
 
     // Map angle to 45-degree section (0-7)
     const section = Math.floor(angle / (Math.PI / 4));
-    
+
     let closestItem = null;
     items.forEach((el) => {
       // Check if this item's angle falls into the current section
