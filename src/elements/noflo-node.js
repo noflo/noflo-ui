@@ -180,7 +180,7 @@ export class FlowNode extends HTMLElement {
           border-radius: 50%;
           z-index: 2;
           cursor: grab;
-          transition: opacity 0.2s;
+          transition: opacity 0.2s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
         }
         .port-label {
           position: absolute;
