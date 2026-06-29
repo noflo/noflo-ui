@@ -335,7 +335,7 @@ export class FlowRadialMenu extends HTMLElement {
       el.addEventListener("pointerdown", (e) => {
         e.stopPropagation();
       });
-      el.addEventListener("click", (e) => {
+      el.addEventListener("pointerup", (e) => {
         e.stopPropagation();
         item.onClick();
         this.close();
