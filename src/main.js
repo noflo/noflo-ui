@@ -10,10 +10,13 @@ import { SelectionPills } from "./elements/noflo-selection-pills.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
 
-backend.onmessage = (event) => {
-  const { type, payload } = (/** @type {MessageEvent} */ (event)).data;
+/** @type {EventListener} */
+const onMessage = (event) => {
+  const e = /** @type {MessageEvent} */ (event);
+  const { type, payload } = e.data;
   console.log(`[Main] Received from backend: ${type}`, payload);
 };
+backend.onmessage = onMessage;
 
 async function init() {
   console.log("Initializing NoFlo UI...");
@@ -249,6 +252,9 @@ async function init() {
   }
 }
 
+/**
+ * @param {any} selection
+ */
 function updateSelectionPills(selection) {
   const sel = /** @type {{nodes: string[], iips: string[], edges: string[]}} */ (selection);
   const pills = document.querySelector("noflo-selection-pills");

@@ -79,6 +79,7 @@ export class SelectionPills extends HTMLElement {
   }
 
   render() {
+    if (!this.shadowRoot) return;
     this.shadowRoot.innerHTML = `
       <style>
         :host {
