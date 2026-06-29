@@ -8,7 +8,9 @@ Object.assign(globalThis, {
   document: window.document,
   customElements: window.customElements,
   HTMLElement: window.HTMLElement,
+  Event: window.Event,
   CustomEvent: window.CustomEvent,
+  ShadowRoot: window.ShadowRoot,
   MutationObserver: window.MutationObserver,
   Node: window.Node,
 });
