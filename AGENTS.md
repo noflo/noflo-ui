@@ -8,6 +8,7 @@ Read `SPEC.md` before doing any planning or work.
 
 - Standard JavaScript
 - Biome default formatting style
+- TypeScript declarations in JsDoc format
 
 ## Work documents
 
@@ -22,6 +23,7 @@ AI agents may not create work documents on their own. Create a markdown file in 
 
 - ✅ **Always**: create a branch for any major change set (work document)
 - ✅ **Always**: write at least smoketests for any new functionality
+- ✅ **Always**: ensure type safety. Always check eith `npm run types` after changes and fix as needed
 - ✅ **Always**: fix formatting with `npm run format` after any changes to source files or tests
 - ✅ **Always**: Use `git mv` instead of `mv' for renaming files
 - ⚠️ **Ask first**: adding dependencies
