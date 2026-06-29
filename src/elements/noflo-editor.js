@@ -965,7 +965,7 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Add IIP",
             onClick: () => {
-              const pos = this.getPortPosition(clickedPort);
+              const pos = this.getPortPosition(port);
               let searchX = pos.x - 40;
               const searchY = pos.y;
 
@@ -978,7 +978,7 @@ export class FlowEditor extends HTMLElement {
               }
 
               const iip = this.addIIP(searchX, searchY);
-              this.addIIPWire(iip, clickedPort);
+              this.addIIPWire(iip, port);
             },
             icon: "circle-plus",
           });
@@ -989,7 +989,7 @@ export class FlowEditor extends HTMLElement {
         items.push({
           text: "Disconnect all",
           onClick: () => {
-            this.disconnectPort(/** @type {any} */ (clickedPort));
+            this.disconnectPort(port);
           },
           icon: "link-slash",
         });
@@ -1615,7 +1615,9 @@ export class FlowEditor extends HTMLElement {
     );
     this.ghostNode.style.left = `${x}px`;
     this.ghostNode.style.top = `${y}px`;
-    this.nodeLayer.appendChild(this.ghostNode);
+    if (this.nodeLayer && this.ghostNode) {
+      this.nodeLayer.appendChild(this.ghostNode);
+    }
   }
 
   removeGhostNode() {
@@ -1742,8 +1744,10 @@ export class FlowEditor extends HTMLElement {
     if (this.iipWires && this.iipWiresGroup) {
       const wiresToRemove = this.iipWires.filter((w) => w.iip === iip);
       wiresToRemove.forEach((wire) => {
-        this.iipWiresGroup.removeChild(wire.hitPath);
-        this.iipWiresGroup.removeChild(wire.visualPath);
+        if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
+          this.iipWiresGroup.removeChild(wire.hitPath);
+          this.iipWiresGroup.removeChild(wire.visualPath);
+        }
       });
       this.iipWires = this.iipWires.filter((w) => w.iip !== iip);
     }
@@ -1787,6 +1791,9 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
+  /**
+   * @param {HTMLElement} port
+   */
   getPortPosition(port) {
     const rect = port.getBoundingClientRect();
     const componentRect = this.getBoundingClientRect();
@@ -2038,6 +2045,11 @@ export class FlowEditor extends HTMLElement {
     this.iipWires.push({ hitPath, visualPath, iip, port });
   }
 
+  /**
+   * @param {number} clientX
+   * @param {number} clientY
+   * @returns {{type: string, element: HTMLElement | null}}
+   */
   getInterestArea(clientX, clientY) {
     if (this.isDraggingWire) {
       const port = this._getNearestPort(clientX, clientY);

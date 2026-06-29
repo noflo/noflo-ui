@@ -5,13 +5,30 @@ import icons from "../../vendor/fa-icon-map.js";
  * A radial/pie menu for context actions.
  */
 export class FlowRadialMenu extends HTMLElement {
+  /** @type {Array<{text: string, onClick: () => void, icon?: string}>} */
+  _items = [];
+  /** @type {boolean} */
+  _isMenuOpen = false;
+  /** @type {EventListener | null} */
+  _closeMenuListener = null;
+  /** @type {EventListener | null} */
+  _moveMenuListener = null;
+  /** @type {EventListener | null} */
+  _releaseMenuListener = null;
+  /** @type {HTMLElement | null} */
+  menuElement = null;
+  /** @type {HTMLElement | null} */
+  centerIconElement = null;
+  /** @type {SVGElement | null} */
+  svgElement = null;
+  /** @type {number} */
+  _openX = 0;
+  /** @type {number} */
+  _openY = 0;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    /** @type {Array<{text: string, onClick: () => void, icon?: string}>} */
-    this._items = [];
-    this._isMenuOpen = false;
-    this._closeMenuListener = null;
   }
 
   connectedCallback() {
@@ -19,6 +36,7 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   render() {
+    if (!this.shadowRoot) return;
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -109,19 +127,24 @@ export class FlowRadialMenu extends HTMLElement {
         <div class="center-icon"></div>
       </div>
     `;
-    this.menuElement = this.shadowRoot.querySelector(".context-menu");
-    this.centerIconElement = this.shadowRoot.querySelector(".center-icon");
-    this.svgElement = this.shadowRoot.querySelector(".menu-svg");
+    this.menuElement = /** @type {HTMLElement} */ (this.shadowRoot.querySelector(".context-menu"));
+    this.centerIconElement = /** @type {HTMLElement} */ (this.shadowRoot.querySelector(".center-icon"));
+    this.svgElement = /** @type {SVGElement} */ (this.shadowRoot.querySelector(".menu-svg"));
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {Array<{text: string, onClick: () => void, icon?: string}>} items
+   * @param {string | null} centerIcon
+   */
   open(x, y, items, centerIcon) {
     this._openX = x;
     this._openY = y;
-    /** @type {Array<{text: string, onClick: () => void, icon?: string}>} */
     this._items = items;
     this.render(); // Reset HTML
-    this.menuElement = this.shadowRoot?.querySelector(".context-menu");
-    this.centerIconElement = this.shadowRoot?.querySelector(".center-icon");
+    this.menuElement = /** @type {HTMLElement} */ (this.shadowRoot?.querySelector(".context-menu"));
+    this.centerIconElement = /** @type {HTMLElement} */ (this.shadowRoot?.querySelector(".center-icon"));
 
     if (this.centerIconElement && centerIcon) {
       this.centerIconElement.innerHTML = this._createIconHtml(centerIcon);
@@ -138,30 +161,34 @@ export class FlowRadialMenu extends HTMLElement {
 
     this._isMenuOpen = true;
 
+    /** @type {EventListener | null} */
     this._closeMenuListener = (e) => {
       const menu = this.menuElement;
+      const target = /** @type {Node} */ (e.target);
       if (
-        (!menu || !menu.contains(e.target)) &&
-        (!this.shadowRoot || !this.shadowRoot.contains(e.target)) &&
-        !this.contains(e.target)
+        (!menu || !menu.contains(target)) &&
+        (!this.shadowRoot || !this.shadowRoot.contains(target)) &&
+        !this.contains(target)
       ) {
         this.close();
       }
     };
     window.addEventListener("pointerdown", this._closeMenuListener);
 
+    /** @type {EventListener | null} */
     this._moveMenuListener = (e) => {
-      if (this._isMenuOpen) {
+      if (this._isMenuOpen && e instanceof PointerEvent) {
         this.handleSlide(e);
       }
     };
     window.addEventListener("pointermove", this._moveMenuListener);
 
+    /** @type {EventListener | null} */
     this._releaseMenuListener = (_e) => {
       const menu = this.menuElement;
-      const highlighted = menu?.querySelector(
+      const highlighted = /** @type {HTMLElement} */ (menu?.querySelector(
         ".context-menu-item.highlighted",
-      );
+      ));
       if (highlighted && (/** @type {any} */ (highlighted))._item) {
         const item = (/** @type {any} */ (highlighted))._item;
         this.close(); // Close first to avoid any event conflicts
@@ -174,12 +201,16 @@ export class FlowRadialMenu extends HTMLElement {
     this.renderItems();
   }
 
+  /**
+   * @param {string} icon
+   * @returns {string}
+   */
   _createIconHtml(icon) {
     if (icon.startsWith("<")) return icon;
     if (icon.startsWith("data:image") || icon.startsWith("http")) {
       return `<img src="${icon}" style="width: 24px; height: 24px; object-fit: contain;">`;
     }
-    const iconChar = icons()[icon];
+    const iconChar = (/** @type {any} */ (icons()))[icon];
     if (iconChar) {
       return `<i class="node-icon-fa">${iconChar}</i>`;
     }
@@ -215,6 +246,7 @@ export class FlowRadialMenu extends HTMLElement {
     const centerX = 90;
     const centerY = 90;
 
+    /** @type {Record<string, number>} */
     const ITEM_SECTION_MAP = {
       Delete: 3,
       Remove: 3,
@@ -252,7 +284,9 @@ export class FlowRadialMenu extends HTMLElement {
       }
     });
 
-    this.svgElement.innerHTML = "";
+    if (this.svgElement) {
+      this.svgElement.innerHTML = "";
+    }
 
     this._items.forEach((item, index) => {
       const angle = itemAngles[index];
@@ -275,14 +309,16 @@ export class FlowRadialMenu extends HTMLElement {
         `M ${centerX} ${centerY} L ${x1} ${y1} A 90 90 0 0 1 ${x2} ${y2} Z`,
       );
       path.setAttribute("class", "menu-segment");
-      this.svgElement.appendChild(path);
+      if (this.svgElement) {
+        this.svgElement.appendChild(path);
+      }
 
       const el = document.createElement("div");
       el.className = "context-menu-item";
 
       if (item.icon) {
         const iconEl = document.createElement("i");
-        const iconChar = icons()[item.icon];
+        const iconChar = (/** @type {any} */ (icons()))[item.icon];
         if (iconChar) {
           iconEl.textContent = iconChar;
           iconEl.className = "node-icon-fa";
@@ -305,18 +341,23 @@ export class FlowRadialMenu extends HTMLElement {
         this.close();
       });
 
-      this.menuElement.appendChild(el);
+      if (this.menuElement) {
+        this.menuElement.appendChild(el);
+      }
 
       const x = centerX + radius * Math.cos(angle) - 30;
       const y = centerY + radius * Math.sin(angle) - 30;
 
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
-      el._angle = angle;
-      el._item = item;
+      /** @type {any} */ (el)._angle = angle;
+      /** @type {any} */ (el)._item = item;
     });
   }
 
+  /**
+   * @param {PointerEvent} e
+   */
   handleSlide(e) {
     /** @type {PointerEvent} */
     const event = e;
