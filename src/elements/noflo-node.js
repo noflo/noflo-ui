@@ -1,25 +1,60 @@
+import icons from "../../utils/icon-map.js";
+
+/**
+ * @typedef {Object} Position
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
+ * @typedef {Object} PortConfig
+ * @property {string} [name]
+ * @property {'regular' | 'array'} [type]
+ * @property {number} [size]
+ */
+
+/**
+ * @typedef {Object} Metadata
+ * @property {string} [name]
+ * @property {string} [componentName]
+ * @property {string} [icon]
+ */
+
 /**
  * FlowNode Web Component
  * A circular representation of a NoFlo node.
  * Follows the architecture defined in SPEC.md and work document #1.
+ * 
+ * @extends HTMLElement
  */
-import icons from "../../vendor/fa-icon-map.js";
-
 export class FlowNode extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    /** @type {number} */
     this._x = 0;
+    /** @type {number} */
     this._y = 0;
+    /** @type {number} */
     this._size = 80;
+    /** @type {number | PortConfig[]} */
     this._inPorts = 1;
+    /** @type {number | PortConfig[]} */
     this._outPorts = 1;
+    /** @type {HTMLElement | null} */
+    this.portsContainer = null;
   }
 
+  /**
+   * @type {number}
+   */
   get size() {
     return this._size;
   }
 
+  /**
+   * @param {number} val
+   */
   set size(val) {
     this._size = val;
     if (this.shadowRoot) {
@@ -27,10 +62,16 @@ export class FlowNode extends HTMLElement {
     }
   }
 
+  /**
+   * @type {number}
+   */
   get radius() {
     return this._size / 2;
   }
 
+  /**
+   * @param {Position} pos
+   */
   set position({ x, y }) {
     this._x = x;
     this._y = y;
@@ -38,20 +79,23 @@ export class FlowNode extends HTMLElement {
     this.style.top = `${y}px`;
   }
 
+  /**
+   * @param {Metadata} metadata
+   */
   setMetadata({ name, componentName, icon }) {
     if (name) this.textContent = name;
     if (componentName) {
-      const compEl = this.shadowRoot.querySelector(".node-component");
+      const compEl = this.shadowRoot?.querySelector(".node-component");
       if (compEl) compEl.textContent = componentName;
     }
     if (icon) {
-      const iconEl = this.shadowRoot.querySelector(".node-content");
+      const iconEl = this.shadowRoot?.querySelector(".node-content");
       if (iconEl) {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
         } else if (icon.indexOf("fa-") === 0) {
           const iconName = icon.substr(3);
-          iconEl.innerHTML = `<i class="node-icon-fa">${icons()[iconName]}</i>`;
+          iconEl.innerHTML = `<i class="node-icon-fa">${(/** @type {any} */ (icons()))[iconName]}</i>`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
         }
@@ -59,6 +103,9 @@ export class FlowNode extends HTMLElement {
     }
   }
 
+  /**
+   * @type {Position}
+   */
   get position() {
     return { x: this._x, y: this._y };
   }
@@ -71,6 +118,10 @@ export class FlowNode extends HTMLElement {
     this.render();
   }
 
+  /**
+   * @param {number | PortConfig[]} inPorts
+   * @param {number | PortConfig[]} outPorts
+   */
   setPorts(inPorts, outPorts) {
     this._inPorts = inPorts;
     this._outPorts = outPorts;
@@ -81,6 +132,7 @@ export class FlowNode extends HTMLElement {
   }
 
   render() {
+    if (!this.shadowRoot) return;
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -247,6 +299,10 @@ export class FlowNode extends HTMLElement {
     this.renderPorts(this._inPorts, this._outPorts);
   }
 
+  /**
+   * @param {number | PortConfig[]} inPorts
+   * @param {number | PortConfig[]} outPorts
+   */
   renderPorts(inPorts, outPorts) {
     if (!this.portsContainer) return;
     this.portsContainer.innerHTML = "";
@@ -272,6 +328,12 @@ export class FlowNode extends HTMLElement {
     });
   }
 
+  /**
+   * @param {number} index
+   * @param {number} totalPorts
+   * @param {boolean} isOutport
+   * @param {PortConfig} cfg
+   */
   createPort(index, totalPorts, isOutport, cfg) {
     const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
     const type = cfg.type || "regular";
@@ -307,6 +369,12 @@ export class FlowNode extends HTMLElement {
     }
   }
 
+  /**
+   * @param {Position} pos
+   * @param {boolean} isOutport
+   * @param {string} name
+   * @param {string} type
+   */
   addPortElement(pos, isOutport, name, type) {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
@@ -333,6 +401,13 @@ export class FlowNode extends HTMLElement {
     this.portsContainer.appendChild(label);
   }
 
+  /**
+   * @param {number} radius
+   * @param {number} index
+   * @param {number} totalPorts
+   * @param {boolean} isOutport
+   * @returns {Position}
+   */
   calculatePortPosition(radius, index, totalPorts, isOutport) {
     const angleRange = Math.PI * 0.5; // Use 50% of the semicircle for a more compact cluster
     const centerAngle = isOutport ? 0 : Math.PI;

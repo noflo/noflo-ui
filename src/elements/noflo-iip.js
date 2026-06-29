@@ -37,7 +37,7 @@ export class FlowIIP extends HTMLElement {
 
   set value(val) {
     this._value = val;
-    const valEl = this.shadowRoot.querySelector(".iip-value");
+    const valEl = this.shadowRoot?.querySelector(".iip-value");
     if (valEl) {
       valEl.textContent = String(val);
     }
@@ -52,6 +52,7 @@ export class FlowIIP extends HTMLElement {
   }
 
   render() {
+    if (!this.shadowRoot) return;
     this.shadowRoot.innerHTML = `
       <style>
         :host {

@@ -34,28 +34,32 @@ async function init() {
     const pills = document.createElement("noflo-selection-pills");
     document.body.appendChild(pills);
     pills.addEventListener("clear-selection", (e) => {
-      const editor = document.querySelector("noflo-editor");
+      const editor = /** @type {FlowEditor} */ (document.querySelector("noflo-editor"));
       if (!editor) return;
-      if (e.detail.type === "nodes") {
+      const event = /** @type {CustomEvent} */ (e);
+      if (event.detail.type === "nodes") {
         editor.clearNodeSelection();
-      } else if (e.detail.type === "edges") {
+      } else if (event.detail.type === "edges") {
         editor.clearEdgeSelection();
       } else {
         editor.clearSelection();
       }
     });
 
-    const editor = document.createElement("noflo-editor");
+    const editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
     app.appendChild(editor);
 
     editor.addEventListener("wire-connection-attempt", (e) => {
-      editor.addEdge(e.detail.portA, e.detail.portB);
+      const event = /** @type {CustomEvent} */ (e);
+      editor.addEdge(event.detail.portA, event.detail.portB);
     });
 
     editor.addEventListener("node-creation-attempt", (e) => {
-      const { x, y, startPort } = e.detail;
+      const event = /** @type {CustomEvent} */ (e);
+      const { x, y, startPort } = event.detail;
       const newNode = editor.addNode("New Node", x, y);
-      const isOut = startPort.classList.contains("port-out");
+      const port = /** @type {HTMLElement} */ (startPort);
+      const isOut = port.classList.contains("port-out");
       const targetPort = newNode.shadowRoot.querySelector(
         `.port${isOut ? "-in" : "-out"}`,
       );
@@ -63,9 +67,9 @@ async function init() {
         // Wait for the next frame to ensure the node is laid out
         requestAnimationFrame(() => {
           if (isOut) {
-            editor.addEdge(startPort, targetPort);
+            editor.addEdge(port, /** @type {HTMLElement} */ (targetPort));
           } else {
-            editor.addEdge(targetPort, startPort);
+            editor.addEdge(/** @type {HTMLElement} */ (targetPort), port);
           }
           requestAnimationFrame(() => {
             editor.updateEdges();
@@ -75,57 +79,66 @@ async function init() {
     });
 
     editor.addEventListener("iip-creation-attempt", (e) => {
-      const { x, y, startPort } = e.detail;
+      const event = /** @type {CustomEvent} */ (e);
+      const { x, y, startPort } = event.detail;
       const newIIP = editor.addIIP(x, y, "Value");
       requestAnimationFrame(() => {
-        editor.addIIPWire(newIIP, startPort);
+        editor.addIIPWire(newIIP, /** @type {HTMLElement} */ (startPort));
       });
     });
 
     editor.addEventListener("selection-changed", (e) => {
-      console.log("selection", e.detail);
-      updateSelectionPills(e.detail);
+      const event = /** @type {CustomEvent} */ (e);
+      console.log("selection", event.detail);
+      updateSelectionPills(event.detail);
     });
 
     editor.addEventListener("node-removal-attempt", (e) => {
-      console.log("remove node", e.detail);
+      const event = /** @type {CustomEvent} */ (e);
+      console.log("remove node", event.detail);
     });
     editor.addEventListener("edge-removal-attempt", (e) => {
-      console.log("remove edge", e.detail);
+      const event = /** @type {CustomEvent} */ (e);
+      console.log("remove edge", event.detail);
     });
 
     editor.addEventListener("iip-edit-attempt", (e) => {
-      const { iip } = e.detail;
-      const newValue = prompt("Enter new IIP value:", iip.value);
+      const event = /** @type {CustomEvent} */ (e);
+      const { iip } = event.detail;
+      const iipElement = /** @type {FlowIIP} */ (iip);
+      const newValue = prompt("Enter new IIP value:", iipElement.value);
       if (newValue !== null) {
-        iip.value = newValue;
+        iipElement.value = newValue;
       }
     });
 
     editor.addEventListener("iip-removal-attempt", (e) => {
-      const { iip } = e.detail;
-      editor.removeIIP(iip);
+      const event = /** @type {CustomEvent} */ (e);
+      const { iip } = event.detail;
+      editor.removeIIP(/** @type {FlowIIP} */ (iip));
     });
 
     editor.addEventListener("iip-send-attempt", (e) => {
-      const { iip } = e.detail;
+      const event = /** @type {CustomEvent} */ (e);
+      const { iip } = event.detail;
+      const iipElement = /** @type {FlowIIP} */ (iip);
       console.log(
-        `[Main] Sending IIP: ${iip.getAttribute("name")} with value: ${iip.value}`,
+        `[Main] Sending IIP: ${iipElement.getAttribute("name")} with value: ${iipElement.value}`,
       );
       // In a real app, this would send a message to the backend
     });
 
     // Add some sample nodes
-    const source = editor.addNode(
+    const source = /** @type {FlowNode} */ (editor.addNode(
       "Source",
       100,
       200,
       [],
       [{ type: "regular", name: "out" }],
-    );
+    ));
     source.setMetadata({ name: "Source", icon: "fa-play" });
 
-    const filter = editor.addNode(
+    const filter = /** @type {FlowNode} */ (editor.addNode(
       "Filter",
       300,
       100,
@@ -134,69 +147,69 @@ async function init() {
         { type: "regular", name: "out" },
         { type: "regular", name: "error" },
       ],
-    );
+    ));
     filter.setMetadata({ name: "Filter", icon: "fa-filter" });
 
-    const splitter = editor.addNode(
+    const splitter = /** @type {FlowNode} */ (editor.addNode(
       "Splitter",
       300,
       300,
       [{ type: "regular", name: "in" }],
       [{ type: "array", name: "out", size: 3 }],
-    );
+    ));
     splitter.setMetadata({ name: "Splitter", icon: "fa-code-branch" });
 
-    const aggregator = editor.addNode(
+    const aggregator = /** @type {FlowNode} */ (editor.addNode(
       "Aggregator",
       500,
       300,
       [{ type: "array", name: "in", size: 3 }],
       [{ type: "regular", name: "out" }],
-    );
+    ));
     aggregator.setMetadata({
       name: "Aggregator",
       icon: "fa-layer-group",
     });
 
-    const logger = editor.addNode(
+    const logger = /** @type {FlowNode} */ (editor.addNode(
       "Logger",
       700,
       100,
       [{ type: "regular", name: "in" }],
       [],
-    );
+    ));
     logger.setMetadata({ name: "Logger", icon: "fa-terminal" });
 
-    const sink = editor.addNode(
+    const sink = /** @type {FlowNode} */ (editor.addNode(
       "Sink",
       700,
       300,
       [{ type: "regular", name: "in" }],
       [],
-    );
+    ));
     sink.setMetadata({ name: "Sink", icon: "fa-database" });
 
-    const router = editor.addNode(
+    const router = /** @type {FlowNode} */ (editor.addNode(
       "Router",
       500,
       100,
       [{ type: "regular", name: "in" }],
       [{ type: "regular", name: "out" }],
       40,
-    );
+    ));
     router.setMetadata({ name: "Router", icon: "fa-route" });
 
     // Initial connections
-    editor.connectNodes(source, "out", filter, "in", 0);
-    editor.connectNodes(source, "out", splitter, "in", 1);
+    editor.connectNodes(source, "out", filter, "in", "0");
+    editor.connectNodes(source, "out", splitter, "in", "1");
 
-    editor.connectNodes(filter, "out", logger, "in", 2);
+    editor.connectNodes(filter, "out", logger, "in", "2");
 
     // Connect only some ArrayPorts to allow testing
-    editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`, 3);
-    editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`, 3);
+    editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`, "3");
+    editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`, "3");
 
-    editor.connectNodes(aggregator, "out", sink, "in", 4);
+    editor.connectNodes(aggregator, "out", sink, "in", "4");
 
     editor.fitNodesToViewport();
 
@@ -205,10 +218,10 @@ async function init() {
       editor.updateEdges();
     });
 
-    // Demo: Occasionally record activity for random nodes and edges
     setInterval(() => {
+      if (!editor.shadowRoot) return;
       const nodes = Array.from(
-        editor.shadowRoot.querySelectorAll("noflo-node"),
+        editor.shadowRoot.querySelectorAll("noflo-node, noflo-iip"),
       );
       const edges = editor.edges || [];
 
@@ -216,7 +229,8 @@ async function init() {
 
       if (Math.random() > 0.5 || edges.length === 0) {
         // Random node activity
-        const node = nodes[Math.floor(Math.random() * nodes.length)];
+        const nodeElement = nodes[Math.floor(Math.random() * nodes.length)];
+        const node = /** @type {FlowNode | FlowIIP} */ (nodeElement);
         editor.recordActivity(
           node.position.x + node.size / 2,
           node.position.y + node.size / 2,
@@ -236,10 +250,12 @@ async function init() {
 }
 
 function updateSelectionPills(selection) {
+  /** @type {any} */
+  const sel = selection;
   const pills = document.querySelector("noflo-selection-pills");
   if (!pills) return;
 
-  const { nodes, iips, edges } = selection;
+  const { nodes, iips, edges } = sel;
   pills.setAttribute("nodes-count", nodes.length);
   pills.setAttribute("iips-count", iips?.length || 0);
   pills.setAttribute("edges-count", edges.length);
