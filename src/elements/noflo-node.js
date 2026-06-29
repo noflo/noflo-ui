@@ -37,10 +37,10 @@ export class FlowNode extends HTMLElement {
     this._y = 0;
     /** @type {number} */
     this._size = 80;
-    /** @type {number | PortConfig[]} */
-    this._inPorts = 1;
-    /** @type {number | PortConfig[]} */
-    this._outPorts = 1;
+    /** @type {PortConfig[]} */
+    this._inPorts = [{ type: "regular" }];
+    /** @type {PortConfig[]} */
+    this._outPorts = [{ type: "regular" }];
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
   }
@@ -119,8 +119,8 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
-   * @param {number | PortConfig[]} inPorts
-   * @param {number | PortConfig[]} outPorts
+   * @param {PortConfig[]} inPorts
+   * @param {PortConfig[]} outPorts
    */
   setPorts(inPorts, outPorts) {
     this._inPorts = inPorts;
@@ -300,31 +300,20 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
-   * @param {number | PortConfig[]} inPorts
-   * @param {number | PortConfig[]} outPorts
+   * @param {PortConfig[]} inPorts
+   * @param {PortConfig[]} outPorts
    */
   renderPorts(inPorts, outPorts) {
     if (!this.portsContainer) return;
     this.portsContainer.innerHTML = "";
 
-    // Ensure we are working with arrays of configurations
-    const processPorts = (ports) => {
-      if (Array.isArray(ports)) return ports;
-      if (typeof ports === "number")
-        return Array(ports).fill({ type: "regular" });
-      return [];
-    };
-
-    const processedIn = processPorts(inPorts);
-    const processedOut = processPorts(outPorts);
-
     // Inports (left side: PI/2 to 3PI/2)
-    processedIn.forEach((portCfg, i) => {
-      this.createPort(i, processedIn.length, false, portCfg);
+    inPorts.forEach((portCfg, i) => {
+      this.createPort(i, inPorts.length, false, portCfg);
     });
     // Outports (right side: -PI/2 to PI/2)
-    processedOut.forEach((portCfg, i) => {
-      this.createPort(i, processedOut.length, true, portCfg);
+    outPorts.forEach((portCfg, i) => {
+      this.createPort(i, outPorts.length, true, portCfg);
     });
   }
 
@@ -397,8 +386,10 @@ export class FlowNode extends HTMLElement {
       : "translate(-100%, -50%)";
     label.style.textAlign = isOutport ? "left" : "right";
 
-    this.portsContainer.appendChild(port);
-    this.portsContainer.appendChild(label);
+    if (this.portsContainer) {
+      this.portsContainer.appendChild(port);
+      this.portsContainer.appendChild(label);
+    }
   }
 
   /**

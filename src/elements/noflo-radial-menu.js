@@ -8,6 +8,7 @@ export class FlowRadialMenu extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    /** @type {Array<{text: string, onClick: () => void, icon?: string}>} */
     this._items = [];
     this._isMenuOpen = false;
     this._closeMenuListener = null;
@@ -116,18 +117,21 @@ export class FlowRadialMenu extends HTMLElement {
   open(x, y, items, centerIcon) {
     this._openX = x;
     this._openY = y;
+    /** @type {Array<{text: string, onClick: () => void, icon?: string}>} */
     this._items = items;
     this.render(); // Reset HTML
-    this.menuElement = this.shadowRoot.querySelector(".context-menu");
-    this.centerIconElement = this.shadowRoot.querySelector(".center-icon");
+    this.menuElement = this.shadowRoot?.querySelector(".context-menu");
+    this.centerIconElement = this.shadowRoot?.querySelector(".center-icon");
 
-    if (centerIcon) {
+    if (this.centerIconElement && centerIcon) {
       this.centerIconElement.innerHTML = this._createIconHtml(centerIcon);
-    } else {
+    } else if (this.centerIconElement) {
       this.centerIconElement.innerHTML = "";
     }
 
-    this.menuElement.style.display = "flex";
+    if (this.menuElement) {
+      this.menuElement.style.display = "flex";
+    }
     this.style.display = "block";
     this.style.left = `${x}px`;
     this.style.top = `${y}px`;
@@ -135,9 +139,10 @@ export class FlowRadialMenu extends HTMLElement {
     this._isMenuOpen = true;
 
     this._closeMenuListener = (e) => {
+      const menu = this.menuElement;
       if (
-        !this.menuElement.contains(e.target) &&
-        !this.shadowRoot.contains(e.target) &&
+        (!menu || !menu.contains(e.target)) &&
+        (!this.shadowRoot || !this.shadowRoot.contains(e.target)) &&
         !this.contains(e.target)
       ) {
         this.close();
@@ -153,11 +158,12 @@ export class FlowRadialMenu extends HTMLElement {
     window.addEventListener("pointermove", this._moveMenuListener);
 
     this._releaseMenuListener = (_e) => {
-      const highlighted = this.menuElement.querySelector(
+      const menu = this.menuElement;
+      const highlighted = menu?.querySelector(
         ".context-menu-item.highlighted",
       );
-      if (highlighted?._item) {
-        const item = highlighted._item;
+      if (highlighted && (/** @type {any} */ (highlighted))._item) {
+        const item = (/** @type {any} */ (highlighted))._item;
         this.close(); // Close first to avoid any event conflicts
         item.onClick();
       }
@@ -181,7 +187,9 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   close() {
-    this.menuElement.style.display = "none";
+    if (this.menuElement) {
+      this.menuElement.style.display = "none";
+    }
     this.style.display = "none";
     this._isMenuOpen = false;
     if (this._closeMenuListener) {
@@ -194,6 +202,7 @@ export class FlowRadialMenu extends HTMLElement {
     }
     if (this._releaseMenuListener) {
       window.removeEventListener("pointerup", this._releaseMenuListener);
+      window.removeEventListener("pointercancel", this._releaseMenuListener);
       this._releaseMenuListener = null;
     }
   }
@@ -309,22 +318,24 @@ export class FlowRadialMenu extends HTMLElement {
   }
 
   handleSlide(e) {
+    /** @type {PointerEvent} */
+    const event = e;
     const centerX = this._openX;
     const centerY = this._openY;
 
-    const dx = e.clientX - centerX;
-    const dy = e.clientY - centerY;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
 
     let angle = Math.atan2(dy, dx);
     if (angle < 0) angle += 2 * Math.PI;
 
     const dist = Math.hypot(dx, dy);
-    const items = this.menuElement.querySelectorAll(".context-menu-item");
+    const items = this.menuElement ? this.menuElement.querySelectorAll(".context-menu-item") : [];
 
     // Finger-sized empty area in the middle (~44px diameter, so 22px radius)
     if (dist < 22) {
       items.forEach((el) => {
-        el.classList.remove("highlighted");
+        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
       });
       return;
     }
@@ -334,8 +345,9 @@ export class FlowRadialMenu extends HTMLElement {
 
     let closestItem = null;
     items.forEach((el) => {
+      const item = /** @type {any} */ (el);
       // Check if this item's angle falls into the current section
-      const itemAngle = el._angle;
+      const itemAngle = item._angle;
       const itemSection = Math.floor(itemAngle / (Math.PI / 4));
       if (itemSection === section) {
         closestItem = el;
@@ -344,12 +356,12 @@ export class FlowRadialMenu extends HTMLElement {
 
     if (closestItem) {
       items.forEach((el) => {
-        el.classList.remove("highlighted");
+        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
       });
-      closestItem.classList.add("highlighted");
+      (/** @type {HTMLElement} */ (closestItem)).classList.add("highlighted");
     } else {
       items.forEach((el) => {
-        el.classList.remove("highlighted");
+        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
       });
     }
   }

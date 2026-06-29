@@ -17,6 +17,11 @@ export class SelectionPills extends HTMLElement {
     return ["nodes-count", "iips-count", "edges-count"];
   }
 
+  /**
+   * @param {string} _name
+   * @param {string | null} oldValue
+   * @param {string | null} newValue
+   */
   attributeChangedCallback(_name, oldValue, newValue) {
     if (oldValue !== newValue) {
       this.updatePills();
@@ -27,7 +32,7 @@ export class SelectionPills extends HTMLElement {
     const nodesCount = parseInt(this.getAttribute("nodes-count") || "0", 10);
     const iipsCount = parseInt(this.getAttribute("iips-count") || "0", 10);
     const edgesCount = parseInt(this.getAttribute("edges-count") || "0", 10);
-    const container = this.shadowRoot.querySelector(".pills-container");
+    const container = this.shadowRoot?.querySelector(".pills-container");
 
     if (!container) return;
 
@@ -49,19 +54,27 @@ export class SelectionPills extends HTMLElement {
     }
   }
 
+  /**
+   * @param {string} text
+   * @param {string} type
+   * @returns {HTMLElement}
+   */
   createPill(text, type) {
     const pill = document.createElement("div");
     pill.className = "selection-pill";
     pill.innerHTML = `<span>${text}</span><span class="clear-btn">x</span>`;
-    pill.querySelector(".clear-btn").onclick = () => {
-      this.dispatchEvent(
-        new CustomEvent("clear-selection", {
-          detail: { type },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-    };
+    const clearBtn = /** @type {HTMLElement} */ (pill.querySelector(".clear-btn"));
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        this.dispatchEvent(
+          new CustomEvent("clear-selection", {
+            detail: { type },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      };
+    }
     return pill;
   }
 

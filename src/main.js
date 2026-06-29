@@ -11,7 +11,7 @@ import { SelectionPills } from "./elements/noflo-selection-pills.js";
 const backend = new Worker("src/backend.js", { type: "module" });
 
 backend.onmessage = (event) => {
-  const { type, payload } = event.data;
+  const { type, payload } = (/** @type {MessageEvent} */ (event)).data;
   console.log(`[Main] Received from backend: ${type}`, payload);
 };
 
@@ -60,7 +60,7 @@ async function init() {
       const newNode = editor.addNode("New Node", x, y);
       const port = /** @type {HTMLElement} */ (startPort);
       const isOut = port.classList.contains("port-out");
-      const targetPort = newNode.shadowRoot.querySelector(
+      const targetPort = newNode.shadowRoot?.querySelector(
         `.port${isOut ? "-in" : "-out"}`,
       );
       if (targetPort) {
@@ -133,7 +133,7 @@ async function init() {
       "Source",
       100,
       200,
-      [],
+      [{ type: "regular" }],
       [{ type: "regular", name: "out" }],
     ));
     source.setMetadata({ name: "Source", icon: "fa-play" });
@@ -250,15 +250,14 @@ async function init() {
 }
 
 function updateSelectionPills(selection) {
-  /** @type {any} */
-  const sel = selection;
+  const sel = /** @type {{nodes: string[], iips: string[], edges: string[]}} */ (selection);
   const pills = document.querySelector("noflo-selection-pills");
   if (!pills) return;
 
   const { nodes, iips, edges } = sel;
-  pills.setAttribute("nodes-count", nodes.length);
-  pills.setAttribute("iips-count", iips?.length || 0);
-  pills.setAttribute("edges-count", edges.length);
+  pills.setAttribute("nodes-count", nodes.length.toString());
+  pills.setAttribute("iips-count", (iips?.length || 0).toString());
+  pills.setAttribute("edges-count", edges.length.toString());
 }
 
 init().catch(console.error);
