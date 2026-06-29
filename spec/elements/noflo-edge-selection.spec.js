@@ -72,7 +72,7 @@ describe("FlowEditor Edge Selection", async () => {
     );
     assert.strictEqual(
       selectionChangedEvent.detail.edges[0],
-      edge,
+      el.getEdgeId(edge),
       "Selected edge should be in event detail",
     );
 
