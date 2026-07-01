@@ -7,6 +7,7 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import { FileSelector } from "./elements/noflo-file-selector.js";
 import { Graph, graph } from "noflo";
 
 // Register Web Components
@@ -15,6 +16,7 @@ customElements.define("noflo-iip", FlowIIP);
 customElements.define("noflo-node", FlowNode);
 customElements.define("noflo-radial-menu", FlowRadialMenu);
 customElements.define("noflo-selection-pills", SelectionPills);
+customElements.define("noflo-file-selector", FileSelector);
 
 /**
  * @typedef {Object} PortConfig
@@ -54,30 +56,23 @@ async function init() {
   // Setup event listeners for editor
   setupEditorEventListeners(editor);
 
-  // Setup Start Button
-  const startBtn = document.getElementById("start-btn");
-  const startOverlay = document.getElementById("start-overlay");
-  const controls = document.getElementById("controls");
+  // Setup File Selector
+  const fileSelector = document.querySelector("noflo-file-selector");
+  if (!fileSelector) {
+    console.error("File selector element not found");
+    return;
+  }
 
-  startBtn.addEventListener("click", async () => {
-    if (!window.showDirectoryPicker) {
-      alert("The File System Access API is not supported in this browser. Please use a Chromium-based browser.");
-      return;
-    }
+  fileSelector.addEventListener("directory-selected", async (e) => {
+    directoryHandle = e.detail.directoryHandle;
+    console.log("Directory selected:", directoryHandle.name);
 
-    try {
-      directoryHandle = await window.showDirectoryPicker();
-      console.log("Directory selected:", directoryHandle.name);
+    await loadLibrary(directoryHandle);
+  });
 
-      await loadLibrary(directoryHandle);
-
-      startOverlay.style.display = "none";
-      controls.style.display = "block";
-
-      await listFiles();
-    } catch (err) {
-      console.error("Error opening directory:", err);
-    }
+  fileSelector.addEventListener("file-selected", async (e) => {
+    const fileHandle = e.detail.fileHandle;
+    await loadFile(fileHandle);
   });
 }
 
@@ -276,23 +271,6 @@ function updateSelectionPills(selection) {
   pills.setAttribute("nodes-count", nodes.length.toString());
   pills.setAttribute("iips-count", (iips?.length || 0).toString());
   pills.setAttribute("edges-count", edges.length.toString());
-}
-
-async function listFiles() {
-  const fileList = document.getElementById("file-list");
-  const fileListContainer = document.getElementById("file-list-container");
-  fileList.innerHTML = "";
-  fileListContainer.style.display = "block";
-
-  for await (const entry of directoryHandle.values()) {
-    if (entry.kind === "file" && entry.name.endsWith(".json")) {
-      const li = document.createElement("li");
-      li.textContent = entry.name;
-      li.style.cursor = "pointer";
-      li.addEventListener("click", () => loadFile(entry));
-      fileList.appendChild(li);
-    }
-  }
 }
 
 async function loadFile(fileHandle) {
