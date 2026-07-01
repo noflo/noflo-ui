@@ -127,9 +127,15 @@ export class FlowRadialMenu extends HTMLElement {
         <div class="center-icon"></div>
       </div>
     `;
-    this.menuElement = /** @type {HTMLElement} */ (this.shadowRoot.querySelector(".context-menu"));
-    this.centerIconElement = /** @type {HTMLElement} */ (this.shadowRoot.querySelector(".center-icon"));
-    this.svgElement = /** @type {SVGElement} */ (this.shadowRoot.querySelector(".menu-svg"));
+    this.menuElement = /** @type {HTMLElement} */ (
+      this.shadowRoot.querySelector(".context-menu")
+    );
+    this.centerIconElement = /** @type {HTMLElement} */ (
+      this.shadowRoot.querySelector(".center-icon")
+    );
+    this.svgElement = /** @type {SVGElement} */ (
+      this.shadowRoot.querySelector(".menu-svg")
+    );
   }
 
   /**
@@ -143,8 +149,12 @@ export class FlowRadialMenu extends HTMLElement {
     this._openY = y;
     this._items = items;
     this.render(); // Reset HTML
-    this.menuElement = /** @type {HTMLElement} */ (this.shadowRoot?.querySelector(".context-menu"));
-    this.centerIconElement = /** @type {HTMLElement} */ (this.shadowRoot?.querySelector(".center-icon"));
+    this.menuElement = /** @type {HTMLElement} */ (
+      this.shadowRoot?.querySelector(".context-menu")
+    );
+    this.centerIconElement = /** @type {HTMLElement} */ (
+      this.shadowRoot?.querySelector(".center-icon")
+    );
 
     if (this.centerIconElement && centerIcon) {
       this.centerIconElement.innerHTML = this._createIconHtml(centerIcon);
@@ -166,8 +176,8 @@ export class FlowRadialMenu extends HTMLElement {
       const menu = this.menuElement;
       const target = /** @type {Node} */ (e.target);
       if (
-        (!menu || !menu.contains(target)) &&
-        (!this.shadowRoot || !this.shadowRoot.contains(target)) &&
+        !menu?.contains(target) &&
+        !this.shadowRoot?.contains(target) &&
         !this.contains(target)
       ) {
         this.close();
@@ -186,11 +196,11 @@ export class FlowRadialMenu extends HTMLElement {
     /** @type {EventListener | null} */
     this._releaseMenuListener = (_e) => {
       const menu = this.menuElement;
-      const highlighted = /** @type {HTMLElement} */ (menu?.querySelector(
-        ".context-menu-item.highlighted",
-      ));
-      if (highlighted && (/** @type {any} */ (highlighted))._item) {
-        const item = (/** @type {any} */ (highlighted))._item;
+      const highlighted = /** @type {HTMLElement} */ (
+        menu?.querySelector(".context-menu-item.highlighted")
+      );
+      if (highlighted && /** @type {any} */ (highlighted)._item) {
+        const item = /** @type {any} */ (highlighted)._item;
         this.close(); // Close first to avoid any event conflicts
         item.onClick();
       }
@@ -210,7 +220,7 @@ export class FlowRadialMenu extends HTMLElement {
     if (icon.startsWith("data:image") || icon.startsWith("http")) {
       return `<img src="${icon}" style="width: 24px; height: 24px; object-fit: contain;">`;
     }
-    const iconChar = (/** @type {any} */ (icons()))[icon];
+    const iconChar = /** @type {any} */ (icons())[icon];
     if (iconChar) {
       return `<i class="node-icon-fa">${iconChar}</i>`;
     }
@@ -318,7 +328,7 @@ export class FlowRadialMenu extends HTMLElement {
 
       if (item.icon) {
         const iconEl = document.createElement("i");
-        const iconChar = (/** @type {any} */ (icons()))[item.icon];
+        const iconChar = /** @type {any} */ (icons())[item.icon];
         if (iconChar) {
           iconEl.textContent = iconChar;
           iconEl.className = "node-icon-fa";
@@ -371,12 +381,14 @@ export class FlowRadialMenu extends HTMLElement {
     if (angle < 0) angle += 2 * Math.PI;
 
     const dist = Math.hypot(dx, dy);
-    const items = this.menuElement ? this.menuElement.querySelectorAll(".context-menu-item") : [];
+    const items = this.menuElement
+      ? this.menuElement.querySelectorAll(".context-menu-item")
+      : [];
 
     // Finger-sized empty area in the middle (~44px diameter, so 22px radius)
     if (dist < 22) {
       items.forEach((el) => {
-        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
+        /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
       return;
     }
@@ -397,12 +409,12 @@ export class FlowRadialMenu extends HTMLElement {
 
     if (closestItem) {
       items.forEach((el) => {
-        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
+        /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
-      (/** @type {HTMLElement} */ (closestItem)).classList.add("highlighted");
+      /** @type {HTMLElement} */ (closestItem).classList.add("highlighted");
     } else {
       items.forEach((el) => {
-        (/** @type {HTMLElement} */ (el)).classList.remove("highlighted");
+        /** @type {HTMLElement} */ (el).classList.remove("highlighted");
       });
     }
   }

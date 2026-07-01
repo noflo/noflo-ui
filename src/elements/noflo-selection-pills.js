@@ -63,7 +63,9 @@ export class SelectionPills extends HTMLElement {
     const pill = document.createElement("div");
     pill.className = "selection-pill";
     pill.innerHTML = `<span>${text}</span><span class="clear-btn">x</span>`;
-    const clearBtn = /** @type {HTMLElement} */ (pill.querySelector(".clear-btn"));
+    const clearBtn = /** @type {HTMLElement} */ (
+      pill.querySelector(".clear-btn")
+    );
     if (clearBtn) {
       clearBtn.onclick = () => {
         this.dispatchEvent(

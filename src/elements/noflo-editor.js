@@ -59,7 +59,7 @@
 
  * A zoomable canvas for editing NoFlo graphs.
  * Follows the architecture defined in SPEC.md and work document #1.
- * 
+ *
  * @extends HTMLElement
  */
 export class FlowEditor extends HTMLElement {
@@ -195,9 +195,11 @@ export class FlowEditor extends HTMLElement {
     this.render();
     this.setupInteractions();
 
-    this.radialMenu = /** @type {NoFloRadialMenu} */ (document.createElement("noflo-radial-menu"));
+    this.radialMenu = /** @type {NoFloRadialMenu} */ (
+      document.createElement("noflo-radial-menu")
+    );
     if (this.radialMenu) {
-      (/** @type {ShadowRoot} */ (this.shadowRoot)).appendChild(this.radialMenu);
+      /** @type {ShadowRoot} */ (this.shadowRoot).appendChild(this.radialMenu);
     }
 
     // Observe changes on body
@@ -265,7 +267,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   render() {
-    (/** @type {ShadowRoot} */ (this.shadowRoot)).innerHTML = `
+    /** @type {ShadowRoot} */ (this.shadowRoot).innerHTML = `
       <style>
         :host {
           display: block;
@@ -415,14 +417,34 @@ export class FlowEditor extends HTMLElement {
         </div>
       </div>
     `;
-    this.viewport = (/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("viewport");
-    this.transformLayer = (/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("transform-layer");
-    this.heatmapCanvas = /** @type {any} */ ((/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("heatmap-canvas"));
-    this.gridLayer = /** @type {any} */ ((/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("grid-layer"));
-    this.iipWiresGroup = /** @type {any} */ ((/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("iip-wires-group"));
-    this.svgLayer = /** @type {any} */ ((/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("svg-layer"));
-    this.edgesGroup = /** @type {any} */ ((/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("edges-group"));
-    this.nodeLayer = (/** @type {ShadowRoot} */ (this.shadowRoot)).getElementById("node-layer");
+    this.viewport = /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
+      "viewport",
+    );
+    this.transformLayer = /** @type {ShadowRoot} */ (
+      this.shadowRoot
+    ).getElementById("transform-layer");
+    this.heatmapCanvas = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
+        "heatmap-canvas",
+      )
+    );
+    this.gridLayer = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("grid-layer")
+    );
+    this.iipWiresGroup = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
+        "iip-wires-group",
+      )
+    );
+    this.svgLayer = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("svg-layer")
+    );
+    this.edgesGroup = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("edges-group")
+    );
+    this.nodeLayer = /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
+      "node-layer",
+    );
 
     if (this.heatmapCanvas) {
       this.heatmapCanvas.width = 800;
@@ -495,7 +517,9 @@ export class FlowEditor extends HTMLElement {
 
   _animationLoop() {
     if (this.animationFrameId === null) {
-      this.animationFrameId = requestAnimationFrame(() => this._animationLoop());
+      this.animationFrameId = requestAnimationFrame(() =>
+        this._animationLoop(),
+      );
       return;
     }
 
@@ -517,7 +541,10 @@ export class FlowEditor extends HTMLElement {
       const nextX = currentPos.x + velocity.x;
       const nextY = currentPos.y + velocity.y;
 
-      if (Math.abs(nextX - currentPos.x) > 0.01 || Math.abs(nextY - currentPos.y) > 0.01) {
+      if (
+        Math.abs(nextX - currentPos.x) > 0.01 ||
+        Math.abs(nextY - currentPos.y) > 0.01
+      ) {
         node.position = { x: nextX, y: nextY };
         this.nodeVelocities.set(node, velocity);
         active = true;
@@ -530,8 +557,13 @@ export class FlowEditor extends HTMLElement {
     if (active) {
       this.updateEdges();
       this.updateIIPWires();
-      this.animationFrameId = requestAnimationFrame(() => this._animationLoop());
+      this.animationFrameId = requestAnimationFrame(() =>
+        this._animationLoop(),
+      );
     } else {
+      if (this.isDraggingNodeInCollision) {
+        this.isDraggingNodeInCollision = false;
+      }
       this.animationFrameId = null;
     }
   }
@@ -585,7 +617,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   fitNodesToViewport() {
-    const nodes = (/** @type {ShadowRoot} */ (this.shadowRoot)).querySelectorAll("noflo-node, noflo-iip");
+    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
+      "noflo-node, noflo-iip",
+    );
     if (nodes.length === 0) return;
 
     let minX = Infinity,
@@ -676,8 +710,12 @@ export class FlowEditor extends HTMLElement {
     this.dispatchEvent(
       new CustomEvent("selection-changed", {
         detail: {
-          nodes: nodes.map((n) => this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n))),
-          iips: iips.map((n) => this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n))),
+          nodes: nodes.map((n) =>
+            this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n)),
+          ),
+          iips: iips.map((n) =>
+            this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n)),
+          ),
           edges: Array.from(this.selectedEdges).map((e) => this.getEdgeId(e)),
         },
         bubbles: true,
@@ -700,21 +738,19 @@ export class FlowEditor extends HTMLElement {
         const element = /** @type {Element} */ (el);
         return element.classList?.contains("port");
       });
-      const clickedNode = path.find(
-        (el) => {
-          const element = /** @type {Element} */ (el);
-          return element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP";
-        },
-      );
-      const clickedEdge = path.find(
-        (el) => {
-          const element = /** @type {Element} */ (el);
-          return (
-            element.classList?.contains("edge-flow") ||
-            element.classList?.contains("edge-hit-area")
-          );
-        },
-      );
+      const clickedNode = path.find((el) => {
+        const element = /** @type {Element} */ (el);
+        return (
+          element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP"
+        );
+      });
+      const clickedEdge = path.find((el) => {
+        const element = /** @type {Element} */ (el);
+        return (
+          element.classList?.contains("edge-flow") ||
+          element.classList?.contains("edge-hit-area")
+        );
+      });
 
       const isModifier = e.ctrlKey || e.shiftKey;
       const isTouch = e.pointerType === "touch";
@@ -742,14 +778,24 @@ export class FlowEditor extends HTMLElement {
           const rect = this.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
-          this.showContextMenu(x, y, { clickedPort: /** @type {HTMLElement} */ (port) });
+          this.showContextMenu(x, y, {
+            clickedPort: /** @type {HTMLElement} */ (port),
+          });
         }, 500);
       } else if (clickedNode) {
         e.stopPropagation();
-        this.handleNodeSelection(e, /** @type {NoFloNode | NoFloIIP} */ (clickedNode), isMultiple);
+        this.handleNodeSelection(
+          e,
+          /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+          isMultiple,
+        );
       } else if (clickedEdge) {
         e.stopPropagation();
-        this.handleEdgeSelection(e, /** @type {Element} */ (clickedEdge), isMultiple);
+        this.handleEdgeSelection(
+          e,
+          /** @type {Element} */ (clickedEdge),
+          isMultiple,
+        );
       } else {
         this.startCanvasPan(e);
         if (!isModifier && !this.selectMode) {
@@ -767,7 +813,7 @@ export class FlowEditor extends HTMLElement {
         const dx = e.clientX - this.lastPointerPos.x;
         const dy = e.clientY - this.lastPointerPos.y;
 
-        if (this.isPanning && (!this.radialMenu || !this.radialMenu.isOpen)) {
+        if (this.isPanning && !this.radialMenu?.isOpen) {
           if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
@@ -791,7 +837,7 @@ export class FlowEditor extends HTMLElement {
         } else if (
           this.draggingNodePointerId === e.pointerId &&
           this.selectedNodes.size > 0 &&
-          (!this.radialMenu || !this.radialMenu.isOpen)
+          !this.radialMenu?.isOpen
         ) {
           if (Math.hypot(dx, dy) > 3) {
             if (!this.isDraggingNode) {
@@ -812,9 +858,11 @@ export class FlowEditor extends HTMLElement {
               const initialPos = this.draggingNodesInitialPositions.get(node);
               if (initialPos && this.draggingStartPointerPos) {
                 const idealX =
-                  initialPos.x + (e.clientX - this.draggingStartPointerPos.x) / this.zoom;
+                  initialPos.x +
+                  (e.clientX - this.draggingStartPointerPos.x) / this.zoom;
                 const idealY =
-                  initialPos.y + (e.clientY - this.draggingStartPointerPos.y) / this.zoom;
+                  initialPos.y +
+                  (e.clientY - this.draggingStartPointerPos.y) / this.zoom;
                 idealMoves.push({ node, x: idealX, y: idealY });
               }
             });
@@ -822,9 +870,9 @@ export class FlowEditor extends HTMLElement {
             let collision = false;
             for (const move of idealMoves) {
               const size = move.node.size || 80;
-              const otherNodes = (/** @type {ShadowRoot} */ (this.shadowRoot)).querySelectorAll(
-                "noflo-node, noflo-iip",
-              );
+              const otherNodes = /** @type {ShadowRoot} */ (
+                this.shadowRoot
+              ).querySelectorAll("noflo-node, noflo-iip");
               for (const other of otherNodes) {
                 const o = /** @type {NoFloNode | NoFloIIP} */ (other);
                 if (this.selectedNodes.has(o)) continue;
@@ -844,21 +892,23 @@ export class FlowEditor extends HTMLElement {
             }
 
             if (!collision) {
+              idealMoves.forEach(({ node, x, y }) => {
+                this.draggingNodesTargetPositions.set(node, { x, y });
+              });
+
               if (this.isDraggingNodeInCollision) {
                 // We were in collision, and now we are not!
                 // We want to animate to the new position.
                 // So we DO NOT update node.position directly.
-                // We ONLY update draggingNodesTargetPositions.
-                idealMoves.forEach(({ node, x, y }) => {
-                  this.draggingNodesTargetPositions.set(node, { x, y });
-                });
-                this.isDraggingNodeInCollision = false;
+                // We ensure animation loop is running
+                if (this.animationFrameId === null) {
+                  this._animationLoop();
+                }
               } else {
                 // Normal drag, no collision.
                 // We want no animation, so update node.position directly.
                 idealMoves.forEach(({ node, x, y }) => {
                   node.position = { x, y };
-                  this.draggingNodesTargetPositions.set(node, { x, y });
                   this.nodeVelocities.set(node, { x: 0, y: 0 });
                 });
               }
@@ -871,7 +921,7 @@ export class FlowEditor extends HTMLElement {
               }
             }
           }
-        } else if (this.isDraggingWire && (!this.radialMenu || !this.radialMenu.isOpen)) {
+        } else if (this.isDraggingWire && !this.radialMenu?.isOpen) {
           if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
@@ -882,7 +932,6 @@ export class FlowEditor extends HTMLElement {
           !this.isDraggingNode &&
           !this.isDraggingWire
         ) {
-          const interest = this.getInterestArea(e.clientX, e.clientY);
           if (this.viewport) {
             this.viewport.style.cursor = "grab";
           }
@@ -1034,25 +1083,29 @@ export class FlowEditor extends HTMLElement {
    */
   handleContextMenu(e) {
     const path = e.composedPath();
-    const clickedPort = /** @type {Element | undefined} */ (path.find((/** @type {EventTarget} */ el) => {
-      const element = /** @type {Element} */ (el);
-      return element.classList?.contains("port");
-    }));
-    const clickedNode = /** @type {Element | undefined} */ (path.find(
-      (/** @type {EventTarget} */ el) => {
+    const clickedPort = /** @type {Element | undefined} */ (
+      path.find((/** @type {EventTarget} */ el) => {
         const element = /** @type {Element} */ (el);
-        return element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP";
-      },
-    ));
-    const clickedEdge = /** @type {Element | undefined} */ (path.find(
-      (/** @type {EventTarget} */ el) => {
+        return element.classList?.contains("port");
+      })
+    );
+    const clickedNode = /** @type {Element | undefined} */ (
+      path.find((/** @type {EventTarget} */ el) => {
+        const element = /** @type {Element} */ (el);
+        return (
+          element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP"
+        );
+      })
+    );
+    const clickedEdge = /** @type {Element | undefined} */ (
+      path.find((/** @type {EventTarget} */ el) => {
         const element = /** @type {Element} */ (el);
         return (
           element.classList?.contains("edge-flow") ||
           element.classList?.contains("edge-hit-area")
         );
-      },
-    ));
+      })
+    );
 
     const rect = this.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1124,7 +1177,13 @@ export class FlowEditor extends HTMLElement {
       const isIIP = clickedNode.tagName === "NOFLO-IIP";
       this.dispatchEvent(
         new CustomEvent(isIIP ? "iip-menu-open" : "node-menu-open", {
-          detail: { node: this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (clickedNode)), x, y },
+          detail: {
+            node: this.getNodeName(
+              /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+            ),
+            x,
+            y,
+          },
           bubbles: true,
           composed: true,
         }),
@@ -1161,7 +1220,11 @@ export class FlowEditor extends HTMLElement {
           onClick: () => {
             this.dispatchEvent(
               new CustomEvent("navigate-down-attempt", {
-                detail: { node: this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (clickedNode)) },
+                detail: {
+                  node: this.getNodeName(
+                    /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+                  ),
+                },
                 bubbles: true,
                 composed: true,
               }),
@@ -1226,8 +1289,10 @@ export class FlowEditor extends HTMLElement {
     } else if (clickedEdge) {
       const edge = this.edges.find(
         (edge) =>
-          (/** @type {Element} */ (edge.hitPath)) === (/** @type {Element} */ (clickedEdge)) || 
-          (/** @type {Element} */ (edge.visualPath)) === (/** @type {Element} */ (clickedEdge)),
+          /** @type {Element} */ (edge.hitPath) ===
+            /** @type {Element} */ (clickedEdge) ||
+          /** @type {Element} */ (edge.visualPath) ===
+            /** @type {Element} */ (clickedEdge),
       );
       if (edge) {
         this.dispatchEvent(
@@ -1289,8 +1354,14 @@ export class FlowEditor extends HTMLElement {
 
     const centerContent = clickedNode
       ? clickedNode.tagName === "NOFLO-IIP"
-        ? (/** @type {NoFloIIP} */ (clickedNode)).shadowRoot?.querySelector(".iip-value")?.textContent ?? null
-        : (/** @type {NoFloNode} */ (clickedNode)).shadowRoot?.querySelector(".node-content")?.innerHTML ?? null
+        ? /** @type {NoFloIIP} */ (
+            clickedNode.shadowRoot?.querySelector(".iip-value")?.textContent ??
+              null
+          )
+        : /** @type {NoFloNode} */ (
+            clickedNode.shadowRoot?.querySelector(".node-content")?.innerHTML ??
+              null
+          )
       : null;
 
     this.radialMenu?.open(x, y, items, centerContent);
@@ -1309,9 +1380,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {PointerEvent} e
+   * @param {PointerEvent} _e
    */
-  startPinchZoom(e) {
+  startPinchZoom(_e) {
     this.didPinch = true;
     const pointers = Array.from(this.activePointers.values());
     const p1 = pointers[0];
@@ -1325,9 +1396,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {PointerEvent} e
+   * @param {PointerEvent} _e
    */
-  handlePinchZoom(e) {
+  handlePinchZoom(_e) {
     const pointers = Array.from(this.activePointers.values());
     const p1 = pointers[0];
     const p2 = pointers[1];
@@ -1641,7 +1712,10 @@ export class FlowEditor extends HTMLElement {
     }
 
     const interestArea = this.getInterestArea(e.clientX, e.clientY);
-    if (interestArea.type === FlowEditor.INTEREST_AREA_TYPES.PORT && interestArea.element) {
+    if (
+      interestArea.type === FlowEditor.INTEREST_AREA_TYPES.PORT &&
+      interestArea.element
+    ) {
       const port = interestArea.element;
       const isDragOut = this.dragPort?.classList.contains("port-out");
       const portIsOut = port.classList.contains("port-out");
@@ -1666,7 +1740,9 @@ export class FlowEditor extends HTMLElement {
    * @param {number} clientY
    */
   _updatePortHighlights(clientX, clientY) {
-    const nodes = (/** @type {ShadowRoot} */ (this.shadowRoot)).querySelectorAll("noflo-node");
+    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
+      "noflo-node",
+    );
     const isDragOut = this.dragPort?.classList.contains("port-out");
     const highlightThreshold = 100;
 
@@ -1716,7 +1792,9 @@ export class FlowEditor extends HTMLElement {
    */
   hasSpaceForNode(x, y, size = 80) {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    const nodes = (/** @type {ShadowRoot} */ (this.shadowRoot)).querySelectorAll("noflo-node, noflo-iip");
+    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
+      "noflo-node, noflo-iip",
+    );
 
     for (const nodeElement of nodes) {
       const node = /** @type {NoFloNode | NoFloIIP} */ (nodeElement);
@@ -2096,7 +2174,11 @@ export class FlowEditor extends HTMLElement {
     );
 
     if (portA && portB) {
-      this.addEdge(/** @type {HTMLElement} */ (portA), /** @type {HTMLElement} */ (portB), routeId);
+      this.addEdge(
+        /** @type {HTMLElement} */ (portA),
+        /** @type {HTMLElement} */ (portB),
+        routeId,
+      );
     } else {
       console.warn(`Could not connect ${portAName} to ${portBName}`);
     }
@@ -2119,9 +2201,18 @@ export class FlowEditor extends HTMLElement {
    * @param {number} [size=80]
    * @returns {NoFloNode}
    */
-  addNode(name, x, y, inPorts = [{ type: "regular" }], outPorts = [{ type: "regular" }], size = 80) {
+  addNode(
+    name,
+    x,
+    y,
+    inPorts = [{ type: "regular" }],
+    outPorts = [{ type: "regular" }],
+    size = 80,
+  ) {
     const snapped = this.snapToGrid(x, y);
-    const node = /** @type {NoFloNode} */ (document.createElement("noflo-node"));
+    const node = /** @type {NoFloNode} */ (
+      document.createElement("noflo-node")
+    );
     node.setAttribute("name", name);
     node.setAttribute("size", size.toString());
     node.textContent = name;

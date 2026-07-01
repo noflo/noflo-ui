@@ -24,7 +24,7 @@ import icons from "../../vendor/fontawesome-icons-7.3.0.js";
  * FlowNode Web Component
  * A circular representation of a NoFlo node.
  * Follows the architecture defined in SPEC.md and work document #1.
- * 
+ *
  * @extends HTMLElement
  */
 export class FlowNode extends HTMLElement {
@@ -95,7 +95,7 @@ export class FlowNode extends HTMLElement {
           iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
         } else if (icon.indexOf("fa-") === 0) {
           const iconName = icon.substr(3);
-          iconEl.innerHTML = `<i class="node-icon-fa">${(/** @type {any} */ (icons()))[iconName]}</i>`;
+          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
         }

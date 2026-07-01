@@ -37,7 +37,9 @@ async function init() {
     const pills = document.createElement("noflo-selection-pills");
     document.body.appendChild(pills);
     pills.addEventListener("clear-selection", (e) => {
-      const editor = /** @type {FlowEditor} */ (document.querySelector("noflo-editor"));
+      const editor = /** @type {FlowEditor} */ (
+        document.querySelector("noflo-editor")
+      );
       if (!editor) return;
       const event = /** @type {CustomEvent} */ (e);
       if (event.detail.type === "nodes") {
@@ -49,7 +51,9 @@ async function init() {
       }
     });
 
-    const editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
+    const editor = /** @type {FlowEditor} */ (
+      document.createElement("noflo-editor")
+    );
     app.appendChild(editor);
 
     editor.addEventListener("wire-connection-attempt", (e) => {
@@ -132,74 +136,76 @@ async function init() {
     });
 
     // Add some sample nodes
-    const source = /** @type {FlowNode} */ (editor.addNode(
-      "Source",
-      100,
-      200,
-      [{ type: "regular" }],
-      [{ type: "regular", name: "out" }],
-    ));
+    const source = /** @type {FlowNode} */ (
+      editor.addNode(
+        "Source",
+        100,
+        200,
+        [{ type: "regular" }],
+        [{ type: "regular", name: "out" }],
+      )
+    );
     source.setMetadata({ name: "Source", icon: "fa-play" });
 
-    const filter = /** @type {FlowNode} */ (editor.addNode(
-      "Filter",
-      300,
-      100,
-      [{ type: "regular", name: "in" }],
-      [
-        { type: "regular", name: "out" },
-        { type: "regular", name: "error" },
-      ],
-    ));
+    const filter = /** @type {FlowNode} */ (
+      editor.addNode(
+        "Filter",
+        300,
+        100,
+        [{ type: "regular", name: "in" }],
+        [
+          { type: "regular", name: "out" },
+          { type: "regular", name: "error" },
+        ],
+      )
+    );
     filter.setMetadata({ name: "Filter", icon: "fa-filter" });
 
-    const splitter = /** @type {FlowNode} */ (editor.addNode(
-      "Splitter",
-      300,
-      300,
-      [{ type: "regular", name: "in" }],
-      [{ type: "array", name: "out", size: 3 }],
-    ));
+    const splitter = /** @type {FlowNode} */ (
+      editor.addNode(
+        "Splitter",
+        300,
+        300,
+        [{ type: "regular", name: "in" }],
+        [{ type: "array", name: "out", size: 3 }],
+      )
+    );
     splitter.setMetadata({ name: "Splitter", icon: "fa-code-branch" });
 
-    const aggregator = /** @type {FlowNode} */ (editor.addNode(
-      "Aggregator",
-      500,
-      300,
-      [{ type: "array", name: "in", size: 3 }],
-      [{ type: "regular", name: "out" }],
-    ));
+    const aggregator = /** @type {FlowNode} */ (
+      editor.addNode(
+        "Aggregator",
+        500,
+        300,
+        [{ type: "array", name: "in", size: 3 }],
+        [{ type: "regular", name: "out" }],
+      )
+    );
     aggregator.setMetadata({
       name: "Aggregator",
       icon: "fa-layer-group",
     });
 
-    const logger = /** @type {FlowNode} */ (editor.addNode(
-      "Logger",
-      700,
-      100,
-      [{ type: "regular", name: "in" }],
-      [],
-    ));
+    const logger = /** @type {FlowNode} */ (
+      editor.addNode("Logger", 700, 100, [{ type: "regular", name: "in" }], [])
+    );
     logger.setMetadata({ name: "Logger", icon: "fa-terminal" });
 
-    const sink = /** @type {FlowNode} */ (editor.addNode(
-      "Sink",
-      700,
-      300,
-      [{ type: "regular", name: "in" }],
-      [],
-    ));
+    const sink = /** @type {FlowNode} */ (
+      editor.addNode("Sink", 700, 300, [{ type: "regular", name: "in" }], [])
+    );
     sink.setMetadata({ name: "Sink", icon: "fa-database" });
 
-    const router = /** @type {FlowNode} */ (editor.addNode(
-      "Router",
-      500,
-      100,
-      [{ type: "regular", name: "in" }],
-      [{ type: "regular", name: "out" }],
-      40,
-    ));
+    const router = /** @type {FlowNode} */ (
+      editor.addNode(
+        "Router",
+        500,
+        100,
+        [{ type: "regular", name: "in" }],
+        [{ type: "regular", name: "out" }],
+        40,
+      )
+    );
     router.setMetadata({ name: "Router", icon: "fa-route" });
 
     // Initial connections
@@ -256,7 +262,10 @@ async function init() {
  * @param {any} selection
  */
 function updateSelectionPills(selection) {
-  const sel = /** @type {{nodes: string[], iips: string[], edges: string[]}} */ (selection);
+  const sel =
+    /** @type {{nodes: string[], iips: string[], edges: string[]}} */ (
+      selection
+    );
   const pills = document.querySelector("noflo-selection-pills");
   if (!pills) return;
 
