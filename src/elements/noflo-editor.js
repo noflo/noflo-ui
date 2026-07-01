@@ -1635,7 +1635,7 @@ export class FlowEditor extends HTMLElement {
         if (this.hasSpaceForNode(mouseX, mouseY, size)) {
           this.stillnessTimer = setTimeout(() => {
             this.showGhostNode(snapped.x, snapped.y, size, shape);
-          }, 500);
+          }, 300);
         }
       }
     }
