@@ -114,6 +114,28 @@ export class FlowEditor extends HTMLElement {
     this.lastPinchDistance = 0;
     /** @type {Map<string, number>} */
     this.activityMap = new Map();
+    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    this.draggingNodesInitialPositions = new Map();
+    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    this.draggingNodesTargetPositions = new Map();
+    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
+    this.nodeVelocities = new Map();
+    /** @type {Position | null} */
+    this.draggingStartPointerPos = null;
+    /** @type {number | null} */
+    this.animationFrameId = null;
+    /** @type {boolean} */
+    this.isDraggingNodeInCollision = false;
+    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    this.draggingNodesInitialPositions = new Map();
+    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    this.draggingNodesTargetPositions = new Map();
+    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
+    this.nodeVelocities = new Map();
+    /** @type {Position | null} */
+    this.draggingStartPointerPos = null;
+    /** @type {number | null} */
+    this.animationFrameId = null;
     /** @type {number | null} */
     this.panningPointerId = null;
     /** @type {number | null} */
@@ -253,6 +275,7 @@ export class FlowEditor extends HTMLElement {
           position: relative;
           touch-action: none;
           user-select: none;
+          -webkit-user-select: none;
           --zoom-scale: 1.0;
           background-color: var(--ui-bg);
         }
@@ -264,6 +287,7 @@ export class FlowEditor extends HTMLElement {
           cursor: grab;
           overflow: hidden;
           user-select: none;
+          -webkit-user-select: none;
         }
         #viewport:active {
           cursor: grabbing;
@@ -467,6 +491,49 @@ export class FlowEditor extends HTMLElement {
       this.transformLayer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
     }
     this.style.setProperty("--zoom-scale", this.zoom.toString());
+  }
+
+  _animationLoop() {
+    if (this.animationFrameId === null) {
+      this.animationFrameId = requestAnimationFrame(() => this._animationLoop());
+      return;
+    }
+
+    const springStiffness = 0.15;
+    const springDamping = 0.8;
+
+    let active = false;
+
+    this.draggingNodesTargetPositions.forEach((targetPos, node) => {
+      const currentPos = node.position;
+      const velocity = this.nodeVelocities.get(node) || { x: 0, y: 0 };
+
+      const ax = (targetPos.x - currentPos.x) * springStiffness;
+      const ay = (targetPos.y - currentPos.y) * springStiffness;
+
+      velocity.x = (velocity.x + ax) * springDamping;
+      velocity.y = (velocity.y + ay) * springDamping;
+
+      const nextX = currentPos.x + velocity.x;
+      const nextY = currentPos.y + velocity.y;
+
+      if (Math.abs(nextX - currentPos.x) > 0.01 || Math.abs(nextY - currentPos.y) > 0.01) {
+        node.position = { x: nextX, y: nextY };
+        this.nodeVelocities.set(node, velocity);
+        active = true;
+      } else {
+        node.position = { x: targetPos.x, y: targetPos.y };
+        this.nodeVelocities.set(node, { x: 0, y: 0 });
+      }
+    });
+
+    if (active) {
+      this.updateEdges();
+      this.updateIIPWires();
+      this.animationFrameId = requestAnimationFrame(() => this._animationLoop());
+    } else {
+      this.animationFrameId = null;
+    }
   }
 
   /**
@@ -727,24 +794,34 @@ export class FlowEditor extends HTMLElement {
           (!this.radialMenu || !this.radialMenu.isOpen)
         ) {
           if (Math.hypot(dx, dy) > 3) {
-            this.isDraggingNode = true;
-            if (this.longPressTimer) {
-              clearTimeout(this.longPressTimer);
-              this.longPressTimer = null;
+            if (!this.isDraggingNode) {
+              this.isDraggingNode = true;
+              if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+              }
+              if (this.animationFrameId === null) {
+                this._animationLoop();
+              }
             }
           }
 
           if (this.isDraggingNode) {
-            /** @type {Array<{node: NoFloNode | NoFloIIP, x: number, y: number}>} */
-            const proposedMoves = [];
-            let collision = false;
-
+            const idealMoves = [];
             this.selectedNodes.forEach((node) => {
-              const pos = node.position;
-              const newX = pos.x + dx / this.zoom;
-              const newY = pos.y + dy / this.zoom;
-              const size = node.size || 80;
+              const initialPos = this.draggingNodesInitialPositions.get(node);
+              if (initialPos && this.draggingStartPointerPos) {
+                const idealX =
+                  initialPos.x + (e.clientX - this.draggingStartPointerPos.x) / this.zoom;
+                const idealY =
+                  initialPos.y + (e.clientY - this.draggingStartPointerPos.y) / this.zoom;
+                idealMoves.push({ node, x: idealX, y: idealY });
+              }
+            });
 
+            let collision = false;
+            for (const move of idealMoves) {
+              const size = move.node.size || 80;
               const otherNodes = (/** @type {ShadowRoot} */ (this.shadowRoot)).querySelectorAll(
                 "noflo-node, noflo-iip",
               );
@@ -754,27 +831,41 @@ export class FlowEditor extends HTMLElement {
                 const otherPos = o.position;
                 const otherSize = o.size || 80;
                 if (
-                  newX < otherPos.x + otherSize &&
-                  newX + size > otherPos.x &&
-                  newY < otherPos.y + otherSize &&
-                  newY + size > otherPos.y
+                  move.x < otherPos.x + otherSize &&
+                  move.x + size > otherPos.x &&
+                  move.y < otherPos.y + otherSize &&
+                  move.y + size > otherPos.y
                 ) {
                   collision = true;
                   break;
                 }
               }
-              if (!collision) {
-                proposedMoves.push({ node, x: newX, y: newY });
-              }
-            });
+              if (collision) break;
+            }
 
             if (!collision) {
-              proposedMoves.forEach(({ node, x, y }) => {
-                node.position = { x, y };
-              });
+              if (this.isDraggingNodeInCollision) {
+                // We were in collision, and now we are not!
+                // We want to animate to the new position.
+                // So we DO NOT update node.position directly.
+                // We ONLY update draggingNodesTargetPositions.
+                idealMoves.forEach(({ node, x, y }) => {
+                  this.draggingNodesTargetPositions.set(node, { x, y });
+                });
+                this.isDraggingNodeInCollision = false;
+              } else {
+                // Normal drag, no collision.
+                // We want no animation, so update node.position directly.
+                idealMoves.forEach(({ node, x, y }) => {
+                  node.position = { x, y };
+                  this.draggingNodesTargetPositions.set(node, { x, y });
+                  this.nodeVelocities.set(node, { x: 0, y: 0 });
+                });
+              }
               this.updateEdges();
               this.updateIIPWires();
             } else {
+              this.isDraggingNodeInCollision = true;
               if (this.viewport) {
                 this.viewport.style.cursor = "no-drop";
               }
@@ -856,6 +947,13 @@ export class FlowEditor extends HTMLElement {
         this.draggingNodePointerId = null;
         this.clickedNode = null;
         this.selectionChangedOnDown = false;
+
+        // Cleanup drag state
+        this.draggingStartPointerPos = null;
+        this.draggingNodesInitialPositions.clear();
+        this.draggingNodesTargetPositions.clear();
+        this.nodeVelocities.clear();
+        this.isDraggingNodeInCollision = false;
       }
       if (e.pointerId === this.draggingWirePointerId) {
         this.isDraggingWire = false;
@@ -1317,6 +1415,17 @@ export class FlowEditor extends HTMLElement {
     n.setPointerCapture(e.pointerId);
     this.draggingNodePointerId = e.pointerId;
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
+
+    // Prepare for potential drag
+    this.isDraggingNodeInCollision = false;
+    this.draggingStartPointerPos = { x: e.clientX, y: e.clientY };
+    this.draggingNodesInitialPositions.clear();
+    this.draggingNodesTargetPositions.clear();
+    this.nodeVelocities.clear();
+    this.selectedNodes.forEach((node) => {
+      this.draggingNodesInitialPositions.set(node, { ...node.position });
+      this.draggingNodesTargetPositions.set(node, { ...node.position });
+    });
 
     this.emitSelectionChanged();
 

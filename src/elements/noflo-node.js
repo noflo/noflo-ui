@@ -144,6 +144,7 @@ export class FlowNode extends HTMLElement {
           align-items: center;
           cursor: grab;
           user-select: none;
+          -webkit-user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           --node-size: 80px;
         }
@@ -211,6 +212,11 @@ export class FlowNode extends HTMLElement {
         .node-icon-fa {
           font-family: 'Font Awesome 7 Free';
           font-style: normal;
+        }
+
+        text, .node-label {
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         /* Semantic Zooming: Use clamp() to create a binary switch based on --zoom-scale */
