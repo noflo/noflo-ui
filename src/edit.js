@@ -39,6 +39,12 @@ let componentLibrary = new Map();
 
 let directoryHandle = null;
 let editor = null;
+/** @type {any} */
+let currentGraph = null;
+/** @type {string} */
+let currentFileName = "";
+/** @type {number | null} */
+let saveTimeout = null;
 
 async function init() {
   console.log("Initializing Flowbased Graph Editor...");
@@ -181,13 +187,37 @@ function addPortToLibrary(compName, portName, direction) {
 function setupEditorEventListeners(editor) {
   editor.addEventListener("wire-connection-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    editor.addEdge(event.detail.portA, event.detail.portB);
+    const edge = editor.addEdge(event.detail.portA, event.detail.portB);
+    if (currentGraph) {
+      const portA = event.detail.portA;
+      const portB = event.detail.portB;
+      const nodeA = portA.closest("noflo-node") || portA.closest("noflo-iip");
+      const nodeB = portB.closest("noflo-node") || portB.closest("noflo-iip");
+      if (nodeA && nodeB) {
+        currentGraph.edges.push({
+          from: { node: nodeA.getAttribute("name"), port: portA.dataset.portName },
+          to: { node: nodeB.getAttribute("name"), port: portB.dataset.portName },
+        });
+      }
+    }
+    debouncedSave();
   });
 
   editor.addEventListener("node-creation-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
-    const newNode = editor.addNode("New Node", x, y);
+    const nodeId = `node_${Date.now()}`;
+    const newNode = editor.addNode(nodeId, x, y);
+    newNode.id = nodeId;
+
+    if (currentGraph) {
+      currentGraph.nodes[nodeId] = {
+        id: nodeId,
+        component: "New Node",
+        metadata: { x, y },
+      };
+    }
+
     const port = /** @type {HTMLElement} */ (startPort);
     const isOut = port.classList.contains("port-out");
     const targetPort = newNode.shadowRoot?.querySelector(
@@ -205,15 +235,27 @@ function setupEditorEventListeners(editor) {
         });
       });
     }
+    debouncedSave();
   });
 
   editor.addEventListener("iip-creation-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
-    const newIIP = editor.addIIP(x, y, "Value");
+    const iipId = `iip_${Date.now()}`;
+    const newIIP = editor.addIIP(iipId, x, y, "Value");
+    newIIP.id = iipId;
+
+    if (currentGraph) {
+      currentGraph.iips[iipId] = {
+        id: iipId,
+        value: "Value",
+      };
+    }
+
     requestAnimationFrame(() => {
       editor.addIIPWire(newIIP, /** @type {HTMLElement} */ (startPort));
     });
+    debouncedSave();
   });
 
   editor.addEventListener("selection-changed", (e) => {
@@ -223,12 +265,40 @@ function setupEditorEventListeners(editor) {
 
   editor.addEventListener("node-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    console.log("remove node", event.detail);
+    const nodes = event.detail.nodes;
+    if (currentGraph) {
+      nodes.forEach((node) => {
+        delete currentGraph.nodes[node.id];
+        node.remove();
+      });
+    }
+    debouncedSave();
   });
 
   editor.addEventListener("edge-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    console.log("remove edge", event.detail);
+    const edge = event.detail.edge;
+    if (currentGraph) {
+      const portA = edge.portA;
+      const portB = edge.portB;
+      const nodeA = portA.closest("noflo-node") || portA.closest("noflo-iip");
+      const nodeB = portB.closest("noflo-node") || portB.closest("noflo-iip");
+      if (nodeA && nodeB) {
+        const idA = nodeA.getAttribute("name");
+        const idB = nodeB.getAttribute("name");
+        const pAName = portA.dataset.portName;
+        const pBName = portB.dataset.portName;
+        currentGraph.edges = currentGraph.edges.filter(
+          (e) => !(
+            (e.from.node === idA && e.from.port === pAName && e.to.node === idB && e.to.port === pBName) ||
+            (e.from.node === idB && e.from.port === pBName && e.to.node === idA && e.to.port === pAName)
+          )
+        );
+      }
+    }
+    edge.visualPath?.remove();
+    edge.hitPath?.remove();
+    debouncedSave();
   });
 
   editor.addEventListener("iip-edit-attempt", (e) => {
@@ -238,6 +308,10 @@ function setupEditorEventListeners(editor) {
     const newValue = prompt("Enter new IIP value:", iipElement.value);
     if (newValue !== null) {
       iipElement.value = newValue;
+      if (currentGraph && currentGraph.iips[iipElement.id]) {
+        currentGraph.iips[iipElement.id].value = newValue;
+      }
+      debouncedSave();
     }
   });
 
@@ -245,6 +319,10 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
     editor.removeIIP(/** @type {FlowIIP} */ (iip));
+    if (currentGraph) {
+      delete currentGraph.iips[iip.id];
+    }
+    debouncedSave();
   });
 
   editor.addEventListener("iip-send-attempt", (e) => {
@@ -255,6 +333,41 @@ function setupEditorEventListeners(editor) {
       `[Main] Sending IIP: ${iipElement.getAttribute("name")} with value: ${iipElement.value}`,
     );
   });
+
+  editor.addEventListener("nodes-moved", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { nodes } = event.detail;
+    if (currentGraph) {
+      nodes.forEach((move) => {
+        const node = currentGraph.nodes[move.name];
+        if (node) {
+          node.metadata = node.metadata || {};
+          node.metadata.x = move.position.x;
+          node.metadata.y = move.position.y;
+        }
+      });
+    }
+    debouncedSave();
+  });
+}
+
+function debouncedSave() {
+  if (saveTimeout) return;
+  saveTimeout = setTimeout(() => {
+    saveTimeout = null;
+    saveGraph();
+  }, 1000);
+}
+
+async function saveGraph() {
+  if (!currentGraph || !directoryHandle || !currentFileName) return;
+  console.log("Saving graph...");
+  try {
+    await saveGraphAsJson(directoryHandle, currentFileName, currentGraph);
+    console.log("Graph saved successfully.");
+  } catch (err) {
+    console.error("Error saving graph:", err);
+  }
 }
 
 /**
@@ -290,7 +403,7 @@ function placeNodesInGraph(graph, padding = 50) {
   let currentX = padding;
   let currentY = padding;
   let maxRowHeight = 0;
-  const maxWidth = 1200; 
+  const maxWidth = 1200;
 
   const defaultWidth = 150;
   const defaultHeight = 100;
@@ -318,14 +431,19 @@ function placeNodesInGraph(graph, padding = 50) {
  * @returns {Promise<string>} The new file name
  */
 async function saveGraphAsJson(directoryHandle, originalFileName, graph) {
-  const newFileName = originalFileName.replace(/\.fbp$/, "") + ".graph.json";
-  const json = JSON.stringify(graph.toJSON(), null, 4);
-  
+  let newFileName;
+  if (originalFileName.endsWith(".fbp")) {
+    newFileName = originalFileName.replace(/\.fbp$/, "") + ".graph.json";
+  } else {
+    newFileName = originalFileName;
+  }
+  const json = JSON.stringify(graph.toJSON(), null, 2);
+
   const fileHandle = await directoryHandle.getFileHandle(newFileName, { create: true });
   const writable = await fileHandle.createWritable();
   await writable.write(json);
   await writable.close();
-  
+
   return newFileName;
 }
 
@@ -349,6 +467,9 @@ async function loadFile(fileHandle) {
 
     console.log("Loaded file:", fileHandle.name);
 
+    currentGraph = g;
+    currentFileName = fileHandle.name;
+
     // Recreate editor to clear it
     const app = document.getElementById("app");
     app.innerHTML = "";
@@ -369,6 +490,7 @@ async function loadFile(fileHandle) {
       const outPorts = comp ? comp.outports : undefined;
 
       const n = editor.addNode(node.id, x, y, inPorts, outPorts);
+      n.id = node.id; // Ensure the DOM element has the correct ID
       nodesMap.set(node.id, n);
     }
 

@@ -2068,7 +2068,9 @@ export class FlowEditor extends HTMLElement {
     }
 
     this.edges = this.edges || [];
-    this.edges.push({ hitPath, visualPath, portA, portB, routeId });
+    const edge = { hitPath, visualPath, portA, portB, routeId };
+    this.edges.push(edge);
+    return edge;
   }
 
   /**
