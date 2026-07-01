@@ -359,7 +359,7 @@ export class FlowNode extends HTMLElement {
           x: this.radius * Math.cos(angle),
           y: this.radius * Math.sin(angle),
         };
-        this.addPortElement(instancePos, isOutport, instanceName, "array");
+        this.addPortElement(instancePos, isOutport, instanceName, "array", i);
       }
     }
   }
@@ -369,13 +369,15 @@ export class FlowNode extends HTMLElement {
    * @param {boolean} isOutport
    * @param {string} name
    * @param {string} type
+   * @param {number} [index]
    */
-  addPortElement(pos, isOutport, name, type) {
+  addPortElement(pos, isOutport, name, type, index) {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
 
     port.dataset.portName = name;
     port.dataset.portType = type;
+    if (index !== undefined) port.dataset.portIndex = index.toString();
 
     // All ports are now 12px (radius 6px)
     port.style.left = `${this.radius + pos.x - 6}px`;

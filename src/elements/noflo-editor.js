@@ -1157,8 +1157,7 @@ export class FlowEditor extends HTMLElement {
                 searchX -= 40;
               }
 
-              const iip = this.addIIP(searchX, searchY);
-              this.addIIPWire(iip, port);
+              const iip = this.addIIP(searchX, searchY, port);
             },
             icon: "circle-plus",
           });
@@ -2226,10 +2225,11 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {number} x
    * @param {number} y
+   * @param {HTMLElement} port
    * @param {string} [value="Value"]
    * @returns {NoFloIIP}
    */
-  addIIP(x, y, value = "Value") {
+  addIIP(x, y, port, value = "Value") {
     const size = 40;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
@@ -2241,35 +2241,32 @@ export class FlowEditor extends HTMLElement {
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(iip);
     }
-    return iip;
-  }
 
-  /**
-   * @param {NoFloIIP} iip
-   * @param {HTMLElement} port
-   */
-  addIIPWire(iip, port) {
-    const hitPath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    hitPath.classList.add("edge-hit-area");
+    if (port) {
+      const hitPath = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      hitPath.classList.add("edge-hit-area");
 
-    const visualPath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    visualPath.classList.add("edge-flow");
+      const visualPath = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      visualPath.classList.add("edge-flow");
 
-    this.updateIIPPathData(hitPath, visualPath, iip, port);
+      this.updateIIPPathData(hitPath, visualPath, iip, port);
 
-    if (this.iipWiresGroup) {
-      this.iipWiresGroup.appendChild(hitPath);
-      this.iipWiresGroup.appendChild(visualPath);
+      if (this.iipWiresGroup) {
+        this.iipWiresGroup.appendChild(hitPath);
+        this.iipWiresGroup.appendChild(visualPath);
+      }
+
+      this.iipWires = this.iipWires || [];
+      this.iipWires.push({ hitPath, visualPath, iip, port });
     }
 
-    this.iipWires = this.iipWires || [];
-    this.iipWires.push({ hitPath, visualPath, iip, port });
+    return iip;
   }
 
   /**

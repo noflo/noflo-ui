@@ -88,10 +88,13 @@ async function init() {
     editor.addEventListener("iip-creation-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
-      const newIIP = editor.addIIP(x, y, "Value");
-      requestAnimationFrame(() => {
-        editor.addIIPWire(newIIP, /** @type {HTMLElement} */ (startPort));
-      });
+      const newIIP = editor.addIIP(
+        x,
+        y,
+        /** @type {HTMLElement} */ (startPort),
+        "Value",
+      );
+      newIIP.id = `iip_${Date.now()}`;
     });
 
     editor.addEventListener("selection-changed", (e) => {

@@ -151,8 +151,12 @@ export class FileSelector extends HTMLElement {
   }
 
   setupEventListeners() {
-    this.shadowRoot.getElementById("start-btn").addEventListener("click", this.handleOpenDirectory);
-    this.shadowRoot.getElementById("minimize-btn").addEventListener("click", this.handleExpand);
+    this.shadowRoot
+      .getElementById("start-btn")
+      .addEventListener("click", this.handleOpenDirectory);
+    this.shadowRoot
+      .getElementById("minimize-btn")
+      .addEventListener("click", this.handleExpand);
   }
 
   handleExpand = () => {
@@ -173,7 +177,9 @@ export class FileSelector extends HTMLElement {
 
   handleOpenDirectory = async () => {
     if (!window.showDirectoryPicker) {
-      alert("The File System Access API is not supported in this browser. Please use a Chromium-based browser.");
+      alert(
+        "The File System Access API is not supported in this browser. Please use a Chromium-based browser.",
+      );
       return;
     }
 
@@ -205,7 +211,10 @@ export class FileSelector extends HTMLElement {
     fileList.innerHTML = "";
 
     for await (const entry of this.directoryHandle.values()) {
-      if (entry.kind === "file" && (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))) {
+      if (
+        entry.kind === "file" &&
+        (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))
+      ) {
         const li = document.createElement("li");
         li.textContent = entry.name;
         li.addEventListener("click", () => {
