@@ -161,7 +161,15 @@ async function inferLibraryFromFiles(directoryHandle) {
         addPortToLibrary(toType, conn.to.port, "in");
       }
     }
+
+    for (const iip of g.initializers) {
+      const toType = nodeToType.get(iip.to.node);
+      if (toType) {
+        addPortToLibrary(toType, iip.to.port, "in");
+      }
+    }
   }
+
 }
 
 /**
@@ -465,7 +473,7 @@ async function loadFile(fileHandle) {
       g = await graph.loadJSON(json);
     }
 
-    console.log("Loaded file:", fileHandle.name);
+    console.log("Loaded file:", fileHandle.name, g);
 
     currentGraph = g;
     currentFileName = fileHandle.name;
@@ -479,11 +487,11 @@ async function loadFile(fileHandle) {
     // Re-setup event listeners for editor
     setupEditorEventListeners(editor);
 
-    const nodesMap = new Map();
+    const elementsMap = new Map();
     for (const nodeId in g.nodes) {
       const node = g.nodes[nodeId];
-      const x = node.metadata?.x || node.position?.x || 0;
-      const y = node.metadata?.y || node.position?.y || 0;
+      const x = node.metadata?.x || 0;
+      const y = node.metadata?.y || 0;
 
       const comp = componentLibrary.get(node.component);
       const inPorts = comp ? comp.inports : undefined;
@@ -491,16 +499,26 @@ async function loadFile(fileHandle) {
 
       const n = editor.addNode(node.id, x, y, inPorts, outPorts);
       n.id = node.id; // Ensure the DOM element has the correct ID
-      nodesMap.set(node.id, n);
+      elementsMap.set(node.id, n);
+    }
+
+    for (const iipId in g.initializers) {
+      const iip = g.initializers[iipId];
+      const x = iip.metadata?.x || 0;
+      const y = iip.metadata?.y || 0;
+      console.log(iip);
+
+      const newIIP = editor.addIIP(iipId, x, y, iip.from.value);
+      newIIP.id = iipId;
+      elementsMap.set(iipId, newIIP);
     }
 
     for (const conn of g.edges) {
-      const fromNode = nodesMap.get(conn.from.node);
-      const toNode = nodesMap.get(conn.to.node);
-      console.log(fromNode, toNode, conn);
+      const fromEl = elementsMap.get(conn.from.node);
+      const toEl = elementsMap.get(conn.to.node);
 
-      if (fromNode && toNode) {
-        editor.connectNodes(fromNode, conn.from.port, toNode, conn.to.port, conn.metadata?.route);
+      if (fromEl && toEl) {
+        editor.connectNodes(fromEl, conn.from.port, toEl, conn.to.port, conn.metadata?.route);
       }
     }
 
