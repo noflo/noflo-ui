@@ -853,6 +853,7 @@ export class FlowEditor extends HTMLElement {
           }
 
           if (this.isDraggingNode) {
+            /** @type {Array<{node: NoFloNode | NoFloIIP, x: number, y: number}>} */
             const idealMoves = [];
             this.selectedNodes.forEach((node) => {
               const initialPos = this.draggingNodesInitialPositions.get(node);
@@ -1354,14 +1355,10 @@ export class FlowEditor extends HTMLElement {
 
     const centerContent = clickedNode
       ? clickedNode.tagName === "NOFLO-IIP"
-        ? /** @type {NoFloIIP} */ (
-            clickedNode.shadowRoot?.querySelector(".iip-value")?.textContent ??
-              null
-          )
-        : /** @type {NoFloNode} */ (
-            clickedNode.shadowRoot?.querySelector(".node-content")?.innerHTML ??
-              null
-          )
+        ? (clickedNode.shadowRoot?.querySelector(".iip-value")?.textContent ??
+          null)
+        : (clickedNode.shadowRoot?.querySelector(".node-content")?.innerHTML ??
+          null)
       : null;
 
     this.radialMenu?.open(x, y, items, centerContent);
