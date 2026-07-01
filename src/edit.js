@@ -442,13 +442,25 @@ function updateSelectionPills(selection) {
  * @param {any} graph
  * @param {number} padding
  */
-function placeNodesInGraph(graph, padding = 50) {
+function placeMissingElements(graph, padding = 50) {
   const elements = [];
   for (const nodeId in graph.nodes) {
     elements.push(graph.nodes[nodeId]);
   }
   for (const iip of graph.initializers) {
     elements.push(iip);
+  }
+
+  const missing = elements.filter(el => el.metadata?.x === undefined || el.metadata?.y === undefined);
+  if (missing.length === 0) return;
+
+  let maxX = 0;
+  let maxY = 0;
+  for (const el of elements) {
+    if (el.metadata?.x !== undefined && el.metadata?.y !== undefined) {
+      maxX = Math.max(maxX, el.metadata.x);
+      maxY = Math.max(maxY, el.metadata.y);
+    }
   }
 
   let currentX = padding;
@@ -459,7 +471,11 @@ function placeNodesInGraph(graph, padding = 50) {
   const defaultWidth = 150;
   const defaultHeight = 100;
 
-  for (const el of elements) {
+  if (maxX > 0 || maxY > 0) {
+    currentX = maxX + padding;
+  }
+
+  for (const el of missing) {
     el.metadata = el.metadata || {};
     el.metadata.x = currentX;
     el.metadata.y = currentY;
@@ -509,7 +525,7 @@ async function loadFile(fileHandle) {
 
     if (isFbp) {
       g = await graph.loadFBP(text);
-      placeNodesInGraph(g);
+      placeMissingElements(g);
       await saveGraphAsJson(directoryHandle, fileHandle.name, g);
       await fileHandle.remove();
       console.log(
@@ -518,6 +534,7 @@ async function loadFile(fileHandle) {
     } else {
       const json = JSON.parse(text);
       g = await graph.loadJSON(json);
+      placeMissingElements(g);
     }
 
     console.log("Loaded file:", fileHandle.name, g);
