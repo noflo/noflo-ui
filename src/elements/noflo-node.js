@@ -1,4 +1,4 @@
-import icons from "../../utils/icon-map.js";
+import icons from "../../vendor/fontawesome-icons-7.3.0.js";
 
 /**
  * @typedef {Object} Position

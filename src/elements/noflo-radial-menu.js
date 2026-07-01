@@ -1,4 +1,4 @@
-import icons from "../../vendor/fa-icon-map.js";
+import icons from "../../vendor/fontawesome-icons-7.3.0.js";
 
 /**
  * FlowRadialMenu Web Component

@@ -1,13 +1,13 @@
 @font-face {
   font-family: SourceCodePro;
-  src: url("../vendor/webfonts/SourceCodePro-Regular.otf.woff2");
+  src: url("../vendor/webfonts/sourcecodepro-2.42.0.woff2");
 }
 @font-face {
   font-family: "Font Awesome 7 Free";
   font-style: normal;
   font-weight: 900;
   font-display: block;
-  src: url("../vendor/webfonts/fa-solid-900.woff2");
+  src: url("../vendor/webfonts/fontawesome-7.3.0.woff2");
 }
 body,
 html {

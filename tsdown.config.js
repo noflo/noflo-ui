@@ -1,9 +1,14 @@
 import { defineConfig } from 'tsdown';
 import { esmExternalRequirePlugin } from 'rolldown/plugins';
+import info from './package-lock.json' with { type: 'json' };
+
+const { packages } = info;
 
 export default defineConfig([
   {
-    entry: 'node_modules/noflo/src/lib/NoFlo.js',
+    entry: {
+      [`noflo-${packages['node_modules/noflo'].version}`]: 'node_modules/noflo/src/lib/NoFlo.js',
+    },
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
@@ -19,15 +24,37 @@ export default defineConfig([
     compilerOptions: {
       allowJs: true,
     },
+    copy: [
+      {
+        from: 'node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2',
+        to: 'vendor/webfonts',
+        rename: `sourcecodepro-${packages['node_modules/source-code-pro'].version}.woff2`
+      },
+    ],
   },
   {
     entry: {
-      'fa-icon-map': './utils/icon-map.js',
+      [`fontawesome-icons-${packages['node_modules/@fortawesome/fontawesome-free'].version}`]: './utils/icon-map.js',
+    },
+    copy: [
+      {
+        from: 'node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2',
+        to: 'vendor/webfonts',
+        rename: `fontawesome-${packages['node_modules/@fortawesome/fontawesome-free'].version}.woff2`
+      },
+    ],
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+  },
+  {
+    entry: {
+      [`jedison-${packages['node_modules/jedison'].version}`]: './node_modules/jedison/dist/esm/jedison.js',
     },
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
-  }
+  },
   /*
   {
     name: 'noflo-core',
