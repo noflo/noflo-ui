@@ -159,7 +159,7 @@ export class FileSelector extends HTMLElement {
     fileList.innerHTML = "";
 
     for await (const entry of this.directoryHandle.values()) {
-      if (entry.kind === "file" && entry.name.endsWith(".json")) {
+      if (entry.kind === "file" && (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))) {
         const li = document.createElement("li");
         li.textContent = entry.name;
         li.addEventListener("click", () => {

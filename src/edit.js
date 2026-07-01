@@ -273,13 +273,80 @@ function updateSelectionPills(selection) {
   pills.setAttribute("edges-count", edges.length.toString());
 }
 
+/**
+ * @param {any} graph
+ * @param {number} padding
+ */
+function placeNodesInGraph(graph, padding = 50) {
+  const elements = [];
+  for (const nodeId in graph.nodes) {
+    elements.push(graph.nodes[nodeId]);
+  }
+  for (const iipId in graph.iips) {
+    elements.push(graph.iips[iipId]);
+  }
+
+  let currentX = padding;
+  let currentY = padding;
+  let maxRowHeight = 0;
+  const maxWidth = 1200; 
+
+  const defaultWidth = 150;
+  const defaultHeight = 100;
+
+  for (const el of elements) {
+    el.metadata = el.metadata || {};
+    el.metadata.x = currentX;
+    el.metadata.y = currentY;
+
+    if (currentX + defaultWidth > maxWidth) {
+      currentX = padding;
+      currentY += maxRowHeight + padding;
+      maxRowHeight = 0;
+    }
+
+    currentX += defaultWidth + padding;
+    maxRowHeight = Math.max(maxRowHeight, defaultHeight);
+  }
+}
+
+/**
+ * @param {FileSystemDirectoryHandle} directoryHandle
+ * @param {string} originalFileName
+ * @param {any} graph
+ * @returns {Promise<string>} The new file name
+ */
+async function saveGraphAsJson(directoryHandle, originalFileName, graph) {
+  const newFileName = originalFileName.replace(/\.fbp$/, "") + ".graph.json";
+  const json = JSON.stringify(graph.toJSON(), null, 4);
+  
+  const fileHandle = await directoryHandle.getFileHandle(newFileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(json);
+  await writable.close();
+  
+  return newFileName;
+}
+
 async function loadFile(fileHandle) {
+  const isFbp = fileHandle.name.endsWith(".fbp");
   try {
     const file = await fileHandle.getFile();
     const text = await file.text();
-    const json = JSON.parse(text);
+    let g;
 
-    console.log("Loaded file:", fileHandle.name, json);
+    if (isFbp) {
+      g = await graph.loadFBP(text);
+      placeNodesInGraph(g);
+      await saveGraphAsJson(directoryHandle, fileHandle.name, g);
+      await fileHandle.remove();
+      console.log(`Converted ${fileHandle.name} to .graph.json and removed original.`);
+    } else {
+      const json = JSON.parse(text);
+      g = await graph.loadJSON(json);
+    }
+
+    console.log("Loaded file:", fileHandle.name);
 
     // Recreate editor to clear it
     const app = document.getElementById("app");
@@ -289,8 +356,6 @@ async function loadFile(fileHandle) {
 
     // Re-setup event listeners for editor
     setupEditorEventListeners(editor);
-
-    const g = await graph.loadJSON(json);
 
     const nodesMap = new Map();
     for (const nodeId in g.nodes) {
