@@ -181,6 +181,8 @@ export class FlowEditor extends HTMLElement {
     // Observe changes on body
     this._bodyObserver = new MutationObserver(() => this._syncWithBody());
     this._bodyObserver.observe(document.body, { attributes: true });
+
+    window.addEventListener("resize", this._resizeHandler);
   }
 
   disconnectedCallback() {
@@ -190,7 +192,33 @@ export class FlowEditor extends HTMLElement {
     if (this.heatmapInterval) {
       clearInterval(this.heatmapInterval);
     }
+    window.removeEventListener("resize", this._resizeHandler);
   }
+
+  /**
+   * @private
+   */
+  _resizeHandler = () => {
+    if (!this.viewport) return;
+
+    // 1. Calculate current graph center
+    const rect = this.viewport.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const graphCenter = this.viewportToGraph(centerX, centerY);
+
+    // 2. Update offset to keep graph center at new viewport center
+    // New viewport dimensions
+    const newWidth = rect.width;
+    const newHeight = rect.height;
+
+    // We want: (newWidth / 2 - newOffset.x) / zoom = graphCenter.x
+    // newOffset.x = newWidth / 2 - graphCenter.x * zoom
+    this.offset.x = newWidth / 2 - graphCenter.x * this.zoom;
+    this.offset.y = newHeight / 2 - graphCenter.y * this.zoom;
+
+    this.updateTransform();
+  };
 
   _syncWithBody() {
     const theme = document.body.getAttribute("data-theme") || "cyberpunk";
