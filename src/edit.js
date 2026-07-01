@@ -73,6 +73,7 @@ async function init() {
   fileSelector.addEventListener("file-selected", async (e) => {
     const fileHandle = e.detail.fileHandle;
     await loadFile(fileHandle);
+    fileSelector.minimize();
   });
 }
 

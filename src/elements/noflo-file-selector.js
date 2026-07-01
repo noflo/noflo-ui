@@ -1,3 +1,5 @@
+import icons from "../../vendor/fontawesome-icons-7.3.0.js";
+
 /**
  * @typedef {Object} FileSelectorEventDetail
  * @property {FileSystemDirectoryHandle} [directoryHandle]
@@ -25,6 +27,7 @@ export class FileSelector extends HTMLElement {
   }
 
   render() {
+    const folderIcon = icons()["folder-open"];
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -66,6 +69,30 @@ export class FileSelector extends HTMLElement {
           width: 100%;
           pointer-events: none;
           display: none;
+        }
+
+        #minimize-btn {
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: white;
+          border: 1px solid #ccc;
+          cursor: pointer;
+          display: none;
+          justify-content: center;
+          align-items: center;
+          font-size: 20px;
+          z-index: 1001;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          pointer-events: auto;
+        }
+
+        #minimize-btn i {
+          font-family: 'Font Awesome 7 Free';
+          font-style: normal;
         }
 
         .control-group {
@@ -118,11 +145,30 @@ export class FileSelector extends HTMLElement {
           <ul id="file-list"></ul>
         </div>
       </div>
+
+      <button id="minimize-btn" title="Open Files"><i class="fa-solid fa-folder-open">${folderIcon}</i></button>
     `;
   }
 
   setupEventListeners() {
     this.shadowRoot.getElementById("start-btn").addEventListener("click", this.handleOpenDirectory);
+    this.shadowRoot.getElementById("minimize-btn").addEventListener("click", this.handleExpand);
+  }
+
+  handleExpand = () => {
+    this.shadowRoot.getElementById("minimize-btn").style.display = "none";
+    if (this.directoryHandle) {
+      this.shadowRoot.getElementById("controls").style.display = "block";
+      this.listFiles();
+    } else {
+      this.shadowRoot.getElementById("start-overlay").style.display = "flex";
+    }
+  };
+
+  minimize() {
+    this.shadowRoot.getElementById("start-overlay").style.display = "none";
+    this.shadowRoot.getElementById("controls").style.display = "none";
+    this.shadowRoot.getElementById("minimize-btn").style.display = "flex";
   }
 
   handleOpenDirectory = async () => {
