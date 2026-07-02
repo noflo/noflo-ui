@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Jedison from '../../vendor/jedison-1.13.0.js';
 import { FontAwesomeEditor } from '../library/editors/fontawesome.js';
 

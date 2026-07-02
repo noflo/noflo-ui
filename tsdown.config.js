@@ -54,6 +54,9 @@ export default defineConfig([
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
+    outputOptions: {
+      banner: '// @ts-nocheck',
+    },
   },
   /*
   {

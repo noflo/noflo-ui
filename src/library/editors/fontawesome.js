@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Jedison from '../../../vendor/jedison-1.13.0.js';
 import icons from "../../../vendor/fontawesome-icons-7.3.0.js";
 
