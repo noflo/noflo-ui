@@ -19,6 +19,10 @@ Technical work is planned with work documents (in Markdown) that are managed usi
 
 AI agents may not create work documents on their own. Create a markdown file in the root folder of the project and ask user to move it to rngit.
 
+## Spatial constraints on editor canvas
+
+The `src/library/SpaceManager.js` is to be the ultimate authority on where items are on a canvas, where they can be placed, etc. Use it for any such decisions. If new helpers are needed, add them.
+
 ## Boundaries
 
 - ✅ **Always**: create a branch for any major change set (work document)
