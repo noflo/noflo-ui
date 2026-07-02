@@ -1117,6 +1117,7 @@ export class FlowEditor extends HTMLElement {
     if (clickedPort) {
       const port = /** @type {HTMLElement} */ (clickedPort);
       const isInPort = port.classList.contains("port-in");
+      const isOutPort = port.classList.contains("port-out");
       const isArrayPort = port.dataset.portType === "array";
 
       const hasEdge = this.edges?.some(
@@ -1143,22 +1144,22 @@ export class FlowEditor extends HTMLElement {
                 searchX -= 40;
               }
 
-              const iip = this.addIIP(searchX, searchY, port);
+              this.addIIP(searchX, searchY, port);
             },
             icon: "circle-plus",
           });
         }
+      }
 
-        const canExport = !isArrayPort || !hasConnection;
-        if (canExport) {
-          items.push({
-            text: "Export",
-            onClick: () => {
-              this.exportPort(port);
-            },
-            icon: "share-from-square",
-          });
-        }
+      const canExport = (isInPort || isOutPort) && (!isArrayPort || !hasConnection);
+      if (canExport) {
+        items.push({
+          text: "Export",
+          onClick: () => {
+            this.exportPort(port);
+          },
+          icon: "share-from-square",
+        });
       }
 
       if (hasConnection) {
