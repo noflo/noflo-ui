@@ -112,8 +112,10 @@ Configuration:
   - `src/elements/`: Web Components
   - `src/components/`: NoFlo Components
   - `src/graphs/`: NoFlo graphs
+  - `src/library/`: Helper libraries
 - `spec/`: unit and integration tests
   - `spec/elements/`: Web Components tests, using `node:test`, `node:assert`, and `happy-dom`
+  - `spec/library/`: library helper tests, using `node:test`, `node:assert`
   - `spec/noflo/`: fbp-spec tests for NoFlo graphs and components
 - `docs/`: documentation in Markdown format
 - `vendor/`: vendored library dependencies as ES Modules
