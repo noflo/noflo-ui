@@ -384,40 +384,50 @@ function setupEditorEventListeners(editor) {
     );
   });
 
+  editor.addEventListener("port-removed", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { name, direction } = event.detail;
+    if (currentGraph) {
+      if (direction === "in") {
+        delete currentGraph.inports[name];
+      } else {
+        delete currentGraph.outports[name];
+      }
+    }
+    debouncedSave();
+  });
+
+  editor.addEventListener("port-renamed", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { oldName, newName, direction, position } = event.detail;
+    if (currentGraph) {
+      if (direction === "in") {
+        delete currentGraph.inports[oldName];
+        currentGraph.setInportMetadata(newName, position);
+      } else {
+        delete currentGraph.outports[oldName];
+        currentGraph.setOutportMetadata(newName, position);
+      }
+    }
+    debouncedSave();
+  });
+
   editor.addEventListener("nodes-moved", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { nodes } = event.detail;
     if (currentGraph) {
       nodes.forEach((move) => {
-        if (move.type === "noflo-node") {
-          currentGraph.setNodeMetadata(move.name, {
-            x: move.position.x,
-            y: move.position.y,
-          });
-        } else if (move.type === "noflo-iip") {
-          const index = currentGraph.initializers.findIndex((init) => init.metadata?.id === move.name);
-          if (index !== -1) {
-            const initializer = currentGraph.initializers[index];
-            const { node, port, index: iipIndex } = initializer.to;
-            const metadata = { ...initializer.metadata, x: move.position.x, y: move.position.y };
-            currentGraph.removeInitial(node, port);
-            if (iipIndex !== undefined && iipIndex !== null) {
-              currentGraph.addInitialIndex(initializer.from.data, node, port, iipIndex, metadata);
-            } else {
-              currentGraph.addInitial(initializer.from.data, node, port, metadata);
-            }
-          }
-        } else if (move.type === "noflo-exported-port") {
+        if (move.type === "noflo-exported-port") {
           if (move.direction === "in") {
-            currentGraph.setInportMetadata(move.portName, {
-              x: move.position.x,
-              y: move.position.y,
-            });
-          } else if (move.direction === "out") {
-            currentGraph.setOutportMetadata(move.portName, {
-              x: move.position.x,
-              y: move.position.y,
-            });
+            currentGraph.setInportMetadata(move.portName, move.position);
+          } else {
+            currentGraph.setOutportMetadata(move.portName, move.position);
+          }
+        } else {
+          if (currentGraph.nodes[move.name]) {
+            currentGraph.nodes[move.name].metadata = currentGraph.nodes[move.name].metadata || {};
+            currentGraph.nodes[move.name].metadata.x = move.position.x;
+            currentGraph.nodes[move.name].metadata.y = move.position.y;
           }
         }
       });

@@ -1181,6 +1181,15 @@ export class FlowEditor extends HTMLElement {
           onClick: () => {
             const newName = window.prompt("Enter new name:", name);
             if (newName && newName !== name) {
+              const direction = ep.direction;
+              const position = ep.position;
+              this.dispatchEvent(
+                new CustomEvent("port-renamed", {
+                  detail: { oldName: name, newName, direction, position },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
               ep.setAttribute("name", newName);
               ep.dataset.portName = newName;
             }
@@ -2446,6 +2455,18 @@ export class FlowEditor extends HTMLElement {
       isOutport ? "out" : "in",
       port,
     );
+
+    this.dispatchEvent(
+      new CustomEvent("port-exported", {
+        detail: {
+          name: finalName,
+          direction: isOutport ? "out" : "in",
+          position: finalExportPos,
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   /**
@@ -2466,10 +2487,21 @@ export class FlowEditor extends HTMLElement {
       this.iipWires = this.iipWires.filter((wire) => wire.port !== ep && wire.iip !== ep);
     }
 
+    const name = ep.getAttribute("name");
+    const direction = ep.direction;
+
+    this.dispatchEvent(
+      new CustomEvent("port-removed", {
+        detail: { name, direction },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+
     if (ep.parentNode) {
       ep.parentNode.removeChild(ep);
     }
-    this.spaceManager.removeNode(ep.getAttribute("name") || "");
+    this.spaceManager.removeNode(name || "");
   }
 
   /**
