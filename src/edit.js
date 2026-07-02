@@ -640,16 +640,13 @@ async function loadFile(fileHandle) {
       if (inports && typeof inports === "object") {
         let i = 0;
         for (const portName in inports) {
-          // Find the node that has this inport
+          const inportInfo = inports[portName];
+          const nodeEl = elementsMap.get(inportInfo.process);
           let targetPort = null;
-          for (const [nodeId, nodeEl] of elementsMap.entries()) {
-            const port = nodeEl.shadowRoot?.querySelector(
-              `.port[data-port-name="${portName}"]`,
+          if (nodeEl) {
+            targetPort = nodeEl.shadowRoot?.querySelector(
+              `.port[data-port-name="${inportInfo.port}"]`,
             );
-            if (port) {
-              targetPort = /** @type {HTMLElement} */ (port);
-              break;
-            }
           }
 
           if (targetPort) {
@@ -661,16 +658,13 @@ async function loadFile(fileHandle) {
       if (outports && typeof outports === "object") {
         let i = 0;
         for (const portName in outports) {
-          // Find the node that has this outport
+          const outportInfo = outports[portName];
+          const nodeEl = elementsMap.get(outportInfo.process);
           let targetPort = null;
-          for (const [nodeId, nodeEl] of elementsMap.entries()) {
-            const port = nodeEl.shadowRoot?.querySelector(
-              `.port[data-port-name="${portName}"]`,
+          if (nodeEl) {
+            targetPort = nodeEl.shadowRoot?.querySelector(
+              `.port[data-port-name="${outportInfo.port}"]`,
             );
-            if (port) {
-              targetPort = /** @type {HTMLElement} */ (port);
-              break;
-            }
           }
 
           if (targetPort) {
