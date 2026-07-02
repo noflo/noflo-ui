@@ -238,6 +238,10 @@ function setupEditorEventListeners(editor) {
     const nodeId = `node_${Date.now()}`;
     const newNode = editor.addNode(nodeId, x, y);
     newNode.id = nodeId;
+    newNode.setMetadata({
+      name: newNode.id,
+      icon: 'fa-gear',
+    });
 
     if (currentGraph) {
       currentGraph.nodes[nodeId] = {
@@ -577,6 +581,10 @@ async function loadFile(fileHandle) {
 
       const n = editor.addNode(node.id, x, y, inPorts, outPorts);
       n.id = node.id; // Ensure the DOM element has the correct ID
+      n.setMetadata({
+        name: node.id,
+        icon: comp.icon || 'fa-gear',
+      });
       elementsMap.set(node.id, n);
     }
 
