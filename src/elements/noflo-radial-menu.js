@@ -258,11 +258,19 @@ export class FlowRadialMenu extends HTMLElement {
 
     /** @type {Record<string, number>} */
     const ITEM_SECTION_MAP = {
+      "Add Node": 5,
+      "Add IIP": 5,
+      "Rename": 5,
       Delete: 3,
       Remove: 3,
       Close: 4,
       Open: 5,
+      Edit: 5,
       "Make subgraph": 6,
+      Export: 6,
+      "Disconnect all": 7,
+      "Send now": 7,
+      "Move up": 7,
     };
 
     const itemAngles = new Array(count);
@@ -278,6 +286,7 @@ export class FlowRadialMenu extends HTMLElement {
     });
 
     // Second pass: fill remaining available sections (3-7)
+    // We _must_ leave the bottom-right sections empty because finger covers those on touch
     const availableSections = [3, 4, 5, 6, 7].filter(
       (s) => !usedSections.has(s),
     );
