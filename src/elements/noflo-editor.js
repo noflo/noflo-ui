@@ -2376,7 +2376,22 @@ export class FlowEditor extends HTMLElement {
    */
   addIIP(x, y, port, value = "Value") {
     const size = 40;
-    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
+    let centerX = x;
+    let centerY = y;
+
+    if (port && port.classList.contains("port-in")) {
+      const node = port.getRootNode().host?.tagName === "NOFLO-NODE" 
+        ? port.getRootNode().host 
+        : port.closest("noflo-node");
+      if (node) {
+        const nodePos = node.position;
+        const nodeSize = node.size || 80;
+        centerX = nodePos.x - size - 20;
+        centerY = nodePos.y + nodeSize / 2 - size / 2;
+      }
+    }
+
+    const snapped = this.snapToGrid(centerX - size / 2, centerY - size / 2);
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
     const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
     iip.setAttribute("name", id);
