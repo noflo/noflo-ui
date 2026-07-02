@@ -72,6 +72,7 @@ export class FlowIIP extends HTMLElement {
           background-color: var(--node-bg, #ccc);
           border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           border-radius: 8px;
+          box-sizing: border-box;
           display: flex;
           align-items: center;
           justify-content: center;

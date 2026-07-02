@@ -73,13 +73,15 @@ export class FlowExportedPort extends HTMLElement {
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
           cursor: grab;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .port-box {
-          width: var(--exported-port-size, 20px);
-          height: var(--exported-port-size, 20px);
+          width: calc(var(--exported-port-size, 20px) * 0.75);
+          height: calc(var(--exported-port-size, 20px) * 0.75);
+          box-sizing: border-box;
           background-color: var(--node-bg, #ccc);
           border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           border-radius: 50%;
@@ -92,7 +94,7 @@ export class FlowExportedPort extends HTMLElement {
           font-family: SourceCodePro, monospace;
           color: var(--node-text, #333);
           text-align: center;
-          margin-top: 4px;
+          margin-top: 2px;
           white-space: nowrap;
           opacity: clamp(0, (var(--zoom-scale) - 0.5) * 100, 1);
           pointer-events: none;
