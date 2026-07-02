@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component setup form example</title>
+    <style>
+      @font-face {
+        font-family: "Font Awesome 7 Free";
+        font-style: normal;
+        font-weight: 900;
+        font-display: block;
+        src: url("../vendor/webfonts/fontawesome-7.3.0.woff2");
+      }
+      i.fa-icon {
+        font-family: "Font Awesome 7 Free";
+        font-style: normal;
+      }
+    </style>
+  </head>
+  <body data-theme="tube" data-age="abstract">
+    <div id="app"></div>
+    <script type="module" src="src/elements/noflo-json-form.js"></script>
+  </body>
+  <noflo-json-form id="component-signature"></noflo-json-form>
+  <script type="module">
+    const { ComponentSignature } = await import('./src/library/schema.js');
+    const formPanel = document.getElementById('component-signature');
+
+    formPanel.schema = ComponentSignature;
+    console.log(ComponentSignature);
+    formPanel.data = {
+      name: 'core/Output',
+      description: '',
+      icon: 'gear',
+      inports: [],
+      outports: [],
+    };
+  </script>
+</html>
