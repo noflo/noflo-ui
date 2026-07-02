@@ -720,56 +720,58 @@ export class FlowEditor extends HTMLElement {
       const isTouch = e.pointerType === "touch";
       const isMultiple = isModifier || (isTouch && this.selectMode);
 
-      if (clickedPort && e.button === 0) {
-        e.stopPropagation();
+      if (e.button === 0) {
+        if (clickedPort) {
+          e.stopPropagation();
 
-        const port = /** @type {HTMLElement} */ (clickedPort);
-        const host = port.getRootNode().host;
-        if (host && host.tagName === "NOFLO-EXPORTED-PORT") {
-          this.handleNodeSelection(e, /** @type {any} */ (host), isMultiple);
-          return;
-        }
-
-        if (port.dataset.portType === "array") {
-          const hasConnection = this.edges?.some(
-            (edge) => edge.portA === port || edge.portB === port,
-          );
-          if (hasConnection) {
+          const port = /** @type {HTMLElement} */ (clickedPort);
+          const host = port.getRootNode().host;
+          if (host && host.tagName === "NOFLO-EXPORTED-PORT") {
+            this.handleNodeSelection(e, /** @type {any} */ (host), isMultiple);
             return;
           }
-        }
 
-        this.pendingDragPort = port;
-        if (this.viewport) {
-          this.viewport.setPointerCapture(e.pointerId);
-        }
-        this.longPressTimer = setTimeout(() => {
-          this.pendingDragPort = null;
-          const rect = this.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          this.showContextMenu(x, y, {
-            clickedPort: /** @type {HTMLElement} */ (port),
-          });
-        }, 500);
-      } else if (clickedNode) {
-        e.stopPropagation();
-        this.handleNodeSelection(
-          e,
-          /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
-          isMultiple,
-        );
-      } else if (clickedEdge) {
-        e.stopPropagation();
-        this.handleEdgeSelection(
-          e,
-          /** @type {Element} */ (clickedEdge),
-          isMultiple,
-        );
-      } else {
-        this.startCanvasPan(e);
-        if (!isModifier && !this.selectMode) {
-          this.clearSelection();
+          if (port.dataset.portType === "array") {
+            const hasConnection = this.edges?.some(
+              (edge) => edge.portA === port || edge.portB === port,
+            );
+            if (hasConnection) {
+              return;
+            }
+          }
+
+          this.pendingDragPort = port;
+          if (this.viewport) {
+            this.viewport.setPointerCapture(e.pointerId);
+          }
+          this.longPressTimer = setTimeout(() => {
+            this.pendingDragPort = null;
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            this.showContextMenu(x, y, {
+              clickedPort: /** @type {HTMLElement} */ (port),
+            });
+          }, 500);
+        } else if (clickedNode) {
+          e.stopPropagation();
+          this.handleNodeSelection(
+            e,
+            /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+            isMultiple,
+          );
+        } else if (clickedEdge) {
+          e.stopPropagation();
+          this.handleEdgeSelection(
+            e,
+            /** @type {Element} */ (clickedEdge),
+            isMultiple,
+          );
+        } else {
+          this.startCanvasPan(e);
+          if (!isModifier && !this.selectMode) {
+            this.clearSelection();
+          }
         }
       }
     });
