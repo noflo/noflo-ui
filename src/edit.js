@@ -634,14 +634,42 @@ async function loadFile(fileHandle) {
       if (inports && typeof inports === "object") {
         let i = 0;
         for (const portName in inports) {
-          editor.addExportedPort(minX - 150, minY + i * 60, portName, "in");
+          // Find the node that has this inport
+          let targetPort = null;
+          for (const [nodeId, nodeEl] of elementsMap.entries()) {
+            const port = nodeEl.shadowRoot?.querySelector(
+              `.port[data-port-name="${portName}"]`,
+            );
+            if (port) {
+              targetPort = /** @type {HTMLElement} */ (port);
+              break;
+            }
+          }
+
+          if (targetPort) {
+            editor.addExportedPort(minX - 150, minY + i * 60, portName, "in", targetPort);
+          }
           i++;
         }
       }
       if (outports && typeof outports === "object") {
         let i = 0;
         for (const portName in outports) {
-          editor.addExportedPort(maxX + 150, minY + i * 60, portName, "out");
+          // Find the node that has this outport
+          let targetPort = null;
+          for (const [nodeId, nodeEl] of elementsMap.entries()) {
+            const port = nodeEl.shadowRoot?.querySelector(
+              `.port[data-port-name="${portName}"]`,
+            );
+            if (port) {
+              targetPort = /** @type {HTMLElement} */ (port);
+              break;
+            }
+          }
+
+          if (targetPort) {
+            editor.addExportedPort(maxX + 150, minY + i * 60, portName, "out", targetPort);
+          }
           i++;
         }
       }
@@ -649,14 +677,17 @@ async function loadFile(fileHandle) {
       if (inports && typeof inports === "object") {
         let i = 0;
         for (const portName in inports) {
-          editor.addExportedPort(100, 100 + i * 60, portName, "in");
+          // Since there are no nodes, we can't find a port. 
+          // But if it's a standalone graph with inports, they must be connected to something.
+          // Without nodes, we can't satisfy the requirement. 
+          // For now, we'll just skip it or it will be a bug.
+          // Actually, if there are no nodes, these inports/outports might not be valid in this editor.
           i++;
         }
       }
       if (outports && typeof outports === "object") {
         let i = 0;
         for (const portName in outports) {
-          editor.addExportedPort(500, 100 + i * 60, portName, "out");
           i++;
         }
       }

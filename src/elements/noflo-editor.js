@@ -2305,9 +2305,10 @@ export class FlowEditor extends HTMLElement {
    * @param {number} y
    * @param {string} name
    * @param {'in' | 'out'} direction
+   * @param {HTMLElement} [port]
    * @returns {any}
    */
-  addExportedPort(x, y, name, direction = "out") {
+  addExportedPort(x, y, name, direction = "out", port) {
     const size = 20;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const exportedPort = /** @type {any} */ (document.createElement("noflo-exported-port"));
@@ -2320,6 +2321,31 @@ export class FlowEditor extends HTMLElement {
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(exportedPort);
     }
+
+    if (port) {
+      const hitPath = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      hitPath.classList.add("edge-hit-area");
+
+      const visualPath = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      visualPath.classList.add("edge-flow");
+
+      this.updateIIPPathData(hitPath, visualPath, exportedPort, port);
+
+      if (this.iipWiresGroup) {
+        this.iipWiresGroup.appendChild(hitPath);
+        this.iipWiresGroup.appendChild(visualPath);
+      }
+
+      this.iipWires = this.iipWires || [];
+      this.iipWires.push({ hitPath, visualPath, iip: exportedPort, port });
+    }
+
     return exportedPort;
   }
 
@@ -2434,24 +2460,13 @@ export class FlowEditor extends HTMLElement {
       finalName = `${portName}${count}`;
     }
 
-    const ep = this.addExportedPort(exportPos.x, exportPos.y, /** @type {string} */ (finalName), isOutport ? "out" : "in");
-
-    // Create wire
-    const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    hitPath.classList.add("edge-hit-area");
-
-    const visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    visualPath.classList.add("edge-flow");
-
-    this.updateIIPPathData(hitPath, visualPath, ep, port);
-
-    if (this.iipWiresGroup) {
-      this.iipWiresGroup.appendChild(hitPath);
-      this.iipWiresGroup.appendChild(visualPath);
-    }
-
-    this.iipWires = this.iipWires || [];
-    this.iipWires.push({ hitPath, visualPath, iip: ep, port });
+    const ep = this.addExportedPort(
+      exportPos.x,
+      exportPos.y,
+      /** @type {string} */ (finalName),
+      isOutport ? "out" : "in",
+      port,
+    );
   }
 
   /**
