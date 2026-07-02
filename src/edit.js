@@ -217,16 +217,12 @@ function setupEditorEventListeners(editor) {
       const nodeA = portA.closest("noflo-node") || portA.closest("noflo-iip");
       const nodeB = portB.closest("noflo-node") || portB.closest("noflo-iip");
       if (nodeA && nodeB) {
-        currentGraph.edges.push({
-          from: {
-            node: nodeA.getAttribute("name"),
-            port: portA.dataset.portName,
-          },
-          to: {
-            node: nodeB.getAttribute("name"),
-            port: portB.dataset.portName,
-          },
-        });
+        currentGraph.addEdge(
+          nodeA.getAttribute("name"),
+          portA.dataset.portName,
+          nodeB.getAttribute("name"),
+          portB.dataset.portName
+        );
       }
     }
     debouncedSave();
@@ -244,11 +240,7 @@ function setupEditorEventListeners(editor) {
     });
 
     if (currentGraph) {
-      currentGraph.nodes[nodeId] = {
-        id: nodeId,
-        component: "New Node",
-        metadata: { x, y },
-      };
+      currentGraph.addNode(nodeId, "New Node", { x, y });
     }
 
     const port = /** @type {HTMLElement} */ (startPort);
@@ -289,16 +281,13 @@ function setupEditorEventListeners(editor) {
         if (nodeElement) {
           const nodeName = nodeElement.getAttribute("name");
           const portName = startPort.dataset.portName;
-          const node = currentGraph.getNode(nodeName);
-          if (node) {
-            const isArrayPort = startPort.dataset.portType === "array";
-            const index = startPort.dataset.portIndex ? parseInt(startPort.dataset.portIndex, 10) : null;
-            const metadata = { x, y, id: iipId };
-            if (isArrayPort && index !== null) {
-              currentGraph.addInitialIndex("Value", node, portName, index, metadata);
-            } else {
-              currentGraph.addInitial("Value", node, portName, metadata);
-            }
+          const isArrayPort = startPort.dataset.portType === "array";
+          const index = startPort.dataset.portIndex ? parseInt(startPort.dataset.portIndex, 10) : null;
+          const metadata = { x, y, id: iipId };
+          if (isArrayPort && index !== null) {
+            currentGraph.addInitialIndex("Value", nodeName, portName, index, metadata);
+          } else {
+            currentGraph.addInitial("Value", nodeName, portName, metadata);
           }
         }
       } else {
@@ -323,7 +312,7 @@ function setupEditorEventListeners(editor) {
     const nodes = event.detail.nodes;
     if (currentGraph) {
       nodes.forEach((node) => {
-        delete currentGraph.nodes[node.id];
+        currentGraph.removeNode(node.id);
         node.remove();
       });
     }
@@ -334,29 +323,12 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const edge = event.detail.edge;
     if (currentGraph) {
-      const portA = edge.portA;
-      const portB = edge.portB;
-      const nodeA = portA.closest("noflo-node") || portA.closest("noflo-iip");
-      const nodeB = portB.closest("noflo-node") || portB.closest("noflo-iip");
-      if (nodeA && nodeB) {
-        const idA = nodeA.getAttribute("name");
-        const idB = nodeB.getAttribute("name");
-        const pAName = portA.dataset.portName;
-        const pBName = portB.dataset.portName;
-        currentGraph.edges = currentGraph.edges.filter(
-          (e) =>
-            !(
-              (e.from.node === idA &&
-                e.from.port === pAName &&
-                e.to.node === idB &&
-                e.to.port === pBName) ||
-              (e.from.node === idB &&
-                e.from.port === pBName &&
-                e.to.node === idA &&
-                e.to.port === pAName)
-            ),
-        );
-      }
+      currentGraph.removeEdge(
+        edge.from.node,
+        edge.from.port,
+        edge.to.node,
+        edge.to.port
+      );
     }
     edge.visualPath?.remove();
     edge.hitPath?.remove();
@@ -373,7 +345,16 @@ function setupEditorEventListeners(editor) {
       if (currentGraph) {
         const index = currentGraph.initializers.findIndex((init) => init.metadata?.id === iipElement.id);
         if (index !== -1) {
-          currentGraph.initializers[index].from.data = newValue;
+          const initializer = currentGraph.initializers[index];
+          const { node, port, index: iipIndex } = initializer.to;
+          const metadata = { ...initializer.metadata, id: iipElement.id };
+
+          currentGraph.removeInitial(node, port);
+          if (iipIndex !== undefined && iipIndex !== null) {
+            currentGraph.addInitialIndex(newValue, node, port, iipIndex, metadata);
+          } else {
+            currentGraph.addInitial(newValue, node, port, metadata);
+          }
         }
       }
       debouncedSave();
@@ -408,12 +389,10 @@ function setupEditorEventListeners(editor) {
     const { nodes } = event.detail;
     if (currentGraph) {
       nodes.forEach((move) => {
-        const node = currentGraph.nodes[move.name];
-        if (node) {
-          node.metadata = node.metadata || {};
-          node.metadata.x = move.position.x;
-          node.metadata.y = move.position.y;
-        }
+        currentGraph.setNodeMetadata(move.name, {
+          x: move.position.x,
+          y: move.position.y,
+        });
       });
     }
     debouncedSave();
