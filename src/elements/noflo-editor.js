@@ -1,3 +1,5 @@
+import { SpaceManager } from "../library/SpaceManager.js";
+
 /** @typedef {any} FlowExportedPort */
 /**
  * @typedef {Object} Position
@@ -77,6 +79,8 @@ export class FlowEditor extends HTMLElement {
     this.zoom = 1.0;
     /** @type {Position} */
     this.offset = { x: 0, y: 0 };
+    /** @type {SpaceManager} */
+    this.spaceManager = new SpaceManager(this.zoom, this.offset);
     /** @type {boolean} */
     this.isPanning = false;
     /** @type {boolean} */
@@ -514,6 +518,7 @@ export class FlowEditor extends HTMLElement {
       this.transformLayer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
     }
     this.style.setProperty("--zoom-scale", this.zoom.toString());
+    this.spaceManager.updateViewport(this.zoom, this.offset);
   }
 
   _animationLoop() {
@@ -575,8 +580,7 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   clientToGraph(clientX, clientY) {
-    const rect = this.getBoundingClientRect();
-    return this.viewportToGraph(clientX - rect.left, clientY - rect.top);
+    return this.spaceManager.clientToGraph(clientX, clientY, this.getBoundingClientRect());
   }
 
   /**
@@ -585,10 +589,7 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   viewportToGraph(viewportX, viewportY) {
-    return {
-      x: (viewportX - this.offset.x) / this.zoom,
-      y: (viewportY - this.offset.y) / this.zoom,
-    };
+    return this.spaceManager.viewportToGraph(viewportX, viewportY);
   }
 
   /**
@@ -597,10 +598,7 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   graphToViewport(graphX, graphY) {
-    return {
-      x: graphX * this.zoom + this.offset.x,
-      y: graphY * this.zoom + this.offset.y,
-    };
+    return this.spaceManager.graphToViewport(graphX, graphY);
   }
 
   /**
@@ -609,12 +607,7 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   graphToClient(graphX, graphY) {
-    const rect = this.getBoundingClientRect();
-    const viewportPos = this.graphToViewport(graphX, graphY);
-    return {
-      x: viewportPos.x + rect.left,
-      y: viewportPos.y + rect.top,
-    };
+    return this.spaceManager.graphToClient(graphX, graphY, this.getBoundingClientRect());
   }
 
   fitNodesToViewport() {
@@ -2380,8 +2373,8 @@ export class FlowEditor extends HTMLElement {
     let centerY = y;
 
     if (port && port.classList.contains("port-in")) {
-      const node = port.getRootNode().host?.tagName === "NOFLO-NODE" 
-        ? port.getRootNode().host 
+      const node = port.getRootNode().host?.tagName === "NOFLO-NODE"
+        ? port.getRootNode().host
         : port.closest("noflo-node");
       if (node) {
         const nodePos = node.position;
