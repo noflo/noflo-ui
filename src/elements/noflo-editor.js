@@ -552,6 +552,7 @@ export class FlowEditor extends HTMLElement {
         Math.abs(nextY - currentPos.y) > 0.01
       ) {
         node.position = { x: nextX, y: nextY };
+        this.spaceManager.updateNode(node.getAttribute("name") || "", node.position);
         this.nodeVelocities.set(node, velocity);
         active = true;
       } else {
@@ -611,44 +612,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   fitNodesToViewport() {
-    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
-      "noflo-node, noflo-iip, noflo-exported-port",
-    );
-    if (nodes.length === 0) return;
-
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-
-    nodes.forEach((node) => {
-      const n = /** @type {NoFloNode | NoFloIIP} */ (node);
-      const pos = n.position;
-      const size = n.size;
-      minX = Math.min(minX, pos.x);
-      minY = Math.min(minY, pos.y);
-      maxX = Math.max(maxX, pos.x + size);
-      maxY = Math.max(maxY, pos.y + size);
-    });
-
-    const padding = 100;
-    const contentWidth = maxX - minX + padding * 2;
-    const contentHeight = maxY - minY + padding * 2;
-
-    const rect = this.getBoundingClientRect();
-    const viewportWidth = rect.width;
-    const viewportHeight = rect.height;
-
-    const zoomX = viewportWidth / contentWidth;
-    const zoomY = viewportHeight / contentHeight;
-    this.zoom = Math.min(zoomX, zoomY, 1.0);
-
-    const contentCenterX = (minX + maxX) / 2;
-    const contentCenterY = (minY + maxY) / 2;
-
-    this.offset.x = viewportWidth / 2 - contentCenterX * this.zoom;
-    this.offset.y = viewportHeight / 2 - contentCenterY * this.zoom;
-
+    this.spaceManager.fitElements(this.getBoundingClientRect());
     this.updateTransform();
   }
 
@@ -985,6 +949,7 @@ export class FlowEditor extends HTMLElement {
           const movedNodes = [];
           this.selectedNodes.forEach((node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
+            this.spaceManager.updateNode(node.getAttribute("name") || "", node.position);
             const type = node.tagName.toLowerCase();
             const name = this.getNodeName(node);
             let direction = null;
@@ -1171,7 +1136,7 @@ export class FlowEditor extends HTMLElement {
               // Search for first empty space to the left
               while (
                 searchX > -8000 &&
-                !this.hasSpaceForNode(searchX, searchY, 40)
+                !this.hasSpace(searchX, searchY, 40)
               ) {
                 searchX -= 40;
               }
@@ -1366,7 +1331,7 @@ export class FlowEditor extends HTMLElement {
           composed: true,
         }),
       );
-      if (this.hasSpaceForNode(graphPos.x, graphPos.y, 80)) {
+      if (this.hasSpace(graphPos.x, graphPos.y, 80)) {
         items.push({
           text: "Add Node",
           onClick: () => {
@@ -1740,7 +1705,7 @@ export class FlowEditor extends HTMLElement {
           clearTimeout(this.stillnessTimer);
           this.stillnessTimer = null;
         }
-        if (this.hasSpaceForNode(mouseX, mouseY, size)) {
+        if (this.hasSpace(mouseX, mouseY, size)) {
           this.stillnessTimer = setTimeout(() => {
             this.showGhostNode(snapped.x, snapped.y, size, shape);
           }, 300);
@@ -1860,26 +1825,8 @@ export class FlowEditor extends HTMLElement {
    * @param {number} [size=80]
    * @returns {boolean}
    */
-  hasSpaceForNode(x, y, size = 80) {
-    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
-      "noflo-node, noflo-iip, noflo-exported-port",
-    );
-
-    for (const nodeElement of nodes) {
-      const node = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (nodeElement);
-      const pos = node.position;
-      const otherSize = node.size || 80;
-      if (
-        snapped.x < pos.x + otherSize &&
-        snapped.x + size > pos.x &&
-        snapped.y < pos.y + otherSize &&
-        snapped.y + size > pos.y
-      ) {
-        return false;
-      }
-    }
-    return true;
+  hasSpace(x, y, size = 80) {
+    return this.spaceManager.hasSpace(x, y, size);
   }
 
   /**
@@ -2034,10 +1981,10 @@ export class FlowEditor extends HTMLElement {
   removeIIP(iip) {
     if (!iip) return;
 
-    // Remove from node layer
     if (iip.parentNode) {
       iip.parentNode.removeChild(iip);
     }
+    this.spaceManager.removeNode(iip.getAttribute("name") || "");
 
     // Remove associated wires
     if (this.iipWires && this.iipWiresGroup) {
@@ -2235,11 +2182,7 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   snapToGrid(x, y) {
-    const H = 40;
-    return {
-      x: Math.round(x / H) * H,
-      y: Math.round(y / H) * H,
-    };
+    return this.spaceManager.snapToGrid(x, y);
   }
 
   /**
@@ -2303,6 +2246,7 @@ export class FlowEditor extends HTMLElement {
     node.setAttribute("size", size.toString());
     node.textContent = name;
     node.position = snapped;
+    this.spaceManager.addElement(name, snapped, size);
     node.setPorts(inPorts, outPorts);
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(node);
@@ -2329,6 +2273,7 @@ export class FlowEditor extends HTMLElement {
     exportedPort.direction = direction;
     exportedPort.position = snapped;
     exportedPort.size = size;
+    this.spaceManager.addElement(name, snapped, size);
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(exportedPort);
     }
@@ -2390,6 +2335,7 @@ export class FlowEditor extends HTMLElement {
     iip.setAttribute("name", id);
     iip.position = snapped;
     iip.size = size;
+    this.spaceManager.addElement(id, snapped, size);
     iip.value = value;
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(iip);
@@ -2456,7 +2402,7 @@ export class FlowEditor extends HTMLElement {
     for (let offset = 0; offset < 5; offset++) {
       const testX = isOutport ? exportPos.x + offset * exportedSize : exportPos.x - offset * exportedSize;
       const testY = exportPos.y;
-      if (this.hasSpaceForNode(testX, testY, exportedSize)) {
+      if (this.hasSpace(testX, testY, exportedSize)) {
         exportPos = { x: testX, y: testY };
         found = true;
         break;
@@ -2516,6 +2462,7 @@ export class FlowEditor extends HTMLElement {
     if (ep.parentNode) {
       ep.parentNode.removeChild(ep);
     }
+    this.spaceManager.removeNode(ep.getAttribute("name") || "");
   }
 
   /**

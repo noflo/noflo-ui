@@ -93,7 +93,7 @@ export class SpaceManager {
    * @param {Position} position
    * @param {number} size
    */
-  addNode(id, position, size) {
+  addElement(id, position, size) {
     this.elements.set(id, { id, position, size });
   }
 
@@ -171,5 +171,64 @@ export class SpaceManager {
       width: maxX === -Infinity ? 0 : maxX - minX,
       height: maxY === -Infinity ? 0 : maxY - minY,
     };
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @returns {Position}
+   */
+  snapToGrid(x, y) {
+    const H = 40;
+    return {
+      x: Math.round(x / H) * H,
+      y: Math.round(y / H) * H,
+    };
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} size
+   * @returns {boolean}
+   */
+  hasSpace(x, y, size = 80) {
+    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
+    for (const el of this.elements.values()) {
+      if (
+        snapped.x < el.position.x + el.size &&
+        snapped.x + size > el.position.x &&
+        snapped.y < el.position.y + el.size &&
+        snapped.y + size > el.position.y
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * @param {DOMRect} rect
+   * @param {number} padding
+   */
+  fitElements(rect, padding = 100) {
+    if (this.elements.size === 0) return;
+
+    const bbox = this.getBoundingBox(Array.from(this.elements.keys()));
+    const contentWidth = bbox.width + padding * 2;
+    const contentHeight = bbox.height + padding * 2;
+
+    const viewportWidth = rect.width;
+    const viewportHeight = rect.height;
+
+    const zoomX = viewportWidth / contentWidth;
+    const zoomY = viewportHeight / contentHeight;
+    this.zoom = Math.min(zoomX, zoomY, 1.0);
+
+    const contentCenterX = bbox.x + bbox.width / 2;
+    const contentCenterY = bbox.y + bbox.height / 2;
+
+    this.offset.x = viewportWidth / 2 - contentCenterX * this.zoom;
+    this.offset.y = viewportHeight / 2 - contentCenterY * this.zoom;
   }
 }
