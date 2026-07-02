@@ -136,12 +136,33 @@ export class SpaceManager {
   }
 
   /**
+   * @param {number} startX
+   * @param {number} startY
    * @param {number} w
    * @param {number} h
    * @returns {Position | null}
    */
-  findEmptySpace(w, h) {
-    // Implementation left for later phases.
+  findEmptySpace(startX, startY, w, h) {
+    const cellSize = 40;
+    const startXSnapped = this.snapToGrid(startX, startY).x;
+    const startYSnapped = this.snapToGrid(startX, startY).y;
+
+    // Try expanding squares around the starting position
+    for (let r = 0; r < 10; r++) {
+      for (let i = -r; i <= r; i++) {
+        for (let j = -r; j <= r; j++) {
+          // Only check the boundary of the square of radius r
+          if (r > 0 && Math.abs(i) !== r && Math.abs(j) !== r) continue;
+
+          const testX = startXSnapped + i * cellSize;
+          const testY = startYSnapped + j * cellSize;
+
+          if (this.hasSpace(testX, testY, w)) {
+            return { x: testX, y: testY };
+          }
+        }
+      }
+    }
     return null;
   }
 

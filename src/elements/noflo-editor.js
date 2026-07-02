@@ -2375,7 +2375,13 @@ export class FlowEditor extends HTMLElement {
    * @param {HTMLElement} port
    */
   exportPort(port) {
-    const node = port.closest("noflo-node") || port.closest("noflo-iip");
+    let node = port.closest("noflo-node") || port.closest("noflo-iip");
+    if (!node && port.getRootNode() instanceof ShadowRoot) {
+      const host = port.getRootNode().host;
+      if (host.tagName === "NOFLO-NODE" || host.tagName === "NOFLO-IIP") {
+        node = host;
+      }
+    }
     if (!node) return;
 
     const nodeAny = /** @type {any} */ (node);
@@ -2401,21 +2407,19 @@ export class FlowEditor extends HTMLElement {
     }
 
     // Search for available space
-    let found = false;
-    for (let offset = 0; offset < 5; offset++) {
-      const testX = isOutport ? exportPos.x + offset * exportedSize : exportPos.x - offset * exportedSize;
-      const testY = exportPos.y;
-      if (this.hasSpace(testX, testY, exportedSize)) {
-        exportPos = { x: testX, y: testY };
-        found = true;
-        break;
-      }
-    }
+    const exportPosFound = this.spaceManager.findEmptySpace(
+      exportPos.x,
+      exportPos.y,
+      exportedSize,
+      exportedSize,
+    );
 
-    if (!found) {
+    if (!exportPosFound) {
       console.warn("No space available for exported port");
       return;
     }
+
+    const finalExportPos = exportPosFound;
 
     // Handle name duplication
     let finalName = portName;
@@ -2435,9 +2439,9 @@ export class FlowEditor extends HTMLElement {
       finalName = `${portName}${count}`;
     }
 
-    const ep = this.addExportedPort(
-      exportPos.x,
-      exportPos.y,
+    this.addExportedPort(
+      finalExportPos.x,
+      finalExportPos.y,
       /** @type {string} */ (finalName),
       isOutport ? "out" : "in",
       port,
