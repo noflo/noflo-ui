@@ -80,6 +80,20 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
+   * @returns {PortConfig[]}
+   */
+  getInPorts() {
+    return this._inPorts;
+  }
+
+  /**
+   * @returns {PortConfig[]}
+   */
+  getOutPorts() {
+    return this._outPorts;
+  }
+
+  /**
    * @param {Metadata} metadata
    */
   setMetadata({ name, componentName, icon }) {

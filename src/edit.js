@@ -1,10 +1,7 @@
-/**
- * Main entry point for Flowbased Graph Editor
- */
-
 import { Graph, graph } from "noflo";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import { FileSelector } from "./elements/noflo-file-selector.js";
+import { FlowExportedPort } from "./elements/noflo-exported-port.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
@@ -12,6 +9,7 @@ import { SelectionPills } from "./elements/noflo-selection-pills.js";
 
 // Register Web Components
 customElements.define("noflo-editor", FlowEditor);
+customElements.define("noflo-exported-port", FlowExportedPort);
 customElements.define("noflo-iip", FlowIIP);
 customElements.define("noflo-node", FlowNode);
 customElements.define("noflo-radial-menu", FlowRadialMenu);
@@ -589,6 +587,55 @@ async function loadFile(fileHandle) {
       );
       newIIP.id = iipId;
       elementsMap.set(iipId, newIIP);
+    }
+
+    // Load exported ports as pseudo-nodes
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let hasNodes = false;
+    for (const nodeId in g.nodes) {
+      const node = g.nodes[nodeId];
+      const x = node.metadata?.x || 0;
+      const y = node.metadata?.y || 0;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      hasNodes = true;
+    }
+
+    const inports = g.inports;
+    const outports = g.outports;
+
+    if (hasNodes) {
+      if (inports && typeof inports === "object") {
+        let i = 0;
+        for (const portName in inports) {
+          editor.addExportedPort(minX - 150, minY + i * 60, portName, "in");
+          i++;
+        }
+      }
+      if (outports && typeof outports === "object") {
+        let i = 0;
+        for (const portName in outports) {
+          editor.addExportedPort(maxX + 150, minY + i * 60, portName, "out");
+          i++;
+        }
+      }
+    } else {
+      if (inports && typeof inports === "object") {
+        let i = 0;
+        for (const portName in inports) {
+          editor.addExportedPort(100, 100 + i * 60, portName, "in");
+          i++;
+        }
+      }
+      if (outports && typeof outports === "object") {
+        let i = 0;
+        for (const portName in outports) {
+          editor.addExportedPort(500, 100 + i * 60, portName, "out");
+          i++;
+        }
+      }
     }
 
     for (const conn of g.edges) {

@@ -618,7 +618,7 @@ export class FlowEditor extends HTMLElement {
 
   fitNodesToViewport() {
     const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
-      "noflo-node, noflo-iip",
+      "noflo-node, noflo-iip, noflo-exported-port",
     );
     if (nodes.length === 0) return;
 
@@ -706,6 +706,9 @@ export class FlowEditor extends HTMLElement {
     const iips = Array.from(this.selectedNodes).filter(
       (n) => n.tagName === "NOFLO-IIP",
     );
+    const exportedPorts = Array.from(this.selectedNodes).filter(
+      (n) => n.tagName === "NOFLO-EXPORTED-PORT",
+    );
 
     this.dispatchEvent(
       new CustomEvent("selection-changed", {
@@ -716,6 +719,7 @@ export class FlowEditor extends HTMLElement {
           iips: iips.map((n) =>
             this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n)),
           ),
+          exportedPorts: exportedPorts.map((n) => n.getAttribute("name")),
           edges: Array.from(this.selectedEdges).map((e) => this.getEdgeId(e)),
         },
         bubbles: true,
@@ -1736,9 +1740,9 @@ export class FlowEditor extends HTMLElement {
    * @param {number} clientY
    */
   _updatePortHighlights(clientX, clientY) {
-    const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
-      "noflo-node",
-    );
+    const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+    const nodes = shadowRoot.querySelectorAll("noflo-node");
+    const exportedPorts = shadowRoot.querySelectorAll("noflo-exported-port");
     const isDragOut = this.dragPort?.classList.contains("port-out");
     const highlightThreshold = 100;
 
@@ -1778,6 +1782,37 @@ export class FlowEditor extends HTMLElement {
         }
       });
     });
+
+    exportedPorts.forEach((port) => {
+      const rect = port.getBoundingClientRect();
+      const portCenterX = rect.left + rect.width / 2;
+      const portCenterY = rect.top + rect.height / 2;
+      const dist = Math.hypot(clientX - portCenterX, clientY - portCenterY);
+
+      if (dist < highlightThreshold) {
+        const isPortOut = port.classList.contains("port-out");
+        let isCompatible = isDragOut !== isPortOut;
+
+        if (isCompatible && port.dataset.portType === "array") {
+          const hasConnection = this.edges?.some(
+            (edge) => edge.portA === port || edge.portB === port,
+          );
+          if (hasConnection) {
+            isCompatible = false;
+          }
+        }
+
+        if (isCompatible) {
+          port.classList.add("port-compatible");
+          port.classList.remove("port-incompatible");
+        } else {
+          port.classList.add("port-incompatible");
+          port.classList.remove("port-compatible");
+        }
+      } else {
+        port.classList.remove("port-compatible", "port-incompatible");
+      }
+    });
   }
 
   /**
@@ -1789,11 +1824,11 @@ export class FlowEditor extends HTMLElement {
   hasSpaceForNode(x, y, size = 80) {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const nodes = /** @type {ShadowRoot} */ (this.shadowRoot).querySelectorAll(
-      "noflo-node, noflo-iip",
+      "noflo-node, noflo-iip, noflo-exported-port",
     );
 
     for (const nodeElement of nodes) {
-      const node = /** @type {NoFloNode | NoFloIIP} */ (nodeElement);
+      const node = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (nodeElement);
       const pos = node.position;
       const otherSize = node.size || 80;
       if (
@@ -1880,6 +1915,19 @@ export class FlowEditor extends HTMLElement {
           clickedPort = port;
         }
       });
+    });
+
+    const exportedPorts = shadowRoot.querySelectorAll("noflo-exported-port");
+    exportedPorts.forEach((ep) => {
+      const port = /** @type {HTMLElement} */ (ep);
+      const rect = port.getBoundingClientRect();
+      const dx = e.clientX - (rect.left + rect.width / 2);
+      const dy = e.clientY - (rect.top + rect.height / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist && dist < threshold) {
+        minDist = dist;
+        clickedPort = port;
+      }
     });
 
     if (clickedPort && this.dragPort && clickedPort !== this.dragPort) {
@@ -2225,6 +2273,29 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {number} x
    * @param {number} y
+   * @param {string} name
+   * @param {'in' | 'out'} direction
+   * @returns {FlowExportedPort}
+   */
+  addExportedPort(x, y, name, direction = "out") {
+    const size = 40;
+    const snapped = this.snapToGrid(x - size / 2, y - size / 2);
+    const exportedPort = /** @type {FlowExportedPort} */ (document.createElement("noflo-exported-port"));
+    exportedPort.setAttribute("name", name);
+    exportedPort.dataset.portName = name;
+    exportedPort.dataset.portType = "regular";
+    exportedPort.direction = direction;
+    exportedPort.position = snapped;
+    exportedPort.size = size;
+    if (this.nodeLayer) {
+      this.nodeLayer.appendChild(exportedPort);
+    }
+    return exportedPort;
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} y
    * @param {HTMLElement} port
    * @param {string} [value="Value"]
    * @returns {NoFloIIP}
@@ -2299,11 +2370,12 @@ export class FlowEditor extends HTMLElement {
    */
   _getNearestPort(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-    const nodes = shadowRoot.querySelectorAll("noflo-node");
     let nearestPort = null;
     let minDist = Infinity;
     const threshold = 20;
 
+    // 1. Check ports in nodes
+    const nodes = shadowRoot.querySelectorAll("noflo-node");
     for (const node of nodes) {
       const n = /** @type {NoFloNode | NoFloIIP} */ (node);
       const sr = n.shadowRoot;
@@ -2321,19 +2393,34 @@ export class FlowEditor extends HTMLElement {
         }
       }
     }
+
+    // 2. Check exported ports
+    const exportedPorts = shadowRoot.querySelectorAll("noflo-exported-port");
+    for (const ep of exportedPorts) {
+      const port = /** @type {HTMLElement} */ (ep);
+      const rect = port.getBoundingClientRect();
+      const dx = clientX - (rect.left + rect.width / 2);
+      const dy = clientY - (rect.top + rect.height / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist && dist < threshold) {
+        minDist = dist;
+        nearestPort = port;
+      }
+    }
+
     return nearestPort;
   }
 
   /**
    * @param {number} clientX
    * @param {number} clientY
-   * @returns {NoFloNode | NoFloIIP | null}
+   * @returns {NoFloNode | NoFloIIP | FlowExportedPort | null}
    */
   _getNearestNode(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-    const nodes = shadowRoot.querySelectorAll("noflo-node, noflo-iip");
+    const nodes = shadowRoot.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port");
     for (const node of nodes) {
-      const n = /** @type {NoFloNode | NoFloIIP} */ (node);
+      const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
       if (this.selectedNodes.has(n)) continue;
       const rect = n.getBoundingClientRect();
       if (

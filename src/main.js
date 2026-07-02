@@ -3,6 +3,7 @@
  */
 
 import { FlowEditor } from "./elements/noflo-editor.js";
+import { FlowExportedPort } from "./elements/noflo-exported-port.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
@@ -28,6 +29,7 @@ async function init() {
   customElements.define("noflo-editor", FlowEditor);
   customElements.define("noflo-node", FlowNode);
   customElements.define("noflo-iip", FlowIIP);
+  customElements.define("noflo-exported-port", FlowExportedPort);
   customElements.define("noflo-radial-menu", FlowRadialMenu);
   customElements.define("noflo-selection-pills", SelectionPills);
 

@@ -95,6 +95,7 @@ Configuration:
 - Communications with FBP Runtimes is handled using any FBP Protocol transport. Initially WebRTC and WebSockets
 - Collaboration is handled over WebRTC and eventually also Reticulum
 - Apart from building vendor files when dependencies change, there is no build. Change a source file, reload the browser
+- The internal implementation of the main editor in `noflo-editor` should be encapsulated so that all methods and events in exposes use actual graph data and don't leak DOM details
 
 ## Commands
 
