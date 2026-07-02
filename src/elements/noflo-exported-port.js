@@ -48,7 +48,7 @@ export class FlowExportedPort extends HTMLElement {
 
   set name(val) {
     this._name = val;
-    const nameEl = this.shadowRoot?.querySelector(".port-name");
+    const nameEl = this.shadowRoot?.querySelector(".port-name-label");
     if (nameEl) {
       nameEl.textContent = val;
     }
@@ -68,36 +68,33 @@ export class FlowExportedPort extends HTMLElement {
       <style>
         :host {
           position: absolute;
-          width: var(--exported-port-size, 30px);
-          height: var(--exported-port-size, 30px);
+          width: var(--exported-port-size, 20px);
+          height: calc(var(--exported-port-size, 20px) + 20px);
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
           cursor: grab;
           user-select: none;
           transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .port-box {
-          width: 100%;
-          height: 100%;
+          width: var(--exported-port-size, 20px);
+          height: var(--exported-port-size, 20px);
           background-color: var(--node-bg, #ccc);
           border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           position: relative;
           box-shadow: 0 0 10px var(--node-glow, transparent);
           transition: opacity 0.2s;
         }
-        .port-name {
+        .port-name-label {
           font-size: 10px;
           font-family: SourceCodePro, monospace;
           color: var(--node-text, #333);
           text-align: center;
-          padding: 2px;
-          word-break: break-all;
-          opacity: clamp(0, (var(--zoom-scale) - 0.6) * 100, 1);
+          margin-top: 4px;
+          white-space: nowrap;
+          opacity: clamp(0, (var(--zoom-scale) - 0.5) * 100, 1);
           pointer-events: none;
         }
         :host([selected]) {
@@ -110,9 +107,8 @@ export class FlowExportedPort extends HTMLElement {
           border-width: 3px;
         }
       </style>
-      <div class="port-box">
-        <div class="port-name">${this._name}</div>
-      </div>
+      <div class="port-box port"></div>
+      <div class="port-name-label">${this._name}</div>
     `;
   }
 }

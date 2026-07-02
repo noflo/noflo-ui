@@ -1,3 +1,4 @@
+/** @typedef {any} FlowExportedPort */
 /**
  * @typedef {Object} Position
  * @property {number} x
@@ -42,7 +43,7 @@
  * @typedef {Object} IIPWire
  * @property {SVGPathElement} hitPath
  * @property {SVGPathElement} visualPath
- * @property {NoFloIIP} iip
+ * @property {NoFloIIP | FlowExportedPort} iip
  * @property {HTMLElement} port
  */
 
@@ -94,7 +95,7 @@ export class FlowEditor extends HTMLElement {
     this.initialZoom = 1.0;
     /** @type {Position} */
     this.initialOffset = { x: 0, y: 0 };
-    /** @type {Set<NoFloNode | NoFloIIP>} */
+    /** @type {Set<NoFloNode | NoFloIIP | FlowExportedPort>} */
     this.selectedNodes = new Set();
     /** @type {Set<Edge>} */
     this.selectedEdges = new Set();
@@ -114,11 +115,11 @@ export class FlowEditor extends HTMLElement {
     this.lastPinchDistance = 0;
     /** @type {Map<string, number>} */
     this.activityMap = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
     this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
     this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, {x: number, y: number}>} */
     this.nodeVelocities = new Map();
     /** @type {Position | null} */
     this.draggingStartPointerPos = null;
@@ -126,11 +127,11 @@ export class FlowEditor extends HTMLElement {
     this.animationFrameId = null;
     /** @type {boolean} */
     this.isDraggingNodeInCollision = false;
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
     this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
     this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
+    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, {x: number, y: number}>} */
     this.nodeVelocities = new Map();
     /** @type {Position | null} */
     this.draggingStartPointerPos = null;
@@ -144,7 +145,7 @@ export class FlowEditor extends HTMLElement {
     this.draggingWirePointerId = null;
     /** @type {boolean} */
     this.wasClickOnSelectedNode = false;
-    /** @type {NoFloNode | NoFloIIP | null} */
+    /** @type {NoFloNode | NoFloIIP | FlowExportedPort | null} */
     this.clickedNode = null;
     /** @type {number | null} */
     this.heatmapInterval = null;
@@ -745,7 +746,9 @@ export class FlowEditor extends HTMLElement {
       const clickedNode = path.find((el) => {
         const element = /** @type {Element} */ (el);
         return (
-          element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP"
+          element.tagName === "NOFLO-NODE" ||
+          element.tagName === "NOFLO-IIP" ||
+          element.tagName === "NOFLO-EXPORTED-PORT"
         );
       });
       const clickedEdge = path.find((el) => {
@@ -1098,7 +1101,9 @@ export class FlowEditor extends HTMLElement {
       path.find((/** @type {EventTarget} */ el) => {
         const element = /** @type {Element} */ (el);
         return (
-          element.tagName === "NOFLO-NODE" || element.tagName === "NOFLO-IIP"
+          element.tagName === "NOFLO-NODE" ||
+          element.tagName === "NOFLO-IIP" ||
+          element.tagName === "NOFLO-EXPORTED-PORT"
         );
       })
     );
@@ -1166,6 +1171,17 @@ export class FlowEditor extends HTMLElement {
             icon: "circle-plus",
           });
         }
+
+        const canExport = !isArrayPort || !hasConnection;
+        if (canExport) {
+          items.push({
+            text: "Export",
+            onClick: () => {
+              this.exportPort(port);
+            },
+            icon: "share-from-square",
+          });
+        }
       }
 
       if (hasConnection) {
@@ -1178,119 +1194,130 @@ export class FlowEditor extends HTMLElement {
         });
       }
     } else if (clickedNode) {
-      const isIIP = clickedNode.tagName === "NOFLO-IIP";
-      this.dispatchEvent(
-        new CustomEvent(isIIP ? "iip-menu-open" : "node-menu-open", {
-          detail: {
-            node: this.getNodeName(
-              /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
-            ),
-            x,
-            y,
-          },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-      if (!isIIP) {
+      if (clickedNode.tagName === "NOFLO-EXPORTED-PORT") {
+        const ep = /** @type {FlowExportedPort} */ (clickedNode);
+        const name = ep.getAttribute("name");
+
         items.push({
-          text: "Remove",
+          text: "Rename",
           onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("node-removal-attempt", {
-                detail: { nodes: [clickedNode] },
-                bubbles: true,
-                composed: true,
-              }),
-            );
-          },
-          icon: "trash",
-        });
-        items.push({
-          text: "Make subgraph",
-          onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("create-subgraph-attempt", {
-                detail: { nodes: [clickedNode] },
-                bubbles: true,
-                composed: true,
-              }),
-            );
-          },
-          icon: "folder-plus",
-        });
-        items.push({
-          text: "Open",
-          onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("navigate-down-attempt", {
-                detail: {
-                  node: this.getNodeName(
-                    /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
-                  ),
-                },
-                bubbles: true,
-                composed: true,
-              }),
-            );
-          },
-          icon: "folder-open",
-        });
-        items.push({
-          text: "Move up",
-          onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("move-nodes-up-attempt", {
-                detail: { nodes: [clickedNode] },
-                bubbles: true,
-                composed: true,
-              }),
-            );
-          },
-          icon: "arrow-up-from-bracket",
-        });
-      } else {
-        items.push({
-          text: "Edit",
-          onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("iip-edit-attempt", {
-                detail: { iip: clickedNode },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            const newName = window.prompt("Enter new name:", name);
+            if (newName && newName !== name) {
+              ep.setAttribute("name", newName);
+              ep.dataset.portName = newName;
+            }
           },
           icon: "pen-to-square",
         });
+
         items.push({
-          text: "Delete",
+          text: "Remove",
           onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("iip-removal-attempt", {
-                detail: { iip: clickedNode },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            this.removeExportedPort(ep);
           },
           icon: "trash",
         });
+      } else {
+        const isIIP = clickedNode.tagName === "NOFLO-IIP";
         items.push({
-          text: "Send now",
+          text: isIIP ? "Edit" : "Open",
           onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("iip-send-attempt", {
-                detail: { iip: clickedNode },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            if (isIIP) {
+              this.dispatchEvent(
+                new CustomEvent("iip-edit-attempt", {
+                  detail: { iip: clickedNode },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            } else {
+              this.dispatchEvent(
+                new CustomEvent("navigate-down-attempt", {
+                  detail: {
+                    node: this.getNodeName(
+                      /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+                    ),
+                  },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            }
           },
-          icon: "paper-plane",
+          icon: isIIP ? "pen-to-square" : "folder-open",
         });
+
+        if (isIIP) {
+          items.push({
+            text: "Delete",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("iip-removal-attempt", {
+                  detail: { iip: clickedNode },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "trash",
+          });
+          items.push({
+            text: "Send now",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("iip-send-attempt", {
+                  detail: { iip: clickedNode },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "paper-plane",
+          });
+        } else {
+          items.push({
+            text: "Remove",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("node-removal-attempt", {
+                  detail: { nodes: [clickedNode] },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "trash",
+          });
+          items.push({
+            text: "Make subgraph",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("create-subgraph-attempt", {
+                  detail: { nodes: [clickedNode] },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "folder-plus",
+          });
+          items.push({
+            text: "Move up",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("move-nodes-up-attempt", {
+                  detail: { nodes: [clickedNode] },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "arrow-up-from-bracket",
+          });
+        }
       }
     } else if (clickedEdge) {
+// ...
       const edge = this.edges.find(
         (edge) =>
           /** @type {Element} */ (edge.hitPath) ===
@@ -1454,11 +1481,11 @@ export class FlowEditor extends HTMLElement {
 
   /**
    * @param {PointerEvent} e
-   * @param {HTMLElement} node
+   * @param {NoFloNode | NoFloIIP | FlowExportedPort} node
    * @param {boolean} isMultiple
    */
   handleNodeSelection(e, node, isMultiple) {
-    const n = /** @type {NoFloNode | NoFloIIP} */ (node);
+    const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
     this.clickedNode = n;
 
     if (isMultiple) {
@@ -1510,13 +1537,13 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {NoFloNode | NoFloIIP | null} node
+   * @param {NoFloNode | NoFloIIP | FlowExportedPort | null} node
    * @param {boolean} isMultiple
    */
   commitNodeSelection(node, isMultiple) {
     if (this.selectionChangedOnDown) return;
 
-    const n = /** @type {NoFloNode | NoFloIIP} */ (node);
+    const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
     if (!n) return;
 
     if (isMultiple) {
@@ -1784,33 +1811,35 @@ export class FlowEditor extends HTMLElement {
     });
 
     exportedPorts.forEach((port) => {
-      const rect = port.getBoundingClientRect();
+      const portEl = port.shadowRoot?.querySelector(".port");
+      if (!portEl) return;
+      const rect = portEl.getBoundingClientRect();
       const portCenterX = rect.left + rect.width / 2;
       const portCenterY = rect.top + rect.height / 2;
       const dist = Math.hypot(clientX - portCenterX, clientY - portCenterY);
 
       if (dist < highlightThreshold) {
-        const isPortOut = port.classList.contains("port-out");
+        const isPortOut = portEl.classList.contains("port-out");
         let isCompatible = isDragOut !== isPortOut;
 
-        if (isCompatible && port.dataset.portType === "array") {
+        if (isCompatible && portEl.dataset.portType === "array") {
           const hasConnection = this.edges?.some(
-            (edge) => edge.portA === port || edge.portB === port,
-          );
+            (edge) => edge.portA === portEl || edge.portB === portEl,
+          ) || this.iipWires?.some((w) => w.port === portEl);
           if (hasConnection) {
             isCompatible = false;
           }
         }
 
         if (isCompatible) {
-          port.classList.add("port-compatible");
-          port.classList.remove("port-incompatible");
+          portEl.classList.add("port-compatible");
+          portEl.classList.remove("port-incompatible");
         } else {
-          port.classList.add("port-incompatible");
-          port.classList.remove("port-compatible");
+          portEl.classList.add("port-incompatible");
+          portEl.classList.remove("port-compatible");
         }
       } else {
-        port.classList.remove("port-compatible", "port-incompatible");
+        portEl.classList.remove("port-compatible", "port-incompatible");
       }
     });
   }
@@ -1919,7 +1948,8 @@ export class FlowEditor extends HTMLElement {
 
     const exportedPorts = shadowRoot.querySelectorAll("noflo-exported-port");
     exportedPorts.forEach((ep) => {
-      const port = /** @type {HTMLElement} */ (ep);
+      const port = ep.shadowRoot?.querySelector(".port");
+      if (!port) return;
       const rect = port.getBoundingClientRect();
       const dx = e.clientX - (rect.left + rect.width / 2);
       const dy = e.clientY - (rect.top + rect.height / 2);
@@ -2144,7 +2174,7 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {SVGPathElement} hitPath
    * @param {SVGPathElement} visualPath
-   * @param {NoFloIIP} iip
+   * @param {NoFloIIP | FlowExportedPort} iip
    * @param {HTMLElement} port
    */
   updateIIPPathData(hitPath, visualPath, iip, port) {
@@ -2275,13 +2305,13 @@ export class FlowEditor extends HTMLElement {
    * @param {number} y
    * @param {string} name
    * @param {'in' | 'out'} direction
-   * @returns {FlowExportedPort}
+   * @returns {any}
    */
   addExportedPort(x, y, name, direction = "out") {
-    const size = 40;
+    const size = 20;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    const exportedPort = /** @type {FlowExportedPort} */ (document.createElement("noflo-exported-port"));
-    exportedPort.setAttribute("name", name);
+    const exportedPort = /** @type {any} */ (document.createElement("noflo-exported-port"));
+    exportedPort.name = name;
     exportedPort.dataset.portName = name;
     exportedPort.dataset.portType = "regular";
     exportedPort.direction = direction;
@@ -2341,6 +2371,113 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * @param {HTMLElement} port
+   */
+  exportPort(port) {
+    const node = port.closest("noflo-node") || port.closest("noflo-iip");
+    if (!node) return;
+
+    const nodeAny = /** @type {any} */ (node);
+    const isOutport = port.classList.contains("port-out");
+    const portName = port.dataset.portName || "";
+    const nodePos = nodeAny.position;
+    const nodeSize = nodeAny.size || 80;
+    const exportedSize = 40;
+
+    let exportPos;
+    if (isOutport) {
+      // Right of node
+      exportPos = {
+        x: nodePos.x + nodeSize,
+        y: nodePos.y + nodeSize / 2,
+      };
+    } else {
+      // Left of node
+      exportPos = {
+        x: nodePos.x - exportedSize,
+        y: nodePos.y + nodeSize / 2,
+      };
+    }
+
+    // Search for available space
+    let found = false;
+    for (let offset = 0; offset < 5; offset++) {
+      const testX = isOutport ? exportPos.x + offset * exportedSize : exportPos.x - offset * exportedSize;
+      const testY = exportPos.y;
+      if (this.hasSpaceForNode(testX, testY, exportedSize)) {
+        exportPos = { x: testX, y: testY };
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      console.warn("No space available for exported port");
+      return;
+    }
+
+    // Handle name duplication
+    let finalName = portName;
+    const existingExportedPorts = /** @type {NodeListOf<HTMLElement>} */ (
+      this.nodeLayer?.querySelectorAll("noflo-exported-port") || []
+    );
+
+    if (Array.from(existingExportedPorts).some(
+      (ep) => ep.getAttribute("name") === finalName
+    )) {
+      let count = 0;
+      while (Array.from(existingExportedPorts).some(
+        (ep) => ep.getAttribute("name") === `${portName}${count}`
+      )) {
+        count++;
+      }
+      finalName = `${portName}${count}`;
+    }
+
+    const ep = this.addExportedPort(exportPos.x, exportPos.y, /** @type {string} */ (finalName), isOutport ? "out" : "in");
+
+    // Create wire
+    const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    hitPath.classList.add("edge-hit-area");
+
+    const visualPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    visualPath.classList.add("edge-flow");
+
+    this.updateIIPPathData(hitPath, visualPath, ep, port);
+
+    if (this.iipWiresGroup) {
+      this.iipWiresGroup.appendChild(hitPath);
+      this.iipWiresGroup.appendChild(visualPath);
+    }
+
+    this.iipWires = this.iipWires || [];
+    this.iipWires.push({ hitPath, visualPath, iip: ep, port });
+  }
+
+  /**
+   * @param {HTMLElement} ep
+   */
+  removeExportedPort(ep) {
+    if (!ep) return;
+
+    // Remove IIP wires
+    if (this.iipWires && this.iipWiresGroup) {
+      const wiresToRemove = this.iipWires.filter((wire) => wire.port === ep || wire.iip === ep);
+      wiresToRemove.forEach((wire) => {
+        if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
+          this.iipWiresGroup.removeChild(wire.hitPath);
+          this.iipWiresGroup.removeChild(wire.visualPath);
+        }
+      });
+      this.iipWires = this.iipWires.filter((wire) => wire.port !== ep && wire.iip !== ep);
+    }
+
+    if (ep.parentNode) {
+      ep.parentNode.removeChild(ep);
+    }
+  }
+
+  /**
    * @param {number} clientX
    * @param {number} clientY
    * @returns {{type: string, element: HTMLElement | null}}
@@ -2397,7 +2534,8 @@ export class FlowEditor extends HTMLElement {
     // 2. Check exported ports
     const exportedPorts = shadowRoot.querySelectorAll("noflo-exported-port");
     for (const ep of exportedPorts) {
-      const port = /** @type {HTMLElement} */ (ep);
+      const port = ep.shadowRoot?.querySelector(".port");
+      if (!port) continue;
       const rect = port.getBoundingClientRect();
       const dx = clientX - (rect.left + rect.width / 2);
       const dy = clientY - (rect.top + rect.height / 2);
@@ -2414,13 +2552,13 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {number} clientX
    * @param {number} clientY
-   * @returns {NoFloNode | NoFloIIP | FlowExportedPort | null}
+   * @returns {NoFloNode | NoFloIIP | any | null}
    */
   _getNearestNode(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
     const nodes = shadowRoot.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port");
     for (const node of nodes) {
-      const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
+      const n = /** @type {NoFloNode | NoFloIIP | any} */ (node);
       if (this.selectedNodes.has(n)) continue;
       const rect = n.getBoundingClientRect();
       if (
