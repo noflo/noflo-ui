@@ -767,6 +767,12 @@ export class FlowEditor extends HTMLElement {
         e.stopPropagation();
 
         const port = /** @type {HTMLElement} */ (clickedPort);
+        const host = port.getRootNode().host;
+        if (host && host.tagName === "NOFLO-EXPORTED-PORT") {
+          this.handleNodeSelection(e, /** @type {any} */ (host), isMultiple);
+          return;
+        }
+
         if (port.dataset.portType === "array") {
           const hasConnection = this.edges?.some(
             (edge) => edge.portA === port || edge.portB === port,
