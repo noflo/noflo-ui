@@ -992,9 +992,20 @@ export class FlowEditor extends HTMLElement {
           const movedNodes = [];
           this.selectedNodes.forEach((node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
+            const type = node.tagName.toLowerCase();
+            const name = this.getNodeName(node);
+            let direction = null;
+            let portName = null;
+            if (type === "noflo-exported-port") {
+              direction = node.direction;
+              portName = node.dataset.portName;
+            }
             movedNodes.push({
-              name: this.getNodeName(node),
+              name,
               position: node.position,
+              type,
+              direction,
+              portName,
             });
           });
           this.updateEdges();
@@ -2319,6 +2330,7 @@ export class FlowEditor extends HTMLElement {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const exportedPort = /** @type {any} */ (document.createElement("noflo-exported-port"));
     exportedPort.name = name;
+    exportedPort.setAttribute("name", name);
     exportedPort.dataset.portName = name;
     exportedPort.dataset.portType = "regular";
     exportedPort.direction = direction;

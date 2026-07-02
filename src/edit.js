@@ -389,10 +389,37 @@ function setupEditorEventListeners(editor) {
     const { nodes } = event.detail;
     if (currentGraph) {
       nodes.forEach((move) => {
-        currentGraph.setNodeMetadata(move.name, {
-          x: move.position.x,
-          y: move.position.y,
-        });
+        if (move.type === "noflo-node") {
+          currentGraph.setNodeMetadata(move.name, {
+            x: move.position.x,
+            y: move.position.y,
+          });
+        } else if (move.type === "noflo-iip") {
+          const index = currentGraph.initializers.findIndex((init) => init.metadata?.id === move.name);
+          if (index !== -1) {
+            const initializer = currentGraph.initializers[index];
+            const { node, port, index: iipIndex } = initializer.to;
+            const metadata = { ...initializer.metadata, x: move.position.x, y: move.position.y };
+            currentGraph.removeInitial(node, port);
+            if (iipIndex !== undefined && iipIndex !== null) {
+              currentGraph.addInitialIndex(initializer.from.data, node, port, iipIndex, metadata);
+            } else {
+              currentGraph.addInitial(initializer.from.data, node, port, metadata);
+            }
+          }
+        } else if (move.type === "noflo-exported-port") {
+          if (move.direction === "in") {
+            currentGraph.setInportMetadata(move.portName, {
+              x: move.position.x,
+              y: move.position.y,
+            });
+          } else if (move.direction === "out") {
+            currentGraph.setOutportMetadata(move.portName, {
+              x: move.position.x,
+              y: move.position.y,
+            });
+          }
+        }
       });
     }
     debouncedSave();
