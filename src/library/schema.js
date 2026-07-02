@@ -51,6 +51,7 @@ export const ComponentSignature = {
       type: 'string',
       title: 'Description',
       description: 'Longer textual description of the component',
+      format: 'textarea',
     },
     inports: {
       type: 'array',
@@ -65,6 +66,60 @@ export const ComponentSignature = {
       minItems: 0,
       uniqueItems: true,
       items: PortSignature,
+    },
+  },
+};
+
+export const GraphProperties = {
+  title: 'Graph properties',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    description: {
+      name: 'Description',
+      type: 'string',
+      description: 'Longer textual description of the graph',
+      format: 'textarea',
+    },
+    icon: {
+      type: 'string',
+      title: 'Icon',
+      description: 'Default icon used to depict the graph when used as a subgraph',
+      default: 'gear',
+      format: 'fontawesome',
+    },
+    main: {
+      type: 'boolean',
+      title: 'Main graph',
+      description: 'Main graphs are not intended to be used as subgraphs elsewhere',
+      default: false,
+    },
+    // TODO: environment.content
+  },
+};
+
+export const NodeMetadata = {
+  title: 'Node metadata',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    label: {
+      name: 'Label',
+      type: 'string',
+      description: 'Node display name',
+    },
+  },
+};
+
+export const EdgeMetadata = {
+  title: 'Graph metadata',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    label: {
+      name: 'Label',
+      type: 'string',
+      description: 'Node display name',
     },
   },
 };
