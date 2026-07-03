@@ -2462,6 +2462,8 @@ export class FlowEditor extends HTMLElement {
           name: finalName,
           direction: isOutport ? "out" : "in",
           position: finalExportPos,
+          process: node.getAttribute("name"),
+          port: portName,
         },
         bubbles: true,
         composed: true,

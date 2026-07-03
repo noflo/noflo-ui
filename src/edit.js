@@ -384,14 +384,27 @@ function setupEditorEventListeners(editor) {
     );
   });
 
+  editor.addEventListener("port-exported", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { name, direction, position, process, port } = event.detail;
+    if (currentGraph) {
+      if (direction === "in") {
+        currentGraph.addInport(name, process, port, position);
+      } else {
+        currentGraph.addOutport(name, process, port, position);
+      }
+    }
+    debouncedSave();
+  });
+
   editor.addEventListener("port-removed", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { name, direction } = event.detail;
     if (currentGraph) {
       if (direction === "in") {
-        delete currentGraph.inports[name];
+        currentGraph.removeInport(name);
       } else {
-        delete currentGraph.outports[name];
+        currentGraph.removeOutport(name);
       }
     }
     debouncedSave();
@@ -402,11 +415,9 @@ function setupEditorEventListeners(editor) {
     const { oldName, newName, direction, position } = event.detail;
     if (currentGraph) {
       if (direction === "in") {
-        delete currentGraph.inports[oldName];
-        currentGraph.setInportMetadata(newName, position);
+        currentGraph.renameInport(oldName, newName);
       } else {
-        delete currentGraph.outports[oldName];
-        currentGraph.setOutportMetadata(newName, position);
+        currentGraph.renameOutport(oldName, newName);
       }
     }
     debouncedSave();
@@ -425,9 +436,7 @@ function setupEditorEventListeners(editor) {
           }
         } else {
           if (currentGraph.nodes[move.name]) {
-            currentGraph.nodes[move.name].metadata = currentGraph.nodes[move.name].metadata || {};
-            currentGraph.nodes[move.name].metadata.x = move.position.x;
-            currentGraph.nodes[move.name].metadata.y = move.position.y;
+            currentGraph.setNodeMetadata(move.name, move.position);
           }
         }
       });
@@ -687,9 +696,9 @@ async function loadFile(fileHandle) {
       if (inports && typeof inports === "object") {
         let i = 0;
         for (const portName in inports) {
-          // Since there are no nodes, we can't find a port. 
+          // Since there are no nodes, we can't find a port.
           // But if it's a standalone graph with inports, they must be connected to something.
-          // Without nodes, we can't satisfy the requirement. 
+          // Without nodes, we can't satisfy the requirement.
           // For now, we'll just skip it or it will be a bug.
           // Actually, if there are no nodes, these inports/outports might not be valid in this editor.
           i++;
