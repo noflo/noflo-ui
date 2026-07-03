@@ -43,5 +43,6 @@ This project was made possible by [1205 Kickstarter backers](http://noflojs.org/
 
 Currently NoFlo UI is being developed as a passion project. To support development, here are some methods:
 
+* Ethereum: `0xFC872bA86812B2bbe90c38cfD2553F7865d04094`
 * Liberapay: https://liberapay.com/bergie/
 * ko-fi: https://ko-fi.com/bergius
