@@ -14,7 +14,7 @@
     "generate:fa": "node utils/generate-icon-map.js",
     "prebuild-vendors": "npm run generate:noflo && npm run generate:fa",
     "build-vendors": " tsdown --config tsdown.config.js",
-    "test": "node --test --test-force-exit --test-timeout 5000 spec/elements/*.js",
+    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js",
     "serve": "npx serve -l 3000 ."
   },
   "dependencies": {
