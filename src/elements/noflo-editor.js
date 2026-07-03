@@ -11,7 +11,8 @@ import { SelectionManager } from "../library/SelectionManager.js";
 /**
  * @typedef {Object} PortConfig
  * @property {string} [name]
- * @property {'regular' | 'array'} [type]
+ * @property {boolean} [addressable]
+ * @property {string} [type]
  * @property {number} [size]
  */
 
@@ -461,33 +462,33 @@ export class FlowEditor extends HTMLElement {
         </div>
       </div>
     `;
-    this.viewport = /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
-      "viewport",
+    this.viewport = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "#viewport",
     );
     this.transformLayer = /** @type {ShadowRoot} */ (
       this.shadowRoot
-    ).getElementById("transform-layer");
+    ).querySelector("#transform-layer");
     this.heatmapCanvas = /** @type {any} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
-        "heatmap-canvas",
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+        "#heatmap-canvas",
       )
     );
     this.gridLayer = /** @type {any} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("grid-layer")
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#grid-layer")
     );
     this.iipWiresGroup = /** @type {any} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
-        "iip-wires-group",
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+        "#iip-wires-group",
       )
     );
     this.svgLayer = /** @type {any} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("svg-layer")
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#svg-layer")
     );
     this.edgesGroup = /** @type {any} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).getElementById("edges-group")
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#edges-group")
     );
-    this.nodeLayer = /** @type {ShadowRoot} */ (this.shadowRoot).getElementById(
-      "node-layer",
+    this.nodeLayer = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "#node-layer",
     );
 
     if (this.heatmapCanvas) {
@@ -2247,8 +2248,8 @@ export class FlowEditor extends HTMLElement {
    * @param {string} name
    * @param {number} x
    * @param {number} y
-   * @param {PortConfig[]} [inPorts=[{ type: "regular" }]]
-   * @param {PortConfig[]} [outPorts=[{ type: "regular" }]]
+   * @param {PortConfig[]} [inPorts=[{ addressable: false }]]
+   * @param {PortConfig[]} [outPorts=[{ addressable: false }]]
    * @param {number} [size=80]
    * @returns {NoFloNode}
    */
@@ -2256,8 +2257,8 @@ export class FlowEditor extends HTMLElement {
     name,
     x,
     y,
-    inPorts = [{ type: "regular" }],
-    outPorts = [{ type: "regular" }],
+    inPorts = [{ addressable: false }],
+    outPorts = [{ addressable: false }],
     size = 80,
     component = null,
   ) {

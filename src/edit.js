@@ -117,6 +117,10 @@ async function loadLibrary(directoryHandle) {
     // json format: { modules: [ { components: [...] } ] }
     for (const module of json.modules) {
       for (const comp of module.components) {
+        const definition = {
+          icon: 'gear',
+          ...comp,
+        };
         componentLibrary.set(comp.name, comp);
       }
     }
@@ -193,7 +197,12 @@ async function inferLibraryFromFiles(directoryHandle) {
 function addPortToLibrary(compName, portName, direction) {
   let comp = componentLibrary.get(compName);
   if (!comp) {
-    comp = { name: compName, inports: [], outports: [] };
+    comp = {
+      name: compName,
+      icon: 'gear',
+      inports: [],
+      outports: [],
+    };
     componentLibrary.set(compName, comp);
   }
 
@@ -202,7 +211,7 @@ function addPortToLibrary(compName, portName, direction) {
     return;
   }
 
-  ports.push({ name: portName, addressable: false });
+  ports.push({ name: portName, addressable: false, type: 'all' });
 }
 
 function setupEditorEventListeners(editor) {
@@ -235,7 +244,8 @@ function setupEditorEventListeners(editor) {
     newNode.id = nodeId;
     newNode.setMetadata({
       name: newNode.id,
-      icon: 'fa-gear',
+      icon: 'gear',
+      componentName: componentName,
     });
 
     if (currentGraph) {
@@ -485,6 +495,9 @@ function setupEditorEventListeners(editor) {
           if (updatedDef && n.setPorts) {
             n.setPorts(updatedDef.inports, updatedDef.outports);
           }
+          if (n.setMetadata) {
+            n.setMetadata({ componentName: newComponentName, icon: newData.icon });
+          }
         }
       });
 
@@ -673,6 +686,7 @@ async function loadFile(fileHandle) {
       const y = node.metadata?.y || 0;
 
       const comp = componentLibrary.get(node.component);
+      console.log(comp);
       const inPorts = comp ? comp.inports : undefined;
       const outPorts = comp ? comp.outports : undefined;
 
@@ -680,7 +694,8 @@ async function loadFile(fileHandle) {
       n.id = node.id; // Ensure the DOM element has the correct ID
       n.setMetadata({
         name: node.id,
-        icon: comp.icon || 'fa-gear',
+        icon: comp.icon || 'gear',
+        componentName: node.component,
       });
       elementsMap.set(node.id, n);
     }

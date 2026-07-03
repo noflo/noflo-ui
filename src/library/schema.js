@@ -1,3 +1,5 @@
+import icons from '../../vendor/fontawesome-icons-7.3.0.js';
+
 export const PortSignature = {
   title: 'Port definition',
   type: 'object',
@@ -20,6 +22,22 @@ export const PortSignature = {
       type: 'string',
       description: 'Port datatype',
       example: 'string',
+      default: 'any',
+      enum: [
+        'all',
+        'string',
+        'number',
+        'int',
+        'object',
+        'array',
+        'boolean',
+        'color',
+        'date',
+        'bang',
+        'function',
+        'buffer',
+        'stream',
+      ],
     },
     addressable: {
       name: 'Addressable',
@@ -34,6 +52,11 @@ export const ComponentSignature = {
   title: 'Component signature',
   type: 'object',
   additionalProperties: false,
+  required: [
+    'name',
+    'inports',
+    'outports',
+  ],
   properties: {
     name: {
       type: 'string',
@@ -45,7 +68,7 @@ export const ComponentSignature = {
       title: 'Icon',
       description: 'Default icon used to depict the component',
       default: 'gear',
-      format: 'fontawesome',
+      enum: Object.keys(icons()),
     },
     description: {
       type: 'string',

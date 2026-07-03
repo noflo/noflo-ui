@@ -133,7 +133,7 @@ async function init() {
         [{ type: "regular", name: "out" }],
       )
     );
-    source.setMetadata({ name: "Source", icon: "fa-play" });
+    source.setMetadata({ name: "Source", icon: "play" });
 
     const filter = /** @type {FlowNode} */ (
       editor.addNode(
@@ -147,7 +147,7 @@ async function init() {
         ],
       )
     );
-    filter.setMetadata({ name: "Filter", icon: "fa-filter" });
+    filter.setMetadata({ name: "Filter", icon: "filter" });
 
     const splitter = /** @type {FlowNode} */ (
       editor.addNode(
@@ -158,7 +158,7 @@ async function init() {
         [{ type: "array", name: "out", size: 3 }],
       )
     );
-    splitter.setMetadata({ name: "Splitter", icon: "fa-code-branch" });
+    splitter.setMetadata({ name: "Splitter", icon: "code-branch" });
 
     const aggregator = /** @type {FlowNode} */ (
       editor.addNode(
@@ -171,18 +171,18 @@ async function init() {
     );
     aggregator.setMetadata({
       name: "Aggregator",
-      icon: "fa-layer-group",
+      icon: "layer-group",
     });
 
     const logger = /** @type {FlowNode} */ (
       editor.addNode("Logger", 700, 100, [{ type: "regular", name: "in" }], [])
     );
-    logger.setMetadata({ name: "Logger", icon: "fa-terminal" });
+    logger.setMetadata({ name: "Logger", icon: "terminal" });
 
     const sink = /** @type {FlowNode} */ (
       editor.addNode("Sink", 700, 300, [{ type: "regular", name: "in" }], [])
     );
-    sink.setMetadata({ name: "Sink", icon: "fa-database" });
+    sink.setMetadata({ name: "Sink", icon: "database" });
 
     const router = /** @type {FlowNode} */ (
       editor.addNode(
@@ -194,7 +194,7 @@ async function init() {
         40,
       )
     );
-    router.setMetadata({ name: "Router", icon: "fa-route" });
+    router.setMetadata({ name: "Router", icon: "route" });
 
     // Initial connections
     editor.connectNodes(source, "out", filter, "in", "0");

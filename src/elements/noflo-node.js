@@ -107,11 +107,9 @@ export class FlowNode extends HTMLElement {
       if (iconEl) {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
-        } else if (icon.indexOf("fa-") === 0) {
-          const iconName = icon.substr(3);
-          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
         } else {
-          iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
+          const iconName = icon.substr();
+          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
         }
       }
     }
@@ -345,7 +343,7 @@ export class FlowNode extends HTMLElement {
    */
   createPort(index, totalPorts, isOutport, cfg) {
     const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
-    const type = cfg.type || "regular";
+    const addressable = cfg.addressable || false;
     const size = cfg.size || 1;
 
     const angleRange = Math.PI * 0.5;
@@ -353,13 +351,13 @@ export class FlowNode extends HTMLElement {
     const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
     const baseAngle = centerAngle + (fraction - 0.5) * angleRange;
 
-    if (type === "regular") {
+    if (!addressable) {
       const pos = {
         x: this.radius * Math.cos(baseAngle),
         y: this.radius * Math.sin(baseAngle),
       };
       this.addPortElement(pos, isOutport, name, "regular");
-    } else if (type === "array") {
+    } else {
       // Use an angular step that makes 12px circles almost touch
       // Chord length approx 13px -> angle approx 0.32 radians
       const angularStep = 0.32;
