@@ -183,10 +183,9 @@ export class FlowEditor extends HTMLElement {
 
     const pills = this.shadowRoot.querySelector("noflo-selection-pills");
     if (pills) {
-      pills.spaceManager = this.spaceManager;
       pills.selectionManager = this.selectionManager;
       pills.addEventListener("clear-selection", (e) => {
-        this.selectionManager.clear();
+        this.selectionManager.clearType(e.detail.type);
       });
     }
 
@@ -351,6 +350,9 @@ export class FlowEditor extends HTMLElement {
           width: 16000px;
           height: 16000px;
           pointer-events: none;
+        }
+        noflo-selection-pills {
+          z-index: 4;
         }
         #svg-layer {
           z-index: 3;
@@ -1535,7 +1537,7 @@ export class FlowEditor extends HTMLElement {
     this.draggingNodesInitialPositions.clear();
     this.draggingNodesTargetPositions.clear();
     this.nodeVelocities.clear();
-    
+
     const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
       this.nodeLayer?.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port") || []
     );
@@ -1546,8 +1548,6 @@ export class FlowEditor extends HTMLElement {
             this.draggingNodesTargetPositions.set(el, { ...el.position });
         }
     });
-
-    this.emitSelectionChanged();
 
     this.longPressTimer = setTimeout(() => {
       this.selectMode = true;
@@ -1579,8 +1579,6 @@ export class FlowEditor extends HTMLElement {
         this.selectionManager.toggle(type, id);
       }
     }
-
-    this.emitSelectionChanged();
   }
 
   /**
@@ -1609,8 +1607,6 @@ export class FlowEditor extends HTMLElement {
         this.selectionManager.select('edges', edgeId, false);
       }
     }
-
-    this.emitSelectionChanged();
   }
 
   /**
@@ -1621,39 +1617,27 @@ export class FlowEditor extends HTMLElement {
     // Deprecated
   }
 
-  clearSelection(emit = true) {
+  clearSelection() {
     this.selectionManager.clear();
 
     if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
     }
-
-    if (emit) {
-      this.emitSelectionChanged();
-    }
   }
 
-  clearNodeSelection(emit = true) {
+  clearNodeSelection() {
     this.selectionManager.clearType('nodes');
 
     if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
     }
-
-    if (emit) {
-      this.emitSelectionChanged();
-    }
   }
 
-  clearEdgeSelection(emit = true) {
+  clearEdgeSelection() {
     this.selectionManager.clearType('edges');
 
     if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
-    }
-
-    if (emit) {
-      this.emitSelectionChanged();
     }
   }
 
@@ -2355,10 +2339,12 @@ export class FlowEditor extends HTMLElement {
         const nodeSize = node.size || 80;
         centerX = nodePos.x - size - 20;
         centerY = nodePos.y + nodeSize / 2 - size / 2;
+        console.log('DEBUG IIP:', { nodePos, size, centerX, centerY });
       }
     }
 
     const snapped = this.snapToGrid(centerX - size / 2, centerY - size / 2);
+    console.log('DEBUG IIP snapped:', snapped);
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
     const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
     iip.setAttribute("name", id);
@@ -2371,6 +2357,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
+      // ... (wait, I can't use comments like this in oldText)
       const hitPath = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "path",

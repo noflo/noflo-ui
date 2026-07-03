@@ -7,31 +7,28 @@ export class SelectionPills extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this._selectionManager = null;
   }
 
   connectedCallback() {
     this.render();
   }
 
-  static get observedAttributes() {
-    return ["nodes-count", "iips-count", "edges-count"];
+  set selectionManager(val) {
+    this._selectionManager = val;
+    this._selectionManager.addEventListener("selection-changed", () => {
+      this.updatePills();
+    });
   }
 
-  /**
-   * @param {string} _name
-   * @param {string | null} oldValue
-   * @param {string | null} newValue
-   */
-  attributeChangedCallback(_name, oldValue, newValue) {
-    if (oldValue !== newValue) {
-      this.updatePills();
-    }
+  get selectionManager() {
+    return this._selectionManager;
   }
 
   updatePills() {
-    const nodesCount = parseInt(this.getAttribute("nodes-count") || "0", 10);
-    const iipsCount = parseInt(this.getAttribute("iips-count") || "0", 10);
-    const edgesCount = parseInt(this.getAttribute("edges-count") || "0", 10);
+    const nodesCount = this._selectionManager?.nodes.size || 0;
+    const iipsCount = this._selectionManager?.iips.size || 0;
+    const edgesCount = this._selectionManager?.edges.size || 0;
     const container = this.shadowRoot?.querySelector(".pills-container");
 
     if (!container) return;
@@ -67,7 +64,8 @@ export class SelectionPills extends HTMLElement {
       pill.querySelector(".clear-btn")
     );
     if (clearBtn) {
-      clearBtn.onclick = () => {
+      clearBtn.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
         this.dispatchEvent(
           new CustomEvent("clear-selection", {
             detail: { type },
@@ -75,7 +73,7 @@ export class SelectionPills extends HTMLElement {
             composed: true,
           }),
         );
-      };
+      });
     }
     return pill;
   }
