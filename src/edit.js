@@ -7,6 +7,7 @@ import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
 import { ComponentSignature } from "./library/schema.js";
+import { LibraryManager } from "./library/LibraryManager.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-modal.js";
 
@@ -20,25 +21,11 @@ customElements.define("noflo-selection-pills", SelectionPills);
 customElements.define("noflo-file-selector", FileSelector);
 
 /**
- * @typedef {Object} PortConfig
- * @property {string} name
- * @property {boolean} addressable
- * @property {string} [description]
- * @property {string} [type]
- * @property {number} [size]
+ * @typedef {import("./library/LibraryManager.js").ComponentDefinition} ComponentDefinition
  */
 
-/**
- * @typedef {Object} ComponentDefinition
- * @property {string} name
- * @property {string} [description]
- * @property {string} [icon]
- * @property {PortConfig[]} inports
- * @property {PortConfig[]} outports
- */
-
-/** @type {Map<string, ComponentDefinition>} */
-const componentLibrary = new Map();
+/** @type {LibraryManager} */
+let libraryManager = null;
 
 /** @type {FileSystemDirectoryHandle | null} */
 let directoryHandle = null;
@@ -67,9 +54,14 @@ async function init() {
     return;
   }
 
+  libraryManager = new LibraryManager();
+
   // Create editor
   editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
   app.appendChild(editor);
+
+  // Pass library manager to editor
+  editor.libraryManager = libraryManager;
 
   // Setup event listeners for editor
   setupEditorEventListeners(editor);
@@ -94,7 +86,7 @@ async function init() {
       directoryHandle = handle;
       console.log("Directory selected:", handle.name);
 
-      await loadLibrary(handle);
+      await libraryManager.loadLibrary(handle);
     }
   });
 
@@ -113,167 +105,10 @@ async function init() {
 }
 
 /**
- * @param {FileSystemDirectoryHandle} directoryHandle
- */
-async function loadLibrary(directoryHandle) {
-  componentLibrary.clear();
-
-  let libraryFileHandle = null;
-  for await (const entry of directoryHandle.values()) {
-    if (entry.kind === "file" && entry.name === "fbp.library.json") {
-      libraryFileHandle = entry;
-      break;
-    }
-  }
-
-  if (libraryFileHandle) {
-    console.log("Loading library from fbp.library.json");
-    const file = await libraryFileHandle.getFile();
-    const text = await file.text();
-    const json = JSON.parse(text);
-    // json format: { modules: [ { components: [...] } ] }
-    for (const module of json.modules) {
-      for (const comp of module.components) {
-        const definition = {
-          icon: "gear",
-          ...comp,
-        };
-        componentLibrary.set(comp.name, definition);
-      }
-    }
-  } else {
-    console.log(
-      "No fbp.library.json found. Inferring library from graph files.",
-    );
-    await inferLibraryFromFiles(directoryHandle);
-  }
-}
-
-/**
- * @param {FileSystemDirectoryHandle} directoryHandle
- */
-async function inferLibraryFromFiles(directoryHandle) {
-  const graphs = [];
-  for await (const entry of directoryHandle.values()) {
-    if (entry.kind !== "file") {
-      continue;
-    }
-    const file = await entry.getFile();
-    const text = await file.text();
-    if (entry.name.endsWith(".json")) {
-      try {
-        const json = JSON.parse(text);
-        const g = await graph.loadJSON(json);
-        if (!g.name) {
-          g.name = entry.name.split('.')[0];
-        }
-        graphs.push(g);
-      } catch (e) {
-        console.warn("Failed to parse graph file:", entry.name, e);
-      }
-    }
-    if (entry.name.endsWith(".fbp")) {
-      try {
-        const g = await graph.loadFBP(text);
-        if (!g.name) {
-          g.name = entry.name.split('.')[0];
-        }
-        graphs.push(g);
-      } catch (e) {
-        // console.warn("Failed to parse FBP language graph file:", entry.name, e);
-      }
-    }
-  }
-
-  for (const g of graphs) {
-    if (!g.properties?.main) {
-      // Graph itself is usable as subgraph, add to library
-      const comp = addComponentToLibrary(g.name);
-      comp.icon = g.properties?.icon || 'tree';
-      for (const inportName in g.inports) {
-        addPortToLibrary(g.name, inportName, "in");
-      }
-      for (const outportName in g.outports) {
-        addPortToLibrary(g.name, outportName, "out");
-      }
-    }
-
-    // Infer more components from nodes
-    const nodeToType = new Map();
-    for (const nodeId in g.nodes) {
-      const node = g.nodes[nodeId];
-      nodeToType.set(node.id, node.component);
-    }
-
-    for (const conn of g.edges) {
-      const fromType = nodeToType.get(conn.from.node);
-      if (fromType) {
-        addPortToLibrary(fromType, conn.from.port, "out");
-      }
-      const toType = nodeToType.get(conn.to.node);
-      if (toType) {
-        addPortToLibrary(toType, conn.to.port, "in");
-      }
-    }
-
-    for (const iip of g.initializers) {
-      const toType = nodeToType.get(iip.to.node);
-      if (toType) {
-        addPortToLibrary(toType, iip.to.port, "in");
-      }
-    }
-  }
-}
-
-/**
  * @param {string} compName
  */
 function getComponentFromLibrary(compName) {
-  let [library, component] = compName.split('/');
-  if (!component) {
-    component = library;
-    library = null;
-  }
-  return componentLibrary.get(component);
-}
-
-/**
- * @param {string} compName
- */
-function addComponentToLibrary(compName) {
-  let [library, component] = compName.split('/');
-  if (!component) {
-    component = library;
-    library = null;
-  }
-  let comp = getComponentFromLibrary(compName);
-  if (!comp) {
-    comp = {
-      name: component,
-      library,
-      icon: "gear",
-      inports: [],
-      outports: [],
-    };
-    componentLibrary.set(component, comp);
-  }
-  return comp;
-}
-
-/**
- * @param {string} compName
- * @param {string} portName
- * @param {'in' | 'out'} direction
- */
-function addPortToLibrary(compName, portName, direction) {
-  const comp = addComponentToLibrary(compName);
-
-  const ports = direction === "in" ? comp.inports : comp.outports;
-  if (ports.some((p) => p.name === portName)) {
-    return;
-  }
-
-  ports.push({ name: portName, addressable: false, type: "all" });
+  return libraryManager.getComponent(compName);
 }
 
 /**
@@ -310,8 +145,8 @@ function setupEditorEventListeners(editor) {
     if (!componentData) {
       componentData = await askForNewComponentDetails(componentName);
       if (!componentData) return;
-      componentLibrary.set(componentName, componentData);
-      await saveLibrary(directoryHandle);
+      libraryManager.setComponent(componentName, componentData);
+      await libraryManager.saveLibrary(directoryHandle);
     }
 
     const nodeId = `node_${Date.now()}`;
@@ -570,7 +405,7 @@ function setupEditorEventListeners(editor) {
 
     let componentData = getComponentFromLibrary(componentName);
     if (!componentData) {
-      componentData = { name: componentName, inports: [], outports: [] };
+      componentData = { name: componentName, type: "stub", inports: [], outports: [] };
     }
 
     const modal = /** @type {any} */ (componentModal);
@@ -587,10 +422,10 @@ function setupEditorEventListeners(editor) {
       const newComponentName = newData.name || componentName;
 
       if (newComponentName !== componentName) {
-        componentLibrary.delete(componentName);
+        libraryManager.removeComponent(componentName);
       }
 
-      componentLibrary.set(newComponentName, newData);
+      libraryManager.setComponent(newComponentName, newData);
 
       // Update all nodes that use this component
       const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
@@ -616,7 +451,7 @@ function setupEditorEventListeners(editor) {
         }
       });
 
-      await saveLibrary(directoryHandle);
+      await libraryManager.saveLibrary(directoryHandle);
       debouncedSave();
     }
   });
@@ -634,6 +469,7 @@ async function askForNewComponentDetails(componentName) {
   componentForm.schema = ComponentSignature;
   componentForm.data = {
     name: componentName,
+    type: "stub",
     icon: "gear",
     inports: [
       {
@@ -679,6 +515,7 @@ async function createNewGraph() {
 
   // Re-setup event listeners for editor
   setupEditorEventListeners(editor);
+  editor.libraryManager = libraryManager;
 
   fileSelector.minimize();
 }
@@ -689,29 +526,6 @@ function debouncedSave() {
     saveTimeout = null;
     saveGraph();
   }, 1000);
-}
-
-async function saveLibrary(/** @type {any} */ directoryHandle) {
-  if (!directoryHandle) return;
-  console.log("Saving library...");
-  try {
-    const modules = [];
-    const components = Array.from(componentLibrary.values());
-    if (components.length > 0) {
-      modules.push({ components });
-    }
-    const json = JSON.stringify({ modules }, null, 2);
-
-    const fileHandle = await directoryHandle.getFileHandle("fbp.library.json", {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-    await writable.write(json);
-    await writable.close();
-    console.log("Library saved successfully.");
-  } catch (err) {
-    console.error("Error saving library:", err);
-  }
 }
 
 async function saveGraph() {
@@ -859,10 +673,10 @@ async function loadFile(/** @type {any} */ fileHandle) {
 
       // Re-setup event listeners for editor
       setupEditorEventListeners(editor);
+      editor.libraryManager = libraryManager;
     }
 
     const elementsMap = new Map();
-    console.log(componentLibrary);
     if (editor) {
       for (const nodeId in g.nodes) {
         const node = g.nodes[nodeId];

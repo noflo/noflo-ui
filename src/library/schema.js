@@ -86,6 +86,13 @@ export const ComponentSignature = {
       uniqueItems: true,
       items: PortSignature,
     },
+    type: {
+      type: "string",
+      title: "Type",
+      description: "Component type",
+      default: "stub",
+      enum: ["subgraph", "elementary", "stub", "inferred"],
+    },
   },
 };
 
