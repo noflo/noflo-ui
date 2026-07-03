@@ -222,7 +222,6 @@ export class FileSelector extends HTMLElement {
 
     const fileList = this.shadowRoot.getElementById("file-list");
     fileList.innerHTML = "";
-
     for await (const entry of this.directoryHandle.values()) {
       if (
         entry.kind === "file" &&
@@ -230,7 +229,7 @@ export class FileSelector extends HTMLElement {
         (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))
       ) {
         const li = document.createElement("li");
-        li.textContent = entry.name;
+        li.textContent = entry.name.split('.')[0];
         li.addEventListener("click", () => {
           this.dispatchEvent(
             new CustomEvent("file-selected", {
