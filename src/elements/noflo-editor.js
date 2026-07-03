@@ -1,4 +1,5 @@
 import { SpaceManager } from "../library/SpaceManager.js";
+import { SelectionManager } from "../library/SelectionManager.js";
 
 /** @typedef {any} FlowExportedPort */
 /**
@@ -81,6 +82,8 @@ export class FlowEditor extends HTMLElement {
     this.offset = { x: 0, y: 0 };
     /** @type {SpaceManager} */
     this.spaceManager = new SpaceManager(this.zoom, this.offset);
+    /** @type {SelectionManager} */
+    this.selectionManager = new SelectionManager();
     /** @type {boolean} */
     this.isPanning = false;
     /** @type {boolean} */
@@ -89,8 +92,6 @@ export class FlowEditor extends HTMLElement {
     this.isDraggingWire = false;
     /** @type {Position} */
     this.lastPointerPos = { x: 0, y: 0 };
-    /** @type {NoFloNode | NoFloIIP | null} */
-    this.selectedNode = null;
     /** @type {Map<number, PointerEvent>} */
     this.activePointers = new Map();
     /** @type {number} */
@@ -99,10 +100,6 @@ export class FlowEditor extends HTMLElement {
     this.initialZoom = 1.0;
     /** @type {Position} */
     this.initialOffset = { x: 0, y: 0 };
-    /** @type {Set<NoFloNode | NoFloIIP | FlowExportedPort>} */
-    this.selectedNodes = new Set();
-    /** @type {Set<Edge>} */
-    this.selectedEdges = new Set();
     /** @type {boolean} */
     this.selectMode = false;
     /** @type {HTMLElement | null} */
@@ -131,28 +128,12 @@ export class FlowEditor extends HTMLElement {
     this.animationFrameId = null;
     /** @type {boolean} */
     this.isDraggingNodeInCollision = false;
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
-    this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
-    this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, {x: number, y: number}>} */
-    this.nodeVelocities = new Map();
-    /** @type {Position | null} */
-    this.draggingStartPointerPos = null;
-    /** @type {number | null} */
-    this.animationFrameId = null;
     /** @type {number | null} */
     this.panningPointerId = null;
     /** @type {number | null} */
     this.draggingNodePointerId = null;
     /** @type {number | null} */
     this.draggingWirePointerId = null;
-    /** @type {boolean} */
-    this.wasClickOnSelectedNode = false;
-    /** @type {NoFloNode | NoFloIIP | FlowExportedPort | null} */
-    this.clickedNode = null;
-    /** @type {number | null} */
-    this.heatmapInterval = null;
     /** @type {NoFloRadialMenu | null} */
     this.radialMenu = null;
     /** @type {number | null} */
@@ -199,6 +180,19 @@ export class FlowEditor extends HTMLElement {
     this._syncWithBody();
     this.render();
     this.setupInteractions();
+
+    const pills = this.shadowRoot.querySelector("noflo-selection-pills");
+    if (pills) {
+      pills.spaceManager = this.spaceManager;
+      pills.selectionManager = this.selectionManager;
+      pills.addEventListener("clear-selection", (e) => {
+        this.selectionManager.clear();
+      });
+    }
+
+    this.selectionManager.addEventListener("selection-changed", (e) => {
+      this._applySelection(e.detail);
+    });
 
     this.radialMenu = /** @type {NoFloRadialMenu} */ (
       document.createElement("noflo-radial-menu")
@@ -269,6 +263,48 @@ export class FlowEditor extends HTMLElement {
     });
 
     this.classList.add(ageClass);
+  }
+
+  /**
+   * @param {{nodes: string[], iips: string[], edges: string[]}} selection
+   * @private
+   */
+  _applySelection({ nodes, iips, edges }) {
+    // 1. Update nodes and exported ports
+    const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
+      this.nodeLayer?.querySelectorAll("noflo-node, noflo-exported-port") || []
+    );
+    allNodes.forEach((node) => {
+      const name = node.getAttribute("name");
+      if (nodes.includes(name)) {
+        node.setAttribute("selected", "");
+      } else {
+        node.removeAttribute("selected");
+      }
+    });
+
+    // 2. Update iips
+    const allIips = /** @type {NodeListOf<HTMLElement>} */ (
+      this.nodeLayer?.querySelectorAll("noflo-iip") || []
+    );
+    allIips.forEach((iip) => {
+      const name = iip.getAttribute("name");
+      if (iips.includes(name)) {
+        iip.setAttribute("selected", "");
+      } else {
+        iip.removeAttribute("selected");
+      }
+    });
+
+    // 3. Update edges
+    this.edges.forEach((edge) => {
+      const edgeId = this.getEdgeId(edge);
+      if (edges.includes(edgeId)) {
+        edge.visualPath.setAttribute("selected", "");
+      } else {
+        edge.visualPath.removeAttribute("selected");
+      }
+    });
   }
 
   render() {
@@ -398,6 +434,7 @@ export class FlowEditor extends HTMLElement {
         }
       </style>
       <div id="viewport">
+        <noflo-selection-pills></noflo-selection-pills>
         <div id="transform-layer">
           <canvas id="heatmap-canvas"></canvas>
           <svg id="grid-layer">
@@ -657,35 +694,6 @@ export class FlowEditor extends HTMLElement {
     return `${nameA}:${portAName}[${portAIdx}]->${nameB}:${portBName}[${portBIdx}]`;
   }
 
-  emitSelectionChanged() {
-    const nodes = Array.from(this.selectedNodes).filter(
-      (n) => n.tagName === "NOFLO-NODE",
-    );
-    const iips = Array.from(this.selectedNodes).filter(
-      (n) => n.tagName === "NOFLO-IIP",
-    );
-    const exportedPorts = Array.from(this.selectedNodes).filter(
-      (n) => n.tagName === "NOFLO-EXPORTED-PORT",
-    );
-
-    this.dispatchEvent(
-      new CustomEvent("selection-changed", {
-        detail: {
-          nodes: nodes.map((n) =>
-            this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n)),
-          ),
-          iips: iips.map((n) =>
-            this.getNodeName(/** @type {NoFloNode | NoFloIIP} */ (n)),
-          ),
-          exportedPorts: exportedPorts.map((n) => n.getAttribute("name")),
-          edges: Array.from(this.selectedEdges).map((e) => this.getEdgeId(e)),
-        },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
   setupInteractions() {
     this.addEventListener("pointerdown", (e) => {
       this.activePointers.set(e.pointerId, e);
@@ -808,7 +816,7 @@ export class FlowEditor extends HTMLElement {
           }
         } else if (
           this.draggingNodePointerId === e.pointerId &&
-          this.selectedNodes.size > 0 &&
+          (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0) &&
           !this.radialMenu?.isOpen
         ) {
           if (Math.hypot(dx, dy) > 3) {
@@ -827,8 +835,7 @@ export class FlowEditor extends HTMLElement {
           if (this.isDraggingNode) {
             /** @type {Array<{node: NoFloNode | NoFloIIP, x: number, y: number}>} */
             const idealMoves = [];
-            this.selectedNodes.forEach((node) => {
-              const initialPos = this.draggingNodesInitialPositions.get(node);
+            this.draggingNodesInitialPositions.forEach((initialPos, node) => {
               if (initialPos && this.draggingStartPointerPos) {
                 const idealX =
                   initialPos.x +
@@ -848,7 +855,12 @@ export class FlowEditor extends HTMLElement {
               ).querySelectorAll("noflo-node, noflo-iip");
               for (const other of otherNodes) {
                 const o = /** @type {NoFloNode | NoFloIIP} */ (other);
-                if (this.selectedNodes.has(o)) continue;
+                if (
+                  this.selectionManager.nodes.has(o.getAttribute("name")) ||
+                  this.selectionManager.iips.has(o.getAttribute("name"))
+                ) {
+                  continue;
+                }
                 const otherPos = o.position;
                 const otherSize = o.size || 80;
                 if (
@@ -949,7 +961,7 @@ export class FlowEditor extends HTMLElement {
         if (this.isDraggingNode) {
           /** @type {Array<{name: string, position: Position}>} */
           const movedNodes = [];
-          this.selectedNodes.forEach((node) => {
+          this.draggingNodesInitialPositions.forEach((initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
             this.spaceManager.updateNode(node.getAttribute("name") || "", node.position);
             const type = node.tagName.toLowerCase();
@@ -1004,7 +1016,7 @@ export class FlowEditor extends HTMLElement {
         this.lastPinchDistance = 0;
       }
 
-      if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+      if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
         this.selectMode = false;
       }
     });
@@ -1040,23 +1052,37 @@ export class FlowEditor extends HTMLElement {
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (this.selectedNodes.size > 0) {
-          this.dispatchEvent(
-            new CustomEvent("node-removal-attempt", {
-              detail: { nodes: Array.from(this.selectedNodes) },
-              bubbles: true,
-              composed: true,
-            }),
+        if (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0) {
+          const nodesToRemove = [];
+          const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
+            this.nodeLayer?.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port") || []
           );
-        } else if (this.selectedEdges.size > 0) {
-          this.selectedEdges.forEach((edge) => {
+          allNodes.forEach(n => {
+            if (this.selectionManager.nodes.has(n.getAttribute("name")) || this.selectionManager.iips.has(n.getAttribute("name"))) {
+              nodesToRemove.push(n);
+            }
+          });
+          if (nodesToRemove.length > 0) {
             this.dispatchEvent(
-              new CustomEvent("edge-removal-attempt", {
-                detail: { edge },
+              new CustomEvent("node-removal-attempt", {
+                detail: { nodes: nodesToRemove },
                 bubbles: true,
                 composed: true,
               }),
             );
+          }
+        } else if (this.selectionManager.edges.size > 0) {
+          this.selectionManager.edges.forEach((edgeId) => {
+            const edge = this.edges.find(e => this.getEdgeId(e) === edgeId);
+            if (edge) {
+              this.dispatchEvent(
+                new CustomEvent("edge-removal-attempt", {
+                  detail: { edge },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            }
           });
         }
       }
@@ -1474,25 +1500,27 @@ export class FlowEditor extends HTMLElement {
   handleNodeSelection(e, node, isMultiple) {
     const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
     this.clickedNode = n;
+    const id = n.getAttribute("name");
+    const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
 
     if (isMultiple) {
       if (this.selectMode) {
         this.radialMenu?.close();
       }
-      if (!this.selectedNodes.has(n)) {
-        this.selectedNodes.add(n);
-        n.setAttribute("selected", "");
+      const isAlreadySelected = this.selectionManager.nodes.has(id) || this.selectionManager.iips.has(id);
+      if (!isAlreadySelected) {
+        this.selectionManager.select(type, id, true);
         this.selectionChangedOnDown = true;
       } else {
         this.selectionChangedOnDown = false;
       }
     } else {
-      if (this.selectedNodes.has(n) && this.selectedNodes.size === 1) {
+      const isOnlyOneSelected = this.selectionManager[type].size === 1 && this.selectionManager[type].has(id);
+      if (isOnlyOneSelected) {
+        this.selectionManager.toggle(type, id);
         this.selectionChangedOnDown = false;
       } else {
-        this.clearNodeSelection(false);
-        this.selectedNodes.add(n);
-        n.setAttribute("selected", "");
+        this.selectionManager.select(type, id, false);
         this.selectionChangedOnDown = true;
       }
     }
@@ -1507,9 +1535,16 @@ export class FlowEditor extends HTMLElement {
     this.draggingNodesInitialPositions.clear();
     this.draggingNodesTargetPositions.clear();
     this.nodeVelocities.clear();
-    this.selectedNodes.forEach((node) => {
-      this.draggingNodesInitialPositions.set(node, { ...node.position });
-      this.draggingNodesTargetPositions.set(node, { ...node.position });
+    
+    const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
+      this.nodeLayer?.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port") || []
+    );
+    allNodes.forEach(el => {
+        const name = el.getAttribute("name");
+        if (this.selectionManager.nodes.has(name) || this.selectionManager.iips.has(name)) {
+            this.draggingNodesInitialPositions.set(el, { ...el.position });
+            this.draggingNodesTargetPositions.set(el, { ...el.position });
+        }
     });
 
     this.emitSelectionChanged();
@@ -1532,16 +1567,16 @@ export class FlowEditor extends HTMLElement {
 
     const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
     if (!n) return;
+    const id = n.getAttribute("name");
+    const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
 
     if (isMultiple) {
-      if (this.selectedNodes.has(n)) {
-        this.selectedNodes.delete(n);
-        n.removeAttribute("selected");
+      if (this.selectionManager[type].has(id)) {
+        this.selectionManager.toggle(type, id);
       }
     } else {
-      if (this.selectedNodes.has(n) && this.selectedNodes.size === 1) {
-        this.selectedNodes.delete(n);
-        n.removeAttribute("selected");
+      if (this.selectionManager[type].has(id) && this.selectionManager[type].size === 1) {
+        this.selectionManager.toggle(type, id);
       }
     }
 
@@ -1560,25 +1595,18 @@ export class FlowEditor extends HTMLElement {
     );
     if (!edge) return;
 
+    const edgeId = this.getEdgeId(edge);
+
     if (isMultiple) {
       if (this.selectMode) {
         this.radialMenu?.close();
       }
-      if (this.selectedEdges.has(edge)) {
-        this.selectedEdges.delete(edge);
-        edge.visualPath.removeAttribute("selected");
-      } else {
-        this.selectedEdges.add(edge);
-        edge.visualPath.setAttribute("selected", "");
-      }
+      this.selectionManager.toggle('edges', edgeId);
     } else {
-      if (this.selectedEdges.has(edge) && this.selectedEdges.size === 1) {
-        this.selectedEdges.delete(edge);
-        edge.visualPath.removeAttribute("selected");
+      if (this.selectionManager.edges.has(edgeId) && this.selectionManager.edges.size === 1) {
+        this.selectionManager.toggle('edges', edgeId);
       } else {
-        this.clearEdgeSelection(false);
-        this.selectedEdges.add(edge);
-        edge.visualPath.setAttribute("selected", "");
+        this.selectionManager.select('edges', edgeId, false);
       }
     }
 
@@ -1594,14 +1622,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   clearSelection(emit = true) {
-    this.selectedNodes.forEach((node) => {
-      node.removeAttribute("selected");
-    });
-    this.selectedNodes.clear();
+    this.selectionManager.clear();
 
-    this.clearEdgeSelection(false);
-
-    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
     }
 
@@ -1611,12 +1634,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   clearNodeSelection(emit = true) {
-    this.selectedNodes.forEach((node) => {
-      node.removeAttribute("selected");
-    });
-    this.selectedNodes.clear();
+    this.selectionManager.clearType('nodes');
 
-    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
     }
 
@@ -1626,12 +1646,9 @@ export class FlowEditor extends HTMLElement {
   }
 
   clearEdgeSelection(emit = true) {
-    this.selectedEdges.forEach((edge) => {
-      edge.visualPath.removeAttribute("selected");
-    });
-    this.selectedEdges.clear();
+    this.selectionManager.clearType('edges');
 
-    if (this.selectedNodes.size === 0 && this.selectedEdges.size === 0) {
+    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
       this.selectMode = false;
     }
 
@@ -2519,7 +2536,7 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    if (this.isDraggingNode && this.selectedNodes.size > 0) {
+    if (this.isDraggingNode && (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0)) {
       const node = this._getNearestNode(clientX, clientY);
       if (node) {
         return { type: FlowEditor.INTEREST_AREA_TYPES.NODE, element: node };
@@ -2588,7 +2605,7 @@ export class FlowEditor extends HTMLElement {
     const nodes = shadowRoot.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port");
     for (const node of nodes) {
       const n = /** @type {NoFloNode | NoFloIIP | any} */ (node);
-      if (this.selectedNodes.has(n)) continue;
+      if (this.selectionManager.nodes.has(n.getAttribute("name")) || this.selectionManager.iips.has(n.getAttribute("name"))) continue;
       const rect = n.getBoundingClientRect();
       if (
         clientX >= rect.left &&

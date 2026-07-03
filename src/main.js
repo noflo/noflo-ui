@@ -36,23 +36,6 @@ async function init() {
   // Initial setup
   const app = document.getElementById("app");
   if (app) {
-    const pills = document.createElement("noflo-selection-pills");
-    document.body.appendChild(pills);
-    pills.addEventListener("clear-selection", (e) => {
-      const editor = /** @type {FlowEditor} */ (
-        document.querySelector("noflo-editor")
-      );
-      if (!editor) return;
-      const event = /** @type {CustomEvent} */ (e);
-      if (event.detail.type === "nodes") {
-        editor.clearNodeSelection();
-      } else if (event.detail.type === "edges") {
-        editor.clearEdgeSelection();
-      } else {
-        editor.clearSelection();
-      }
-    });
-
     const editor = /** @type {FlowEditor} */ (
       document.createElement("noflo-editor")
     );
