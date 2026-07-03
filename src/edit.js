@@ -51,6 +51,8 @@ let saveTimeout = null;
 
 let componentModal = null;
 let componentForm = null;
+/** @type {FileSelector} */
+let fileSelector = null;
 
 async function init() {
   console.log("Initializing Flowbased Graph Editor...");
@@ -69,7 +71,7 @@ async function init() {
   setupEditorEventListeners(editor);
 
   // Setup File Selector
-  const fileSelector = document.querySelector("noflo-file-selector");
+  fileSelector = document.querySelector("noflo-file-selector");
   if (!fileSelector) {
     console.error("File selector element not found");
     return;
@@ -92,6 +94,10 @@ async function init() {
     const fileHandle = e.detail.fileHandle;
     await loadFile(fileHandle);
     fileSelector.minimize();
+  });
+
+  fileSelector.addEventListener("new-graph-requested", async (e) => {
+    await createNewGraph();
   });
 }
 
@@ -235,16 +241,34 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("node-creation-attempt", (e) => {
+  editor.addEventListener("node-creation-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
+
+    const componentName = await askForComponent();
+    let componentData = componentLibrary.get(componentName);
+
+    if (!componentData) {
+      componentData = await askForNewComponentDetails(componentName);
+      if (!componentData) return;
+      componentLibrary.set(componentName, componentData);
+      await saveLibrary(directoryHandle);
+    }
+
     const nodeId = `node_${Date.now()}`;
-    const componentName = "New Node";
-    const newNode = editor.addNode(nodeId, x, y, [{ addressable: false }], [{ addressable: false }], 80, componentName);
+    const newNode = editor.addNode(
+      nodeId,
+      x,
+      y,
+      componentData.inports || [{ addressable: false }],
+      componentData.outports || [{ addressable: false }],
+      80,
+      componentName,
+    );
     newNode.id = nodeId;
     newNode.setMetadata({
       name: newNode.id,
-      icon: 'gear',
+      icon: componentData.icon || "gear",
       componentName: componentName,
     });
 
@@ -321,8 +345,9 @@ function setupEditorEventListeners(editor) {
     const nodes = event.detail.nodes;
     if (currentGraph) {
       nodes.forEach((node) => {
-        currentGraph.removeNode(node.id);
-        node.remove();
+        const nodeId = node.id;
+        currentGraph.removeNode(nodeId);
+        editor.removeNode(node);
       });
     }
     debouncedSave();
@@ -338,6 +363,13 @@ function setupEditorEventListeners(editor) {
         edge.to.node,
         edge.to.port
       );
+    }
+    // Remove from editor.edges
+    if (editor.edges) {
+      const index = editor.edges.indexOf(edge);
+      if (index > -1) {
+        editor.edges.splice(index, 1);
+      }
     }
     edge.visualPath?.remove();
     edge.hitPath?.remove();
@@ -505,6 +537,63 @@ function setupEditorEventListeners(editor) {
       debouncedSave();
     }
   });
+}
+
+async function askForComponent() {
+  const name = window.prompt("Enter component name (or leave empty to use 'New Node'):");
+  return name ? name.trim() : "New Node";
+}
+
+async function askForNewComponentDetails(componentName) {
+  componentModal.open(`Define New Component: ${componentName}`);
+  componentForm.schema = ComponentSignature;
+  componentForm.data = {
+    name: componentName,
+    icon: "gear",
+    inports: [
+      {
+        name: "in",
+        type: "all",
+        addressable: false,
+      },
+    ],
+    outports: [
+      {
+        name: "out",
+        type: "all",
+        addressable: false,
+      },
+    ],
+  };
+
+  const submitted = await componentModal.submit();
+  if (submitted) {
+    return componentForm.data;
+  }
+  return null;
+}
+
+/**
+ * @returns {Promise<void>}
+ */
+async function createNewGraph() {
+  const name = window.prompt("Enter new graph name (without .json):");
+  if (!name) return;
+
+  const g = new Graph();
+  currentGraph = g;
+  currentFileName = name + ".graph.json";
+
+  // Recreate editor to clear it
+  const app = document.getElementById("app");
+  app.querySelectorAll("noflo-editor").forEach((el) => el.remove());
+  editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
+  app.appendChild(editor);
+
+  // Re-setup event listeners for editor
+  setupEditorEventListeners(editor);
+
+  fileSelector.minimize();
 }
 
 function debouncedSave() {

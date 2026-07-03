@@ -125,9 +125,9 @@ export class FileSelector extends HTMLElement {
           background-color: #f0f0f0;
         }
 
-        button {
-          padding: 0.5rem 1rem;
-          cursor: pointer;
+        #new-graph-btn {
+          margin-top: 10px;
+          width: 100%;
         }
       </style>
 
@@ -143,6 +143,7 @@ export class FileSelector extends HTMLElement {
         <div class="control-group">
           <div class="control-label">Files</div>
           <ul id="file-list"></ul>
+          <button id="new-graph-btn" type="button">New Graph</button>
         </div>
       </div>
 
@@ -155,9 +156,21 @@ export class FileSelector extends HTMLElement {
       .getElementById("start-btn")
       .addEventListener("click", this.handleOpenDirectory);
     this.shadowRoot
+      .getElementById("new-graph-btn")
+      .addEventListener("click", this.handleNewGraph);
+    this.shadowRoot
       .getElementById("minimize-btn")
       .addEventListener("click", this.handleExpand);
   }
+
+  handleNewGraph = () => {
+    this.dispatchEvent(
+      new CustomEvent("new-graph-requested", {
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
 
   handleExpand = () => {
     this.shadowRoot.getElementById("minimize-btn").style.display = "none";
@@ -213,6 +226,7 @@ export class FileSelector extends HTMLElement {
     for await (const entry of this.directoryHandle.values()) {
       if (
         entry.kind === "file" &&
+        entry.name !== "fbp.library.json" &&
         (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))
       ) {
         const li = document.createElement("li");

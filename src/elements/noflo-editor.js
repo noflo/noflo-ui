@@ -1999,6 +1999,42 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * @param {NoFloNode} node
+   */
+  removeNode(node) {
+    if (!node) return;
+
+    const name = node.getAttribute("name");
+
+    if (node.parentNode) {
+      node.parentNode.removeChild(node);
+    }
+    if (name) {
+      this.spaceManager.removeNode(name);
+    }
+
+    // Remove associated edges
+    if (this.edges) {
+      const edgesToRemove = this.edges.filter(edge => {
+        const nodeA = edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
+        const nodeB = edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
+        return (nodeA && nodeA.getAttribute("name") === name) || (nodeB && nodeB.getAttribute("name") === name);
+      });
+
+      edgesToRemove.forEach(edge => {
+        edge.visualPath?.remove();
+        edge.hitPath?.remove();
+      });
+
+      this.edges = this.edges.filter(edge => {
+        const nodeA = edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
+        const nodeB = edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
+        return !((nodeA && nodeA.getAttribute("name") === name) || (nodeB && nodeB.getAttribute("name") === name));
+      });
+    }
+  }
+
+  /**
    * @param {NoFloIIP} iip
    */
   removeIIP(iip) {
@@ -2266,6 +2302,7 @@ export class FlowEditor extends HTMLElement {
     const node = /** @type {NoFloNode} */ (
       document.createElement("noflo-node")
     );
+    node.id = name;
     node.setAttribute("name", name);
     node.setAttribute("size", size.toString());
     node.textContent = name;
@@ -2293,6 +2330,7 @@ export class FlowEditor extends HTMLElement {
     const size = 20;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const exportedPort = /** @type {any} */ (document.createElement("noflo-exported-port"));
+    exportedPort.id = name;
     exportedPort.name = name;
     exportedPort.setAttribute("name", name);
     exportedPort.dataset.portName = name;
@@ -2362,6 +2400,7 @@ export class FlowEditor extends HTMLElement {
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
     const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
     iip.setAttribute("name", id);
+    iip.id = id;
     iip.position = snapped;
     iip.size = size;
     this.spaceManager.addElement(id, snapped, size);
