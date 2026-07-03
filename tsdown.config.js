@@ -23,6 +23,8 @@ export default defineConfig([
     comments: true,
     compilerOptions: {
       allowJs: true,
+      declarationMap: true,
+      isolatedDeclarations: true,
     },
     copy: [
       {

@@ -40,7 +40,9 @@ customElements.define("noflo-file-selector", FileSelector);
 /** @type {Map<string, ComponentDefinition>} */
 const componentLibrary = new Map();
 
+/** @type {FileSystemDirectoryHandle | null} */
 let directoryHandle = null;
+/** @type {FlowEditor | null} */
 let editor = null;
 /** @type {any} */
 let currentGraph = null;
@@ -49,9 +51,11 @@ let currentFileName = "";
 /** @type {number | null} */
 let saveTimeout = null;
 
+/** @type {any} */
 let componentModal = null;
+/** @type {any} */
 let componentForm = null;
-/** @type {FileSelector} */
+/** @type {FileSelector | null} */
 let fileSelector = null;
 
 async function init() {
@@ -71,7 +75,7 @@ async function init() {
   setupEditorEventListeners(editor);
 
   // Setup File Selector
-  fileSelector = document.querySelector("noflo-file-selector");
+  fileSelector = /** @type {FileSelector} */ (document.querySelector("noflo-file-selector"));
   if (!fileSelector) {
     console.error("File selector element not found");
     return;
@@ -79,24 +83,31 @@ async function init() {
 
   // Create component editor modal
   componentModal = document.createElement("noflo-modal");
-  componentForm = document.createElement("noflo-json-form");
+  componentForm = /** @type {HTMLElement} */ (document.createElement("noflo-json-form"));
   componentModal.appendChild(componentForm);
   app.appendChild(componentModal);
 
   fileSelector.addEventListener("directory-selected", async (e) => {
-    directoryHandle = e.detail.directoryHandle;
-    console.log("Directory selected:", directoryHandle.name);
+    const event = /** @type {CustomEvent} */ (e);
+    const handle = /** @type {FileSystemDirectoryHandle} */ (event.detail.directoryHandle);
+    if (handle) {
+      directoryHandle = handle;
+      console.log("Directory selected:", handle.name);
 
-    await loadLibrary(directoryHandle);
+      await loadLibrary(handle);
+    }
   });
 
   fileSelector.addEventListener("file-selected", async (e) => {
-    const fileHandle = e.detail.fileHandle;
-    await loadFile(fileHandle);
-    fileSelector.minimize();
+    const event = /** @type {CustomEvent} */ (e);
+    const fileHandle = /** @type {FileSystemFileHandle} */ (event.detail.fileHandle);
+    if (fileHandle && fileSelector) {
+      await loadFile(fileHandle);
+      fileSelector.minimize();
+    }
   });
 
-  fileSelector.addEventListener("new-graph-requested", async (e) => {
+  fileSelector.addEventListener("new-graph-requested", async () => {
     await createNewGraph();
   });
 }
@@ -127,7 +138,7 @@ async function loadLibrary(directoryHandle) {
           icon: "gear",
           ...comp,
         };
-        componentLibrary.set(comp.name, comp);
+        componentLibrary.set(comp.name, definition);
       }
     }
   } else {
@@ -201,6 +212,7 @@ async function inferLibraryFromFiles(directoryHandle) {
  * @param {'in' | 'out'} direction
  */
 function addPortToLibrary(compName, portName, direction) {
+  /** @type {any} */
   let comp = componentLibrary.get(compName);
   if (!comp) {
     comp = {
@@ -220,6 +232,9 @@ function addPortToLibrary(compName, portName, direction) {
   ports.push({ name: portName, addressable: false, type: "all" });
 }
 
+/**
+ * @param {FlowEditor} editor
+ */
 function setupEditorEventListeners(editor) {
   editor.addEventListener("wire-connection-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
@@ -266,7 +281,7 @@ function setupEditorEventListeners(editor) {
       componentName,
     );
     newNode.id = nodeId;
-    newNode.setMetadata({
+    (/** @type {any} */ (newNode)).setMetadata({
       name: newNode.id,
       icon: componentData.icon || "gear",
       componentName: componentName,
@@ -352,7 +367,7 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const nodes = event.detail.nodes;
     if (currentGraph) {
-      nodes.forEach((node) => {
+      nodes.forEach((/** @type {any} */ node) => {
         const nodeId = node.id;
         currentGraph.removeNode(nodeId);
         editor.removeNode(node);
@@ -393,7 +408,7 @@ function setupEditorEventListeners(editor) {
       iipElement.value = newValue;
       if (currentGraph) {
         const index = currentGraph.initializers.findIndex(
-          (init) => init.metadata?.id === iipElement.id,
+          (/** @type {any} */ init) => init.metadata?.id === iipElement.id,
         );
         if (index !== -1) {
           const initializer = currentGraph.initializers[index];
@@ -424,7 +439,7 @@ function setupEditorEventListeners(editor) {
     editor.removeIIP(/** @type {FlowIIP} */ (iip));
     if (currentGraph) {
       const index = currentGraph.initializers.findIndex(
-        (init) => init.metadata?.id === iip.id,
+        (/** @type {any} */ init) => init.metadata?.id === iip.id,
       );
       if (index !== -1) {
         const initializer = currentGraph.initializers[index];
@@ -486,7 +501,7 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const { nodes } = event.detail;
     if (currentGraph) {
-      nodes.forEach((move) => {
+      nodes.forEach((/** @type {any} */ move) => {
         if (move.type === "noflo-exported-port") {
           if (move.direction === "in") {
             currentGraph.setInportMetadata(move.portName, move.position);
@@ -514,13 +529,16 @@ function setupEditorEventListeners(editor) {
       componentData = { name: componentName, inports: [], outports: [] };
     }
 
-    componentModal.open(`Edit Component: ${componentName}`);
-    componentForm.schema = ComponentSignature;
-    componentForm.data = componentData;
+    const modal = /** @type {any} */ (componentModal);
+    const form = /** @type {any} */ (componentForm);
 
-    const submitted = await componentModal.submit();
+    modal.open(`Edit Component: ${componentName}`);
+    form.schema = ComponentSignature;
+    form.data = componentData;
+
+    const submitted = await modal.submit();
     if (submitted) {
-      const newData = componentForm.data;
+      const newData = form.data;
 
       const newComponentName = newData.name || componentName;
 
@@ -542,11 +560,11 @@ function setupEditorEventListeners(editor) {
             n.setAttribute("component", newComponentName);
           }
           const updatedDef = componentLibrary.get(newComponentName);
-          if (updatedDef && n.setPorts) {
-            n.setPorts(updatedDef.inports, updatedDef.outports);
+          if (updatedDef && (/** @type {any} */ (n)).setPorts) {
+            (/** @type {any} */ (n)).setPorts(updatedDef.inports, updatedDef.outports);
           }
-          if (n.setMetadata) {
-            n.setMetadata({
+          if ((/** @type {any} */ (n)).setMetadata) {
+            (/** @type {any} */ (n)).setMetadata({
               componentName: newComponentName,
               icon: newData.icon,
             });
@@ -591,7 +609,7 @@ async function askForNewComponentDetails(componentName) {
 
   const submitted = await componentModal.submit();
   if (submitted) {
-    return componentForm.data;
+    return /** @type {ComponentDefinition} */ (componentForm.data);
   }
   return null;
 }
@@ -629,7 +647,7 @@ function debouncedSave() {
   }, 1000);
 }
 
-async function saveLibrary(directoryHandle) {
+async function saveLibrary(/** @type {any} */ directoryHandle) {
   if (!directoryHandle) return;
   console.log("Saving library...");
   try {
@@ -656,7 +674,7 @@ async function saveGraph() {
   if (!currentGraph || !directoryHandle || !currentFileName) return;
   console.log("Saving graph...");
   try {
-    await saveGraphAsJson(directoryHandle, currentFileName, currentGraph);
+    await saveGraphAsJson(/** @type {any} */ (directoryHandle), currentFileName, currentGraph);
     console.log("Graph saved successfully.");
   } catch (err) {
     console.error("Error saving graph:", err);
@@ -760,7 +778,7 @@ async function saveGraphAsJson(directoryHandle, originalFileName, graph) {
   return newFileName;
 }
 
-async function loadFile(fileHandle) {
+async function loadFile(/** @type {any} */ fileHandle) {
   const isFbp = fileHandle.name.endsWith(".fbp");
   try {
     const file = await fileHandle.getFile();
@@ -770,7 +788,7 @@ async function loadFile(fileHandle) {
     if (isFbp) {
       g = await graph.loadFBP(text);
       placeMissingElements(g);
-      await saveGraphAsJson(directoryHandle, fileHandle.name, g);
+      await saveGraphAsJson(/** @type {any} */ (directoryHandle), fileHandle.name, g);
       await fileHandle.remove();
       console.log(
         `Converted ${fileHandle.name} to .graph.json and removed original.`,
@@ -788,175 +806,174 @@ async function loadFile(fileHandle) {
 
     // Recreate editor to clear it
     const app = document.getElementById("app");
-    app.querySelectorAll("noflo-editor").forEach((el) => {
-      el.remove();
-    });
-    editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
-    app.appendChild(editor);
-
-    // Re-setup event listeners for editor
-    setupEditorEventListeners(editor);
-
-    const elementsMap = new Map();
-    for (const nodeId in g.nodes) {
-      const node = g.nodes[nodeId];
-      const x = node.metadata?.x || 0;
-      const y = node.metadata?.y || 0;
-
-      const comp = componentLibrary.get(node.component);
-      console.log(comp);
-      const inPorts = comp ? comp.inports : undefined;
-      const outPorts = comp ? comp.outports : undefined;
-
-      const n = editor.addNode(
-        node.id,
-        x,
-        y,
-        inPorts,
-        outPorts,
-        80,
-        node.component,
-      );
-      n.id = node.id; // Ensure the DOM element has the correct ID
-      n.setMetadata({
-        name: node.id,
-        icon: comp.icon || "gear",
-        componentName: node.component,
+    if (app) {
+      app.querySelectorAll("noflo-editor").forEach((el) => {
+        el.remove();
       });
-      elementsMap.set(node.id, n);
+      editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
+      app.appendChild(editor);
+
+      // Re-setup event listeners for editor
+      setupEditorEventListeners(editor);
     }
 
-    for (const iip of g.initializers) {
-      const x = iip.metadata?.x || 0;
-      const y = iip.metadata?.y || 0;
+    const elementsMap = new Map();
+    if (editor) {
+      for (const nodeId in g.nodes) {
+        const node = g.nodes[nodeId];
+        const x = node.metadata?.x || 0;
+        const y = node.metadata?.y || 0;
 
-      let port = null;
-      if (iip.to && iip.to.node && iip.to.port) {
-        const toNode = elementsMap.get(iip.to.node);
-        if (toNode) {
-          port = toNode.shadowRoot?.querySelector(
-            `.port[data-port-name="${iip.to.port}"]`,
+        const comp = componentLibrary.get(node.component);
+        console.log(comp);
+        const inPorts = comp ? comp.inports : undefined;
+        const outPorts = comp ? comp.outports : undefined;
+
+        const n = editor.addNode(
+          node.id,
+          x,
+          y,
+          inPorts,
+          outPorts,
+          80,
+          node.component,
+        );
+        n.id = node.id; // Ensure the DOM element has the correct ID
+        (/** @type {any} */ (n)).setMetadata({
+          name: node.id,
+          icon: comp?.icon || "gear",
+          componentName: node.component,
+        });
+        elementsMap.set(node.id, n);
+      }
+
+      for (const iip of g.initializers) {
+        const x = iip.metadata?.x || 0;
+        const y = iip.metadata?.y || 0;
+
+        let port = null;
+        if (iip.to && iip.to.node && iip.to.port) {
+          const toNode = elementsMap.get(iip.to.node);
+          if (toNode) {
+            port = toNode.shadowRoot?.querySelector(
+              `.port[data-port-name="${iip.to.port}"]`,
+            );
+          }
+        }
+
+        const iipId =
+          iip.metadata?.id || iip.from?.data || "iip_" + Math.random();
+        const newIIP = editor.addIIP(
+          x,
+          y,
+          /** @type {any} */ (port),
+          iip.from?.data || "Value",
+        );
+        newIIP.id = iipId;
+        elementsMap.set(iipId, newIIP);
+      }
+
+      // Load exported ports as pseudo-nodes
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      let hasNodes = false;
+      for (const nodeId in g.nodes) {
+        const node = g.nodes[nodeId];
+        const x = node.metadata?.x || 0;
+        const y = node.metadata?.y || 0;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        hasNodes = true;
+      }
+
+      const inports = g.inports;
+      const outports = g.outports;
+
+      if (hasNodes) {
+        if (inports && typeof inports === "object") {
+          let i = 0;
+          for (const portName in inports) {
+            const inportInfo = inports[portName];
+            const nodeEl = elementsMap.get(inportInfo.process);
+            let targetPort = null;
+            if (nodeEl) {
+              targetPort = nodeEl.shadowRoot?.querySelector(
+                `.port[data-port-name="${inportInfo.port}"]`,
+              );
+            }
+
+            if (targetPort) {
+              editor.addExportedPort(
+                minX - 150,
+                minY + i * 60,
+                portName,
+                "in",
+                targetPort,
+              );
+            }
+            i++;
+          }
+        }
+        if (outports && typeof outports === "object") {
+          let i = 0;
+          for (const portName in outports) {
+            const outportInfo = outports[portName];
+            const nodeEl = elementsMap.get(outportInfo.process);
+            let targetPort = null;
+            if (nodeEl) {
+              targetPort = nodeEl.shadowRoot?.querySelector(
+                `.port[data-port-name="${outportInfo.port}"]`,
+              );
+            }
+
+            if (targetPort) {
+              editor.addExportedPort(
+                maxX + 150,
+                minY + i * 60,
+                portName,
+                "out",
+                targetPort,
+              );
+            }
+            i++;
+          }
+        }
+      } else {
+        if (inports && typeof inports === "object") {
+          let i = 0;
+          for (const portName in inports) {
+            i++;
+          }
+        }
+        if (outports && typeof outports === "object") {
+          let i = 0;
+          for (const portName in outports) {
+            i++;
+          }
+        }
+      }
+
+      for (const conn of g.edges) {
+        const fromEl = elementsMap.get(conn.from.node);
+        const toEl = elementsMap.get(conn.to.node);
+
+        if (fromEl && toEl) {
+          editor.connectNodes(
+            fromEl,
+            conn.from.port,
+            toEl,
+            conn.to.port,
+            conn.metadata?.route,
           );
         }
       }
 
-      const iipId =
-        iip.metadata?.id || iip.from?.data || "iip_" + Math.random();
-      const newIIP = editor.addIIP(
-        x,
-        y,
-        port ? /** @type {HTMLElement} */ (port) : null,
-        iip.from?.data || "Value",
-      );
-      newIIP.id = iipId;
-      elementsMap.set(iipId, newIIP);
+      editor.fitNodesToViewport();
     }
-
-    // Load exported ports as pseudo-nodes
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    let hasNodes = false;
-    for (const nodeId in g.nodes) {
-      const node = g.nodes[nodeId];
-      const x = node.metadata?.x || 0;
-      const y = node.metadata?.y || 0;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-      hasNodes = true;
-    }
-
-    const inports = g.inports;
-    const outports = g.outports;
-
-    if (hasNodes) {
-      if (inports && typeof inports === "object") {
-        let i = 0;
-        for (const portName in inports) {
-          const inportInfo = inports[portName];
-          const nodeEl = elementsMap.get(inportInfo.process);
-          let targetPort = null;
-          if (nodeEl) {
-            targetPort = nodeEl.shadowRoot?.querySelector(
-              `.port[data-port-name="${inportInfo.port}"]`,
-            );
-          }
-
-          if (targetPort) {
-            editor.addExportedPort(
-              minX - 150,
-              minY + i * 60,
-              portName,
-              "in",
-              targetPort,
-            );
-          }
-          i++;
-        }
-      }
-      if (outports && typeof outports === "object") {
-        let i = 0;
-        for (const portName in outports) {
-          const outportInfo = outports[portName];
-          const nodeEl = elementsMap.get(outportInfo.process);
-          let targetPort = null;
-          if (nodeEl) {
-            targetPort = nodeEl.shadowRoot?.querySelector(
-              `.port[data-port-name="${outportInfo.port}"]`,
-            );
-          }
-
-          if (targetPort) {
-            editor.addExportedPort(
-              maxX + 150,
-              minY + i * 60,
-              portName,
-              "out",
-              targetPort,
-            );
-          }
-          i++;
-        }
-      }
-    } else {
-      if (inports && typeof inports === "object") {
-        let i = 0;
-        for (const portName in inports) {
-          // Since there are no nodes, we can't find a port.
-          // But if it's a standalone graph with inports, they must be connected to something.
-          // Without nodes, we can't satisfy the requirement.
-          // For now, we'll just skip it or it will be a bug.
-          // Actually, if there are no nodes, these inports/outports might not be valid in this editor.
-          i++;
-        }
-      }
-      if (outports && typeof outports === "object") {
-        let i = 0;
-        for (const portName in outports) {
-          i++;
-        }
-      }
-    }
-
-    for (const conn of g.edges) {
-      const fromEl = elementsMap.get(conn.from.node);
-      const toEl = elementsMap.get(conn.to.node);
-
-      if (fromEl && toEl) {
-        editor.connectNodes(
-          fromEl,
-          conn.from.port,
-          toEl,
-          conn.to.port,
-          conn.metadata?.route,
-        );
-      }
-    }
-
-    editor.fitNodesToViewport();
   } catch (err) {
     console.error("Error loading file:", err);
   }
