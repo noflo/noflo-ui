@@ -129,8 +129,8 @@ async function init() {
         "Source",
         100,
         200,
-        [{ type: "regular" }],
-        [{ type: "regular", name: "out" }],
+        [{ addressable: false }],
+        [{ name: "out" }],
       )
     );
     source.setMetadata({ name: "Source", icon: "play" });
@@ -140,10 +140,10 @@ async function init() {
         "Filter",
         300,
         100,
-        [{ type: "regular", name: "in" }],
+        [{ name: "in" }],
         [
-          { type: "regular", name: "out" },
-          { type: "regular", name: "error" },
+          { name: "out" },
+          { name: "error" },
         ],
       )
     );
@@ -154,8 +154,8 @@ async function init() {
         "Splitter",
         300,
         300,
-        [{ type: "regular", name: "in" }],
-        [{ type: "array", name: "out", size: 3 }],
+        [{ name: "in" }],
+        [{ name: "out", addressable: true }],
       )
     );
     splitter.setMetadata({ name: "Splitter", icon: "code-branch" });
@@ -165,8 +165,8 @@ async function init() {
         "Aggregator",
         500,
         300,
-        [{ type: "array", name: "in", size: 3 }],
-        [{ type: "regular", name: "out" }],
+        [{ name: "in", addressable: true }],
+        [{ name: "out" }],
       )
     );
     aggregator.setMetadata({
@@ -175,12 +175,12 @@ async function init() {
     });
 
     const logger = /** @type {FlowNode} */ (
-      editor.addNode("Logger", 700, 100, [{ type: "regular", name: "in" }], [])
+      editor.addNode("Logger", 700, 100, [{ name: "in" }], [])
     );
     logger.setMetadata({ name: "Logger", icon: "terminal" });
 
     const sink = /** @type {FlowNode} */ (
-      editor.addNode("Sink", 700, 300, [{ type: "regular", name: "in" }], [])
+      editor.addNode("Sink", 700, 300, [{ name: "in" }], [])
     );
     sink.setMetadata({ name: "Sink", icon: "database" });
 
@@ -189,8 +189,8 @@ async function init() {
         "Router",
         500,
         100,
-        [{ type: "regular", name: "in" }],
-        [{ type: "regular", name: "out" }],
+        [{ name: "in" }],
+        [{ name: "out" }],
         40,
       )
     );

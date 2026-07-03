@@ -10,7 +10,6 @@ import icons from "../../vendor/fontawesome-icons-7.3.0.js";
  * @typedef {Object} PortConfig
  * @property {string} [name]
  * @property {'regular' | 'array'} [type]
- * @property {number} [size]
  */
 
 /**
@@ -344,7 +343,7 @@ export class FlowNode extends HTMLElement {
   createPort(index, totalPorts, isOutport, cfg) {
     const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
     const addressable = cfg.addressable || false;
-    const size = cfg.size || 1;
+    const size = addressable ? 3 : 1;
 
     const angleRange = Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;

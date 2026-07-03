@@ -22,7 +22,7 @@ export const PortSignature = {
       type: 'string',
       description: 'Port datatype',
       example: 'string',
-      default: 'any',
+      default: 'all',
       enum: [
         'all',
         'string',
