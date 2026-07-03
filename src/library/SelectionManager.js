@@ -23,8 +23,8 @@ export class SelectionManager extends EventTarget {
 
   /**
    * Selects an item, optionally preserving existing selections (multi-select)
-   * @param {'nodes'|'edges'|'iips'|'ports'} type 
-   * @param {string} id 
+   * @param {'nodes'|'edges'|'iips'|'ports'} type
+   * @param {string} id
    * @param {boolean} [multiSelect=false] (e.g., is Shift key held?)
    */
   select(type, id, multiSelect = false) {
@@ -47,8 +47,8 @@ export class SelectionManager extends EventTarget {
 
   /**
    * Toggles the selection state of an item
-   * @param {'nodes'|'edges'|'iips'|'ports'} type 
-   * @param {string} id 
+   * @param {'nodes'|'edges'|'iips'|'ports'} type
+   * @param {string} id
    */
   toggle(type, id) {
     if (this[type].has(id)) {
@@ -96,8 +96,12 @@ export class SelectionManager extends EventTarget {
    * @returns {boolean}
    */
   hasAnySelection() {
-    return this.nodes.size > 0 || this.edges.size > 0 || 
-           this.iips.size > 0 || this.ports.size > 0;
+    return (
+      this.nodes.size > 0 ||
+      this.edges.size > 0 ||
+      this.iips.size > 0 ||
+      this.ports.size > 0
+    );
   }
 
   /**
@@ -109,7 +113,7 @@ export class SelectionManager extends EventTarget {
       nodes: Array.from(this.nodes),
       edges: Array.from(this.edges),
       iips: Array.from(this.iips),
-      ports: Array.from(this.ports)
+      ports: Array.from(this.ports),
     };
   }
 
@@ -119,8 +123,10 @@ export class SelectionManager extends EventTarget {
    */
   _notify() {
     // Dispatch a standard CustomEvent with the new state
-    this.dispatchEvent(new CustomEvent('selection-changed', {
-      detail: this.getSnapshot()
-    }));
+    this.dispatchEvent(
+      new CustomEvent("selection-changed", {
+        detail: this.getSnapshot(),
+      }),
+    );
   }
 }

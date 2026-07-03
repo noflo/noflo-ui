@@ -1,7 +1,7 @@
 import { Graph, graph } from "noflo";
 import { FlowEditor } from "./elements/noflo-editor.js";
-import { FileSelector } from "./elements/noflo-file-selector.js";
 import { FlowExportedPort } from "./elements/noflo-exported-port.js";
+import { FileSelector } from "./elements/noflo-file-selector.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
@@ -124,7 +124,7 @@ async function loadLibrary(directoryHandle) {
     for (const module of json.modules) {
       for (const comp of module.components) {
         const definition = {
-          icon: 'gear',
+          icon: "gear",
           ...comp,
         };
         componentLibrary.set(comp.name, comp);
@@ -205,7 +205,7 @@ function addPortToLibrary(compName, portName, direction) {
   if (!comp) {
     comp = {
       name: compName,
-      icon: 'gear',
+      icon: "gear",
       inports: [],
       outports: [],
     };
@@ -217,7 +217,7 @@ function addPortToLibrary(compName, portName, direction) {
     return;
   }
 
-  ports.push({ name: portName, addressable: false, type: 'all' });
+  ports.push({ name: portName, addressable: false, type: "all" });
 }
 
 function setupEditorEventListeners(editor) {
@@ -234,7 +234,7 @@ function setupEditorEventListeners(editor) {
           nodeA.getAttribute("name"),
           portA.dataset.portName,
           nodeB.getAttribute("name"),
-          portB.dataset.portName
+          portB.dataset.portName,
         );
       }
     }
@@ -315,10 +315,18 @@ function setupEditorEventListeners(editor) {
           const nodeName = nodeElement.getAttribute("name");
           const portName = startPort.dataset.portName;
           const isArrayPort = startPort.dataset.portType === "array";
-          const index = startPort.dataset.portIndex ? parseInt(startPort.dataset.portIndex, 10) : null;
+          const index = startPort.dataset.portIndex
+            ? parseInt(startPort.dataset.portIndex, 10)
+            : null;
           const metadata = { x, y, id: iipId };
           if (isArrayPort && index !== null) {
-            currentGraph.addInitialIndex("Value", nodeName, portName, index, metadata);
+            currentGraph.addInitialIndex(
+              "Value",
+              nodeName,
+              portName,
+              index,
+              metadata,
+            );
           } else {
             currentGraph.addInitial("Value", nodeName, portName, metadata);
           }
@@ -361,7 +369,7 @@ function setupEditorEventListeners(editor) {
         edge.from.node,
         edge.from.port,
         edge.to.node,
-        edge.to.port
+        edge.to.port,
       );
     }
     // Remove from editor.edges
@@ -384,7 +392,9 @@ function setupEditorEventListeners(editor) {
     if (newValue !== null) {
       iipElement.value = newValue;
       if (currentGraph) {
-        const index = currentGraph.initializers.findIndex((init) => init.metadata?.id === iipElement.id);
+        const index = currentGraph.initializers.findIndex(
+          (init) => init.metadata?.id === iipElement.id,
+        );
         if (index !== -1) {
           const initializer = currentGraph.initializers[index];
           const { node, port, index: iipIndex } = initializer.to;
@@ -392,7 +402,13 @@ function setupEditorEventListeners(editor) {
 
           currentGraph.removeInitial(node, port);
           if (iipIndex !== undefined && iipIndex !== null) {
-            currentGraph.addInitialIndex(newValue, node, port, iipIndex, metadata);
+            currentGraph.addInitialIndex(
+              newValue,
+              node,
+              port,
+              iipIndex,
+              metadata,
+            );
           } else {
             currentGraph.addInitial(newValue, node, port, metadata);
           }
@@ -407,7 +423,9 @@ function setupEditorEventListeners(editor) {
     const { iip } = event.detail;
     editor.removeIIP(/** @type {FlowIIP} */ (iip));
     if (currentGraph) {
-      const index = currentGraph.initializers.findIndex((init) => init.metadata?.id === iip.id);
+      const index = currentGraph.initializers.findIndex(
+        (init) => init.metadata?.id === iip.id,
+      );
       if (index !== -1) {
         const initializer = currentGraph.initializers[index];
         currentGraph.removeInitial(initializer.to.node, initializer.to.port);
@@ -528,7 +546,10 @@ function setupEditorEventListeners(editor) {
             n.setPorts(updatedDef.inports, updatedDef.outports);
           }
           if (n.setMetadata) {
-            n.setMetadata({ componentName: newComponentName, icon: newData.icon });
+            n.setMetadata({
+              componentName: newComponentName,
+              icon: newData.icon,
+            });
           }
         }
       });
@@ -540,7 +561,9 @@ function setupEditorEventListeners(editor) {
 }
 
 async function askForComponent() {
-  const name = window.prompt("Enter component name (or leave empty to use 'New Node'):");
+  const name = window.prompt(
+    "Enter component name (or leave empty to use 'New Node'):",
+  );
   return name ? name.trim() : "New Node";
 }
 
@@ -586,7 +609,9 @@ async function createNewGraph() {
 
   // Recreate editor to clear it
   const app = document.getElementById("app");
-  app.querySelectorAll("noflo-editor").forEach((el) => el.remove());
+  app.querySelectorAll("noflo-editor").forEach((el) => {
+    el.remove();
+  });
   editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
   app.appendChild(editor);
 
@@ -668,7 +693,9 @@ function placeMissingElements(graph, padding = 50) {
     elements.push(iip);
   }
 
-  const missing = elements.filter(el => el.metadata?.x === undefined || el.metadata?.y === undefined);
+  const missing = elements.filter(
+    (el) => el.metadata?.x === undefined || el.metadata?.y === undefined,
+  );
   if (missing.length === 0) return;
 
   let maxX = 0;
@@ -761,7 +788,9 @@ async function loadFile(fileHandle) {
 
     // Recreate editor to clear it
     const app = document.getElementById("app");
-    app.querySelectorAll("noflo-editor").forEach(el => el.remove())
+    app.querySelectorAll("noflo-editor").forEach((el) => {
+      el.remove();
+    });
     editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
     app.appendChild(editor);
 
@@ -779,11 +808,19 @@ async function loadFile(fileHandle) {
       const inPorts = comp ? comp.inports : undefined;
       const outPorts = comp ? comp.outports : undefined;
 
-      const n = editor.addNode(node.id, x, y, inPorts, outPorts, 80, node.component);
+      const n = editor.addNode(
+        node.id,
+        x,
+        y,
+        inPorts,
+        outPorts,
+        80,
+        node.component,
+      );
       n.id = node.id; // Ensure the DOM element has the correct ID
       n.setMetadata({
         name: node.id,
-        icon: comp.icon || 'gear',
+        icon: comp.icon || "gear",
         componentName: node.component,
       });
       elementsMap.set(node.id, n);
@@ -803,7 +840,8 @@ async function loadFile(fileHandle) {
         }
       }
 
-      const iipId = iip.metadata?.id || iip.from?.data || "iip_" + Math.random();
+      const iipId =
+        iip.metadata?.id || iip.from?.data || "iip_" + Math.random();
       const newIIP = editor.addIIP(
         x,
         y,
@@ -815,7 +853,10 @@ async function loadFile(fileHandle) {
     }
 
     // Load exported ports as pseudo-nodes
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     let hasNodes = false;
     for (const nodeId in g.nodes) {
       const node = g.nodes[nodeId];
@@ -845,7 +886,13 @@ async function loadFile(fileHandle) {
           }
 
           if (targetPort) {
-            editor.addExportedPort(minX - 150, minY + i * 60, portName, "in", targetPort);
+            editor.addExportedPort(
+              minX - 150,
+              minY + i * 60,
+              portName,
+              "in",
+              targetPort,
+            );
           }
           i++;
         }
@@ -863,7 +910,13 @@ async function loadFile(fileHandle) {
           }
 
           if (targetPort) {
-            editor.addExportedPort(maxX + 150, minY + i * 60, portName, "out", targetPort);
+            editor.addExportedPort(
+              maxX + 150,
+              minY + i * 60,
+              portName,
+              "out",
+              targetPort,
+            );
           }
           i++;
         }

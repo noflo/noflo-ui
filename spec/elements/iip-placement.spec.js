@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import assert from "node:assert";
+import { describe, it } from "node:test";
 import "./utils/register.js";
 import { FlowEditor } from "../../src/elements/noflo-editor.js";
 import { FlowNode } from "../../src/elements/noflo-node.js";
@@ -24,7 +24,14 @@ describe("IIP Placement", async () => {
     const nodeX = 500;
     const nodeY = 500;
     const nodeSize = 80;
-    const node = editor.addNode(nodeName, nodeX, nodeY, [{ type: "regular" }], [{ type: "regular" }], nodeSize);
+    const node = editor.addNode(
+      nodeName,
+      nodeX,
+      nodeY,
+      [{ type: "regular" }],
+      [{ type: "regular" }],
+      nodeSize,
+    );
 
     // 2. Get an inport from the node
     // We need to wait for the node to be rendered in the shadow DOM
@@ -59,8 +66,16 @@ describe("IIP Placement", async () => {
     const actualCenterX = iip.position.x + iip.size / 2;
     const actualCenterY = iip.position.y + iip.size / 2;
 
-    assert.strictEqual(actualCenterX, expectedCenterX, `Expected IIP center X to be ${expectedCenterX}, but got ${actualCenterX}`);
-    assert.strictEqual(actualCenterY, expectedCenterY, `Expected IIP center Y to be ${expectedCenterY}, but got ${actualCenterY}`);
+    assert.strictEqual(
+      actualCenterX,
+      expectedCenterX,
+      `Expected IIP center X to be ${expectedCenterX}, but got ${actualCenterX}`,
+    );
+    assert.strictEqual(
+      actualCenterY,
+      expectedCenterY,
+      `Expected IIP center Y to be ${expectedCenterY}, but got ${actualCenterY}`,
+    );
 
     // Teardown
     document.body.removeChild(el);

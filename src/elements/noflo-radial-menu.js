@@ -260,7 +260,7 @@ export class FlowRadialMenu extends HTMLElement {
     const ITEM_SECTION_MAP = {
       "Add Node": 5,
       "Add IIP": 5,
-      "Rename": 5,
+      Rename: 5,
       Delete: 3,
       Remove: 3,
       Close: 4,

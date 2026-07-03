@@ -1,6 +1,6 @@
 // @ts-nocheck
-import Jedison from '../../vendor/jedison-1.13.0.js';
-import { FontAwesomeEditor } from '../library/editors/fontawesome.js';
+import Jedison from "../../vendor/jedison-1.13.0.js";
+import { FontAwesomeEditor } from "../library/editors/fontawesome.js";
 
 class NofloJsonForm extends HTMLElement {
   constructor() {
@@ -43,20 +43,20 @@ class NofloJsonForm extends HTMLElement {
    */
   connectedCallback() {
     // 1. Capture any pre-upgrade values shadowing our setters
-    this._upgradeProperty('schema');
-    this._upgradeProperty('data');
+    this._upgradeProperty("schema");
+    this._upgradeProperty("data");
 
     // 2. Build the editor
     this._rebuildEditor();
   }
 
-/**
+  /**
    * Captures properties set before the element was upgraded
    * and routes:them through the class setters.
    */
   _upgradeProperty(prop) {
-    if (this.hasOwnProperty(prop)) {
-      let value = this[prop];
+    if (Object.hasOwn(this, prop)) {
+      const value = this[prop];
       delete this[prop];
       this[prop] = value;
     }
@@ -79,7 +79,7 @@ class NofloJsonForm extends HTMLElement {
     // 1. Clean up the old instance if it exists
     if (this.editor) {
       this.editor.destroy();
-      this.innerHTML = '';
+      this.innerHTML = "";
     }
 
     if (!this._schema || Object.keys(this._schema).length === 0) return;
@@ -89,35 +89,32 @@ class NofloJsonForm extends HTMLElement {
       theme: new Jedison.Theme(),
       schema: this._schema,
       startval: this._data,
-      customEditors: [
-        FontAwesomeEditor,
-      ],
+      customEditors: [FontAwesomeEditor],
     });
 
     // 2. Wait for the engine to finish its initial render and data binding
-    this.editor.on('ready', () => {
-
+    this.editor.on("ready", () => {
       // 3. Now it is safe to listen for actual user changes
-      this.editor.on('change', () => {
-
+      this.editor.on("change", () => {
         // 4. Access the auto-generated validation results directly
         // Fallback to an empty array just in case it is perfectly valid and undefined
         const errors = this.editor.validation_results || [];
 
-        this.dispatchEvent(new CustomEvent('form-change', {
-          detail: {
-            data: this.editor.getValue(),
-            isValid: errors.length === 0,
-            errors: errors
-          },
-          bubbles: true,
-          composed: true
-        }));
+        this.dispatchEvent(
+          new CustomEvent("form-change", {
+            detail: {
+              data: this.editor.getValue(),
+              isValid: errors.length === 0,
+              errors: errors,
+            },
+            bubbles: true,
+            composed: true,
+          }),
+        );
       });
-
     });
   }
 }
 
 // Register the custom element with the browser
-customElements.define('noflo-json-form', NofloJsonForm);
+customElements.define("noflo-json-form", NofloJsonForm);

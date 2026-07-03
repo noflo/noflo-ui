@@ -141,10 +141,7 @@ async function init() {
         300,
         100,
         [{ name: "in" }],
-        [
-          { name: "out" },
-          { name: "error" },
-        ],
+        [{ name: "out" }, { name: "error" }],
       )
     );
     filter.setMetadata({ name: "Filter", icon: "filter" });

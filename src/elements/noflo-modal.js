@@ -99,7 +99,9 @@ export class NofloModal extends HTMLElement {
       </dialog>
     `;
     this._dialog = this.shadowRoot.querySelector("dialog");
-    this.shadowRoot.querySelector(".close-btn").addEventListener("click", () => this.close());
+    this.shadowRoot
+      .querySelector(".close-btn")
+      .addEventListener("click", () => this.close());
   }
 
   open(title) {
@@ -120,9 +122,13 @@ export class NofloModal extends HTMLElement {
         resolve(false);
         return;
       }
-      this._dialog.addEventListener('close', () => {
-        resolve(this._dialog.returnValue === 'save');
-      }, { once: true });
+      this._dialog.addEventListener(
+        "close",
+        () => {
+          resolve(this._dialog.returnValue === "save");
+        },
+        { once: true },
+      );
     });
   }
 }

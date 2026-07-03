@@ -1,5 +1,5 @@
-import { SpaceManager } from "../library/SpaceManager.js";
 import { SelectionManager } from "../library/SelectionManager.js";
+import { SpaceManager } from "../library/SpaceManager.js";
 
 /** @typedef {any} FlowExportedPort */
 /**
@@ -592,7 +592,10 @@ export class FlowEditor extends HTMLElement {
         Math.abs(nextY - currentPos.y) > 0.01
       ) {
         node.position = { x: nextX, y: nextY };
-        this.spaceManager.updateNode(node.getAttribute("name") || "", node.position);
+        this.spaceManager.updateNode(
+          node.getAttribute("name") || "",
+          node.position,
+        );
         this.nodeVelocities.set(node, velocity);
         active = true;
       } else {
@@ -621,7 +624,11 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   clientToGraph(clientX, clientY) {
-    return this.spaceManager.clientToGraph(clientX, clientY, this.getBoundingClientRect());
+    return this.spaceManager.clientToGraph(
+      clientX,
+      clientY,
+      this.getBoundingClientRect(),
+    );
   }
 
   /**
@@ -648,7 +655,11 @@ export class FlowEditor extends HTMLElement {
    * @returns {Position}
    */
   graphToClient(graphX, graphY) {
-    return this.spaceManager.graphToClient(graphX, graphY, this.getBoundingClientRect());
+    return this.spaceManager.graphToClient(
+      graphX,
+      graphY,
+      this.getBoundingClientRect(),
+    );
   }
 
   fitNodesToViewport() {
@@ -819,7 +830,8 @@ export class FlowEditor extends HTMLElement {
           }
         } else if (
           this.draggingNodePointerId === e.pointerId &&
-          (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0) &&
+          (this.selectionManager.nodes.size > 0 ||
+            this.selectionManager.iips.size > 0) &&
           !this.radialMenu?.isOpen
         ) {
           if (Math.hypot(dx, dy) > 3) {
@@ -966,7 +978,10 @@ export class FlowEditor extends HTMLElement {
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
-            this.spaceManager.updateNode(node.getAttribute("name") || "", node.position);
+            this.spaceManager.updateNode(
+              node.getAttribute("name") || "",
+              node.position,
+            );
             const type = node.tagName.toLowerCase();
             const name = this.getNodeName(node);
             let direction = null;
@@ -1019,7 +1034,11 @@ export class FlowEditor extends HTMLElement {
         this.lastPinchDistance = 0;
       }
 
-      if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
+      if (
+        this.selectionManager.nodes.size === 0 &&
+        this.selectionManager.edges.size === 0 &&
+        this.selectionManager.iips.size === 0
+      ) {
         this.selectMode = false;
       }
     });
@@ -1055,13 +1074,21 @@ export class FlowEditor extends HTMLElement {
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0) {
+        if (
+          this.selectionManager.nodes.size > 0 ||
+          this.selectionManager.iips.size > 0
+        ) {
           const nodesToRemove = [];
           const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
-            this.nodeLayer?.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port") || []
+            this.nodeLayer?.querySelectorAll(
+              "noflo-node, noflo-iip, noflo-exported-port",
+            ) || []
           );
-          allNodes.forEach(n => {
-            if (this.selectionManager.nodes.has(n.getAttribute("name")) || this.selectionManager.iips.has(n.getAttribute("name"))) {
+          allNodes.forEach((n) => {
+            if (
+              this.selectionManager.nodes.has(n.getAttribute("name")) ||
+              this.selectionManager.iips.has(n.getAttribute("name"))
+            ) {
               nodesToRemove.push(n);
             }
           });
@@ -1076,7 +1103,7 @@ export class FlowEditor extends HTMLElement {
           }
         } else if (this.selectionManager.edges.size > 0) {
           this.selectionManager.edges.forEach((edgeId) => {
-            const edge = this.edges.find(e => this.getEdgeId(e) === edgeId);
+            const edge = this.edges.find((e) => this.getEdgeId(e) === edgeId);
             if (edge) {
               this.dispatchEvent(
                 new CustomEvent("edge-removal-attempt", {
@@ -1166,10 +1193,7 @@ export class FlowEditor extends HTMLElement {
               const searchY = pos.y;
 
               // Search for first empty space to the left
-              while (
-                searchX > -8000 &&
-                !this.hasSpace(searchX, searchY, 40)
-              ) {
+              while (searchX > -8000 && !this.hasSpace(searchX, searchY, 40)) {
                 searchX -= 40;
               }
 
@@ -1180,7 +1204,8 @@ export class FlowEditor extends HTMLElement {
         }
       }
 
-      const canExport = (isInPort || isOutPort) && (!isArrayPort || !hasConnection);
+      const canExport =
+        (isInPort || isOutPort) && (!isArrayPort || !hasConnection);
       if (canExport) {
         items.push({
           text: "Export",
@@ -1346,7 +1371,7 @@ export class FlowEditor extends HTMLElement {
         }
       }
     } else if (clickedEdge) {
-// ...
+      // ...
       const edge = this.edges.find(
         (edge) =>
           /** @type {Element} */ (edge.hitPath) ===
@@ -1523,7 +1548,9 @@ export class FlowEditor extends HTMLElement {
       if (this.selectMode) {
         this.radialMenu?.close();
       }
-      const isAlreadySelected = this.selectionManager.nodes.has(id) || this.selectionManager.iips.has(id);
+      const isAlreadySelected =
+        this.selectionManager.nodes.has(id) ||
+        this.selectionManager.iips.has(id);
       if (!isAlreadySelected) {
         this.selectionManager.select(type, id, true);
         this.selectionChangedOnDown = true;
@@ -1531,7 +1558,9 @@ export class FlowEditor extends HTMLElement {
         this.selectionChangedOnDown = false;
       }
     } else {
-      const isOnlyOneSelected = this.selectionManager[type].size === 1 && this.selectionManager[type].has(id);
+      const isOnlyOneSelected =
+        this.selectionManager[type].size === 1 &&
+        this.selectionManager[type].has(id);
       if (isOnlyOneSelected) {
         this.selectionManager.toggle(type, id);
         this.selectionChangedOnDown = false;
@@ -1553,14 +1582,19 @@ export class FlowEditor extends HTMLElement {
     this.nodeVelocities.clear();
 
     const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
-      this.nodeLayer?.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port") || []
+      this.nodeLayer?.querySelectorAll(
+        "noflo-node, noflo-iip, noflo-exported-port",
+      ) || []
     );
-    allNodes.forEach(el => {
-        const name = el.getAttribute("name");
-        if (this.selectionManager.nodes.has(name) || this.selectionManager.iips.has(name)) {
-            this.draggingNodesInitialPositions.set(el, { ...el.position });
-            this.draggingNodesTargetPositions.set(el, { ...el.position });
-        }
+    allNodes.forEach((el) => {
+      const name = el.getAttribute("name");
+      if (
+        this.selectionManager.nodes.has(name) ||
+        this.selectionManager.iips.has(name)
+      ) {
+        this.draggingNodesInitialPositions.set(el, { ...el.position });
+        this.draggingNodesTargetPositions.set(el, { ...el.position });
+      }
     });
 
     this.longPressTimer = setTimeout(() => {
@@ -1589,7 +1623,10 @@ export class FlowEditor extends HTMLElement {
         this.selectionManager.toggle(type, id);
       }
     } else {
-      if (this.selectionManager[type].has(id) && this.selectionManager[type].size === 1) {
+      if (
+        this.selectionManager[type].has(id) &&
+        this.selectionManager[type].size === 1
+      ) {
         this.selectionManager.toggle(type, id);
       }
     }
@@ -1613,12 +1650,15 @@ export class FlowEditor extends HTMLElement {
       if (this.selectMode) {
         this.radialMenu?.close();
       }
-      this.selectionManager.toggle('edges', edgeId);
+      this.selectionManager.toggle("edges", edgeId);
     } else {
-      if (this.selectionManager.edges.has(edgeId) && this.selectionManager.edges.size === 1) {
-        this.selectionManager.toggle('edges', edgeId);
+      if (
+        this.selectionManager.edges.has(edgeId) &&
+        this.selectionManager.edges.size === 1
+      ) {
+        this.selectionManager.toggle("edges", edgeId);
       } else {
-        this.selectionManager.select('edges', edgeId, false);
+        this.selectionManager.select("edges", edgeId, false);
       }
     }
   }
@@ -1634,23 +1674,35 @@ export class FlowEditor extends HTMLElement {
   clearSelection() {
     this.selectionManager.clear();
 
-    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
+    if (
+      this.selectionManager.nodes.size === 0 &&
+      this.selectionManager.edges.size === 0 &&
+      this.selectionManager.iips.size === 0
+    ) {
       this.selectMode = false;
     }
   }
 
   clearNodeSelection() {
-    this.selectionManager.clearType('nodes');
+    this.selectionManager.clearType("nodes");
 
-    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
+    if (
+      this.selectionManager.nodes.size === 0 &&
+      this.selectionManager.edges.size === 0 &&
+      this.selectionManager.iips.size === 0
+    ) {
       this.selectMode = false;
     }
   }
 
   clearEdgeSelection() {
-    this.selectionManager.clearType('edges');
+    this.selectionManager.clearType("edges");
 
-    if (this.selectionManager.nodes.size === 0 && this.selectionManager.edges.size === 0 && this.selectionManager.iips.size === 0) {
+    if (
+      this.selectionManager.nodes.size === 0 &&
+      this.selectionManager.edges.size === 0 &&
+      this.selectionManager.iips.size === 0
+    ) {
       this.selectMode = false;
     }
   }
@@ -1825,9 +1877,10 @@ export class FlowEditor extends HTMLElement {
         let isCompatible = isDragOut !== isPortOut;
 
         if (isCompatible && portEl.dataset.portType === "array") {
-          const hasConnection = this.edges?.some(
-            (edge) => edge.portA === portEl || edge.portB === portEl,
-          ) || this.iipWires?.some((w) => w.port === portEl);
+          const hasConnection =
+            this.edges?.some(
+              (edge) => edge.portA === portEl || edge.portB === portEl,
+            ) || this.iipWires?.some((w) => w.port === portEl);
           if (hasConnection) {
             isCompatible = false;
           }
@@ -1980,7 +2033,11 @@ export class FlowEditor extends HTMLElement {
 
       this.dispatchEvent(
         new CustomEvent(eventName, {
-          detail: { x: this.ghostPos.x, y: this.ghostPos.y, startPort: this.dragPort },
+          detail: {
+            x: this.ghostPos.x,
+            y: this.ghostPos.y,
+            startPort: this.dragPort,
+          },
           bubbles: true,
           composed: true,
         }),
@@ -2015,21 +2072,31 @@ export class FlowEditor extends HTMLElement {
 
     // Remove associated edges
     if (this.edges) {
-      const edgesToRemove = this.edges.filter(edge => {
-        const nodeA = edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
-        const nodeB = edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
-        return (nodeA && nodeA.getAttribute("name") === name) || (nodeB && nodeB.getAttribute("name") === name);
+      const edgesToRemove = this.edges.filter((edge) => {
+        const nodeA =
+          edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
+        const nodeB =
+          edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
+        return (
+          (nodeA && nodeA.getAttribute("name") === name) ||
+          (nodeB && nodeB.getAttribute("name") === name)
+        );
       });
 
-      edgesToRemove.forEach(edge => {
+      edgesToRemove.forEach((edge) => {
         edge.visualPath?.remove();
         edge.hitPath?.remove();
       });
 
-      this.edges = this.edges.filter(edge => {
-        const nodeA = edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
-        const nodeB = edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
-        return !((nodeA && nodeA.getAttribute("name") === name) || (nodeB && nodeB.getAttribute("name") === name));
+      this.edges = this.edges.filter((edge) => {
+        const nodeA =
+          edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
+        const nodeB =
+          edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
+        return !(
+          (nodeA && nodeA.getAttribute("name") === name) ||
+          (nodeB && nodeB.getAttribute("name") === name)
+        );
       });
     }
   }
@@ -2329,7 +2396,9 @@ export class FlowEditor extends HTMLElement {
   addExportedPort(x, y, name, direction = "out", port) {
     const size = 20;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    const exportedPort = /** @type {any} */ (document.createElement("noflo-exported-port"));
+    const exportedPort = /** @type {any} */ (
+      document.createElement("noflo-exported-port")
+    );
     exportedPort.id = name;
     exportedPort.name = name;
     exportedPort.setAttribute("name", name);
@@ -2383,20 +2452,21 @@ export class FlowEditor extends HTMLElement {
     let centerY = y;
 
     if (!x && !y && port && port.classList.contains("port-in")) {
-      const node = port.getRootNode().host?.tagName === "NOFLO-NODE"
-        ? port.getRootNode().host
-        : port.closest("noflo-node");
+      const node =
+        port.getRootNode().host?.tagName === "NOFLO-NODE"
+          ? port.getRootNode().host
+          : port.closest("noflo-node");
       if (node) {
         const nodePos = node.position;
         const nodeSize = node.size || 80;
         centerX = nodePos.x - size - 20;
         centerY = nodePos.y + nodeSize / 2 - size / 2;
-        console.log('DEBUG IIP:', { nodePos, size, centerX, centerY });
+        console.log("DEBUG IIP:", { nodePos, size, centerX, centerY });
       }
     }
 
     const snapped = this.snapToGrid(centerX - size / 2, centerY - size / 2);
-    console.log('DEBUG IIP snapped:', snapped);
+    console.log("DEBUG IIP snapped:", snapped);
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
     const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
     iip.setAttribute("name", id);
@@ -2493,13 +2563,17 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer?.querySelectorAll("noflo-exported-port") || []
     );
 
-    if (Array.from(existingExportedPorts).some(
-      (ep) => ep.getAttribute("name") === finalName
-    )) {
+    if (
+      Array.from(existingExportedPorts).some(
+        (ep) => ep.getAttribute("name") === finalName,
+      )
+    ) {
       let count = 0;
-      while (Array.from(existingExportedPorts).some(
-        (ep) => ep.getAttribute("name") === `${portName}${count}`
-      )) {
+      while (
+        Array.from(existingExportedPorts).some(
+          (ep) => ep.getAttribute("name") === `${portName}${count}`,
+        )
+      ) {
         count++;
       }
       finalName = `${portName}${count}`;
@@ -2536,14 +2610,18 @@ export class FlowEditor extends HTMLElement {
 
     // Remove IIP wires
     if (this.iipWires && this.iipWiresGroup) {
-      const wiresToRemove = this.iipWires.filter((wire) => wire.port === ep || wire.iip === ep);
+      const wiresToRemove = this.iipWires.filter(
+        (wire) => wire.port === ep || wire.iip === ep,
+      );
       wiresToRemove.forEach((wire) => {
         if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
           this.iipWiresGroup.removeChild(wire.hitPath);
           this.iipWiresGroup.removeChild(wire.visualPath);
         }
       });
-      this.iipWires = this.iipWires.filter((wire) => wire.port !== ep && wire.iip !== ep);
+      this.iipWires = this.iipWires.filter(
+        (wire) => wire.port !== ep && wire.iip !== ep,
+      );
     }
 
     const name = ep.getAttribute("name");
@@ -2576,7 +2654,11 @@ export class FlowEditor extends HTMLElement {
       }
     }
 
-    if (this.isDraggingNode && (this.selectionManager.nodes.size > 0 || this.selectionManager.iips.size > 0)) {
+    if (
+      this.isDraggingNode &&
+      (this.selectionManager.nodes.size > 0 ||
+        this.selectionManager.iips.size > 0)
+    ) {
       const node = this._getNearestNode(clientX, clientY);
       if (node) {
         return { type: FlowEditor.INTEREST_AREA_TYPES.NODE, element: node };
@@ -2642,10 +2724,16 @@ export class FlowEditor extends HTMLElement {
    */
   _getNearestNode(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-    const nodes = shadowRoot.querySelectorAll("noflo-node, noflo-iip, noflo-exported-port");
+    const nodes = shadowRoot.querySelectorAll(
+      "noflo-node, noflo-iip, noflo-exported-port",
+    );
     for (const node of nodes) {
       const n = /** @type {NoFloNode | NoFloIIP | any} */ (node);
-      if (this.selectionManager.nodes.has(n.getAttribute("name")) || this.selectionManager.iips.has(n.getAttribute("name"))) continue;
+      if (
+        this.selectionManager.nodes.has(n.getAttribute("name")) ||
+        this.selectionManager.iips.has(n.getAttribute("name"))
+      )
+        continue;
       const rect = n.getBoundingClientRect();
       if (
         clientX >= rect.left &&
