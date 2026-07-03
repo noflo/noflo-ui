@@ -1958,19 +1958,15 @@ export class FlowEditor extends HTMLElement {
           "Cannot connect ports of the same type (both in or both out)",
         );
       }
-    } else if (this.ghostNode) {
-      const { x: mouseX, y: mouseY } = this.clientToGraph(e.clientX, e.clientY);
+    } else if (this.ghostNode && this.ghostPos) {
       const isOutPort = this.dragPort?.classList.contains("port-out");
-      const size = isOutPort ? 80 : 40;
-      const snapped = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
-
       const eventName = isOutPort
         ? "node-creation-attempt"
         : "iip-creation-attempt";
 
       this.dispatchEvent(
         new CustomEvent(eventName, {
-          detail: { x: snapped.x, y: snapped.y, startPort: this.dragPort },
+          detail: { x: this.ghostPos.x, y: this.ghostPos.y, startPort: this.dragPort },
           bubbles: true,
           composed: true,
         }),
@@ -2330,7 +2326,7 @@ export class FlowEditor extends HTMLElement {
     let centerX = x;
     let centerY = y;
 
-    if (port && port.classList.contains("port-in")) {
+    if (!x && !y && port && port.classList.contains("port-in")) {
       const node = port.getRootNode().host?.tagName === "NOFLO-NODE"
         ? port.getRootNode().host
         : port.closest("noflo-node");
