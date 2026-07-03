@@ -2348,37 +2348,34 @@ export class FlowEditor extends HTMLElement {
    * @param {number} [size=80]
    */
   /**
-   * @param {string} name
-   * @param {number} x
-   * @param {number} y
-   * @param {PortConfig[]} [inPorts=[{ addressable: false }]]
-   * @param {PortConfig[]} [outPorts=[{ addressable: false }]]
-   * @param {number} [size=80]
+   * @param {string} nodeId
+   * @param {string} component
+   * @param {any} metadata
    * @returns {NoFloNode}
    */
-  addNode(
-    name,
-    x,
-    y,
-    inPorts = [{ addressable: false }],
-    outPorts = [{ addressable: false }],
-    size = 80,
-    component = null,
-  ) {
+  addNode(nodeId, component, metadata) {
+    const x = metadata.x || 0;
+    const y = metadata.y || 0;
+    const size = metadata.size || 80;
     const snapped = this.snapToGrid(x, y);
     const node = /** @type {NoFloNode} */ (
       document.createElement("noflo-node")
     );
-    node.id = name;
-    node.setAttribute("name", name);
+    node.id = nodeId;
+    node.setAttribute("name", nodeId);
+    node.setAttribute("component", component);
     node.setAttribute("size", size.toString());
-    node.textContent = name;
     node.position = snapped;
-    if (component) {
-      node.setAttribute("component", component);
+
+    if (this.libraryManager) {
+      node.libraryManager = this.libraryManager;
     }
-    this.spaceManager.addElement(name, snapped, size);
-    node.setPorts(inPorts, outPorts);
+
+    if (metadata.name || metadata.componentName || metadata.icon) {
+      node.setMetadata(metadata);
+    }
+
+    this.spaceManager.addElement(nodeId, snapped, size);
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(node);
     }

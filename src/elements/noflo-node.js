@@ -42,6 +42,50 @@ export class FlowNode extends HTMLElement {
     this._outPorts = [{ type: "regular" }];
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
+
+    /** @type {import("../../library/LibraryManager.js").LibraryManager | null} */
+    this._libraryManager = null;
+    /** @type {string | null} */
+    this._componentName = null;
+    /** @type {MutationObserver | null} */
+    this._observer = null;
+  }
+
+  /**
+   * @param {import("../../library/LibraryManager.js").LibraryManager} lm
+   */
+  set libraryManager(lm) {
+    this._libraryManager = lm;
+    this._updatePortsFromLibrary();
+    if (this._observer) {
+      this._libraryManager.removeEventListener("component-changed", this._onComponentChanged);
+      this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
+    }
+  }
+
+  get libraryManager() {
+    return this._libraryManager;
+  }
+
+  /**
+   * @type {import("../../library/LibraryManager.js").LibraryManager}
+   */
+  _onComponentChanged = (e) => {
+    const { compName } = e.detail;
+    if (compName === this._componentName) {
+      this._updatePortsFromLibrary();
+    }
+  };
+
+  /**
+   * @private
+   */
+  _updatePortsFromLibrary() {
+    if (!this._libraryManager || !this._componentName) return;
+    const comp = this._libraryManager.getComponent(this._componentName);
+    if (comp) {
+      this.setPorts(comp.inports || [], comp.outports || []);
+    }
   }
 
   /**
@@ -98,8 +142,10 @@ export class FlowNode extends HTMLElement {
   setMetadata({ name, componentName, icon }) {
     if (name) this.textContent = name;
     if (componentName) {
+      this._componentName = componentName;
       const compEl = this.shadowRoot?.querySelector(".node-component");
       if (compEl) compEl.textContent = componentName;
+      this._updatePortsFromLibrary();
     }
     if (icon) {
       const iconEl = this.shadowRoot?.querySelector(".node-content");
@@ -127,6 +173,31 @@ export class FlowNode extends HTMLElement {
       this.size = parseInt(sizeAttr, 10);
     }
     this.render();
+
+    this._observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes" && mutation.attributeName === "component") {
+          this._componentName = this.getAttribute("component");
+          this._updatePortsFromLibrary();
+        }
+      }
+    });
+    this._observer.observe(this, { attributes: true });
+
+    if (this._libraryManager) {
+      this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
+    }
+
+    this._updatePortsFromLibrary();
+  }
+
+  disconnectedCallback() {
+    if (this._observer) {
+      this._observer.disconnect();
+    }
+    if (this._libraryManager) {
+      this._libraryManager.removeEventListener("component-changed", this._onComponentChanged);
+    }
   }
 
   /**

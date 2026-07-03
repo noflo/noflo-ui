@@ -152,19 +152,15 @@ function setupEditorEventListeners(editor) {
     const nodeId = `node_${Date.now()}`;
     const newNode = editor.addNode(
       nodeId,
-      x,
-      y,
-      componentData.inports || [{ addressable: false }],
-      componentData.outports || [{ addressable: false }],
-      80,
       componentName,
+      { 
+        x, 
+        y,
+        name: nodeId,
+        icon: componentData.icon || "gear",
+        componentName: componentName
+      },
     );
-    newNode.id = nodeId;
-    (/** @type {any} */ (newNode)).setMetadata({
-      name: newNode.id,
-      icon: componentData.icon || "gear",
-      componentName: componentName,
-    });
 
     if (currentGraph) {
       currentGraph.addNode(nodeId, componentName, { x, y });
@@ -689,19 +685,15 @@ async function loadFile(/** @type {any} */ fileHandle) {
 
         const n = editor.addNode(
           node.id,
-          x,
-          y,
-          inPorts,
-          outPorts,
-          80,
           node.component,
+          { 
+            x, 
+            y, 
+            name: node.id,
+            icon: comp?.icon || "gear",
+            componentName: node.component
+          },
         );
-        n.id = node.id; // Ensure the DOM element has the correct ID
-        (/** @type {any} */ (n)).setMetadata({
-          name: node.id,
-          icon: comp?.icon || "gear",
-          componentName: node.component,
-        });
         elementsMap.set(node.id, n);
       }
 
