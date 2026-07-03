@@ -1291,6 +1291,19 @@ export class FlowEditor extends HTMLElement {
           });
         } else {
           items.push({
+            text: "Edit Component",
+            onClick: () => {
+              this.dispatchEvent(
+                new CustomEvent("edit-component-attempt", {
+                  detail: { node: clickedNode },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            },
+            icon: "pen-to-square",
+          });
+          items.push({
             text: "Remove",
             onClick: () => {
               this.dispatchEvent(
@@ -2246,6 +2259,7 @@ export class FlowEditor extends HTMLElement {
     inPorts = [{ type: "regular" }],
     outPorts = [{ type: "regular" }],
     size = 80,
+    component = null,
   ) {
     const snapped = this.snapToGrid(x, y);
     const node = /** @type {NoFloNode} */ (
@@ -2255,6 +2269,9 @@ export class FlowEditor extends HTMLElement {
     node.setAttribute("size", size.toString());
     node.textContent = name;
     node.position = snapped;
+    if (component) {
+      node.setAttribute("component", component);
+    }
     this.spaceManager.addElement(name, snapped, size);
     node.setPorts(inPorts, outPorts);
     if (this.nodeLayer) {

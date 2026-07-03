@@ -6,6 +6,9 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import { ComponentSignature } from "./library/schema.js";
+import "./elements/noflo-json-form.js";
+import "./elements/noflo-modal.js";
 
 // Register Web Components
 customElements.define("noflo-editor", FlowEditor);
@@ -19,7 +22,9 @@ customElements.define("noflo-file-selector", FileSelector);
 /**
  * @typedef {Object} PortConfig
  * @property {string} name
- * @property {'regular' | 'array'} type
+ * @property {boolean} addressable
+ * @property {string} [description]
+ * @property {string} [type]
  * @property {number} [size]
  */
 
@@ -44,6 +49,9 @@ let currentFileName = "";
 /** @type {number | null} */
 let saveTimeout = null;
 
+let componentModal = null;
+let componentForm = null;
+
 async function init() {
   console.log("Initializing Flowbased Graph Editor...");
 
@@ -66,6 +74,12 @@ async function init() {
     console.error("File selector element not found");
     return;
   }
+
+  // Create component editor modal
+  componentModal = document.createElement("noflo-modal");
+  componentForm = document.createElement("noflo-json-form");
+  componentModal.appendChild(componentForm);
+  app.appendChild(componentModal);
 
   fileSelector.addEventListener("directory-selected", async (e) => {
     directoryHandle = e.detail.directoryHandle;
@@ -188,7 +202,7 @@ function addPortToLibrary(compName, portName, direction) {
     return;
   }
 
-  ports.push({ name: portName, type: "regular" });
+  ports.push({ name: portName, addressable: false });
 }
 
 function setupEditorEventListeners(editor) {
@@ -216,7 +230,8 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
     const nodeId = `node_${Date.now()}`;
-    const newNode = editor.addNode(nodeId, x, y);
+    const componentName = "New Node";
+    const newNode = editor.addNode(nodeId, x, y, [{ addressable: false }], [{ addressable: false }], 80, componentName);
     newNode.id = nodeId;
     newNode.setMetadata({
       name: newNode.id,
@@ -224,7 +239,7 @@ function setupEditorEventListeners(editor) {
     });
 
     if (currentGraph) {
-      currentGraph.addNode(nodeId, "New Node", { x, y });
+      currentGraph.addNode(nodeId, componentName, { x, y });
     }
 
     const port = /** @type {HTMLElement} */ (startPort);
@@ -427,6 +442,56 @@ function setupEditorEventListeners(editor) {
     }
     debouncedSave();
   });
+
+  editor.addEventListener("edit-component-attempt", async (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { node } = event.detail;
+    const componentName = node.getAttribute("component");
+    if (!componentName) return;
+
+    let componentData = componentLibrary.get(componentName);
+    if (!componentData) {
+      componentData = { name: componentName, inports: [], outports: [] };
+    }
+
+    componentModal.open(`Edit Component: ${componentName}`);
+    componentForm.schema = ComponentSignature;
+    componentForm.data = componentData;
+
+    const submitted = await componentModal.submit();
+    if (submitted) {
+      const newData = componentForm.data;
+
+      const newComponentName = newData.name || componentName;
+
+      if (newComponentName !== componentName) {
+        componentLibrary.delete(componentName);
+      }
+
+      componentLibrary.set(newComponentName, newData);
+
+      // Update all nodes that use this component
+      const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
+        editor.nodeLayer?.querySelectorAll("noflo-node") || []
+      );
+
+      allNodes.forEach((n) => {
+        const currentCompName = n.getAttribute("component");
+        if (currentCompName === componentName) {
+          if (newComponentName !== componentName) {
+            n.setAttribute("component", newComponentName);
+          }
+          const updatedDef = componentLibrary.get(newComponentName);
+          if (updatedDef && n.setPorts) {
+            n.setPorts(updatedDef.inports, updatedDef.outports);
+          }
+        }
+      });
+
+      await saveLibrary(directoryHandle);
+      debouncedSave();
+    }
+  });
 }
 
 function debouncedSave() {
@@ -435,6 +500,29 @@ function debouncedSave() {
     saveTimeout = null;
     saveGraph();
   }, 1000);
+}
+
+async function saveLibrary(directoryHandle) {
+  if (!directoryHandle) return;
+  console.log("Saving library...");
+  try {
+    const modules = [];
+    const components = Array.from(componentLibrary.values());
+    if (components.length > 0) {
+      modules.push({ components });
+    }
+    const json = JSON.stringify({ modules }, null, 2);
+
+    const fileHandle = await directoryHandle.getFileHandle("fbp.library.json", {
+      create: true,
+    });
+    const writable = await fileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    console.log("Library saved successfully.");
+  } catch (err) {
+    console.error("Error saving library:", err);
+  }
 }
 
 async function saveGraph() {
@@ -571,7 +659,7 @@ async function loadFile(fileHandle) {
 
     // Recreate editor to clear it
     const app = document.getElementById("app");
-    app.innerHTML = "";
+    app.querySelectorAll("noflo-editor").forEach(el => el.remove())
     editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
     app.appendChild(editor);
 
@@ -588,7 +676,7 @@ async function loadFile(fileHandle) {
       const inPorts = comp ? comp.inports : undefined;
       const outPorts = comp ? comp.outports : undefined;
 
-      const n = editor.addNode(node.id, x, y, inPorts, outPorts);
+      const n = editor.addNode(node.id, x, y, inPorts, outPorts, 80, node.component);
       n.id = node.id; // Ensure the DOM element has the correct ID
       n.setMetadata({
         name: node.id,
