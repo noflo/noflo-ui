@@ -30,6 +30,7 @@ The `src/library/SpaceManager.js` is to be the ultimate authority on where items
 - ✅ **Always**: ensure type safety. Always check eith `npm run types` after changes and fix as needed
 - ✅ **Always**: fix formatting with `npm run format` after any changes to source files or tests
 - ✅ **Always**: Use `git mv` instead of `mv' for renaming files
+- ✅ **Always**: Remove ambiguity and legacy support from APIs you modify. Right now there are no API consumers outside this repo so we can keep things fluid
 - ⚠️ **Ask first**: adding dependencies
 - ⚠️ **Ask first**: modify CI config
 - 🚫 **Never**: AI agents may not make commits on their own, instead notify user that there are uncommitted changes to review
