@@ -164,6 +164,9 @@ async function inferLibraryFromFiles(directoryHandle) {
       try {
         const json = JSON.parse(text);
         const g = await graph.loadJSON(json);
+        if (!g.name) {
+          g.name = entry.name.split('.')[0];
+        }
         graphs.push(g);
       } catch (e) {
         console.warn("Failed to parse graph file:", entry.name, e);
@@ -172,6 +175,9 @@ async function inferLibraryFromFiles(directoryHandle) {
     if (entry.name.endsWith(".fbp")) {
       try {
         const g = await graph.loadFBP(text);
+        if (!g.name) {
+          g.name = entry.name.split('.')[0];
+        }
         graphs.push(g);
       } catch (e) {
         // console.warn("Failed to parse FBP language graph file:", entry.name, e);
@@ -180,6 +186,19 @@ async function inferLibraryFromFiles(directoryHandle) {
   }
 
   for (const g of graphs) {
+    if (!g.properties?.main) {
+      // Graph itself is usable as subgraph, add to library
+      const comp = addComponentToLibrary(g.name);
+      comp.icon = g.properties?.icon || 'tree';
+      for (const inportName in g.inports) {
+        addPortToLibrary(g.name, inportName, "in");
+      }
+      for (const outportName in g.outports) {
+        addPortToLibrary(g.name, outportName, "out");
+      }
+    }
+
+    // Infer more components from nodes
     const nodeToType = new Map();
     for (const nodeId in g.nodes) {
       const node = g.nodes[nodeId];
@@ -208,21 +227,46 @@ async function inferLibraryFromFiles(directoryHandle) {
 
 /**
  * @param {string} compName
- * @param {string} portName
- * @param {'in' | 'out'} direction
  */
-function addPortToLibrary(compName, portName, direction) {
-  /** @type {any} */
-  let comp = componentLibrary.get(compName);
+function getComponentFromLibrary(compName) {
+  let [library, component] = compName.split('/');
+  if (!component) {
+    component = library;
+    library = null;
+  }
+  return componentLibrary.get(component);
+}
+
+/**
+ * @param {string} compName
+ */
+function addComponentToLibrary(compName) {
+  let [library, component] = compName.split('/');
+  if (!component) {
+    component = library;
+    library = null;
+  }
+  let comp = getComponentFromLibrary(compName);
   if (!comp) {
     comp = {
-      name: compName,
+      name: component,
+      library,
       icon: "gear",
       inports: [],
       outports: [],
     };
-    componentLibrary.set(compName, comp);
+    componentLibrary.set(component, comp);
   }
+  return comp;
+}
+
+/**
+ * @param {string} compName
+ * @param {string} portName
+ * @param {'in' | 'out'} direction
+ */
+function addPortToLibrary(compName, portName, direction) {
+  const comp = addComponentToLibrary(compName);
 
   const ports = direction === "in" ? comp.inports : comp.outports;
   if (ports.some((p) => p.name === portName)) {
@@ -261,7 +305,7 @@ function setupEditorEventListeners(editor) {
     const { x, y, startPort } = event.detail;
 
     const componentName = await askForComponent();
-    let componentData = componentLibrary.get(componentName);
+    let componentData = getComponentFromLibrary(componentName);
 
     if (!componentData) {
       componentData = await askForNewComponentDetails(componentName);
@@ -524,7 +568,7 @@ function setupEditorEventListeners(editor) {
     const componentName = node.getAttribute("component");
     if (!componentName) return;
 
-    let componentData = componentLibrary.get(componentName);
+    let componentData = getComponentFromLibrary(componentName);
     if (!componentData) {
       componentData = { name: componentName, inports: [], outports: [] };
     }
@@ -559,7 +603,7 @@ function setupEditorEventListeners(editor) {
           if (newComponentName !== componentName) {
             n.setAttribute("component", newComponentName);
           }
-          const updatedDef = componentLibrary.get(newComponentName);
+          const updatedDef = getComponentFromLibrary(newComponentName);
           if (updatedDef && (/** @type {any} */ (n)).setPorts) {
             (/** @type {any} */ (n)).setPorts(updatedDef.inports, updatedDef.outports);
           }
@@ -818,14 +862,14 @@ async function loadFile(/** @type {any} */ fileHandle) {
     }
 
     const elementsMap = new Map();
+    console.log(componentLibrary);
     if (editor) {
       for (const nodeId in g.nodes) {
         const node = g.nodes[nodeId];
         const x = node.metadata?.x || 0;
         const y = node.metadata?.y || 0;
 
-        const comp = componentLibrary.get(node.component);
-        console.log(comp);
+        const comp = getComponentFromLibrary(node.component);
         const inPorts = comp ? comp.inports : undefined;
         const outPorts = comp ? comp.outports : undefined;
 
