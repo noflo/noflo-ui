@@ -141,87 +141,53 @@ export class LibraryManager extends EventTarget {
   }
 
   /**
-   * @param {FileSystemDirectoryHandle} directoryHandle
+   * @returns {Object}
    */
-  async loadLibrary(directoryHandle) {
-    this.modules.clear();
-    this.modules.set(LibraryManager.PROJECT_MODULE, new Map());
-
-    let libraryFileHandle = null;
-    for await (const entry of directoryHandle.values()) {
-      if (entry.kind === "file" && entry.name === "fbp.library.json") {
-        libraryFileHandle = entry;
-        break;
+  toJSON() {
+    const modules = [];
+    for (const [moduleName, moduleMap] of this.modules) {
+      const components = Array.from(moduleMap.values());
+      if (components.length > 0) {
+        modules.push({
+          name: moduleName,
+          components: components.map(comp => ({
+            name: comp.name,
+            icon: comp.icon,
+            description: comp.description,
+            inports: comp.inports,
+            outports: comp.outports,
+            type: comp.type,
+          })),
+        });
       }
     }
-
-    if (libraryFileHandle) {
-      console.log("Loading library from fbp.library.json");
-      const file = await libraryFileHandle.getFile();
-      const text = await file.text();
-      const json = JSON.parse(text);
-      // json format: { modules: [ { name: "modName", components: [...] } ] }
-      for (const moduleEntry of json.modules) {
-        const moduleName = moduleEntry.name || LibraryManager.PROJECT_MODULE;
-        const moduleMap = new Map();
-        for (const comp of moduleEntry.components) {
-          const definition = {
-            icon: "gear",
-            ...comp,
-            module: moduleName,
-          };
-          // If comp.name is "module/Comp", we should handle it, 
-          // but the JSON format seems to be per-module.
-          // Let's assume comp.name is the component name within the module.
-          moduleMap.set(comp.name, definition);
-        }
-        this.modules.set(moduleName, moduleMap);
-      }
-    } else {
-      console.log(
-        "No fbp.library.json found. Inferring library from graph files.",
-      );
-      await this.inferLibraryFromFolder(directoryHandle);
-    }
+    return { modules };
   }
 
   /**
-   * @param {FileSystemDirectoryHandle} directoryHandle
+   * @param {Object} json
+   * @returns {LibraryManager}
    */
-  async inferLibraryFromFolder(directoryHandle) {
-    for await (const entry of directoryHandle.values()) {
-      if (entry.kind !== "file") {
-        continue;
+  static fromJSON(json) {
+    const manager = new LibraryManager();
+    // json format: { modules: [ { name: "modName", components: [...] } ] }
+    for (const moduleEntry of json.modules) {
+      const moduleName = moduleEntry.name || LibraryManager.PROJECT_MODULE;
+      const moduleMap = new Map();
+      for (const comp of moduleEntry.components) {
+        const definition = {
+          icon: "gear",
+          ...comp,
+          module: moduleName,
+        };
+        // If comp.name is "module/Comp", we should handle it, 
+        // but the JSON format seems to be per-module.
+        // Let's assume comp.name is the component name within the module.
+        moduleMap.set(comp.name, definition);
       }
-      const file = await entry.getFile();
-      const text = await file.text();
-      let g = null;
-
-      if (entry.name.endsWith(".json")) {
-        try {
-          const json = JSON.parse(text);
-          g = await graph.loadJSON(json);
-          if (!g.name) {
-            g.name = entry.name.split(".")[0];
-          }
-        } catch (e) {
-          console.warn("Failed to parse graph file:", entry.name, e);
-        }
-      } else if (entry.name.endsWith(".fbp")) {
-        try {
-          g = await graph.loadFBP(text);
-          if (!g.name) {
-            g.name = entry.name.split(".")[0];
-          }
-        } catch (e) {
-          // console.warn("Failed to parse FBP language graph file:", entry.name, e);
-        }
-      }
-
-      if (g) {
-        this.inferLibraryFromGraph(g);
-      }
+      manager.modules.set(moduleName, moduleMap);
     }
+    return manager;
   }
 
   /**
@@ -265,44 +231,6 @@ export class LibraryManager extends EventTarget {
       if (toType) {
         this.addPort(toType, iip.to.port, "in");
       }
-    }
-  }
-
-  /**
-   * @param {FileSystemDirectoryHandle} directoryHandle
-   */
-  async saveLibrary(directoryHandle) {
-    if (!directoryHandle) return;
-    console.log("Saving library...");
-    try {
-      const modules = [];
-      for (const [moduleName, moduleMap] of this.modules) {
-        const components = Array.from(moduleMap.values());
-        if (components.length > 0) {
-          modules.push({
-            name: moduleName,
-            components: components.map(comp => ({
-              name: comp.name,
-              icon: comp.icon,
-              description: comp.description,
-              inports: comp.inports,
-              outports: comp.outports,
-              type: comp.type,
-            })),
-          });
-        }
-      }
-      const json = JSON.stringify({ modules }, null, 2);
-
-      const fileHandle = await directoryHandle.getFileHandle("fbp.library.json", {
-        create: true,
-      });
-      const writable = await fileHandle.createWritable();
-      await writable.write(json);
-      await writable.close();
-      console.log("Library saved successfully.");
-    } catch (err) {
-      console.error("Error saving library:", err);
     }
   }
 }

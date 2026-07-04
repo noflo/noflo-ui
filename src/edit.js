@@ -86,7 +86,7 @@ async function init() {
       directoryHandle = handle;
       console.log("Directory selected:", handle.name);
 
-      await libraryManager.loadLibrary(handle);
+      await loadLibrary(handle);
     }
   });
 
@@ -146,7 +146,7 @@ function setupEditorEventListeners(editor) {
       componentData = await askForNewComponentDetails(componentName);
       if (!componentData) return;
       libraryManager.setComponent(componentName, componentData);
-      await libraryManager.saveLibrary(directoryHandle);
+      await saveLibrary(directoryHandle);
     }
 
     const nodeId = `node_${Date.now()}`;
@@ -447,7 +447,7 @@ function setupEditorEventListeners(editor) {
         }
       });
 
-      await libraryManager.saveLibrary(directoryHandle);
+      await saveLibrary(directoryHandle);
       debouncedSave();
     }
   });
@@ -493,45 +493,96 @@ async function askForNewComponentDetails(componentName) {
 /**
  * @returns {Promise<void>}
  */
-async function createNewGraph() {
-  const name = window.prompt("Enter new graph name (without .json):");
-  if (!name) return;
+/**
+ * @param {FileSystemDirectoryHandle} directoryHandle
+ */
+async function loadLibrary(directoryHandle) {
+  libraryManager.modules.clear();
+  libraryManager.modules.set(LibraryManager.PROJECT_MODULE, new Map());
 
-  const g = new Graph();
-  currentGraph = g;
-  currentFileName = name + ".graph.json";
+  let libraryFileHandle = null;
+  for await (const entry of directoryHandle.values()) {
+    if (entry.kind === "file" && entry.name === "fbp.library.json") {
+      libraryFileHandle = entry;
+      break;
+    }
+  }
 
-  // Recreate editor to clear it
-  const app = document.getElementById("app");
-  app.querySelectorAll("noflo-editor").forEach((el) => {
-    el.remove();
-  });
-  editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
-  app.appendChild(editor);
-
-  // Re-setup event listeners for editor
-  setupEditorEventListeners(editor);
-  editor.libraryManager = libraryManager;
-
-  fileSelector.minimize();
+  if (libraryFileHandle) {
+    console.log("Loading library from fbp.library.json");
+    const file = await libraryFileHandle.getFile();
+    const text = await file.text();
+    const json = JSON.parse(text);
+    const newManager = LibraryManager.fromJSON(json);
+    // Copy modules from newManager to libraryManager
+    for (const [moduleName, moduleMap] of newManager.modules) {
+      libraryManager.modules.set(moduleName, moduleMap);
+    }
+  } else {
+    console.log(
+      "No fbp.library.json found. Inferring library from graph files.",
+    );
+    await inferLibraryFromFolder(directoryHandle);
+  }
 }
 
-function debouncedSave() {
-  if (saveTimeout) return;
-  saveTimeout = setTimeout(() => {
-    saveTimeout = null;
-    saveGraph();
-  }, 1000);
+/**
+ * @param {FileSystemDirectoryHandle} directoryHandle
+ */
+async function inferLibraryFromFolder(directoryHandle) {
+  for await (const entry of directoryHandle.values()) {
+    if (entry.kind !== "file") {
+      continue;
+    }
+    const file = await entry.getFile();
+    const text = await file.text();
+    let g = null;
+
+    if (entry.name.endsWith(".json")) {
+      try {
+        const json = JSON.parse(text);
+        g = await graph.loadJSON(json);
+        if (!g.name) {
+          g.name = entry.name.split(".")[0];
+        }
+      } catch (e) {
+        console.warn("Failed to parse graph file:", entry.name, e);
+      }
+    } else if (entry.name.endsWith(".fbp")) {
+      try {
+        g = await graph.loadFBP(text);
+        if (!g.name) {
+          g.name = entry.name.split(".")[0];
+        }
+      } catch (e) {
+        // console.warn("Failed to parse FBP language graph file:", entry.name, e);
+      }
+    }
+
+    if (g) {
+      libraryManager.inferLibraryFromGraph(g);
+    }
+  }
 }
 
-async function saveGraph() {
-  if (!currentGraph || !directoryHandle || !currentFileName) return;
-  console.log("Saving graph...");
+/**
+ * @param {FileSystemDirectoryHandle} directoryHandle
+ */
+async function saveLibrary(directoryHandle) {
+  if (!directoryHandle) return;
+  console.log("Saving library...");
   try {
-    await saveGraphAsJson(/** @type {any} */ (directoryHandle), currentFileName, currentGraph);
-    console.log("Graph saved successfully.");
+    const json = JSON.stringify(libraryManager.toJSON(), null, 2);
+
+    const fileHandle = await directoryHandle.getFileHandle("fbp.library.json", {
+      create: true,
+    });
+    const writable = await fileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    console.log("Library saved successfully.");
   } catch (err) {
-    console.error("Error saving graph:", err);
+    console.error("Error saving library:", err);
   }
 }
 

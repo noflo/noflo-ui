@@ -4,6 +4,9 @@ export const PortSignature = {
   title: "Port definition",
   type: "object",
   additionalProperties: false,
+  required: [
+    "name",
+  ],
   properties: {
     name: {
       name: "Name",
@@ -44,6 +47,7 @@ export const PortSignature = {
       type: "boolean",
       description: "Whether the port is an addressable ArrayPort",
       example: false,
+      default: false,
     },
   },
 };
@@ -122,7 +126,24 @@ export const GraphProperties = {
         "Main graphs are not intended to be used as subgraphs elsewhere",
       default: false,
     },
-    // TODO: environment.content
+    "environment": {
+      title: "Graph runtime environment information",
+      type: "object",
+      properties: {
+        type: {
+          name: "Type",
+          type: "string",
+          title: "Runtime type",
+          example: "noflo"
+        },
+        content: {
+          name: "Content",
+          type: "string",
+          description: "Content to be passed to the runtime environment (for example a HTML fixture for browser graphs)",
+          format: "textarea",
+        },
+      },
+    }
   },
 };
 

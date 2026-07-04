@@ -8,6 +8,7 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import { LibraryManager } from "./library/LibraryManager.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
 
@@ -41,6 +42,18 @@ async function init() {
     );
     app.appendChild(editor);
 
+    const libraryManager = new LibraryManager();
+    editor.libraryManager = libraryManager;
+
+    // Register sample components
+    libraryManager.setComponent("Source", { name: "Source", icon: "play", inports: [], outports: [{ name: "out" }], type: "elementary" });
+    libraryManager.setComponent("Filter", { name: "Filter", icon: "filter", inports: [{ name: "in" }], outports: [{ name: "out" }, { name: "error" }], type: "elementary" });
+    libraryManager.setComponent("Splitter", { name: "Splitter", icon: "code-branch", inports: [{ name: "in" }], outports: [{ name: "out", addressable: true }], type: "elementary" });
+    libraryManager.setComponent("Aggregator", { name: "Aggregator", icon: "layer-group", inports: [{ name: "in", addressable: true }], outports: [{ name: "out" }], type: "elementary" });
+    libraryManager.setComponent("Logger", { name: "Logger", icon: "terminal", inports: [{ name: "in" }], outports: [], type: "elementary" });
+    libraryManager.setComponent("Sink", { name: "Sink", icon: "database", inports: [{ name: "in" }], outports: [], type: "elementary" });
+    libraryManager.setComponent("Router", { name: "Router", icon: "route", inports: [{ name: "in" }], outports: [{ name: "out" }], type: "elementary" });
+
     editor.addEventListener("wire-connection-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       editor.addEdge(event.detail.portA, event.detail.portB);
@@ -49,14 +62,13 @@ async function init() {
     editor.addEventListener("node-creation-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
-      const newNode = editor.addNode("New Node", x, y);
+      const newNode = editor.addNode("new_node_" + Date.now(), "project/New Node", { x, y });
       const port = /** @type {HTMLElement} */ (startPort);
       const isOut = port.classList.contains("port-out");
       const targetPort = newNode.shadowRoot?.querySelector(
         `.port${isOut ? "-in" : "-out"}`,
       );
       if (targetPort) {
-        // Wait for the next frame to ensure the node is laid out
         requestAnimationFrame(() => {
           if (isOut) {
             editor.addEdge(port, /** @type {HTMLElement} */ (targetPort));
@@ -120,78 +132,36 @@ async function init() {
       console.log(
         `[Main] Sending IIP: ${iipElement.getAttribute("name")} with value: ${iipElement.value}`,
       );
-      // In a real app, this would send a message to the backend
     });
 
     // Add some sample nodes
     const source = /** @type {FlowNode} */ (
-      editor.addNode(
-        "Source",
-        100,
-        200,
-        [{ addressable: false }],
-        [{ name: "out" }],
-      )
+      editor.addNode("node_source", "Source", { x: 100, y: 200, name: "Source", icon: "play" })
     );
-    source.setMetadata({ name: "Source", icon: "play" });
 
     const filter = /** @type {FlowNode} */ (
-      editor.addNode(
-        "Filter",
-        300,
-        100,
-        [{ name: "in" }],
-        [{ name: "out" }, { name: "error" }],
-      )
+      editor.addNode("node_filter", "Filter", { x: 300, y: 100, name: "Filter", icon: "filter" })
     );
-    filter.setMetadata({ name: "Filter", icon: "filter" });
 
     const splitter = /** @type {FlowNode} */ (
-      editor.addNode(
-        "Splitter",
-        300,
-        300,
-        [{ name: "in" }],
-        [{ name: "out", addressable: true }],
-      )
+      editor.addNode("node_splitter", "Splitter", { x: 300, y: 300, name: "Splitter", icon: "code-branch" })
     );
-    splitter.setMetadata({ name: "Splitter", icon: "code-branch" });
 
     const aggregator = /** @type {FlowNode} */ (
-      editor.addNode(
-        "Aggregator",
-        500,
-        300,
-        [{ name: "in", addressable: true }],
-        [{ name: "out" }],
-      )
+      editor.addNode("node_aggregator", "Aggregator", { x: 500, y: 300, name: "Aggregator", icon: "layer-group" })
     );
-    aggregator.setMetadata({
-      name: "Aggregator",
-      icon: "layer-group",
-    });
 
     const logger = /** @type {FlowNode} */ (
-      editor.addNode("Logger", 700, 100, [{ name: "in" }], [])
+      editor.addNode("node_logger", "Logger", { x: 700, y: 100, name: "Logger", icon: "terminal" })
     );
-    logger.setMetadata({ name: "Logger", icon: "terminal" });
 
     const sink = /** @type {FlowNode} */ (
-      editor.addNode("Sink", 700, 300, [{ name: "in" }], [])
+      editor.addNode("node_sink", "Sink", { x: 700, y: 300, name: "Sink", icon: "database" })
     );
-    sink.setMetadata({ name: "Sink", icon: "database" });
 
     const router = /** @type {FlowNode} */ (
-      editor.addNode(
-        "Router",
-        500,
-        100,
-        [{ name: "in" }],
-        [{ name: "out" }],
-        40,
-      )
+      editor.addNode("node_router", "Router", { x: 500, y: 100, name: "Router", icon: "route", size: 40 })
     );
-    router.setMetadata({ name: "Router", icon: "route" });
 
     // Initial connections
     editor.connectNodes(source, "out", filter, "in", "0");
