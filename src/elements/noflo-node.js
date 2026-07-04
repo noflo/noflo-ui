@@ -174,6 +174,10 @@ export class FlowNode extends HTMLElement {
     }
     this.render();
 
+    if (!this._componentName) {
+      this._componentName = this.getAttribute("component");
+    }
+
     this._observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === "attributes" && mutation.attributeName === "component") {
