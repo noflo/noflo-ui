@@ -28,9 +28,17 @@ This project is developed following [Reticulum Distributed Development](https://
 
 See also the [project specification](SPEC.md).
 
-## Vendored dependecies
+### Running and developing
 
-This project aims for long-term maintainability. In support of that, we try to keep dependencies as minimal as possible.
+There is no build process for the project itself. To serve the files, run:
+
+* `npm run serve`
+
+Development happens the old-school way, just edit a file and press reload in the browser.
+
+### Vendored dependecies
+
+We aim for long-term maintainability. In support of that, we try to keep dependencies as minimal as possible.
 The dependencies we have are to be vendored and committed into git.
 
 *  `npm run build-vendors`
