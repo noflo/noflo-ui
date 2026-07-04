@@ -2362,9 +2362,9 @@ export class FlowEditor extends HTMLElement {
       document.createElement("noflo-node")
     );
     node.id = nodeId;
+    node.component = component;
+    node.size = size;
     node.setAttribute("name", nodeId);
-    node.setAttribute("component", component);
-    node.setAttribute("size", size.toString());
     node.position = snapped;
 
     if (this.libraryManager) {

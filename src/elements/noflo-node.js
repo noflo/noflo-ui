@@ -111,6 +111,24 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
+   * @type {string | null}
+   */
+  get component() {
+    return this._componentName;
+  }
+
+  /**
+   * @param {string} componentName
+   */
+  set component(componentName) {
+    this._componentName = componentName;
+    this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
+    const compEl = this.shadowRoot?.querySelector(".node-component");
+    if (compEl) compEl.textContent = componentName;
+  }
+
+  /**
    * @type {number}
    */
   get size() {
@@ -161,15 +179,8 @@ export class FlowNode extends HTMLElement {
   /**
    * @param {Metadata} metadata
    */
-  setMetadata({ name, componentName }) {
+  setMetadata({ name,  }) {
     if (name) this.textContent = name;
-    if (componentName) {
-      this._componentName = componentName;
-      const compEl = this.shadowRoot?.querySelector(".node-component");
-      if (compEl) compEl.textContent = componentName;
-      this._updatePortsFromLibrary();
-      this._updateIconFromLibrary();
-    }
   }
 
   /**
@@ -186,24 +197,11 @@ export class FlowNode extends HTMLElement {
     }
     this.render();
 
-    if (!this._componentName) {
-      this._componentName = this.getAttribute("component");
-    }
-
-    this._observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "attributes" && mutation.attributeName === "component") {
-          this._componentName = this.getAttribute("component");
-          this._updatePortsFromLibrary();
-          this._updateIconFromLibrary();
-        }
-      }
-    });
-    this._observer.observe(this, { attributes: true });
-
     if (this._libraryManager) {
       this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
     }
+    const compEl = this.shadowRoot?.querySelector(".node-component");
+    if (compEl) compEl.textContent = this._componentName;
 
     this._updatePortsFromLibrary();
     this._updateIconFromLibrary();
