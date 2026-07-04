@@ -57,6 +57,7 @@ export class FlowNode extends HTMLElement {
   set libraryManager(lm) {
     this._libraryManager = lm;
     this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
     if (this._observer) {
       this._libraryManager.removeEventListener("component-changed", this._onComponentChanged);
       this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
@@ -74,6 +75,7 @@ export class FlowNode extends HTMLElement {
     const { compName } = e.detail;
     if (compName === this._componentName) {
       this._updatePortsFromLibrary();
+      this._updateIconFromLibrary();
     }
   };
 
@@ -85,6 +87,26 @@ export class FlowNode extends HTMLElement {
     const comp = this._libraryManager.getComponent(this._componentName);
     if (comp) {
       this.setPorts(comp.inports || [], comp.outports || []);
+    }
+  }
+
+  /**
+   * @private
+   */
+  _updateIconFromLibrary() {
+    if (!this._libraryManager || !this._componentName) return;
+    const comp = this._libraryManager.getComponent(this._componentName);
+    console.log(comp);
+    if (comp && comp.icon) {
+      const iconEl = this.shadowRoot?.querySelector(".node-content");
+      if (iconEl) {
+        if (comp.icon.startsWith("data:image") || comp.icon.startsWith("http")) {
+          iconEl.innerHTML = `<img src="${comp.icon}" class="node-icon-img">`;
+        } else {
+          const iconName = comp.icon.substr();
+          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
+        }
+      }
     }
   }
 
@@ -139,24 +161,14 @@ export class FlowNode extends HTMLElement {
   /**
    * @param {Metadata} metadata
    */
-  setMetadata({ name, componentName, icon }) {
+  setMetadata({ name, componentName }) {
     if (name) this.textContent = name;
     if (componentName) {
       this._componentName = componentName;
       const compEl = this.shadowRoot?.querySelector(".node-component");
       if (compEl) compEl.textContent = componentName;
       this._updatePortsFromLibrary();
-    }
-    if (icon) {
-      const iconEl = this.shadowRoot?.querySelector(".node-content");
-      if (iconEl) {
-        if (icon.startsWith("data:image") || icon.startsWith("http")) {
-          iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
-        } else {
-          const iconName = icon.substr();
-          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
-        }
-      }
+      this._updateIconFromLibrary();
     }
   }
 
@@ -183,6 +195,7 @@ export class FlowNode extends HTMLElement {
         if (mutation.type === "attributes" && mutation.attributeName === "component") {
           this._componentName = this.getAttribute("component");
           this._updatePortsFromLibrary();
+          this._updateIconFromLibrary();
         }
       }
     });
@@ -193,6 +206,7 @@ export class FlowNode extends HTMLElement {
     }
 
     this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
   }
 
   disconnectedCallback() {
