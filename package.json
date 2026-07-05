@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "npx @biomejs/biome check src/ spec/ index.html",
-    "format": "npx @biomejs/biome check --write src/ spec/ index.html",
+    "format": "npx @biomejs/biome check --use-editorconfig=true --write src/ spec/ index.html",
     "types": "npx tsc --checkJs --noEmit --allowJs --declaration src/*.js src/**/*.js",
     "generate:noflo": "node utils/generate-noflo-loader.js",
     "generate:fa": "node utils/generate-icon-map.js",

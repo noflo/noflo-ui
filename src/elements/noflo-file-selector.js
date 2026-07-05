@@ -229,7 +229,7 @@ export class FileSelector extends HTMLElement {
         (entry.name.endsWith(".json") || entry.name.endsWith(".fbp"))
       ) {
         const li = document.createElement("li");
-        li.textContent = entry.name.split('.')[0];
+        li.textContent = entry.name.split(".")[0];
         li.addEventListener("click", () => {
           this.dispatchEvent(
             new CustomEvent("file-selected", {

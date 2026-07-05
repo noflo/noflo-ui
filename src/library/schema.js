@@ -4,9 +4,7 @@ export const PortSignature = {
   title: "Port definition",
   type: "object",
   additionalProperties: false,
-  required: [
-    "name",
-  ],
+  required: ["name"],
   properties: {
     name: {
       name: "Name",
@@ -126,7 +124,7 @@ export const GraphProperties = {
         "Main graphs are not intended to be used as subgraphs elsewhere",
       default: false,
     },
-    "environment": {
+    environment: {
       title: "Graph runtime environment information",
       type: "object",
       properties: {
@@ -134,16 +132,17 @@ export const GraphProperties = {
           name: "Type",
           type: "string",
           title: "Runtime type",
-          example: "noflo"
+          example: "noflo",
         },
         content: {
           name: "Content",
           type: "string",
-          description: "Content to be passed to the runtime environment (for example a HTML fixture for browser graphs)",
+          description:
+            "Content to be passed to the runtime environment (for example a HTML fixture for browser graphs)",
           format: "textarea",
         },
       },
-    }
+    },
   },
 };
 

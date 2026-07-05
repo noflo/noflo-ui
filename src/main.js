@@ -46,13 +46,55 @@ async function init() {
     editor.libraryManager = libraryManager;
 
     // Register sample components
-    libraryManager.setComponent("Source", { name: "Source", icon: "play", inports: [], outports: [{ name: "out" }], type: "elementary" });
-    libraryManager.setComponent("Filter", { name: "Filter", icon: "filter", inports: [{ name: "in" }], outports: [{ name: "out" }, { name: "error" }], type: "elementary" });
-    libraryManager.setComponent("Splitter", { name: "Splitter", icon: "code-branch", inports: [{ name: "in" }], outports: [{ name: "out", addressable: true }], type: "elementary" });
-    libraryManager.setComponent("Aggregator", { name: "Aggregator", icon: "layer-group", inports: [{ name: "in", addressable: true }], outports: [{ name: "out" }], type: "elementary" });
-    libraryManager.setComponent("Logger", { name: "Logger", icon: "terminal", inports: [{ name: "in" }], outports: [], type: "elementary" });
-    libraryManager.setComponent("Sink", { name: "Sink", icon: "database", inports: [{ name: "in" }], outports: [], type: "elementary" });
-    libraryManager.setComponent("Router", { name: "Router", icon: "route", inports: [{ name: "in" }], outports: [{ name: "out" }], type: "elementary" });
+    libraryManager.setComponent("Source", {
+      name: "Source",
+      icon: "play",
+      inports: [],
+      outports: [{ name: "out" }],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Filter", {
+      name: "Filter",
+      icon: "filter",
+      inports: [{ name: "in" }],
+      outports: [{ name: "out" }, { name: "error" }],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Splitter", {
+      name: "Splitter",
+      icon: "code-branch",
+      inports: [{ name: "in" }],
+      outports: [{ name: "out", addressable: true }],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Aggregator", {
+      name: "Aggregator",
+      icon: "layer-group",
+      inports: [{ name: "in", addressable: true }],
+      outports: [{ name: "out" }],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Logger", {
+      name: "Logger",
+      icon: "terminal",
+      inports: [{ name: "in" }],
+      outports: [],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Sink", {
+      name: "Sink",
+      icon: "database",
+      inports: [{ name: "in" }],
+      outports: [],
+      type: "elementary",
+    });
+    libraryManager.setComponent("Router", {
+      name: "Router",
+      icon: "route",
+      inports: [{ name: "in" }],
+      outports: [{ name: "out" }],
+      type: "elementary",
+    });
 
     editor.addEventListener("wire-connection-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
@@ -62,7 +104,11 @@ async function init() {
     editor.addEventListener("node-creation-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
-      const newNode = editor.addNode("new_node_" + Date.now(), "project/New Node", { x, y });
+      const newNode = editor.addNode(
+        "new_node_" + Date.now(),
+        "project/New Node",
+        { x, y },
+      );
       const port = /** @type {HTMLElement} */ (startPort);
       const isOut = port.classList.contains("port-out");
       const targetPort = newNode.shadowRoot?.querySelector(
@@ -136,31 +182,67 @@ async function init() {
 
     // Add some sample nodes
     const source = /** @type {FlowNode} */ (
-      editor.addNode("node_source", "Source", { x: 100, y: 200, name: "Source", icon: "play" })
+      editor.addNode("node_source", "Source", {
+        x: 100,
+        y: 200,
+        name: "Source",
+        icon: "play",
+      })
     );
 
     const filter = /** @type {FlowNode} */ (
-      editor.addNode("node_filter", "Filter", { x: 300, y: 100, name: "Filter", icon: "filter" })
+      editor.addNode("node_filter", "Filter", {
+        x: 300,
+        y: 100,
+        name: "Filter",
+        icon: "filter",
+      })
     );
 
     const splitter = /** @type {FlowNode} */ (
-      editor.addNode("node_splitter", "Splitter", { x: 300, y: 300, name: "Splitter", icon: "code-branch" })
+      editor.addNode("node_splitter", "Splitter", {
+        x: 300,
+        y: 300,
+        name: "Splitter",
+        icon: "code-branch",
+      })
     );
 
     const aggregator = /** @type {FlowNode} */ (
-      editor.addNode("node_aggregator", "Aggregator", { x: 500, y: 300, name: "Aggregator", icon: "layer-group" })
+      editor.addNode("node_aggregator", "Aggregator", {
+        x: 500,
+        y: 300,
+        name: "Aggregator",
+        icon: "layer-group",
+      })
     );
 
     const logger = /** @type {FlowNode} */ (
-      editor.addNode("node_logger", "Logger", { x: 700, y: 100, name: "Logger", icon: "terminal" })
+      editor.addNode("node_logger", "Logger", {
+        x: 700,
+        y: 100,
+        name: "Logger",
+        icon: "terminal",
+      })
     );
 
     const sink = /** @type {FlowNode} */ (
-      editor.addNode("node_sink", "Sink", { x: 700, y: 300, name: "Sink", icon: "database" })
+      editor.addNode("node_sink", "Sink", {
+        x: 700,
+        y: 300,
+        name: "Sink",
+        icon: "database",
+      })
     );
 
     const router = /** @type {FlowNode} */ (
-      editor.addNode("node_router", "Router", { x: 500, y: 100, name: "Router", icon: "route", size: 40 })
+      editor.addNode("node_router", "Router", {
+        x: 500,
+        y: 100,
+        name: "Router",
+        icon: "route",
+        size: 40,
+      })
     );
 
     // Initial connections

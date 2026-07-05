@@ -7,7 +7,7 @@ import { ComponentSignature } from "./schema.js";
 
 /**
  * @typedef {import("./schema.js").PortSignature} PortSignature
- * 
+ *
  * @typedef {Object} ComponentDefinition
  * @property {string} name
  * @property {string} [module]
@@ -22,7 +22,7 @@ import { ComponentSignature } from "./schema.js";
  * LibraryManager keeps track of the component library.
  * It resolves both "project local" components without a namespace (e.g., "MyComponent")
  * and library components with a namespace (e.g., "module/MyComponent").
- * 
+ *
  * @extends EventTarget
  */
 export class LibraryManager extends EventTarget {
@@ -73,9 +73,11 @@ export class LibraryManager extends EventTarget {
     definition.module = module;
     moduleMap.set(component, definition);
 
-    this.dispatchEvent(new CustomEvent("component-changed", {
-      detail: { compName, definition },
-    }));
+    this.dispatchEvent(
+      new CustomEvent("component-changed", {
+        detail: { compName, definition },
+      }),
+    );
   }
 
   /**
@@ -90,9 +92,11 @@ export class LibraryManager extends EventTarget {
 
     const moduleMap = this.modules.get(module);
     if (moduleMap && moduleMap.delete(component)) {
-      this.dispatchEvent(new CustomEvent("component-changed", {
-        detail: { compName },
-      }));
+      this.dispatchEvent(
+        new CustomEvent("component-changed", {
+          detail: { compName },
+        }),
+      );
     }
   }
 
@@ -150,7 +154,7 @@ export class LibraryManager extends EventTarget {
       if (components.length > 0) {
         modules.push({
           name: moduleName,
-          components: components.map(comp => ({
+          components: components.map((comp) => ({
             name: comp.name,
             icon: comp.icon,
             description: comp.description,
@@ -180,7 +184,7 @@ export class LibraryManager extends EventTarget {
           ...comp,
           module: moduleName,
         };
-        // If comp.name is "module/Comp", we should handle it, 
+        // If comp.name is "module/Comp", we should handle it,
         // but the JSON format seems to be per-module.
         // Let's assume comp.name is the component name within the module.
         moduleMap.set(comp.name, definition);

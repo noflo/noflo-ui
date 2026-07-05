@@ -59,8 +59,14 @@ export class FlowNode extends HTMLElement {
     this._updatePortsFromLibrary();
     this._updateIconFromLibrary();
     if (this._observer) {
-      this._libraryManager.removeEventListener("component-changed", this._onComponentChanged);
-      this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
+      this._libraryManager.removeEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
+      this._libraryManager.addEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
     }
   }
 
@@ -100,7 +106,10 @@ export class FlowNode extends HTMLElement {
     if (comp && comp.icon) {
       const iconEl = this.shadowRoot?.querySelector(".node-content");
       if (iconEl) {
-        if (comp.icon.startsWith("data:image") || comp.icon.startsWith("http")) {
+        if (
+          comp.icon.startsWith("data:image") ||
+          comp.icon.startsWith("http")
+        ) {
           iconEl.innerHTML = `<img src="${comp.icon}" class="node-icon-img">`;
         } else {
           const iconName = comp.icon.substr();
@@ -179,7 +188,7 @@ export class FlowNode extends HTMLElement {
   /**
    * @param {Metadata} metadata
    */
-  setMetadata({ name,  }) {
+  setMetadata({ name }) {
     if (name) this.textContent = name;
   }
 
@@ -198,7 +207,10 @@ export class FlowNode extends HTMLElement {
     this.render();
 
     if (this._libraryManager) {
-      this._libraryManager.addEventListener("component-changed", this._onComponentChanged);
+      this._libraryManager.addEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
     }
     const compEl = this.shadowRoot?.querySelector(".node-component");
     if (compEl) compEl.textContent = this._componentName;
@@ -212,7 +224,10 @@ export class FlowNode extends HTMLElement {
       this._observer.disconnect();
     }
     if (this._libraryManager) {
-      this._libraryManager.removeEventListener("component-changed", this._onComponentChanged);
+      this._libraryManager.removeEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
     }
   }
 

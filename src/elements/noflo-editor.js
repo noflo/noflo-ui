@@ -2261,10 +2261,7 @@ export class FlowEditor extends HTMLElement {
    * @param {HTMLElement} port
    */
   updateIIPPathData(hitPath, visualPath, iip, port) {
-    const posA = {
-      x: iip.position.x + iip.size / 2,
-      y: iip.position.y + iip.size / 2,
-    };
+    const posA = this.getPortPosition(iip);
     const posB = this.getPortPosition(port);
 
     const dx = Math.abs(posB.x - posA.x) * 0.5;

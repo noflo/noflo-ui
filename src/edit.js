@@ -6,8 +6,8 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
-import { ComponentSignature } from "./library/schema.js";
 import { LibraryManager } from "./library/LibraryManager.js";
+import { ComponentSignature } from "./library/schema.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-modal.js";
 
@@ -36,7 +36,7 @@ let currentGraph = null;
 /** @type {string} */
 let currentFileName = "";
 /** @type {number | null} */
-let saveTimeout = null;
+const saveTimeout = null;
 
 /** @type {any} */
 let componentModal = null;
@@ -67,7 +67,9 @@ async function init() {
   setupEditorEventListeners(editor);
 
   // Setup File Selector
-  fileSelector = /** @type {FileSelector} */ (document.querySelector("noflo-file-selector"));
+  fileSelector = /** @type {FileSelector} */ (
+    document.querySelector("noflo-file-selector")
+  );
   if (!fileSelector) {
     console.error("File selector element not found");
     return;
@@ -75,13 +77,17 @@ async function init() {
 
   // Create component editor modal
   componentModal = document.createElement("noflo-modal");
-  componentForm = /** @type {HTMLElement} */ (document.createElement("noflo-json-form"));
+  componentForm = /** @type {HTMLElement} */ (
+    document.createElement("noflo-json-form")
+  );
   componentModal.appendChild(componentForm);
   app.appendChild(componentModal);
 
   fileSelector.addEventListener("directory-selected", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    const handle = /** @type {FileSystemDirectoryHandle} */ (event.detail.directoryHandle);
+    const handle = /** @type {FileSystemDirectoryHandle} */ (
+      event.detail.directoryHandle
+    );
     if (handle) {
       directoryHandle = handle;
       console.log("Directory selected:", handle.name);
@@ -92,7 +98,9 @@ async function init() {
 
   fileSelector.addEventListener("file-selected", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    const fileHandle = /** @type {FileSystemFileHandle} */ (event.detail.fileHandle);
+    const fileHandle = /** @type {FileSystemFileHandle} */ (
+      event.detail.fileHandle
+    );
     if (fileHandle && fileSelector) {
       await loadFile(fileHandle);
       fileSelector.minimize();
@@ -150,17 +158,13 @@ function setupEditorEventListeners(editor) {
     }
 
     const nodeId = `node_${Date.now()}`;
-    const newNode = editor.addNode(
-      nodeId,
-      componentName,
-      { 
-        x, 
-        y,
-        name: nodeId,
-        icon: componentData.icon || "gear",
-        componentName: componentName
-      },
-    );
+    const newNode = editor.addNode(nodeId, componentName, {
+      x,
+      y,
+      name: nodeId,
+      icon: componentData.icon || "gear",
+      componentName: componentName,
+    });
 
     if (currentGraph) {
       currentGraph.addNode(nodeId, componentName, { x, y });
@@ -401,7 +405,12 @@ function setupEditorEventListeners(editor) {
 
     let componentData = getComponentFromLibrary(componentName);
     if (!componentData) {
-      componentData = { name: componentName, type: "stub", inports: [], outports: [] };
+      componentData = {
+        name: componentName,
+        type: "stub",
+        inports: [],
+        outports: [],
+      };
     }
 
     const modal = /** @type {any} */ (componentModal);
@@ -435,11 +444,14 @@ function setupEditorEventListeners(editor) {
             n.setAttribute("component", newComponentName);
           }
           const updatedDef = getComponentFromLibrary(newComponentName);
-          if (updatedDef && (/** @type {any} */ (n)).setPorts) {
-            (/** @type {any} */ (n)).setPorts(updatedDef.inports, updatedDef.outports);
+          if (updatedDef && /** @type {any} */ (n).setPorts) {
+            /** @type {any} */ (n).setPorts(
+              updatedDef.inports,
+              updatedDef.outports,
+            );
           }
-          if ((/** @type {any} */ (n)).setMetadata) {
-            (/** @type {any} */ (n)).setMetadata({
+          if (/** @type {any} */ (n).setMetadata) {
+            /** @type {any} */ (n).setMetadata({
               componentName: newComponentName,
               icon: newData.icon,
             });
@@ -693,7 +705,11 @@ async function loadFile(/** @type {any} */ fileHandle) {
     if (isFbp) {
       g = await graph.loadFBP(text);
       placeMissingElements(g);
-      await saveGraphAsJson(/** @type {any} */ (directoryHandle), fileHandle.name, g);
+      await saveGraphAsJson(
+        /** @type {any} */ (directoryHandle),
+        fileHandle.name,
+        g,
+      );
       await fileHandle.remove();
       console.log(
         `Converted ${fileHandle.name} to .graph.json and removed original.`,
@@ -715,7 +731,9 @@ async function loadFile(/** @type {any} */ fileHandle) {
       app.querySelectorAll("noflo-editor").forEach((el) => {
         el.remove();
       });
-      editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
+      editor = /** @type {FlowEditor} */ (
+        document.createElement("noflo-editor")
+      );
       app.appendChild(editor);
 
       // Re-setup event listeners for editor
@@ -734,17 +752,13 @@ async function loadFile(/** @type {any} */ fileHandle) {
         const inPorts = comp ? comp.inports : undefined;
         const outPorts = comp ? comp.outports : undefined;
 
-        const n = editor.addNode(
-          node.id,
-          node.component,
-          { 
-            x, 
-            y, 
-            name: node.id,
-            icon: comp?.icon || "gear",
-            componentName: node.component
-          },
-        );
+        const n = editor.addNode(node.id, node.component, {
+          x,
+          y,
+          name: node.id,
+          icon: comp?.icon || "gear",
+          componentName: node.component,
+        });
         elementsMap.set(node.id, n);
       }
 
