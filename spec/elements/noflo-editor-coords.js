@@ -25,6 +25,7 @@ describe("FlowEditor Coordinate Conversions", async () => {
     // Mock offset and zoom
     el.offset = { x: 50, y: 50 };
     el.zoom = 2.0;
+    el.updateTransform();
 
     // 1. Test viewportToGraph
     // viewportX = 100, viewportY = 100

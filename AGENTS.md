@@ -33,5 +33,6 @@ The `src/library/SpaceManager.js` is to be the ultimate authority on where items
 - ✅ **Always**: Remove ambiguity and legacy support from APIs you modify. Right now there are no API consumers outside this repo so we can keep things fluid
 - ⚠️ **Ask first**: adding dependencies
 - ⚠️ **Ask first**: modify CI config
+- ⚠️ **Ask first**: allow an optional input to a method
 - 🚫 **Never**: AI agents may not make commits on their own, instead notify user that there are uncommitted changes to review
 

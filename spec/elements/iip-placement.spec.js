@@ -24,14 +24,13 @@ describe("IIP Placement", async () => {
     const nodeX = 500;
     const nodeY = 500;
     const nodeSize = 80;
-    const node = editor.addNode(
-      nodeName,
-      nodeX,
-      nodeY,
-      [{ type: "regular" }],
-      [{ type: "regular" }],
-      nodeSize,
-    );
+    const node = editor.addNode(nodeName, null, {
+      x: nodeX,
+      y: nodeY,
+      size: nodeSize,
+      inPorts: [{ type: "regular" }],
+      outPorts: [{ type: "regular" }],
+    });
 
     // 2. Get an inport from the node
     // We need to wait for the node to be rendered in the shadow DOM
@@ -46,7 +45,7 @@ describe("IIP Placement", async () => {
     const iipValue = "TestIIPValue";
     // The current implementation of addIIP(x, y, port) uses x,y as center.
     // We'll pass some arbitrary x,y because it should be overridden.
-    const iip = editor.addIIP(100, 100, inport, iipValue);
+    const iip = editor.addIIP(0, 0, inport, iipValue);
 
     // 4. Assert IIP position
     // Expected center:
@@ -58,8 +57,8 @@ describe("IIP Placement", async () => {
     // Wait, if snapped.x is 400, and size is 40, then center is 420.
     // If snapped.y is 500, and size is 40, then center is 520.
 
-    const expectedCenterX = 420;
-    const expectedCenterY = 520;
+    const expectedCenterX = 460;
+    const expectedCenterY = 540;
 
     // Due to snapping, let's check if it's close to what we expect.
     // The actual center of the IIP element will be position.x + size/2

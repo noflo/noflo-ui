@@ -1642,8 +1642,9 @@ export class FlowEditor extends HTMLElement {
     const edge = this.edges.find(
       (edge) => edge.hitPath === el || edge.visualPath === el,
     );
-    if (!edge) return;
-
+    if (!edge) {
+      return;
+    }
     const edgeId = this.getEdgeId(edge);
 
     if (isMultiple) {
@@ -2025,17 +2026,30 @@ export class FlowEditor extends HTMLElement {
           "Cannot connect ports of the same type (both in or both out)",
         );
       }
-    } else if (this.ghostNode && this.ghostPos) {
+    } else if (this.ghostNode) {
       const isOutPort = this.dragPort?.classList.contains("port-out");
       const eventName = isOutPort
         ? "node-creation-attempt"
         : "iip-creation-attempt";
 
+      // Prefer the position where the ghost node is actually displayed.
+      // Fall back to computing it from the current pointer position so the
+      // method is self-contained (e.g. when ghostPos was not populated).
+      let pos = this.ghostPos;
+      if (!pos) {
+        const size = isOutPort ? 80 : 40;
+        const { x: mouseX, y: mouseY } = this.clientToGraph(
+          e.clientX,
+          e.clientY,
+        );
+        pos = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
+      }
+
       this.dispatchEvent(
         new CustomEvent(eventName, {
           detail: {
-            x: this.ghostPos.x,
-            y: this.ghostPos.y,
+            x: pos.x,
+            y: pos.y,
             startPort: this.dragPort,
           },
           bubbles: true,
@@ -2455,12 +2469,10 @@ export class FlowEditor extends HTMLElement {
         const nodeSize = node.size || 80;
         centerX = nodePos.x - size - 20;
         centerY = nodePos.y + nodeSize / 2 - size / 2;
-        console.log("DEBUG IIP:", { nodePos, size, centerX, centerY });
       }
     }
 
     const snapped = this.snapToGrid(centerX - size / 2, centerY - size / 2);
-    console.log("DEBUG IIP snapped:", snapped);
     const iip = /** @type {NoFloIIP} */ (document.createElement("noflo-iip"));
     const id = `iip_${Date.now().toString().slice(-4)}_${Math.floor(Math.random() * 1000)}`;
     iip.setAttribute("name", id);
