@@ -266,15 +266,8 @@ function setupEditorEventListeners(editor) {
         edge.to.port,
       );
     }
-    // Remove from editor.edges
-    if (editor.edges) {
-      const index = editor.edges.indexOf(edge);
-      if (index > -1) {
-        editor.edges.splice(index, 1);
-      }
-    }
-    edge.visualPath?.remove();
-    edge.hitPath?.remove();
+    // Remove from editor
+    editor.removeEdge(edge);
     debouncedSave();
   });
 

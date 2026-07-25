@@ -1,4 +1,5 @@
 import { FlowHeatmap } from "./noflo-heatmap.js";
+import { EdgeManager } from "../library/EdgeManager.js";
 import { SelectionManager } from "../library/SelectionManager.js";
 import { SpaceManager } from "../library/SpaceManager.js";
 
@@ -36,23 +37,6 @@ import { SpaceManager } from "../library/SpaceManager.js";
  */
 
 /**
- * @typedef {Object} Edge
- * @property {SVGPathElement} hitPath
- * @property {SVGPathElement} visualPath
- * @property {HTMLElement} portA
- * @property {HTMLElement} portB
- * @property {string} [routeId]
- */
-
-/**
- * @typedef {Object} IIPWire
- * @property {SVGPathElement} hitPath
- * @property {SVGPathElement} visualPath
- * @property {NoFloIIP | FlowExportedPort} iip
- * @property {HTMLElement} port
- */
-
-/**
  * @typedef {HTMLElement & {
  *   isOpen: boolean,
  *   open: (x: number, y: number, items: any[], centerContent: string | null) => void,
@@ -86,6 +70,8 @@ export class FlowEditor extends HTMLElement {
     this.spaceManager = new SpaceManager(this.zoom, this.offset);
     /** @type {SelectionManager} */
     this.selectionManager = new SelectionManager();
+    /** @type {EdgeManager | null} */
+    this.edgeManager = null;
     /** @type {boolean} */
     this.isPanning = false;
     /** @type {boolean} */
@@ -162,10 +148,6 @@ export class FlowEditor extends HTMLElement {
     this.nodeLayer = null;
 
     // Data
-    /** @type {Edge[]} */
-    this.edges = [];
-    /** @type {IIPWire[]} */
-    this.iipWires = [];
     /** @type {SVGPathElement | null} */
     this.activeWire = null;
     /** @type {HTMLElement | null} */
@@ -483,6 +465,12 @@ export class FlowEditor extends HTMLElement {
       "#node-layer",
     );
 
+    this.edgeManager = new EdgeManager({
+      edgesGroup: /** @type {SVGElement} */ (this.edgesGroup),
+      iipWiresGroup: /** @type {SVGElement} */ (this.iipWiresGroup),
+      getPortPosition: (port) => this.getPortPosition(port),
+    });
+
     this.updateTransform();
   }
 
@@ -493,6 +481,16 @@ export class FlowEditor extends HTMLElement {
    */
   recordActivity(worldX, worldY) {
     this.heatmap?.recordActivity(worldX, worldY);
+  }
+
+  /** @returns {import("../library/EdgeManager.js").Edge[]} */
+  get edges() {
+    return this.edgeManager ? this.edgeManager.edges : [];
+  }
+
+  /** @returns {import("../library/EdgeManager.js").IIPWire[]} */
+  get iipWires() {
+    return this.edgeManager ? this.edgeManager.iipWires : [];
   }
 
   updateTransform() {
@@ -618,36 +616,11 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {Edge} edge
-   * @returns {string}
-   */
-  /**
-   * @param {Edge} edge
+   * @param {import("../library/EdgeManager.js").Edge} edge
    * @returns {string}
    */
   getEdgeId(edge) {
-    const portA = edge.portA;
-    const portB = edge.portB;
-
-    /** @param {HTMLElement} port */
-    const findNode = (port) => {
-      const p = /** @type {HTMLElement} */ (port);
-      const root = p.getRootNode();
-      const host = root instanceof ShadowRoot ? root.host : null;
-      return host || p.closest("noflo-node") || p.closest("noflo-iip");
-    };
-
-    const nodeA = findNode(portA);
-    const nodeB = findNode(portB);
-
-    const nameA = nodeA ? nodeA.getAttribute("name") : "unknown";
-    const nameB = nodeB ? nodeB.getAttribute("name") : "unknown";
-    const portAName = portA.dataset.portName;
-    const portBName = portB.dataset.portName;
-    const portAIdx = portA.dataset.portIndex || "0";
-    const portBIdx = portB.dataset.portIndex || "0";
-
-    return `${nameA}:${portAName}[${portAIdx}]->${nameB}:${portBName}[${portBIdx}]`;
+    return /** @type {EdgeManager} */ (this.edgeManager).getEdgeId(edge);
   }
 
   setupInteractions() {
@@ -1994,35 +1967,7 @@ export class FlowEditor extends HTMLElement {
       this.spaceManager.removeNode(name);
     }
 
-    // Remove associated edges
-    if (this.edges) {
-      const edgesToRemove = this.edges.filter((edge) => {
-        const nodeA =
-          edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
-        const nodeB =
-          edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
-        return (
-          (nodeA && nodeA.getAttribute("name") === name) ||
-          (nodeB && nodeB.getAttribute("name") === name)
-        );
-      });
-
-      edgesToRemove.forEach((edge) => {
-        edge.visualPath?.remove();
-        edge.hitPath?.remove();
-      });
-
-      this.edges = this.edges.filter((edge) => {
-        const nodeA =
-          edge.portA.closest("noflo-node") || edge.portA.closest("noflo-iip");
-        const nodeB =
-          edge.portB.closest("noflo-node") || edge.portB.closest("noflo-iip");
-        return !(
-          (nodeA && nodeA.getAttribute("name") === name) ||
-          (nodeB && nodeB.getAttribute("name") === name)
-        );
-      });
-    }
+    this.edgeManager?.removeEdgesForNode(node);
   }
 
   /**
@@ -2036,55 +1981,21 @@ export class FlowEditor extends HTMLElement {
     }
     this.spaceManager.removeNode(iip.getAttribute("name") || "");
 
-    // Remove associated wires
-    if (this.iipWires && this.iipWiresGroup) {
-      const wiresToRemove = this.iipWires.filter((w) => w.iip === iip);
-      wiresToRemove.forEach((wire) => {
-        if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
-          this.iipWiresGroup.removeChild(wire.hitPath);
-          this.iipWiresGroup.removeChild(wire.visualPath);
-        }
-      });
-      this.iipWires = this.iipWires.filter((w) => w.iip !== iip);
-    }
+    this.edgeManager?.removeIIPWiresForIIP(iip);
   }
 
   /**
    * @param {HTMLElement} port
    */
-  /**
-   * @param {HTMLElement} port
-   */
-  /**
-   * @param {HTMLElement} port
-   */
-  /**
-   * @param {HTMLElement} port
-   */
   disconnectPort(port) {
-    // Remove standard edges
-    if (this.edges && this.edgesGroup) {
-      const edgesToRemove = this.edges.filter(
-        (edge) => edge.portA === port || edge.portB === port,
-      );
-      edgesToRemove.forEach((edge) => {
-        this.edgesGroup?.removeChild(edge.hitPath);
-        this.edgesGroup?.removeChild(edge.visualPath);
-      });
-      this.edges = this.edges.filter(
-        (edge) => edge.portA !== port && edge.portB !== port,
-      );
-    }
+    this.edgeManager?.disconnectPort(port);
+  }
 
-    // Remove IIP wires
-    if (this.iipWires && this.iipWiresGroup) {
-      const wiresToRemove = this.iipWires.filter((wire) => wire.port === port);
-      wiresToRemove.forEach((wire) => {
-        this.iipWiresGroup?.removeChild(wire.hitPath);
-        this.iipWiresGroup?.removeChild(wire.visualPath);
-      });
-      this.iipWires = this.iipWires.filter((wire) => wire.port !== port);
-    }
+  /**
+   * @param {import("../library/EdgeManager.js").Edge} edge
+   */
+  removeEdge(edge) {
+    this.edgeManager?.removeEdge(edge);
   }
 
   /**
@@ -2103,124 +2014,18 @@ export class FlowEditor extends HTMLElement {
    * @param {HTMLElement} portA
    * @param {HTMLElement} portB
    * @param {string} [routeId]
+   * @returns {import("../library/EdgeManager.js").Edge | undefined}
    */
   addEdge(portA, portB, routeId) {
-    if (
-      !portA.classList.contains("port-out") ||
-      !portB.classList.contains("port-in")
-    ) {
-      console.error("Invalid connection: expected outport -> inport");
-      return;
-    }
-
-    if (portA.dataset.portType === "array") {
-      const existing = this.edges?.filter((e) => e.portA === portA);
-      if (existing && existing.length >= 1) {
-        alert(`ArrayPort ${portA.dataset.portName} already has a connection.`);
-        return;
-      }
-    }
-    if (portB.dataset.portType === "array") {
-      const existing = this.edges?.filter((e) => e.portB === portB);
-      if (existing && existing.length >= 1) {
-        alert(`ArrayPort ${portB.dataset.portName} already has a connection.`);
-        return;
-      }
-    }
-
-    const hitPath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    hitPath.classList.add("edge-hit-area");
-
-    const visualPath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    visualPath.classList.add("edge-flow");
-
-    this.updatePathData(hitPath, visualPath, portA, portB);
-
-    if (routeId !== undefined) {
-      visualPath.style.setProperty("--flow-color", `var(--route-${routeId})`);
-    }
-
-    if (this.edgesGroup) {
-      this.edgesGroup.appendChild(hitPath);
-      this.edgesGroup.appendChild(visualPath);
-    }
-
-    this.edges = this.edges || [];
-    const edge = { hitPath, visualPath, portA, portB, routeId };
-    this.edges.push(edge);
-    return edge;
-  }
-
-  /**
-   * @param {SVGPathElement} hitPath
-   * @param {SVGPathElement} visualPath
-   * @param {HTMLElement} portA
-   * @param {HTMLElement} portB
-   */
-  updatePathData(hitPath, visualPath, portA, portB) {
-    const posA = this.getPortPosition(portA);
-    const posB = this.getPortPosition(portB);
-
-    const dx = Math.abs(posB.x - posA.x) * 0.5;
-    const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
-    const cp1y = posA.y;
-    const cp2x = posB.x + (posB.x > posA.x ? -dx : dx);
-    const cp2y = posB.y;
-
-    const d = `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`;
-    hitPath.setAttribute("d", d);
-    visualPath.setAttribute("d", d);
-  }
-
-  /**
-   * @param {SVGPathElement} hitPath
-   * @param {SVGPathElement} visualPath
-   * @param {NoFloIIP | FlowExportedPort} iip
-   * @param {HTMLElement} port
-   */
-  updateIIPPathData(hitPath, visualPath, iip, port) {
-    const posA = this.getPortPosition(iip);
-    const posB = this.getPortPosition(port);
-
-    const dx = Math.abs(posB.x - posA.x) * 0.5;
-    const cp1x = posA.x + (posB.x > posA.x ? dx : -dx);
-    const cp1y = posA.y;
-    const cp2x = posB.x + (posB.x > posA.x ? -dx : dx);
-    const cp2y = posB.y;
-
-    const d = `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`;
-    hitPath.setAttribute("d", d);
-    visualPath.setAttribute("d", d);
+    return this.edgeManager?.addEdge(portA, portB, routeId);
   }
 
   updateEdges() {
-    if (!this.edges) return;
-    this.edges.forEach((edge) => {
-      this.updatePathData(
-        edge.hitPath,
-        edge.visualPath,
-        edge.portA,
-        edge.portB,
-      );
-    });
+    this.edgeManager?.updateEdges();
   }
 
   updateIIPWires() {
-    if (!this.iipWires) return;
-    this.iipWires.forEach((wire) => {
-      this.updateIIPPathData(
-        wire.hitPath,
-        wire.visualPath,
-        wire.iip,
-        wire.port,
-      );
-    });
+    this.edgeManager?.updateIIPWires();
   }
 
   /**
@@ -2238,26 +2043,16 @@ export class FlowEditor extends HTMLElement {
    * @param {NoFloNode | NoFloIIP} nodeB
    * @param {string} portBName
    * @param {string} [routeId]
+   * @returns {import("../library/EdgeManager.js").Edge | undefined}
    */
   connectNodes(nodeA, portAName, nodeB, portBName, routeId) {
-    const nA = /** @type {NoFloNode | NoFloIIP} */ (nodeA);
-    const nB = /** @type {NoFloNode | NoFloIIP} */ (nodeB);
-    const portA = nA.shadowRoot?.querySelector(
-      `.port[data-port-name="${portAName}"]`,
+    return this.edgeManager?.connectNodes(
+      /** @type {HTMLElement} */ (nodeA),
+      portAName,
+      /** @type {HTMLElement} */ (nodeB),
+      portBName,
+      routeId,
     );
-    const portB = nB.shadowRoot?.querySelector(
-      `.port[data-port-name="${portBName}"]`,
-    );
-
-    if (portA && portB) {
-      this.addEdge(
-        /** @type {HTMLElement} */ (portA),
-        /** @type {HTMLElement} */ (portB),
-        routeId,
-      );
-    } else {
-      console.warn(`Could not connect ${portAName} to ${portBName}`);
-    }
   }
 
   /**
@@ -2331,27 +2126,10 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
-      const hitPath = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path",
+      this.edgeManager?.connectIIP(
+        /** @type {HTMLElement} */ (exportedPort),
+        port,
       );
-      hitPath.classList.add("edge-hit-area");
-
-      const visualPath = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path",
-      );
-      visualPath.classList.add("edge-flow");
-
-      this.updateIIPPathData(hitPath, visualPath, exportedPort, port);
-
-      if (this.iipWiresGroup) {
-        this.iipWiresGroup.appendChild(hitPath);
-        this.iipWiresGroup.appendChild(visualPath);
-      }
-
-      this.iipWires = this.iipWires || [];
-      this.iipWires.push({ hitPath, visualPath, iip: exportedPort, port });
     }
 
     return exportedPort;
@@ -2396,28 +2174,10 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
-      // ... (wait, I can't use comments like this in oldText)
-      const hitPath = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path",
+      this.edgeManager?.connectIIP(
+        /** @type {HTMLElement} */ (iip),
+        port,
       );
-      hitPath.classList.add("edge-hit-area");
-
-      const visualPath = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path",
-      );
-      visualPath.classList.add("edge-flow");
-
-      this.updateIIPPathData(hitPath, visualPath, iip, port);
-
-      if (this.iipWiresGroup) {
-        this.iipWiresGroup.appendChild(hitPath);
-        this.iipWiresGroup.appendChild(visualPath);
-      }
-
-      this.iipWires = this.iipWires || [];
-      this.iipWires.push({ hitPath, visualPath, iip, port });
     }
 
     return iip;
@@ -2524,21 +2284,9 @@ export class FlowEditor extends HTMLElement {
   removeExportedPort(ep) {
     if (!ep) return;
 
-    // Remove IIP wires
-    if (this.iipWires && this.iipWiresGroup) {
-      const wiresToRemove = this.iipWires.filter(
-        (wire) => wire.port === ep || wire.iip === ep,
-      );
-      wiresToRemove.forEach((wire) => {
-        if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
-          this.iipWiresGroup.removeChild(wire.hitPath);
-          this.iipWiresGroup.removeChild(wire.visualPath);
-        }
-      });
-      this.iipWires = this.iipWires.filter(
-        (wire) => wire.port !== ep && wire.iip !== ep,
-      );
-    }
+    this.edgeManager?.removeIIPWiresForExportedPort(
+      /** @type {HTMLElement} */ (ep),
+    );
 
     const name = ep.getAttribute("name");
     const direction = ep.direction;
