@@ -28,7 +28,7 @@ Every API interface needs to have TypeScript definitions in JsDoc format. Run `n
 
 - ✅ **Always**: write at least smoketests for any new functionality
 - ✅ **Always**: ensure type safety. Always check eith `npm run types` after changes and fix as needed
-- ✅ **Always**: fix formatting with `npm run format` (in Android/Termux `biome check --use-editorconfig=true --write packages/*/src packages/*/test examples`) after any changes to source files or tests
+- ✅ **Always**: fix formatting with `npm run format` (in Android/Termux `biome check --use-editorconfig=true --write src/ spec/ index.html`) after any changes to source files or tests
 - ✅ **Always**: Use `git mv` instead of `mv' for renaming files
 - ✅ **Always**: Remove ambiguity and legacy support from APIs you modify. Right now there are no API consumers outside this repo so we don't need to worry about backwards compatibility
 - ⚠️ **Ask first**: adding dependencies
