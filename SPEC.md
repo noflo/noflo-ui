@@ -46,7 +46,6 @@ Viewing or managing a graph:
 - New nodes can be added by either long-pressing on an empty piece of canvas or by dragging from a port to an empty piece of canvas
   - New nodes can be either selected from list of known subgraphs or elementary (code) components, or created as a "dummy" placeholder to be filled in later
 - Multiple nodes can be selected together
-- Dragging a node (or a selection) into an existing node allows moving all of them to that subgraph
 - Nodes can show custom status (from the running implementation) either by an icon (from Font Awesome selection), a 84x84px P4 .pbm image, or a 18x18px P6 .ppm image sent from the runtime
 - When a node is selected it expands to show a radial menu and to present larger port targets for easier finger interaction
 - When an edge is selected it shows its packets passing through. We will want to support different visualizations for different packet types and edge configurations (line graphs for numbers etc)
@@ -139,6 +138,13 @@ If there is a signature defined for this component, or for nodes connected to it
 
 When viewing a component signature, there should be big friendly buttons for "Implement as graph", "Implement in JavaScript" etc (depending what the runtime supports). When viewing a library component there should similarly be a "Fork" button to make a local editable copy.
 
+### Guiding users
+
+The user interface should guide user towards making the correct decisions. For example, when dragging a wire from a port, ports that are compatible should expand to show they're available for connection, while incompatible (wrong type, already occupied, etc) should shrink.
+Similarly the editor should prevent elements from being positioned on top of each other. Every element should occupy its own space in the canvas.
+
+Undo/redo should always be available so that users feel safe experimenting.
+
 ## Tech stack
 
 - Standard JavaScript and HTML targeting evergreen browsers (both desktop and mobile)
@@ -150,7 +156,7 @@ When viewing a component signature, there should be big friendly buttons for "Im
 - NoFlo graphs are used to manage interaction between UI and state
 - Application is split between UI (main) thread and most backend logic (including the CRDT) in a Web Worker
 - Communications with FBP Runtimes is handled using any FBP Protocol transport. Initially WebRTC and WebSockets
-- Collaboration is handled over Reticulum
+- Collaboration is handled over Reticulum (with reticulum-js)
 - Apart from building vendor files when dependencies change, there is no build. Change a source file, reload the browser
 - The internal implementation of the main editor in `noflo-editor` should be encapsulated so that all methods and events in exposes use actual graph data and don't leak DOM details
 
