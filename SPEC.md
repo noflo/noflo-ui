@@ -31,27 +31,28 @@ In NoFlo UI, a project is a collection of:
 
 By default these will live in the CRDT structure in the NoFlo UI's IndexedDB. In some technology combinations (for example when `window.showDirectoryPicker` is supported) we may also load and store latest state from disk. Otherwise the runtime may do storage to disk.
 
-Live collaboration will enable inviting other users to edit the project together either over WebRTC or Reticulum. Theoretically we can also introduce AI agents as similar collaborators.
+Live collaboration will enable inviting other users to edit the project together over Reticulum. Theoretically we can also introduce AI agents as similar collaborators.
 
-The app is meant to be a durable piece of software that can be run and maintained for years or decades to come. Because of this, reliance on the standard web stack and minimization of technology dependencies outside of that is crucial.
+The app is meant to be a durable piece of software that can be run and maintained for years or decades to come. Because of this, reliance on the standard web stack and minimization of technology dependencies outside of that is crucial. Any 3rd party libraries are built to vendor files that we keep in our own git and loaded from those instead of `node_modules/` etc.
 
 ## Primary user interactions
 
 Viewing or managing a graph:
-- See the full visual graph and be able to pan and zoom
+- See the full visual graph and be able to pan and zoom both using mouse and multi-touch
 - Nodes are circular, with their ports along the outer edge. Inports on left, outports on right. Addressable (ArrayPorts) are shown with indexed port instances "stacked together"
 - Current state of the graph and the components is given by colors, highlighting, maybe animation (in case of severe problems)
 - New nodes can be added by either long-pressing on an empty piece of canvas or by dragging from a port to an empty piece of canvas
   - New nodes can be either selected from list of known subgraphs or elementary (code) components, or created as a "dummy" placeholder to be filled in later
 - Multiple nodes can be selected together
-- Dragging a node (or a group) into an existing node allows moving all of them to that subgraph
+- Dragging a node (or a selection) into an existing node allows moving all of them to that subgraph
 - Nodes can show custom status (from the running implementation) either by an icon (from Font Awesome selection), a 84x84px P4 .pbm image, or a 18x18px P6 .ppm image sent from the runtime
 - When a node is selected it expands to show a radial menu and to present larger port targets for easier finger interaction
 - When an edge is selected it shows its packets passing through. We will want to support different visualizations for different packet types and edge configurations (line graphs for numbers etc)
 - Nodes and edges can be removed from their radial menu
 - We will have a forms-based metadata editor for all normal graph parts (graph itself, node, edge, IIP)
-- Initial information packets can be added from the menu of an inport or by dragging from inport to empty spot on canvas and choosing IIP instead of new node
-- Initial Information packets are edited using a form that supports their JSON Schema or data type
+- Initial Information Packets can be added from the menu of an inport or by dragging from inport to empty spot on canvas and choosing IIP instead of new node
+- Initial Information Packets are edited using a form that supports their JSON Schema or data type
+- Any connectable in or outport in the graph can be exported to be available when the graph is used as a subgraph/node in another graph
 
 Editing components or documentation:
 - Editing a component or documentation file opens a normal text/code editor
@@ -74,9 +75,13 @@ Viewing a trace:
 - Edges can be selected to choose what data is shown
 - There is a "timeline scrubber" to move back and forth on the trace
 
+Work documents:
+- Work documents are the planning part of any project. They are Markdown documents with a state (proposed/active/completed)
+  - Data structure should be kept compatible with rngit work documents
+- User may edit work documents they created, and post updates (comments) to any work document in the project
+
 Configuration:
 - Choosing the app theme
-- Managing list of WebRTC signaling servers to use
 - Managing Reticulum identity and interfaces
 - There will likely be some options to enable/disable
   - Storing project changes to disk (when implemented)
@@ -87,13 +92,13 @@ Configuration:
 - Standard JavaScript and HTML targeting evergreen browsers (both desktop and mobile)
 - All code is written in standard JavaScript with TypeScript annotations via JsDoc
 - Web Components are used for user interface (no library). All of our own Web Components should be prefixed with `noflo-`
-- CRDT is used to keep state (likely Yjs, still a bit open)
+- Yjs CRDT is used to keep state
 - CRDT is persisted in IndexedDB
 - We need a separation between project data (kept in CRDT), "awareness" data (user/runtime statuses and interaction), and dataflow data (events and packets flowing from a runtime)
 - NoFlo graphs are used to manage interaction between UI and state
 - Application is split between UI (main) thread and most backend logic (including the CRDT) in a Web Worker
 - Communications with FBP Runtimes is handled using any FBP Protocol transport. Initially WebRTC and WebSockets
-- Collaboration is handled over WebRTC and eventually also Reticulum
+- Collaboration is handled over Reticulum
 - Apart from building vendor files when dependencies change, there is no build. Change a source file, reload the browser
 - The internal implementation of the main editor in `noflo-editor` should be encapsulated so that all methods and events in exposes use actual graph data and don't leak DOM details
 
@@ -121,12 +126,3 @@ Configuration:
 - `vendor/`: vendored library dependencies as ES Modules
 
 Technical work is planned using work documents (in Markdown) that are managed [using rngit](https://reticulum.network/manual/git.html#work-documents) in <rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui>.
-
-## Boundaries
-
-- ✅ **Always**: add at least basic test coverage for any new functionality
-- ✅ **Always**: run tests after every change set
-- ✅ **Always**: check and fix linter and formatting issues after every change set
-- ⚠️ **Ask first**: adding dependencies
-
-Additional boundaries for AI Agents can be found from `AGENTS.md`.
