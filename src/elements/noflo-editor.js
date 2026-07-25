@@ -55,6 +55,21 @@
  */
 
 /**
+ * Duration (in ms) of the spring animation used when a dragged node jumps from
+ * a blocked (colliding) position to a legal one. Kept short so the jump feels
+ * snappy rather than sluggish.
+ */
+const SPRING_MS = 180;
+
+/**
+ * CSS transition applied to nodes only while the spring jump is running. A
+ * lightly overshooting cubic-bezier (a "back-out" curve) gives a springy feel
+ * without lingering on the settle. It is removed again as soon as the
+ * animation completes (see `_endSpring`).
+ */
+const SPRING_TRANSITION = `left ${SPRING_MS}ms cubic-bezier(0.34, 1.35, 0.64, 1), top ${SPRING_MS}ms cubic-bezier(0.34, 1.35, 0.64, 1)`;
+
+/**
  * FlowEditor Web Component
 
  * A zoomable canvas for editing NoFlo graphs.
@@ -116,26 +131,16 @@ export class FlowEditor extends HTMLElement {
     this.activityMap = new Map();
     /** @type {Map<NoFloNode | NoFloIIP, Position>} */
     this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
-    this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
-    this.nodeVelocities = new Map();
     /** @type {Position | null} */
     this.draggingStartPointerPos = null;
-    /** @type {number | null} */
-    this.animationFrameId = null;
     /** @type {boolean} */
     this.isDraggingNodeInCollision = false;
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
-    this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, Position>} */
-    this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP, {x: number, y: number}>} */
-    this.nodeVelocities = new Map();
-    /** @type {Position | null} */
-    this.draggingStartPointerPos = null;
+    /** @type {boolean} */
+    this.isSpringing = false;
     /** @type {number | null} */
-    this.animationFrameId = null;
+    this.springRefreshFrame = null;
+    /** @type {number} */
+    this.springEndTime = 0;
     /** @type {number | null} */
     this.panningPointerId = null;
     /** @type {number | null} */
@@ -515,57 +520,94 @@ export class FlowEditor extends HTMLElement {
     this.style.setProperty("--zoom-scale", this.zoom.toString());
   }
 
-  _animationLoop() {
-    if (this.animationFrameId === null) {
-      this.animationFrameId = requestAnimationFrame(() =>
-        this._animationLoop(),
-      );
+  /**
+   * Whether the user has requested reduced motion. When true the spring jump
+   * is skipped and nodes move instantly, per SPEC.md ("Disabling UI animations",
+   * defaulting to the `prefers-reduced-motion` media query).
+   *
+   * @returns {boolean}
+   */
+  _prefersReducedMotion() {
+    return (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  /**
+   * Starts a one-shot spring CSS animation that moves the given nodes to their
+   * target positions. Used when a dragged node was blocked by a collision and
+   * the pointer has since moved to a legal spot: instead of teleporting there
+   * instantly, the node springs to its new position. The CSS transition is
+   * removed again as soon as the animation completes (see `_endSpring`), so
+   * subsequent pointer movement follows the pointer instantly.
+   *
+   * While the spring plays the nodes are frozen: pointer movement is ignored
+   * so the animation can run uninterrupted to its target.
+   *
+   * @param {Array<{node: NoFloNode | NoFloIIP, x: number, y: number}>} moves
+   */
+  _startSpringJump(moves) {
+    if (moves.length === 0) return;
+
+    if (this._prefersReducedMotion()) {
+      // No animation: jump straight to the target and keep following instantly.
+      for (const { node, x, y } of moves) {
+        node.position = { x, y };
+      }
+      this.updateEdges();
+      this.updateIIPWires();
       return;
     }
 
-    const springStiffness = 0.15;
-    const springDamping = 0.8;
+    this.isSpringing = true;
+    for (const { node, x, y } of moves) {
+      // Apply the transition before changing the position so the browser
+      // animates from the current (stuck) position to the new target.
+      node.style.transition = SPRING_TRANSITION;
+      node.position = { x, y };
+    }
+    this.springEndTime = performance.now() + SPRING_MS;
+    this._springRefreshLoop();
+  }
 
-    let active = false;
-
-    this.draggingNodesTargetPositions.forEach((targetPos, node) => {
-      const currentPos = node.position;
-      const velocity = this.nodeVelocities.get(node) || { x: 0, y: 0 };
-
-      const ax = (targetPos.x - currentPos.x) * springStiffness;
-      const ay = (targetPos.y - currentPos.y) * springStiffness;
-
-      velocity.x = (velocity.x + ax) * springDamping;
-      velocity.y = (velocity.y + ay) * springDamping;
-
-      const nextX = currentPos.x + velocity.x;
-      const nextY = currentPos.y + velocity.y;
-
-      if (
-        Math.abs(nextX - currentPos.x) > 0.01 ||
-        Math.abs(nextY - currentPos.y) > 0.01
-      ) {
-        node.position = { x: nextX, y: nextY };
-        this.nodeVelocities.set(node, velocity);
-        active = true;
-      } else {
-        node.position = { x: targetPos.x, y: targetPos.y };
-        this.nodeVelocities.set(node, { x: 0, y: 0 });
-      }
-    });
-
-    if (active) {
-      this.updateEdges();
-      this.updateIIPWires();
-      this.animationFrameId = requestAnimationFrame(() =>
-        this._animationLoop(),
+  /**
+   * Animation-frame loop that keeps edges and IIP wires attached to nodes while
+   * they are mid-spring. Because of the CSS transition the nodes' visual
+   * position lags behind their logical `position`, so we re-read the live port
+   * positions every frame. Ends the spring (removing the transition) once the
+   * configured duration has elapsed.
+   */
+  _springRefreshLoop() {
+    this.updateEdges();
+    this.updateIIPWires();
+    if (performance.now() < this.springEndTime) {
+      this.springRefreshFrame = window.requestAnimationFrame(() =>
+        this._springRefreshLoop(),
       );
     } else {
-      if (this.isDraggingNodeInCollision) {
-        this.isDraggingNodeInCollision = false;
-      }
-      this.animationFrameId = null;
+      this._endSpring();
     }
+  }
+
+  /**
+   * Ends the spring animation, removing the CSS transition from the dragged
+   * nodes so that further pointer movement follows the pointer instantly again.
+   * Safe to call when no spring is currently running.
+   */
+  _endSpring() {
+    this.isSpringing = false;
+    if (this.springRefreshFrame !== null) {
+      window.cancelAnimationFrame(this.springRefreshFrame);
+      this.springRefreshFrame = null;
+    }
+    if (this.selectedNodes) {
+      this.selectedNodes.forEach((node) => {
+        node.style.transition = "";
+      });
+    }
+    this.springEndTime = 0;
   }
 
   /**
@@ -846,9 +888,6 @@ export class FlowEditor extends HTMLElement {
                 clearTimeout(this.longPressTimer);
                 this.longPressTimer = null;
               }
-              if (this.animationFrameId === null) {
-                this._animationLoop();
-              }
             }
           }
 
@@ -893,30 +932,35 @@ export class FlowEditor extends HTMLElement {
             }
 
             if (!collision) {
-              idealMoves.forEach(({ node, x, y }) => {
-                this.draggingNodesTargetPositions.set(node, { x, y });
-              });
-
-              if (this.isDraggingNodeInCollision) {
-                // We were in collision, and now we are not!
-                // We want to animate to the new position.
-                // So we DO NOT update node.position directly.
-                // We ensure animation loop is running
-                if (this.animationFrameId === null) {
-                  this._animationLoop();
+              if (this.isSpringing) {
+                // A spring jump is playing; the nodes are frozen mid-jump so
+                // we intentionally ignore pointer movement until it settles.
+              } else if (this.isDraggingNodeInCollision) {
+                // Pointer moved from an illegal spot to a legal one. Instead
+                // of teleporting, spring the nodes to their new positions with
+                // a one-shot CSS animation.
+                this.isDraggingNodeInCollision = false;
+                this._startSpringJump(idealMoves);
+                if (this.viewport) {
+                  this.viewport.style.cursor = "";
                 }
               } else {
-                // Normal drag, no collision.
-                // We want no animation, so update node.position directly.
+                // Normal drag, no collision and no spring: follow the pointer
+                // instantly without any animation.
                 idealMoves.forEach(({ node, x, y }) => {
                   node.position = { x, y };
-                  this.nodeVelocities.set(node, { x: 0, y: 0 });
                 });
+                this.updateEdges();
+                this.updateIIPWires();
               }
-              this.updateEdges();
-              this.updateIIPWires();
             } else {
               this.isDraggingNodeInCollision = true;
+              if (this.isSpringing) {
+                // Pointer re-entered an illegal area mid-spring; cancel the
+                // spring so the node sticks where it is instead of continuing
+                // into the collision.
+                this._endSpring();
+              }
               if (this.viewport) {
                 this.viewport.style.cursor = "no-drop";
               }
@@ -975,6 +1019,8 @@ export class FlowEditor extends HTMLElement {
         }
 
         if (this.isDraggingNode) {
+          // Stop any in-flight spring so the snap-to-grid below is instant.
+          this._endSpring();
           /** @type {Array<{name: string, position: Position}>} */
           const movedNodes = [];
           this.selectedNodes.forEach((node) => {
@@ -1001,8 +1047,6 @@ export class FlowEditor extends HTMLElement {
         // Cleanup drag state
         this.draggingStartPointerPos = null;
         this.draggingNodesInitialPositions.clear();
-        this.draggingNodesTargetPositions.clear();
-        this.nodeVelocities.clear();
         this.isDraggingNodeInCollision = false;
       }
       if (e.pointerId === this.draggingWirePointerId) {
@@ -1486,13 +1530,11 @@ export class FlowEditor extends HTMLElement {
 
     // Prepare for potential drag
     this.isDraggingNodeInCollision = false;
+    this.isSpringing = false;
     this.draggingStartPointerPos = { x: e.clientX, y: e.clientY };
     this.draggingNodesInitialPositions.clear();
-    this.draggingNodesTargetPositions.clear();
-    this.nodeVelocities.clear();
     this.selectedNodes.forEach((node) => {
       this.draggingNodesInitialPositions.set(node, { ...node.position });
-      this.draggingNodesTargetPositions.set(node, { ...node.position });
     });
 
     this.emitSelectionChanged();
