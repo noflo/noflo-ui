@@ -880,7 +880,7 @@ async function loadFile(/** @type {any} */ fileHandle) {
         }
       }
 
-      editor.fitNodesToViewport();
+      editor.fitEntitiesToViewport();
     }
   } catch (err) {
     console.error("Error loading file:", err);

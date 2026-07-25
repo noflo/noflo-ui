@@ -13,6 +13,15 @@
  */
 
 /**
+ * Spatial record for a graph entity placed on the canvas.
+ *
+ * @typedef {Object} EntityRecord
+ * @property {string} id
+ * @property {Position} position
+ * @property {number} size
+ */
+
+/**
  * SpaceManager handles the spatial math and indexing for the flow editor.
  */
 export class SpaceManager {
@@ -25,8 +34,8 @@ export class SpaceManager {
     this.zoom = zoom;
     /** @type {Position} */
     this.offset = offset;
-    /** @type {Map<string, {id: string, position: Position, size: number}>} */
-    this.elements = new Map();
+    /** @type {Map<string, EntityRecord>} */
+    this.entities = new Map();
   }
 
   /**
@@ -93,16 +102,16 @@ export class SpaceManager {
    * @param {Position} position
    * @param {number} size
    */
-  addElement(id, position, size) {
-    this.elements.set(id, { id, position, size });
+  addEntity(id, position, size) {
+    this.entities.set(id, { id, position, size });
   }
 
   /**
    * @param {string} id
    * @param {Position} position
    */
-  updateNode(id, position) {
-    const el = this.elements.get(id);
+  updateEntity(id, position) {
+    const el = this.entities.get(id);
     if (el) {
       el.position = position;
     }
@@ -111,8 +120,8 @@ export class SpaceManager {
   /**
    * @param {string} id
    */
-  removeNode(id) {
-    this.elements.delete(id);
+  removeEntity(id) {
+    this.entities.delete(id);
   }
 
   /**
@@ -120,9 +129,9 @@ export class SpaceManager {
    * @param {number} y
    * @returns {string[]}
    */
-  getElementsAt(x, y) {
+  getEntitiesAt(x, y) {
     const results = [];
-    for (const el of this.elements.values()) {
+    for (const el of this.entities.values()) {
       if (
         x >= el.position.x &&
         x <= el.position.x + el.size &&
@@ -177,7 +186,7 @@ export class SpaceManager {
     let maxY = -Infinity;
 
     for (const id of ids) {
-      const el = this.elements.get(id);
+      const el = this.entities.get(id);
       if (el) {
         minX = Math.min(minX, el.position.x);
         minY = Math.min(minY, el.position.y);
@@ -215,7 +224,7 @@ export class SpaceManager {
    */
   hasSpace(x, y, size = 80) {
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
-    for (const el of this.elements.values()) {
+    for (const el of this.entities.values()) {
       if (
         snapped.x < el.position.x + el.size &&
         snapped.x + size > el.position.x &&
@@ -232,10 +241,10 @@ export class SpaceManager {
    * @param {DOMRect} rect
    * @param {number} padding
    */
-  fitElements(rect, padding = 100) {
-    if (this.elements.size === 0) return;
+  fitEntities(rect, padding = 100) {
+    if (this.entities.size === 0) return;
 
-    const bbox = this.getBoundingBox(Array.from(this.elements.keys()));
+    const bbox = this.getBoundingBox(Array.from(this.entities.keys()));
     const contentWidth = bbox.width + padding * 2;
     const contentHeight = bbox.height + padding * 2;
 

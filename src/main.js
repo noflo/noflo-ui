@@ -259,7 +259,7 @@ async function init() {
 
     editor.connectNodes(aggregator, "out", sink, "in", "4");
 
-    editor.fitNodesToViewport();
+    editor.fitEntitiesToViewport();
 
     // Ensure edges are rendered after initial layout
     requestAnimationFrame(() => {

@@ -37,6 +37,14 @@ import { SpaceManager } from "../library/SpaceManager.js";
  */
 
 /**
+ * A graph entity is anything placed on the editor canvas: a node, an IIP, or
+ * an exported port. These differ in how they are created, but share how they
+ * are selected, moved, and occupy space.
+ *
+ * @typedef {NoFloNode | NoFloIIP | FlowExportedPort} GraphEntity
+ */
+
+/**
  * @typedef {HTMLElement & {
  *   isOpen: boolean,
  *   open: (x: number, y: number, items: any[], centerContent: string | null) => void,
@@ -102,11 +110,11 @@ export class FlowEditor extends HTMLElement {
     this.lastPinchCenter = null;
     /** @type {number} */
     this.lastPinchDistance = 0;
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
+    /** @type {Map<GraphEntity, Position>} */
     this.draggingNodesInitialPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
+    /** @type {Map<GraphEntity, Position>} */
     this.draggingNodesTargetPositions = new Map();
-    /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, {x: number, y: number}>} */
+    /** @type {Map<GraphEntity, {x: number, y: number}>} */
     this.nodeVelocities = new Map();
     /** @type {Position | null} */
     this.draggingStartPointerPos = null;
@@ -532,7 +540,7 @@ export class FlowEditor extends HTMLElement {
         Math.abs(nextY - currentPos.y) > 0.01
       ) {
         node.position = { x: nextX, y: nextY };
-        this.spaceManager.updateNode(
+        this.spaceManager.updateEntity(
           node.getAttribute("name") || "",
           node.position,
         );
@@ -602,13 +610,13 @@ export class FlowEditor extends HTMLElement {
     );
   }
 
-  fitNodesToViewport() {
-    this.spaceManager.fitElements(this.getBoundingClientRect());
+  fitEntitiesToViewport() {
+    this.spaceManager.fitEntities(this.getBoundingClientRect());
     this.updateTransform();
   }
 
   /**
-   * @param {NoFloNode | NoFloIIP} node
+   * @param {GraphEntity} node
    * @returns {string}
    */
   getNodeName(node) {
@@ -694,7 +702,7 @@ export class FlowEditor extends HTMLElement {
           e.stopPropagation();
           this.handleNodeSelection(
             e,
-            /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+            /** @type {GraphEntity} */ (clickedNode),
             isMultiple,
           );
         } else if (clickedEdge) {
@@ -763,7 +771,7 @@ export class FlowEditor extends HTMLElement {
           }
 
           if (this.isDraggingNode) {
-            /** @type {Array<{node: NoFloNode | NoFloIIP, x: number, y: number}>} */
+            /** @type {Array<{node: GraphEntity, x: number, y: number}>} */
             const idealMoves = [];
             this.draggingNodesInitialPositions.forEach((initialPos, node) => {
               if (initialPos && this.draggingStartPointerPos) {
@@ -893,7 +901,7 @@ export class FlowEditor extends HTMLElement {
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
-            this.spaceManager.updateNode(
+            this.spaceManager.updateEntity(
               node.getAttribute("name") || "",
               node.position,
             );
@@ -1191,7 +1199,7 @@ export class FlowEditor extends HTMLElement {
                 new CustomEvent("navigate-down-attempt", {
                   detail: {
                     node: this.getNodeName(
-                      /** @type {NoFloNode | NoFloIIP} */ (clickedNode),
+                      /** @type {GraphEntity} */ (clickedNode),
                     ),
                   },
                   bubbles: true,
@@ -1450,11 +1458,11 @@ export class FlowEditor extends HTMLElement {
 
   /**
    * @param {PointerEvent} e
-   * @param {NoFloNode | NoFloIIP | FlowExportedPort} node
+   * @param {GraphEntity} node
    * @param {boolean} isMultiple
    */
   handleNodeSelection(e, node, isMultiple) {
-    const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
+    const n = /** @type {GraphEntity} */ (node);
     this.clickedNode = n;
     const id = n.getAttribute("name");
     const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
@@ -1522,13 +1530,13 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {NoFloNode | NoFloIIP | FlowExportedPort | null} node
+   * @param {GraphEntity | null} node
    * @param {boolean} isMultiple
    */
   commitNodeSelection(node, isMultiple) {
     if (this.selectionChangedOnDown) return;
 
-    const n = /** @type {NoFloNode | NoFloIIP | FlowExportedPort} */ (node);
+    const n = /** @type {GraphEntity} */ (node);
     if (!n) return;
     const id = n.getAttribute("name");
     const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
@@ -1964,7 +1972,7 @@ export class FlowEditor extends HTMLElement {
       node.parentNode.removeChild(node);
     }
     if (name) {
-      this.spaceManager.removeNode(name);
+      this.spaceManager.removeEntity(name);
     }
 
     this.edgeManager?.removeEdgesForNode(node);
@@ -1979,7 +1987,7 @@ export class FlowEditor extends HTMLElement {
     if (iip.parentNode) {
       iip.parentNode.removeChild(iip);
     }
-    this.spaceManager.removeNode(iip.getAttribute("name") || "");
+    this.spaceManager.removeEntity(iip.getAttribute("name") || "");
 
     this.edgeManager?.removeIIPWiresForIIP(iip);
   }
@@ -2091,7 +2099,7 @@ export class FlowEditor extends HTMLElement {
       node.setMetadata(metadata);
     }
 
-    this.spaceManager.addElement(nodeId, snapped, size);
+    this.spaceManager.addEntity(nodeId, snapped, size);
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(node);
     }
@@ -2120,7 +2128,7 @@ export class FlowEditor extends HTMLElement {
     exportedPort.direction = direction;
     exportedPort.position = snapped;
     exportedPort.size = size;
-    this.spaceManager.addElement(name, snapped, size);
+    this.spaceManager.addEntity(name, snapped, size);
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(exportedPort);
     }
@@ -2167,7 +2175,7 @@ export class FlowEditor extends HTMLElement {
     iip.id = id;
     iip.position = snapped;
     iip.size = size;
-    this.spaceManager.addElement(id, snapped, size);
+    this.spaceManager.addEntity(id, snapped, size);
     iip.value = value;
     if (this.nodeLayer) {
       this.nodeLayer.appendChild(iip);
@@ -2302,7 +2310,7 @@ export class FlowEditor extends HTMLElement {
     if (ep.parentNode) {
       ep.parentNode.removeChild(ep);
     }
-    this.spaceManager.removeNode(name || "");
+    this.spaceManager.removeEntity(name || "");
   }
 
   /**
@@ -2323,7 +2331,7 @@ export class FlowEditor extends HTMLElement {
       (this.selectionManager.nodes.size > 0 ||
         this.selectionManager.iips.size > 0)
     ) {
-      const node = this._getNearestNode(clientX, clientY);
+      const node = this._getNearestEntity(clientX, clientY);
       if (node) {
         return { type: FlowEditor.INTEREST_AREA_TYPES.NODE, element: node };
       }
@@ -2384,15 +2392,15 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {number} clientX
    * @param {number} clientY
-   * @returns {NoFloNode | NoFloIIP | any | null}
+   * @returns {GraphEntity | null}
    */
-  _getNearestNode(clientX, clientY) {
+  _getNearestEntity(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
     const nodes = shadowRoot.querySelectorAll(
       "noflo-node, noflo-iip, noflo-exported-port",
     );
     for (const node of nodes) {
-      const n = /** @type {NoFloNode | NoFloIIP | any} */ (node);
+      const n = /** @type {GraphEntity} */ (node);
       if (
         this.selectionManager.nodes.has(n.getAttribute("name")) ||
         this.selectionManager.iips.has(n.getAttribute("name"))
