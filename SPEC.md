@@ -23,6 +23,8 @@ The home view is a zoomable flow editor. Upon first launch, a "home graph" is cr
 
 Visual interactions will enable connecting and disconnecting prots on the various nodes. You can also move a set of nodes to its own subgraph, and easily add new nodes by just dragging from a port to the empty canvas.
 
+The editor is designed so that user can fluidly move from sketching (placing nodes on canvas and connecting them) to specifying (naming things, defining interfaces) and eventually to implementing (writing code and drawing subgraphs). Different parts of the graph might be in different states, so user might be already implementing and running components in one part, while another remains just a sketch.
+
 In NoFlo UI, a project is a collection of:
 - Graph files, in the fbp-graph JSON format. Any NoFlo UI specific parts will be stored in graph/node/edge/IIP metadata. For example: x/y coordinates, chose edge visualization widgets, Flowtrace tracepoints. Similarly the latest CRDT clock may be stored here to make reconciliation easier when reconnecting to a runtime or loading a file from disk.
 - Components, in whatever programming language supported by the runtime (JavaScript and TypeScript in case of NoFlo)
@@ -56,6 +58,7 @@ Viewing or managing a graph:
 
 Editing components or documentation:
 - Editing a component or documentation file opens a normal text/code editor
+- When editing a component (or a component signature) we should visualize a node with the component's definition (ports, etc)
 
 Managing tests:
 - When editing tests, the current graph or component "zooms out" becoming a new graph editor with itself as the only node being shown
@@ -86,6 +89,55 @@ Configuration:
 - There will likely be some options to enable/disable
   - Storing project changes to disk (when implemented)
   - Disabling UI animations (default from `prefers-reduced-motion`)
+
+### Corners
+
+Each corner in the user interface is dedicated to a particular area of functionality:
+- Top left: graph/component. Navigating up the tree, fbp-spec tests and their status. Properties/settings
+- Bottom left: collaboration. CRDT collaborator status, version control, work documents
+- Top right: runtime. connect/disconnect, start/stop, Flowtrace recording controls. Flowtraces associated with runtime, runtime STDOUT console, uptime
+- Bottom right: local operations. Undo/redo, graph autolayout controls, minimap
+
+The corners can be in several different visual states:
+1. Hidden. Not shown at all so user is not confused by features they don't need
+2. Normal. Showing basic info on couple of lines of text and icons
+3. Minified. Just showing icons and counts, somewhat similarly to modern terminal status lines
+4. Expanded. One of multiple elements expanded, each their own accordion
+   - Open Accordions share that side of the screen equally so if you have fbp-spec test cases (top left) and work documents (bottom left) expanded, each gets 50% of vertical space
+
+The items in the corners can be buttons (like undo), or enumerators (like "9 test cases"). Clicking them will either execute the functionality or expand that area.
+
+On small screens like a smartphone the corners should always start either hidden or minified, except if a particular functionality is opened by URL path.
+
+Some corner feature may also expand on its own if there is crucial functionality to show, like a new Flowtrace for a crash.
+
+### Screen usage policy
+
+Currently viewed or edited primary element (Graph, Component, fbp-spec, Work Document, Flowtrace, etc) gets to occupy the full screen except for the corners.
+
+Other elements use pop-up dialogs either centered, or placed contextually (for example packet view for an edge).
+
+### Naming is hard
+
+We should push the decision of naming something, be it a project, graph, or a component as late in the process as humanly possible. Having to come up with names can easily break the sketching flow state. A good example of this is Apple's iMovie asking to name a project only when you close it.
+
+New components should follow the node name until there is either a signature or implementation. New nodes should start with `in` and `out` ports. Components without a signature or implementation are in "inferred era".
+
+### Component implementations
+
+When sketching a graph, we start with inferred components. They just are nodes that may be connected to other nodes.
+
+User can at any point choose to define the component signature (using the component signature schema editor) to add maybe a description and custom ports. They can also choose to implement the component. User can either go from inferred to specified to implemented, or skip the signature specification step.
+
+For implementation there are multiple things user may want to do:
+- Implement the new component in code
+- Implement the new component as subgraph
+- Choose an existing component
+- Load a new component library (if supported by runtime) and then choose an existing component from it ("Not finding your component? Add a library")
+
+If there is a signature defined for this component, or for nodes connected to it, these can help to populate a component template or narrow down the list of possible components to use (for example based on port data types or schemas).
+
+When viewing a component signature, there should be big friendly buttons for "Implement as graph", "Implement in JavaScript" etc (depending what the runtime supports). When viewing a library component there should similarly be a "Fork" button to make a local editable copy.
 
 ## Tech stack
 
