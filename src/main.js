@@ -4,6 +4,7 @@
 
 import { FlowEditor } from "./elements/noflo-editor.js";
 import { FlowExportedPort } from "./elements/noflo-exported-port.js";
+import { FlowHeatmap } from "./elements/noflo-heatmap.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
@@ -28,6 +29,7 @@ async function init() {
 
   // Register Web Components
   customElements.define("noflo-editor", FlowEditor);
+  customElements.define("noflo-heatmap", FlowHeatmap);
   customElements.define("noflo-node", FlowNode);
   customElements.define("noflo-iip", FlowIIP);
   customElements.define("noflo-exported-port", FlowExportedPort);

@@ -1,3 +1,4 @@
+import { FlowHeatmap } from "./noflo-heatmap.js";
 import { SelectionManager } from "../library/SelectionManager.js";
 import { SpaceManager } from "../library/SpaceManager.js";
 
@@ -115,8 +116,6 @@ export class FlowEditor extends HTMLElement {
     this.lastPinchCenter = null;
     /** @type {number} */
     this.lastPinchDistance = 0;
-    /** @type {Map<string, number>} */
-    this.activityMap = new Map();
     /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
     this.draggingNodesInitialPositions = new Map();
     /** @type {Map<NoFloNode | NoFloIIP | FlowExportedPort, Position>} */
@@ -149,8 +148,8 @@ export class FlowEditor extends HTMLElement {
     this.viewport = null;
     /** @type {HTMLElement | null} */
     this.transformLayer = null;
-    /** @type {HTMLCanvasElement | null} */
-    this.heatmapCanvas = null;
+    /** @type {FlowHeatmap | null} */
+    this.heatmap = null;
     /** @type {SVGElement | null} */
     this.gridLayer = null;
     /** @type {SVGElement | null} */
@@ -211,9 +210,6 @@ export class FlowEditor extends HTMLElement {
   disconnectedCallback() {
     if (this._bodyObserver) {
       this._bodyObserver.disconnect();
-    }
-    if (this.heatmapInterval) {
-      clearInterval(this.heatmapInterval);
     }
     window.removeEventListener("resize", this._resizeHandler);
   }
@@ -344,7 +340,7 @@ export class FlowEditor extends HTMLElement {
           transform-origin: 0 0;
           pointer-events: auto;
         }
-        #svg-layer, #iip-wire-layer, #grid-layer, #heatmap-canvas {
+        #svg-layer, #iip-wire-layer, #grid-layer {
           position: absolute;
           top: -8000px;
           left: -8000px;
@@ -374,10 +370,6 @@ export class FlowEditor extends HTMLElement {
           height: 100%;
           z-index: 4;
           pointer-events: auto;
-        }
-        #heatmap-canvas {
-          z-index: 0;
-          image-rendering: pixelated;
         }
         .grid-pattern {
           fill: url(#grid);
@@ -439,7 +431,7 @@ export class FlowEditor extends HTMLElement {
       <div id="viewport">
         <noflo-selection-pills></noflo-selection-pills>
         <div id="transform-layer">
-          <canvas id="heatmap-canvas"></canvas>
+          <noflo-heatmap></noflo-heatmap>
           <svg id="grid-layer">
             <defs>
               <pattern id="dot-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
@@ -468,9 +460,9 @@ export class FlowEditor extends HTMLElement {
     this.transformLayer = /** @type {ShadowRoot} */ (
       this.shadowRoot
     ).querySelector("#transform-layer");
-    this.heatmapCanvas = /** @type {any} */ (
+    this.heatmap = /** @type {FlowHeatmap | null} */ (
       /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
-        "#heatmap-canvas",
+        "noflo-heatmap",
       )
     );
     this.gridLayer = /** @type {any} */ (
@@ -491,66 +483,16 @@ export class FlowEditor extends HTMLElement {
       "#node-layer",
     );
 
-    if (this.heatmapCanvas) {
-      this.heatmapCanvas.width = 800;
-      this.heatmapCanvas.height = 800;
-    }
-
-    this.startHeatmapLoop();
     this.updateTransform();
   }
 
-  startHeatmapLoop() {
-    const gridSize = 40;
-    const canvas = this.heatmapCanvas;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
-    this.heatmapInterval = setInterval(() => {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const heatmapColor = getComputedStyle(this)
-        .getPropertyValue("--heatmap-color")
-        .trim();
-
-      for (const [key, heat] of this.activityMap.entries()) {
-        if (heat <= 0.05) {
-          this.activityMap.delete(key);
-          continue;
-        }
-
-        const [col, row] = key.split(",").map(Number);
-
-        const color = heatmapColor.startsWith("rgba")
-          ? heatmapColor.replace(/[\d.]+\)$/, `${heat * 0.6})`)
-          : heatmapColor.replace(/\)$/, `, ${heat * 0.6})`);
-
-        ctx.fillStyle = color;
-        ctx.fillRect(
-          (col * gridSize + 8000) / 20,
-          (row * gridSize + 8000) / 20,
-          2,
-          2,
-        );
-
-        this.activityMap.set(key, heat - 0.1);
-      }
-    }, 500);
-  }
-
   /**
+   * Record activity at a graph-space coordinate.
    * @param {number} worldX
    * @param {number} worldY
    */
   recordActivity(worldX, worldY) {
-    const gridSize = 40;
-    const col = Math.floor(worldX / gridSize);
-    const row = Math.floor(worldY / gridSize);
-    const key = `${col},${row}`;
-
-    const currentHeat = this.activityMap.get(key) || 0;
-    this.activityMap.set(key, Math.min(currentHeat + 0.25, 1.0));
+    this.heatmap?.recordActivity(worldX, worldY);
   }
 
   updateTransform() {
