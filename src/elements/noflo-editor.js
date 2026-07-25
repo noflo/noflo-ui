@@ -99,16 +99,8 @@ export class FlowEditor extends HTMLElement {
     this.isDraggingWire = false;
     /** @type {Position} */
     this.lastPointerPos = { x: 0, y: 0 };
-    /** @type {NoFloNode | NoFloIIP | null} */
-    this.selectedNode = null;
     /** @type {Map<number, PointerEvent>} */
     this.activePointers = new Map();
-    /** @type {number} */
-    this.initialPinchDistance = 0;
-    /** @type {number} */
-    this.initialZoom = 1.0;
-    /** @type {Position} */
-    this.initialOffset = { x: 0, y: 0 };
     /** @type {Set<NoFloNode | NoFloIIP>} */
     this.selectedNodes = new Set();
     /** @type {Set<Edge>} */
@@ -147,8 +139,6 @@ export class FlowEditor extends HTMLElement {
     this.draggingNodePointerId = null;
     /** @type {number | null} */
     this.draggingWirePointerId = null;
-    /** @type {boolean} */
-    this.wasClickOnSelectedNode = false;
     /** @type {NoFloNode | NoFloIIP | null} */
     this.clickedNode = null;
     /** @type {number | null} */
@@ -712,10 +702,6 @@ export class FlowEditor extends HTMLElement {
    * @param {Edge} edge
    * @returns {string}
    */
-  /**
-   * @param {Edge} edge
-   * @returns {string}
-   */
   getEdgeId(edge) {
     const portA = edge.portA;
     const portB = edge.portB;
@@ -803,7 +789,7 @@ export class FlowEditor extends HTMLElement {
 
         const port = /** @type {HTMLElement} */ (clickedPort);
         if (port.dataset.portType === "array") {
-          const hasConnection = this.edges?.some(
+          const hasConnection = this.edges.some(
             (edge) => edge.portA === port || edge.portB === port,
           );
           if (hasConnection) {
@@ -909,7 +895,7 @@ export class FlowEditor extends HTMLElement {
 
             let collision = false;
             for (const move of idealMoves) {
-              const size = move.node.size || 80;
+              const size = move.node.size;
               const otherNodes = /** @type {ShadowRoot} */ (
                 this.shadowRoot
               ).querySelectorAll("noflo-node, noflo-iip");
@@ -917,7 +903,7 @@ export class FlowEditor extends HTMLElement {
                 const o = /** @type {NoFloNode | NoFloIIP} */ (other);
                 if (this.selectedNodes.has(o)) continue;
                 const otherPos = o.position;
-                const otherSize = o.size || 80;
+                const otherSize = o.size;
                 if (
                   move.x < otherPos.x + otherSize &&
                   move.x + size > otherPos.x &&
@@ -994,10 +980,6 @@ export class FlowEditor extends HTMLElement {
         this.longPressTimer = null;
       }
       this.pendingDragPort = null;
-
-      if (this.activePointers.size < 2) {
-        this.initialPinchDistance = 0;
-      }
 
       if (e.pointerId === this.panningPointerId) {
         if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
@@ -1177,10 +1159,10 @@ export class FlowEditor extends HTMLElement {
       const isInPort = port.classList.contains("port-in");
       const isArrayPort = port.dataset.portType === "array";
 
-      const hasEdge = this.edges?.some(
+      const hasEdge = this.edges.some(
         (e) => e.portA === port || e.portB === port,
       );
-      const hasIIP = this.iipWires?.some((w) => w.port === port);
+      const hasIIP = this.iipWires.some((w) => w.port === port);
       const hasConnection = hasEdge || hasIIP;
 
       if (isInPort) {
@@ -1610,14 +1592,6 @@ export class FlowEditor extends HTMLElement {
     this.emitSelectionChanged();
   }
 
-  /**
-   * @param {PointerEvent} _e
-   * @param {HTMLElement} _node
-   */
-  startNodeDrag(_e, _node) {
-    // Deprecated
-  }
-
   clearSelection(emit = true) {
     this.selectedNodes.forEach((node) => {
       node.removeAttribute("selected");
@@ -1801,7 +1775,7 @@ export class FlowEditor extends HTMLElement {
           let isCompatible = isDragOut !== isPortOut;
 
           if (isCompatible && port.dataset.portType === "array") {
-            const hasConnection = this.edges?.some(
+            const hasConnection = this.edges.some(
               (edge) => edge.portA === port || edge.portB === port,
             );
             if (hasConnection) {
@@ -1838,7 +1812,7 @@ export class FlowEditor extends HTMLElement {
     for (const nodeElement of nodes) {
       const node = /** @type {NoFloNode | NoFloIIP} */ (nodeElement);
       const pos = node.position;
-      const otherSize = node.size || 80;
+      const otherSize = node.size;
       if (
         snapped.x < pos.x + otherSize &&
         snapped.x + size > pos.x &&
@@ -1995,12 +1969,13 @@ export class FlowEditor extends HTMLElement {
     }
 
     // Remove associated wires
-    if (this.iipWires && this.iipWiresGroup) {
+    const iipWiresGroup = this.iipWiresGroup;
+    if (iipWiresGroup) {
       const wiresToRemove = this.iipWires.filter((w) => w.iip === iip);
       wiresToRemove.forEach((wire) => {
-        if (this.iipWiresGroup && wire.hitPath && wire.visualPath) {
-          this.iipWiresGroup.removeChild(wire.hitPath);
-          this.iipWiresGroup.removeChild(wire.visualPath);
+        if (wire.hitPath && wire.visualPath) {
+          iipWiresGroup.removeChild(wire.hitPath);
+          iipWiresGroup.removeChild(wire.visualPath);
         }
       });
       this.iipWires = this.iipWires.filter((w) => w.iip !== iip);
@@ -2010,24 +1985,16 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {HTMLElement} port
    */
-  /**
-   * @param {HTMLElement} port
-   */
-  /**
-   * @param {HTMLElement} port
-   */
-  /**
-   * @param {HTMLElement} port
-   */
   disconnectPort(port) {
     // Remove standard edges
-    if (this.edges && this.edgesGroup) {
+    const edgesGroup = this.edgesGroup;
+    if (edgesGroup) {
       const edgesToRemove = this.edges.filter(
         (edge) => edge.portA === port || edge.portB === port,
       );
       edgesToRemove.forEach((edge) => {
-        this.edgesGroup?.removeChild(edge.hitPath);
-        this.edgesGroup?.removeChild(edge.visualPath);
+        edgesGroup.removeChild(edge.hitPath);
+        edgesGroup.removeChild(edge.visualPath);
       });
       this.edges = this.edges.filter(
         (edge) => edge.portA !== port && edge.portB !== port,
@@ -2035,11 +2002,12 @@ export class FlowEditor extends HTMLElement {
     }
 
     // Remove IIP wires
-    if (this.iipWires && this.iipWiresGroup) {
+    const iipWiresGroup = this.iipWiresGroup;
+    if (iipWiresGroup) {
       const wiresToRemove = this.iipWires.filter((wire) => wire.port === port);
       wiresToRemove.forEach((wire) => {
-        this.iipWiresGroup?.removeChild(wire.hitPath);
-        this.iipWiresGroup?.removeChild(wire.visualPath);
+        iipWiresGroup.removeChild(wire.hitPath);
+        iipWiresGroup.removeChild(wire.visualPath);
       });
       this.iipWires = this.iipWires.filter((wire) => wire.port !== port);
     }
@@ -2072,15 +2040,15 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (portA.dataset.portType === "array") {
-      const existing = this.edges?.filter((e) => e.portA === portA);
-      if (existing && existing.length >= 1) {
+      const existing = this.edges.filter((e) => e.portA === portA);
+      if (existing.length >= 1) {
         alert(`ArrayPort ${portA.dataset.portName} already has a connection.`);
         return;
       }
     }
     if (portB.dataset.portType === "array") {
-      const existing = this.edges?.filter((e) => e.portB === portB);
-      if (existing && existing.length >= 1) {
+      const existing = this.edges.filter((e) => e.portB === portB);
+      if (existing.length >= 1) {
         alert(`ArrayPort ${portB.dataset.portName} already has a connection.`);
         return;
       }
@@ -2109,7 +2077,6 @@ export class FlowEditor extends HTMLElement {
       this.edgesGroup.appendChild(visualPath);
     }
 
-    this.edges = this.edges || [];
     this.edges.push({ hitPath, visualPath, portA, portB, routeId });
   }
 
@@ -2159,7 +2126,6 @@ export class FlowEditor extends HTMLElement {
   }
 
   updateEdges() {
-    if (!this.edges) return;
     this.edges.forEach((edge) => {
       this.updatePathData(
         edge.hitPath,
@@ -2171,7 +2137,6 @@ export class FlowEditor extends HTMLElement {
   }
 
   updateIIPWires() {
-    if (!this.iipWires) return;
     this.iipWires.forEach((wire) => {
       this.updateIIPPathData(
         wire.hitPath,
@@ -2223,14 +2188,6 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
-  /**
-   * @param {string} name
-   * @param {number} x
-   * @param {number} y
-   * @param {number} [inPorts=1]
-   * @param {number} [outPorts=1]
-   * @param {number} [size=80]
-   */
   /**
    * @param {string} name
    * @param {number} x
@@ -2308,7 +2265,6 @@ export class FlowEditor extends HTMLElement {
       this.iipWiresGroup.appendChild(visualPath);
     }
 
-    this.iipWires = this.iipWires || [];
     this.iipWires.push({ hitPath, visualPath, iip, port });
   }
 

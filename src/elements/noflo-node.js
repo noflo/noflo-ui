@@ -94,7 +94,7 @@ export class FlowNode extends HTMLElement {
         if (icon.startsWith("data:image") || icon.startsWith("http")) {
           iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
         } else if (icon.indexOf("fa-") === 0) {
-          const iconName = icon.substr(3);
+          const iconName = icon.slice(3);
           iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
         } else {
           iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
@@ -396,24 +396,5 @@ export class FlowNode extends HTMLElement {
       this.portsContainer.appendChild(port);
       this.portsContainer.appendChild(label);
     }
-  }
-
-  /**
-   * @param {number} radius
-   * @param {number} index
-   * @param {number} totalPorts
-   * @param {boolean} isOutport
-   * @returns {Position}
-   */
-  calculatePortPosition(radius, index, totalPorts, isOutport) {
-    const angleRange = Math.PI * 0.5; // Use 50% of the semicircle for a more compact cluster
-    const centerAngle = isOutport ? 0 : Math.PI;
-    const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
-    const angle = centerAngle + (fraction - 0.5) * angleRange;
-
-    return {
-      x: radius * Math.cos(angle),
-      y: radius * Math.sin(angle),
-    };
   }
 }
