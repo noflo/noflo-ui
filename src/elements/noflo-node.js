@@ -172,20 +172,6 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
-   * @returns {PortConfig[]}
-   */
-  getInPorts() {
-    return this._inPorts;
-  }
-
-  /**
-   * @returns {PortConfig[]}
-   */
-  getOutPorts() {
-    return this._outPorts;
-  }
-
-  /**
    * @param {Metadata} metadata
    */
   setMetadata({ name }) {
@@ -511,24 +497,5 @@ export class FlowNode extends HTMLElement {
       this.portsContainer.appendChild(port);
       this.portsContainer.appendChild(label);
     }
-  }
-
-  /**
-   * @param {number} radius
-   * @param {number} index
-   * @param {number} totalPorts
-   * @param {boolean} isOutport
-   * @returns {Position}
-   */
-  calculatePortPosition(radius, index, totalPorts, isOutport) {
-    const angleRange = Math.PI * 0.5; // Use 50% of the semicircle for a more compact cluster
-    const centerAngle = isOutport ? 0 : Math.PI;
-    const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
-    const angle = centerAngle + (fraction - 0.5) * angleRange;
-
-    return {
-      x: radius * Math.cos(angle),
-      y: radius * Math.sin(angle),
-    };
   }
 }

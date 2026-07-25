@@ -1664,40 +1664,8 @@ export class FlowEditor extends HTMLElement {
     }
   }
 
-  /**
-   * @param {PointerEvent} _e
-   * @param {HTMLElement} _node
-   */
-  startNodeDrag(_e, _node) {
-    // Deprecated
-  }
-
   clearSelection() {
     this.selectionManager.clear();
-
-    if (
-      this.selectionManager.nodes.size === 0 &&
-      this.selectionManager.edges.size === 0 &&
-      this.selectionManager.iips.size === 0
-    ) {
-      this.selectMode = false;
-    }
-  }
-
-  clearNodeSelection() {
-    this.selectionManager.clearType("nodes");
-
-    if (
-      this.selectionManager.nodes.size === 0 &&
-      this.selectionManager.edges.size === 0 &&
-      this.selectionManager.iips.size === 0
-    ) {
-      this.selectMode = false;
-    }
-  }
-
-  clearEdgeSelection() {
-    this.selectionManager.clearType("edges");
 
     if (
       this.selectionManager.nodes.size === 0 &&
