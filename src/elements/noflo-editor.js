@@ -1,4 +1,5 @@
 import { FlowHeatmap } from "./noflo-heatmap.js";
+import { Camera } from "../library/Camera.js";
 import { EdgeManager } from "../library/EdgeManager.js";
 import { SelectionManager } from "../library/SelectionManager.js";
 import { SpaceManager } from "../library/SpaceManager.js";
@@ -70,46 +71,26 @@ export class FlowEditor extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    /** @type {number} */
-    this.zoom = 1.0;
-    /** @type {Position} */
-    this.offset = { x: 0, y: 0 };
     /** @type {SpaceManager} */
-    this.spaceManager = new SpaceManager(this.zoom, this.offset);
+    this.spaceManager = new SpaceManager(1.0, { x: 0, y: 0 });
+    /** @type {Camera | null} */
+    this.camera = null;
     /** @type {SelectionManager} */
     this.selectionManager = new SelectionManager();
     /** @type {EdgeManager | null} */
     this.edgeManager = null;
-    /** @type {boolean} */
-    this.isPanning = false;
     /** @type {boolean} */
     this.isDraggingNode = false;
     /** @type {boolean} */
     this.isDraggingWire = false;
     /** @type {Position} */
     this.lastPointerPos = { x: 0, y: 0 };
-    /** @type {Map<number, PointerEvent>} */
-    this.activePointers = new Map();
-    /** @type {number} */
-    this.initialPinchDistance = 0;
-    /** @type {number} */
-    this.initialZoom = 1.0;
-    /** @type {Position} */
-    this.initialOffset = { x: 0, y: 0 };
     /** @type {boolean} */
     this.selectMode = false;
     /** @type {HTMLElement | null} */
     this.ghostNode = null;
     /** @type {number | null} */
     this.stillnessTimer = null;
-    /** @type {number} */
-    this.panDistance = 0;
-    /** @type {boolean} */
-    this.didPinch = false;
-    /** @type {Position | null} */
-    this.lastPinchCenter = null;
-    /** @type {number} */
-    this.lastPinchDistance = 0;
     /** @type {Map<GraphEntity, Position>} */
     this.draggingNodesInitialPositions = new Map();
     /** @type {Map<GraphEntity, Position>} */
@@ -122,8 +103,6 @@ export class FlowEditor extends HTMLElement {
     this.animationFrameId = null;
     /** @type {boolean} */
     this.isDraggingNodeInCollision = false;
-    /** @type {number | null} */
-    this.panningPointerId = null;
     /** @type {number | null} */
     this.draggingNodePointerId = null;
     /** @type {number | null} */
@@ -204,29 +183,8 @@ export class FlowEditor extends HTMLElement {
     window.removeEventListener("resize", this._resizeHandler);
   }
 
-  /**
-   * @private
-   */
   _resizeHandler = () => {
-    if (!this.viewport) return;
-
-    // 1. Calculate current graph center
-    const rect = this.viewport.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const graphCenter = this.viewportToGraph(centerX, centerY);
-
-    // 2. Update offset to keep graph center at new viewport center
-    // New viewport dimensions
-    const newWidth = rect.width;
-    const newHeight = rect.height;
-
-    // We want: (newWidth / 2 - newOffset.x) / zoom = graphCenter.x
-    // newOffset.x = newWidth / 2 - graphCenter.x * zoom
-    this.offset.x = newWidth / 2 - graphCenter.x * this.zoom;
-    this.offset.y = newHeight / 2 - graphCenter.y * this.zoom;
-
-    this.updateTransform();
+    this.camera?.maintainCenterOnResize();
   };
 
   _syncWithBody() {
@@ -473,6 +431,13 @@ export class FlowEditor extends HTMLElement {
       "#node-layer",
     );
 
+    this.camera = new Camera({
+      transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
+      host: this,
+      spaceManager: this.spaceManager,
+      getRect: () => this.getBoundingClientRect(),
+    });
+
     this.edgeManager = new EdgeManager({
       edgesGroup: /** @type {SVGElement} */ (this.edgesGroup),
       iipWiresGroup: /** @type {SVGElement} */ (this.iipWiresGroup),
@@ -502,11 +467,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   updateTransform() {
-    if (this.transformLayer) {
-      this.transformLayer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.zoom})`;
-    }
-    this.style.setProperty("--zoom-scale", this.zoom.toString());
-    this.spaceManager.updateViewport(this.zoom, this.offset);
+    this.camera?.apply();
   }
 
   _animationLoop() {
@@ -611,8 +572,7 @@ export class FlowEditor extends HTMLElement {
   }
 
   fitEntitiesToViewport() {
-    this.spaceManager.fitEntities(this.getBoundingClientRect());
-    this.updateTransform();
+    this.camera?.fit();
   }
 
   /**
@@ -632,11 +592,12 @@ export class FlowEditor extends HTMLElement {
   }
 
   setupInteractions() {
+    const camera = /** @type {Camera} */ (this.camera);
     this.addEventListener("pointerdown", (e) => {
-      this.activePointers.set(e.pointerId, e);
+      camera.trackPointer(e);
 
-      if (this.activePointers.size === 2) {
-        this.startPinchZoom(e);
+      if (camera.isPinching()) {
+        camera.beginPinch();
         return;
       }
 
@@ -722,23 +683,20 @@ export class FlowEditor extends HTMLElement {
     });
 
     window.addEventListener("pointermove", (e) => {
-      this.activePointers.set(e.pointerId, e);
+      camera.trackPointer(e);
 
-      if (this.activePointers.size === 2) {
-        this.handlePinchZoom(e);
+      if (camera.isPinching()) {
+        camera.updatePinch();
       } else {
         const dx = e.clientX - this.lastPointerPos.x;
         const dy = e.clientY - this.lastPointerPos.y;
 
-        if (this.isPanning && !this.radialMenu?.isOpen) {
+        if (camera.isPanning && !this.radialMenu?.isOpen) {
           if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
           }
-          this.offset.x += dx;
-          this.offset.y += dy;
-          this.updateTransform();
-          this.panDistance += Math.hypot(dx, dy);
+          camera.panBy(dx, dy);
           if (this.viewport) {
             this.viewport.style.cursor = "grabbing";
           }
@@ -777,10 +735,10 @@ export class FlowEditor extends HTMLElement {
               if (initialPos && this.draggingStartPointerPos) {
                 const idealX =
                   initialPos.x +
-                  (e.clientX - this.draggingStartPointerPos.x) / this.zoom;
+                  (e.clientX - this.draggingStartPointerPos.x) / camera.zoom;
                 const idealY =
                   initialPos.y +
-                  (e.clientY - this.draggingStartPointerPos.y) / this.zoom;
+                  (e.clientY - this.draggingStartPointerPos.y) / camera.zoom;
                 idealMoves.push({ node, x: idealX, y: idealY });
               }
             });
@@ -851,7 +809,7 @@ export class FlowEditor extends HTMLElement {
           }
           this.updateWireDrag(e);
         } else if (
-          !this.isPanning &&
+          !camera.isPanning &&
           !this.isDraggingNode &&
           !this.isDraggingWire
         ) {
@@ -865,7 +823,7 @@ export class FlowEditor extends HTMLElement {
     });
 
     window.addEventListener("pointerup", (e) => {
-      this.activePointers.delete(e.pointerId);
+      camera.releasePointer(e.pointerId);
 
       if (this.longPressTimer) {
         clearTimeout(this.longPressTimer);
@@ -873,19 +831,10 @@ export class FlowEditor extends HTMLElement {
       }
       this.pendingDragPort = null;
 
-      if (this.activePointers.size < 2) {
-        this.initialPinchDistance = 0;
-      }
-
-      if (e.pointerId === this.panningPointerId) {
-        if (this.isPanning && this.panDistance < 5 && !this.didPinch) {
-          if (!this.selectMode) {
-            this.clearSelection();
-          }
+      if (camera.isPanningPointer(e.pointerId)) {
+        if (camera.endPan(e.pointerId) && !this.selectMode) {
+          this.clearSelection();
         }
-        this.isPanning = false;
-        this.panDistance = 0;
-        this.panningPointerId = null;
       }
 
       if (e.pointerId === this.draggingNodePointerId) {
@@ -951,10 +900,8 @@ export class FlowEditor extends HTMLElement {
         }
       }
 
-      if (this.activePointers.size === 0) {
-        this.didPinch = false;
-        this.lastPinchCenter = null;
-        this.lastPinchDistance = 0;
+      if (camera.allPointersReleased()) {
+        camera.resetPinchGesture();
       }
 
       if (
@@ -970,20 +917,7 @@ export class FlowEditor extends HTMLElement {
       "wheel",
       (e) => {
         e.preventDefault();
-        const zoomSpeed = 0.001;
-        const delta = -e.deltaY;
-        const oldZoom = this.zoom;
-        this.zoom *= 1 + delta * zoomSpeed;
-        this.zoom = Math.max(0.1, Math.min(5, this.zoom));
-
-        const rect = this.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        this.offset.x -= (mouseX - this.offset.x) * (this.zoom / oldZoom - 1);
-        this.offset.y -= (mouseY - this.offset.y) * (this.zoom / oldZoom - 1);
-
-        this.updateTransform();
+        camera.wheelZoom(e);
       },
       { passive: false },
     );
@@ -1375,85 +1309,9 @@ export class FlowEditor extends HTMLElement {
    * @param {PointerEvent} e
    */
   startCanvasPan(e) {
-    if (this.viewport) {
-      this.viewport.setPointerCapture(e.pointerId);
-    }
-    this.isPanning = true;
-    this.panningPointerId = e.pointerId;
+    this.viewport?.setPointerCapture(e.pointerId);
+    this.camera?.startPan(e.pointerId);
     this.lastPointerPos = { x: e.clientX, y: e.clientY };
-  }
-
-  /**
-   * @param {PointerEvent} _e
-   */
-  startPinchZoom(_e) {
-    this.didPinch = true;
-    const pointers = Array.from(this.activePointers.values());
-    const p1 = pointers[0];
-    const p2 = pointers[1];
-
-    this.lastPinchDistance = this.getDistance(p1, p2);
-    this.lastPinchCenter = {
-      x: (p1.clientX + p2.clientX) / 2,
-      y: (p1.clientY + p2.clientY) / 2,
-    };
-  }
-
-  /**
-   * @param {PointerEvent} _e
-   */
-  handlePinchZoom(_e) {
-    const pointers = Array.from(this.activePointers.values());
-    const p1 = pointers[0];
-    const p2 = pointers[1];
-
-    const currentDistance = this.getDistance(p1, p2);
-    const currentCenter = {
-      x: (p1.clientX + p2.clientX) / 2,
-      y: (p1.clientY + p2.clientY) / 2,
-    };
-
-    if (this.lastPinchDistance === 0) {
-      this.lastPinchDistance = currentDistance;
-      this.lastPinchCenter = currentCenter;
-      return;
-    }
-
-    const prevDistance = this.lastPinchDistance;
-    const prevCenter = this.lastPinchCenter;
-
-    if (!prevCenter) return;
-
-    const zoomFactor = currentDistance / prevDistance;
-    const newZoom = Math.max(0.1, Math.min(5, this.zoom * zoomFactor));
-    const actualZoomFactor = newZoom / this.zoom;
-
-    this.offset.x =
-      currentCenter.x - (currentCenter.x - this.offset.x) * actualZoomFactor;
-    this.offset.y =
-      currentCenter.y - (currentCenter.y - this.offset.y) * actualZoomFactor;
-
-    this.zoom = newZoom;
-
-    const dx = currentCenter.x - prevCenter.x;
-    const dy = currentCenter.y - prevCenter.y;
-    this.offset.x += dx;
-    this.offset.y += dy;
-
-    this.updateTransform();
-
-    this.lastPinchCenter = currentCenter;
-    this.lastPinchDistance = currentDistance;
-  }
-
-  /**
-   * @param {PointerEvent} p1
-   * @param {PointerEvent} p2
-   */
-  getDistance(p1, p2) {
-    const dx = p1.clientX - p2.clientX;
-    const dy = p1.clientY - p2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**

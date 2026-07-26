@@ -144,6 +144,11 @@ export class SpaceManager {
     return results;
   }
 
+  /** @returns {string[]} ids of all placed graph entities. */
+  getEntityIds() {
+    return Array.from(this.entities.keys());
+  }
+
   /**
    * @param {number} startX
    * @param {number} startY
@@ -237,28 +242,4 @@ export class SpaceManager {
     return true;
   }
 
-  /**
-   * @param {DOMRect} rect
-   * @param {number} padding
-   */
-  fitEntities(rect, padding = 100) {
-    if (this.entities.size === 0) return;
-
-    const bbox = this.getBoundingBox(Array.from(this.entities.keys()));
-    const contentWidth = bbox.width + padding * 2;
-    const contentHeight = bbox.height + padding * 2;
-
-    const viewportWidth = rect.width;
-    const viewportHeight = rect.height;
-
-    const zoomX = viewportWidth / contentWidth;
-    const zoomY = viewportHeight / contentHeight;
-    this.zoom = Math.min(zoomX, zoomY, 1.0);
-
-    const contentCenterX = bbox.x + bbox.width / 2;
-    const contentCenterY = bbox.y + bbox.height / 2;
-
-    this.offset.x = viewportWidth / 2 - contentCenterX * this.zoom;
-    this.offset.y = viewportHeight / 2 - contentCenterY * this.zoom;
-  }
 }
