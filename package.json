@@ -19,11 +19,14 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.0",
+    "@reticulum/core": "^0.6.1",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",
     "noflo": "^1.5.2",
     "noflo-core": "^0.6.1",
-    "source-code-pro": "^2.42.0"
+    "source-code-pro": "^2.42.0",
+    "y-reticulum": "^0.1.1",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "happy-dom": "^20.10.6",
