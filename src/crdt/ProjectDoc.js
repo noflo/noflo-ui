@@ -482,6 +482,349 @@ function addExportedPort(graph, direction, publicName, nodeId, port, metadata) {
   return true;
 }
 
+// ---- components ---------------------------------------------------------
+
+/**
+ * Returns the components collection.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Y.Map<any>}
+ */
+function componentsOf(doc) {
+  return doc.getMap(COMPONENTS_MAP);
+}
+
+/**
+ * Ensures a component entry exists, creating an empty collaborative code
+ * buffer when it does not. The entry holds component `metadata` (name,
+ * description, icon, ...) and the `code` Y.Text buffer.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentId
+ * @param {{ [key: string]: any }} [metadata]
+ * @returns {Y.Map<any>}
+ */
+export function ensureComponent(doc, componentId, metadata = {}) {
+  const components = componentsOf(doc);
+  const existing = /** @type {Y.Map<any> | undefined} */ (
+    components.get(componentId)
+  );
+  if (existing) return existing;
+
+  const component = new Y.Map();
+  doc.transact(() => {
+    components.set(componentId, component);
+    component.set("metadata", metadataMap(metadata));
+    component.set("code", new Y.Text());
+  });
+  return component;
+}
+
+/**
+ * Returns a component entry, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentId
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getComponent(doc, componentId) {
+  return /** @type {Y.Map<any> | undefined} */ (
+    componentsOf(doc).get(componentId)
+  );
+}
+
+/**
+ * Deletes a component entry.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentId
+ * @returns {boolean} Whether the component existed.
+ */
+export function deleteComponent(doc, componentId) {
+  const components = componentsOf(doc);
+  if (!components.has(componentId)) return false;
+  components.delete(componentId);
+  return true;
+}
+
+/**
+ * Returns the collaborative code buffer of a component.
+ *
+ * @param {Y.Map<any>} component
+ * @returns {Y.Text}
+ */
+export function getComponentCode(component) {
+  return /** @type {Y.Text} */ (component.get("code"));
+}
+
+/**
+ * Replaces the whole code buffer atomically (single transaction, single
+ * delete+insert pair), preserving concurrent edits on other character ranges
+ * through Yjs merging.
+ *
+ * @param {Y.Map<any>} component
+ * @param {string} code
+ */
+export function setComponentCode(component, code) {
+  const text = getComponentCode(component);
+  transact(component, () => {
+    text.delete(0, text.length);
+    text.insert(0, code);
+  });
+}
+
+/**
+ * Merges a patch into a component's metadata map.
+ *
+ * @param {Y.Map<any>} component
+ * @param {{ [key: string]: any }} patch
+ */
+export function updateComponentMetadata(component, patch) {
+  const metadata = /** @type {Y.Map<any>} */ (component.get("metadata"));
+  transact(component, () => {
+    for (const key of Object.keys(patch)) {
+      metadata.set(key, patch[key]);
+    }
+  });
+}
+
+// ---- component signatures (registry) ------------------------------------
+
+/**
+ * A port signature as stored in the registry.
+ *
+ * @typedef {Object} PortSignature
+ * @property {string} name
+ * @property {string} [type]
+ * @property {boolean} [addressable]
+ */
+
+/**
+ * A component signature: the ports a component exposes.
+ *
+ * @typedef {Object} ComponentSignatureValue
+ * @property {PortSignature[]} [inports]
+ * @property {PortSignature[]} [outports]
+ * @property {string} [description]
+ * @property {string} [icon]
+ */
+
+/**
+ * Copies a port signature list into a fresh Y.Array of Y.Maps.
+ *
+ * @param {PortSignature[]} [ports]
+ * @returns {Y.Array<any>}
+ */
+function signatureArray(ports = []) {
+  const array = new Y.Array();
+  for (const port of ports) {
+    const entry = new Y.Map();
+    entry.set("name", port.name);
+    if (port.type !== undefined) entry.set("type", port.type);
+    if (port.addressable !== undefined)
+      entry.set("addressable", port.addressable);
+    array.push([entry]);
+  }
+  return array;
+}
+
+/**
+ * Sets (replaces) a component's signature in the registry. The registry holds
+ * the ports a component exposes, used by the UI to render nodes.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {ComponentSignatureValue} signature
+ */
+export function setComponentSignature(doc, componentName, signature) {
+  const registry = doc.getMap(REGISTRY_MAP);
+  const entry = new Y.Map();
+  doc.transact(() => {
+    entry.set("inports", signatureArray(signature.inports));
+    entry.set("outports", signatureArray(signature.outports));
+    if (signature.description !== undefined) {
+      entry.set("description", signature.description);
+    }
+    if (signature.icon !== undefined) {
+      entry.set("icon", signature.icon);
+    }
+    registry.set(componentName, entry);
+  });
+}
+
+/**
+ * Returns a component signature entry, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getComponentSignature(doc, componentName) {
+  return /** @type {Y.Map<any> | undefined} */ (
+    doc.getMap(REGISTRY_MAP).get(componentName)
+  );
+}
+
+/**
+ * Removes a component signature from the registry.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @returns {boolean} Whether the signature existed.
+ */
+export function removeComponentSignature(doc, componentName) {
+  const registry = doc.getMap(REGISTRY_MAP);
+  if (!registry.has(componentName)) return false;
+  registry.delete(componentName);
+  return true;
+}
+
+// ---- specs ---------------------------------------------------------------
+
+/**
+ * Returns the specs collection.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Y.Map<any>}
+ */
+function specsOf(doc) {
+  return doc.getMap(SPECS_MAP);
+}
+
+/**
+ * Ensures a structural test suite exists for a subject (component or graph).
+ * Shape per SPEC Appendix B: `cases` is a Y.Array of case maps, each with
+ * `name`, optional `fixtureGraph`, and structural `inputs`/`expects` arrays.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} specId
+ * @param {string} topic Subject component or graph name.
+ * @returns {Y.Map<any>}
+ */
+export function ensureSpecSuite(doc, specId, topic) {
+  const specs = specsOf(doc);
+  const existing = /** @type {Y.Map<any> | undefined} */ (specs.get(specId));
+  if (existing) return existing;
+
+  const suite = new Y.Map();
+  doc.transact(() => {
+    specs.set(specId, suite);
+    suite.set("id", specId);
+    suite.set("topic", topic);
+    suite.set("cases", new Y.Array());
+  });
+  return suite;
+}
+
+/**
+ * Returns a spec suite, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} specId
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getSpecSuite(doc, specId) {
+  return /** @type {Y.Map<any> | undefined} */ (specsOf(doc).get(specId));
+}
+
+/**
+ * Deletes a spec suite.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} specId
+ * @returns {boolean} Whether the suite existed.
+ */
+export function deleteSpecSuite(doc, specId) {
+  const specs = specsOf(doc);
+  if (!specs.has(specId)) return false;
+  specs.delete(specId);
+  return true;
+}
+
+/**
+ * @typedef {Object} SpecInput
+ * @property {string} port
+ * @property {any} payload
+ */
+
+/**
+ * @typedef {Object} SpecExpect
+ * @property {string} port
+ * @property {any} payload
+ * @property {string} [assertion]
+ */
+
+/**
+ * Adds a test case to a suite. Inputs and expects are stored structurally so
+ * the UI can edit them as forms (WD #16); YAML is only an export format.
+ *
+ * @param {Y.Map<any>} suite
+ * @param {{ name: string, inputs?: SpecInput[], expects?: SpecExpect[] }} spec
+ * @returns {Y.Map<any>} The created case map.
+ */
+export function addSpecCase(suite, { name, inputs = [], expects = [] }) {
+  const specCase = new Y.Map();
+  specCase.set("name", name);
+  specCase.set("inputs", inputExpectArray(inputs, ["port", "payload"]));
+  specCase.set(
+    "expects",
+    inputExpectArray(expects, ["port", "payload", "assertion"]),
+  );
+  const cases = /** @type {Y.Array<any>} */ (suite.get("cases"));
+  const doc = suite.doc;
+  if (doc) {
+    doc.transact(() => {
+      cases.push([specCase]);
+    });
+  } else {
+    cases.push([specCase]);
+  }
+  return specCase;
+}
+
+/**
+ * Removes a test case by index.
+ *
+ * @param {Y.Map<any>} suite
+ * @param {number} index
+ * @returns {boolean} Whether the index existed.
+ */
+export function removeSpecCase(suite, index) {
+  const cases = /** @type {Y.Array<any>} */ (suite.get("cases"));
+  if (index < 0 || index >= cases.length) return false;
+  const doc = suite.doc;
+  if (doc) {
+    doc.transact(() => {
+      cases.delete(index, 1);
+    });
+  } else {
+    cases.delete(index, 1);
+  }
+  return true;
+}
+
+/**
+ * Copies input/expect records into a Y.Array of Y.Maps, keeping only the
+ * given keys (skipping undefined values like an optional `assertion`).
+ *
+ * @param {Array<Record<string, any>>} records
+ * @param {string[]} keys
+ * @returns {Y.Array<any>}
+ */
+function inputExpectArray(records, keys) {
+  const array = new Y.Array();
+  for (const record of records) {
+    const entry = new Y.Map();
+    for (const key of keys) {
+      if (record[key] !== undefined) {
+        entry.set(key, record[key]);
+      }
+    }
+    array.push([entry]);
+  }
+  return array;
+}
+
 /**
  * Removes an exported port.
  *

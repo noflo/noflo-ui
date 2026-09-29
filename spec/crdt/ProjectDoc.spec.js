@@ -8,20 +8,34 @@ import {
   addInport,
   addNode,
   addOutport,
+  addSpecCase,
   createGraph,
   createProjectDoc,
+  deleteComponent,
   deleteGraph,
+  deleteSpecSuite,
   edgeIdFor,
+  ensureComponent,
   ensureProjectSchema,
+  ensureSpecSuite,
+  getComponent,
+  getComponentCode,
+  getComponentSignature,
   getGraph,
   getNode,
   getProjectMetadata,
+  getSpecSuite,
   iipEdgeIdFor,
   moveNode,
   PROJECT_SCHEMA_VERSION,
+  removeComponentSignature,
   removeEdge,
   removeExportedPort,
   removeNode,
+  removeSpecCase,
+  setComponentCode,
+  setComponentSignature,
+  updateComponentMetadata,
 } from "../../src/crdt/ProjectDoc.js";
 
 describe("edge id rules", () => {
@@ -246,15 +260,135 @@ describe("removeNode cascades", () => {
   });
 });
 
-describe("peer convergence", () => {
-  /** @param {import("yjs").Doc} a @param {import("yjs").Doc} b */
-  function sync(a, b) {
-    const aState = Y.encodeStateAsUpdate(a);
-    const bState = Y.encodeStateAsUpdate(b);
-    Y.applyUpdate(b, aState);
-    Y.applyUpdate(a, bState);
-  }
+describe("components, registry, and specs", () => {
+  it("creates component entries with an empty collaborative code buffer", () => {
+    const doc = createProjectDoc("p");
+    const component = ensureComponent(doc, "c/Parser", { icon: "gear" });
+    assert.equal(getComponent(doc, "c/Parser"), component);
+    assert.equal(component.get("metadata").get("icon"), "gear");
+    assert.equal(getComponentCode(component).toString(), "");
+    assert.equal(ensureComponent(doc, "c/Parser"), component, "idempotent");
+  });
 
+  it("sets and replaces component code", () => {
+    const doc = createProjectDoc("p");
+    const component = ensureComponent(doc, "c/Parser");
+    setComponentCode(component, "export function parse() {}");
+    assert.equal(
+      getComponentCode(component).toString(),
+      "export function parse() {}",
+    );
+    setComponentCode(component, "");
+    assert.equal(getComponentCode(component).toString(), "");
+  });
+
+  it("updates component metadata and deletes components", () => {
+    const doc = createProjectDoc("p");
+    const component = ensureComponent(doc, "c/Parser");
+    updateComponentMetadata(component, { icon: "cogs", description: "Parses" });
+    assert.equal(component.get("metadata").get("icon"), "cogs");
+    assert.equal(component.get("metadata").get("description"), "Parses");
+    assert.equal(deleteComponent(doc, "c/Parser"), true);
+    assert.equal(deleteComponent(doc, "c/Parser"), false);
+    assert.equal(getComponent(doc, "c/Parser"), undefined);
+  });
+
+  it("stores component signatures in the registry", () => {
+    const doc = createProjectDoc("p");
+    setComponentSignature(doc, "c/Parser", {
+      description: "Parses text",
+      icon: "cogs",
+      inports: [{ name: "in", type: "string" }],
+      outports: [
+        { name: "out", type: "string" },
+        { name: "error", type: "string", addressable: false },
+      ],
+    });
+
+    const signature = getComponentSignature(doc, "c/Parser");
+    assert.ok(signature);
+    assert.equal(signature.get("icon"), "cogs");
+    assert.equal(signature.get("inports").length, 1);
+    assert.equal(signature.get("inports").get(0).get("name"), "in");
+    assert.equal(signature.get("outports").get(1).get("addressable"), false);
+
+    assert.equal(removeComponentSignature(doc, "c/Parser"), true);
+    assert.equal(removeComponentSignature(doc, "c/Parser"), false);
+    assert.equal(getComponentSignature(doc, "c/Parser"), undefined);
+  });
+
+  it("manages structural spec suites", () => {
+    const doc = createProjectDoc("p");
+    const suite = ensureSpecSuite(doc, "spec-parser", "c/Parser");
+    assert.equal(suite.get("topic"), "c/Parser");
+    assert.equal(
+      ensureSpecSuite(doc, "spec-parser", "other"),
+      suite,
+      "idempotent",
+    );
+
+    addSpecCase(suite, {
+      name: "parses simple input",
+      inputs: [{ port: "in", payload: "a=1" }],
+      expects: [{ port: "out", payload: 1, assertion: "equals" }],
+    });
+    addSpecCase(suite, { name: "empty input" });
+
+    const cases = suite.get("cases");
+    assert.equal(cases.length, 2);
+    assert.equal(cases.get(0).get("name"), "parses simple input");
+    assert.equal(cases.get(0).get("inputs").get(0).get("port"), "in");
+    assert.equal(cases.get(0).get("expects").get(0).get("assertion"), "equals");
+    assert.equal(
+      cases.get(1).get("inputs").length,
+      0,
+      "optional arrays default to empty",
+    );
+
+    assert.equal(removeSpecCase(suite, 0), true);
+    assert.equal(removeSpecCase(suite, 5), false, "out of range");
+    assert.equal(cases.length, 1);
+
+    assert.equal(deleteSpecSuite(doc, "spec-parser"), true);
+    assert.equal(getSpecSuite(doc, "spec-parser"), undefined);
+  });
+
+  it("merges concurrent edits to the same component code buffer", () => {
+    const docA = createProjectDoc("p");
+    const component = ensureComponent(docA, "c/Parser");
+    setComponentCode(component, "line1\nline2");
+    const docB = createProjectDoc("p");
+    sync(docA, docB);
+    const componentB = getComponent(docB, "c/Parser");
+    assert.ok(componentB);
+
+    // Each peer appends a different third line concurrently
+    getComponentCode(component).insert(12, "\nA line");
+    getComponentCode(componentB).insert(12, "\nB line");
+    sync(docA, docB);
+
+    const mergedA = getComponentCode(component).toString();
+    const mergedB = getComponentCode(componentB).toString();
+    assert.equal(mergedA, mergedB, "peers converge");
+    assert.ok(mergedA.includes("A line"), "A's edit survives");
+    assert.ok(mergedA.includes("B line"), "B's edit survives");
+  });
+});
+
+/**
+ * Exchanges full state updates between two documents, both ways.
+ *
+ * @param {import("yjs").Doc} a
+ * @param {import("yjs").Doc} b
+ */
+function sync(a, b) {
+  const aState = Y.encodeStateAsUpdate(a);
+  const bState = Y.encodeStateAsUpdate(b);
+  Y.applyUpdate(b, aState);
+  Y.applyUpdate(a, bState);
+}
+
+describe("peer convergence", () => {
   it("merges concurrent graphs from two peers", () => {
     const docA = createProjectDoc("p");
     const docB = createProjectDoc("p");
