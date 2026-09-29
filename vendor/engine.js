@@ -20973,6 +20973,35 @@ const GRAPHS_MAP = "graphs";
 /** Root map name for component signatures. */
 const REGISTRY_MAP = "registry";
 /**
+* One endpoint of an edge: the node id, the port name, and the ArrayPort
+* index when the port is an arrayport instance.
+*
+* @typedef {Object} EdgeEndpoint
+* @property {string} node
+* @property {string} port
+* @property {number} [index]
+*/
+/**
+* Optional edge metadata (route color, custom route points).
+*
+* @typedef {Object} EdgeMetadata
+* @property {number} [route]
+*/
+/**
+* A schema migration step, applied when a loaded document's schema version is
+* lower than the step's version.
+*
+* @typedef {(doc: Y.Doc) => void} Migration
+*/
+/**
+* Registry of schema migrations keyed by the version they upgrade TO.
+* Version 1 is the identity migration (the initial layout); later versions
+* append here as the schema evolves.
+*
+* @type {Record<number, Migration>}
+*/
+const MIGRATIONS = { 1: () => {} };
+/**
 * The canonical edge key for a node-to-node edge, incorporating ArrayPort
 * indexes so concurrent mutations can never collide (SPEC Appendix B).
 *
@@ -20982,6 +21011,15 @@ const REGISTRY_MAP = "registry";
 */
 function edgeIdFor(src, tgt) {
 	return `${src.node}:${src.port}[${src.index ?? 0}]->${tgt.node}:${tgt.port}[${tgt.index ?? 0}]`;
+}
+/**
+* The canonical edge key for an Initial Information Packet.
+*
+* @param {EdgeEndpoint} tgt
+* @returns {string}
+*/
+function iipEdgeIdFor(tgt) {
+	return `DATA->${tgt.node}:${tgt.port}[${tgt.index ?? 0}]`;
 }
 /**
 * Creates an empty project document with the root maps of SPEC Appendix B and
@@ -21009,6 +21047,35 @@ function newProjectId() {
 	const cryptoObject = globalThis.crypto;
 	if (cryptoObject && typeof cryptoObject.randomUUID === "function") return cryptoObject.randomUUID();
 	return `project-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+/**
+* Ensures the document conforms to the current schema version, applying any
+* migrations needed. Safe to call on already-current documents (no-op) and on
+* fresh documents created by {@link createProjectDoc}.
+*
+* @param {Y.Doc} doc
+* @returns {{ from: number, to: number, migrated: boolean }}
+*/
+function ensureProjectSchema(doc) {
+	const metadata = doc.getMap(METADATA_MAP);
+	const startVersion = metadata.get("schemaVersion") ?? 0;
+	if (startVersion === 1) return {
+		from: startVersion,
+		to: 1,
+		migrated: false
+	};
+	doc.transact(() => {
+		for (let version = startVersion + 1; version <= 1; version++) {
+			const migration = MIGRATIONS[version];
+			if (migration) migration(doc);
+		}
+		metadata.set("schemaVersion", 1);
+	});
+	return {
+		from: startVersion,
+		to: 1,
+		migrated: true
+	};
 }
 /**
 * Creates a graph entry in the project, or returns the existing one.
@@ -21185,6 +21252,28 @@ function addEdge(graph, src, tgt, metadata = {}) {
 	return edgeId;
 }
 /**
+* Adds an Initial Information Packet under its deterministic `DATA->` key.
+*
+* @param {Y.Map<any>} graph
+* @param {any} data
+* @param {EdgeEndpoint} tgt
+* @param {{ [key: string]: any }} [metadata]
+* @returns {string | null} The edge id, or null on duplicate or unknown node.
+*/
+function addIIP(graph, data, tgt, metadata = {}) {
+	if (!getNode(graph, tgt.node)) return null;
+	const edgeId = iipEdgeIdFor(tgt);
+	const edges = edgesOf(graph);
+	if (edges.has(edgeId)) return null;
+	const edge = new YMap();
+	edge.set("id", edgeId);
+	edge.set("data", data);
+	edge.set("tgt", endpointMap(tgt));
+	edge.set("metadata", metadataMap(metadata));
+	edges.set(edgeId, edge);
+	return edgeId;
+}
+/**
 * Removes an edge (node-to-node or IIP) by its deterministic id.
 *
 * @param {Y.Map<any>} graph
@@ -21211,6 +21300,52 @@ function endpointMap(endpoint) {
 	return map;
 }
 /**
+* Exports a node port as a graph inport.
+*
+* @param {Y.Map<any>} graph
+* @param {string} publicName
+* @param {string} nodeId
+* @param {string} port
+* @param {{ [key: string]: any }} [metadata]
+* @returns {boolean} False when the node is unknown or the name is taken.
+*/
+function addInport(graph, publicName, nodeId, port, metadata = {}) {
+	return addExportedPort(graph, "inports", publicName, nodeId, port, metadata);
+}
+/**
+* Exports a node port as a graph outport.
+*
+* @param {Y.Map<any>} graph
+* @param {string} publicName
+* @param {string} nodeId
+* @param {string} port
+* @param {{ [key: string]: any }} [metadata]
+* @returns {boolean} False when the node is unknown or the name is taken.
+*/
+function addOutport(graph, publicName, nodeId, port, metadata = {}) {
+	return addExportedPort(graph, "outports", publicName, nodeId, port, metadata);
+}
+/**
+* @param {Y.Map<any>} graph
+* @param {"inports" | "outports"} direction
+* @param {string} publicName
+* @param {string} nodeId
+* @param {string} port
+* @param {{ [key: string]: any }} metadata
+* @returns {boolean}
+*/
+function addExportedPort(graph, direction, publicName, nodeId, port, metadata) {
+	if (!getNode(graph, nodeId)) return false;
+	const ports = graph.get(direction);
+	if (ports.has(publicName)) return false;
+	const info = new YMap();
+	info.set("process", nodeId);
+	info.set("port", port);
+	info.set("metadata", metadataMap(metadata));
+	ports.set(publicName, info);
+	return true;
+}
+/**
 * Returns a component signature entry, or undefined.
 *
 * @param {Y.Doc} doc
@@ -21219,6 +21354,20 @@ function endpointMap(endpoint) {
 */
 function getComponentSignature(doc, componentName) {
 	return doc.getMap(REGISTRY_MAP).get(componentName);
+}
+/**
+* Removes an exported port.
+*
+* @param {Y.Map<any>} graph
+* @param {"inports" | "outports"} direction
+* @param {string} publicName
+* @returns {boolean} Whether the port existed.
+*/
+function removeExportedPort(graph, direction, publicName) {
+	const ports = graph.get(direction);
+	if (!ports.has(publicName)) return false;
+	ports.delete(publicName);
+	return true;
 }
 //#endregion
 //#region src/crdt/Protocol.js
@@ -21311,6 +21460,47 @@ function getComponentSignature(doc, componentName) {
 * @property {{ graphId: string, id: string }} payload
 */
 /**
+* Appendix A extension (work documents #18/#20): IIP mutations. The IIP id
+* follows the `DATA->` deterministic edge rule.
+*
+* @typedef {Object} IntentAddIIPMessage
+* @property {'INTENT'} type
+* @property {'addIIP'} command
+* @property {{ graphId: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+*/
+/**
+* @typedef {Object} IntentUpdateIIPMessage
+* @property {'INTENT'} type
+* @property {'updateIIP'} command
+* @property {{ graphId: string, id: string, data: any }} payload
+*/
+/**
+* @typedef {Object} IntentRemoveIIPMessage
+* @property {'INTENT'} type
+* @property {'removeIIP'} command
+* @property {{ graphId: string, id: string }} payload
+*/
+/**
+* Appendix A extension (work documents #18/#20): exported port mutations.
+*
+* @typedef {Object} IntentAddExportMessage
+* @property {'INTENT'} type
+* @property {'addInport' | 'addOutport'} command
+* @property {{ graphId: string, name: string, nodeId: string, port: string }} payload
+*/
+/**
+* @typedef {Object} IntentRemoveExportMessage
+* @property {'INTENT'} type
+* @property {'removeInport' | 'removeOutport'} command
+* @property {{ graphId: string, name: string }} payload
+*/
+/**
+* @typedef {Object} IntentRenameExportMessage
+* @property {'INTENT'} type
+* @property {'renameInport' | 'renameOutport'} command
+* @property {{ graphId: string, from: string, to: string }} payload
+*/
+/**
 * All messages the Glass may send to the Engine.
 *
 * @typedef {LifecycleSubscribeMessage
@@ -21320,7 +21510,13 @@ function getComponentSignature(doc, componentName) {
 *   | IntentRemoveNodeMessage
 *   | IntentMoveNodeMessage
 *   | IntentAddEdgeMessage
-*   | IntentRemoveEdgeMessage} UIWorkerMessage
+*   | IntentRemoveEdgeMessage
+*   | IntentAddIIPMessage
+*   | IntentUpdateIIPMessage
+*   | IntentRemoveIIPMessage
+*   | IntentAddExportMessage
+*   | IntentRemoveExportMessage
+*   | IntentRenameExportMessage} UIWorkerMessage
 */
 /**
 * @typedef {Object} HeartbeatMessage
@@ -21383,7 +21579,53 @@ function getComponentSignature(doc, componentName) {
 *   | GraphMoveNodeMessage
 *   | GraphAddEdgeMessage
 *   | GraphRemoveEdgeMessage
+*   | GraphAddIIPMessage
+*   | GraphUpdateIIPMessage
+*   | GraphRemoveIIPMessage
+*   | GraphAddExportMessage
+*   | GraphRemoveExportMessage
+*   | GraphRenameExportMessage
 *   | NetworkFlowtraceMessage} EngineUIMessage
+*/
+/**
+* Appendix A extension: authoritative IIP echo.
+*
+* @typedef {Object} GraphAddIIPMessage
+* @property {'graph'} protocol
+* @property {'addiip'} command
+* @property {{ id: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+*/
+/**
+* @typedef {Object} GraphUpdateIIPMessage
+* @property {'graph'} protocol
+* @property {'updateiip'} command
+* @property {{ id: string, data: any }} payload
+*/
+/**
+* @typedef {Object} GraphRemoveIIPMessage
+* @property {'graph'} protocol
+* @property {'removeiip'} command
+* @property {{ id: string }} payload
+*/
+/**
+* Appendix A extension: authoritative exported-port echoes.
+*
+* @typedef {Object} GraphAddExportMessage
+* @property {'graph'} protocol
+* @property {'addinport' | 'addoutport'} command
+* @property {{ name: string, nodeId: string, port: string }} payload
+*/
+/**
+* @typedef {Object} GraphRemoveExportMessage
+* @property {'graph'} protocol
+* @property {'removeinport' | 'removeoutport'} command
+* @property {{ name: string }} payload
+*/
+/**
+* @typedef {Object} GraphRenameExportMessage
+* @property {'graph'} protocol
+* @property {'renameinport' | 'renameoutport'} command
+* @property {{ from: string, to: string }} payload
 */
 /**
 * Engine response to a `QUERY: getSignature` message. NOTE: Appendix A does
@@ -21406,6 +21648,14 @@ function isUIWorkerMessage(message) {
 }
 //#endregion
 //#region src/crdt/EngineCore.js
+/**
+* @file Engine core (work document #18): pure intent validation and
+* application over the project Y.Doc, producing the Appendix A echo messages.
+*
+* This module contains no Worker or DOM code — the NoFlo dispatcher graph in
+* the Worker is a thin wiring around these functions, and the tests run them
+* directly.
+*/
 /**
 * Mutable Engine session state that is not part of the CRDT.
 *
@@ -21514,7 +21764,7 @@ function handleQuery(doc, message) {
 }
 /**
 * @param {Y.Doc} doc
-* @param {import("./Protocol.js").IntentAddNodeMessage | import("./Protocol.js").IntentRemoveNodeMessage | import("./Protocol.js").IntentMoveNodeMessage | import("./Protocol.js").IntentAddEdgeMessage | import("./Protocol.js").IntentRemoveEdgeMessage} message
+* @param {import("./Protocol.js").UIWorkerMessage} message
 * @returns {EngineResult}
 */
 function handleIntent(doc, message) {
@@ -21525,6 +21775,15 @@ function handleIntent(doc, message) {
 		case "moveNode": return intentMoveNode(doc, payload);
 		case "addEdge": return intentAddEdge(doc, payload);
 		case "removeEdge": return intentRemoveEdge(doc, payload);
+		case "addIIP": return intentAddIIP(doc, payload);
+		case "updateIIP": return intentUpdateIIP(doc, payload);
+		case "removeIIP": return intentRemoveIIP(doc, payload);
+		case "addInport":
+		case "addOutport": return intentAddExport(doc, message.command, payload);
+		case "removeInport":
+		case "removeOutport": return intentRemoveExport(doc, message.command, payload);
+		case "renameInport":
+		case "renameOutport": return intentRenameExport(doc, message.command, payload);
 		default: return {
 			accepted: false,
 			echoes: []
@@ -21693,6 +21952,227 @@ function intentRemoveEdge(doc, payload) {
 */
 function isValidEndpoint(endpoint) {
 	return !!endpoint && typeof endpoint.node === "string" && typeof endpoint.port === "string" && (endpoint.index === void 0 || typeof endpoint.index === "number");
+}
+/**
+* @param {Y.Doc} doc
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentAddIIP(doc, payload) {
+	const { graphId, data, tgt } = payload ?? {};
+	if (typeof graphId !== "string" || !isValidEndpoint(tgt)) return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	const id = addIIP(graph, data, tgt);
+	if (!id) return {
+		accepted: false,
+		echoes: []
+	};
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: "addiip",
+			payload: {
+				id,
+				data,
+				tgt
+			}
+		}]
+	};
+}
+/**
+* @param {Y.Doc} doc
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentUpdateIIP(doc, payload) {
+	const { graphId, id, data } = payload ?? {};
+	if (typeof graphId !== "string" || typeof id !== "string") return {
+		accepted: false,
+		echoes: []
+	};
+	if (!id.startsWith("DATA->")) return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	const edge = graph.get("edges").get(id);
+	if (!edge) return {
+		accepted: false,
+		echoes: []
+	};
+	doc.transact(() => {
+		edge.set("data", data);
+	});
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: "updateiip",
+			payload: {
+				id,
+				data
+			}
+		}]
+	};
+}
+/**
+* @param {Y.Doc} doc
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentRemoveIIP(doc, payload) {
+	const { graphId, id } = payload ?? {};
+	if (typeof graphId !== "string" || typeof id !== "string") return {
+		accepted: false,
+		echoes: []
+	};
+	if (!id.startsWith("DATA->")) return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	if (!removeEdge(graph, id)) return {
+		accepted: false,
+		echoes: []
+	};
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: "removeiip",
+			payload: { id }
+		}]
+	};
+}
+/**
+* @param {'addInport' | 'addOutport' | 'removeInport' | 'removeOutport' | 'renameInport' | 'renameOutport'} command
+* @returns {"inports" | "outports"}
+*/
+function directionForCommand(command) {
+	return command.toLowerCase().endsWith("inport") ? "inports" : "outports";
+}
+/**
+* @param {Y.Doc} doc
+* @param {'addInport' | 'addOutport'} command
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentAddExport(doc, command, payload) {
+	const { graphId, name, nodeId, port } = payload ?? {};
+	if (typeof graphId !== "string" || typeof name !== "string" || typeof nodeId !== "string" || typeof port !== "string") return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	if (!(directionForCommand(command) === "inports" ? addInport(graph, name, nodeId, port) : addOutport(graph, name, nodeId, port))) return {
+		accepted: false,
+		echoes: []
+	};
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: command.toLowerCase(),
+			payload: {
+				name,
+				nodeId,
+				port
+			}
+		}]
+	};
+}
+/**
+* @param {Y.Doc} doc
+* @param {'removeInport' | 'removeOutport'} command
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentRemoveExport(doc, command, payload) {
+	const { graphId, name } = payload ?? {};
+	if (typeof graphId !== "string" || typeof name !== "string") return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	if (!removeExportedPort(graph, directionForCommand(command), name)) return {
+		accepted: false,
+		echoes: []
+	};
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: command.toLowerCase(),
+			payload: { name }
+		}]
+	};
+}
+/**
+* @param {Y.Doc} doc
+* @param {'renameInport' | 'renameOutport'} command
+* @param {any} payload
+* @returns {EngineResult}
+*/
+function intentRenameExport(doc, command, payload) {
+	const { graphId, from, to } = payload ?? {};
+	if (typeof graphId !== "string" || typeof from !== "string" || typeof to !== "string") return {
+		accepted: false,
+		echoes: []
+	};
+	const graph = getGraph(doc, graphId);
+	if (!graph) return {
+		accepted: false,
+		echoes: []
+	};
+	const direction = directionForCommand(command);
+	const ports = graph.get(direction);
+	const info = ports.get(from);
+	if (!info || ports.has(to)) return {
+		accepted: false,
+		echoes: []
+	};
+	const plain = info.toJSON();
+	doc.transact(() => {
+		ports.delete(from);
+		const moved = new YMap();
+		for (const key of Object.keys(plain)) moved.set(key, plain[key]);
+		ports.set(to, moved);
+	});
+	return {
+		accepted: true,
+		echoes: [{
+			protocol: "graph",
+			command: command.toLowerCase(),
+			payload: {
+				from,
+				to
+			}
+		}]
+	};
 }
 //#endregion
 //#region node_modules/lib0/indexeddb.js
@@ -22017,10 +22497,14 @@ var IndexeddbPersistence = class extends Observable {
 //#endregion
 //#region src/crdt/ProjectPersistence.js
 /**
-* @file Persistence binding for the project Y.Doc, per SPEC "IndexedDB
-* Persistence & Multi-Tab Safety": y-indexeddb holds the authoritative CRDT
-* state, the schema version is checked after loading (the Engine drives the
-* migrations), and imminent eviction is surfaced to the user.
+* @file Persistence binding for the project Y.Doc (Engine side), per SPEC
+* "IndexedDB Persistence & Multi-Tab Safety": y-indexeddb holds the
+* authoritative CRDT state, and the schema version is checked after loading —
+* the Engine drives the migrations.
+*
+* This module is Engine/Worker territory: it must never be imported by
+* main-thread (Glass) code, so the y-indexeddb dependency stays out of the
+* Glass module graph.
 */
 /**
 * Binds a project Y.Doc to its IndexedDB persistence. The provider keeps
@@ -22041,6 +22525,16 @@ function bindDocumentPersistence(doc, databaseName) {
 */
 function whenPersisted(persistence) {
 	return persistence.whenSynced;
+}
+/**
+* Drives the CRDT schema migration after a persisted document was loaded.
+* Per SPEC, the Engine owns data migrations for older UI versions.
+*
+* @param {import("yjs").Doc} doc
+* @returns {{ from: number, to: number, migrated: boolean }}
+*/
+function migrateLoadedProject(doc) {
+	return ensureProjectSchema(doc);
 }
 //#endregion
 //#region src/components/engine/ApplyMessage.js
@@ -22241,6 +22735,7 @@ async function startEngine(io, options = {}) {
 	});
 	if (typeof globalThis.indexedDB !== "undefined") try {
 		whenPersisted(bindDocumentPersistence(doc, "noflo-project")).then(() => {
+			migrateLoadedProject(doc);
 			io.postMessage({ kind: "y-synced" });
 		});
 	} catch (err) {

@@ -10,10 +10,14 @@ const CHECK_INTERVAL_MS = 5_000;
 
 /** Default timer sink: the global timers of the current realm. */
 const DEFAULT_TIMERS = {
-  setTimeout,
-  clearTimeout,
-  setInterval,
-  clearInterval,
+  setTimeout: /** @type {typeof setTimeout} */ setTimeout.bind(globalThis),
+  clearTimeout: /** @type {typeof clearTimeout} */ clearTimeout.bind(
+    globalThis,
+  ),
+  setInterval: /** @type {typeof setInterval} */ setInterval.bind(globalThis),
+  clearInterval: /** @type {typeof clearInterval} */ clearInterval.bind(
+    globalThis,
+  ),
   now: () => Date.now(),
 };
 

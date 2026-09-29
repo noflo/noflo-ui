@@ -15,8 +15,10 @@ const DEFAULT_LEADER_TIMEOUT_MS = 3000;
 
 /** Default timer sink: the global timers of the current realm. */
 const DEFAULT_TIMERS = {
-  setInterval: /** @type {typeof setInterval} */ setInterval,
-  clearInterval: /** @type {typeof clearInterval} */ clearInterval,
+  setInterval: /** @type {typeof setInterval} */ setInterval.bind(globalThis),
+  clearInterval: /** @type {typeof clearInterval} */ clearInterval.bind(
+    globalThis,
+  ),
   now: () => Date.now(),
 };
 

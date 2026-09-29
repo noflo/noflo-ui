@@ -11,12 +11,16 @@ import * as Y from "yjs";
 
 import {
   addEdge,
+  addIIP,
+  addInport,
   addNode,
+  addOutport,
   createGraph,
   getComponentSignature,
   getGraph,
   moveNode,
   removeEdge,
+  removeExportedPort,
   removeNode,
 } from "./ProjectDoc.js";
 import { isUIWorkerMessage } from "./Protocol.js";
@@ -127,7 +131,7 @@ function handleQuery(doc, message) {
 
 /**
  * @param {Y.Doc} doc
- * @param {import("./Protocol.js").IntentAddNodeMessage | import("./Protocol.js").IntentRemoveNodeMessage | import("./Protocol.js").IntentMoveNodeMessage | import("./Protocol.js").IntentAddEdgeMessage | import("./Protocol.js").IntentRemoveEdgeMessage} message
+ * @param {import("./Protocol.js").UIWorkerMessage} message
  * @returns {EngineResult}
  */
 function handleIntent(doc, message) {
@@ -143,6 +147,21 @@ function handleIntent(doc, message) {
       return intentAddEdge(doc, payload);
     case "removeEdge":
       return intentRemoveEdge(doc, payload);
+    case "addIIP":
+      return intentAddIIP(doc, payload);
+    case "updateIIP":
+      return intentUpdateIIP(doc, payload);
+    case "removeIIP":
+      return intentRemoveIIP(doc, payload);
+    case "addInport":
+    case "addOutport":
+      return intentAddExport(doc, message.command, payload);
+    case "removeInport":
+    case "removeOutport":
+      return intentRemoveExport(doc, message.command, payload);
+    case "renameInport":
+    case "renameOutport":
+      return intentRenameExport(doc, message.command, payload);
     default:
       return { accepted: false, echoes: [] };
   }
@@ -306,4 +325,215 @@ function isValidEndpoint(endpoint) {
     typeof endpoint.port === "string" &&
     (endpoint.index === undefined || typeof endpoint.index === "number")
   );
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentAddIIP(doc, payload) {
+  const { graphId, data, tgt } = payload ?? {};
+  if (typeof graphId !== "string" || !isValidEndpoint(tgt)) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const id = addIIP(graph, data, tgt);
+  if (!id) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphAddIIPMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "addiip",
+    payload: { id, data, tgt },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentUpdateIIP(doc, payload) {
+  const { graphId, id, data } = payload ?? {};
+  if (typeof graphId !== "string" || typeof id !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  if (!id.startsWith("DATA->")) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const edge = /** @type {Y.Map<any> | undefined} */ (
+    graph.get("edges").get(id)
+  );
+  if (!edge) {
+    return { accepted: false, echoes: [] };
+  }
+  doc.transact(() => {
+    edge.set("data", data);
+  });
+  /** @type {import("./Protocol.js").GraphUpdateIIPMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "updateiip",
+    payload: { id, data },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRemoveIIP(doc, payload) {
+  const { graphId, id } = payload ?? {};
+  if (typeof graphId !== "string" || typeof id !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  if (!id.startsWith("DATA->")) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!removeEdge(graph, id)) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphRemoveIIPMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "removeiip",
+    payload: { id },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * @param {'addInport' | 'addOutport' | 'removeInport' | 'removeOutport' | 'renameInport' | 'renameOutport'} command
+ * @returns {"inports" | "outports"}
+ */
+function directionForCommand(command) {
+  return command.toLowerCase().endsWith("inport") ? "inports" : "outports";
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {'addInport' | 'addOutport'} command
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentAddExport(doc, command, payload) {
+  const { graphId, name, nodeId, port } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof name !== "string" ||
+    typeof nodeId !== "string" ||
+    typeof port !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const direction = directionForCommand(command);
+  const added =
+    direction === "inports"
+      ? addInport(graph, name, nodeId, port)
+      : addOutport(graph, name, nodeId, port);
+  if (!added) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphAddExportMessage} */
+  const echo = {
+    protocol: "graph",
+    command: /** @type {'addinport' | 'addoutport'} */ (command.toLowerCase()),
+    payload: { name, nodeId, port },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {'removeInport' | 'removeOutport'} command
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRemoveExport(doc, command, payload) {
+  const { graphId, name } = payload ?? {};
+  if (typeof graphId !== "string" || typeof name !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!removeExportedPort(graph, directionForCommand(command), name)) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphRemoveExportMessage} */
+  const echo = {
+    protocol: "graph",
+    command: /** @type {'removeinport' | 'removeoutport'} */ (
+      command.toLowerCase()
+    ),
+    payload: { name },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {'renameInport' | 'renameOutport'} command
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRenameExport(doc, command, payload) {
+  const { graphId, from, to } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof from !== "string" ||
+    typeof to !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const direction = directionForCommand(command);
+  const ports = /** @type {Y.Map<any>} */ (graph.get(direction));
+  const info = ports.get(from);
+  if (!info || ports.has(to)) {
+    return { accepted: false, echoes: [] };
+  }
+  // Yjs types cannot be re-integrated under a new key; copy the record
+  const plain = info.toJSON();
+  doc.transact(() => {
+    ports.delete(from);
+    const moved = new Y.Map();
+    for (const key of Object.keys(plain)) {
+      moved.set(key, plain[key]);
+    }
+    ports.set(to, moved);
+  });
+  /** @type {import("./Protocol.js").GraphRenameExportMessage} */
+  const echo = {
+    protocol: "graph",
+    command: /** @type {'renameinport' | 'renameoutport'} */ (
+      command.toLowerCase()
+    ),
+    payload: { from, to },
+  };
+  return { accepted: true, echoes: [echo] };
 }

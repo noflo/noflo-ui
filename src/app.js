@@ -8,7 +8,7 @@
 import { graph } from "noflo";
 import * as Y from "yjs";
 
-import { checkEviction } from "./crdt/ProjectPersistence.js";
+import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import { FlowExportedPort } from "./elements/noflo-exported-port.js";
@@ -18,11 +18,17 @@ import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
 import {
   addEdgeIntent,
+  addExportIntent,
+  addIIPIntent,
   addNodeIntent,
   moveNodeIntent,
   projectGraph,
   removeEdgeIntent,
+  removeExportIntent,
+  removeIIPIntent,
   removeNodeIntent,
+  renameExportIntent,
+  updateIIPIntent,
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { LibraryManager } from "./library/LibraryManager.js";
@@ -353,14 +359,73 @@ function setupEditorEventListeners(ed) {
     );
   });
 
+  ed.addEventListener("iip-creation-attempt", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const value = window.prompt("Value for the initial information packet:");
+    if (value === null) return;
+    const startPort = /** @type {HTMLElement | undefined} */ (
+      event.detail.startPort
+    );
+    if (!startPort) return;
+    sendIntent(addIIPIntent(GRAPH_ID, value, endpointFor(startPort)));
+  });
+
+  ed.addEventListener("iip-edit-attempt", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const iip = /** @type {any} */ (event.detail.iip);
+    const newValue = window.prompt("New value for the packet:", iip.value);
+    if (newValue === null || typeof iip.id !== "string") return;
+    sendIntent(updateIIPIntent(GRAPH_ID, iip.id, newValue));
+  });
+
+  ed.addEventListener("iip-removal-attempt", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const iip = /** @type {any} */ (event.detail.iip);
+    if (typeof iip.id !== "string") return;
+    sendIntent(removeIIPIntent(GRAPH_ID, iip.id));
+  });
+
+  ed.addEventListener("port-exported", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { name, direction, process, port } = event.detail;
+    sendIntent(
+      addExportIntent(
+        GRAPH_ID,
+        direction === "in" ? "inports" : "outports",
+        name,
+        process,
+        port,
+      ),
+    );
+  });
+
+  ed.addEventListener("port-removed", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { name, direction } = event.detail;
+    sendIntent(
+      removeExportIntent(
+        GRAPH_ID,
+        direction === "in" ? "inports" : "outports",
+        name,
+      ),
+    );
+  });
+
+  ed.addEventListener("port-renamed", (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const { oldName, newName, direction } = event.detail;
+    sendIntent(
+      renameExportIntent(
+        GRAPH_ID,
+        direction === "in" ? "inports" : "outports",
+        oldName,
+        newName,
+      ),
+    );
+  });
+
   for (const kind of [
-    "iip-creation-attempt",
-    "iip-edit-attempt",
     "iip-send-attempt",
-    "iip-removal-attempt",
-    "port-exported",
-    "port-removed",
-    "port-renamed",
     "create-subgraph-attempt",
     "move-nodes-up-attempt",
     "navigate-down-attempt",

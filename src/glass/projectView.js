@@ -60,7 +60,9 @@ export function projectGraph(doc, graphId) {
       connections.push({
         data: plain.data,
         tgt: plain.tgt,
-        metadata: plain.metadata ?? {},
+        // The CRDT edge id rides in the metadata so the rendered IIP element
+        // can reference it for update/remove intents
+        metadata: { id: plain.id, ...(plain.metadata ?? {}) },
       });
     } else {
       connections.push({
@@ -156,6 +158,84 @@ export function removeEdgeIntent(graphId, src, tgt) {
     type: "INTENT",
     command: "removeEdge",
     payload: { graphId, id: edgeIdFor(src, tgt) },
+  };
+}
+
+/**
+ * @param {string} graphId
+ * @param {any} data
+ * @param {{ node: string, port: string, index?: number }} tgt
+ * @returns {import("../crdt/Protocol.js").IntentAddIIPMessage}
+ */
+export function addIIPIntent(graphId, data, tgt) {
+  return { type: "INTENT", command: "addIIP", payload: { graphId, data, tgt } };
+}
+
+/**
+ * @param {string} graphId
+ * @param {string} id
+ * @param {any} data
+ * @returns {import("../crdt/Protocol.js").IntentUpdateIIPMessage}
+ */
+export function updateIIPIntent(graphId, id, data) {
+  return {
+    type: "INTENT",
+    command: "updateIIP",
+    payload: { graphId, id, data },
+  };
+}
+
+/**
+ * @param {string} graphId
+ * @param {string} id
+ * @returns {import("../crdt/Protocol.js").IntentRemoveIIPMessage}
+ */
+export function removeIIPIntent(graphId, id) {
+  return { type: "INTENT", command: "removeIIP", payload: { graphId, id } };
+}
+
+/**
+ * @param {string} graphId
+ * @param {"inports" | "outports"} direction
+ * @param {string} name
+ * @param {string} nodeId
+ * @param {string} port
+ * @returns {import("../crdt/Protocol.js").IntentAddExportMessage}
+ */
+export function addExportIntent(graphId, direction, name, nodeId, port) {
+  return {
+    type: "INTENT",
+    command: direction === "inports" ? "addInport" : "addOutport",
+    payload: { graphId, name, nodeId, port },
+  };
+}
+
+/**
+ * @param {string} graphId
+ * @param {"inports" | "outports"} direction
+ * @param {string} name
+ * @returns {import("../crdt/Protocol.js").IntentRemoveExportMessage}
+ */
+export function removeExportIntent(graphId, direction, name) {
+  return {
+    type: "INTENT",
+    command: direction === "inports" ? "removeInport" : "removeOutport",
+    payload: { graphId, name },
+  };
+}
+
+/**
+ * @param {string} graphId
+ * @param {"inports" | "outports"} direction
+ * @param {string} from
+ * @param {string} to
+ * @returns {import("../crdt/Protocol.js").IntentRenameExportMessage}
+ */
+export function renameExportIntent(graphId, direction, from, to) {
+  return {
+    type: "INTENT",
+    command: direction === "inports" ? "renameInport" : "renameOutport",
+    payload: { graphId, from, to },
   };
 }
 

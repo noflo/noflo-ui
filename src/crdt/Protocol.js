@@ -102,6 +102,53 @@
  */
 
 /**
+ * Appendix A extension (work documents #18/#20): IIP mutations. The IIP id
+ * follows the `DATA->` deterministic edge rule.
+ *
+ * @typedef {Object} IntentAddIIPMessage
+ * @property {'INTENT'} type
+ * @property {'addIIP'} command
+ * @property {{ graphId: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+ */
+
+/**
+ * @typedef {Object} IntentUpdateIIPMessage
+ * @property {'INTENT'} type
+ * @property {'updateIIP'} command
+ * @property {{ graphId: string, id: string, data: any }} payload
+ */
+
+/**
+ * @typedef {Object} IntentRemoveIIPMessage
+ * @property {'INTENT'} type
+ * @property {'removeIIP'} command
+ * @property {{ graphId: string, id: string }} payload
+ */
+
+/**
+ * Appendix A extension (work documents #18/#20): exported port mutations.
+ *
+ * @typedef {Object} IntentAddExportMessage
+ * @property {'INTENT'} type
+ * @property {'addInport' | 'addOutport'} command
+ * @property {{ graphId: string, name: string, nodeId: string, port: string }} payload
+ */
+
+/**
+ * @typedef {Object} IntentRemoveExportMessage
+ * @property {'INTENT'} type
+ * @property {'removeInport' | 'removeOutport'} command
+ * @property {{ graphId: string, name: string }} payload
+ */
+
+/**
+ * @typedef {Object} IntentRenameExportMessage
+ * @property {'INTENT'} type
+ * @property {'renameInport' | 'renameOutport'} command
+ * @property {{ graphId: string, from: string, to: string }} payload
+ */
+
+/**
  * All messages the Glass may send to the Engine.
  *
  * @typedef {LifecycleSubscribeMessage
@@ -111,7 +158,13 @@
  *   | IntentRemoveNodeMessage
  *   | IntentMoveNodeMessage
  *   | IntentAddEdgeMessage
- *   | IntentRemoveEdgeMessage} UIWorkerMessage
+ *   | IntentRemoveEdgeMessage
+ *   | IntentAddIIPMessage
+ *   | IntentUpdateIIPMessage
+ *   | IntentRemoveIIPMessage
+ *   | IntentAddExportMessage
+ *   | IntentRemoveExportMessage
+ *   | IntentRenameExportMessage} UIWorkerMessage
  */
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -185,7 +238,59 @@
  *   | GraphMoveNodeMessage
  *   | GraphAddEdgeMessage
  *   | GraphRemoveEdgeMessage
+ *   | GraphAddIIPMessage
+ *   | GraphUpdateIIPMessage
+ *   | GraphRemoveIIPMessage
+ *   | GraphAddExportMessage
+ *   | GraphRemoveExportMessage
+ *   | GraphRenameExportMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
+ */
+
+/**
+ * Appendix A extension: authoritative IIP echo.
+ *
+ * @typedef {Object} GraphAddIIPMessage
+ * @property {'graph'} protocol
+ * @property {'addiip'} command
+ * @property {{ id: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+ */
+
+/**
+ * @typedef {Object} GraphUpdateIIPMessage
+ * @property {'graph'} protocol
+ * @property {'updateiip'} command
+ * @property {{ id: string, data: any }} payload
+ */
+
+/**
+ * @typedef {Object} GraphRemoveIIPMessage
+ * @property {'graph'} protocol
+ * @property {'removeiip'} command
+ * @property {{ id: string }} payload
+ */
+
+/**
+ * Appendix A extension: authoritative exported-port echoes.
+ *
+ * @typedef {Object} GraphAddExportMessage
+ * @property {'graph'} protocol
+ * @property {'addinport' | 'addoutport'} command
+ * @property {{ name: string, nodeId: string, port: string }} payload
+ */
+
+/**
+ * @typedef {Object} GraphRemoveExportMessage
+ * @property {'graph'} protocol
+ * @property {'removeinport' | 'removeoutport'} command
+ * @property {{ name: string }} payload
+ */
+
+/**
+ * @typedef {Object} GraphRenameExportMessage
+ * @property {'graph'} protocol
+ * @property {'renameinport' | 'renameoutport'} command
+ * @property {{ from: string, to: string }} payload
  */
 
 /**

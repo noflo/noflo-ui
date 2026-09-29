@@ -373,3 +373,305 @@ describe("schema integrity", () => {
     assert.equal(getProjectMetadata(doc).get("schemaVersion"), 1);
   });
 });
+
+describe("IIP intents", () => {
+  it("addIIP echoes the deterministic DATA-> id", () => {
+    const doc = createProjectDoc("p");
+    handle(doc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "B",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "addIIP",
+      payload: {
+        graphId: "main",
+        data: "hello",
+        tgt: { node: "B", port: "in" },
+      },
+    });
+
+    assert.equal(result.accepted, true);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "addiip",
+        payload: {
+          id: "DATA->B:in[0]",
+          data: "hello",
+          tgt: { node: "B", port: "in" },
+        },
+      },
+    ]);
+  });
+
+  it("addIIP rejects duplicates and unknown graphs", () => {
+    const doc = createProjectDoc("p");
+    handle(doc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "B",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    const intent = {
+      type: "INTENT",
+      command: "addIIP",
+      payload: {
+        graphId: "main",
+        data: "hello",
+        tgt: { node: "B", port: "in" },
+      },
+    };
+    handle(doc, intent);
+    const before = doc.toJSON();
+
+    assert.equal(handle(doc, intent).accepted, false, "duplicate rejected");
+    assert.equal(
+      handle(doc, {
+        ...intent,
+        payload: { graphId: "nope", data: 1, tgt: { node: "x", port: "in" } },
+      }).accepted,
+      false,
+      "unknown graph rejected",
+    );
+    assert.deepEqual(doc.toJSON(), before);
+  });
+
+  it("updateIIP changes the data in place", () => {
+    const doc = createProjectDoc("p");
+    handle(doc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "B",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    handle(doc, {
+      type: "INTENT",
+      command: "addIIP",
+      payload: { graphId: "main", data: "old", tgt: { node: "B", port: "in" } },
+    });
+
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "updateIIP",
+      payload: { graphId: "main", id: "DATA->B:in[0]", data: "new" },
+    });
+
+    assert.equal(result.accepted, true);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "updateiip",
+        payload: { id: "DATA->B:in[0]", data: "new" },
+      },
+    ]);
+    assert.equal(
+      getGraph(doc, "main").get("edges").get("DATA->B:in[0]").get("data"),
+      "new",
+    );
+  });
+
+  it("updateIIP rejects node edges and unknown ids", () => {
+    const doc = createProjectDoc("p");
+    const intent = {
+      type: "INTENT",
+      command: "updateIIP",
+      payload: { graphId: "main", id: "A:out[0]->B:in[0]", data: "x" },
+    };
+    assert.equal(handle(doc, intent).accepted, false, "node edge id rejected");
+    assert.equal(
+      handle(doc, {
+        ...intent,
+        payload: { graphId: "nope", id: "DATA->B:in[0]", data: 1 },
+      }).accepted,
+      false,
+      "unknown graph rejected",
+    );
+  });
+
+  it("removeIIP echoes removeiip", () => {
+    const doc = createProjectDoc("p");
+    handle(doc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "B",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    handle(doc, {
+      type: "INTENT",
+      command: "addIIP",
+      payload: {
+        graphId: "main",
+        data: "hello",
+        tgt: { node: "B", port: "in" },
+      },
+    });
+
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "removeIIP",
+      payload: { graphId: "main", id: "DATA->B:in[0]" },
+    });
+
+    assert.equal(result.accepted, true);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "removeiip",
+        payload: { id: "DATA->B:in[0]" },
+      },
+    ]);
+  });
+});
+
+describe("exported port intents", () => {
+  /** @param {import("yjs").Doc} doc */
+  function withNode(doc) {
+    handle(doc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "A",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+  }
+
+  it("addInport/addOutport echo authoritative exports", () => {
+    const doc = createProjectDoc("p");
+    withNode(doc);
+
+    const inResult = handle(doc, {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
+    });
+    assert.equal(inResult.accepted, true);
+    assert.deepEqual(inResult.echoes, [
+      {
+        protocol: "graph",
+        command: "addinport",
+        payload: { name: "input", nodeId: "A", port: "in" },
+      },
+    ]);
+
+    const outResult = handle(doc, {
+      type: "INTENT",
+      command: "addOutport",
+      payload: { graphId: "main", name: "output", nodeId: "A", port: "out" },
+    });
+    assert.equal(outResult.echoes[0].command, "addoutport");
+  });
+
+  it("rejects taken names and unknown nodes", () => {
+    const doc = createProjectDoc("p");
+    withNode(doc);
+    const intent = {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
+    };
+    handle(doc, intent);
+    const before = doc.toJSON();
+
+    assert.equal(handle(doc, intent).accepted, false, "name taken");
+    assert.equal(
+      handle(doc, { ...intent, payload: { ...intent.payload, nodeId: "Nope" } })
+        .accepted,
+      false,
+      "unknown node",
+    );
+    assert.deepEqual(doc.toJSON(), before);
+  });
+
+  it("removeInport/removeOutport echo removals", () => {
+    const doc = createProjectDoc("p");
+    withNode(doc);
+    handle(doc, {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
+    });
+
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "removeInport",
+      payload: { graphId: "main", name: "input" },
+    });
+
+    assert.equal(result.accepted, true);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "removeinport",
+        payload: { name: "input" },
+      },
+    ]);
+    assert.equal(getGraph(doc, "main").get("inports").size, 0);
+  });
+
+  it("renameInport moves the mapping and rejects taken targets", () => {
+    const doc = createProjectDoc("p");
+    withNode(doc);
+    handle(doc, {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
+    });
+    handle(doc, {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "other", nodeId: "A", port: "in2" },
+    });
+
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "renameInport",
+      payload: { graphId: "main", from: "input", to: "renamed" },
+    });
+
+    assert.equal(result.accepted, true);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "renameinport",
+        payload: { from: "input", to: "renamed" },
+      },
+    ]);
+
+    const inports = getGraph(doc, "main").get("inports");
+    assert.ok(inports.has("renamed"));
+    assert.ok(!inports.has("input"));
+
+    assert.equal(
+      handle(doc, {
+        type: "INTENT",
+        command: "renameInport",
+        payload: { graphId: "main", from: "other", to: "renamed" },
+      }).accepted,
+      false,
+      "target name taken",
+    );
+  });
+});

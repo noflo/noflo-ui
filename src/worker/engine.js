@@ -15,6 +15,7 @@ import { createEngineState } from "../crdt/EngineCore.js";
 import { createProjectDoc } from "../crdt/ProjectDoc.js";
 import {
   bindDocumentPersistence,
+  migrateLoadedProject,
   whenPersisted,
 } from "../crdt/ProjectPersistence.js";
 import {
@@ -76,6 +77,8 @@ export async function startEngine(io, options = {}) {
     try {
       const persistence = bindDocumentPersistence(doc, "noflo-project");
       whenPersisted(persistence).then(() => {
+        // The Engine drives CRDT schema migrations after loading
+        migrateLoadedProject(doc);
         io.postMessage({ kind: "y-synced" });
       });
     } catch (err) {
