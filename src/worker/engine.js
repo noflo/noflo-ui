@@ -7,6 +7,7 @@
  */
 
 import noflo from "../../vendor/noflo.js";
+import * as Y from "../../vendor/yjs.js";
 
 /** NoFlo's shipped types omit the default export; the runtime API is stable. */
 const NoFlo = /** @type {any} */ (noflo);
@@ -24,6 +25,18 @@ import {
 } from "../graphs/engine-dispatch.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
+
+/**
+ * Sends the full document state to the Glass. Applied on a fresh replica, it
+ * establishes clock contiguity so subsequent incremental `y-update` messages
+ * integrate.
+ *
+ * @param {import("yjs").Doc} doc
+ * @param {{ postMessage: (message: any) => void }} io
+ */
+function syncFullState(doc, io) {
+  io.postMessage({ kind: "y-sync", update: Y.encodeStateAsUpdate(doc) });
+}
 
 /**
  * Starts the engine. Kept as a pure async function so integration tests can
@@ -66,27 +79,30 @@ export async function startEngine(io, options = {}) {
     });
   }, HEARTBEAT_INTERVAL_MS);
 
-  // Mirror every CRDT update to the Glass so its read replica stays in sync
+  // Mirror every CRDT update to the Glass so its read replica stays in sync.
+  // Incremental updates alone can never converge a fresh replica: the document
+  // state starts before the listener attaches (project metadata) and grows
+  // through persisted loads, so Yjs clock contiguity requires a full-state
+  // sync first (the same reason yjs sync protocols exchange state on connect).
   doc.on("update", (update) => {
     io.postMessage({ kind: "y-update", update });
   });
 
-  // Persist the document when IndexedDB is available (browser worker). The
-  // Glass waits for the synced signal before its first render.
+  // Persist the document when IndexedDB is available (browser worker).
   if (typeof globalThis.indexedDB !== "undefined") {
     try {
       const persistence = bindDocumentPersistence(doc, "noflo-project");
       whenPersisted(persistence).then(() => {
         // The Engine drives CRDT schema migrations after loading
         migrateLoadedProject(doc);
-        io.postMessage({ kind: "y-synced" });
+        syncFullState(doc, io);
       });
     } catch (err) {
       console.error("Document persistence failed:", err);
-      io.postMessage({ kind: "y-synced" });
+      syncFullState(doc, io);
     }
   } else {
-    io.postMessage({ kind: "y-synced" });
+    syncFullState(doc, io);
   }
 
   return {

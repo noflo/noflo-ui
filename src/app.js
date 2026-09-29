@@ -47,6 +47,14 @@ const GRAPH_ID = "main";
 const CHANNEL_NAME = "noflo-ui-tabs";
 const RENDER_DEBOUNCE_MS = 30;
 
+/** Handler for coordinator traffic, wired by the TabCoordinator wrapper. */
+let coordinatorHandler =
+  /** @type {((event: { data: any }) => void) | null} */ (null);
+/** Handler for mirror protocol traffic, wired by setupCrossTabMirror. */
+let mirrorHandler = /** @type {((event: { data: any }) => void) | null} */ (
+  null
+);
+
 /** @type {Y.Doc} */
 let mirrorDoc = new Y.Doc();
 /** @type {FlowEditor | null} */
@@ -126,10 +134,11 @@ function flushPendingAfterNode() {
  * @param {any} data
  */
 function onEngineMessage(data) {
-  if (data?.kind === "y-update") {
+  if (data?.kind === "y-sync") {
+    // Full state: establishes clock contiguity for the incremental stream
     Y.applyUpdate(mirrorDoc, data.update);
-  } else if (data?.kind === "y-synced") {
-    scheduleRender();
+  } else if (data?.kind === "y-update") {
+    Y.applyUpdate(mirrorDoc, data.update);
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
   }
@@ -454,7 +463,9 @@ function updateRoleBadge() {
 
 /**
  * Wires the cross-tab mirror: the leader broadcasts replica updates to
- * followers; followers apply them read-only.
+ * followers; followers apply them read-only. A follower that joins mid-stream
+ * requests full state, since incremental updates alone cannot converge a
+ * fresh replica (Yjs clock contiguity).
  */
 function setupCrossTabMirror() {
   if (!channel) return;
@@ -462,12 +473,18 @@ function setupCrossTabMirror() {
     mirrorDoc.on("update", (update) => {
       channel?.postMessage({ kind: "y-update", update });
     });
-    channel.onmessage = (event) => {
-      console.debug("Follower message (no leader handling yet):", event.data);
+    mirrorHandler = (event) => {
+      if (event.data?.kind === "y-request") {
+        channel?.postMessage({
+          kind: "y-sync",
+          update: Y.encodeStateAsUpdate(mirrorDoc),
+        });
+      }
     };
   } else {
-    channel.onmessage = (event) => {
-      if (event.data?.kind === "y-update") {
+    channel.postMessage({ kind: "y-request" });
+    mirrorHandler = (event) => {
+      if (event.data?.kind === "y-sync") {
         Y.applyUpdate(mirrorDoc, event.data.update);
       }
     };
@@ -509,6 +526,16 @@ async function init() {
   });
 
   channel = new BroadcastChannel(CHANNEL_NAME);
+  // One dispatcher on the raw channel: coordinator traffic and mirror
+  // protocol messages share it
+  channel.onmessage = (event) => {
+    const data = event.data;
+    if (data?.kind === "tab") {
+      coordinatorHandler?.({ data: data.message });
+    } else {
+      mirrorHandler?.(event);
+    }
+  };
   coordinator = createTabCoordinator({
     channel: wrapChannel(channel),
     id: newTabId(),
@@ -557,10 +584,7 @@ function wrapChannel(raw) {
     postMessage: (/** @type {any} */ message) =>
       raw.postMessage({ kind: "tab", message }),
     set onmessage(/** @type {any} */ handler) {
-      raw.onmessage = (event) => {
-        const data = event.data;
-        if (data?.kind === "tab") handler?.({ data: data.message });
-      };
+      coordinatorHandler = handler;
     },
     close: () => raw.close(),
   };
