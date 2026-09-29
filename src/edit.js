@@ -57,6 +57,15 @@ function debouncedSave() {
   graphSaver.schedule();
 }
 
+/**
+ * Stack of ancestor graphs for subgraph navigation. The current graph is not
+ * on the stack; each entry holds the graph and its file name so navigating up
+ * can restore the parent without re-reading from disk.
+ *
+ * @type {Array<{graph: any, fileName: string}>}
+ */
+let graphStack = [];
+
 /** @type {any} */
 let componentModal = null;
 /** @type {any} */
@@ -119,6 +128,7 @@ async function init() {
       event.detail.fileHandle
     );
     if (fileHandle && fileSelector) {
+      graphStack = [];
       await loadFile(fileHandle);
       fileSelector.minimize();
     }
@@ -176,6 +186,38 @@ function setupEditorEventListeners(editor) {
       }
     }
     debouncedSave();
+  });
+
+  editor.addEventListener("navigate-down-attempt", async (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    const nodeName = event.detail.node;
+    if (!currentGraph || !directoryHandle) return;
+    const node = currentGraph.nodes.find(
+      (/** @type {any} */ n) => n.id === nodeName,
+    );
+    if (!node) return;
+    const fileName = graphFileNameFor(node.component);
+    try {
+      const handle = await directoryHandle.getFileHandle(fileName);
+      // Persist any pending edits before switching graphs, so the debounced
+      // writer cannot leak this graph's state into the next file.
+      await graphSaver.flush();
+      graphStack.push({ graph: currentGraph, fileName: currentFileName });
+      await loadFile(handle);
+      console.log(`Navigated down into ${fileName}`);
+    } catch {
+      console.warn(`No graph file for component ${node.component}`);
+    }
+  });
+
+  editor.addEventListener("navigate-up-attempt", async () => {
+    if (graphStack.length === 0) return;
+    await graphSaver.flush();
+    const parent = graphStack.pop();
+    if (parent) {
+      openGraph(parent.graph, parent.fileName);
+      console.log(`Navigated up to ${parent.fileName}`);
+    }
   });
 
   editor.addEventListener("node-creation-attempt", async (e) => {
@@ -858,6 +900,7 @@ async function createNewGraph() {
     console.error("Cannot create a graph: no directory selected");
     return;
   }
+  graphStack = [];
   const raw = window.prompt("Name for the new graph:");
   if (!raw || !raw.trim()) return;
   const name = raw.trim();

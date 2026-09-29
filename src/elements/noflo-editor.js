@@ -653,6 +653,24 @@ export class FlowEditor extends HTMLElement {
 
   setupInteractions() {
     const camera = /** @type {Camera} */ (this.camera);
+    this.addEventListener("dblclick", (e) => {
+      const path = e.composedPath();
+      const clickedNode = path.find((el) => {
+        const element = /** @type {Element} */ (el);
+        return element.tagName === "NOFLO-NODE";
+      });
+      if (clickedNode) {
+        this.dispatchEvent(
+          new CustomEvent("navigate-down-attempt", {
+            detail: {
+              node: this.getNodeName(/** @type {GraphEntity} */ (clickedNode)),
+            },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    });
     this.addEventListener("pointerdown", (e) => {
       camera.trackPointer(e);
 
