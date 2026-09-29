@@ -147,6 +147,33 @@ function getComponentFromLibrary(compName) {
 }
 
 /**
+ * Generates an exported port name based on `base`, appending numeric suffixes
+ * (`in`, `in1`, `in2`...) to avoid conflicts with names already claimed.
+ *
+ * @param {string} base
+ * @param {Map<string, string>} existing
+ * @returns {string}
+ */
+function uniquePortName(base, existing) {
+  const taken = new Set(existing.values());
+  if (!taken.has(base)) return base;
+  let counter = 1;
+  while (taken.has(`${base}${counter}`)) counter++;
+  return `${base}${counter}`;
+}
+
+/**
+ * Splits a `nodeId:port` composite key. Assumes neither part contains a colon.
+ *
+ * @param {string} key
+ * @returns {[string, string]}
+ */
+function splitNodePort(key) {
+  const separator = key.indexOf(":");
+  return [key.slice(0, separator), key.slice(separator + 1)];
+}
+
+/**
  * @param {FlowEditor} editor
  */
 function setupEditorEventListeners(editor) {
@@ -218,6 +245,195 @@ function setupEditorEventListeners(editor) {
       openGraph(parent.graph, parent.fileName);
       console.log(`Navigated up to ${parent.fileName}`);
     }
+  });
+
+  editor.addEventListener("create-subgraph-attempt", async (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    if (!currentGraph || !directoryHandle) return;
+
+    // Operate on the active selection when the clicked node is part of it
+    const clickedNames = event.detail.nodes.map((/** @type {any} */ n) =>
+      editor.getNodeName(n),
+    );
+    let names = clickedNames;
+    if (
+      clickedNames.some((/** @type {string} */ n) =>
+        editor.selectionManager.nodes.has(n),
+      )
+    ) {
+      names = [...editor.selectionManager.nodes];
+    }
+    if (names.length === 0) return;
+
+    const raw = prompt("Name for the subgraph:");
+    if (!raw || !raw.trim()) return;
+    const subName = raw.trim();
+    const fileName = graphFileNameFor(subName);
+    try {
+      await directoryHandle.getFileHandle(fileName);
+      alert(`A graph named ${fileName} already exists`);
+      return;
+    } catch {
+      // Not found — good, we can create it
+    }
+
+    const nameSet = new Set(names);
+    const parent = currentGraph;
+    const nodesToMove = parent.nodes.filter((/** @type {any} */ n) =>
+      nameSet.has(n.id),
+    );
+    if (nodesToMove.length === 0) return;
+
+    // Capture edge data before mutating the parent graph
+    const internalEdges = parent.edges.filter(
+      (/** @type {any} */ edge) =>
+        nameSet.has(edge.from.node) && nameSet.has(edge.to.node),
+    );
+    const externalEdges = parent.edges.filter(
+      (/** @type {any} */ edge) =>
+        nameSet.has(edge.from.node) !== nameSet.has(edge.to.node),
+    );
+    const movedInitializers = parent.initializers.filter(
+      (/** @type {any} */ init) => nameSet.has(init.to.node),
+    );
+
+    // Externally-wired ports of the moved nodes become exported ports of the
+    // subgraph, named after the port with numeric suffixes on conflicts
+    const inportNames = new Map();
+    const outportNames = new Map();
+    for (const edge of externalEdges) {
+      if (nameSet.has(edge.to.node)) {
+        const key = `${edge.to.node}:${edge.to.port}`;
+        if (!inportNames.has(key)) {
+          inportNames.set(key, uniquePortName(edge.to.port, inportNames));
+        }
+      }
+      if (nameSet.has(edge.from.node)) {
+        const key = `${edge.from.node}:${edge.from.port}`;
+        if (!outportNames.has(key)) {
+          outportNames.set(key, uniquePortName(edge.from.port, outportNames));
+        }
+      }
+    }
+
+    const sub = new Graph(subName);
+    for (const node of nodesToMove) {
+      sub.addNode(node.id, node.component, node.metadata);
+    }
+    for (const edge of internalEdges) {
+      sub.addEdgeIndex(
+        edge.from.node,
+        edge.from.port,
+        edge.from.index ?? null,
+        edge.to.node,
+        edge.to.port,
+        edge.to.index ?? null,
+        edge.metadata,
+      );
+    }
+    for (const [key, publicName] of inportNames) {
+      const [nodeId, port] = splitNodePort(key);
+      sub.addInport(publicName, nodeId, port);
+    }
+    for (const [key, publicName] of outportNames) {
+      const [nodeId, port] = splitNodePort(key);
+      sub.addOutport(publicName, nodeId, port);
+    }
+    for (const init of movedInitializers) {
+      if (init.to.index !== undefined && init.to.index !== null) {
+        sub.addInitialIndex(
+          init.from.data,
+          init.to.node,
+          init.to.port,
+          init.to.index,
+          init.metadata,
+        );
+      } else {
+        sub.addInitial(
+          init.from.data,
+          init.to.node,
+          init.to.port,
+          init.metadata,
+        );
+      }
+    }
+
+    // Replace the moved nodes in the parent with a single subgraph node,
+    // placed at the centroid of the moved nodes
+    const centroid = {
+      x: Math.round(
+        nodesToMove.reduce(
+          (/** @type {number} */ sum, /** @type {any} */ n) =>
+            sum + (n.metadata?.x || 0),
+          0,
+        ) / nodesToMove.length,
+      ),
+      y: Math.round(
+        nodesToMove.reduce(
+          (/** @type {number} */ sum, /** @type {any} */ n) =>
+            sum + (n.metadata?.y || 0),
+          0,
+        ) / nodesToMove.length,
+      ),
+    };
+    parent.addNode(subName, subName, centroid);
+    for (const edge of externalEdges) {
+      if (nameSet.has(edge.to.node)) {
+        const publicName = inportNames.get(`${edge.to.node}:${edge.to.port}`);
+        parent.addEdge(
+          edge.from.node,
+          edge.from.port,
+          subName,
+          publicName,
+          edge.metadata,
+        );
+      } else {
+        const publicName = outportNames.get(
+          `${edge.from.node}:${edge.from.port}`,
+        );
+        parent.addEdge(
+          subName,
+          publicName,
+          edge.to.node,
+          edge.to.port,
+          edge.metadata,
+        );
+      }
+    }
+    for (const node of nodesToMove) {
+      parent.removeNode(node.id);
+    }
+
+    // Register the subgraph as a component, persist everything, and re-render
+    libraryManager.setComponent(subName, {
+      name: subName,
+      type: "subgraph",
+      icon: "folder-open",
+      inports: [...inportNames.values()].map((n) => ({
+        name: n,
+        type: "all",
+        addressable: false,
+      })),
+      outports: [...outportNames.values()].map((n) => ({
+        name: n,
+        type: "all",
+        addressable: false,
+      })),
+    });
+    try {
+      await saveGraphAsJson(directoryHandle, fileName, sub);
+      if (directoryHandle) {
+        await saveLibrary(directoryHandle);
+      }
+    } catch (err) {
+      console.error("Error saving subgraph:", err);
+      return;
+    }
+    openGraph(parent, currentFileName);
+    debouncedSave();
+    console.log(
+      `Created subgraph ${fileName} with ${nodesToMove.length} nodes`,
+    );
   });
 
   editor.addEventListener("node-creation-attempt", async (e) => {
