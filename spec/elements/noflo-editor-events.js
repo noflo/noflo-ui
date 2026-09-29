@@ -106,9 +106,9 @@ describe("FlowEditor Events", async () => {
       clientY: 100,
     };
 
-    // Mock offset and zoom to control snapped position
-    el.offset = { x: 0, y: 0 };
-    el.zoom = 1;
+    // Mock offset and zoom to control snapped position (camera owns them)
+    el.camera.offset = { x: 0, y: 0 };
+    el.camera.zoom = 1;
 
     el.completeWireDrag(mockEvent);
 

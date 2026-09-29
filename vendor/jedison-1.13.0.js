@@ -1,3 +1,4 @@
+// @ts-nocheck
 //#region node_modules/jedison/dist/esm/jedison.js
 function clone(thing) {
 	if (thing === null || typeof thing !== "object") return thing;

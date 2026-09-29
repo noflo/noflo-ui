@@ -10,6 +10,7 @@ Object.assign(globalThis, {
   HTMLElement: window.HTMLElement,
   Event: window.Event,
   CustomEvent: window.CustomEvent,
+  EventTarget: window.EventTarget,
   ShadowRoot: window.ShadowRoot,
   MutationObserver: window.MutationObserver,
   Node: window.Node,

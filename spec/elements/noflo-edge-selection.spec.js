@@ -23,30 +23,20 @@ describe("FlowEditor Edge Selection", async () => {
     assert.ok(edge, "Edge should be created");
 
     // Prepare to capture the selection-changed event
-    let selectionChangedEvent = null;
-    el.addEventListener("selection-changed", (e) => {
-      selectionChangedEvent = e;
+    const selectionEvents = [];
+    el.selectionManager.addEventListener("selection-changed", (e) => {
+      selectionEvents.push(e);
     });
 
-    // Try to use PointerEvent if available, otherwise fallback to CustomEvent
-    let event;
-    if (typeof PointerEvent !== "undefined") {
-      event = new PointerEvent("pointerdown", {
-        pointerId: 1,
-        clientX: 50,
-        clientY: 50,
-        bubbles: true,
-        composed: true,
-      });
-    } else {
-      event = new CustomEvent("pointerdown", {
-        bubbles: true,
-        composed: true,
-      });
-      event.pointerId = 1;
-      event.clientX = 50;
-      event.clientY = 50;
-    }
+    // Try to use CustomEvent to ensure composedPath is respected in the test environment
+    const event = new CustomEvent("pointerdown", {
+      bubbles: true,
+      composed: true,
+    });
+    event.pointerId = 1;
+    event.clientX = 50;
+    event.clientY = 50;
+    event.button = 0;
 
     Object.defineProperty(event, "composedPath", {
       value: () => [edge.hitPath, el],
@@ -56,10 +46,9 @@ describe("FlowEditor Edge Selection", async () => {
     });
 
     // Dispatch the event
-    edge.hitPath.dispatchEvent(event);
+    el.dispatchEvent(event);
 
     // Now check if edge is selected
-    assert.ok(el.selectedEdges.has(edge), "Edge should be selected");
     assert.ok(
       edge.visualPath.hasAttribute("selected"),
       "Visual path should have 'selected' attribute",
@@ -67,9 +56,10 @@ describe("FlowEditor Edge Selection", async () => {
 
     // Check selection-changed event
     assert.ok(
-      selectionChangedEvent,
+      selectionEvents.length > 0,
       "selection-changed event should have been emitted",
     );
+    const selectionChangedEvent = selectionEvents[0];
     assert.strictEqual(
       selectionChangedEvent.detail.edges[0],
       el.getEdgeId(edge),

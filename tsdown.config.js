@@ -23,6 +23,8 @@ export default defineConfig([
     comments: true,
     compilerOptions: {
       allowJs: true,
+      declarationMap: true,
+      isolatedDeclarations: true,
     },
     copy: [
       {
@@ -54,6 +56,9 @@ export default defineConfig([
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
+    outputOptions: {
+      banner: '// @ts-nocheck',
+    },
   },
   /*
   {

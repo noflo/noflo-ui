@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowbased Graph Editor</title>
+    <link rel="stylesheet" href="./src/main.css" />
+  </head>
+  <body data-theme="tube" data-age="abstract">
+    <noflo-file-selector></noflo-file-selector>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "fontawesome-icons": "./vendor/fontwesome-icons-7.3.0.js",
+          "jedison": "./vendor/jedison-1.13.0.js",
+          "noflo": "./vendor/noflo-1.5.2.js"
+        }
+      }
+    </script>
+    <script type="module" src="src/edit.js"></script>
+  </body>
+</html>

@@ -1,129 +1,315 @@
-NoFlo Development Environment Specification
-===========================================
+# NoFlo Development Environment Specification
 
 ## Objective
 
-NoFlo Development Environemt (NoFlo UI in short) is a node-based editor for creating, editing, and managing flow-based applications. The approach is known as "live programming", meaning that applications connected to the UI can be modified while they run.
+NoFlo Development Environment (NoFlo UI in short) is a node-based editor for creating, editing, and managing flow-based applications. The approach is known as "live programming", meaning that applications connected to the UI can be modified while they run.
 
-Applications can run in the UI itself (using the in-browser NoFlo runtime) or on a remote system accessible via FBP Protocol. Any FBP Protocol compatible Dataflow engine can be managed with this UI.
+Applications can run in the UI itself (using the in-browser NoFlo runtime) or on a remote system accessible via FBP Protocol. Any FBP Protocol compatible Dataflow engine can be managed with this UI. The architecture is engineered for extreme durability, off-grid hardware environments (like marine deployments), and low-bandwidth mesh networks.
 
 The aim is to handle the full lifecycle of flow-based software, from:
-- **Sketching**: Using "dummy" placeholder nodes
-- **Implementation**: Selecting libraries, writing code, or drawing subgraphs
-- **Verification**: Adding/running tests via fbp-spec
-- **Deployment**: Running on remote runtimes over FBP Protocol
-- **Observability**: Seeing the state of runtimes. Setting tracepoints and traveling through dataflow via Flowtraces
+
+* **Sketching**: Using "dummy" placeholder nodes
+* **Implementation**: Selecting libraries, writing code, or drawing subgraphs
+* **Verification**: Adding/running tests via `fbp-spec`
+* **Deployment**: Running on remote runtimes over FBP Protocol
+* **Observability**: Seeing the state of runtimes. Setting tracepoints and traveling through dataflow via Flowtraces
 
 Eventually we also want to be able to:
-- Manage and edit project documentation, change logs, and other Markdown documents associated with a project
-- Utilize work documents associated with the project (via rngit)
-- Version control and make releases (via rngit)
 
-The home view is a zoomable flow editor. Upon first launch, a "home graph" is created to orchestrate discovered runtimes, components, and projects. Offline runtimes appear as stopped/dead nodes, with related runtimes grouped visually.
+* Manage and edit project documentation, change logs, and other Markdown documents associated with a project
+* Utilize work documents associated with the project (via `rngit`)
+* Version control and make releases (via `rngit`)
 
-Visual interactions will enable connecting and disconnecting prots on the various nodes. You can also move a set of nodes to its own subgraph, and easily add new nodes by just dragging from a port to the empty canvas.
+The home view is a zoomable flow editor. Upon first launch, a "home graph" orchestrates discovered runtimes, components, and projects. Runtime discovery happens dynamically via mDNS (facilitated by a local companion daemon) and Reticulum Announce packets. It can also happen out-of-band (the "sneakernet" way) through URLs/QR codes containing connection details.
 
-In NoFlo UI, a project is a collection of:
-- Graph files, in the fbp-graph JSON format. Any NoFlo UI specific parts will be stored in graph/node/edge/IIP metadata. For example: x/y coordinates, chose edge visualization widgets, Flowtrace tracepoints. Similarly the latest CRDT clock may be stored here to make reconciliation easier when reconnecting to a runtime or loading a file from disk.
-- Components, in whatever programming language supported by the runtime (JavaScript and TypeScript in case of NoFlo)
-- Specs files, in the fbp-spec YAML format
-- Markdown documents (`README.md`, `CHANGELOG.md`, etc)
+**Dogfooding:** NoFlo UI is itself built with NoFlo. The application's core business logic, view orchestration, and Worker-to-UI dispatching are defined as NoFlo graphs running in the browser.
 
-By default these will live in the CRDT structure in the NoFlo UI's IndexedDB. In some technology combinations (for example when `window.showDirectoryPicker` is supported) we may also load and store latest state from disk. Otherwise the runtime may do storage to disk.
+---
 
-Live collaboration will enable inviting other users to edit the project together either over WebRTC or Reticulum. Theoretically we can also introduce AI agents as similar collaborators.
+## Trust Model & Authorization
 
-The app is meant to be a durable piece of software that can be run and maintained for years or decades to come. Because of this, reliance on the standard web stack and minimization of technology dependencies outside of that is crucial.
+Remote runtimes, live mesh collaboration, and untrusted graph execution require strict security boundaries.
 
-## Primary user interactions
+### Legacy Transports (FBP Protocol 1.0)
 
-Viewing or managing a graph:
-- See the full visual graph and be able to pan and zoom
-- Nodes are circular, with their ports along the outer edge. Inports on left, outports on right. Addressable (ArrayPorts) are shown with indexed port instances "stacked together"
-- Current state of the graph and the components is given by colors, highlighting, maybe animation (in case of severe problems)
-- New nodes can be added by either long-pressing on an empty piece of canvas or by dragging from a port to an empty piece of canvas
-  - New nodes can be either selected from list of known subgraphs or elementary (code) components, or created as a "dummy" placeholder to be filled in later
-- Multiple nodes can be selected together
-- Dragging a node (or a group) into an existing node allows moving all of them to that subgraph
-- Nodes can show custom status (from the running implementation) either by an icon (from Font Awesome selection), a 84x84px P4 .pbm image, or a 18x18px P6 .ppm image sent from the runtime
-- When a node is selected it expands to show a radial menu and to present larger port targets for easier finger interaction
-- When an edge is selected it shows its packets passing through. We will want to support different visualizations for different packet types and edge configurations (line graphs for numbers etc)
-- Nodes and edges can be removed from their radial menu
-- We will have a forms-based metadata editor for all normal graph parts (graph itself, node, edge, IIP)
-- Initial information packets can be added from the menu of an inport or by dragging from inport to empty spot on canvas and choosing IIP instead of new node
-- Initial Information packets are edited using a form that supports their JSON Schema or data type
+WebRTC and WebSockets transports are supported **solely** for connecting to legacy FBP Protocol 1.0 runtimes. The mesh security model is out of scope here; authorization relies entirely on the legacy shared secret mechanism. WebRTC signaling servers are treated as zero-trust brokers, facilitating the handshake while DTLS/SRTP handles the secure payload.
 
-Editing components or documentation:
-- Editing a component or documentation file opens a normal text/code editor
+### Mesh Transports (Dacar & FBP Protocol 2.0)
 
-Managing tests:
-- When editing tests, the current graph or component "zooms out" becoming a new graph editor with itself as the only node being shown
-- There is a list of test cases on the side to choose and add to
-- Test inputs are edited like normal Initial Information Packets
-- Test expects are added as special "assertion nodes" from the component outports
-- Test can be run against runtime and flowtrace captured as needed
+For Reticulum/LXMF connections, NoFlo UI utilizes **Dacar** (a Reticulum-based capability system). Runtimes require a valid Dacar token to accept FBP connections.
 
-Viewing a trace:
-- There are several ways we may get Flowtraces into the system
-  - Loaded by user through a file operation (where available) or maybe URL load
-  - Sent by a Runtime when a Flowtrace point is hit
-  - Recorded by UI whena Flowtrace point is hit (in case of runtime that can't do it on its own)
-  - Recorded by user during an interactive session (we should have record/pause buttons somewhere in the editor)
-  - Recorded as part of a failing test run
-- Flowtraces are shown with a read-only version of the graph editor
-- Edges can be selected to choose what data is shown
-- There is a "timeline scrubber" to move back and forth on the trace
+* **Observer:** Public access or basic tuple-hash validation (a cryptographic proof-of-delegation chaining back to the graph owner).
+* **Operator:** Explicit peer grant from owner.
+* **Developer:** Recursive delegation with strict termination rules and deterministic garbage collection of expired token trees (revoked via CRDT tombstones). Automated AI agents are issued strictly scoped, sandboxed Developer/Operator tokens, instantly revocable by human admins.
 
-Configuration:
-- Choosing the app theme
-- Managing list of WebRTC signaling servers to use
-- Managing Reticulum identity and interfaces
-- There will likely be some options to enable/disable
-  - Storing project changes to disk (when implemented)
-  - Disabling UI animations (default from `prefers-reduced-motion`)
+---
 
-## Tech stack
+## Architecture, Rendering & Data Model
 
-- Standard JavaScript and HTML targeting evergreen browsers (both desktop and mobile)
-- All code is written in standard JavaScript with TypeScript annotations via JsDoc
-- Web Components are used for user interface (no library). All of our own Web Components should be prefixed with `noflo-`
-- CRDT is used to keep state (likely Yjs, still a bit open)
-- CRDT is persisted in IndexedDB
-- We need a separation between project data (kept in CRDT), "awareness" data (user/runtime statuses and interaction), and dataflow data (events and packets flowing from a runtime)
-- NoFlo graphs are used to manage interaction between UI and state
-- Application is split between UI (main) thread and most backend logic (including the CRDT) in a Web Worker
-- Communications with FBP Runtimes is handled using any FBP Protocol transport. Initially WebRTC and WebSockets
-- Collaboration is handled over WebRTC and eventually also Reticulum
-- Apart from building vendor files when dependencies change, there is no build. Change a source file, reload the browser
+The application enforces a strict split to guarantee the UI remains highly responsive during heavy CRDT reconciliation.
+
+* **Main Thread (The Glass):** View layer with no independent write authority. Handles DOM/SVG rendering, CSS animations, and keyboard navigation.
+* **Worker Thread (The Engine):** Owns FBP Protocol execution, Yjs CRDT state, Dacar authorization, and Reticulum/LXMF mesh connectivity.
+
+### The UI Shadow State (Read Replica)
+
+The UI thread maintains a synchronized read replica of the CRDT graph. The UI queries this local shadow state for immediate UI decisions but cannot commit state unilaterally. All mutations are sent as Intents to the Worker, which validates them and echoes authoritative updates back.
+
+### Rendering Strategy (SVG)
+
+The graph canvas utilizes an **SVG-based rendering engine**. SVG is chosen over Canvas2D/WebGL for its native DOM accessibility (ARIA roles, logical tab-ordering), CSS styling compatibility, and event hit-testing capabilities.
+
+* **Coordinate System:** A dependency-free, hand-rolled `ViewportTransform` utility manages the math between screen space and the primary SVG `<g>` canvas.
+* **Performance Ceiling & Culling:** To manage SVG DOM cost, the UI enforces a Level-of-Detail (LOD) ceiling. Beyond ~250 nodes on screen, or when zoomed out past a specific threshold, the UI culls off-screen nodes (via simple bounding box intersection) and degrades rendered nodes to simplified geometric bounds (hiding ports, labels, and icons) to maintain 60fps.
+
+### Project CRDT Structure (Yjs)
+
+Every project is backed by a single `Y.Doc`.
+
+* **`metadata`:** Includes the CRDT schema version. The Worker handles automated data migrations for older UI versions.
+* **`graphs`:** A `Y.Map` of graphs. Edges use deterministic keys (incorporating ArrayPort indices) to prevent array index conflicts.
+* **`components`:** A `Y.Map` containing per-component configurations and collaborative `Y.Text` code buffers.
+* **`registry`:** Component signatures.
+* **`specs`:** A `Y.Map` of structural test suites, each containing a nested `Y.Array` of test cases.
+
+### The Source of Truth: CRDT vs. Files
+
+The Yjs CRDT in IndexedDB is the authoritative live editing structure. Standard file formats (fbp-graph JSON, fbp-spec YAML) act as export/interchange serializations. The CRDT clock stored in graph metadata is used to reconcile external file modifications made on disk via the File System Access API, merging them deterministically back into the Yjs vector.
+
+---
+
+## Web Components & Lifecycle Internals
+
+The UI uses standard Web Components, strictly prefixing tags with `noflo-`.
+
+* **The Base Class:** All components extend a custom `NofloElement` base class. This standardizes `connectedCallback` and `disconnectedCallback` lifecycle cleanup to prevent memory leaks in the durable architecture.
+* **Light DOM vs. Shadow DOM:** The application standardizes on **Light DOM** for all SVG-based elements. SVG definitions (`<defs>`, markers) and CSS custom property styling (for theme-switching) break down across Shadow boundaries. Shadow DOM is reserved strictly for encapsulated HTML forms/modals outside the graph canvas.
+* **Mechanical UI/NoFlo Bridge:** Web Components act as pure, dumb views. Parent elements pass data down via primitive DOM attributes or a standardized `state` property setter. Children communicate upwards exclusively by dispatching native `CustomEvent` bubbles (e.g., `{ action, payload }`). A top-level "View Controller" NoFlo graph (running on the main thread) attaches listeners to the DOM shell, routes those events through the UI-side NoFlo business logic, and maps the outputs back to the DOM nodes' reactive properties.
+* **View Stack & Routing:** A hand-rolled Hash Router (`window.onhashchange`) manages navigation. To prevent losing zoom/pan context, navigating away from the graph editor (e.g., into settings) does not unmount the SVG canvas; it is hidden via CSS, preserving its local state.
+
+---
+
+## Worker Internals & Resilience
+
+* **Intent/Command Dispatch:** The Worker's message dispatcher is a compiled **NoFlo graph**. When an Intent arrives via `postMessage`, it enters the network, routes through capability checks (Dacar), applies to the Yjs doc, and routes the resulting mutations back to the UI.
+* **Backpressure & Queuing:** To prevent main-thread UI lag, telemetry pushed from Worker to UI (Flowtraces) utilizes a bounded queue with a drop-oldest policy. Critical Intents (UI to Worker) are queued sequentially.
+* **Worker Supervisor:** A supervisor script on the main thread monitors a heartbeat from the Worker. If the Worker crashes or is terminated due to memory pressure, the supervisor seamlessly respins it, resubscribing to the IndexedDB CRDT doc and re-establishing mesh connections.
+
+---
+
+## Observability, Persistence & Testing
+
+### Error Handling & Diagnostics
+
+A global `window.onerror` and `unhandledrejection` boundary captures fatal errors. For field debugging in offline environments, NoFlo UI includes an in-app diagnostic log panel that persists local crash reports and mesh connectivity states, removing reliance on remote telemetry servers.
+
+### IndexedDB Persistence & Multi-Tab Safety
+
+* **Multi-Tab Coordination:** If a user opens the project in two tabs, a `BroadcastChannel` layer performs leader-election. Only the leader tab spins up the Worker and holds write-access to IndexedDB and the mesh sockets. Secondary tabs become read-only observers of the leader's state.
+* **Eviction Protection:** The app queries the `navigator.storage` API. If IndexedDB eviction is imminent due to storage limits, the UI proactively warns the user to export critical data.
+* **IndexedDB Schema Migration:** The wrapper database uses IndexedDB's native `onupgradeneeded` lifecycle to handle structural storage migrations independently of the Yjs document schema.
+
+### Testing Infrastructure
+
+* **Unit Testing:** `spec/elements/` tests standard Web Components using `node:test` and `happy-dom`. Worker logic is isolated into pure ES modules to be tested without a Worker context.
+* **Spatial Testing:** Because `happy-dom` lacks real geometry, a smaller suite of **Playwright** tests asserts spatial interactions (collision detection, hit-testing, radial menu placement) against a real browser layout engine.
+
+### Build/Vendoring Mechanics
+
+The application relies on native `import`/`export` and `<script type="importmap">`.
+
+* **The `build-vendors` Command:** Because import maps cannot resolve nested bare specifiers inside third-party `node_modules`, this command utilizes a bundler strictly to flatten and export vendored dependencies into single, ES module files inside `vendor/`. This ensures the live application runs natively without a build step.
+
+---
+
+## Decades-Long Durability Strategy
+
+* **Dependency Minimization:** Any suggestions of software libraries must be explicitly verified for EUPL-1.2 compatibility.
+* **Encapsulated Exceptions:** Yjs, `rngit`, and Dacar/Reticulum are explicitly chosen exceptions. Yjs is utilized because its underlying CRDT mathematics are formally specifiable outside the library itself. Reticulum and `rngit` provide necessary hardware independence and mesh-native versioning.
+* **Codec Avoidance:** Nodes can report status via 84x84px P4 `.pbm` or 18x18px P6 `.ppm` images to eliminate PNG/JPEG codec overhead on constrained edge microcontrollers.
+
+---
+
+## Primary User Interactions
+
+### Viewing or managing a graph
+
+* **Canvas Navigation:** See the full visual graph and be able to pan and zoom. The highly visual canvas includes semantic DOM fallbacks, ARIA roles, and logical tab-ordering to support keyboard navigation and screen readers.
+* **Node Geometry:** Nodes are circular, with ports along the outer edge. Inports on left, outports on right. Addressable (ArrayPorts) are shown stacked.
+* **Spatial Interactions (Ghost Dragging):** When dragging nodes, the UI Space Manager handles synchronous collision detection to prevent overlaps (a single-user affordance, not a strict multi-user invariant). Dragging acts as an ephemeral "ghost" state, emitting `AWARENESS` broadcasts over the mesh (throttled to ~250ms) to render live cursors for peers. Only upon mouse-up does the UI fire the authoritative `INTENT: moveNode` to commit the final coordinates to the Worker.
+* **High-Latency Mesh UX (Pending States):** Reticulum/LXMF is a store-and-forward mesh. Optimistic UI updates enter an "unconfirmed/pending" visual state (e.g., dashed outlines). Dependent logic cannot be built on pending nodes until cryptographic confirmation of the CRDT merge is received.
+* **Context Menus:** When a node is selected, it expands to show a radial menu. Options are evaluated synchronously by the local NoFlo UI graph.
+* **Edge Visualization:** Selected edges show packets passing through. A pluggable UI registry determines packet visualization.
+
+### Managing tests
+
+* When editing tests, the UI isolates the current component, becoming a new graph editor with the subject under test as the only node shown. Tests are managed structurally in the CRDT (allowing form-based test building). Test expects are added as special "assertion nodes" from the component outports.
+
+### Viewing a trace
+
+* **Streaming Architecture:** Execution telemetry is buffered by the Worker into concatenated MsgPack chunks and flushed to the UI.
+* There is a timeline scrubber. During standard live execution, the UI renders an ambient density heatmap on the grid; during paused step-debugging, the UI highlights specific packets on the wire.
+
+### Configuration
+
+* Toggling themes, local disk persistence, and animations (`prefers-reduced-motion`).
+* Managing Reticulum identity, interfaces, and Dacar tokens.
+
+---
 
 ## Commands
 
-- Lint: `npm run lint`: Check code formatting
-- Format code: `npm run format`: Fixes linting and formatting errors that can be dealt with automatically
-- Run tests: `npm test`
-- Check type definitions: `npm run types`
-- Serve: `npm run serve`: Start a local development server
-- Vendors: `npm run build-vendors`: build latest vendor modules from `node_modules` into `vendor`. Only needed when adding/updating dependencies
+* `npm run lint`: Check code formatting
+* `npm run format`: Fixes linting/formatting errors automatically
+* `npm test`: Run unit, integration, and spatial (Playwright) tests
+* `npm run serve`: Start local development server
+* `npm run build-vendors`: Flatten `node_modules` into `vendor/` (strictly EUPL-1.2 compatible).
+
+---
 
 ## Project structure
 
-- `src/`: application source code
-  - `src/elements/`: Web Components
-  - `src/components/`: NoFlo Components
-  - `src/graphs/`: NoFlo graphs
-- `spec/`: unit and integration tests
-  - `spec/elements/`: Web Components tests, using `node:test`, `node:assert`, and `happy-dom`
-  - `spec/noflo/`: fbp-spec tests for NoFlo graphs and components
-- `docs/`: documentation in Markdown format
-- `vendor/`: vendored library dependencies as ES Modules
+* `src/`: application source code
+* `src/elements/`: Web Components (Light DOM preferred, `NofloElement` base)
+* `src/graphs/`: NoFlo graphs (driving UI business logic & Worker dispatch)
+* `src/worker/`: Web Worker execution engine
 
-Technical work is planned using work documents (in Markdown) that are managed [using rngit](https://reticulum.network/manual/git.html#work-documents) in <rns://3ea5aad068a337670f5bb8073226adb4/public/noflo-ui>.
+
+* `spec/`: unit, integration, and Playwright spatial tests
+* `vendor/`: flattened dependencies as ES Modules
+
+---
 
 ## Boundaries
 
-- ✅ **Always**: add at least basic test coverage for any new functionality
-- ✅ **Always**: run tests after every change set
-- ✅ **Always**: check and fix linter and formatting issues after every change set
-- ⚠️ **Ask first**: adding dependencies
+* ✅ **Always**: add basic test coverage, check linters, verify EUPL-1.2 compatibility.
+* ⚠️ **Ask first**: adding dependencies.
+* Additional boundaries for AI Agents can be found from `AGENTS.md`.
 
-Additional boundaries for AI Agents can be found from `AGENTS.md`.
+---
+
+## Appendix A: IPC Contract Schemas
+
+These interfaces enforce a strict Application Boundary between the Main Thread (UI) and the Web Worker (Engine), defined using exact discriminated unions to guarantee type safety. The UI never commands state directly; it requests subscriptions, emits intents, or broadcasts ephemeral awareness. The Worker echoes authoritative FBP Protocol 2.0 commands back.
+
+### Part 1: UI to Worker (`Main -> Engine`)
+
+```typescript
+type UIWorkerMessage =
+  | { type: 'LIFECYCLE'; command: 'subscribe'; payload: { graphId: string } }
+  | { type: 'QUERY'; command: 'getSignature'; payload: { componentName: string } }
+  | { type: 'AWARENESS'; command: 'dragging'; payload: AwarenessDragging }
+  | { type: 'INTENT'; command: 'addNode'; payload: IntentAddNode }
+  | { type: 'INTENT'; command: 'removeNode'; payload: IntentRemoveNode }
+  | { type: 'INTENT'; command: 'moveNode'; payload: IntentMoveNode }
+  | { type: 'INTENT'; command: 'addEdge'; payload: IntentAddEdge }
+  | { type: 'INTENT'; command: 'removeEdge'; payload: IntentRemoveEdge };
+
+// Awareness: Throttled telemetry for mesh peers (does not mutate CRDT)
+interface AwarenessDragging { peerId: string; graphId: string; nodeId: string; x: number; y: number; }
+
+// Intents: Requests to mutate the CRDT
+interface IntentAddNode { graphId: string; nodeId: string; componentName: string; metadata: { x: number; y: number } }
+interface IntentRemoveNode { graphId: string; nodeId: string; }
+interface IntentMoveNode { graphId: string; nodeId: string; x: number; y: number; }
+interface IntentAddEdge {
+  graphId: string;
+  src: { node: string; port: string; index?: number };
+  tgt: { node: string; port: string; index?: number }
+}
+// Edge removal only requires the deterministic ID, not the full payload
+interface IntentRemoveEdge { graphId: string; id: string; }
+
+```
+
+### Part 2: Worker to UI (`Engine -> Main`)
+
+```typescript
+type EngineUIMessage =
+  | { protocol: 'system'; command: 'heartbeat'; payload: { status: 'ok' | 'syncing'; uptime: number } }
+  | { protocol: 'graph'; command: 'addnode'; payload: GraphAddNode }
+  | { protocol: 'graph'; command: 'removenode'; payload: GraphRemoveNode }
+  | { protocol: 'graph'; command: 'movenode'; payload: GraphMoveNode }
+  | { protocol: 'graph'; command: 'addedge'; payload: GraphEdge }
+  | { protocol: 'graph'; command: 'removeedge'; payload: { id: string } }
+  | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
+
+// Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)
+interface GraphAddNode { id: string; component: string; metadata: { x: number; y: number; [key: string]: any } }
+interface GraphRemoveNode { id: string; }
+// Closes the loop for IntentMoveNode
+interface GraphMoveNode { id: string; metadata: { x: number; y: number } }
+interface GraphEdge {
+  id: string;
+  src: { node: string; port: string; index?: number };
+  tgt: { node: string; port: string; index?: number };
+  metadata?: { route?: number; routePoints?: Array<{x: number, y: number}> };
+}
+
+// Network Protocol (Batched telemetry chunks)
+interface NetworkFlowtraceChunk {
+  graphId: string;
+  events: Array<{
+    protocol: 'network';
+    command: 'data' | 'begingroup' | 'endgroup';
+    payload: { id: string; src?: object; tgt?: object; data?: any; time: number; }
+  }>;
+}
+
+```
+
+---
+
+## Appendix B: Yjs CRDT Document Structure
+
+Each NoFlo project is backed by a single `Y.Doc`. This structure provides an explicit security/sync unit over Reticulum and IndexedDB.
+
+### Root Layout
+
+```javascript
+const doc = new Y.Doc();
+const metadata   = doc.getMap('metadata');   // Project metadata (name, id, schema version)
+const graphs     = doc.getMap('graphs');     // Y.Map<graphId, Y.Map>
+const components = doc.getMap('components'); // Y.Map<componentId, Y.Map> (metadata and Y.Text buffer)
+const registry   = doc.getMap('registry');   // Y.Map<componentName, Y.Map> (Signatures)
+const specs      = doc.getMap('specs');      // Y.Map<specId, Y.Map> (fbp-spec testing)
+
+```
+
+### Graph & Edge Determinism
+
+Edges map keys must be deterministic string hashes to prevent `Y.Array` index shifts during concurrent peer mutations. Crucially, the hash incorporates the `index` property to prevent silent collisions when multiple ArrayPort instances fan into or out of a single component.
+
+```typescript
+// Inside doc.getMap('graphs').get(graphId)
+edges: Y.Map<string, Y.Map<{
+  id: string; // The deterministic key
+  src?: { node: string, port: string, index?: number };
+  data?: any; // Static payload (Replaces `src` for Initial Information Packets)
+  tgt: { node: string, port: string, index?: number };
+  metadata: Y.Map<{ route?: number, routePoints?: Y.Array<{x: number, y: number}> }>
+}>>
+
+```
+
+* **Standard Edge ID Rule:** `"${src.node}:${src.port}[${src.index ?? 0}]->${tgt.node}:${tgt.port}[${tgt.index ?? 0}]"`
+* **IIP Edge ID Rule:** `"DATA->${tgt.node}:${tgt.port}[${tgt.index ?? 0}]"`
+
+### fbp-spec Structural Layout
+
+To prevent YAML merge conflicts and enable forms-based test editing, specs are defined structurally with an optional fixture graph sub-topology.
+
+```typescript
+// Inside doc.getMap('specs').get(specId)
+{
+  id: "test-nmea-parsing",
+  topic: "marine/NMEA2000-Reader",
+  cases: Y.Array<Y.Map<{
+    name: string,
+    fixtureGraph?: Y.Map<{ nodes: Y.Map, edges: Y.Map }>, // Optional contextual setup
+    inputs: Y.Array<Y.Map<{ port: string, payload: any }>>,
+    expects: Y.Array<Y.Map<{ port: string, payload: any, assertion?: string }>>
+  }>>
+}
+
+```

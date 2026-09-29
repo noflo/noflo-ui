@@ -7,10 +7,7 @@ import icons from "../../vendor/fontawesome-icons-7.3.0.js";
  */
 
 /**
- * @typedef {Object} PortConfig
- * @property {string} [name]
- * @property {'regular' | 'array'} [type]
- * @property {number} [size]
+ * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
  */
 
 /**
@@ -43,6 +40,100 @@ export class FlowNode extends HTMLElement {
     this._outPorts = [{ type: "regular" }];
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
+
+    /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
+    this._libraryManager = null;
+    /** @type {string | null} */
+    this._componentName = null;
+    /** @type {MutationObserver | null} */
+    this._observer = null;
+  }
+
+  /**
+   * @param {import("../library/LibraryManager.js").LibraryManager} lm
+   */
+  set libraryManager(lm) {
+    this._libraryManager = lm;
+    this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
+    if (this._observer && this._libraryManager) {
+      const manager = this._libraryManager;
+      manager.removeEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
+      manager.addEventListener("component-changed", this._onComponentChanged);
+    }
+  }
+
+  /**
+   * @returns {import("../library/LibraryManager.js").LibraryManager | null}
+   */
+  get libraryManager() {
+    return this._libraryManager;
+  }
+
+  /**
+   * @type {(e: Event) => void}
+   */
+  _onComponentChanged = (e) => {
+    const { compName } = /** @type {CustomEvent} */ (e).detail;
+    if (compName === this._componentName) {
+      this._updatePortsFromLibrary();
+      this._updateIconFromLibrary();
+    }
+  };
+
+  /**
+   * @private
+   */
+  _updatePortsFromLibrary() {
+    if (!this._libraryManager || !this._componentName) return;
+    const comp = this._libraryManager.getComponent(this._componentName);
+    if (comp) {
+      this.setPorts(comp.inports || [], comp.outports || []);
+    }
+  }
+
+  /**
+   * @private
+   */
+  _updateIconFromLibrary() {
+    if (!this._libraryManager || !this._componentName) return;
+    const comp = this._libraryManager.getComponent(this._componentName);
+    console.log(comp);
+    if (comp && comp.icon) {
+      const iconEl = this.shadowRoot?.querySelector(".node-content");
+      if (iconEl) {
+        if (
+          comp.icon.startsWith("data:image") ||
+          comp.icon.startsWith("http")
+        ) {
+          iconEl.innerHTML = `<img src="${comp.icon}" class="node-icon-img">`;
+        } else {
+          const iconName = comp.icon;
+          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
+        }
+      }
+    }
+  }
+
+  /**
+   * @type {string | null}
+   */
+  get component() {
+    return this._componentName;
+  }
+
+  /**
+   * @param {string} componentName
+   */
+  set component(componentName) {
+    this._componentName = componentName;
+    this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
+    const compEl = this.shadowRoot?.querySelector(".node-component");
+    if (compEl) compEl.textContent = componentName;
   }
 
   /**
@@ -82,25 +173,8 @@ export class FlowNode extends HTMLElement {
   /**
    * @param {Metadata} metadata
    */
-  setMetadata({ name, componentName, icon }) {
+  setMetadata({ name }) {
     if (name) this.textContent = name;
-    if (componentName) {
-      const compEl = this.shadowRoot?.querySelector(".node-component");
-      if (compEl) compEl.textContent = componentName;
-    }
-    if (icon) {
-      const iconEl = this.shadowRoot?.querySelector(".node-content");
-      if (iconEl) {
-        if (icon.startsWith("data:image") || icon.startsWith("http")) {
-          iconEl.innerHTML = `<img src="${icon}" class="node-icon-img">`;
-        } else if (icon.indexOf("fa-") === 0) {
-          const iconName = icon.slice(3);
-          iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
-        } else {
-          iconEl.textContent = icon; // Assume it's an emoji or font-awesome icon
-        }
-      }
-    }
   }
 
   /**
@@ -116,6 +190,30 @@ export class FlowNode extends HTMLElement {
       this.size = parseInt(sizeAttr, 10);
     }
     this.render();
+
+    if (this._libraryManager) {
+      this._libraryManager.addEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
+    }
+    const compEl = this.shadowRoot?.querySelector(".node-component");
+    if (compEl) compEl.textContent = this._componentName;
+
+    this._updatePortsFromLibrary();
+    this._updateIconFromLibrary();
+  }
+
+  disconnectedCallback() {
+    if (this._observer) {
+      this._observer.disconnect();
+    }
+    if (this._libraryManager) {
+      this._libraryManager.removeEventListener(
+        "component-changed",
+        this._onComponentChanged,
+      );
+    }
   }
 
   /**
@@ -331,21 +429,21 @@ export class FlowNode extends HTMLElement {
    */
   createPort(index, totalPorts, isOutport, cfg) {
     const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
-    const type = cfg.type || "regular";
-    const size = cfg.size || 1;
+    const addressable = cfg.addressable || false;
+    const size = addressable ? 3 : 1;
 
     const angleRange = Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;
     const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
     const baseAngle = centerAngle + (fraction - 0.5) * angleRange;
 
-    if (type === "regular") {
+    if (!addressable) {
       const pos = {
         x: this.radius * Math.cos(baseAngle),
         y: this.radius * Math.sin(baseAngle),
       };
       this.addPortElement(pos, isOutport, name, "regular");
-    } else if (type === "array") {
+    } else {
       // Use an angular step that makes 12px circles almost touch
       // Chord length approx 13px -> angle approx 0.32 radians
       const angularStep = 0.32;
@@ -359,7 +457,7 @@ export class FlowNode extends HTMLElement {
           x: this.radius * Math.cos(angle),
           y: this.radius * Math.sin(angle),
         };
-        this.addPortElement(instancePos, isOutport, instanceName, "array");
+        this.addPortElement(instancePos, isOutport, instanceName, "array", i);
       }
     }
   }
@@ -369,13 +467,15 @@ export class FlowNode extends HTMLElement {
    * @param {boolean} isOutport
    * @param {string} name
    * @param {string} type
+   * @param {number} [index]
    */
-  addPortElement(pos, isOutport, name, type) {
+  addPortElement(pos, isOutport, name, type, index) {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
 
     port.dataset.portName = name;
     port.dataset.portType = type;
+    if (index !== undefined) port.dataset.portIndex = index.toString();
 
     // All ports are now 12px (radius 6px)
     port.style.left = `${this.radius + pos.x - 6}px`;

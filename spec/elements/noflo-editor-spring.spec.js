@@ -14,13 +14,11 @@ customElements.define("noflo-node", FlowNode);
  * @returns {FlowNode}
  */
 function makeSelectedNode(el) {
-  const node = /** @type {FlowNode} */ (
-    document.createElement("noflo-node")
-  );
+  const node = /** @type {FlowNode} */ (document.createElement("noflo-node"));
   node.size = 80;
   node.position = { x: 0, y: 0 };
   el.nodeLayer.appendChild(node);
-  el.selectedNodes.add(node);
+  el.selectionManager.nodes.add(node.getAttribute("name") ?? "");
   return node;
 }
 
