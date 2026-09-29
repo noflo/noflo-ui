@@ -232,7 +232,8 @@ export class EdgeManager {
    */
   removeEdgesForNode(nodeEl) {
     this._removeEdges(
-      (e) => this._hostOf(e.portA) === nodeEl || this._hostOf(e.portB) === nodeEl,
+      (e) =>
+        this._hostOf(e.portA) === nodeEl || this._hostOf(e.portB) === nodeEl,
     );
   }
 

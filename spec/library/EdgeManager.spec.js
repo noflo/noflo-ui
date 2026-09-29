@@ -70,7 +70,11 @@ describe("EdgeManager", () => {
     };
     try {
       const { em } = makeManager();
-      const out = makePort({ direction: "out", name: "out", portType: "array" });
+      const out = makePort({
+        direction: "out",
+        name: "out",
+        portType: "array",
+      });
       const in1 = makePort({ direction: "in", name: "in1" });
       const in2 = makePort({ direction: "in", name: "in2" });
 

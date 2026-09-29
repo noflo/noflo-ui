@@ -1,8 +1,8 @@
-import { FlowHeatmap } from "./noflo-heatmap.js";
 import { Camera } from "../library/Camera.js";
 import { EdgeManager } from "../library/EdgeManager.js";
 import { SelectionManager } from "../library/SelectionManager.js";
 import { SpaceManager } from "../library/SpaceManager.js";
+import { FlowHeatmap } from "./noflo-heatmap.js";
 
 /** @typedef {any} FlowExportedPort */
 /**
@@ -409,9 +409,7 @@ export class FlowEditor extends HTMLElement {
       this.shadowRoot
     ).querySelector("#transform-layer");
     this.heatmap = /** @type {FlowHeatmap | null} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
-        "noflo-heatmap",
-      )
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("noflo-heatmap")
     );
     this.gridLayer = /** @type {any} */ (
       /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#grid-layer")
@@ -2040,10 +2038,7 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
-      this.edgeManager?.connectIIP(
-        /** @type {HTMLElement} */ (iip),
-        port,
-      );
+      this.edgeManager?.connectIIP(/** @type {HTMLElement} */ (iip), port);
     }
 
     return iip;

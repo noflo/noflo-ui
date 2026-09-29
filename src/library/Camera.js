@@ -206,11 +206,7 @@ export class Camera {
   wheelZoom(e) {
     const oldZoom = this.zoom;
     const delta = -e.deltaY;
-    this.zoom = clamp(
-      this.zoom * (1 + delta * ZOOM_SPEED),
-      MIN_ZOOM,
-      MAX_ZOOM,
-    );
+    this.zoom = clamp(this.zoom * (1 + delta * ZOOM_SPEED), MIN_ZOOM, MAX_ZOOM);
 
     const rect = this.getRect();
     const mouseX = e.clientX - rect.left;

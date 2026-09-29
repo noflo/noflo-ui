@@ -99,13 +99,8 @@ export class FlowHeatmap extends HTMLElement {
       .trim();
     if (!heatmapColor) return;
 
-    const {
-      GRID_SIZE,
-      SPACE_OFFSET,
-      CANVAS_SIZE,
-      DECAY,
-      MIN_HEAT,
-    } = FlowHeatmap;
+    const { GRID_SIZE, SPACE_OFFSET, CANVAS_SIZE, DECAY, MIN_HEAT } =
+      FlowHeatmap;
     // Drawing buffer is CANVAS_SIZE px for a (SPACE_OFFSET*2) px space.
     const scale = (SPACE_OFFSET * 2) / CANVAS_SIZE;
     const cellPx = 2;

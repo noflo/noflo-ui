@@ -83,7 +83,9 @@ describe("Camera", () => {
     const { camera } = setup();
 
     // delta = -deltaY = 1000 -> zoom *= (1 + 1000*0.001) = 2, around (0,0)
-    camera.wheelZoom(/** @type {any} */ ({ deltaY: -1000, clientX: 0, clientY: 0 }));
+    camera.wheelZoom(
+      /** @type {any} */ ({ deltaY: -1000, clientX: 0, clientY: 0 }),
+    );
     assert.strictEqual(camera.zoom, 2);
     assert.strictEqual(camera.offset.x, 0);
     assert.strictEqual(camera.offset.y, 0);

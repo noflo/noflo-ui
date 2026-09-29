@@ -6,6 +6,12 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import {
+  createDebouncedSaver,
+  graphFileNameFor,
+  placeMissingElements,
+  saveGraphAsJson,
+} from "./library/FileGraphStore.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { ComponentSignature } from "./library/schema.js";
 import "./elements/noflo-json-form.js";
@@ -35,8 +41,21 @@ let editor = null;
 let currentGraph = null;
 /** @type {string} */
 let currentFileName = "";
-/** @type {number | null} */
-const saveTimeout = null;
+/**
+ * Debounced writer: serializes the current graph to disk after a quiet period.
+ * Closes over the module-level state so it always writes the live graph.
+ */
+const graphSaver = createDebouncedSaver(async () => {
+  if (!directoryHandle || !currentGraph) return;
+  await saveGraphAsJson(directoryHandle, currentFileName, currentGraph);
+});
+
+/**
+ * Request a debounced save of the current graph to disk. Coalesces rapid edits.
+ */
+function debouncedSave() {
+  graphSaver.schedule();
+}
 
 /** @type {any} */
 let componentModal = null;
@@ -609,103 +628,180 @@ function updateSelectionPills(selection) {
 }
 
 /**
- * @param {any} graph
- * @param {number} padding
+ * Tears down any existing editor and creates a fresh one bound to the library
+ * manager and the global event listeners.
+ *
+ * @returns {FlowEditor | null}
  */
-function placeMissingElements(graph, padding = 50) {
-  const elements = [];
-  for (const nodeId in graph.nodes) {
-    elements.push(graph.nodes[nodeId]);
-  }
-  for (const iip of graph.initializers) {
-    elements.push(iip);
-  }
+function recreateEditor() {
+  const app = document.getElementById("app");
+  if (!app) return null;
+  app.querySelectorAll("noflo-editor").forEach((el) => {
+    el.remove();
+  });
+  const ed = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
+  app.appendChild(ed);
+  setupEditorEventListeners(ed);
+  ed.libraryManager = libraryManager;
+  editor = ed;
+  return ed;
+}
 
-  const missing = elements.filter(
-    (el) => el.metadata?.x === undefined || el.metadata?.y === undefined,
-  );
-  if (missing.length === 0) return;
-
-  let maxX = 0;
-  let maxY = 0;
-  for (const el of elements) {
-    if (el.metadata?.x !== undefined && el.metadata?.y !== undefined) {
-      maxX = Math.max(maxX, el.metadata.x);
-      maxY = Math.max(maxY, el.metadata.y);
+/**
+ * Renders exported in/out ports just outside the node bounding box.
+ *
+ * @param {any} ports `g.inports` or `g.outports`.
+ * @param {Map<string, any>} elementsMap Graph id -> editor element.
+ * @param {FlowEditor} ed Editor instance to render into.
+ * @param {number} x Column X for this side.
+ * @param {number} y Top Y of the bounding box.
+ * @param {"in" | "out"} direction Which side to render.
+ */
+function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
+  if (!ports || typeof ports !== "object") return;
+  let i = 0;
+  for (const portName in ports) {
+    const info = ports[portName];
+    const nodeEl = elementsMap.get(info.process);
+    let targetPort = null;
+    if (nodeEl) {
+      targetPort = nodeEl.shadowRoot?.querySelector(
+        `.port[data-port-name="${info.port}"]`,
+      );
     }
-  }
-
-  let currentX = padding;
-  let currentY = padding;
-  let maxRowHeight = 0;
-  const maxWidth = 1200;
-
-  const defaultWidth = 150;
-  const defaultHeight = 100;
-
-  if (maxX > 0 || maxY > 0) {
-    currentX = maxX + padding;
-  }
-
-  for (const el of missing) {
-    el.metadata = el.metadata || {};
-    el.metadata.x = currentX;
-    el.metadata.y = currentY;
-
-    if (currentX + defaultWidth > maxWidth) {
-      currentX = padding;
-      currentY += maxRowHeight + padding;
-      maxRowHeight = 0;
+    if (targetPort) {
+      ed.addExportedPort(x, y + i * 60, portName, direction, targetPort);
     }
-
-    currentX += defaultWidth + padding;
-    maxRowHeight = Math.max(maxRowHeight, defaultHeight);
+    i++;
   }
 }
 
 /**
- * @param {FileSystemDirectoryHandle} directoryHandle
- * @param {string} originalFileName
- * @param {any} graph
- * @returns {Promise<string>} The new file name
+ * Renders a graph's nodes, IIPs, exported ports, and edges into an editor.
+ *
+ * @param {any} g Loaded noflo graph.
+ * @param {FlowEditor} ed Editor instance to render into.
+ * @returns {Map<string, any>} Map of graph id -> editor element.
  */
-async function saveGraphAsJson(directoryHandle, originalFileName, graph) {
-  let newFileName;
-  if (originalFileName.endsWith(".fbp")) {
-    newFileName = originalFileName.replace(/\.fbp$/, "") + ".graph.json";
-  } else {
-    newFileName = originalFileName;
+function renderGraphIntoEditor(g, ed) {
+  const elementsMap = new Map();
+
+  for (const node of g.nodes) {
+    const x = node.metadata?.x || 0;
+    const y = node.metadata?.y || 0;
+    const comp = getComponentFromLibrary(node.component);
+    const n = ed.addNode(node.id, node.component, {
+      x,
+      y,
+      name: node.id,
+      icon: comp?.icon || "gear",
+      componentName: node.component,
+    });
+    elementsMap.set(node.id, n);
   }
-  const json = JSON.stringify(graph.toJSON(), null, 2);
 
-  const fileHandle = await directoryHandle.getFileHandle(newFileName, {
-    create: true,
-  });
-  const writable = await fileHandle.createWritable();
-  await writable.write(json);
-  await writable.close();
+  for (const iip of g.initializers) {
+    const x = iip.metadata?.x || 0;
+    const y = iip.metadata?.y || 0;
+    let port = null;
+    if (iip.to?.node && iip.to?.port) {
+      const toNode = elementsMap.get(iip.to.node);
+      if (toNode) {
+        port = toNode.shadowRoot?.querySelector(
+          `.port[data-port-name="${iip.to.port}"]`,
+        );
+      }
+    }
+    const iipId = iip.metadata?.id || iip.from?.data || `iip_${Math.random()}`;
+    const newIIP = ed.addIIP(
+      x,
+      y,
+      /** @type {any} */ (port),
+      iip.from?.data || "Value",
+    );
+    newIIP.id = iipId;
+    elementsMap.set(iipId, newIIP);
+  }
 
-  return newFileName;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let hasNodes = false;
+  for (const node of g.nodes) {
+    const x = node.metadata?.x || 0;
+    const y = node.metadata?.y || 0;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+    hasNodes = true;
+  }
+
+  if (hasNodes) {
+    renderExportedPorts(g.inports, elementsMap, ed, minX - 150, minY, "in");
+    renderExportedPorts(g.outports, elementsMap, ed, maxX + 150, minY, "out");
+  }
+
+  for (const conn of g.edges) {
+    const fromEl = elementsMap.get(conn.from.node);
+    const toEl = elementsMap.get(conn.to.node);
+    if (fromEl && toEl) {
+      ed.connectNodes(
+        fromEl,
+        conn.from.port,
+        toEl,
+        conn.to.port,
+        conn.metadata?.route,
+      );
+    }
+  }
+
+  return elementsMap;
 }
 
-async function loadFile(/** @type {any} */ fileHandle) {
+/**
+ * Opens a graph in a freshly recreated editor and records it as current.
+ *
+ * @param {any} g Graph to display.
+ * @param {string} fileName On-disk file name for the graph.
+ */
+function openGraph(g, fileName) {
+  currentGraph = g;
+  currentFileName = fileName;
+  const ed = recreateEditor();
+  if (!ed) return;
+  renderGraphIntoEditor(g, ed);
+  ed.fitEntitiesToViewport();
+}
+
+/**
+ * Loads a graph file (`.json` or `.fbp`) from the chosen directory.
+ *
+ * `.fbp` files are placed, saved as `.graph.json`, and the original removed
+ * (in that order) before being opened.
+ *
+ * @param {any} fileHandle File to load.
+ */
+async function loadFile(fileHandle) {
   const isFbp = fileHandle.name.endsWith(".fbp");
   try {
     const file = await fileHandle.getFile();
     const text = await file.text();
     let g;
+    let fileName = fileHandle.name;
 
     if (isFbp) {
       g = await graph.loadFBP(text);
       placeMissingElements(g);
-      await saveGraphAsJson(
+      fileName = await saveGraphAsJson(
         /** @type {any} */ (directoryHandle),
         fileHandle.name,
         g,
       );
       await fileHandle.remove();
       console.log(
-        `Converted ${fileHandle.name} to .graph.json and removed original.`,
+        `Converted ${fileHandle.name} to ${fileName} and removed original.`,
       );
     } else {
       const json = JSON.parse(text);
@@ -714,176 +810,38 @@ async function loadFile(/** @type {any} */ fileHandle) {
     }
 
     console.log("Loaded file:", fileHandle.name, g);
-
-    currentGraph = g;
-    currentFileName = fileHandle.name;
-
-    // Recreate editor to clear it
-    const app = document.getElementById("app");
-    if (app) {
-      app.querySelectorAll("noflo-editor").forEach((el) => {
-        el.remove();
-      });
-      editor = /** @type {FlowEditor} */ (
-        document.createElement("noflo-editor")
-      );
-      app.appendChild(editor);
-
-      // Re-setup event listeners for editor
-      setupEditorEventListeners(editor);
-      editor.libraryManager = libraryManager;
-    }
-
-    const elementsMap = new Map();
-    if (editor) {
-      for (const nodeId in g.nodes) {
-        const node = g.nodes[nodeId];
-        const x = node.metadata?.x || 0;
-        const y = node.metadata?.y || 0;
-
-        const comp = getComponentFromLibrary(node.component);
-        const inPorts = comp ? comp.inports : undefined;
-        const outPorts = comp ? comp.outports : undefined;
-
-        const n = editor.addNode(node.id, node.component, {
-          x,
-          y,
-          name: node.id,
-          icon: comp?.icon || "gear",
-          componentName: node.component,
-        });
-        elementsMap.set(node.id, n);
-      }
-
-      for (const iip of g.initializers) {
-        const x = iip.metadata?.x || 0;
-        const y = iip.metadata?.y || 0;
-
-        let port = null;
-        if (iip.to && iip.to.node && iip.to.port) {
-          const toNode = elementsMap.get(iip.to.node);
-          if (toNode) {
-            port = toNode.shadowRoot?.querySelector(
-              `.port[data-port-name="${iip.to.port}"]`,
-            );
-          }
-        }
-
-        const iipId =
-          iip.metadata?.id || iip.from?.data || "iip_" + Math.random();
-        const newIIP = editor.addIIP(
-          x,
-          y,
-          /** @type {any} */ (port),
-          iip.from?.data || "Value",
-        );
-        newIIP.id = iipId;
-        elementsMap.set(iipId, newIIP);
-      }
-
-      // Load exported ports as pseudo-nodes
-      let minX = Infinity,
-        minY = Infinity,
-        maxX = -Infinity,
-        maxY = -Infinity;
-      let hasNodes = false;
-      for (const nodeId in g.nodes) {
-        const node = g.nodes[nodeId];
-        const x = node.metadata?.x || 0;
-        const y = node.metadata?.y || 0;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-        hasNodes = true;
-      }
-
-      const inports = g.inports;
-      const outports = g.outports;
-
-      if (hasNodes) {
-        if (inports && typeof inports === "object") {
-          let i = 0;
-          for (const portName in inports) {
-            const inportInfo = inports[portName];
-            const nodeEl = elementsMap.get(inportInfo.process);
-            let targetPort = null;
-            if (nodeEl) {
-              targetPort = nodeEl.shadowRoot?.querySelector(
-                `.port[data-port-name="${inportInfo.port}"]`,
-              );
-            }
-
-            if (targetPort) {
-              editor.addExportedPort(
-                minX - 150,
-                minY + i * 60,
-                portName,
-                "in",
-                targetPort,
-              );
-            }
-            i++;
-          }
-        }
-        if (outports && typeof outports === "object") {
-          let i = 0;
-          for (const portName in outports) {
-            const outportInfo = outports[portName];
-            const nodeEl = elementsMap.get(outportInfo.process);
-            let targetPort = null;
-            if (nodeEl) {
-              targetPort = nodeEl.shadowRoot?.querySelector(
-                `.port[data-port-name="${outportInfo.port}"]`,
-              );
-            }
-
-            if (targetPort) {
-              editor.addExportedPort(
-                maxX + 150,
-                minY + i * 60,
-                portName,
-                "out",
-                targetPort,
-              );
-            }
-            i++;
-          }
-        }
-      } else {
-        if (inports && typeof inports === "object") {
-          let i = 0;
-          for (const portName in inports) {
-            i++;
-          }
-        }
-        if (outports && typeof outports === "object") {
-          let i = 0;
-          for (const portName in outports) {
-            i++;
-          }
-        }
-      }
-
-      for (const conn of g.edges) {
-        const fromEl = elementsMap.get(conn.from.node);
-        const toEl = elementsMap.get(conn.to.node);
-
-        if (fromEl && toEl) {
-          editor.connectNodes(
-            fromEl,
-            conn.from.port,
-            toEl,
-            conn.to.port,
-            conn.metadata?.route,
-          );
-        }
-      }
-
-      editor.fitEntitiesToViewport();
-    }
+    openGraph(g, fileName);
   } catch (err) {
     console.error("Error loading file:", err);
+  }
+}
+
+/**
+ * Prompts for a name and creates a new empty graph, persisted to disk.
+ */
+async function createNewGraph() {
+  if (!directoryHandle) {
+    console.error("Cannot create a graph: no directory selected");
+    return;
+  }
+  const raw = window.prompt("Name for the new graph:");
+  if (!raw || !raw.trim()) return;
+  const name = raw.trim();
+  const g = new Graph(name);
+  const fileName = graphFileNameFor(name);
+  try {
+    await saveGraphAsJson(/** @type {any} */ (directoryHandle), fileName, g);
+    console.log(`Created new graph: ${fileName}`);
+  } catch (err) {
+    console.error("Error creating new graph:", err);
+    return;
+  }
+  openGraph(g, fileName);
+  if (fileSelector) {
+    fileSelector.minimize();
+    if (typeof fileSelector.listFiles === "function") {
+      fileSelector.listFiles();
+    }
   }
 }
 

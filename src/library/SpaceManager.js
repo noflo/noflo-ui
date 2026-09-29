@@ -241,5 +241,4 @@ export class SpaceManager {
     }
     return true;
   }
-
 }
