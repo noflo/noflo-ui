@@ -23,7 +23,10 @@ import { FlowHeatmap } from "./noflo-heatmap.js";
  * @typedef {HTMLElement & {
  *   position: Position,
  *   size: number,
+ *   component?: string | null,
+ *   libraryManager?: import("../library/LibraryManager.js").LibraryManager | null,
  *   setPorts: (inPorts: PortConfig[], outPorts: PortConfig[]) => void,
+ *   setMetadata: (metadata: Record<string, any>) => void,
  *   shadowRoot: ShadowRoot | null
  * }} NoFloNode
  */
@@ -77,6 +80,8 @@ export class FlowEditor extends HTMLElement {
     this.camera = null;
     /** @type {SelectionManager} */
     this.selectionManager = new SelectionManager();
+    /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
+    this.libraryManager = null;
     /** @type {EdgeManager | null} */
     this.edgeManager = null;
     /** @type {boolean} */
@@ -150,16 +155,19 @@ export class FlowEditor extends HTMLElement {
     this.render();
     this.setupInteractions();
 
-    const pills = this.shadowRoot.querySelector("noflo-selection-pills");
+    const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+    const pills = shadowRoot.querySelector("noflo-selection-pills");
     if (pills) {
-      pills.selectionManager = this.selectionManager;
+      /** @type {any} */ (pills).selectionManager = this.selectionManager;
       pills.addEventListener("clear-selection", (e) => {
-        this.selectionManager.clearType(e.detail.type);
+        this.selectionManager.clearType(
+          /** @type {CustomEvent} */ (e).detail.type,
+        );
       });
     }
 
     this.selectionManager.addEventListener("selection-changed", (e) => {
-      this._applySelection(e.detail);
+      this._applySelection(/** @type {CustomEvent} */ (e).detail);
     });
 
     this.radialMenu = /** @type {NoFloRadialMenu} */ (
@@ -219,7 +227,7 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer?.querySelectorAll("noflo-node, noflo-exported-port") || []
     );
     allNodes.forEach((node) => {
-      const name = node.getAttribute("name");
+      const name = node.getAttribute("name") ?? "";
       if (nodes.includes(name)) {
         node.setAttribute("selected", "");
       } else {
@@ -232,7 +240,7 @@ export class FlowEditor extends HTMLElement {
       this.nodeLayer?.querySelectorAll("noflo-iip") || []
     );
     allIips.forEach((iip) => {
-      const name = iip.getAttribute("name");
+      const name = iip.getAttribute("name") ?? "";
       if (iips.includes(name)) {
         iip.setAttribute("selected", "");
       } else {
@@ -629,7 +637,7 @@ export class FlowEditor extends HTMLElement {
           e.stopPropagation();
 
           const port = /** @type {HTMLElement} */ (clickedPort);
-          const host = port.getRootNode().host;
+          const host = /** @type {any} */ (port.getRootNode()).host;
           if (host && host.tagName === "NOFLO-EXPORTED-PORT") {
             this.handleNodeSelection(e, /** @type {any} */ (host), isMultiple);
             return;
@@ -750,8 +758,10 @@ export class FlowEditor extends HTMLElement {
               for (const other of otherNodes) {
                 const o = /** @type {NoFloNode | NoFloIIP} */ (other);
                 if (
-                  this.selectionManager.nodes.has(o.getAttribute("name")) ||
-                  this.selectionManager.iips.has(o.getAttribute("name"))
+                  this.selectionManager.nodes.has(
+                    o.getAttribute("name") ?? "",
+                  ) ||
+                  this.selectionManager.iips.has(o.getAttribute("name") ?? "")
                 ) {
                   continue;
                 }
@@ -844,7 +854,7 @@ export class FlowEditor extends HTMLElement {
         }
 
         if (this.isDraggingNode) {
-          /** @type {Array<{name: string, position: Position}>} */
+          /** @type {Array<{name: string, position: Position, type: string, direction: any, portName: string | null}>} */
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
@@ -933,7 +943,7 @@ export class FlowEditor extends HTMLElement {
           this.selectionManager.nodes.size > 0 ||
           this.selectionManager.iips.size > 0
         ) {
-          const nodesToRemove = [];
+          const nodesToRemove = /** @type {HTMLElement[]} */ ([]);
           const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
             this.nodeLayer?.querySelectorAll(
               "noflo-node, noflo-iip, noflo-exported-port",
@@ -941,8 +951,8 @@ export class FlowEditor extends HTMLElement {
           );
           allNodes.forEach((n) => {
             if (
-              this.selectionManager.nodes.has(n.getAttribute("name")) ||
-              this.selectionManager.iips.has(n.getAttribute("name"))
+              this.selectionManager.nodes.has(n.getAttribute("name") ?? "") ||
+              this.selectionManager.iips.has(n.getAttribute("name") ?? "")
             ) {
               nodesToRemove.push(n);
             }
@@ -1269,10 +1279,16 @@ export class FlowEditor extends HTMLElement {
         items.push({
           text: "Add Node",
           onClick: () => {
-            this.addNode(
-              `Node_${Date.now().toString().slice(-4)}`,
-              graphPos.x - 40,
-              graphPos.y - 40,
+            this.dispatchEvent(
+              new CustomEvent("node-creation-attempt", {
+                detail: {
+                  x: graphPos.x - 40,
+                  y: graphPos.y - 40,
+                  startPort: null,
+                },
+                bubbles: true,
+                composed: true,
+              }),
             );
           },
           icon: "plus",
@@ -1365,7 +1381,8 @@ export class FlowEditor extends HTMLElement {
         "noflo-node, noflo-iip, noflo-exported-port",
       ) || []
     );
-    allNodes.forEach((el) => {
+    allNodes.forEach((element) => {
+      const el = /** @type {GraphEntity} */ (element);
       const name = el.getAttribute("name");
       if (
         this.selectionManager.nodes.has(name) ||
@@ -1613,7 +1630,9 @@ export class FlowEditor extends HTMLElement {
     });
 
     exportedPorts.forEach((port) => {
-      const portEl = port.shadowRoot?.querySelector(".port");
+      const portEl = /** @type {HTMLElement | null | undefined} */ (
+        port.shadowRoot?.querySelector(".port")
+      );
       if (!portEl) return;
       const rect = portEl.getBoundingClientRect();
       const portCenterX = rect.left + rect.width / 2;
@@ -2013,8 +2032,8 @@ export class FlowEditor extends HTMLElement {
 
     if (!x && !y && port && port.classList.contains("port-in")) {
       const node =
-        port.getRootNode().host?.tagName === "NOFLO-NODE"
-          ? port.getRootNode().host
+        /** @type {any} */ (port.getRootNode()).host?.tagName === "NOFLO-NODE"
+          ? /** @type {any} */ (port.getRootNode()).host
           : port.closest("noflo-node");
       if (node) {
         const nodePos = node.position;
@@ -2050,7 +2069,7 @@ export class FlowEditor extends HTMLElement {
   exportPort(port) {
     let node = port.closest("noflo-node") || port.closest("noflo-iip");
     if (!node && port.getRootNode() instanceof ShadowRoot) {
-      const host = port.getRootNode().host;
+      const host = /** @type {any} */ (port.getRootNode()).host;
       if (host.tagName === "NOFLO-NODE" || host.tagName === "NOFLO-IIP") {
         node = host;
       }
@@ -2150,7 +2169,7 @@ export class FlowEditor extends HTMLElement {
     );
 
     const name = ep.getAttribute("name");
-    const direction = ep.direction;
+    const direction = /** @type {any} */ (ep).direction;
 
     this.dispatchEvent(
       new CustomEvent("port-removed", {
@@ -2200,6 +2219,7 @@ export class FlowEditor extends HTMLElement {
    */
   _getNearestPort(clientX, clientY) {
     const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+    /** @type {HTMLElement | null} */
     let nearestPort = null;
     let minDist = Infinity;
     const threshold = 20;
@@ -2219,7 +2239,7 @@ export class FlowEditor extends HTMLElement {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < minDist && dist < threshold) {
           minDist = dist;
-          nearestPort = port;
+          nearestPort = /** @type {HTMLElement} */ (port);
         }
       }
     }
@@ -2235,7 +2255,7 @@ export class FlowEditor extends HTMLElement {
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < minDist && dist < threshold) {
         minDist = dist;
-        nearestPort = port;
+        nearestPort = /** @type {HTMLElement} */ (port);
       }
     }
 

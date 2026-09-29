@@ -169,7 +169,7 @@ export class LibraryManager extends EventTarget {
   }
 
   /**
-   * @param {Object} json
+   * @param {{ modules: Array<{ name?: string, components: Array<any> }> }} json
    * @returns {LibraryManager}
    */
   static fromJSON(json) {

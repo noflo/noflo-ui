@@ -31,7 +31,7 @@ customElements.define("noflo-file-selector", FileSelector);
  */
 
 /** @type {LibraryManager} */
-let libraryManager = null;
+const libraryManager = new LibraryManager();
 
 /** @type {FileSystemDirectoryHandle | null} */
 let directoryHandle = null;
@@ -72,8 +72,6 @@ async function init() {
     console.error("App element not found");
     return;
   }
-
-  libraryManager = new LibraryManager();
 
   // Create editor
   editor = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
@@ -173,7 +171,9 @@ function setupEditorEventListeners(editor) {
       componentData = await askForNewComponentDetails(componentName);
       if (!componentData) return;
       libraryManager.setComponent(componentName, componentData);
-      await saveLibrary(directoryHandle);
+      if (directoryHandle) {
+        await saveLibrary(directoryHandle);
+      }
     }
 
     const nodeId = `node_${Date.now()}`;
@@ -189,22 +189,24 @@ function setupEditorEventListeners(editor) {
       currentGraph.addNode(nodeId, componentName, { x, y });
     }
 
-    const port = /** @type {HTMLElement} */ (startPort);
-    const isOut = port.classList.contains("port-out");
-    const targetPort = newNode.shadowRoot?.querySelector(
-      `.port${isOut ? "-in" : "-out"}`,
-    );
-    if (targetPort) {
-      requestAnimationFrame(() => {
-        if (isOut) {
-          editor.addEdge(port, /** @type {HTMLElement} */ (targetPort));
-        } else {
-          editor.addEdge(/** @type {HTMLElement} */ (targetPort), port);
-        }
+    if (startPort) {
+      const port = /** @type {HTMLElement} */ (startPort);
+      const isOut = port.classList.contains("port-out");
+      const targetPort = newNode.shadowRoot?.querySelector(
+        `.port${isOut ? "-in" : "-out"}`,
+      );
+      if (targetPort) {
         requestAnimationFrame(() => {
-          editor.updateEdges();
+          if (isOut) {
+            editor.addEdge(port, /** @type {HTMLElement} */ (targetPort));
+          } else {
+            editor.addEdge(/** @type {HTMLElement} */ (targetPort), port);
+          }
+          requestAnimationFrame(() => {
+            editor.updateEdges();
+          });
         });
-      });
+      }
     }
     debouncedSave();
   });
@@ -471,7 +473,9 @@ function setupEditorEventListeners(editor) {
         }
       });
 
-      await saveLibrary(directoryHandle);
+      if (directoryHandle) {
+        await saveLibrary(directoryHandle);
+      }
       debouncedSave();
     }
   });
@@ -484,6 +488,10 @@ async function askForComponent() {
   return name ? name.trim() : "New Node";
 }
 
+/**
+ * @param {string} componentName
+ * @returns {Promise<ComponentDefinition | undefined>}
+ */
 async function askForNewComponentDetails(componentName) {
   componentModal.open(`Define New Component: ${componentName}`);
   componentForm.schema = ComponentSignature;
@@ -511,7 +519,7 @@ async function askForNewComponentDetails(componentName) {
   if (submitted) {
     return /** @type {ComponentDefinition} */ (componentForm.data);
   }
-  return null;
+  return undefined;
 }
 
 /**

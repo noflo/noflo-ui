@@ -26,9 +26,32 @@ export class FileSelector extends HTMLElement {
     this.setupEventListeners();
   }
 
+  /**
+   * Shadow root accessor that satisfies the type checker; the element always
+   * attaches its shadow root in the constructor.
+   *
+   * @returns {ShadowRoot}
+   */
+  get uiRoot() {
+    return /** @type {ShadowRoot} */ (this.shadowRoot);
+  }
+
+  /**
+   * Looks up a template element inside the shadow root. Throws if the element
+   * is missing, since the template is static and all IDs are known.
+   *
+   * @param {string} id
+   * @returns {HTMLElement}
+   */
+  uiElement(id) {
+    const el = this.uiElement(id);
+    if (!el) throw new Error(`FileSelector is missing element #${id}`);
+    return el;
+  }
+
   render() {
     const folderIcon = icons()["folder-open"];
-    this.shadowRoot.innerHTML = `
+    /** @type {ShadowRoot} */ (this.shadowRoot).innerHTML = `
       <style>
         :host {
           display: block;
@@ -152,15 +175,15 @@ export class FileSelector extends HTMLElement {
   }
 
   setupEventListeners() {
-    this.shadowRoot
-      .getElementById("start-btn")
-      .addEventListener("click", this.handleOpenDirectory);
-    this.shadowRoot
-      .getElementById("new-graph-btn")
-      .addEventListener("click", this.handleNewGraph);
-    this.shadowRoot
-      .getElementById("minimize-btn")
-      .addEventListener("click", this.handleExpand);
+    this.uiElement("start-btn").addEventListener(
+      "click",
+      this.handleOpenDirectory,
+    );
+    this.uiElement("new-graph-btn").addEventListener(
+      "click",
+      this.handleNewGraph,
+    );
+    this.uiElement("minimize-btn").addEventListener("click", this.handleExpand);
   }
 
   handleNewGraph = () => {
@@ -173,23 +196,24 @@ export class FileSelector extends HTMLElement {
   };
 
   handleExpand = () => {
-    this.shadowRoot.getElementById("minimize-btn").style.display = "none";
+    this.uiElement("minimize-btn").style.display = "none";
     if (this.directoryHandle) {
-      this.shadowRoot.getElementById("controls").style.display = "block";
+      this.uiElement("controls").style.display = "block";
       this.listFiles();
     } else {
-      this.shadowRoot.getElementById("start-overlay").style.display = "flex";
+      this.uiElement("start-overlay").style.display = "flex";
     }
   };
 
   minimize() {
-    this.shadowRoot.getElementById("start-overlay").style.display = "none";
-    this.shadowRoot.getElementById("controls").style.display = "none";
-    this.shadowRoot.getElementById("minimize-btn").style.display = "flex";
+    this.uiElement("start-overlay").style.display = "none";
+    this.uiElement("controls").style.display = "none";
+    this.uiElement("minimize-btn").style.display = "flex";
   }
 
   handleOpenDirectory = async () => {
-    if (!window.showDirectoryPicker) {
+    const picker = /** @type {any} */ (window).showDirectoryPicker;
+    if (!picker) {
       alert(
         "The File System Access API is not supported in this browser. Please use a Chromium-based browser.",
       );
@@ -197,11 +221,11 @@ export class FileSelector extends HTMLElement {
     }
 
     try {
-      this.directoryHandle = await window.showDirectoryPicker();
-      console.log("Directory selected:", this.directoryHandle.name);
+      this.directoryHandle = await picker();
+      console.log("Directory selected:", this.directoryHandle?.name);
 
-      this.shadowRoot.getElementById("start-overlay").style.display = "none";
-      this.shadowRoot.getElementById("controls").style.display = "block";
+      this.uiElement("start-overlay").style.display = "none";
+      this.uiElement("controls").style.display = "block";
 
       this.dispatchEvent(
         new CustomEvent("directory-selected", {
@@ -220,7 +244,8 @@ export class FileSelector extends HTMLElement {
   async listFiles() {
     if (!this.directoryHandle) return;
 
-    const fileList = this.shadowRoot.getElementById("file-list");
+    const fileList = this.uiElement("file-list");
+    if (!fileList) return;
     fileList.innerHTML = "";
     for await (const entry of this.directoryHandle.values()) {
       if (

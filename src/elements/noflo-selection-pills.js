@@ -7,6 +7,7 @@ export class SelectionPills extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    /** @type {import("../library/SelectionManager.js").SelectionManager | null} */
     this._selectionManager = null;
   }
 
@@ -14,6 +15,9 @@ export class SelectionPills extends HTMLElement {
     this.render();
   }
 
+  /**
+   * @param {import("../library/SelectionManager.js").SelectionManager} val
+   */
   set selectionManager(val) {
     this._selectionManager = val;
     this._selectionManager.addEventListener("selection-changed", () => {
@@ -21,6 +25,9 @@ export class SelectionPills extends HTMLElement {
     });
   }
 
+  /**
+   * @returns {import("../library/SelectionManager.js").SelectionManager | null}
+   */
   get selectionManager() {
     return this._selectionManager;
   }

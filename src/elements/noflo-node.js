@@ -7,9 +7,7 @@ import icons from "../../vendor/fontawesome-icons-7.3.0.js";
  */
 
 /**
- * @typedef {Object} PortConfig
- * @property {string} [name]
- * @property {'regular' | 'array'} [type]
+ * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
  */
 
 /**
@@ -43,7 +41,7 @@ export class FlowNode extends HTMLElement {
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
 
-    /** @type {import("../../library/LibraryManager.js").LibraryManager | null} */
+    /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
     this._libraryManager = null;
     /** @type {string | null} */
     this._componentName = null;
@@ -52,33 +50,34 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
-   * @param {import("../../library/LibraryManager.js").LibraryManager} lm
+   * @param {import("../library/LibraryManager.js").LibraryManager} lm
    */
   set libraryManager(lm) {
     this._libraryManager = lm;
     this._updatePortsFromLibrary();
     this._updateIconFromLibrary();
-    if (this._observer) {
-      this._libraryManager.removeEventListener(
+    if (this._observer && this._libraryManager) {
+      const manager = this._libraryManager;
+      manager.removeEventListener(
         "component-changed",
         this._onComponentChanged,
       );
-      this._libraryManager.addEventListener(
-        "component-changed",
-        this._onComponentChanged,
-      );
+      manager.addEventListener("component-changed", this._onComponentChanged);
     }
   }
 
+  /**
+   * @returns {import("../library/LibraryManager.js").LibraryManager | null}
+   */
   get libraryManager() {
     return this._libraryManager;
   }
 
   /**
-   * @type {import("../../library/LibraryManager.js").LibraryManager}
+   * @type {(e: Event) => void}
    */
   _onComponentChanged = (e) => {
-    const { compName } = e.detail;
+    const { compName } = /** @type {CustomEvent} */ (e).detail;
     if (compName === this._componentName) {
       this._updatePortsFromLibrary();
       this._updateIconFromLibrary();
@@ -112,7 +111,7 @@ export class FlowNode extends HTMLElement {
         ) {
           iconEl.innerHTML = `<img src="${comp.icon}" class="node-icon-img">`;
         } else {
-          const iconName = comp.icon.substr();
+          const iconName = comp.icon;
           iconEl.innerHTML = `<i class="node-icon-fa">${/** @type {any} */ (icons())[iconName]}</i>`;
         }
       }
