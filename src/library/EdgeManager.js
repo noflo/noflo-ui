@@ -108,22 +108,28 @@ export class EdgeManager {
   }
 
   /**
-   * Connect two nodes by port name, looking the port elements up in each
-   * node's shadow root.
+   * Connect two nodes by port name (and optional arrayport index), looking the
+   * port elements up in each node's shadow root.
    * @param {HTMLElement} nodeA
    * @param {string} portAName
    * @param {HTMLElement} nodeB
    * @param {string} portBName
    * @param {string} [routeId]
+   * @param {number | undefined} [portAIndex]
+   * @param {number | undefined} [portBIndex]
    * @returns {Edge | undefined}
    */
-  connectNodes(nodeA, portAName, nodeB, portBName, routeId) {
-    const portA = nodeA.shadowRoot?.querySelector(
-      `.port[data-port-name="${portAName}"]`,
-    );
-    const portB = nodeB.shadowRoot?.querySelector(
-      `.port[data-port-name="${portBName}"]`,
-    );
+  connectNodes(
+    nodeA,
+    portAName,
+    nodeB,
+    portBName,
+    routeId,
+    portAIndex,
+    portBIndex,
+  ) {
+    const portA = this._findPort(nodeA, portAName, portAIndex);
+    const portB = this._findPort(nodeB, portBName, portBIndex);
 
     if (portA && portB) {
       return this.addEdge(
@@ -134,6 +140,58 @@ export class EdgeManager {
     }
     console.warn(`Could not connect ${portAName} to ${portBName}`);
     return;
+  }
+
+  /**
+   * Finds a port element inside a node's shadow root by name, optionally
+   * narrowed to a specific arrayport index.
+   *
+   * @param {HTMLElement} node
+   * @param {string} portName
+   * @param {number | undefined} [index]
+   * @returns {Element | null | undefined}
+   */
+  _findPort(node, portName, index) {
+    let selector = `.port[data-port-name="${portName}"]`;
+    if (index !== undefined) {
+      selector += `[data-port-index="${index}"]`;
+    }
+    return node.shadowRoot?.querySelector(selector);
+  }
+
+  /**
+   * Structured graph identity of an edge, derived from its endpoint port
+   * elements: node names, port names, and arrayport indexes. Indexes are
+   * `undefined` for regular ports. This is what the app layer uses to mirror
+   * editor-side edge changes onto the `fbp-graph` Graph object.
+   *
+   * @param {Edge} edge
+   * @returns {{ fromNode: string, fromPort: string, fromIndex: number | undefined, toNode: string, toPort: string, toIndex: number | undefined }}
+   */
+  getEdgeDescriptor(edge) {
+    const { portA, portB } = edge;
+    const nodeA = this._hostOf(portA);
+    const nodeB = this._hostOf(portB);
+
+    return {
+      fromNode: nodeA ? nodeA.getAttribute("name") || "unknown" : "unknown",
+      fromPort: portA.dataset.portName || "",
+      fromIndex: this._indexOf(portA),
+      toNode: nodeB ? nodeB.getAttribute("name") || "unknown" : "unknown",
+      toPort: portB.dataset.portName || "",
+      toIndex: this._indexOf(portB),
+    };
+  }
+
+  /**
+   * @param {HTMLElement} port
+   * @returns {number | undefined}
+   */
+  _indexOf(port) {
+    const raw = port.dataset.portIndex;
+    if (raw === undefined) return undefined;
+    const index = Number.parseInt(raw, 10);
+    return Number.isNaN(index) ? undefined : index;
   }
 
   /**

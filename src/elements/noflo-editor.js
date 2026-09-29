@@ -1940,6 +1940,14 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * @param {import("../library/EdgeManager.js").Edge} edge
+   * @returns {{ fromNode: string, fromPort: string, fromIndex: number | undefined, toNode: string, toPort: string, toIndex: number | undefined } | undefined}
+   */
+  getEdgeDescriptor(edge) {
+    return this.edgeManager?.getEdgeDescriptor(edge);
+  }
+
+  /**
    * @param {HTMLElement} port
    */
   getPortPosition(port) {
@@ -1984,15 +1992,27 @@ export class FlowEditor extends HTMLElement {
    * @param {NoFloNode | NoFloIIP} nodeB
    * @param {string} portBName
    * @param {string} [routeId]
+   * @param {number | undefined} [portAIndex]
+   * @param {number | undefined} [portBIndex]
    * @returns {import("../library/EdgeManager.js").Edge | undefined}
    */
-  connectNodes(nodeA, portAName, nodeB, portBName, routeId) {
+  connectNodes(
+    nodeA,
+    portAName,
+    nodeB,
+    portBName,
+    routeId,
+    portAIndex,
+    portBIndex,
+  ) {
     return this.edgeManager?.connectNodes(
       /** @type {HTMLElement} */ (nodeA),
       portAName,
       /** @type {HTMLElement} */ (nodeB),
       portBName,
       routeId,
+      portAIndex,
+      portBIndex,
     );
   }
 

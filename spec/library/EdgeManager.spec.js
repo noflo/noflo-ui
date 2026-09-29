@@ -8,13 +8,14 @@ import { EdgeManager } from "../../src/library/EdgeManager.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 /**
- * @param {{direction: 'in' | 'out', name: string, portType?: string}} opts
+ * @param {{direction: 'in' | 'out', name: string, portType?: string, index?: number}} opts
  */
-function makePort({ direction, name, portType = "regular" }) {
+function makePort({ direction, name, portType = "regular", index }) {
   const p = document.createElement("div");
   p.classList.add("port", direction === "out" ? "port-out" : "port-in");
   p.dataset.portName = name;
   p.dataset.portType = portType;
+  if (index !== undefined) p.dataset.portIndex = index.toString();
   return p;
 }
 
@@ -196,5 +197,87 @@ describe("EdgeManager", () => {
 
     // only the wire whose iip===ep is removed; the other (iip!=ep, port!=ep) stays
     assert.strictEqual(em.iipWires.length, 1);
+  });
+
+  describe("arrayport indexes", () => {
+    /**
+     * @param {string} name
+     * @param {HTMLElement[]} ports
+     */
+    function makeNode(name, ports) {
+      const node = document.createElement("div");
+      node.setAttribute("name", name);
+      const shadow = node.attachShadow({ mode: "open" });
+      for (const port of ports) shadow.appendChild(port);
+      return node;
+    }
+
+    it("connectNodes matches the indexed port element", () => {
+      const { em } = makeManager();
+      const in0 = makePort({
+        direction: "in",
+        name: "in",
+        portType: "array",
+        index: 0,
+      });
+      const in1 = makePort({
+        direction: "in",
+        name: "in",
+        portType: "array",
+        index: 1,
+      });
+      const nodeB = makeNode("B", [in0, in1]);
+      const out = makePort({ direction: "out", name: "out" });
+      const nodeA = makeNode("A", [out]);
+
+      const edge = em.connectNodes(
+        nodeA,
+        "out",
+        nodeB,
+        "in",
+        undefined,
+        undefined,
+        1,
+      );
+
+      assert.ok(edge, "edge should be created");
+      assert.strictEqual(edge.portB, in1, "should connect to the index 1 port");
+    });
+
+    it("connectNodes still matches regular ports without an index", () => {
+      const { em } = makeManager();
+      const out = makePort({ direction: "out", name: "out" });
+      const inPort = makePort({ direction: "in", name: "in" });
+      const nodeA = makeNode("A", [out]);
+      const nodeB = makeNode("B", [inPort]);
+
+      const edge = em.connectNodes(nodeA, "out", nodeB, "in");
+
+      assert.ok(edge);
+      assert.strictEqual(edge.portB, inPort);
+    });
+
+    it("getEdgeDescriptor exposes node names, ports, and indexes", () => {
+      const { em } = makeManager();
+      const out1 = makePort({
+        direction: "out",
+        name: "out",
+        portType: "array",
+        index: 1,
+      });
+      const inPort = makePort({ direction: "in", name: "in" });
+      const nodeA = makeNode("A", [out1]);
+      const nodeB = makeNode("B", [inPort]);
+
+      const edge = em.addEdge(out1, inPort);
+      const descriptor = em.getEdgeDescriptor(/** @type {any} */ (edge));
+
+      assert.strictEqual(descriptor.fromNode, "A");
+      assert.strictEqual(descriptor.fromPort, "out");
+      assert.strictEqual(descriptor.fromIndex, 1);
+      assert.strictEqual(descriptor.toNode, "B");
+      assert.strictEqual(descriptor.toPort, "in");
+      assert.strictEqual(descriptor.toIndex, undefined);
+    });
   });
 });

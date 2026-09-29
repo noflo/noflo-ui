@@ -149,12 +149,30 @@ function setupEditorEventListeners(editor) {
       const nodeA = portA.closest("noflo-node") || portA.closest("noflo-iip");
       const nodeB = portB.closest("noflo-node") || portB.closest("noflo-iip");
       if (nodeA && nodeB) {
-        currentGraph.addEdge(
-          nodeA.getAttribute("name"),
-          portA.dataset.portName,
-          nodeB.getAttribute("name"),
-          portB.dataset.portName,
+        const descriptor = editor.getEdgeDescriptor(
+          /** @type {import("./library/EdgeManager.js").Edge} */ (edge),
         );
+        if (
+          descriptor &&
+          (descriptor.fromIndex !== undefined ||
+            descriptor.toIndex !== undefined)
+        ) {
+          currentGraph.addEdgeIndex(
+            nodeA.getAttribute("name"),
+            portA.dataset.portName,
+            descriptor.fromIndex ?? null,
+            nodeB.getAttribute("name"),
+            portB.dataset.portName,
+            descriptor.toIndex ?? null,
+          );
+        } else {
+          currentGraph.addEdge(
+            nodeA.getAttribute("name"),
+            portA.dataset.portName,
+            nodeB.getAttribute("name"),
+            portB.dataset.portName,
+          );
+        }
       }
     }
     debouncedSave();
@@ -280,12 +298,18 @@ function setupEditorEventListeners(editor) {
     const event = /** @type {CustomEvent} */ (e);
     const edge = event.detail.edge;
     if (currentGraph) {
-      currentGraph.removeEdge(
-        edge.from.node,
-        edge.from.port,
-        edge.to.node,
-        edge.to.port,
-      );
+      const descriptor = editor.getEdgeDescriptor(edge);
+      if (descriptor) {
+        // Note: fbp-graph's removeEdge matches node+port pairs without arrayport
+        // indexes, so with multiple indexed edges between the same port pair it
+        // removes the first match. Upstream API limitation.
+        currentGraph.removeEdge(
+          descriptor.fromNode,
+          descriptor.fromPort,
+          descriptor.toNode,
+          descriptor.toPort,
+        );
+      }
     }
     // Remove from editor
     editor.removeEdge(edge);
@@ -761,6 +785,8 @@ function renderGraphIntoEditor(g, ed) {
         toEl,
         conn.to.port,
         conn.metadata?.route,
+        conn.from.index,
+        conn.to.index,
       );
     }
   }
