@@ -436,6 +436,252 @@ function setupEditorEventListeners(editor) {
     );
   });
 
+  editor.addEventListener("move-nodes-up-attempt", async (e) => {
+    const event = /** @type {CustomEvent} */ (e);
+    if (!currentGraph || !directoryHandle) return;
+    if (graphStack.length === 0) {
+      console.warn("Already at the top-level graph; cannot move nodes up");
+      return;
+    }
+
+    // Operate on the active selection when the clicked node is part of it
+    const clickedNames = event.detail.nodes.map((/** @type {any} */ n) =>
+      editor.getNodeName(n),
+    );
+    let names = clickedNames;
+    if (
+      clickedNames.some((/** @type {string} */ n) =>
+        editor.selectionManager.nodes.has(n),
+      )
+    ) {
+      names = [...editor.selectionManager.nodes];
+    }
+    if (names.length === 0) return;
+
+    const nameSet = new Set(names);
+    const sub = currentGraph;
+    const parentEntry = graphStack[graphStack.length - 1];
+    const parent = parentEntry.graph;
+    const subComponentName = currentFileName.replace(/\.graph\.json$/, "");
+
+    const nodesToMove = sub.nodes.filter((/** @type {any} */ n) =>
+      nameSet.has(n.id),
+    );
+    if (nodesToMove.length === 0) return;
+
+    // Capture before mutating
+    const internalEdges = sub.edges.filter(
+      (/** @type {any} */ edge) =>
+        nameSet.has(edge.from.node) && nameSet.has(edge.to.node),
+    );
+    const externalEdges = sub.edges.filter(
+      (/** @type {any} */ edge) =>
+        nameSet.has(edge.from.node) !== nameSet.has(edge.to.node),
+    );
+    const movedInitializers = sub.initializers.filter(
+      (/** @type {any} */ init) => nameSet.has(init.to.node),
+    );
+
+    // Parent-graph edges routed through the subgraph node's exported ports
+    // whose sub-side endpoint is a moved node can connect directly again
+    const subGraphNodeIds = parent.nodes
+      .filter((/** @type {any} */ n) => n.component === subComponentName)
+      .map((/** @type {any} */ n) => n.id);
+    const routedParentEdges = parent.edges.filter(
+      (/** @type {any} */ edge) =>
+        (subGraphNodeIds.includes(edge.from.node) &&
+          nameSet.has(sub.inports[edge.from.port]?.process)) ||
+        (subGraphNodeIds.includes(edge.to.node) &&
+          nameSet.has(sub.outports[edge.to.port]?.process)),
+    );
+
+    // New exports for connections between staying and moving nodes
+    const newInports = new Map();
+    const newOutports = new Map();
+    for (const edge of externalEdges) {
+      if (nameSet.has(edge.to.node)) {
+        // Staying node feeds a moving node: subgraph exports an outport from
+        // the staying node, the parent wires it into the moved node
+        const key = `${edge.from.node}:${edge.from.port}`;
+        if (!newOutports.has(key)) {
+          newOutports.set(key, uniquePortName(edge.from.port, newOutports));
+        }
+      }
+      if (nameSet.has(edge.from.node)) {
+        // Moving node feeds a staying node: subgraph exports an inport into
+        // the staying node, the parent wires the moved node into it
+        const key = `${edge.to.node}:${edge.to.port}`;
+        if (!newInports.has(key)) {
+          newInports.set(key, uniquePortName(edge.to.port, newInports));
+        }
+      }
+    }
+
+    // Move nodes and their internal connections and IIPs into the parent
+    for (const node of nodesToMove) {
+      parent.addNode(node.id, node.component, node.metadata);
+    }
+    for (const edge of internalEdges) {
+      parent.addEdgeIndex(
+        edge.from.node,
+        edge.from.port,
+        edge.from.index ?? null,
+        edge.to.node,
+        edge.to.port,
+        edge.to.index ?? null,
+        edge.metadata,
+      );
+    }
+    for (const init of movedInitializers) {
+      if (init.to.index !== undefined && init.to.index !== null) {
+        parent.addInitialIndex(
+          init.from.data,
+          init.to.node,
+          init.to.port,
+          init.to.index,
+          init.metadata,
+        );
+      } else {
+        parent.addInitial(
+          init.from.data,
+          init.to.node,
+          init.to.port,
+          init.metadata,
+        );
+      }
+    }
+
+    // Replace parent edges routed through the subgraph node with direct ones
+    for (const edge of routedParentEdges) {
+      if (subGraphNodeIds.includes(edge.from.node)) {
+        const info = sub.inports[edge.from.port];
+        parent.removeEdge(
+          edge.from.node,
+          edge.from.port,
+          edge.to.node,
+          edge.to.port,
+        );
+        parent.addEdge(
+          info.process,
+          info.port,
+          edge.to.node,
+          edge.to.port,
+          edge.metadata,
+        );
+      } else {
+        const info = sub.outports[edge.to.port];
+        parent.removeEdge(
+          edge.from.node,
+          edge.from.port,
+          edge.to.node,
+          edge.to.port,
+        );
+        parent.addEdge(
+          edge.from.node,
+          edge.from.port,
+          info.process,
+          info.port,
+          edge.metadata,
+        );
+      }
+    }
+
+    // Wire the staying side of external edges through new subgraph exports
+    for (const [key, publicName] of newOutports) {
+      const [nodeId, port] = splitNodePort(key);
+      sub.addOutport(publicName, nodeId, port);
+      const edge = externalEdges.find(
+        (/** @type {any} */ e) =>
+          nameSet.has(e.to.node) && `${e.from.node}:${e.from.port}` === key,
+      );
+      if (edge) {
+        parent.addEdge(
+          subComponentName,
+          publicName,
+          edge.to.node,
+          edge.to.port,
+          edge.metadata,
+        );
+      }
+    }
+    for (const [key, publicName] of newInports) {
+      const [nodeId, port] = splitNodePort(key);
+      sub.addInport(publicName, nodeId, port);
+      const edge = externalEdges.find(
+        (/** @type {any} */ e) =>
+          nameSet.has(e.from.node) && `${e.to.node}:${e.to.port}` === key,
+      );
+      if (edge) {
+        parent.addEdge(
+          edge.from.node,
+          edge.from.port,
+          subComponentName,
+          publicName,
+          edge.metadata,
+        );
+      }
+    }
+
+    // Remove the moved nodes (and their now-gone edges/exports) from the sub
+    for (const node of nodesToMove) {
+      sub.removeNode(node.id);
+    }
+
+    // Keep the subgraph component signature in sync with the new exports
+    libraryManager.setComponent(subComponentName, {
+      name: subComponentName,
+      type: "subgraph",
+      icon: "folder-open",
+      inports: Object.entries(sub.inports).map(([n, info]) => ({
+        name: n,
+        type: "all",
+        addressable: false,
+        process: /** @type {any} */ (info).process,
+      })),
+      outports: Object.entries(sub.outports).map(([n, info]) => ({
+        name: n,
+        type: "all",
+        addressable: false,
+        process: /** @type {any} */ (info).process,
+      })),
+    });
+
+    try {
+      // The parent is not the current graph, so the debounced writer will not
+      // pick it up; save it explicitly
+      await saveGraphAsJson(directoryHandle, parentEntry.fileName, parent);
+      if (directoryHandle) {
+        await saveLibrary(directoryHandle);
+      }
+    } catch (err) {
+      console.error("Error saving parent graph:", err);
+      return;
+    }
+
+    if (sub.nodes.length === 0) {
+      // The subgraph is empty now: delete its file and component, navigate up
+      try {
+        const handle = await directoryHandle.getFileHandle(currentFileName);
+        await /** @type {any} */ (handle).remove();
+      } catch (err) {
+        console.error("Error deleting empty subgraph file:", err);
+      }
+      libraryManager.removeComponent(subComponentName);
+      await saveLibrary(directoryHandle);
+      graphStack.pop();
+      openGraph(parent, parentEntry.fileName);
+      console.log(
+        `Moved all nodes up; deleted empty subgraph ${currentFileName}`,
+      );
+    } else {
+      openGraph(sub, currentFileName);
+      debouncedSave();
+      console.log(
+        `Moved ${nodesToMove.length} nodes up to ${parentEntry.fileName}`,
+      );
+    }
+  });
+
   editor.addEventListener("node-creation-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
