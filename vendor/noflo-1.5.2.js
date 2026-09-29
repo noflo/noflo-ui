@@ -6,6 +6,14 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esmMin = (fn, res, err) => () => {
+	if (err) throw err[0];
+	try {
+		return fn && (res = fn(fn = 0)), res;
+	} catch (e) {
+		throw err = [e], e;
+	}
+};
 var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod), cb = null), mod.exports);
 var __exportAll = (all, no_symbols) => {
 	let target = {};
@@ -30,6 +38,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 	value: mod,
 	enumerable: true
 }) : target, mod));
+var __toCommonJS = (mod) => __hasOwnProp.call(mod, "module.exports") ? mod["module.exports"] : __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, { get: (a, b) => (typeof require !== "undefined" ? require : a)[b] }) : x)(function(x) {
 	if (typeof require !== "undefined") return require.apply(this, arguments);
 	throw Error("Calling `require` for \"" + x + "\" in an environment that doesn't expose the `require` function. See https://rolldown.rs/in-depth/bundling-cjs#require-external-modules for more details.");
@@ -270,6 +279,33 @@ var require_eventemitter3 = /* @__PURE__ */ __commonJSMin(((exports, module) => 
 	if ("undefined" !== typeof module) module.exports = EventEmitter;
 }));
 //#endregion
+//#region node_modules/eventemitter3/index.mjs
+var import_eventemitter3;
+var init_eventemitter3 = __esmMin((() => {
+	import_eventemitter3 = /* @__PURE__ */ __toESM(require_eventemitter3(), 1);
+}));
+//#endregion
+//#region src/shims/event-emitter.js
+var event_emitter_exports = /* @__PURE__ */ __exportAll({
+	EventEmitter: () => EventEmitter,
+	default: () => EventEmitter
+});
+var EventEmitter;
+var init_event_emitter = __esmMin((() => {
+	init_eventemitter3();
+	EventEmitter = class extends import_eventemitter3.default {
+		/**
+		* Node API no-op: eventemitter3 has no listener cap to raise.
+		*
+		* @param {number} _n
+		* @returns {this}
+		*/
+		setMaxListeners(_n) {
+			return this;
+		}
+	};
+}));
+//#endregion
 //#region node_modules/clone/clone.js
 var require_clone = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var clone = (function() {
@@ -451,7 +487,7 @@ var require_clone = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#region node_modules/fbp-graph/lib/JournalStore.js
 var require_JournalStore = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
-	const events_1 = require_eventemitter3();
+	const events_1 = (init_event_emitter(), __toCommonJS(event_emitter_exports));
 	/**
 	* General interface for journal storage
 	*/
@@ -506,7 +542,7 @@ var require_MemoryJournalStore = /* @__PURE__ */ __commonJSMin(((exports) => {
 var require_Journal = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.MemoryJournalStore = exports.JournalStore = exports.Journal = void 0;
-	const events_1 = require_eventemitter3();
+	const events_1 = (init_event_emitter(), __toCommonJS(event_emitter_exports));
 	const clone = require_clone();
 	exports.JournalStore = require_JournalStore().default;
 	const MemoryJournalStore_1 = require_MemoryJournalStore();
@@ -5215,7 +5251,7 @@ var require_lib$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 var require_Graph = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.mergeResolveTheirs = exports.equivalent = exports.loadFile = exports.loadFBP = exports.loadJSON = exports.createGraph = exports.Graph = void 0;
-	const events_1 = require_eventemitter3();
+	const events_1 = (init_event_emitter(), __toCommonJS(event_emitter_exports));
 	const clone = require_clone();
 	const fs_1 = __require("fs");
 	const Platform_1 = require_Platform();
@@ -6015,11 +6051,9 @@ var require_lib = /* @__PURE__ */ __commonJSMin(((exports) => {
 	});
 }));
 //#endregion
-//#region node_modules/eventemitter3/index.mjs
-var import_lib = require_lib();
-var import_eventemitter3 = /* @__PURE__ */ __toESM(require_eventemitter3(), 1);
-//#endregion
 //#region node_modules/noflo/src/lib/IP.js
+init_event_emitter();
+var import_lib = require_lib();
 /**
 * @typedef {Object<string, boolean|string>} IPOptions
 */
@@ -6157,7 +6191,7 @@ function ipToLegacy(ip) {
 * @property {string} [id]
 * @property {import("fbp-graph/lib/Types").GraphNodeMetadata} [metadata]
 */
-var InternalSocket = class extends import_eventemitter3.default {
+var InternalSocket = class extends EventEmitter {
 	/**
 	* @private
 	*/
@@ -6851,6 +6885,7 @@ function debounce(func, wait, immediate) {
 }
 //#endregion
 //#region node_modules/noflo/src/lib/BaseNetwork.js
+init_event_emitter();
 /**
 * @typedef NetworkProcess
 * @property {string} id
@@ -6913,7 +6948,7 @@ function connectPort(socket, process, port, index, inbound) {
 /**
 * @typedef { NetworkOwnOptions & import("./ComponentLoader").ComponentLoaderOptions} NetworkOptions
 */
-var BaseNetwork = class extends import_eventemitter3.default {
+var BaseNetwork = class extends EventEmitter {
 	/**
 	* All NoFlo networks are instantiated with a graph. Upon instantiation
 	* they will load all the needed components, instantiate them, and
@@ -8434,6 +8469,7 @@ var require_browser = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/noflo/src/lib/BasePort.js
 var import_browser = /* @__PURE__ */ __toESM(require_browser());
+init_event_emitter();
 const validTypes = [
 	"all",
 	"string",
@@ -8482,7 +8518,7 @@ function handleOptions(options) {
 		scoped
 	});
 }
-var BasePort = class extends import_eventemitter3.default {
+var BasePort = class extends EventEmitter {
 	/**
 	* @param {BaseOptions} options
 	*/
@@ -9011,10 +9047,11 @@ var OutPort = class extends BasePort {
 };
 //#endregion
 //#region node_modules/noflo/src/lib/Ports.js
+init_event_emitter();
 /**
 * @typedef {import("./BasePort").BaseOptions} PortOptions
 */
-var Ports = class extends import_eventemitter3.default {
+var Ports = class extends EventEmitter {
 	/**
 	* @param {Object<string, import("./BasePort").default|PortOptions>} ports
 	* @param {typeof import("./BasePort").default} model
@@ -9561,6 +9598,7 @@ var ProcessOutput = class {
 };
 //#endregion
 //#region node_modules/noflo/src/lib/Component.js
+init_event_emitter();
 const debugComponent = (0, import_browser.default)("noflo:component");
 const debugBrackets = (0, import_browser.default)("noflo:component:brackets");
 const debugSend = (0, import_browser.default)("noflo:component:send");
@@ -9591,7 +9629,7 @@ const debugSend = (0, import_browser.default)("noflo:component:send");
 * @property {Object<string,Object>} out
 */
 /** @typedef {{ __resolved?: boolean, __bracketClosingAfter?: BracketContext[], [key: string]: any }} ProcessResult */
-var Component = class extends import_eventemitter3.default {
+var Component = class extends EventEmitter {
 	/**
 	* @param {ComponentOptions} [options]
 	*/

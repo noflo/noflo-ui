@@ -15,9 +15,11 @@ export default defineConfig([
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
+    // Inline all dependencies: the Glass import map only maps this one file
+    noExternal: [/./],
     alias: {
-      'node:events': 'eventemitter3',
-      'events': 'eventemitter3',
+      'node:events': resolve(here, './src/shims/event-emitter.js'),
+      'events': resolve(here, './src/shims/event-emitter.js'),
     },
     banner: {
       js: `var require = () => ({}); var fs = {};`,
@@ -74,8 +76,8 @@ export default defineConfig([
     // everything must be inlined into the single bundle.
     noExternal: [/./],
     alias: {
-      'node:events': 'eventemitter3',
-      'events': 'eventemitter3',
+      'node:events': resolve(here, './src/shims/event-emitter.js'),
+      'events': resolve(here, './src/shims/event-emitter.js'),
       'fs': resolve(here, './src/worker/empty-fs.js'),
       'node:fs': resolve(here, './src/worker/empty-fs.js'),
     },
