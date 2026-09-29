@@ -3,7 +3,7 @@
  * routes valid messages onward for application against the CRDT.
  */
 
-import noflo from "noflo";
+import noflo from "../../../vendor/noflo.js";
 
 /** NoFlo's shipped types omit the default export; the runtime API is stable. */
 const NoFlo = /** @type {any} */ (noflo);

@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import noflo from "noflo";
-
 import { createEngineState } from "../../src/crdt/EngineCore.js";
 import {
   createProjectDoc,
@@ -13,6 +10,7 @@ import {
   createDispatcherGraph,
   registerEngineComponents,
 } from "../../src/graphs/engine-dispatch.js";
+import noflo from "../../vendor/noflo.js";
 
 /**
  * Starts a dispatcher network wired to an in-memory echo sink.

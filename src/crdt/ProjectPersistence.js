@@ -9,7 +9,7 @@
  * Glass module graph.
  */
 
-import { IndexeddbPersistence } from "y-indexeddb";
+import { IndexeddbPersistence } from "../../vendor/y-indexeddb.js";
 
 import { ensureProjectSchema } from "./ProjectDoc.js";
 

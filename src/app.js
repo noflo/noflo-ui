@@ -85,7 +85,7 @@ function sendIntent(message) {
  * @returns {import("./worker/EngineSupervisor.js").WorkerLike}
  */
 function spawnEngineWorker() {
-  const worker = new Worker("vendor/engine.js", { type: "module" });
+  const worker = new Worker("src/worker/engine.js", { type: "module" });
   return {
     postMessage: (/** @type {any} */ message) => worker.postMessage(message),
     onMessage: (/** @type {(event: { data: any }) => void} */ handler) => {

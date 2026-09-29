@@ -1,5 +1,5 @@
 // @ts-nocheck
-import Jedison from "../../vendor/jedison-1.13.0.js";
+import Jedison from "../../vendor/jedison.js";
 import { FontAwesomeEditor } from "../library/editors/fontawesome.js";
 
 class NofloJsonForm extends HTMLElement {

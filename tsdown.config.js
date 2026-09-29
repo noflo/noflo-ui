@@ -1,36 +1,43 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'tsdown';
-import { esmExternalRequirePlugin } from 'rolldown/plugins';
 import info from './package-lock.json' with { type: 'json' };
 
 const { packages } = info;
 const here = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Vendor builds, per SPEC "Build/Vendoring Mechanics": the bundler is used
+ * strictly to flatten and export external dependencies into single ES module
+ * files inside `vendor/`, so the live application itself runs natively via
+ * import maps and native ESM — no build step for first-party code.
+ *
+ * Vendor file names are unversioned so first-party imports and import maps
+ * stay stable across dependency bumps; `git diff` on rebuilds shows what a
+ * bump changed.
+ */
 export default defineConfig([
   {
     entry: {
-      [`noflo-${packages['node_modules/noflo'].version}`]: 'node_modules/noflo/src/lib/NoFlo.js',
+      'noflo': 'node_modules/noflo/src/lib/NoFlo.js',
     },
     platform: 'browser',
     format: 'esm',
     outDir: 'vendor',
-    // Inline all dependencies: the Glass import map only maps this one file
+    // Inline all dependencies: import maps map only this one file
     noExternal: [/./],
     alias: {
       'node:events': resolve(here, './src/shims/event-emitter.js'),
       'events': resolve(here, './src/shims/event-emitter.js'),
+      // fbp-graph requires fs for journal file persistence, never used in the
+      // browser
+      'fs': resolve(here, './src/worker/empty-fs.js'),
+      'node:fs': resolve(here, './src/worker/empty-fs.js'),
     },
     banner: {
       js: `var require = () => ({}); var fs = {};`,
     },
-    dts: true,
     comments: true,
-    compilerOptions: {
-      allowJs: true,
-      declarationMap: true,
-      isolatedDeclarations: true,
-    },
     copy: [
       {
         from: 'node_modules/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.otf.woff2',
@@ -41,7 +48,33 @@ export default defineConfig([
   },
   {
     entry: {
-      [`fontawesome-icons-${packages['node_modules/@fortawesome/fontawesome-free'].version}`]: './utils/icon-map.js',
+      'yjs': 'node_modules/yjs/dist/yjs.mjs',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+    // Inline lib0 and other transitive dependencies
+    noExternal: [/./],
+  },
+  {
+    entry: {
+      'y-indexeddb': 'node_modules/y-indexeddb/src/y-indexeddb.js',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+    // yjs stays external: all contexts must share ONE Yjs instance, served as
+    // the sibling vendor/yjs.js bundle
+    external: ['yjs'],
+    outputOptions: {
+      paths: {
+        yjs: './yjs.js',
+      },
+    },
+  },
+  {
+    entry: {
+      'fontawesome-icons': './utils/icon-map.js',
     },
     copy: [
       {
@@ -56,7 +89,7 @@ export default defineConfig([
   },
   {
     entry: {
-      [`jedison-${packages['node_modules/jedison'].version}`]: './node_modules/jedison/dist/esm/jedison.js',
+      'jedison': './node_modules/jedison/dist/esm/jedison.js',
     },
     platform: 'browser',
     format: 'esm',
@@ -65,53 +98,4 @@ export default defineConfig([
       banner: '// @ts-nocheck',
     },
   },
-  {
-    entry: {
-      'engine': './src/worker/engine.js',
-    },
-    platform: 'browser',
-    format: 'esm',
-    outDir: 'vendor',
-    // The worker cannot resolve bare imports (no import maps there), so
-    // everything must be inlined into the single bundle.
-    noExternal: [/./],
-    alias: {
-      'node:events': resolve(here, './src/shims/event-emitter.js'),
-      'events': resolve(here, './src/shims/event-emitter.js'),
-      'fs': resolve(here, './src/worker/empty-fs.js'),
-      'node:fs': resolve(here, './src/worker/empty-fs.js'),
-    },
-    banner: {
-      js: `var require = () => ({}); var fs = {};`,
-    },
-  },
-  {
-    entry: {
-      'yjs': 'node_modules/yjs/dist/yjs.mjs',
-    },
-    platform: 'browser',
-    format: 'esm',
-    outDir: 'vendor',
-  },
-  /*
-  {
-    name: 'noflo-core',
-    entry: 'node_modules/noflo-core/components/*.js',
-    platform: 'browser',
-    format: 'esm',
-    outDir: 'vendor',
-    comments: false,
-    banner: {
-      js: `var require = () => ({}); var util = {};`,
-    },
-    plugins: [
-      esmExternalRequirePlugin({
-        external: ['noflo'],
-      }),
-    ],
-    alias: {
-      'events': 'eventemitter3',
-    },
-  },
-  */
 ])

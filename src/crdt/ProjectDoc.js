@@ -8,7 +8,7 @@
  * these primitives.
  */
 
-import * as Y from "yjs";
+import * as Y from "../../vendor/yjs.js";
 
 /** Current CRDT schema version of the project document. */
 export const PROJECT_SCHEMA_VERSION = 1;

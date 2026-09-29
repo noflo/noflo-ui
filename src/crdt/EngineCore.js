@@ -7,7 +7,7 @@
  * directly.
  */
 
-import * as Y from "yjs";
+import * as Y from "../../vendor/yjs.js";
 
 import {
   addEdge,

@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import * as Y from "yjs";
-
 import {
   addEdge,
   addIIP,
@@ -37,6 +35,7 @@ import {
   setComponentSignature,
   updateComponentMetadata,
 } from "../../src/crdt/ProjectDoc.js";
+import * as Y from "../../vendor/yjs.js";
 
 describe("edge id rules", () => {
   it("builds deterministic keys including arrayport indexes", () => {

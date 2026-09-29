@@ -39,10 +39,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 	enumerable: true
 }) : target, mod));
 var __toCommonJS = (mod) => __hasOwnProp.call(mod, "module.exports") ? mod["module.exports"] : __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, { get: (a, b) => (typeof require !== "undefined" ? require : a)[b] }) : x)(function(x) {
-	if (typeof require !== "undefined") return require.apply(this, arguments);
-	throw Error("Calling `require` for \"" + x + "\" in an environment that doesn't expose the `require` function. See https://rolldown.rs/in-depth/bundling-cjs#require-external-modules for more details.");
-});
 //#endregion
 //#region node_modules/eventemitter3/index.js
 var require_eventemitter3 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
@@ -538,6 +534,13 @@ var require_MemoryJournalStore = /* @__PURE__ */ __commonJSMin(((exports) => {
 	exports.default = MemoryJournalStore;
 }));
 //#endregion
+//#region src/worker/empty-fs.js
+var empty_fs_exports = /* @__PURE__ */ __exportAll({ default: () => empty_fs_default });
+var empty_fs_default;
+var init_empty_fs = __esmMin((() => {
+	empty_fs_default = {};
+}));
+//#endregion
 //#region node_modules/fbp-graph/lib/Journal.js
 var require_Journal = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -587,7 +590,7 @@ var require_Journal = /* @__PURE__ */ __commonJSMin(((exports) => {
 		});
 		return setMeta;
 	}
-	var Journal$1 = class extends events_1.EventEmitter {
+	var Journal = class extends events_1.EventEmitter {
 		constructor(graph, metadata, store) {
 			super();
 			this.graph = graph;
@@ -950,7 +953,7 @@ var require_Journal = /* @__PURE__ */ __commonJSMin(((exports) => {
 		save(file, callback) {
 			const promise = new Promise((resolve, reject) => {
 				const json = JSON.stringify(this.toJSON(), null, 4);
-				const { writeFile } = __require("fs");
+				const { writeFile } = (init_empty_fs(), __toCommonJS(empty_fs_exports));
 				writeFile(`${file}.json`, json, "utf-8", (err) => {
 					if (err) {
 						reject(err);
@@ -968,7 +971,7 @@ var require_Journal = /* @__PURE__ */ __commonJSMin(((exports) => {
 			return promise;
 		}
 	};
-	exports.Journal = Journal$1;
+	exports.Journal = Journal;
 }));
 //#endregion
 //#region node_modules/fbp-graph/lib/Platform.js
@@ -5253,7 +5256,7 @@ var require_Graph = /* @__PURE__ */ __commonJSMin(((exports) => {
 	exports.mergeResolveTheirs = exports.equivalent = exports.loadFile = exports.loadFBP = exports.loadJSON = exports.createGraph = exports.Graph = void 0;
 	const events_1 = (init_event_emitter(), __toCommonJS(event_emitter_exports));
 	const clone = require_clone();
-	const fs_1 = __require("fs");
+	const fs_1 = (init_empty_fs(), __toCommonJS(empty_fs_exports));
 	const Platform_1 = require_Platform();
 	var Graph = class extends events_1.EventEmitter {
 		constructor(name = "", options = {}) {

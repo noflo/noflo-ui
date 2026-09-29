@@ -3,7 +3,7 @@
  * to the Glass via an injected postMessage-style callback.
  */
 
-import noflo from "noflo";
+import noflo from "../../../vendor/noflo.js";
 
 /** NoFlo's shipped types omit the default export; the runtime API is stable. */
 const NoFlo = /** @type {any} */ (noflo);
