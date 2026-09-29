@@ -14,6 +14,10 @@ const NoFlo = /** @type {any} */ (noflo);
 import { createEngineState } from "../crdt/EngineCore.js";
 import { createProjectDoc } from "../crdt/ProjectDoc.js";
 import {
+  bindDocumentPersistence,
+  whenPersisted,
+} from "../crdt/ProjectPersistence.js";
+import {
   createDispatcherGraph,
   registerEngineComponents,
 } from "../graphs/engine-dispatch.js";
@@ -60,6 +64,27 @@ export async function startEngine(io, options = {}) {
       payload: { status: "ok", uptime: Date.now() - startedAt },
     });
   }, HEARTBEAT_INTERVAL_MS);
+
+  // Mirror every CRDT update to the Glass so its read replica stays in sync
+  doc.on("update", (update) => {
+    io.postMessage({ kind: "y-update", update });
+  });
+
+  // Persist the document when IndexedDB is available (browser worker). The
+  // Glass waits for the synced signal before its first render.
+  if (typeof globalThis.indexedDB !== "undefined") {
+    try {
+      const persistence = bindDocumentPersistence(doc, "noflo-project");
+      whenPersisted(persistence).then(() => {
+        io.postMessage({ kind: "y-synced" });
+      });
+    } catch (err) {
+      console.error("Document persistence failed:", err);
+      io.postMessage({ kind: "y-synced" });
+    }
+  } else {
+    io.postMessage({ kind: "y-synced" });
+  }
 
   return {
     doc,

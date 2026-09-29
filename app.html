@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoFlo UI</title>
+    <link rel="stylesheet" href="./src/main.css" />
+    <style>
+      #topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: var(--ui-bg, #eee);
+        border-bottom: 1px solid #ccc;
+        z-index: 2000;
+        pointer-events: none;
+      }
+      #role-badge {
+        font-weight: bold;
+      }
+      #banner {
+        position: fixed;
+        top: 2.6rem;
+        left: 0;
+        right: 0;
+        padding: 0.5rem 1rem;
+        background: #fff3cd;
+        color: #664d03;
+        border-bottom: 1px solid #ffe69c;
+        z-index: 2000;
+      }
+      #app {
+        padding-top: 2.6rem;
+      }
+    </style>
+  </head>
+  <body data-theme="tube" data-age="abstract">
+    <header id="topbar">
+      <span id="project-name">Project</span>
+      <span id="role-badge">Starting&hellip;</span>
+    </header>
+    <div id="banner" hidden></div>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "fontawesome-icons": "./vendor/fontwesome-icons-7.3.0.js",
+          "jedison": "./vendor/jedison-1.13.0.js",
+          "noflo": "./vendor/noflo-1.5.2.js",
+          "yjs": "./vendor/yjs.js"
+        }
+      }
+    </script>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

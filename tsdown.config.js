@@ -1,8 +1,11 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'tsdown';
 import { esmExternalRequirePlugin } from 'rolldown/plugins';
 import info from './package-lock.json' with { type: 'json' };
 
 const { packages } = info;
+const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig([
   {
@@ -59,6 +62,34 @@ export default defineConfig([
     outputOptions: {
       banner: '// @ts-nocheck',
     },
+  },
+  {
+    entry: {
+      'engine': './src/worker/engine.js',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+    // The worker cannot resolve bare imports (no import maps there), so
+    // everything must be inlined into the single bundle.
+    noExternal: [/./],
+    alias: {
+      'node:events': 'eventemitter3',
+      'events': 'eventemitter3',
+      'fs': resolve(here, './src/worker/empty-fs.js'),
+      'node:fs': resolve(here, './src/worker/empty-fs.js'),
+    },
+    banner: {
+      js: `var require = () => ({}); var fs = {};`,
+    },
+  },
+  {
+    entry: {
+      'yjs': 'node_modules/yjs/dist/yjs.mjs',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
   },
   /*
   {
