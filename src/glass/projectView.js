@@ -207,6 +207,34 @@ export function removeIIPIntent(graphId, id) {
 }
 
 /**
+ * Returns the parent graph id of a graph, or the empty string for root
+ * graphs and unknown ids.
+ *
+ * @param {import("yjs").Doc} doc
+ * @param {string} graphId
+ * @returns {string}
+ */
+export function graphParent(doc, graphId) {
+  const graph = doc.getMap("graphs").get(graphId);
+  const parent = graph?.get("metadata")?.get("parent");
+  return typeof parent === "string" ? parent : "";
+}
+
+/**
+ * @param {string} graphId
+ * @param {string} name
+ * @param {string} parent Parent graph id, empty string for root graphs.
+ * @returns {import("../crdt/Protocol.js").IntentCreateGraphMessage}
+ */
+export function createGraphIntent(graphId, name, parent = "") {
+  return {
+    type: "INTENT",
+    command: "createGraph",
+    payload: { graphId, name, parent },
+  };
+}
+
+/**
  * @param {string} graphId
  * @param {"inports" | "outports"} direction
  * @param {string} name

@@ -8,6 +8,8 @@
  * @typedef {Object} IntentMapperOptions
  * @property {(message: any) => void} sendIntent Delivers an intent to the Engine.
  * @property {() => string} graphId The graph the Glass is editing.
+ * @property {{ down: (node: string) => void, up: () => void, createSubgraph: (nodes: any[]) => void }} [navigation]
+ *   Handlers for graph navigation, backed by the CRDT and the URL router.
  * @property {() => { getComponent: (name: string) => any } | null} getLibrary
  *   The Glass-side library view, for default port names.
  */
@@ -81,7 +83,12 @@ function defaultPortFor(library, componentName, direction) {
  * @param {IntentMapperOptions} options
  * @returns {IntentMapper}
  */
-export function createIntentMapper({ sendIntent, graphId, getLibrary }) {
+export function createIntentMapper({
+  sendIntent,
+  graphId,
+  getLibrary,
+  navigation,
+}) {
   /** Intents held back until their target node appears in the replica. */
   const pendingAfterNode = new Map();
 
@@ -338,19 +345,28 @@ export function createIntentMapper({ sendIntent, graphId, getLibrary }) {
         });
       });
 
-      for (const kind of [
-        "iip-send-attempt",
-        "create-subgraph-attempt",
-        "move-nodes-up-attempt",
-        "navigate-down-attempt",
-        "navigate-up-attempt",
-      ]) {
+      for (const kind of ["iip-send-attempt", "move-nodes-up-attempt"]) {
         ed.addEventListener(kind, () => {
           console.info(
             `${kind} has no Engine IPC yet; not applied (see work document #18 SPEC gaps)`,
           );
         });
       }
+
+      ed.addEventListener("navigate-down-attempt", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        const node = /** @type {string | undefined} */ (event.detail?.node);
+        if (node) navigation?.down(node);
+      });
+
+      ed.addEventListener("navigate-up-attempt", () => {
+        navigation?.up();
+      });
+
+      ed.addEventListener("create-subgraph-attempt", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        navigation?.createSubgraph(event.detail?.nodes ?? []);
+      });
     },
   };
 }

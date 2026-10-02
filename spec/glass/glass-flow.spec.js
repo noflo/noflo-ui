@@ -459,3 +459,54 @@ describe("Glass loop: all graph editing operations", () => {
     engine.stop();
   }, 20000);
 });
+
+describe("glass navigation wiring (work document #23)", () => {
+  it("routes navigation events to the navigation handlers", async () => {
+    const harness = new GlassHarness();
+    /** @type {any[]} */
+    const calls = [];
+    const navMapper = createIntentMapper({
+      sendIntent: (/** @type {any} */ message) => {
+        harness.sentIntents.push(message);
+      },
+      graphId: () => "main",
+      getLibrary: () => harness.libraryManager,
+      navigation: {
+        down: (/** @type {string} */ node) => calls.push(["down", node]),
+        up: () => calls.push(["up"]),
+        createSubgraph: (/** @type {any} */ nodes) =>
+          calls.push(["createSubgraph", nodes]),
+      },
+    });
+    await harness.render();
+    navMapper.wire(harness.editor);
+
+    harness.editor.dispatchEvent(
+      new CustomEvent("navigate-down-attempt", {
+        detail: { node: "A" },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    harness.editor.dispatchEvent(
+      new CustomEvent("navigate-up-attempt", { bubbles: true, composed: true }),
+    );
+    // Reused so the structural assertion does not compare function identity
+    const fakeNode = { getAttribute: () => "A" };
+    harness.editor.dispatchEvent(
+      new CustomEvent("create-subgraph-attempt", {
+        detail: { nodes: [fakeNode] },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+
+    assert.deepEqual(calls, [
+      ["down", "A"],
+      ["up"],
+      ["createSubgraph", [fakeNode]],
+    ]);
+
+    harness.editor?.remove();
+  });
+});

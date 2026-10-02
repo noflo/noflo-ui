@@ -22,6 +22,8 @@ import {
   addExportIntent,
   addIIPIntent,
   addNodeIntent,
+  createGraphIntent,
+  graphParent,
   moveNodeIntent,
   projectGraph,
   removeEdgeIntent,
@@ -32,6 +34,7 @@ import {
   updateIIPIntent,
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
+import { createRouter } from "./glass/router.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
 
@@ -43,8 +46,8 @@ customElements.define("noflo-selection-pills", SelectionPills);
 customElements.define("noflo-iip", FlowIIP);
 customElements.define("noflo-exported-port", FlowExportedPort);
 
-/** The graph the Glass currently displays. Multiple graphs come later. */
-const GRAPH_ID = "main";
+/** The graph the Glass currently displays; driven by the URL router. */
+let activeGraphId = "main";
 const CHANNEL_NAME = "noflo-ui-tabs";
 const RENDER_DEBOUNCE_MS = 30;
 
@@ -58,6 +61,9 @@ let mirrorHandler = /** @type {((event: { data: any }) => void) | null} */ (
 
 /** @type {Y.Doc} */
 let mirrorDoc = new Y.Doc();
+
+/** @type {ReturnType<typeof createRouter> | null} */
+let router = null;
 /** @type {FlowEditor | null} */
 let editor = null;
 /** @type {LibraryManager | null} */
@@ -138,16 +144,48 @@ function scheduleRender() {
 }
 
 /**
+ * Falls back from a graph that no longer exists in the replica (removed
+ * while active, or the route pointed at a graph the engine never had). Only
+ * kicks in once the replica has any graphs at all — an empty mirror just
+ * means the initial sync has not arrived yet.
+ */
+function resolveActiveGraph() {
+  const graphs = mirrorDoc.getMap("graphs");
+  if (graphs.size === 0) return;
+  if (graphs.has(activeGraphId)) return;
+  const parent = graphParent(mirrorDoc, activeGraphId);
+  const fallback = parent || "main";
+  activeGraphId = fallback;
+  router?.navigate(fallback, { replace: true });
+}
+
+/**
+ * Enters a subgraph, creating it in the CRDT when it does not exist yet.
+ * Moving existing nodes into the subgraph is a follow-up operation.
+ *
+ * @param {string} childId
+ */
+function enterSubgraph(childId) {
+  if (!router || childId === activeGraphId) return;
+  if (!projectGraph(mirrorDoc, childId)) {
+    const name = childId.split("/").pop() ?? childId;
+    sendIntent(createGraphIntent(childId, name, activeGraphId));
+  }
+  router.navigate(childId);
+}
+
+/**
  * Re-renders the editor from the replica document.
  */
 async function render() {
+  resolveActiveGraph();
   bootstrapLibrary();
-  const view = projectGraph(mirrorDoc, GRAPH_ID) ?? {
+  const view = projectGraph(mirrorDoc, activeGraphId) ?? {
     processes: {},
     connections: [],
     inports: {},
     outports: {},
-    properties: { name: GRAPH_ID },
+    properties: { name: activeGraphId },
   };
   const replica = await graph.loadJSON(view);
   const app = document.getElementById("app");
@@ -250,7 +288,7 @@ function onRoleChange() {
     supervisor.send({
       type: "LIFECYCLE",
       command: "subscribe",
-      payload: { graphId: GRAPH_ID },
+      payload: { graphId: activeGraphId },
     });
   }
   updateRoleBadge();
@@ -266,7 +304,7 @@ async function init() {
   mirrorDoc = new Y.Doc();
   mirrorDoc.on("update", () => {
     intentMapper?.flushPending((nodeId) =>
-      Boolean(projectGraph(mirrorDoc, GRAPH_ID)?.processes[nodeId]),
+      Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
     );
     scheduleRender();
   });
@@ -287,10 +325,42 @@ async function init() {
     id: newTabId(),
     onChange: () => onRoleChange(),
   });
+
+  router = createRouter({
+    onRouteChange: (route) => {
+      if (route.graphId === activeGraphId) return;
+      activeGraphId = route.graphId;
+      intentMapper?.flushPending((nodeId) =>
+        Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
+      );
+      scheduleRender();
+    },
+  });
+  activeGraphId = router.graphId();
+
   intentMapper = createIntentMapper({
     sendIntent,
-    graphId: () => GRAPH_ID,
+    graphId: () => activeGraphId,
     getLibrary: () => libraryManager,
+    navigation: {
+      down: (node) => enterSubgraph(`${activeGraphId}/${node}`),
+      up: () => {
+        const parent = graphParent(mirrorDoc, activeGraphId);
+        if (parent) router?.navigate(parent);
+      },
+      // Creating a subgraph currently creates an empty child graph and
+      // enters it; moving existing nodes into it is a follow-up
+      createSubgraph: (nodes) => {
+        const first = nodes[0];
+        const name =
+          typeof first === "string"
+            ? first
+            : /** @type {HTMLElement | undefined} */ (first)?.getAttribute(
+                "name",
+              );
+        if (name) enterSubgraph(`${activeGraphId}/${name}`);
+      },
+    },
   });
   isLeader = coordinator.isLeader();
 
@@ -302,7 +372,7 @@ async function init() {
     supervisor.send({
       type: "LIFECYCLE",
       command: "subscribe",
-      payload: { graphId: GRAPH_ID },
+      payload: { graphId: activeGraphId },
     });
   } else {
     console.info("Read-only tab: the leader runs the engine");
