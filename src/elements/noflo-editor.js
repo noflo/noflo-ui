@@ -342,6 +342,14 @@ export class FlowEditor extends HTMLElement {
           width: 100%;
           height: 100%;
           z-index: 4;
+          /* The layer itself must not intercept clicks: it spans the whole
+             viewport and would block every edge underneath. Only the graph
+             entities are interactive. */
+          pointer-events: none;
+        }
+        #node-layer > noflo-node,
+        #node-layer > noflo-iip,
+        #node-layer > noflo-exported-port {
           pointer-events: auto;
         }
         .grid-pattern {
@@ -393,6 +401,11 @@ export class FlowEditor extends HTMLElement {
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--flow-dash);
           pointer-events: none;
+        }
+        .edge-flow[selected] {
+          stroke: var(--ui-accent);
+          stroke-width: calc(var(--edge-width, 4px) + 2px);
+          stroke-dasharray: none;
         }
         .edge-hit-area {
           stroke: transparent;

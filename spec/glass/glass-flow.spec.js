@@ -272,6 +272,29 @@ describe("Glass loop: all graph editing operations", () => {
       "edge renders in the editor",
     );
 
+    // --- selection probe: pointerdown on the edge hit path ---
+    const hitPath = /** @type {any} */ (harness.editor.edgeManager).edges[0]
+      .hitPath;
+    const PointerEventCtor = window.PointerEvent || window.MouseEvent;
+    hitPath.dispatchEvent(
+      new PointerEventCtor("pointerdown", {
+        bubbles: true,
+        composed: true,
+        clientX: 250,
+        clientY: 120,
+        button: 0,
+        pointerId: 1,
+      }),
+    );
+    console.log(
+      "SELECTION PROBE edges:",
+      [...harness.editor.selectionManager.edges],
+      "visualPath selected:",
+      /** @type {any} */ (
+        harness.editor.edgeManager
+      ).edges[0].visualPath.getAttribute("selected") !== null,
+    );
+
     // --- add an IIP targeting node B's in port (wire-drop ghost flow) ---
     harness.editor.dispatchEvent(
       new CustomEvent("iip-creation-attempt", {
