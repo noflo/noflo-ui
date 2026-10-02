@@ -41,3 +41,47 @@ describe("FlowEditor subgraph gating (work document #23)", () => {
     assert.ok(!ed.isSubgraphNode(node));
   });
 });
+
+describe("FlowEditor subgraph context menu (work document #23)", () => {
+  it("offers Open but not Make subgraph on subgraph nodes", () => {
+    const ed = /** @type {FlowEditor} */ (
+      document.createElement("noflo-editor")
+    );
+    ed.libraryManager = /** @type {any} */ ({
+      getComponent: (/** @type {string} */ name) =>
+        name === "mylib/Sub" ? { type: "subgraph" } : { type: "stub" },
+    });
+    /** @type {any[][]} */
+    const opened = [];
+    /** @type {any} */ (ed).radialMenu = {
+      open: (
+        /** @type {number} */ _x,
+        /** @type {number} */ _y,
+        /** @type {any[]} */ items,
+      ) => {
+        opened.push(items);
+      },
+    };
+
+    const subgraphNode = /** @type {FlowNode} */ (
+      document.createElement("noflo-node")
+    );
+    subgraphNode.component = "mylib/Sub";
+    subgraphNode.setAttribute("name", "sub");
+    ed.showContextMenu(0, 0, { clickedNode: subgraphNode });
+    const texts = opened[0].map((item) => item.text);
+    assert.ok(texts.includes("Open"), "Open is offered");
+    assert.ok(!texts.includes("Make subgraph"), "Make subgraph is not");
+
+    opened.length = 0;
+    const plainNode = /** @type {FlowNode} */ (
+      document.createElement("noflo-node")
+    );
+    plainNode.component = "core/Hello";
+    plainNode.setAttribute("name", "plain");
+    ed.showContextMenu(0, 0, { clickedNode: plainNode });
+    const plainTexts = opened[0].map((item) => item.text);
+    assert.ok(plainTexts.includes("Make subgraph"), "elementary can convert");
+    assert.ok(!plainTexts.includes("Open"), "elementary cannot open");
+  });
+});

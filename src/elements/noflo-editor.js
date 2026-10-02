@@ -1339,19 +1339,21 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "trash",
           });
-          items.push({
-            text: "Make subgraph",
-            onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("create-subgraph-attempt", {
-                  detail: { nodes: [clickedNode] },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
-            },
-            icon: "folder-plus",
-          });
+          if (!this.isSubgraphNode(/** @type {Element} */ (clickedNode))) {
+            items.push({
+              text: "Make subgraph",
+              onClick: () => {
+                this.dispatchEvent(
+                  new CustomEvent("create-subgraph-attempt", {
+                    detail: { nodes: [clickedNode] },
+                    bubbles: true,
+                    composed: true,
+                  }),
+                );
+              },
+              icon: "folder-plus",
+            });
+          }
           items.push({
             text: "Move up",
             onClick: () => {
