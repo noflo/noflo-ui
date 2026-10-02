@@ -251,14 +251,14 @@ export function createGraphIntent(graphId, name, parent = "") {
 
 /**
  * @param {string} graphId
- * @param {string} nodeId
+ * @param {string[]} nodeIds
  * @returns {import("../crdt/Protocol.js").IntentMakeSubgraphMessage}
  */
-export function makeSubgraphIntent(graphId, nodeId) {
+export function makeSubgraphIntent(graphId, nodeIds) {
   return {
     type: "INTENT",
     command: "makeSubgraph",
-    payload: { graphId, nodeId },
+    payload: { graphId, nodeIds },
   };
 }
 

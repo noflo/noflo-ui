@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
 import {
   addEdge,
+  addIIP,
   addNode,
   createGraph,
   createProjectDoc,
@@ -803,17 +804,17 @@ describe("makeSubgraph (work document #23)", () => {
     const result = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "makeSubgraph",
-      payload: { graphId: "main", nodeId: "A" },
+      payload: { graphId: "main", nodeIds: ["A"] },
     });
     assert.ok(result.accepted);
 
-    // Echo sequence: create, populate, export, switch
+    // Echo sequence: create, populate, export, switch. Exports are
+    // connection-driven: only the connected in port crosses the boundary
     const commands = result.echoes.map((e) => e.command);
     assert.deepEqual(commands, [
       "creategraph",
       "addnode",
       "addinport",
-      "addoutport",
       "setcomponent",
     ]);
     assert.deepEqual(result.echoes[0].payload, {
@@ -821,7 +822,7 @@ describe("makeSubgraph (work document #23)", () => {
       name: "A",
       parent: "main",
     });
-    assert.deepEqual(result.echoes[4].payload, {
+    assert.deepEqual(result.echoes[3].payload, {
       id: "A",
       component: "main/A",
     });
@@ -831,7 +832,10 @@ describe("makeSubgraph (work document #23)", () => {
     assert.ok(child);
     assert.equal(child.get("nodes").get("A").get("component"), "core/Hello");
     assert.equal(child.get("inports").get("in").get("process"), "A");
-    assert.equal(child.get("outports").get("out").get("process"), "A");
+    assert.ok(
+      !child.get("outports").has("out"),
+      "unconnected signature ports are not exported",
+    );
 
     // The parent node now points at the subgraph, making it openable
     assert.equal(graph.get("nodes").get("A").get("component"), "main/A");
@@ -851,7 +855,7 @@ describe("makeSubgraph (work document #23)", () => {
         .get("outports")
         .toJSON()
         .map((p) => p.name),
-      ["out"],
+      [],
     );
   });
 
@@ -866,14 +870,15 @@ describe("makeSubgraph (work document #23)", () => {
     const result = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "makeSubgraph",
-      payload: { graphId: "main", nodeId: "A" },
+      payload: { graphId: "main", nodeIds: ["A"] },
     });
     assert.ok(result.accepted);
     const child = getGraph(doc, "main/A");
     assert.ok(child.get("inports").get("in0"), "connected in port exported");
-    // No signature anywhere: the engine falls back to the same default port
-    // set the editor renders for signature-less components
-    assert.ok(child.get("outports").get("out0"), "default out port exported");
+    assert.ok(
+      !child.get("outports").has("out0"),
+      "no out boundary, so no out export",
+    );
   });
 
   it("rejects unknown nodes and already-subgraph nodes", () => {
@@ -885,20 +890,166 @@ describe("makeSubgraph (work document #23)", () => {
     const unknown = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "makeSubgraph",
-      payload: { graphId: "main", nodeId: "ghost" },
+      payload: { graphId: "main", nodeIds: ["ghost"] },
     });
     assert.ok(!unknown.accepted);
 
     handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "makeSubgraph",
-      payload: { graphId: "main", nodeId: "A" },
+      payload: { graphId: "main", nodeIds: ["A"] },
     });
     const again = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "makeSubgraph",
-      payload: { graphId: "main", nodeId: "A" },
+      payload: { graphId: "main", nodeIds: ["A"] },
     });
     assert.ok(!again.accepted, "node is already a subgraph instance");
+  });
+});
+
+describe("default component signatures (work document #23)", () => {
+  it("registers in0/out0 for a component created without a signature", () => {
+    const doc = createProjectDoc("p");
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "A",
+        componentName: "c/Fresh",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    const signature = doc.getMap("registry").get("c/Fresh")?.toJSON();
+    assert.ok(signature, "signature registered");
+    assert.deepEqual(
+      signature.inports.map((/** @type {any} */ p) => p.name),
+      ["in0"],
+    );
+    assert.deepEqual(
+      signature.outports.map((/** @type {any} */ p) => p.name),
+      ["out0"],
+    );
+  });
+
+  it("leaves existing signatures untouched", () => {
+    const doc = createProjectDoc("p");
+    setComponentSignature(doc, "c/Known", {
+      inports: [{ name: "seed" }],
+      outports: [],
+    });
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "A",
+        componentName: "c/Known",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    const signature = doc.getMap("registry").get("c/Known")?.toJSON();
+    assert.deepEqual(
+      signature.inports.map((/** @type {any} */ p) => p.name),
+      ["seed"],
+    );
+  });
+});
+
+describe("makeSubgraph with multiple nodes (work document #23)", () => {
+  it("moves the selection, rewires boundaries, and replaces with one node", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "c/One", { x: 0, y: 0 });
+    addNode(graph, "B", "c/Two", { x: 100, y: 0 });
+    addNode(graph, "X", "c/Ext", { x: -100, y: 0 });
+    addNode(graph, "Y", "c/Ext", { x: 200, y: 0 });
+    // Internal edge moves into the subgraph
+    addEdge(graph, { node: "A", port: "out" }, { node: "B", port: "in" });
+    // Boundary edges rewire through the replacement node
+    addEdge(graph, { node: "X", port: "out" }, { node: "B", port: "in0" });
+    addEdge(graph, { node: "A", port: "out0" }, { node: "Y", port: "in" });
+    // IIP into a moved node is retargeted in the parent
+    addIIP(graph, "seed", { node: "A", port: "in" });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A", "B"] },
+    });
+    assert.ok(result.accepted);
+
+    const child = getGraph(doc, "main/A");
+    assert.ok(child, "child graph created");
+    // Both moved nodes live in the child with their original components
+    assert.equal(child.get("nodes").get("A").get("component"), "c/One");
+    assert.equal(child.get("nodes").get("B").get("component"), "c/Two");
+    // The internal edge moved with them
+    assert.ok(child.get("edges").has("A:out[0]->B:in[0]"));
+    // Exports: the boundary connections became in/out ports
+    assert.equal(child.get("inports").get("in0").get("process"), "B");
+    assert.equal(child.get("outports").get("out0").get("process"), "A");
+
+    // The parent kept its boundary edges, rewired to the replacement node
+    assert.ok(
+      graph.get("edges").has("X:out[0]->A:in0[0]"),
+      "inbound edge rewired to the subgraph node",
+    );
+    assert.ok(
+      graph.get("edges").has("A:out0[0]->Y:in[0]"),
+      "outbound edge kept (replacement id matches)",
+    );
+    assert.ok(
+      graph.get("edges").has("DATA->A:in[0]"),
+      "IIP retargeted to the subgraph node",
+    );
+    // The moved nodes and their old edges are gone from the parent
+    assert.ok(!graph.get("nodes").has("B"));
+    assert.ok(!graph.get("edges").has("A:out[0]->B:in[0]"));
+
+    // The replacement node is the subgraph instance at the bbox center
+    const replacement = graph.get("nodes").get("A");
+    assert.equal(replacement.get("component"), "main/A");
+    assert.equal(replacement.get("metadata").get("x"), 50);
+
+    // The subgraph signature carries the exported ports: the boundary
+    // connections of every moved node, including the IIP into the
+    // replacement node's original in port
+    const signature = doc.getMap("registry").get("main/A")?.toJSON();
+    assert.deepEqual(
+      signature.inports.map((/** @type {any} */ p) => p.name).sort(),
+      ["in", "in0"],
+    );
+    assert.deepEqual(
+      signature.outports.map((/** @type {any} */ p) => p.name),
+      ["out0"],
+    );
+  });
+
+  it("rejects selections containing unknown or duplicate ids", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "c/One");
+
+    const unknown = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A", "ghost"] },
+    });
+    assert.ok(!unknown.accepted);
+
+    const duplicate = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A", "A"] },
+    });
+    assert.ok(!duplicate.accepted);
+
+    // Nothing was mutated by the rejected intents
+    assert.ok(graph.get("nodes").has("A"));
+    assert.ok(!getGraph(doc, "main/A"));
   });
 });

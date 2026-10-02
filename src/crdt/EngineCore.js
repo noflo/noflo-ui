@@ -27,6 +27,7 @@ import {
   removeNode,
   setComponentSignature,
   setNodeComponent,
+  transferNode,
 } from "./ProjectDoc.js";
 import { isUIWorkerMessage } from "./Protocol.js";
 
@@ -179,121 +180,247 @@ function handleIntent(doc, message) {
 }
 
 /**
- * Turns a node into a subgraph: creates a child graph containing the node,
- * exports its ports (registry signature ports plus every port referenced by
- * a connection), switches the parent node's component to the child graph id,
- * and registers the subgraph component signature so the node renders with
- * ports and becomes openable.
+ * Turns nodes into a subgraph: creates a child graph containing the moved
+ * nodes, rewires connections that cross the boundary into exported ports,
+ * and replaces the moved nodes in the parent with a single subgraph node
+ * (id of the first moved node, component switched to the child graph id,
+ * position at the bounding-box center of the moved nodes). The subgraph
+ * component signature is registered so the node renders with ports and is
+ * openable.
+ *
+ * Exported ports are connection-driven: every boundary connection exports
+ * the port it crosses. With no boundary connections at all, the default
+ * in0/out0 ports are exported, matching what the editor renders for
+ * signature-less components.
  *
  * @param {Y.Doc} doc
  * @param {any} payload
  * @returns {EngineResult}
  */
 function intentMakeSubgraph(doc, payload) {
-  const { graphId, nodeId } = payload ?? {};
-  if (typeof graphId !== "string" || typeof nodeId !== "string") {
+  const { graphId, nodeIds } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    !Array.isArray(nodeIds) ||
+    nodeIds.length === 0 ||
+    !nodeIds.every((/** @type {any} */ id) => typeof id === "string") ||
+    new Set(nodeIds).size !== nodeIds.length
+  ) {
     return { accepted: false, echoes: [] };
   }
   const graph = getGraph(doc, graphId);
   if (!graph) {
     return { accepted: false, echoes: [] };
   }
-  const node = getNode(graph, nodeId);
-  if (!node) {
+  const movedData = nodeIds.map((/** @type {string} */ id) =>
+    getNode(graph, id),
+  );
+  if (movedData.some((/** @type {any} */ node) => !node)) {
     return { accepted: false, echoes: [] };
   }
-  const component = node.get("component");
-  if (typeof component !== "string" || getGraph(doc, component)) {
-    // Unknown component, or the node is already a subgraph instance
+  const knownNodes = /** @type {Y.Map<any>[]} */ (movedData);
+  const components = knownNodes.map((node) => node.get("component"));
+  if (
+    components.some(
+      (/** @type {any} */ component) =>
+        typeof component !== "string" || getGraph(doc, component),
+    )
+  ) {
+    // Unknown component, or a node is already a subgraph instance
     return { accepted: false, echoes: [] };
   }
-  const childId = `${graphId}/${nodeId}`;
+  const replacementId = /** @type {string} */ (nodeIds[0]);
+  const childId = `${graphId}/${replacementId}`;
   if (getGraph(doc, childId)) {
     return { accepted: false, echoes: [] };
   }
 
-  const metadata =
-    /** @type {Y.Map<any> | undefined} */ (node.get("metadata"))?.toJSON() ??
-    {};
-
   /** @type {import("./Protocol.js").EngineUIMessage[]} */
   const echoes = [];
-  createGraph(doc, childId, nodeId, graphId);
+  createGraph(doc, childId, replacementId, graphId);
   const child = getGraph(doc, childId);
   if (!child) {
     return { accepted: false, echoes: [] };
   }
-  addNode(child, nodeId, component, metadata);
+
   /** @type {import("./Protocol.js").GraphCreateGraphMessage} */
   const createEcho = {
     protocol: "graph",
     command: "creategraph",
-    payload: { id: childId, name: nodeId, parent: graphId },
+    payload: { id: childId, name: replacementId, parent: graphId },
   };
   echoes.push(createEcho);
-  /** @type {import("./Protocol.js").GraphAddNodeMessage} */
-  const addNodeEcho = {
-    protocol: "graph",
-    command: "addnode",
-    payload: { id: nodeId, component, metadata },
-  };
-  echoes.push(addNodeEcho);
 
-  // Ports to export: every port in the component's registry signature plus
-  // every port a connection references. Components without a signature get
-  // the same default ports the editor renders for them (in0/out0)
-  const signature = getComponentSignature(doc, component)?.toJSON();
-  /** @type {Set<string>} */
-  const inPorts = new Set(
-    (signature?.inports ?? []).map((/** @type {any} */ p) => p.name),
-  );
-  /** @type {Set<string>} */
-  const outPorts = new Set(
-    (signature?.outports ?? []).map((/** @type {any} */ p) => p.name),
-  );
-  if (!signature) {
-    inPorts.add("in0");
-    outPorts.add("out0");
+  // Move the node entries; edges are handled explicitly below
+  /** @type {Array<{ id: string, component: string, metadata: { [key: string]: any } }>} */
+  const moved = [];
+  for (const id of /** @type {string[]} */ (nodeIds)) {
+    const info = transferNode(graph, child, id);
+    if (!info) {
+      return { accepted: false, echoes: [] };
+    }
+    moved.push({ id, ...info });
+    /** @type {import("./Protocol.js").GraphAddNodeMessage} */
+    const addNodeEcho = {
+      protocol: "graph",
+      command: "addnode",
+      payload: { id, component: info.component, metadata: info.metadata },
+    };
+    echoes.push(addNodeEcho);
   }
+
+  // The replacement node takes over the first moved node's id, positioned
+  // at the bounding-box center of the moved nodes. It must exist before
+  // boundary edges are rewired to it.
+  const xs = moved
+    .map((m) => m.metadata?.x)
+    .filter((/** @type {any} */ x) => typeof x === "number");
+  const ys = moved
+    .map((m) => m.metadata?.y)
+    .filter((/** @type {any} */ y) => typeof y === "number");
+  addNode(graph, replacementId, childId, {
+    x: xs.length > 0 ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0,
+    y: ys.length > 0 ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
+  });
+
+  const movedIds = new Set(/** @type {string[]} */ (nodeIds));
   const edges = /** @type {Y.Map<any>} */ (graph.get("edges"));
-  for (const edge of edges.values()) {
+  /** @type {Set<string>} */
+  const inPortNames = new Set();
+  /** @type {Set<string>} */
+  const outPortNames = new Set();
+  /** @type {(base: string, used: Set<string>) => string} */
+  const uniqueName = (base, used) => {
+    if (!used.has(base)) return base;
+    let counter = 2;
+    while (used.has(`${base}${counter}`)) counter++;
+    return `${base}${counter}`;
+  };
+
+  /**
+   * Exports a child port for a boundary connection.
+   *
+   * @param {"addinport" | "addoutport"} command
+   * @param {string} name
+   * @param {string} nodeId
+   * @param {string} port
+   */
+  const exportPort = (command, name, nodeId, port) => {
+    if (command === "addinport") {
+      addInport(child, name, nodeId, port);
+      inPortNames.add(name);
+    } else {
+      addOutport(child, name, nodeId, port);
+      outPortNames.add(name);
+    }
+    /** @type {import("./Protocol.js").GraphAddExportMessage} */
+    const echo = {
+      protocol: "graph",
+      command,
+      payload: { name, nodeId, port, metadata: {} },
+    };
+    echoes.push(echo);
+  };
+
+  // Snapshot edge ids: the loop below deletes from the same map
+  for (const edgeId of [...edges.keys()]) {
+    const edge = /** @type {Y.Map<any>} */ (edges.get(edgeId));
     const plain = edge.toJSON();
-    if (plain.src?.node === nodeId) outPorts.add(plain.src.port);
-    if (plain.tgt?.node === nodeId) inPorts.add(plain.tgt.port);
-  }
-  for (const port of inPorts) {
-    addInport(child, port, nodeId, port);
-    /** @type {import("./Protocol.js").GraphAddExportMessage} */
-    const echo = {
-      protocol: "graph",
-      command: "addinport",
-      payload: { name: port, nodeId, port, metadata: {} },
-    };
-    echoes.push(echo);
-  }
-  for (const port of outPorts) {
-    addOutport(child, port, nodeId, port);
-    /** @type {import("./Protocol.js").GraphAddExportMessage} */
-    const echo = {
-      protocol: "graph",
-      command: "addoutport",
-      payload: { name: port, nodeId, port, metadata: {} },
-    };
-    echoes.push(echo);
+    const srcMoved = plain.src ? movedIds.has(plain.src.node) : false;
+    const tgtMoved = movedIds.has(plain.tgt.node);
+    if (!srcMoved && !tgtMoved) continue;
+    const metadata = /** @type {Y.Map<any> | undefined} */ (
+      edge.get("metadata")
+    )?.toJSON();
+
+    if (srcMoved && tgtMoved) {
+      // Internal wiring follows the nodes into the subgraph
+      removeEdge(graph, edgeId);
+      addEdge(child, plain.src, plain.tgt, metadata ?? {});
+      continue;
+    }
+
+    if (srcMoved) {
+      const movedNode = /** @type {string} */ (plain.src.node);
+      if (movedNode !== replacementId) {
+        // Retarget the parent edge to the replacement node
+        removeEdge(graph, edgeId);
+        addEdge(
+          graph,
+          {
+            node: replacementId,
+            port: plain.src.port,
+            index: plain.src.index,
+          },
+          plain.tgt,
+          metadata ?? {},
+        );
+      }
+      exportPort(
+        "addoutport",
+        uniqueName(plain.src.port, outPortNames),
+        movedNode,
+        plain.src.port,
+      );
+      continue;
+    }
+
+    // In boundary (including IIPs)
+    const movedNode = /** @type {string} */ (plain.tgt.node);
+    if (movedNode !== replacementId) {
+      removeEdge(graph, edgeId);
+      if (plain.src) {
+        addEdge(
+          graph,
+          plain.src,
+          {
+            node: replacementId,
+            port: plain.tgt.port,
+            index: plain.tgt.index,
+          },
+          metadata ?? {},
+        );
+      } else {
+        addIIP(
+          graph,
+          plain.data,
+          {
+            node: replacementId,
+            port: plain.tgt.port,
+            index: plain.tgt.index,
+          },
+          metadata ?? {},
+        );
+      }
+    }
+    exportPort(
+      "addinport",
+      uniqueName(plain.tgt.port, inPortNames),
+      movedNode,
+      plain.tgt.port,
+    );
   }
 
-  setNodeComponent(graph, nodeId, childId);
+  // With no boundary connections at all, export the default ports the
+  // editor renders for signature-less components
+  if (inPortNames.size === 0 && outPortNames.size === 0) {
+    addInport(child, "in0", replacementId, "in0");
+    addOutport(child, "out0", replacementId, "out0");
+    inPortNames.add("in0");
+    outPortNames.add("out0");
+  }
+
   /** @type {import("./Protocol.js").GraphSetComponentMessage} */
   const setComponentEcho = {
     protocol: "graph",
     command: "setcomponent",
-    payload: { id: nodeId, component: childId },
+    payload: { id: replacementId, component: childId },
   };
   echoes.push(setComponentEcho);
 
   setComponentSignature(doc, childId, {
-    inports: [...inPorts].map((name) => ({ name })),
-    outports: [...outPorts].map((name) => ({ name })),
+    inports: [...inPortNames].map((name) => ({ name })),
+    outports: [...outPortNames].map((name) => ({ name })),
     description: `Subgraph of ${graphId}`,
   });
 
@@ -386,6 +513,7 @@ function intentAddNode(doc, payload) {
   if (!created) {
     return { accepted: false, echoes: [] };
   }
+  ensureDefaultSignature(doc, componentName);
   /** @type {import("./Protocol.js").GraphAddNodeMessage} */
   const echo = {
     protocol: "graph",
@@ -393,6 +521,22 @@ function intentAddNode(doc, payload) {
     payload: { id: nodeId, component: componentName, metadata },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Registers the default port signature (in0/out0) for a component that has
+ * none, matching what the editor renders for signature-less components.
+ * Components with real signatures keep them untouched.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ */
+function ensureDefaultSignature(doc, componentName) {
+  if (getComponentSignature(doc, componentName)) return;
+  setComponentSignature(doc, componentName, {
+    inports: [{ name: "in0", type: "all" }],
+    outports: [{ name: "out0", type: "all" }],
+  });
 }
 
 /**

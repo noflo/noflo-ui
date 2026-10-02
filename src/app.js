@@ -341,19 +341,18 @@ async function init() {
       },
       // Creating a subgraph currently creates an empty child graph and
       // enters it; moving existing nodes into it is a follow-up
-      // Make subgraph: one atomic engine op populates the child graph with
-      // the node and exports its ports; the Glass navigates in optimistically
+      // Make subgraph: one atomic engine op moves the selected nodes into
+      // the child graph and rewires boundary connections; the Glass
+      // navigates in optimistically
       createSubgraph: (nodes) => {
-        const first = nodes[0];
-        const name =
-          typeof first === "string"
-            ? first
-            : /** @type {HTMLElement | undefined} */ (first)?.getAttribute(
-                "name",
-              );
-        if (!name) return;
-        const childId = `${activeGraphId}/${name}`;
-        sendIntent(makeSubgraphIntent(activeGraphId, name));
+        const names = nodes
+          .map((/** @type {any} */ n) =>
+            typeof n === "string" ? n : n?.getAttribute?.("name"),
+          )
+          .filter((/** @type {any} */ n) => typeof n === "string");
+        if (names.length === 0) return;
+        const childId = `${activeGraphId}/${names[0]}`;
+        sendIntent(makeSubgraphIntent(activeGraphId, names));
         router?.navigate(childId);
       },
     },

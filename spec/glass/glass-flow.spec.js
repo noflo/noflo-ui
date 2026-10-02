@@ -557,7 +557,7 @@ describe("make subgraph loop (work document #23)", () => {
         createSubgraph: (/** @type {any} */ nodes) => {
           const name = nodes[0]?.getAttribute?.("name");
           if (!name) return;
-          localHarness.messageHandler?.(makeSubgraphIntent("main", name));
+          localHarness.messageHandler?.(makeSubgraphIntent("main", [name]));
         },
       },
     });

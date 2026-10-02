@@ -121,15 +121,15 @@
  */
 
 /**
- * Appendix A extension (work document #23): turn a node into a subgraph.
- * The engine creates the child graph, populates it with the node, exports
- * its ports, switches the node's component to the child graph id, and
- * registers the subgraph signature.
+ * Appendix A extension (work document #23): turn nodes into a subgraph.
+ * The engine creates the child graph, moves the nodes into it, exports the
+ * boundary connections as ports, replaces the nodes with a single subgraph
+ * node, and registers the subgraph signature.
  *
  * @typedef {Object} IntentMakeSubgraphMessage
  * @property {'INTENT'} type
  * @property {'makeSubgraph'} command
- * @property {{ graphId: string, nodeId: string }} payload
+ * @property {{ graphId: string, nodeIds: string[] }} payload
  */
 
 /**

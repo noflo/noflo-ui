@@ -346,6 +346,35 @@ export function setNodeComponent(graph, nodeId, component) {
 }
 
 /**
+ * Moves a node entry from one graph to another without touching edges.
+ * Callers are responsible for rewiring any edges that cross the boundary.
+ *
+ * @param {Y.Map<any>} sourceGraph
+ * @param {Y.Map<any>} targetGraph
+ * @param {string} nodeId
+ * @returns {{ component: string, metadata: { [key: string]: any }} | null}
+ *   The moved node's data, or null when the node does not exist in the
+ *   source or the id is taken in the target.
+ */
+export function transferNode(sourceGraph, targetGraph, nodeId) {
+  const node = getNode(sourceGraph, nodeId);
+  if (!node) return null;
+  const created = addNode(
+    targetGraph,
+    nodeId,
+    node.get("component"),
+    /** @type {Y.Map<any> | undefined} */ (node.get("metadata"))?.toJSON() ??
+      {},
+  );
+  if (!created) return null;
+  nodesOf(sourceGraph).delete(nodeId);
+  return {
+    component: created.get("component"),
+    metadata: /** @type {Y.Map<any>} */ (created.get("metadata")).toJSON(),
+  };
+}
+
+/**
  * Removes a node and everything wired to it: edges (node-to-node and IIPs)
  * touching it and exported ports referencing it.
  *

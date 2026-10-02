@@ -1343,9 +1343,16 @@ export class FlowEditor extends HTMLElement {
             items.push({
               text: "Make subgraph",
               onClick: () => {
+                // When the clicked node is part of the current selection,
+                // the whole selection becomes the subgraph
+                const name = this.getNodeName(
+                  /** @type {GraphEntity} */ (clickedNode),
+                );
+                const selected = [...this.selectionManager.nodes];
+                const nodeIds = selected.includes(name) ? selected : [name];
                 this.dispatchEvent(
                   new CustomEvent("create-subgraph-attempt", {
-                    detail: { nodes: [clickedNode] },
+                    detail: { nodes: nodeIds },
                     bubbles: true,
                     composed: true,
                   }),
