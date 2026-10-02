@@ -19,11 +19,14 @@ import {
   deleteGraph,
   getComponentSignature,
   getGraph,
+  getNode,
   graphChildren,
   moveNode,
   removeEdge,
   removeExportedPort,
   removeNode,
+  setComponentSignature,
+  setNodeComponent,
 } from "./ProjectDoc.js";
 import { isUIWorkerMessage } from "./Protocol.js";
 
@@ -168,9 +171,133 @@ function handleIntent(doc, message) {
       return intentCreateGraph(doc, payload);
     case "removeGraph":
       return intentRemoveGraph(doc, payload);
+    case "makeSubgraph":
+      return intentMakeSubgraph(doc, payload);
     default:
       return { accepted: false, echoes: [] };
   }
+}
+
+/**
+ * Turns a node into a subgraph: creates a child graph containing the node,
+ * exports its ports (registry signature ports plus every port referenced by
+ * a connection), switches the parent node's component to the child graph id,
+ * and registers the subgraph component signature so the node renders with
+ * ports and becomes openable.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentMakeSubgraph(doc, payload) {
+  const { graphId, nodeId } = payload ?? {};
+  if (typeof graphId !== "string" || typeof nodeId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const node = getNode(graph, nodeId);
+  if (!node) {
+    return { accepted: false, echoes: [] };
+  }
+  const component = node.get("component");
+  if (typeof component !== "string" || getGraph(doc, component)) {
+    // Unknown component, or the node is already a subgraph instance
+    return { accepted: false, echoes: [] };
+  }
+  const childId = `${graphId}/${nodeId}`;
+  if (getGraph(doc, childId)) {
+    return { accepted: false, echoes: [] };
+  }
+
+  const metadata =
+    /** @type {Y.Map<any> | undefined} */ (node.get("metadata"))?.toJSON() ??
+    {};
+
+  /** @type {import("./Protocol.js").EngineUIMessage[]} */
+  const echoes = [];
+  createGraph(doc, childId, nodeId, graphId);
+  const child = getGraph(doc, childId);
+  if (!child) {
+    return { accepted: false, echoes: [] };
+  }
+  addNode(child, nodeId, component, metadata);
+  /** @type {import("./Protocol.js").GraphCreateGraphMessage} */
+  const createEcho = {
+    protocol: "graph",
+    command: "creategraph",
+    payload: { id: childId, name: nodeId, parent: graphId },
+  };
+  echoes.push(createEcho);
+  /** @type {import("./Protocol.js").GraphAddNodeMessage} */
+  const addNodeEcho = {
+    protocol: "graph",
+    command: "addnode",
+    payload: { id: nodeId, component, metadata },
+  };
+  echoes.push(addNodeEcho);
+
+  // Ports to export: every port in the component's registry signature plus
+  // every port a connection references. Components without a signature get
+  // the same default ports the editor renders for them (in0/out0)
+  const signature = getComponentSignature(doc, component)?.toJSON();
+  /** @type {Set<string>} */
+  const inPorts = new Set(
+    (signature?.inports ?? []).map((/** @type {any} */ p) => p.name),
+  );
+  /** @type {Set<string>} */
+  const outPorts = new Set(
+    (signature?.outports ?? []).map((/** @type {any} */ p) => p.name),
+  );
+  if (!signature) {
+    inPorts.add("in0");
+    outPorts.add("out0");
+  }
+  const edges = /** @type {Y.Map<any>} */ (graph.get("edges"));
+  for (const edge of edges.values()) {
+    const plain = edge.toJSON();
+    if (plain.src?.node === nodeId) outPorts.add(plain.src.port);
+    if (plain.tgt?.node === nodeId) inPorts.add(plain.tgt.port);
+  }
+  for (const port of inPorts) {
+    addInport(child, port, nodeId, port);
+    /** @type {import("./Protocol.js").GraphAddExportMessage} */
+    const echo = {
+      protocol: "graph",
+      command: "addinport",
+      payload: { name: port, nodeId, port, metadata: {} },
+    };
+    echoes.push(echo);
+  }
+  for (const port of outPorts) {
+    addOutport(child, port, nodeId, port);
+    /** @type {import("./Protocol.js").GraphAddExportMessage} */
+    const echo = {
+      protocol: "graph",
+      command: "addoutport",
+      payload: { name: port, nodeId, port, metadata: {} },
+    };
+    echoes.push(echo);
+  }
+
+  setNodeComponent(graph, nodeId, childId);
+  /** @type {import("./Protocol.js").GraphSetComponentMessage} */
+  const setComponentEcho = {
+    protocol: "graph",
+    command: "setcomponent",
+    payload: { id: nodeId, component: childId },
+  };
+  echoes.push(setComponentEcho);
+
+  setComponentSignature(doc, childId, {
+    inports: [...inPorts].map((name) => ({ name })),
+    outports: [...outPorts].map((name) => ({ name })),
+    description: `Subgraph of ${graphId}`,
+  });
+
+  return { accepted: true, echoes };
 }
 
 /**

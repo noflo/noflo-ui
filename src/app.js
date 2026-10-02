@@ -22,8 +22,8 @@ import {
   addExportIntent,
   addIIPIntent,
   addNodeIntent,
-  createGraphIntent,
   graphParent,
+  makeSubgraphIntent,
   moveNodeIntent,
   projectGraph,
   removeEdgeIntent,
@@ -158,21 +158,6 @@ function resolveActiveGraph() {
   const fallback = parent || "main";
   activeGraphId = fallback;
   router?.navigate(fallback, { replace: true });
-}
-
-/**
- * Enters a subgraph, creating it in the CRDT when it does not exist yet.
- * Moving existing nodes into the subgraph is a follow-up operation.
- *
- * @param {string} childId
- */
-function enterSubgraph(childId) {
-  if (!router || childId === activeGraphId) return;
-  if (!projectGraph(mirrorDoc, childId)) {
-    const name = childId.split("/").pop() ?? childId;
-    sendIntent(createGraphIntent(childId, name, activeGraphId));
-  }
-  router.navigate(childId);
 }
 
 /**
@@ -356,6 +341,8 @@ async function init() {
       },
       // Creating a subgraph currently creates an empty child graph and
       // enters it; moving existing nodes into it is a follow-up
+      // Make subgraph: one atomic engine op populates the child graph with
+      // the node and exports its ports; the Glass navigates in optimistically
       createSubgraph: (nodes) => {
         const first = nodes[0];
         const name =
@@ -364,7 +351,10 @@ async function init() {
             : /** @type {HTMLElement | undefined} */ (first)?.getAttribute(
                 "name",
               );
-        if (name) enterSubgraph(`${activeGraphId}/${name}`);
+        if (!name) return;
+        const childId = `${activeGraphId}/${name}`;
+        sendIntent(makeSubgraphIntent(activeGraphId, name));
+        router?.navigate(childId);
       },
     },
   });

@@ -10,7 +10,11 @@ import { FlowNode } from "../../src/elements/noflo-node.js";
 import { FlowRadialMenu } from "../../src/elements/noflo-radial-menu.js";
 import { SelectionPills } from "../../src/elements/noflo-selection-pills.js";
 import { createIntentMapper } from "../../src/glass/intentMapping.js";
-import { projectGraph } from "../../src/glass/projectView.js";
+import {
+  makeSubgraphIntent,
+  projectGraph,
+  subgraphComponentFor,
+} from "../../src/glass/projectView.js";
 import { renderGraphIntoEditor } from "../../src/glass/renderGraph.js";
 import { LibraryManager } from "../../src/library/LibraryManager.js";
 import { startEngine } from "../../src/worker/engine.js";
@@ -509,4 +513,112 @@ describe("glass navigation wiring (work document #23)", () => {
 
     harness.editor?.remove();
   });
+});
+
+describe("make subgraph loop (work document #23)", () => {
+  it("populates the child graph, exports ports, and makes the node openable", async () => {
+    const posted = [];
+    const localHarness = new GlassHarness();
+    const localEngine = await startEngine({
+      postMessage: (/** @type {any} */ message) => posted.push(message),
+      registerMessageHandler: (/** @type {any} */ handler) => {
+        localHarness.messageHandler = handler;
+      },
+    });
+    localHarness.posted = posted;
+    localHarness.applyEngineMessages();
+    await localHarness.render();
+
+    // Add a node with known ports, then an upstream node feeding it
+    localHarness.editor.dispatchEvent(
+      new CustomEvent("node-creation-attempt", {
+        detail: { x: 100, y: 100, startPort: null },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    await localHarness.pump();
+    const nodeName = Object.keys(
+      projectGraph(localHarness.mirror, "main").processes,
+    )[0];
+
+    // Turn the node into a subgraph (Make subgraph menu action). The
+    // navigation handlers live in app.js, so mirror them here: send the
+    // makeSubgraph intent and navigate into the child graph
+    const navMapper = createIntentMapper({
+      sendIntent: (/** @type {any} */ message) => {
+        localHarness.messageHandler?.(message);
+      },
+      graphId: () => "main",
+      getLibrary: () => localHarness.libraryManager,
+      navigation: {
+        down: () => {},
+        up: () => {},
+        createSubgraph: (/** @type {any} */ nodes) => {
+          const name = nodes[0]?.getAttribute?.("name");
+          if (!name) return;
+          localHarness.messageHandler?.(makeSubgraphIntent("main", name));
+        },
+      },
+    });
+    navMapper.wire(localHarness.editor);
+    localHarness.editor.dispatchEvent(
+      new CustomEvent("create-subgraph-attempt", {
+        detail: {
+          nodes: [
+            {
+              getAttribute: (/** @type {string} */ attr) =>
+                attr === "name" ? nodeName : null,
+            },
+          ],
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    await localHarness.pump();
+    await localHarness.render();
+
+    // The intent created and populated the child graph
+    const childId = `main/${nodeName}`;
+    const childView = projectGraph(localHarness.mirror, childId);
+    assert.ok(childView, "child graph exists");
+    assert.ok(childView.processes[nodeName], "child contains the node copy");
+    assert.equal(
+      childView.processes[nodeName].component,
+      "c/A",
+      "child node keeps the original component",
+    );
+
+    // The parent node's component now points at the subgraph: openable
+    const parentView = projectGraph(localHarness.mirror, "main");
+    assert.equal(
+      parentView.processes[nodeName].component,
+      childId,
+      "parent node became a subgraph instance",
+    );
+    const component = subgraphComponentFor(
+      localHarness.mirror,
+      "main",
+      nodeName,
+    );
+    assert.equal(component, childId, "node resolves as openable subgraph");
+
+    // The subgraph component is registered with exported ports
+    const signature = localHarness.mirror
+      .getMap("registry")
+      .get(childId)
+      ?.toJSON();
+    assert.ok(signature, "subgraph signature registered");
+    assert.ok(
+      signature.inports.some((/** @type {any} */ p) => p.name === "in0"),
+      "in0 exported",
+    );
+    assert.ok(
+      signature.outports.some((/** @type {any} */ p) => p.name === "out0"),
+      "out0 exported",
+    );
+
+    localEngine.stop();
+  }, 20000);
 });

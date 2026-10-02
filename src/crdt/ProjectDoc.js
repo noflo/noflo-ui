@@ -331,6 +331,21 @@ export function addNode(graph, nodeId, component, metadata = {}) {
 }
 
 /**
+ * Changes a node's component, keeping id and metadata.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} nodeId
+ * @param {string} component
+ * @returns {boolean} Whether the node existed.
+ */
+export function setNodeComponent(graph, nodeId, component) {
+  const node = getNode(graph, nodeId);
+  if (!node) return false;
+  node.set("component", component);
+  return true;
+}
+
+/**
  * Removes a node and everything wired to it: edges (node-to-node and IIPs)
  * touching it and exported ports referencing it.
  *

@@ -121,6 +121,18 @@
  */
 
 /**
+ * Appendix A extension (work document #23): turn a node into a subgraph.
+ * The engine creates the child graph, populates it with the node, exports
+ * its ports, switches the node's component to the child graph id, and
+ * registers the subgraph signature.
+ *
+ * @typedef {Object} IntentMakeSubgraphMessage
+ * @property {'INTENT'} type
+ * @property {'makeSubgraph'} command
+ * @property {{ graphId: string, nodeId: string }} payload
+ */
+
+/**
  * Appendix A extension (work documents #18/#20): IIP mutations. The IIP id
  * follows the `DATA->` deterministic edge rule. Metadata carries the Glass
  * position for rendering.
@@ -187,7 +199,8 @@
  *   | IntentRemoveExportMessage
  *   | IntentRenameExportMessage
  *   | IntentCreateGraphMessage
- *   | IntentRemoveGraphMessage} UIWorkerMessage
+ *   | IntentRemoveGraphMessage
+ *   | IntentMakeSubgraphMessage} UIWorkerMessage
  */
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -203,7 +216,7 @@
  * @typedef {Object} GraphAddNodeMessage
  * @property {'graph'} protocol
  * @property {'addnode'} command
- * @property {{ id: string, component: string, metadata: { x: number, y: number, [key: string]: any } }} payload
+ * @property {{ id: string, component: string, metadata: { [key: string]: any } }} payload
  */
 
 /**
@@ -264,6 +277,15 @@
  */
 
 /**
+ * Appendix A extension (work document #23): a node's component changed.
+ *
+ * @typedef {Object} GraphSetComponentMessage
+ * @property {'graph'} protocol
+ * @property {'setcomponent'} command
+ * @property {{ id: string, component: string }} payload
+ */
+
+/**
  * Batched telemetry chunk (bounded queue, drop-oldest).
  *
  * @typedef {Object} NetworkFlowtraceMessage
@@ -289,6 +311,7 @@
  *   | GraphRenameExportMessage
  *   | GraphCreateGraphMessage
  *   | GraphRemoveGraphMessage
+ *   | GraphSetComponentMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
  */
 
@@ -321,7 +344,7 @@
  * @typedef {Object} GraphAddExportMessage
  * @property {'graph'} protocol
  * @property {'addinport' | 'addoutport'} command
- * @property {{ name: string, nodeId: string, port: string, metadata?: { x: number, y: number } }} payload
+ * @property {{ name: string, nodeId: string, port: string, metadata?: { [key: string]: any } }} payload
  */
 
 /**

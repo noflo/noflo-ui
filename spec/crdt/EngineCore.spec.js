@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 
 import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
 import {
+  addEdge,
+  addNode,
+  createGraph,
   createProjectDoc,
   getGraph,
   getNode,
@@ -781,5 +784,121 @@ describe("graph lifecycle (work document #23)", () => {
     assert.deepEqual(result.echoes, [
       { protocol: "graph", command: "removegraph", payload: { id: "main/A" } },
     ]);
+  });
+});
+
+describe("makeSubgraph (work document #23)", () => {
+  it("populates the child graph, exports ports, and switches the component", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Hello");
+    addNode(graph, "B", "core/Other");
+    addEdge(graph, { node: "B", port: "out" }, { node: "A", port: "in" });
+    setComponentSignature(doc, "core/Hello", {
+      inports: [{ name: "in" }],
+      outports: [{ name: "out" }],
+    });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeId: "A" },
+    });
+    assert.ok(result.accepted);
+
+    // Echo sequence: create, populate, export, switch
+    const commands = result.echoes.map((e) => e.command);
+    assert.deepEqual(commands, [
+      "creategraph",
+      "addnode",
+      "addinport",
+      "addoutport",
+      "setcomponent",
+    ]);
+    assert.deepEqual(result.echoes[0].payload, {
+      id: "main/A",
+      name: "A",
+      parent: "main",
+    });
+    assert.deepEqual(result.echoes[4].payload, {
+      id: "A",
+      component: "main/A",
+    });
+
+    // The child graph holds a copy of the node and the exports
+    const child = getGraph(doc, "main/A");
+    assert.ok(child);
+    assert.equal(child.get("nodes").get("A").get("component"), "core/Hello");
+    assert.equal(child.get("inports").get("in").get("process"), "A");
+    assert.equal(child.get("outports").get("out").get("process"), "A");
+
+    // The parent node now points at the subgraph, making it openable
+    assert.equal(graph.get("nodes").get("A").get("component"), "main/A");
+
+    // The subgraph is registered so the library can render its ports
+    const signature = doc.getMap("registry").get("main/A");
+    assert.ok(signature);
+    assert.deepEqual(
+      signature
+        .get("inports")
+        .toJSON()
+        .map((p) => p.name),
+      ["in"],
+    );
+    assert.deepEqual(
+      signature
+        .get("outports")
+        .toJSON()
+        .map((p) => p.name),
+      ["out"],
+    );
+  });
+
+  it("exports connection ports even without a registry signature", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/NoSignature");
+    addNode(graph, "B", "core/Other");
+    addEdge(graph, { node: "B", port: "out" }, { node: "A", port: "in0" });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeId: "A" },
+    });
+    assert.ok(result.accepted);
+    const child = getGraph(doc, "main/A");
+    assert.ok(child.get("inports").get("in0"), "connected in port exported");
+    // No signature anywhere: the engine falls back to the same default port
+    // set the editor renders for signature-less components
+    assert.ok(child.get("outports").get("out0"), "default out port exported");
+  });
+
+  it("rejects unknown nodes and already-subgraph nodes", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Hello");
+
+    const unknown = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeId: "ghost" },
+    });
+    assert.ok(!unknown.accepted);
+
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeId: "A" },
+    });
+    const again = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeId: "A" },
+    });
+    assert.ok(!again.accepted, "node is already a subgraph instance");
   });
 });
