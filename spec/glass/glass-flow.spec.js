@@ -127,15 +127,21 @@ describe("Glass loop: all graph editing operations", () => {
   /** @type {any} */
   let engine;
   const prompts = [];
+  /** Queued prompt answers; when empty, the default fallback applies. */
+  const promptQueue = [];
 
   beforeEach(() => {
     prompts.length = 0;
+    promptQueue.length = 0;
     // Stub prompts: node creation returns a component name, IIPs a value
     /** @type {any} */ (globalThis).window.prompt = (
       /** @type {string} */ _message,
       /** @type {string | undefined} */ defaultValue,
     ) => {
       prompts.push(_message);
+      if (promptQueue.length > 0) {
+        return /** @type {string} */ (promptQueue.shift());
+      }
       return defaultValue !== undefined ? defaultValue : "c/A";
     };
   });
@@ -283,7 +289,16 @@ describe("Glass loop: all graph editing operations", () => {
     const iipId = iipConnection.id ?? `DATA->${nodeB}:in0[0]`;
     assert.equal(iipConnection.tgt.process, nodeB);
 
+    // ...and renders with the CRDT id so later edit/remove intents can
+    // reference it
+    await harness.render();
+    const iipElements = harness.editor.nodeLayer.querySelectorAll("noflo-iip");
+    assert.equal(iipElements.length, 1, "IIP renders in the editor");
+    assert.equal(iipElements[0].id, iipId, "IIP element carries the CRDT id");
+    assert.equal(iipElements[0].value, "c/A", "IIP element shows its value");
+
     // --- edit the IIP ---
+    promptQueue.push("42");
     harness.editor.dispatchEvent(
       new CustomEvent("iip-edit-attempt", {
         detail: { iip: { id: iipId, value: "c/A" } },
@@ -296,8 +311,14 @@ describe("Glass loop: all graph editing operations", () => {
       harness.view.connections.find(
         (/** @type {any} */ c) => c.data !== undefined,
       ).data,
-      "c/A",
-      "IIP updated in place (stub returns the current value)",
+      "42",
+      "IIP updated in place",
+    );
+    await harness.render();
+    assert.equal(
+      harness.editor.nodeLayer.querySelectorAll("noflo-iip")[0].value,
+      "42",
+      "edited IIP value renders",
     );
 
     // --- export node A's outport ---
@@ -343,6 +364,12 @@ describe("Glass loop: all graph editing operations", () => {
     );
     await harness.pump();
     assert.equal(harness.view.outports.result, undefined, "export removed");
+    await harness.render();
+    assert.equal(
+      harness.editor.nodeLayer.querySelectorAll("noflo-exported-port").length,
+      0,
+      "export element removed from the editor",
+    );
 
     // --- remove the IIP ---
     harness.editor.dispatchEvent(
@@ -359,6 +386,12 @@ describe("Glass loop: all graph editing operations", () => {
       ),
       undefined,
       "IIP removed",
+    );
+    await harness.render();
+    assert.equal(
+      harness.editor.nodeLayer.querySelectorAll("noflo-iip").length,
+      0,
+      "IIP element removed from the editor",
     );
 
     // --- remove the edge ---
