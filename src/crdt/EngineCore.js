@@ -333,7 +333,7 @@ function isValidEndpoint(endpoint) {
  * @returns {EngineResult}
  */
 function intentAddIIP(doc, payload) {
-  const { graphId, data, tgt } = payload ?? {};
+  const { graphId, data, tgt, metadata } = payload ?? {};
   if (typeof graphId !== "string" || !isValidEndpoint(tgt)) {
     return { accepted: false, echoes: [] };
   }
@@ -341,7 +341,7 @@ function intentAddIIP(doc, payload) {
   if (!graph) {
     return { accepted: false, echoes: [] };
   }
-  const id = addIIP(graph, data, tgt);
+  const id = addIIP(graph, data, tgt, metadata ?? {});
   if (!id) {
     return { accepted: false, echoes: [] };
   }
@@ -349,7 +349,7 @@ function intentAddIIP(doc, payload) {
   const echo = {
     protocol: "graph",
     command: "addiip",
-    payload: { id, data, tgt },
+    payload: { id, data, tgt, metadata: metadata ?? {} },
   };
   return { accepted: true, echoes: [echo] };
 }
@@ -433,7 +433,7 @@ function directionForCommand(command) {
  * @returns {EngineResult}
  */
 function intentAddExport(doc, command, payload) {
-  const { graphId, name, nodeId, port } = payload ?? {};
+  const { graphId, name, nodeId, port, metadata } = payload ?? {};
   if (
     typeof graphId !== "string" ||
     typeof name !== "string" ||
@@ -449,8 +449,8 @@ function intentAddExport(doc, command, payload) {
   const direction = directionForCommand(command);
   const added =
     direction === "inports"
-      ? addInport(graph, name, nodeId, port)
-      : addOutport(graph, name, nodeId, port);
+      ? addInport(graph, name, nodeId, port, metadata ?? {})
+      : addOutport(graph, name, nodeId, port, metadata ?? {});
   if (!added) {
     return { accepted: false, echoes: [] };
   }
@@ -458,7 +458,7 @@ function intentAddExport(doc, command, payload) {
   const echo = {
     protocol: "graph",
     command: /** @type {'addinport' | 'addoutport'} */ (command.toLowerCase()),
-    payload: { name, nodeId, port },
+    payload: { name, nodeId, port, metadata: metadata ?? {} },
   };
   return { accepted: true, echoes: [echo] };
 }

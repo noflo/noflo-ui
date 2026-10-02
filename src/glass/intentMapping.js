@@ -274,6 +274,7 @@ export function createIntentMapper({ sendIntent, graphId, getLibrary }) {
             graphId: graphId(),
             data: value,
             tgt: endpointFor(startPort),
+            metadata: { x: event.detail.x, y: event.detail.y },
           },
         });
       });
@@ -303,11 +304,17 @@ export function createIntentMapper({ sendIntent, graphId, getLibrary }) {
 
       ed.addEventListener("port-exported", (/** @type {any} */ e) => {
         const event = /** @type {CustomEvent} */ (e);
-        const { name, direction, process, port } = event.detail;
+        const { name, direction, process, port, position } = event.detail;
         sendIntent({
           type: "INTENT",
           command: direction === "in" ? "addInport" : "addOutport",
-          payload: { graphId: graphId(), name, nodeId: process, port },
+          payload: {
+            graphId: graphId(),
+            name,
+            nodeId: process,
+            port,
+            metadata: position ? { x: position.x, y: position.y } : undefined,
+          },
         });
       });
 

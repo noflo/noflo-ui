@@ -1083,7 +1083,13 @@ export class FlowEditor extends HTMLElement {
     const clickedPort = /** @type {Element | undefined} */ (
       path.find((/** @type {EventTarget} */ el) => {
         const element = /** @type {Element} */ (el);
-        return element.classList?.contains("port");
+        // Ports living inside an exported port belong to that exported port's
+        // context menu, not the port menu
+        return (
+          element.classList?.contains("port") &&
+          /** @type {any} */ (element.getRootNode()).host?.tagName !==
+            "NOFLO-EXPORTED-PORT"
+        );
       })
     );
     const clickedNode = /** @type {Element | undefined} */ (
@@ -1153,7 +1159,15 @@ export class FlowEditor extends HTMLElement {
                 searchX -= 40;
               }
 
-              this.addIIP(searchX, searchY, port);
+              // The Glass has no write authority: request the IIP via the
+              // same event the wire-drop ghost flow uses
+              this.dispatchEvent(
+                new CustomEvent("iip-creation-attempt", {
+                  detail: { x: searchX, y: searchY, startPort: port },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
             },
             icon: "circle-plus",
           });

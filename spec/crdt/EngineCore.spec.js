@@ -407,6 +407,7 @@ describe("IIP intents", () => {
           id: "DATA->B:in[0]",
           data: "hello",
           tgt: { node: "B", port: "in" },
+          metadata: {},
         },
       },
     ]);
@@ -572,7 +573,7 @@ describe("exported port intents", () => {
       {
         protocol: "graph",
         command: "addinport",
-        payload: { name: "input", nodeId: "A", port: "in" },
+        payload: { name: "input", nodeId: "A", port: "in", metadata: {} },
       },
     ]);
 

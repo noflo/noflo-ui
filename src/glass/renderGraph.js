@@ -27,7 +27,10 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
       );
     }
     if (targetPort) {
-      ed.addExportedPort(x, y + i * 60, portName, direction, targetPort);
+      // Stored positions win over the computed column layout
+      const px = info.metadata?.x ?? x;
+      const py = info.metadata?.y ?? y + i * 60;
+      ed.addExportedPort(px, py, portName, direction, targetPort);
     }
     i++;
   }

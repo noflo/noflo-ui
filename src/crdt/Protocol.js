@@ -103,12 +103,13 @@
 
 /**
  * Appendix A extension (work documents #18/#20): IIP mutations. The IIP id
- * follows the `DATA->` deterministic edge rule.
+ * follows the `DATA->` deterministic edge rule. Metadata carries the Glass
+ * position for rendering.
  *
  * @typedef {Object} IntentAddIIPMessage
  * @property {'INTENT'} type
  * @property {'addIIP'} command
- * @property {{ graphId: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+ * @property {{ graphId: string, data: any, tgt: { node: string, port: string, index?: number }, metadata?: { x: number, y: number } }} payload
  */
 
 /**
@@ -127,11 +128,12 @@
 
 /**
  * Appendix A extension (work documents #18/#20): exported port mutations.
+ * Metadata carries the Glass position for rendering.
  *
  * @typedef {Object} IntentAddExportMessage
  * @property {'INTENT'} type
  * @property {'addInport' | 'addOutport'} command
- * @property {{ graphId: string, name: string, nodeId: string, port: string }} payload
+ * @property {{ graphId: string, name: string, nodeId: string, port: string, metadata?: { x: number, y: number } }} payload
  */
 
 /**
@@ -253,7 +255,7 @@
  * @typedef {Object} GraphAddIIPMessage
  * @property {'graph'} protocol
  * @property {'addiip'} command
- * @property {{ id: string, data: any, tgt: { node: string, port: string, index?: number } }} payload
+ * @property {{ id: string, data: any, tgt: { node: string, port: string, index?: number }, metadata?: { x: number, y: number } }} payload
  */
 
 /**
@@ -276,7 +278,7 @@
  * @typedef {Object} GraphAddExportMessage
  * @property {'graph'} protocol
  * @property {'addinport' | 'addoutport'} command
- * @property {{ name: string, nodeId: string, port: string }} payload
+ * @property {{ name: string, nodeId: string, port: string, metadata?: { x: number, y: number } }} payload
  */
 
 /**
