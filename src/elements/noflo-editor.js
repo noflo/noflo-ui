@@ -657,6 +657,20 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * A node can be opened into a graph only when its component is a subgraph.
+   *
+   * @param {Element} node
+   * @returns {boolean}
+   */
+  isSubgraphNode(node) {
+    if (!this.libraryManager) return false;
+    const component =
+      this.libraryManager.getComponent(/** @type {any} */ (node).component) ??
+      null;
+    return component?.type === "subgraph";
+  }
+
+  /**
    * @param {import("../library/EdgeManager.js").Edge} edge
    * @returns {string}
    */
@@ -672,7 +686,11 @@ export class FlowEditor extends HTMLElement {
         const element = /** @type {Element} */ (el);
         return element.tagName === "NOFLO-NODE";
       });
-      if (clickedNode) {
+      // Only subgraph components have a graph to open
+      if (
+        clickedNode &&
+        this.isSubgraphNode(/** @type {Element} */ (clickedNode))
+      ) {
         this.dispatchEvent(
           new CustomEvent("navigate-down-attempt", {
             detail: {
@@ -1230,10 +1248,12 @@ export class FlowEditor extends HTMLElement {
         });
       } else {
         const isIIP = clickedNode.tagName === "NOFLO-IIP";
-        items.push({
-          text: isIIP ? "Edit" : "Open",
-          onClick: () => {
-            if (isIIP) {
+        const isSubgraph =
+          !isIIP && this.isSubgraphNode(/** @type {Element} */ (clickedNode));
+        if (isIIP) {
+          items.push({
+            text: "Edit",
+            onClick: () => {
               this.dispatchEvent(
                 new CustomEvent("iip-edit-attempt", {
                   detail: { iip: clickedNode },
@@ -1241,7 +1261,14 @@ export class FlowEditor extends HTMLElement {
                   composed: true,
                 }),
               );
-            } else {
+            },
+            icon: "pen-to-square",
+          });
+        }
+        if (isSubgraph) {
+          items.push({
+            text: "Open",
+            onClick: () => {
               this.dispatchEvent(
                 new CustomEvent("navigate-down-attempt", {
                   detail: {
@@ -1253,10 +1280,10 @@ export class FlowEditor extends HTMLElement {
                   composed: true,
                 }),
               );
-            }
-          },
-          icon: isIIP ? "pen-to-square" : "folder-open",
-        });
+            },
+            icon: "folder-open",
+          });
+        }
 
         if (isIIP) {
           items.push({

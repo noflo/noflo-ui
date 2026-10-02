@@ -207,6 +207,21 @@ export function removeIIPIntent(graphId, id) {
 }
 
 /**
+ * Returns the component name of a node whose component is a registered
+ * graph — i.e. the node is a subgraph — or null otherwise.
+ *
+ * @param {import("yjs").Doc} doc
+ * @param {string} graphId
+ * @param {string} nodeId
+ * @returns {string | null}
+ */
+export function subgraphComponentFor(doc, graphId, nodeId) {
+  const component = projectGraph(doc, graphId)?.processes[nodeId]?.component;
+  if (typeof component !== "string") return null;
+  return doc.getMap("graphs").has(component) ? component : null;
+}
+
+/**
  * Returns the parent graph id of a graph, or the empty string for root
  * graphs and unknown ids.
  *

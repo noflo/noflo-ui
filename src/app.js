@@ -31,6 +31,7 @@ import {
   removeIIPIntent,
   removeNodeIntent,
   renameExportIntent,
+  subgraphComponentFor,
   updateIIPIntent,
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
@@ -343,7 +344,12 @@ async function init() {
     graphId: () => activeGraphId,
     getLibrary: () => libraryManager,
     navigation: {
-      down: (node) => enterSubgraph(`${activeGraphId}/${node}`),
+      // Opening a node only makes sense when its component is a subgraph:
+      // navigate to the graph registered under the component's name
+      down: (node) => {
+        const component = subgraphComponentFor(mirrorDoc, activeGraphId, node);
+        if (component) router?.navigate(component);
+      },
       up: () => {
         const parent = graphParent(mirrorDoc, activeGraphId);
         if (parent) router?.navigate(parent);

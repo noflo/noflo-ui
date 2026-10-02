@@ -7,6 +7,7 @@ import {
   addNode,
   createGraph,
   createProjectDoc,
+  getGraph,
 } from "../../src/crdt/ProjectDoc.js";
 import {
   addEdgeIntent,
@@ -15,6 +16,7 @@ import {
   projectGraph,
   removeEdgeIntent,
   removeNodeIntent,
+  subgraphComponentFor,
 } from "../../src/glass/projectView.js";
 
 function seedGraph(doc, graphId = "main") {
@@ -131,5 +133,27 @@ describe("intent constructors", () => {
         payload: { graphId: "main", id: "A:out[1]->B:in[0]" },
       },
     );
+  });
+});
+
+describe("subgraph resolution (work document #23)", () => {
+  it("resolves a node whose component is a registered graph", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    createGraph(doc, "mylib/Sub", "Sub");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "mylib/Sub");
+    addNode(graph, "B", "core/Hello");
+    assert.equal(subgraphComponentFor(doc, "main", "A"), "mylib/Sub");
+    assert.equal(subgraphComponentFor(doc, "main", "B"), null);
+  });
+
+  it("returns null for unknown nodes and unknown components", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    assert.equal(subgraphComponentFor(doc, "main", "ghost"), null);
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Hello");
+    assert.equal(subgraphComponentFor(doc, "main", "A"), null);
   });
 });
