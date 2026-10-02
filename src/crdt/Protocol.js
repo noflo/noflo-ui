@@ -200,7 +200,8 @@
  *   | IntentRenameExportMessage
  *   | IntentCreateGraphMessage
  *   | IntentRemoveGraphMessage
- *   | IntentMakeSubgraphMessage} UIWorkerMessage
+ *   | IntentMakeSubgraphMessage
+ *   | IntentMoveUpMessage} UIWorkerMessage
  */
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -264,6 +265,17 @@
  * @property {'graph'} protocol
  * @property {'creategraph'} command
  * @property {{ id: string, name: string, parent: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #23): move nodes from a subgraph back
+ * into its parent. When the move empties the subgraph, the graph, its
+ * signature, and the parent's subgraph node are removed.
+ *
+ * @typedef {Object} IntentMoveUpMessage
+ * @property {'INTENT'} type
+ * @property {'moveUp'} command
+ * @property {{ graphId: string, nodeIds: string[] }} payload
  */
 
 /**

@@ -180,6 +180,7 @@ async function render() {
   const ed = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
   app.appendChild(ed);
   ed.libraryManager = libraryManager;
+  ed.unpackEnabled = true;
   editor = ed;
   intentMapper?.wire(ed);
   renderGraphIntoEditor(replica, ed, (name) =>
@@ -339,8 +340,6 @@ async function init() {
         const parent = graphParent(mirrorDoc, activeGraphId);
         if (parent) router?.navigate(parent);
       },
-      // Creating a subgraph currently creates an empty child graph and
-      // enters it; moving existing nodes into it is a follow-up
       // Make subgraph: one atomic engine op moves the selected nodes into
       // the child graph and rewires boundary connections; the Glass
       // navigates in optimistically
@@ -354,6 +353,46 @@ async function init() {
         const childId = `${activeGraphId}/${names[0]}`;
         sendIntent(makeSubgraphIntent(activeGraphId, names));
         router?.navigate(childId);
+      },
+
+      // Move up: lift the selection from this subgraph into its parent
+      moveUp: (nodes) => {
+        const names = nodes
+          .map((/** @type {any} */ n) =>
+            typeof n === "string" ? n : n?.getAttribute?.("name"),
+          )
+          .filter((/** @type {any} */ n) => typeof n === "string");
+        if (names.length === 0) return;
+        if (!graphParent(mirrorDoc, activeGraphId)) return;
+        sendIntent({
+          type: "INTENT",
+          command: "moveUp",
+          payload: { graphId: activeGraphId, nodeIds: names },
+        });
+      },
+
+      // Unpack: lift every node of a subgraph instance into its parent and
+      // remove the subgraph. Only for instances whose graph is a child of
+      // the graph being edited
+      unpack: (node) => {
+        const childId = subgraphComponentFor(mirrorDoc, activeGraphId, node);
+        if (!childId || !childId.startsWith(`${activeGraphId}/`)) return;
+        const childView = projectGraph(mirrorDoc, childId);
+        const nodeIds = Object.keys(childView?.processes ?? {});
+        if (nodeIds.length === 0) {
+          // An empty subgraph has nothing to lift; remove it outright
+          sendIntent({
+            type: "INTENT",
+            command: "removeGraph",
+            payload: { graphId: childId },
+          });
+          return;
+        }
+        sendIntent({
+          type: "INTENT",
+          command: "moveUp",
+          payload: { graphId: childId, nodeIds },
+        });
       },
     },
   });

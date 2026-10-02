@@ -5,6 +5,7 @@ import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
 import {
   addEdge,
   addIIP,
+  addInport,
   addNode,
   createGraph,
   createProjectDoc,
@@ -1051,5 +1052,170 @@ describe("makeSubgraph with multiple nodes (work document #23)", () => {
     // Nothing was mutated by the rejected intents
     assert.ok(graph.get("nodes").has("A"));
     assert.ok(!getGraph(doc, "main/A"));
+  });
+});
+
+describe("moveUp (work document #23)", () => {
+  it("moves a node up, rewires routed parent edges, and re-exports", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const main = getGraph(doc, "main");
+    addNode(main, "X", "c/Ext", { x: 0, y: 0 });
+    addNode(main, "A", "main/A", { x: 50, y: 0 });
+    addEdge(main, { node: "X", port: "out" }, { node: "A", port: "in0" });
+    createGraph(doc, "main/A", "A", "main");
+    const child = getGraph(doc, "main/A");
+    addNode(child, "A", "c/One", { x: 0, y: 0 });
+    addNode(child, "B", "c/Two", { x: 10, y: 0 });
+    addEdge(child, { node: "A", port: "out" }, { node: "B", port: "in" });
+    addInport(child, "in0", "B", "in0");
+    setComponentSignature(doc, "main/A", {
+      inports: [{ name: "in0" }],
+      outports: [],
+    });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main/A", nodeIds: ["B"] },
+    });
+    assert.ok(result.accepted);
+
+    // B lives in the parent again
+    assert.equal(main.get("nodes").get("B").get("component"), "c/Two");
+    // The routed parent edge reconnects directly to the moved node
+    assert.ok(main.get("edges").has("X:out[0]->B:in0[0]"));
+    assert.ok(!main.get("edges").has("X:out[0]->A:in0[0]"));
+    // The child edge into B became an outport export wired to B
+    assert.ok(!child.get("edges").has("A:out[0]->B:in[0]"));
+    assert.equal(child.get("outports").get("out").get("process"), "A");
+    assert.ok(main.get("edges").has("A:out[0]->B:in[0]"));
+    // The inport export whose target moved is gone
+    assert.ok(!child.get("inports").has("in0"));
+    // The signature tracks the remaining exports
+    const signature = doc.getMap("registry").get("main/A")?.toJSON();
+    assert.deepEqual(
+      signature.inports.map((/** @type {any} */ p) => p.name),
+      [],
+    );
+    assert.deepEqual(
+      signature.outports.map((/** @type {any} */ p) => p.name),
+      ["out"],
+    );
+    // The subgraph survives with its remaining node
+    assert.ok(getGraph(doc, "main/A"));
+    assert.ok(child.get("nodes").has("A"));
+  });
+
+  it("deletes the subgraph when the move empties it", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const main = getGraph(doc, "main");
+    addNode(main, "X", "c/Ext", { x: 0, y: 0 });
+    addNode(main, "sub", "main/A", { x: 50, y: 0 });
+    addEdge(main, { node: "X", port: "out" }, { node: "sub", port: "in0" });
+    createGraph(doc, "main/A", "A", "main");
+    const child = getGraph(doc, "main/A");
+    addNode(child, "B", "c/One", { x: 0, y: 0 });
+    addNode(child, "C", "c/Two", { x: 10, y: 0 });
+    addEdge(child, { node: "B", port: "out" }, { node: "C", port: "in" });
+    addInport(child, "in0", "B", "in0");
+    setComponentSignature(doc, "main/A", {
+      inports: [{ name: "in0" }],
+      outports: [],
+    });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main/A", nodeIds: ["B", "C"] },
+    });
+    assert.ok(result.accepted);
+
+    // Nodes and their internal wiring are in the parent
+    assert.equal(main.get("nodes").get("B").get("component"), "c/One");
+    assert.equal(main.get("nodes").get("C").get("component"), "c/Two");
+    assert.ok(main.get("edges").has("B:out[0]->C:in[0]"));
+    // The routed parent edge reconnects directly
+    assert.ok(main.get("edges").has("X:out[0]->B:in0[0]"));
+    // The subgraph node, graph, and signature are gone
+    assert.ok(!main.get("nodes").has("sub"));
+    assert.ok(!getGraph(doc, "main/A"));
+    assert.ok(!doc.getMap("registry").has("main/A"));
+    assert.ok(
+      result.echoes.some(
+        (e) => e.command === "removegraph" && e.payload.id === "main/A",
+      ),
+    );
+  });
+
+  it("lets a moved node take over the subgraph node's id on full unnest", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const main = getGraph(doc, "main");
+    addNode(main, "X", "c/Ext", { x: 0, y: 0 });
+    addNode(main, "A", "main/A", { x: 50, y: 0 });
+    addEdge(main, { node: "X", port: "out" }, { node: "A", port: "in0" });
+    createGraph(doc, "main/A", "A", "main");
+    const child = getGraph(doc, "main/A");
+    addNode(child, "A", "c/One", { x: 0, y: 0 });
+    addInport(child, "in0", "A", "in0");
+    setComponentSignature(doc, "main/A", {
+      inports: [{ name: "in0" }],
+      outports: [],
+    });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main/A", nodeIds: ["A"] },
+    });
+    assert.ok(result.accepted);
+
+    // The moved node took over the id with its original component
+    assert.equal(main.get("nodes").get("A").get("component"), "c/One");
+    // The routed edge reconnects to it directly
+    assert.ok(main.get("edges").has("X:out[0]->A:in0[0]"));
+    // Subgraph gone entirely
+    assert.ok(!getGraph(doc, "main/A"));
+    assert.ok(!doc.getMap("registry").has("main/A"));
+  });
+
+  it("rejects root graphs, unknown nodes, and unresolvable id conflicts", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const main = getGraph(doc, "main");
+    addNode(main, "X", "c/Ext", { x: 0, y: 0 });
+    createGraph(doc, "main/A", "A", "main");
+    const child = getGraph(doc, "main/A");
+    addNode(child, "A", "c/One", { x: 0, y: 0 });
+    addNode(child, "X", "c/Ext", { x: 10, y: 0 });
+
+    const fromRoot = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main", nodeIds: ["X"] },
+    });
+    assert.ok(!fromRoot.accepted, "root graphs have no parent");
+
+    const unknown = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main/A", nodeIds: ["ghost"] },
+    });
+    assert.ok(!unknown.accepted);
+
+    // X exists in both graphs and the move does not empty the subgraph
+    const conflict = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "moveUp",
+      payload: { graphId: "main/A", nodeIds: ["X"] },
+    });
+    assert.ok(!conflict.accepted);
+
+    // Nothing was mutated
+    assert.ok(getGraph(doc, "main/A"));
+    assert.ok(child.get("nodes").has("X"));
+    assert.equal(main.get("nodes").get("X").get("component"), "c/Ext");
   });
 });

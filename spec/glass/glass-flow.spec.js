@@ -480,6 +480,8 @@ describe("glass navigation wiring (work document #23)", () => {
         up: () => calls.push(["up"]),
         createSubgraph: (/** @type {any} */ nodes) =>
           calls.push(["createSubgraph", nodes]),
+        moveUp: (/** @type {any} */ nodes) => calls.push(["moveUp", nodes]),
+        unpack: (/** @type {string} */ node) => calls.push(["unpack", node]),
       },
     });
     await harness.render();
@@ -504,11 +506,27 @@ describe("glass navigation wiring (work document #23)", () => {
         composed: true,
       }),
     );
+    harness.editor.dispatchEvent(
+      new CustomEvent("move-nodes-up-attempt", {
+        detail: { nodes: ["A", "B"] },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    harness.editor.dispatchEvent(
+      new CustomEvent("unpack-subgraph-attempt", {
+        detail: { node: "A" },
+        bubbles: true,
+        composed: true,
+      }),
+    );
 
     assert.deepEqual(calls, [
       ["down", "A"],
       ["up"],
       ["createSubgraph", [fakeNode]],
+      ["moveUp", ["A", "B"]],
+      ["unpack", "A"],
     ]);
 
     harness.editor?.remove();

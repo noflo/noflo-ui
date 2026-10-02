@@ -22,6 +22,7 @@ import {
   getNode,
   graphChildren,
   moveNode,
+  removeComponentSignature,
   removeEdge,
   removeExportedPort,
   removeNode,
@@ -174,6 +175,8 @@ function handleIntent(doc, message) {
       return intentRemoveGraph(doc, payload);
     case "makeSubgraph":
       return intentMakeSubgraph(doc, payload);
+    case "moveUp":
+      return intentMoveUp(doc, payload);
     default:
       return { accepted: false, echoes: [] };
   }
@@ -423,6 +426,330 @@ function intentMakeSubgraph(doc, payload) {
     outports: [...outPortNames].map((name) => ({ name })),
     description: `Subgraph of ${graphId}`,
   });
+
+  return { accepted: true, echoes };
+}
+
+/**
+ * Moves nodes from a subgraph back into its parent graph (the reverse of
+ * makeSubgraph). Internal wiring moves with the nodes; connections between
+ * moved and staying nodes reroute through new exports on the staying side;
+ * parent connections routed through the subgraph node's exported ports
+ * reconnect directly when their far end moves up. When the move empties the
+ * subgraph, its graph, registry signature, and the parent's subgraph node
+ * are removed (a full unnest, also used by the Unpack action).
+ *
+ * Moving a node whose id collides with the parent's subgraph node is only
+ * allowed when the move empties the subgraph: the subgraph node is removed
+ * and the moved node takes over its id.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentMoveUp(doc, payload) {
+  const { graphId, nodeIds } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    !Array.isArray(nodeIds) ||
+    nodeIds.length === 0 ||
+    !nodeIds.every((/** @type {any} */ id) => typeof id === "string") ||
+    new Set(nodeIds).size !== nodeIds.length
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const child = getGraph(doc, graphId);
+  if (!child) {
+    return { accepted: false, echoes: [] };
+  }
+  const parentId = child.get("metadata")?.get("parent");
+  if (typeof parentId !== "string" || parentId === "") {
+    // Root graphs have nowhere to move up to
+    return { accepted: false, echoes: [] };
+  }
+  const parent = getGraph(doc, parentId);
+  if (!parent) {
+    return { accepted: false, echoes: [] };
+  }
+  for (const id of /** @type {string[]} */ (nodeIds)) {
+    if (!getNode(child, id)) {
+      return { accepted: false, echoes: [] };
+    }
+  }
+
+  // Snapshot the pieces the rewiring logic needs before any mutation
+  /** @type {Map<string, { process: string, port: string }>} */
+  const inportInfo = new Map();
+  for (const [name, info] of /** @type {Y.Map<any>} */ (
+    child.get("inports")
+  ).entries()) {
+    const plain = info.toJSON();
+    if (typeof plain.process === "string" && typeof plain.port === "string") {
+      inportInfo.set(name, { process: plain.process, port: plain.port });
+    }
+  }
+  /** @type {Map<string, { process: string, port: string }>} */
+  const outportInfo = new Map();
+  for (const [name, info] of /** @type {Y.Map<any>} */ (
+    child.get("outports")
+  ).entries()) {
+    const plain = info.toJSON();
+    if (typeof plain.process === "string" && typeof plain.port === "string") {
+      outportInfo.set(name, { process: plain.process, port: plain.port });
+    }
+  }
+  const parentEdges = [
+    .../** @type {Y.Map<any>} */ (parent.get("edges")).entries(),
+  ].map(([id, edge]) => ({
+    id,
+    plain: /** @type {Y.Map<any>} */ (edge).toJSON(),
+  }));
+  const movedIds = new Set(/** @type {string[]} */ (nodeIds));
+
+  // Subgraph node instances in the parent
+  const subNodes = [
+    .../** @type {Y.Map<any>} */ (parent.get("nodes")).entries(),
+  ]
+    .filter(([, node]) => node.get("component") === graphId)
+    .map(([id]) => id);
+
+  // An id collision with a parent node is only resolvable when the collision
+  // is with a subgraph node instance and the move empties the subgraph
+  const emptiesSubgraph = /** @type {string[]} */ ([
+    .../** @type {Y.Map<any>} */ (child.get("nodes")).keys(),
+  ]).every((id) => movedIds.has(id));
+  for (const id of /** @type {string[]} */ (nodeIds)) {
+    const occupant = getNode(parent, id);
+    if (!occupant) continue;
+    if (
+      occupant.get("component") === graphId &&
+      subNodes.includes(id) &&
+      emptiesSubgraph
+    ) {
+      continue;
+    }
+    return { accepted: false, echoes: [] };
+  }
+
+  // Full unnest with an id collision: the subgraph node is removed first
+  // (its routed connections are snapshotted above and recreated below)
+  if (emptiesSubgraph) {
+    for (const id of subNodes) {
+      if (getNode(parent, id)) {
+        removeNode(parent, id);
+      }
+    }
+  }
+
+  // Move the nodes
+  /** @type {import("./Protocol.js").EngineUIMessage[]} */
+  const echoes = [];
+  for (const id of /** @type {string[]} */ (nodeIds)) {
+    const node = /** @type {Y.Map<any>} */ (getNode(child, id));
+    const metadata =
+      /** @type {Y.Map<any> | undefined} */ (node.get("metadata"))?.toJSON() ??
+      {};
+    const info = transferNode(child, parent, id);
+    if (!info) {
+      return { accepted: false, echoes: [] };
+    }
+    /** @type {import("./Protocol.js").GraphRemoveNodeMessage} */
+    const removeEcho = {
+      protocol: "graph",
+      command: "removenode",
+      payload: { id },
+    };
+    echoes.push(removeEcho);
+    /** @type {import("./Protocol.js").GraphAddNodeMessage} */
+    const addEcho = {
+      protocol: "graph",
+      command: "addnode",
+      payload: { id, component: info.component, metadata },
+    };
+    echoes.push(addEcho);
+  }
+
+  // Recreate the parent connections that were routed through subgraph node
+  // exported ports whose far end moved up: the moved endpoint takes over
+  // the subgraph node's slot in the connection
+  for (const { id, plain } of parentEdges) {
+    const metadata = plain.metadata ?? {};
+    if (
+      subNodes.includes(plain.tgt.node) &&
+      movedIds.has(inportInfo.get(plain.tgt.port)?.process ?? "")
+    ) {
+      const info = /** @type {{ process: string, port: string }} */ (
+        inportInfo.get(plain.tgt.port)
+      );
+      // The direct connection replaces the routed one
+      removeEdge(parent, id);
+      addEdge(
+        parent,
+        plain.src,
+        { node: info.process, port: info.port },
+        metadata,
+      );
+      continue;
+    }
+    if (
+      plain.src &&
+      subNodes.includes(plain.src.node) &&
+      movedIds.has(outportInfo.get(plain.src.port)?.process ?? "")
+    ) {
+      const info = /** @type {{ process: string, port: string }} */ (
+        outportInfo.get(plain.src.port)
+      );
+      removeEdge(parent, id);
+      addEdge(
+        parent,
+        { node: info.process, port: info.port },
+        plain.tgt,
+        metadata,
+      );
+    }
+  }
+
+  // Connections between moved and staying nodes reroute through new exports
+  // on the staying side
+  const childEdges = /** @type {Y.Map<any>} */ (child.get("edges"));
+  /** @type {Map<string, string>} */
+  const newInportNames = new Map();
+  /** @type {Map<string, string>} */
+  const newOutportNames = new Map();
+  const usedInNames = new Set([...inportInfo.keys()]);
+  const usedOutNames = new Set([...outportInfo.keys()]);
+  // Reverse lookups for reusing an existing export
+  /** @type {Map<string, string>} */
+  const existingInportFor = new Map(
+    [...inportInfo.entries()].map(([name, info]) => [
+      `${info.process}:${info.port}`,
+      name,
+    ]),
+  );
+  /** @type {Map<string, string>} */
+  const existingOutportFor = new Map(
+    [...outportInfo.entries()].map(([name, info]) => [
+      `${info.process}:${info.port}`,
+      name,
+    ]),
+  );
+  /** @type {(base: string, used: Set<string>) => string} */
+  const uniqueName = (base, used) => {
+    if (!used.has(base)) return base;
+    let counter = 2;
+    while (used.has(`${base}${counter}`)) counter++;
+    return `${base}${counter}`;
+  };
+
+  // Snapshot child edge ids: they are removed while iterating
+  for (const edgeId of [...childEdges.keys()]) {
+    const edge = /** @type {Y.Map<any>} */ (childEdges.get(edgeId));
+    const plain = edge.toJSON();
+    const srcMoved = plain.src ? movedIds.has(plain.src.node) : false;
+    const tgtMoved = movedIds.has(plain.tgt.node);
+    if (!srcMoved && !tgtMoved) continue;
+    const metadata = /** @type {Y.Map<any> | undefined} */ (
+      edge.get("metadata")
+    )?.toJSON();
+    removeEdge(child, edgeId);
+
+    if (srcMoved && tgtMoved) {
+      // Internal wiring moves to the parent with the nodes
+      addEdge(parent, plain.src, plain.tgt, metadata ?? {});
+      continue;
+    }
+
+    if (srcMoved) {
+      // Moved node feeds a staying node: export an inport into the staying
+      // node and wire the moved node to the subgraph node
+      const key = `${plain.tgt.node}:${plain.tgt.port}`;
+      const existing = existingInportFor.get(key);
+      const name =
+        existing ?? uniqueName(plain.tgt.port, usedInNames) ?? plain.tgt.port;
+      if (!existing) {
+        newInportNames.set(key, name);
+        usedInNames.add(name);
+      }
+      for (const sub of subNodes) {
+        addEdge(
+          parent,
+          {
+            node: plain.src.node,
+            port: plain.src.port,
+            index: plain.src.index,
+          },
+          { node: sub, port: name },
+          metadata ?? {},
+        );
+      }
+      continue;
+    }
+
+    // A staying node feeds the moved node: export an outport from the
+    // staying node and wire it into the moved node
+    const key = `${plain.src.node}:${plain.src.port}`;
+    const existing = existingOutportFor.get(key);
+    const name =
+      existing ?? uniqueName(plain.src.port, usedOutNames) ?? plain.src.port;
+    if (!existing) {
+      newOutportNames.set(key, name);
+      usedOutNames.add(name);
+    }
+    for (const sub of subNodes) {
+      addEdge(
+        parent,
+        { node: sub, port: name },
+        { node: plain.tgt.node, port: plain.tgt.port, index: plain.tgt.index },
+        metadata ?? {},
+      );
+    }
+  }
+
+  for (const [key, name] of newInportNames) {
+    const [nodeId, port] = /** @type {string[]} */ (key.split(":"));
+    addInport(child, name, nodeId, port);
+  }
+  for (const [key, name] of newOutportNames) {
+    const [nodeId, port] = /** @type {string[]} */ (key.split(":"));
+    addOutport(child, name, nodeId, port);
+  }
+
+  // Exports whose far end moved up are no longer routed through the
+  // subgraph node; remove them
+  for (const [name, info] of inportInfo) {
+    if (movedIds.has(info.process)) {
+      removeExportedPort(child, "inports", name);
+    }
+  }
+  for (const [name, info] of outportInfo) {
+    if (movedIds.has(info.process)) {
+      removeExportedPort(child, "outports", name);
+    }
+  }
+
+  // An emptied subgraph is deleted along with its signature
+  if (/** @type {Y.Map<any>} */ (child.get("nodes")).size === 0) {
+    deleteGraph(doc, graphId);
+    removeComponentSignature(doc, graphId);
+    /** @type {import("./Protocol.js").GraphRemoveGraphMessage} */
+    const removeGraphEcho = {
+      protocol: "graph",
+      command: "removegraph",
+      payload: { id: graphId },
+    };
+    echoes.push(removeGraphEcho);
+  } else {
+    // Keep the signature in sync with the remaining exports
+    setComponentSignature(doc, graphId, {
+      inports: [.../** @type {Y.Map<any>} */ (child.get("inports")).keys()].map(
+        (name) => ({ name }),
+      ),
+      outports: [
+        .../** @type {Y.Map<any>} */ (child.get("outports")).keys(),
+      ].map((name) => ({ name })),
+      description: `Subgraph of ${parentId}`,
+    });
+  }
 
   return { accepted: true, echoes };
 }

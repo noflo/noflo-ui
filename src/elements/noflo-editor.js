@@ -97,6 +97,8 @@ export class FlowEditor extends HTMLElement {
     this.selectionManager = new SelectionManager();
     /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
     this.libraryManager = null;
+    /** Whether the Unpack action is available (set by the embedding app). */
+    this.unpackEnabled = false;
     /** @type {EdgeManager | null} */
     this.edgeManager = null;
     /** @type {boolean} */
@@ -1364,9 +1366,16 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Move up",
             onClick: () => {
+              // When the clicked node is part of the current selection, the
+              // whole selection moves up
+              const name = this.getNodeName(
+                /** @type {GraphEntity} */ (clickedNode),
+              );
+              const selected = [...this.selectionManager.nodes];
+              const nodes = selected.includes(name) ? selected : [name];
               this.dispatchEvent(
                 new CustomEvent("move-nodes-up-attempt", {
-                  detail: { nodes: [clickedNode] },
+                  detail: { nodes },
                   bubbles: true,
                   composed: true,
                 }),
@@ -1374,6 +1383,28 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "arrow-up-from-bracket",
           });
+          if (
+            this.isSubgraphNode(/** @type {Element} */ (clickedNode)) &&
+            this.unpackEnabled
+          ) {
+            items.push({
+              text: "Unpack",
+              onClick: () => {
+                this.dispatchEvent(
+                  new CustomEvent("unpack-subgraph-attempt", {
+                    detail: {
+                      node: this.getNodeName(
+                        /** @type {GraphEntity} */ (clickedNode),
+                      ),
+                    },
+                    bubbles: true,
+                    composed: true,
+                  }),
+                );
+              },
+              icon: "box-open",
+            });
+          }
         }
       }
     } else if (clickedEdge) {

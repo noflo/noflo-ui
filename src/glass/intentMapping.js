@@ -8,8 +8,9 @@
  * @typedef {Object} IntentMapperOptions
  * @property {(message: any) => void} sendIntent Delivers an intent to the Engine.
  * @property {() => string} graphId The graph the Glass is editing.
- * @property {{ down: (node: string) => void, up: () => void, createSubgraph: (nodes: any[]) => void }} [navigation]
- *   Handlers for graph navigation, backed by the CRDT and the URL router.
+ * @property {{ down: (node: string) => void, up: () => void, createSubgraph: (nodes: any[]) => void, moveUp: (nodes: any[]) => void, unpack: (node: string) => void }} [navigation]
+ *   Handlers for graph navigation and subgraph lifecycle, backed by the
+ *   CRDT and the URL router.
  * @property {() => { getComponent: (name: string) => any } | null} getLibrary
  *   The Glass-side library view, for default port names.
  */
@@ -345,13 +346,24 @@ export function createIntentMapper({
         });
       });
 
-      for (const kind of ["iip-send-attempt", "move-nodes-up-attempt"]) {
+      for (const kind of ["iip-send-attempt"]) {
         ed.addEventListener(kind, () => {
           console.info(
             `${kind} has no Engine IPC yet; not applied (see work document #18 SPEC gaps)`,
           );
         });
       }
+
+      ed.addEventListener("move-nodes-up-attempt", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        navigation?.moveUp(event.detail?.nodes ?? []);
+      });
+
+      ed.addEventListener("unpack-subgraph-attempt", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        const node = /** @type {string | undefined} */ (event.detail?.node);
+        if (node) navigation?.unpack(node);
+      });
 
       ed.addEventListener("navigate-down-attempt", (/** @type {any} */ e) => {
         const event = /** @type {CustomEvent} */ (e);
