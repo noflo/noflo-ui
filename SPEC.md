@@ -86,6 +86,7 @@ The UI uses standard Web Components, strictly prefixing tags with `noflo-`.
 * **Light DOM vs. Shadow DOM:** The application standardizes on **Light DOM** for all SVG-based elements. SVG definitions (`<defs>`, markers) and CSS custom property styling (for theme-switching) break down across Shadow boundaries. Shadow DOM is reserved strictly for encapsulated HTML forms/modals outside the graph canvas.
 * **Mechanical UI/NoFlo Bridge:** Web Components act as pure, dumb views. Parent elements pass data down via primitive DOM attributes or a standardized `state` property setter. Children communicate upwards exclusively by dispatching native `CustomEvent` bubbles (e.g., `{ action, payload }`). A top-level "View Controller" NoFlo graph (running on the main thread) attaches listeners to the DOM shell, routes those events through the UI-side NoFlo business logic, and maps the outputs back to the DOM nodes' reactive properties.
 * **View Stack & Routing:** A hand-rolled Hash Router (`window.onhashchange`) manages navigation. To prevent losing zoom/pan context, navigating away from the graph editor (e.g., into settings) does not unmount the SVG canvas; it is hidden via CSS, preserving its local state.
+* **Graph Addressing:** The Glass routes the edited location in the URL as `#/p/<projectId>/<graphId>`, with hierarchical subgraph ids (`main/A/deep`). Navigation into or out of a subgraph pushes history entries, so browser back/forward walks the graph stack, and a reload lands on the routed graph. Unrouted URLs normalize to the project's root graph without polluting history.
 
 ---
 
@@ -203,7 +204,17 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'removeNode'; payload: IntentRemoveNode }
   | { type: 'INTENT'; command: 'moveNode'; payload: IntentMoveNode }
   | { type: 'INTENT'; command: 'addEdge'; payload: IntentAddEdge }
-  | { type: 'INTENT'; command: 'removeEdge'; payload: IntentRemoveEdge };
+  | { type: 'INTENT'; command: 'removeEdge'; payload: IntentRemoveEdge }
+  | { type: 'INTENT'; command: 'addIIP'; payload: IntentAddIIP }
+  | { type: 'INTENT'; command: 'updateIIP'; payload: IntentUpdateIIP }
+  | { type: 'INTENT'; command: 'removeIIP'; payload: IntentRemoveIIP }
+  | { type: 'INTENT'; command: 'addInport' | 'addOutport'; payload: IntentAddExport }
+  | { type: 'INTENT'; command: 'removeInport' | 'removeOutport'; payload: IntentRemoveExport }
+  | { type: 'INTENT'; command: 'renameInport' | 'renameOutport'; payload: IntentRenameExport }
+  | { type: 'INTENT'; command: 'createGraph'; payload: IntentCreateGraph }
+  | { type: 'INTENT'; command: 'removeGraph'; payload: IntentRemoveGraph }
+  | { type: 'INTENT'; command: 'makeSubgraph'; payload: IntentMakeSubgraph }
+  | { type: 'INTENT'; command: 'moveUp'; payload: IntentMoveUp };
 
 // Awareness: Throttled telemetry for mesh peers (does not mutate CRDT)
 interface AwarenessDragging { peerId: string; graphId: string; nodeId: string; x: number; y: number; }
@@ -220,6 +231,40 @@ interface IntentAddEdge {
 // Edge removal only requires the deterministic ID, not the full payload
 interface IntentRemoveEdge { graphId: string; id: string; }
 
+// IIPs are stored as edges with a `DATA->` deterministic id (Appendix B).
+// Metadata carries the Glass position so renders are stable across reloads.
+interface IntentAddIIP {
+  graphId: string;
+  data: any;
+  tgt: { node: string; port: string; index?: number };
+  metadata?: { x: number; y: number };
+}
+interface IntentUpdateIIP { graphId: string; id: string; data: any }
+interface IntentRemoveIIP { graphId: string; id: string }
+
+// Exported ports. Metadata carries the Glass position of the exported port
+// element, persisted so layouts survive reloads.
+interface IntentAddExport {
+  graphId: string;
+  name: string;
+  nodeId: string;
+  port: string;
+  metadata?: { x: number; y: number };
+}
+interface IntentRemoveExport { graphId: string; name: string }
+interface IntentRenameExport { graphId: string; from: string; to: string }
+
+// Graph lifecycle. A graph without a parent is a root graph. Graph creation
+// is idempotent; graphs with children cannot be removed until the children
+// are removed first.
+interface IntentCreateGraph { graphId: string; name?: string; parent?: string }
+interface IntentRemoveGraph { graphId: string }
+
+// Subgraph operations (see Appendix B for the full semantics). Both operate
+// atomically: the engine applies the whole transformation and echoes the
+// resulting changes.
+interface IntentMakeSubgraph { graphId: string; nodeIds: string[] }
+interface IntentMoveUp { graphId: string; nodeIds: string[] }
 ```
 
 ### Part 2: Worker to UI (`Engine -> Main`)
@@ -227,24 +272,55 @@ interface IntentRemoveEdge { graphId: string; id: string; }
 ```typescript
 type EngineUIMessage =
   | { protocol: 'system'; command: 'heartbeat'; payload: { status: 'ok' | 'syncing'; uptime: number } }
+  | { protocol: 'system'; command: 'signature'; payload: SignatureResponse }
   | { protocol: 'graph'; command: 'addnode'; payload: GraphAddNode }
   | { protocol: 'graph'; command: 'removenode'; payload: GraphRemoveNode }
   | { protocol: 'graph'; command: 'movenode'; payload: GraphMoveNode }
+  | { protocol: 'graph'; command: 'setcomponent'; payload: GraphSetComponent }
   | { protocol: 'graph'; command: 'addedge'; payload: GraphEdge }
   | { protocol: 'graph'; command: 'removeedge'; payload: { id: string } }
+  | { protocol: 'graph'; command: 'addiip'; payload: GraphIIP }
+  | { protocol: 'graph'; command: 'updateiip'; payload: { id: string; data: any } }
+  | { protocol: 'graph'; command: 'removeiip'; payload: { id: string } }
+  | { protocol: 'graph'; command: 'addinport' | 'addoutport'; payload: GraphExport }
+  | { protocol: 'graph'; command: 'removeinport' | 'removeoutport'; payload: { name: string } }
+  | { protocol: 'graph'; command: 'renameinport' | 'renameoutport'; payload: { from: string; to: string } }
+  | { protocol: 'graph'; command: 'creategraph'; payload: GraphCreateGraph }
+  | { protocol: 'graph'; command: 'removegraph'; payload: { id: string } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)
-interface GraphAddNode { id: string; component: string; metadata: { x: number; y: number; [key: string]: any } }
+interface GraphAddNode { id: string; component: string; metadata: { [key: string]: any } }
 interface GraphRemoveNode { id: string; }
 // Closes the loop for IntentMoveNode
 interface GraphMoveNode { id: string; metadata: { x: number; y: number } }
+// Emitted when a node's component changes (e.g. on subgraph conversion)
+interface GraphSetComponent { id: string; component: string }
 interface GraphEdge {
   id: string;
   src: { node: string; port: string; index?: number };
   tgt: { node: string; port: string; index?: number };
   metadata?: { route?: number; routePoints?: Array<{x: number, y: number}> };
 }
+// IIP echoes reuse the deterministic edge id. GraphIIP.id is the `DATA->` key.
+interface GraphIIP {
+  id: string;
+  data: any;
+  tgt: { node: string; port: string; index?: number };
+  metadata?: { [key: string]: any };
+}
+interface GraphExport {
+  name: string;
+  nodeId: string;
+  port: string;
+  metadata?: { [key: string]: any };
+}
+interface GraphCreateGraph { id: string; name: string; parent: string }
+
+// Query response for `QUERY: getSignature`; also serves as the echo channel
+// when signatures are written. A null signature means the component is
+// unknown to the registry.
+interface SignatureResponse { componentName: string; signature: any }
 
 // Network Protocol (Batched telemetry chunks)
 interface NetworkFlowtraceChunk {
@@ -255,8 +331,9 @@ interface NetworkFlowtraceChunk {
     payload: { id: string; src?: object; tgt?: object; data?: any; time: number; }
   }>;
 }
-
 ```
+
+**Known gap — graph scoping of echoes:** graph protocol echoes do not yet carry a `graphId`, so a consumer subscribed to multiple graphs cannot tell which graph a change belongs to. The Glass is unaffected today because it re-renders from CRDT synchronization and only projects the graph the URL router selects. Before any consumer relies on the echo channel across graphs, the graph-scoped echo payloads gain a `graphId` field.
 
 ---
 
@@ -275,6 +352,40 @@ const registry   = doc.getMap('registry');   // Y.Map<componentName, Y.Map> (Sig
 const specs      = doc.getMap('specs');      // Y.Map<specId, Y.Map> (fbp-spec testing)
 
 ```
+
+### Graph Layout and Hierarchy
+
+Each graph carries a `metadata` map describing it in the project-wide graph hierarchy. A graph without a `parent` is a root graph; subgraph ids are hierarchical (`parent/nodeName`), which also makes them directly addressable in the Glass URL router (`#/p/<projectId>/<graphId>`).
+
+```typescript
+// Inside doc.getMap('graphs').get(graphId)
+metadata: Y.Map<{
+  name: string;    // Human-readable name, defaults to the graph id
+  parent: string;  // Parent graph id, empty string for root graphs
+  created: number; // Creation timestamp
+}>
+nodes: Y.Map<string, Y.Map<{ id: string, component: string, metadata: Y.Map }>>
+inports: Y.Map<string, Y.Map<{ process: string, port: string, metadata: Y.Map }>>
+outports: Y.Map<string, Y.Map<{ process: string, port: string, metadata: Y.Map }>>
+
+```
+
+Exported port metadata carries the Glass position (`x`, `y`) so exported port layouts persist across reloads; IIP edge metadata carries the packet's canvas position the same way.
+
+### Subgraph Lifecycle Semantics
+
+`makeSubgraph` turns a selection of nodes into a subgraph in one atomic operation:
+
+* A child graph `parent/<firstNodeId>` is created; the selected nodes **move** into it with their original components, ids, and positions.
+* The moved nodes are replaced in the parent by a single **subgraph node** — the first moved node's id, component switched to the child graph id, positioned at the bounding-box center of the selection.
+* Connections are rewired: edges between moved nodes follow them into the child; edges crossing the boundary retarget to the subgraph node and the crossed port becomes an exported child port (unique names on conflicts, e.g. `in`, `in2`); IIPs into moved nodes stay in the parent, retargeted, with the port exported. With no boundary connections at all, the default `in0`/`out0` ports are exported.
+* The child graph's exported ports are registered as the subgraph component's registry signature, so the node renders with its real ports and is openable.
+
+`moveUp` is the reverse: a selection of nodes moves back into the parent graph. Internal wiring moves with the nodes; connections between moved and staying nodes reroute through new exports on the staying side (reusing an existing export when the same port already crosses the boundary); parent connections routed through the subgraph node's exported ports reconnect directly, replacing the routed edge; parent IIPs routed into the subgraph retarget to the moved node. When the move empties the subgraph, the graph, its registry signature, and the parent's subgraph node are removed. A moved node may take over the subgraph node's id on a full unnest; other id collisions are rejected.
+
+### Registry Signatures
+
+The registry holds the ports a component exposes, used by the UI to render nodes. When a node is added referencing a component without a signature, the engine registers the default `in0`/`out0` signature — the same fallback the editor renders for signature-less components — so the registry and the UI stay consistent. Existing signatures are never overwritten.
 
 ### Graph & Edge Determinism
 
