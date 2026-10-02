@@ -56,18 +56,30 @@ export function projectGraph(doc, graphId) {
   const connections = [];
   for (const [, edge] of edges.entries()) {
     const plain = toPlain(edge);
+    // fbp-graph JSON names the endpoint node "process"; the CRDT (SPEC
+    // Appendix B) calls it "node", so the projection translates
     if (typeof plain.id === "string" && plain.id.startsWith("DATA->")) {
       connections.push({
         data: plain.data,
-        tgt: plain.tgt,
-        // The CRDT edge id rides in the metadata so the rendered IIP element
-        // can reference it for update/remove intents
+        tgt: {
+          process: plain.tgt.node,
+          port: plain.tgt.port,
+          index: plain.tgt.index,
+        },
         metadata: { id: plain.id, ...(plain.metadata ?? {}) },
       });
     } else {
       connections.push({
-        src: plain.src,
-        tgt: plain.tgt,
+        src: {
+          process: plain.src.node,
+          port: plain.src.port,
+          index: plain.src.index,
+        },
+        tgt: {
+          process: plain.tgt.node,
+          port: plain.tgt.port,
+          index: plain.tgt.index,
+        },
         metadata: plain.metadata ?? {},
       });
     }

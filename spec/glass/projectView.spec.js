@@ -43,16 +43,16 @@ describe("projectGraph", () => {
 
     assert.equal(view.connections.length, 2);
     const edge = view.connections.find((/** @type {any} */ c) => c.src);
-    assert.equal(edge.src.node, "Read");
+    assert.equal(edge.src.process, "Read");
     assert.equal(edge.src.port, "out");
-    assert.equal(edge.tgt.node, "Log");
+    assert.equal(edge.tgt.process, "Log");
     assert.equal(edge.tgt.port, "in");
     assert.equal(edge.tgt.index, 2);
     assert.equal(edge.metadata.route, 5);
 
     const iip = view.connections.find((/** @type {any} */ c) => c.data);
     assert.equal(iip.data, "file.txt");
-    assert.equal(iip.tgt.node, "Read");
+    assert.equal(iip.tgt.process, "Read");
     assert.equal(iip.tgt.port, "source");
     assert.equal(iip.src, undefined, "IIPs have no src");
   });

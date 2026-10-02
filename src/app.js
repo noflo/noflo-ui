@@ -16,6 +16,7 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import { createIntentMapper } from "./glass/intentMapping.js";
 import {
   addEdgeIntent,
   addExportIntent,
@@ -70,8 +71,6 @@ let channel = null;
 let isLeader = false;
 /** @type {ReturnType<typeof setTimeout> | null} */
 let renderTimer = null;
-/** Intents held back until their target node appears in the replica. */
-const pendingAfterNode = new Map();
 
 /**
  * Sends an intent to the Engine. Only the leader has write authority; other
@@ -104,29 +103,12 @@ function spawnEngineWorker() {
 }
 
 /**
- * Queues an intent to be sent once the given node exists in the replica, so
- * dependent intents (like connecting a freshly created node) don't bounce off
- * the engine's dangling-endpoint validation.
+ * The intent mapper: editor events to Appendix A intents, with queued
+ * follow-up intents for brand-new nodes.
  *
- * @param {string} nodeId
- * @param {any} intent
+ * @type {import("./glass/intentMapping.js").IntentMapper | null}
  */
-function afterNode(nodeId, intent) {
-  const queue = pendingAfterNode.get(nodeId) ?? [];
-  queue.push(intent);
-  pendingAfterNode.set(nodeId, queue);
-}
-
-function flushPendingAfterNode() {
-  for (const [nodeId, queue] of pendingAfterNode) {
-    const graphView = projectGraph(mirrorDoc, GRAPH_ID);
-    if (!graphView?.processes[nodeId]) continue;
-    pendingAfterNode.delete(nodeId);
-    for (const intent of queue) {
-      sendIntent(intent);
-    }
-  }
-}
+let intentMapper = null;
 
 /**
  * Applies one engine message to the read replica.
@@ -175,7 +157,7 @@ async function render() {
   app.appendChild(ed);
   ed.libraryManager = libraryManager;
   editor = ed;
-  setupEditorEventListeners(ed);
+  intentMapper?.wire(ed);
   renderGraphIntoEditor(replica, ed, (name) =>
     libraryManager?.getComponent(name),
   );
@@ -206,244 +188,6 @@ function bootstrapLibrary() {
         type: p.type ?? "all",
         addressable: Boolean(p.addressable),
       })),
-    });
-  }
-}
-
-/**
- * Resolves the graph node hosting a port element.
- *
- * @param {HTMLElement} port
- * @returns {HTMLElement | null}
- */
-function hostOf(port) {
-  const root = port.getRootNode();
-  if (root instanceof ShadowRoot) {
-    return /** @type {HTMLElement | null} */ (root.host);
-  }
-  return port.closest("noflo-node") || port.closest("noflo-iip");
-}
-
-/**
- * Builds the Appendix A edge endpoint for a port element.
- *
- * @param {HTMLElement} port
- * @returns {{ node: string, port: string, index?: number }}
- */
-function endpointFor(port) {
-  const host = hostOf(port);
-  const index = port.dataset.portIndex;
-  return {
-    node: host?.getAttribute("name") ?? "unknown",
-    port: port.dataset.portName ?? "",
-    ...(index !== undefined ? { index: Number.parseInt(index, 10) } : {}),
-  };
-}
-
-/**
- * First outport/inport name of a component, used when wiring a brand-new node
- * whose signature comes from the library.
- *
- * @param {string} componentName
- * @param {"inports" | "outports"} direction
- * @returns {string}
- */
-function defaultPortFor(componentName, direction) {
-  const component = libraryManager?.getComponent(componentName);
-  const ports = component?.[direction];
-  return ports?.[0]?.name ?? (direction === "inports" ? "in" : "out");
-}
-
-/**
- * Wires the editor's interaction events to engine intents.
- *
- * @param {FlowEditor} ed
- */
-function setupEditorEventListeners(ed) {
-  ed.addEventListener("node-creation-attempt", async (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const { x, y, startPort } = event.detail;
-    const componentName = window.prompt(
-      "Enter component name (or leave empty to use 'New Node'):",
-    );
-    if (componentName === null) return;
-    const name = componentName.trim() || "New Node";
-    const nodeId = `node_${Date.now()}`;
-    sendIntent(addNodeIntent(GRAPH_ID, nodeId, name, { x, y }));
-
-    if (startPort) {
-      const port = /** @type {HTMLElement} */ (startPort);
-      const isOut = port.classList.contains("port-out");
-      const hostName = hostOf(port)?.getAttribute("name") ?? "unknown";
-      const portName = port.dataset.portName ?? "";
-      const index = port.dataset.portIndex;
-      if (isOut) {
-        afterNode(
-          nodeId,
-          addEdgeIntent(
-            GRAPH_ID,
-            {
-              node: hostName,
-              port: portName,
-              ...(index !== undefined
-                ? { index: Number.parseInt(index, 10) }
-                : {}),
-            },
-            { node: nodeId, port: defaultPortFor(name, "inports") },
-          ),
-        );
-      } else {
-        afterNode(
-          nodeId,
-          addEdgeIntent(
-            GRAPH_ID,
-            { node: nodeId, port: defaultPortFor(name, "outports") },
-            {
-              node: hostName,
-              port: portName,
-              ...(index !== undefined
-                ? { index: Number.parseInt(index, 10) }
-                : {}),
-            },
-          ),
-        );
-      }
-    }
-  });
-
-  ed.addEventListener("node-removal-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    for (const node of event.detail.nodes) {
-      const name = node.getAttribute?.("name") ?? node.name;
-      sendIntent(removeNodeIntent(GRAPH_ID, name));
-    }
-  });
-
-  ed.addEventListener("nodes-moved", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    for (const node of event.detail.nodes) {
-      if (node.type !== "noflo-node") continue;
-      sendIntent(
-        moveNodeIntent(GRAPH_ID, node.name, {
-          x: node.position.x,
-          y: node.position.y,
-        }),
-      );
-    }
-  });
-
-  ed.addEventListener("wire-connection-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    sendIntent(
-      addEdgeIntent(
-        GRAPH_ID,
-        endpointFor(event.detail.portA),
-        endpointFor(event.detail.portB),
-      ),
-    );
-  });
-
-  ed.addEventListener("edge-removal-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const descriptor = ed.getEdgeDescriptor(event.detail.edge);
-    if (!descriptor) return;
-    sendIntent(
-      removeEdgeIntent(
-        GRAPH_ID,
-        {
-          node: descriptor.fromNode,
-          port: descriptor.fromPort,
-          ...(descriptor.fromIndex !== undefined
-            ? { index: descriptor.fromIndex }
-            : {}),
-        },
-        {
-          node: descriptor.toNode,
-          port: descriptor.toPort,
-          ...(descriptor.toIndex !== undefined
-            ? { index: descriptor.toIndex }
-            : {}),
-        },
-      ),
-    );
-  });
-
-  ed.addEventListener("iip-creation-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const value = window.prompt("Value for the initial information packet:");
-    if (value === null) return;
-    const startPort = /** @type {HTMLElement | undefined} */ (
-      event.detail.startPort
-    );
-    if (!startPort) return;
-    sendIntent(addIIPIntent(GRAPH_ID, value, endpointFor(startPort)));
-  });
-
-  ed.addEventListener("iip-edit-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const iip = /** @type {any} */ (event.detail.iip);
-    const newValue = window.prompt("New value for the packet:", iip.value);
-    if (newValue === null || typeof iip.id !== "string") return;
-    sendIntent(updateIIPIntent(GRAPH_ID, iip.id, newValue));
-  });
-
-  ed.addEventListener("iip-removal-attempt", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const iip = /** @type {any} */ (event.detail.iip);
-    if (typeof iip.id !== "string") return;
-    sendIntent(removeIIPIntent(GRAPH_ID, iip.id));
-  });
-
-  ed.addEventListener("port-exported", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const { name, direction, process, port } = event.detail;
-    sendIntent(
-      addExportIntent(
-        GRAPH_ID,
-        direction === "in" ? "inports" : "outports",
-        name,
-        process,
-        port,
-      ),
-    );
-  });
-
-  ed.addEventListener("port-removed", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const { name, direction } = event.detail;
-    sendIntent(
-      removeExportIntent(
-        GRAPH_ID,
-        direction === "in" ? "inports" : "outports",
-        name,
-      ),
-    );
-  });
-
-  ed.addEventListener("port-renamed", (e) => {
-    const event = /** @type {CustomEvent} */ (e);
-    const { oldName, newName, direction } = event.detail;
-    sendIntent(
-      renameExportIntent(
-        GRAPH_ID,
-        direction === "in" ? "inports" : "outports",
-        oldName,
-        newName,
-      ),
-    );
-  });
-
-  for (const kind of [
-    "iip-send-attempt",
-    "create-subgraph-attempt",
-    "move-nodes-up-attempt",
-    "navigate-down-attempt",
-    "navigate-up-attempt",
-  ]) {
-    ed.addEventListener(kind, () => {
-      console.info(
-        `${kind} has no Engine IPC yet; not applied (see work document #18 SPEC gaps)`,
-      );
     });
   }
 }
@@ -521,7 +265,9 @@ async function init() {
 
   mirrorDoc = new Y.Doc();
   mirrorDoc.on("update", () => {
-    flushPendingAfterNode();
+    intentMapper?.flushPending((nodeId) =>
+      Boolean(projectGraph(mirrorDoc, GRAPH_ID)?.processes[nodeId]),
+    );
     scheduleRender();
   });
 
@@ -540,6 +286,11 @@ async function init() {
     channel: wrapChannel(channel),
     id: newTabId(),
     onChange: () => onRoleChange(),
+  });
+  intentMapper = createIntentMapper({
+    sendIntent,
+    graphId: () => GRAPH_ID,
+    getLibrary: () => libraryManager,
   });
   isLeader = coordinator.isLeader();
 
