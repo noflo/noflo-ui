@@ -16,8 +16,10 @@ import {
   addNode,
   addOutport,
   createGraph,
+  deleteGraph,
   getComponentSignature,
   getGraph,
+  graphChildren,
   moveNode,
   removeEdge,
   removeExportedPort,
@@ -162,9 +164,78 @@ function handleIntent(doc, message) {
     case "renameInport":
     case "renameOutport":
       return intentRenameExport(doc, message.command, payload);
+    case "createGraph":
+      return intentCreateGraph(doc, payload);
+    case "removeGraph":
+      return intentRemoveGraph(doc, payload);
     default:
       return { accepted: false, echoes: [] };
   }
+}
+
+/**
+ * Creates a graph (root or subgraph). Idempotent: creating an existing graph
+ * echoes it without mutating, so concurrent subgraph creation converges.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentCreateGraph(doc, payload) {
+  const { graphId, name, parent } = payload ?? {};
+  if (typeof graphId !== "string" || graphId.length === 0) {
+    return { accepted: false, echoes: [] };
+  }
+  if (parent !== undefined && typeof parent !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const parentGraph = parent ? getGraph(doc, parent) : undefined;
+  if (parent && !parentGraph) {
+    return { accepted: false, echoes: [] };
+  }
+  createGraph(
+    doc,
+    graphId,
+    typeof name === "string" ? name : graphId,
+    parent ?? "",
+  );
+  /** @type {import("./Protocol.js").GraphCreateGraphMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "creategraph",
+    payload: {
+      id: graphId,
+      name: typeof name === "string" ? name : graphId,
+      parent: parent ?? "",
+    },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Removes a graph and its contents. Graphs with children must have their
+ * children removed first, keeping subgraph lifecycles explicit.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRemoveGraph(doc, payload) {
+  const { graphId } = payload ?? {};
+  if (typeof graphId !== "string" || !getGraph(doc, graphId)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (graphChildren(doc, graphId).length > 0) {
+    return { accepted: false, echoes: [] };
+  }
+  deleteGraph(doc, graphId);
+  /** @type {import("./Protocol.js").GraphRemoveGraphMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "removegraph",
+    payload: { id: graphId },
+  };
+  return { accepted: true, echoes: [echo] };
 }
 
 /**

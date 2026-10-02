@@ -102,6 +102,25 @@
  */
 
 /**
+ * Appendix A extension (work document #23): graph lifecycle. A graph without
+ * a parent is a root graph.
+ *
+ * @typedef {Object} IntentCreateGraphMessage
+ * @property {'INTENT'} type
+ * @property {'createGraph'} command
+ * @property {{ graphId: string, name?: string, parent?: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #23): graph lifecycle.
+ *
+ * @typedef {Object} IntentRemoveGraphMessage
+ * @property {'INTENT'} type
+ * @property {'removeGraph'} command
+ * @property {{ graphId: string }} payload
+ */
+
+/**
  * Appendix A extension (work documents #18/#20): IIP mutations. The IIP id
  * follows the `DATA->` deterministic edge rule. Metadata carries the Glass
  * position for rendering.
@@ -166,7 +185,9 @@
  *   | IntentRemoveIIPMessage
  *   | IntentAddExportMessage
  *   | IntentRemoveExportMessage
- *   | IntentRenameExportMessage} UIWorkerMessage
+ *   | IntentRenameExportMessage
+ *   | IntentCreateGraphMessage
+ *   | IntentRemoveGraphMessage} UIWorkerMessage
  */
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -223,6 +244,26 @@
  */
 
 /**
+ * Appendix A extension (work document #23): authoritative graph lifecycle
+ * echo.
+ *
+ * @typedef {Object} GraphCreateGraphMessage
+ * @property {'graph'} protocol
+ * @property {'creategraph'} command
+ * @property {{ id: string, name: string, parent: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #23): authoritative graph lifecycle
+ * echo.
+ *
+ * @typedef {Object} GraphRemoveGraphMessage
+ * @property {'graph'} protocol
+ * @property {'removegraph'} command
+ * @property {{ id: string }} payload
+ */
+
+/**
  * Batched telemetry chunk (bounded queue, drop-oldest).
  *
  * @typedef {Object} NetworkFlowtraceMessage
@@ -246,6 +287,8 @@
  *   | GraphAddExportMessage
  *   | GraphRemoveExportMessage
  *   | GraphRenameExportMessage
+ *   | GraphCreateGraphMessage
+ *   | GraphRemoveGraphMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
  */
 

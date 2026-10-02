@@ -676,3 +676,110 @@ describe("exported port intents", () => {
     );
   });
 });
+
+describe("graph lifecycle (work document #23)", () => {
+  it("creates a root graph and echoes creategraph", () => {
+    const result = handleMessage(createProjectDoc("p"), createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    assert.ok(result.accepted);
+    assert.deepEqual(result.echoes, [
+      {
+        protocol: "graph",
+        command: "creategraph",
+        payload: { id: "main", name: "Main", parent: "" },
+      },
+    ]);
+  });
+
+  it("creates a subgraph with a parent", () => {
+    const doc = createProjectDoc("p");
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main/A", name: "A", parent: "main" },
+    });
+    assert.ok(result.accepted);
+    assert.equal(result.echoes[0].payload.parent, "main");
+  });
+
+  it("is idempotent for an existing graph", () => {
+    const doc = createProjectDoc("p");
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    assert.ok(result.accepted);
+    assert.deepEqual(result.echoes[0].payload, {
+      id: "main",
+      name: "Main",
+      parent: "",
+    });
+  });
+
+  it("rejects an unknown parent", () => {
+    const result = handleMessage(createProjectDoc("p"), createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "x", parent: "ghost" },
+    });
+    assert.ok(!result.accepted);
+    assert.equal(result.echoes.length, 0);
+  });
+
+  it("rejects removing a graph with children", () => {
+    const doc = createProjectDoc("p");
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main/A", name: "A", parent: "main" },
+    });
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "removeGraph",
+      payload: { graphId: "main" },
+    });
+    assert.ok(!result.accepted, "parent with children is protected");
+  });
+
+  it("removes a leaf graph and echoes removegraph", () => {
+    const doc = createProjectDoc("p");
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "Main" },
+    });
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main/A", name: "A", parent: "main" },
+    });
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "removeGraph",
+      payload: { graphId: "main/A" },
+    });
+    assert.ok(result.accepted);
+    assert.deepEqual(result.echoes, [
+      { protocol: "graph", command: "removegraph", payload: { id: "main/A" } },
+    ]);
+  });
+});

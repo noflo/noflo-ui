@@ -23,6 +23,8 @@ import {
   getNode,
   getProjectMetadata,
   getSpecSuite,
+  graphAncestry,
+  graphChildren,
   iipEdgeIdFor,
   moveNode,
   PROJECT_SCHEMA_VERSION,
@@ -426,5 +428,66 @@ describe("peer convergence", () => {
       [...graphA.get("edges").keys()],
       [...graphB.get("edges").keys()],
     );
+  });
+});
+
+describe("graph hierarchy (work document #23)", () => {
+  it("records parent and created in graph metadata", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const child = createGraph(doc, "main/A", "A", "main");
+    const metadata = child.get("metadata");
+    assert.equal(metadata.get("parent"), "main");
+    assert.equal(metadata.get("name"), "A");
+    assert.ok(typeof metadata.get("created") === "number");
+  });
+
+  it("lists direct children", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    createGraph(doc, "main/A", "A", "main");
+    createGraph(doc, "main/B", "B", "main");
+    createGraph(doc, "main/A/deep", "deep", "main/A");
+    assert.deepEqual(graphChildren(doc, "main").sort(), ["main/A", "main/B"]);
+    assert.deepEqual(graphChildren(doc, "main/A"), ["main/A/deep"]);
+    assert.deepEqual(graphChildren(doc, "main/B"), []);
+  });
+
+  it("resolves ancestry from root to graph", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    createGraph(doc, "main/A", "A", "main");
+    createGraph(doc, "main/A/deep", "deep", "main/A");
+    assert.deepEqual(graphAncestry(doc, "main/A/deep"), [
+      "main",
+      "main/A",
+      "main/A/deep",
+    ]);
+    assert.deepEqual(graphAncestry(doc, "nonexistent"), ["nonexistent"]);
+  });
+
+  it("cascades deletion to descendant subgraphs", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    createGraph(doc, "main/A", "A", "main");
+    createGraph(doc, "main/A/deep", "deep", "main/A");
+    createGraph(doc, "other");
+    assert.ok(deleteGraph(doc, "main/A"));
+    assert.ok(!getGraph(doc, "main/A"));
+    assert.ok(!getGraph(doc, "main/A/deep"));
+    assert.ok(getGraph(doc, "main"), "siblings survive");
+    assert.ok(getGraph(doc, "other"), "unrelated graphs survive");
+  });
+
+  it("converges graph hierarchy between peers", () => {
+    const docA = createProjectDoc("p");
+    const docB = createProjectDoc("p");
+    createGraph(docA, "main");
+    createGraph(docA, "main/A", "A", "main");
+    sync(docA, docB);
+    const child = getGraph(docB, "main/A");
+    assert.ok(child, "B sees the subgraph");
+    assert.equal(child.get("metadata").get("parent"), "main");
+    assert.deepEqual(graphAncestry(docB, "main/A"), ["main", "main/A"]);
   });
 });

@@ -165,9 +165,10 @@ export function getProjectMetadata(doc) {
  * @param {Y.Doc} doc
  * @param {string} graphId
  * @param {string} [name] Human-readable name; defaults to the graph id.
+ * @param {string} [parent] Id of the parent graph, for subgraphs.
  * @returns {Y.Map<any>} The graph map.
  */
-export function createGraph(doc, graphId, name = graphId) {
+export function createGraph(doc, graphId, name = graphId, parent = "") {
   const graphs = doc.getMap(GRAPHS_MAP);
   const existing = /** @type {Y.Map<any> | undefined} */ (graphs.get(graphId));
   if (existing) return existing;
@@ -177,6 +178,8 @@ export function createGraph(doc, graphId, name = graphId) {
     graphs.set(graphId, graph);
     const graphMetadata = new Y.Map();
     graphMetadata.set("name", name);
+    graphMetadata.set("parent", parent);
+    graphMetadata.set("created", Date.now());
     graph.set("metadata", graphMetadata);
     graph.set("nodes", new Y.Map());
     graph.set("edges", new Y.Map());
@@ -200,7 +203,45 @@ export function getGraph(doc, graphId) {
 }
 
 /**
- * Deletes a graph and everything in it.
+ * Returns the ids of a graph's direct children.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} graphId
+ * @returns {string[]}
+ */
+export function graphChildren(doc, graphId) {
+  /** @type {string[]} */
+  const children = [];
+  const graphs = doc.getMap(GRAPHS_MAP);
+  for (const [id, graph] of graphs.entries()) {
+    const metadata = graph.get("metadata");
+    if (metadata?.get("parent") === graphId) children.push(id);
+  }
+  return children;
+}
+
+/**
+ * Returns the ancestry of a graph, root first. Unknown graphs yield an
+ * empty array.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} graphId
+ * @returns {string[]}
+ */
+export function graphAncestry(doc, graphId) {
+  /** @type {string[]} */
+  const chain = [];
+  let current = graphId;
+  while (current && !chain.includes(current)) {
+    chain.unshift(current);
+    const graph = getGraph(doc, current);
+    current = graph?.get("metadata")?.get("parent") ?? "";
+  }
+  return chain;
+}
+
+/**
+ * Deletes a graph and everything in it, including descendant subgraphs.
  *
  * @param {Y.Doc} doc
  * @param {string} graphId
@@ -209,7 +250,12 @@ export function getGraph(doc, graphId) {
 export function deleteGraph(doc, graphId) {
   const graphs = doc.getMap(GRAPHS_MAP);
   if (!graphs.has(graphId)) return false;
-  graphs.delete(graphId);
+  doc.transact(() => {
+    for (const child of graphChildren(doc, graphId)) {
+      deleteGraph(doc, child);
+    }
+    graphs.delete(graphId);
+  });
   return true;
 }
 
