@@ -131,13 +131,18 @@ export default defineConfig([
     },
   },
   {
-    // @reticulum/dacar pure core (no transport adapters): external to the
-    // shared sibling @reticulum/core bundle, same contract as y-reticulum
+    // @reticulum/dacar pure core plus the §11 direct-link Delta push
+    // transport (utils/dacar-entry.js): external to the shared sibling
+    // @reticulum/core bundle, same contract as y-reticulum
     entry: {
-      dacar: 'node_modules/@reticulum/dacar/src/index.js',
+      dacar: './utils/dacar-entry.js',
     },
     ...vendor,
     external: ['@reticulum/core'],
+    // The dacar package itself is inlined (it ships no declarations, so a
+    // bare-specifier re-export would be invisible to the type checker);
+    // only @reticulum/core stays external
+    noExternal: [/^@reticulum\/dacar/],
     splitting: false,
     outputOptions: {
       paths: {
