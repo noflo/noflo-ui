@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<!--
+  WebCrypto capability diagnostic for Reticulum (work document #21).
+
+  Self-contained: no imports, no dependencies, works from any origin (also
+  file:// and insecure contexts, where it will note the fact). Walks the
+  browser through every WebCrypto operation reticulum.js performs, using the
+  exact call shapes, and renders a plain-text report that is easy to copy
+  and paste.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebCrypto capability report</title>
+    <style>
+      body {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 13px;
+        margin: 20px auto;
+        max-width: 760px;
+        padding: 0 12px;
+        background: #14171c;
+        color: #eee;
+      }
+      h1 { font-size: 16px; }
+      .row { margin: 2px 0; }
+      .ok { color: #7ec97e; }
+      .fail { color: #ff7b72; }
+      .skip { color: #d7b85c; }
+      pre {
+        background: #0d1014;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 10px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        user-select: all;
+      }
+      button {
+        background: #4aa3df;
+        color: #000;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebCrypto capability report (Reticulum operations)</h1>
+    <div id="progress">Running…</div>
+    <pre id="report"></pre>
+    <button id="copy">Copy report</button>
+    <script>
+      "use strict";
+
+      /**
+       * The full operation suite, written once so it can run on the main
+       * thread AND inside a worker (the Engine runs its crypto in a worker,
+       * and WebKit capabilities can differ between the two contexts).
+       *
+       * @param {(line: string) => void} emit
+       */
+      async function runSuite(emit) {
+        /** @type {string[]} */
+        const lines = [];
+        /** @type {string} */
+        let currentPrefix = "";
+        /** @type {any} */
+        let edKey = null;
+        /** @type {any} */
+        let edPubRaw = null;
+        /** @type {any} */
+        let xKey = null;
+        /** @type {any} */
+        let xPeer = null;
+        /** @type {any} */
+        let hkdfKey = null;
+
+        /**
+         * @param {string} op
+         * @param {() => Promise<any>} fn
+         */
+        async function record(op, fn) {
+          try {
+            await fn();
+            lines.push(`${currentPrefix} ${op}: OK`);
+            return true;
+          } catch (err) {
+            const reason = /** @type {any} */ (err);
+            lines.push(
+              `${currentPrefix} ${op}: FAIL ${reason.name}: ${String(reason.message).slice(0, 80)}`,
+            );
+            return false;
+          }
+        }
+
+        /**
+         * @param {string} op
+         */
+        function skip(op) {
+          lines.push(`${currentPrefix} ${op}: SKIPPED (prerequisite failed)`);
+        }
+
+        lines.push(`userAgent: ${navigator.userAgent}`);
+        lines.push(`secureContext: ${String(isSecureContext)}`);
+        lines.push(`subtle: ${typeof crypto?.subtle}`);
+        try {
+          const random = new Uint8Array(32);
+          crypto.getRandomValues(random);
+          lines.push("getRandomValues: OK");
+        } catch (err) {
+          const reason = /** @type {any} */ (err);
+          lines.push(`getRandomValues: FAIL ${reason.name}`);
+        }
+        try {
+          await crypto.subtle.digest("SHA-256", new Uint8Array(8));
+          lines.push("digest SHA-256: OK");
+        } catch (err) {
+          const reason = /** @type {any} */ (err);
+          lines.push(`digest SHA-256: FAIL ${reason.name}`);
+        }
+
+        // ---- Ed25519 (identity keys, announce signing) ----------------
+        currentPrefix = "ed25519";
+        let edOk = await record("generateKey", async () => {
+          edKey = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+            "sign",
+            "verify",
+          ]);
+        });
+        if (edOk) {
+          edOk = await record("exportKey raw (public)", async () => {
+            edPubRaw = await crypto.subtle.exportKey("raw", edKey.publicKey);
+          });
+        }
+        if (edOk) {
+          let signature = null;
+          const signOk = await record("sign", async () => {
+            signature = await crypto.subtle.sign(
+              { name: "Ed25519" },
+              edKey.privateKey,
+              new Uint8Array([1, 2, 3]),
+            );
+          });
+          if (signOk) {
+            await record("verify", async () => {
+              const valid = await crypto.subtle.verify(
+                { name: "Ed25519" },
+                edKey.publicKey,
+                signature,
+                new Uint8Array([1, 2, 3]),
+              );
+              if (!valid) throw new Error("signature invalid");
+            });
+          } else {
+            skip("verify");
+          }
+          await record("exportKey pkcs8 (private)", async () => {
+            return await crypto.subtle.exportKey("pkcs8", edKey.privateKey);
+          });
+          await record("importKey raw (public)", async () => {
+            return await crypto.subtle.importKey(
+              "raw",
+              edPubRaw,
+              { name: "Ed25519" },
+              true,
+              ["verify"],
+            );
+          });
+        } else {
+          for (const op of [
+            "exportKey raw (public)",
+            "sign",
+            "verify",
+            "exportKey pkcs8 (private)",
+            "importKey raw (public)",
+          ]) {
+            skip(op);
+          }
+        }
+
+        // ---- X25519 (link key derivation) ------------------------------
+        currentPrefix = "x25519";
+        let xOk = await record("generateKey", async () => {
+          xKey = await crypto.subtle.generateKey({ name: "X25519" }, true, [
+            "deriveKey",
+            "deriveBits",
+          ]);
+        });
+        if (xOk) {
+          xOk = await record("exportKey raw (public)", async () => {
+            return await crypto.subtle.exportKey("raw", xKey.publicKey);
+          });
+        }
+        if (xOk) {
+          await record("exportKey pkcs8 (private)", async () => {
+            return await crypto.subtle.exportKey("pkcs8", xKey.privateKey);
+          });
+          let peer = null;
+          try {
+            peer = await crypto.subtle.generateKey(
+              { name: "X25519" },
+              true,
+              ["deriveKey", "deriveBits"],
+            );
+          } catch {
+            peer = null;
+          }
+          if (peer) {
+            await record("deriveBits (ECDH shared secret, 256)", async () => {
+              return await crypto.subtle.deriveBits(
+                { name: "X25519", public: peer.publicKey },
+                xKey.privateKey,
+                256,
+              );
+            });
+          } else {
+            skip("deriveBits (ECDH shared secret, 256)");
+          }
+        } else {
+          for (const op of [
+            "exportKey raw (public)",
+            "exportKey pkcs8 (private)",
+            "deriveBits (ECDH shared secret, 256)",
+          ]) {
+            skip(op);
+          }
+        }
+
+        // ---- HKDF (key derivation for links and ciphers) ---------------
+        currentPrefix = "hkdf";
+        const shared = new Uint8Array(32).fill(9);
+        let hkdfInput = null;
+        try {
+          hkdfInput = await crypto.subtle.importKey(
+            "raw",
+            shared,
+            "HKDF",
+            false,
+            ["deriveKey", "deriveBits"],
+          );
+          lines.push("hkdf importKey raw: OK");
+        } catch (err) {
+          const reason = /** @type {any} */ (err);
+          lines.push(`hkdf importKey raw: FAIL ${reason.name}`);
+        }
+        if (hkdfInput) {
+          let hkdfOk = await record(
+            "deriveKey (HKDF SHA-256 -> AES-CBC 128)",
+            async () => {
+              hkdfKey = await crypto.subtle.deriveKey(
+                {
+                  name: "HKDF",
+                  hash: "SHA-256",
+                  salt: new Uint8Array(16),
+                  info: new Uint8Array(0),
+                },
+                hkdfInput,
+                { name: "AES-CBC", length: 128 },
+                false,
+                ["encrypt", "decrypt"],
+              );
+            },
+          );
+          await record("deriveBits (HKDF SHA-256, 256)", async () => {
+            return await crypto.subtle.deriveBits(
+              {
+                name: "HKDF",
+                hash: "SHA-256",
+                salt: new Uint8Array(16),
+                info: new Uint8Array(0),
+              },
+              hkdfInput,
+              256,
+            );
+          });
+          // ---- AES-CBC (packet encryption) -----------------------------
+          currentPrefix = "aes-cbc";
+          if (hkdfOk) {
+            let aesKey = hkdfKey;
+            if (!(await record("use derived key", async () => void aesKey))) {
+              aesKey = null;
+            }
+            let ciphertext = null;
+            const encOk = await record("encrypt", async () => {
+              ciphertext = await crypto.subtle.encrypt(
+                { name: "AES-CBC", iv: new Uint8Array(16).fill(2) },
+                aesKey,
+                new Uint8Array([9, 8, 7]),
+              );
+            });
+            if (encOk) {
+              await record("decrypt (round trip)", async () => {
+                const plain = await crypto.subtle.decrypt(
+                  { name: "AES-CBC", iv: new Uint8Array(16).fill(2) },
+                  aesKey,
+                  ciphertext,
+                );
+                if (new Uint8Array(plain)[0] !== 9) {
+                  throw new Error("round trip mismatch");
+                }
+              });
+            } else {
+              skip("decrypt (round trip)");
+            }
+          } else {
+            skip("encrypt");
+            skip("decrypt (round trip)");
+          }
+        } else {
+          skip("deriveKey (HKDF SHA-256 -> AES-CBC 128)");
+          skip("deriveBits (HKDF SHA-256, 256)");
+          skip("encrypt");
+          skip("decrypt (round trip)");
+        }
+
+        // ---- HMAC (token authentication) --------------------------------
+        currentPrefix = "hmac";
+        let hmacKey = null;
+        const hmacImport = await record(
+          "importKey raw (HMAC SHA-256)",
+          async () => {
+            hmacKey = await crypto.subtle.importKey(
+              "raw",
+              new Uint8Array(32),
+              { name: "HMAC", hash: "SHA-256" },
+              false,
+              ["sign"],
+            );
+          },
+        );
+        if (hmacImport) {
+          await record("sign", async () => {
+            return await crypto.subtle.sign(
+              "HMAC",
+              hmacKey,
+              new Uint8Array([4, 5, 6]),
+            );
+          });
+        } else {
+          skip("sign");
+        }
+
+        for (const line of lines) emit(line);
+        emit("(end)");
+      }
+
+      /** @type {string[]} */
+      const report = [];
+      /** @type {HTMLElement | null} */
+      const reportEl = document.getElementById("report");
+      /** @type {HTMLElement | null} */
+      const progressEl = document.getElementById("progress");
+
+      /**
+       * @param {string} section
+       * @returns {(line: string) => void}
+       */
+      function sectionEmitter(section) {
+        let first = true;
+        return (/** @type {string} */ line) => {
+          if (first) {
+            report.push(section);
+            first = false;
+          }
+          report.push(`  ${line}`);
+          if (reportEl) {
+            reportEl.textContent = report.join("\n");
+          }
+        };
+      }
+
+      (async () => {
+        const emit = sectionEmitter("main thread:");
+        await runSuite(emit);
+        emit("(end)");
+
+        // The Engine runs its crypto inside a Worker: capabilities can differ
+        // between the main thread and worker contexts in WebKit
+        try {
+          const workerSource = `const run = ${runSuite.toString()};\nrun((line) => self.postMessage(line));`;
+          const worker = new Worker(
+            URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" })),
+          );
+          const workerEmit = sectionEmitter("worker:");
+          worker.onmessage = (/** @type {MessageEvent} */ event) => {
+            const line = /** @type {string} */ (event.data);
+            if (line === "(end)") {
+              workerEmit("(end)");
+              worker.terminate();
+              progressEl && (progressEl.textContent = "Done — copy the report below.");
+              return;
+            }
+            workerEmit(line);
+          };
+          worker.onerror = (/** @type {ErrorEvent} */ event) => {
+            workerEmit(`worker failed to start: ${event.message}`);
+            progressEl && (progressEl.textContent = "Done — copy the report below.");
+          };
+        } catch (err) {
+          const reason = /** @type {any} */ (err);
+          const workerEmit = sectionEmitter("worker:");
+          workerEmit(`worker failed to start: ${reason.message}`);
+        }
+      })();
+
+      /** @type {HTMLElement | null} */
+      const copyButton = document.getElementById("copy");
+      copyButton?.addEventListener("click", () => {
+        const text = reportEl?.textContent ?? "";
+        navigator.clipboard?.writeText(text).then(
+          () => {
+            if (copyButton) copyButton.textContent = "Copied ✓";
+          },
+          () => {
+            // Clipboard blocked: the report block is user-select: all, so a
+            // manual selection + copy works
+            if (copyButton) copyButton.textContent = "Select the report manually";
+          },
+        );
+      });
+    </script>
+  </body>
+</html>
