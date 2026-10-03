@@ -43,7 +43,8 @@ export class FlowMeshSettings extends HTMLElement {
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
-    this._room = "";
+    /** Generated invite URI (`noflo://join/...`), shown with a copy button. */
+    this._inviteUri = "";
     /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */
     this._joinRequests = [];
     /** @type {string | null} */
@@ -65,8 +66,7 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {string} identityHash Hex identity hash for display.
    * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
    *   interface type.
-   * @param {string} room The project's sync room, for display.
-   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} joinRequests
    *   Peers awaiting an access decision.
    * @param {string} meshError Engine mesh error (e.g. WebCrypto without
    *   Ed25519): when set, mesh sync cannot run on this browser.
@@ -76,7 +76,6 @@ export class FlowMeshSettings extends HTMLElement {
     grants,
     identityHash,
     interfaceSchemas = {},
-    room = "",
     joinRequests = [],
     meshError = "",
   ) {
@@ -84,7 +83,6 @@ export class FlowMeshSettings extends HTMLElement {
     this._grants = grants ?? [];
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
-    this._room = room;
     this._joinRequests = joinRequests ?? [];
     this._meshError = meshError;
     this._open = true;
@@ -137,7 +135,18 @@ export class FlowMeshSettings extends HTMLElement {
   }
 
   /**
-   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+   * Shows a generated invite URI (work document #25): the Glass sets this
+   * when the Engine answers a `MESH createInvite` with `mesh-invite`.
+   *
+   * @param {string} uri
+   */
+  setInvite(uri) {
+    this._inviteUri = uri ?? "";
+    if (this._open) this.render();
+  }
+
+  /**
+   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }> | null} joinRequests
    */
   setJoinRequests(joinRequests) {
     this._joinRequests = joinRequests ?? [];
@@ -280,14 +289,21 @@ export class FlowMeshSettings extends HTMLElement {
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable && !this._meshError ? "" : "disabled"}> Enabled</label>
         </div>
         <h3>Invite</h3>
-        <div class="row">
-          <div class="hash grow" id="mesh-room">${this._room}</div>
+        ${
+          this._inviteUri
+            ? `<div class="row">
+          <div class="hash grow" id="mesh-invite">${this._inviteUri}</div>
           <button class="secondary" data-action="copy-invite">Copy</button>
         </div>
-        <div class="hint">Per-project by construction: peers join this project by syncing to this room. Send it to a collaborator, then have them paste it under "Join a project".</div>
+        <div class="hint">Send this invite to a collaborator, then have them paste it under "Join a project". The token expires in 24 hours.</div>`
+            : `<div class="row">
+          <button data-action="create-invite" ${editable && !this._meshError ? "" : "disabled"}>Generate invite</button>
+        </div>
+        <div class="hint">Generates a noflo:// join link for this project. The invited device joins by pasting it under "Join a project"; you approve the joining device when it knocks.</div>`
+        }
         <h3>Join a project</h3>
         <div class="row">
-          <input id="join-room" placeholder="Paste a project room (noflo-ui:...)">
+          <input id="join-room" placeholder="Paste an invite (noflo://join/...)">
           <button data-action="join">Join</button>
         </div>
         <div class="hint">Joining materializes the invited project as a new project in this device's storage. Only possible while the local project is empty.</div>
@@ -439,10 +455,17 @@ export class FlowMeshSettings extends HTMLElement {
     shadow
       .querySelector('[data-action="copy-invite"]')
       ?.addEventListener("click", () => {
-        const room = /** @type {HTMLElement} */ (
-          shadow.querySelector("#mesh-room")
+        const invite = /** @type {HTMLElement} */ (
+          shadow.querySelector("#mesh-invite")
         ).textContent?.trim();
-        if (room) navigator.clipboard?.writeText(room).catch(() => {});
+        if (invite) navigator.clipboard?.writeText(invite).catch(() => {});
+      });
+    shadow
+      .querySelector('[data-action="create-invite"]')
+      ?.addEventListener("click", () => {
+        this.dispatchEvent(
+          new CustomEvent("mesh-create-invite", { bubbles: true }),
+        );
       });
     shadow
       .querySelector('[data-action="join"]')
@@ -450,12 +473,12 @@ export class FlowMeshSettings extends HTMLElement {
         const input = /** @type {HTMLInputElement} */ (
           shadow.querySelector("#join-room")
         );
-        const room = input.value.trim();
-        if (!room) return;
+        const invite = input.value.trim();
+        if (!invite) return;
         input.value = "";
         this.dispatchEvent(
           new CustomEvent("mesh-join", {
-            detail: { room },
+            detail: { invite },
             bubbles: true,
           }),
         );

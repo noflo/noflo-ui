@@ -132,43 +132,52 @@ describe("FlowMeshSettings (work document #21)", () => {
       [],
       "",
       { websocket: websocketSchema },
-      "noflo-ui:proj-123",
     );
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector("#mesh-room"))
-        .textContent ?? "",
-      /noflo-ui:proj-123/,
-    );
+    // Without a generated invite, the section offers generation
+    const generate = shadow.querySelector('[data-action="create-invite"]');
+    assert.ok(generate, "invite generation offered");
     const input = /** @type {HTMLInputElement} */ (
       shadow.querySelector("#join-room")
     );
-    input.value = "noflo-ui:invited-456";
+    input.value =
+      "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff";
     /** @type {HTMLElement} */ (
       shadow.querySelector('[data-action="join"]')
     ).click();
-    assert.deepEqual(joins, [{ room: "noflo-ui:invited-456" }]);
+    assert.deepEqual(joins, [
+      {
+        invite:
+          "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff",
+      },
+    ]);
     assert.equal(input.value, "", "input cleared after join");
     el.remove();
   });
 
-  it("shows the project room as read-only", () => {
+  it("shows a generated invite URI with a copy button", () => {
     const el = makeElement();
     el.open(
       { enabled: false, identity: "", interfaces: [], webrtc: {} },
       [],
       "",
       { websocket: websocketSchema },
-      "noflo-ui:proj-123",
     );
+    const uri =
+      "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff";
+    el.setInvite(uri);
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    const room = /** @type {HTMLElement} */ (
-      shadow.querySelector("#mesh-room")
+    const chip = /** @type {HTMLElement} */ (
+      shadow.querySelector("#mesh-invite")
     );
-    assert.match(room.textContent ?? "", /noflo-ui:proj-123/);
+    assert.match(chip.textContent ?? "", /noflo:\/\/join\//);
     assert.ok(
-      !shadow.querySelector("#mesh-room-input"),
-      "room is not editable",
+      shadow.querySelector('[data-action="copy-invite"]'),
+      "copy button shown for the invite",
+    );
+    assert.ok(
+      !shadow.querySelector('[data-action="create-invite"]'),
+      "generation replaced by the generated URI",
     );
     el.remove();
   });
@@ -295,7 +304,6 @@ describe("mesh error display (work document #21)", () => {
       [],
       "",
       { websocket: websocketSchema },
-      "noflo-ui:test",
       [],
       "Identity generation failed: The operation is not supported.",
     );

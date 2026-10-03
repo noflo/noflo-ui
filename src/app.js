@@ -80,15 +80,15 @@ const pendingTracker = createPendingTracker();
 let meshConfig = /** @type {any} */ (null);
 /** Identity hash reported by the Engine, for the settings dialog. */
 let meshIdentityHash = "";
-/** Per-project sync room reported by the Engine, for the settings dialog. */
-let meshRoom = "";
 /** Mesh error reported by the Engine (e.g. WebCrypto without Ed25519). */
 let meshError = "";
 /** Main-thread identity recovery attempted at most once per session. */
 let identityRecoveryAttempted = false;
 /** Peers awaiting an access decision, reported by the Engine. */
 let joinRequests =
-  /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */ ([]);
+  /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} */ ([]);
+/** Last generated invite URI, reported by the Engine. */
+let meshInviteUri = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** @type {FlowEditor | null} */
@@ -179,7 +179,6 @@ function onEngineMessage(data) {
   } else if (data?.kind === "mesh-config") {
     meshConfig = data.config ?? null;
     meshIdentityHash = data.identityHash ?? "";
-    meshRoom = data.room ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
     joinRequests = data.joinRequests ?? joinRequests;
     // The engine's identity state is authoritative: recovered or still
@@ -189,6 +188,9 @@ function onEngineMessage(data) {
     } else if (data.identityHash) {
       meshError = "";
     }
+    refreshMeshSettings();
+  } else if (data?.kind === "mesh-invite") {
+    meshInviteUri = data.uri ?? "";
     refreshMeshSettings();
   } else if (data?.kind === "mesh-requests") {
     joinRequests = data.requests ?? [];
@@ -364,10 +366,10 @@ function openMeshSettings() {
     projectGrants(mirrorDoc),
     meshIdentityHash,
     meshInterfaceSchemas,
-    meshRoom,
     joinRequests,
     meshError,
   );
+  dialog.setInvite(meshInviteUri);
 }
 
 /**
@@ -383,9 +385,9 @@ function refreshMeshSettings() {
     dialog._config = meshConfig;
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
-    dialog._room = meshRoom;
     dialog._meshError = meshError;
     dialog._joinRequests = joinRequests;
+    dialog.setInvite(meshInviteUri);
     dialog.render();
   }
 }
@@ -610,22 +612,41 @@ async function init() {
   settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
     sendIntent(revokePermissionIntent(e.detail.id));
   });
+  settingsDialog?.addEventListener("mesh-create-invite", () => {
+    supervisor?.send({ type: "MESH", command: "createInvite" });
+  });
   settingsDialog?.addEventListener("mesh-join", (/** @type {any} */ e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
   });
   settingsDialog?.addEventListener("mesh-approve", (/** @type {any} */ e) => {
+    const request = joinRequests.find(
+      (/** @type {any} */ entry) =>
+        entry.identityHash === e.detail.identityHash,
+    );
+    if (request?.source === "bootstrap") {
+      // A bootstrap knocker is granted by the host decision engine itself
+      // when the approval resolves; the grant then syncs over the mesh
+      supervisor?.send({
+        type: "MESH",
+        command: "resolveRequest",
+        payload: { identityHash: e.detail.identityHash, decision: "approved" },
+      });
+      return;
+    }
+    // A sync-refusal peer holds no bootstrap link: the grant flows through
+    // the CRDT, and resolving just clears the request entry
     sendIntent(grantPermissionIntent(e.detail.identityHash, "operator"));
     supervisor?.send({
       type: "MESH",
       command: "resolveRequest",
-      payload: { identityHash: e.detail.identityHash },
+      payload: { identityHash: e.detail.identityHash, decision: "approved" },
     });
   });
   settingsDialog?.addEventListener("mesh-deny", (/** @type {any} */ e) => {
     supervisor?.send({
       type: "MESH",
       command: "resolveRequest",
-      payload: { identityHash: e.detail.identityHash },
+      payload: { identityHash: e.detail.identityHash, decision: "declined" },
     });
   });
   settingsDialog?.addEventListener("mesh-close", () => {});
