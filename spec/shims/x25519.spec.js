@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { installX25519SubtlePolyfill } from "../../src/shims/x25519-subtle.js";
+import {
+  createX25519SubtleProxy,
+  probeX25519Support,
+} from "../../src/shims/x25519-subtle.js";
 
 const hexToBytes = (/** @type {string} */ hex) =>
   Uint8Array.from(hex.match(/../g) ?? [], (/** @type {string} */ h) =>
@@ -34,10 +37,17 @@ describe("X25519 polyfill (@noble/curves-backed subtle shim)", () => {
     );
   });
 
-  it("does not install when the runtime supports X25519 natively", async () => {
-    // Node's WebCrypto has native X25519: the polyfill must stay inactive
-    // and leave crypto.subtle untouched
-    const installed = await installX25519SubtlePolyfill();
-    assert.equal(installed, false);
+  it("delegates to native X25519 once the probe confirms support", async () => {
+    // Node's WebCrypto has native X25519: after the probe, the proxy must
+    // delegate X25519 operations to the native implementation
+    await probeX25519Support();
+    const native = /** @type {any} */ (globalThis.crypto).subtle;
+    const proxied = createX25519SubtleProxy(native);
+    const pair = await proxied.generateKey({ name: "X25519" }, true, [
+      "deriveKey",
+      "deriveBits",
+    ]);
+    assert.equal(pair.privateKey.type, "private");
+    assert.ok(pair.privateKey instanceof CryptoKey, "native keys pass through");
   });
 });

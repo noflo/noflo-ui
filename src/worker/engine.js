@@ -28,7 +28,7 @@ import {
   createDispatcherGraph,
   registerEngineComponents,
 } from "../graphs/engine-dispatch.js";
-import { installX25519SubtlePolyfill } from "../shims/x25519-subtle.js";
+import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { createMeshSync } from "./MeshSync.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -60,10 +60,7 @@ export async function startEngine(io, options = {}) {
   // WebKit ships Ed25519 but not X25519 in WebCrypto: intercept X25519
   // operations with the first-party RFC 7748 implementation. No-op on
   // runtimes with full support.
-  const polyfilled = await installX25519SubtlePolyfill();
-  console.info(
-    `X25519 polyfill: ${polyfilled ? "installed" : "native X25519 available"}`,
-  );
+  await probeX25519Support();
   // Project-scoped persistence (work document #21): the device keeps an
   // active-project pointer in its engine-owned storage; the project document
   // loads from and persists to its own IndexedDB store keyed by the project

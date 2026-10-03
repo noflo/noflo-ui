@@ -219,12 +219,8 @@ async function recoverIdentityOnMainThread() {
       "sign",
       "verify",
     ]);
-    // Safari's main thread lacks X25519 as well: install the same polyfill
-    // the Engine uses, so Identity.generate() can complete here
-    const { installX25519SubtlePolyfill } = await import(
-      "./shims/x25519-subtle.js"
-    );
-    await installX25519SubtlePolyfill();
+    // The vendored reticulum-core's crypto shim routes X25519 through the
+    // RFC 7748 fallback, so Identity.generate() works on the main thread too
     const { Identity } = await import("../vendor/reticulum-core.js");
     const identity = await Identity.generate();
     const key = await identity.getPrivateKey();

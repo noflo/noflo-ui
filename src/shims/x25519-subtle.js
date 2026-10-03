@@ -7,10 +7,9 @@
  * (including Ed25519, HKDF, AES, HMAC) is delegated to the native subtle
  * untouched.
  *
- * Install with `installX25519SubtlePolyfill()` before any code that uses
- * X25519 keys. The polyfill is only active when the runtime cannot actually
- * generate an X25519 key; runtimes with full support see zero behavioral
- * difference.
+ * Use via the crypto-subtle shim (aliased into the reticulum-core vendor
+ * bundle at build time). X25519 operations route through @noble/curves
+ * unless a boot-time probe confirms native support.
  */
 
 /** Marker for polyfilled X25519 key objects. */
@@ -53,6 +52,25 @@ async function curves() {
  *
  * @returns {Promise<boolean>}
  */
+/**
+ * Whether the runtime's WebCrypto natively implements X25519. Probed at
+ * boot; until the probe completes, X25519 operations route through the
+ * polyfill (the safe fallback).
+ *
+ * @type {boolean | null}
+ */
+let nativeX25519Supported = null;
+
+/**
+ * Probes native X25519 support once and records it, so browsers with full
+ * support stop routing X25519 through the polyfill after boot.
+ *
+ * @returns {Promise<void>}
+ */
+export async function probeX25519Support() {
+  nativeX25519Supported = await hasNativeX25519();
+}
+
 export async function hasNativeX25519() {
   try {
     await crypto.subtle.generateKey({ name: "X25519" }, true, [
@@ -73,13 +91,7 @@ export async function hasNativeX25519() {
  *
  * @returns {Promise<boolean>} Whether the polyfill was installed.
  */
-export async function installX25519SubtlePolyfill() {
-  if (!globalThis.crypto?.subtle) return false;
-  if (await hasNativeX25519()) return false;
-  curvesCache = await curves();
-
-  const nativeSubtle = crypto.subtle;
-
+export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
   /**
    * @param {any} target
    * @param {string} operation
@@ -104,6 +116,10 @@ export async function installX25519SubtlePolyfill() {
       isX25519 = Boolean(asX25519Key(args[1]));
     }
     if (!isX25519) {
+      return /** @type {any} */ (target)[operation](...args);
+    }
+    if (nativeX25519Supported === true) {
+      // Full native support confirmed after boot: use the real thing
       return /** @type {any} */ (target)[operation](...args);
     }
 
@@ -242,30 +258,22 @@ export async function installX25519SubtlePolyfill() {
     }
   };
 
-  const wrapped = new Proxy(nativeSubtle, {
-    get(target, property) {
-      if (
-        property === "generateKey" ||
-        property === "importKey" ||
-        property === "exportKey" ||
-        property === "deriveBits" ||
-        property === "deriveKey"
-      ) {
-        return (/** @type {any[]} */ ...args) =>
-          intercept(target, /** @type {string} */ (property), args);
-      }
-      const value = Reflect.get(target, property);
-      return typeof value === "function" ? value.bind(target) : value;
-    },
-  });
-
-  try {
-    Object.defineProperty(globalThis.crypto, "subtle", {
-      value: /** @type {any} */ (wrapped),
-      configurable: true,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  return /** @type {any} */ (
+    new Proxy(nativeSubtle, {
+      get(target, property) {
+        if (
+          property === "generateKey" ||
+          property === "importKey" ||
+          property === "exportKey" ||
+          property === "deriveBits" ||
+          property === "deriveKey"
+        ) {
+          return (/** @type {any[]} */ ...args) =>
+            intercept(target, /** @type {string} */ (property), args);
+        }
+        const value = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    })
+  );
 }
