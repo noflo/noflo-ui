@@ -497,14 +497,24 @@ export async function createMeshSync({
     provider.room?.rns?.transport?.addEventListener(
       "announce",
       (/** @type {any} */ event) => {
+        // Only log announces for the room's own aspect: other destinations
+        // (relay traffic for unrelated peers) would be noise
         const detail = event.detail ?? {};
+        const roomNameHash = provider.room?.dest?.nameHash;
+        if (
+          !detail.nameHash ||
+          !roomNameHash ||
+          !Buffer.from(detail.nameHash).equals(Buffer.from(roomNameHash))
+        ) {
+          return;
+        }
         const hash = detail.destinationHash
           ? [...detail.destinationHash]
               .map((b) => b.toString(16).padStart(2, "0"))
               .join("")
               .slice(-12)
           : "unknown";
-        console.info(`[mesh] announce received from peer ${hash}`);
+        console.info(`[mesh] announce received from room peer ${hash}`);
       },
     );
     provider.on("synced", (/** @type {any} */ event) => {
