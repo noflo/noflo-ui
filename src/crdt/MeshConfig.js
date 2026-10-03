@@ -9,6 +9,23 @@ export const MESH_CONFIG_VERSION = 1;
 export const MESH_CONFIG_KEY = "mesh-config";
 
 /**
+ * Default WebSocket entry points into the Reticulum mesh. A fresh instance
+ * seeds its configuration with one of these at random, so mesh sync works
+ * out of the box; users can replace or remove the seeded interface. The
+ * list will grow as more entry-point servers come online.
+ */
+export const DEFAULT_ENTRY_POINTS = ["wss://cloud.lille-oe.de"];
+
+/**
+ * @returns {string}
+ */
+export function pickDefaultEntryPoint() {
+  return DEFAULT_ENTRY_POINTS[
+    Math.floor(Math.random() * DEFAULT_ENTRY_POINTS.length)
+  ];
+}
+
+/**
  * Interface configuration is options-based: each interface type supplies its
  * own JSON Schema (`getConfigurationSchema()` static on @reticulum/core interface classes), and the options object holds whatever that schema describes. The settings UI renders forms from the schema.
  *

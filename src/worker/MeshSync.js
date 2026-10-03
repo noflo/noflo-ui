@@ -14,6 +14,7 @@ import { ReticulumProvider } from "../../vendor/y-reticulum.js";
 import {
   loadMeshConfig,
   normalizeMeshConfig,
+  pickDefaultEntryPoint,
   saveMeshConfig,
 } from "../crdt/MeshConfig.js";
 import { grantPermission } from "../crdt/ProjectDoc.js";
@@ -330,6 +331,19 @@ export async function createMeshSync({
 
   async function start() {
     if (!config.enabled || provider) return;
+    // A fresh instance connects through a random default entry point, so
+    // mesh sync works out of the box; the choice persists with the config
+    if (config.interfaces.length === 0) {
+      config.interfaces = [
+        {
+          id: `iface-${Math.random().toString(36).slice(2, 10)}`,
+          type: "websocket",
+          options: { url: pickDefaultEntryPoint() },
+          enabled: true,
+        },
+      ];
+      await saveMeshConfig(storage, config);
+    }
     try {
       const identity = await ensureIdentity();
       ensureSelfGrant(identityHash);

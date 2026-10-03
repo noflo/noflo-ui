@@ -4,6 +4,7 @@ import { afterEach, describe, it } from "node:test";
 import {
   createDefaultMeshConfig,
   createMemoryStorage,
+  DEFAULT_ENTRY_POINTS,
   loadMeshConfig,
   normalizeMeshConfig,
   saveMeshConfig,
@@ -418,5 +419,51 @@ describe("awareness (work document #21)", () => {
     // Not enabled: no provider, no awareness — must not throw
     mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 1, y: 1 });
     mesh.handleAwareness({ graphId: "main", nodeId: null });
+  });
+});
+
+describe("default entry points (work document #21)", () => {
+  it("seeds a random default entry point on first enable", async () => {
+    const storage = createMemoryStorage();
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: () => {},
+      storage,
+      createProvider: async () => ({ on: () => {}, destroy: async () => {} }),
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    assert.equal(mesh.config.interfaces.length, 1, "one interface seeded");
+    const seeded = mesh.config.interfaces[0];
+    assert.equal(seeded.type, "websocket");
+    assert.ok(
+      DEFAULT_ENTRY_POINTS.includes(seeded.options.url),
+      "url picked from the default entry point list",
+    );
+    // The choice persists with the configuration
+    const persisted = await loadMeshConfig(storage);
+    assert.deepEqual(persisted.interfaces, mesh.config.interfaces);
+  });
+
+  it("keeps user-configured interfaces untouched", async () => {
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: () => {},
+      storage: createMemoryStorage(),
+      createProvider: async () => ({ on: () => {}, destroy: async () => {} }),
+    });
+    await mesh.handleConfigure({
+      ...createDefaultMeshConfig(),
+      enabled: true,
+      interfaces: [
+        {
+          id: "mine",
+          type: "websocket",
+          options: { url: "wss://mine" },
+          enabled: true,
+        },
+      ],
+    });
+    assert.equal(mesh.config.interfaces.length, 1);
+    assert.equal(mesh.config.interfaces[0].id, "mine");
   });
 });
