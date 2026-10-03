@@ -59,6 +59,9 @@ export function pickDefaultEntryPoint() {
  *   empty until the Engine generates one
  * @property {MeshInterface[]} interfaces
  * @property {MeshWebRTCConfig} webrtc
+ * @property {boolean} joinedViaInvite Set when this device joined the
+ *   project by invite: such devices never self-grant — access comes from
+ *   the owner's approval through the grants sync.
  */
 
 /**
@@ -71,6 +74,7 @@ export function createDefaultMeshConfig() {
     identity: "",
     interfaces: [],
     webrtc: createDefaultWebRTCConfig(),
+    joinedViaInvite: false,
   };
 }
 
@@ -103,6 +107,7 @@ export function normalizeMeshConfig(blob) {
   if (!blob || typeof blob !== "object") return config;
   if (blob.enabled === true) config.enabled = true;
   if (typeof blob.identity === "string") config.identity = blob.identity;
+  if (blob.joinedViaInvite === true) config.joinedViaInvite = true;
   if (blob.webrtc && typeof blob.webrtc === "object") {
     config.webrtc = {
       ...createDefaultWebRTCConfig(),

@@ -272,13 +272,18 @@ export async function startEngine(io, options = {}) {
     // project-scoped store (the binding writes the doc state into it), the
     // device pointer, and a mesh rebind into the invited room
     adoptProjectIdentity(doc, invitedId);
+    // The invited device never self-grants: mark it, and clear any local
+    // grants so the document starts with the owner's grant map once synced
+    meshStorage
+      .set("activeProjectId", invitedId)
+      .then(() => mesh.handleJoinedViaInvite())
+      .catch(() => {});
     if (persistence) {
       persistence.destroy().catch(() => {});
     }
     if (typeof globalThis.indexedDB !== "undefined") {
       legacyLoad = false;
       bindProjectPersistence(`noflo-project-${invitedId}`);
-      meshStorage.set("activeProjectId", invitedId).catch(() => {});
     }
     mesh
       .rebind()

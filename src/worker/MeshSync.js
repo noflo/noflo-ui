@@ -139,6 +139,8 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   freshly resolved room.
  * @property {(base64: string) => Promise<void>} handleImportedIdentity
  *   Adopts a main-thread-generated identity.
+ * @property {() => Promise<void>} handleJoinedViaInvite Marks the device as
+ *   invited (no self-grant) and clears its local grants map.
  * @property {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
  *   Peers that know the room but hold no grant (access requests).
  * @property {(identityHash: string) => void} resolveJoinRequest Removes a
@@ -359,6 +361,9 @@ export async function createMeshSync({
    * @param {string} ownHash
    */
   function ensureSelfGrant(ownHash) {
+    // Invited devices never self-grant: their access comes from the owner's
+    // approval, synced through the grants map after the link establishes
+    if (config.joinedViaInvite) return;
     if (!doc.getMap?.("grants")) return;
     if (!isGranted(ownHash)) {
       grantPermission(doc, ownHash, "developer");
@@ -585,6 +590,17 @@ export async function createMeshSync({
       await start();
       // The Engine reports the full state (config, identity, room, schemas)
       // after reconfiguration; MeshSync stays silent here
+    },
+    /**
+     * Marks this device as having joined by invite (work document #21):
+     * invited devices never self-grant, and their local grants map is
+     * cleared so the document starts with the owner's grant map once the
+     * access is approved and the link syncs.
+     */
+    async handleJoinedViaInvite() {
+      config.joinedViaInvite = true;
+      await saveMeshConfig(storage, config);
+      doc.getMap?.("grants")?.clear();
     },
     /**
      * @param {any} payload
