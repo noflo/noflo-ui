@@ -60,7 +60,10 @@ export async function startEngine(io, options = {}) {
   // WebKit ships Ed25519 but not X25519 in WebCrypto: intercept X25519
   // operations with the first-party RFC 7748 implementation. No-op on
   // runtimes with full support.
-  await installX25519SubtlePolyfill();
+  const polyfilled = await installX25519SubtlePolyfill();
+  console.info(
+    `X25519 polyfill: ${polyfilled ? "installed" : "native X25519 available"}`,
+  );
   // Project-scoped persistence (work document #21): the device keeps an
   // active-project pointer in its engine-owned storage; the project document
   // loads from and persists to its own IndexedDB store keyed by the project
@@ -343,6 +346,17 @@ if (
   typeof selfGlobal.addEventListener === "function" &&
   typeof selfGlobal.document === "undefined"
 ) {
+  // Surface otherwise-silent worker promise rejections with their stacks
+  selfGlobal.addEventListener(
+    "unhandledrejection",
+    (/** @type {any} */ event) => {
+      const reason = event.reason ?? {};
+      console.error(
+        "Worker unhandled rejection:",
+        reason?.stack ?? reason?.message ?? reason,
+      );
+    },
+  );
   startEngine({
     postMessage: (message) => selfGlobal.postMessage(message),
     registerMessageHandler: (handler) => {

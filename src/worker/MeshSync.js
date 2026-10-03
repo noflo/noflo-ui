@@ -306,7 +306,12 @@ export async function createMeshSync({
         }
         identityHash = toHex(restored.getSalt());
         return restored;
-      } catch {
+      } catch (err) {
+        // Surfaced: why the persisted identity could not be reused
+        console.warn(
+          "Mesh: stored identity could not be restored, regenerating:",
+          /** @type {any} */ (err)?.message ?? err,
+        );
         // A corrupt stored identity is regenerated: it is only an address,
         // and peers re-grant access to the new hash through the config UI
       }
