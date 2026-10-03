@@ -29,6 +29,7 @@ import {
   registerEngineComponents,
 } from "../graphs/engine-dispatch.js";
 import { probeX25519Support } from "../shims/x25519-subtle.js";
+import { parseInviteUri } from "./Bootstrap.js";
 import { createMeshSync } from "./MeshSync.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -75,16 +76,15 @@ export async function startEngine(io, options = {}) {
   const storedProjectId = await meshStorage
     .get("activeProjectId")
     .catch(() => null);
-  const storedPendingInvite = await meshStorage
-    .get("pendingInviteId")
+  // A pending bootstrap invite survives reloads (work document #25 plan
+  // item 3): the joiner re-dials the host, which answers idempotently
+  const storedPendingInviteUri = await meshStorage
+    .get("pendingInviteUri")
     .catch(() => null);
-  if (
+  const hasPendingInvite =
     !storedProjectId &&
-    typeof storedPendingInvite === "string" &&
-    storedPendingInvite
-  ) {
-    pendingInviteId = storedPendingInvite;
-  }
+    typeof storedPendingInviteUri === "string" &&
+    parseInviteUri(storedPendingInviteUri) !== null;
   const doc = createProjectDoc(options.name ?? "Untitled project");
   if (typeof storedProjectId === "string" && storedProjectId) {
     adoptProjectIdentity(doc, storedProjectId);
@@ -185,7 +185,7 @@ export async function startEngine(io, options = {}) {
   let legacyLoad = false;
   if (typeof globalThis.indexedDB !== "undefined") {
     try {
-      if (pendingInviteId) {
+      if (hasPendingInvite) {
         // Pending join: the project store materializes on approval
         legacyLoad = false;
       } else {
@@ -233,10 +233,10 @@ export async function startEngine(io, options = {}) {
           console.error("Join materialization failed:", err),
         );
     },
-    // With a bound project store, wait for the stored project id (or the
-    // approved invite) before binding; a pending invite starts immediately
-    // in requester mode
-    autostart: !persistence,
+    // With a bound project store, wait for the stored project id before
+    // binding; a pending bootstrap invite resumes the join instead of
+    // starting the sync provider (the grant has not been handed off yet)
+    autostart: !persistence && !hasPendingInvite,
   });
   if (projectLoaded) {
     // The project load beat the mesh boot: bind now
@@ -244,6 +244,19 @@ export async function startEngine(io, options = {}) {
       .rebind()
       .catch((/** @type {any} */ err) =>
         console.error("Mesh rebinding failed:", err),
+      );
+  }
+  if (hasPendingInvite) {
+    // Resume the interrupted join (work document #25 plan item 3): the
+    // host answers idempotently, so the re-dial is safe. The handler is
+    // referenced lazily: it is defined further down in the boot sequence.
+    mesh
+      .resumePendingInvite({
+        onApproved: (/** @type {any} */ project) =>
+          adoptInvitedProject(project),
+      })
+      .catch((/** @type {any} */ err) =>
+        console.error("Join resume failed:", err),
       );
   }
 
@@ -268,32 +281,22 @@ export async function startEngine(io, options = {}) {
   };
 
   /**
-   * Joins a project by invite (work document #21). The invited project
-   * materializes as a new project in this device's IndexedDB — its own
-   * project-scoped store — unless the device already has the matching
-   * project id, in which case the invite is a no-op. Refused for local
-   * projects with different ids that already have content: two projects
-   * merged would interleave their graphs.
+   * Applies an approved bootstrap handoff (work document #25 §4.2): adopts
+   * the invited project identity and switches the device into invited mode
+   * (no self-grant, grants map cleared). The handed-off grant itself is
+   * written by the mesh layer right after this resolves — which triggers
+   * the approval watcher and materializes the project. Returns false when
+   * the project was already present (nothing to adopt, no grant write).
    *
-   * @param {any} payload
+   * @param {any} project Approved handoff payload `{ id, name }`.
+   * @returns {Promise<boolean>}
    */
-  const joinProject = (payload) => {
-    const room = String(payload?.room ?? "").trim();
-    const prefix = "noflo-ui:";
-    const invitedId = room.startsWith(prefix)
-      ? room.slice(prefix.length)
-      : room;
-    if (!invitedId) {
-      io.postMessage({
-        kind: "mesh-status",
-        error: "Join failed: paste an invite (project room)",
-      });
-      return;
-    }
+  const adoptInvitedProject = async (project) => {
+    const invitedId = String(project?.id ?? "");
+    if (!invitedId) return false;
     if (invitedId === projectId) {
-      // Already have this project; nothing to adopt
-      postMeshConfig();
-      return;
+      // Already have this project; the existing grants stay authoritative
+      return false;
     }
     if (doc.getMap("graphs").size > 0) {
       io.postMessage({
@@ -301,26 +304,42 @@ export async function startEngine(io, options = {}) {
         error:
           "Join failed: this device already has project content. Joining would merge two projects.",
       });
-      return;
+      return false;
     }
-    // Join = REQUEST only (work document #21): adopt the invited identity
-    // into the in-memory document and start the mesh in requester mode —
-    // announcing, dialing the owner, surfacing the access request. The
-    // project itself (scoped persistence, device pointer) materializes only
-    // when the owner approves, via the onApproved callback.
     adoptProjectIdentity(doc, invitedId);
     pendingInviteId = invitedId;
-    meshStorage.set("pendingInviteId", invitedId).catch(() => {});
     if (persistence) {
       persistence.destroy().catch(() => {});
+      persistence = null;
     }
     if (typeof globalThis.indexedDB !== "undefined") {
       legacyLoad = false;
     }
+    await mesh.handleJoinedViaInvite();
+    return true;
+  };
+
+  /**
+   * Joins a project by invite (work document #25, "Knock and Approve"):
+   * runs the joiner state machine against the invited host — path request,
+   * bootstrap link, identify, knock — and, on approval, adopts the invited
+   * project and materializes it as a new project in this device's
+   * IndexedDB. Declines surface their reason; failed links leave the
+   * pending invite stored so a reload resumes the join.
+   *
+   * @param {any} payload
+   */
+  const joinProject = (payload) => {
+    const invite = String(payload?.invite ?? "").trim();
+    if (!parseInviteUri(invite)) {
+      io.postMessage({
+        kind: "mesh-status",
+        error: "Join failed: paste an invite (noflo://join/...) URL",
+      });
+      return;
+    }
     mesh
-      .handleJoinedViaInvite()
-      .then(() => mesh.rebind())
-      .then(() => postMeshConfig())
+      .startBootstrapJoin(invite, { onApproved: adoptInvitedProject })
       .catch((/** @type {any} */ err) =>
         io.postMessage({
           kind: "mesh-status",
@@ -339,7 +358,7 @@ export async function startEngine(io, options = {}) {
   const materializePendingProject = (invitedId) => {
     pendingInviteId = null;
     meshStorage.set("activeProjectId", invitedId).catch(() => {});
-    meshStorage.set("pendingInviteId", "").catch(() => {});
+    meshStorage.set("pendingInviteUri", "").catch(() => {});
     legacyLoad = false;
     if (typeof globalThis.indexedDB !== "undefined" && !persistence) {
       bindProjectPersistence(`noflo-project-${invitedId}`);
@@ -361,7 +380,28 @@ export async function startEngine(io, options = {}) {
       } else if (message.command === "join") {
         joinProject(message.payload);
       } else if (message.command === "resolveRequest") {
-        mesh.resolveJoinRequest(message.payload?.identityHash);
+        mesh.resolveRequest({
+          identityHash: message.payload?.identityHash,
+          decision:
+            message.payload?.decision === "approved" ? "approved" : "declined",
+        });
+      } else if (message.command === "createInvite") {
+        mesh
+          .createInvite()
+          .then((/** @type {any} */ invite) => {
+            if (!invite) {
+              io.postMessage({
+                kind: "mesh-status",
+                error:
+                  "Invite unavailable: mesh must be connected and this device must own the project",
+              });
+              return;
+            }
+            io.postMessage({ kind: "mesh-invite", ...invite });
+          })
+          .catch((/** @type {any} */ err) =>
+            console.error("Invite creation failed:", err),
+          );
       } else if (message.command === "importIdentity") {
         mesh
           .handleImportedIdentity(message.payload?.identity)

@@ -18,6 +18,15 @@ import {
   saveMeshConfig,
 } from "../crdt/MeshConfig.js";
 import { grantPermission } from "../crdt/ProjectDoc.js";
+import {
+  buildInviteUri,
+  createBootstrapHost,
+  generateInviteToken,
+  INVITE_TOKEN_TTL_MS,
+  isInviteRecordValid,
+  joinViaBootstrapInvite,
+  parseInviteUri,
+} from "./Bootstrap.js";
 
 /**
  * @param {Uint8Array} bytes
@@ -41,8 +50,9 @@ function base64ToBytes(base64) {
 }
 
 /**
- * Default provider factory: a Reticulum instance with the enabled WebSocket
- * interfaces from the config, and a provider bound to the room.
+ * Default provider factory: a provider bound to the room on the SHARED
+ * Reticulum instance (owned by the mesh layer, so the bootstrap pre-flow and
+ * the sync phase share one transport — work document #25).
  *
  * @param {import("../crdt/MeshConfig.js").MeshConfig} config
  * @param {InstanceType<typeof Identity>} identity
@@ -51,25 +61,19 @@ function base64ToBytes(base64) {
  * @param {{ isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }} access
  *   Dacar access-control hooks (work document #21): the link policy gates
  *   sync to granted peers; refusals surface as join requests.
+ * @param {any} reticulum Shared Reticulum instance built from the enabled
+ *   interfaces; the factory binds the provider to it but does not own it.
  * @returns {Promise<any>}
  */
-async function defaultCreateProvider(config, identity, doc, room, access) {
-  const { Reticulum, WebRTCSignaling, WebSocketClientInterface } = await import(
-    "../../vendor/reticulum-core.js"
-  );
-  const reticulum = new Reticulum();
-  for (const iface of config.interfaces) {
-    if (!iface.enabled) continue;
-    if (iface.type === "websocket") {
-      const client = new WebSocketClientInterface(iface.options ?? {});
-      await client.connect();
-      reticulum.addInterface(client, true);
-    } else {
-      console.warn(
-        `Mesh interface type ${iface.type} is not available in the browser worker; skipped`,
-      );
-    }
-  }
+async function defaultCreateProvider(
+  config,
+  identity,
+  doc,
+  room,
+  access,
+  reticulum,
+) {
+  const { WebRTCSignaling } = await import("../../vendor/reticulum-core.js");
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
@@ -147,10 +151,21 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   Adopts a main-thread-generated identity.
  * @property {() => Promise<void>} handleJoinedViaInvite Marks the device as
  *   invited (no self-grant) and clears its local grants map.
- * @property {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
- *   Peers that know the room but hold no grant (access requests).
- * @property {(identityHash: string) => void} resolveJoinRequest Removes a
- *   handled join request and re-reports the list.
+ * @property {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source: "sync" | "bootstrap" }>} joinRequests
+ *   Peers that know the room but hold no grant (access requests) and
+ *   bootstrap knockers awaiting a decision.
+ * @property {(payload: { identityHash: string, decision?: "approved" | "declined" }) => void} resolveRequest
+ *   Resolves a handled request: a pending bootstrap approval gets its
+ *   decision, sync-refusal entries are removed, and the list re-reports.
+ * @property {() => Promise<{ uri: string, token: string, expiresAt: number } | null>} createInvite
+ *   Issues a bootstrap invite URI for the hosted project; null when this
+ *   device cannot host (mesh disabled, joined by invite, no bootstrap host).
+ * @property {(uri: string, hooks?: { onApproved?: (project: any) => Promise<void> | void }) => Promise<void>} startBootstrapJoin
+ *   Runs the joiner state machine (work document #25 §5.1) against the
+ *   invited host; the handoff routes through `onApproved`.
+ * @property {(hooks?: { onApproved?: (project: any) => Promise<void> | void }) => Promise<boolean>} resumePendingInvite
+ *   Re-runs a persisted pending invite (resume on reload); false when none
+ *   is stored.
  * @property {() => Promise<void>} stop
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
@@ -166,7 +181,7 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -409,12 +424,254 @@ export async function createMeshSync({
    * Refused links are access requests: peers that know the room but hold no
    * grant. Surfaced to the Glass for approval.
    *
-   * @type {Map<string, { identityHash: string, destinationHash: string | null, firstSeen: number }>}
+   * @type {Map<string, { identityHash: string, destinationHash: string | null, firstSeen: number, source: "sync" | "bootstrap" }>}}
    */
   const joinRequests = new Map();
 
+  // ---- Shared Reticulum transport --------------------------------------
+  // One Reticulum instance serves BOTH the bootstrap pre-flow (work
+  // document #25) and the sync phase (y-reticulum): the joiner's routing
+  // table warms up during the bootstrap wait, so the first sync dial after
+  // the grant needs no discovery wait. MeshSync owns the instance — it is
+  // built from the enabled interfaces at first use and stopped exactly once
+  // per provider lifetime (the ghost-connection fix in work doc #21 update
+  // #9 now lives here).
   /** @type {any} */
-  const activeRns = null;
+  let sharedRns = null;
+
+  /**
+   * Returns the shared Reticulum instance, creating it (and connecting the
+   * enabled WebSocket interfaces) on first use.
+   *
+   * @returns {Promise<any>}
+   */
+  async function ensureReticulum() {
+    if (sharedRns) return sharedRns;
+    const { Reticulum, WebSocketClientInterface } = await import(
+      "../../vendor/reticulum-core.js"
+    );
+    const rns = new Reticulum();
+    try {
+      for (const iface of config.interfaces) {
+        if (!iface.enabled) continue;
+        if (iface.type === "websocket") {
+          const client = new WebSocketClientInterface(iface.options ?? {});
+          await client.connect();
+          rns.addInterface(client, true);
+        } else {
+          console.warn(
+            `Mesh interface type ${iface.type} is not available in the browser worker; skipped`,
+          );
+        }
+      }
+    } catch (err) {
+      // A failed connect keeps an auto-reconnect loop alive: stop the whole
+      // instance so no ghost connection outlives the failed start
+      await rns.stop().catch(() => {});
+      throw err;
+    }
+    sharedRns = rns;
+    return rns;
+  }
+
+  /** Stops and discards the shared Reticulum instance. */
+  async function releaseReticulum() {
+    if (!sharedRns) return;
+    const rns = sharedRns;
+    sharedRns = null;
+    await rns.stop().catch(() => {});
+  }
+
+  // ---- Bootstrap pre-flow (work document #25, "Knock and Approve") ------
+  // The host side announces a stable per-owner `noflo.join` destination on
+  // the shared Reticulum instance; the joiner side runs the state machine
+  // over an ephemeral link to that destination.
+  /** @type {any} */
+  let bootstrapHost = null;
+  /** Pending host-user approval decisions, keyed by joiner identity hash. */
+  /** @type {Map<string, (decision: "approved" | "declined") => void>} */
+  const pendingApprovals = new Map();
+  const INVITES_KEY = "bootstrap-invites";
+
+  /**
+   * Reads the issued-invite registry, pruning expired records.
+   *
+   * @returns {Promise<Array<{ token: string, createdAt: number, expiresAt: number }>>}
+   */
+  async function loadInvites() {
+    try {
+      const list = await storage.get(INVITES_KEY);
+      if (!Array.isArray(list)) return [];
+      const now = Date.now();
+      const live = list.filter(
+        (/** @type {any} */ record) =>
+          record &&
+          typeof record.token === "string" &&
+          typeof record.expiresAt === "number" &&
+          record.expiresAt > now,
+      );
+      if (live.length !== list.length) {
+        await storage.set(INVITES_KEY, live);
+      }
+      return live;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Starts the bootstrap host on the shared Reticulum instance: only a
+   * device that owns its grants may host invites (an invited device holds no
+   * signing authority). Failures degrade to "no invites can be issued" —
+   * sync itself is unaffected.
+   */
+  async function startBootstrapHost() {
+    if (config.joinedViaInvite || bootstrapHost || !provider) return;
+    const reticulum = provider.room?.rns ?? null;
+    if (!reticulum) return;
+    const metadata = doc.getMap?.("metadata");
+    const projectId = String(metadata?.get("id") ?? "");
+    if (!projectId) return;
+    try {
+      bootstrapHost = await createBootstrapHost({
+        reticulum,
+        identity: await ensureIdentity(),
+        projectId,
+        projectName: String(metadata?.get("name") ?? projectId),
+        isGranted,
+        getGrant: (/** @type {string} */ peerHash) => {
+          const grants = doc.getMap?.("grants");
+          if (!grants) return null;
+          for (const entry of grants.values()) {
+            const plain = entry.toJSON();
+            if (plain.peerHash === peerHash && plain.revoked === null) {
+              return {
+                peerHash: plain.peerHash,
+                role: plain.role,
+                issued: plain.issued,
+              };
+            }
+          }
+          return null;
+        },
+        mintGrant: (/** @type {string} */ peerHash) =>
+          grantPermission(doc, peerHash, "developer"),
+        hasAuthority: () => !config.joinedViaInvite,
+        requestApproval: (/** @type {string} */ joinerHash) => {
+          if (!joinRequests.has(joinerHash)) {
+            joinRequests.set(joinerHash, {
+              identityHash: joinerHash,
+              destinationHash: null,
+              firstSeen: Date.now(),
+              source: "bootstrap",
+            });
+          }
+          postMessage({
+            kind: "mesh-requests",
+            requests: [...joinRequests.values()],
+          });
+          return new Promise((resolve) => {
+            pendingApprovals.set(joinerHash, resolve);
+          });
+        },
+        isValidInviteToken: async (/** @type {string} */ token) => {
+          const invites = await loadInvites();
+          return invites.some((record) =>
+            isInviteRecordValid(record, token, Date.now()),
+          );
+        },
+      });
+    } catch (err) {
+      bootstrapHost = null;
+      console.warn(
+        "Bootstrap host failed to start (invites unavailable):",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
+  }
+
+  /**
+   * Stops the bootstrap host and fails any pending approval decisions —
+   * the knocking joiner re-dials and gets the answer then.
+   */
+  async function stopBootstrapHost() {
+    if (!bootstrapHost) return;
+    const host = bootstrapHost;
+    bootstrapHost = null;
+    for (const resolve of pendingApprovals.values()) resolve("declined");
+    pendingApprovals.clear();
+    await host.stop().catch(() => {});
+  }
+
+  /**
+   * Parses, validates, and runs the joiner state machine against the
+   * invited host, then applies the handoff: the Engine adopts the invited
+   * project identity (through `onApproved`), and the handed-off grant is
+   * written into the local grants map — which triggers the Engine's existing
+   * approval watcher and materializes the project.
+   *
+   * @param {string} uri Invite URI (`noflo://join/<hash>/<token>`).
+   * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+   */
+  async function runBootstrapJoin(uri, hooks = {}) {
+    const invite = parseInviteUri(uri);
+    if (!invite) {
+      postMessage({
+        kind: "mesh-status",
+        error: "Join failed: not a valid invite (noflo://join/...) URL",
+      });
+      return;
+    }
+    // Persisted so a reload resumes the join (work document #25 plan item 3):
+    // the host answers idempotently, so re-dialing is safe
+    await storage.set("pendingInviteUri", uri).catch(() => {});
+    const identity = await ensureIdentity();
+    try {
+      const response = await joinViaBootstrapInvite({
+        reticulum: await ensureReticulum(),
+        identity,
+        invite,
+        onState: (/** @type {string} */ stage) => {
+          postMessage({ kind: "mesh-bootstrap", stage });
+        },
+      });
+      if (response.status === "declined") {
+        // Declined joins halt without auto-retry (work document #25 §5.1)
+        await storage.set("pendingInviteUri", "").catch(() => {});
+        postMessage({
+          kind: "mesh-bootstrap",
+          stage: "declined",
+          reason: response.reason,
+        });
+        postMessage({
+          kind: "mesh-status",
+          error: `Join declined: ${response.reason}`,
+        });
+        return;
+      }
+      // Approved: hand the project identity to the Engine first — the grant
+      // write below triggers the Engine's approval watcher, which must see
+      // the pending invite by then
+      await hooks.onApproved?.(response.project ?? {});
+      const grant = response.grant ?? {};
+      if (typeof grant.peerHash === "string" && grant.peerHash) {
+        grantPermission(doc, grant.peerHash, "developer");
+      }
+      await storage.set("pendingInviteUri", "").catch(() => {});
+      postMessage({
+        kind: "mesh-bootstrap",
+        stage: "approved",
+        project: response.project ?? null,
+      });
+    } catch (err) {
+      const reason = /** @type {any} */ (err)?.message ?? err;
+      postMessage({ kind: "mesh-bootstrap", stage: "failed", error: reason });
+      postMessage({
+        kind: "mesh-status",
+        error: `Join failed: ${reason}`,
+      });
+    }
+  }
 
   async function start() {
     console.info(
@@ -443,30 +700,42 @@ export async function createMeshSync({
       const identity = await ensureIdentity();
       ensureSelfGrant(identityHash);
       room = roomFor();
-      provider = await createProvider(config, identity, doc, room, {
-        isGranted,
-        isInRequesterMode,
-        onRefused: (/** @type {any[]} */ refusals) => {
-          for (const refusal of refusals) {
-            if (!refusal?.identityHash) continue;
-            if (!joinRequests.has(refusal.identityHash)) {
-              joinRequests.set(refusal.identityHash, {
-                identityHash: refusal.identityHash,
-                destinationHash: refusal.destinationHash ?? null,
-                firstSeen: Date.now(),
+      // The shared transport serves the provider AND the bootstrap pre-flow
+      const reticulum = await ensureReticulum();
+      provider = await createProvider(
+        config,
+        identity,
+        doc,
+        room,
+        {
+          isGranted,
+          isInRequesterMode,
+          onRefused: (/** @type {any[]} */ refusals) => {
+            for (const refusal of refusals) {
+              if (!refusal?.identityHash) continue;
+              if (!joinRequests.has(refusal.identityHash)) {
+                joinRequests.set(refusal.identityHash, {
+                  identityHash: refusal.identityHash,
+                  destinationHash: refusal.destinationHash ?? null,
+                  firstSeen: Date.now(),
+                  source: "sync",
+                });
+              }
+            }
+            if (refusals.length > 0) {
+              postMessage({
+                kind: "mesh-requests",
+                requests: [...joinRequests.values()],
               });
             }
-          }
-          if (refusals.length > 0) {
-            postMessage({
-              kind: "mesh-requests",
-              requests: [...joinRequests.values()],
-            });
-          }
+          },
         },
-      });
+        reticulum,
+      );
     } catch (err) {
       provider = null;
+      // No ghost transport may outlive a failed provider start
+      await releaseReticulum();
       const reason = /** @type {any} */ (err)?.message ?? err;
       postMessage({
         kind: "mesh-status",
@@ -541,6 +810,9 @@ export async function createMeshSync({
         peers: peerCount,
       });
     });
+    // Host side of the bootstrap pre-flow: invite others once the sync
+    // provider is live (work document #25)
+    await startBootstrapHost();
   }
 
   async function stop() {
@@ -563,6 +835,10 @@ export async function createMeshSync({
     provider = null;
     peerCount = 0;
     joinRequests.clear();
+    // Bootstrap host and shared transport end with the provider: exactly
+    // one teardown per provider lifetime (ghost-connection rule)
+    await stopBootstrapHost();
+    await releaseReticulum();
     // Clear any peer ghosts the Glass is rendering
     postMessage({ kind: "awareness", states: [] });
   }
@@ -614,17 +890,80 @@ export async function createMeshSync({
       return [...joinRequests.values()];
     },
     /**
-     * Removes a handled join request (granted or dismissed).
+     * Removes a handled request (granted, declined, or dismissed) and
+     * re-reports the list. A pending bootstrap approval gets its decision
+     * here; sync-refusal entries are just cleared.
      *
-     * @param {string} identityHash
+     * @param {{ identityHash: string, decision?: "approved" | "declined" }} payload
      */
-    resolveJoinRequest(identityHash) {
+    resolveRequest(payload) {
+      const identityHash = payload?.identityHash;
+      if (typeof identityHash !== "string" || !identityHash) return;
+      const pending = pendingApprovals.get(identityHash);
+      if (pending) {
+        pendingApprovals.delete(identityHash);
+        pending(payload.decision === "approved" ? "approved" : "declined");
+      }
       joinRequests.delete(identityHash);
       postMessage({
         kind: "mesh-requests",
         requests: [...joinRequests.values()],
       });
     },
+    /**
+     * Issues a bootstrap invite for the hosted project (work document #25
+     * §3.2 Step 1): a `noflo://join/<hash>/<token>` URI whose token the
+     * host validates on knock. Null when this device cannot host.
+     *
+     * @returns {Promise<{ uri: string, token: string, expiresAt: number } | null>}
+     */
+    async createInvite() {
+      if (!bootstrapHost) return null;
+      const token = generateInviteToken();
+      const createdAt = Date.now();
+      const expiresAt = createdAt + INVITE_TOKEN_TTL_MS;
+      const invites = await loadInvites();
+      invites.push({ token, createdAt, expiresAt });
+      await storage.set(INVITES_KEY, invites);
+      return {
+        uri: buildInviteUri({
+          hostDestinationHash: bootstrapHost.destinationHash,
+          token,
+        }),
+        token,
+        expiresAt,
+      };
+    },
+    /**
+     * Runs the joiner state machine against the invited host.
+     *
+     * @param {string} uri
+     * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+     */
+    async startBootstrapJoin(uri, hooks = {}) {
+      await runBootstrapJoin(uri, hooks);
+    },
+    /**
+     * Re-runs a persisted pending invite (resume on reload, work document
+     * #25 plan item 3); false when no pending invite is stored.
+     *
+     * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+     * @returns {Promise<boolean>}
+     */
+    async resumePendingInvite(hooks = {}) {
+      let uri = "";
+      try {
+        uri = String((await storage.get("pendingInviteUri")) ?? "");
+      } catch {
+        return false;
+      }
+      if (!uri) return false;
+      await runBootstrapJoin(uri, hooks);
+      return true;
+    },
+    /**
+     * @param {any} payload
+     */
     /**
      * Stops and restarts the provider with a freshly resolved room — the
      * Engine calls this once persistence has restored the authoritative
