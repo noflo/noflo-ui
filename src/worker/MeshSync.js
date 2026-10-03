@@ -503,10 +503,11 @@ export async function createMeshSync({
     provider.room?.rns?.transport?.addEventListener(
       "announce",
       (/** @type {any} */ event) => {
-        // Only log announces for the room's own aspect: other destinations
-        // (relay traffic for unrelated peers) would be noise
+        // Only log announces for the room's own aspect; guard against the
+        // provider being torn down (null during rebinds)
+        if (!provider?.room) return;
         const detail = event.detail ?? {};
-        const roomNameHash = provider.room?.dest?.nameHash;
+        const roomNameHash = provider.room.dest?.nameHash;
         if (
           !detail.nameHash ||
           !roomNameHash ||
