@@ -485,6 +485,28 @@ export async function createMeshSync({
         peers: peerCount,
       });
     });
+    // Announce diagnostics: log when the room's destination announces and
+    // when an announce from another room member arrives. This confirms
+    // whether the entry point propagates announces between peers.
+    const roomDest = provider.room?.dest;
+    if (roomDest) {
+      roomDest.addEventListener("announce", () => {
+        console.info(`[mesh] announced room destination ${room.slice(-12)}`);
+      });
+    }
+    provider.room?.rns?.transport?.addEventListener(
+      "announce",
+      (/** @type {any} */ event) => {
+        const detail = event.detail ?? {};
+        const hash = detail.destinationHash
+          ? [...detail.destinationHash]
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("")
+              .slice(-12)
+          : "unknown";
+        console.info(`[mesh] announce received from peer ${hash}`);
+      },
+    );
     provider.on("synced", (/** @type {any} */ event) => {
       postMessage({
         kind: "mesh-status",
