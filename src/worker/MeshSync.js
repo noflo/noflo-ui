@@ -16,6 +16,7 @@ import {
   normalizeMeshConfig,
   saveMeshConfig,
 } from "../crdt/MeshConfig.js";
+import { grantPermission } from "../crdt/ProjectDoc.js";
 
 /**
  * @param {Uint8Array} bytes
@@ -46,9 +47,12 @@ function base64ToBytes(base64) {
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
  * @param {string} room
+ * @param {{ isGranted: (peerHash: string) => boolean, onRefused: (refusals: any[]) => void }} access
+ *   Dacar access-control hooks (work document #21): the link policy gates
+ *   sync to granted peers; refusals surface as join requests.
  * @returns {Promise<any>}
  */
-async function defaultCreateProvider(config, identity, doc, room) {
+async function defaultCreateProvider(config, identity, doc, room, access) {
   const { Reticulum, WebRTCSignaling, WebSocketClientInterface } = await import(
     "../../vendor/reticulum-core.js"
   );
@@ -68,6 +72,13 @@ async function defaultCreateProvider(config, identity, doc, room) {
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
+    // Dacar gate: only peers with a non-revoked grant may sync. Ignored by
+    // y-reticulum versions without the hook, degrading to the old behavior.
+    linkPolicy: (/** @type {any} */ context) =>
+      access.isGranted(context.remoteIdentityHash),
+  });
+  provider.on("refused", (/** @type {any} */ event) => {
+    access.onRefused(event.refusals ?? []);
   });
   await provider.connect();
 
@@ -113,6 +124,11 @@ async function defaultCreateProvider(config, identity, doc, room) {
  *   the project identity.
  * @property {() => Promise<void>} rebind Restarts the provider with a
  *   freshly resolved room.
+ * @property {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+ *   Peers that know the room but hold no grant (access requests).
+ * @property {(identityHash: string) => void} resolveJoinRequest Removes a
+ *   handled join request and re-reports the list.
+ * @property {() => Promise<void>} stop
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
  * @property {(payload: any) => void} handleAwareness Handles a local
@@ -127,7 +143,7 @@ async function defaultCreateProvider(config, identity, doc, room) {
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, onRefused: (refusals: any[]) => void }) => Promise<any>,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -272,12 +288,73 @@ export async function createMeshSync({
     return identity;
   }
 
+  /**
+   * Dacar check: a peer may sync when a non-revoked grant names its identity
+   * hash (work document #21). Reads the live grants map so revocations apply
+   * immediately.
+   *
+   * @param {string} peerHash
+   * @returns {boolean}
+   */
+  function isGranted(peerHash) {
+    const grants = doc.getMap?.("grants");
+    if (!grants) return false;
+    for (const entry of grants.values()) {
+      const plain = entry.toJSON();
+      if (plain.peerHash === peerHash && plain.revoked === null) return true;
+    }
+    return false;
+  }
+
+  /**
+   * The project owner bootstraps their own grant, otherwise the strict
+   * policy would lock everyone - including the owner - out of an
+   * un-granted project.
+   *
+   * @param {string} ownHash
+   */
+  function ensureSelfGrant(ownHash) {
+    if (!doc.getMap?.("grants")) return;
+    if (!isGranted(ownHash)) {
+      grantPermission(doc, ownHash, "developer");
+    }
+  }
+
+  /**
+   * Refused links are access requests: peers that know the room but hold no
+   * grant. Surfaced to the Glass for approval.
+   *
+   * @type {Map<string, { identityHash: string, destinationHash: string | null, firstSeen: number }>}
+   */
+  const joinRequests = new Map();
+
   async function start() {
     if (!config.enabled || provider) return;
     try {
       const identity = await ensureIdentity();
+      ensureSelfGrant(identityHash);
       room = roomFor();
-      provider = await createProvider(config, identity, doc, room);
+      provider = await createProvider(config, identity, doc, room, {
+        isGranted,
+        onRefused: (/** @type {any[]} */ refusals) => {
+          for (const refusal of refusals) {
+            if (!refusal?.identityHash) continue;
+            if (!joinRequests.has(refusal.identityHash)) {
+              joinRequests.set(refusal.identityHash, {
+                identityHash: refusal.identityHash,
+                destinationHash: refusal.destinationHash ?? null,
+                firstSeen: Date.now(),
+              });
+            }
+          }
+          if (refusals.length > 0) {
+            postMessage({
+              kind: "mesh-requests",
+              requests: [...joinRequests.values()],
+            });
+          }
+        },
+      });
     } catch (err) {
       provider = null;
       const reason = /** @type {any} */ (err)?.message ?? err;
@@ -344,6 +421,7 @@ export async function createMeshSync({
     }
     provider = null;
     peerCount = 0;
+    joinRequests.clear();
     // Clear any peer ghosts the Glass is rendering
     postMessage({ kind: "awareness", states: [] });
   }
@@ -361,6 +439,21 @@ export async function createMeshSync({
     },
     get room() {
       return room;
+    },
+    get joinRequests() {
+      return [...joinRequests.values()];
+    },
+    /**
+     * Removes a handled join request (granted or dismissed).
+     *
+     * @param {string} identityHash
+     */
+    resolveJoinRequest(identityHash) {
+      joinRequests.delete(identityHash);
+      postMessage({
+        kind: "mesh-requests",
+        requests: [...joinRequests.values()],
+      });
     },
     /**
      * Stops and restarts the provider with a freshly resolved room — the

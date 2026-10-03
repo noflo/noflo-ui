@@ -82,6 +82,9 @@ let meshConfig = /** @type {any} */ (null);
 let meshIdentityHash = "";
 /** Per-project sync room reported by the Engine, for the settings dialog. */
 let meshRoom = "";
+/** Peers awaiting an access decision, reported by the Engine. */
+let joinRequests =
+  /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */ ([]);
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** @type {FlowEditor | null} */
@@ -174,6 +177,9 @@ function onEngineMessage(data) {
     meshIdentityHash = data.identityHash ?? "";
     meshRoom = data.room ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    refreshMeshSettings();
+  } else if (data?.kind === "mesh-requests") {
+    joinRequests = data.requests ?? [];
     refreshMeshSettings();
   } else if (data?.kind === "mesh-status") {
     console.debug("Mesh", data.connected ?? "", data.error ?? "");
@@ -303,6 +309,7 @@ function openMeshSettings() {
     meshIdentityHash,
     meshInterfaceSchemas,
     meshRoom,
+    joinRequests,
   );
 }
 
@@ -320,6 +327,7 @@ function refreshMeshSettings() {
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
     dialog._room = meshRoom;
+    dialog._joinRequests = joinRequests;
     dialog.render();
   }
 }
@@ -546,6 +554,21 @@ async function init() {
   });
   settingsDialog?.addEventListener("mesh-join", (/** @type {any} */ e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
+  });
+  settingsDialog?.addEventListener("mesh-approve", (/** @type {any} */ e) => {
+    sendIntent(grantPermissionIntent(e.detail.identityHash, "operator"));
+    supervisor?.send({
+      type: "MESH",
+      command: "resolveRequest",
+      payload: { identityHash: e.detail.identityHash },
+    });
+  });
+  settingsDialog?.addEventListener("mesh-deny", (/** @type {any} */ e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "resolveRequest",
+      payload: { identityHash: e.detail.identityHash },
+    });
   });
   settingsDialog?.addEventListener("mesh-close", () => {});
 

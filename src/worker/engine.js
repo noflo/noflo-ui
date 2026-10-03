@@ -278,6 +278,8 @@ export async function startEngine(io, options = {}) {
         postMeshConfig();
       } else if (message.command === "join") {
         joinProject(message.payload);
+      } else if (message.command === "resolveRequest") {
+        mesh.resolveJoinRequest(message.payload?.identityHash);
       }
       return;
     }

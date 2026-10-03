@@ -24,6 +24,8 @@ export class FlowMeshSettings extends HTMLElement {
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
     this._room = "";
+    /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */
+    this._joinRequests = [];
   }
 
   connectedCallback() {
@@ -40,13 +42,23 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
    *   interface type.
    * @param {string} room The project's sync room, for display.
+   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+   *   Peers awaiting an access decision.
    */
-  open(config, grants, identityHash, interfaceSchemas = {}, room = "") {
+  open(
+    config,
+    grants,
+    identityHash,
+    interfaceSchemas = {},
+    room = "",
+    joinRequests = [],
+  ) {
     this._config = config;
     this._grants = grants ?? [];
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
     this._room = room;
+    this._joinRequests = joinRequests ?? [];
     this._open = true;
     // The dialog element may sit hidden in the page shell; visibility is
     // controlled here so open/close always agree with the rendered state
@@ -68,6 +80,16 @@ export class FlowMeshSettings extends HTMLElement {
    */
   setGrants(grants) {
     this._grants = grants ?? [];
+    if (this._open) this.render();
+  }
+
+  /**
+   * Refreshes the join-request list while open.
+   *
+   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+   */
+  setJoinRequests(joinRequests) {
+    this._joinRequests = joinRequests ?? [];
     if (this._open) this.render();
   }
 
@@ -203,6 +225,20 @@ export class FlowMeshSettings extends HTMLElement {
         </div>
         <div id="interface-form-host" class="iface-form-host" hidden></div>
         ${editable ? (Object.keys(this._interfaceSchemas).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
+        <h3>Join requests</h3>
+        <div id="join-request-list">
+          ${(this._joinRequests ?? [])
+            .map(
+              (/** @type {any} */ request) => `
+          <div class="list-item">
+            <span class="grow">${request.identityHash}</span>
+            <button data-join-approve="${request.identityHash}">Approve</button>
+            <button class="danger" data-join-deny="${request.identityHash}">Deny</button>
+          </div>`,
+            )
+            .join("")}
+        </div>
+        ${(this._joinRequests ?? []).length === 0 ? `<div class="hint">No pending access requests. Peers that know the room but hold no grant appear here.</div>` : ""}
         <h3>Access grants (Dacar)</h3>
         <div id="grant-list">
           ${this._grants
@@ -480,6 +516,30 @@ export class FlowMeshSettings extends HTMLElement {
           shadow.querySelector("#new-grant-peer")
         ).value = "";
       });
+    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
+      shadow.querySelectorAll("[data-join-approve]")
+    )) {
+      button.addEventListener("click", () => {
+        this.dispatchEvent(
+          new CustomEvent("mesh-approve", {
+            detail: { identityHash: button.getAttribute("data-join-approve") },
+            bubbles: true,
+          }),
+        );
+      });
+    }
+    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
+      shadow.querySelectorAll("[data-join-deny]")
+    )) {
+      button.addEventListener("click", () => {
+        this.dispatchEvent(
+          new CustomEvent("mesh-deny", {
+            detail: { identityHash: button.getAttribute("data-join-deny") },
+            bubbles: true,
+          }),
+        );
+      });
+    }
     for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
       shadow.querySelectorAll("[data-grant-revoke]")
     )) {
