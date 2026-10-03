@@ -148,6 +148,17 @@ export default defineConfig([
     },
   },
   {
+    // @noble/curves (ed25519 module, includes X25519): first-party fallback
+    // crypto for the X25519 polyfill; @noble/hashes is inlined (zero-dep
+    // chain, MIT)
+    entry: {
+      'noble-curves': './utils/noble-curves-entry.js',
+    },
+    ...vendor,
+    noExternal: [/./],
+    splitting: false,
+  },
+  {
     // Type-only builds (see utils/*-entry.js): packages that ship their own
     // declarations re-export through first-party entries, generating the
     // vendor type surface from those declarations
@@ -155,6 +166,7 @@ export default defineConfig([
       yjs: './utils/yjs-entry.js',
       'y-indexeddb': './utils/y-indexeddb-entry.js',
       'reticulum-core': './utils/reticulum-core-types-entry.js',
+      'noble-curves': './utils/noble-curves-entry.js',
     },
     dts: { emitDtsOnly: true },
     ...vendor,

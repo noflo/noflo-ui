@@ -1,0 +1,1 @@
+export * from "@noble/curves/ed25519.js";
