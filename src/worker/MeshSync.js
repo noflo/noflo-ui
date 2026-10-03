@@ -359,9 +359,11 @@ export async function createMeshSync({
   const joinRequests = new Map();
 
   async function start() {
-    if (!config.enabled || provider || identityError) return;
+    if (!config.enabled || provider) return;
     // A fresh instance connects through a random default entry point, so
-    // mesh sync works out of the box; the choice persists with the config
+    // mesh sync works out of the box; the choice persists with the config.
+    // Seeding only needs randomness, not identity: it must happen even when
+    // identity generation previously failed, so the state can be repaired
     if (config.interfaces.length === 0) {
       config.interfaces = [
         {
@@ -373,6 +375,8 @@ export async function createMeshSync({
       ];
       await saveMeshConfig(storage, config);
     }
+    // Identity generation failures disable mesh (surfaced via mesh-status)
+    if (identityError) return;
     try {
       const identity = await ensureIdentity();
       ensureSelfGrant(identityHash);
