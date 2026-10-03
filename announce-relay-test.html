@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reticulum announce relay test</title>
+    <style>
+      body {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 13px;
+        margin: 20px auto;
+        max-width: 760px;
+        padding: 0 12px;
+        background: #14171c;
+        color: #eee;
+      }
+      h1 { font-size: 16px; }
+      pre {
+        background: #0d1014;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 10px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      button {
+        background: #4aa3df;
+        color: #000;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reticulum announce relay test</h1>
+    <p>Two reticulum.js peers connect to the same WebSocket entry point and bounce announces.</p>
+    <pre id="log">Loading modules…</pre>
+    <script type="module">
+      const log = (line) => {
+        const el = document.getElementById("log");
+        el.textContent += line + "\n";
+      };
+
+      try {
+        const { Reticulum, Identity } = await import(
+          "./vendor/reticulum-core.js"
+        );
+        const { WebSocketClientInterface } = await import(
+          "./vendor/reticulum-core.js"
+        );
+        log("Modules loaded ✓");
+
+        const ENTRY_POINT = "wss://cloud.lille-oe.de";
+        const ROOM = "noflo-ui:announce-relay-test";
+
+        // Derive the aspect name exactly like y-reticulum does
+        const digest = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(ROOM),
+        );
+        const aspectHex = [...new Uint8Array(digest).slice(0, 8)]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        const APP_NAME = `y-reticulum.sync.${aspectHex}`;
+        log(`Aspect name: ${APP_NAME}`);
+
+        // --- Peer A ---
+        const rnsA = new Reticulum();
+        const wsA = new WebSocketClientInterface(rnsA, {
+          name: "peer-a-ws",
+          target_host: "cloud.lille-oe.de",
+          target_port: 443,
+          use_ssl: true,
+        });
+        log("Peer A WebSocket connecting…");
+
+        // --- Peer B ---
+        const rnsB = new Reticulum();
+        const wsB = new WebSocketClientInterface(rnsB, {
+          name: "peer-b-ws",
+          target_host: "cloud.lille-oe.de",
+          target_port: 443,
+          use_ssl: true,
+        });
+        log("Peer B WebSocket connecting…");
+
+        // Wait for both WebSocket connections to establish
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        log(`Peer A online: ${wsA.online}, Peer B online: ${wsB.online}`);
+
+        // --- Identities ---
+        const idA = await Identity.generate();
+        const idB = await Identity.generate();
+        const hashA = [...(await Identity.truncatedHash(await idA.getPublicKey()))]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        const hashB = [...(await Identity.truncatedHash(await idB.getPublicKey()))]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        log(`Peer A identity: …${hashA.slice(-12)}`);
+        log(`Peer B identity: …${hashB.slice(-12)}`);
+
+        // --- Destinations ---
+        const { Destination, DestType } = await import(
+          "./vendor/reticulum-core.js"
+        );
+        const destA = await Destination.IN(APP_NAME, DestType.SINGLE, idA, rnsA);
+        const destB = await Destination.IN(APP_NAME, DestType.SINGLE, idB, rnsB);
+        log(`Peer A destination: ${[...destA.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)}`);
+        log(`Peer B destination: ${[...destB.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)}`);
+
+        // --- Announce listeners ---
+        let aSawB = false;
+        let bSawA = false;
+        rnsA.transport.addEventListener("announce", (/** @type {any} */ e) => {
+          const d = e.detail ?? {};
+          const dh = d.destinationHash
+            ? [...d.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)
+            : "?";
+          log(`Peer A received announce from ${dh}`);
+          if (dh === [...destB.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)) {
+            aSawB = true;
+          }
+        });
+        rnsB.transport.addEventListener("announce", (/** @type {any} */ e) => {
+          const d = e.detail ?? {};
+          const dh = d.destinationHash
+            ? [...d.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)
+            : "?";
+          log(`Peer B received announce from ${dh}`);
+          if (dh === [...destA.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)) {
+            bSawA = true;
+          }
+        });
+
+        // --- Announce from both ---
+        log("Announcing from both peers…");
+        await destA.announce();
+        await destB.announce();
+        log("Announces sent. Waiting for cross-reception…");
+
+        // Nudge after 5s
+        setTimeout(async () => {
+          log("Nudging announces…");
+          await destA.announce();
+          await destB.announce();
+        }, 5000);
+
+        // Report after 15s
+        setTimeout(() => {
+          log("");
+          log("=== RESULTS ===");
+          log(`Peer A saw Peer B's announce: ${aSawB ? "YES" : "NO"}`);
+          log(`Peer B saw Peer A's announce: ${bSawA ? "YES" : "NO"}`);
+          if (aSawB && bSawA) {
+            log("Announce relay: WORKING ✓");
+          } else {
+            log("Announce relay: NOT WORKING ✗");
+          }
+        }, 15000);
+      } catch (err) {
+        log(`ERROR: ${err?.message ?? err}`);
+        console.error(err);
+      }
+    </script>
+  </body>
+</html>
