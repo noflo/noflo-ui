@@ -413,6 +413,9 @@ export async function createMeshSync({
    */
   const joinRequests = new Map();
 
+  /** @type {any} */
+  const activeRns = null;
+
   async function start() {
     console.info(
       `Mesh start called: enabled=${config.enabled}, hasProvider=${Boolean(provider)}, identityError=${identityError || "none"}, room=${roomFor()}, interfaces=${config.interfaces.length}, requesterMode=${isInRequesterMode()}, identityHash=${identityHash ?? "none"}`,
