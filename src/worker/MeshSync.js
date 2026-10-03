@@ -48,7 +48,7 @@ function base64ToBytes(base64) {
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
  * @param {string} room
- * @param {{ isGranted: (peerHash: string) => boolean, onRefused: (refusals: any[]) => void }} access
+ * @param {{ isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }} access
  *   Dacar access-control hooks (work document #21): the link policy gates
  *   sync to granted peers; refusals surface as join requests.
  * @returns {Promise<any>}
@@ -73,9 +73,11 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
-    // Dacar gate: only peers with a non-revoked grant may sync. Ignored by
-    // y-reticulum versions without the hook, degrading to the old behavior.
+    // Dacar gate: peers with a non-revoked grant may sync; devices in
+    // requester mode (empty grants, fresh join) may dial so the owner sees
+    // the access request. Ignored by y-reticulum versions without the hook.
     linkPolicy: (/** @type {any} */ context) =>
+      access.isInRequesterMode() ||
       access.isGranted(context.remoteIdentityHash),
   });
   provider.on("refused", (/** @type {any} */ event) => {
@@ -156,7 +158,7 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, onRefused: (refusals: any[]) => void }) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }) => Promise<any>,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -364,6 +366,22 @@ export async function createMeshSync({
   }
 
   /**
+   * Requester mode (work document #21): a device whose grants map is
+   * completely empty is a fresh joiner — its own policy must let it dial,
+   * because the access REQUEST is the dial itself; the owner's policy then
+   * decides. Without this, an empty-grants joiner could never contact the
+   * owner and no join request would ever surface. Once grants sync
+   * (approval), the device leaves requester mode.
+   *
+   * @returns {boolean}
+   */
+  function isInRequesterMode() {
+    const grants = doc.getMap?.("grants");
+    if (!grants) return false;
+    return grants.size === 0;
+  }
+
+  /**
    * Refused links are access requests: peers that know the room but hold no
    * grant. Surfaced to the Glass for approval.
    *
@@ -396,6 +414,7 @@ export async function createMeshSync({
       room = roomFor();
       provider = await createProvider(config, identity, doc, room, {
         isGranted,
+        isInRequesterMode,
         onRefused: (/** @type {any[]} */ refusals) => {
           for (const refusal of refusals) {
             if (!refusal?.identityHash) continue;
