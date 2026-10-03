@@ -1,3 +1,4 @@
+import crypto from "../src/shims/crypto-subtle.js";
 //#region \0rolldown/runtime.js
 var __defProp = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {

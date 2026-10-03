@@ -97,6 +97,12 @@ export default defineConfig([
     // One file: the vendor contract is a single module per package, and
     // relative chunks would complicate the worker's import graph
     splitting: false,
+    // @reticulum/core reads the global `crypto` directly; the banner
+    // shadows it with the X25519-polyfilling shim so browsers without
+    // native X25519 (WebKit) can run the full stack
+    banner: {
+      js: 'import crypto from "../src/shims/crypto-subtle.js";',
+    },
   },
   {
     entry: {

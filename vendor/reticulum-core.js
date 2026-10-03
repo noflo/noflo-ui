@@ -1,4 +1,5 @@
-import { C as __exportAll, S as generateX25519KeyPair, _ as Token, a as getLogLevel, b as exportRawPrivateKey, c as setLogLevel, d as bytesEqual, f as bytesToBase64, g as toHex, h as fromHex, i as LogLevel, l as base64ToBytes, m as concatBytes, o as log, p as bytesToBase64Url, r as LOG_LEVEL_ENV, s as parseLogLevel, t as Identity, u as base64UrlToBytes, v as hkdf, x as generateEd25519KeyPair, y as exportPublicKey } from "./identity-DcrmHbEd.js";
+import crypto from "../src/shims/crypto-subtle.js";
+import { C as __exportAll, S as generateX25519KeyPair, _ as Token, a as getLogLevel, b as exportRawPrivateKey, c as setLogLevel, d as bytesEqual, f as bytesToBase64, g as toHex, h as fromHex, i as LogLevel, l as base64ToBytes, m as concatBytes, o as log, p as bytesToBase64Url, r as LOG_LEVEL_ENV, s as parseLogLevel, t as Identity, u as base64UrlToBytes, v as hkdf, x as generateEd25519KeyPair, y as exportPublicKey } from "./identity-lzAPfTg7.js";
 //#region node_modules/@reticulum/core/src/core/packet.js
 /**
 * @module @reticulum/core/src/core/packet.js
@@ -1666,7 +1667,7 @@ function isLinkPacketUnencrypted(packetType, contextByte) {
 * @returns {Promise<Uint8Array>}
 */
 async function linkIdFromLrPacket(packet) {
-	const { Identity } = await import("./identity-DcrmHbEd.js").then((n) => n.n);
+	const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 	const lowFlags = packet.raw[0] & 15;
 	const offset = packet.headerType === HeaderType.HEADER_2 ? 18 : 2;
 	let body = packet.raw.subarray(offset);
@@ -2522,7 +2523,7 @@ var Link = class Link extends EventTarget {
 	* @private
 	*/
 	async _handleIdentify(packet) {
-		const { Identity } = await import("./identity-DcrmHbEd.js").then((n) => n.n);
+		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const plaintext = packet.payload;
 		if (plaintext.length !== 128) return;
 		const publicKey = plaintext.subarray(0, 64);
@@ -2576,7 +2577,7 @@ var Link = class Link extends EventTarget {
 	*/
 	async request(path, data = null, options = {}) {
 		if (this.status !== LinkStatus.ACTIVE) throw new Error("Link must be ACTIVE to issue a REQUEST.");
-		const { Identity } = await import("./identity-DcrmHbEd.js").then((n) => n.n);
+		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const pathHash = await Identity.truncatedHash(new TextEncoder().encode(path));
 		const envelope = [
 			Date.now() / 1e3,
@@ -2672,7 +2673,7 @@ var Link = class Link extends EventTarget {
 	* @private
 	*/
 	async _handleRequest(originalPacket, decrypted) {
-		const { Identity } = await import("./identity-DcrmHbEd.js").then((n) => n.n);
+		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const requestId = await Identity.truncatedHash(originalPacket.getHashablePart());
 		let decoded;
 		try {

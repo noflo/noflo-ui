@@ -111,7 +111,9 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
     ) {
       isX25519 = formatOrAlgorithm?.name === "X25519";
     } else if (operation === "importKey") {
-      isX25519 = algorithmOrKey?.name === "X25519";
+      // importKey args are (format, keyData, algorithm, ...): the algorithm
+      // sits at index 2, not 1
+      isX25519 = args[2]?.name === "X25519";
     } else if (operation === "exportKey") {
       isX25519 = Boolean(asX25519Key(args[1]));
     }
@@ -123,6 +125,9 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
       return /** @type {any} */ (target)[operation](...args);
     }
 
+    if (/** @type {any} */ (globalThis).__x25519Debug) {
+      console.error(`[x25519-polyfill] ${operation} X25519`);
+    }
     switch (operation) {
       case "generateKey": {
         const { x25519 } = await curves();
@@ -153,6 +158,14 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
       case "importKey": {
         const format = formatOrAlgorithm;
         const data = new Uint8Array(algorithmOrKey);
+        if (/** @type {any} */ (globalThis).__x25519Debug) {
+          console.error(
+            "[x25519-polyfill] importKey",
+            format,
+            "len",
+            data.length,
+          );
+        }
         let publicBytes;
         let privateBytes = null;
         let type = /** @type {"public" | "private"} */ ("public");
@@ -197,7 +210,10 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         return Promise.resolve(bytes.slice());
       }
       case "deriveBits": {
-        const peerPublic = algorithmOrKey?.public;
+        if (/** @type {any} */ (globalThis).__x25519Debug) {
+          console.error("[x25519-polyfill] deriveBits enter");
+        }
+        const peerPublic = formatOrAlgorithm?.public;
         const peerKey = asX25519Key(peerPublic);
         const peerBytes = peerKey
           ? peerKey.publicBytes
@@ -208,15 +224,34 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         }
         const length = args[2];
         const { x25519 } = await curves();
-        const shared = x25519.getSharedSecret(ownKey.privateBytes, peerBytes);
+        let shared;
+        try {
+          shared = x25519.getSharedSecret(ownKey.privateBytes, peerBytes);
+        } catch (err) {
+          if (/** @type {any} */ (globalThis).__x25519Debug) {
+            console.error(
+              "[x25519-polyfill] getSharedSecret failed:",
+              /** @type {any} */ (err)?.message,
+              "peerBytes len",
+              peerBytes?.length,
+            );
+          }
+          throw err;
+        }
+        if (/** @type {any} */ (globalThis).__x25519Debug) {
+          console.error("[x25519-polyfill] deriveBits derived, length", length);
+        }
         const bits = new Uint8Array(Math.ceil(length / 8));
         bits.set(shared.slice(0, bits.length));
+        if (/** @type {any} */ (globalThis).__x25519Debug) {
+          console.error("[x25519-polyfill] deriveBits exit");
+        }
         return Promise.resolve(bits.buffer);
       }
       case "deriveKey": {
         // Derive the shared secret, then hand it to the native subtle as
         // HKDF input for the requested derived algorithm
-        const peerPublic = algorithmOrKey?.public;
+        const peerPublic = formatOrAlgorithm?.public;
         const peerKey = asX25519Key(peerPublic);
         const peerBytes = peerKey
           ? peerKey.publicBytes
