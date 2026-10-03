@@ -1219,3 +1219,61 @@ describe("moveUp (work document #23)", () => {
     assert.equal(main.get("nodes").get("X").get("component"), "c/Ext");
   });
 });
+
+describe("grant intents (work document #21)", () => {
+  it("grants a Dacar role and echoes the acl grant", () => {
+    const doc = createProjectDoc("p");
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "grantPermission",
+      payload: { peerHash: "abc123", role: "operator" },
+    });
+    assert.ok(result.accepted);
+    const echo = result.echoes[0];
+    assert.equal(echo.protocol, "acl");
+    assert.equal(echo.command, "grant");
+    assert.equal(echo.payload.peerHash, "abc123");
+    assert.equal(echo.payload.role, "operator");
+    assert.equal(echo.payload.revoked, null);
+
+    // The grant lives in the project CRDT
+    const grant = doc.getMap("grants").get(echo.payload.id);
+    assert.equal(grant.get("peerHash"), "abc123");
+  });
+
+  it("tombstone-revokes through an intent", () => {
+    const doc = createProjectDoc("p");
+    const grant = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "grantPermission",
+      payload: { peerHash: "abc123", role: "observer" },
+    });
+    const grantId = grant.echoes[0].payload.id;
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "revokePermission",
+      payload: { grantId },
+    });
+    assert.ok(result.accepted);
+    assert.deepEqual(result.echoes, [
+      { protocol: "acl", command: "revoke", payload: { id: grantId } },
+    ]);
+    assert.ok(doc.getMap("grants").get(grantId).get("revoked") > 0);
+  });
+
+  it("rejects unknown roles and unknown grants", () => {
+    const doc = createProjectDoc("p");
+    const badRole = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "grantPermission",
+      payload: { peerHash: "abc", role: "root" },
+    });
+    assert.ok(!badRole.accepted);
+    const ghost = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "revokePermission",
+      payload: { grantId: "grant-ghost" },
+    });
+    assert.ok(!ghost.accepted);
+  });
+});

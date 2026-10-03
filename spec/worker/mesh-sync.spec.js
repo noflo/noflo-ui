@@ -18,19 +18,30 @@ describe("mesh config (work document #21)", () => {
       interfaces: [
         { id: "a", type: "websocket", url: "wss://rns.example", enabled: true },
         { id: "bad", type: "tcp" },
+        {
+          id: "legacy",
+          type: "websocket",
+          url: "wss://legacy",
+          enabled: false,
+        },
         { type: "websocket", url: "wss://x", enabled: true },
         null,
       ],
     });
     assert.equal(config.enabled, true);
     assert.equal(config.room, "my-room");
-    assert.equal(config.interfaces.length, 1, "only valid interfaces kept");
+    // Options-based normalization keeps any typed interface with an options
+    // object; runtime validation happens when the interface attaches
+    assert.equal(config.interfaces.length, 3, "typed interfaces kept");
+    assert.deepEqual(config.interfaces[0].options, {
+      url: "wss://rns.example",
+    });
+    assert.deepEqual(config.interfaces[1].options, {});
+    assert.deepEqual(config.interfaces[2].options, { url: "wss://legacy" });
     assert.deepEqual(config.interfaces[0], {
       id: "a",
       type: "websocket",
-      url: "wss://rns.example",
-      host: undefined,
-      port: undefined,
+      options: { url: "wss://rns.example" },
       enabled: true,
     });
 

@@ -20,12 +20,14 @@ import {
   getComponentSignature,
   getGraph,
   getNode,
+  grantPermission,
   graphChildren,
   moveNode,
   removeComponentSignature,
   removeEdge,
   removeExportedPort,
   removeNode,
+  revokePermission,
   setComponentSignature,
   setNodeComponent,
   transferNode,
@@ -177,6 +179,10 @@ function handleIntent(doc, message) {
       return intentMakeSubgraph(doc, payload);
     case "moveUp":
       return intentMoveUp(doc, payload);
+    case "grantPermission":
+      return intentGrantPermission(doc, payload);
+    case "revokePermission":
+      return intentRevokePermission(doc, payload);
     default:
       return { accepted: false, echoes: [] };
   }
@@ -1203,6 +1209,57 @@ function intentRenameExport(doc, command, payload) {
       command.toLowerCase()
     ),
     payload: { from, to },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Grants a Dacar capability role to a peer identity. Grants are project
+ * data (Appendix B `grants` map); capability validation itself lives with
+ * the Dacar protocol (work document #21 scope note).
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentGrantPermission(doc, payload) {
+  const { peerHash, role } = payload ?? {};
+  const grant = grantPermission(doc, peerHash, role);
+  if (!grant) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").AclGrantMessage} */
+  const echo = {
+    protocol: "acl",
+    command: "grant",
+    payload: {
+      id: grant.id,
+      peerHash: grant.peerHash,
+      role: grant.role,
+      issued: grant.issued,
+      revoked: null,
+    },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Tombstone-revokes a grant.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRevokePermission(doc, payload) {
+  const { grantId } = payload ?? {};
+  if (!revokePermission(doc, grantId)) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").AclRevokeMessage} */
+  const echo = {
+    protocol: "acl",
+    command: "revoke",
+    payload: { id: grantId },
   };
   return { accepted: true, echoes: [echo] };
 }

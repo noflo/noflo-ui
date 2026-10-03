@@ -121,6 +121,25 @@
  */
 
 /**
+ * Appendix A extension (work document #21): issue a Dacar capability grant
+ * to a peer identity. Grants are project data synced to all peers.
+ *
+ * @typedef {Object} IntentGrantPermissionMessage
+ * @property {'INTENT'} type
+ * @property {'grantPermission'} command
+ * @property {{ peerHash: string, role: 'observer' | 'operator' | 'developer' }} payload
+ */
+
+/**
+ * Appendix A extension (work document #21): tombstone-revoke a grant.
+ *
+ * @typedef {Object} IntentRevokePermissionMessage
+ * @property {'INTENT'} type
+ * @property {'revokePermission'} command
+ * @property {{ grantId: string }} payload
+ */
+
+/**
  * Appendix A extension (work document #23): turn nodes into a subgraph.
  * The engine creates the child graph, moves the nodes into it, exports the
  * boundary connections as ports, replaces the nodes with a single subgraph
@@ -201,7 +220,9 @@
  *   | IntentCreateGraphMessage
  *   | IntentRemoveGraphMessage
  *   | IntentMakeSubgraphMessage
- *   | IntentMoveUpMessage} UIWorkerMessage
+ *   | IntentMoveUpMessage
+ *   | IntentGrantPermissionMessage
+ *   | IntentRevokePermissionMessage} UIWorkerMessage
  */
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -307,6 +328,24 @@
  */
 
 /**
+ * Appendix A extension (work document #21): authoritative ACL echoes.
+ *
+ * @typedef {Object} AclGrantMessage
+ * @property {'acl'} protocol
+ * @property {'grant'} command
+ * @property {{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }} payload
+ */
+
+/**
+ * Appendix A extension (work document #21): authoritative ACL echo.
+ *
+ * @typedef {Object} AclRevokeMessage
+ * @property {'acl'} protocol
+ * @property {'revoke'} command
+ * @property {{ id: string }} payload
+ */
+
+/**
  * All messages the Engine may send to the Glass.
  *
  * @typedef {HeartbeatMessage
@@ -324,6 +363,8 @@
  *   | GraphCreateGraphMessage
  *   | GraphRemoveGraphMessage
  *   | GraphSetComponentMessage
+ *   | AclGrantMessage
+ *   | AclRevokeMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
  */
 

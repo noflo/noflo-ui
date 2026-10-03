@@ -929,3 +929,82 @@ export function removeExportedPort(graph, direction, publicName) {
   ports.delete(publicName);
   return true;
 }
+
+// ---- grants (work document #21) ------------------------------------------
+
+/**
+ * Returns the grants collection. Dacar capability grants issued to peer
+ * identities are project data: they sync to all peers, and revocation is a
+ * tombstone (a timestamp), never a deletion, so revocations propagate
+ * deterministically. Validation of the capability masks themselves lives
+ * with the Dacar protocol (out of scope here).
+ */
+export const GRANTS_MAP = "grants";
+
+/** Dacar roles the UI can issue. */
+export const GRANT_ROLES = ["observer", "operator", "developer"];
+
+/**
+ * Issues a capability grant to a peer identity.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} peerHash Hex identity hash of the granted peer.
+ * @param {string} role One of GRANT_ROLES.
+ * @returns {{ id: string, peerHash: string, role: string, issued: number, revoked: null } | null}
+ *   The grant, or null on invalid input.
+ */
+export function grantPermission(doc, peerHash, role) {
+  if (typeof peerHash !== "string" || peerHash.length === 0) return null;
+  if (!(/** @type {string[]} */ (GRANT_ROLES).includes(role))) return null;
+  const grants = doc.getMap(GRANTS_MAP);
+  const id = `grant-${newProjectId()}`;
+  const entry = new Y.Map();
+  doc.transact(() => {
+    entry.set("peerHash", peerHash);
+    entry.set("role", role);
+    entry.set("issued", Date.now());
+    entry.set("revoked", null);
+    grants.set(id, entry);
+  });
+  return { id, peerHash, role, issued: entry.get("issued"), revoked: null };
+}
+
+/**
+ * Tombstone-revokes a grant. Revoking an already-revoked grant is a no-op
+ * that still reports success.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} grantId
+ * @returns {boolean} Whether the grant existed.
+ */
+export function revokePermission(doc, grantId) {
+  if (typeof grantId !== "string") return false;
+  const entry = doc.getMap(GRANTS_MAP).get(grantId);
+  if (!entry) return false;
+  if (entry.get("revoked") === null) {
+    entry.set("revoked", Date.now());
+  }
+  return true;
+}
+
+/**
+ * Projects all grants as plain data.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>}
+ */
+export function listGrants(doc) {
+  /** @type {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>} */
+  const grants = [];
+  for (const [id, entry] of doc.getMap(GRANTS_MAP).entries()) {
+    const plain = entry.toJSON();
+    grants.push({
+      id,
+      peerHash: plain.peerHash,
+      role: plain.role,
+      issued: plain.issued,
+      revoked: plain.revoked ?? null,
+    });
+  }
+  return grants;
+}

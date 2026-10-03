@@ -7,6 +7,7 @@
  */
 
 import noflo from "../../vendor/noflo.js";
+import { WebSocketClientInterface } from "../../vendor/reticulum-core.js";
 import * as Y from "../../vendor/yjs.js";
 
 /** NoFlo's shipped types omit the default export; the runtime API is stable. */
@@ -136,7 +137,16 @@ export async function startEngine(io, options = {}) {
           .handleConfigure(message.payload)
           .catch((err) => console.error("Mesh configuration failed:", err));
       } else if (message.command === "status") {
-        io.postMessage({ kind: "mesh-config", config: mesh.config });
+        io.postMessage({
+          kind: "mesh-config",
+          config: mesh.config,
+          identityHash: mesh.identityHash,
+          // Interface configuration schemas come from the interface classes
+          // themselves; the settings UI renders forms from them
+          interfaceSchemas: {
+            websocket: WebSocketClientInterface.getConfigurationSchema(),
+          },
+        });
       }
       return;
     }

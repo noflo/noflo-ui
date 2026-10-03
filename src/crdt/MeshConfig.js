@@ -9,12 +9,13 @@ export const MESH_CONFIG_VERSION = 1;
 export const MESH_CONFIG_KEY = "mesh-config";
 
 /**
+ * Interface configuration is options-based: each interface type supplies its
+ * own JSON Schema (`getConfigurationSchema()` static on @reticulum/core interface classes), and the options object holds whatever that schema describes. The settings UI renders forms from the schema.
+ *
  * @typedef {Object} MeshInterface
  * @property {string} id Stable identifier for editing and removal
  * @property {'websocket' | 'tcp'} type
- * @property {string} [url] WebSocket URL, for type "websocket"
- * @property {string} [host] TCP host, for type "tcp"
- * @property {number} [port] TCP port, for type "tcp"
+ * @property {{ [key: string]: any }} options Constructor options per the interface type's JSON Schema
  * @property {boolean} enabled Whether the Engine should attach the interface
  */
 
@@ -73,16 +74,22 @@ export function normalizeMeshConfig(blob) {
         id: typeof iface.id === "string" ? iface.id : "",
         type:
           iface.type === "websocket" || iface.type === "tcp" ? iface.type : "",
-        url: typeof iface.url === "string" ? iface.url : undefined,
-        host: typeof iface.host === "string" ? iface.host : undefined,
-        port: typeof iface.port === "number" ? iface.port : undefined,
+        options:
+          iface.options && typeof iface.options === "object"
+            ? { ...iface.options }
+            : // Configs saved before options-based interfaces folded the
+              // constructor arguments into the entry itself
+              {
+                ...(typeof iface.url === "string" ? { url: iface.url } : {}),
+                ...(typeof iface.host === "string" ? { host: iface.host } : {}),
+                ...(typeof iface.port === "number" ? { port: iface.port } : {}),
+              },
         enabled: iface.enabled === true,
       }))
-      .filter((/** @type {any} */ iface) => {
-        if (!iface.id || !iface.type) return false;
-        if (iface.type === "websocket") return typeof iface.url === "string";
-        return typeof iface.host === "string" && typeof iface.port === "number";
-      });
+      .filter(
+        (/** @type {any} */ iface) =>
+          iface.id && iface.type && typeof iface.options === "object",
+      );
   }
   return config;
 }

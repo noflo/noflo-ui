@@ -23,9 +23,11 @@ import {
   getNode,
   getProjectMetadata,
   getSpecSuite,
+  grantPermission,
   graphAncestry,
   graphChildren,
   iipEdgeIdFor,
+  listGrants,
   moveNode,
   PROJECT_SCHEMA_VERSION,
   removeComponentSignature,
@@ -33,6 +35,7 @@ import {
   removeExportedPort,
   removeNode,
   removeSpecCase,
+  revokePermission,
   setComponentCode,
   setComponentSignature,
   updateComponentMetadata,
@@ -489,5 +492,41 @@ describe("graph hierarchy (work document #23)", () => {
     assert.ok(child, "B sees the subgraph");
     assert.equal(child.get("metadata").get("parent"), "main");
     assert.deepEqual(graphAncestry(docB, "main/A"), ["main", "main/A"]);
+  });
+});
+
+describe("grants (work document #21)", () => {
+  it("issues grants with a tombstone-capable shape", () => {
+    const doc = createProjectDoc("p");
+    const grant = grantPermission(doc, "abc123hash", "operator");
+    assert.ok(grant);
+    assert.equal(grant.peerHash, "abc123hash");
+    assert.equal(grant.role, "operator");
+    assert.equal(grant.revoked, null);
+    const grants = listGrants(doc);
+    assert.equal(grants.length, 1);
+    assert.equal(grants[0].id, grant.id);
+  });
+
+  it("rejects unknown roles and empty peer hashes", () => {
+    const doc = createProjectDoc("p");
+    assert.equal(grantPermission(doc, "abc", "admin"), null);
+    assert.equal(grantPermission(doc, "", "operator"), null);
+    assert.equal(listGrants(doc).length, 0);
+  });
+
+  it("revokes by tombstone, never deletion", () => {
+    const doc = createProjectDoc("p");
+    const grant = /** @type {any} */ (
+      grantPermission(doc, "peerhash", "developer")
+    );
+    assert.ok(revokePermission(doc, grant.id));
+    const grants = listGrants(doc);
+    assert.equal(grants.length, 1, "tombstone retained");
+    assert.ok(grants[0].revoked > 0);
+    // Double revoke is a no-op that still succeeds
+    assert.ok(revokePermission(doc, grant.id));
+    assert.equal(listGrants(doc)[0].revoked, grants[0].revoked);
+    assert.ok(!revokePermission(doc, "grant-ghost"));
   });
 });

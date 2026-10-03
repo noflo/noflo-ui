@@ -13,6 +13,8 @@ import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import { FlowExportedPort } from "./elements/noflo-exported-port.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
+import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
+import "./elements/noflo-json-form.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
@@ -22,15 +24,18 @@ import {
   addExportIntent,
   addIIPIntent,
   addNodeIntent,
+  grantPermissionIntent,
   graphParent,
   makeSubgraphIntent,
   moveNodeIntent,
+  projectGrants,
   projectGraph,
   removeEdgeIntent,
   removeExportIntent,
   removeIIPIntent,
   removeNodeIntent,
   renameExportIntent,
+  revokePermissionIntent,
   subgraphComponentFor,
   updateIIPIntent,
 } from "./glass/projectView.js";
@@ -46,6 +51,7 @@ customElements.define("noflo-radial-menu", FlowRadialMenu);
 customElements.define("noflo-selection-pills", SelectionPills);
 customElements.define("noflo-iip", FlowIIP);
 customElements.define("noflo-exported-port", FlowExportedPort);
+customElements.define("noflo-mesh-settings", FlowMeshSettings);
 
 /** The graph the Glass currently displays; driven by the URL router. */
 let activeGraphId = "main";
@@ -65,6 +71,13 @@ let mirrorDoc = new Y.Doc();
 
 /** @type {ReturnType<typeof createRouter> | null} */
 let router = null;
+
+/** Last mesh config reported by the Engine, for the settings dialog. */
+let meshConfig = /** @type {any} */ (null);
+/** Identity hash reported by the Engine, for the settings dialog. */
+let meshIdentityHash = "";
+/** JSON Schemas per mesh interface type, for the settings dialog. */
+let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** @type {FlowEditor | null} */
 let editor = null;
 /** @type {LibraryManager | null} */
@@ -136,8 +149,13 @@ function onEngineMessage(data) {
         state?.dragging?.graphId === activeGraphId || state?.dragging == null,
     );
     editor.setPeerGhosts(states);
-  } else if (data?.kind === "mesh-status" || data?.kind === "mesh-config") {
-    console.debug("Mesh", data.kind, data.connected ?? "", data.error ?? "");
+  } else if (data?.kind === "mesh-config") {
+    meshConfig = data.config ?? null;
+    meshIdentityHash = data.identityHash ?? "";
+    meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    refreshMeshSettings();
+  } else if (data?.kind === "mesh-status") {
+    console.debug("Mesh", data.connected ?? "", data.error ?? "");
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
   }
@@ -243,6 +261,42 @@ function bootstrapLibrary() {
         addressable: Boolean(p.addressable),
       })),
     });
+  }
+}
+
+/**
+ * Opens the mesh settings dialog with the current Engine config and the
+ * CRDT-resident grants. Observer tabs see a read-only config (the Engine is
+ * owned by the leader) but can still view grants.
+ */
+function openMeshSettings() {
+  const dialog = /** @type {FlowMeshSettings | null} */ (
+    /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
+  );
+  if (!dialog) return;
+  supervisor?.send({ type: "MESH", command: "status" });
+  dialog.open(
+    meshConfig,
+    projectGrants(mirrorDoc),
+    meshIdentityHash,
+    meshInterfaceSchemas,
+  );
+}
+
+/**
+ * Refreshes the grants list while the settings dialog is open.
+ */
+function refreshMeshSettings() {
+  const dialog = /** @type {FlowMeshSettings | null} */ (
+    /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
+  );
+  if (!dialog || !dialog._open) return;
+  dialog.setGrants(projectGrants(mirrorDoc));
+  if (meshConfig) {
+    dialog._config = meshConfig;
+    dialog._identityHash = meshIdentityHash;
+    dialog._interfaceSchemas = meshInterfaceSchemas;
+    dialog.render();
   }
 }
 
@@ -445,6 +499,28 @@ async function init() {
 
   setupCrossTabMirror();
   updateRoleBadge();
+
+  // Mesh settings dialog wiring (work document #21)
+  document
+    .getElementById("mesh-settings")
+    ?.addEventListener("click", () => openMeshSettings());
+  const settingsDialog = /** @type {FlowMeshSettings | null} */ (
+    /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
+  );
+  settingsDialog?.addEventListener("mesh-configure", (/** @type {any} */ e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "configure",
+      payload: e.detail.config,
+    });
+  });
+  settingsDialog?.addEventListener("mesh-grant", (/** @type {any} */ e) => {
+    sendIntent(grantPermissionIntent(e.detail.peerHash, e.detail.role));
+  });
+  settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
+    sendIntent(revokePermissionIntent(e.detail.id));
+  });
+  settingsDialog?.addEventListener("mesh-close", () => {});
 
   const eviction = await checkEviction(/** @type {any} */ (navigator).storage);
   if (eviction?.level === "warning") {

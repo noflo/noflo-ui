@@ -9,7 +9,7 @@
  * configured WebSocket interfaces attached.
  */
 
-import { Identity } from "../../vendor/reticulum-core.js";
+import { Identity, toHex } from "../../vendor/reticulum-core.js";
 import { ReticulumProvider } from "../../vendor/y-reticulum.js";
 import {
   loadMeshConfig,
@@ -54,10 +54,14 @@ async function defaultCreateProvider(config, identity, doc) {
   const reticulum = new Reticulum();
   for (const iface of config.interfaces) {
     if (!iface.enabled) continue;
-    if (iface.type === "websocket" && iface.url) {
-      const client = new WebSocketClientInterface({ url: iface.url });
+    if (iface.type === "websocket") {
+      const client = new WebSocketClientInterface(iface.options ?? {});
       await client.connect();
       reticulum.addInterface(client, true);
+    } else {
+      console.warn(
+        `Mesh interface type ${iface.type} is not available in the browser worker; skipped`,
+      );
     }
   }
   const provider = new ReticulumProvider(config.room, doc, {
@@ -71,6 +75,8 @@ async function defaultCreateProvider(config, identity, doc) {
 /**
  * @typedef {Object} MeshSyncHandle
  * @property {import("../crdt/MeshConfig.js").MeshConfig} config
+ * @property {string} identityHash Hex identity hash for display; empty until
+ *   the identity is generated or restored.
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
  * @property {(payload: any) => void} handleAwareness Handles a local
@@ -101,6 +107,8 @@ export async function createMeshSync({
   /** @type {any} */
   let provider = null;
   let peerCount = 0;
+  /** Hex identity hash for display in the config UI; empty until generated. */
+  let identityHash = "";
 
   // ---- Awareness (work document #21, SPEC "Spatial Interactions") -------
   // Ephemeral drag-ghost telemetry; never mutates the CRDT. Local states are
@@ -200,7 +208,11 @@ export async function createMeshSync({
   async function ensureIdentity() {
     if (config.identity) {
       try {
-        return await Identity.fromBytes(base64ToBytes(config.identity));
+        const restored = await Identity.fromBytes(
+          base64ToBytes(config.identity),
+        );
+        identityHash = toHex(restored.getSalt());
+        return restored;
       } catch {
         // A corrupt stored identity is regenerated: it is only an address,
         // and peers re-grant access to the new hash through the config UI
@@ -208,6 +220,7 @@ export async function createMeshSync({
     }
     const identity = await Identity.generate();
     config.identity = bytesToBase64(await identity.getPrivateKey());
+    identityHash = toHex(identity.getSalt());
     await saveMeshConfig(storage, config);
     return identity;
   }
@@ -290,6 +303,9 @@ export async function createMeshSync({
   return {
     get config() {
       return config;
+    },
+    get identityHash() {
+      return identityHash;
     },
     /**
      * @param {any} payload
