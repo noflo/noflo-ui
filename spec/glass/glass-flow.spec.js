@@ -483,6 +483,8 @@ describe("glass navigation wiring (work document #23)", () => {
         moveUp: (/** @type {any} */ nodes) => calls.push(["moveUp", nodes]),
         unpack: (/** @type {string} */ node) => calls.push(["unpack", node]),
       },
+      onDragging: (/** @type {any} */ nodes) => calls.push(["dragging", nodes]),
+      onDragEnd: (/** @type {any} */ nodes) => calls.push(["dragEnd", nodes]),
     });
     await harness.render();
     navMapper.wire(harness.editor);
@@ -520,6 +522,20 @@ describe("glass navigation wiring (work document #23)", () => {
         composed: true,
       }),
     );
+    harness.editor.dispatchEvent(
+      new CustomEvent("nodes-dragging", {
+        detail: { nodes: [{ node: "A", x: 5, y: 6 }] },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    harness.editor.dispatchEvent(
+      new CustomEvent("nodes-drag-end", {
+        detail: { nodes: ["A"] },
+        bubbles: true,
+        composed: true,
+      }),
+    );
 
     assert.deepEqual(calls, [
       ["down", "A"],
@@ -527,6 +543,8 @@ describe("glass navigation wiring (work document #23)", () => {
       ["createSubgraph", [fakeNode]],
       ["moveUp", ["A", "B"]],
       ["unpack", "A"],
+      ["dragging", [{ node: "A", x: 5, y: 6 }]],
+      ["dragEnd", ["A"]],
     ]);
 
     harness.editor?.remove();

@@ -274,3 +274,133 @@ describe("mesh sync convergence over a TCP loopback (work document #21)", () => 
     );
   }, 30000);
 });
+
+describe("awareness (work document #21)", () => {
+  /**
+   * Builds a y-protocols-like awareness stub with a controllable clientID.
+   *
+   * @returns {any}
+   */
+  function makeAwareness() {
+    return {
+      clientID: 1,
+      /** @type {Map<number, any>} */
+      states: new Map(),
+      /** @type {Array<(changes: any) => void>} */
+      observers: [],
+      observe(handler) {
+        this.observers.push(handler);
+      },
+      unobserve(handler) {
+        this.observers = this.observers.filter((h) => h !== handler);
+      },
+      setLocalStateField(field, value) {
+        this.states.set(this.clientID, {
+          ...(this.states.get(this.clientID) ?? {}),
+          [field]: value,
+        });
+        for (const handler of this.observers) {
+          handler({ added: [], updated: [this.clientID], removed: [] });
+        }
+      },
+      getStates() {
+        return this.states;
+      },
+    };
+  }
+
+  it("throttles local drag states with a trailing flush", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    const awareness = makeAwareness();
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      awarenessThrottleMs: 50,
+      createProvider: async () => ({
+        awareness,
+        on: () => {},
+        destroy: async () => {},
+      }),
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+
+    // Burst of updates within the throttle window
+    mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 1, y: 1 });
+    mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 2, y: 2 });
+    mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 3, y: 3 });
+    // First passes immediately, trailing one scheduled; none dropped entirely
+    assert.equal(awareness.states.get(1).dragging.x, 1);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    assert.equal(awareness.states.get(1).dragging.x, 3, "trailing flush");
+
+    // Stops pass through immediately and cancel the pending flush
+    mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 4, y: 4 });
+    mesh.handleAwareness({ graphId: "main", nodeId: null });
+    assert.equal(awareness.states.get(1).dragging, null);
+  });
+
+  it("forwards remote awareness states, not the local one", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    const awareness = makeAwareness();
+    let updateHandler = null;
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      createProvider: async () => ({
+        awareness,
+        on: () => {},
+        destroy: async () => {},
+      }),
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    updateHandler = awareness.observers[0];
+    assert.ok(updateHandler, "observing provider awareness");
+
+    // A remote peer drags a node
+    awareness.states.set(42, {
+      dragging: { graphId: "main", nodeId: "A", x: 5, y: 6 },
+    });
+    updateHandler({ added: [42], updated: [], removed: [] });
+    const forwarded = messages.find((m) => m.kind === "awareness");
+    assert.deepEqual(forwarded.states, [
+      { peerId: "42", graphId: "main", nodeId: "A", x: 5, y: 6 },
+    ]);
+
+    // The local client's own state is not echoed back
+    awareness.states.set(1, {
+      dragging: { graphId: "main", nodeId: "B", x: 0, y: 0 },
+    });
+    updateHandler({ added: [], updated: [1], removed: [] });
+    assert.equal(
+      messages.filter((m) => m.kind === "awareness").length,
+      1,
+      "own state not forwarded",
+    );
+
+    // A peer dropping off clears its ghost
+    updateHandler({ added: [], updated: [], removed: [42] });
+    const clear = messages.filter((m) => m.kind === "awareness").pop();
+    assert.deepEqual(clear.states, [{ peerId: "42", dragging: null }]);
+  });
+
+  it("drops awareness silently when no provider is bound", async () => {
+    const awareness = makeAwareness();
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: () => {},
+      storage: createMemoryStorage(),
+      createProvider: async () => ({
+        awareness,
+        on: () => {},
+        destroy: async () => {},
+      }),
+    });
+    // Not enabled: no provider, no awareness — must not throw
+    mesh.handleAwareness({ graphId: "main", nodeId: "A", x: 1, y: 1 });
+    mesh.handleAwareness({ graphId: "main", nodeId: null });
+  });
+});

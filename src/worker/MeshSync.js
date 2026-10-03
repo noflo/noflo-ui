@@ -73,6 +73,8 @@ async function defaultCreateProvider(config, identity, doc) {
  * @property {import("../crdt/MeshConfig.js").MeshConfig} config
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
+ * @property {(payload: any) => void} handleAwareness Handles a local
+ *   `AWARENESS: dragging` payload from the Glass (throttled).
  * @property {() => Promise<void>} stop
  */
 
@@ -84,6 +86,7 @@ async function defaultCreateProvider(config, identity, doc) {
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
  *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc) => Promise<any>,
+ *   awarenessThrottleMs?: number,
  * }} options
  * @returns {Promise<MeshSyncHandle>}
  */
@@ -92,11 +95,103 @@ export async function createMeshSync({
   postMessage,
   storage,
   createProvider = defaultCreateProvider,
+  awarenessThrottleMs = 250,
 }) {
   let config = await loadMeshConfig(storage);
   /** @type {any} */
   let provider = null;
   let peerCount = 0;
+
+  // ---- Awareness (work document #21, SPEC "Spatial Interactions") -------
+  // Ephemeral drag-ghost telemetry; never mutates the CRDT. Local states are
+  // throttled to ~250ms with a trailing flush; stops pass immediately.
+  /** @type {any} */
+  let awareness = null;
+  /** @type {(() => void) | null} */
+  let unobserveAwareness = null;
+  let lastAwarenessSentAt = 0;
+  /** @type {any} */
+  let pendingAwareness = null;
+  /** @type {any} */
+  let awarenessTimer = null;
+
+  /**
+   * @param {any} dragging Null clears the local ghost state.
+   */
+  function writeLocalAwareness(dragging) {
+    if (!awareness) return;
+    awareness.setLocalStateField("dragging", dragging);
+  }
+
+  /**
+   * Handles a local `AWARENESS: dragging` message from the Glass.
+   *
+   * @param {any} payload Appendix A AwarenessDragging, or with a null
+   *   nodeId to signal drag end.
+   */
+  function handleAwareness(payload) {
+    const dragging =
+      payload?.nodeId == null
+        ? null
+        : {
+            graphId: payload.graphId,
+            nodeId: payload.nodeId,
+            x: payload.x,
+            y: payload.y,
+          };
+    if (dragging === null) {
+      if (awarenessTimer !== null) {
+        clearTimeout(awarenessTimer);
+        awarenessTimer = null;
+      }
+      pendingAwareness = null;
+      lastAwarenessSentAt = Date.now();
+      writeLocalAwareness(null);
+      return;
+    }
+    const since = Date.now() - lastAwarenessSentAt;
+    if (since >= awarenessThrottleMs) {
+      lastAwarenessSentAt = Date.now();
+      writeLocalAwareness(dragging);
+      return;
+    }
+    pendingAwareness = dragging;
+    if (awarenessTimer === null) {
+      awarenessTimer = setTimeout(() => {
+        awarenessTimer = null;
+        if (pendingAwareness === null) return;
+        lastAwarenessSentAt = Date.now();
+        writeLocalAwareness(pendingAwareness);
+        pendingAwareness = null;
+      }, awarenessThrottleMs - since);
+    }
+  }
+
+  /**
+   * Forwards remote awareness states to the Glass, keyed by peer.
+   *
+   * @param {{ added: number[], updated: number[], removed: number[] }} changes
+   */
+  function forwardRemoteAwareness(changes) {
+    if (!awareness) return;
+    /** @type {any[]} */
+    const states = [];
+    const allStates = awareness.getStates();
+    for (const clientId of [...changes.added, ...changes.updated]) {
+      if (clientId === awareness.clientID) continue;
+      const state = allStates.get(clientId);
+      if (state?.dragging) {
+        states.push({ peerId: String(clientId), ...state.dragging });
+      }
+    }
+    for (const clientId of changes.removed) {
+      if (clientId === awareness.clientID) continue;
+      states.push({ peerId: String(clientId), dragging: null });
+    }
+    if (states.length > 0) {
+      postMessage({ kind: "awareness", states });
+    }
+  }
 
   /**
    * Returns the configured identity, generating and persisting one on first
@@ -134,6 +229,14 @@ export async function createMeshSync({
       });
       return;
     }
+    // Bind awareness to this provider instance; dropped on unbind
+    awareness = provider.awareness ?? null;
+    if (awareness) {
+      const updateHandler = (/** @type {any} */ changes) =>
+        forwardRemoteAwareness(changes);
+      awareness.observe(updateHandler);
+      unobserveAwareness = () => awareness?.unobserve?.(updateHandler);
+    }
     provider.on("status", (/** @type {any} */ event) => {
       postMessage({
         kind: "mesh-status",
@@ -163,6 +266,16 @@ export async function createMeshSync({
 
   async function stop() {
     if (!provider) return;
+    if (unobserveAwareness) {
+      unobserveAwareness();
+      unobserveAwareness = null;
+    }
+    if (awarenessTimer !== null) {
+      clearTimeout(awarenessTimer);
+      awarenessTimer = null;
+    }
+    pendingAwareness = null;
+    awareness = null;
     try {
       await provider.destroy();
     } catch {
@@ -170,6 +283,8 @@ export async function createMeshSync({
     }
     provider = null;
     peerCount = 0;
+    // Clear any peer ghosts the Glass is rendering
+    postMessage({ kind: "awareness", states: [] });
   }
 
   return {
@@ -186,6 +301,12 @@ export async function createMeshSync({
       await stop();
       await start();
       postMessage({ kind: "mesh-config", config });
+    },
+    /**
+     * @param {any} payload
+     */
+    handleAwareness(payload) {
+      handleAwareness(payload);
     },
     async stop() {
       await stop();

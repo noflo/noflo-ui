@@ -157,6 +157,8 @@ export class FlowEditor extends HTMLElement {
     this.edgesGroup = null;
     /** @type {HTMLElement | null} */
     this.nodeLayer = null;
+    /** Remote peer drag ghosts, keyed by peer id (work document #21). */
+    this.peerGhosts = new Map();
 
     // Data
     /** @type {SVGPathElement | null} */
@@ -349,6 +351,33 @@ export class FlowEditor extends HTMLElement {
              entities are interactive. */
           pointer-events: none;
         }
+        #peer-layer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 4;
+          pointer-events: none;
+        }
+        .peer-ghost {
+          position: absolute;
+          width: var(--node-size, 80px);
+          height: var(--node-size, 80px);
+          border-radius: var(--ghost-radius, 50%);
+          border: 2px dashed var(--ui-accent, #4aa3df);
+          background: color-mix(in srgb, var(--ui-accent, #4aa3df) 12%, transparent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          color: var(--ui-fg, #eee);
+          max-width: 120px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          animation: ghost-appear 150ms ease-out;
+        }
         #node-layer > noflo-node,
         #node-layer > noflo-iip,
         #node-layer > noflo-exported-port {
@@ -436,6 +465,7 @@ export class FlowEditor extends HTMLElement {
             <g id="iip-wires-group" transform="translate(8000, 8000)"></g>
           </svg>
           <div id="node-layer"></div>
+          <div id="peer-layer"></div>
           <svg id="svg-layer">
             <g id="edges-group" transform="translate(8000, 8000)"></g>
           </svg>
@@ -467,6 +497,9 @@ export class FlowEditor extends HTMLElement {
     );
     this.nodeLayer = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
       "#node-layer",
+    );
+    this.peerLayer = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "#peer-layer",
     );
 
     this.camera = new Camera({
@@ -651,11 +684,47 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {GraphEntity} node
+   * @param {GraphEntity | string} node
    * @returns {string}
    */
   getNodeName(node) {
+    if (typeof node === "string") return node;
     return node.getAttribute("name") || "IIP";
+  }
+
+  /**
+   * Renders remote peer drag ghosts (work document #21 awareness). States
+   * carry `{ peerId, nodeId, x, y }` in the graph the peers are editing; a
+   * null `dragging` drops that peer's ghost. The Glass filters states to the
+   * graph it is rendering before calling this.
+   *
+   * @param {Array<{ peerId: string, dragging?: { graphId: string, nodeId: string, x: number, y: number } | null }> | null} states
+   */
+  setPeerGhosts(states) {
+    if (!this.peerLayer) return;
+    for (const state of states ?? []) {
+      const { peerId, dragging } = state;
+      if (!peerId) continue;
+      if (!dragging) {
+        const stale = this.peerGhosts.get(peerId);
+        if (stale) {
+          stale.remove();
+          this.peerGhosts.delete(peerId);
+        }
+        continue;
+      }
+      let ghost = this.peerGhosts.get(peerId);
+      if (!ghost) {
+        ghost = document.createElement("div");
+        ghost.className = "peer-ghost";
+        ghost.textContent = `${dragging.nodeId} (${peerId.slice(-4)})`;
+        this.peerLayer.appendChild(ghost);
+        this.peerGhosts.set(peerId, ghost);
+      }
+      const placed = /** @type {HTMLElement} */ (ghost);
+      placed.style.left = `${dragging.x}px`;
+      placed.style.top = `${dragging.y}px`;
+    }
   }
 
   /**
@@ -908,6 +977,21 @@ export class FlowEditor extends HTMLElement {
                 this.updateEdges();
                 this.updateIIPWires();
               }
+              // Ephemeral drag telemetry for mesh peers (work document #21):
+              // the engine throttles this to ~250ms
+              this.dispatchEvent(
+                new CustomEvent("nodes-dragging", {
+                  detail: {
+                    nodes: idealMoves.map(({ node, x, y }) => ({
+                      node: this.getNodeName(node),
+                      x,
+                      y,
+                    })),
+                  },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
             } else {
               this.isDraggingNodeInCollision = true;
               if (this.isSpringing) {
@@ -967,6 +1051,18 @@ export class FlowEditor extends HTMLElement {
         if (this.isDraggingNode) {
           // Stop any in-flight spring so the snap-to-grid below is instant.
           this._endSpring();
+          // Drag ended: mesh peers drop their ghost states immediately
+          this.dispatchEvent(
+            new CustomEvent("nodes-drag-end", {
+              detail: {
+                nodes: [...this.draggingNodesInitialPositions.keys()].map(
+                  (node) => this.getNodeName(node),
+                ),
+              },
+              bubbles: true,
+              composed: true,
+            }),
+          );
           /** @type {Array<{name: string, position: Position, type: string, direction: any, portName: string | null}>} */
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {

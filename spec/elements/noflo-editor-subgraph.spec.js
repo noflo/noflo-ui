@@ -85,3 +85,69 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
     assert.ok(!plainTexts.includes("Open"), "elementary cannot open");
   });
 });
+
+describe("FlowEditor peer ghosts (work document #21)", () => {
+  it("renders, moves, and drops remote drag ghosts", () => {
+    const ed = /** @type {FlowEditor} */ (
+      document.createElement("noflo-editor")
+    );
+    document.body.appendChild(ed);
+    const layer = /** @type {any} */ (
+      ed.shadowRoot?.querySelector("#peer-layer")
+    );
+    assert.ok(layer, "peer layer exists inside the transform layer");
+
+    ed.setPeerGhosts([
+      {
+        peerId: "123456",
+        dragging: { graphId: "main", nodeId: "A", x: 10, y: 20 },
+      },
+    ]);
+    let ghost = /** @type {HTMLElement} */ (layer.querySelector(".peer-ghost"));
+    assert.ok(ghost, "ghost created");
+    assert.equal(ghost.style.left, "10px");
+    assert.equal(ghost.style.top, "20px");
+
+    // Movement updates the existing element
+    ed.setPeerGhosts([
+      {
+        peerId: "123456",
+        dragging: { graphId: "main", nodeId: "A", x: 30, y: 40 },
+      },
+    ]);
+    assert.equal(layer.querySelectorAll(".peer-ghost").length, 1);
+    ghost = /** @type {HTMLElement} */ (layer.querySelector(".peer-ghost"));
+    assert.equal(ghost.style.left, "30px");
+
+    // A second peer appears alongside
+    ed.setPeerGhosts([
+      {
+        peerId: "123456",
+        dragging: { graphId: "main", nodeId: "A", x: 30, y: 40 },
+      },
+      {
+        peerId: "654321",
+        dragging: { graphId: "main", nodeId: "B", x: 0, y: 0 },
+      },
+    ]);
+    assert.equal(layer.querySelectorAll(".peer-ghost").length, 2);
+
+    // Drag end clears the ghost
+    ed.setPeerGhosts([{ peerId: "123456", dragging: null }]);
+    assert.equal(layer.querySelectorAll(".peer-ghost").length, 1);
+    ed.setPeerGhosts([{ peerId: "654321", dragging: null }]);
+    assert.equal(layer.querySelectorAll(".peer-ghost").length, 0);
+
+    // Updates are incremental: peers not mentioned in an update keep
+    // rendering; the engine sends explicit nulls on drop-off
+    ed.setPeerGhosts([
+      {
+        peerId: "111111",
+        dragging: { graphId: "main", nodeId: "C", x: 1, y: 2 },
+      },
+    ]);
+    assert.equal(layer.querySelectorAll(".peer-ghost").length, 1);
+
+    ed.remove();
+  });
+});

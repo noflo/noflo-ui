@@ -128,9 +128,38 @@ function onEngineMessage(data) {
     Y.applyUpdate(mirrorDoc, data.update);
   } else if (data?.kind === "y-update") {
     Y.applyUpdate(mirrorDoc, data.update);
+  } else if (data?.kind === "awareness") {
+    // Remote peer drag ghosts; only the graph being rendered matters
+    if (!editor) return;
+    const states = (data.states ?? []).filter(
+      (/** @type {any} */ state) =>
+        state?.dragging?.graphId === activeGraphId || state?.dragging == null,
+    );
+    editor.setPeerGhosts(states);
+  } else if (data?.kind === "mesh-status" || data?.kind === "mesh-config") {
+    console.debug("Mesh", data.kind, data.connected ?? "", data.error ?? "");
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
   }
+}
+
+/**
+ * Sends ephemeral drag telemetry to the Engine for mesh awareness. No-ops in
+ * observer tabs, which have no Engine to talk to.
+ *
+ * @param {Array<{ node: string, x: number, y: number }>} nodes
+ */
+function sendDraggingAwareness(nodes) {
+  supervisor?.send({
+    type: "AWARENESS",
+    command: "dragging",
+    payload: {
+      graphId: activeGraphId,
+      nodeId: nodes[0]?.node ?? null,
+      x: nodes[0]?.x ?? 0,
+      y: nodes[0]?.y ?? 0,
+    },
+  });
 }
 
 /**
@@ -329,6 +358,8 @@ async function init() {
     sendIntent,
     graphId: () => activeGraphId,
     getLibrary: () => libraryManager,
+    onDragging: (nodes) => sendDraggingAwareness(nodes),
+    onDragEnd: () => sendDraggingAwareness([]),
     navigation: {
       // Opening a node only makes sense when its component is a subgraph:
       // navigate to the graph registered under the component's name

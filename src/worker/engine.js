@@ -140,6 +140,12 @@ export async function startEngine(io, options = {}) {
       }
       return;
     }
+    if (message?.type === "AWARENESS") {
+      // Ephemeral drag telemetry: throttled by the mesh layer, never a CRDT
+      // mutation, and meaningless without a live provider
+      mesh.handleAwareness(message.payload);
+      return;
+    }
     socket.send(message);
   };
 

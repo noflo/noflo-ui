@@ -11,6 +11,10 @@
  * @property {{ down: (node: string) => void, up: () => void, createSubgraph: (nodes: any[]) => void, moveUp: (nodes: any[]) => void, unpack: (node: string) => void }} [navigation]
  *   Handlers for graph navigation and subgraph lifecycle, backed by the
  *   CRDT and the URL router.
+ * @property {(nodes: Array<{ node: string, x: number, y: number }>) => void} [onDragging]
+ *   Emitted during node drags for peer awareness (throttled by the engine).
+ * @property {(nodes: string[]) => void} [onDragEnd]
+ *   Emitted when a node drag ends, clearing peer ghost states.
  * @property {() => { getComponent: (name: string) => any } | null} getLibrary
  *   The Glass-side library view, for default port names.
  */
@@ -89,6 +93,8 @@ export function createIntentMapper({
   graphId,
   getLibrary,
   navigation,
+  onDragging,
+  onDragEnd,
 }) {
   /** Intents held back until their target node appears in the replica. */
   const pendingAfterNode = new Map();
@@ -353,6 +359,18 @@ export function createIntentMapper({
           );
         });
       }
+
+      ed.addEventListener("nodes-dragging", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        if (!onDragging) return;
+        onDragging(event.detail?.nodes ?? []);
+      });
+
+      ed.addEventListener("nodes-drag-end", (/** @type {any} */ e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        if (!onDragEnd) return;
+        onDragEnd(event.detail?.nodes ?? []);
+      });
 
       ed.addEventListener("move-nodes-up-attempt", (/** @type {any} */ e) => {
         const event = /** @type {CustomEvent} */ (e);
