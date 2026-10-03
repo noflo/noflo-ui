@@ -172,6 +172,18 @@ export class FlowMeshSettings extends HTMLElement {
           width: 100%;
           box-sizing: border-box;
         }
+        /* Checkboxes must keep their intrinsic size: the width: 100% rule
+           collapses them to zero width on WebKit */
+        input[type="checkbox"] {
+          width: 14px;
+          height: 14px;
+          min-width: 14px;
+          padding: 0;
+          margin: 0;
+          flex: none;
+          accent-color: var(--ui-accent);
+          cursor: pointer;
+        }
         .row {
           display: flex;
           gap: 8px;

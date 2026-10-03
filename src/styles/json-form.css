@@ -71,10 +71,13 @@ select.form-control:focus {
   margin: 4px 0;
 }
 
-.form-check-input {
-  accent-color: var(--ui-accent, #4aa3df);
+.form-check-input,
+input[type="checkbox"] {
+  accent-color: var(--ui-accent);
   width: 14px;
   height: 14px;
+  margin: 0;
+  flex: none;
   cursor: pointer;
 }
 

@@ -167,12 +167,16 @@ export async function createMeshSync({
    * authoritative project id after boot.
    */
   let room = roomFor();
+  /** Hex identity hash for display in the config UI; empty until generated. */
+  let identityHash = "";
   let config = await loadMeshConfig(storage);
+  // The identity is the peer's address: generate (and persist) it at boot,
+  // independent of whether sync is enabled — peers and node admins need the
+  // hash to grant access before sync is ever turned on
+  await ensureIdentity();
   /** @type {any} */
   let provider = null;
   let peerCount = 0;
-  /** Hex identity hash for display in the config UI; empty until generated. */
-  let identityHash = "";
 
   // ---- Awareness (work document #21, SPEC "Spatial Interactions") -------
   // Ephemeral drag-ghost telemetry; never mutates the CRDT. Local states are
