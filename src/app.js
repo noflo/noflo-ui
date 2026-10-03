@@ -181,6 +181,7 @@ function onEngineMessage(data) {
     meshIdentityHash = data.identityHash ?? "";
     meshRoom = data.room ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    joinRequests = data.joinRequests ?? joinRequests;
     // The engine's identity state is authoritative: recovered or still
     // failing, the dialog reflects it
     if (data.identityError) {
