@@ -7,6 +7,8 @@
 export const Identity: any;
 export const Reticulum: any;
 export const WebSocketClientInterface: any;
+export const WebRTCSignaling: any;
+export const WebRTCInterface: any;
 export const Destination: any;
 export const DestType: any;
 export const toHex: (...args: any[]) => string;

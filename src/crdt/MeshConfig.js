@@ -20,6 +20,21 @@ export const MESH_CONFIG_KEY = "mesh-config";
  */
 
 /**
+ * The WebRTC transport upgrade is orchestrator config, not an interface
+ * entry: `WebRTCInterface` instances are created programmatically by the
+ * signaling orchestrator once SDP has been exchanged over a Reticulum link
+ * (its own JSON Schema says "not instantiated from static node config").
+ *
+ * @typedef {Object} MeshWebRTCConfig
+ * @property {boolean} enabled Whether the Engine runs the signaling
+ *   orchestrator
+ * @property {boolean} autoConnect Dial discovered WebRTC-capable peers
+ *   automatically
+ * @property {{ [key: string]: any }} rtcConfig RTCPeerConnection
+ *   configuration (e.g. `{ iceServers: [...] }` for STUN/TURN)
+ */
+
+/**
  * @typedef {Object} MeshConfig
  * @property {number} schemaVersion
  * @property {boolean} enabled Whether mesh sync runs at all
@@ -27,6 +42,7 @@ export const MESH_CONFIG_KEY = "mesh-config";
  * @property {string} identity Base64 of the 128-byte Reticulum private key;
  *   empty until the Engine generates one
  * @property {MeshInterface[]} interfaces
+ * @property {MeshWebRTCConfig} webrtc
  */
 
 /**
@@ -39,7 +55,15 @@ export function createDefaultMeshConfig() {
     room: "noflo-ui",
     identity: "",
     interfaces: [],
+    webrtc: createDefaultWebRTCConfig(),
   };
+}
+
+/**
+ * @returns {MeshWebRTCConfig}
+ */
+export function createDefaultWebRTCConfig() {
+  return { enabled: false, autoConnect: true, rtcConfig: {} };
 }
 
 /**
@@ -67,6 +91,17 @@ export function normalizeMeshConfig(blob) {
     config.room = blob.room;
   }
   if (typeof blob.identity === "string") config.identity = blob.identity;
+  if (blob.webrtc && typeof blob.webrtc === "object") {
+    config.webrtc = {
+      ...createDefaultWebRTCConfig(),
+      enabled: blob.webrtc.enabled === true,
+      autoConnect: blob.webrtc.autoConnect !== false,
+      rtcConfig:
+        blob.webrtc.rtcConfig && typeof blob.webrtc.rtcConfig === "object"
+          ? { ...blob.webrtc.rtcConfig }
+          : {},
+    };
+  }
   if (Array.isArray(blob.interfaces)) {
     config.interfaces = blob.interfaces
       .filter((/** @type {any} */ iface) => iface && typeof iface === "object")

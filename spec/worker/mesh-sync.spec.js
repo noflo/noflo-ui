@@ -47,6 +47,14 @@ describe("mesh config (work document #21)", () => {
 
     assert.equal(normalizeMeshConfig(null).enabled, false);
     assert.equal(normalizeMeshConfig("junk").room, "noflo-ui");
+
+    // WebRTC transport upgrade section defaults to off, auto-connect on
+    const withWebRTC = normalizeMeshConfig({ webrtc: { enabled: true } });
+    assert.equal(withWebRTC.webrtc.enabled, true);
+    assert.equal(withWebRTC.webrtc.autoConnect, true);
+    assert.deepEqual(withWebRTC.webrtc.rtcConfig, {});
+    assert.equal(normalizeMeshConfig({}).webrtc.enabled, false);
+    assert.equal(normalizeMeshConfig({}).webrtc.autoConnect, true);
   });
 
   it("round-trips through storage", async () => {

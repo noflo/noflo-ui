@@ -22,8 +22,7 @@ export class FlowMeshSettings extends HTMLElement {
     this._grants = [];
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
-    /** @type {{ [type: string]: any }} */
-    (this)._interfaceSchemas = {};
+    this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
   }
 
   connectedCallback() {
@@ -169,6 +168,12 @@ export class FlowMeshSettings extends HTMLElement {
         </div>
         <label for="mesh-room">Room</label>
         <input id="mesh-room" value="${config?.room ?? ""}" ${editable ? "" : "disabled"}>
+        <h3>WebRTC transport upgrade</h3>
+        <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>
+        <div class="row" style="margin-top: 6px">
+          <label style="margin: 0"><input type="checkbox" id="webrtc-enabled" ${config?.webrtc?.enabled ? "checked" : ""} ${editable ? "" : "disabled"}> Enabled</label>
+          <label style="margin: 0"><input type="checkbox" id="webrtc-autoconnect" ${config?.webrtc?.autoConnect !== false ? "checked" : ""} ${editable ? "" : "disabled"}> Auto-connect to peers</label>
+        </div>
         <h3>Interfaces</h3>
         <div id="interface-list">
           ${interfaces
@@ -184,7 +189,7 @@ export class FlowMeshSettings extends HTMLElement {
             .join("")}
         </div>
         <div id="interface-form-host" class="iface-form-host" hidden></div>
-        ${editable ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
+        ${editable ? (Object.keys(this._interfaceSchemas).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
         <h3>Access grants (Dacar)</h3>
         <div id="grant-list">
           ${this._grants
@@ -319,6 +324,31 @@ export class FlowMeshSettings extends HTMLElement {
         }),
       );
     });
+    for (const [id, field] of [
+      ["webrtc-enabled", "enabled"],
+      ["webrtc-autoconnect", "autoConnect"],
+    ]) {
+      const checkbox = /** @type {HTMLInputElement | null} */ (
+        shadow.querySelector(`#${id}`)
+      );
+      checkbox?.addEventListener("change", () => {
+        const webrtc = {
+          ...(this._config?.webrtc ?? {
+            enabled: false,
+            autoConnect: true,
+            rtcConfig: {},
+          }),
+          [field]: checkbox.checked,
+        };
+        this._config = { ...(this._config ?? {}), webrtc };
+        this.dispatchEvent(
+          new CustomEvent("mesh-configure", {
+            detail: { config: this._config },
+            bubbles: true,
+          }),
+        );
+      });
+    }
 
     shadow
       .querySelector('[data-action="add-interface"]')

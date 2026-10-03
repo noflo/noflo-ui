@@ -48,7 +48,7 @@ function base64ToBytes(base64) {
  * @returns {Promise<any>}
  */
 async function defaultCreateProvider(config, identity, doc) {
-  const { Reticulum, WebSocketClientInterface } = await import(
+  const { Reticulum, WebRTCSignaling, WebSocketClientInterface } = await import(
     "../../vendor/reticulum-core.js"
   );
   const reticulum = new Reticulum();
@@ -69,6 +69,37 @@ async function defaultCreateProvider(config, identity, doc) {
     identity,
   });
   await provider.connect();
+
+  // WebRTC transport upgrade (work document #21): the signaling orchestrator
+  // announces a capability destination, accepts inbound link requests, and
+  // registers each resulting data channel as a WebRTCInterface. The
+  // orchestrator owns its resources, so its teardown is wrapped into the
+  // provider's destroy.
+  if (config.webrtc?.enabled) {
+    const signaling = new WebRTCSignaling({
+      rns: reticulum,
+      identity,
+      rtcConfig: config.webrtc.rtcConfig ?? {},
+    });
+    await signaling.start();
+    if (config.webrtc.autoConnect) {
+      signaling.addEventListener("peer", (/** @type {any} */ event) => {
+        signaling
+          .connect(event.detail?.destinationHash)
+          .catch((/** @type {any} */ err) =>
+            console.warn(
+              `WebRTC connect to ${event.detail?.destinationHash} failed: ${err?.message ?? err}`,
+            ),
+          );
+      });
+    }
+    const originalDestroy = provider.destroy.bind(provider);
+    provider.destroy = async () => {
+      signaling.stop();
+      await originalDestroy();
+    };
+  }
+
   return provider;
 }
 
