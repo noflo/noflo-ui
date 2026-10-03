@@ -47,6 +47,14 @@ export const JOIN_TIMEOUT_MS = 60_000;
 /** How long the host waits for the joiner's identify handshake. */
 const IDENTIFY_TIMEOUT_MS = 10_000;
 
+/**
+ * Maximum JSON bytes per channel message. The Reticulum link channel MDU is
+ * 431 bytes (500B wire MTU minus crypto overhead) and the per-message
+ * framing adds ~45, so the JSON budget per message is well under that;
+ * larger bodies are split into chunk envelopes.
+ */
+const CHANNEL_CHUNK_BYTES = 320;
+
 /** Interval between identity-recall polls while awaiting a path response. */
 const RECALL_POLL_MS = 250;
 
@@ -166,36 +174,63 @@ function linkIsActive(link) {
 }
 
 /**
+ * Splits a JSON body into channel-sized chunk envelopes: a single small
+ * body travels as-is; larger ones travel as `{ __chunk: [i, n], data }`
+ * fragments that the receiver reassembles before parsing.
+ *
+ * @param {any} body
+ * @returns {any[]}
+ */
+function chunkBody(body) {
+  const json = JSON.stringify(body);
+  if (json.length <= CHANNEL_CHUNK_BYTES) return [body];
+  const parts = Math.ceil(json.length / CHANNEL_CHUNK_BYTES);
+  const chunks = [];
+  for (let i = 0; i < parts; i++) {
+    chunks.push({
+      __chunk: [i, parts],
+      data: json.slice(i * CHANNEL_CHUNK_BYTES, (i + 1) * CHANNEL_CHUNK_BYTES),
+    });
+  }
+  return chunks;
+}
+
+/**
  * Sends a message on the link channel with the same backpressure loop the
  * y-reticulum PeerConn uses: wait while the send window is full and retry on
- * a transient link-not-ready error.
+ * a transient link-not-ready error. Bodies larger than the channel MDU are
+ * sent as chunk envelopes in order.
  *
  * @param {any} channel
- * @param {MessageBase} message
+ * @param {any} body JSON body to send.
  * @param {() => boolean} isClosed
  */
-async function sendChannelMessage(channel, message, isClosed) {
-  for (;;) {
-    if (isClosed()) return;
-    while (!channel.isReadyToSend()) {
+async function sendChannelMessage(channel, body, isClosed) {
+  const messages = chunkBody(body).map((chunk) => encodeBody(chunk));
+  for (const message of messages) {
+    for (;;) {
       if (isClosed()) return;
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    try {
-      await channel.send(message);
-      return;
-    } catch (err) {
-      // Transient: the link finished activating between the readiness
-      // check and the send; retry
-      if (/** @type {any} */ (err)?.type === 1) continue;
-      throw err;
+      while (!channel.isReadyToSend()) {
+        if (isClosed()) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      try {
+        await channel.send(message);
+        break;
+      } catch (err) {
+        // Transient: the link finished activating between the readiness
+        // check and the send; retry
+        if (/** @type {any} */ (err)?.type === 1) continue;
+        throw err;
+      }
     }
   }
 }
 
 /**
  * Collects channel payloads matching the bootstrap message type until the
- * predicate accepts a parsed body or the deadline passes.
+ * predicate accepts a parsed body or the deadline passes. Chunk envelopes
+ * (`{ __chunk: [i, n], data }`) are buffered and reassembled in order.
  *
  * @param {any} link
  * @param {(body: any) => boolean} accept
@@ -207,26 +242,62 @@ function awaitChannelBody(link, accept, deadline) {
   channel.registerMessageType(BootstrapMessage);
   return new Promise((resolve) => {
     let closed = false;
-    const onClose = () => {
-      if (closed) return;
-      closed = true;
-      clearTimeout(timer);
-      channel.removeMessageHandler(handler);
-      resolve(null);
-    };
-    const handler = (/** @type {any} */ msg) => {
-      if (!(msg instanceof BootstrapMessage) || closed) return false;
-      let body;
-      try {
-        body = JSON.parse(new TextDecoder().decode(msg.data));
-      } catch {
-        return false;
-      }
-      if (!accept(body)) return false;
+    /** @type {string[]} */
+    let chunks = [];
+    let receivedChunks = 0;
+    const finish = (/** @type {any} */ body) => {
       closed = true;
       clearTimeout(timer);
       channel.removeMessageHandler(handler);
       resolve(body);
+    };
+    const onClose = () => {
+      if (closed) return;
+      finish(null);
+    };
+    const handler = (/** @type {any} */ msg) => {
+      if (!(msg instanceof BootstrapMessage) || closed) return false;
+      let payload;
+      try {
+        payload = JSON.parse(new TextDecoder().decode(msg.data));
+      } catch {
+        return false;
+      }
+      if (Array.isArray(payload?.__chunk)) {
+        const [index, total] = payload.__chunk;
+        if (
+          typeof index !== "number" ||
+          typeof total !== "number" ||
+          total < 1 ||
+          total > 4096 ||
+          index < 0 ||
+          index >= total ||
+          typeof payload.data !== "string"
+        ) {
+          return false;
+        }
+        if (chunks.length === 0) {
+          chunks = new Array(total).fill(undefined);
+          receivedChunks = 0;
+        }
+        if (chunks.length !== total || chunks[index] !== undefined)
+          return false;
+        chunks[index] = payload.data;
+        receivedChunks += 1;
+        if (receivedChunks < total) return false;
+        let body;
+        try {
+          body = JSON.parse(chunks.join(""));
+        } catch {
+          chunks = [];
+          receivedChunks = 0;
+          return false;
+        }
+        if (accept(body)) finish(body);
+        return true;
+      }
+      if (!accept(payload)) return false;
+      finish(payload);
       return true;
     };
     const timer = setTimeout(onClose, Math.max(0, deadline - Date.now()));
@@ -255,8 +326,8 @@ function encodeBody(body) {
  *  1. already authorized by an existing grant → APPROVED (idempotent
  *     re-dials get the same answer without re-prompting);
  *  2. the invite token must be one the host issued and unexpired;
- *  3. authority: the host must be the project owner (a device that itself
- *     joined by invite has no authority to mint grants);
+ *  3. authority: the host must hold the project Trust Anchor's private key
+ *     (§2.2) — only the anchor can mint Dacar-signed grants;
  *  4. otherwise the decision is surfaced to the host user via
  *     `requestApproval` and APPROVE / DECLINE resolves the knock.
  *
@@ -269,11 +340,12 @@ function encodeBody(body) {
  *   projectId: string,
  *   projectName: string,
  *   isGranted: (identityHash: string) => boolean,
- *   getGrant: (identityHash: string) => Promise<any | null> | any | null,
- *   mintGrant: (identityHash: string) => Promise<any> | any,
+ *   getAuthorization: (identityHash: string) => Promise<any | null> | any | null,
+ *   mintAuthorization: (identityHash: string) => Promise<any> | any,
  *   hasAuthority: () => boolean,
  *   requestApproval: (identityHash: string) => Promise<"approved" | "declined">,
  *   isValidInviteToken: (token: string) => Promise<boolean> | boolean,
+ *   deliverAuthorization?: (identityHash: string, authorization: any) => Promise<void>,
  *   announceIntervalMs?: number,
  * }} options
  * @returns {Promise<{ destinationHash: string, stop: () => Promise<void> }>}
@@ -284,11 +356,12 @@ export async function createBootstrapHost({
   projectId,
   projectName,
   isGranted,
-  getGrant,
-  mintGrant,
+  getAuthorization,
+  mintAuthorization,
   hasAuthority,
   requestApproval,
   isValidInviteToken,
+  deliverAuthorization,
   announceIntervalMs = 60_000,
 }) {
   const dest = await Destination.IN(
@@ -328,21 +401,18 @@ export async function createBootstrapHost({
     // 1. Already authorized: idempotent re-dial path, no prompt; the
     //    existing grant re-handoffs so a dropped link never lost it
     if (isGranted(joinerHash)) {
-      const grant =
-        (await getGrant(joinerHash)) ?? (await mintGrant(joinerHash));
-      return {
-        status: "approved",
-        project: { id: projectId, name: projectName },
-        grant,
-      };
+      const authorization =
+        (await getAuthorization(joinerHash)) ??
+        (await mintAuthorization(joinerHash));
+      return buildApproved(authorization);
     }
     // 2. Token must be one we issued and unexpired
     if (!isValidInviteToken(body?.token ?? "")) {
       return { status: "declined", reason: DECLINE_REASON.INVALID_TOKEN };
     }
-    // 3. Authority: only a device that owns its grants may mint new ones.
-    //    An invited device holds no signing authority for the project.
-    //    (Dacar trust anchors replace this check in the next milestone.)
+    // 3. Authority: only the project Trust Anchor's private key holder may
+    //    mint Dacar-signed grants (work document #25 §2.2). A device that
+    //    holds only the public anchor cannot sign assertions.
     if (!hasAuthority()) {
       return {
         status: "declined",
@@ -354,13 +424,32 @@ export async function createBootstrapHost({
     if (decision !== "approved") {
       return { status: "declined", reason: DECLINE_REASON.HOST_REJECTED };
     }
-    const grant = await mintGrant(joinerHash);
+    const authorization = await mintAuthorization(joinerHash);
+    return buildApproved(authorization);
+  };
+
+  /**
+   * Builds the §4.2 approved handoff: the wire response carries only the
+   * small Dacar node bootstrap (§10 — Trust Anchor and Privacy Salt, the
+   * out-of-band provisioning the Dacar spec prescribes); the signed grant
+   * itself is delivered out-of-band of the JSON envelope via the §11
+   * direct-link Delta push to the joiner's `dacar.sync.v1` endpoint.
+   *
+   * @param {any} authorization
+   * @returns {any}
+   */
+  function buildApproved(authorization) {
     return {
       status: "approved",
       project: { id: projectId, name: projectName },
-      grant,
+      config: {
+        anchor: authorization.anchor,
+        salt: authorization.salt,
+        permissions: authorization.permissions,
+      },
+      authorization,
     };
-  };
+  }
 
   const onLinkRequest = async (/** @type {any} */ event) => {
     if (stopped) return;
@@ -395,14 +484,32 @@ export async function createBootstrapHost({
         response = await evaluate(body, joinerHash);
         decisions.set(joinerHash, response);
       }
+      // The wire response carries only the small node bootstrap (§10);
+      // the signed grant travels via the §11 direct-link Delta push
+      const { authorization, ...wireResponse } = response;
       await sendChannelMessage(
         channel,
-        encodeBody(response),
+        wireResponse,
         () => stopped || !linkIsActive(link),
       );
+      // Deliver the signed grant out-of-band of the JSON envelope: the
+      // §11 direct-link Delta push to the joiner's `dacar.sync.v1`
+      // endpoint. Best-effort — a lost push is retried by the joiner's
+      // CRDT sync, which carries the same grants-map entry
+      if (wireResponse.status === "approved" && deliverAuthorization) {
+        try {
+          await deliverAuthorization(joinerHash, response.authorization);
+        } catch (err) {
+          console.warn(
+            "Bootstrap grant delivery failed (CRDT sync will recover):",
+            /** @type {any} */ (err)?.message ?? err,
+          );
+        }
+      }
       await link.teardown();
-    } catch {
+    } catch (err) {
       // A failed bootstrap link is best-effort: the joiner re-dials
+      console.warn("bootstrap host link error:", err);
       if (link) link.teardown().catch(() => {});
     }
   };
@@ -497,7 +604,7 @@ export async function joinViaBootstrapInvite({
     channel.registerMessageType(BootstrapMessage);
     await sendChannelMessage(
       channel,
-      encodeBody({ type: "knock", token: invite.token }),
+      { type: "knock", token: invite.token },
       () => !linkIsActive(link),
     );
 

@@ -8,6 +8,10 @@ import {
   joinViaBootstrapInvite,
   STATE,
 } from "../../src/worker/Bootstrap.js";
+import {
+  createDacarNode,
+  mintAuthorization as mintDacar,
+} from "../../src/worker/Dacar.js";
 import { Identity, toHex } from "../../vendor/reticulum-core.js";
 import { makeLoopback } from "./loopback-peer.js";
 
@@ -22,8 +26,9 @@ afterEach(async () => {
 });
 
 /**
- * Builds a host + joiner pair over a TCP loopback with the minimal decision
- * hooks, plus the test's handles into the host decision engine.
+ * Builds a host + joiner pair over a TCP loopback with Dacar-backed decision
+ * hooks (the host identity acts as the project Trust Anchor), plus the
+ * test's handles into the host decision engine.
  *
  * @param {{ granted?: boolean, authority?: boolean, validToken?: boolean }} [options]
  */
@@ -35,34 +40,53 @@ async function makePair(options = {}) {
   const identityHost = await Identity.generate();
   const identityJoiner = await Identity.generate();
   const joinerHash = toHex(identityJoiner.getSalt());
+  const projectId = "test-project-id";
 
   /** @type {string[]} */
   const approvalPrompts = [];
   /** @type {Array<(decision: "approved" | "declined") => void>} */
   const approvalResolvers = [];
   const minted = [];
+  /** @type {Map<string, any>} */
+  const authorizations = new Map();
+  /** Grants delivered via the §11 direct-link push, per joiner hash. */
+  /** @type {Array<{ peerHash: string, authorization: any }>} */
+  const deliveries = [];
+
+  const mintAuthorization = async (/** @type {string} */ peerHash) => {
+    const authorization = await mintDacar({
+      anchorIdentity: identityHost,
+      subjectHex: peerHash,
+      projectId,
+      role: "developer",
+      salt: "ab".repeat(32),
+    });
+    authorizations.set(peerHash, authorization);
+    minted.push(peerHash);
+    return authorization;
+  };
 
   const host = await createBootstrapHost({
     reticulum: rnsHost,
     identity: identityHost,
-    projectId: "test-project-id",
+    projectId,
     projectName: "Test project",
     isGranted: () => options.granted === true,
-    getGrant: (/** @type {string} */ peerHash) => ({
-      peerHash,
-      role: "developer",
-      issued: 1234,
-    }),
-    mintGrant: (/** @type {string} */ peerHash) => {
-      minted.push(peerHash);
-      return { peerHash, role: "developer", issued: Date.now() };
-    },
+    getAuthorization: (/** @type {string} */ peerHash) =>
+      authorizations.get(peerHash) ?? null,
+    mintAuthorization,
     hasAuthority: () => options.authority !== false,
     requestApproval: (/** @type {string} */ identityHash) => {
       approvalPrompts.push(identityHash);
       return new Promise((resolve) => approvalResolvers.push(resolve));
     },
     isValidInviteToken: () => options.validToken !== false,
+    deliverAuthorization: async (
+      /** @type {string} */ peerHash,
+      /** @type {any} */ authorization,
+    ) => {
+      deliveries.push({ peerHash, authorization });
+    },
     announceIntervalMs: 60_000,
   });
 
@@ -80,9 +104,12 @@ async function makePair(options = {}) {
     identityHost,
     identityJoiner,
     joinerHash,
+    projectId,
     approvalPrompts,
     approvalResolvers,
     minted,
+    authorizations,
+    deliveries,
   };
 }
 
@@ -111,8 +138,39 @@ describe("bootstrap host decision engine (work document #25 §3.1)", () => {
       assert.equal(response.status, "approved");
       assert.equal(response.project.id, "test-project-id");
       assert.equal(response.project.name, "Test project");
-      assert.equal(response.grant.peerHash, pair.joinerHash);
-      assert.equal(response.grant.role, "developer");
+      // §4.2/§10: the wire response carries the small Dacar node bootstrap
+      // (Trust Anchor + salt); the signed grant travels via the §11
+      // direct-link Delta push
+      assert.ok(response.config, "handoff carries a Dacar node config");
+      assert.equal(
+        response.config.anchor.hash,
+        toHex(pair.identityHost.getSalt()),
+      );
+      assert.equal(response.config.salt, "ab".repeat(32));
+      assert.deepEqual(response.config.permissions, ["sync", "write"]);
+      assert.equal(response.authorization, undefined, "no grant on the wire");
+      assert.equal(pair.deliveries.length, 1, "grant pushed out-of-band");
+      assert.equal(pair.deliveries[0].peerHash, pair.joinerHash);
+      // A recipient configured from the handoff authorizes through the
+      // Dacar Engine once the pushed grant is ingested
+      const node = createDacarNode();
+      node.configure({
+        anchorHashHex: response.config.anchor.hash,
+        anchorPubkeyHex: response.config.anchor.pubkey,
+        salt: response.config.salt,
+      });
+      assert.equal(
+        await node.ingestAuthorization(pair.deliveries[0].authorization),
+        2,
+      );
+      assert.equal(
+        await node.evaluate(pair.projectId, "sync", pair.joinerHash),
+        true,
+      );
+      assert.equal(
+        await node.evaluate(pair.projectId, "write", pair.joinerHash),
+        true,
+      );
       assert.ok(pair.minted.includes(pair.joinerHash), "grant minted");
       assert.ok(
         states.includes(STATE.REQUESTING_PATH) &&
@@ -203,7 +261,6 @@ describe("bootstrap host decision engine (work document #25 §3.1)", () => {
         timeoutMs: 20_000,
       });
       assert.equal(response.status, "approved");
-      assert.equal(response.grant.peerHash, pair.joinerHash);
       assert.equal(
         pair.approvalPrompts.length,
         0,
@@ -217,7 +274,11 @@ describe("bootstrap host decision engine (work document #25 §3.1)", () => {
         timeoutMs: 20_000,
       });
       assert.equal(second.status, "approved");
-      assert.equal(second.grant.issued, response.grant.issued);
+      assert.equal(
+        second.config.salt,
+        response.config.salt,
+        "the stored grant re-handoffs",
+      );
       assert.equal(pair.approvalPrompts.length, 0);
     } finally {
       await pair.host.stop();
