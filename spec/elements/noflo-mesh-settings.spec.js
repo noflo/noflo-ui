@@ -70,13 +70,19 @@ describe("FlowMeshSettings (work document #21)", () => {
           },
         ],
       },
-      [
+      "abcd1234abcd1234",
+      { websocket: websocketSchema },
+    );
+    el.setDacarState({
+      anchor: { hash: "b".repeat(32), owner: true },
+      grants: [
         {
           id: "grant-1",
           peerHash: "deadbeef",
           role: "operator",
           issued: 1,
           revoked: null,
+          status: "verified",
         },
         {
           id: "grant-2",
@@ -84,11 +90,11 @@ describe("FlowMeshSettings (work document #21)", () => {
           role: "observer",
           issued: 1,
           revoked: 5,
+          status: "revoked",
         },
       ],
-      "abcd1234abcd1234",
-      { websocket: websocketSchema },
-    );
+      wallet: [],
+    });
 
     assert.ok(!el.hasAttribute("hidden"), "open() reveals the dialog");
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
@@ -113,8 +119,25 @@ describe("FlowMeshSettings (work document #21)", () => {
       2,
       "both grants listed",
     );
+    // Verification badges reflect the Engine's Dacar verdicts
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#grant-list"))
+        .textContent ?? "",
+      /verified/,
+    );
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#grant-list"))
+        .textContent ?? "",
+      /revoked/,
+    );
     // Only the non-revoked grant offers Revoke
     assert.equal(shadow.querySelectorAll("[data-grant-revoke]").length, 1);
+    // The anchor panel shows ownership
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#trust-anchor-role"))
+        .textContent ?? "",
+      /holds the project's Trust Anchor private key/,
+    );
     el.close();
     assert.ok(el.hasAttribute("hidden"), "close() hides the dialog again");
     el.remove();
@@ -127,12 +150,9 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.addEventListener("mesh-join", (e) =>
       joins.push(/** @type {any} */ (e).detail),
     );
-    el.open(
-      { enabled: false, identity: "", interfaces: [], webrtc: {} },
-      [],
-      "",
-      { websocket: websocketSchema },
-    );
+    el.open({ enabled: false, identity: "", interfaces: [], webrtc: {} }, "", {
+      websocket: websocketSchema,
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     // Without a generated invite, the section offers generation
     const generate = shadow.querySelector('[data-action="create-invite"]');
@@ -157,12 +177,9 @@ describe("FlowMeshSettings (work document #21)", () => {
 
   it("shows a generated invite URI with a copy button", () => {
     const el = makeElement();
-    el.open(
-      { enabled: false, identity: "", interfaces: [], webrtc: {} },
-      [],
-      "",
-      { websocket: websocketSchema },
-    );
+    el.open({ enabled: false, identity: "", interfaces: [], webrtc: {} }, "", {
+      websocket: websocketSchema,
+    });
     const uri =
       "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff";
     el.setInvite(uri);
@@ -189,12 +206,9 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.addEventListener("mesh-configure", (e) =>
       events.push(/** @type {any} */ (e).detail),
     );
-    el.open(
-      { enabled: false, room: "old", identity: "", interfaces: [] },
-      [],
-      "",
-      { websocket: websocketSchema },
-    );
+    el.open({ enabled: false, room: "old", identity: "", interfaces: [] }, "", {
+      websocket: websocketSchema,
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const enabled = /** @type {HTMLInputElement} */ (
       shadow.querySelector("#mesh-enabled")
@@ -209,12 +223,9 @@ describe("FlowMeshSettings (work document #21)", () => {
 
   it("opens a schema-driven interface form and reports options", async () => {
     const el = makeElement();
-    el.open(
-      { enabled: true, room: "r", identity: "", interfaces: [] },
-      [],
-      "",
-      { websocket: websocketSchema },
-    );
+    el.open({ enabled: true, room: "r", identity: "", interfaces: [] }, "", {
+      websocket: websocketSchema,
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     /** @type {HTMLElement} */ (
       shadow.querySelector('[data-action="add-interface"]')
@@ -267,18 +278,23 @@ describe("FlowMeshSettings (work document #21)", () => {
         identity: "",
         interfaces: [],
       },
-      [
+      "",
+      { websocket: websocketSchema },
+    );
+    el.setDacarState({
+      anchor: { hash: "b".repeat(32), owner: true },
+      grants: [
         {
           id: "grant-9",
           peerHash: "p",
           role: "observer",
           issued: 1,
           revoked: null,
+          status: "verified",
         },
       ],
-      "",
-      { websocket: websocketSchema },
-    );
+      wallet: [],
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const peer = /** @type {HTMLInputElement} */ (
       shadow.querySelector("#new-grant-peer")
@@ -301,7 +317,6 @@ describe("mesh error display (work document #21)", () => {
     const el = makeElement();
     el.open(
       { enabled: true, identity: "", interfaces: [], webrtc: {} },
-      [],
       "",
       { websocket: websocketSchema },
       [],
@@ -321,12 +336,9 @@ describe("mesh error display (work document #21)", () => {
 
   it("renders no banner when the mesh is healthy", () => {
     const el = makeElement();
-    el.open(
-      { enabled: false, identity: "", interfaces: [], webrtc: {} },
-      [],
-      "",
-      { websocket: websocketSchema },
-    );
+    el.open({ enabled: false, identity: "", interfaces: [], webrtc: {} }, "", {
+      websocket: websocketSchema,
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     assert.ok(!shadow.querySelector("#mesh-error"));
     assert.ok(
@@ -342,7 +354,6 @@ describe("mesh error display (work document #21)", () => {
     const el = makeElement();
     el.open(
       { enabled: true, identity: "", interfaces: [], webrtc: {} },
-      [],
       "a".repeat(32),
     );
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
@@ -351,7 +362,7 @@ describe("mesh error display (work document #21)", () => {
     const line = /** @type {HTMLElement} */ (
       shadow.querySelector("#mesh-sync-status")
     );
-    assert.match(line.textContent ?? '', /connected, 2 peers/);
+    assert.match(line.textContent ?? "", /connected, 2 peers/);
     el.remove();
   });
 
@@ -359,20 +370,19 @@ describe("mesh error display (work document #21)", () => {
     const el = makeElement();
     el.open(
       { enabled: true, identity: "", interfaces: [], webrtc: {} },
-      [],
       "a".repeat(32),
     );
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     assert.ok(!shadow.querySelector("#join-progress"), "no progress yet");
     el.setJoinProgress({ stage: "wait_response" });
     assert.match(
-      (/** @type {HTMLElement} */ (shadow.querySelector("#join-progress")))
+      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
         .textContent ?? "",
-      /Waiting for the host/, 
+      /Waiting for the host/,
     );
     el.setJoinProgress({ stage: "declined", reason: "host_lacks_authority" });
     assert.match(
-      (/** @type {HTMLElement} */ (shadow.querySelector("#join-progress")))
+      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
         .textContent ?? "",
       /cannot grant access/,
     );
@@ -381,7 +391,10 @@ describe("mesh error display (work document #21)", () => {
       shadow.querySelector("#join-progress")
     );
     assert.match(approved.textContent ?? "", /Telemetry/);
-    assert.ok(approved.classList.contains("success"), "approved reads as success");
+    assert.ok(
+      approved.classList.contains("success"),
+      "approved reads as success",
+    );
     el.remove();
   });
 });

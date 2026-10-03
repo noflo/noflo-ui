@@ -322,27 +322,6 @@ export function nodeExists(doc, graphId, nodeId) {
 }
 
 /**
- * Projects all Dacar capability grants as plain data.
- *
- * @param {import("yjs").Doc} doc
- * @returns {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>}
- */
-export function projectGrants(doc) {
-  const grants = [];
-  for (const [id, entry] of doc.getMap("grants").entries()) {
-    const plain = entry.toJSON();
-    grants.push({
-      id,
-      peerHash: plain.peerHash,
-      role: plain.role,
-      issued: plain.issued,
-      revoked: plain.revoked ?? null,
-    });
-  }
-  return grants;
-}
-
-/**
  * @param {string} peerHash
  * @param {"observer" | "operator" | "developer"} role
  * @returns {import("../crdt/Protocol.js").IntentGrantPermissionMessage}

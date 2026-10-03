@@ -29,7 +29,6 @@ import {
   graphParent,
   makeSubgraphIntent,
   moveNodeIntent,
-  projectGrants,
   projectGraph,
   removeEdgeIntent,
   removeExportIntent,
@@ -92,9 +91,15 @@ let meshInviteUri = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** Live sync status reported by the Engine, for the settings dialog. */
-let syncStatus = /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */ (null);
+let syncStatus =
+  /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */ (
+    null
+  );
 /** Join progress reported by the Engine, for the settings dialog. */
-let joinProgress = /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (null);
+let joinProgress =
+  /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (
+    null
+  );
 /** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
 let dacarState = /** @type {any} */ (null);
 /** @type {FlowEditor | null} */
@@ -384,7 +389,6 @@ function openMeshSettings() {
   supervisor?.send({ type: "MESH", command: "status" });
   dialog.open(
     meshConfig,
-    projectGrants(mirrorDoc),
     meshIdentityHash,
     meshInterfaceSchemas,
     joinRequests,
@@ -393,6 +397,7 @@ function openMeshSettings() {
   dialog.setInvite(meshInviteUri);
   dialog.setSyncStatus(syncStatus);
   dialog.setJoinProgress(joinProgress);
+  dialog.setDacarState(dacarState);
 }
 
 /**
@@ -403,7 +408,7 @@ function refreshMeshSettings() {
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
   if (!dialog || !dialog._open) return;
-  dialog.setGrants(projectGrants(mirrorDoc));
+  dialog.setDacarState(dacarState);
   if (meshConfig) {
     dialog._config = meshConfig;
     dialog._identityHash = meshIdentityHash;

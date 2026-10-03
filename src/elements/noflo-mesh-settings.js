@@ -7,10 +7,15 @@
  * slotted container, since Jedison needs real DOM to render into.
  *
  * The element is a pure view: it receives the current state via
- * `open(config, grants, identityHash, interfaceSchemas)` and reports intent
- * through events (`mesh-configure`, `mesh-grant`, `mesh-revoke`,
- * `mesh-close`). Interface forms are generated from the interface types' own
- * JSON Schemas supplied by @reticulum/core.
+ * `open(config, identityHash, interfaceSchemas, ...)` plus live updates
+ * (`setInvite`, `setSyncStatus`, `setJoinProgress`, `setDacarState`) and
+ * reports intent through events (`mesh-configure`, `mesh-grant`,
+ * `mesh-revoke`, `mesh-close`). The Dacar state — Trust Anchor, per-grant
+ * verification status, and the local wallet — comes from the Engine's
+ * `mesh-dacar` report, so the UI shows what the Dacar Engine actually
+ * verified, not merely what the grants map claims. Interface forms are
+ * generated from the interface types' own JSON Schemas supplied by
+ * @reticulum/core.
  */
 /** Cached jedison form styles (fetched once, injected into the shadow root). */
 /** @type {string | null} */
@@ -74,8 +79,8 @@ export class FlowMeshSettings extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._open = false;
     this._config = null;
-    /** @type {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>} */
-    this._grants = [];
+    /** Dacar state reported by the Engine (`mesh-dacar` messages). */
+    this._dacarState = /** @type {any} */ (null);
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
@@ -104,7 +109,6 @@ export class FlowMeshSettings extends HTMLElement {
    *
    * @param {any} config Engine mesh configuration (null for observer tabs;
    *   the form then renders read-only).
-   * @param {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>} grants
    * @param {string} identityHash Hex identity hash for display.
    * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
    *   interface type.
@@ -115,14 +119,12 @@ export class FlowMeshSettings extends HTMLElement {
    */
   open(
     config,
-    grants,
     identityHash,
     interfaceSchemas = {},
     joinRequests = [],
     meshError = "",
   ) {
     this._config = config;
-    this._grants = grants ?? [];
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
     this._joinRequests = joinRequests ?? [];
@@ -152,12 +154,13 @@ export class FlowMeshSettings extends HTMLElement {
   }
 
   /**
-   * Refreshes in place (e.g. grants changed in the mirror while open).
+   * Refreshes in place with a new Engine Dacar report (`mesh-dacar`): the
+   * Trust Anchor, per-grant verification status, and the local wallet.
    *
-   * @param {Array<{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }>} grants
+   * @param {{ projectId?: string, anchor?: { hash: string, owner: boolean }, grants?: Array<any>, wallet?: Array<any> } | null} state
    */
-  setGrants(grants) {
-    this._grants = grants ?? [];
+  setDacarState(state) {
+    this._dacarState = state;
     if (this._open) this.render();
   }
 
@@ -266,6 +269,120 @@ export class FlowMeshSettings extends HTMLElement {
     return `<div class="hint" id="mesh-sync-status">Sync: ${
       status.connected ? "connected" : "disconnected"
     }${peers}${synced}</div>`;
+  }
+
+  /**
+   * The project's Trust Anchor panel: who anchors the project and whether
+   * this device holds the anchor's private key (Owner) or only its public
+   * key (Participant).
+   *
+   * @returns {string}
+   */
+  trustAnchorHtml() {
+    const anchor = this._dacarState?.anchor;
+    if (!anchor?.hash) {
+      return `<div class="hint">No Trust Anchor yet — it is assigned when mesh sync starts for this project.</div>`;
+    }
+    const role = anchor.owner
+      ? "This device holds the project's Trust Anchor private key: it can mint and revoke grants for this project."
+      : "This device holds only the public anchor (Participant): grants are minted on the Trust Anchor's device.";
+    return `<div class="hash" id="trust-anchor-hash">${escapeHtml(
+      anchor.hash,
+    )}</div><div class="hint" id="trust-anchor-role">${role}</div>`;
+  }
+
+  /**
+   * The grants list with Dacar verification badges: what the Engine
+   * actually verified, not merely what the grants map claims.
+   *
+   * @returns {string}
+   */
+  grantsListHtml() {
+    const grants = this._dacarState?.grants ?? [];
+    if (grants.length === 0) {
+      return `<div class="hint">No grants yet. Peers receive grants through invites or access requests.</div>`;
+    }
+    const badges = {
+      verified: "verified",
+      refused: "refused",
+      pending: "pending verification",
+      unsigned: "unsigned",
+    };
+    const owner = this._dacarState?.anchor?.owner === true;
+    return grants
+      .map((/** @type {any} */ grant) => {
+        const badge =
+          grant.revoked !== null
+            ? `<span class="revoked">revoked</span>`
+            : `<span class="badge ${escapeHtml(grant.status)}">${
+                /** @type {Record<string, string>} */ (badges)[grant.status] ??
+                escapeHtml(grant.status)
+              }</span>`;
+        const revoke =
+          owner && grant.revoked === null
+            ? `<button class="danger" data-grant-revoke="${escapeHtml(grant.id)}">Revoke</button>`
+            : "";
+        return `<div class="list-item">
+            <span class="grow">${escapeHtml(grant.peerHash)} <em>${escapeHtml(
+              grant.role,
+            )}</em></span>
+            ${badge}
+            ${revoke}
+          </div>`;
+      })
+      .join("");
+  }
+
+  /**
+   * The grant-minting form, enabled only for the Trust Anchor's device —
+   * a grant issued elsewhere could never be countersigned.
+   *
+   * @returns {string}
+   */
+  grantFormHtml() {
+    const owner = this._dacarState?.anchor?.owner === true;
+    const disabled = owner ? "" : "disabled";
+    return `<div class="row" style="margin-top: 8px">
+          <input id="new-grant-peer" placeholder="peer identity hash" ${disabled}>
+          <select id="new-grant-role" ${disabled}>
+            <option value="observer">Observer</option>
+            <option value="operator">Operator</option>
+            <option value="developer">Developer</option>
+          </select>
+          <button data-action="add-grant" ${disabled}>Grant</button>
+        </div>
+        <div class="hint">${
+          owner
+            ? "Grants are Dacar-signed by this project's Trust Anchor and sync to every peer, which verifies them against the anchor before granting access."
+            : "Only the project's Trust Anchor can mint grants. Grant from the Trust Anchor's device (shown above)."
+        }</div>`;
+  }
+
+  /**
+   * The local wallet (§5.2): the grants this device holds, with their
+   * unblinded scopes.
+   *
+   * @returns {string}
+   */
+  walletHtml() {
+    const wallet = this._dacarState?.wallet ?? [];
+    if (wallet.length === 0) {
+      return `<div class="hint">No grants held yet — grants received through an invite, or minted here, appear here.</div>`;
+    }
+    return wallet
+      .map((/** @type {any} */ record) => {
+        const expires =
+          record.expires == null
+            ? "never expires"
+            : `expires ${new Date(record.expires).toISOString()}`;
+        return `<div class="list-item">
+            <span class="grow">${escapeHtml(
+              record.resource,
+            )} <em>${escapeHtml((record.permissions ?? []).join(", "))}</em></span>
+            <span class="hint">by ${escapeHtml(record.issuer)}, ${expires}</span>
+          </div>`;
+      })
+      .join("");
   }
 
   render() {
@@ -469,28 +586,14 @@ export class FlowMeshSettings extends HTMLElement {
             .join("")}
         </div>
         ${(this._joinRequests ?? []).length === 0 ? `<div class="hint">No pending access requests. Peers that know the room but hold no grant appear here.</div>` : ""}
+        ${this.trustAnchorHtml()}
         <h3>Access grants (Dacar)</h3>
         <div id="grant-list">
-          ${this._grants
-            .map(
-              (/** @type {any} */ grant) => `
-          <div class="list-item">
-            <span class="grow">${grant.peerHash} <em>${grant.role}</em>${grant.revoked ? ' <span class="revoked">revoked</span>' : ""}</span>
-            ${grant.revoked ? "" : `<button class="danger" data-grant-revoke="${grant.id}">Revoke</button>`}
-          </div>`,
-            )
-            .join("")}
+          ${this.grantsListHtml()}
         </div>
-        <div class="row" style="margin-top: 8px">
-          <input id="new-grant-peer" placeholder="peer identity hash">
-          <select id="new-grant-role">
-            <option value="observer">Observer</option>
-            <option value="operator">Operator</option>
-            <option value="developer">Developer</option>
-          </select>
-          <button data-action="add-grant">Grant</button>
-        </div>
-        <div class="hint">Grants are project data: they sync to every peer, and revocation tombstones propagate deterministically.</div>
+        ${this.grantFormHtml()}
+        <h3>This device's grants (wallet)</h3>
+        ${this.walletHtml()}
       </div>
     `;
     this.wireEvents(editable);
