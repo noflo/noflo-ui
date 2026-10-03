@@ -46,11 +46,15 @@ export class FlowMeshSettings extends HTMLElement {
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
     this._open = true;
+    // The dialog element may sit hidden in the page shell; visibility is
+    // controlled here so open/close always agree with the rendered state
+    this.removeAttribute("hidden");
     this.render();
   }
 
   close() {
     this._open = false;
+    this.setAttribute("hidden", "");
     this.render();
     this.dispatchEvent(new CustomEvent("mesh-close", { bubbles: true }));
   }

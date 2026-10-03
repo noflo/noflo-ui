@@ -90,6 +90,7 @@ describe("FlowMeshSettings (work document #21)", () => {
       { websocket: websocketSchema },
     );
 
+    assert.ok(!el.hasAttribute("hidden"), "open() reveals the dialog");
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     assert.ok(shadow.querySelector("#identity-hash"), "identity hash shown");
     assert.match(
@@ -115,6 +116,7 @@ describe("FlowMeshSettings (work document #21)", () => {
     // Only the non-revoked grant offers Revoke
     assert.equal(shadow.querySelectorAll("[data-grant-revoke]").length, 1);
     el.close();
+    assert.ok(el.hasAttribute("hidden"), "close() hides the dialog again");
     el.remove();
   });
 

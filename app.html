@@ -18,7 +18,13 @@
         background: var(--ui-bg, #eee);
         border-bottom: 1px solid #ccc;
         z-index: 2000;
+        /* The bar itself stays click-transparent, but its interactive
+           children (buttons) must receive events or they fall through to
+           the editor canvas below */
         pointer-events: none;
+      }
+      #topbar > * {
+        pointer-events: auto;
       }
       #role-badge {
         font-weight: bold;
