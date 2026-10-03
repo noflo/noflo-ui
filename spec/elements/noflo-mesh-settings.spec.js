@@ -120,6 +120,38 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.remove();
   });
 
+  it("copies the invite and emits mesh-join", () => {
+    const el = makeElement();
+    /** @type {any[]} */
+    const joins = [];
+    el.addEventListener("mesh-join", (e) =>
+      joins.push(/** @type {any} */ (e).detail),
+    );
+    el.open(
+      { enabled: false, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "",
+      { websocket: websocketSchema },
+      "noflo-ui:proj-123",
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#mesh-room"))
+        .textContent ?? "",
+      /noflo-ui:proj-123/,
+    );
+    const input = /** @type {HTMLInputElement} */ (
+      shadow.querySelector("#join-room")
+    );
+    input.value = "noflo-ui:invited-456";
+    /** @type {HTMLElement} */ (
+      shadow.querySelector('[data-action="join"]')
+    ).click();
+    assert.deepEqual(joins, [{ room: "noflo-ui:invited-456" }]);
+    assert.equal(input.value, "", "input cleared after join");
+    el.remove();
+  });
+
   it("shows the project room as read-only", () => {
     const el = makeElement();
     el.open(

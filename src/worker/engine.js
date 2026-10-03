@@ -18,7 +18,7 @@ import {
   createIndexeddbStorage,
   createMemoryStorage,
 } from "../crdt/MeshConfig.js";
-import { createProjectDoc } from "../crdt/ProjectDoc.js";
+import { adoptProjectIdentity, createProjectDoc } from "../crdt/ProjectDoc.js";
 import {
   bindDocumentPersistence,
   migrateLoadedProject,
@@ -56,7 +56,22 @@ function syncFullState(doc, io) {
  * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void }>}
  */
 export async function startEngine(io, options = {}) {
+  // Project-scoped persistence (work document #21): the device keeps an
+  // active-project pointer in its engine-owned storage; the project document
+  // loads from and persists to its own IndexedDB store keyed by the project
+  // id. Joining a project by invite materializes it as a new project here.
+  const meshStorage =
+    typeof globalThis.indexedDB !== "undefined"
+      ? createIndexeddbStorage("noflo-mesh", "config")
+      : createMemoryStorage();
+  const storedProjectId = await meshStorage
+    .get("activeProjectId")
+    .catch(() => null);
   const doc = createProjectDoc(options.name ?? "Untitled project");
+  if (typeof storedProjectId === "string" && storedProjectId) {
+    adoptProjectIdentity(doc, storedProjectId);
+  }
+  const projectId = doc.getMap("metadata").get("id");
   const state = createEngineState();
 
   const loader = new NoFlo.ComponentLoader(".");
@@ -98,17 +113,56 @@ export async function startEngine(io, options = {}) {
     io.postMessage({ kind: "y-update", update });
   });
 
+  /**
+   * Runs after a persistence binding has loaded the project: migrations,
+   * full-state sync to the Glass, and a mesh rebind (the room derives from
+   * the project identity, which may just have been restored or adopted).
+   */
+  const onProjectLoaded = () => {
+    migrateLoadedProject(doc);
+    syncFullState(doc, io);
+    mesh.rebind().catch((err) => console.error("Mesh rebinding failed:", err));
+  };
+
+  /**
+   * Binds project-scoped persistence for the given store name.
+   *
+   * @param {string} storeName
+   */
+  const bindProjectPersistence = (storeName) => {
+    persistence = bindDocumentPersistence(doc, storeName);
+    whenPersisted(persistence)
+      .then(() => {
+        if (legacyLoad) {
+          // First boot after the move to project-scoped stores: the pointer
+          // was just adopted from the legacy load. Binding the scoped store
+          // writes the doc's current state into it.
+          legacyLoad = false;
+          meshStorage.set("activeProjectId", projectId).catch(() => {});
+          bindProjectPersistence(`noflo-project-${projectId}`);
+        } else {
+          onProjectLoaded();
+        }
+      })
+      .catch((err) => {
+        console.error("Document persistence failed:", err);
+        syncFullState(doc, io);
+      });
+  };
+
   // Persist the document when IndexedDB is available (browser worker).
   /** @type {any} */
   let persistence = null;
+  /** Whether this boot still reads the pre-scoped legacy store. */
+  let legacyLoad = false;
   if (typeof globalThis.indexedDB !== "undefined") {
     try {
-      persistence = bindDocumentPersistence(doc, "noflo-project");
-      whenPersisted(persistence).then(() => {
-        // The Engine drives CRDT schema migrations after loading
-        migrateLoadedProject(doc);
-        syncFullState(doc, io);
-      });
+      // Devices without a pointer read the pre-scoped fixed store once, then
+      // move the project into its own scoped store
+      legacyLoad = !storedProjectId;
+      bindProjectPersistence(
+        legacyLoad ? "noflo-project" : `noflo-project-${projectId}`,
+      );
     } catch (err) {
       console.error("Document persistence failed:", err);
       syncFullState(doc, io);
@@ -124,10 +178,6 @@ export async function startEngine(io, options = {}) {
   // rebinds) only once that identity is known. CONFIG-family messages are
   // handled here instead of the dispatcher graph — they concern the
   // Engine's own peripherals, not the CRDT
-  const meshStorage =
-    typeof globalThis.indexedDB !== "undefined"
-      ? createIndexeddbStorage("noflo-mesh", "config")
-      : createMemoryStorage();
   const projectRoom = () =>
     `noflo-ui:${doc.getMap("metadata").get("id") ?? "default"}`;
   const mesh = await createMeshSync({
@@ -138,15 +188,83 @@ export async function startEngine(io, options = {}) {
     // With persistence, wait for the stored project id before binding
     autostart: typeof globalThis.indexedDB === "undefined",
   });
-  if (persistence) {
-    whenPersisted(persistence)
-      .then(() => {
-        mesh
-          .rebind()
-          .catch((err) => console.error("Mesh rebinding failed:", err));
-      })
-      .catch(() => {});
-  }
+
+  /**
+   * Reports the full mesh state to the Glass (config, identity, room, and
+   * the interface schemas the settings UI renders forms from).
+   */
+  const postMeshConfig = () => {
+    io.postMessage({
+      kind: "mesh-config",
+      config: mesh.config,
+      identityHash: mesh.identityHash,
+      room: mesh.room,
+      // Interface configuration schemas come from the interface classes
+      // themselves; the settings UI renders forms from them
+      interfaceSchemas: {
+        websocket: WebSocketClientInterface.getConfigurationSchema(),
+      },
+    });
+  };
+
+  /**
+   * Joins a project by invite (work document #21). The invited project
+   * materializes as a new project in this device's IndexedDB — its own
+   * project-scoped store — unless the device already has the matching
+   * project id, in which case the invite is a no-op. Refused for local
+   * projects with different ids that already have content: two projects
+   * merged would interleave their graphs.
+   *
+   * @param {any} payload
+   */
+  const joinProject = (payload) => {
+    const room = String(payload?.room ?? "").trim();
+    const prefix = "noflo-ui:";
+    const invitedId = room.startsWith(prefix)
+      ? room.slice(prefix.length)
+      : room;
+    if (!invitedId) {
+      io.postMessage({
+        kind: "mesh-status",
+        error: "Join failed: paste an invite (project room)",
+      });
+      return;
+    }
+    if (invitedId === projectId) {
+      // Already have this project; nothing to adopt
+      postMeshConfig();
+      return;
+    }
+    if (doc.getMap("graphs").size > 0) {
+      io.postMessage({
+        kind: "mesh-status",
+        error:
+          "Join failed: this device already has project content. Joining would merge two projects.",
+      });
+      return;
+    }
+    // Adopt the invited identity, then materialize the project: a fresh
+    // project-scoped store (the binding writes the doc state into it), the
+    // device pointer, and a mesh rebind into the invited room
+    adoptProjectIdentity(doc, invitedId);
+    if (persistence) {
+      persistence.destroy().catch(() => {});
+    }
+    if (typeof globalThis.indexedDB !== "undefined") {
+      legacyLoad = false;
+      bindProjectPersistence(`noflo-project-${invitedId}`);
+      meshStorage.set("activeProjectId", invitedId).catch(() => {});
+    }
+    mesh
+      .rebind()
+      .then(() => postMeshConfig())
+      .catch((err) =>
+        io.postMessage({
+          kind: "mesh-status",
+          error: `Join failed: ${err?.message ?? err}`,
+        }),
+      );
+  };
 
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
@@ -154,19 +272,12 @@ export async function startEngine(io, options = {}) {
       if (message.command === "configure") {
         mesh
           .handleConfigure(message.payload)
+          .then(() => postMeshConfig())
           .catch((err) => console.error("Mesh configuration failed:", err));
       } else if (message.command === "status") {
-        io.postMessage({
-          kind: "mesh-config",
-          config: mesh.config,
-          identityHash: mesh.identityHash,
-          room: mesh.room,
-          // Interface configuration schemas come from the interface classes
-          // themselves; the settings UI renders forms from them
-          interfaceSchemas: {
-            websocket: WebSocketClientInterface.getConfigurationSchema(),
-          },
-        });
+        postMeshConfig();
+      } else if (message.command === "join") {
+        joinProject(message.payload);
       }
       return;
     }

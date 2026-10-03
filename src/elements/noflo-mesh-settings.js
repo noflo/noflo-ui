@@ -169,9 +169,18 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row">
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable ? "" : "disabled"}> Enabled</label>
         </div>
-        <h3>Project room</h3>
-        <div class="hash" id="mesh-room">${this._room}</div>
-        <div class="hint">Per-project by construction: peers join this project by syncing to this room.</div>
+        <h3>Invite</h3>
+        <div class="row">
+          <div class="hash grow" id="mesh-room">${this._room}</div>
+          <button class="secondary" data-action="copy-invite">Copy</button>
+        </div>
+        <div class="hint">Per-project by construction: peers join this project by syncing to this room. Send it to a collaborator, then have them paste it under "Join a project".</div>
+        <h3>Join a project</h3>
+        <div class="row">
+          <input id="join-room" placeholder="Paste a project room (noflo-ui:...)">
+          <button data-action="join">Join</button>
+        </div>
+        <div class="hint">Joining materializes the invited project as a new project in this device's storage. Only possible while the local project is empty.</div>
         <h3>WebRTC transport upgrade</h3>
         <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>
         <div class="row" style="margin-top: 6px">
@@ -303,6 +312,30 @@ export class FlowMeshSettings extends HTMLElement {
     shadow
       .querySelector('[data-action="close"]')
       ?.addEventListener("click", () => this.close());
+    shadow
+      .querySelector('[data-action="copy-invite"]')
+      ?.addEventListener("click", () => {
+        const room = /** @type {HTMLElement} */ (
+          shadow.querySelector("#mesh-room")
+        ).textContent?.trim();
+        if (room) navigator.clipboard?.writeText(room).catch(() => {});
+      });
+    shadow
+      .querySelector('[data-action="join"]')
+      ?.addEventListener("click", () => {
+        const input = /** @type {HTMLInputElement} */ (
+          shadow.querySelector("#join-room")
+        );
+        const room = input.value.trim();
+        if (!room) return;
+        input.value = "";
+        this.dispatchEvent(
+          new CustomEvent("mesh-join", {
+            detail: { room },
+            bubbles: true,
+          }),
+        );
+      });
 
     const enabled = /** @type {HTMLInputElement | null} */ (
       shadow.querySelector("#mesh-enabled")

@@ -380,7 +380,8 @@ export async function createMeshSync({
       await saveMeshConfig(storage, config);
       await stop();
       await start();
-      postMessage({ kind: "mesh-config", config });
+      // The Engine reports the full state (config, identity, room, schemas)
+      // after reconfiguration; MeshSync stays silent here
     },
     /**
      * @param {any} payload

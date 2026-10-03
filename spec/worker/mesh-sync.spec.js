@@ -125,11 +125,9 @@ describe("mesh sync (work document #21)", () => {
     assert.ok(providerCalls[0].identity, "identity passed to provider");
     const persisted = await loadMeshConfig(storage);
     assert.ok(persisted.identity.length > 0, "identity persisted");
-    assert.equal(
-      messages.filter((m) => m.kind === "mesh-config").length,
-      1,
-      "config echoed back",
-    );
+    // The full config echo (identity, room, schemas) is the Engine's job
+    // after reconfiguration; MeshSync itself stays silent
+    assert.equal(messages.filter((m) => m.kind === "mesh-config").length, 0);
     assert.equal(
       providerCalls[0].room,
       "noflo-ui:test-project",

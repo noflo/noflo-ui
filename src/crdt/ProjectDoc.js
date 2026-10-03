@@ -1008,3 +1008,20 @@ export function listGrants(doc) {
   }
   return grants;
 }
+
+/**
+ * Adopts a project identity, e.g. when joining a project by invite (work
+ * document #21). The invited room derives from this id, so adoption is what
+ * makes the peer converge into the invited project. Callers must refuse to
+ * adopt into a project that already has content: two non-empty projects
+ * merged would interleave their graphs.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} projectId
+ * @returns {boolean} Whether the id was adopted.
+ */
+export function adoptProjectIdentity(doc, projectId) {
+  if (typeof projectId !== "string" || projectId.length === 0) return false;
+  doc.getMap(METADATA_MAP).set("id", projectId);
+  return true;
+}

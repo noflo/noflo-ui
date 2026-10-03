@@ -544,6 +544,9 @@ async function init() {
   settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
     sendIntent(revokePermissionIntent(e.detail.id));
   });
+  settingsDialog?.addEventListener("mesh-join", (/** @type {any} */ e) => {
+    supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
+  });
   settingsDialog?.addEventListener("mesh-close", () => {});
 
   const eviction = await checkEviction(/** @type {any} */ (navigator).storage);

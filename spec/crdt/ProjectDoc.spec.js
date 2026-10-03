@@ -7,6 +7,7 @@ import {
   addNode,
   addOutport,
   addSpecCase,
+  adoptProjectIdentity,
   createGraph,
   createProjectDoc,
   deleteComponent,
@@ -528,5 +529,20 @@ describe("grants (work document #21)", () => {
     assert.ok(revokePermission(doc, grant.id));
     assert.equal(listGrants(doc)[0].revoked, grants[0].revoked);
     assert.ok(!revokePermission(doc, "grant-ghost"));
+  });
+});
+
+describe("adoptProjectIdentity (work document #21)", () => {
+  it("sets the project id for invite joins", () => {
+    const doc = createProjectDoc("p");
+    const originalId = getProjectMetadata(doc).get("id");
+    assert.ok(adoptProjectIdentity(doc, "invited-project-id"));
+    assert.equal(getProjectMetadata(doc).get("id"), "invited-project-id");
+    assert.notEqual(originalId, "invited-project-id");
+  });
+
+  it("rejects empty ids", () => {
+    const doc = createProjectDoc("p");
+    assert.ok(!adoptProjectIdentity(doc, ""));
   });
 });
