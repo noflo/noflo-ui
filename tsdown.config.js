@@ -131,6 +131,25 @@ export default defineConfig([
     },
   },
   {
+    // @reticulum/dacar pure core (no transport adapters): external to the
+    // shared sibling @reticulum/core bundle, same contract as y-reticulum
+    entry: {
+      dacar: 'node_modules/@reticulum/dacar/src/index.js',
+    },
+    ...vendor,
+    external: ['@reticulum/core'],
+    splitting: false,
+    outputOptions: {
+      paths: {
+        '@reticulum/core': './reticulum-core.js',
+      },
+    },
+    // No shipped declarations: the bundle is type-inferred only
+    banner: {
+      js: '// @ts-nocheck',
+    },
+  },
+  {
     entry: {
       'fontawesome-icons': './utils/icon-map.js',
     },

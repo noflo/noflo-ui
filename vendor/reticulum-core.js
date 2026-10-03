@@ -5880,6 +5880,10 @@ var Persistor = class {
 		this.persistedDestinations = /* @__PURE__ */ new Set();
 		/** @type {ReturnType<typeof setTimeout> | null} */
 		this._flushTimer = null;
+		/** @type {Promise<void> | null} */
+		this.loadPromise = null;
+		/** @type {boolean} */
+		this.loaded = false;
 	}
 	/**
 	* Returns the adapter only when it implements the full KV interface (#16),
@@ -6022,13 +6026,22 @@ var Persistor = class {
 	* @returns {Promise<void>}
 	*/
 	async load() {
-		const adapter = this._kvAdapter();
-		if (!adapter) return;
-		await this._loadNamespace(adapter, StorageNamespace.IDENTITIES, this.knownDestinations, decodeIdentityEntry);
-		await this._loadNamespace(adapter, StorageNamespace.RATCHETS, this.knownRatchets, decodeRatchet);
-		if (this.routingTable) await this._loadNamespace(adapter, StorageNamespace.PATHS, this.routingTable.routes, decodeRoute);
-		Destination.cleanKnownRatchets(this.knownRatchets, this.knownDestinations);
-		log("Persistor", `Loaded ${this.persistedDestinations.size} persisted destination(s).`, LogLevel.DEBUG);
+		if (this.loaded) return;
+		if (this.loadPromise) return this.loadPromise;
+		this.loadPromise = (async () => {
+			const adapter = this._kvAdapter();
+			if (!adapter) {
+				this.loaded = true;
+				return;
+			}
+			await this._loadNamespace(adapter, StorageNamespace.IDENTITIES, this.knownDestinations, decodeIdentityEntry);
+			await this._loadNamespace(adapter, StorageNamespace.RATCHETS, this.knownRatchets, decodeRatchet);
+			if (this.routingTable) await this._loadNamespace(adapter, StorageNamespace.PATHS, this.routingTable.routes, decodeRoute);
+			Destination.cleanKnownRatchets(this.knownRatchets, this.knownDestinations);
+			this.loaded = true;
+			log("Persistor", `Loaded ${this.persistedDestinations.size} persisted destination(s).`, LogLevel.DEBUG);
+		})();
+		return this.loadPromise;
 	}
 	/**
 	* Loads one namespace into a map, registering each key as persisted.
@@ -7539,6 +7552,22 @@ const DEFAULT_PER_HOP_TIMEOUT_SECS = 6;
 */
 const MINIMUM_BITRATE = 5;
 /**
+* Thrown when an identity cannot be recalled or solicited for a destination hash.
+*/
+var UnknownIdentityError = class extends Error {
+	/**
+	* @param {Uint8Array} destinationHash
+	* @param {string} [message]
+	*/
+	constructor(destinationHash, message) {
+		const hex = toHex(destinationHash);
+		super(message || `Cannot deliver: identity for ${hex} is unknown`);
+		this.name = "UnknownIdentityError";
+		/** @type {Uint8Array} */
+		this.destinationHash = destinationHash;
+	}
+};
+/**
 * The central network router for the Reticulum node.
 * Routes packets emitted by Interfaces.
 */
@@ -7599,6 +7628,8 @@ var TransportCore = class TransportCore extends EventTarget {
 		this.pathRequests = /* @__PURE__ */ new Map();
 		/** @type {Map<string, number>} */
 		this.inflightPathRequests = /* @__PURE__ */ new Map();
+		/** @type {Map<string, Promise<import("../core/identity.js").Identity>>} */
+		this._inflightIdentitySolicitations = /* @__PURE__ */ new Map();
 		/** @type {ReturnType<typeof setInterval>|null} */
 		this._sweepTimer = null;
 	}
@@ -7732,7 +7763,70 @@ var TransportCore = class TransportCore extends EventTarget {
 	* @returns {Promise<import("../core/identity.js").Identity|null>}
 	*/
 	async recallIdentity(targetHash, fromIdentityHash = false) {
+		if (this.persistor?.loadPromise && !this.persistor.loaded) await this.persistor.loadPromise;
 		return Destination.recallFrom(this.caches.knownDestinations, targetHash, fromIdentityHash);
+	}
+	/**
+	* Recalls a learned identity by destination hash. If the identity is not yet
+	* known, it sends a path request and awaits the destination's announce event
+	* up to timeoutMs before attempting to recall again.
+	*
+	* @param {Uint8Array} destinationHash
+	* @param {number} [timeoutMs=30000]
+	* @returns {Promise<import("../core/identity.js").Identity>}
+	* @throws {UnknownIdentityError} when the identity is not known and cannot be solicited within timeout.
+	*/
+	async recallOrSolicitIdentity(destinationHash, timeoutMs = 3e4) {
+		if (this.persistor?.loadPromise && !this.persistor.loaded) await this.persistor.loadPromise;
+		const identity = await this.recallIdentity(destinationHash);
+		if (identity) return identity;
+		const destHex = toHex(destinationHash);
+		const existing = this._inflightIdentitySolicitations.get(destHex);
+		if (existing) return await existing;
+		const solicitationPromise = (async () => {
+			let foundIdentity = null;
+			let cleanup = () => {};
+			/** @type {Promise<import("../core/identity.js").Identity | null>} */
+			const announcePromise = new Promise((resolve) => {
+				let settled = false;
+				/** @type {ReturnType<typeof setTimeout> | null} */
+				let timer = null;
+				cleanup = () => {
+					if (timer) clearTimeout(timer);
+					this.removeEventListener("announce", onAnnounce);
+				};
+				/** @param {any} ev */
+				const onAnnounce = (ev) => {
+					const dh = ev?.detail?.destinationHash;
+					if (dh && bytesEqual(dh, destinationHash)) {
+						if (settled) return;
+						settled = true;
+						cleanup();
+						resolve(ev.detail.identity ?? null);
+					}
+				};
+				this.addEventListener("announce", onAnnounce);
+				if (timeoutMs > 0) timer = setTimeout(() => {
+					if (settled) return;
+					settled = true;
+					cleanup();
+					resolve(null);
+				}, timeoutMs);
+			});
+			try {
+				await this.requestPath(destinationHash);
+			} catch {}
+			foundIdentity = await announcePromise;
+			if (!foundIdentity) foundIdentity = await this.recallIdentity(destinationHash);
+			if (!foundIdentity) throw new UnknownIdentityError(destinationHash);
+			return foundIdentity;
+		})();
+		this._inflightIdentitySolicitations.set(destHex, solicitationPromise);
+		try {
+			return await solicitationPromise;
+		} finally {
+			this._inflightIdentitySolicitations.delete(destHex);
+		}
 	}
 	/**
 	* Caches an announced ratchet public key for a destination
@@ -8811,6 +8905,16 @@ var Reticulum = class Reticulum {
 	*/
 	getMediumPathTimeout() {
 		return this.transport.mediumPathTimeout();
+	}
+	/**
+	* Waits for the Reticulum node to be ready.
+	* Resolves when the initial persistence hydration has finished and any
+	* background initialization (such as interface discovery) has completed.
+	* @returns {Promise<void>}
+	*/
+	async ready() {
+		await this.persistorLoadPromise;
+		if (this.discovery?.startPromise) await this.discovery.startPromise;
 	}
 	/**
 	* Graceful shutdown: stops interface discovery, disconnects every attached
@@ -11788,4 +11892,4 @@ var WebSocketClientInterface = class extends Interface {
 	}
 };
 //#endregion
-export { ACCEPTED_INTERFACE_TYPES, Allow, CEType, CORE_INSTANCE_TOKEN, Channel, ChannelException, ContextType, DISCOVERABLE_TYPES, APP_NAME as DISCOVERY_APP_NAME, ASPECT as DISCOVERY_ASPECT, DEFAULT_STAMP_VALUE as DISCOVERY_DEFAULT_STAMP_VALUE, FLAG_ENCRYPTED as DISCOVERY_FLAG_ENCRYPTED, FLAG_SIGNED as DISCOVERY_FLAG_SIGNED, STATUS_AVAILABLE as DISCOVERY_STATUS_AVAILABLE, STATUS_STALE as DISCOVERY_STATUS_STALE, STATUS_UNKNOWN as DISCOVERY_STATUS_UNKNOWN, THRESHOLD_REMOVE as DISCOVERY_THRESHOLD_REMOVE, THRESHOLD_STALE as DISCOVERY_THRESHOLD_STALE, THRESHOLD_UNKNOWN as DISCOVERY_THRESHOLD_UNKNOWN, WORKBLOCK_EXPAND_ROUNDS as DISCOVERY_WORKBLOCK_EXPAND_ROUNDS, DestType, Destination, Direction, Envelope, HeaderType, Identity, IdentityCache, InterfaceDiscovery, LOG_LEVEL_ENV, Link, LinkChannelOutlet, LinkStatus, LogLevel, MemoryStorageAdapter, MessageBase, MessageState, MicroMsgPack as MsgPack, Packet, PacketReceipt, PacketType, Persistor, ReceiptStatus, Resource, ResourceAdvertisement, ResourceFlag, ResourceResponse, ResourceStatus, Reticulum, SplitResourceAssembler, StorageNamespace, StreamDataMessage, SystemMessageTypes, TransportType, CAPABILITY_FLAG as WEBRTC_CAPABILITY_FLAG, CHANNEL_LABEL as WEBRTC_CHANNEL_LABEL, DEFAULT_DESTINATION_NAME as WEBRTC_DEFAULT_DESTINATION_NAME, MAX_SDP_SIZE as WEBRTC_MAX_SDP_SIZE, SDP_TYPE_ANSWER as WEBRTC_SDP_TYPE_ANSWER, SDP_TYPE_CANDIDATE as WEBRTC_SDP_TYPE_CANDIDATE, SDP_TYPE_OFFER as WEBRTC_SDP_TYPE_OFFER, WebRTCSignaling, WebSocketClientInterface, aspectNameHash, base64ToBytes, base64UrlToBytes, buildDiscoveryAppData, buildConfigEntry as buildDiscoveryConfigEntry, bytesEqual, bytesToBase64, bytesToBase64Url, concatBytes, fromHex, generateDiscoveryStamp, getLogLevel, isHostname, isIpAddress, log, openDuplex, openReadable, openWritable, parseDiscoveryAnnounce, parseLogLevel, sanitizeName as sanitizeDiscoveryName, setLogLevel, toHex, warnIfFragmented };
+export { ACCEPTED_INTERFACE_TYPES, Allow, CEType, CORE_INSTANCE_TOKEN, Channel, ChannelException, ContextType, DISCOVERABLE_TYPES, APP_NAME as DISCOVERY_APP_NAME, ASPECT as DISCOVERY_ASPECT, DEFAULT_STAMP_VALUE as DISCOVERY_DEFAULT_STAMP_VALUE, FLAG_ENCRYPTED as DISCOVERY_FLAG_ENCRYPTED, FLAG_SIGNED as DISCOVERY_FLAG_SIGNED, STATUS_AVAILABLE as DISCOVERY_STATUS_AVAILABLE, STATUS_STALE as DISCOVERY_STATUS_STALE, STATUS_UNKNOWN as DISCOVERY_STATUS_UNKNOWN, THRESHOLD_REMOVE as DISCOVERY_THRESHOLD_REMOVE, THRESHOLD_STALE as DISCOVERY_THRESHOLD_STALE, THRESHOLD_UNKNOWN as DISCOVERY_THRESHOLD_UNKNOWN, WORKBLOCK_EXPAND_ROUNDS as DISCOVERY_WORKBLOCK_EXPAND_ROUNDS, DestType, Destination, Direction, Envelope, HeaderType, Identity, IdentityCache, InterfaceDiscovery, LOG_LEVEL_ENV, Link, LinkChannelOutlet, LinkStatus, LogLevel, MemoryStorageAdapter, MessageBase, MessageState, MicroMsgPack as MsgPack, Packet, PacketReceipt, PacketType, Persistor, ReceiptStatus, Resource, ResourceAdvertisement, ResourceFlag, ResourceResponse, ResourceStatus, Reticulum, SplitResourceAssembler, StorageNamespace, StreamDataMessage, SystemMessageTypes, TransportType, UnknownIdentityError, CAPABILITY_FLAG as WEBRTC_CAPABILITY_FLAG, CHANNEL_LABEL as WEBRTC_CHANNEL_LABEL, DEFAULT_DESTINATION_NAME as WEBRTC_DEFAULT_DESTINATION_NAME, MAX_SDP_SIZE as WEBRTC_MAX_SDP_SIZE, SDP_TYPE_ANSWER as WEBRTC_SDP_TYPE_ANSWER, SDP_TYPE_CANDIDATE as WEBRTC_SDP_TYPE_CANDIDATE, SDP_TYPE_OFFER as WEBRTC_SDP_TYPE_OFFER, WebRTCSignaling, WebSocketClientInterface, aspectNameHash, base64ToBytes, base64UrlToBytes, buildDiscoveryAppData, buildConfigEntry as buildDiscoveryConfigEntry, bytesEqual, bytesToBase64, bytesToBase64Url, concatBytes, fromHex, generateDiscoveryStamp, getLogLevel, isHostname, isIpAddress, log, openDuplex, openReadable, openWritable, parseDiscoveryAnnounce, parseLogLevel, sanitizeName as sanitizeDiscoveryName, setLogLevel, toHex, warnIfFragmented };
