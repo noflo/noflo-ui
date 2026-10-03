@@ -37,10 +37,7 @@ import {
   projectResource,
   ROLE_PERMISSIONS,
 } from "./Dacar.js";
-import {
-  listWalletGrants,
-  saveWalletGrant,
-} from "./DacarWallet.js";
+import { listWalletGrants, saveWalletGrant } from "./DacarWallet.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
 const GRANT_WAIT_MS = 30_000;
@@ -244,6 +241,41 @@ export async function createMeshSync({
   // the project.
   /** @type {boolean} */
   let approvalFired = false;
+  // ---- Dacar node state (work document #25 §2, §6.2, §7) ----------------
+  // One per-project Dacar node: Config + StateVector + DeltaReceiver +
+  // Engine. Grants reach it two ways — the §11 direct-link Delta push
+  // during the bootstrap handoff, and the grants map (the CRDT is the
+  // replication layer) — and both paths authenticate through
+  // verify-on-ingest against the project's designated Trust Anchor. An
+  // unknown Trust Anchor's deltas are refused and never authorize (§7).
+  //
+  // The state declarations live ABOVE the observers below: those observers
+  // can fire while createMeshSync is still awaiting (a persisted document
+  // loading through y-indexeddb commits transactions mid-boot), and a
+  // callback hitting a not-yet-initialized declaration is a TDZ error.
+  /** @type {ReturnType<typeof createDacarNode> | null} */
+  let dacarNode = null;
+  let dacarNodeAnchorHash = "";
+  let dacarNodeProjectId = "";
+  /** Peer → Engine verdict cache; isGranted reads this synchronously. */
+  /** @type {Map<string, boolean>} */
+  const grantedCache = new Map();
+  /** Grants-map entries already ingested, keyed by content fingerprint. */
+  /** @type {Map<string, string>} */
+  const ingestedEntries = new Map();
+  /** Tombstone state per entry id, to detect revocations. */
+  /** @type {Map<string, boolean>} */
+  const entryRevocations = new Map();
+  /** Per-entry verification status, reported to the Glass. */
+  /** @type {Map<string, string>} */
+  const entryStatuses = new Map();
+  let reconciling = false;
+  /** Pushes received before the node was configured, replayed after. */
+  /** @type {Uint8Array[]} */
+  const pendingPushes = [];
+  /** The last delta batch a peer pushed to this device (§11), base64. */
+  let lastPushedBatch = "";
+
   /**
    * Fires the Engine's approval callback once this device's own grant is
    * authorized by the Dacar state (the handed-off grant, or a grant synced
@@ -256,24 +288,44 @@ export async function createMeshSync({
   }
   // Dacar grant lifecycle (work document #25 §6.2, §7): reconcile the
   // grants map into the Dacar node state as entries arrive, and let the
-  // anchor countersign plain grants written through the Glass intents
+  // anchor countersign plain grants written through the Glass intents.
+  // Observer failures must never propagate into the Yjs transaction that
+  // triggered them (a throw here would abort persistence commits)
   doc.getMap?.("grants")?.observe(() => {
-    reconcileDacarState()
-      .then(() => notifyApprovalIfGranted())
-      .catch(() => {});
-    notifyApprovalIfGranted();
+    try {
+      reconcileDacarState()
+        .then(() => notifyApprovalIfGranted())
+        .catch((/** @type {any} */ err) =>
+          console.warn("Dacar reconcile failed:", err?.message ?? err),
+        );
+      notifyApprovalIfGranted();
+    } catch (err) {
+      console.warn(
+        "Grants observer failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
   });
   // A Trust Anchor change (transfer, work document #25 §2.4) invalidates
   // every verification: grants from the previous anchor no longer authorize
   let lastSeenAnchorHash = "";
   doc.getMap?.("metadata")?.observe(() => {
-    const anchorHash = trustAnchorHash();
-    if (anchorHash === lastSeenAnchorHash) return;
-    lastSeenAnchorHash = anchorHash;
-    invalidateDacarState();
-    reconcileDacarState()
-      .then(() => notifyApprovalIfGranted())
-      .catch(() => {});
+    try {
+      const anchorHash = trustAnchorHash();
+      if (anchorHash === lastSeenAnchorHash) return;
+      lastSeenAnchorHash = anchorHash;
+      invalidateDacarState();
+      reconcileDacarState()
+        .then(() => notifyApprovalIfGranted())
+        .catch((/** @type {any} */ err) =>
+          console.warn("Dacar reconcile failed:", err?.message ?? err),
+        );
+    } catch (err) {
+      console.warn(
+        "Metadata observer failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
   });
   // The identity is the peer's address: generate (and persist) it at boot,
   // independent of whether sync is enabled — peers and node admins need the
@@ -488,29 +540,6 @@ export async function createMeshSync({
   // replication layer) — and both paths authenticate through
   // verify-on-ingest against the project's designated Trust Anchor. An
   // unknown Trust Anchor's deltas are refused and never authorize (§7).
-  /** @type {ReturnType<typeof createDacarNode> | null} */
-  let dacarNode = null;
-  let dacarNodeAnchorHash = "";
-  let dacarNodeProjectId = "";
-  /** Peer → Engine verdict cache; isGranted reads this synchronously. */
-  /** @type {Map<string, boolean>} */
-  const grantedCache = new Map();
-  /** Grants-map entries already ingested, keyed by content fingerprint. */
-  /** @type {Map<string, string>} */
-  const ingestedEntries = new Map();
-  /** Tombstone state per entry id, to detect revocations. */
-  /** @type {Map<string, boolean>} */
-  const entryRevocations = new Map();
-  /** Per-entry verification status, reported to the Glass. */
-  /** @type {Map<string, string>} */
-  const entryStatuses = new Map();
-  let reconciling = false;
-  /** Pushes received before the node was configured, replayed after. */
-  /** @type {Uint8Array[]} */
-  const pendingPushes = [];
-  /** The last delta batch a peer pushed to this device (§11), base64. */
-  let lastPushedBatch = "";
-
   /**
    * @param {string} projectId
    * @returns {string}
