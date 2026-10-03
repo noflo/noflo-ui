@@ -118,10 +118,20 @@ export async function startEngine(io, options = {}) {
    * full-state sync to the Glass, and a mesh rebind (the room derives from
    * the project identity, which may just have been restored or adopted).
    */
+  // The project load and the mesh boot race (both wait on IndexedDB): if the
+  // load wins, the mesh rebind runs once the mesh exists
+  /** @type {any} */
+  let mesh = null;
+  let projectLoaded = false;
   const onProjectLoaded = () => {
+    projectLoaded = true;
     migrateLoadedProject(doc);
     syncFullState(doc, io);
-    mesh.rebind().catch((err) => console.error("Mesh rebinding failed:", err));
+    mesh
+      ?.rebind()
+      .catch((/** @type {any} */ err) =>
+        console.error("Mesh rebinding failed:", err),
+      );
   };
 
   /**
@@ -180,7 +190,7 @@ export async function startEngine(io, options = {}) {
   // Engine's own peripherals, not the CRDT
   const projectRoom = () =>
     `noflo-ui:${doc.getMap("metadata").get("id") ?? "default"}`;
-  const mesh = await createMeshSync({
+  mesh = await createMeshSync({
     doc,
     postMessage: io.postMessage,
     storage: meshStorage,
@@ -188,6 +198,14 @@ export async function startEngine(io, options = {}) {
     // With persistence, wait for the stored project id before binding
     autostart: typeof globalThis.indexedDB === "undefined",
   });
+  if (projectLoaded) {
+    // The project load beat the mesh boot: bind now
+    mesh
+      .rebind()
+      .catch((/** @type {any} */ err) =>
+        console.error("Mesh rebinding failed:", err),
+      );
+  }
 
   /**
    * Reports the full mesh state to the Glass (config, identity, room, and
@@ -258,7 +276,7 @@ export async function startEngine(io, options = {}) {
     mesh
       .rebind()
       .then(() => postMeshConfig())
-      .catch((err) =>
+      .catch((/** @type {any} */ err) =>
         io.postMessage({
           kind: "mesh-status",
           error: `Join failed: ${err?.message ?? err}`,
@@ -273,7 +291,9 @@ export async function startEngine(io, options = {}) {
         mesh
           .handleConfigure(message.payload)
           .then(() => postMeshConfig())
-          .catch((err) => console.error("Mesh configuration failed:", err));
+          .catch((/** @type {any} */ err) =>
+            console.error("Mesh configuration failed:", err),
+          );
       } else if (message.command === "status") {
         postMeshConfig();
       } else if (message.command === "join") {

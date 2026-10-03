@@ -179,7 +179,11 @@ export class FlowMeshSettings extends HTMLElement {
           flex-wrap: nowrap;
         }
         .row label {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           white-space: nowrap;
+          margin: 0;
         }
         .row input, .row select { flex: 1; }
         button {
@@ -232,7 +236,7 @@ export class FlowMeshSettings extends HTMLElement {
           this._identityHash
             ? `<h3>Identity</h3><div class="hash" id="identity-hash">${this._identityHash}</div>
         <div class="hint">Share this hash so node admins can grant this peer access.</div>`
-            : `<h3>Identity</h3><div class="hint">No identity yet — enabling sync generates one.</div>`
+            : `<h3>Identity</h3><div class="hint">${config?.enabled ? "The engine generates the identity when sync starts." : "No identity yet — enabling sync generates one."}</div>`
         }
         <h3>Sync</h3>
         <div class="row">
@@ -325,7 +329,7 @@ export class FlowMeshSettings extends HTMLElement {
       iface.type === "websocket"
         ? (options.url ?? "")
         : `${options.host ?? ""}:${options.port ?? ""}`;
-    return `${detail} (${iface.type})`;
+    return detail ? `${detail} (${iface.type})` : `${iface.type} (${iface.id})`;
   }
 
   /**
