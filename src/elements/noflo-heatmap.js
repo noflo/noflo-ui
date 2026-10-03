@@ -37,6 +37,7 @@ export class FlowHeatmap extends HTMLElement {
     /** @type {HTMLCanvasElement | null} */
     this.canvas = null;
     /** @type {number | null} */
+    /** @type { ReturnType<typeof setTimeout> | null } */
     this.intervalId = null;
   }
 

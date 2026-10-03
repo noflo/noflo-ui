@@ -112,6 +112,7 @@ export class FlowEditor extends HTMLElement {
     /** @type {HTMLElement | null} */
     this.ghostNode = null;
     /** @type {number | null} */
+    /** @type {ReturnType<typeof setTimeout> | null} */
     this.stillnessTimer = null;
     /** @type {Map<GraphEntity, Position>} */
     this.draggingNodesInitialPositions = new Map();
@@ -134,6 +135,7 @@ export class FlowEditor extends HTMLElement {
     /** @type {NoFloRadialMenu | null} */
     this.radialMenu = null;
     /** @type {number | null} */
+    /** @type { ReturnType<typeof setTimeout> | null } */
     this.longPressTimer = null;
     /** @type {boolean} */
     this.selectionChangedOnDown = false;

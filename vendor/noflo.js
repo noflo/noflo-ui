@@ -1,3 +1,4 @@
+// @ts-nocheck
 var require = () => ({}); var fs = {};
 //#region \0rolldown/runtime.js
 var __create = Object.create;

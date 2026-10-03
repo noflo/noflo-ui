@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Y from "./yjs.js";
 import { CEType, ChannelException, DestType, Destination, Identity, MessageBase, Resource, toHex } from "./reticulum-core.js";
 //#region src/shims/bzip2-stub.js
@@ -1383,11 +1384,33 @@ function bytesEqual(a, b) {
 	return diff === 0;
 }
 /**
+* Context handed to a room's {@link LinkPolicy} for every inbound and
+* outbound peer link.
+*
+* @typedef {Object} LinkPolicyContext
+* @property {string} remoteIdentityHash Hex truncated hash of the remote
+*   peer's long-term identity. Cryptographically bound: on the initiator
+*   side it comes from the peer's announce, on the responder side from the
+*   signed identify handshake over the link.
+* @property {string|null} remoteDestinationHash Hex destination hash of the
+*   remote room destination, when known (initiator side).
+* @property {boolean} initiator Whether this side initiated the link.
+*/
+/**
+* Decides whether a peer link may carry room traffic. Called on both the
+* initiator and responder sides once the remote identity is proven.
+*
+* @typedef {(context: LinkPolicyContext) => boolean | Promise<boolean>} LinkPolicy
+*/
+/**
 * @typedef {Object} RoomCallbacks
 * @property {(added: string[], removed: string[]) => void} onPeers
 *   Fired whenever peers are discovered or drop off. Ids are hex link_ids.
 * @property {(synced: boolean) => void} onSynced
 *   Fired when the room's overall sync state changes.
+* @property {(refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean }>) => void} [onRefused]
+*   Fired when a peer link was refused by the link policy. Apps can use this
+*   to surface access requests (e.g. "peer X wants to join").
 */
 /**
 * One Yjs room: a local destination that announces for discovery, plus the set
@@ -1404,9 +1427,14 @@ var Room = class {
 	* @param {string} options.appName - Deterministic destination app-name for the room.
 	* @param {number} options.maxConns
 	* @param {number} options.announceIntervalMs
+	* @param {LinkPolicy | null} [options.linkPolicy] When set, peer links must prove
+	*   their identity (initiator runs the identify handshake) and pass the
+	*   policy before any room traffic flows; refused links are torn down.
+	* @param {number} [options.identifyTimeoutMs] How long the responder waits
+	*   for the initiator's identify handshake before refusing.
 	* @param {RoomCallbacks} options.callbacks
 	*/
-	constructor({ doc, awareness, reticulum, identity, appName, maxConns, announceIntervalMs, callbacks }) {
+	constructor({ doc, awareness, reticulum, identity, appName, maxConns, announceIntervalMs, linkPolicy, identifyTimeoutMs = 1e4, callbacks }) {
 		this.doc = doc;
 		this.awareness = awareness;
 		this.rns = reticulum;
@@ -1414,6 +1442,8 @@ var Room = class {
 		this.appName = appName;
 		this.maxConns = maxConns;
 		this.announceIntervalMs = announceIntervalMs;
+		this.linkPolicy = linkPolicy ?? null;
+		this.identifyTimeoutMs = identifyTimeoutMs;
 		this.callbacks = callbacks;
 		/** @type {import("@reticulum/core").Destination|null} */
 		this.dest = null;
@@ -1492,12 +1522,29 @@ var Room = class {
 		if (this.linkedDestHexes.has(remoteHex) || this.pendingInitiates.has(remoteHex)) return;
 		if (this.myHex > remoteHex) return;
 		this.pendingInitiates.add(remoteHex);
+		if (this.linkPolicy) {
+			const initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
+			if (!await this.linkPolicy({
+				remoteIdentityHash: initiatorIdentityHash,
+				remoteDestinationHash: remoteHex,
+				initiator: true
+			})) {
+				this.pendingInitiates.delete(remoteHex);
+				this.callbacks.onRefused?.([{
+					destinationHash: remoteHex,
+					identityHash: initiatorIdentityHash,
+					initiator: true
+				}]);
+				return;
+			}
+		}
 		try {
 			const link = await (await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns)).createLink();
 			if (!this.connected) {
 				await link.teardown();
 				return;
 			}
+			if (this.linkPolicy) await link.identify(this.identity);
 			this.linkedDestHexes.add(remoteHex);
 			this._registerPeer(link, detail.destinationHash);
 		} catch {} finally {
@@ -1505,7 +1552,9 @@ var Room = class {
 		}
 	}
 	/**
-	* Responder path: a peer is opening a Link to us. Accept it.
+	* Responder path: a peer is opening a Link to us. Accept it. With a link
+	* policy, the peer must prove its identity over the link (signed identify
+	* handshake) before the policy decides and any room traffic flows.
 	* @param {Event} event
 	*/
 	async _onLinkRequest(event) {
@@ -1518,8 +1567,54 @@ var Room = class {
 				await link.teardown();
 				return;
 			}
+			if (this.linkPolicy) {
+				const identityHash = await this._awaitIdentify(link);
+				if (!identityHash) {
+					await link.teardown();
+					this.callbacks.onRefused?.([{
+						destinationHash: null,
+						identityHash: null,
+						initiator: false
+					}]);
+					return;
+				}
+				if (!await this.linkPolicy({
+					remoteIdentityHash: identityHash,
+					remoteDestinationHash: null,
+					initiator: false
+				})) {
+					await link.teardown();
+					this.callbacks.onRefused?.([{
+						destinationHash: null,
+						identityHash,
+						initiator: false
+					}]);
+					return;
+				}
+			}
 			this._registerPeer(link, null);
 		} catch {}
+	}
+	/**
+	* Waits for the initiator's signed identify handshake on this link.
+	*
+	* @param {import("@reticulum/core").Link} link
+	* @returns {Promise<string|null>} Hex remote identity hash, or null when
+	*   the peer did not identify within the timeout.
+	*/
+	_awaitIdentify(link) {
+		return new Promise((resolve) => {
+			const timer = setTimeout(() => {
+				link.removeEventListener("identify", onIdentify);
+				resolve(null);
+			}, this.identifyTimeoutMs);
+			const onIdentify = (event) => {
+				clearTimeout(timer);
+				const identity = event.detail?.identity;
+				resolve(identity ? toHex(identity.getSalt()) : null);
+			};
+			link.addEventListener("identify", onIdentify, { once: true });
+		});
 	}
 	/**
 	* Registers a newly active peer and kicks off the Yjs sync handshake
@@ -1683,6 +1778,14 @@ var Room = class {
 *   Cadence (ms) at which the room destination is re-announced for discovery.
 *   Forwarded to `Destination.startAnnouncing`, which clamps it to the
 *   §9.7 60 s floor (sub-minute intervals trigger ingress rate limiting).
+* @property {import("./room.js").LinkPolicy} [linkPolicy]
+*   When set, peer links must prove their identity (the initiator runs the
+*   signed identify handshake over the link) and pass the policy before any
+*   room traffic flows. Refused links are torn down and reported via the
+*   `refused` event, which apps can use to surface access requests.
+* @property {number} [identifyTimeoutMs]
+*   How long the responder waits for the initiator's identify handshake
+*   before refusing the link.
 */
 /**
 * Events emitted by {@link ReticulumProvider}. Mirrors the y-webrtc event
@@ -1695,6 +1798,8 @@ var Room = class {
 *   Fired when sync state with the peer mesh changes. (Phase 3.)
 * @property {(event: { added: Array<string>, removed: Array<string> }) => void} peers
 *   Fired when peers are discovered or drop off.
+* @property {(event: { refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean }> }) => void} refused
+*   Fired when a peer link was refused by the link policy.
 */
 /**
 * Reticulum provider for Yjs.
@@ -1717,6 +1822,8 @@ var ReticulumProvider = class extends ObservableV2 {
 		this.awareness = opts.awareness ?? new Awareness(doc);
 		this.maxConns = opts.maxConns ?? 20;
 		this.announceIntervalMs = opts.announceIntervalMs ?? 6e4;
+		this.linkPolicy = opts.linkPolicy ?? null;
+		this.identifyTimeoutMs = opts.identifyTimeoutMs ?? 1e4;
 		/** Resolved with the room destination's identity on connect(). */
 		this.identityPromise = opts.identity ? Promise.resolve(opts.identity) : Identity.generate();
 		/** @type {Identity|null} */
@@ -1748,12 +1855,15 @@ var ReticulumProvider = class extends ObservableV2 {
 			appName,
 			maxConns: this.maxConns,
 			announceIntervalMs: this.announceIntervalMs,
+			linkPolicy: this.linkPolicy,
+			identifyTimeoutMs: this.identifyTimeoutMs,
 			callbacks: {
 				onPeers: (added, removed) => this.emit("peers", [{
 					added,
 					removed
 				}]),
-				onSynced: (synced) => this.emit("synced", [{ synced }])
+				onSynced: (synced) => this.emit("synced", [{ synced }]),
+				onRefused: (refusals) => this.emit("refused", [{ refusals }])
 			}
 		});
 		await this.room.connect();

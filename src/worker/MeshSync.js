@@ -275,6 +275,9 @@ export async function createMeshSync({
         const restored = await Identity.fromBytes(
           base64ToBytes(config.identity),
         );
+        if (!restored) {
+          throw new Error("stored identity could not be restored");
+        }
         identityHash = toHex(restored.getSalt());
         return restored;
       } catch {

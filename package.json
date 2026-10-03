@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "npx @biomejs/biome check src/ spec/ index.html",
     "format": "npx @biomejs/biome check --use-editorconfig=true --write src/ spec/ index.html",
-    "types": "npx tsc --checkJs --noEmit --allowJs --declaration src/*.js src/**/*.js src/*.d.ts",
+    "types": "npx tsc --checkJs --noEmit --allowJs --skipLibCheck --ignoreConfig src/*.js src/**/*.js src/*.d.ts",
     "generate:noflo": "node utils/generate-noflo-loader.js",
     "generate:fa": "node utils/generate-icon-map.js",
     "prebuild-vendors": "npm run generate:noflo && npm run generate:fa",
@@ -26,7 +26,7 @@
     "noflo-core": "^0.6.1",
     "source-code-pro": "^2.42.0",
     "y-indexeddb": "^9.0.12",
-    "y-reticulum": "^0.1.3",
+    "y-reticulum": "^0.2.0",
     "yjs": "^13.6.31"
   },
   "devDependencies": {
