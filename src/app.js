@@ -91,6 +91,12 @@ let joinRequests =
 let meshInviteUri = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+/** Live sync status reported by the Engine, for the settings dialog. */
+let syncStatus = /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */ (null);
+/** Join progress reported by the Engine, for the settings dialog. */
+let joinProgress = /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (null);
+/** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
+let dacarState = /** @type {any} */ (null);
 /** @type {FlowEditor | null} */
 let editor = null;
 /** @type {LibraryManager | null} */
@@ -195,7 +201,22 @@ function onEngineMessage(data) {
   } else if (data?.kind === "mesh-requests") {
     joinRequests = data.requests ?? [];
     refreshMeshSettings();
+  } else if (data?.kind === "mesh-bootstrap") {
+    // Joiner state-machine progress (work document #25 §5.1)
+    joinProgress = data;
+    refreshMeshSettings();
+  } else if (data?.kind === "mesh-dacar") {
+    // Dacar authorization state: anchor, per-grant verification, wallet
+    dacarState = data;
+    refreshMeshSettings();
   } else if (data?.kind === "mesh-status") {
+    if (data.connected !== undefined) {
+      syncStatus = {
+        connected: data.connected === true,
+        synced: data.synced === true,
+        peers: data.peers,
+      };
+    }
     meshError = data.error ?? "";
     refreshMeshSettings();
     if (meshError) {
@@ -370,6 +391,8 @@ function openMeshSettings() {
     meshError,
   );
   dialog.setInvite(meshInviteUri);
+  dialog.setSyncStatus(syncStatus);
+  dialog.setJoinProgress(joinProgress);
 }
 
 /**
@@ -388,6 +411,8 @@ function refreshMeshSettings() {
     dialog._meshError = meshError;
     dialog._joinRequests = joinRequests;
     dialog.setInvite(meshInviteUri);
+    dialog.setSyncStatus(syncStatus);
+    dialog.setJoinProgress(joinProgress);
     dialog.render();
   }
 }

@@ -17,6 +17,42 @@
 let formStylesCache = null;
 
 /**
+ * Escapes a value for interpolation into the shadow template.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/**
+ * Plain-language text for a bootstrap decline reason (work document #25
+ * §4.3).
+ *
+ * @param {string | undefined} reason
+ * @returns {string}
+ */
+function declineReasonText(reason) {
+  switch (reason) {
+    case "host_rejected":
+      return "the host declined your request";
+    case "host_lacks_authority":
+      return "the host cannot grant access (it does not hold the project’s Trust Anchor)";
+    case "invalid_token":
+      return "the invite is invalid or expired";
+    case "invalid_authorization":
+      return "the handoff failed verification";
+    default:
+      return reason ?? "unknown reason";
+  }
+}
+
+/**
  * @returns {Promise<string>}
  */
 async function loadFormStyles() {
@@ -45,12 +81,18 @@ export class FlowMeshSettings extends HTMLElement {
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
     /** Generated invite URI (`noflo://join/...`), shown with a copy button. */
     this._inviteUri = "";
-    /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */
+    /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} */
     this._joinRequests = [];
     /** @type {string | null} */
     this._formStyles = null;
     /** @type {string} */
     this._meshError = "";
+    /** Live sync status from the Engine (`mesh-status` telemetry). */
+    /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */
+    this._syncStatus = null;
+    /** Joiner state-machine progress (`mesh-bootstrap` messages). */
+    /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */
+    this._joinProgress = null;
   }
 
   connectedCallback() {
@@ -151,6 +193,79 @@ export class FlowMeshSettings extends HTMLElement {
   setJoinRequests(joinRequests) {
     this._joinRequests = joinRequests ?? [];
     if (this._open) this.render();
+  }
+
+  /**
+   * Updates the live sync status line (connected, peers, synced).
+   *
+   * @param {{ connected?: boolean, synced?: boolean, peers?: number } | null} status
+   */
+  setSyncStatus(status) {
+    this._syncStatus = status;
+    if (this._open) this.render();
+  }
+
+  /**
+   * Updates the join progress line (joiner state machine stages).
+   *
+   * @param {{ stage: string, reason?: string, project?: any, error?: string } | null} progress
+   */
+  setJoinProgress(progress) {
+    this._joinProgress = progress;
+    if (this._open) this.render();
+  }
+
+  /**
+   * Human-readable join progress line, empty while no join has run.
+   *
+   * @returns {string}
+   */
+  joinProgressHtml() {
+    const progress = this._joinProgress;
+    if (!progress?.stage) return "";
+    const stage = progress.stage;
+    if (stage === "approved") {
+      const name = progress.project?.name ?? "the project";
+      return `<div class="status-line success" id="join-progress">Approved — “${escapeHtml(
+        String(name),
+      )}” joined. Its content appears here once mesh sync delivers it.</div>`;
+    }
+    if (stage === "declined") {
+      return `<div class="status-line danger" id="join-progress">Join declined: ${escapeHtml(
+        declineReasonText(progress.reason),
+      )}</div>`;
+    }
+    if (stage === "failed") {
+      return `<div class="status-line danger" id="join-progress">Join failed: ${escapeHtml(
+        String(progress.error ?? "unknown error"),
+      )}</div>`;
+    }
+    const stageText = {
+      requesting_path: "Resolving the host’s path…",
+      linking: "Establishing a link to the host…",
+      knocking: "Knocking on the host’s door…",
+      wait_response: "Waiting for the host’s decision…",
+    }[stage];
+    if (!stageText) return "";
+    return `<div class="status-line" id="join-progress">${stageText}</div>`;
+  }
+
+  /**
+   * Live sync status line, empty until the Engine reports connectivity.
+   *
+   * @returns {string}
+   */
+  syncStatusHtml() {
+    const status = this._syncStatus;
+    if (!status || status.connected === undefined) return "";
+    const peers =
+      typeof status.peers === "number" && status.peers > 0
+        ? `, ${status.peers} peer${status.peers === 1 ? "" : "s"}`
+        : "";
+    const synced = status.synced ? ", synced" : "";
+    return `<div class="hint" id="mesh-sync-status">Sync: ${
+      status.connected ? "connected" : "disconnected"
+    }${peers}${synced}</div>`;
   }
 
   render() {
@@ -259,6 +374,15 @@ export class FlowMeshSettings extends HTMLElement {
         }
         .list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         .revoked { color: var(--ui-danger, #d9534f); }
+        .status-line {
+          font-size: 12px;
+          margin-top: 6px;
+          padding: 6px 8px;
+          border-radius: 4px;
+          background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+        }
+        .status-line.danger { color: var(--ui-danger, #d9534f); }
+        .status-line.success { color: var(--ui-success, #5cb85c); }
         .hint {
           font-size: 11px;
           color: color-mix(in srgb, currentColor 60%, transparent);
@@ -288,6 +412,7 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row">
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable && !this._meshError ? "" : "disabled"}> Enabled</label>
         </div>
+        ${this.syncStatusHtml()}
         <h3>Invite</h3>
         ${
           this._inviteUri
@@ -306,6 +431,7 @@ export class FlowMeshSettings extends HTMLElement {
           <input id="join-room" placeholder="Paste an invite (noflo://join/...)">
           <button data-action="join">Join</button>
         </div>
+        ${this.joinProgressHtml()}
         <div class="hint">Joining materializes the invited project as a new project in this device's storage. Only possible while the local project is empty.</div>
         <h3>WebRTC transport upgrade</h3>
         <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>

@@ -337,4 +337,51 @@ describe("mesh error display (work document #21)", () => {
     );
     el.remove();
   });
+
+  it("renders live sync status once the engine reports connectivity", () => {
+    const el = makeElement();
+    el.open(
+      { enabled: true, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "a".repeat(32),
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(!shadow.querySelector("#mesh-sync-status"), "no status yet");
+    el.setSyncStatus({ connected: true, synced: false, peers: 2 });
+    const line = /** @type {HTMLElement} */ (
+      shadow.querySelector("#mesh-sync-status")
+    );
+    assert.match(line.textContent ?? '', /connected, 2 peers/);
+    el.remove();
+  });
+
+  it("renders join progress stages and decline reasons in plain language", () => {
+    const el = makeElement();
+    el.open(
+      { enabled: true, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "a".repeat(32),
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(!shadow.querySelector("#join-progress"), "no progress yet");
+    el.setJoinProgress({ stage: "wait_response" });
+    assert.match(
+      (/** @type {HTMLElement} */ (shadow.querySelector("#join-progress")))
+        .textContent ?? "",
+      /Waiting for the host/, 
+    );
+    el.setJoinProgress({ stage: "declined", reason: "host_lacks_authority" });
+    assert.match(
+      (/** @type {HTMLElement} */ (shadow.querySelector("#join-progress")))
+        .textContent ?? "",
+      /cannot grant access/,
+    );
+    el.setJoinProgress({ stage: "approved", project: { name: "Telemetry" } });
+    const approved = /** @type {HTMLElement} */ (
+      shadow.querySelector("#join-progress")
+    );
+    assert.match(approved.textContent ?? "", /Telemetry/);
+    assert.ok(approved.classList.contains("success"), "approved reads as success");
+    el.remove();
+  });
 });
