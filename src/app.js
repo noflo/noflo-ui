@@ -82,6 +82,8 @@ let meshConfig = /** @type {any} */ (null);
 let meshIdentityHash = "";
 /** Per-project sync room reported by the Engine, for the settings dialog. */
 let meshRoom = "";
+/** Mesh error reported by the Engine (e.g. WebCrypto without Ed25519). */
+let meshError = "";
 /** Peers awaiting an access decision, reported by the Engine. */
 let joinRequests =
   /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */ ([]);
@@ -182,7 +184,11 @@ function onEngineMessage(data) {
     joinRequests = data.requests ?? [];
     refreshMeshSettings();
   } else if (data?.kind === "mesh-status") {
-    console.debug("Mesh", data.connected ?? "", data.error ?? "");
+    meshError = data.error ?? "";
+    refreshMeshSettings();
+    if (meshError) {
+      console.warn("Mesh error:", meshError);
+    }
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
   }
@@ -310,6 +316,7 @@ function openMeshSettings() {
     meshInterfaceSchemas,
     meshRoom,
     joinRequests,
+    meshError,
   );
 }
 
@@ -327,6 +334,7 @@ function refreshMeshSettings() {
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
     dialog._room = meshRoom;
+    dialog._meshError = meshError;
     dialog._joinRequests = joinRequests;
     dialog.render();
   }

@@ -121,6 +121,8 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  * @property {import("../crdt/MeshConfig.js").MeshConfig} config
  * @property {string} identityHash Hex identity hash for display; empty until
  *   the identity is generated or restored.
+ * @property {string} identityError Set when identity generation is
+ *   impossible (WebCrypto without Ed25519); mesh sync cannot run.
  * @property {string} room The room the project syncs through, derived from
  *   the project identity.
  * @property {() => Promise<void>} rebind Restarts the provider with a
@@ -169,11 +171,29 @@ export async function createMeshSync({
   let room = roomFor();
   /** Hex identity hash for display in the config UI; empty until generated. */
   let identityHash = "";
+  /**
+   * Set when identity generation is impossible (e.g. WebKit's WebCrypto
+   * lacks Ed25519): mesh sync cannot run, but the Engine keeps working.
+   */
+  let identityError = "";
   let config = await loadMeshConfig(storage);
   // The identity is the peer's address: generate (and persist) it at boot,
   // independent of whether sync is enabled — peers and node admins need the
-  // hash to grant access before sync is ever turned on
-  await ensureIdentity();
+  // hash to grant access before sync is ever turned on. Failure here (old
+  // WebKit without Ed25519 in WebCrypto) disables mesh but not the Engine.
+  try {
+    await ensureIdentity();
+  } catch (err) {
+    const reason = /** @type {any} */ (err)?.message ?? err;
+    identityError = `Identity generation failed: ${reason}`;
+    postMessage({
+      kind: "mesh-status",
+      connected: false,
+      synced: false,
+      peers: 0,
+      error: identityError,
+    });
+  }
   /** @type {any} */
   let provider = null;
   let peerCount = 0;
@@ -337,7 +357,7 @@ export async function createMeshSync({
   const joinRequests = new Map();
 
   async function start() {
-    if (!config.enabled || provider) return;
+    if (!config.enabled || provider || identityError) return;
     // A fresh instance connects through a random default entry point, so
     // mesh sync works out of the box; the choice persists with the config
     if (config.interfaces.length === 0) {
@@ -457,6 +477,9 @@ export async function createMeshSync({
     },
     get identityHash() {
       return identityHash;
+    },
+    get identityError() {
+      return identityError;
     },
     get room() {
       return room;

@@ -286,3 +286,47 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.remove();
   });
 });
+
+describe("mesh error display (work document #21)", () => {
+  it("shows the mesh error banner and disables sync when identity generation is impossible", () => {
+    const el = makeElement();
+    el.open(
+      { enabled: true, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "",
+      { websocket: websocketSchema },
+      "noflo-ui:test",
+      [],
+      "Identity generation failed: The operation is not supported.",
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const banner = /** @type {HTMLElement} */ (
+      shadow.querySelector("#mesh-error")
+    );
+    assert.match(banner.textContent ?? "", /not supported/, "error surfaced");
+    const enabled = /** @type {HTMLInputElement} */ (
+      shadow.querySelector("#mesh-enabled")
+    );
+    assert.ok(enabled.disabled, "sync toggle disabled: mesh cannot run");
+    el.remove();
+  });
+
+  it("renders no banner when the mesh is healthy", () => {
+    const el = makeElement();
+    el.open(
+      { enabled: false, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "",
+      { websocket: websocketSchema },
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(!shadow.querySelector("#mesh-error"));
+    assert.ok(
+      !(
+        /** @type {HTMLInputElement} */ (shadow.querySelector("#mesh-enabled"))
+          .disabled
+      ),
+    );
+    el.remove();
+  });
+});

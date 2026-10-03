@@ -48,6 +48,8 @@ export class FlowMeshSettings extends HTMLElement {
     this._joinRequests = [];
     /** @type {string | null} */
     this._formStyles = null;
+    /** @type {string} */
+    this._meshError = "";
   }
 
   connectedCallback() {
@@ -66,6 +68,8 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {string} room The project's sync room, for display.
    * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
    *   Peers awaiting an access decision.
+   * @param {string} meshError Engine mesh error (e.g. WebCrypto without
+   *   Ed25519): when set, mesh sync cannot run on this browser.
    */
   open(
     config,
@@ -74,6 +78,7 @@ export class FlowMeshSettings extends HTMLElement {
     interfaceSchemas = {},
     room = "",
     joinRequests = [],
+    meshError = "",
   ) {
     this._config = config;
     this._grants = grants ?? [];
@@ -81,6 +86,7 @@ export class FlowMeshSettings extends HTMLElement {
     this._interfaceSchemas = interfaceSchemas ?? {};
     this._room = room;
     this._joinRequests = joinRequests ?? [];
+    this._meshError = meshError;
     this._open = true;
     // The dialog element may sit hidden in the page shell; visibility is
     // controlled here so open/close always agree with the rendered state
@@ -118,6 +124,19 @@ export class FlowMeshSettings extends HTMLElement {
   /**
    * Refreshes the join-request list while open.
    *
+   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
+   */
+  /**
+   * Updates the reported mesh error while open.
+   *
+   * @param {string} meshError
+   */
+  setMeshError(meshError) {
+    this._meshError = meshError ?? "";
+    if (this._open) this.render();
+  }
+
+  /**
    * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
    */
   setJoinRequests(joinRequests) {
@@ -251,8 +270,14 @@ export class FlowMeshSettings extends HTMLElement {
             : `<h3>Identity</h3><div class="hint">${config?.enabled ? "The engine generates the identity when sync starts." : "No identity yet — enabling sync generates one."}</div>`
         }
         <h3>Sync</h3>
+        ${
+          this._meshError
+            ? `<div class="alert alert-danger" id="mesh-error">${this._meshError}</div>
+        <div class="hint">This browser cannot run mesh sync. Editing works locally and persists to this device.</div>`
+            : ""
+        }
         <div class="row">
-          <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable ? "" : "disabled"}> Enabled</label>
+          <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable && !this._meshError ? "" : "disabled"}> Enabled</label>
         </div>
         <h3>Invite</h3>
         <div class="row">
