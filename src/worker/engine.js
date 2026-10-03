@@ -300,6 +300,13 @@ export async function startEngine(io, options = {}) {
         joinProject(message.payload);
       } else if (message.command === "resolveRequest") {
         mesh.resolveJoinRequest(message.payload?.identityHash);
+      } else if (message.command === "importIdentity") {
+        mesh
+          .handleImportedIdentity(message.payload?.identity)
+          .then(() => postMeshConfig())
+          .catch((/** @type {any} */ err) =>
+            console.error("Identity import failed:", err),
+          );
       }
       return;
     }

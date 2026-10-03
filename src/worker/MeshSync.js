@@ -127,6 +127,8 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   the project identity.
  * @property {() => Promise<void>} rebind Restarts the provider with a
  *   freshly resolved room.
+ * @property {(base64: string) => Promise<void>} handleImportedIdentity
+ *   Adopts a main-thread-generated identity.
  * @property {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} joinRequests
  *   Peers that know the room but hold no grant (access requests).
  * @property {(identityHash: string) => void} resolveJoinRequest Removes a
@@ -482,6 +484,32 @@ export async function createMeshSync({
     },
     get identityError() {
       return identityError;
+    },
+    /**
+     * Adopts a main-thread-generated identity (work document #21): the Glass
+     * generates the keypair where WebCrypto works and hands over the raw
+     * private key, since generation is a do-once operation. The worker still
+     * needs to import and use the key — if that also fails, identityError
+     * resurfaces.
+     *
+     * @param {string} base64 Base64 of the 128-byte private key.
+     */
+    async handleImportedIdentity(base64) {
+      if (typeof base64 !== "string" || base64.length === 0) return;
+      config.identity = base64;
+      await saveMeshConfig(storage, config);
+      identityError = "";
+      await stop();
+      await start();
+      if (identityError) {
+        postMessage({
+          kind: "mesh-status",
+          connected: false,
+          synced: false,
+          peers: 0,
+          error: identityError,
+        });
+      }
     },
     get room() {
       return room;

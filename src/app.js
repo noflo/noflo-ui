@@ -84,6 +84,8 @@ let meshIdentityHash = "";
 let meshRoom = "";
 /** Mesh error reported by the Engine (e.g. WebCrypto without Ed25519). */
 let meshError = "";
+/** Main-thread identity recovery attempted at most once per session. */
+let identityRecoveryAttempted = false;
 /** Peers awaiting an access decision, reported by the Engine. */
 let joinRequests =
   /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */ ([]);
@@ -191,6 +193,32 @@ function onEngineMessage(data) {
     }
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
+  }
+}
+
+/**
+ * Generates the Reticulum identity on the main thread (once) and hands the
+ * raw private key to the Engine, for browsers whose worker WebCrypto cannot
+ * generate Ed25519 keys. Uses the same @reticulum/core library as the
+ * Engine, so the key format matches exactly.
+ */
+async function recoverIdentityOnMainThread() {
+  if (identityRecoveryAttempted) return;
+  identityRecoveryAttempted = true;
+  try {
+    const { Identity } = await import("../vendor/reticulum-core.js");
+    const identity = await Identity.generate();
+    const key = await identity.getPrivateKey();
+    let binary = "";
+    for (const byte of key) binary += String.fromCharCode(byte);
+    supervisor?.send({
+      type: "MESH",
+      command: "importIdentity",
+      payload: { identity: btoa(binary) },
+    });
+  } catch (err) {
+    // Main-thread generation failed too: the Engine's error stands
+    console.warn("Main-thread identity recovery failed:", err);
   }
 }
 
