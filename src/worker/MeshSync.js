@@ -76,9 +76,15 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
     // Dacar gate: peers with a non-revoked grant may sync; devices in
     // requester mode (empty grants, fresh join) may dial so the owner sees
     // the access request. Ignored by y-reticulum versions without the hook.
-    linkPolicy: (/** @type {any} */ context) =>
-      access.isInRequesterMode() ||
-      access.isGranted(context.remoteIdentityHash),
+    linkPolicy: (/** @type {any} */ context) => {
+      const allowed =
+        access.isInRequesterMode() ||
+        access.isGranted(context.remoteIdentityHash);
+      console.info(
+        `[mesh] linkPolicy: peer …${context.remoteIdentityHash?.slice(-12) ?? "unidentified"}, ${context.initiator ? "initiator" : "responder"}, ${allowed ? "ALLOW" : "REFUSE"}`,
+      );
+      return allowed;
+    },
   });
   provider.on("refused", (/** @type {any} */ event) => {
     access.onRefused(event.refusals ?? []);
