@@ -970,6 +970,61 @@ export function grantPermission(doc, peerHash, role) {
 }
 
 /**
+ * Issues a capability grant that carries its Dacar-signed authorization
+ * (work document #25 §4.2): the entry syncs to all peers, and each peer
+ * verifies the assertion against the project's Trust Anchor before treating
+ * the granted peer as authorized. Writing the same authorization twice is
+ * idempotent — the existing entry is returned instead of duplicated.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} peerHash Hex identity hash of the granted peer.
+ * @param {string} role One of GRANT_ROLES.
+ * @param {Record<string, any>} authorization Dacar authorization (work
+ *   document #25 §4.2): anchor, subject, resource, permissions, salt,
+ *   issued_at, expires, and the signed per-permission payloads.
+ * @returns {{ id: string, peerHash: string, role: string, issued: number, revoked: null, authorization: Record<string, any> } | null}
+ *   The grant, or null on invalid input.
+ */
+export function grantAssertion(doc, peerHash, role, authorization) {
+  if (typeof peerHash !== "string" || peerHash.length === 0) return null;
+  if (!(/** @type {string[]} */ (GRANT_ROLES).includes(role))) return null;
+  if (!authorization || typeof authorization !== "object") return null;
+  const grants = doc.getMap(GRANTS_MAP);
+  // Idempotence: a non-revoked entry already carrying exactly this
+  // authorization is reused, so bootstrap re-handoffs never duplicate
+  const serialized = JSON.stringify(authorization);
+  for (const entry of grants.values()) {
+    const plain = entry.toJSON();
+    if (
+      plain.peerHash === peerHash &&
+      plain.revoked === null &&
+      plain.authorization &&
+      JSON.stringify(plain.authorization) === serialized
+    ) {
+      return /** @type {any} */ (plain);
+    }
+  }
+  const id = `grant-${newProjectId()}`;
+  const entry = new Y.Map();
+  doc.transact(() => {
+    entry.set("peerHash", peerHash);
+    entry.set("role", role);
+    entry.set("issued", Date.now());
+    entry.set("revoked", null);
+    entry.set("authorization", authorization);
+    grants.set(id, entry);
+  });
+  return {
+    id,
+    peerHash,
+    role,
+    issued: entry.get("issued"),
+    revoked: null,
+    authorization,
+  };
+}
+
+/**
  * Tombstone-revokes a grant. Revoking an already-revoked grant is a no-op
  * that still reports success.
  *
