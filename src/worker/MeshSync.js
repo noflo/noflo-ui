@@ -507,24 +507,21 @@ export async function createMeshSync({
     provider.room?.rns?.transport?.addEventListener(
       "announce",
       (/** @type {any} */ event) => {
-        // Only log announces for the room's own aspect; guard against the
-        // provider being torn down (null during rebinds)
-        if (!provider?.room) return;
+        // Temporary: log ALL received announces with their nameHash so we
+        // can see exactly what the transport receives and what gets
+        // filtered. Remove once the join flow is stable.
+        if (!provider) return;
         const detail = event.detail ?? {};
-        const roomNameHash = provider.room.dest?.nameHash;
-        if (
-          !detail.nameHash ||
-          !roomNameHash ||
-          !bytesEqual(detail.nameHash, roomNameHash)
-        ) {
-          return;
-        }
-        // Derive the identity hash from the announce's public key so the
-        // log correlates with the grants map and join requests
+        const nameHash = detail.nameHash ? toHex(detail.nameHash) : "none";
         const identityHash = detail.identity
           ? toHex(detail.identity.getSalt())
           : "unidentified";
-        console.info(`[mesh] announce from identity ${identityHash}`);
+        const roomNameHash = provider.room?.dest?.nameHash
+          ? toHex(provider.room.dest.nameHash)
+          : "none";
+        console.info(
+          `[mesh] announce: nameHash=${nameHash} identity=${identityHash} room=${roomNameHash} match=${nameHash === roomNameHash}`,
+        );
       },
     );
     provider.on("synced", (/** @type {any} */ event) => {
