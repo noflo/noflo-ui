@@ -408,13 +408,15 @@ export async function createMeshSync({
       });
       return;
     }
-    // Bind awareness to this provider instance; dropped on unbind
+    // Bind awareness to this provider instance; dropped on unbind.
+    // y-protocols Awareness extends lib0's Observable: the API is
+    // on/off, not observe
     awareness = provider.awareness ?? null;
     if (awareness) {
       const updateHandler = (/** @type {any} */ changes) =>
         forwardRemoteAwareness(changes);
-      awareness.observe(updateHandler);
-      unobserveAwareness = () => awareness?.unobserve?.(updateHandler);
+      awareness.on("update", updateHandler);
+      unobserveAwareness = () => awareness?.off?.("update", updateHandler);
     }
     provider.on("status", (/** @type {any} */ event) => {
       postMessage({

@@ -303,22 +303,24 @@ describe("awareness (work document #21)", () => {
       clientID: 1,
       /** @type {Map<number, any>} */
       states: new Map(),
-      /** @type {Array<(changes: any) => void>} */
-      observers: [],
-      observe(handler) {
-        this.observers.push(handler);
+      /** @type {Map<string, (changes: any) => void>} */
+      handlers: new Map(),
+      on(name, handler) {
+        this.handlers.set(name, handler);
       },
-      unobserve(handler) {
-        this.observers = this.observers.filter((h) => h !== handler);
+      off(name, handler) {
+        this.handlers.delete(name);
       },
       setLocalStateField(field, value) {
         this.states.set(this.clientID, {
           ...(this.states.get(this.clientID) ?? {}),
           [field]: value,
         });
-        for (const handler of this.observers) {
-          handler({ added: [], updated: [this.clientID], removed: [] });
-        }
+        this.handlers.get("update")?.({
+          added: [],
+          updated: [this.clientID],
+          removed: [],
+        });
       },
       getStates() {
         return this.states;
@@ -374,7 +376,7 @@ describe("awareness (work document #21)", () => {
       }),
     });
     await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
-    updateHandler = awareness.observers[0];
+    updateHandler = awareness.handlers.get("update");
     assert.ok(updateHandler, "observing provider awareness");
 
     // A remote peer drags a node
