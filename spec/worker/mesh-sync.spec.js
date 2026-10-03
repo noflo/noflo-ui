@@ -1,0 +1,276 @@
+import assert from "node:assert/strict";
+import { afterEach, describe, it } from "node:test";
+
+import {
+  createDefaultMeshConfig,
+  createMemoryStorage,
+  loadMeshConfig,
+  normalizeMeshConfig,
+  saveMeshConfig,
+} from "../../src/crdt/MeshConfig.js";
+import { createMeshSync } from "../../src/worker/MeshSync.js";
+
+describe("mesh config (work document #21)", () => {
+  it("normalizes partial and malformed blobs into defaults", () => {
+    const config = normalizeMeshConfig({
+      enabled: true,
+      room: "my-room",
+      interfaces: [
+        { id: "a", type: "websocket", url: "wss://rns.example", enabled: true },
+        { id: "bad", type: "tcp" },
+        { type: "websocket", url: "wss://x", enabled: true },
+        null,
+      ],
+    });
+    assert.equal(config.enabled, true);
+    assert.equal(config.room, "my-room");
+    assert.equal(config.interfaces.length, 1, "only valid interfaces kept");
+    assert.deepEqual(config.interfaces[0], {
+      id: "a",
+      type: "websocket",
+      url: "wss://rns.example",
+      host: undefined,
+      port: undefined,
+      enabled: true,
+    });
+
+    assert.equal(normalizeMeshConfig(null).enabled, false);
+    assert.equal(normalizeMeshConfig("junk").room, "noflo-ui");
+  });
+
+  it("round-trips through storage", async () => {
+    const storage = createMemoryStorage();
+    const config = {
+      ...createDefaultMeshConfig(),
+      enabled: true,
+      room: "test",
+      identity: "abc",
+    };
+    await saveMeshConfig(storage, config);
+    const loaded = await loadMeshConfig(storage);
+    assert.equal(loaded.enabled, true);
+    assert.equal(loaded.room, "test");
+    assert.equal(loaded.identity, "abc");
+  });
+
+  it("falls back to defaults when storage fails", async () => {
+    const storage = {
+      get: async () => {
+        throw new Error("db closed");
+      },
+      set: async () => {},
+    };
+    const config = await loadMeshConfig(storage);
+    assert.equal(config.enabled, false);
+  });
+});
+
+describe("mesh sync (work document #21)", () => {
+  /** @type {Array<() => Promise<void>>} */
+  const cleaners = [];
+  afterEach(async () => {
+    for (const clean of cleaners.reverse()) await clean();
+    cleaners.length = 0;
+  });
+
+  it("stays idle until enabled", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      createProvider: async () => {
+        throw new Error("should not be called");
+      },
+    });
+    assert.equal(mesh.config.enabled, false);
+    assert.equal(messages.length, 0, "no status events while disabled");
+  });
+
+  it("generates and persists an identity on first enable", async () => {
+    const storage = createMemoryStorage();
+    /** @type {any[]} */
+    const messages = [];
+    const providerCalls = [];
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage,
+      createProvider: async (config, identity, doc) => {
+        providerCalls.push({ room: config.room, identity, doc });
+        return {
+          on: () => {},
+          destroy: async () => {},
+        };
+      },
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    assert.equal(providerCalls.length, 1, "provider created after enabling");
+    assert.ok(providerCalls[0].identity, "identity passed to provider");
+    const persisted = await loadMeshConfig(storage);
+    assert.ok(persisted.identity.length > 0, "identity persisted");
+    assert.equal(
+      messages.filter((m) => m.kind === "mesh-config").length,
+      1,
+      "config echoed back",
+    );
+  });
+
+  it("reports status and peer events from the provider", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    /** @type {Map<string, (event: any) => void>} */
+    const listeners = new Map();
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      createProvider: async () => ({
+        on: (name, handler) => listeners.set(name, handler),
+        destroy: async () => {},
+      }),
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    listeners.get("status")?.({ connected: true });
+    listeners.get("peers")?.({ added: ["peer-a", "peer-b"], removed: [] });
+    listeners.get("peers")?.({ added: [], removed: ["peer-b"] });
+    listeners.get("synced")?.({ synced: true });
+
+    const statuses = messages.filter((m) => m.kind === "mesh-status");
+    assert.deepEqual(
+      statuses.map((m) => `${m.connected}/${m.synced}/${m.peers}`),
+      ["true/false/0", "true/true/1"],
+    );
+    const peerEvents = messages.filter((m) => m.kind === "mesh-peers");
+    assert.deepEqual(
+      peerEvents.map((m) => m.peers),
+      [2, 1],
+    );
+    assert.deepEqual(peerEvents[0].added, ["peer-a", "peer-b"]);
+  });
+
+  it("restarts the provider when configuration changes", async () => {
+    const storage = createMemoryStorage();
+    /** @type {any[]} */
+    const messages = [];
+    let built = 0;
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage,
+      createProvider: async () => {
+        built++;
+        return { on: () => {}, destroy: async () => {} };
+      },
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    await mesh.handleConfigure({
+      ...createDefaultMeshConfig(),
+      enabled: true,
+      room: "other",
+    });
+    assert.equal(built, 2, "provider rebuilt on reconfiguration");
+    assert.equal(mesh.config.room, "other");
+    const persisted = await loadMeshConfig(storage);
+    assert.equal(persisted.room, "other", "configuration persisted");
+  });
+
+  it("survives a failing provider factory", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    const mesh = await createMeshSync({
+      doc: /** @type {any} */ ({}),
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      createProvider: async () => {
+        throw new Error("no interfaces");
+      },
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    const failure = messages.find(
+      (m) => m.kind === "mesh-status" && m.error !== undefined,
+    );
+    assert.ok(failure, "failure surfaced as status with error");
+    assert.match(failure.error, /no interfaces/);
+  });
+});
+
+describe("mesh sync convergence over a TCP loopback (work document #21)", () => {
+  /** @type {Array<() => Promise<void>>} */
+  const cleaners = [];
+  afterEach(async () => {
+    for (const clean of cleaners.reverse()) await clean();
+    cleaners.length = 0;
+  });
+
+  it("converges two provider-bound docs through the mesh transport", async () => {
+    const loopback = await import("./loopback-peer.js");
+    const { rnsA, rnsB, close } = await loopback.makeLoopback();
+    cleaners.push(close);
+
+    const core = await import("../../vendor/reticulum-core.js");
+    const { Identity } = core;
+    const { ReticulumProvider } = await import("../../vendor/y-reticulum.js");
+    const Y = await import("../../vendor/yjs.js");
+
+    const docA = new Y.Doc();
+    const docB = new Y.Doc();
+    /** @type {any[]} */
+    const statusB = [];
+    const identityA = await Identity.generate();
+    const identityB = await Identity.generate();
+
+    const providerA = new ReticulumProvider("noflo-test-room", docA, {
+      reticulum: rnsA,
+      identity: identityA,
+    });
+    const providerB = new ReticulumProvider("noflo-test-room", docB, {
+      reticulum: rnsB,
+      identity: identityB,
+    });
+    providerB.on("synced", (/** @type {any} */ event) => {
+      statusB.push(event.synced);
+    });
+    await providerA.connect();
+    await providerB.connect();
+    cleaners.push(async () => {
+      await providerA.destroy().catch(() => {});
+      await providerB.destroy().catch(() => {});
+    });
+
+    // Write on A, wait for convergence on B
+    const graphA = docA.getMap("graphs");
+    const graph = new (docA.getMap("graphs").constructor)();
+    // @ts-expect-error Yjs internals
+    graph.set("metadata", "main");
+    graphA.set("main", graph);
+
+    const deadline = Date.now() + 10_000;
+    while (
+      Date.now() < deadline &&
+      docB.getMap("graphs").get("main") === undefined
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    assert.ok(
+      docB.getMap("graphs").get("main") !== undefined,
+      "document state converged across the mesh",
+    );
+
+    // Incremental updates keep converging
+    docA.getMap("graphs").get("main").set("extra", "value");
+    const deadline2 = Date.now() + 10_000;
+    while (
+      Date.now() < deadline2 &&
+      docB.getMap("graphs").get("main")?.get("extra") !== "value"
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    assert.equal(
+      docB.getMap("graphs").get("main")?.get("extra"),
+      "value",
+      "incremental updates propagate",
+    );
+  }, 30000);
+});

@@ -13,6 +13,10 @@ import * as Y from "../../vendor/yjs.js";
 const NoFlo = /** @type {any} */ (noflo);
 
 import { createEngineState } from "../crdt/EngineCore.js";
+import {
+  createIndexeddbStorage,
+  createMemoryStorage,
+} from "../crdt/MeshConfig.js";
 import { createProjectDoc } from "../crdt/ProjectDoc.js";
 import {
   bindDocumentPersistence,
@@ -23,6 +27,7 @@ import {
   createDispatcherGraph,
   registerEngineComponents,
 } from "../graphs/engine-dispatch.js";
+import { createMeshSync } from "./MeshSync.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
@@ -66,10 +71,14 @@ export async function startEngine(io, options = {}) {
   const gateway = network.getNode("gateway");
   const socket = NoFlo.internalSocket.createSocket();
   /** @type {any} */ (gateway.component.inPorts).in.attach(socket);
-  io.registerMessageHandler((message) => {
+  // Single mutable delegate: the mesh-aware router replaces the plain socket
+  // forwarder once mesh sync has booted
+  let routeMessage = (/** @type {any} */ message) => {
     socket.send(message);
+  };
+  io.registerMessageHandler((message) => {
+    routeMessage(message);
   });
-
   const startedAt = Date.now();
   const heartbeat = setInterval(() => {
     io.postMessage({
@@ -105,10 +114,40 @@ export async function startEngine(io, options = {}) {
     syncFullState(doc, io);
   }
 
+  // Mesh sync (work document #21): Engine-owned configuration over its own
+  // storage; disabled until the Glass configures it. CONFIG-family messages
+  // are handled here instead of the dispatcher graph — they concern the
+  // Engine's own peripherals, not the CRDT
+  const meshStorage =
+    typeof globalThis.indexedDB !== "undefined"
+      ? createIndexeddbStorage("noflo-mesh", "config")
+      : createMemoryStorage();
+  const mesh = await createMeshSync({
+    doc,
+    postMessage: io.postMessage,
+    storage: meshStorage,
+  });
+
+  // Swap the plain socket forwarder for the mesh-aware router
+  routeMessage = (message) => {
+    if (message?.type === "MESH") {
+      if (message.command === "configure") {
+        mesh
+          .handleConfigure(message.payload)
+          .catch((err) => console.error("Mesh configuration failed:", err));
+      } else if (message.command === "status") {
+        io.postMessage({ kind: "mesh-config", config: mesh.config });
+      }
+      return;
+    }
+    socket.send(message);
+  };
+
   return {
     doc,
     stop() {
       clearInterval(heartbeat);
+      mesh.stop().catch(() => {});
       network.stop().catch(() => {});
     },
   };

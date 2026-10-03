@@ -74,6 +74,54 @@ export default defineConfig([
   },
   {
     entry: {
+      // Browser-safe @reticulum/core surface plus the WebSocket interface,
+      // bundled as one module so all contexts share one core instance
+      // (see utils/reticulum-entry.js)
+      'reticulum-core': './utils/reticulum-entry.js',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+    // @reticulum/core is dependency-free by design; inline everything
+    noExternal: [/./],
+    // One file: the vendor contract is a single module per package, and
+    // relative chunks would complicate the worker's import graph
+    outputOptions: {
+      splitting: false,
+    },
+    // Keep the hand-written type-surface declarations in vendor/ intact
+    clean: false,
+  },
+  {
+    entry: {
+      'y-reticulum': 'node_modules/y-reticulum/src/index.js',
+    },
+    platform: 'browser',
+    format: 'esm',
+    outDir: 'vendor',
+    // yjs and @reticulum/core stay external: all contexts must share one
+    // instance of each, served as sibling vendor bundles. lib0 and
+    // y-protocols are inlined. The bzip2 WASM dependency is stubbed out —
+    // y-reticulum falls back to uncompressed Resources when it is missing
+    external: ['yjs', '@reticulum/core'],
+    alias: {
+      '@digitaldefiance/bzip2-wasm': resolve(
+        here,
+        './src/shims/bzip2-stub.js',
+      ),
+    },
+    outputOptions: {
+      splitting: false,
+      paths: {
+        yjs: './yjs.js',
+        '@reticulum/core': './reticulum-core.js',
+      },
+    },
+    // Keep the hand-written type-surface declarations in vendor/ intact
+    clean: false,
+  },
+  {
+    entry: {
       'fontawesome-icons': './utils/icon-map.js',
     },
     copy: [
