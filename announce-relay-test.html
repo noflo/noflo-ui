@@ -22,15 +22,7 @@
         padding: 10px;
         white-space: pre-wrap;
         word-break: break-all;
-      }
-      button {
-        background: #4aa3df;
-        color: #000;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        font-size: 13px;
-        cursor: pointer;
+        user-select: all;
       }
     </style>
   </head>
@@ -44,96 +36,70 @@
         el.textContent += line + "\n";
       };
 
+      const toHex = (/** @type {Uint8Array} */ bytes) =>
+        [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+
       try {
-        const { Reticulum, Identity } = await import(
-          "./vendor/reticulum-core.js"
-        );
-        const { WebSocketClientInterface } = await import(
-          "./vendor/reticulum-core.js"
-        );
+        const core = await import("./vendor/reticulum-core.js");
+        const { Reticulum, Identity, Destination, DestType, WebSocketClientInterface } = core;
         log("Modules loaded ✓");
 
-        const ENTRY_POINT = "wss://cloud.lille-oe.de";
-        const ROOM = "noflo-ui:announce-relay-test";
+        const ENTRY_URL = "wss://cloud.lille-oe.de";
+        // Accept the room from the URL query string for testing specific rooms
+        const params = new URLSearchParams(location.search);
+        const ROOM = params.get("room") ?? "noflo-ui:announce-relay-test";
 
         // Derive the aspect name exactly like y-reticulum does
         const digest = await crypto.subtle.digest(
           "SHA-256",
           new TextEncoder().encode(ROOM),
         );
-        const aspectHex = [...new Uint8Array(digest).slice(0, 8)]
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
+        const aspectHex = toHex(new Uint8Array(digest).slice(0, 8));
         const APP_NAME = `y-reticulum.sync.${aspectHex}`;
         log(`Aspect name: ${APP_NAME}`);
 
         // --- Peer A ---
         const rnsA = new Reticulum();
-        const wsA = new WebSocketClientInterface(rnsA, {
-          name: "peer-a-ws",
-          target_host: "cloud.lille-oe.de",
-          target_port: 443,
-          use_ssl: true,
-        });
-        log("Peer A WebSocket connecting…");
+        const wsA = new WebSocketClientInterface({ url: ENTRY_URL });
+        await wsA.connect();
+        rnsA.addInterface(wsA, true);
+        log(`Peer A WebSocket online: ${wsA.online}`);
 
         // --- Peer B ---
         const rnsB = new Reticulum();
-        const wsB = new WebSocketClientInterface(rnsB, {
-          name: "peer-b-ws",
-          target_host: "cloud.lille-oe.de",
-          target_port: 443,
-          use_ssl: true,
-        });
-        log("Peer B WebSocket connecting…");
-
-        // Wait for both WebSocket connections to establish
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        log(`Peer A online: ${wsA.online}, Peer B online: ${wsB.online}`);
+        const wsB = new WebSocketClientInterface({ url: ENTRY_URL });
+        await wsB.connect();
+        rnsB.addInterface(wsB, true);
+        log(`Peer B WebSocket online: ${wsB.online}`);
 
         // --- Identities ---
         const idA = await Identity.generate();
         const idB = await Identity.generate();
-        const hashA = [...(await Identity.truncatedHash(await idA.getPublicKey()))]
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        const hashB = [...(await Identity.truncatedHash(await idB.getPublicKey()))]
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        log(`Peer A identity: …${hashA.slice(-12)}`);
-        log(`Peer B identity: …${hashB.slice(-12)}`);
+        const hashA = toHex(await Identity.truncatedHash(await idA.getPublicKey()));
+        const hashB = toHex(await Identity.truncatedHash(await idB.getPublicKey()));
+        log(`Peer A identity: ${hashA}`);
+        log(`Peer B identity: ${hashB}`);
 
         // --- Destinations ---
-        const { Destination, DestType } = await import(
-          "./vendor/reticulum-core.js"
-        );
         const destA = await Destination.IN(APP_NAME, DestType.SINGLE, idA, rnsA);
         const destB = await Destination.IN(APP_NAME, DestType.SINGLE, idB, rnsB);
-        log(`Peer A destination: ${[...destA.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)}`);
-        log(`Peer B destination: ${[...destB.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)}`);
+        const destHashA = toHex(destA.destinationHash);
+        const destHashB = toHex(destB.destinationHash);
+        log(`Peer A destination: ${destHashA}`);
+        log(`Peer B destination: ${destHashB}`);
 
         // --- Announce listeners ---
         let aSawB = false;
         let bSawA = false;
         rnsA.transport.addEventListener("announce", (/** @type {any} */ e) => {
-          const d = e.detail ?? {};
-          const dh = d.destinationHash
-            ? [...d.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)
-            : "?";
-          log(`Peer A received announce from ${dh}`);
-          if (dh === [...destB.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)) {
-            aSawB = true;
-          }
+          const dh = e.detail?.destinationHash ? toHex(e.detail.destinationHash) : "?";
+          log(`Peer A received announce: ${dh}`);
+          if (dh === destHashB) aSawB = true;
         });
         rnsB.transport.addEventListener("announce", (/** @type {any} */ e) => {
-          const d = e.detail ?? {};
-          const dh = d.destinationHash
-            ? [...d.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)
-            : "?";
-          log(`Peer B received announce from ${dh}`);
-          if (dh === [...destA.destinationHash].map((b) => b.toString(16).padStart(2, "0")).join("").slice(-12)) {
-            bSawA = true;
-          }
+          const dh = e.detail?.destinationHash ? toHex(e.detail.destinationHash) : "?";
+          log(`Peer B received announce: ${dh}`);
+          if (dh === destHashA) bSawA = true;
         });
 
         // --- Announce from both ---
