@@ -515,13 +515,14 @@ export async function createMeshSync({
         ) {
           return;
         }
-        const hash = detail.destinationHash
-          ? [...detail.destinationHash]
-              .map((b) => b.toString(16).padStart(2, "0"))
-              .join("")
-              .slice(-12)
-          : "unknown";
-        console.info(`[mesh] announce received from room peer ${hash}`);
+        // Derive the identity hash from the announce's public key so the
+        // log correlates with the grants map and join requests
+        const identityHash = detail.identity
+          ? toHex(detail.identity.getSalt())
+          : "unidentified";
+        console.info(
+          `[mesh] announce from identity ${identityHash.slice(-12)}`,
+        );
       },
     );
     provider.on("synced", (/** @type {any} */ event) => {
