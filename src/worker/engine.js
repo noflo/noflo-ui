@@ -273,11 +273,10 @@ export async function startEngine(io, options = {}) {
     // device pointer, and a mesh rebind into the invited room
     adoptProjectIdentity(doc, invitedId);
     // The invited device never self-grants: mark it, and clear any local
-    // grants so the document starts with the owner's grant map once synced
-    meshStorage
-      .set("activeProjectId", invitedId)
-      .then(() => mesh.handleJoinedViaInvite())
-      .catch(() => {});
+    // grants so the document starts with the owner's grant map once synced.
+    // Joining also enables sync — the whole point of the invite. The chain
+    // is sequential: mark → rebind → report.
+    meshStorage.set("activeProjectId", invitedId).catch(() => {});
     if (persistence) {
       persistence.destroy().catch(() => {});
     }
@@ -286,7 +285,8 @@ export async function startEngine(io, options = {}) {
       bindProjectPersistence(`noflo-project-${invitedId}`);
     }
     mesh
-      .rebind()
+      .handleJoinedViaInvite()
+      .then(() => mesh.rebind())
       .then(() => postMeshConfig())
       .catch((/** @type {any} */ err) =>
         io.postMessage({

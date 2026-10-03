@@ -396,6 +396,9 @@ export async function createMeshSync({
 
   async function start() {
     if (!config.enabled || provider) return;
+    console.info(
+      `Mesh starting: room ${roomFor()}, interfaces ${config.interfaces.length}, requester mode ${isInRequesterMode()}`,
+    );
     // A fresh instance connects through a random default entry point, so
     // mesh sync works out of the box; the choice persists with the config.
     // Seeding only needs randomness, not identity: it must happen even when
@@ -598,6 +601,8 @@ export async function createMeshSync({
      * access is approved and the link syncs.
      */
     async handleJoinedViaInvite() {
+      // Joining implies enabling sync: the whole point of the invite
+      config.enabled = true;
       config.joinedViaInvite = true;
       await saveMeshConfig(storage, config);
       doc.getMap?.("grants")?.clear();
