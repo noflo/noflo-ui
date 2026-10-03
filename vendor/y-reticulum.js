@@ -1462,6 +1462,9 @@ var Room = class {
 		this.pendingInitiates = /* @__PURE__ */ new Set();
 		/** Destination hex → scheduled reconnect path-request timer (initiator side). */
 		this.pendingPathRequests = /* @__PURE__ */ new Map();
+		/** Link → payloads stashed before the peer's PeerConn existed (see
+		* {@link Room._primeChannel}). */
+		this._primedChannels = /* @__PURE__ */ new Map();
 		this._onAnnounce = this._onAnnounce.bind(this);
 		this._onLinkRequest = this._onLinkRequest.bind(this);
 		this._docUpdateHandler = this._docUpdateHandler.bind(this);
@@ -1538,16 +1541,20 @@ var Room = class {
 				return;
 			}
 		}
+		let link = null;
 		try {
-			const link = await (await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns)).createLink();
+			link = await (await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns)).createLink();
 			if (!this.connected) {
 				await link.teardown();
 				return;
 			}
+			this._primeChannel(link);
 			if (this.linkPolicy) await link.identify(this.identity);
 			this.linkedDestHexes.add(remoteHex);
 			this._registerPeer(link, detail.destinationHash);
-		} catch {} finally {
+		} catch {
+			if (link) this._unprimeChannel(link);
+		} finally {
 			this.pendingInitiates.delete(remoteHex);
 		}
 	}
@@ -1561,15 +1568,18 @@ var Room = class {
 		if (!this.connected || !this.dest) return;
 		if (this.peerConns.size >= this.maxConns) return;
 		const packet = event.detail.packet;
+		let link = null;
 		try {
-			const link = await this.dest.acceptLink(packet);
+			link = await this.dest.acceptLink(packet);
 			if (!this.connected) {
 				await link.teardown();
 				return;
 			}
+			this._primeChannel(link);
 			if (this.linkPolicy) {
 				const identityHash = await this._awaitIdentify(link);
 				if (!identityHash) {
+					this._unprimeChannel(link);
 					await link.teardown();
 					this.callbacks.onRefused?.([{
 						destinationHash: null,
@@ -1583,6 +1593,7 @@ var Room = class {
 					remoteDestinationHash: null,
 					initiator: false
 				})) {
+					this._unprimeChannel(link);
 					await link.teardown();
 					this.callbacks.onRefused?.([{
 						destinationHash: null,
@@ -1593,7 +1604,9 @@ var Room = class {
 				}
 			}
 			this._registerPeer(link, null);
-		} catch {}
+		} catch {
+			if (link) this._unprimeChannel(link);
+		}
 	}
 	/**
 	* Waits for the initiator's signed identify handshake on this link.
@@ -1617,12 +1630,48 @@ var Room = class {
 		});
 	}
 	/**
+	* Registers `YjsSyncMessage` on the link's channel and stashes any inbound
+	* payloads that arrive before the {@link PeerConn} exists. Without this, a
+	* payload arriving during the identify / link-policy await is dropped by the
+	* channel with `Unable to find constructor for Channel MSGTYPE 0x1`.
+	* @param {import("@reticulum/core").Link} link
+	*/
+	_primeChannel(link) {
+		const channel = link.getChannel();
+		channel.registerMessageType(YjsSyncMessage);
+		const payloads = [];
+		const stash = (msg) => {
+			if (!(msg instanceof YjsSyncMessage)) return false;
+			payloads.push(msg.data);
+			return true;
+		};
+		channel.addMessageHandler(stash);
+		this._primedChannels.set(link, {
+			payloads,
+			stash
+		});
+	}
+	/**
+	* Removes the stash handler installed by {@link Room._primeChannel} and
+	* returns the payloads received before the PeerConn took over the channel.
+	* @param {import("@reticulum/core").Link} link
+	* @returns {Uint8Array[]}
+	*/
+	_unprimeChannel(link) {
+		const primed = this._primedChannels.get(link);
+		if (!primed) return [];
+		this._primedChannels.delete(link);
+		link.getChannel().removeMessageHandler(primed.stash);
+		return primed.payloads;
+	}
+	/**
 	* Registers a newly active peer and kicks off the Yjs sync handshake
 	* (syncStep1 + local awareness), mirroring y-webrtc's peer-on-connect path.
 	* @param {import("@reticulum/core").Link} link
 	* @param {Uint8Array|null} remoteDestHash
 	*/
 	_registerPeer(link, remoteDestHash) {
+		const stashed = this._unprimeChannel(link);
 		const peer = new PeerConn({
 			link,
 			remoteDestHash,
@@ -1632,6 +1681,7 @@ var Room = class {
 		});
 		this.peerConns.set(peer.peerId, peer);
 		this.callbacks.onPeers([peer.peerId], []);
+		for (const payload of stashed) this._onPeerData(payload, peer);
 		this._sendInitialSync(peer);
 	}
 	/** @param {PeerConn} peer */

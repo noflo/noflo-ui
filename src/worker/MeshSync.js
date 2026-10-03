@@ -164,6 +164,7 @@ async function defaultCreateProvider(config, identity, doc, room, access) {
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
+ *   onApproved?: () => void,
  * }} options
  * @returns {Promise<MeshSyncHandle>}
  */
@@ -175,6 +176,7 @@ export async function createMeshSync({
   awarenessThrottleMs = 250,
   roomFor = () => "noflo-ui",
   autostart = true,
+  onApproved,
 }) {
   /**
    * The room this project syncs through: per-project by construction,
@@ -191,6 +193,17 @@ export async function createMeshSync({
    */
   let identityError = "";
   let config = await loadMeshConfig(storage);
+  // Approval watcher (work document #21): when the grants map gains a grant
+  // for this device's identity hash, the owner has approved this device's
+  // join request — surfaced through onApproved so the Engine can materialize
+  // the project.
+  /** @type {boolean} */
+  let approvalFired = false;
+  doc.getMap?.("grants")?.observe(() => {
+    if (approvalFired || !identityHash || !isGranted(identityHash)) return;
+    approvalFired = true;
+    onApproved?.();
+  });
   // The identity is the peer's address: generate (and persist) it at boot,
   // independent of whether sync is enabled — peers and node admins need the
   // hash to grant access before sync is ever turned on. Failure here (old

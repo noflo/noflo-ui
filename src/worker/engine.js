@@ -65,13 +65,26 @@ export async function startEngine(io, options = {}) {
   // active-project pointer in its engine-owned storage; the project document
   // loads from and persists to its own IndexedDB store keyed by the project
   // id. Joining a project by invite materializes it as a new project here.
-  const meshStorage =
+  /** @type {any} */ const meshStorage =
     typeof globalThis.indexedDB !== "undefined"
       ? createIndexeddbStorage("noflo-mesh", "config")
       : createMemoryStorage();
+  /** The invited project id awaiting approval, if joining by invite. */
+  /** @type {string | null} */
+  let pendingInviteId = null;
   const storedProjectId = await meshStorage
     .get("activeProjectId")
     .catch(() => null);
+  const storedPendingInvite = await meshStorage
+    .get("pendingInviteId")
+    .catch(() => null);
+  if (
+    !storedProjectId &&
+    typeof storedPendingInvite === "string" &&
+    storedPendingInvite
+  ) {
+    pendingInviteId = storedPendingInvite;
+  }
   const doc = createProjectDoc(options.name ?? "Untitled project");
   if (typeof storedProjectId === "string" && storedProjectId) {
     adoptProjectIdentity(doc, storedProjectId);
@@ -172,12 +185,17 @@ export async function startEngine(io, options = {}) {
   let legacyLoad = false;
   if (typeof globalThis.indexedDB !== "undefined") {
     try {
-      // Devices without a pointer read the pre-scoped fixed store once, then
-      // move the project into its own scoped store
-      legacyLoad = !storedProjectId;
-      bindProjectPersistence(
-        legacyLoad ? "noflo-project" : `noflo-project-${projectId}`,
-      );
+      if (pendingInviteId) {
+        // Pending join: the project store materializes on approval
+        legacyLoad = false;
+      } else {
+        // Devices without a pointer read the pre-scoped fixed store once,
+        // then move the project into its own scoped store
+        legacyLoad = !storedProjectId;
+        bindProjectPersistence(
+          legacyLoad ? "noflo-project" : `noflo-project-${projectId}`,
+        );
+      }
     } catch (err) {
       console.error("Document persistence failed:", err);
       syncFullState(doc, io);
@@ -200,8 +218,25 @@ export async function startEngine(io, options = {}) {
     postMessage: io.postMessage,
     storage: meshStorage,
     roomFor: projectRoom,
-    // With persistence, wait for the stored project id before binding
-    autostart: typeof globalThis.indexedDB === "undefined",
+    // The invited project materializes when the owner's approval grant
+    // arrives through the synced grants map
+    onApproved: () => {
+      const invitedId = pendingInviteId;
+      if (!invitedId) return;
+      materializePendingProject(invitedId);
+      whenPersisted(persistence)
+        .then(() => {
+          onProjectLoaded();
+          postMeshConfig();
+        })
+        .catch((/** @type {any} */ err) =>
+          console.error("Join materialization failed:", err),
+        );
+    },
+    // With a bound project store, wait for the stored project id (or the
+    // approved invite) before binding; a pending invite starts immediately
+    // in requester mode
+    autostart: !persistence,
   });
   if (projectLoaded) {
     // The project load beat the mesh boot: bind now
@@ -268,21 +303,19 @@ export async function startEngine(io, options = {}) {
       });
       return;
     }
-    // Adopt the invited identity, then materialize the project: a fresh
-    // project-scoped store (the binding writes the doc state into it), the
-    // device pointer, and a mesh rebind into the invited room
+    // Join = REQUEST only (work document #21): adopt the invited identity
+    // into the in-memory document and start the mesh in requester mode —
+    // announcing, dialing the owner, surfacing the access request. The
+    // project itself (scoped persistence, device pointer) materializes only
+    // when the owner approves, via the onApproved callback.
     adoptProjectIdentity(doc, invitedId);
-    // The invited device never self-grants: mark it, and clear any local
-    // grants so the document starts with the owner's grant map once synced.
-    // Joining also enables sync — the whole point of the invite. The chain
-    // is sequential: mark → rebind → report.
-    meshStorage.set("activeProjectId", invitedId).catch(() => {});
+    pendingInviteId = invitedId;
+    meshStorage.set("pendingInviteId", invitedId).catch(() => {});
     if (persistence) {
       persistence.destroy().catch(() => {});
     }
     if (typeof globalThis.indexedDB !== "undefined") {
       legacyLoad = false;
-      bindProjectPersistence(`noflo-project-${invitedId}`);
     }
     mesh
       .handleJoinedViaInvite()
@@ -294,6 +327,23 @@ export async function startEngine(io, options = {}) {
           error: `Join failed: ${err?.message ?? err}`,
         }),
       );
+  };
+
+  /**
+   * Materializes the pending invited project (work document #21): binds the
+   * project-scoped persistence store (which adopts the synced document
+   * state), sets the device pointer, and clears the pending invite.
+   *
+   * @param {string} invitedId
+   */
+  const materializePendingProject = (invitedId) => {
+    pendingInviteId = null;
+    meshStorage.set("activeProjectId", invitedId).catch(() => {});
+    meshStorage.set("pendingInviteId", "").catch(() => {});
+    legacyLoad = false;
+    if (typeof globalThis.indexedDB !== "undefined" && !persistence) {
+      bindProjectPersistence(`noflo-project-${invitedId}`);
+    }
   };
 
   // Swap the plain socket forwarder for the mesh-aware router

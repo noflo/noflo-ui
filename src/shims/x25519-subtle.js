@@ -125,9 +125,6 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
       return /** @type {any} */ (target)[operation](...args);
     }
 
-    if (/** @type {any} */ (globalThis).__x25519Debug) {
-      console.error(`[x25519-polyfill] ${operation} X25519`);
-    }
     switch (operation) {
       case "generateKey": {
         const { x25519 } = await curves();
@@ -158,14 +155,6 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
       case "importKey": {
         const format = formatOrAlgorithm;
         const data = new Uint8Array(algorithmOrKey);
-        if (/** @type {any} */ (globalThis).__x25519Debug) {
-          console.error(
-            "[x25519-polyfill] importKey",
-            format,
-            "len",
-            data.length,
-          );
-        }
         let publicBytes;
         let privateBytes = null;
         let type = /** @type {"public" | "private"} */ ("public");
@@ -210,9 +199,6 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         return Promise.resolve(bytes.slice());
       }
       case "deriveBits": {
-        if (/** @type {any} */ (globalThis).__x25519Debug) {
-          console.error("[x25519-polyfill] deriveBits enter");
-        }
         const peerPublic = formatOrAlgorithm?.public;
         const peerKey = asX25519Key(peerPublic);
         const peerBytes = peerKey
@@ -224,28 +210,9 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         }
         const length = args[2];
         const { x25519 } = await curves();
-        let shared;
-        try {
-          shared = x25519.getSharedSecret(ownKey.privateBytes, peerBytes);
-        } catch (err) {
-          if (/** @type {any} */ (globalThis).__x25519Debug) {
-            console.error(
-              "[x25519-polyfill] getSharedSecret failed:",
-              /** @type {any} */ (err)?.message,
-              "peerBytes len",
-              peerBytes?.length,
-            );
-          }
-          throw err;
-        }
-        if (/** @type {any} */ (globalThis).__x25519Debug) {
-          console.error("[x25519-polyfill] deriveBits derived, length", length);
-        }
+        const shared = x25519.getSharedSecret(ownKey.privateBytes, peerBytes);
         const bits = new Uint8Array(Math.ceil(length / 8));
         bits.set(shared.slice(0, bits.length));
-        if (/** @type {any} */ (globalThis).__x25519Debug) {
-          console.error("[x25519-polyfill] deriveBits exit");
-        }
         return Promise.resolve(bits.buffer);
       }
       case "deriveKey": {
