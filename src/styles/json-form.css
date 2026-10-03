@@ -1,0 +1,171 @@
+/**
+ * @file Styling for jedison-generated JSON Schema forms (used by the mesh
+ * settings dialog and the component signature editor). Loaded as a light
+ * DOM stylesheet in editors, and injected into Shadow DOM dialogs, so the
+ * rules must stay self-contained (no document-level selectors).
+ */
+
+/* Editor container */
+.jedi-editor-container {
+  font-family: inherit;
+  font-size: 13px;
+  color: inherit;
+}
+
+.jedi-editor-fieldset {
+  border: 1px solid var(--ui-border, #333);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 6px 0;
+  min-inline-size: auto;
+}
+
+.jedi-editor-legend,
+.jedi-editor-legend label {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--ui-accent, #4aa3df);
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+}
+
+.jedi-title,
+.jedi-legend {
+  text-transform: uppercase;
+}
+
+/* Text and select inputs */
+input.form-control,
+textarea.form-control,
+select.form-select,
+select.form-control {
+  background: var(--ui-bg);
+  color: inherit;
+  border: 1px solid var(--ui-border, #333);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-select:focus,
+select.form-control:focus {
+  outline: none;
+  border-color: var(--ui-accent, #4aa3df);
+  box-shadow: 0 0 8px
+    color-mix(in srgb, var(--ui-accent, #4aa3df) 40%, transparent);
+}
+
+/* Checkboxes */
+.form-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0;
+}
+
+.form-check-input {
+  accent-color: var(--ui-accent, #4aa3df);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.form-check-label {
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Range inputs */
+input.form-range {
+  accent-color: var(--ui-accent, #4aa3df);
+  width: 100%;
+}
+
+/* Groups, labels, help text */
+.form-group {
+  margin: 8px 0;
+}
+
+.form-group > label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.form-text {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Buttons inside forms */
+.btn {
+  background: var(--ui-accent);
+  color: var(--ui-bg);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    filter 120ms ease,
+    transform 80ms ease;
+}
+
+.btn:hover {
+  filter: brightness(1.15);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary,
+.btn-default,
+.btn-light {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--ui-border, #333);
+}
+
+.btn-danger {
+  background: var(--ui-danger, #d9534f);
+  color: #fff;
+}
+
+.btn-sm,
+.btn-group-sm > .btn {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* Validation and feedback */
+.alert {
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.alert-danger {
+  background: color-mix(in srgb, var(--ui-danger, #d9534f) 15%, transparent);
+  border: 1px solid var(--ui-danger, #d9534f);
+  color: var(--ui-danger, #d9534f);
+}
+
+/* Array/table rows: separators for repeated item editors */
+.jedi-editor-container [data-schematype="array"] > .je-array-container,
+.jedi-editor-container .card {
+  border: 1px solid var(--ui-border, #333);
+  border-radius: 6px;
+  padding: 6px;
+  margin: 4px 0;
+}

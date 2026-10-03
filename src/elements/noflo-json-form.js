@@ -86,7 +86,9 @@ class NofloJsonForm extends HTMLElement {
 
     this.editor = new Jedison.Create({
       container: this,
-      theme: new Jedison.Theme(),
+      // Bootstrap-styled markup: the class names match the theme CSS in
+      // src/styles/json-form.css
+      theme: new Jedison.ThemeBootstrap3(),
       schema: this._schema,
       startval: this._data,
       customEditors: [FontAwesomeEditor],

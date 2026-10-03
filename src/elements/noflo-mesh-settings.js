@@ -12,6 +12,26 @@
  * `mesh-close`). Interface forms are generated from the interface types' own
  * JSON Schemas supplied by @reticulum/core.
  */
+/** Cached jedison form styles (fetched once, injected into the shadow root). */
+/** @type {string | null} */
+let formStylesCache = null;
+
+/**
+ * @returns {Promise<string>}
+ */
+async function loadFormStyles() {
+  if (formStylesCache === null) {
+    try {
+      formStylesCache = await fetch("./src/styles/json-form.css").then((r) =>
+        r.text(),
+      );
+    } catch {
+      formStylesCache = "";
+    }
+  }
+  return /** @type {string} */ (formStylesCache);
+}
+
 export class FlowMeshSettings extends HTMLElement {
   constructor() {
     super();
@@ -26,6 +46,8 @@ export class FlowMeshSettings extends HTMLElement {
     this._room = "";
     /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number }>} */
     this._joinRequests = [];
+    /** @type {string | null} */
+    this._formStyles = null;
   }
 
   connectedCallback() {
@@ -64,6 +86,16 @@ export class FlowMeshSettings extends HTMLElement {
     // controlled here so open/close always agree with the rendered state
     this.removeAttribute("hidden");
     this.render();
+    // The jedison form styles live in a light-DOM stylesheet for editors;
+    // fetch them once and re-render with them injected — but only when they
+    // actually arrived (a hanging or failed fetch must not disturb the
+    // rendered dialog state)
+    loadFormStyles().then((styles) => {
+      if (this._open && styles && styles !== this._renderedFormStyles) {
+        this._formStyles = styles;
+        this.render();
+      }
+    });
   }
 
   close() {
@@ -101,9 +133,12 @@ export class FlowMeshSettings extends HTMLElement {
     }
     const config = this._config;
     const editable = Boolean(config);
+    const formStyles = this._formStyles ?? "";
+    this._renderedFormStyles = formStyles;
     const interfaces = config?.interfaces ?? [];
     shadow.innerHTML = `
       <style>
+        ${formStyles}
         :host {
           position: fixed;
           inset: 0;
@@ -112,11 +147,11 @@ export class FlowMeshSettings extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: system-ui, sans-serif;
-          color: var(--ui-fg, #eee);
+          font-family: inherit;
+          color: inherit;
         }
         .dialog {
-          background: var(--ui-bg, #14171c);
+          background: var(--ui-bg);
           border: 1px solid var(--ui-border, #333);
           border-radius: 8px;
           width: min(560px, 92vw);
@@ -125,11 +160,11 @@ export class FlowMeshSettings extends HTMLElement {
           padding: 16px 20px;
         }
         h2 { margin: 0 0 12px; font-size: 16px; }
-        h3 { margin: 16px 0 6px; font-size: 13px; color: var(--ui-accent, #4aa3df); }
+        h3 { margin: 16px 0 6px; font-size: 13px; color: var(--ui-accent); }
         label { display: block; font-size: 12px; margin: 8px 0 2px; }
         input, select {
-          background: var(--ui-bg, #14171c);
-          color: var(--ui-fg, #eee);
+          background: var(--ui-bg);
+          color: inherit;
           border: 1px solid var(--ui-border, #333);
           border-radius: 4px;
           padding: 4px 8px;
@@ -137,11 +172,19 @@ export class FlowMeshSettings extends HTMLElement {
           width: 100%;
           box-sizing: border-box;
         }
-        .row { display: flex; gap: 8px; align-items: center; }
+        .row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: nowrap;
+        }
+        .row label {
+          white-space: nowrap;
+        }
         .row input, .row select { flex: 1; }
         button {
-          background: var(--ui-accent, #4aa3df);
-          color: #000;
+          background: var(--ui-accent);
+          color: var(--ui-bg);
           border: none;
           border-radius: 4px;
           padding: 4px 10px;
@@ -150,15 +193,15 @@ export class FlowMeshSettings extends HTMLElement {
         }
         button.secondary {
           background: transparent;
-          color: var(--ui-fg, #eee);
+          color: inherit;
           border: 1px solid var(--ui-border, #333);
         }
-        button.danger { background: var(--ui-danger, #d9534f); color: #fff; }
+        button.danger { background: var(--ui-danger, #d9534f); color: var(--ui-bg); }
         .hash {
-          font-family: monospace;
+          font-family: SourceCodePro, monospace;
           font-size: 12px;
           word-break: break-all;
-          background: rgba(255, 255, 255, 0.04);
+          background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
           padding: 6px 8px;
           border-radius: 4px;
         }
@@ -172,8 +215,12 @@ export class FlowMeshSettings extends HTMLElement {
         }
         .list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         .revoked { color: var(--ui-danger, #d9534f); }
-        .hint { font-size: 11px; color: #888; margin-top: 4px; }
-        noflo-json-form { display: block; margin: 8px 0; color: var(--ui-fg, #eee); }
+        .hint {
+          font-size: 11px;
+          color: color-mix(in srgb, currentColor 60%, transparent);
+          margin-top: 4px;
+        }
+        noflo-json-form { display: block; margin: 8px 0; color: inherit; }
         .iface-form-host { border: 1px solid var(--ui-border, #333); border-radius: 6px; padding: 8px; margin-top: 8px; }
       </style>
       <div class="dialog">
