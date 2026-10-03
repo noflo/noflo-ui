@@ -414,10 +414,11 @@ export async function createMeshSync({
   const joinRequests = new Map();
 
   async function start() {
-    if (!config.enabled || provider) return;
     console.info(
-      `Mesh starting: room ${roomFor()}, interfaces ${config.interfaces.length}, requester mode ${isInRequesterMode()}`,
+      `Mesh start called: enabled=${config.enabled}, hasProvider=${Boolean(provider)}, identityError=${identityError || "none"}, room=${roomFor()}, interfaces=${config.interfaces.length}, requesterMode=${isInRequesterMode()}, identityHash=${identityHash ? identityHash.slice(-12) : "none"}`,
     );
+    if (!config.enabled || provider || identityError) return;
+    console.info("Mesh starting: gates passed");
     // A fresh instance connects through a random default entry point, so
     // mesh sync works out of the box; the choice persists with the config.
     // Seeding only needs randomness, not identity: it must happen even when
