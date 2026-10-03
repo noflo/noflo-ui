@@ -415,7 +415,7 @@ export async function createMeshSync({
 
   async function start() {
     console.info(
-      `Mesh start called: enabled=${config.enabled}, hasProvider=${Boolean(provider)}, identityError=${identityError || "none"}, room=${roomFor()}, interfaces=${config.interfaces.length}, requesterMode=${isInRequesterMode()}, identityHash=${identityHash ? identityHash.slice(-12) : "none"}`,
+      `Mesh start called: enabled=${config.enabled}, hasProvider=${Boolean(provider)}, identityError=${identityError || "none"}, room=${roomFor()}, interfaces=${config.interfaces.length}, requesterMode=${isInRequesterMode()}, identityHash=${identityHash ?? "none"}`,
     );
     if (!config.enabled || provider || identityError) return;
     console.info("Mesh starting: gates passed");
@@ -521,9 +521,7 @@ export async function createMeshSync({
         const identityHash = detail.identity
           ? toHex(detail.identity.getSalt())
           : "unidentified";
-        console.info(
-          `[mesh] announce from identity ${identityHash.slice(-12)}`,
-        );
+        console.info(`[mesh] announce from identity ${identityHash}`);
       },
     );
     provider.on("synced", (/** @type {any} */ event) => {
