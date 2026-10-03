@@ -99,9 +99,11 @@ export async function startEngine(io, options = {}) {
   });
 
   // Persist the document when IndexedDB is available (browser worker).
+  /** @type {any} */
+  let persistence = null;
   if (typeof globalThis.indexedDB !== "undefined") {
     try {
-      const persistence = bindDocumentPersistence(doc, "noflo-project");
+      persistence = bindDocumentPersistence(doc, "noflo-project");
       whenPersisted(persistence).then(() => {
         // The Engine drives CRDT schema migrations after loading
         migrateLoadedProject(doc);
@@ -116,18 +118,35 @@ export async function startEngine(io, options = {}) {
   }
 
   // Mesh sync (work document #21): Engine-owned configuration over its own
-  // storage; disabled until the Glass configures it. CONFIG-family messages
-  // are handled here instead of the dispatcher graph — they concern the
+  // storage; disabled until the Glass configures it. The sync room is
+  // per-project, derived from the project's CRDT identity — persistence may
+  // restore the authoritative id after boot, so the provider binds (and
+  // rebinds) only once that identity is known. CONFIG-family messages are
+  // handled here instead of the dispatcher graph — they concern the
   // Engine's own peripherals, not the CRDT
   const meshStorage =
     typeof globalThis.indexedDB !== "undefined"
       ? createIndexeddbStorage("noflo-mesh", "config")
       : createMemoryStorage();
+  const projectRoom = () =>
+    `noflo-ui:${doc.getMap("metadata").get("id") ?? "default"}`;
   const mesh = await createMeshSync({
     doc,
     postMessage: io.postMessage,
     storage: meshStorage,
+    roomFor: projectRoom,
+    // With persistence, wait for the stored project id before binding
+    autostart: typeof globalThis.indexedDB === "undefined",
   });
+  if (persistence) {
+    whenPersisted(persistence)
+      .then(() => {
+        mesh
+          .rebind()
+          .catch((err) => console.error("Mesh rebinding failed:", err));
+      })
+      .catch(() => {});
+  }
 
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
@@ -141,6 +160,7 @@ export async function startEngine(io, options = {}) {
           kind: "mesh-config",
           config: mesh.config,
           identityHash: mesh.identityHash,
+          room: mesh.room,
           // Interface configuration schemas come from the interface classes
           // themselves; the settings UI renders forms from them
           interfaceSchemas: {

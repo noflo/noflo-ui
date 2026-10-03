@@ -80,6 +80,8 @@ const pendingTracker = createPendingTracker();
 let meshConfig = /** @type {any} */ (null);
 /** Identity hash reported by the Engine, for the settings dialog. */
 let meshIdentityHash = "";
+/** Per-project sync room reported by the Engine, for the settings dialog. */
+let meshRoom = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** @type {FlowEditor | null} */
@@ -170,6 +172,7 @@ function onEngineMessage(data) {
   } else if (data?.kind === "mesh-config") {
     meshConfig = data.config ?? null;
     meshIdentityHash = data.identityHash ?? "";
+    meshRoom = data.room ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
     refreshMeshSettings();
   } else if (data?.kind === "mesh-status") {
@@ -299,6 +302,7 @@ function openMeshSettings() {
     projectGrants(mirrorDoc),
     meshIdentityHash,
     meshInterfaceSchemas,
+    meshRoom,
   );
 }
 
@@ -315,6 +319,7 @@ function refreshMeshSettings() {
     dialog._config = meshConfig;
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
+    dialog._room = meshRoom;
     dialog.render();
   }
 }

@@ -45,9 +45,10 @@ function base64ToBytes(base64) {
  * @param {import("../crdt/MeshConfig.js").MeshConfig} config
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
+ * @param {string} room
  * @returns {Promise<any>}
  */
-async function defaultCreateProvider(config, identity, doc) {
+async function defaultCreateProvider(config, identity, doc, room) {
   const { Reticulum, WebRTCSignaling, WebSocketClientInterface } = await import(
     "../../vendor/reticulum-core.js"
   );
@@ -64,7 +65,7 @@ async function defaultCreateProvider(config, identity, doc) {
       );
     }
   }
-  const provider = new ReticulumProvider(config.room, doc, {
+  const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
   });
@@ -108,6 +109,10 @@ async function defaultCreateProvider(config, identity, doc) {
  * @property {import("../crdt/MeshConfig.js").MeshConfig} config
  * @property {string} identityHash Hex identity hash for display; empty until
  *   the identity is generated or restored.
+ * @property {string} room The room the project syncs through, derived from
+ *   the project identity.
+ * @property {() => Promise<void>} rebind Restarts the provider with a
+ *   freshly resolved room.
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
  * @property {(payload: any) => void} handleAwareness Handles a local
@@ -122,8 +127,10 @@ async function defaultCreateProvider(config, identity, doc) {
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string) => Promise<any>,
  *   awarenessThrottleMs?: number,
+ *   roomFor?: () => string,
+ *   autostart?: boolean,
  * }} options
  * @returns {Promise<MeshSyncHandle>}
  */
@@ -133,7 +140,16 @@ export async function createMeshSync({
   storage,
   createProvider = defaultCreateProvider,
   awarenessThrottleMs = 250,
+  roomFor = () => "noflo-ui",
+  autostart = true,
 }) {
+  /**
+   * The room this project syncs through: per-project by construction,
+   * derived from the project's CRDT identity. Peers join by sharing this
+   * value. Re-evaluated on rebind, since persistence may restore the
+   * authoritative project id after boot.
+   */
+  let room = roomFor();
   let config = await loadMeshConfig(storage);
   /** @type {any} */
   let provider = null;
@@ -260,7 +276,8 @@ export async function createMeshSync({
     if (!config.enabled || provider) return;
     try {
       const identity = await ensureIdentity();
-      provider = await createProvider(config, identity, doc);
+      room = roomFor();
+      provider = await createProvider(config, identity, doc, room);
     } catch (err) {
       provider = null;
       const reason = /** @type {any} */ (err)?.message ?? err;
@@ -331,12 +348,28 @@ export async function createMeshSync({
     postMessage({ kind: "awareness", states: [] });
   }
 
+  if (autostart) {
+    await start();
+  }
+
   return {
     get config() {
       return config;
     },
     get identityHash() {
       return identityHash;
+    },
+    get room() {
+      return room;
+    },
+    /**
+     * Stops and restarts the provider with a freshly resolved room — the
+     * Engine calls this once persistence has restored the authoritative
+     * project identity.
+     */
+    async rebind() {
+      await stop();
+      await start();
     },
     /**
      * @param {any} payload

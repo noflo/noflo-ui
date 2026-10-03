@@ -120,7 +120,28 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.remove();
   });
 
-  it("emits mesh-configure when toggling enabled and room", () => {
+  it("shows the project room as read-only", () => {
+    const el = makeElement();
+    el.open(
+      { enabled: false, identity: "", interfaces: [], webrtc: {} },
+      [],
+      "",
+      { websocket: websocketSchema },
+      "noflo-ui:proj-123",
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const room = /** @type {HTMLElement} */ (
+      shadow.querySelector("#mesh-room")
+    );
+    assert.match(room.textContent ?? "", /noflo-ui:proj-123/);
+    assert.ok(
+      !shadow.querySelector("#mesh-room-input"),
+      "room is not editable",
+    );
+    el.remove();
+  });
+
+  it("emits mesh-configure when toggling enabled", () => {
     const el = makeElement();
     /** @type {any[]} */
     const events = [];
@@ -142,12 +163,6 @@ describe("FlowMeshSettings (work document #21)", () => {
     assert.equal(events.length, 1);
     assert.equal(events[0].config.enabled, true);
 
-    const room = /** @type {HTMLInputElement} */ (
-      shadow.querySelector("#mesh-room")
-    );
-    room.value = "new-room";
-    room.dispatchEvent(new Event("change"));
-    assert.equal(events[1].config.room, "new-room");
     el.remove();
   });
 

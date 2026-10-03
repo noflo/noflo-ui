@@ -23,6 +23,7 @@ export class FlowMeshSettings extends HTMLElement {
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+    this._room = "";
   }
 
   connectedCallback() {
@@ -38,12 +39,14 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {string} identityHash Hex identity hash for display.
    * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
    *   interface type.
+   * @param {string} room The project's sync room, for display.
    */
-  open(config, grants, identityHash, interfaceSchemas = {}) {
+  open(config, grants, identityHash, interfaceSchemas = {}, room = "") {
     this._config = config;
     this._grants = grants ?? [];
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
+    this._room = room;
     this._open = true;
     // The dialog element may sit hidden in the page shell; visibility is
     // controlled here so open/close always agree with the rendered state
@@ -166,8 +169,9 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row">
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable ? "" : "disabled"}> Enabled</label>
         </div>
-        <label for="mesh-room">Room</label>
-        <input id="mesh-room" value="${config?.room ?? ""}" ${editable ? "" : "disabled"}>
+        <h3>Project room</h3>
+        <div class="hash" id="mesh-room">${this._room}</div>
+        <div class="hint">Per-project by construction: peers join this project by syncing to this room.</div>
         <h3>WebRTC transport upgrade</h3>
         <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>
         <div class="row" style="margin-top: 6px">
@@ -305,18 +309,6 @@ export class FlowMeshSettings extends HTMLElement {
     );
     enabled?.addEventListener("change", () => {
       this._config = { ...(this._config ?? {}), enabled: enabled.checked };
-      this.dispatchEvent(
-        new CustomEvent("mesh-configure", {
-          detail: { config: this._config },
-          bubbles: true,
-        }),
-      );
-    });
-    const room = /** @type {HTMLInputElement | null} */ (
-      shadow.querySelector("#mesh-room")
-    );
-    room?.addEventListener("change", () => {
-      this._config = { ...(this._config ?? {}), room: room.value.trim() };
       this.dispatchEvent(
         new CustomEvent("mesh-configure", {
           detail: { config: this._config },

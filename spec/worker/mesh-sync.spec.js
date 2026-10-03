@@ -14,7 +14,6 @@ describe("mesh config (work document #21)", () => {
   it("normalizes partial and malformed blobs into defaults", () => {
     const config = normalizeMeshConfig({
       enabled: true,
-      room: "my-room",
       interfaces: [
         { id: "a", type: "websocket", url: "wss://rns.example", enabled: true },
         { id: "bad", type: "tcp" },
@@ -29,7 +28,6 @@ describe("mesh config (work document #21)", () => {
       ],
     });
     assert.equal(config.enabled, true);
-    assert.equal(config.room, "my-room");
     // Options-based normalization keeps any typed interface with an options
     // object; runtime validation happens when the interface attaches
     assert.equal(config.interfaces.length, 3, "typed interfaces kept");
@@ -46,7 +44,6 @@ describe("mesh config (work document #21)", () => {
     });
 
     assert.equal(normalizeMeshConfig(null).enabled, false);
-    assert.equal(normalizeMeshConfig("junk").room, "noflo-ui");
 
     // WebRTC transport upgrade section defaults to off, auto-connect on
     const withWebRTC = normalizeMeshConfig({ webrtc: { enabled: true } });
@@ -62,13 +59,11 @@ describe("mesh config (work document #21)", () => {
     const config = {
       ...createDefaultMeshConfig(),
       enabled: true,
-      room: "test",
       identity: "abc",
     };
     await saveMeshConfig(storage, config);
     const loaded = await loadMeshConfig(storage);
     assert.equal(loaded.enabled, true);
-    assert.equal(loaded.room, "test");
     assert.equal(loaded.identity, "abc");
   });
 
@@ -116,8 +111,9 @@ describe("mesh sync (work document #21)", () => {
       doc: /** @type {any} */ ({}),
       postMessage: (m) => messages.push(m),
       storage,
-      createProvider: async (config, identity, doc) => {
-        providerCalls.push({ room: config.room, identity, doc });
+      roomFor: () => "noflo-ui:test-project",
+      createProvider: async (config, identity, doc, room) => {
+        providerCalls.push({ room, identity, doc });
         return {
           on: () => {},
           destroy: async () => {},
@@ -133,6 +129,11 @@ describe("mesh sync (work document #21)", () => {
       messages.filter((m) => m.kind === "mesh-config").length,
       1,
       "config echoed back",
+    );
+    assert.equal(
+      providerCalls[0].room,
+      "noflo-ui:test-project",
+      "room derived per project",
     );
   });
 
@@ -187,12 +188,10 @@ describe("mesh sync (work document #21)", () => {
     await mesh.handleConfigure({
       ...createDefaultMeshConfig(),
       enabled: true,
-      room: "other",
     });
     assert.equal(built, 2, "provider rebuilt on reconfiguration");
-    assert.equal(mesh.config.room, "other");
     const persisted = await loadMeshConfig(storage);
-    assert.equal(persisted.room, "other", "configuration persisted");
+    assert.equal(persisted.enabled, true, "configuration persisted");
   });
 
   it("survives a failing provider factory", async () => {

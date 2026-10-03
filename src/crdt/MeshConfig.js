@@ -1,6 +1,6 @@
 /**
  * @file Engine-owned mesh configuration (work document #21): Reticulum
- * identity, room name, and network interfaces. Persisted per-device by the
+ * identity, network interfaces, and the WebRTC upgrade. Persisted per-device by the
  * Engine, deliberately separate from the project CRDT — configuration is
  * device state, not project data, and must not sync to peers.
  */
@@ -38,7 +38,6 @@ export const MESH_CONFIG_KEY = "mesh-config";
  * @typedef {Object} MeshConfig
  * @property {number} schemaVersion
  * @property {boolean} enabled Whether mesh sync runs at all
- * @property {string} room Room name peers sync through
  * @property {string} identity Base64 of the 128-byte Reticulum private key;
  *   empty until the Engine generates one
  * @property {MeshInterface[]} interfaces
@@ -52,7 +51,6 @@ export function createDefaultMeshConfig() {
   return {
     schemaVersion: MESH_CONFIG_VERSION,
     enabled: false,
-    room: "noflo-ui",
     identity: "",
     interfaces: [],
     webrtc: createDefaultWebRTCConfig(),
@@ -87,9 +85,6 @@ export function normalizeMeshConfig(blob) {
   const config = createDefaultMeshConfig();
   if (!blob || typeof blob !== "object") return config;
   if (blob.enabled === true) config.enabled = true;
-  if (typeof blob.room === "string" && blob.room.length > 0) {
-    config.room = blob.room;
-  }
   if (typeof blob.identity === "string") config.identity = blob.identity;
   if (blob.webrtc && typeof blob.webrtc === "object") {
     config.webrtc = {
