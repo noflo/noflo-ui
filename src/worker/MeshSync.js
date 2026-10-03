@@ -9,7 +9,7 @@
  * configured WebSocket interfaces attached.
  */
 
-import { Identity, toHex } from "../../vendor/reticulum-core.js";
+import { bytesEqual, Identity, toHex } from "../../vendor/reticulum-core.js";
 import { ReticulumProvider } from "../../vendor/y-reticulum.js";
 import {
   loadMeshConfig,
@@ -504,7 +504,7 @@ export async function createMeshSync({
         if (
           !detail.nameHash ||
           !roomNameHash ||
-          !Buffer.from(detail.nameHash).equals(Buffer.from(roomNameHash))
+          !bytesEqual(detail.nameHash, roomNameHash)
         ) {
           return;
         }
