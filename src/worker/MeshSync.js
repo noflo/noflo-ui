@@ -37,7 +37,10 @@ import {
   projectResource,
   ROLE_PERMISSIONS,
 } from "./Dacar.js";
-import { saveWalletGrant } from "./DacarWallet.js";
+import {
+  listWalletGrants,
+  saveWalletGrant,
+} from "./DacarWallet.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
 const GRANT_WAIT_MS = 30_000;
@@ -498,6 +501,9 @@ export async function createMeshSync({
   /** Tombstone state per entry id, to detect revocations. */
   /** @type {Map<string, boolean>} */
   const entryRevocations = new Map();
+  /** Per-entry verification status, reported to the Glass. */
+  /** @type {Map<string, string>} */
+  const entryStatuses = new Map();
   let reconciling = false;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
@@ -612,9 +618,63 @@ export async function createMeshSync({
     grantedCache.clear();
     ingestedEntries.clear();
     entryRevocations.clear();
+    entryStatuses.clear();
     dacarNode = null;
     dacarNodeAnchorHash = "";
     dacarNodeProjectId = "";
+  }
+
+  /**
+   * Reports the Dacar authorization state to the Glass (work document #26):
+   * the project's Trust Anchor and whether this device holds its private
+   * key, every grants-map entry with its verification status, and the local
+   * wallet's contents — the raw material for the Dacar grants UI.
+   *
+   * @param {any} grants
+   * @param {string} projectId
+   * @returns {Promise<void>}
+   */
+  async function reportDacarState(grants, projectId) {
+    /** @type {Array<any>} */
+    const grantReports = [];
+    for (const [id, entry] of grants.entries()) {
+      const plain = entry.toJSON();
+      grantReports.push({
+        id,
+        peerHash: plain.peerHash,
+        role: plain.role,
+        issued: plain.issued,
+        revoked: plain.revoked,
+        status: entryStatuses.get(id) ?? "pending",
+      });
+    }
+    /** @type {Array<any>} */
+    const wallet = [];
+    try {
+      for (const record of await listWalletGrants(walletStorage)) {
+        wallet.push({
+          grantId: record.grantId,
+          projectId: record.projectId,
+          resource: record.unblindedScope,
+          permissions: record.assertion.permissions,
+          issuer: record.trustAnchor.hash,
+          issuedAt: record.assertion.issued_at,
+          expires: record.assertion.expires,
+        });
+      }
+    } catch {
+      // Wallet listing is best-effort UI detail
+    }
+    postMessage({
+      kind: "mesh-dacar",
+      projectId,
+      anchor: {
+        hash: trustAnchorHash(),
+        owner: hasAuthority(),
+      },
+      grants: grantReports,
+      wallet,
+    });
   }
 
   /**
@@ -693,7 +753,14 @@ export async function createMeshSync({
       // Ingest authorization entries not yet in the Dacar state
       for (const [id, entry] of grants.entries()) {
         const plain = entry.toJSON();
-        if (plain.revoked !== null || !plain.authorization) continue;
+        if (plain.revoked !== null) {
+          entryStatuses.set(id, "revoked");
+          continue;
+        }
+        if (!plain.authorization) {
+          entryStatuses.set(id, "unsigned");
+          continue;
+        }
         const fingerprint = authorizationFingerprint(plain.authorization);
         if (ingestedEntries.get(id) === fingerprint) continue;
         ingestedEntries.set(id, fingerprint);
@@ -712,6 +779,25 @@ export async function createMeshSync({
           (await node.evaluate(projectId, "sync", peerHash)) === true,
         );
       }
+      // Per-entry verification status for the Glass: a grant entry is
+      // verified when the Engine allows its peer, refused when the peer is
+      // known but unauthorized, pending while the Dacar node is still
+      // unconfigured (no designated anchor or salt learned yet)
+      for (const [id, entry] of grants.entries()) {
+        const plain = entry.toJSON();
+        if (plain.revoked !== null) {
+          entryStatuses.set(id, "revoked");
+        } else if (!plain.authorization) {
+          entryStatuses.set(id, "unsigned");
+        } else if (!node.isConfigured()) {
+          entryStatuses.set(id, "pending");
+        } else if (grantedCache.get(plain.peerHash) === true) {
+          entryStatuses.set(id, "verified");
+        } else {
+          entryStatuses.set(id, "refused");
+        }
+      }
+      await reportDacarState(grants, projectId);
     } finally {
       reconciling = false;
     }
@@ -823,6 +909,11 @@ export async function createMeshSync({
       salt,
     });
     await writeGrantedAssertion(peerHash, role, authorization);
+    // The wallet catalogs every grant this device holds, including the
+    // ones it minted itself (work document #25 §5.2)
+    await saveWalletGrant(walletStorage, { projectId, authorization }).catch(
+      () => {},
+    );
     return authorization;
   }
 
