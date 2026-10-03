@@ -438,6 +438,16 @@ export class FlowEditor extends HTMLElement {
           stroke-width: calc(var(--edge-width, 4px) + 2px);
           stroke-dasharray: none;
         }
+        /* Pending state (work document #21): optimistic edges until the
+           replica confirms the CRDT merge */
+        .edge-flow.edge-pending {
+          stroke-dasharray: 6 4;
+          opacity: 0.6;
+        }
+        .edge-flow.edge-pending-remove {
+          stroke-dasharray: 6 4;
+          opacity: 0.35;
+        }
         .edge-hit-area {
           stroke: transparent;
           stroke-width: var(--edge-hit-width, 40px);
@@ -690,6 +700,53 @@ export class FlowEditor extends HTMLElement {
   getNodeName(node) {
     if (typeof node === "string") return node;
     return node.getAttribute("name") || "IIP";
+  }
+
+  /**
+   * Applies the Glass's pending-entity state (work document #21, SPEC
+   * "High-Latency Mesh UX"): optimistic changes render dashed/faded until
+   * the read replica confirms the CRDT merge. Maps are keyed by node name,
+   * IIP element id, and deterministic edge id respectively; values are
+   * "add" | "move" | "remove".
+   *
+   * @param {{
+   *   nodes?: Map<string, string>,
+   *   iips?: Map<string, string>,
+   *   edges?: Map<string, string>,
+   * }} [state]
+   */
+  applyPendingState(state = {}) {
+    const nodes = state.nodes ?? new Map();
+    const iips = state.iips ?? new Map();
+    const edges = state.edges ?? new Map();
+
+    for (const node of this.nodeLayer?.querySelectorAll("noflo-node") ?? []) {
+      const pendingState = nodes.get(node.getAttribute("name") ?? "");
+      if (pendingState) {
+        node.setAttribute("pending", pendingState);
+      } else {
+        node.removeAttribute("pending");
+      }
+    }
+    for (const iip of this.nodeLayer?.querySelectorAll("noflo-iip") ?? []) {
+      const pendingState = iips.get(iip.id ?? "");
+      if (pendingState) {
+        iip.setAttribute("pending", pendingState);
+      } else {
+        iip.removeAttribute("pending");
+      }
+    }
+    for (const edge of this.edges) {
+      const pendingState = edges.get(this.getEdgeId(edge));
+      edge.visualPath.classList.toggle(
+        "edge-pending",
+        pendingState === "add" || pendingState === "move",
+      );
+      edge.visualPath.classList.toggle(
+        "edge-pending-remove",
+        pendingState === "remove",
+      );
+    }
   }
 
   /**

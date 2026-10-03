@@ -151,3 +151,40 @@ describe("FlowEditor peer ghosts (work document #21)", () => {
     ed.remove();
   });
 });
+
+describe("FlowEditor pending state (work document #21)", () => {
+  it("toggles pending visuals on nodes, IIPs, and edges", () => {
+    const ed = /** @type {FlowEditor} */ (
+      document.createElement("noflo-editor")
+    );
+    document.body.appendChild(ed);
+
+    // A node and an IIP in the node layer, plus an edge registered with
+    // deterministic endpoints matching getEdgeId
+    const node = document.createElement("noflo-node");
+    node.setAttribute("name", "A");
+    /** @type {any} */ (ed.nodeLayer).appendChild(node);
+    const iip = document.createElement("noflo-iip");
+    iip.id = "DATA->A:in[0]";
+    /** @type {any} */ (ed.nodeLayer).appendChild(iip);
+
+    ed.applyPendingState({
+      nodes: new Map([["A", "add"]]),
+      iips: new Map([["DATA->A:in[0]", "remove"]]),
+      edges: new Map(),
+    });
+    assert.equal(node.getAttribute("pending"), "add");
+    assert.equal(iip.getAttribute("pending"), "remove");
+
+    // Confirmation clears the attributes
+    ed.applyPendingState({
+      nodes: new Map(),
+      iips: new Map(),
+      edges: new Map(),
+    });
+    assert.ok(!node.hasAttribute("pending"));
+    assert.ok(!iip.hasAttribute("pending"));
+
+    ed.remove();
+  });
+});

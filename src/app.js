@@ -19,6 +19,7 @@ import { FlowNode } from "./elements/noflo-node.js";
 import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
 import { SelectionPills } from "./elements/noflo-selection-pills.js";
 import { createIntentMapper } from "./glass/intentMapping.js";
+import { createPendingTracker } from "./glass/pendingState.js";
 import {
   addEdgeIntent,
   addExportIntent,
@@ -72,6 +73,9 @@ let mirrorDoc = new Y.Doc();
 /** @type {ReturnType<typeof createRouter> | null} */
 let router = null;
 
+/** Tracks optimistic intent state until the replica confirms it. */
+const pendingTracker = createPendingTracker();
+
 /** Last mesh config reported by the Engine, for the settings dialog. */
 let meshConfig = /** @type {any} */ (null);
 /** Identity hash reported by the Engine, for the settings dialog. */
@@ -103,7 +107,21 @@ function sendIntent(message) {
     console.info("Read-only tab: dropping intent", message.command);
     return;
   }
+  // Optimistic pending state (work document #21): track what this intent
+  // will touch until the replica confirms the CRDT merge
+  pendingTracker.markIntent(message, activeGraphId);
+  applyPendingState();
   supervisor.send(message);
+}
+
+/**
+ * Reconciles pending entities against the replica and renders the visual
+ * state on the editor.
+ */
+function applyPendingState() {
+  if (!editor) return;
+  const view = projectGraph(mirrorDoc, activeGraphId);
+  editor.applyPendingState(pendingTracker.reconcile(view, activeGraphId));
 }
 
 /**
@@ -233,6 +251,7 @@ async function render() {
   renderGraphIntoEditor(replica, ed, (name) =>
     libraryManager?.getComponent(name),
   );
+  applyPendingState();
   ed.fitEntitiesToViewport();
 }
 

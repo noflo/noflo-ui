@@ -347,6 +347,15 @@ export class FlowNode extends HTMLElement {
           border-color: var(--node-border);
           border-width: 3px;
         }
+        /* Pending state (work document #21): the change is optimistic until
+           the read replica confirms the CRDT merge */
+        :host([pending]) .node-circle {
+          stroke-dasharray: 4 3;
+          opacity: 0.75;
+        }
+        :host([pending="remove"]) {
+          opacity: 0.4;
+        }
         .port {
           position: absolute;
           width: 12px;

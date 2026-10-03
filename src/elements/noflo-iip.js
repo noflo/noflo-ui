@@ -99,6 +99,14 @@ export class FlowIIP extends HTMLElement {
           border-color: var(--ui-accent);
           border-width: 3px;
         }
+        /* Pending state (work document #21) */
+        :host([pending]) .iip-box {
+          border-style: dashed;
+          opacity: 0.75;
+        }
+        :host([pending="remove"]) {
+          opacity: 0.4;
+        }
       </style>
       <div class="iip-box">
         <div class="iip-value">${this._value}</div>
