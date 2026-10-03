@@ -114,13 +114,24 @@ export async function installX25519SubtlePolyfill() {
         const publicKey = x25519.getPublicKey(privateScalar);
         const extractable = args[1] === true;
         const usages = /** @type {string[]} */ (args[2] ?? []);
+        // CryptoKeyPair shape: callers destructure privateKey/publicKey
         return Promise.resolve({
-          [X25519_KEY]: true,
-          type: "private",
-          publicBytes: publicKey,
-          privateBytes: privateScalar,
-          extractable,
-          usages,
+          privateKey: {
+            [X25519_KEY]: true,
+            type: "private",
+            publicBytes: publicKey,
+            privateBytes: privateScalar,
+            extractable,
+            usages,
+          },
+          publicKey: {
+            [X25519_KEY]: true,
+            type: "public",
+            publicBytes: publicKey,
+            privateBytes: null,
+            extractable,
+            usages: [],
+          },
         });
       }
       case "importKey": {
