@@ -181,6 +181,13 @@ function onEngineMessage(data) {
     meshIdentityHash = data.identityHash ?? "";
     meshRoom = data.room ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    // The engine's identity state is authoritative: recovered or still
+    // failing, the dialog reflects it
+    if (data.identityError) {
+      meshError = data.identityError;
+    } else if (data.identityHash) {
+      meshError = "";
+    }
     refreshMeshSettings();
   } else if (data?.kind === "mesh-requests") {
     joinRequests = data.requests ?? [];
@@ -206,6 +213,12 @@ async function recoverIdentityOnMainThread() {
   if (identityRecoveryAttempted) return;
   identityRecoveryAttempted = true;
   try {
+    // Probe the exact operation the Engine failed on, so the dialog can
+    // report whether the main thread even has Ed25519
+    await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+      "sign",
+      "verify",
+    ]);
     const { Identity } = await import("../vendor/reticulum-core.js");
     const identity = await Identity.generate();
     const key = await identity.getPrivateKey();
@@ -217,7 +230,10 @@ async function recoverIdentityOnMainThread() {
       payload: { identity: btoa(binary) },
     });
   } catch (err) {
-    // Main-thread generation failed too: the Engine's error stands
+    // Main-thread generation failed too: say so where the user looks
+    const reason = /** @type {any} */ (err)?.message ?? err;
+    meshError = `Main-thread identity recovery also failed: ${reason}`;
+    refreshMeshSettings();
     console.warn("Main-thread identity recovery failed:", err);
   }
 }
@@ -336,6 +352,9 @@ function openMeshSettings() {
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
   if (!dialog) return;
+  if (meshError && /Identity generation failed/.test(meshError)) {
+    recoverIdentityOnMainThread();
+  }
   supervisor?.send({ type: "MESH", command: "status" });
   dialog.open(
     meshConfig,

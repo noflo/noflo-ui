@@ -216,6 +216,7 @@ export async function startEngine(io, options = {}) {
       kind: "mesh-config",
       config: mesh.config,
       identityHash: mesh.identityHash,
+      identityError: mesh.identityError,
       room: mesh.room,
       // Interface configuration schemas come from the interface classes
       // themselves; the settings UI renders forms from them
