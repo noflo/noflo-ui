@@ -1401,6 +1401,13 @@ var PeerConn = class {
 * blips and to no-op if the peer comes back via the next announce first.
 */
 const RECONNECT_PATH_REQUEST_DELAY_MS = 1500;
+/**
+* Delay between connect() and the early re-announce that covers a dropped
+* first announce (which races interface readiness at the relay). Large
+* enough for the interface to be established end to end, small enough that
+* discovery does not wait for the periodic announce cadence.
+*/
+const EARLY_ANNOUNCE_DELAY_MS = 2e3;
 /** Constant-time-ish equality for two equal-length byte arrays. */
 function bytesEqual(a, b) {
 	if (a.length !== b.length) return false;
@@ -1538,6 +1545,8 @@ var Room = class {
 		this.pendingInitiates = /* @__PURE__ */ new Set();
 		/** Destination hex → scheduled reconnect path-request timer (initiator side). */
 		this.pendingPathRequests = /* @__PURE__ */ new Map();
+		/** Timer for the early re-announce after connect (see connect()). */
+		this.earlyAnnounceTimer = null;
 		/** Link → payloads stashed before the peer's PeerConn existed (see
 		* {@link Room._primeChannel}). */
 		this._primedChannels = /* @__PURE__ */ new Map();
@@ -1558,12 +1567,20 @@ var Room = class {
 		this.doc.on("update", this._docUpdateHandler);
 		this.awareness.on("update", this._awarenessUpdateHandler);
 		this.dest.startAnnouncing({ intervalMs: this.announceIntervalMs });
+		this.earlyAnnounceTimer = setTimeout(() => {
+			this.earlyAnnounceTimer = null;
+			if (this.connected && this.dest) this.dest.announce().catch(() => {});
+		}, EARLY_ANNOUNCE_DELAY_MS);
 		this.connected = true;
 	}
 	/** Stops announcing, tears down all peer links, and unbinds the destination. */
 	async disconnect() {
 		if (!this.connected) return;
 		this.connected = false;
+		if (this.earlyAnnounceTimer) {
+			clearTimeout(this.earlyAnnounceTimer);
+			this.earlyAnnounceTimer = null;
+		}
 		this.dest?.stopAnnouncing();
 		for (const timer of this.pendingPathRequests.values()) clearTimeout(timer);
 		this.pendingPathRequests.clear();
