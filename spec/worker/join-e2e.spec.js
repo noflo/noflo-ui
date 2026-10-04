@@ -144,7 +144,9 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       console.log(
         "JOINER STAGES:",
         JSON.stringify(
-          joinerMessages.filter((m) => m.kind === "mesh-bootstrap"),
+          joinerMessages.filter(
+            (m) => m.kind === "progress" && m.operation === "mesh.join",
+          ),
         ),
       );
       console.log(
@@ -170,7 +172,11 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       sleep,
       () =>
         joinerMessages.some(
-          (m) => m.kind === "mesh-bootstrap" && m.stage === "granted",
+          (m) =>
+            m.kind === "progress" &&
+            m.operation === "mesh.join" &&
+            m.stage === "materialize" &&
+            m.state === "done",
         ),
       60_000,
       "the joiner's grant to verify and the project to be adopted",
@@ -221,7 +227,8 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       "BOOTSTRAP STAGES: %j",
       joinerMessages.filter(
         (m) =>
-          m.kind === "mesh-bootstrap" || (m.kind === "mesh-status" && m.error),
+          (m.kind === "progress" && m.operation === "mesh.join") ||
+            (m.kind === "mesh-status" && m.error),
       ),
     );
     console.log(

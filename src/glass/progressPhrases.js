@@ -42,7 +42,7 @@ const PHRASES = {
   "mesh.connect.link.establish": "Establishing a link to peer {peer}",
   "mesh.connect.proof.verify":
     "Validating link proof for peer {peer}",
-  "mesh.join.request_path": "Resolving the host’s path",
+  "mesh.join.requesting_path": "Resolving the host’s path",
   "mesh.join.linking": "Establishing a link to the host",
   "mesh.join.knocking": "Knocking on the host’s door",
   "mesh.join.wait_response": "Waiting for the host’s decision",

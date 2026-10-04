@@ -270,23 +270,17 @@ function onEngineMessage(data) {
     // The Engine wiped local state: reload into a fresh boot (which
     // respawns the worker and re-runs leader election)
     location.reload();
-  } else if (data?.kind === "mesh-bootstrap") {
-    // Joiner state-machine progress (work document #25 §5.1)
-    joinProgress = data;
-    refreshMeshSettings();
-    refreshSyncPanel();
   } else if (data?.kind === "mesh-dacar") {
     // Dacar authorization state: anchor, per-grant verification, wallet
     dacarState = data;
     refreshMeshSettings();
     refreshSyncPanel();
   } else if (data?.kind === "mesh-status") {
-    if (data.connected !== undefined || data.stage) {
+    if (data.connected !== undefined) {
       syncStatus = {
         connected: data.connected === true,
         synced: data.synced === true,
         peers: data.peers,
-        stage: data.stage,
       };
     }
     meshError = data.error ?? "";

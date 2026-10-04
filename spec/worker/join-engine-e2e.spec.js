@@ -177,7 +177,11 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
       sleep,
       () =>
         joiner.posted.some(
-          (m) => m.kind === "mesh-bootstrap" && m.stage === "granted",
+          (m) =>
+            m.kind === "progress" &&
+            m.operation === "mesh.join" &&
+            m.stage === "materialize" &&
+            m.state === "done",
         ),
       60_000,
       "the joiner's grant to verify and the project to be adopted",
@@ -213,7 +217,9 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
       );
       console.log(
         "JOINER BOOTSTRAP: %j",
-        joiner.posted.filter((m) => m.kind === "mesh-bootstrap"),
+        joiner.posted.filter(
+          (m) => m.kind === "progress" && m.operation === "mesh.join",
+        ),
       );
       throw err;
     }

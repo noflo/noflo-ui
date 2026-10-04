@@ -162,12 +162,14 @@ describe("mesh sync (work document #21)", () => {
     listeners.get("peers")?.({ added: [], removed: ["peer-b"] });
     listeners.get("synced")?.({ synced: true });
 
-    const statuses = messages.filter(
-      (m) => m.kind === "mesh-status" && !m.stage,
-    );
+    const statuses = messages.filter((m) => m.kind === "mesh-status");
     assert.deepEqual(
       statuses.map((m) => `${m.connected}/${m.synced}/${m.peers}`),
       [
+        // The idle state posts during boot (starting, connecting) — no
+        // stage field anymore, the progress channel narrates stages
+        "false/false/0",
+        "false/false/0",
         // The transport-up report from start() itself: the provider's own
         // status event fires inside the factory, before listeners attach
         "true/false/0",

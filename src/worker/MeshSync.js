@@ -1457,6 +1457,8 @@ export async function createMeshSync({
    * @param {any} invite Parsed invite.
    */
   async function runBootstrapJoinInner(uri, hooks, invite) {
+    // The stage narrated when an unexpected failure aborts the flow
+    let joinStage = "requesting_path";
     // Persisted so a reload resumes the join (work document #25 plan item 3):
     // the host answers idempotently, so re-dialing is safe
     await storage.set("pendingInviteUri", uri).catch(() => {});
@@ -1471,17 +1473,19 @@ export async function createMeshSync({
         identity,
         invite,
         onState: (/** @type {string} */ stage) => {
-          postMessage({ kind: "mesh-bootstrap", stage });
+          joinStage = stage;
+          postMessage(progress("mesh.join", stage, "running"));
         },
       });
       if (response.status === "declined") {
         // Declined joins halt without auto-retry (work document #25 §5.1)
+        joinStage = "wait_response";
         await storage.set("pendingInviteUri", "").catch(() => {});
-        postMessage({
-          kind: "mesh-bootstrap",
-          stage: "declined",
-          reason: response.reason,
-        });
+        postMessage(
+          progress("mesh.join", "wait_response", "failed", {
+            reason: response.reason,
+          }),
+        );
         postMessage({
           kind: "mesh-status",
           error: `Join declined: ${response.reason}`,
@@ -1497,13 +1501,16 @@ export async function createMeshSync({
       // grants map) and authorizes through the Dacar Engine
       const nodeConfig = response.config ?? null;
       const invitedProjectId = String(response.project?.id ?? "");
+      joinStage = "handoff";
+      postMessage(progress("mesh.join", "handoff", "running"));
       if (!nodeConfig?.anchor?.hash || !nodeConfig.salt || !invitedProjectId) {
+        joinStage = "handoff";
         await storage.set("pendingInviteUri", "").catch(() => {});
-        postMessage({
-          kind: "mesh-bootstrap",
-          stage: "declined",
-          reason: "invalid_authorization",
-        });
+        postMessage(
+          progress("mesh.join", "handoff", "failed", {
+            reason: "invalid_authorization",
+          }),
+        );
         postMessage({
           kind: "mesh-status",
           error: "Join failed: handoff carried no Dacar node config",
@@ -1530,6 +1537,7 @@ export async function createMeshSync({
         identity: await Identity.fromPublicKey(fromHex(nodeConfig.anchor.pubkey)),
         peer: String(nodeConfig.anchor.hash),
       };
+      joinStage = "grant";
       // Wait for the pushed grant and verify it through a Dacar node built
       // from the delivered anchor — BEFORE any project setup: the device
       // does not adopt the invited project until it demonstrably holds the
@@ -1564,12 +1572,12 @@ export async function createMeshSync({
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
       if (!granted) {
-        postMessage({
-          kind: "mesh-bootstrap",
-          stage: "failed",
-          error:
-            "the pushed grant did not arrive — the invite stays pending; re-join to retry",
-        });
+        postMessage(
+          progress("mesh.join", "grant", "failed", {
+            error:
+              "the pushed grant did not arrive — the invite stays pending; re-join to retry",
+          }),
+        );
         postMessage({
           kind: "mesh-status",
           error:
@@ -1586,12 +1594,13 @@ export async function createMeshSync({
         // The device already carries other project content: joining would
         // merge two projects. The invite is spent; re-joining after
         // clearing the content restarts the flow
+        joinStage = "materialize";
         await storage.set("pendingInviteUri", "").catch(() => {});
-        postMessage({
-          kind: "mesh-bootstrap",
-          stage: "failed",
-          error: "this device already has project content",
-        });
+        postMessage(
+          progress("mesh.join", "materialize", "failed", {
+            error: "this device already has project content",
+          }),
+        );
         return;
       }
       invalidateDacarState();
@@ -1634,17 +1643,16 @@ export async function createMeshSync({
       // transition, not an observer inference
       await hooks.onGranted?.(response.project ?? {});
       await storage.set("pendingInviteUri", "").catch(() => {});
-      postMessage({
-        kind: "mesh-bootstrap",
-        // "approved" is the wire response (the state machine's §5.1 state);
-        // "granted" means the pushed grant verified and the project is
-        // being adopted — the Glass keys its success message on this
-        stage: "granted",
-        project: response.project ?? null,
-      });
+      postMessage(
+        progress("mesh.join", "materialize", "done", {
+          project: response.project ?? null,
+        }),
+      );
     } catch (err) {
       const reason = /** @type {any} */ (err)?.message ?? err;
-      postMessage({ kind: "mesh-bootstrap", stage: "failed", error: reason });
+      postMessage(
+        progress("mesh.join", joinStage, "failed", { error: String(reason) }),
+      );
       postMessage({
         kind: "mesh-status",
         error: `Join failed: ${reason}`,
@@ -1653,19 +1661,18 @@ export async function createMeshSync({
   }
 
   /**
-   * Posts a mesh-status with the current boot stage, so the Glass's sync
-   * line shows exactly where the start path is (or stalled).
+   * Posts the idle (not connected) mesh state. Boot-stage narration is the
+   * progress channel's job (work document #34); mesh-status carries state,
+   * not stages.
    *
-   * @param {string} stage
    * @param {string} [error]
    */
-  function postStartStatus(stage, error) {
+  function postIdleStatus(error) {
     postMessage({
       kind: "mesh-status",
       connected: false,
       synced: false,
       peers: 0,
-      stage,
       ...(error ? { error } : {}),
     });
   }
@@ -1676,15 +1683,15 @@ export async function createMeshSync({
     );
     if (!config.enabled) return;
     if (provider) {
-      postStartStatus("already-running");
+      // Already running: the provider's own events keep the Glass current
       return;
     }
     if (identityError) {
-      postStartStatus("identity-error", identityError);
+      postIdleStatus(identityError);
       return;
     }
     postMessage(progress("mesh.connect", "starting", "running"));
-    postStartStatus("starting");
+    postIdleStatus();
     console.info("Mesh starting: gates passed");
     // A fresh instance connects through a random default entry point, so
     // mesh sync works out of the box; the choice persists with the config.
@@ -1727,7 +1734,7 @@ export async function createMeshSync({
       // The shared transport serves the provider AND the bootstrap pre-flow
       const reticulum = await ensureReticulum();
       postMessage(progress("mesh.connect", "transport", "running"));
-      postStartStatus("connecting");
+      postIdleStatus();
       // A connect that never completes (a Safari stall, a half-open
       // interface) must be diagnosable, not silent: race the provider
       // start against a timeout so the status line reports the failure
@@ -1801,17 +1808,9 @@ export async function createMeshSync({
       postMessage(
         progress("mesh.connect", "transport", "failed", { error: reason }),
       );
-      postMessage({
-        kind: "mesh-status",
-        connected: false,
-        synced: false,
-        peers: 0,
-        stage: "provider-failed",
-        error: `Mesh provider failed: ${reason}`,
-      });
+      postIdleStatus(`Mesh provider failed: ${reason}`);
       return;
     }
-    // The provider's own "connected" status event fired inside the factory
     // (connect() completes before createProvider resolves), before these
     // listeners were attached — so the transport state is reported here
     // directly: the sync line must leave "connecting…" as soon as the

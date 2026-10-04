@@ -23,7 +23,7 @@ export const PROGRESS_OPERATIONS = {
   "mesh.connect.link": ["establish"],
   "mesh.connect.proof": ["verify"],
   "mesh.join": [
-    "request_path",
+    "requesting_path",
     "linking",
     "knocking",
     "wait_response",

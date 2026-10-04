@@ -117,17 +117,17 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.remove();
   });
 
-  it("narrates the boot stage in place of the steady state", () => {
+  it("narrates the running operation in place of the steady state", () => {
     const el = makeElement();
     el.setVisible(true);
-    el.setSyncStatus({ connected: false, synced: false, stage: "connecting" });
+    el.setNarration({
+      phrase: "Connecting to the relay",
+      operation: "mesh.connect",
+      stage: "transport",
+    });
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const stage = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
-    assert.match(stage.textContent ?? "", /connecting/);
-    assert.ok(
-      stage.classList.contains("activity"),
-      "a running operation is activity",
-    );
+    assert.match(stage.textContent ?? "", /Connecting to the relay/);
     el.remove();
   });
 

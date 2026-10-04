@@ -98,7 +98,7 @@ export class FlowSyncPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */
+    /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */
     this._syncStatus = null;
     /** @type {string[]} */
     this._peers = [];
@@ -144,7 +144,7 @@ export class FlowSyncPanel extends HTMLElement {
   }
 
   /**
-   * @param {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} status
+   * @param {{ connected?: boolean, synced?: boolean, peers?: number } | null} status
    */
   setSyncStatus(status) {
     this._syncStatus = status;
@@ -278,10 +278,6 @@ export class FlowSyncPanel extends HTMLElement {
         this._narration.failed
           ? `<span class="seg attention" title="${escapeHtml(this._narration.phrase)}">${icon("triangle-exclamation")}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`
           : `<span class="seg">${icon(narrationIcon(this._narration.operation, this._narration.stage))}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`,
-      );
-    } else if (status.stage && status.stage !== "already-running") {
-      segments.push(
-        `<span class="seg activity">${icon("hourglass-half")}<span class="label">${escapeHtml(status.stage)}…</span></span>`,
       );
     } else if (status.connected === true) {
       // Offline-first (work document #28): having no peers online is the
@@ -428,14 +424,17 @@ export class FlowSyncPanel extends HTMLElement {
       /** @type {{ stage: string, reason?: string, project?: any, error?: string }} */
       (this._joinProgress ?? {});
     switch (progress.stage) {
-      case "invited":
+      case "requesting_path":
+      case "linking":
       case "knocking":
       case "connecting":
         return `<div class="status-line">Joining — contacting the host…</div>`;
-      case "approved":
+      case "wait_response":
+        return `<div class="status-line">Waiting for the host's decision…</div>`;
+      case "handoff":
         return `<div class="status-line">Approved — “${escapeHtml(
           String(progress.project?.name ?? "project"),
-        )}” joined. Its content appears here once mesh sync delivers it.</div>`;
+        )}” joined. Its content arrives once the host's grant verifies.</div>`;
       case "granted":
         return `<div class="status-line success">Joined “${escapeHtml(
           String(progress.project?.name ?? "project"),

@@ -81,7 +81,9 @@ describe("mesh bootstrap invites (work document #25)", () => {
     );
     assert.equal(errors.length, 1, "one error posted");
     assert.equal(
-      messages.filter((m) => m.kind === "mesh-bootstrap").length,
+      messages.filter(
+        (m) => m.kind === "progress" && m.operation === "mesh.join",
+      ).length,
       0,
       "no state machine run for a malformed URI",
     );
