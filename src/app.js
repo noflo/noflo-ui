@@ -776,6 +776,12 @@ async function init() {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
   });
   syncPanel?.addEventListener("sync-settings", () => openMeshSettings());
+  // Graceful mesh shutdown on page unload: the Engine tears its links down
+  // immediately, so peers clean their room state instead of waiting out the
+  // Reticulum link timeout after this worker dies mid-session (Safari reload)
+  globalThis.addEventListener("pagehide", () => {
+    supervisor?.send({ type: "MESH", command: "stop" });
+  });
   const settingsDialog = /** @type {FlowMeshSettings | null} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );

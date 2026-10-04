@@ -476,6 +476,13 @@ export async function startEngine(io, options = {}) {
           );
       } else if (message.command === "factoryReset") {
         factoryReset();
+      } else if (message.command === "stop") {
+        // Graceful mesh shutdown on page unload (work document #28 finding):
+        // the peer cleans its room state immediately instead of waiting out
+        // the Reticulum link timeout after this worker dies mid-session
+        mesh.stop().catch((/** @type {any} */ err) =>
+          console.error("Mesh stop failed:", err),
+        );
       } else if (message.command === "importIdentity") {
         mesh
           .handleImportedIdentity(message.payload?.identity)
