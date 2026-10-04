@@ -203,7 +203,11 @@ describe("FlowCornerElement viewport-driven minify (work document #28)", () => {
     await setViewport(400);
     assert.equal(el.cornerState, "minified");
     await setViewport(1024);
-    assert.equal(el.cornerState, "minified", "explicit minify survives growing");
+    assert.equal(
+      el.cornerState,
+      "minified",
+      "explicit minify survives growing",
+    );
     el.setMinified(false);
     assert.equal(
       el.cornerState,
@@ -229,7 +233,11 @@ describe("FlowCornerElement viewport-driven minify (work document #28)", () => {
   it("starts minified when connected on an already-compact viewport", async () => {
     await setViewport(400);
     const el = makeElement();
-    assert.equal(el.cornerState, "minified", "the initial resize check applies");
+    assert.equal(
+      el.cornerState,
+      "minified",
+      "the initial resize check applies",
+    );
     el.remove();
     await setViewport(1024);
   });

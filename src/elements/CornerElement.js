@@ -206,8 +206,7 @@ export class FlowCornerElement extends HTMLElement {
    * Reads the current viewport into the auto-Minified flag.
    */
   _trackViewport() {
-    const width =
-      typeof window.innerWidth === "number" ? window.innerWidth : 0;
+    const width = typeof window.innerWidth === "number" ? window.innerWidth : 0;
     this._compact = width > 0 && width <= COMPACT_VIEWPORT;
   }
 

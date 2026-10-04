@@ -17,9 +17,7 @@ import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
  *
  * @type {Set<string>}
  */
-const UI_KEYS = new Set(
-  UI_MESSAGES.map((key) => `${key.type}/${key.command}`),
-);
+const UI_KEYS = new Set(UI_MESSAGES.map((key) => `${key.type}/${key.command}`));
 
 /** * @returns {any} */
 export function getComponent() {
