@@ -235,12 +235,6 @@ export async function createMeshSync({
     typeof globalThis.indexedDB !== "undefined"
       ? createIndexeddbStorage("noflo-dacar", "dacar_grants")
       : storage;
-  // Approval watcher (work document #21): when the grants map gains a grant
-  // for this device's identity hash, the owner has approved this device's
-  // join request — surfaced through onApproved so the Engine can materialize
-  // the project.
-  /** @type {boolean} */
-  let approvalFired = false;
   // ---- Dacar node state (work document #25 §2, §6.2, §7) ----------------
   // One per-project Dacar node: Config + StateVector + DeltaReceiver +
   // Engine. Grants reach it two ways — the §11 direct-link Delta push
@@ -277,6 +271,12 @@ export async function createMeshSync({
   let lastPushedBatch = "";
 
   /**
+   * @param {string} projectId
+   * @returns {string}
+   */
+  const dacarNodeConfigKey = (projectId) => `dacar-node:${projectId}`;
+
+  /**
    * Fires the Engine's approval callback once this device's own grant is
    * authorized by the Dacar state (the handed-off grant, or a grant synced
    * from the owner).
@@ -286,47 +286,6 @@ export async function createMeshSync({
     approvalFired = true;
     onApproved?.();
   }
-  // Dacar grant lifecycle (work document #25 §6.2, §7): reconcile the
-  // grants map into the Dacar node state as entries arrive, and let the
-  // anchor countersign plain grants written through the Glass intents.
-  // Observer failures must never propagate into the Yjs transaction that
-  // triggered them (a throw here would abort persistence commits)
-  doc.getMap?.("grants")?.observe(() => {
-    try {
-      reconcileDacarState()
-        .then(() => notifyApprovalIfGranted())
-        .catch((/** @type {any} */ err) =>
-          console.warn("Dacar reconcile failed:", err?.message ?? err),
-        );
-      notifyApprovalIfGranted();
-    } catch (err) {
-      console.warn(
-        "Grants observer failed:",
-        /** @type {any} */ (err)?.message ?? err,
-      );
-    }
-  });
-  // A Trust Anchor change (transfer, work document #25 §2.4) invalidates
-  // every verification: grants from the previous anchor no longer authorize
-  let lastSeenAnchorHash = "";
-  doc.getMap?.("metadata")?.observe(() => {
-    try {
-      const anchorHash = trustAnchorHash();
-      if (anchorHash === lastSeenAnchorHash) return;
-      lastSeenAnchorHash = anchorHash;
-      invalidateDacarState();
-      reconcileDacarState()
-        .then(() => notifyApprovalIfGranted())
-        .catch((/** @type {any} */ err) =>
-          console.warn("Dacar reconcile failed:", err?.message ?? err),
-        );
-    } catch (err) {
-      console.warn(
-        "Metadata observer failed:",
-        /** @type {any} */ (err)?.message ?? err,
-      );
-    }
-  });
   // The identity is the peer's address: generate (and persist) it at boot,
   // independent of whether sync is enabled — peers and node admins need the
   // hash to grant access before sync is ever turned on. Failure here (old
@@ -540,12 +499,6 @@ export async function createMeshSync({
   // replication layer) — and both paths authenticate through
   // verify-on-ingest against the project's designated Trust Anchor. An
   // unknown Trust Anchor's deltas are refused and never authorize (§7).
-  /**
-   * @param {string} projectId
-   * @returns {string}
-   */
-  const dacarNodeConfigKey = (projectId) => `dacar-node:${projectId}`;
-
   /**
    * Learns the anchor pubkey and salt from a grants-map entry whose claimed
    * anchor matches the project's designated Trust Anchor hash. The binding
@@ -1571,6 +1524,67 @@ export async function createMeshSync({
     // Clear any peer ghosts the Glass is rendering
     postMessage({ kind: "awareness", states: [] });
   }
+
+  // ---- Observers (registered after every closure declaration) -----------
+  // The observers can fire while createMeshSync is suspended on an await
+  // (a persisted document loading through y-indexeddb commits transactions
+  // mid-boot), so they are registered only after the whole closure state
+  // exists — a callback hitting a not-yet-initialized declaration is a TDZ
+  // error. State changes before this point are covered by the initial
+  // reconcile pass in start(). Observer failures must never propagate into
+  // the Yjs transaction that triggered them (a throw there would abort
+  // persistence commits).
+
+  // Approval watcher (work document #21): when the grants map gains a grant
+  // for this device's identity hash, the owner has approved this device's
+  // join request — surfaced through onApproved so the Engine can materialize
+  // the project.
+  /** @type {boolean} */
+  let approvalFired = false;
+  doc.getMap?.("grants")?.observe(() => {
+    if (approvalFired || !identityHash || !isGranted(identityHash)) return;
+    approvalFired = true;
+    onApproved?.();
+  });
+  // Dacar grant lifecycle (work document #25 §6.2, §7): reconcile the
+  // grants map into the Dacar node state as entries arrive, and let the
+  // anchor countersign plain grants written through the Glass intents
+  doc.getMap?.("grants")?.observe(() => {
+    try {
+      reconcileDacarState()
+        .then(() => notifyApprovalIfGranted())
+        .catch((/** @type {any} */ err) =>
+          console.warn("Dacar reconcile failed:", err?.message ?? err),
+        );
+      notifyApprovalIfGranted();
+    } catch (err) {
+      console.warn(
+        "Grants observer failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
+  });
+  // A Trust Anchor change (transfer, work document #25 §2.4) invalidates
+  // every verification: grants from the previous anchor no longer authorize
+  let lastSeenAnchorHash = "";
+  doc.getMap?.("metadata")?.observe(() => {
+    try {
+      const anchorHash = trustAnchorHash();
+      if (anchorHash === lastSeenAnchorHash) return;
+      lastSeenAnchorHash = anchorHash;
+      invalidateDacarState();
+      reconcileDacarState()
+        .then(() => notifyApprovalIfGranted())
+        .catch((/** @type {any} */ err) =>
+          console.warn("Dacar reconcile failed:", err?.message ?? err),
+        );
+    } catch (err) {
+      console.warn(
+        "Metadata observer failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
+  });
 
   if (autostart) {
     await start();
