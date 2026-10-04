@@ -1678,6 +1678,17 @@ export async function createMeshSync({
       });
       return;
     }
+    // The provider's own "connected" status event fired inside the factory
+    // (connect() completes before createProvider resolves), before these
+    // listeners were attached — so the transport state is reported here
+    // directly: the sync line must leave "connecting…" as soon as the
+    // transport is up, not when the first peer happens to sync
+    postMessage({
+      kind: "mesh-status",
+      connected: true,
+      synced: false,
+      peers: peerCount,
+    });
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe

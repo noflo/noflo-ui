@@ -162,7 +162,14 @@ describe("mesh sync (work document #21)", () => {
     );
     assert.deepEqual(
       statuses.map((m) => `${m.connected}/${m.synced}/${m.peers}`),
-      ["true/false/0", "true/true/1"],
+      [
+        // The transport-up report from start() itself: the provider's own
+        // status event fires inside the factory, before listeners attach
+        "true/false/0",
+        // The provider's own later status and synced events
+        "true/false/0",
+        "true/true/1",
+      ],
     );
     const peerEvents = messages.filter((m) => m.kind === "mesh-peers");
     assert.deepEqual(
