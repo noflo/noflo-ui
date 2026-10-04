@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as Y from "./yjs.js";
-import { CEType, ChannelException, DestType, Destination, Identity, MessageBase, Resource, toHex } from "./reticulum-core.js";
+import { CEType, ChannelException, DestType, Destination, Identity, LinkStatus, MessageBase, Resource, toHex } from "./reticulum-core.js";
 //#region src/shims/bzip2-stub.js
 /**
 * @file Vendor build shim: `@digitaldefiance/bzip2-wasm` is a hard dependency
@@ -1598,7 +1598,14 @@ var Room = class {
 		const remoteHex = toHex(detail.destinationHash);
 		if (remoteHex === this.myHex) return;
 		if (this.peerConns.size >= this.maxConns) return;
-		if (this.linkedDestHexes.has(remoteHex) || this.pendingInitiates.has(remoteHex)) return;
+		if (this.linkedDestHexes.has(remoteHex)) {
+			const staleConns = [...this.peerConns.values()].filter((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status !== LinkStatus.ACTIVE);
+			if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex) && staleConns.length === 0) return;
+			for (const conn of staleConns) conn.destroy();
+			this.linkedDestHexes.delete(remoteHex);
+			this.linkedDestHexes.delete(remoteHex);
+		}
+		if (this.pendingInitiates.has(remoteHex)) return;
 		if (this.myHex > remoteHex) return;
 		this.pendingInitiates.add(remoteHex);
 		const needsProvenIdentity = Boolean(this.linkPolicy || this.authorizeLink);
