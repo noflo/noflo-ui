@@ -82,21 +82,60 @@ export function handleMessage(doc, state, message) {
     return { accepted: false, echoes: [] };
   }
 
-  switch (message.type) {
-    case "LIFECYCLE":
-      return handleLifecycle(state, message);
-    case "QUERY":
-      return handleQuery(doc, message);
-    case "AWARENESS":
-      // Ephemeral: accepted for mesh rebroadcast (mesh work document), never
-      // echoes back and never mutates the CRDT.
-      return { accepted: true, echoes: [] };
-    case "INTENT":
-      return handleIntent(doc, message);
-    default:
-      return { accepted: false, echoes: [] };
+  const handler = CORE_TYPE_HANDLERS[message.type];
+  if (!handler) {
+    return { accepted: false, echoes: [] };
   }
+  return handler(doc, state, message);
 }
+
+/**
+ * The Engine core's type dispatch table. The contract registry's non-MESH
+ * types must match its keys exactly (work document #37): MESH commands are
+ * routed in the Engine's message router before the dispatcher graph.
+ *
+ * @type {Record<string, (doc: Y.Doc, state: EngineState, message: any) => EngineResult>}
+ */
+export const CORE_TYPE_HANDLERS = {
+  LIFECYCLE: (_doc, state, message) => handleLifecycle(state, message),
+  QUERY: (doc, _state, message) => handleQuery(doc, message),
+  // Ephemeral: accepted for mesh rebroadcast (mesh work document), never
+  // echoes back and never mutates the CRDT.
+  AWARENESS: () => ({ accepted: true, echoes: [] }),
+  INTENT: (doc, _state, message) => handleIntent(doc, message),
+};
+
+/**
+ * The Engine core's intent dispatch table. The contract registry's INTENT
+ * commands must match its keys exactly (work document #37).
+ *
+ * @type {Record<string, (doc: Y.Doc, payload: any) => EngineResult>}
+ */
+export const INTENT_HANDLERS = {
+  addNode: intentAddNode,
+  removeNode: intentRemoveNode,
+  moveNode: intentMoveNode,
+  addEdge: intentAddEdge,
+  removeEdge: intentRemoveEdge,
+  addIIP: intentAddIIP,
+  updateIIP: intentUpdateIIP,
+  removeIIP: intentRemoveIIP,
+  addInport: (doc, payload) => intentAddExport(doc, "addInport", payload),
+  addOutport: (doc, payload) => intentAddExport(doc, "addOutport", payload),
+  removeInport: (doc, payload) =>
+    intentRemoveExport(doc, "removeInport", payload),
+  removeOutport: (doc, payload) =>
+    intentRemoveExport(doc, "removeOutport", payload),
+  renameInport: (doc, payload) =>
+    intentRenameExport(doc, "renameInport", payload),
+  renameOutport: (doc, payload) =>
+    intentRenameExport(doc, "renameOutport", payload),
+  createGraph: intentCreateGraph,
+  removeGraph: intentRemoveGraph,
+  makeSubgraph: intentMakeSubgraph,
+  moveUp: intentMoveUp,
+  revokePermission: intentRevokePermission,
+};
 
 /**
  * @param {EngineState} state
@@ -144,45 +183,11 @@ function handleQuery(doc, message) {
  */
 function handleIntent(doc, message) {
   const payload = message.payload;
-  switch (message.command) {
-    case "addNode":
-      return intentAddNode(doc, payload);
-    case "removeNode":
-      return intentRemoveNode(doc, payload);
-    case "moveNode":
-      return intentMoveNode(doc, payload);
-    case "addEdge":
-      return intentAddEdge(doc, payload);
-    case "removeEdge":
-      return intentRemoveEdge(doc, payload);
-    case "addIIP":
-      return intentAddIIP(doc, payload);
-    case "updateIIP":
-      return intentUpdateIIP(doc, payload);
-    case "removeIIP":
-      return intentRemoveIIP(doc, payload);
-    case "addInport":
-    case "addOutport":
-      return intentAddExport(doc, message.command, payload);
-    case "removeInport":
-    case "removeOutport":
-      return intentRemoveExport(doc, message.command, payload);
-    case "renameInport":
-    case "renameOutport":
-      return intentRenameExport(doc, message.command, payload);
-    case "createGraph":
-      return intentCreateGraph(doc, payload);
-    case "removeGraph":
-      return intentRemoveGraph(doc, payload);
-    case "makeSubgraph":
-      return intentMakeSubgraph(doc, payload);
-    case "moveUp":
-      return intentMoveUp(doc, payload);
-    case "revokePermission":
-      return intentRevokePermission(doc, payload);
-    default:
-      return { accepted: false, echoes: [] };
+  const handler = INTENT_HANDLERS[message.command];
+  if (!handler) {
+    return { accepted: false, echoes: [] };
   }
+  return handler(doc, payload);
 }
 
 /**

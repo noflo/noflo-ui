@@ -33,6 +33,7 @@ import { parseInviteUri } from "./Bootstrap.js";
 import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { createMeshSync } from "./MeshSync.js";
 import { progress } from "./Progress.js";
+import { routeMeshCommand } from "./mesh-commands.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
@@ -433,64 +434,16 @@ export async function startEngine(io, options = {}) {
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
     if (message?.type === "MESH") {
-      if (message.command === "configure") {
-        mesh
-          .handleConfigure(message.payload)
-          .then(() => postMeshConfig())
-          .catch((/** @type {any} */ err) =>
-            console.error("Mesh configuration failed:", err),
-          );
-      } else if (message.command === "status") {
-        postMeshConfig();
-      } else if (message.command === "join") {
-        joinProject(message.payload);
-      } else if (message.command === "grant") {
-        mesh
-          .grant(message.payload)
-          .then(() => postMeshConfig())
-          .catch((/** @type {any} */ err) =>
-            console.error("Grant failed:", err),
-          );
-      } else if (message.command === "resolveRequest") {
-        mesh.resolveRequest({
-          identityHash: message.payload?.identityHash,
-          decision:
-            message.payload?.decision === "approved" ? "approved" : "declined",
-        });
-      } else if (message.command === "createInvite") {
-        mesh
-          .createInvite()
-          .then((/** @type {any} */ invite) => {
-            if (!invite) {
-              io.postMessage({
-                kind: "mesh-status",
-                error:
-                  "Invite unavailable: mesh must be connected and this device must own the project",
-              });
-              return;
-            }
-            io.postMessage({ kind: "mesh-invite", ...invite });
-          })
-          .catch((/** @type {any} */ err) =>
-            console.error("Invite creation failed:", err),
-          );
-      } else if (message.command === "factoryReset") {
-        factoryReset();
-      } else if (message.command === "stop") {
-        // Graceful mesh shutdown on page unload (work document #28 finding):
-        // the peer cleans its room state immediately instead of waiting out
-        // the Reticulum link timeout after this worker dies mid-session
-        mesh.stop().catch((/** @type {any} */ err) =>
-          console.error("Mesh stop failed:", err),
-        );
-      } else if (message.command === "importIdentity") {
-        mesh
-          .handleImportedIdentity(message.payload?.identity)
-          .then(() => postMeshConfig())
-          .catch((/** @type {any} */ err) =>
-            console.error("Identity import failed:", err),
-          );
-      }
+      routeMeshCommand(
+        {
+          mesh,
+          postMessage: (echo) => io.postMessage(echo),
+          postMeshConfig,
+          joinProject,
+          factoryReset,
+        },
+        message,
+      );
       return;
     }
     if (message?.type === "AWARENESS") {
