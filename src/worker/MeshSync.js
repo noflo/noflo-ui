@@ -282,6 +282,10 @@ export async function createMeshSync({
   let reconciling = false;
   /** Set when a reconcile is requested while one is already running. */
   let pendingReconcile = false;
+  /** Set while a bootstrap join is in flight: pushes the active project's
+   * Dacar node refuses may belong to the invited project, whose binding is
+   * not the active one until the project is adopted. */
+  let joinInFlight = false;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -453,41 +457,101 @@ export async function createMeshSync({
     return identity;
   }
 
+  // ---- Device-local Trust Anchor binding (work document #27) ------------
+  // The anchor binding (hash, pubkey, salt) is device-local state, never
+  // project CRDT metadata: a synced peer could rewrite a CRDT binding and
+  // swap the trust root, and every write raced every replica via LWW. The
+  // creator self-assigns locally; every other device receives the binding
+  // through the authenticated bootstrap handoff, and a device that loses
+  // its local state factory-resets and re-joins via a new invite — the
+  // CRDT is never a source of trust. A binding is immutable for the
+  // project's lifetime: transferring the anchor means forking the project
+  // (a new project id with fresh grants).
+  /** @type {{ projectId: string, anchorHash: string, anchorPubkey: string, salt: string } | null} */
+  let localBinding = null;
+
   /**
-   * Hex hash of the project's designated Trust Anchor (work document #25
-   * §2.2), from the project metadata. Empty until a device has claimed it.
+   * Hex hash of the project's designated Trust Anchor, from the
+   * device-local binding. Empty while the binding is unknown (an invited
+   * device before the handoff, or before the local state has loaded).
    *
    * @returns {string}
    */
   function trustAnchorHash() {
-    return String(doc.getMap?.("metadata")?.get("trust_anchor_hash") ?? "");
+    return localBinding?.anchorHash ?? "";
   }
 
   /**
-   * Default ownership (work document #25 §2.4): the first device to bind a
-   * fresh project assigns its own Reticulum identity as the project Trust
-   * Anchor. An invited device never claims the anchor — the host's anchor
-   * arrives through the synced metadata or the bootstrap handoff.
+   * Loads (or, as the creator, self-assigns) the device-local Trust Anchor
+   * binding for the project. A device that did not join via invite binds
+   * its own Reticulum identity as the anchor and mints the project's
+   * Privacy Salt (work document #25 §2.2, §2.3); invited devices wait for
+   * the bootstrap handoff to provision the binding.
+   *
+   * @returns {Promise<{ projectId: string, anchorHash: string, anchorPubkey: string, salt: string } | null>}
    */
-  function ensureTrustAnchor() {
-    const metadata = doc.getMap?.("metadata");
-    if (!metadata || config.joinedViaInvite) return;
-    if (!metadata.get("trust_anchor_hash") && identityHash) {
-      metadata.set("trust_anchor_hash", identityHash);
+  async function ensureLocalBinding() {
+    const projectId = String(doc.getMap?.("metadata")?.get("id") ?? "");
+    if (!projectId) {
+      localBinding = null;
+      return null;
     }
+    if (localBinding?.projectId === projectId) return localBinding;
+    try {
+      const stored = await storage.get(dacarNodeConfigKey(projectId));
+      if (
+        stored &&
+        typeof stored.anchorHash === "string" &&
+        /^[0-9a-f]{32}$/.test(stored.anchorHash) &&
+        typeof stored.salt === "string" &&
+        /^[0-9a-f]{64}$/.test(stored.salt) &&
+        typeof stored.anchorPubkey === "string" &&
+        /^[0-9a-f]{128}$/.test(stored.anchorPubkey)
+      ) {
+        localBinding = { projectId, ...stored };
+        return localBinding;
+      }
+    } catch {
+      // Fall through to self-assignment below
+    }
+    if (config.joinedViaInvite || !identityHash) {
+      localBinding = null;
+      return null;
+    }
+    const binding = {
+      projectId,
+      anchorHash: identityHash,
+      anchorPubkey: toHex(await (await ensureIdentity()).getPublicKey()),
+      salt: await ensureDacarSalt(projectId),
+    };
+    await storage
+      .set(dacarNodeConfigKey(projectId), {
+        anchorHash: binding.anchorHash,
+        anchorPubkey: binding.anchorPubkey,
+        salt: binding.salt,
+      })
+      .catch(() => {});
+    localBinding = binding;
+    return binding;
   }
 
   /**
    * Authority (work document #25 §2.2): this device may mint grants iff it
-   * holds the project Trust Anchor's private key. The default anchor is the
-   * owner's own mesh identity, so ownership is an identity-hash match; a
+   * holds the project Trust Anchor's private key. The creator's binding is
+   * its own mesh identity, so ownership is an identity-hash match; a
    * device holding only the public anchor (a participant) cannot sign
    * assertions.
    *
    * @returns {boolean}
    */
   function hasAuthority() {
-    return identityHash !== "" && trustAnchorHash() === identityHash;
+    if (identityHash === "") return false;
+    const projectId = String(doc.getMap?.("metadata")?.get("id") ?? "");
+    return (
+      localBinding !== null &&
+      localBinding.projectId === projectId &&
+      localBinding.anchorHash === identityHash
+    );
   }
 
   /**
@@ -523,97 +587,33 @@ export async function createMeshSync({
   // verify-on-ingest against the project's designated Trust Anchor. An
   // unknown Trust Anchor's deltas are refused and never authorize (§7).
   /**
-   * Learns the anchor pubkey and salt from a grants-map entry whose claimed
-   * anchor matches the project's designated Trust Anchor hash. The binding
-   * is safe: a forged pubkey cannot collide the 16-byte truncated hash, and
-   * verify-on-ingest refuses deltas its pubkey does not authenticate.
-   *
-   * @param {string} anchorHash
-   * @returns {{ salt: string, anchorHash: string, anchorPubkey: string } | null}
-   */
-  function learnNodeConfigFromGrants(anchorHash) {
-    const grants = doc.getMap?.("grants");
-    if (!grants) return null;
-    for (const entry of grants.values()) {
-      const plain = entry.toJSON();
-      const authorization = plain.authorization;
-      if (plain.revoked !== null || !authorization?.anchor) continue;
-      if (authorization.anchor.hash !== anchorHash) continue;
-      if (
-        typeof authorization.salt === "string" &&
-        /^[0-9a-f]{64}$/.test(authorization.salt) &&
-        /^[0-9a-f]{128}$/.test(authorization.anchor.pubkey ?? "")
-      ) {
-        return {
-          salt: authorization.salt,
-          anchorHash,
-          anchorPubkey: authorization.anchor.pubkey,
-        };
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Returns the live Dacar node for the project, building (or rebuilding,
-   * after a Trust Anchor transfer) it from the stored node config — the
-   * anchor's own device mints its config, joiners receive it in the
-   * bootstrap handoff (§2.3, §10), and peers learn it from verified
-   * grants-map entries. Null while the project id, designated anchor, or
-   * salt/pubkey pair is unknown.
+   * Returns the live Dacar node for the project, built from the
+   * device-local Trust Anchor binding (work document #27): the anchor's
+   * own device self-assigns it, joiners receive it in the bootstrap
+   * handoff (§2.3, §10). Null while the project id or the binding is
+   * unknown.
    *
    * @returns {Promise<ReturnType<typeof createDacarNode> | null>}
    */
   async function ensureDacarNode() {
-    const metadata = doc.getMap?.("metadata");
-    const projectId = String(metadata?.get("id") ?? "");
-    const anchorHash = trustAnchorHash();
-    if (!projectId || !anchorHash) return null;
+    const projectId = String(doc.getMap?.("metadata")?.get("id") ?? "");
+    if (!projectId) return null;
+    const binding = await ensureLocalBinding();
+    if (!binding) return null;
     if (
       dacarNode &&
-      dacarNodeAnchorHash === anchorHash &&
+      dacarNodeAnchorHash === binding.anchorHash &&
       dacarNodeProjectId === projectId
     ) {
       return dacarNode;
     }
-    /** @type {{ salt: string, anchorHash: string, anchorPubkey: string } | null} */
-    let nodeConfig = null;
-    try {
-      const stored = await storage.get(dacarNodeConfigKey(projectId));
-      if (
-        stored &&
-        stored.anchorHash === anchorHash &&
-        typeof stored.salt === "string" &&
-        typeof stored.anchorPubkey === "string"
-      ) {
-        nodeConfig = stored;
-      }
-    } catch {
-      // Learn below
-    }
-    if (!nodeConfig) {
-      nodeConfig = learnNodeConfigFromGrants(anchorHash);
-    }
-    if (!nodeConfig && hasAuthority()) {
-      // This device IS the anchor: it holds the private key and mints the
-      // project's salt (work document #25 §2.2, §2.3)
-      nodeConfig = {
-        anchorHash,
-        anchorPubkey: toHex(await (await ensureIdentity()).getPublicKey()),
-        salt: await ensureDacarSalt(projectId),
-      };
-    }
-    if (!nodeConfig) return null;
-    await storage
-      .set(dacarNodeConfigKey(projectId), nodeConfig)
-      .catch(() => {});
     dacarNode = createDacarNode();
     dacarNode.configure({
-      anchorHashHex: nodeConfig.anchorHash,
-      anchorPubkeyHex: nodeConfig.anchorPubkey,
-      salt: nodeConfig.salt,
+      anchorHashHex: binding.anchorHash,
+      anchorPubkeyHex: binding.anchorPubkey,
+      salt: binding.salt,
     });
-    dacarNodeAnchorHash = anchorHash;
+    dacarNodeAnchorHash = binding.anchorHash;
     dacarNodeProjectId = projectId;
     return dacarNode;
   }
@@ -857,6 +857,15 @@ export async function createMeshSync({
       lastPushedBatch = bytesToBase64(data);
       await reconcileDacarState().catch(() => {});
       notifyApprovalIfGranted();
+    } else if (joinInFlight) {
+      // The active project's node refused the push, but a bootstrap join is
+      // in flight: the invited project's grant arrives while this device
+      // still runs its scratch project, so the refusal only means the push
+      // is not for the active binding. Buffer it for the join flow's drain
+      // (work document #27); the invited project's verify-on-ingest there
+      // refuses anything that does not authenticate
+      pendingPushes.push(data);
+      return 1;
     }
     return applied;
   }
@@ -1035,7 +1044,9 @@ export async function createMeshSync({
     // approval, synced through the grants map after the link establishes
     if (config.joinedViaInvite) return;
     const projectId = String(doc.getMap?.("metadata")?.get("id") ?? "");
-    if (!projectId || !hasAuthority()) return;
+    if (!projectId) return;
+    await ensureLocalBinding();
+    if (!hasAuthority()) return;
     if (findAuthorization(identityHash)) return;
     await mintPeerAuthorization(identityHash, projectId);
   }
@@ -1339,6 +1350,23 @@ export async function createMeshSync({
       });
       return;
     }
+    joinInFlight = true;
+    try {
+      await runBootstrapJoinInner(uri, hooks, invite);
+    } finally {
+      joinInFlight = false;
+    }
+  }
+
+  /**
+   * Inner body of the joiner state machine, run with `joinInFlight` set so
+   * the push receiver buffers refused deltas for the invited project.
+   *
+   * @param {string} uri Invite URI (`noflo://join/<hash>/<token>`).
+   * @param {{ onApproved?: (project: any) => Promise<void> | void }} hooks
+   * @param {any} invite Parsed invite.
+   */
+  async function runBootstrapJoinInner(uri, hooks, invite) {
     // Persisted so a reload resumes the join (work document #25 plan item 3):
     // the host answers idempotently, so re-dialing is safe
     await storage.set("pendingInviteUri", uri).catch(() => {});
@@ -1392,22 +1420,11 @@ export async function createMeshSync({
         });
         return;
       }
-      // Pin the Trust Anchor the handoff delivered BEFORE anything else —
-      // the out-of-band invite authenticated the host, so the delivered
-      // anchor is authoritative (§2.3). The device's own scratch project
-      // may have self-assigned its identity as the anchor with a LATER
-      // wall clock than the owner's original write; pinning immediately
-      // overwrites that stale claim with the correct value — a later write
-      // with the correct value wins the LWW race and heals every replica
-      // on sync. This is authorization metadata, not project setup: the
-      // project itself is still not adopted until the grant verifies.
-      const metadata = doc.getMap?.("metadata");
-      if (metadata) {
-        metadata.set("trust_anchor_hash", nodeConfig.anchor.hash);
-      }
       invalidateDacarState();
-      // Provision the Dacar node config for the invited project (§2.3):
-      // device-local, held by this device's own storage
+      // Provision the device-local Trust Anchor binding for the invited
+      // project (work document #27, §2.3): anchor hash, pubkey, and salt
+      // delivered over the authenticated handoff. No CRDT write carries
+      // the binding — peers cannot swap the trust root
       await storage
         .set(dacarNodeConfigKey(invitedProjectId), {
           salt: nodeConfig.salt,
@@ -1573,32 +1590,10 @@ export async function createMeshSync({
     if (identityError) return;
     try {
       const identity = await ensureIdentity();
-      // Default ownership (work document #25 §2.4): a fresh project gets
-      // this device's identity as its Trust Anchor; invited devices wait
-      // for the host's anchor instead
-      ensureTrustAnchor();
-      // Self-heal an invited device that still claims the anchor (a stale
-      // self-assignment from its pre-join scratch project): a participant
-      // cannot hold the anchor's private key, so repair by overwriting with
-      // the anchor the grants map evidences — a later write with the
-      // correct value wins the LWW race and heals every replica. Deleting
-      // would wipe the anchor network-wide instead.
-      if (config.joinedViaInvite && trustAnchorHash() === identityHash) {
-        const grants = doc.getMap?.("grants");
-        let evidencedAnchor = "";
-        if (grants) {
-          for (const entry of grants.values()) {
-            const hash = entry.toJSON()?.authorization?.anchor?.hash;
-            if (typeof hash === "string" && /^[0-9a-f]{32}$/.test(hash)) {
-              evidencedAnchor = hash;
-              break;
-            }
-          }
-        }
-        if (evidencedAnchor) {
-          doc.getMap?.("metadata")?.set("trust_anchor_hash", evidencedAnchor);
-        }
-      }
+      // Load (or, as the creator, self-assign) the device-local Trust
+      // Anchor binding (work document #27). An invited device waits for
+      // the bootstrap handoff instead.
+      await ensureLocalBinding();
       // The anchor signs itself like any other peer, so authorization is
       // uniform across devices (work document #25 §2.2)
       await ensureSelfAuthorization();
@@ -1795,28 +1790,6 @@ export async function createMeshSync({
       );
     }
   });
-  // A Trust Anchor change (transfer, work document #25 §2.4) invalidates
-  // every verification: grants from the previous anchor no longer authorize
-  let lastSeenAnchorHash = "";
-  doc.getMap?.("metadata")?.observe(() => {
-    try {
-      const anchorHash = trustAnchorHash();
-      if (anchorHash === lastSeenAnchorHash) return;
-      lastSeenAnchorHash = anchorHash;
-      invalidateDacarState();
-      reconcileDacarState()
-        .then(() => notifyApprovalIfGranted())
-        .catch((/** @type {any} */ err) =>
-          console.warn("Dacar reconcile failed:", err?.message ?? err),
-        );
-    } catch (err) {
-      console.warn(
-        "Metadata observer failed:",
-        /** @type {any} */ (err)?.message ?? err,
-      );
-    }
-  });
-
   if (autostart) {
     await start();
   }
@@ -1982,13 +1955,9 @@ export async function createMeshSync({
       // approval (e.g. a scratch project's self-grant) must not block it
       approvalFired = false;
       doc.getMap?.("grants")?.clear();
-      // NOTE: a device that ran mesh before joining may have self-assigned
-      // the Trust Anchor of its own scratch project. That claim is void,
-      // but it must never be *deleted* from the CRDT: a delete carries a
-      // later clock than the owner's original write and would win the LWW
-      // race on sync, wiping the anchor on every device. The bootstrap
-      // handoff overwrites it with the real anchor instead (a later write
-      // with the correct value heals the whole network).
+      // No anchor claim needs clearing: the Trust Anchor binding is
+      // device-local per project (work document #27), so a scratch
+      // project's self-assignment cannot shadow the invited project
     },
     /**
      * @param {any} payload

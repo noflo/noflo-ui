@@ -197,10 +197,9 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       );
     } catch (err) {
       console.log(
-        "IDS: invited=%s joinerIdentity=%s trustAnchor=%s",
+        "IDS: invited=%s joinerIdentity=%s",
         projectId,
         joiner.identityHash,
-        String(joinerDoc.getMap("metadata").get("trust_anchor_hash") ?? "none"),
       );
       console.log(
         "DACAR REPORTS:",
@@ -224,10 +223,9 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       ),
     );
     console.log(
-      "REPORT CHECK: invited=%s joinerIdentity=%s trustAnchor=%s reports=%j",
+      "REPORT CHECK: invited=%s joinerIdentity=%s reports=%j",
       projectId,
       joiner.identityHash,
-      String(joinerDoc.getMap("metadata").get("trust_anchor_hash") ?? "none"),
       joinerReports.map((r) => ({
         owner: r.anchor.owner,
         anchor: r.anchor.hash?.slice(0, 8),
