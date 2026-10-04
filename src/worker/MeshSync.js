@@ -53,6 +53,9 @@ import { listWalletGrants, saveWalletGrant } from "./DacarWallet.js";
 /** How long the joiner waits for the pushed grant to authorize it. */
 const GRANT_WAIT_MS = 30_000;
 
+/** How long a provider start may take before the stall is surfaced. */
+const PROVIDER_CONNECT_TIMEOUT_MS = 30_000;
+
 /**
  * @param {Uint8Array} bytes
  * @returns {string}
@@ -73,6 +76,20 @@ function base64ToBytes(base64) {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }
+
+/**
+ * Hooks the join flow's explicit lifecycle drives (work document #27): each
+ * granted transition fires its hook directly instead of an observer inferring
+ * the transition from grants-map contents.
+ *
+ * @typedef {Object} JoinHooks
+ * @property {(project: any) => Promise<string> | string} [onAdopt]
+ *   Adopts the invited project identity. Returns "adopted", "present" (the
+ *   project already exists here — the join continues, cleanup runs), or
+ *   "refused" (the device has other content — the join fails).
+ * @property {(project: any) => Promise<void> | void} [onGranted]
+ *   Materializes the granted project and rebinds the mesh onto it.
+ */
 
 /**
  * Default provider factory: a provider bound to the room on the SHARED
@@ -190,10 +207,10 @@ async function defaultCreateProvider(
  * @property {() => Promise<{ uri: string, token: string, expiresAt: number } | null>} createInvite
  *   Issues a bootstrap invite URI for the hosted project; null when this
  *   device cannot host (mesh disabled, joined by invite, no bootstrap host).
- * @property {(uri: string, hooks?: { onApproved?: (project: any) => Promise<void> | void }) => Promise<void>} startBootstrapJoin
+ * @property {(uri: string, hooks?: JoinHooks) => Promise<void>} startBootstrapJoin
  *   Runs the joiner state machine (work document #25 §5.1) against the
- *   invited host; the handoff routes through `onApproved`.
- * @property {(hooks?: { onApproved?: (project: any) => Promise<void> | void }) => Promise<boolean>} resumePendingInvite
+ *   invited host; the granted path routes through the hooks.
+ * @property {(hooks?: JoinHooks) => Promise<boolean>} resumePendingInvite
  *   Re-runs a persisted pending invite (resume on reload); false when none
  *   is stored.
  * @property {() => Promise<void>} stop
@@ -215,7 +232,6 @@ async function defaultCreateProvider(
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
- *   onApproved?: () => void,
  * }} options
  * @returns {Promise<MeshSyncHandle>}
  */
@@ -227,7 +243,6 @@ export async function createMeshSync({
   awarenessThrottleMs = 250,
   roomFor = () => "noflo-ui",
   autostart = true,
-  onApproved,
 }) {
   /**
    * The room this project syncs through: per-project by construction,
@@ -297,22 +312,6 @@ export async function createMeshSync({
    * @returns {string}
    */
   const dacarNodeConfigKey = (projectId) => `dacar-node:${projectId}`;
-
-  /**
-   * Fires the Engine's approval callback once this device's own grant is
-   * authorized by the Dacar state (the handed-off grant, or a grant synced
-   * from the owner).
-   */
-  function notifyApprovalIfGranted() {
-    if (approvalFired || !identityHash || !isGranted(identityHash)) return;
-    // Only an invited device materializes through the approval watcher: a
-    // device's own self-grant (the owner's, or a scratch project's) must
-    // never consume it — otherwise the flag is spent before the invited
-    // project's grant ever arrives, and the materialization never runs
-    if (!config.joinedViaInvite) return;
-    approvalFired = true;
-    onApproved?.();
-  }
   // The identity is the peer's address: generate (and persist) it at boot,
   // independent of whether sync is enabled — peers and node admins need the
   // hash to grant access before sync is ever turned on. Failure here (old
@@ -856,7 +855,6 @@ export async function createMeshSync({
     if (applied > 0) {
       lastPushedBatch = bytesToBase64(data);
       await reconcileDacarState().catch(() => {});
-      notifyApprovalIfGranted();
     } else if (joinInFlight) {
       // The active project's node refused the push, but a bootstrap join is
       // in flight: the invited project's grant arrives while this device
@@ -1333,13 +1331,13 @@ export async function createMeshSync({
 
   /**
    * Parses, validates, and runs the joiner state machine against the
-   * invited host, then applies the handoff: the Engine adopts the invited
-   * project identity (through `onApproved`), and the handed-off grant is
-   * written into the local grants map — which triggers the Engine's existing
-   * approval watcher and materializes the project.
+   * invited host, then applies the handoff through the explicit lifecycle:
+   * the Engine adopts the invited project identity (`onAdopt`), the verified
+   * grant is written into the local grants map, and the project
+   * materializes (`onGranted`) — no observer infers the transitions.
    *
    * @param {string} uri Invite URI (`noflo://join/<hash>/<token>`).
-   * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+   * @param {JoinHooks} [hooks]
    */
   async function runBootstrapJoin(uri, hooks = {}) {
     const invite = parseInviteUri(uri);
@@ -1363,7 +1361,7 @@ export async function createMeshSync({
    * the push receiver buffers refused deltas for the invited project.
    *
    * @param {string} uri Invite URI (`noflo://join/<hash>/<token>`).
-   * @param {{ onApproved?: (project: any) => Promise<void> | void }} hooks
+   * @param {JoinHooks} hooks
    * @param {any} invite Parsed invite.
    */
   async function runBootstrapJoinInner(uri, hooks, invite) {
@@ -1479,11 +1477,23 @@ export async function createMeshSync({
         });
         return;
       }
-      // Granted. NOW set up the project: adopt the invited identity (the
-      // Engine binds pending materialization to the approval watcher), and
-      // write the verified grant into the grants map — whose verification
-      // completes the materialization
-      await hooks.onApproved?.(response.project ?? {});
+      // Granted. The explicit lifecycle (work document #27) walks
+      // adopt → write the verified entry → materialize → rebind, with no
+      // observer inferring the transitions: each step fires its hook
+      // directly
+      const adopted = await hooks.onAdopt?.(response.project ?? {});
+      if (adopted === "refused") {
+        // The device already carries other project content: joining would
+        // merge two projects. The invite is spent; re-joining after
+        // clearing the content restarts the flow
+        await storage.set("pendingInviteUri", "").catch(() => {});
+        postMessage({
+          kind: "mesh-bootstrap",
+          stage: "failed",
+          error: "this device already has project content",
+        });
+        return;
+      }
       invalidateDacarState();
       // Reconstruct the grant record from Dacar ground truth: the deltas
       // that granted us plus the permissions the Engine actually allows
@@ -1519,6 +1529,10 @@ export async function createMeshSync({
         projectId: invitedProjectId,
         authorization,
       }).catch(() => {});
+      // The verified grant is in place: materialize the project and rebind
+      // the mesh onto the adopted identity — the join flow's explicit
+      // transition, not an observer inference
+      await hooks.onGranted?.(response.project ?? {});
       await storage.set("pendingInviteUri", "").catch(() => {});
       postMessage({
         kind: "mesh-bootstrap",
@@ -1600,7 +1614,6 @@ export async function createMeshSync({
       // Reconcile entries already in the restored document: observers only
       // fire on changes, so a persisted grants map needs a first pass
       await reconcileDacarState().catch(() => {});
-      notifyApprovalIfGranted();
       // The direct-link Delta ingestion endpoint (§11) serves pushes on the
       // shared transport for as long as sync runs
       await ensureDacarSyncServer().catch((/** @type {any} */ err) => {
@@ -1613,37 +1626,54 @@ export async function createMeshSync({
       // The shared transport serves the provider AND the bootstrap pre-flow
       const reticulum = await ensureReticulum();
       postStartStatus("connecting");
-      provider = await createProvider(
-        config,
-        identity,
-        doc,
-        room,
-        {
-          isGranted,
-          isInRequesterMode,
-          authorizeLink,
-          onRefused: (/** @type {any[]} */ refusals) => {
-            for (const refusal of refusals) {
-              if (!refusal?.identityHash) continue;
-              if (!joinRequests.has(refusal.identityHash)) {
-                joinRequests.set(refusal.identityHash, {
-                  identityHash: refusal.identityHash,
-                  destinationHash: refusal.destinationHash ?? null,
-                  firstSeen: Date.now(),
-                  source: "sync",
-                });
-              }
-            }
-            if (refusals.length > 0) {
-              postMessage({
-                kind: "mesh-requests",
-                requests: [...joinRequests.values()],
-              });
-            }
-          },
-        },
-        reticulum,
-      );
+      // A connect that never completes (a Safari stall, a half-open
+      // interface) must be diagnosable, not silent: race the provider
+      // start against a timeout so the status line reports the failure
+      // instead of hanging on "connecting" forever (work document #27)
+      let connectTimeout;
+      try {
+        provider = await Promise.race([
+          createProvider(
+            config,
+            identity,
+            doc,
+            room,
+            {
+              isGranted,
+              isInRequesterMode,
+              authorizeLink,
+              onRefused: (/** @type {any[]} */ refusals) => {
+                for (const refusal of refusals) {
+                  if (!refusal?.identityHash) continue;
+                  if (!joinRequests.has(refusal.identityHash)) {
+                    joinRequests.set(refusal.identityHash, {
+                      identityHash: refusal.identityHash,
+                      destinationHash: refusal.destinationHash ?? null,
+                      firstSeen: Date.now(),
+                      source: "sync",
+                    });
+                  }
+                }
+                if (refusals.length > 0) {
+                  postMessage({
+                    kind: "mesh-requests",
+                    requests: [...joinRequests.values()],
+                  });
+                }
+              },
+            },
+            reticulum,
+          ),
+          new Promise((_resolve, reject) => {
+            connectTimeout = setTimeout(
+              () => reject(new Error("provider connect timed out")),
+              PROVIDER_CONNECT_TIMEOUT_MS,
+            );
+          }),
+        ]);
+      } finally {
+        clearTimeout(connectTimeout);
+      }
     } catch (err) {
       provider = null;
       // No ghost transport may outlive a failed provider start
@@ -1761,28 +1791,16 @@ export async function createMeshSync({
   // the Yjs transaction that triggered them (a throw there would abort
   // persistence commits).
 
-  // Approval watcher (work document #21): when the grants map gains a grant
-  // for this device's identity hash, the owner has approved this device's
-  // join request — surfaced through onApproved so the Engine can materialize
-  // the project.
-  /** @type {boolean} */
-  let approvalFired = false;
-  doc.getMap?.("grants")?.observe(() => {
-    if (approvalFired || !identityHash || !isGranted(identityHash)) return;
-    approvalFired = true;
-    onApproved?.();
-  });
   // Dacar grant lifecycle (work document #25 §6.2, §7): reconcile the
-  // grants map into the Dacar node state as entries arrive, and let the
-  // anchor countersign plain grants written through the Glass intents
+  // grants map into the Dacar node state as entries arrive. The grants map
+  // is replication: verification happens through the Dacar Engine, never
+  // by inferring device transitions from map contents — the join flow's
+  // granted path drives materialization directly (work document #27)
   doc.getMap?.("grants")?.observe(() => {
     try {
-      reconcileDacarState()
-        .then(() => notifyApprovalIfGranted())
-        .catch((/** @type {any} */ err) =>
-          console.warn("Dacar reconcile failed:", err?.message ?? err),
-        );
-      notifyApprovalIfGranted();
+      reconcileDacarState().catch((/** @type {any} */ err) =>
+        console.warn("Dacar reconcile failed:", err?.message ?? err),
+      );
     } catch (err) {
       console.warn(
         "Grants observer failed:",
@@ -1885,7 +1903,7 @@ export async function createMeshSync({
      * Runs the joiner state machine against the invited host.
      *
      * @param {string} uri
-     * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+     * @param {JoinHooks} [hooks]
      */
     async startBootstrapJoin(uri, hooks = {}) {
       await runBootstrapJoin(uri, hooks);
@@ -1894,7 +1912,7 @@ export async function createMeshSync({
      * Re-runs a persisted pending invite (resume on reload, work document
      * #25 plan item 3); false when no pending invite is stored.
      *
-     * @param {{ onApproved?: (project: any) => Promise<void> | void }} [hooks]
+     * @param {JoinHooks} [hooks]
      * @returns {Promise<boolean>}
      */
     async resumePendingInvite(hooks = {}) {
@@ -1951,9 +1969,6 @@ export async function createMeshSync({
       config.enabled = true;
       config.joinedViaInvite = true;
       await saveMeshConfig(storage, config);
-      // A fresh join means a fresh materialization: a previously spent
-      // approval (e.g. a scratch project's self-grant) must not block it
-      approvalFired = false;
       doc.getMap?.("grants")?.clear();
       // No anchor claim needs clearing: the Trust Anchor binding is
       // device-local per project (work document #27), so a scratch

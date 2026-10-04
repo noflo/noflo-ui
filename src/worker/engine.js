@@ -74,9 +74,6 @@ export async function startEngine(io, options = {}) {
     (typeof globalThis.indexedDB !== "undefined"
       ? createIndexeddbStorage("noflo-mesh", "config")
       : createMemoryStorage());
-  /** The invited project id awaiting approval, if joining by invite. */
-  /** @type {string | null} */
-  let pendingInviteId = null;
   const storedProjectId = await meshStorage
     .get("activeProjectId")
     .catch(() => null);
@@ -222,20 +219,6 @@ export async function startEngine(io, options = {}) {
     postMessage: io.postMessage,
     storage: meshStorage,
     roomFor: projectRoom,
-    // The invited project materializes when the owner's approval grant
-    // arrives through the synced grants map
-    onApproved: () => {
-      const invitedId = pendingInviteId;
-      if (!invitedId) return;
-      materializePendingProject(invitedId);
-      // The mesh room derives from the adopted project identity, so the
-      // rebind runs NOW: gating it on the persistence sync would leave the
-      // provider on the scratch room forever if the sync stalls (Safari's
-      // IndexedDB can). onProjectLoaded runs again once the store syncs,
-      // which is harmless (migrations and full-state sync are idempotent)
-      onProjectLoaded();
-      postMeshConfig();
-    },
     // With a bound project store, wait for the stored project id before
     // binding; a pending bootstrap invite resumes the join instead of
     // starting the sync provider (the grant has not been handed off yet)
@@ -254,10 +237,7 @@ export async function startEngine(io, options = {}) {
     // host answers idempotently, so the re-dial is safe. The handler is
     // referenced lazily: it is defined further down in the boot sequence.
     mesh
-      .resumePendingInvite({
-        onApproved: (/** @type {any} */ project) =>
-          adoptInvitedProject(project),
-      })
+      .resumePendingInvite(joinHooks())
       .catch((/** @type {any} */ err) =>
         console.error("Join resume failed:", err),
       );
@@ -284,22 +264,52 @@ export async function startEngine(io, options = {}) {
   };
 
   /**
+   * The join flow's explicit lifecycle hooks (work document #27): the
+   * granted path fires them directly — adopt the invited identity, then
+   * materialize and rebind — instead of an observer inferring the
+   * transitions from grants-map contents. A function declaration so the
+   * boot sequence's early resume call can reference it; the hooks close
+   * over later-defined handlers that only fire once the join grants.
+   *
+   * @returns {import("./MeshSync.js").JoinHooks}
+   */
+  function joinHooks() {
+    return {
+      onAdopt: (/** @type {any} */ project) => adoptInvitedProject(project),
+      onGranted: (/** @type {any} */ project) => {
+        const invitedId = String(project?.id ?? "");
+        if (!invitedId) return;
+        materializePendingProject(invitedId);
+        // The mesh room derives from the adopted project identity, so the
+        // rebind runs NOW: gating it on the persistence sync would leave the
+        // provider on the scratch room forever if the sync stalls (Safari's
+        // IndexedDB can). onProjectLoaded runs again once the store syncs,
+        // which is harmless (migrations and full-state sync are idempotent)
+        onProjectLoaded();
+        postMeshConfig();
+      },
+    };
+  }
+
+  /**
    * Applies an approved bootstrap handoff (work document #25 §4.2): adopts
    * the invited project identity and switches the device into invited mode
    * (no self-grant, grants map cleared). The handed-off grant itself is
-   * written by the mesh layer right after this resolves — which triggers
-   * the approval watcher and materializes the project. Returns false when
-   * the project was already present (nothing to adopt, no grant write).
+   * written by the mesh layer right after this resolves, and the granted
+   * path materializes the project directly through `onGranted`.
    *
    * @param {any} project Approved handoff payload `{ id, name }`.
-   * @returns {Promise<boolean>}
+   * @returns {Promise<"adopted" | "present" | "refused">}
+   *   "adopted" — the identity was adopted; "present" — this device already
+   *   holds the project (the join continues, cleanup runs); "refused" — the
+   *   device has other project content, joining would merge two projects.
    */
   const adoptInvitedProject = async (project) => {
     const invitedId = String(project?.id ?? "");
-    if (!invitedId) return false;
+    if (!invitedId) return "refused";
     if (invitedId === projectId) {
       // Already have this project; the existing grants stay authoritative
-      return false;
+      return "present";
     }
     if (doc.getMap("graphs").size > 0) {
       io.postMessage({
@@ -307,10 +317,9 @@ export async function startEngine(io, options = {}) {
         error:
           "Join failed: this device already has project content. Joining would merge two projects.",
       });
-      return false;
+      return "refused";
     }
     adoptProjectIdentity(doc, invitedId);
-    pendingInviteId = invitedId;
     if (persistence) {
       persistence.destroy().catch(() => {});
       persistence = null;
@@ -319,7 +328,7 @@ export async function startEngine(io, options = {}) {
       legacyLoad = false;
     }
     await mesh.handleJoinedViaInvite();
-    return true;
+    return "adopted";
   };
 
   /**
@@ -342,7 +351,7 @@ export async function startEngine(io, options = {}) {
       return;
     }
     mesh
-      .startBootstrapJoin(invite, { onApproved: adoptInvitedProject })
+      .startBootstrapJoin(invite, joinHooks())
       .catch((/** @type {any} */ err) =>
         io.postMessage({
           kind: "mesh-status",
@@ -359,7 +368,6 @@ export async function startEngine(io, options = {}) {
    * @param {string} invitedId
    */
   const materializePendingProject = (invitedId) => {
-    pendingInviteId = null;
     meshStorage.set("activeProjectId", invitedId).catch(() => {});
     meshStorage.set("pendingInviteUri", "").catch(() => {});
     legacyLoad = false;

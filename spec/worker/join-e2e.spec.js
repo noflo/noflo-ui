@@ -113,13 +113,15 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
     joiner
       .startBootstrapJoin(invite.uri, {
         // Mirrors the Engine's adoptInvitedProject: the project identity is
-        // adopted only once the grant verified (work document #25)
-        onApproved: async (/** @type {any} */ project) => {
+        // adopted once the grant verified, through the join flow's explicit
+        // lifecycle (work document #27)
+        onAdopt: async (/** @type {any} */ project) => {
           console.info(
-            `[room-debug-joiner] onApproved adopting ${String(project?.id ?? "none").slice(0, 8)}`,
+            `[room-debug-joiner] onAdopt adopting ${String(project?.id ?? "none").slice(0, 8)}`,
           );
           adoptProjectIdentity(joinerDoc, String(project?.id ?? ""));
           await joiner.handleJoinedViaInvite();
+          return "adopted";
         },
       })
       .catch((/** @type {any} */ err) =>
