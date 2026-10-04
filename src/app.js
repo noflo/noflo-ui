@@ -186,7 +186,12 @@ function onEngineMessage(data) {
   if (data?.kind === "progress") {
     // Operation narration (work document #34): the phrase catalog renders
     // the micro-phrase; a running operation replaces the previous one, its
-    // done clears it, a failure sticks until the next operation
+    // done clears it. A failed ATTEMPT is a completed fact, not the current
+    // state: pinning it on the chip would contradict a system that has
+    // since recovered through another path (the announce fallback). The
+    // chip narrates running operations only; failures stay in the console
+    // timeline, while state-level failures (identity, provider) surface
+    // persistently through mesh-status errors.
     const phrase = progressPhrase(data);
     if (data.state === "running") {
       narration = {
@@ -195,6 +200,10 @@ function onEngineMessage(data) {
         stage: data.stage,
       };
     } else if (data.state === "failed") {
+      // A failed attempt stays visible until the system demonstrably
+      // recovers (mesh-status reports synced) or a newer operation
+      // supersedes it — a dial failure with sync still down is a real
+      // problem, not noise (work document #34, no silent failures)
       narration = {
         phrase,
         operation: data.operation,
@@ -281,6 +290,11 @@ function onEngineMessage(data) {
       };
     }
     meshError = data.error ?? "";
+    // Recovery clears a stuck failure narration: the chip must not keep
+    // claiming a dial failed when sync demonstrably works again
+    if (data.connected === true && data.synced === true && narration?.failed) {
+      narration = null;
+    }
     refreshMeshSettings();
     refreshSyncPanel();
     if (meshError) {

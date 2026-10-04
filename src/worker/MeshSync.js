@@ -328,6 +328,9 @@ export async function createMeshSync({
   let pendingHostDial = /** @type {{ identity: any, peer: string } | null} */ (
     null
   );
+  /** Room destination hashes whose direct dial failed and has not yet
+   * succeeded: re-dialed when a matching announce refreshes the path. */
+  const failedDials = new Set();
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -1009,7 +1012,9 @@ export async function createMeshSync({
           peer: peerHash,
         }),
       );
-      const established = await provider.dialHash?.(destHash).catch(() => false);
+      const established = await provider.dialHash?.(destHash, peerHash).catch(() => false);
+      if (established) failedDials.delete(destHash);
+      else failedDials.add(destHash);
       postMessage(
         progress("mesh.connect.path", "request", established ? "done" : "failed", {
           peer: peerHash,
@@ -1741,6 +1746,16 @@ export async function createMeshSync({
               authorizeLink,
               onRefused: (/** @type {any[]} */ refusals) => {
                 for (const refusal of refusals) {
+                  // Narrate every refusal with its reason (work document
+                  // #34): dial failures must not be silent
+                  if (refusal?.reason) {
+                    postMessage(
+                      progress("mesh.connect.link", "establish", "failed", {
+                        peer: String(refusal.identityHash ?? ""),
+                        reason: refusal.reason,
+                      }),
+                    );
+                  }
                   if (!refusal?.identityHash) continue;
                   // Only responder-side refusals are access requests: a peer
                   // knocked and the policy declined. An initiator-side
@@ -1821,10 +1836,32 @@ export async function createMeshSync({
     provider.on("discovered", (/** @type {any} */ event) => {
       const remoteHex = String(unwrap(event)?.remoteHex ?? "");
       postMessage(
-        progress("mesh.connect", "discovered", "done", {
-          peer: remoteHex.slice(0, 8),
-        }),
+        progress("mesh.connect", "discovered", "done", { peer: remoteHex }),
       );
+      // The announce just refreshed the path table: retry a direct dial
+      // that failed at start, when the path may still have pointed at the
+      // peer's previous session (work document #34). The retry's done
+      // closes the failed narration the Glass is showing.
+      if (failedDials.has(remoteHex)) {
+        failedDials.delete(remoteHex);
+        postMessage(
+          progress("mesh.connect.path", "request", "running", { peer: remoteHex }),
+        );
+        provider
+          .dialHash?.(remoteHex)
+          .then((/** @type {any} */ established) => {
+            if (!established) failedDials.add(remoteHex);
+            postMessage(
+              progress(
+                "mesh.connect.path",
+                "request",
+                established ? "done" : "failed",
+                { peer: remoteHex },
+              ),
+            );
+          })
+          .catch(() => failedDials.add(remoteHex));
+      }
     });
     provider.on("announced", () => {
       postMessage(
