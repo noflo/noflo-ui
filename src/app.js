@@ -92,7 +92,7 @@ let meshInviteUri = "";
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
 /** Live sync status reported by the Engine, for the settings dialog. */
 let syncStatus =
-  /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */ (
+  /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */ (
     null
   );
 /** Join progress reported by the Engine, for the settings dialog. */
@@ -219,11 +219,12 @@ function onEngineMessage(data) {
     dacarState = data;
     refreshMeshSettings();
   } else if (data?.kind === "mesh-status") {
-    if (data.connected !== undefined) {
+    if (data.connected !== undefined || data.stage) {
       syncStatus = {
         connected: data.connected === true,
         synced: data.synced === true,
         peers: data.peers,
+        stage: data.stage,
       };
     }
     meshError = data.error ?? "";

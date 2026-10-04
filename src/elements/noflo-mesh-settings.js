@@ -94,7 +94,7 @@ export class FlowMeshSettings extends HTMLElement {
     /** @type {string} */
     this._meshError = "";
     /** Live sync status from the Engine (`mesh-status` telemetry). */
-    /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */
+    /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */
     this._syncStatus = null;
     /** Joiner state-machine progress (`mesh-bootstrap` messages). */
     /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */
@@ -202,7 +202,7 @@ export class FlowMeshSettings extends HTMLElement {
   /**
    * Updates the live sync status line (connected, peers, synced).
    *
-   * @param {{ connected?: boolean, synced?: boolean, peers?: number } | null} status
+   * @param {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} status
    */
   setSyncStatus(status) {
     this._syncStatus = status;
@@ -265,20 +265,28 @@ export class FlowMeshSettings extends HTMLElement {
    */
   syncStatusHtml() {
     const status = this._syncStatus;
-    if (this._config?.enabled && (!status || status.connected === undefined)) {
-      // Enabled but no provider status yet: say so instead of hiding the
-      // line — a silent gap read as "sync is fine" during debugging
-      return `<div class="hint" id="mesh-sync-status">Sync: starting…</div>`;
+    if (status?.connected) {
+      const peers =
+        typeof status.peers === "number" && status.peers > 0
+          ? `, ${status.peers} peer${status.peers === 1 ? "" : "s"}`
+          : "";
+      const synced = status.synced ? ", synced" : "";
+      return `<div class="hint" id="mesh-sync-status">Sync: connected${peers}${synced}</div>`;
     }
-    if (!status || status.connected === undefined) return "";
-    const peers =
-      typeof status.peers === "number" && status.peers > 0
-        ? `, ${status.peers} peer${status.peers === 1 ? "" : "s"}`
-        : "";
-    const synced = status.synced ? ", synced" : "";
-    return `<div class="hint" id="mesh-sync-status">Sync: ${
-      status.connected ? "connected" : "disconnected"
-    }${peers}${synced}</div>`;
+    if (this._config?.enabled) {
+      // Show the boot stage (or the last known state) instead of hiding
+      // the line — a silent gap reads as "sync is fine" during debugging
+      const stageText = {
+        starting: "starting…",
+        connecting: "connecting…",
+        disabled: "disabled",
+        "already-running": "starting…",
+        "identity-error": "identity unavailable",
+        "provider-failed": "provider failed",
+      }[status?.stage ?? "starting"];
+      return `<div class="hint" id="mesh-sync-status">Sync: ${stageText ?? "starting…"}</div>`;
+    }
+    return "";
   }
 
   /**

@@ -156,7 +156,9 @@ describe("mesh sync (work document #21)", () => {
     listeners.get("peers")?.({ added: [], removed: ["peer-b"] });
     listeners.get("synced")?.({ synced: true });
 
-    const statuses = messages.filter((m) => m.kind === "mesh-status");
+    const statuses = messages.filter(
+      (m) => m.kind === "mesh-status" && !m.stage,
+    );
     assert.deepEqual(
       statuses.map((m) => `${m.connected}/${m.synced}/${m.peers}`),
       ["true/false/0", "true/true/1"],

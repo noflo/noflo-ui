@@ -285,7 +285,7 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
         joiner2.posted.some(
           (m) => m.kind === "mesh-status" && m.connected === true,
         ),
-      30_000,
+      90_000,
       "the reloaded joiner's mesh to boot and connect",
     );
 

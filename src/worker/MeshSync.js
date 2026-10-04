@@ -102,10 +102,6 @@ async function defaultCreateProvider(
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
-    // Faster peer discovery than the 60s upstream default: a freshly
-    // invited device should link within seconds of the handoff, not wait
-    // out a full announce cadence. Announces are small; the cost is modest.
-    announceIntervalMs: 15_000,
     // Dacar gate: peers with a non-revoked grant may sync; devices in
     // requester mode (empty grants, fresh join) may dial so the owner sees
     // the access request. Ignored by y-reticulum versions without the hook.
@@ -1525,11 +1521,38 @@ export async function createMeshSync({
     }
   }
 
+  /**
+   * Posts a mesh-status with the current boot stage, so the Glass's sync
+   * line shows exactly where the start path is (or stalled).
+   *
+   * @param {string} stage
+   * @param {string} [error]
+   */
+  function postStartStatus(stage, error) {
+    postMessage({
+      kind: "mesh-status",
+      connected: false,
+      synced: false,
+      peers: 0,
+      stage,
+      ...(error ? { error } : {}),
+    });
+  }
+
   async function start() {
     console.info(
       `Mesh start called: enabled=${config.enabled}, hasProvider=${Boolean(provider)}, identityError=${identityError || "none"}, room=${roomFor()}, interfaces=${config.interfaces.length}, requesterMode=${isInRequesterMode()}, identityHash=${identityHash ?? "none"}`,
     );
-    if (!config.enabled || provider || identityError) return;
+    if (!config.enabled) return;
+    if (provider) {
+      postStartStatus("already-running");
+      return;
+    }
+    if (identityError) {
+      postStartStatus("identity-error", identityError);
+      return;
+    }
+    postStartStatus("starting");
     console.info("Mesh starting: gates passed");
     // A fresh instance connects through a random default entry point, so
     // mesh sync works out of the box; the choice persists with the config.
@@ -1594,6 +1617,7 @@ export async function createMeshSync({
       room = roomFor();
       // The shared transport serves the provider AND the bootstrap pre-flow
       const reticulum = await ensureReticulum();
+      postStartStatus("connecting");
       provider = await createProvider(
         config,
         identity,
@@ -1635,6 +1659,7 @@ export async function createMeshSync({
         connected: false,
         synced: false,
         peers: 0,
+        stage: "provider-failed",
         error: `Mesh provider failed: ${reason}`,
       });
       return;
@@ -1649,28 +1674,34 @@ export async function createMeshSync({
       awareness.on("update", updateHandler);
       unobserveAwareness = () => awareness?.off?.("update", updateHandler);
     }
+    const unwrap = (/** @type {any} */ event) =>
+      Array.isArray(event) ? event[0] : event;
     provider.on("status", (/** @type {any} */ event) => {
+      const payload = unwrap(event) ?? {};
       postMessage({
         kind: "mesh-status",
-        connected: event.connected === true,
+        connected: payload.connected === true,
         synced: false,
         peers: peerCount,
       });
     });
     provider.on("synced", (/** @type {any} */ event) => {
+      const payload = unwrap(event) ?? {};
       postMessage({
         kind: "mesh-status",
         connected: true,
-        synced: event.synced === true,
+        synced: payload.synced === true,
         peers: peerCount,
       });
     });
     provider.on("peers", (/** @type {any} */ event) => {
-      peerCount += event.added.length - event.removed.length;
+      const payload = unwrap(event) ?? {};
+      peerCount +=
+        (payload.added ?? []).length - (payload.removed ?? []).length;
       postMessage({
         kind: "mesh-peers",
-        added: event.added,
-        removed: event.removed,
+        added: payload.added ?? [],
+        removed: payload.removed ?? [],
         peers: peerCount,
       });
     });
@@ -1692,7 +1723,14 @@ export async function createMeshSync({
     pendingAwareness = null;
     awareness = null;
     try {
-      await provider.destroy();
+      // Best-effort: the destroy's link teardown against an unreachable
+      // peer can retry for the whole Reticulum link timeout — the new
+      // provider must not wait for that. A late teardown completing in the
+      // background is harmless (the room state is already released).
+      await Promise.race([
+        provider.destroy(),
+        new Promise((resolve) => setTimeout(resolve, 2_500)),
+      ]);
     } catch {
       // Tearing down a half-connected provider is best-effort
     }
@@ -1703,7 +1741,14 @@ export async function createMeshSync({
     // one teardown per provider lifetime (ghost-connection rule)
     await stopBootstrapHost();
     await stopDacarSyncServer();
-    await releaseReticulum();
+    if (sharedRns) {
+      const rns = sharedRns;
+      sharedRns = null;
+      await Promise.race([
+        rns.stop(),
+        new Promise((resolve) => setTimeout(resolve, 2_500)),
+      ]).catch(() => {});
+    }
     // Release the wallet's connection so a factory reset's deleteDatabase
     // is never blocked by it
     walletStorage.close?.();
@@ -1906,8 +1951,16 @@ export async function createMeshSync({
      * @param {any} payload
      */
     async handleConfigure(payload) {
+      // The identity is device state, not configuration: a configure
+      // payload that omits it (the settings form does not render secret
+      // key material) must never wipe it — a fresh identity would drop
+      // every grant the peers hold, silently unsyncing the device
+      const previousIdentity = config.identity;
       config = normalizeMeshConfig(payload);
       config.enabled = payload?.enabled === true;
+      if (!config.identity && previousIdentity) {
+        config.identity = previousIdentity;
+      }
       await saveMeshConfig(storage, config);
       await stop();
       await start();
