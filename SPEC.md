@@ -193,6 +193,8 @@ The application relies on native `import`/`export` and `<script type="importmap"
 
 These interfaces enforce a strict Application Boundary between the Main Thread (UI) and the Web Worker (Engine), defined using exact discriminated unions to guarantee type safety. The UI never commands state directly; it requests subscriptions, emits intents, or broadcasts ephemeral awareness. The Worker echoes authoritative FBP Protocol 2.0 commands back.
 
+**Source of truth and enforcement (work document #37):** the contract lives as machine-readable registries in `src/crdt/Protocol.js` (`UI_MESSAGES`, `ECHO_MESSAGES`) alongside the JSDoc-typed unions. The Engine dispatches through enumerable tables (`EngineCore`'s `CORE_TYPE_HANDLERS`/`INTENT_HANDLERS`, the MESH router in `src/worker/mesh-commands.js`), the Glass through its echo dispatch table (`src/glass/echo-handlers.js`), and the NoFlo gateway refuses messages outside the registry at the boundary. `spec/crdt/contract.spec.js` (run by `npm test`) asserts exact-set equality between the registries and the dispatch tables on both sides — a message added on either side without a registry entry, or a registry entry without a handler, fails the build. **Process rule: a contract change lands in the same commit or milestone as the dispatch change that requires it, never "later".**
+
 ### Part 1: UI to Worker (`Main -> Engine`)
 
 ```typescript
@@ -214,7 +216,21 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'createGraph'; payload: IntentCreateGraph }
   | { type: 'INTENT'; command: 'removeGraph'; payload: IntentRemoveGraph }
   | { type: 'INTENT'; command: 'makeSubgraph'; payload: IntentMakeSubgraph }
-  | { type: 'INTENT'; command: 'moveUp'; payload: IntentMoveUp };
+  | { type: 'INTENT'; command: 'moveUp'; payload: IntentMoveUp }
+  | { type: 'INTENT'; command: 'revokePermission'; payload: IntentRevokePermission }
+  | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
+  | { type: 'MESH'; command: 'status' }
+  | { type: 'MESH'; command: 'join'; payload: { invite: string } }
+  | { type: 'MESH'; command: 'grant'; payload: { identityHash: string; role: string } }
+  | { type: 'MESH'; command: 'resolveRequest'; payload: { identityHash: string; decision: 'approved' | 'declined' } }
+  | { type: 'MESH'; command: 'createInvite' }
+  | { type: 'MESH'; command: 'factoryReset' }
+  | { type: 'MESH'; command: 'stop' }
+  | { type: 'MESH'; command: 'importIdentity'; payload: { identity: string } };
+
+// Tombstone-revoke a grant (work document #21). Grants are minted born-verified
+// through `MESH grant` (work document #27); the intent only ever revokes.
+interface IntentRevokePermission { grantId: string }
 
 // Awareness: Throttled telemetry for mesh peers (does not mutate CRDT)
 interface AwarenessDragging { peerId: string; graphId: string; nodeId: string; x: number; y: number; }
@@ -265,6 +281,11 @@ interface IntentRemoveGraph { graphId: string }
 // resulting changes.
 interface IntentMakeSubgraph { graphId: string; nodeIds: string[] }
 interface IntentMoveUp { graphId: string; nodeIds: string[] }
+
+// MESH commands (work documents #25/#27) bypass the NoFlo dispatcher: they
+// concern the mesh layer, not the CRDT graph, and are routed by the Engine's
+// message router (`src/worker/mesh-commands.js`). Unknown commands are
+// refused loudly.
 ```
 
 ### Part 2: Worker to UI (`Engine -> Main`)
@@ -287,6 +308,18 @@ type EngineUIMessage =
   | { protocol: 'graph'; command: 'renameinport' | 'renameoutport'; payload: { from: string; to: string } }
   | { protocol: 'graph'; command: 'creategraph'; payload: GraphCreateGraph }
   | { protocol: 'graph'; command: 'removegraph'; payload: { id: string } }
+  | { protocol: 'acl'; command: 'revoke'; payload: { id: string } }
+  | { kind: 'progress'; operation: string; stage: string; state: 'running' | 'done' | 'failed'; detail?: Record<string, any> }
+  | { kind: 'y-sync'; update: Uint8Array }
+  | { kind: 'y-update'; update: Uint8Array }
+  | { kind: 'awareness'; states: Array<Record<string, any>> }
+  | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
+  | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
+  | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number }
+  | { kind: 'mesh-requests'; requests: Array<{ identityHash: string; destinationHash: string | null; firstSeen: number; source?: string }> }
+  | { kind: 'mesh-dacar'; projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
+  | { kind: 'mesh-invite'; uri: string }
+  | { kind: 'factory-reset' }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)
@@ -321,6 +354,20 @@ interface GraphCreateGraph { id: string; name: string; parent: string }
 // when signatures are written. A null signature means the component is
 // unknown to the registry.
 interface SignatureResponse { componentName: string; signature: any }
+
+// Operation narration (work document #34): named operations report structured
+// progress. `operation` and `stage` are enums the Glass renders micro-phrases
+// from — the Engine never sends free-form user-facing text.
+interface ProgressDetail { [key: string]: any }
+
+// Mesh and mirror echoes (work documents #21/#25/#27/#34). Kind-style echoes
+// carry their discriminator in `kind`; the Glass dispatches every Engine
+// message through `src/glass/echo-handlers.js`, whose keys must equal the
+// registry exactly (see the process rule at the top of this appendix).
+interface MeshStatus { connected?: boolean; synced?: boolean; peers?: number; error?: string }
+interface MeshPeerChange { added: string[]; removed: string[]; peers?: number }
+interface MeshJoinRequest { identityHash: string; destinationHash: string | null; firstSeen: number; source?: string }
+interface MeshDacarState { projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
 
 // Network Protocol (Batched telemetry chunks)
 interface NetworkFlowtraceChunk {
