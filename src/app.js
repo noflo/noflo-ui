@@ -10,8 +10,8 @@ import * as Y from "yjs";
 
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
-import { FlowEditor } from "./elements/noflo-editor.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
+import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
 import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
@@ -92,7 +92,7 @@ let syncStatus =
     null
   );
 /** Join progress reported by the Engine, for the sync panel. */
-let joinProgress =
+const joinProgress =
   /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (
     null
   );
@@ -460,12 +460,7 @@ function openMeshSettings() {
     recoverIdentityOnMainThread();
   }
   supervisor?.send({ type: "MESH", command: "status" });
-  dialog.open(
-    meshConfig,
-    meshIdentityHash,
-    meshInterfaceSchemas,
-    meshError,
-  );
+  dialog.open(meshConfig, meshIdentityHash, meshInterfaceSchemas, meshError);
   dialog.setDacarState(dacarState);
 }
 
@@ -515,14 +510,15 @@ function refreshSyncPanel() {
  */
 function updateContextChip() {
   if (!contextChip) return;
-  const projectName = String(
-    mirrorDoc?.getMap("metadata")?.get("name") ?? "",
-  );
+  const projectName = String(mirrorDoc?.getMap("metadata")?.get("name") ?? "");
   contextChip.setLabel(
     projectName && activeGraphId
       ? `${projectName} · ${activeGraphId}`
       : projectName || activeGraphId || "",
   );
+  // The up button navigates one level up (WD #28's app-level navigation);
+  // at root graphs it hides until the Home graph exists (WD #32)
+  contextChip.setUp(mirrorDoc ? graphParent(mirrorDoc, activeGraphId) : "");
 }
 
 /**
@@ -731,6 +727,12 @@ async function init() {
     /** @type {any} */ (document.getElementById("context-chip"))
   );
   contextChip?.addEventListener("open-settings", () => openMeshSettings());
+  // Up navigation from the Context corner: one level up, same path the
+  // keyboard/gesture up-navigation takes
+  contextChip?.addEventListener("navigate-up", () => {
+    const parent = graphParent(mirrorDoc, activeGraphId);
+    if (parent) router?.navigate(parent);
+  });
   // Corner sync/presence panel (work document #28): actions route to the
   // same Engine commands the settings dialog uses
   syncPanel = /** @type {FlowSyncPanel | null} */ (

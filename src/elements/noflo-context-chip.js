@@ -1,14 +1,19 @@
 /**
  * @file Context chip (work document #28, top-left corner): the Context
- * corner's first sliver — what am I editing, plus the tab's engine role and
- * the entry into configuration. It replaces the former full-width top bar:
- * everything it carried has a corner home now (the mesh state lives in the
- * bottom-right sync panel).
+ * corner's first sliver — what am I editing, plus the tab's engine role,
+ * the up navigation, and the entry into configuration. It replaces the
+ * former full-width top bar: everything it carried has a corner home now
+ * (the mesh state lives in the bottom-right sync panel).
  *
- * Pure view: state in via setters, intent out via the `open-settings`
- * event. Shadow DOM, per SPEC "Light DOM vs Shadow DOM".
+ * Pure view: state in via setters, intents out via the `open-settings` and
+ * `navigate-up` events. Shadow DOM, per SPEC "Light DOM vs Shadow DOM".
+ * Corner states come from the shared corner base; the chip carries no
+ * accordion content yet (the test summary rides in with WD #16), so it
+ * never expands.
  */
+
 import icons from "../../vendor/fontawesome-icons.js";
+import { FlowCornerElement } from "./CornerElement.js";
 
 /**
  * Escapes a value for interpolation into the shadow template.
@@ -35,13 +40,17 @@ function icon(name) {
   return `<i class="fa" aria-hidden="true">${/** @type {any} */ (icons())[name] ?? ""}</i>`;
 }
 
-export class FlowContextChip extends HTMLElement {
+export class FlowContextChip extends FlowCornerElement {
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
+    this.expandable = false;
+    this.chipTitle = "What you are editing";
     this._label = "";
     /** @type {{ leader: boolean, leaderId?: string } | null} */
     this._role = null;
+    /** The graph one level up; empty at root graphs, where the up button
+     * hides (the graph→Home hop lands with the Home graph, WD #32). */
+    this._up = "";
   }
 
   connectedCallback() {
@@ -71,11 +80,25 @@ export class FlowContextChip extends HTMLElement {
     this.render();
   }
 
-  render() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    const role = this._role;
-    shadow.innerHTML = `
-      <style>
+  /**
+   * Sets the up-navigation target: shown when the current graph has a
+   * parent (the up button navigates one level up, WD #28's app-level
+   * navigation); hidden at root graphs.
+   *
+   * @param {string} parentGraphId
+   */
+  setUp(parentGraphId) {
+    const next = parentGraphId ?? "";
+    if (next === this._up) return;
+    this._up = next;
+    this.render();
+  }
+
+  /**
+   * @returns {string}
+   */
+  styles() {
+    return `
         :host {
           position: fixed;
           top: 10px;
@@ -93,17 +116,14 @@ export class FlowContextChip extends HTMLElement {
           font-size: 12px;
           backdrop-filter: blur(8px);
           max-width: min(60vw, 420px);
+          cursor: default;
         }
-        .fa {
-          font-family: "Font Awesome 7 Free";
-          font-weight: 900;
-          font-style: normal;
-        }
-        .label {
+        .context-label {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+        .chip { cursor: default; }
         .role {
           display: inline-flex;
           gap: 4px;
@@ -113,35 +133,50 @@ export class FlowContextChip extends HTMLElement {
           font-size: 11px;
         }
         .role.observer { color: var(--ui-age-attention, #d9534f); }
-        button {
-          background: transparent;
-          color: inherit;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: 4px;
-          padding: 2px 7px;
-          font-size: 12px;
-          cursor: pointer;
-        }
         /* Phone and compact layouts: at most one line */
         @media (max-width: 480px) {
           .role { display: none; }
         }
-      </style>
-      <span class="label">${escapeHtml(this._label)}</span>
+    `;
+  }
+
+  /**
+   * The Context corner's chip: the up button, the editing context, the
+   * engine role, and the entry into configuration.
+   *
+   * @returns {string}
+   */
+  chipHtml() {
+    return `
+      ${this._up ? `<button class="secondary" data-action="up" title="Back to ${escapeHtml(this._up)}">${icon("arrow-up")}</button>` : ""}
+      <span class="context-label">${escapeHtml(this._label)}</span>
       ${
-        role
-          ? role.leader
+        this._role
+          ? this._role.leader
             ? `<span class="role" title="This tab runs the Engine">${icon("bolt")}<span class="label-text">Leader</span></span>`
-            : `<span class="role observer" title="Read-only: the leader tab (${escapeHtml(role.leaderId ?? "?")}) runs the Engine">${icon("eye")}<span class="label-text">Observer</span></span>`
+            : `<span class="role observer" title="Read-only: the leader tab (${escapeHtml(this._role.leaderId ?? "?")}) runs the Engine">${icon("eye")}<span class="label-text">Observer</span></span>`
           : ""
       }
-      <button data-action="settings" title="Mesh and device settings">${icon("gear")}</button>
+      <button class="secondary" data-action="settings" title="Mesh and device settings">${icon("gear")}</button>
     `;
+  }
+
+  wireEvents() {
+    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     shadow
       .querySelector("[data-action='settings']")
-      ?.addEventListener("click", () => {
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
         this.dispatchEvent(
           new CustomEvent("open-settings", { bubbles: true, composed: true }),
+        );
+      });
+    shadow
+      .querySelector("[data-action='up']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        this.dispatchEvent(
+          new CustomEvent("navigate-up", { bubbles: true, composed: true }),
         );
       });
   }
