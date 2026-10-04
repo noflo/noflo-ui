@@ -8,7 +8,7 @@ describe("operation narration (work document #34)", () => {
   it("renders micro-phrases from the catalog", () => {
     assert.equal(
       progressPhrase(progress("mesh.connect", "discovery", "running")),
-      "Waiting for peers",
+      "Working locally",
     );
     assert.equal(
       progressPhrase(progress("persistence.load", "load", "running")),

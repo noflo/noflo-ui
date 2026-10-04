@@ -30,7 +30,7 @@ const PHRASES = {
     running: "Connecting to the relay",
     failed: "Mesh transport failed: {error}",
   },
-  "mesh.connect.discovery": "Waiting for peers",
+  "mesh.connect.discovery": "Working locally",
   "mesh.announce.room": "Announced the project room",
   "mesh.announce.sync": "Announced the sync endpoint",
   "mesh.connect.path.request":
