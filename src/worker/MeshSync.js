@@ -958,7 +958,7 @@ export async function createMeshSync({
     dacarSyncServer.destination?.addEventListener?.("announced", () => {
       postMessage(
         progress("mesh.announce", "sync", "done", {
-          destination: String(dacarSyncServer.destination?.destinationHash ?? ""),
+          destination: toHex(dacarSyncServer.destination?.destinationHash ?? []),
         }),
       );
     });
