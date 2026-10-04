@@ -345,7 +345,7 @@ function encodeBody(body) {
  *   hasAuthority: () => boolean,
  *   requestApproval: (identityHash: string) => Promise<"approved" | "declined">,
  *   isValidInviteToken: (token: string) => Promise<boolean> | boolean,
- *   deliverAuthorization?: (identityHash: string, authorization: any) => Promise<void>,
+ *   deliverAuthorization?: (identityHash: string, authorization: any, identity: any) => Promise<void>,
  *   announceIntervalMs?: number,
  * }} options
  * @returns {Promise<{ destinationHash: string, stop: () => Promise<void> }>}
@@ -460,14 +460,17 @@ export async function createBootstrapHost({
         await link.teardown();
         return;
       }
+      // Register the bootstrap message type before anything else: the
+      // joiner may send its knock the moment the link activates, and a
+      // channel that does not know the type yet drops the message
+      const channel = link.getChannel();
+      channel.registerMessageType(BootstrapMessage);
       const joinerIdentity = await awaitIdentify(link);
       if (!joinerIdentity || stopped) {
         await link.teardown();
         return;
       }
       const joinerHash = toHex(joinerIdentity.getSalt());
-      const channel = link.getChannel();
-      channel.registerMessageType(BootstrapMessage);
       // Await the knock packet
       const body = await awaitChannelBody(
         link,
@@ -475,6 +478,9 @@ export async function createBootstrapHost({
         Date.now() + IDENTIFY_TIMEOUT_MS,
       );
       if (!body || stopped) {
+        console.warn(
+          "Bootstrap host: no knock received before the deadline; tearing down",
+        );
         await link.teardown();
         return;
       }
@@ -498,7 +504,11 @@ export async function createBootstrapHost({
       // CRDT sync, which carries the same grants-map entry
       if (wireResponse.status === "approved" && deliverAuthorization) {
         try {
-          await deliverAuthorization(joinerHash, response.authorization);
+          await deliverAuthorization(
+            joinerHash,
+            response.authorization,
+            joinerIdentity,
+          );
         } catch (err) {
           console.warn(
             "Bootstrap grant delivery failed (CRDT sync will recover):",
@@ -591,34 +601,45 @@ export async function joinViaBootstrapInvite({
   /** @type {any} */ let link = null;
   try {
     link = await destination.createLink();
+    link.getChannel().registerMessageType(BootstrapMessage);
     await link.identify(identity);
   } catch (err) {
     if (link) link.teardown().catch(() => {});
     fail(STATE.LINKING, err);
   }
 
+  const channel = link.getChannel();
+  channel.registerMessageType(BootstrapMessage);
   try {
-    // [ KNOCKING ]: send the invite token packet (§4.1)
+    // [ KNOCKING ]: send the invite token packet (§4.1). The host may not
+    // have its channel handler attached when the first knock lands, so the
+    // joiner re-knocks until answered — the host remembers its decision,
+    // which makes every retry idempotent (§3.1)
     onState(STATE.KNOCKING);
-    const channel = link.getChannel();
-    channel.registerMessageType(BootstrapMessage);
-    await sendChannelMessage(
-      channel,
-      { type: "knock", token: invite.token },
-      () => !linkIsActive(link),
-    );
+    const knock = { type: "knock", token: invite.token };
+    await sendChannelMessage(channel, knock, () => !linkIsActive(link));
 
     // [ WAIT_RESPONSE ]: the host answers with approved or declined (§4.2/§4.3)
     onState(STATE.WAIT_RESPONSE);
-    const response = await awaitChannelBody(
-      link,
-      (candidate) =>
-        candidate?.type === "approved" ||
-        candidate?.type === "declined" ||
-        candidate?.status === "approved" ||
-        candidate?.status === "declined",
-      deadline,
-    );
+    const reknock = setInterval(() => {
+      sendChannelMessage(channel, knock, () => !linkIsActive(link)).catch(
+        () => {},
+      );
+    }, 2_000);
+    let response;
+    try {
+      response = await awaitChannelBody(
+        link,
+        (candidate) =>
+          candidate?.type === "approved" ||
+          candidate?.type === "declined" ||
+          candidate?.status === "approved" ||
+          candidate?.status === "declined",
+        deadline,
+      );
+    } finally {
+      clearInterval(reknock);
+    }
     if (!response) fail(STATE.WAIT_RESPONSE, "no handoff response received");
     onState(response.status === "approved" ? STATE.APPROVED : STATE.DECLINED);
     return response;
