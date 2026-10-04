@@ -1755,17 +1755,43 @@ var Room = class {
 	* initiate applies.
 	*
 	* @param {string} remoteHex Hex of the peer's room destination hash.
+	* @param {string} [remoteIdentityHashHex] Hex of the peer's identity
+	*   hash, when the application knows it — the link policy evaluates
+	*   against it before any link is opened.
 	* @returns {Promise<boolean>} Whether a link was established (true also
 	*   when an active link to this peer already existed).
 	*/
-	async dialHash(remoteHex) {
+	async dialHash(remoteHex, remoteIdentityHashHex = "") {
 		if (!this.connected || !this.dest) return false;
+		const remoteHashBytes = fromHex(remoteHex);
 		if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status === LinkStatus.ACTIVE)) return true;
 		if (this.pendingInitiates.has(remoteHex)) return false;
 		this.pendingInitiates.add(remoteHex);
 		try {
-			const out = await Destination.recalled(this.appName, fromHex(remoteHex), this.rns);
-			const initiatorIdentityHash = toHex(this.identity.identityHash);
+			const remoteIdentity = await this.rns.transport.recallOrSolicitIdentity?.(remoteHashBytes, 1e4).catch(() => null) ?? null;
+			const initiatorIdentityHash = remoteIdentity ? toHex(await Identity.truncatedHash(remoteIdentity.publicKey)) : remoteIdentityHashHex;
+			if (this.linkPolicy && remoteIdentity) {
+				if (!await this.linkPolicy({
+					remoteIdentityHash: initiatorIdentityHash,
+					remoteDestinationHash: remoteHex,
+					initiator: true
+				})) {
+					this.callbacks.onRefused?.([{
+						destinationHash: remoteHex,
+						identityHash: initiatorIdentityHash,
+						initiator: true,
+						reason: "link-policy"
+					}]);
+					return false;
+				}
+			}
+			if (!this.rns.transport.hasPath?.(remoteHashBytes)) {
+				await this.rns.transport.requestPath?.(remoteHashBytes).catch(() => {});
+				const pathDeadline = Date.now() + 1e4;
+				while (!this.rns.transport.hasPath?.(remoteHashBytes) && Date.now() < pathDeadline) await new Promise((resolve) => setTimeout(resolve, 250));
+				if (!this.rns.transport.hasPath?.(remoteHashBytes)) return false;
+			}
+			const out = remoteIdentity ? await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns) : await Destination.recalled(this.appName, remoteHashBytes, this.rns);
 			return await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
 		} catch {
 			this.pendingInitiates.delete(remoteHex);
@@ -2308,10 +2334,12 @@ var ReticulumProvider = class extends ObservableV2 {
 	* knows through its own channels. See the Room's dialHash.
 	*
 	* @param {string} remoteHex Hex of the peer's room destination hash.
+	* @param {string} [remoteIdentityHashHex] Hex of the peer's identity hash,
+	*   when the application knows it.
 	* @returns {Promise<boolean>} Whether a link was established.
 	*/
-	async dialHash(remoteHex) {
-		return await this.room?.dialHash(remoteHex);
+	async dialHash(remoteHex, remoteIdentityHashHex = "") {
+		return await this.room?.dialHash(remoteHex, remoteIdentityHashHex);
 	}
 	/**
 	* Dials a peer's room destination directly from a known identity (work
