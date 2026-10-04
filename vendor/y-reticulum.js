@@ -1594,19 +1594,17 @@ var Room = class {
 	async _onAnnounce(event) {
 		if (!this.connected || !this.dest) return;
 		const detail = event.detail;
-		console.info(`[room-debug] announce: match=${bytesEqual(detail.nameHash, this.dest.nameHash)} app=${this.appName}`);
 		if (!bytesEqual(detail.nameHash, this.dest.nameHash)) return;
 		const remoteHex = toHex(detail.destinationHash);
 		if (remoteHex === this.myHex) return;
 		if (this.peerConns.size >= this.maxConns) return;
 		if (this.linkedDestHexes.has(remoteHex)) {
-			const staleConns = [...this.peerConns.values()].filter((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status !== LinkStatus.ACTIVE);
-			const live = [...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex) && staleConns.length === 0;
-			console.info(`[room-debug] stale check: linked=${this.linkedDestHexes.has(remoteHex)} live=${live} stale=${staleConns.length}`);
-			if (live) return;
-			for (const conn of staleConns) conn.destroy();
-			this.linkedDestHexes.delete(remoteHex);
-			this.linkedDestHexes.delete(remoteHex);
+			const conns = [...this.peerConns.values()].filter((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex);
+			if (conns.some((conn) => conn.link.status === LinkStatus.ACTIVE)) return;
+			for (const conn of conns) {
+				conn.destroy();
+				this._onPeerClose(conn);
+			}
 		}
 		if (this.pendingInitiates.has(remoteHex)) return;
 		if (this.myHex > remoteHex) return;
