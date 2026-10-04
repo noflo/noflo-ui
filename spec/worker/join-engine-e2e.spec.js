@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import { describe, it } from "node:test";
 
+import { createMemoryStorage } from "../../src/crdt/MeshConfig.js";
 import { startEngine } from "../../src/worker/engine.js";
 import * as Y from "../../vendor/yjs.js";
 
@@ -28,18 +29,23 @@ function getFreePort() {
  * Boots an Engine with captured messages and a sendable handler, mirroring
  * how app.js wires the worker.
  *
+ * @param {{ meshStorage?: import("../../src/crdt/MeshConfig.js").AsyncStorage }} [options]
+ *   A shared mesh storage emulates device persistence across reloads.
  * @returns {Promise<{ engine: any, posted: any[], send: (message: any) => void, stop: () => Promise<void> }>}
  */
-async function bootEngine() {
+async function bootEngine(options = {}) {
   /** @type {any[]} */
   const posted = [];
   /** @type {Array<(event: { data: any }) => void>} */
   const handlers = [];
-  const engine = await startEngine({
-    postMessage: (/** @type {any} */ message) => posted.push(message),
-    registerMessageHandler: (/** @type {any} */ handler) =>
-      handlers.push(handler),
-  });
+  const engine = await startEngine(
+    {
+      postMessage: (/** @type {any} */ message) => posted.push(message),
+      registerMessageHandler: (/** @type {any} */ handler) =>
+        handlers.push(handler),
+    },
+    { meshStorage: options.meshStorage },
+  );
   return {
     engine,
     posted,
@@ -107,7 +113,10 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
     );
     const invite = owner.posted.find((m) => m.kind === "mesh-invite").uri;
 
-    const joiner = await bootEngine();
+    // Device persistence: the joiner's mesh config (identity, enabled
+    // state, interfaces) survives a reload, exactly like IndexedDB does
+    const joinerStorage = createMemoryStorage();
+    const joiner = await bootEngine({ meshStorage: joinerStorage });
     joiner.send({
       type: "MESH",
       command: "configure",
@@ -257,7 +266,132 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
     }
     clearInterval(watch);
 
-    await owner.stop();
+    // ---- Reload emulation: a fresh Engine with the same persisted doc ----
+    // On reload the device boots a new Engine, loads the persisted project
+    // into its doc, and starts the mesh against that state
+    const joinerState = Y.encodeStateAsUpdate(joiner.engine.doc);
     await joiner.stop();
+
+    // The reloaded device boots with the SAME device storage: same
+    // identity, same enabled config (so its provider starts immediately
+    // on the invited room), same project pointer
+    const joiner2 = await bootEngine({ meshStorage: joinerStorage });
+    Y.applyUpdate(joiner2.engine.doc, joinerState);
+    // The reloaded device boots straight into its saved config: its
+    // provider starts on the invited room immediately (no configure step)
+    await waitFor(
+      sleep,
+      () =>
+        joiner2.posted.some(
+          (m) => m.kind === "mesh-status" && m.connected === true,
+        ),
+      30_000,
+      "the reloaded joiner's mesh to boot and connect",
+    );
+
+    const mirror2 = new Y.Doc();
+    for (const message of joiner2.posted) {
+      if (message.kind === "y-sync") Y.applyUpdate(mirror2, message.update);
+      else if (message.kind === "y-update") {
+        Y.applyUpdate(mirror2, message.update);
+      }
+    }
+    const watch2 = setInterval(() => {
+      const latest = joiner2.posted.splice(0);
+      for (const message of latest) {
+        if (message.kind === "y-sync") Y.applyUpdate(mirror2, message.update);
+        else if (message.kind === "y-update") {
+          Y.applyUpdate(mirror2, message.update);
+        }
+      }
+    }, 100);
+    try {
+      // Further edits flow after the reload
+      ownerSend({
+        type: "INTENT",
+        command: "addNode",
+        payload: {
+          graphId: "main",
+          nodeId: "AfterReload",
+          componentName: "noflo-core/Repeat",
+          metadata: { x: 30, y: 40 },
+        },
+      });
+      await waitFor(
+        sleep,
+        () =>
+          mirror2
+            .getMap("graphs")
+            .get("main")
+            ?.get("nodes")
+            ?.has("AfterReload"),
+        90_000,
+        "post-reload edits to reach the reloaded device",
+      );
+
+      // And edits made on the reloaded device flow back to the owner
+      joiner2.send({
+        type: "INTENT",
+        command: "addNode",
+        payload: {
+          graphId: "main",
+          nodeId: "FromReloaded",
+          componentName: "noflo-core/Repeat",
+          metadata: { x: 50, y: 60 },
+        },
+      });
+      const ownerMirror = new Y.Doc();
+      for (const message of owner.posted) {
+        if (message.kind === "y-sync")
+          Y.applyUpdate(ownerMirror, message.update);
+        else if (message.kind === "y-update") {
+          Y.applyUpdate(ownerMirror, message.update);
+        }
+      }
+      const watchOwner = setInterval(() => {
+        const latest = owner.posted.splice(0);
+        for (const message of latest) {
+          if (message.kind === "y-sync") {
+            Y.applyUpdate(ownerMirror, message.update);
+          } else if (message.kind === "y-update") {
+            Y.applyUpdate(ownerMirror, message.update);
+          }
+        }
+      }, 100);
+      try {
+        await waitFor(
+          sleep,
+          () =>
+            ownerMirror
+              .getMap("graphs")
+              .get("main")
+              ?.get("nodes")
+              ?.has("FromReloaded"),
+          90_000,
+          "the reloaded device's edits to reach the owner",
+        );
+      } finally {
+        clearInterval(watchOwner);
+      }
+    } catch (err) {
+      console.log(
+        "JOINER2 STATUS: %j",
+        joiner2.posted.filter((m) => m.kind === "mesh-status"),
+      );
+      console.log(
+        "JOINER2 PEERS: %j",
+        joiner2.posted.filter((m) => m.kind === "mesh-peers"),
+      );
+      console.log(
+        "JOINER2 ROOM: %s",
+        joiner2.posted.find((m) => m.kind === "mesh-config")?.room ?? "none",
+      );
+      throw err;
+    } finally {
+      clearInterval(watch2);
+    }
+
+    await owner.stop();
+    await joiner2.stop();
   });
 });

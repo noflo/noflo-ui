@@ -160,6 +160,13 @@ function spawnEngineWorker() {
   };
 }
 
+// Graceful mesh shutdown on page unload: the Engine tears its links down
+// immediately, so peers clean their room state instead of waiting out the
+// Reticulum link timeout after this worker dies mid-session (Safari reload)
+globalThis.addEventListener("pagehide", () => {
+  supervisor?.send({ type: "MESH", command: "stop" });
+});
+
 /**
  * The intent mapper: editor events to Appendix A intents, with queued
  * follow-up intents for brand-new nodes.

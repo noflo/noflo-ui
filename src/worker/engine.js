@@ -55,7 +55,9 @@ function syncFullState(doc, io) {
  *   postMessage: (message: any) => void,
  *   registerMessageHandler: (handler: (message: any) => void) => void,
  * }} io Injection point for the Worker messaging surface.
- * @param {{ name?: string }} [options]
+ * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage }} [options]
+ *   `meshStorage` injects the Engine-owned mesh configuration storage —
+ *   used by tests to share device state across simulated reloads.
  * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void }>}
  */
 export async function startEngine(io, options = {}) {
@@ -68,9 +70,10 @@ export async function startEngine(io, options = {}) {
   // loads from and persists to its own IndexedDB store keyed by the project
   // id. Joining a project by invite materializes it as a new project here.
   /** @type {any} */ const meshStorage =
-    typeof globalThis.indexedDB !== "undefined"
+    options.meshStorage ??
+    (typeof globalThis.indexedDB !== "undefined"
       ? createIndexeddbStorage("noflo-mesh", "config")
-      : createMemoryStorage();
+      : createMemoryStorage());
   /** The invited project id awaiting approval, if joining by invite. */
   /** @type {string | null} */
   let pendingInviteId = null;
@@ -441,6 +444,11 @@ export async function startEngine(io, options = {}) {
           );
       } else if (message.command === "factoryReset") {
         factoryReset();
+      } else if (message.command === "stop") {
+        // Graceful mesh shutdown (the Glass sends it on page unload): the
+        // peer's room cleans its link state immediately instead of waiting
+        // out the Reticulum link timeout after this worker dies
+        mesh?.stop().catch(() => {});
       } else if (message.command === "importIdentity") {
         mesh
           .handleImportedIdentity(message.payload?.identity)
