@@ -19,6 +19,7 @@ import "./elements/noflo-json-form.js";
 import "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
+import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import "./elements/noflo-selection-pills.js";
 import { createIntentMapper } from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
@@ -177,65 +178,38 @@ function spawnEngineWorker() {
  */
 let intentMapper = null;
 
+// ---- Echo dispatch (work document #37) -------------------------------------
+//
+// The Glass handles Engine messages through the contract's echo dispatch
+// table (src/glass/echo-handlers.js): one handler per Engine → Glass
+// message in the registry, with the Glass's state supplied as dependencies.
+// The bodies below are those dependencies — the state mutations they wrap
+// are unchanged from the previous inline chain.
+
 /**
- * Applies one engine message to the read replica.
- *
- * @param {any} data
+ * @type {Record<string, (data: any) => void>}
  */
-function onEngineMessage(data) {
-  if (data?.kind === "progress") {
-    // Operation narration (work document #34): the phrase catalog renders
-    // the micro-phrase; a running operation replaces the previous one, its
-    // done clears it. A failed ATTEMPT is a completed fact, not the current
-    // state: pinning it on the chip would contradict a system that has
-    // since recovered through another path (the announce fallback). The
-    // chip narrates running operations only; failures stay in the console
-    // timeline, while state-level failures (identity, provider) surface
-    // persistently through mesh-status errors.
-    const phrase = progressPhrase(data);
-    if (data.state === "running") {
-      narration = {
-        phrase,
-        operation: data.operation,
-        stage: data.stage,
-      };
-    } else if (data.state === "failed") {
-      // A failed attempt stays visible until the system demonstrably
-      // recovers (mesh-status reports synced) or a newer operation
-      // supersedes it — a dial failure with sync still down is a real
-      // problem, not noise (work document #34, no silent failures)
-      narration = {
-        phrase,
-        operation: data.operation,
-        stage: data.stage,
-        failed: true,
-      };
-    } else if (narration?.operation === data.operation) {
-      narration = null;
-    }
-    console.info(
-      `[progress] ${phrase} (${data.state})`,
-      data.detail ? JSON.stringify(data.detail) : "",
-    );
-    refreshSyncPanel();
-    return;
-  }
-  if (data?.kind === "y-sync") {
-    // Full state: establishes clock contiguity for the incremental stream
-    Y.applyUpdate(mirrorDoc, data.update);
+const echoHandlers = createEchoHandlers({
+  getNarration: () => narration,
+  setNarration: (next) => {
+    narration = next;
+  },
+  refreshSyncPanel,
+  refreshMeshSettings,
+  applyMirrorUpdate: (update) => {
+    Y.applyUpdate(mirrorDoc, update);
     updateContextChip();
-  } else if (data?.kind === "y-update") {
-    Y.applyUpdate(mirrorDoc, data.update);
-    updateContextChip();
-  } else if (data?.kind === "awareness") {
+  },
+  showPeerGhosts: (states) => {
     // Remote peer drag ghosts; only the graph being rendered matters
     if (!editor) return;
-    const states = (data.states ?? []).filter(
+    const visible = (states ?? []).filter(
       (/** @type {any} */ state) =>
         state?.dragging?.graphId === activeGraphId || state?.dragging == null,
     );
-    editor.setPeerGhosts(states);
-  } else if (data?.kind === "mesh-config") {
+    editor.setPeerGhosts(visible);
+  },
+  ingestMeshConfig: (data) => {
     meshConfig = data.config ?? null;
     meshIdentityHash = data.identityHash ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
@@ -249,33 +223,33 @@ function onEngineMessage(data) {
     }
     refreshMeshSettings();
     refreshSyncPanel();
-  } else if (data?.kind === "mesh-invite") {
-    meshInviteUri = data.uri ?? "";
+  },
+  setMeshInvite: (uri) => {
+    meshInviteUri = uri;
     refreshMeshSettings();
     refreshSyncPanel();
-  } else if (data?.kind === "mesh-peers") {
-    // Track the peer set for the panel's peers accordion
-    const added = /** @type {string[]} */ (data.added ?? []);
-    const removed = /** @type {string[]} */ (data.removed ?? []);
+  },
+  updateMeshPeers: (added, removed) => {
     meshPeers = meshPeers.filter((hash) => !removed.includes(hash));
     for (const hash of added) {
       if (!meshPeers.includes(hash)) meshPeers.push(hash);
     }
     refreshSyncPanel();
-  } else if (data?.kind === "mesh-requests") {
-    joinRequests = data.requests ?? [];
+  },
+  setJoinRequests: (requests) => {
+    joinRequests = requests;
     refreshMeshSettings();
     refreshSyncPanel();
-  } else if (data?.kind === "factory-reset") {
-    // The Engine wiped local state: reload into a fresh boot (which
-    // respawns the worker and re-runs leader election)
+  },
+  reloadIntoFreshBoot: () => {
     location.reload();
-  } else if (data?.kind === "mesh-dacar") {
-    // Dacar authorization state: anchor, per-grant verification, wallet
-    dacarState = data;
+  },
+  setDacarState: (state) => {
+    dacarState = state;
     refreshMeshSettings();
     refreshSyncPanel();
-  } else if (data?.kind === "mesh-status") {
+  },
+  ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
       syncStatus = {
         connected: data.connected === true,
@@ -294,15 +268,22 @@ function onEngineMessage(data) {
     if (meshError) {
       console.warn("Mesh error:", meshError);
     }
-  } else if (data?.protocol === "graph") {
-    // Authoritative Appendix A echoes: rendering is replica-driven (the
-    // y-update stream mirrors the CRDT), so the Glass takes no action —
-    // traced at debug for protocol visibility without drowning the
-    // genuinely-unhandled branch below
-    console.debug(`[echo] graph/${data.command}`, data.payload?.id ?? "");
-  } else {
-    console.debug("Engine message (no Glass handling yet):", data);
+  },
+});
+
+/**
+ * Applies one engine message to the read replica through the contract's
+ * echo dispatch table (work document #37).
+ *
+ * @param {any} data
+ */
+function onEngineMessage(data) {
+  const handler = echoHandlers[echoKey(data)];
+  if (handler) {
+    handler(data);
+    return;
   }
+  console.debug("Engine message (no Glass handling yet):", data);
 }
 
 /**

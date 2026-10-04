@@ -5,10 +5,8 @@ import {
   CORE_TYPE_HANDLERS,
   INTENT_HANDLERS,
 } from "../../src/crdt/EngineCore.js";
-import {
-  ECHO_MESSAGES,
-  UI_MESSAGES,
-} from "../../src/crdt/Protocol.js";
+import { ECHO_MESSAGES, UI_MESSAGES } from "../../src/crdt/Protocol.js";
+import { createEchoHandlers, echoKey } from "../../src/glass/echo-handlers.js";
 import { MESH_HANDLERS } from "../../src/worker/mesh-commands.js";
 
 describe("IPC contract registries (work document #37)", () => {
@@ -63,9 +61,7 @@ describe("IPC contract registries (work document #37)", () => {
 
   it("the Engine core's type dispatch covers exactly the registry's non-MESH types", () => {
     const registryTypes = new Set(
-      UI_MESSAGES.filter((key) => key.type !== "MESH").map(
-        (key) => key.type,
-      ),
+      UI_MESSAGES.filter((key) => key.type !== "MESH").map((key) => key.type),
     );
     assert.deepEqual(
       [...registryTypes].sort(),
@@ -95,4 +91,55 @@ describe("IPC contract registries (work document #37)", () => {
       "registry MESH commands and the router table must match exactly",
     );
   });
+
+  it("the Glass's echo dispatch covers exactly the registry's Engine → Glass messages", () => {
+    const expected = ECHO_MESSAGES.map((key) =>
+      "kind" in key ? `kind:${key.kind}` : `${key.protocol}/${key.command}`,
+    );
+    const actual = Object.keys(createEchoHandlers(noopDeps())).sort();
+    assert.deepEqual(
+      expected.sort(),
+      actual,
+      "registry echoes and the Glass's handler table must match exactly",
+    );
+  });
+
+  it("the Glass's echo dispatch resolves every registry message through echoKey", () => {
+    const handlers = createEchoHandlers(noopDeps());
+    for (const key of ECHO_MESSAGES) {
+      const message =
+        "kind" in key
+          ? { kind: key.kind }
+          : { protocol: key.protocol, command: key.command };
+      assert.ok(
+        handlers[echoKey(message)],
+        `no handler resolves for ${echoKey(message)}`,
+      );
+    }
+  });
 });
+
+/**
+ * A dep set that satisfies the handler table's shape without touching any
+ * Glass state: coverage checks only enumerate keys.
+ *
+ * @returns {import("../../src/glass/echo-handlers.js").EchoHandlerDeps}
+ */
+function noopDeps() {
+  const noop = () => {};
+  return {
+    getNarration: () => null,
+    setNarration: noop,
+    refreshSyncPanel: noop,
+    refreshMeshSettings: noop,
+    applyMirrorUpdate: noop,
+    showPeerGhosts: noop,
+    ingestMeshConfig: noop,
+    setMeshInvite: noop,
+    updateMeshPeers: noop,
+    setJoinRequests: noop,
+    reloadIntoFreshBoot: noop,
+    setDacarState: noop,
+    ingestMeshStatus: noop,
+  };
+}
