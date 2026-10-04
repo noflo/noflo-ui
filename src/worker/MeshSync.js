@@ -1688,6 +1688,13 @@ export async function createMeshSync({
               onRefused: (/** @type {any[]} */ refusals) => {
                 for (const refusal of refusals) {
                   if (!refusal?.identityHash) continue;
+                  // Only responder-side refusals are access requests: a peer
+                  // knocked and the policy declined. An initiator-side
+                  // refusal is this device's own dial being declined by its
+                  // own policy — surfacing it as a join request would ask a
+                  // participant to "approve" a peer it has no authority to
+                  // grant (work document #28 finding)
+                  if (refusal.initiator === true) continue;
                   if (!joinRequests.has(refusal.identityHash)) {
                     joinRequests.set(refusal.identityHash, {
                       identityHash: refusal.identityHash,
@@ -1766,7 +1773,11 @@ export async function createMeshSync({
       );
     });
     provider.on("announced", () => {
-      postMessage(progress("mesh.announce", "room", "done"));
+      postMessage(
+        progress("mesh.announce", "room", "done", {
+          destination: String(provider.room?.myHex ?? ""),
+        }),
+      );
     });
     provider.on("announce-failed", (/** @type {any} */ event) => {
       postMessage(

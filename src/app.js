@@ -204,7 +204,10 @@ function onEngineMessage(data) {
     } else if (narration?.operation === data.operation) {
       narration = null;
     }
-    console.info(`[progress] ${phrase} (${data.state})`);
+    console.info(
+      `[progress] ${phrase} (${data.state})`,
+      data.detail ? JSON.stringify(data.detail) : "",
+    );
     refreshSyncPanel();
     return;
   }

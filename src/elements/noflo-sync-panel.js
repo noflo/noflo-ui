@@ -356,18 +356,21 @@ export class FlowSyncPanel extends HTMLElement {
       })
       .join("");
     const requests = this._joinRequests
-      .map(
-        (request) => `
+      .map((/** @type {any} */ request) => {
+        // Approving mints a Dacar grant: only the Trust Anchor's device can
+        // act on a request; participants see it as information
+        const owner = this._dacarState?.anchor?.owner === true;
+        const actions =
+          this._readOnly || !owner
+            ? `<div class="hint">Only the project's Trust Anchor can approve access.</div>`
+            : `<button data-approve="${escapeHtml(request.identityHash)}">Approve</button>
+        <button class="danger" data-decline="${escapeHtml(request.identityHash)}">Decline</button>`;
+        return `
       <div class="list-item">
         <span class="grow hash-text">${escapeHtml(request.identityHash)}</span>
-        ${
-          this._readOnly
-            ? ""
-            : `<button data-approve="${escapeHtml(request.identityHash)}">Approve</button>
-        <button class="danger" data-decline="${escapeHtml(request.identityHash)}">Decline</button>`
-        }
-      </div>`,
-      )
+        ${actions}
+      </div>`;
+      })
       .join("");
     return `
       <div class="panel">
