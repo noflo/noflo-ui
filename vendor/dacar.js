@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DestType, Destination, Identity, Link, MsgPack, toHex } from "./reticulum-core.js";
 //#region node_modules/@reticulum/dacar/src/hlc.js
 /**

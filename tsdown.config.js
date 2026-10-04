@@ -140,17 +140,16 @@ export default defineConfig([
     external: ['@reticulum/core'],
     // The dacar package itself is inlined (it ships no declarations, so a
     // bare-specifier re-export would be invisible to the type checker);
-    // only @reticulum/core stays external
+    // only @reticulum/core stays external. Declarations are generated
+    // locally from the package's JSDoc sources by
+    // utils/generate-vendor-types.js (work document #24) — no
+    // @ts-nocheck banner.
     noExternal: [/^@reticulum\/dacar/],
     splitting: false,
     outputOptions: {
       paths: {
         '@reticulum/core': './reticulum-core.js',
       },
-    },
-    // No shipped declarations: the bundle is type-inferred only
-    banner: {
-      js: '// @ts-nocheck',
     },
   },
   {

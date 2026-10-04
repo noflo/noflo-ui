@@ -21,7 +21,10 @@ import {
   Identity,
   toHex,
 } from "../../vendor/reticulum-core.js";
-import { ReticulumProvider, roomDestinationHash } from "../../vendor/y-reticulum.js";
+import {
+  ReticulumProvider,
+  roomDestinationHash,
+} from "../../vendor/y-reticulum.js";
 import {
   createIndexeddbStorage,
   loadMeshConfig,
@@ -948,7 +951,11 @@ export async function createMeshSync({
     const rns = sharedRns ?? (await ensureReticulum());
     dacarSyncServer = await RnsSyncServer.create({
       identity: await ensureIdentity(),
-      receiver: dacarPushReceiver,
+      // The transport only consumes the two apply methods (§11.2.4); the
+      // generated declaration types the seam as the full DeltaReceiver
+      // class, whose internals leak as required properties (upstream: mark
+      // them @private or type the seam structurally)
+      receiver: /** @type {any} */ (dacarPushReceiver),
       rns,
     });
     // The one-shot announce at creation races interface readiness: peers
@@ -961,7 +968,9 @@ export async function createMeshSync({
     dacarSyncServer.destination?.addEventListener?.("announced", () => {
       postMessage(
         progress("mesh.announce", "sync", "done", {
-          destination: toHex(dacarSyncServer.destination?.destinationHash ?? []),
+          destination: toHex(
+            dacarSyncServer.destination?.destinationHash ?? [],
+          ),
         }),
       );
     });
@@ -1012,13 +1021,20 @@ export async function createMeshSync({
           peer: peerHash,
         }),
       );
-      const established = await provider.dialHash?.(destHash, peerHash).catch(() => false);
+      const established = await provider
+        .dialHash?.(destHash, peerHash)
+        .catch(() => false);
       if (established) failedDials.delete(destHash);
       else failedDials.add(destHash);
       postMessage(
-        progress("mesh.connect.path", "request", established ? "done" : "failed", {
-          peer: peerHash,
-        }),
+        progress(
+          "mesh.connect.path",
+          "request",
+          established ? "done" : "failed",
+          {
+            peer: peerHash,
+          },
+        ),
       );
     }
   }
@@ -1534,7 +1550,9 @@ export async function createMeshSync({
       // for announce-driven discovery (work document #34) — the announce
       // exchange costs a full cycle even when it works
       pendingHostDial = {
-        identity: await Identity.fromPublicKey(fromHex(nodeConfig.anchor.pubkey)),
+        identity: await Identity.fromPublicKey(
+          fromHex(nodeConfig.anchor.pubkey),
+        ),
         peer: String(nodeConfig.anchor.hash),
       };
       joinStage = "grant";
@@ -1844,7 +1862,9 @@ export async function createMeshSync({
       if (failedDials.has(remoteHex)) {
         failedDials.delete(remoteHex);
         postMessage(
-          progress("mesh.connect.path", "request", "running", { peer: remoteHex }),
+          progress("mesh.connect.path", "request", "running", {
+            peer: remoteHex,
+          }),
         );
         provider
           .dialHash?.(remoteHex)
@@ -1883,15 +1903,22 @@ export async function createMeshSync({
       const dial = pendingHostDial;
       pendingHostDial = null;
       postMessage(
-        progress("mesh.connect.path", "request", "running", { peer: dial.peer }),
+        progress("mesh.connect.path", "request", "running", {
+          peer: dial.peer,
+        }),
       );
       provider
         .dialPeer?.(dial.identity)
         .then((/** @type {any} */ established) => {
           postMessage(
-            progress("mesh.connect.path", "request", established ? "done" : "failed", {
-              peer: dial.peer,
-            }),
+            progress(
+              "mesh.connect.path",
+              "request",
+              established ? "done" : "failed",
+              {
+                peer: dial.peer,
+              },
+            ),
           );
         })
         .catch(() => {});
