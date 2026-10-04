@@ -7,53 +7,25 @@
     <link rel="stylesheet" href="./src/main.css" />
     <link rel="stylesheet" href="./src/styles/json-form.css" />
     <style>
-      #topbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        background: var(--ui-bg, #eee);
-        border-bottom: 1px solid #ccc;
-        z-index: 2000;
-        /* The bar itself stays click-transparent, but its interactive
-           children (buttons) must receive events or they fall through to
-           the editor canvas below */
-        pointer-events: none;
-      }
-      #topbar > * {
-        pointer-events: auto;
-      }
-      #role-badge {
-        font-weight: bold;
-      }
       #banner {
         position: fixed;
-        top: 2.6rem;
-        left: 0;
-        right: 0;
+        top: 0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: min(90vw, 640px);
         padding: 0.5rem 1rem;
         background: #fff3cd;
         color: #664d03;
-        border-bottom: 1px solid #ffe69c;
+        border: 1px solid #ffe69c;
+        border-radius: 6px;
         z-index: 2000;
-      }
-      #app {
-        padding-top: 2.6rem;
       }
     </style>
   </head>
   <body data-theme="tube" data-age="abstract">
-    <header id="topbar">
-      <span id="project-name">Project</span>
-      <span id="role-badge">Starting&hellip;</span>
-      <button id="mesh-settings" title="Mesh settings">&#9881;</button>
-    </header>
     <div id="banner" hidden></div>
     <div id="app"></div>
+    <noflo-context-chip id="context-chip"></noflo-context-chip>
     <noflo-mesh-settings id="mesh-settings-dialog" hidden></noflo-mesh-settings>
     <noflo-sync-panel id="sync-panel" hidden></noflo-sync-panel>
     <script type="importmap">

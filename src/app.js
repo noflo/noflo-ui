@@ -11,6 +11,7 @@ import * as Y from "yjs";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
+import { FlowContextChip } from "./elements/noflo-context-chip.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
 import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
@@ -100,6 +101,8 @@ let dacarState = /** @type {any} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
+/** @type {FlowContextChip | null} */
+let contextChip = null;
 /** @type {FlowEditor | null} */
 let editor = null;
 /** @type {LibraryManager | null} */
@@ -176,8 +179,10 @@ function onEngineMessage(data) {
   if (data?.kind === "y-sync") {
     // Full state: establishes clock contiguity for the incremental stream
     Y.applyUpdate(mirrorDoc, data.update);
+    updateContextChip();
   } else if (data?.kind === "y-update") {
     Y.applyUpdate(mirrorDoc, data.update);
+    updateContextChip();
   } else if (data?.kind === "awareness") {
     // Remote peer drag ghosts; only the graph being rendered matters
     if (!editor) return;
@@ -455,16 +460,30 @@ function refreshSyncPanel() {
 }
 
 /**
- * Shows the leadership role in the top bar.
+ * Updates the context chip (work document #28, top-left corner): what the
+ * user is editing plus the tab's engine role. Replaces the former top bar.
+ */
+function updateContextChip() {
+  if (!contextChip) return;
+  const projectName = String(
+    mirrorDoc?.getMap("metadata")?.get("name") ?? "",
+  );
+  contextChip.setLabel(
+    projectName && activeGraphId
+      ? `${projectName} · ${activeGraphId}`
+      : projectName || activeGraphId || "",
+  );
+}
+
+/**
+ * Shows the leadership role in the context chip.
  */
 function updateRoleBadge() {
-  const badge = document.getElementById("role-badge");
-  if (!badge) return;
-  if (isLeader) {
-    badge.textContent = "Leader — engine running";
-  } else {
-    badge.textContent = `Observer — read-only (leader: ${coordinator?.leaderId() ?? "?"})`;
-  }
+  contextChip?.setRole({
+    leader: isLeader,
+    leaderId: coordinator?.leaderId() ?? undefined,
+  });
+  updateContextChip();
 }
 
 /**
@@ -557,6 +576,7 @@ async function init() {
       intentMapper?.flushPending((nodeId) =>
         Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
       );
+      updateContextChip();
       scheduleRender();
     },
   });
@@ -654,10 +674,13 @@ async function init() {
   setupCrossTabMirror();
   updateRoleBadge();
 
-  // Mesh settings dialog wiring (work document #21)
-  document
-    .getElementById("mesh-settings")
-    ?.addEventListener("click", () => openMeshSettings());
+  // Context chip (work document #28, top-left corner): what am I editing,
+  // the tab's engine role, and the entry into configuration — replaces the
+  // former top bar
+  contextChip = /** @type {FlowContextChip | null} */ (
+    /** @type {any} */ (document.getElementById("context-chip"))
+  );
+  contextChip?.addEventListener("open-settings", () => openMeshSettings());
   // Corner sync/presence panel (work document #28): actions route to the
   // same Engine commands the settings dialog uses
   syncPanel = /** @type {FlowSyncPanel | null} */ (
