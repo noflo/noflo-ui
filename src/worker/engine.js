@@ -148,6 +148,7 @@ export async function startEngine(io, options = {}) {
     syncFullState(doc, io);
     mesh
       ?.rebind()
+      .then(() => postMeshConfig())
       .catch((/** @type {any} */ err) =>
         console.error("Mesh rebinding failed:", err),
       );
@@ -228,6 +229,7 @@ export async function startEngine(io, options = {}) {
     // The project load beat the mesh boot: bind now
     mesh
       .rebind()
+      .then(() => postMeshConfig())
       .catch((/** @type {any} */ err) =>
         console.error("Mesh rebinding failed:", err),
       );
@@ -262,6 +264,10 @@ export async function startEngine(io, options = {}) {
       },
     });
   };
+  // The Glass learns the mesh state proactively at boot: the corner sync
+  // panel (work document #28) renders from it without waiting for the
+  // settings dialog to be opened
+  postMeshConfig();
 
   /**
    * The join flow's explicit lifecycle hooks (work document #27): the

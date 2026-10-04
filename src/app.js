@@ -439,7 +439,11 @@ function refreshMeshSettings() {
  */
 function refreshSyncPanel() {
   if (!syncPanel) return;
-  syncPanel.setVisible(meshConfig !== null);
+  // Hidden until the mesh is in use: a device that never enabled sync
+  // shows no corner UI (work document #28's disclosure rules)
+  syncPanel.setVisible(
+    Boolean(meshConfig && (meshConfig.enabled || meshError)),
+  );
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setPeers(meshPeers);
   syncPanel.setJoinRequests(joinRequests);
