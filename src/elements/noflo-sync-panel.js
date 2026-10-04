@@ -242,14 +242,26 @@ export class FlowSyncPanel extends HTMLElement {
         `<span class="seg activity">${icon("hourglass-half")}<span class="label">${escapeHtml(status.stage)}…</span></span>`,
       );
     } else if (status.connected === true) {
-      segments.push(
-        status.synced === true
-          ? `<span class="seg calm">${icon("circle-check")}<span class="label">synced</span></span>`
-          : `<span class="seg activity">${icon("arrows-rotate")}<span class="label">syncing</span></span>`,
-      );
-      if ((status.peers ?? 0) > 0 || this._peers.length > 0) {
+      // Terminology per Syncthing conventions (WD #28 feedback): "syncing"
+      // only while bits are moving; the connected idle state is "up to
+      // date"; a connected mesh with no peers is waiting for peers
+      const peerCount = this._peers.length || status.peers || 0;
+      if (peerCount === 0) {
         segments.push(
-          `<span class="seg">${icon("user-group")}<span class="label">${this._peers.length || status.peers} peer${(this._peers.length || status.peers) === 1 ? "" : "s"}</span></span>`,
+          `<span class="seg">${icon("plug")}<span class="label">waiting for peers</span></span>`,
+        );
+      } else if (status.synced === true) {
+        segments.push(
+          `<span class="seg calm">${icon("circle-check")}<span class="label">up to date</span></span>`,
+        );
+      } else {
+        segments.push(
+          `<span class="seg">${icon("arrows-rotate")}<span class="label">syncing</span></span>`,
+        );
+      }
+      if (peerCount > 0) {
+        segments.push(
+          `<span class="seg">${icon("user-group")}<span class="label">${peerCount} peer${peerCount === 1 ? "" : "s"}</span></span>`,
         );
       }
     } else {

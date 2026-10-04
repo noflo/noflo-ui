@@ -67,33 +67,45 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: synced (calm), peers, Owner — pending intents drop out
+    // Segments: up to date (calm), peers, Owner — pending intents drop out
     const segments = shadow.querySelectorAll(".chip .seg");
     assert.equal(segments.length, 3, "empty states drop out");
-    assert.match(chip.textContent ?? "", /synced/);
+    assert.match(chip.textContent ?? "", /up to date/);
     assert.match(chip.textContent ?? "", /2 peers/);
     assert.match(chip.textContent ?? "", /Owner/);
     const syncSegment = /** @type {HTMLElement} */ (segments[0]);
     assert.ok(
       syncSegment.classList.contains("calm"),
-      "synced reads as calm in the Ages vocabulary",
+      "up to date reads as calm in the Ages vocabulary",
     );
     el.remove();
   });
 
-  it("shows syncing as activity, offline as offline state", () => {
+  it("shows syncing as neutral, offline as offline state", () => {
     const el = makeElement();
     el.setVisible(true);
+    // Connected but no peers yet: the mesh is waiting, not syncing
     el.setSyncStatus({ connected: true, synced: false, peers: 0 });
     let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    const syncing = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
+    const waiting = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
+    assert.match(waiting.textContent ?? "", /waiting for peers/);
     assert.ok(
-      syncing.classList.contains("activity"),
-      "syncing is an activity state",
+      !waiting.classList.contains("activity") &&
+        !waiting.classList.contains("calm"),
+      "waiting is neutral",
     );
-    assert.match(syncing.textContent ?? "", /syncing/);
-    // No peers yet: the peer segment drops out
     assert.equal(shadow.querySelectorAll(".chip .seg").length, 1);
+    // A peer joined, bits moving: syncing (neutral)
+    el.setPeers([PEER_HASH]);
+    el.setSyncStatus({ connected: true, synced: false, peers: 1 });
+    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const syncing = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
+    assert.match(syncing.textContent ?? "", /syncing/);
+    assert.ok(
+      !syncing.classList.contains("activity") &&
+        !syncing.classList.contains("calm"),
+      "the steady syncing state is neutral: color is reserved for states that need attention",
+    );
     el.setSyncStatus({ connected: false, synced: false, peers: 0 });
     shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const offline = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
