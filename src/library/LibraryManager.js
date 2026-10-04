@@ -1,4 +1,4 @@
-import { graph } from "noflo";
+import { graph } from "../../vendor/noflo.js";
 import { ComponentSignature } from "./schema.js";
 
 /**

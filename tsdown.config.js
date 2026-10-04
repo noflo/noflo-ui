@@ -46,11 +46,12 @@ export default defineConfig([
       fs: resolve(here, './src/worker/empty-fs.js'),
       'node:fs': resolve(here, './src/worker/empty-fs.js'),
     },
-    // The @ts-nocheck must stay the first statement: the bundle is
-    // type-inferred only until noflo's declaration graph generates through
-    // the vendor pipeline (its own lib/*.d.ts exist)
+    // The `require`/`fs` shims must stay the first statements: fbp-graph's
+    // journal persistence is stubbed out. Types flow from the package's own
+    // shipped declarations through the type-only build below (work document
+    // #24) — no @ts-nocheck banner.
     banner: {
-      js: `// @ts-nocheck\nvar require = () => ({}); var fs = {};`,
+      js: `var require = () => ({}); var fs = {};`,
     },
     comments: true,
     copy: [
@@ -117,17 +118,15 @@ export default defineConfig([
     alias: {
       '@digitaldefiance/bzip2-wasm': resolve(here, './src/shims/bzip2-stub.js'),
     },
+    // Types flow from y-reticulum's shipped declarations through the
+    // type-only build below (work document #24): 0.4.0 emits declarations
+    // for every chunk of its build — no @ts-nocheck banner.
     splitting: false,
     outputOptions: {
       paths: {
         yjs: './yjs.js',
         '@reticulum/core': './reticulum-core.js',
       },
-    },
-    // Suppressed until y-reticulum ships its own declarations: the bundle
-    // is then only type-inferred (same mechanism as the jedison bundle)
-    banner: {
-      js: '// @ts-nocheck',
     },
   },
   {
@@ -197,6 +196,7 @@ export default defineConfig([
       'y-indexeddb': './utils/y-indexeddb-entry.js',
       'reticulum-core': './utils/reticulum-core-types-entry.js',
       'noble-curves': './utils/noble-curves-entry.js',
+      'y-reticulum': './utils/y-reticulum-types-entry.js',
     },
     dts: { emitDtsOnly: true },
     ...vendor,

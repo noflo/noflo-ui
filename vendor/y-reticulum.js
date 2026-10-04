@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CEType, ChannelException, DestType, Destination, Identity, LinkStatus, MessageBase, Resource, fromHex, toHex } from "./reticulum-core.js";
 import * as Y from "./yjs.js";
 //#region src/shims/bzip2-stub.js

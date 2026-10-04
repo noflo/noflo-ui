@@ -5,8 +5,8 @@
  * `graph` protocol echoes (mirrored here as CRDT updates) drive rendering.
  */
 
-import { graph } from "noflo";
 import * as Y from "yjs";
+import { graph } from "../vendor/noflo.js";
 
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";

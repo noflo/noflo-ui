@@ -1,4 +1,4 @@
-import { Graph, graph } from "noflo";
+import { Graph, graph } from "../vendor/noflo.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import { FileSelector } from "./elements/noflo-file-selector.js";
