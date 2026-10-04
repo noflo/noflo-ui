@@ -950,7 +950,11 @@ export async function createMeshSync({
     // so its announce cadence matters for join debugging (work document
     // #34); @reticulum/core 0.9.5 emits "announced" on broadcast
     dacarSyncServer.destination?.addEventListener?.("announced", () => {
-      postMessage(progress("mesh.announce", "sync", "done"));
+      postMessage(
+        progress("mesh.announce", "sync", "done", {
+          destination: String(dacarSyncServer.destination?.destinationHash ?? ""),
+        }),
+      );
     });
     return dacarSyncServer;
   }
