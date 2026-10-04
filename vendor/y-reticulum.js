@@ -16,7 +16,7 @@ var BZip2Stub = class {
 	}
 };
 //#endregion
-//#region node_modules/y-reticulum/src/compression.js
+//#region ../y-reticulum/src/compression.js
 /**
 * @file compression.js
 * @description Shared bzip2 provider for compressing Reticulum Resources.
@@ -48,7 +48,7 @@ function getCompressionProvider() {
 	return initPromise;
 }
 //#endregion
-//#region node_modules/y-reticulum/src/destination.js
+//#region ../y-reticulum/src/destination.js
 /**
 * @file destination.js
 * @description Helpers mapping a Yjs room name to a Reticulum destination.
@@ -84,7 +84,7 @@ async function roomDestinationName(roomName) {
 	return `${DESTINATION_APP_PREFIX}.${hex}`;
 }
 //#endregion
-//#region node_modules/lib0/math.js
+//#region ../y-reticulum/node_modules/lib0/math.js
 /**
 * Common Math expressions.
 *
@@ -107,7 +107,7 @@ const min = (a, b) => a < b ? a : b;
 const max = (a, b) => a > b ? a : b;
 Number.isNaN;
 //#endregion
-//#region node_modules/lib0/number.js
+//#region ../y-reticulum/node_modules/lib0/number.js
 /**
 * Utility helpers for working with numbers.
 *
@@ -119,7 +119,7 @@ Number.isInteger;
 Number.isNaN;
 Number.parseInt;
 //#endregion
-//#region node_modules/lib0/set.js
+//#region ../y-reticulum/node_modules/lib0/set.js
 /**
 * Utility module to work with sets.
 *
@@ -127,7 +127,7 @@ Number.parseInt;
 */
 const create$2 = () => /* @__PURE__ */ new Set();
 //#endregion
-//#region node_modules/lib0/array.js
+//#region ../y-reticulum/node_modules/lib0/array.js
 /**
 * Transforms something array-like to an actual Array.
 *
@@ -139,7 +139,7 @@ const create$2 = () => /* @__PURE__ */ new Set();
 const from = Array.from;
 Array.isArray;
 //#endregion
-//#region node_modules/lib0/string.js
+//#region ../y-reticulum/node_modules/lib0/string.js
 /**
 * Utility module to work with strings.
 *
@@ -182,7 +182,7 @@ if (utf8TextDecoder && utf8TextDecoder.decode(/* @__PURE__ */ new Uint8Array()).
  /* c8 ignore next */
 utf8TextDecoder = null;
 //#endregion
-//#region node_modules/lib0/error.js
+//#region ../y-reticulum/node_modules/lib0/error.js
 /**
 * Error helpers.
 *
@@ -195,7 +195,7 @@ utf8TextDecoder = null;
 /* c8 ignore next */
 const create$1 = (s) => new Error(s);
 //#endregion
-//#region node_modules/lib0/encoding.js
+//#region ../y-reticulum/node_modules/lib0/encoding.js
 /**
 * Efficient schema-less binary encoding with support for variable length encoding.
 *
@@ -376,7 +376,7 @@ const writeVarUint8Array = (encoder, uint8Array) => {
 	writeUint8Array(encoder, uint8Array);
 };
 //#endregion
-//#region node_modules/lib0/decoding.js
+//#region ../y-reticulum/node_modules/lib0/decoding.js
 /**
 * Efficient schema-less binary decoding with support for variable length encoding.
 *
@@ -545,7 +545,7 @@ const _readVarStringNative = (decoder) => utf8TextDecoder.decode(readVarUint8Arr
 /* c8 ignore next */
 const readVarString = utf8TextDecoder ? _readVarStringNative : _readVarStringPolyfill;
 //#endregion
-//#region node_modules/lib0/time.js
+//#region ../y-reticulum/node_modules/lib0/time.js
 /**
 * Return current unix time.
 *
@@ -553,7 +553,7 @@ const readVarString = utf8TextDecoder ? _readVarStringNative : _readVarStringPol
 */
 const getUnixTime = Date.now;
 //#endregion
-//#region node_modules/lib0/map.js
+//#region ../y-reticulum/node_modules/lib0/map.js
 /**
 * Utility module to work with key-value stores.
 *
@@ -595,7 +595,7 @@ const setIfUndefined = (map, key, createT) => {
 	return set;
 };
 //#endregion
-//#region node_modules/lib0/observable.js
+//#region ../y-reticulum/node_modules/lib0/observable.js
 /**
 * Observable class prototype.
 *
@@ -736,10 +736,10 @@ var Observable = class {
 };
 /* c8 ignore end */
 //#endregion
-//#region node_modules/lib0/trait/equality.js
+//#region ../y-reticulum/node_modules/lib0/trait/equality.js
 const EqualityTraitSymbol = Symbol("Equality");
 //#endregion
-//#region node_modules/lib0/object.js
+//#region ../y-reticulum/node_modules/lib0/object.js
 /**
 * @param {Object<string,any>} obj
 */
@@ -758,7 +758,7 @@ const size = (obj) => keys(obj).length;
 */
 const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 //#endregion
-//#region node_modules/lib0/function.js
+//#region ../y-reticulum/node_modules/lib0/function.js
 /* c8 ignore start */
 /**
 * @param {any} a
@@ -799,7 +799,7 @@ const equalityDeep = (a, b) => {
 	return true;
 };
 //#endregion
-//#region node_modules/y-protocols/awareness.js
+//#region ../y-reticulum/node_modules/y-protocols/awareness.js
 /**
 * @module awareness-protocol
 */
@@ -1117,7 +1117,7 @@ const readSyncMessage = (decoder, encoder, doc, transactionOrigin, errorHandler)
 	return messageType;
 };
 //#endregion
-//#region node_modules/y-reticulum/src/messages.js
+//#region ../y-reticulum/src/messages.js
 /**
 * @file messages.js
 * @description The Yjs sync wire protocol used over a peer Link.
@@ -1181,7 +1181,7 @@ function readMessage(doc, awareness, buf, origin, roomSynced, onSynced) {
 	return sendReply ? toUint8Array(encoder) : null;
 }
 //#endregion
-//#region node_modules/y-reticulum/src/peer-conn.js
+//#region ../y-reticulum/src/peer-conn.js
 /**
 * @file peer-conn.js
 * @description Wrapper around a Reticulum {@link Link} to a single Yjs peer.
@@ -1210,6 +1210,31 @@ function readMessage(doc, awareness, buf, origin, roomSynced, onSynced) {
 var YjsSyncMessage = class extends MessageBase {
 	/** Unique y-reticulum message type on the channel (< 0xf000). */
 	static MSGTYPE = 1;
+	constructor() {
+		super();
+		/** @type {Uint8Array} */
+		this.data = /* @__PURE__ */ new Uint8Array(0);
+	}
+	/** @returns {Uint8Array} */
+	pack() {
+		return this.data;
+	}
+	/** @param {Uint8Array} raw */
+	unpack(raw) {
+		this.data = raw;
+	}
+};
+/**
+* Application message type reserved for the room's link-authorization phase.
+* Its body is raw application bytes (e.g. a Dacar assertion), carried verbatim;
+* the channel envelope provides the usual reliability and ordering. Only used
+* while a link is being authorized, before any Yjs traffic flows.
+*
+* @extends {MessageBase}
+*/
+var LinkAuthMessage = class extends MessageBase {
+	/** Unique y-reticulum message type on the channel (< 0xf000). */
+	static MSGTYPE = 2;
 	constructor() {
 		super();
 		/** @type {Uint8Array} */
@@ -1354,7 +1379,7 @@ var PeerConn = class {
 	}
 };
 //#endregion
-//#region node_modules/y-reticulum/src/room.js
+//#region ../y-reticulum/src/room.js
 /**
 * @file room.js
 * @description The per-room mesh for a {@link ReticulumProvider}.
@@ -1403,14 +1428,54 @@ function bytesEqual(a, b) {
 * @typedef {(context: LinkPolicyContext) => boolean | Promise<boolean>} LinkPolicy
 */
 /**
+* Exchange API handed to a room's {@link LinkAuthorizer} for the
+* application-defined authorization phase on a newly established link. `send`
+* delivers an application payload to the peer; `receive` resolves with the
+* next application payload from the peer (payloads arriving before the call
+* are queued). Both are scoped to this link and stop working once the
+* authorization phase ends.
+*
+* @typedef {Object} LinkAuthorizationExchange
+* @property {(payload: Uint8Array) => Promise<void>} send
+* @property {() => Promise<Uint8Array>} receive
+*/
+/**
+* Context handed to a room's {@link LinkAuthorizer}. Carries the same identity
+* proof as {@link LinkPolicyContext}, plus the live link and a
+* {@link LinkAuthorizationExchange} so the application can run its own
+* protocol (e.g. a Dacar assertion exchange) before any room traffic flows.
+*
+* @typedef {Object} LinkAuthorizationContext
+* @property {import("@reticulum/core").Link} link The established link.
+* @property {string} remoteIdentityHash Hex truncated hash of the remote
+*   peer's long-term identity, proven over the link.
+* @property {string|null} remoteDestinationHash Hex destination hash of the
+*   remote room destination, when known (initiator side).
+* @property {boolean} initiator Whether this side initiated the link.
+* @property {LinkAuthorizationExchange} exchange
+*/
+/**
+* Application-defined authorization for a peer link, run after the identity
+* is proven and before any room traffic flows. May exchange messages with the
+* peer via `context.exchange`; return (or resolve) `false` to refuse the
+* link. Throwing is treated as a refusal.
+*
+* @typedef {(context: LinkAuthorizationContext) => boolean | Promise<boolean>} LinkAuthorizer
+*/
+/**
 * @typedef {Object} RoomCallbacks
 * @property {(added: string[], removed: string[]) => void} onPeers
 *   Fired whenever peers are discovered or drop off. Ids are hex link_ids.
 * @property {(synced: boolean) => void} onSynced
 *   Fired when the room's overall sync state changes.
-* @property {(refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean }>) => void} [onRefused]
-*   Fired when a peer link was refused by the link policy. Apps can use this
-*   to surface access requests (e.g. "peer X wants to join").
+* @property {(refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }>) => void} [onRefused]
+*   Fired when a peer link was refused by the link policy or the
+*   authorization phase. `reason` is `"identify-timeout"` (the peer never
+*   proved its identity), `"link-policy"` (policy declined),
+*   `"authorization"` (the authorizer declined or threw) or
+*   `"authorization-timeout"` (the authorization phase exceeded
+*   `authorizeTimeoutMs`). Apps can use this to surface access requests
+*   (e.g. "peer X wants to join").
 */
 /**
 * One Yjs room: a local destination that announces for discovery, plus the set
@@ -1432,9 +1497,18 @@ var Room = class {
 	*   policy before any room traffic flows; refused links are torn down.
 	* @param {number} [options.identifyTimeoutMs] How long the responder waits
 	*   for the initiator's identify handshake before refusing.
+	* @param {LinkAuthorizer | null} [options.authorizeLink] When set, runs the
+	*   application-defined authorization phase on every peer link after the
+	*   identity is proven and before any room traffic flows. The authorizer
+	*   may exchange messages with the peer over the link; a `false` verdict,
+	*   a throw, or exceeding `authorizeTimeoutMs` refuses and tears down the
+	*   link (reported via `onRefused`). Composes with `linkPolicy`, which is
+	*   evaluated first.
+	* @param {number} [options.authorizeTimeoutMs] How long the authorization
+	*   phase may run before the link is refused.
 	* @param {RoomCallbacks} options.callbacks
 	*/
-	constructor({ doc, awareness, reticulum, identity, appName, maxConns, announceIntervalMs, linkPolicy, identifyTimeoutMs = 1e4, callbacks }) {
+	constructor({ doc, awareness, reticulum, identity, appName, maxConns, announceIntervalMs, linkPolicy, identifyTimeoutMs = 1e4, authorizeLink, authorizeTimeoutMs = 1e4, callbacks }) {
 		this.doc = doc;
 		this.awareness = awareness;
 		this.rns = reticulum;
@@ -1444,6 +1518,8 @@ var Room = class {
 		this.announceIntervalMs = announceIntervalMs;
 		this.linkPolicy = linkPolicy ?? null;
 		this.identifyTimeoutMs = identifyTimeoutMs;
+		this.authorizeLink = authorizeLink ?? null;
+		this.authorizeTimeoutMs = authorizeTimeoutMs;
 		this.callbacks = callbacks;
 		/** @type {import("@reticulum/core").Destination|null} */
 		this.dest = null;
@@ -1525,8 +1601,11 @@ var Room = class {
 		if (this.linkedDestHexes.has(remoteHex) || this.pendingInitiates.has(remoteHex)) return;
 		if (this.myHex > remoteHex) return;
 		this.pendingInitiates.add(remoteHex);
+		const needsProvenIdentity = Boolean(this.linkPolicy || this.authorizeLink);
+		/** @type {string} */
+		let initiatorIdentityHash = "";
+		if (needsProvenIdentity) initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
 		if (this.linkPolicy) {
-			const initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
 			if (!await this.linkPolicy({
 				remoteIdentityHash: initiatorIdentityHash,
 				remoteDestinationHash: remoteHex,
@@ -1536,7 +1615,8 @@ var Room = class {
 				this.callbacks.onRefused?.([{
 					destinationHash: remoteHex,
 					identityHash: initiatorIdentityHash,
-					initiator: true
+					initiator: true,
+					reason: "link-policy"
 				}]);
 				return;
 			}
@@ -1549,7 +1629,25 @@ var Room = class {
 				return;
 			}
 			this._primeChannel(link);
-			if (this.linkPolicy) await link.identify(this.identity);
+			if (needsProvenIdentity) await link.identify(this.identity);
+			if (this.authorizeLink) {
+				const verdict = await this._authorizeLink(link, {
+					remoteIdentityHash: initiatorIdentityHash,
+					remoteDestinationHash: remoteHex,
+					initiator: true
+				});
+				if (!verdict.allowed) {
+					this._unprimeChannel(link);
+					await link.teardown();
+					this.callbacks.onRefused?.([{
+						destinationHash: remoteHex,
+						identityHash: initiatorIdentityHash,
+						initiator: true,
+						reason: verdict.timedOut ? "authorization-timeout" : "authorization"
+					}]);
+					return;
+				}
+			}
 			this.linkedDestHexes.add(remoteHex);
 			this._registerPeer(link, detail.destinationHash);
 		} catch {
@@ -1576,7 +1674,7 @@ var Room = class {
 				return;
 			}
 			this._primeChannel(link);
-			if (this.linkPolicy) {
+			if (this.linkPolicy || this.authorizeLink) {
 				const identityHash = await this._awaitIdentify(link);
 				if (!identityHash) {
 					this._unprimeChannel(link);
@@ -1584,23 +1682,45 @@ var Room = class {
 					this.callbacks.onRefused?.([{
 						destinationHash: null,
 						identityHash: null,
-						initiator: false
+						initiator: false,
+						reason: "identify-timeout"
 					}]);
 					return;
 				}
-				if (!await this.linkPolicy({
-					remoteIdentityHash: identityHash,
-					remoteDestinationHash: null,
-					initiator: false
-				})) {
-					this._unprimeChannel(link);
-					await link.teardown();
-					this.callbacks.onRefused?.([{
-						destinationHash: null,
-						identityHash,
+				if (this.linkPolicy) {
+					if (!await this.linkPolicy({
+						remoteIdentityHash: identityHash,
+						remoteDestinationHash: null,
 						initiator: false
-					}]);
-					return;
+					})) {
+						this._unprimeChannel(link);
+						await link.teardown();
+						this.callbacks.onRefused?.([{
+							destinationHash: null,
+							identityHash,
+							initiator: false,
+							reason: "link-policy"
+						}]);
+						return;
+					}
+				}
+				if (this.authorizeLink) {
+					const verdict = await this._authorizeLink(link, {
+						remoteIdentityHash: identityHash,
+						remoteDestinationHash: null,
+						initiator: false
+					});
+					if (!verdict.allowed) {
+						this._unprimeChannel(link);
+						await link.teardown();
+						this.callbacks.onRefused?.([{
+							destinationHash: null,
+							identityHash,
+							initiator: false,
+							reason: verdict.timedOut ? "authorization-timeout" : "authorization"
+						}]);
+						return;
+					}
 				}
 			}
 			this._registerPeer(link, null);
@@ -1630,15 +1750,18 @@ var Room = class {
 		});
 	}
 	/**
-	* Registers `YjsSyncMessage` on the link's channel and stashes any inbound
-	* payloads that arrive before the {@link PeerConn} exists. Without this, a
-	* payload arriving during the identify / link-policy await is dropped by the
-	* channel with `Unable to find constructor for Channel MSGTYPE 0x1`.
+	* Registers the Yjs and link-authorization message types on the link's
+	* channel and stashes any inbound payloads that arrive before the
+	* {@link PeerConn} exists (Yjs) or before the application consumes them
+	* (authorization). Without the Yjs stash, a payload arriving during the
+	* identify / link-policy / authorization awaits is dropped by the channel
+	* with `Unable to find constructor for Channel MSGTYPE 0x1`.
 	* @param {import("@reticulum/core").Link} link
 	*/
 	_primeChannel(link) {
 		const channel = link.getChannel();
 		channel.registerMessageType(YjsSyncMessage);
+		channel.registerMessageType(LinkAuthMessage);
 		const payloads = [];
 		const stash = (msg) => {
 			if (!(msg instanceof YjsSyncMessage)) return false;
@@ -1646,14 +1769,29 @@ var Room = class {
 			return true;
 		};
 		channel.addMessageHandler(stash);
+		const authPayloads = [];
+		/** @type {Array<{ resolve: (payload: Uint8Array) => void, reject: (err: Error) => void }>} */
+		const authWaiters = [];
+		const authStash = (msg) => {
+			if (!(msg instanceof LinkAuthMessage)) return false;
+			const waiter = authWaiters.shift();
+			if (waiter) waiter.resolve(msg.data);
+			else authPayloads.push(msg.data);
+			return true;
+		};
+		channel.addMessageHandler(authStash);
 		this._primedChannels.set(link, {
 			payloads,
-			stash
+			stash,
+			authPayloads,
+			authStash,
+			authWaiters
 		});
 	}
 	/**
-	* Removes the stash handler installed by {@link Room._primeChannel} and
-	* returns the payloads received before the PeerConn took over the channel.
+	* Removes the stash handlers installed by {@link Room._primeChannel} and
+	* returns the Yjs payloads received before the PeerConn took over the
+	* channel. Pending authorization `receive()` calls are rejected.
 	* @param {import("@reticulum/core").Link} link
 	* @returns {Uint8Array[]}
 	*/
@@ -1661,8 +1799,89 @@ var Room = class {
 		const primed = this._primedChannels.get(link);
 		if (!primed) return [];
 		this._primedChannels.delete(link);
-		link.getChannel().removeMessageHandler(primed.stash);
+		const channel = link.getChannel();
+		channel.removeMessageHandler(primed.stash);
+		channel.removeMessageHandler(primed.authStash);
+		for (const waiter of primed.authWaiters.splice(0)) waiter.reject(/* @__PURE__ */ new Error("authorization channel closed"));
 		return primed.payloads;
+	}
+	/**
+	* Runs the application-defined authorization phase on an established link:
+	* hands the authorizer the link plus a send/receive exchange bound to this
+	* link's channel, and races it against `authorizeTimeoutMs`. Any `false`
+	* verdict, throw, or timeout refuses the link. Inbound Yjs traffic is
+	* stashed by `_primeChannel` meanwhile and only delivered once the phase
+	* passes, so no sync flows before the verdict.
+	*
+	* @param {import("@reticulum/core").Link} link
+	* @param {{ remoteIdentityHash: string, remoteDestinationHash: string | null, initiator: boolean }} proven
+	* @returns {Promise<{ allowed: boolean, timedOut: boolean }>}
+	*/
+	async _authorizeLink(link, { remoteIdentityHash, remoteDestinationHash, initiator }) {
+		if (!this.authorizeLink) return {
+			allowed: true,
+			timedOut: false
+		};
+		const primed = this._primedChannels.get(link);
+		if (!primed) return {
+			allowed: false,
+			timedOut: false
+		};
+		const channel = link.getChannel();
+		/** Mirrors PeerConn._sendChannel's readiness/retry loop, for auth bytes. */
+		const send = async (payload) => {
+			const message = new LinkAuthMessage();
+			message.data = payload;
+			for (;;) {
+				if (!this._primedChannels.has(link) || channel._shutDown) throw new Error("authorization channel closed");
+				while (!channel.isReadyToSend()) {
+					if (!this._primedChannels.has(link) || channel._shutDown) throw new Error("authorization channel closed");
+					await new Promise((r) => setTimeout(r, 50));
+				}
+				try {
+					await channel.send(message);
+					return;
+				} catch (err) {
+					if (err instanceof ChannelException && err.type === CEType.ME_LINK_NOT_READY) continue;
+					throw err;
+				}
+			}
+		};
+		const receive = () => {
+			const queued = primed.authPayloads.shift();
+			if (queued) return Promise.resolve(queued);
+			return new Promise((resolve, reject) => {
+				primed.authWaiters.push({
+					resolve,
+					reject
+				});
+			});
+		};
+		let timer = null;
+		try {
+			return {
+				allowed: await Promise.race([Promise.resolve(this.authorizeLink({
+					link,
+					remoteIdentityHash,
+					remoteDestinationHash,
+					initiator,
+					exchange: {
+						send,
+						receive
+					}
+				})), new Promise((_resolve, reject) => {
+					timer = setTimeout(() => reject(/* @__PURE__ */ new Error("authorization timed out")), this.authorizeTimeoutMs);
+				})]) !== false,
+				timedOut: false
+			};
+		} catch {
+			return {
+				allowed: false,
+				timedOut: true
+			};
+		} finally {
+			if (timer !== null) clearTimeout(timer);
+		}
 	}
 	/**
 	* Registers a newly active peer and kicks off the Yjs sync handshake
@@ -1796,7 +2015,7 @@ var Room = class {
 	}
 };
 //#endregion
-//#region node_modules/y-reticulum/src/provider.js
+//#region ../y-reticulum/src/provider.js
 /**
 * @file provider.js
 * @description Reticulum provider for Yjs.
@@ -1833,9 +2052,21 @@ var Room = class {
 *   signed identify handshake over the link) and pass the policy before any
 *   room traffic flows. Refused links are torn down and reported via the
 *   `refused` event, which apps can use to surface access requests.
+* @property {import("./room.js").LinkAuthorizer} [authorizeLink]
+*   When set, runs an application-defined authorization phase on every peer
+*   link after the identity is proven and before any room traffic flows. The
+*   authorizer receives the live link plus a `send`/`receive` exchange bound
+*   to the link's channel, so it can run its own protocol (e.g. a Dacar
+*   assertion exchange) before Yjs sync is allowed to start. A `false`
+*   verdict, a throw, or exceeding `authorizeTimeoutMs` tears the link down
+*   and reports it via the `refused` event. Composes with `linkPolicy`,
+*   which is evaluated first.
 * @property {number} [identifyTimeoutMs]
 *   How long the responder waits for the initiator's identify handshake
 *   before refusing the link.
+* @property {number} [authorizeTimeoutMs]
+*   How long the authorization phase may run before the link is refused.
+*   Only relevant with an `authorizeLink`.
 */
 /**
 * Events emitted by {@link ReticulumProvider}. Mirrors the y-webrtc event
@@ -1848,8 +2079,9 @@ var Room = class {
 *   Fired when sync state with the peer mesh changes. (Phase 3.)
 * @property {(event: { added: Array<string>, removed: Array<string> }) => void} peers
 *   Fired when peers are discovered or drop off.
-* @property {(event: { refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean }> }) => void} refused
-*   Fired when a peer link was refused by the link policy.
+* @property {(event: { refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }> }) => void} refused
+*   Fired when a peer link was refused by the link policy or the
+*   authorization phase.
 */
 /**
 * Reticulum provider for Yjs.
@@ -1874,6 +2106,8 @@ var ReticulumProvider = class extends ObservableV2 {
 		this.announceIntervalMs = opts.announceIntervalMs ?? 6e4;
 		this.linkPolicy = opts.linkPolicy ?? null;
 		this.identifyTimeoutMs = opts.identifyTimeoutMs ?? 1e4;
+		this.authorizeLink = opts.authorizeLink ?? null;
+		this.authorizeTimeoutMs = opts.authorizeTimeoutMs ?? 1e4;
 		/** Resolved with the room destination's identity on connect(). */
 		this.identityPromise = opts.identity ? Promise.resolve(opts.identity) : Identity.generate();
 		/** @type {Identity|null} */
@@ -1907,6 +2141,8 @@ var ReticulumProvider = class extends ObservableV2 {
 			announceIntervalMs: this.announceIntervalMs,
 			linkPolicy: this.linkPolicy,
 			identifyTimeoutMs: this.identifyTimeoutMs,
+			authorizeLink: this.authorizeLink,
+			authorizeTimeoutMs: this.authorizeTimeoutMs,
 			callbacks: {
 				onPeers: (added, removed) => this.emit("peers", [{
 					added,

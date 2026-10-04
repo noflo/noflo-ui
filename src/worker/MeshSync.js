@@ -37,6 +37,7 @@ import {
   projectResource,
   ROLE_PERMISSIONS,
 } from "./Dacar.js";
+import { createDacarLinkAuthorizer } from "./DacarLinkAuth.js";
 import { listWalletGrants, saveWalletGrant } from "./DacarWallet.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
@@ -72,7 +73,7 @@ function base64ToBytes(base64) {
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
  * @param {string} room
- * @param {{ isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }} access
+ * @param {{ isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }} access
  *   Dacar access-control hooks (work document #21): the link policy gates
  *   sync to granted peers; refusals surface as join requests.
  * @param {any} reticulum Shared Reticulum instance built from the enabled
@@ -103,6 +104,11 @@ async function defaultCreateProvider(
       );
       return allowed;
     },
+    // §6.2 assertion exchange (work document #25): once the identity is
+    // proven and before any sync flows, both peers present their Dacar
+    // assertions and verify each other through the Dacar Engine. Ignored
+    // by y-reticulum versions without the hook.
+    authorizeLink: access.authorizeLink ?? null,
   });
   provider.on("refused", (/** @type {any} */ event) => {
     access.onRefused(event.refusals ?? []);
@@ -195,7 +201,7 @@ async function defaultCreateProvider(
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -953,6 +959,21 @@ export async function createMeshSync({
   }
 
   /**
+   * The §6.2 link authorizer (work document #25): peers present their Dacar
+   * assertions on the established link and verify each other through the
+   * Dacar Engine before any sync flows. Both sides send first, then read,
+   * so the phase cannot deadlock; a timeout or refusal tears the link down.
+   */
+  const authorizeLink = createDacarLinkAuthorizer({
+    isGranted,
+    isInRequesterMode,
+    ownAuthorization: () =>
+      identityHash ? findAuthorization(identityHash) : null,
+    ensureDacarNode,
+    projectId: () => String(doc.getMap?.("metadata")?.get("id") ?? ""),
+  });
+
+  /**
    * The project owner bootstraps their own signed grant, otherwise the
    * strict policy would lock everyone - including the owner - out of an
    * un-granted project. The anchor signs itself like any other peer, so
@@ -1391,6 +1412,7 @@ export async function createMeshSync({
         {
           isGranted,
           isInRequesterMode,
+          authorizeLink,
           onRefused: (/** @type {any[]} */ refusals) => {
             for (const refusal of refusals) {
               if (!refusal?.identityHash) continue;
