@@ -1,16 +1,19 @@
 /**
- * @file Mesh configuration settings (work document #21): a Glass-side view
- * over the Engine-owned mesh configuration and the CRDT-resident Dacar
- * grants. Shadow DOM, per SPEC "Light DOM vs Shadow DOM" (reserved strictly
- * for encapsulated forms/modals outside the graph canvas) — the JSON Schema
+ * @file Mesh configuration settings (work document #21, config-only since
+ * work document #28): a Glass-side view over the Engine-owned mesh
+ * configuration and the CRDT-resident Dacar grants. Shadow DOM, per SPEC
+ * "Light DOM vs Shadow DOM" (reserved strictly for encapsulated forms/modals
+ * outside the graph canvas) — the JSON Schema
  * forms inside are Light DOM `noflo-json-form` elements mounted into a
  * slotted container, since Jedison needs real DOM to render into.
  *
  * The element is a pure view: it receives the current state via
- * `open(config, identityHash, interfaceSchemas, ...)` plus live updates
- * (`setInvite`, `setSyncStatus`, `setJoinProgress`, `setDacarState`) and
- * reports intent through events (`mesh-configure`, `mesh-grant`,
- * `mesh-revoke`, `mesh-factory-reset`, `mesh-close`). The Dacar state —
+ * `open(config, identityHash, interfaceSchemas, meshError)` plus live Dacar
+ * updates (`setDacarState`) and reports intent through events
+ * (`mesh-configure`, `mesh-grant`, `mesh-revoke`, `mesh-factory-reset`,
+ * `mesh-close`). Live sync state — status, peers, join requests, invites,
+ * join progress — lives in the corner sync panel (`noflo-sync-panel`, work
+ * document #28); this dialog is configuration only. The Dacar state —
  * Trust Anchor, per-grant
  * verification status, and the local wallet — comes from the Engine's
  * `mesh-dacar` report, so the UI shows what the Dacar Engine actually
@@ -34,28 +37,6 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
-}
-
-/**
- * Plain-language text for a bootstrap decline reason (work document #25
- * §4.3).
- *
- * @param {string | undefined} reason
- * @returns {string}
- */
-function declineReasonText(reason) {
-  switch (reason) {
-    case "host_rejected":
-      return "the host declined your request";
-    case "host_lacks_authority":
-      return "the host cannot grant access (it does not hold the project’s Trust Anchor)";
-    case "invalid_token":
-      return "the invite is invalid or expired";
-    case "invalid_authorization":
-      return "the handoff failed verification";
-    default:
-      return reason ?? "unknown reason";
-  }
 }
 
 /**
@@ -85,20 +66,10 @@ export class FlowMeshSettings extends HTMLElement {
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
-    /** Generated invite URI (`noflo://join/...`), shown with a copy button. */
-    this._inviteUri = "";
-    /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} */
-    this._joinRequests = [];
     /** @type {string | null} */
     this._formStyles = null;
     /** @type {string} */
     this._meshError = "";
-    /** Live sync status from the Engine (`mesh-status` telemetry). */
-    /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */
-    this._syncStatus = null;
-    /** Joiner state-machine progress (`mesh-bootstrap` messages). */
-    /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */
-    this._joinProgress = null;
   }
 
   connectedCallback() {
@@ -113,22 +84,13 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {string} identityHash Hex identity hash for display.
    * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
    *   interface type.
-   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} joinRequests
-   *   Peers awaiting an access decision.
    * @param {string} meshError Engine mesh error (e.g. WebCrypto without
    *   Ed25519): when set, mesh sync cannot run on this browser.
    */
-  open(
-    config,
-    identityHash,
-    interfaceSchemas = {},
-    joinRequests = [],
-    meshError = "",
-  ) {
+  open(config, identityHash, interfaceSchemas = {}, meshError = "") {
     this._config = config;
     this._identityHash = identityHash ?? "";
     this._interfaceSchemas = interfaceSchemas ?? {};
-    this._joinRequests = joinRequests ?? [];
     this._meshError = meshError;
     this._open = true;
     // The dialog element may sit hidden in the page shell; visibility is
@@ -178,115 +140,6 @@ export class FlowMeshSettings extends HTMLElement {
   setMeshError(meshError) {
     this._meshError = meshError ?? "";
     if (this._open) this.render();
-  }
-
-  /**
-   * Shows a generated invite URI (work document #25): the Glass sets this
-   * when the Engine answers a `MESH createInvite` with `mesh-invite`.
-   *
-   * @param {string} uri
-   */
-  setInvite(uri) {
-    this._inviteUri = uri ?? "";
-    if (this._open) this.render();
-  }
-
-  /**
-   * @param {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }> | null} joinRequests
-   */
-  setJoinRequests(joinRequests) {
-    this._joinRequests = joinRequests ?? [];
-    if (this._open) this.render();
-  }
-
-  /**
-   * Updates the live sync status line (connected, peers, synced).
-   *
-   * @param {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} status
-   */
-  setSyncStatus(status) {
-    this._syncStatus = status;
-    if (this._open) this.render();
-  }
-
-  /**
-   * Updates the join progress line (joiner state machine stages).
-   *
-   * @param {{ stage: string, reason?: string, project?: any, error?: string } | null} progress
-   */
-  setJoinProgress(progress) {
-    this._joinProgress = progress;
-    if (this._open) this.render();
-  }
-
-  /**
-   * Human-readable join progress line, empty while no join has run.
-   *
-   * @returns {string}
-   */
-  joinProgressHtml() {
-    const progress = this._joinProgress;
-    if (!progress?.stage) return "";
-    const stage = progress.stage;
-    if (stage === "granted") {
-      const name = progress.project?.name ?? "the project";
-      return `<div class="status-line success" id="join-progress">Approved — “${escapeHtml(
-        String(name),
-      )}” joined. Its content appears here once mesh sync delivers it.</div>`;
-    }
-    if (stage === "approved") {
-      // The wire response arrived; the grant is still on its way
-      return `<div class="status-line" id="join-progress">Approved by the host — receiving the project grant…</div>`;
-    }
-    if (stage === "declined") {
-      return `<div class="status-line danger" id="join-progress">Join declined: ${escapeHtml(
-        declineReasonText(progress.reason),
-      )}</div>`;
-    }
-    if (stage === "failed") {
-      return `<div class="status-line danger" id="join-progress">Join failed: ${escapeHtml(
-        String(progress.error ?? "unknown error"),
-      )}</div>`;
-    }
-    const stageText = {
-      requesting_path: "Resolving the host’s path…",
-      linking: "Establishing a link to the host…",
-      knocking: "Knocking on the host’s door…",
-      wait_response: "Waiting for the host’s decision…",
-    }[stage];
-    if (!stageText) return "";
-    return `<div class="status-line" id="join-progress">${stageText}</div>`;
-  }
-
-  /**
-   * Live sync status line, empty until the Engine reports connectivity.
-   *
-   * @returns {string}
-   */
-  syncStatusHtml() {
-    const status = this._syncStatus;
-    if (status?.connected) {
-      const peers =
-        typeof status.peers === "number" && status.peers > 0
-          ? `, ${status.peers} peer${status.peers === 1 ? "" : "s"}`
-          : "";
-      const synced = status.synced ? ", synced" : "";
-      return `<div class="hint" id="mesh-sync-status">Sync: connected${peers}${synced}</div>`;
-    }
-    if (this._config?.enabled) {
-      // Show the boot stage (or the last known state) instead of hiding
-      // the line — a silent gap reads as "sync is fine" during debugging
-      const stageText = {
-        starting: "starting…",
-        connecting: "connecting…",
-        disabled: "disabled",
-        "already-running": "starting…",
-        "identity-error": "identity unavailable",
-        "provider-failed": "provider failed",
-      }[status?.stage ?? "starting"];
-      return `<div class="hint" id="mesh-sync-status">Sync: ${stageText ?? "starting…"}</div>`;
-    }
-    return "";
   }
 
   /**
@@ -556,27 +409,7 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row">
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable && !this._meshError ? "" : "disabled"}> Enabled</label>
         </div>
-        ${this.syncStatusHtml()}
-        <h3>Invite</h3>
-        ${
-          this._inviteUri
-            ? `<div class="row">
-          <div class="hash grow" id="mesh-invite">${this._inviteUri}</div>
-          <button class="secondary" data-action="copy-invite">Copy</button>
-        </div>
-        <div class="hint">Send this invite to a collaborator, then have them paste it under "Join a project". The token expires in 24 hours.</div>`
-            : `<div class="row">
-          <button data-action="create-invite" ${editable && !this._meshError ? "" : "disabled"}>Generate invite</button>
-        </div>
-        <div class="hint">Generates a noflo:// join link for this project. The invited device joins by pasting it under "Join a project"; you approve the joining device when it knocks.</div>`
-        }
-        <h3>Join a project</h3>
-        <div class="row">
-          <input id="join-room" placeholder="Paste an invite (noflo://join/...)">
-          <button data-action="join">Join</button>
-        </div>
-        ${this.joinProgressHtml()}
-        <div class="hint">Joining materializes the invited project as a new project in this device's storage. Only possible while the local project is empty.</div>
+        <div class="hint">Live sync state lives in the sync panel at the bottom-right corner; this dialog is configuration only (work document #28).</div>
         <h3>WebRTC transport upgrade</h3>
         <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>
         <div class="row" style="margin-top: 6px">
@@ -599,20 +432,6 @@ export class FlowMeshSettings extends HTMLElement {
         </div>
         <div id="interface-form-host" class="iface-form-host" hidden></div>
         ${editable ? (Object.keys(this._interfaceSchemas).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
-        <h3>Join requests</h3>
-        <div id="join-request-list">
-          ${(this._joinRequests ?? [])
-            .map(
-              (/** @type {any} */ request) => `
-          <div class="list-item">
-            <span class="grow">${request.identityHash}</span>
-            <button data-join-approve="${request.identityHash}">Approve</button>
-            <button class="danger" data-join-deny="${request.identityHash}">Deny</button>
-          </div>`,
-            )
-            .join("")}
-        </div>
-        ${(this._joinRequests ?? []).length === 0 ? `<div class="hint">No pending access requests. Peers that know the room but hold no grant appear here.</div>` : ""}
         ${this.trustAnchorHtml()}
         <h3>Access grants (Dacar)</h3>
         <div id="grant-list">
@@ -713,37 +532,6 @@ export class FlowMeshSettings extends HTMLElement {
     shadow
       .querySelector('[data-action="close"]')
       ?.addEventListener("click", () => this.close());
-    shadow
-      .querySelector('[data-action="copy-invite"]')
-      ?.addEventListener("click", () => {
-        const invite = /** @type {HTMLElement} */ (
-          shadow.querySelector("#mesh-invite")
-        ).textContent?.trim();
-        if (invite) navigator.clipboard?.writeText(invite).catch(() => {});
-      });
-    shadow
-      .querySelector('[data-action="create-invite"]')
-      ?.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("mesh-create-invite", { bubbles: true }),
-        );
-      });
-    shadow
-      .querySelector('[data-action="join"]')
-      ?.addEventListener("click", () => {
-        const input = /** @type {HTMLInputElement} */ (
-          shadow.querySelector("#join-room")
-        );
-        const invite = input.value.trim();
-        if (!invite) return;
-        input.value = "";
-        this.dispatchEvent(
-          new CustomEvent("mesh-join", {
-            detail: { invite },
-            bubbles: true,
-          }),
-        );
-      });
 
     const enabled = /** @type {HTMLInputElement | null} */ (
       shadow.querySelector("#mesh-enabled")
@@ -911,30 +699,6 @@ export class FlowMeshSettings extends HTMLElement {
         }, 6_000);
       });
     for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
-      shadow.querySelectorAll("[data-join-approve]")
-    )) {
-      button.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("mesh-approve", {
-            detail: { identityHash: button.getAttribute("data-join-approve") },
-            bubbles: true,
-          }),
-        );
-      });
-    }
-    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
-      shadow.querySelectorAll("[data-join-deny]")
-    )) {
-      button.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("mesh-deny", {
-            detail: { identityHash: button.getAttribute("data-join-deny") },
-            bubbles: true,
-          }),
-        );
-      });
-    }
-    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
       shadow.querySelectorAll("[data-grant-revoke]")
     )) {
       button.addEventListener("click", () => {
@@ -948,3 +712,5 @@ export class FlowMeshSettings extends HTMLElement {
     }
   }
 }
+
+customElements.define("noflo-mesh-settings", FlowMeshSettings);

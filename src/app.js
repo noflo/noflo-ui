@@ -11,13 +11,14 @@ import * as Y from "yjs";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
-import { FlowExportedPort } from "./elements/noflo-exported-port.js";
-import { FlowIIP } from "./elements/noflo-iip.js";
+import "./elements/noflo-exported-port.js";
+import "./elements/noflo-iip.js";
 import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
 import "./elements/noflo-json-form.js";
-import { FlowNode } from "./elements/noflo-node.js";
-import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
-import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import "./elements/noflo-node.js";
+import "./elements/noflo-radial-menu.js";
+import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
+import "./elements/noflo-selection-pills.js";
 import { createIntentMapper } from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
 import {
@@ -43,14 +44,8 @@ import { createRouter } from "./glass/router.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
 
-// Register Web Components
-customElements.define("noflo-editor", FlowEditor);
-customElements.define("noflo-node", FlowNode);
-customElements.define("noflo-radial-menu", FlowRadialMenu);
-customElements.define("noflo-selection-pills", SelectionPills);
-customElements.define("noflo-iip", FlowIIP);
-customElements.define("noflo-exported-port", FlowExportedPort);
-customElements.define("noflo-mesh-settings", FlowMeshSettings);
+// Element modules self-register their custom elements on import (the
+// tag name and its class are defined in the same module).
 
 /** The graph the Glass currently displays; driven by the URL router. */
 let activeGraphId = "main";
@@ -94,13 +89,17 @@ let syncStatus =
   /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */ (
     null
   );
-/** Join progress reported by the Engine, for the settings dialog. */
+/** Join progress reported by the Engine, for the sync panel. */
 let joinProgress =
   /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (
     null
   );
 /** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
 let dacarState = /** @type {any} */ (null);
+/** Connected peer identity hashes, from the Engine's mesh-peers events. */
+let meshPeers = /** @type {string[]} */ ([]);
+/** @type {FlowSyncPanel | null} */
+let syncPanel = null;
 /** @type {FlowEditor | null} */
 let editor = null;
 /** @type {LibraryManager | null} */
@@ -141,6 +140,7 @@ function applyPendingState() {
   if (!editor) return;
   const view = projectGraph(mirrorDoc, activeGraphId);
   editor.applyPendingState(pendingTracker.reconcile(view, activeGraphId));
+  syncPanel?.setPendingIntents(pendingTracker.size);
 }
 
 /**
@@ -199,12 +199,24 @@ function onEngineMessage(data) {
       meshError = "";
     }
     refreshMeshSettings();
+    refreshSyncPanel();
   } else if (data?.kind === "mesh-invite") {
     meshInviteUri = data.uri ?? "";
     refreshMeshSettings();
+    refreshSyncPanel();
+  } else if (data?.kind === "mesh-peers") {
+    // Track the peer set for the panel's peers accordion
+    const added = /** @type {string[]} */ (data.added ?? []);
+    const removed = /** @type {string[]} */ (data.removed ?? []);
+    meshPeers = meshPeers.filter((hash) => !removed.includes(hash));
+    for (const hash of added) {
+      if (!meshPeers.includes(hash)) meshPeers.push(hash);
+    }
+    refreshSyncPanel();
   } else if (data?.kind === "mesh-requests") {
     joinRequests = data.requests ?? [];
     refreshMeshSettings();
+    refreshSyncPanel();
   } else if (data?.kind === "factory-reset") {
     // The Engine wiped local state: reload into a fresh boot (which
     // respawns the worker and re-runs leader election)
@@ -213,10 +225,12 @@ function onEngineMessage(data) {
     // Joiner state-machine progress (work document #25 §5.1)
     joinProgress = data;
     refreshMeshSettings();
+    refreshSyncPanel();
   } else if (data?.kind === "mesh-dacar") {
     // Dacar authorization state: anchor, per-grant verification, wallet
     dacarState = data;
     refreshMeshSettings();
+    refreshSyncPanel();
   } else if (data?.kind === "mesh-status") {
     if (data.connected !== undefined || data.stage) {
       syncStatus = {
@@ -228,6 +242,7 @@ function onEngineMessage(data) {
     }
     meshError = data.error ?? "";
     refreshMeshSettings();
+    refreshSyncPanel();
     if (meshError) {
       console.warn("Mesh error:", meshError);
     }
@@ -395,12 +410,8 @@ function openMeshSettings() {
     meshConfig,
     meshIdentityHash,
     meshInterfaceSchemas,
-    joinRequests,
     meshError,
   );
-  dialog.setInvite(meshInviteUri);
-  dialog.setSyncStatus(syncStatus);
-  dialog.setJoinProgress(joinProgress);
   dialog.setDacarState(dacarState);
 }
 
@@ -418,12 +429,25 @@ function refreshMeshSettings() {
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
     dialog._meshError = meshError;
-    dialog._joinRequests = joinRequests;
-    dialog.setInvite(meshInviteUri);
-    dialog.setSyncStatus(syncStatus);
-    dialog.setJoinProgress(joinProgress);
     dialog.render();
   }
+}
+
+/**
+ * Feeds the corner sync/presence panel (work document #28) from the Glass's
+ * mesh state: a pure view over the Engine's existing messages.
+ */
+function refreshSyncPanel() {
+  if (!syncPanel) return;
+  syncPanel.setVisible(meshConfig !== null);
+  syncPanel.setSyncStatus(syncStatus);
+  syncPanel.setPeers(meshPeers);
+  syncPanel.setJoinRequests(joinRequests);
+  syncPanel.setJoinProgress(joinProgress);
+  syncPanel.setDacarState(dacarState);
+  syncPanel.setInvite(meshInviteUri);
+  syncPanel.setMeshError(meshError);
+  syncPanel.setIdentityHash(meshIdentityHash);
 }
 
 /**
@@ -630,6 +654,62 @@ async function init() {
   document
     .getElementById("mesh-settings")
     ?.addEventListener("click", () => openMeshSettings());
+  // Corner sync/presence panel (work document #28): actions route to the
+  // same Engine commands the settings dialog uses
+  syncPanel = /** @type {FlowSyncPanel | null} */ (
+    /** @type {any} */ (document.getElementById("sync-panel"))
+  );
+  syncPanel?.addEventListener("sync-approve", (/** @type {any} */ e) => {
+    const request = joinRequests.find(
+      (/** @type {any} */ entry) =>
+        entry.identityHash === e.detail.identityHash,
+    );
+    if (request?.source === "bootstrap") {
+      // A bootstrap knocker is granted by the host decision engine
+      // itself when the approval resolves; the grant is born verified
+      supervisor?.send({
+        type: "MESH",
+        command: "resolveRequest",
+        payload: {
+          identityHash: e.detail.identityHash,
+          decision: "approved",
+        },
+      });
+      return;
+    }
+    // A sync-refusal peer holds no bootstrap link: the grant is minted
+    // through the mesh layer, and resolving clears the request entry
+    supervisor?.send({
+      type: "MESH",
+      command: "grant",
+      payload: { identityHash: e.detail.identityHash, role: "operator" },
+    });
+    supervisor?.send({
+      type: "MESH",
+      command: "resolveRequest",
+      payload: {
+        identityHash: e.detail.identityHash,
+        decision: "approved",
+      },
+    });
+  });
+  syncPanel?.addEventListener("sync-decline", (/** @type {any} */ e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "resolveRequest",
+      payload: {
+        identityHash: e.detail.identityHash,
+        decision: "declined",
+      },
+    });
+  });
+  syncPanel?.addEventListener("sync-invite", () => {
+    supervisor?.send({ type: "MESH", command: "createInvite" });
+  });
+  syncPanel?.addEventListener("sync-join", (/** @type {any} */ e) => {
+    supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
+  });
+  syncPanel?.addEventListener("sync-settings", () => openMeshSettings());
   const settingsDialog = /** @type {FlowMeshSettings | null} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
@@ -661,41 +741,6 @@ async function init() {
   });
   settingsDialog?.addEventListener("mesh-join", (/** @type {any} */ e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
-  });
-  settingsDialog?.addEventListener("mesh-approve", (/** @type {any} */ e) => {
-    const request = joinRequests.find(
-      (/** @type {any} */ entry) =>
-        entry.identityHash === e.detail.identityHash,
-    );
-    if (request?.source === "bootstrap") {
-      // A bootstrap knocker is granted by the host decision engine itself
-      // when the approval resolves; the grant then syncs over the mesh
-      supervisor?.send({
-        type: "MESH",
-        command: "resolveRequest",
-        payload: { identityHash: e.detail.identityHash, decision: "approved" },
-      });
-      return;
-    }
-    // A sync-refusal peer holds no bootstrap link: the grant is minted
-    // through the mesh layer, and resolving just clears the request entry
-    supervisor?.send({
-      type: "MESH",
-      command: "grant",
-      payload: { identityHash: e.detail.identityHash, role: "operator" },
-    });
-    supervisor?.send({
-      type: "MESH",
-      command: "resolveRequest",
-      payload: { identityHash: e.detail.identityHash, decision: "approved" },
-    });
-  });
-  settingsDialog?.addEventListener("mesh-deny", (/** @type {any} */ e) => {
-    supervisor?.send({
-      type: "MESH",
-      command: "resolveRequest",
-      payload: { identityHash: e.detail.identityHash, decision: "declined" },
-    });
   });
   settingsDialog?.addEventListener("mesh-close", () => {});
 

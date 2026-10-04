@@ -147,58 +147,29 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.remove();
   });
 
-  it("copies the invite and emits mesh-join", () => {
+  it("renders no live-state sections: they moved to the sync panel (work document #28)", () => {
     const el = makeElement();
-    /** @type {any[]} */
-    const joins = [];
-    el.addEventListener("mesh-join", (e) =>
-      joins.push(/** @type {any} */ (e).detail),
-    );
-    el.open({ enabled: false, identity: "", interfaces: [], webrtc: {} }, "", {
-      websocket: websocketSchema,
-    });
+    el.open({ enabled: true, identity: "", interfaces: [], webrtc: {} }, "");
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    // Without a generated invite, the section offers generation
-    const generate = shadow.querySelector('[data-action="create-invite"]');
-    assert.ok(generate, "invite generation offered");
-    const input = /** @type {HTMLInputElement} */ (
-      shadow.querySelector("#join-room")
-    );
-    input.value =
-      "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff";
-    /** @type {HTMLElement} */ (
-      shadow.querySelector('[data-action="join"]')
-    ).click();
-    assert.deepEqual(joins, [
-      {
-        invite:
-          "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff",
-      },
-    ]);
-    assert.equal(input.value, "", "input cleared after join");
-    el.remove();
-  });
-
-  it("shows a generated invite URI with a copy button", () => {
-    const el = makeElement();
-    el.open({ enabled: false, identity: "", interfaces: [], webrtc: {} }, "", {
-      websocket: websocketSchema,
-    });
-    const uri =
-      "noflo://join/a1b2c3d4e5f60718293a4b5c6d7e8f90/11223344556677889900aabbccddeeff";
-    el.setInvite(uri);
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    const chip = /** @type {HTMLElement} */ (
-      shadow.querySelector("#mesh-invite")
-    );
-    assert.match(chip.textContent ?? "", /noflo:\/\/join\//);
     assert.ok(
-      shadow.querySelector('[data-action="copy-invite"]'),
-      "copy button shown for the invite",
+      !shadow.querySelector("#mesh-sync-status"),
+      "no sync status line in the config dialog",
+    );
+    assert.ok(
+      !shadow.querySelector("#join-progress"),
+      "no join progress in the config dialog",
+    );
+    assert.ok(
+      !shadow.querySelector("#join-room"),
+      "no join form in the config dialog",
+    );
+    assert.ok(
+      !shadow.querySelector("#mesh-invite"),
+      "no invite display in the config dialog",
     );
     assert.ok(
       !shadow.querySelector('[data-action="create-invite"]'),
-      "generation replaced by the generated URI",
+      "no invite generation in the config dialog",
     );
     el.remove();
   });
@@ -323,7 +294,6 @@ describe("mesh error display (work document #21)", () => {
       { enabled: true, identity: "", interfaces: [], webrtc: {} },
       "",
       { websocket: websocketSchema },
-      [],
       "Identity generation failed: The operation is not supported.",
     );
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
@@ -373,66 +343,6 @@ describe("mesh error display (work document #21)", () => {
     assert.match(button.textContent ?? "", /Really erase/);
     button.click();
     assert.equal(resetRequested, true, "the second click dispatches");
-    el.remove();
-  });
-
-  it("renders live sync status once the engine reports connectivity", () => {
-    const el = makeElement();
-    el.open(
-      { enabled: true, identity: "", interfaces: [], webrtc: {} },
-      "a".repeat(32),
-    );
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    // While enabled but before any provider status, the line shows the
-    // starting state instead of hiding
-    assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector("#mesh-sync-status"))
-        .textContent ?? "",
-      /starting/,
-    );
-    el.setSyncStatus({ connected: true, synced: false, peers: 2 });
-    const line = /** @type {HTMLElement} */ (
-      shadow.querySelector("#mesh-sync-status")
-    );
-    assert.match(line.textContent ?? "", /connected, 2 peers/);
-    el.remove();
-  });
-
-  it("renders join progress stages and decline reasons in plain language", () => {
-    const el = makeElement();
-    el.open(
-      { enabled: true, identity: "", interfaces: [], webrtc: {} },
-      "a".repeat(32),
-    );
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.ok(!shadow.querySelector("#join-progress"), "no progress yet");
-    el.setJoinProgress({ stage: "wait_response" });
-    assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
-        .textContent ?? "",
-      /Waiting for the host/,
-    );
-    el.setJoinProgress({ stage: "declined", reason: "host_lacks_authority" });
-    assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
-        .textContent ?? "",
-      /cannot grant access/,
-    );
-    el.setJoinProgress({ stage: "approved" });
-    assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
-        .textContent ?? "",
-      /receiving the project grant/,
-    );
-    el.setJoinProgress({ stage: "granted", project: { name: "Telemetry" } });
-    const granted = /** @type {HTMLElement} */ (
-      shadow.querySelector("#join-progress")
-    );
-    assert.match(granted.textContent ?? "", /Telemetry/);
-    assert.ok(
-      granted.classList.contains("success"),
-      "granted reads as success",
-    );
     el.remove();
   });
 });

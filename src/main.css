@@ -162,6 +162,15 @@ button:hover {
   --ui-panel-border: rgb(58, 63, 72);
   --ui-radius: 6px;
 
+  /* Ages state colors for corner HUD chips (work document #28): calm is
+     synced/settled, activity is work in flight, attention demands the
+     user, offline is disconnected. Routed through the theme's route
+     palette so both themes follow for free */
+  --ui-age-calm: var(--route-4);
+  --ui-age-activity: var(--route-6);
+  --ui-age-attention: var(--route-1);
+  --ui-age-offline: var(--node-subtext);
+
   /* Cyberpunk Route Palette */
   --route-0: rgb(224, 247, 250);
   --route-1: rgb(255, 82, 82);
