@@ -21,7 +21,7 @@ import {
   Identity,
   toHex,
 } from "../../vendor/reticulum-core.js";
-import { ReticulumProvider } from "../../vendor/y-reticulum.js";
+import { ReticulumProvider, roomDestinationHash } from "../../vendor/y-reticulum.js";
 import {
   createIndexeddbStorage,
   loadMeshConfig,
@@ -983,6 +983,42 @@ export async function createMeshSync({
   }
 
   /**
+   * Dials every granted peer's room destination directly (work document
+   * #34): the grants map carries each granted peer's identity hash, and the
+   * room destination hash is derivable from it — restarts recover without
+   * announce-driven discovery, whose acceptance at the relay is not
+   * guaranteed for known destinations.
+   */
+  async function dialKnownPeers() {
+    if (!provider) return;
+    const grants = doc.getMap?.("grants");
+    if (!grants) return;
+    const room = roomFor();
+    /** Peers already dialed in this pass (entries can repeat per role). */
+    const dialed = new Set();
+    for (const entry of grants.values()) {
+      const plain = entry.toJSON();
+      if (plain.revoked !== null || !plain.authorization) continue;
+      const peerHash = String(plain.peerHash ?? "");
+      if (peerHash === identityHash) continue;
+      if (!/^[0-9a-f]{32}$/.test(peerHash) || dialed.has(peerHash)) continue;
+      dialed.add(peerHash);
+      const destHash = await roomDestinationHash(room, peerHash);
+      postMessage(
+        progress("mesh.connect.path", "request", "running", {
+          peer: peerHash,
+        }),
+      );
+      const established = await provider.dialHash?.(destHash).catch(() => false);
+      postMessage(
+        progress("mesh.connect.path", "request", established ? "done" : "failed", {
+          peer: peerHash,
+        }),
+      );
+    }
+  }
+
+  /**
    * Mints a Dacar-signed grant for a peer and records it on a grants-map
    * entry — the CRDT is the replication other peers verify from (work
    * document #25 §6.2).
@@ -1487,7 +1523,7 @@ export async function createMeshSync({
       // exchange costs a full cycle even when it works
       pendingHostDial = {
         identity: await Identity.fromPublicKey(fromHex(nodeConfig.anchor.pubkey)),
-        peer: String(nodeConfig.anchor.hash).slice(0, 8),
+        peer: String(nodeConfig.anchor.hash),
       };
       // Wait for the pushed grant and verify it through a Dacar node built
       // from the delivered anchor — BEFORE any project setup: the device
@@ -1824,6 +1860,10 @@ export async function createMeshSync({
         })
         .catch(() => {});
     }
+    // Restart recovery (work document #34): dial every granted peer's room
+    // destination directly, derived from the grants map — announce-driven
+    // discovery is the fallback
+    dialKnownPeers().catch(() => {});
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe

@@ -1,6 +1,6 @@
 // @ts-nocheck
+import { CEType, ChannelException, DestType, Destination, Identity, LinkStatus, MessageBase, Resource, fromHex, toHex } from "./reticulum-core.js";
 import * as Y from "./yjs.js";
-import { CEType, ChannelException, DestType, Destination, Identity, LinkStatus, MessageBase, Resource, toHex } from "./reticulum-core.js";
 //#region src/shims/bzip2-stub.js
 /**
 * @file Vendor build shim: `@digitaldefiance/bzip2-wasm` is a hard dependency
@@ -64,6 +64,30 @@ function getCompressionProvider() {
 * segment is a hex digest of the room name (see {@link roomDestinationName}).
 */
 const DESTINATION_APP_PREFIX = "y-reticulum.sync";
+/**
+* Computes the room destination hash for a peer whose identity hash the
+* application knows from its own state (work document #34): a room
+* destination is derived from the app name's hash combined with the peer's
+* identity hash — the same derivation `@reticulum/core` performs when
+* validating an announce. Knowing the destination hash lets the application
+* dial the peer directly, without waiting for announce-driven discovery.
+*
+* @param {string} roomName The Yjs room name (e.g. `noflo-ui:<uuid>`).
+* @param {string} peerIdentityHashHex Hex of the peer's 16-byte identity
+*   hash, as the application tracks it.
+* @returns {Promise<string>} Hex of the peer's 16-byte room destination
+*   hash.
+*/
+async function roomDestinationHash(roomName, peerIdentityHashHex) {
+	const appName = await roomDestinationName(roomName);
+	const nameHashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(appName));
+	const nameHash = new Uint8Array(nameHashBuffer.slice(0, 10));
+	const identityHash = fromHex(peerIdentityHashHex);
+	const combined = new Uint8Array(nameHash.length + identityHash.length);
+	combined.set(nameHash, 0);
+	combined.set(identityHash, nameHash.length);
+	return toHex(await Identity.truncatedHash(combined));
+}
 /**
 * Derives the deterministic Reticulum destination app-name for a Yjs room.
 *
@@ -1478,10 +1502,11 @@ function bytesEqual(a, b) {
 * @typedef {Object} RoomCallbacks
 * @property {(added: string[], removed: string[]) => void} onPeers
 *   Fired whenever peers are discovered or drop off. Ids are hex link_ids.
-* @property {(remoteHex: string) => void} [onDiscovered]
+* @property {(remoteHex: string, publicKeyHex: string) => void} [onDiscovered]
 *   Fired when an announce matching this room arrives, before any glare
 *   or policy decision — the room-propagation fact, narrable even when a
-*   subsequent link does not form.
+*   subsequent link does not form. The peer's full public key (hex) rides
+*   along for the app's peer cache.
 * @property {() => void} [onAnnounced]
 *   Fired each time this room's destination actually broadcasts an announce
 *   (core 0.9.5's "announced" destination event covers the immediate,
@@ -1634,7 +1659,7 @@ var Room = class {
 		if (!bytesEqual(detail.nameHash, this.dest.nameHash)) return;
 		const remoteHex = toHex(detail.destinationHash);
 		if (remoteHex === this.myHex) return;
-		this.callbacks.onDiscovered?.(remoteHex);
+		this.callbacks.onDiscovered?.(remoteHex, toHex(detail.identity?.publicKey ?? []));
 		if (this.peerConns.size >= this.maxConns) return;
 		if (this.linkedDestHexes.has(remoteHex)) {
 			const conns = [...this.peerConns.values()].filter((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex);
@@ -1651,7 +1676,8 @@ var Room = class {
 		/** @type {string} */
 		let initiatorIdentityHash = "";
 		if (needsProvenIdentity) initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
-		await this._establishOutgoingLink(remoteHex, detail.identity, initiatorIdentityHash);
+		const out = await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns);
+		await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
 	}
 	/**
 	* Establishes an outgoing peer link to a room peer: the link policy,
@@ -1660,13 +1686,14 @@ var Room = class {
 	* direct dial (work document #34).
 	*
 	* @param {string} remoteHex Hex of the peer's room destination hash.
-	* @param {InstanceType<typeof Identity>} remoteIdentity The peer's full
-	*   identity, from the announce or from known state.
+	* @param {InstanceType<typeof Destination>} out The OUT destination
+	*   targeting the peer — from its announce identity, or recalled by hash
+	*   when the peer's identity hash is known from project state.
 	* @param {string} initiatorIdentityHash Hex of this device's truncated
 	*   identity hash, proven to the responder during the identify phase.
 	* @returns {Promise<boolean>} Whether a link was established.
 	*/
-	async _establishOutgoingLink(remoteHex, remoteIdentity, initiatorIdentityHash) {
+	async _establishOutgoingLink(remoteHex, out, initiatorIdentityHash) {
 		if (this.linkPolicy) {
 			if (!await this.linkPolicy({
 				remoteIdentityHash: initiatorIdentityHash,
@@ -1684,7 +1711,6 @@ var Room = class {
 		}
 		let link = null;
 		try {
-			const out = await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns);
 			link = await out.createLink();
 			if (!this.connected) {
 				await link.teardown();
@@ -1721,16 +1747,38 @@ var Room = class {
 		}
 	}
 	/**
-	* Dials a peer's room destination directly from a known identity, without
-	* waiting for announce-driven discovery (work document #34): the bootstrap
-	* handoff carries the host's identity, so the joiner can reach the room
-	* immediately after its rebind. Runs the same policy/identify/
-	* authorization sequence as the announce-driven initiate.
+	* Dials a peer's room destination directly from its destination hash,
+	* without waiting for announce-driven discovery (work document #34): for
+	* peers whose room destination hash the application knows through its own
+	* channels. The peer proves its identity during the identify phase; the
+	* same policy/identify/authorization sequence as the announce-driven
+	* initiate applies.
 	*
-	* @param {InstanceType<typeof Identity>} remoteIdentity The peer's full
-	*   identity.
+	* @param {string} remoteHex Hex of the peer's room destination hash.
 	* @returns {Promise<boolean>} Whether a link was established (true also
 	*   when an active link to this peer already existed).
+	*/
+	async dialHash(remoteHex) {
+		if (!this.connected || !this.dest) return false;
+		if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status === LinkStatus.ACTIVE)) return true;
+		if (this.pendingInitiates.has(remoteHex)) return false;
+		this.pendingInitiates.add(remoteHex);
+		try {
+			const out = await Destination.recalled(this.appName, fromHex(remoteHex), this.rns);
+			const initiatorIdentityHash = toHex(this.identity.identityHash);
+			return await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
+		} catch {
+			this.pendingInitiates.delete(remoteHex);
+			return false;
+		}
+	}
+	/**
+	* Dials a peer's room destination directly from a known identity (work
+	* document #34): for peers whose identity the application learned
+	* through its own channels.
+	*
+	* @param {InstanceType<typeof Identity>} remoteIdentity
+	* @returns {Promise<boolean>} Whether a link was established.
 	*/
 	async dial(remoteIdentity) {
 		if (!this.connected || !this.dest) return false;
@@ -2255,9 +2303,20 @@ var ReticulumProvider = class extends ObservableV2 {
 		this.emit("status", [{ connected: true }]);
 	}
 	/**
+	* Dials a peer's room destination directly from its destination hash (work
+	* document #34): for peers whose room destination hash the application
+	* knows through its own channels. See the Room's dialHash.
+	*
+	* @param {string} remoteHex Hex of the peer's room destination hash.
+	* @returns {Promise<boolean>} Whether a link was established.
+	*/
+	async dialHash(remoteHex) {
+		return await this.room?.dialHash(remoteHex);
+	}
+	/**
 	* Dials a peer's room destination directly from a known identity (work
-	* document #34): for flows that learned the peer's identity out-of-band,
-	* such as the bootstrap handoff carrying the host's identity key.
+	* document #34): for peers whose identity the application learned
+	* through its own channels.
 	*
 	* @param {InstanceType<typeof Identity>} remoteIdentity
 	* @returns {Promise<boolean>} Whether a link was established.
@@ -2282,4 +2341,4 @@ var ReticulumProvider = class extends ObservableV2 {
 	}
 };
 //#endregion
-export { PeerConn, ReticulumProvider, Room, getCompressionProvider, messageAwareness, messageSync, readMessage, roomDestinationName };
+export { PeerConn, ReticulumProvider, Room, getCompressionProvider, messageAwareness, messageSync, readMessage, roomDestinationHash, roomDestinationName };
