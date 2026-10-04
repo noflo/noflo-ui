@@ -13,11 +13,11 @@
 
 /**
  * Phrase catalog: `operation.stage` → phrase template. Entries are either a
- * single phrase for all states, or a `{ running, failed }` record when the
- * failure needs different wording. `{param}` placeholders interpolate from
+ * single phrase for all states, or a `{ done, running, failed }` record when
+ * states need different wording. `{param}` placeholders interpolate from
  * the message's `detail`.
  *
- * @type {Record<string, string | { running?: string, failed?: string }>}
+ * @type {Record<string, string | { done?: string, running?: string, failed?: string }>}
  */
 const PHRASES = {
   "identity.generate.restore": {
@@ -32,7 +32,10 @@ const PHRASES = {
   },
   "mesh.connect.discovery": "Working locally",
   "mesh.connect.discovered": "Discovered peer {peer}",
-  "mesh.announce.room": "Announced the project room",
+  "mesh.announce.room": {
+    done: "Announced the project room",
+    failed: "Room announce failed: {error}",
+  },
   "mesh.announce.sync": "Announced the sync endpoint",
   "mesh.connect.path.request":
     "Requesting a path to peer {peer}",
@@ -69,7 +72,7 @@ export function progressPhrase(message) {
       : entry
         ? (message.state === "failed"
             ? entry.failed ?? entry.running ?? fallback
-            : entry.running ?? fallback)
+            : entry.done ?? entry.running ?? fallback)
         : fallback;
   return String(template).replace(
     /\{(\w+)\}/g,

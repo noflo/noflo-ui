@@ -1768,7 +1768,13 @@ export async function createMeshSync({
     provider.on("announced", () => {
       postMessage(progress("mesh.announce", "room", "done"));
     });
-    postMessage(progress("mesh.announce", "room", "done"));
+    provider.on("announce-failed", (/** @type {any} */ event) => {
+      postMessage(
+        progress("mesh.announce", "room", "failed", {
+          error: String(unwrap(event)?.error ?? "unknown"),
+        }),
+      );
+    });
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe

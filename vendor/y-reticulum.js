@@ -1483,7 +1483,11 @@ function bytesEqual(a, b) {
 *   or policy decision — the room-propagation fact, narrable even when a
 *   subsequent link does not form.
 * @property {() => void} [onAnnounced]
-*   Fired each time this room's destination goes on air.
+*   Fired each time this room's destination actually broadcasts an announce
+*   (core 0.9.5's "announced" destination event covers the immediate,
+*   early-burst, and periodic cadences uniformly).
+* @property {(error: string) => void} [onAnnounceFailed]
+*   Fired when an announce attempt threw before broadcast.
 * @property {(synced: boolean) => void} onSynced
 *   Fired when the room's overall sync state changes.
 * @property {(refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }>) => void} [onRefused]
@@ -1578,10 +1582,14 @@ var Room = class {
 		this.doc.on("update", this._docUpdateHandler);
 		this.awareness.on("update", this._awarenessUpdateHandler);
 		this.dest.startAnnouncing({ intervalMs: this.announceIntervalMs });
+		this.dest.addEventListener("announced", () => this.callbacks.onAnnounced?.());
 		for (const delay of EARLY_ANNOUNCE_DELAYS_MS) {
 			const timer = setTimeout(() => {
 				this.earlyAnnounceTimers.delete(timer);
-				if (this.connected && this.dest) this.dest.announce().catch(() => {});
+				if (this.connected && this.dest) this.dest.announce().catch((err) => this.callbacks.onAnnounceFailed?.(
+					/** @type {any} */
+					err?.message ?? String(err)
+				));
 			}, delay);
 			this.earlyAnnounceTimers.add(timer);
 		}
@@ -1591,10 +1599,8 @@ var Room = class {
 	async disconnect() {
 		if (!this.connected) return;
 		this.connected = false;
-		if (this.earlyAnnounceTimers.size > 0) {
-			for (const timer of this.earlyAnnounceTimers) clearTimeout(timer);
-			this.earlyAnnounceTimers.clear();
-		}
+		for (const timer of this.earlyAnnounceTimers) clearTimeout(timer);
+		this.earlyAnnounceTimers.clear();
 		this.dest?.stopAnnouncing();
 		for (const timer of this.pendingPathRequests.values()) clearTimeout(timer);
 		this.pendingPathRequests.clear();
@@ -2119,6 +2125,14 @@ var Room = class {
 *   Fired when sync state with the peer mesh changes. (Phase 3.)
 * @property {(event: { added: Array<string>, removed: Array<string> }) => void} peers
 *   Fired when peers are discovered or drop off.
+* @property {(event: { remoteHex: string }) => void} discovered
+*   Fired when an announce for this room arrives from the mesh, before any
+*   glare or policy decision — evidence the room propagates even when no
+*   link forms.
+* @property {(event: {}) => void} announced
+*   Fired when this peer's room destination goes on air: at connect and on
+*   each early-burst re-announce. The periodic re-announce cadence is
+*   delegated to `@reticulum/core` and does not fire this event.
 * @property {(event: { refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }> }) => void} refused
 *   Fired when a peer link was refused by the link policy or the
 *   authorization phase.
@@ -2190,6 +2204,7 @@ var ReticulumProvider = class extends ObservableV2 {
 				}]),
 				onDiscovered: (remoteHex) => this.emit("discovered", [{ remoteHex }]),
 				onAnnounced: () => this.emit("announced", [{}]),
+				onAnnounceFailed: (error) => this.emit("announce-failed", [{ error }]),
 				onSynced: (synced) => this.emit("synced", [{ synced }]),
 				onRefused: (refusals) => this.emit("refused", [{ refusals }])
 			}
