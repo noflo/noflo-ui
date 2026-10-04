@@ -265,6 +265,11 @@ export class FlowMeshSettings extends HTMLElement {
    */
   syncStatusHtml() {
     const status = this._syncStatus;
+    if (this._config?.enabled && (!status || status.connected === undefined)) {
+      // Enabled but no provider status yet: say so instead of hiding the
+      // line — a silent gap read as "sync is fine" during debugging
+      return `<div class="hint" id="mesh-sync-status">Sync: starting…</div>`;
+    }
     if (!status || status.connected === undefined) return "";
     const peers =
       typeof status.peers === "number" && status.peers > 0
@@ -327,8 +332,12 @@ export class FlowMeshSettings extends HTMLElement {
           owner && grant.revoked === null
             ? `<button class="danger" data-grant-revoke="${escapeHtml(grant.id)}">Revoke</button>`
             : "";
+        const self =
+          grant.peerHash === this._identityHash
+            ? ` <strong>(this device)</strong>`
+            : "";
         return `<div class="list-item">
-            <span class="grow">${escapeHtml(grant.peerHash)} <em>${escapeHtml(
+            <span class="grow">${escapeHtml(grant.peerHash)}${self} <em>${escapeHtml(
               grant.role,
             )}</em></span>
             ${badge}

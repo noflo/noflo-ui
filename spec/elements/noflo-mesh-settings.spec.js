@@ -78,7 +78,7 @@ describe("FlowMeshSettings (work document #21)", () => {
       grants: [
         {
           id: "grant-1",
-          peerHash: "deadbeef",
+          peerHash: "abcd1234abcd1234",
           role: "operator",
           issued: 1,
           revoked: null,
@@ -129,6 +129,12 @@ describe("FlowMeshSettings (work document #21)", () => {
       /** @type {HTMLElement} */ (shadow.querySelector("#grant-list"))
         .textContent ?? "",
       /revoked/,
+    );
+    // The device's own grant is marked
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#grant-list"))
+        .textContent ?? "",
+      /this device/,
     );
     // Only the non-revoked grant offers Revoke
     assert.equal(shadow.querySelectorAll("[data-grant-revoke]").length, 1);
@@ -379,7 +385,13 @@ describe("mesh error display (work document #21)", () => {
       "a".repeat(32),
     );
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.ok(!shadow.querySelector("#mesh-sync-status"), "no status yet");
+    // While enabled but before any provider status, the line shows the
+    // starting state instead of hiding
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#mesh-sync-status"))
+        .textContent ?? "",
+      /starting/,
+    );
     el.setSyncStatus({ connected: true, synced: false, peers: 2 });
     const line = /** @type {HTMLElement} */ (
       shadow.querySelector("#mesh-sync-status")

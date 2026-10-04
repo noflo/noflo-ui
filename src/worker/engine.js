@@ -444,11 +444,6 @@ export async function startEngine(io, options = {}) {
           );
       } else if (message.command === "factoryReset") {
         factoryReset();
-      } else if (message.command === "stop") {
-        // Graceful mesh shutdown (the Glass sends it on page unload): the
-        // peer's room cleans its link state immediately instead of waiting
-        // out the Reticulum link timeout after this worker dies
-        mesh?.stop().catch(() => {});
       } else if (message.command === "importIdentity") {
         mesh
           .handleImportedIdentity(message.payload?.identity)
