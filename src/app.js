@@ -99,7 +99,7 @@ let joinProgress =
 /** The current operation narration (work document #34), rendered by the
  * sync panel's stage segment; null when no operation is in flight. */
 let narration =
-  /** @type {{ phrase: string, operation: string, failed?: boolean } | null} */ (
+  /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */ (
     null
   );
 /** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
@@ -189,9 +189,18 @@ function onEngineMessage(data) {
     // done clears it, a failure sticks until the next operation
     const phrase = progressPhrase(data);
     if (data.state === "running") {
-      narration = { phrase, operation: data.operation };
+      narration = {
+        phrase,
+        operation: data.operation,
+        stage: data.stage,
+      };
     } else if (data.state === "failed") {
-      narration = { phrase, operation: data.operation, failed: true };
+      narration = {
+        phrase,
+        operation: data.operation,
+        stage: data.stage,
+        failed: true,
+      };
     } else if (narration?.operation === data.operation) {
       narration = null;
     }
@@ -274,6 +283,12 @@ function onEngineMessage(data) {
     if (meshError) {
       console.warn("Mesh error:", meshError);
     }
+  } else if (data?.protocol === "graph") {
+    // Authoritative Appendix A echoes: rendering is replica-driven (the
+    // y-update stream mirrors the CRDT), so the Glass takes no action —
+    // traced at debug for protocol visibility without drowning the
+    // genuinely-unhandled branch below
+    console.debug(`[echo] graph/${data.command}`, data.payload?.id ?? "");
   } else {
     console.debug("Engine message (no Glass handling yet):", data);
   }
