@@ -1,5 +1,1035 @@
 import crypto from "../src/shims/crypto-subtle.js";
-import { C as __exportAll, S as generateX25519KeyPair, _ as Token, a as getLogLevel, b as exportRawPrivateKey, c as setLogLevel, d as bytesEqual, f as bytesToBase64, g as toHex, h as fromHex, i as LogLevel, l as base64ToBytes, m as concatBytes, o as log, p as bytesToBase64Url, r as LOG_LEVEL_ENV, s as parseLogLevel, t as Identity, u as base64UrlToBytes, v as hkdf, x as generateEd25519KeyPair, y as exportPublicKey } from "./identity-lzAPfTg7.js";
+//#region node_modules/@reticulum/core/src/crypto/keys.js
+/**
+* @module @reticulum/core/src/crypto/keys.js
+* @description X25519 / Ed25519 generation and parsing — Web Crypto
+*   import/export helpers for raw keys (the operations SubtleCrypto supports;
+*   used by key sealing and rfed channel derivation).
+*/
+/**
+* An asymmetric key pair (private + public CryptoKey).
+* @typedef KeyPair
+* @property {CryptoKey} privateKey
+* @property {CryptoKey} publicKey
+*/
+/**
+* Generates an Ed25519 key pair.
+* @returns {Promise<KeyPair>}
+*/
+async function generateEd25519KeyPair() {
+	return crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+}
+/**
+* Generates an X25519 key pair.
+* @returns {Promise<KeyPair>}
+*/
+async function generateX25519KeyPair() {
+	return crypto.subtle.generateKey({ name: "X25519" }, true, ["deriveKey", "deriveBits"]);
+}
+/**
+* Exports the public key as a raw Uint8Array.
+* @param {CryptoKey} publicKey
+* @returns {Promise<Uint8Array>}
+*/
+async function exportPublicKey(publicKey) {
+	const exported = await crypto.subtle.exportKey("raw", publicKey);
+	return new Uint8Array(exported);
+}
+/**
+* Imports a raw Ed25519 public key.
+* @param {Uint8Array} rawKey
+* @returns {Promise<CryptoKey>}
+*/
+async function importEd25519PublicKey(rawKey) {
+	return await crypto.subtle.importKey("raw", rawKey, { name: "Ed25519" }, true, ["verify"]);
+}
+/**
+* Imports a raw X25519 public key.
+* @param {Uint8Array} rawKey
+* @returns {Promise<CryptoKey>}
+*/
+async function importX25519PublicKey(rawKey) {
+	return await crypto.subtle.importKey("raw", rawKey, { name: "X25519" }, true, []);
+}
+/**
+* Exports the private key as raw bytes (32 bytes).
+* @param {CryptoKey} privateKey
+* @returns {Promise<Uint8Array>}
+*/
+async function exportRawPrivateKey(privateKey) {
+	const pkcs8 = await crypto.subtle.exportKey("pkcs8", privateKey);
+	return new Uint8Array(pkcs8).slice(-32);
+}
+/**
+* Imports an Ed25519 private key from raw bytes.
+* @param {Uint8Array} rawKey
+* @returns {Promise<CryptoKey>}
+*/
+async function importRawEd25519PrivateKey(rawKey) {
+	const wrapped = new Uint8Array([
+		48,
+		46,
+		2,
+		1,
+		0,
+		48,
+		5,
+		6,
+		3,
+		43,
+		101,
+		112,
+		4,
+		34,
+		4,
+		32,
+		...rawKey
+	]);
+	return await crypto.subtle.importKey("pkcs8", wrapped, { name: "Ed25519" }, true, ["sign"]);
+}
+/**
+* Decodes an unpadded base64url string into a byte array.
+* @param {string} s
+* @returns {Uint8Array}
+* @private
+*/
+function base64urlToBytes(s) {
+	const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - s.length % 4);
+	const b64 = s.replace(/-/g, "+").replace(/_/g, "/") + pad;
+	const bin = atob(b64);
+	const out = new Uint8Array(bin.length);
+	for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+	return out;
+}
+/**
+* Derives the public key corresponding to an OKP (X25519 / Ed25519) private
+* key.
+*
+* WebCrypto has no direct "give me my public key" call, but exporting an OKP
+* private key as JWK yields the public component in the `x` field
+* (RFC 8037), which we re-import as a raw public key. Used by
+* {@link import("../core/identity.js").Identity.fromPrivateKey} to build a
+* full identity from private-key material alone.
+* @param {CryptoKey} privateKey An extractable X25519 or Ed25519 private key.
+* @returns {Promise<{publicKey: CryptoKey, raw: Uint8Array}>} The matching
+*   public key, both as a CryptoKey and as 32 raw bytes.
+*/
+async function derivePublicKeyFromPrivate(privateKey) {
+	const raw = base64urlToBytes((await crypto.subtle.exportKey("jwk", privateKey)).x);
+	const algorithm = privateKey.algorithm;
+	return {
+		publicKey: await crypto.subtle.importKey("raw", raw, { name: algorithm.name }, true, algorithm.name === "Ed25519" ? ["verify"] : []),
+		raw
+	};
+}
+/**
+* Imports an X25519 private key from raw bytes.
+* @param {Uint8Array} rawKey
+* @returns {Promise<CryptoKey>}
+*/
+async function importRawX25519PrivateKey(rawKey) {
+	const wrapped = new Uint8Array([
+		48,
+		46,
+		2,
+		1,
+		0,
+		48,
+		5,
+		6,
+		3,
+		43,
+		101,
+		110,
+		4,
+		34,
+		4,
+		32,
+		...rawKey
+	]);
+	return await crypto.subtle.importKey("pkcs8", wrapped, { name: "X25519" }, true, ["deriveKey", "deriveBits"]);
+}
+//#endregion
+//#region node_modules/@reticulum/core/src/crypto/hmac.js
+/**
+* @file hmac.js
+* @description HMAC implementation using Web Crypto API
+*/
+/**
+* Computes an HMAC-SHA256 signature.
+* @param {any} key - The key for HMAC.
+* @param {any} data - The data to sign.
+* @returns {Promise<Uint8Array>} The resulting HMAC signature.
+*/
+async function hmac(key, data) {
+	const cryptoKey = await crypto.subtle.importKey("raw", key, {
+		name: "HMAC",
+		hash: "SHA-256"
+	}, false, ["sign"]);
+	const cleanData = new Uint8Array(data);
+	const signature = await crypto.subtle.sign("HMAC", cryptoKey, cleanData);
+	return new Uint8Array(signature);
+}
+//#endregion
+//#region node_modules/@reticulum/core/src/crypto/ciphers.js
+/**
+* @file ciphers.js
+* @description AES-128-CBC, HKDF derivation
+*/
+/**
+* Performs HKDF to derive bits.
+* @param {any} masterKey
+* @param {any} salt
+* @param {any} info
+* @param {number} lengthInBytes
+* @returns {Promise<Uint8Array>}
+*/
+async function hkdf(masterKey, salt, info, lengthInBytes) {
+	const prk = await hmac(salt.length === 0 ? /* @__PURE__ */ new Uint8Array(32) : salt, masterKey);
+	const okm = new Uint8Array(lengthInBytes);
+	let lastT = /* @__PURE__ */ new Uint8Array(0);
+	let offset = 0;
+	let counter = 1;
+	while (offset < lengthInBytes) {
+		const input = new Uint8Array(lastT.length + info.length + 1);
+		input.set(lastT, 0);
+		input.set(info, lastT.length);
+		input[input.length - 1] = counter;
+		const t = await hmac(prk, input);
+		const toCopy = Math.min(t.length, lengthInBytes - offset);
+		okm.set(t.slice(0, toCopy), offset);
+		offset += toCopy;
+		lastT = t;
+		counter++;
+	}
+	return okm;
+}
+/**
+* Encrypts a Uint8Array using AES-CBC.
+* @param {CryptoKey} key - The AES-CBC key.
+* @param {Uint8Array} iv - 16-byte initialization vector.
+* @param {Uint8Array} data - Plaintext data.
+* @returns {Promise<Uint8Array>}
+*/
+async function encryptAES(key, iv, data) {
+	const encrypted = await crypto.subtle.encrypt({
+		name: "AES-CBC",
+		iv
+	}, key, data);
+	return new Uint8Array(encrypted);
+}
+/**
+* Decrypts a Uint8Array using AES-CBC.
+* @param {CryptoKey} key - The AES-CBC key.
+* @param {Uint8Array} iv - 16-byte initialization vector.
+* @param {Uint8Array} data - Ciphertext data.
+* @returns {Promise<Uint8Array>}
+*/
+async function decryptAES(key, iv, data) {
+	const decrypted = await crypto.subtle.decrypt({
+		name: "AES-CBC",
+		iv
+	}, key, data);
+	return new Uint8Array(decrypted);
+}
+//#endregion
+//#region node_modules/@reticulum/core/src/crypto/token.js
+/**
+* @file token.js
+* @description Token implementation (modified Fernet)
+*/
+/**
+* Token encryption cipher modes.
+* @enum {string}
+*/
+const MODE = {
+	AES_128_CBC: "AES_128_CBC",
+	AES_256_CBC: "AES_256_CBC"
+};
+/**
+* This class provides a slightly modified implementation of the Fernet spec.
+* Reticulum strips the version and timestamp fields from the token to reduce overhead.
+*/
+var Token = class {
+	/**
+	* @param {Uint8Array} key
+	* @param {string} [mode=MODE.AES_256_CBC]
+	*/
+	constructor(key, mode = MODE.AES_256_CBC) {
+		if (!key) throw new Error("Token key cannot be null");
+		if (mode === MODE.AES_128_CBC) {
+			if (key.length !== 32) throw new Error("Token key must be 32 bytes for AES_128_CBC");
+			this.mode = MODE.AES_128_CBC;
+			this.signingKey = key.slice(0, 16);
+			this.encryptionKey = key.slice(16);
+			this.algorithm = "AES-CBC";
+		} else if (mode === MODE.AES_256_CBC) {
+			if (key.length !== 64) throw new Error("Token key must be 64 bytes for AES_256_CBC");
+			this.mode = MODE.AES_256_CBC;
+			this.signingKey = key.slice(0, 32);
+			this.encryptionKey = key.slice(32);
+			this.algorithm = "AES-CBC";
+		} else throw new Error("Invalid token mode");
+	}
+	/**
+	* Generates a new random token key.
+	* @param {string} [mode=MODE.AES_256_CBC]
+	* @returns {Promise<Uint8Array>}
+	*/
+	static async generateKey(mode = MODE.AES_256_CBC) {
+		const length = mode === MODE.AES_128_CBC ? 32 : 64;
+		return crypto.getRandomValues(new Uint8Array(length));
+	}
+	/**
+	* Verifies the HMAC of a token.
+	* @param {Uint8Array} token
+	* @returns {Promise<boolean>}
+	*/
+	async verifyHmac(token) {
+		if (token.length <= 32) throw new Error("Cannot verify HMAC on token of only " + token.length + " bytes");
+		const receivedHmac = token.slice(-32);
+		const dataToVerify = token.slice(0, -32);
+		const expectedHmac = await hmac(this.signingKey, dataToVerify);
+		return this.constantTimeCompare(receivedHmac, expectedHmac);
+	}
+	/**
+	* Encrypts the provided data.
+	* @param {Uint8Array} data
+	* @returns {Promise<Uint8Array>}
+	*/
+	async encrypt(data) {
+		if (!(data instanceof Uint8Array)) throw new TypeError("Token plaintext input must be Uint8Array");
+		const iv = crypto.getRandomValues(/* @__PURE__ */ new Uint8Array(16));
+		const ciphertext = await encryptAES(await crypto.subtle.importKey("raw", this.encryptionKey, { name: this.algorithm }, false, ["encrypt"]), iv, data);
+		const signedParts = new Uint8Array(iv.length + ciphertext.length);
+		signedParts.set(iv, 0);
+		signedParts.set(ciphertext, iv.length);
+		const mac = await hmac(this.signingKey, signedParts);
+		const token = new Uint8Array(signedParts.length + mac.length);
+		token.set(signedParts, 0);
+		token.set(mac, signedParts.length);
+		return token;
+	}
+	/**
+	* Decrypts the provided token.
+	* @param {Uint8Array} token
+	* @returns {Promise<Uint8Array>}
+	*/
+	async decrypt(token) {
+		if (!(token instanceof Uint8Array)) throw new TypeError("Token must be Uint8Array");
+		if (!await this.verifyHmac(token)) throw new Error("Token HMAC was invalid");
+		const iv = token.slice(0, 16);
+		const ciphertext = token.slice(16, -32);
+		const decryptedPlaintext = await decryptAES(await crypto.subtle.importKey("raw", this.encryptionKey, { name: this.algorithm }, false, ["decrypt"]), iv, ciphertext);
+		return new Uint8Array(decryptedPlaintext);
+	}
+	/**
+	* Performs a constant-time comparison of two Uint8Arrays.
+	* @param {Uint8Array} a
+	* @param {Uint8Array} b
+	* @returns {boolean}
+	* @private
+	*/
+	constantTimeCompare(a, b) {
+		if (a.length !== b.length) return false;
+		let result = 0;
+		for (let i = 0; i < a.length; i++) result |= a[i] ^ b[i];
+		return result === 0;
+	}
+};
+//#endregion
+//#region node_modules/@reticulum/core/src/utils/encoding.js
+/**
+* @module @reticulum/core/src/utils/encoding.js
+* @description Minimal, zero-dependency encoding utilities for the Reticulum Network System.
+* Strictly utilizes standard ES6 TypedArrays and Strings.
+*/
+/**
+* Converts a Uint8Array to a lowercase hexadecimal string.
+* This is primarily used for indexing Routing Tables and displaying Destination Hashes.
+* * @param {Uint8Array} bytes - The raw byte array to convert.
+* @returns {string} The resulting hexadecimal string.
+*/
+function toHex(bytes) {
+	if (!(bytes instanceof Uint8Array)) throw new TypeError("toHex expects a Uint8Array");
+	const hex = new Array(bytes.length);
+	for (let i = 0; i < bytes.length; i++) hex[i] = bytes[i].toString(16).padStart(2, "0");
+	return hex.join("");
+}
+/**
+* Constant-time-ish equality check for two Uint8Arrays.
+*
+* Used for comparing hashes / public keys where short-circuiting on the first
+* differing byte would leak timing information. Returns true only when both
+* arrays are the same length and every byte matches.
+*
+* @param {Uint8Array} a
+* @param {Uint8Array} b
+* @returns {boolean}
+*/
+function bytesEqual(a, b) {
+	if (!(a instanceof Uint8Array) || !(b instanceof Uint8Array)) throw new TypeError("bytesEqual expects Uint8Array arguments");
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+	return diff === 0;
+}
+/**
+* Concatenates a variable number of Uint8Array (or array-like byte sources)
+* into a single new Uint8Array. Accepts Uint8Array values directly; anything
+* else is coerced via `new Uint8Array(source)`.
+*
+* @param {...Uint8Array | ArrayLike<number>} arrays
+* @returns {Uint8Array}
+*/
+function concatBytes(...arrays) {
+	/** @type {Uint8Array[]} */
+	const parts = arrays.map((a) => a instanceof Uint8Array ? a : new Uint8Array(a));
+	let total = 0;
+	for (const p of parts) total += p.length;
+	const out = new Uint8Array(total);
+	let offset = 0;
+	for (const p of parts) {
+		out.set(p, offset);
+		offset += p.length;
+	}
+	return out;
+}
+/**
+* Encodes a Uint8Array into standard (RFC 4648) base64.
+*
+* Pure-JS implementation (no `Buffer`/`btoa`) so it runs unchanged on every
+* WinterTC-compatible runtime.
+*
+* @param {Uint8Array} bytes
+* @returns {string}
+*/
+function bytesToBase64(bytes) {
+	if (!(bytes instanceof Uint8Array)) throw new TypeError("bytesToBase64 expects a Uint8Array");
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	let out = "";
+	let i = 0;
+	for (; i + 2 < bytes.length; i += 3) {
+		const n = bytes[i] << 16 | bytes[i + 1] << 8 | bytes[i + 2];
+		out += chars[n >> 18 & 63];
+		out += chars[n >> 12 & 63];
+		out += chars[n >> 6 & 63];
+		out += chars[n & 63];
+	}
+	const rem = bytes.length - i;
+	if (rem === 1) {
+		const n = bytes[i] << 16;
+		out += chars[n >> 18 & 63];
+		out += chars[n >> 12 & 63];
+		out += "==";
+	} else if (rem === 2) {
+		const n = bytes[i] << 16 | bytes[i + 1] << 8;
+		out += chars[n >> 18 & 63];
+		out += chars[n >> 12 & 63];
+		out += chars[n >> 6 & 63];
+		out += "=";
+	}
+	return out;
+}
+const B64_DEC = (() => {
+	const t = (/* @__PURE__ */ new Int8Array(128)).fill(-1);
+	const std = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	for (let i = 0; i < 64; i++) t[std.charCodeAt(i)] = i;
+	t["-".charCodeAt(0)] = 62;
+	t["_".charCodeAt(0)] = 63;
+	return t;
+})();
+/**
+* Decodes a (standard or URL-safe, padded or unpadded) base64 string.
+*
+* Tolerant in the same ways the Python LXMF reference is when ingesting paper
+* URIs: stray padding is ignored and missing padding is restored.
+*
+* @param {string} str
+* @returns {Uint8Array}
+*/
+function base64ToBytes(str) {
+	if (typeof str !== "string") throw new TypeError("base64ToBytes expects a string");
+	let s = str.replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
+	const pad = (4 - s.length % 4) % 4;
+	if (pad) s += "=".repeat(pad);
+	const out = new Uint8Array(s.length / 4 * 3);
+	let o = 0;
+	for (let i = 0; i < s.length; i += 4) {
+		const c0 = B64_DEC[s.charCodeAt(i)];
+		const c1 = B64_DEC[s.charCodeAt(i + 1)];
+		const c2 = s.charCodeAt(i + 2) === "=".charCodeAt(0) ? -1 : B64_DEC[s.charCodeAt(i + 2)];
+		const c3 = s.charCodeAt(i + 3) === "=".charCodeAt(0) ? -1 : B64_DEC[s.charCodeAt(i + 3)];
+		const n = c0 << 18 | c1 << 12 | (c2 & 63) << 6 | c3 & 63;
+		out[o++] = n >> 16 & 255;
+		if (c2 !== -1) out[o++] = n >> 8 & 255;
+		if (c3 !== -1) out[o++] = n & 255;
+	}
+	return out.subarray(0, o);
+}
+/**
+* Encodes bytes as URL-safe base64 **without** padding, the exact form used by
+* the LXMF paper-message `lxm://` URI (`LXMessage.as_uri`).
+*
+* @param {Uint8Array} bytes
+* @returns {string}
+*/
+function bytesToBase64Url(bytes) {
+	return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+/**
+* Decodes a URL-safe (or standard) base64 string, tolerating missing padding —
+* the inverse of {@link bytesToBase64Url}.
+*
+* @param {string} str
+* @returns {Uint8Array}
+*/
+function base64UrlToBytes(str) {
+	return base64ToBytes(str);
+}
+/**
+* Converts a hexadecimal string back into a raw Uint8Array.
+* Useful for parsing user-provided destination hashes or static routing configurations.
+*
+* @param {string} hexString - The hexadecimal string to convert.
+* @returns {Uint8Array} The resulting raw byte array.
+*/
+function fromHex(hexString) {
+	if (typeof hexString !== "string") throw new TypeError("fromHex expects a string");
+	const cleanHex = hexString.replace(/[\s-]/g, "");
+	if (cleanHex.length % 2 !== 0) throw new Error("Hex string must have an even number of characters");
+	const bytes = new Uint8Array(cleanHex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		const start = i * 2;
+		bytes[i] = parseInt(cleanHex.substring(start, start + 2), 16);
+	}
+	return bytes;
+}
+//#endregion
+//#region node_modules/@reticulum/core/src/utils/log.js
+/**
+* @module @reticulum/core/src/utils/log.js
+* @description Logging utilities for the Reticulum Network System: log levels,
+* threshold control, and the `log()` emitter. Log levels and names follow
+* RNS conventions (the familiar `LOG_*` levels).
+*/
+/**
+* Log levels, following RNS conventions (the familiar `LOG_*` levels).
+*
+* Names, ordering and numeric values match the Python reference so that
+* `RETICULUM_LOG_LEVEL` / `setLogLevel` accept familiar names
+* (`ERROR`, `NOTICE`, `DEBUG`, …) and behave as Reticulum users expect.
+*
+* @enum {number}
+*/
+const LogLevel = {
+	NONE: -1,
+	CRITICAL: 0,
+	ERROR: 1,
+	WARNING: 2,
+	NOTICE: 3,
+	INFO: 4,
+	VERBOSE: 5,
+	DEBUG: 6,
+	PATHING: 7,
+	EXTREME: 8
+};
+/** Environment variable consulted at module load for the initial threshold. */
+const LOG_LEVEL_ENV = "RETICULUM_LOG_LEVEL";
+/** Default threshold when nothing else is configured. */
+const DEFAULT_LOG_LEVEL = LogLevel.NOTICE;
+const LEVEL_BY_NAME = new Map(Object.entries(LogLevel).map(([name, value]) => [name.toLowerCase(), value]));
+/**
+* Reads an environment variable in a platform-neutral, dependency-free way.
+*
+* Works on Node (`process.env`) and Deno (`Deno.env`); returns `undefined`
+* in browsers and other runtimes without an environment. Access is wrapped
+* so runtimes that throw on env access are treated as "unset".
+* @param {string} name
+* @returns {string | undefined}
+*/
+function readEnv(name) {
+	try {
+		/** @type {any} */
+		const g = globalThis;
+		const fromProcess = g?.process?.env?.[name];
+		if (fromProcess !== void 0) return fromProcess;
+		const fromDeno = g?.Deno?.env?.get?.(name);
+		if (fromDeno !== void 0) return fromDeno;
+	} catch {}
+}
+/**
+* Parses a log level from a name (case-insensitive, e.g. `"DEBUG"`) or a
+* number. Out-of-range numbers are clamped to `[CRITICAL, EXTREME]`.
+* Unknown names fall back to `fallback`.
+* @param {string | number | undefined} value - name, number, or empty.
+* @param {number} [fallback] - {@link LogLevel} used when `value` is
+*   missing or unrecognised. Defaults to {@link LogLevel.NOTICE}.
+* @returns {number} a {@link LogLevel} value.
+*/
+function parseLogLevel(value, fallback = DEFAULT_LOG_LEVEL) {
+	if (value === void 0 || value === null || value === "") return fallback;
+	if (typeof value === "number") return clamp(Number.isFinite(value) ? Math.trunc(value) : fallback);
+	const trimmed = String(value).trim();
+	if (/^-?\d+$/.test(trimmed)) return clamp(Number.parseInt(trimmed, 10));
+	return LEVEL_BY_NAME.get(trimmed.toLowerCase()) ?? fallback;
+}
+/** @param {number} n */
+const clamp = (n) => Math.min(LogLevel.EXTREME, Math.max(LogLevel.CRITICAL, n));
+let logLevel = parseLogLevel(readEnv(LOG_LEVEL_ENV), DEFAULT_LOG_LEVEL);
+/**
+* Sets the active log level (the threshold above which messages are dropped).
+*
+* Accepts a {@link LogLevel} value, a level name, or a numeric level; see
+* {@link parseLogLevel}. Takes precedence over the `RETICULUM_LOG_LEVEL`
+* environment variable.
+* @param {number | string} level
+* @returns {void}
+*/
+function setLogLevel(level) {
+	logLevel = parseLogLevel(level, logLevel);
+}
+/**
+* Returns the currently active {@link LogLevel} threshold.
+* @returns {number}
+*/
+function getLogLevel() {
+	return logLevel;
+}
+/**
+* Emits a log message if `level` is at or below the active threshold.
+*
+* The default message level is {@link LogLevel.DEBUG}, so bare
+* `log("Mod", msg)` calls stay quiet unless the operator raises the
+* threshold to `DEBUG` (or higher). Call sites that should appear at the
+* default `NOTICE` verbosity pass an explicit level.
+*
+* @param {string} module - short tag identifying the emitting subsystem.
+* @param {string} message - the message body.
+* @param {number} [level=LogLevel.DEBUG] - {@link LogLevel} of this message.
+* @returns {void}
+*/
+function log(module, message, level = LogLevel.DEBUG) {
+	if (level > logLevel) return;
+	console.log((/* @__PURE__ */ new Date()).toISOString(), `[${module}]`, message);
+}
+//#endregion
+//#region node_modules/@reticulum/core/src/core/identity.js
+/**
+* @module @reticulum/core/src/core/identity.js
+* @description Identity creation, signing, and verification
+*/
+/**
+* Result of a successful announce validation (SPEC.md §4.5).
+*
+* @typedef {Object} AnnounceValidation
+* @property {Identity} identity - Identity reconstructed from the announced public key.
+* @property {Uint8Array} nameHash - 10-byte name_hash from the announce body.
+* @property {Uint8Array} randomHash - 10-byte random_hash (5 random || 5-byte BE uint40 timestamp).
+* @property {Uint8Array|null} ratchet - 32-byte ratchet X25519 pub if context_flag was set, else null.
+* @property {Uint8Array} signature - 64-byte Ed25519 signature.
+* @property {Uint8Array|null} appData - app_data bytes if present in the announce, else null.
+*/
+/**
+* Represents a Reticulum Identity.
+* @description Identity creation, signing, and verification
+*/
+var Identity = class Identity extends EventTarget {
+	/**
+	* Truncated-hash length in bytes. Destination, identity, and address
+	* hashes are the first 16 bytes of a SHA-256 digest (the Python reference
+	* expresses this as `RNS.Reticulum.TRUNCATED_HASHLENGTH//8`, in bits).
+	*/
+	static TRUNCATED_HASH_LENGTH = 16;
+	appData = /* @__PURE__ */ new Uint8Array();
+	/**
+	* Low-level constructor. Prefer the static factories (`Identity.generate`,
+	* `Identity.fromPublicKey`, `Identity.fromBytes`).
+	* @param {CryptoKey|null} x25519Priv
+	* @param {CryptoKey|null} ed25519Priv
+	* @param {CryptoKey} x25519Pub
+	* @param {CryptoKey} ed25519Pub
+	* @param {Uint8Array} publicKey
+	* @param {Uint8Array} identityHash
+	*/
+	constructor(x25519Priv, ed25519Priv, x25519Pub, ed25519Pub, publicKey, identityHash) {
+		super();
+		this.x25519Priv = x25519Priv;
+		this.ed25519Priv = ed25519Priv;
+		this.x25519Pub = x25519Pub;
+		this.ed25519Pub = ed25519Pub;
+		this.publicKey = publicKey;
+		this.identityHash = identityHash;
+	}
+	/**
+	* Sets the application-specific metadata attached to announcements.
+	* @param {string} data
+	*/
+	setAppData(data) {
+		this.appData = new TextEncoder().encode(data);
+	}
+	/**
+	* Returns the application-specific metadata as a UTF-8 string.
+	* @returns {string}
+	*/
+	getAppData() {
+		return new TextDecoder().decode(this.appData);
+	}
+	/**
+	* Attempts to load an identity from a storage adapter, or generates and
+	* saves a new one.
+	*
+	* Fail-loud semantics: an identity *is* the node's cryptographic address, so
+	* we never silently mint a fresh one over an existing key. Only a genuinely
+	* absent key file (the adapter returns `null`) leads to generation; a read
+	* error or an unusable/corrupt stored blob is surfaced to the operator
+	* rather than quietly overwritten, which would break every peer that has
+	* cached the old public key.
+	*
+	* @param {any} [storageAdapter] - Must implement async loadKey() and async saveKey(bytes)
+	* @returns {Promise<Identity>}
+	* @throws {Error} if a stored key exists but cannot be loaded, or if reading
+	*   or persisting the key fails for any non-"missing file" reason.
+	*/
+	static async loadOrGenerate(storageAdapter) {
+		if (!storageAdapter) {
+			log("Identity", "No storage adapter provided. Generating ephemeral identity.", LogLevel.WARNING);
+			return await Identity.generate();
+		}
+		let savedBytes = null;
+		try {
+			savedBytes = await storageAdapter.loadKey();
+		} catch (e) {
+			log("Identity", `Failed to read identity from storage: ${e}`, LogLevel.ERROR);
+			throw new Error(`Failed to read identity from storage: ${e}`);
+		}
+		if (savedBytes) {
+			if (savedBytes.length === 128) {
+				const identity = await Identity.fromBytes(savedBytes);
+				if (identity) return identity;
+			}
+			log("Identity", "Stored identity key is present but could not be loaded (corrupt or wrong length). Refusing to overwrite; remove the file manually to regenerate.", LogLevel.ERROR);
+			throw new Error("Stored identity key is present but could not be loaded; refusing to overwrite it");
+		}
+		const newIdentity = await Identity.generate();
+		const privateBytes = await newIdentity.getPrivateKey();
+		try {
+			await storageAdapter.saveKey(privateBytes);
+		} catch (e) {
+			log("Identity", `Failed to persist new identity: ${e}`, LogLevel.ERROR);
+			throw new Error(`Failed to persist new identity: ${e}`);
+		}
+		return newIdentity;
+	}
+	/**
+	* Get a SHA-256 hash of passed data.
+	* @param {Uint8Array} data
+	* @returns {Promise<Uint8Array>}
+	*/
+	static async fullHash(data) {
+		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+		return new Uint8Array(hashBuffer);
+	}
+	/**
+	* Get a truncated SHA-256 hash of passed data.
+	* @param {Uint8Array} data
+	* @returns {Promise<Uint8Array>}
+	*/
+	static async truncatedHash(data) {
+		return (await Identity.fullHash(data)).slice(0, Identity.TRUNCATED_HASH_LENGTH);
+	}
+	/**
+	* Returns `Identity.TRUNCATED_HASH_LENGTH` (16) fresh random bytes.
+	*
+	* Mirrors `RNS.Identity.get_random_hash()`. Despite the name this is plain
+	* randomness, not a hash of anything. It is the source of the random half
+	* of the announce `random_hash` (SPEC.md §4.1) and the Resource random-hash
+	* prefix (§10.2 step 3).
+	*
+	* @returns {Uint8Array} 16 random bytes.
+	*/
+	static getRandomHash() {
+		return crypto.getRandomValues(new Uint8Array(Identity.TRUNCATED_HASH_LENGTH));
+	}
+	/**
+	* Load an identity from a public key.
+	* @param {Uint8Array} publicKey
+	* @returns {Promise<Identity>}
+	*/
+	static async fromPublicKey(publicKey) {
+		const ed25519PubBytes = /* @__PURE__ */ new Uint8Array(32);
+		const x25519PubBytes = /* @__PURE__ */ new Uint8Array(32);
+		x25519PubBytes.set(publicKey.subarray(0, 32), 0);
+		ed25519PubBytes.set(publicKey.subarray(32, 64), 0);
+		const x25519Pub = await crypto.subtle.importKey("raw", x25519PubBytes, { name: "X25519" }, true, []);
+		const ed25519Pub = await crypto.subtle.importKey("raw", ed25519PubBytes, { name: "Ed25519" }, true, ["verify"]);
+		const cleanPublicKey = /* @__PURE__ */ new Uint8Array(64);
+		cleanPublicKey.set(publicKey.subarray(0, 64), 0);
+		return new Identity(null, null, x25519Pub, ed25519Pub, cleanPublicKey, await Identity.truncatedHash(cleanPublicKey));
+	}
+	/**
+	* Create a new random identity.
+	* @returns {Promise<Identity>}
+	*/
+	static async generate() {
+		const x25519 = await generateX25519KeyPair();
+		const ed25519 = await generateEd25519KeyPair();
+		const x25519PubBytes = await exportPublicKey(x25519.publicKey);
+		const ed25519PubBytes = await exportPublicKey(ed25519.publicKey);
+		const publicKey = /* @__PURE__ */ new Uint8Array(64);
+		publicKey.set(x25519PubBytes, 0);
+		publicKey.set(ed25519PubBytes, 32);
+		const identityHash = await Identity.truncatedHash(publicKey);
+		return new Identity(x25519.privateKey, ed25519.privateKey, x25519.publicKey, ed25519.publicKey, publicKey, identityHash);
+	}
+	/**
+	* Get the raw private key bytes (64 bytes).
+	* @returns {Promise<Uint8Array>}
+	*/
+	async getPrivateKey() {
+		if (!this.x25519Priv || !this.ed25519Priv) throw new Error("Cannot get private key because identity does not hold a private key");
+		const x25519PrivBytes = await exportRawPrivateKey(this.x25519Priv);
+		const ed25519PrivBytes = await exportRawPrivateKey(this.ed25519Priv);
+		const x25519PubBytes = await exportPublicKey(this.x25519Pub);
+		const ed25519PubBytes = await exportPublicKey(this.ed25519Pub);
+		const privKey = /* @__PURE__ */ new Uint8Array(128);
+		privKey.set(x25519PrivBytes, 0);
+		privKey.set(x25519PubBytes, 32);
+		privKey.set(ed25519PrivBytes, 64);
+		privKey.set(ed25519PubBytes, 96);
+		return privKey;
+	}
+	/**
+	* Get the public key as bytes.
+	* @returns {Promise<Uint8Array>}
+	*/
+	async getPublicKey() {
+		const x25519PubBytes = await exportPublicKey(this.x25519Pub);
+		const ed25519PubBytes = await exportPublicKey(this.ed25519Pub);
+		const publicKey = /* @__PURE__ */ new Uint8Array(64);
+		publicKey.set(x25519PubBytes, 0);
+		publicKey.set(ed25519PubBytes, 32);
+		return publicKey;
+	}
+	/**
+	* Build an identity from a 64-byte private-key blob.
+	*
+	* The input is **private key material only** — the first 32 bytes are the
+	* X25519 private key, the last
+	* 32 bytes the Ed25519 private key — and the public keys are derived from
+	* them (rather than supplied, as in {@link Identity.fromBytes}, which takes
+	* the full 128-byte priv+pub export).
+	*
+	* Used to instantiate the {@link import("./ifac.js").deriveIfac IFAC
+	* identity} from an HKDF-derived 64-byte key, matching upstream
+	* `Identity.from_bytes(ifac_key)`. Returns `null` on invalid input.
+	* @param {Uint8Array} bytes 64 bytes: `[x25519Priv(32) || ed25519Priv(32)]`.
+	* @returns {Promise<Identity|null>}
+	*/
+	static async fromPrivateKey(bytes) {
+		try {
+			if (bytes.length !== 64) throw new Error(`Expected 64 bytes of private key material, got ${bytes.length}`);
+			const x25519Priv = await importRawX25519PrivateKey(bytes.slice(0, 32));
+			const ed25519Priv = await importRawEd25519PrivateKey(bytes.slice(32, 64));
+			const x25519 = await derivePublicKeyFromPrivate(x25519Priv);
+			const ed25519 = await derivePublicKeyFromPrivate(ed25519Priv);
+			const publicKey = /* @__PURE__ */ new Uint8Array(64);
+			publicKey.set(x25519.raw, 0);
+			publicKey.set(ed25519.raw, 32);
+			const identityHash = await Identity.truncatedHash(publicKey);
+			return new Identity(x25519Priv, ed25519Priv, x25519.publicKey, ed25519.publicKey, publicKey, identityHash);
+		} catch (e) {
+			log("Identity", `Failed to load identity from private key: ${e}`, LogLevel.ERROR);
+			return null;
+		}
+	}
+	/**
+	* Load an identity from raw bytes.
+	* @param {Uint8Array} bytes
+	* @returns {Promise<Identity|null>}
+	*/
+	static async fromBytes(bytes) {
+		try {
+			const x25519Priv = await importRawX25519PrivateKey(bytes.slice(0, 32));
+			const x25519Pub = await importX25519PublicKey(bytes.slice(32, 64));
+			const ed25519Priv = await importRawEd25519PrivateKey(bytes.slice(64, 96));
+			const ed25519Pub = await importEd25519PublicKey(bytes.slice(96, 128));
+			const publicKey = /* @__PURE__ */ new Uint8Array(64);
+			publicKey.set(bytes.slice(32, 64), 0);
+			publicKey.set(bytes.slice(96, 128), 32);
+			return new Identity(x25519Priv, ed25519Priv, x25519Pub, ed25519Pub, publicKey, await Identity.truncatedHash(publicKey));
+		} catch (e) {
+			log("Identity", `Failed to load identity from bytes: ${e}`, LogLevel.ERROR);
+			return null;
+		}
+	}
+	/**
+	* Get the salt for HKDF.
+	* @returns {Uint8Array}
+	*/
+	getSalt() {
+		return this.identityHash;
+	}
+	/**
+	* Get the context for HKDF.
+	* @returns {Uint8Array|null}
+	*/
+	getContext() {
+		return null;
+	}
+	/**
+	* Encrypt information for the identity.
+	* @param {Uint8Array} plaintext
+	* @param {Uint8Array|null} ratchet
+	* @returns {Promise<Uint8Array>}
+	*/
+	async encrypt(plaintext, ratchet = null) {
+		if (!this.ed25519Pub) throw new Error("Encryption failed because identity does not hold a public key");
+		const ephemeralKey = await generateX25519KeyPair();
+		const ephemeralPubBytes = await exportPublicKey(ephemeralKey.publicKey);
+		let targetPublicKey;
+		if (ratchet) targetPublicKey = await crypto.subtle.importKey("raw", ratchet, { name: "X25519" }, true, []);
+		else targetPublicKey = this.x25519Pub;
+		const sharedKeyBuffer = await crypto.subtle.deriveBits({
+			name: "X25519",
+			public: targetPublicKey
+		}, ephemeralKey.privateKey, 256);
+		const ciphertext = await new Token(await hkdf(new Uint8Array(sharedKeyBuffer), this.getSalt(), this.getContext() || /* @__PURE__ */ new Uint8Array(0), 64)).encrypt(plaintext);
+		const result = new Uint8Array(ephemeralPubBytes.length + ciphertext.length);
+		result.set(ephemeralPubBytes, 0);
+		result.set(ciphertext, ephemeralPubBytes.length);
+		return result;
+	}
+	/**
+	* Decrypt information for the identity.
+	* @param {Uint8Array} ciphertextToken
+	* @param {Array<Uint8Array>|null} ratchets
+	* @returns {Promise<Uint8Array|null>}
+	*/
+	async decrypt(ciphertextToken, ratchets = null) {
+		if (!this.ed25519Priv) throw new Error("Decryption failed because identity does not hold a private key");
+		if (ciphertextToken.length > 32) {
+			const peerPubBytes = ciphertextToken.slice(0, 32);
+			const ciphertext = ciphertextToken.slice(32);
+			const peerPub = await crypto.subtle.importKey("raw", peerPubBytes, { name: "X25519" }, true, []);
+			let plaintext = null;
+			if (ratchets) for (const ratchet of ratchets) try {
+				const ratchetPrv = await importRawX25519PrivateKey(ratchet);
+				const sharedKeyBuffer = await crypto.subtle.deriveBits({
+					name: "X25519",
+					public: peerPub
+				}, ratchetPrv, 256);
+				plaintext = await new Token(await hkdf(new Uint8Array(sharedKeyBuffer), this.getSalt(), this.getContext() || /* @__PURE__ */ new Uint8Array(0), 64)).decrypt(ciphertext);
+				if (plaintext) break;
+			} catch (e) {}
+			if (!plaintext) try {
+				const sharedKeyBuffer = await crypto.subtle.deriveBits({
+					name: "X25519",
+					public: peerPub
+				}, this.x25519Priv, 256);
+				plaintext = await new Token(await hkdf(new Uint8Array(sharedKeyBuffer), this.getSalt(), this.getContext() || /* @__PURE__ */ new Uint8Array(0), 64)).decrypt(ciphertext);
+			} catch (e) {
+				plaintext = null;
+			}
+			return plaintext;
+		} else return null;
+	}
+	/**
+	* Signs information by the identity.
+	* @param {Uint8Array} message
+	* @returns {Promise<Uint8Array>}
+	*/
+	async sign(message) {
+		if (!this.ed25519Priv) throw new Error("Signing failed because identity does not hold a private key");
+		const signature = await crypto.subtle.sign("Ed25519", this.ed25519Priv, message);
+		const sigArray = new Uint8Array(signature);
+		if (sigArray.length !== 64) throw new Error(`CRITICAL: Signature length is ${sigArray.length}, expected 64!`);
+		return sigArray;
+	}
+	/**
+	* Validates the signature of a signed message.
+	* @param {Uint8Array} signature
+	* @param {Uint8Array} messageId
+	* @returns {Promise<boolean>}
+	*/
+	async validate(signature, messageId) {
+		if (signature.length !== 64) return false;
+		const signatureView = new Uint8Array(signature.buffer, signature.byteOffset, 64);
+		const dataView = new Uint8Array(messageId.buffer, messageId.byteOffset, messageId.byteLength);
+		return await crypto.subtle.verify("Ed25519", this.ed25519Pub, signatureView, dataView);
+	}
+	/**
+	* Validates an announce exactly like the Python reference's
+	* `validate_announce` (SPEC.md §4.5 steps 1-3).
+	*
+	* Parses the announce body — branching on `contextFlag` so a ratchet-bearing
+	* announce shifts the signature 32 bytes deeper (§4.5 step 1) — verifies the
+	* Ed25519 signature over the §4.2 `signed_data` (step 2), and recomputes the
+	* destination hash from `(name_hash, public_key)` to confirm it matches the
+	* outer packet header (step 3).
+	*
+	* The caller is responsible for the §4.5 step 4 public-key collision check
+	* and step 6 caching, since those touch the transport's identity cache.
+	*
+	* @param {Uint8Array} destinationHash - 16-byte dest_hash from the outer packet header.
+	* @param {boolean} contextFlag - the packet header's context_flag bit (ratchet present).
+	* @param {Uint8Array} data - the announce body (packet payload).
+	* @returns {Promise<AnnounceValidation|null>} null on any validation failure.
+	*/
+	static async validateAnnounce(destinationHash, contextFlag, data) {
+		const sigOffset = contextFlag ? 116 : 84;
+		const sigEnd = sigOffset + 64;
+		if (data.length < sigEnd) {
+			log("Identity", `Announce body too short (${data.length} bytes; need ${sigEnd} for context_flag=${contextFlag ? 1 : 0})`, LogLevel.WARNING);
+			return null;
+		}
+		const publicKey = data.subarray(0, 64);
+		const nameHash = data.subarray(64, 74);
+		const randomHash = data.subarray(74, 84);
+		/** @type {Uint8Array|null} */
+		let ratchet = null;
+		if (contextFlag) ratchet = data.subarray(84, 116);
+		const signature = data.subarray(sigOffset, sigEnd);
+		const appData = data.length > sigEnd ? data.slice(sigEnd) : null;
+		const identity = await Identity.fromPublicKey(publicKey);
+		const ratchetForSig = ratchet ?? /* @__PURE__ */ new Uint8Array(0);
+		const appDataForSig = appData ?? /* @__PURE__ */ new Uint8Array(0);
+		const signedData = new Uint8Array(destinationHash.length + publicKey.length + nameHash.length + randomHash.length + ratchetForSig.length + appDataForSig.length);
+		let offset = 0;
+		signedData.set(destinationHash, offset);
+		offset += destinationHash.length;
+		signedData.set(publicKey, offset);
+		offset += publicKey.length;
+		signedData.set(nameHash, offset);
+		offset += nameHash.length;
+		signedData.set(randomHash, offset);
+		offset += randomHash.length;
+		signedData.set(ratchetForSig, offset);
+		offset += ratchetForSig.length;
+		signedData.set(appDataForSig, offset);
+		if (!await identity.validate(signature, signedData)) {
+			log("Identity", "Announce signature verification failed — rejecting", LogLevel.WARNING);
+			return null;
+		}
+		const combined = new Uint8Array(nameHash.length + identity.identityHash.length);
+		combined.set(nameHash, 0);
+		combined.set(identity.identityHash, nameHash.length);
+		if (!bytesEqual(await Identity.truncatedHash(combined), destinationHash)) {
+			log("Identity", "Announce destination_hash mismatch — rejecting", LogLevel.WARNING);
+			return null;
+		}
+		identity.appData = appData ?? /* @__PURE__ */ new Uint8Array();
+		return {
+			identity,
+			nameHash,
+			randomHash,
+			ratchet,
+			signature,
+			appData
+		};
+	}
+};
+//#endregion
 //#region node_modules/@reticulum/core/src/core/packet.js
 /**
 * @module @reticulum/core/src/core/packet.js
@@ -219,6 +1249,7 @@ var Packet = class Packet {
 		offset += DST_LEN;
 		const contextByte = data[offset];
 		offset += 1;
+		if (offset >= data.length) throw new Error("Zero-length data field");
 		return new Packet({
 			headerType,
 			hops,
@@ -651,6 +1682,1075 @@ function pushChunked(bytes, value) {
 		bytes.push(...slice);
 	}
 }
+//#endregion
+//#region node_modules/@reticulum/core/src/core/resource_advertisement.js
+/**
+* @file resource_advertisement.js
+* @description RESOURCE_ADV msgpack encoding/decoding (PROTOCOL-SPEC.md §10.4).
+*/
+/**
+* Bit layout of the RESOURCE_ADV `f` flags byte (PROTOCOL-SPEC.md §10.4):
+*
+* ```
+* bit 0 : e — encrypted
+* bit 1 : c — compressed
+* bit 2 : s — split (multi-segment)
+* bit 3 : u — is_request  (Resource carries a Link REQUEST body)
+* bit 4 : p — is_response (Resource carries a Link RESPONSE body)
+* bit 5 : x — has_metadata
+* ```
+*
+* @enum {number}
+*/
+const ResourceFlag = {
+	ENCRYPTED: 1,
+	COMPRESSED: 2,
+	SPLIT: 4,
+	IS_REQUEST: 8,
+	IS_RESPONSE: 16,
+	HAS_METADATA: 32
+};
+/**
+* Represents a RESOURCE_ADV — the advertisement that opens a Resource transfer.
+*
+* The wire form is a single msgpack map (PROTOCOL-SPEC.md §10.4). The byte
+* fields (`h`, `r`, `o`, `m`, `q`) MUST be msgpack `bin`, not
+* arrays — encoding them via `Array.from(...)` produces a msgpack array and
+* silently breaks Python interop. Keys are emitted in a fixed order so the
+* packed bytes are deterministic.
+*
+* Note that `r` is the 4-byte integrity/hashmap salt (`get_random_hash()[:4]`),
+* NOT the leading wire prefix that the receiver strips (§10.2 step 3 / §10.8).
+*/
+var ResourceAdvertisement = class ResourceAdvertisement {
+	/**
+	* @param {Object} options
+	* @param {number} [options.t] - Transfer size (encrypted byte length on wire).
+	* @param {number} [options.d] - Total logical size (original uncompressed).
+	* @param {number} [options.n] - Number of parts in this segment.
+	* @param {Uint8Array} [options.h] - Resource hash `SHA-256(plaintext ‖ r)` (32B).
+	* @param {Uint8Array} [options.r] - Random hash salt (4B).
+	* @param {Uint8Array} [options.o] - Original hash of first segment (32B).
+	* @param {number} [options.i] - Segment index (1-based).
+	* @param {number} [options.l] - Total segments.
+	* @param {Uint8Array} [options.q] - Associated REQUEST id, or undefined/None.
+	* @param {number} [options.f] - Flags byte.
+	* @param {Uint8Array} [options.m] - Hashmap fragment (concatenated 4B map_hashes).
+	*/
+	constructor(options = {}) {
+		this.t = options.t || 0;
+		this.d = options.d || 0;
+		this.n = options.n || 0;
+		this.h = options.h || /* @__PURE__ */ new Uint8Array(0);
+		this.r = options.r || /* @__PURE__ */ new Uint8Array(0);
+		this.o = options.o || /* @__PURE__ */ new Uint8Array(0);
+		this.i = options.i || 0;
+		this.l = options.l || 0;
+		this.q = options.q || void 0;
+		this.f = options.f || 0;
+		this.m = options.m || /* @__PURE__ */ new Uint8Array(0);
+	}
+	/** @returns {boolean} */
+	get encrypted() {
+		return !!(this.f >> 0 & 1);
+	}
+	/** @returns {boolean} */
+	get compressed() {
+		return !!(this.f >> 1 & 1);
+	}
+	/** @returns {boolean} */
+	get split() {
+		return !!(this.f >> 2 & 1);
+	}
+	/** @returns {boolean} */
+	get isRequest() {
+		return !!(this.f >> 3 & 1);
+	}
+	/** @returns {boolean} */
+	get isResponse() {
+		return !!(this.f >> 4 & 1);
+	}
+	/** @returns {boolean} */
+	get hasMetadata() {
+		return !!(this.f >> 5 & 1);
+	}
+	/**
+	* Packs the advertisement into a msgpack `bin`-correct Uint8Array.
+	* @returns {Uint8Array}
+	*/
+	pack() {
+		/** @type {Record<string, any>} */
+		const dict = {
+			t: this.t,
+			d: this.d,
+			n: this.n,
+			h: this.h,
+			r: this.r,
+			o: this.o,
+			i: this.i,
+			l: this.l,
+			q: this.q ?? null,
+			f: this.f,
+			m: this.m
+		};
+		return MicroMsgPack.encode(dict);
+	}
+	/**
+	* Unpacks an advertisement from its msgpack wire form.
+	* @param {Uint8Array} data
+	* @returns {ResourceAdvertisement}
+	*/
+	static unpack(data) {
+		/** @type {any} */
+		const dict = MicroMsgPack.decode(data);
+		return new ResourceAdvertisement({
+			t: dict.t,
+			d: dict.d,
+			n: dict.n,
+			h: new Uint8Array(dict.h),
+			r: new Uint8Array(dict.r),
+			o: new Uint8Array(dict.o),
+			i: dict.i,
+			l: dict.l,
+			q: dict.q ? new Uint8Array(dict.q) : void 0,
+			f: dict.f,
+			m: new Uint8Array(dict.m)
+		});
+	}
+};
+//#endregion
+//#region node_modules/@reticulum/core/src/core/resource.js
+/**
+* @file resource.js
+* @description Resource fragmentation protocol (PROTOCOL-SPEC.md §10).
+*
+* Implements:
+*
+*   - sender preparation: random prefix, link-encrypt-whole-then-slice,
+*     hashmap construction with COLLISION_GUARD_SIZE collision avoidance.
+*   - RESOURCE_ADV advertisement with correct flags/context.
+*   - receiver accept with advertised-size cap (§10.4 bomb defense).
+*   - the receiver request loop (RESOURCE_REQ) with windowed pacing and
+*     RESOURCE_HMU hashmap continuation for resources with more parts than
+*     HASHMAP_MAX_LEN.
+*   - part matching by 4-byte map_hash (out-of-order tolerant).
+*   - assembly: link-decrypt, strip prefix, optional decompress, hash check.
+*   - RESOURCE_PRF proof handshake (receiver proves, sender validates).
+*   - RESOURCE_ICL / RESOURCE_RCL cancellation.
+*   - §10.3 multi-segment splitting: payloads over MAX_EFFICIENT_SIZE are
+*     sent as sequentially-advertised segments tied by the first segment's
+*     hash (`o`), and reassembled receiver-side by
+*     {@link SplitResourceAssembler}.
+*   - §10.4 `x` flag: response metadata traveling inside the hashed/
+*     compressed/encrypted blob (see {@link Resource.metadata}).
+*
+* Not yet implemented: sliding-window rate adaptation, watchdog /
+* advertisement retransmit, and the full decompression-bomb streaming bound
+* (a receive-time `d` cap is enforced now).
+*/
+/**
+* Status of a {@link Resource} transfer, mirroring `RNS.ResourceStatus`
+* (NONE → QUEUED → ADVERTISED → TRANSFERRING → COMPLETE, plus the failure
+* states FAILED/CORRUPT/REJECTED).
+* @enum {number}
+*/
+const ResourceStatus = {
+	NONE: 0,
+	QUEUED: 1,
+	ADVERTISED: 2,
+	TRANSFERRING: 3,
+	ASSEMBLING: 4,
+	AWAITING_PROOF: 5,
+	COMPLETE: 6,
+	FAILED: 7,
+	CORRUPT: 8,
+	REJECTED: 9
+};
+/** Receiver-side RESOURCE_REQ hashmap-exhausted flag values (§10.5). */
+const HASHMAP_IS_NOT_EXHAUSTED = 0;
+const HASHMAP_IS_EXHAUSTED = 255;
+/**
+* Minimal bzip2 compressor/decompressor duck-type for Resource compression.
+* @typedef {object} Bzip2
+* @property {(data: Uint8Array) => Uint8Array} compress
+* @property {(data: Uint8Array, outputLen: number) => Uint8Array} decompress
+*/
+/**
+* A Reticulum Resource — a fragmented transfer riding on top of an ACTIVE Link.
+*
+* Construct with `data` for the sender side (then `await resource.advertise()`);
+* or via {@link Resource.accept} on the receiver side. Both sides emit
+* `progress` / `complete` / `failed` events, and expose `whenComplete()` for
+* promise-based consumers.
+*/
+var Resource = class Resource extends EventTarget {
+	/**
+	* Size of the throwaway random prefix prepended to the wire body (§10.2
+	* step 3). Distinct from the advertisement `r` field.
+	*/
+	static RANDOM_HASH_SIZE = 4;
+	/** `RNS.Reticulum.IFAC_MIN_SIZE` — reserved IFAC bytes when computing SDU. */
+	static IFAC_MIN_SIZE = 1;
+	/**
+	* `RNS.Packet.HEADER_MAXSIZE` — worst-case header after relay HEADER_1→HEADER_2
+	* conversion: flags(1) + hops(1) + transport_id(16) + dest_hash(16) + context(1).
+	*/
+	static HEADER_MAX_SIZE = 35;
+	/** Initial receiver request window (§10.10). */
+	static WINDOW = 4;
+	/** Default window cap used for the collision-guard span (§10.10 WINDOW_MAX_SLOW). */
+	static WINDOW_MAX_SLOW = 10;
+	/** Constants in the advertisement-size formula `HASHMAP_MAX_LEN = (MDU-134)/4`. */
+	static HASHMAP_FIXED_OVERHEAD = 134;
+	/** Cap on advertised transfer/logical size at accept time (§10.4 bomb defense). */
+	static DEFAULT_MAX_SIZE = 32 * 1024 * 1024;
+	/**
+	* Absolute cap on the advertised part count `n` at accept time. Defends
+	* against a single RESOURCE_ADV that advertises a tiny `t` but a huge `n`:
+	* the receiver allocates `new Array(n).fill(null)` for the parts, so an
+	* unbounded `n` is a one-packet OOM. Set generously enough that any
+	* legitimate transfer up to {@link DEFAULT_MAX_SIZE} at the minimum MTU
+	* (219 → sdu 183 → ~183k parts for 32 MiB) still fits, with headroom.
+	*/
+	static DEFAULT_MAX_PARTS = 262144;
+	/** Receiver request window during a transfer. */
+	window = Resource.WINDOW;
+	/** Max encodable metadata size: 3-byte length prefix limits it to 16 MiB-1. */
+	static METADATA_MAX_SIZE = 16777215;
+	/**
+	* Logical bytes per Resource segment (§10.3). Larger payloads are split
+	* into `l` sequentially-advertised segments tied together by the first
+	* segment's hash (`o`). Segment 1 counts the metadata prefix toward its
+	* budget, so its payload share is smaller by the prefix length.
+	*/
+	static MAX_EFFICIENT_SIZE = 1 * 1024 * 1024 - 1;
+	/** Sanity ceiling on an advertised total segment count `l`. */
+	static DEFAULT_MAX_SEGMENTS = 4096;
+	/**
+	* Ceiling on the reassembled logical size of a split Resource — the
+	* per-segment `t`/`d` caps bound each transfer, this bounds their sum.
+	*/
+	static DEFAULT_MAX_TOTAL_SIZE = 256 * 1024 * 1024;
+	/**
+	* @param {Object} options
+	* @param {Uint8Array|undefined} [options.data] - Sender-side payload.
+	* @param {any} [options.metadata] - Sender-side response metadata (§10.4
+	*   `x` flag). Encoded as msgpack and prepended to the payload as
+	*   `3-byte BE size ‖ packed metadata` before hashing/compression, matching
+	*   the reference implementation's file-with-metadata transfers. Receivers
+	*   expose the decoded value as {@link Resource.metadata} and strip it from
+	*   {@link Resource.data}.
+	* @param {import("../transport/link.js").Link|undefined} [options.link]
+	* @param {boolean} [options.autoCompress=true]
+	* @param {Uint8Array} [options.originalHash]
+	* @param {Uint8Array} [options.requestId] - Associated REQUEST id (§11).
+	* @param {boolean} [options.isRequest=false] - This Resource is a REQUEST body.
+	* @param {boolean} [options.isResponse=false] - This Resource is a RESPONSE body.
+	* @param {Bzip2} [options.bz2] - Injected bz2 module; never imported by the library.
+	*/
+	constructor(options = {}) {
+		super();
+		this.data = options.data;
+		/**
+		* Response metadata: the decoded value on the receiver (after assembly),
+		* or the caller-supplied value on the sender.
+		* @type {any}
+		*/
+		this.metadata = void 0;
+		this.hasMetadata = false;
+		/**
+		* Sender-side `3-byte BE size ‖ msgpack(metadata)` prefix (§10.4). The
+		* prefix is part of the hashed/compressed/encrypted blob on the wire.
+		* @type {Uint8Array|undefined}
+		*/
+		this.metadataPrefix = void 0;
+		if (options.metadata !== void 0 && options.metadata !== null) {
+			const packed = MicroMsgPack.encode(options.metadata);
+			if (packed.length > Resource.METADATA_MAX_SIZE) throw new Error("Resource metadata size exceeded");
+			const prefix = /* @__PURE__ */ new Uint8Array(3);
+			prefix[0] = packed.length >> 16;
+			prefix[1] = packed.length >> 8 & 255;
+			prefix[2] = packed.length & 255;
+			this.metadataPrefix = concatBytes(prefix, packed);
+			this.hasMetadata = true;
+			this.metadata = options.metadata;
+		}
+		/** @type {import("../transport/link.js").Link} */
+		this.link = options.link;
+		this.autoCompress = options.autoCompress ?? true;
+		this.originalHash = options.originalHash;
+		this.requestId = options.requestId;
+		this.isRequest = options.isRequest ?? false;
+		this.isResponse = options.isResponse ?? false;
+		/** @type {Bzip2|undefined} */
+		this.bz2 = options.bz2;
+		this.status = ResourceStatus.NONE;
+		/** @type {(Uint8Array|null)[]} */
+		this.parts = [];
+		/** @type {Uint8Array[]} */ this.hashmap = [];
+		this.receivedCount = 0;
+		this.totalParts = 0;
+		this.totalSize = 0;
+		this.size = 0;
+		/** @type {Uint8Array|undefined} */ this.hash = void 0;
+		/** @type {Uint8Array|undefined} */ this.randomHash = void 0;
+		/** @type {Uint8Array|undefined} */ this.expectedProof = void 0;
+		this.compressed = false;
+		this.encrypted = false;
+		this.split = false;
+		this.segmentIndex = 1;
+		this.totalSegments = 1;
+		this.uncompressedSize = 0;
+		/** Outstanding part requests in the current window (receiver). */
+		this.outstanding = 0;
+		/** Whether sender preparation is done. */
+		this._prepared = false;
+	}
+	/**
+	* Maximum part body size. Parts are raw slices of the already-encrypted
+	* whole, sent as `context=RESOURCE` packets which are NOT token-encrypted
+	* (§10.6 gotcha), so the full SDU is available for part data.
+	* @returns {number}
+	*/
+	get sdu() {
+		if (!this.link) return 0;
+		return this.link.mtu - Resource.HEADER_MAX_SIZE - Resource.IFAC_MIN_SIZE;
+	}
+	/**
+	* Number of 4-byte map_hashes that fit in one advertisement's `m` field
+	* (§10.4): `floor((link.mdu - 134) / 4)`. At the default MDU 431 this is 74.
+	* @returns {number}
+	*/
+	get hashmapMaxLen() {
+		if (!this.link) return 0;
+		return Math.floor((this.link.mdu - Resource.HASHMAP_FIXED_OVERHEAD) / 4);
+	}
+	/**
+	* Collision-guard span (§10.2 step 7): map_hashes must be unique within this
+	* many parts of any position.
+	* @returns {number}
+	*/
+	get collisionGuardSize() {
+		return 2 * Resource.WINDOW_MAX_SLOW + this.hashmapMaxLen;
+	}
+	/**
+	* Prepares the resource for sending (§10.2): optional compression, integrity
+	* material over the uncompressed plaintext, link-encrypt the whole
+	* `prefix ‖ body` blob, slice into SDU parts, and build the collision-guarded
+	* hashmap. Idempotent.
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _prepareSender() {
+		if (this._prepared) return;
+		if (!(this.data instanceof Uint8Array)) throw new TypeError("Resource sender data must be a Uint8Array");
+		const plaintext = this.metadataPrefix ? concatBytes(this.metadataPrefix, this.data) : this.data;
+		if (plaintext.length > Resource.MAX_EFFICIENT_SIZE) {
+			this.split = true;
+			this.segmentIndex = 1;
+			this.totalSegments = Math.floor((plaintext.length - 1) / Resource.MAX_EFFICIENT_SIZE) + 1;
+			this._fullPlaintext = plaintext;
+			await this._prepareSegment();
+			this._prepared = true;
+			return;
+		}
+		this.uncompressedSize = plaintext.length;
+		let body = plaintext;
+		if (this.autoCompress && this.bz2) try {
+			const compressed = this.bz2.compress(plaintext);
+			if (compressed.length < plaintext.length) {
+				body = compressed;
+				this.compressed = true;
+			}
+		} catch (err) {
+			log("Resource", `Could not auto-compress resource data, falling back to uncompressed transfer: ${err.message ?? err}`, LogLevel.DEBUG);
+		}
+		await this._buildIntegrityAndParts(plaintext, body);
+		this._prepared = true;
+	}
+	/**
+	* Prepares the segment at {@link Resource.segmentIndex} of a split
+	* resource: slices the full plaintext, re-evaluates per-segment compression,
+	* and rebuilds integrity material, parts and hashmap.
+	*
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _prepareSegment() {
+		const full = this._fullPlaintext;
+		const start = (this.segmentIndex - 1) * Resource.MAX_EFFICIENT_SIZE;
+		const plaintext = full.subarray(start, Math.min(start + Resource.MAX_EFFICIENT_SIZE, full.length));
+		this.uncompressedSize = plaintext.length;
+		this._sentPartIndices = /* @__PURE__ */ new Set();
+		let body = plaintext;
+		this.compressed = false;
+		if (this.autoCompress && this.bz2) try {
+			const compressed = this.bz2.compress(plaintext);
+			if (compressed.length < plaintext.length) {
+				body = compressed;
+				this.compressed = true;
+			}
+		} catch (err) {
+			log("Resource", `Could not auto-compress segment ${this.segmentIndex}, falling back to uncompressed transfer: ${err.message ?? err}`, LogLevel.DEBUG);
+		}
+		await this._buildIntegrityAndParts(plaintext, body);
+		if (this.segmentIndex === 1) this.originalHash = this.hash;
+	}
+	/**
+	* Computes the integrity material (hash, expected_proof, random_hash salt),
+	* link-encrypts `prefix ‖ body`, slices into parts, and builds the hashmap.
+	*
+	* Integrity is always over the uncompressed `plaintext` (§10.2 step 5), even
+	* when `body` is the compressed form — the receiver decompresses before the
+	* hash check.
+	*
+	* @param {Uint8Array} plaintext
+	* @param {Uint8Array} body
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _buildIntegrityAndParts(plaintext, body) {
+		for (let attempt = 0; attempt < 8; attempt++) {
+			this.randomHash = Identity.getRandomHash().slice(0, Resource.RANDOM_HASH_SIZE);
+			this.hash = await Identity.fullHash(concatBytes(plaintext, this.randomHash));
+			this.expectedProof = await Identity.fullHash(concatBytes(plaintext, this.hash));
+			const prefix = Identity.getRandomHash().slice(0, Resource.RANDOM_HASH_SIZE);
+			if (!this.link.token) throw new Error("Link token unavailable; handshake not complete.");
+			const encrypted = await this.link.token.encrypt(concatBytes(prefix, body));
+			this.encrypted = true;
+			this.totalSize = encrypted.length;
+			this.totalParts = Math.max(1, Math.ceil(encrypted.length / this.sdu));
+			this.parts = [];
+			for (let i = 0; i < this.totalParts; i++) {
+				const start = i * this.sdu;
+				this.parts.push(encrypted.subarray(start, Math.min(start + this.sdu, encrypted.length)));
+			}
+			this.hashmap = await Promise.all(this.parts.map((p) => this._mapHash(p)));
+			if (!this._hasCollision()) return;
+			log("Resource", `Hashmap collision on attempt ${attempt + 1}; regenerating salt`, LogLevel.DEBUG);
+		}
+		throw new Error("Failed to construct a collision-free resource hashmap");
+	}
+	/**
+	* 4-byte map_hash for a part: `SHA-256(part ‖ r)[:4]` (§10.6).
+	* @param {Uint8Array} part
+	* @returns {Promise<Uint8Array>}
+	* @private
+	*/
+	async _mapHash(part) {
+		return (await Identity.fullHash(concatBytes(part, this.randomHash))).slice(0, 4);
+	}
+	/**
+	* Returns true if any two map_hashes collide within COLLISION_GUARD_SIZE of
+	* each other (§10.2 step 7).
+	* @returns {boolean}
+	* @private
+	*/
+	_hasCollision() {
+		const span = this.collisionGuardSize;
+		for (let i = 0; i < this.hashmap.length; i++) {
+			const lo = Math.max(0, i - span);
+			for (let j = lo; j < i; j++) if (bytesEqual(this.hashmap[i], this.hashmap[j])) return true;
+		}
+		return false;
+	}
+	/**
+	* The hashmap fragment carried in this advertisement's `m` field: the first
+	* `hashmapMaxLen` 4-byte map_hashes concatenated (§10.4).
+	* @returns {Uint8Array}
+	* @private
+	*/
+	_advHashmapFragment() {
+		const count = Math.min(this.hashmap.length, this.hashmapMaxLen);
+		return concatBytes(...this.hashmap.slice(0, count));
+	}
+	/**
+	* Builds and sends the RESOURCE_ADV (§10.4). The link registers this
+	* resource as an outgoing transfer keyed by `hash`.
+	* @returns {Promise<void>}
+	*/
+	async advertise() {
+		if (!this.link) throw new Error("Resource.advertise requires a link");
+		await this._prepareSender();
+		if (this.status !== ResourceStatus.NONE) throw new Error("Resource already advertised or in progress");
+		this.status = ResourceStatus.QUEUED;
+		await this._advertiseSegment();
+		this.status = ResourceStatus.ADVERTISED;
+	}
+	/**
+	* Advertises the segment currently prepared on this resource. Split
+	* resources call this once per segment as their predecessors' proofs
+	* arrive; single-segment resources call it once from
+	* {@link Resource.advertise}.
+	*
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _advertiseSegment() {
+		let f = 0;
+		if (this.encrypted) f |= ResourceFlag.ENCRYPTED;
+		if (this.compressed) f |= ResourceFlag.COMPRESSED;
+		if (this.split) f |= ResourceFlag.SPLIT;
+		if (this.isRequest) f |= ResourceFlag.IS_REQUEST;
+		if (this.isResponse) f |= ResourceFlag.IS_RESPONSE;
+		if (this.hasMetadata) f |= ResourceFlag.HAS_METADATA;
+		const adv = new ResourceAdvertisement({
+			t: this.totalSize,
+			d: this.uncompressedSize,
+			n: this.totalParts,
+			h: this.hash,
+			r: this.randomHash,
+			o: this.originalHash || this.hash,
+			i: this.segmentIndex,
+			l: this.totalSegments,
+			q: this.requestId,
+			f,
+			m: this._advHashmapFragment()
+		});
+		const packet = new Packet({
+			packetType: PacketType.DATA,
+			destinationType: DestType.LINK,
+			destinationHash: this.link.linkId,
+			contextByte: ContextType.RESOURCE_ADV,
+			payload: adv.pack()
+		});
+		this.link._registerOutgoingResource(this);
+		await this.link.send(packet);
+		log("Resource", `Advertised ${this.totalParts} parts (${this.totalSize}B)` + (this.split ? ` segment ${this.segmentIndex}/${this.totalSegments}` : "") + ` h=${toHex(
+			/** @type {Uint8Array} */
+			this.hash.subarray(0, 8)
+		)}…`, LogLevel.DEBUG);
+	}
+	/**
+	* Sender: fulfils an inbound RESOURCE_REQ (§10.5/§10.7) — emits the
+	* requested RESOURCE part packets, and a RESOURCE_HMU continuation when the
+	* receiver signalled hashmap exhaustion.
+	* @param {Uint8Array} body
+	* @returns {Promise<void>}
+	*/
+	async handleRequest(body) {
+		const { requested, exhausted, lastMapHash } = this._parseRequest(body);
+		for (const mh of requested) {
+			const idx = this._findPartByMapHash(mh);
+			if (idx < 0) {
+				log("Resource", "Requested map_hash not found; skipping", LogLevel.DEBUG);
+				continue;
+			}
+			await this._sendPart(this.parts[idx]);
+			this._sentPartIndices ??= /* @__PURE__ */ new Set();
+			this._sentPartIndices.add(idx);
+			this.dispatchEvent(new CustomEvent("progress", { detail: {
+				sent: this._sentPartIndices.size,
+				total: this.totalParts,
+				progress: this.totalParts ? this._sentPartIndices.size / this.totalParts : 0
+			} }));
+		}
+		if (exhausted) await this._sendHashmapUpdate(lastMapHash);
+	}
+	/**
+	* Sends one RESOURCE part packet. Parts are NOT token-encrypted — they are
+	* raw slices of the already-encrypted whole (§10.6 gotcha); `Link.send`
+	* honours that because `isLinkPacketUnencrypted(DATA, RESOURCE)` is true.
+	* @param {Uint8Array} part
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _sendPart(part) {
+		const packet = new Packet({
+			packetType: PacketType.DATA,
+			destinationType: DestType.LINK,
+			destinationHash: this.link.linkId,
+			contextByte: ContextType.RESOURCE,
+			payload: part
+		});
+		await this.link.send(packet);
+	}
+	/**
+	* Sender: validates a RESOURCE_PRF (§10.8). Body is `resource_hash(32) ||
+	* full_proof(32)`; `full_proof` must equal the pre-computed `expected_proof`.
+	* @param {Uint8Array} body
+	* @returns {Promise<void>}
+	*/
+	async validateProof(body) {
+		if (body.length !== 64) {
+			log("Resource", `Bad RESOURCE_PRF length ${body.length}`, LogLevel.WARNING);
+			return;
+		}
+		if (this.status === ResourceStatus.FAILED || this.status === ResourceStatus.REJECTED || this.status === ResourceStatus.CORRUPT) return;
+		if (!bytesEqual(body.subarray(32, 64), this.expectedProof)) {
+			log("Resource", "RESOURCE_PRF full_proof mismatch", LogLevel.WARNING);
+			this.status = ResourceStatus.FAILED;
+			this._setFailed("Resource proof mismatch");
+			return;
+		}
+		if (this.split && this.segmentIndex < this.totalSegments) {
+			log("Resource", `Segment ${this.segmentIndex}/${this.totalSegments} proven; advertising next`, LogLevel.DEBUG);
+			this.link._unregisterOutgoingResource(this.hash);
+			this.segmentIndex++;
+			await this._prepareSegment();
+			this.status = ResourceStatus.QUEUED;
+			await this._advertiseSegment();
+			this.status = ResourceStatus.ADVERTISED;
+			return;
+		}
+		this.status = ResourceStatus.COMPLETE;
+		log("Resource", "Outgoing resource COMPLETE (proof validated)", LogLevel.DEBUG);
+		this.dispatchEvent(new CustomEvent("complete", { detail: { resource: this } }));
+	}
+	/**
+	* Sender: sends a RESOURCE_HMU carrying the hashmap window after
+	* `lastMapHash` (§10.7). Body = `resource_hash(32) ‖ msgpack([segment_index,
+	* hashmap_bytes])`.
+	* @param {Uint8Array} lastMapHash
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _sendHashmapUpdate(lastMapHash) {
+		const fromIdx = this.hashmap.findIndex((mh) => bytesEqual(mh, lastMapHash));
+		if (fromIdx < 0 || (fromIdx + 1) % this.hashmapMaxLen !== 0) {
+			log("Resource", "HMU sequencing error; cancelling", LogLevel.WARNING);
+			await this.cancel();
+			return;
+		}
+		const segIndex = Math.floor((fromIdx + 1) / this.hashmapMaxLen);
+		const start = (fromIdx + 1) % this.hashmap.length;
+		const end = Math.min(start + this.hashmapMaxLen, this.hashmap.length);
+		const segment = concatBytes(...this.hashmap.slice(start, end));
+		const inner = MicroMsgPack.encode([segIndex, segment]);
+		const payload = concatBytes(this.hash, inner);
+		const packet = new Packet({
+			packetType: PacketType.DATA,
+			destinationType: DestType.LINK,
+			destinationHash: this.link.linkId,
+			contextByte: ContextType.RESOURCE_HMU,
+			payload
+		});
+		await this.link.send(packet);
+	}
+	/**
+	* Finds the part index whose map_hash equals `mh`. The collision guard
+	* guarantees uniqueness within the resource.
+	* @param {Uint8Array} mh
+	* @returns {number}
+	* @private
+	*/
+	_findPartByMapHash(mh) {
+		for (let i = 0; i < this.hashmap.length; i++) if (bytesEqual(this.hashmap[i], mh)) return i;
+		return -1;
+	}
+	/**
+	* Parses a RESOURCE_REQ body (§10.5).
+	* @param {Uint8Array} body
+	* @returns {{requested: Uint8Array[], exhausted: boolean, lastMapHash: Uint8Array|null, resourceHash: Uint8Array}}
+	* @private
+	*/
+	_parseRequest(body) {
+		const exhausted = body[0] === HASHMAP_IS_EXHAUSTED;
+		let offset = 1;
+		/** @type {Uint8Array|null} */
+		let lastMapHash = null;
+		if (exhausted) {
+			lastMapHash = body.slice(1, 5);
+			offset = 5;
+		}
+		const resourceHash = body.slice(offset, offset + 32);
+		offset += 32;
+		const requested = [];
+		for (let i = offset; i + 4 <= body.length; i += 4) requested.push(body.slice(i, i + 4));
+		return {
+			requested,
+			exhausted,
+			lastMapHash,
+			resourceHash
+		};
+	}
+	/**
+	* Accepts an inbound RESOURCE_ADV and prepares to receive parts (§10.4/§10.5).
+	*
+	* @param {import("../transport/link.js").Link} link
+	* @param {import("./packet.js").Packet} advertisementPacket
+	* @param {object} [options]
+	* @param {Bzip2} [options.bz2]
+	* @param {number} [options.maxSize] - Reject advertisements whose `t` or `d`
+	*   exceeds this (§10.4 bomb defense). Defaults to 32 MiB.
+	* @param {number} [options.maxParts] - Reject advertisements whose part count
+	*   `n` exceeds this. Defaults to {@link Resource.DEFAULT_MAX_PARTS}.
+	* @param {number} [options.maxSegments] - Reject split advertisements whose
+	*   total segment count `l` exceeds this. Defaults to
+	*   {@link Resource.DEFAULT_MAX_SEGMENTS}.
+	* @returns {Promise<Resource|null>} null if the advertisement was rejected.
+	*/
+	static async accept(link, advertisementPacket, options = {}) {
+		const adv = ResourceAdvertisement.unpack(advertisementPacket.payload);
+		const maxSize = options.maxSize ?? Resource.DEFAULT_MAX_SIZE;
+		const maxParts = options.maxParts ?? Resource.DEFAULT_MAX_PARTS;
+		const maxSegments = options.maxSegments ?? Resource.DEFAULT_MAX_SEGMENTS;
+		if (adv.l > 1 && (adv.i < 1 || adv.i > adv.l || adv.l > maxSegments)) {
+			log("Resource", `Rejecting advertisement: bad segment bookkeeping i=${adv.i} l=${adv.l}`, LogLevel.WARNING);
+			await Resource._sendReject(link, adv.h);
+			return null;
+		}
+		const sdu = link.mtu - Resource.HEADER_MAX_SIZE - Resource.IFAC_MIN_SIZE;
+		const expectedParts = sdu > 0 ? Math.ceil(adv.t / sdu) : 0;
+		const partCountInsane = adv.n <= 0 || adv.n > maxParts || adv.n > adv.t || expectedParts > 0 && adv.n > expectedParts + 1;
+		if (adv.t > maxSize || adv.d > maxSize || partCountInsane) {
+			log("Resource", `Rejecting advertisement: size t=${adv.t} d=${adv.d} n=${adv.n} (cap size=${maxSize} parts=${maxParts}, expected≈${expectedParts})`, LogLevel.WARNING);
+			await Resource._sendReject(link, adv.h);
+			return null;
+		}
+		const resource = new Resource({
+			link,
+			bz2: options.bz2
+		});
+		resource.status = ResourceStatus.TRANSFERRING;
+		resource.totalSize = adv.t;
+		resource.uncompressedSize = adv.d;
+		resource.totalParts = adv.n;
+		resource.hash = adv.h;
+		resource.randomHash = adv.r;
+		resource.originalHash = adv.o;
+		resource.segmentIndex = adv.i;
+		resource.totalSegments = adv.l;
+		resource.requestId = adv.q;
+		resource.compressed = adv.compressed;
+		resource.encrypted = adv.encrypted;
+		resource.isRequest = adv.isRequest;
+		resource.isResponse = adv.isResponse;
+		resource.hasMetadata = adv.hasMetadata;
+		resource.parts = new Array(resource.totalParts).fill(null);
+		resource.hashmap = Resource._splitHashmap(adv.m);
+		resource.receivedCount = 0;
+		resource.outstanding = 0;
+		link._registerIncomingResource(resource);
+		log("Resource", `Accepted advertisement: ${resource.totalParts} parts, compressed=${resource.compressed}` + (resource.totalSegments > 1 ? ` segment ${resource.segmentIndex}/${resource.totalSegments}` : ""), LogLevel.DEBUG);
+		return resource;
+	}
+	/**
+	* Splits a concatenated hashmap fragment into its 4-byte map_hashes.
+	* @param {Uint8Array} fragment
+	* @returns {Uint8Array[]}
+	* @private
+	*/
+	static _splitHashmap(fragment) {
+		/** @type {Uint8Array[]} */
+		const out = [];
+		for (let i = 0; i + 4 <= fragment.length; i += 4) out.push(fragment.slice(i, i + 4));
+		return out;
+	}
+	/**
+	* Receiver: builds and sends the next RESOURCE_REQ for missing parts
+	* (§10.5). Windowed stop-and-wait for Phase 2 — requests up to `window`
+	* outstanding missing parts, then waits for them before requesting more.
+	* @returns {Promise<void>}
+	*/
+	async requestNext() {
+		if (this.status !== ResourceStatus.TRANSFERRING) return;
+		if (this.receivedCount >= this.totalParts) return;
+		/** @type {Uint8Array[]} */
+		const requested = [];
+		/** @type {Uint8Array|null} */
+		let lastKnown = null;
+		let exhausted = false;
+		for (let i = 0; i < this.hashmap.length && requested.length < this.window; i++) {
+			if (this.parts[i] === null) requested.push(this.hashmap[i]);
+			lastKnown = this.hashmap[i];
+		}
+		if (this.parts.some((p) => p === null) && requested.length === 0) exhausted = true;
+		if (!exhausted && requested.length === 0) return;
+		this.outstanding = requested.length;
+		await this._sendRequest(requested, exhausted, exhausted ? lastKnown : null);
+	}
+	/**
+	* Sends a RESOURCE_REQ (§10.5).
+	* @param {Uint8Array[]} mapHashes
+	* @param {boolean} exhausted
+	* @param {Uint8Array|null} lastMapHash
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _sendRequest(mapHashes, exhausted, lastMapHash) {
+		/** @type {Uint8Array[]} */
+		const parts = [new Uint8Array([exhausted ? HASHMAP_IS_EXHAUSTED : HASHMAP_IS_NOT_EXHAUSTED])];
+		if (exhausted && lastMapHash) parts.push(lastMapHash);
+		parts.push(this.hash);
+		for (const mh of mapHashes) parts.push(mh);
+		const payload = concatBytes(...parts);
+		const packet = new Packet({
+			packetType: PacketType.DATA,
+			destinationType: DestType.LINK,
+			destinationHash: this.link.linkId,
+			contextByte: ContextType.RESOURCE_REQ,
+			payload
+		});
+		await this.link.send(packet);
+	}
+	/**
+	* Receiver: places an incoming RESOURCE part by matching its 4-byte
+	* map_hash against the hashmap (§10.6). Returns true if the part was placed.
+	* @param {Uint8Array} chunk
+	* @returns {Promise<boolean>}
+	*/
+	async receivePart(chunk) {
+		if (this.status !== ResourceStatus.TRANSFERRING && this.status !== ResourceStatus.ASSEMBLING) return false;
+		const mh = await this._mapHash(chunk);
+		for (let i = 0; i < this.hashmap.length; i++) if (this.parts[i] === null && bytesEqual(this.hashmap[i], mh)) {
+			this.parts[i] = chunk;
+			this.receivedCount++;
+			if (this.outstanding > 0) this.outstanding--;
+			this.dispatchEvent(new CustomEvent("progress", { detail: {
+				received: this.receivedCount,
+				total: this.totalParts,
+				progress: this.getProgress()
+			} }));
+			if (this.receivedCount >= this.totalParts) await this.assemble();
+			else if (this.outstanding <= 0) await this.requestNext();
+			return true;
+		}
+		return false;
+	}
+	/**
+	* Receiver: applies a RESOURCE_HMU hashmap continuation (§10.7).
+	* @param {Uint8Array} body
+	* @returns {Promise<void>}
+	*/
+	async hashmapUpdate(body) {
+		const resourceHash = body.slice(0, 32);
+		const decoded = MicroMsgPack.decode(body.subarray(32));
+		if (!Array.isArray(decoded) || decoded.length < 2) return;
+		const segment = decoded[1];
+		if (!(segment instanceof Uint8Array)) return;
+		for (const mh of Resource._splitHashmap(segment)) this.hashmap.push(mh);
+		log("Resource", `Applied HMU (${this.hashmap.length} map_hashes known) for ${toHex(resourceHash.subarray(0, 8))}…`, LogLevel.DEBUG);
+		if (this.outstanding <= 0) await this.requestNext();
+	}
+	/**
+	* Receiver: assembles all parts, link-decrypts, strips the prefix, optional
+	* decompress, recomputes the integrity hash, and emits the RESOURCE_PRF
+	* (§10.8).
+	* @returns {Promise<void>}
+	*/
+	async assemble() {
+		this.status = ResourceStatus.ASSEMBLING;
+		try {
+			const encrypted = concatBytes(...this.parts);
+			if (!this.link.token) throw new Error("Link token unavailable; handshake not complete.");
+			const body = (await this.link.token.decrypt(encrypted)).subarray(Resource.RANDOM_HASH_SIZE);
+			let plaintext = body;
+			if (this.compressed) {
+				if (!this.bz2) throw new Error("Resource is compressed but no bz2 module was provided");
+				plaintext = this.bz2.decompress(body, this.uncompressedSize);
+			}
+			if (!bytesEqual(await Identity.fullHash(concatBytes(plaintext, this.randomHash)), this.hash)) {
+				this.status = ResourceStatus.CORRUPT;
+				await this.cancel();
+				this._setFailed("Resource integrity check failed");
+				return;
+			}
+			this.data = plaintext;
+			await this._sendProof();
+			if (this.hasMetadata && this.segmentIndex === 1) try {
+				const metadataSize = plaintext[0] << 16 | plaintext[1] << 8 | plaintext[2];
+				if (3 + metadataSize > plaintext.length) throw new Error(`metadata size ${metadataSize} exceeds plaintext`);
+				this.data = plaintext.subarray(3 + metadataSize);
+				this.metadata = MicroMsgPack.decode(plaintext.subarray(3, 3 + metadataSize));
+			} catch (err) {
+				log("Resource", `Could not parse resource metadata: ${err}`, LogLevel.WARNING);
+				this.metadata = void 0;
+			}
+			this.status = ResourceStatus.COMPLETE;
+			this.parts = [];
+			this.link._unregisterIncomingResource(this.hash);
+			log("Resource", "Incoming resource COMPLETE", LogLevel.DEBUG);
+			this.dispatchEvent(new CustomEvent("complete", { detail: {
+				resource: this,
+				data: this.data
+			} }));
+		} catch (err) {
+			log("Resource", `Assembly failed: ${err}`, LogLevel.ERROR);
+			this.status = ResourceStatus.CORRUPT;
+			this._setFailed(`Resource assembly failed: ${err}`);
+		}
+	}
+	/**
+	* Receiver: emits the RESOURCE_PRF (§10.8).
+	* `proof_data = resource_hash(32) ‖ SHA-256(plaintext ‖ resource_hash)(32)`.
+	* @returns {Promise<void>}
+	* @private
+	*/
+	async _sendProof() {
+		const fullProof = await Identity.fullHash(concatBytes(this.data, this.hash));
+		const payload = concatBytes(this.hash, fullProof);
+		const packet = new Packet({
+			packetType: PacketType.PROOF,
+			destinationType: DestType.LINK,
+			destinationHash: this.link.linkId,
+			contextByte: ContextType.RESOURCE_PRF,
+			payload
+		});
+		await this.link.send(packet);
+	}
+	/**
+	* Cancels the resource. Sender emits RESOURCE_ICL; receiver cancels locally
+	* (an ordinary receiver cancel does NOT emit RESOURCE_RCL per §10.9).
+	* @returns {Promise<void>}
+	*/
+	async cancel() {
+		if (this.status === ResourceStatus.COMPLETE) return;
+		if (this.parts.length > 0 && this._prepared && this.hashmap.length > 0 && this.status !== ResourceStatus.NONE) {
+			const payload = concatBytes(this.hash);
+			const packet = new Packet({
+				packetType: PacketType.DATA,
+				destinationType: DestType.LINK,
+				destinationHash: this.link.linkId,
+				contextByte: ContextType.RESOURCE_ICL,
+				payload
+			});
+			try {
+				await this.link.send(packet);
+			} catch (err) {
+				log("Resource", `Failed to send RESOURCE_ICL: ${err}`, LogLevel.WARNING);
+			}
+		}
+		this.status = ResourceStatus.FAILED;
+		this._setFailed("Resource cancelled");
+	}
+	/**
+	* Receiver: peer (initiator) cancelled via RESOURCE_ICL.
+	* @returns {Promise<void>}
+	*/
+	async handleIncomingCancel() {
+		this.status = ResourceStatus.FAILED;
+		this._setFailed("Remote cancelled the resource (RESOURCE_ICL)");
+	}
+	/**
+	* Sender: peer (receiver) rejected via RESOURCE_RCL.
+	* @returns {Promise<void>}
+	*/
+	async handleRejection() {
+		this.status = ResourceStatus.REJECTED;
+		this._setFailed("Resource rejected by receiver (RESOURCE_RCL)");
+	}
+	/**
+	* Emits a RESOURCE_RCL rejection for a resource hash.
+	* @param {import("../transport/link.js").Link} link
+	* @param {Uint8Array} resourceHash
+	* @returns {Promise<void>}
+	* @internal
+	*/
+	static async _sendReject(link, resourceHash) {
+		const packet = new Packet({
+			packetType: PacketType.DATA,
+			destinationType: DestType.LINK,
+			destinationHash: link.linkId,
+			contextByte: ContextType.RESOURCE_RCL,
+			payload: resourceHash
+		});
+		await link.send(packet);
+	}
+	/**
+	* Resolves when the transfer reaches a terminal state (COMPLETE/FAILED/etc).
+	* Rejects if the resource fails rather than completing.
+	* @returns {Promise<Resource>}
+	*/
+	whenComplete() {
+		return new Promise((resolve, reject) => {
+			const onComplete = (e) => {
+				this.removeEventListener("complete", onComplete);
+				this.removeEventListener("failed", onFailed);
+				resolve(this);
+			};
+			const onFailed = (e) => {
+				this.removeEventListener("complete", onComplete);
+				this.removeEventListener("failed", onFailed);
+				reject(new Error(e?.detail?.reason ?? "resource failed"));
+			};
+			if (this.status === ResourceStatus.COMPLETE) return resolve(this);
+			if (this.status === ResourceStatus.FAILED || this.status === ResourceStatus.CORRUPT || this.status === ResourceStatus.REJECTED) return reject(/* @__PURE__ */ new Error(`resource already ${this.status}`));
+			this.addEventListener("complete", onComplete);
+			this.addEventListener("failed", onFailed);
+		});
+	}
+	/** @param {string} reason @private */
+	_setFailed(reason) {
+		this.dispatchEvent(new CustomEvent("failed", { detail: {
+			resource: this,
+			reason
+		} }));
+	}
+	/**
+	* Current transfer progress as a float in [0.0, 1.0].
+	* @returns {number}
+	*/
+	getProgress() {
+		if (this.totalParts === 0) return 0;
+		return this.receivedCount / this.totalParts;
+	}
+};
+/**
+* Receiver-side accumulator for the segments of a split Resource (§10.3).
+*
+* Each segment transfers as an independent Resource (own hash, parts and
+* proof) tied to its siblings by the first segment's hash (`o`). The
+* assembler stashes completed segments in order and, when the final segment
+* arrives, produces a synthetic COMPLETE Resource carrying the reassembled
+* payload plus the segment-1 metadata — which the Link routes exactly like
+* a single-segment resource.
+*
+* Split resources transfer segments strictly one at a time (the sender
+* advertises the next only after the current proof), so segments complete
+* in order.
+*/
+var SplitResourceAssembler = class {
+	/**
+	* @param {Resource} firstSegment - The first accepted segment.
+	* @param {object} [options]
+	* @param {number} [options.maxTotalSize] - Cap on the reassembled
+	*   logical size; the per-segment accept checks bound each transfer, this
+	*   bounds their sum.
+	*/
+	constructor(firstSegment, options = {}) {
+		this.link = firstSegment.link;
+		this.totalSegments = firstSegment.totalSegments;
+		this.originalHash = firstSegment.originalHash;
+		this.requestId = firstSegment.requestId;
+		this.isRequest = firstSegment.isRequest;
+		this.isResponse = firstSegment.isResponse;
+		this.maxTotalSize = options.maxTotalSize ?? Resource.DEFAULT_MAX_TOTAL_SIZE;
+		/** @type {Uint8Array[]} */ this.segments = [];
+		/** @type {any} */ this.metadata = void 0;
+		this.received = 0;
+		this.bytes = 0;
+	}
+	/**
+	* Records a completed segment and returns a synthetic COMPLETE Resource
+	* for the whole transfer when `segment` is the final one, otherwise `null`.
+	*
+	* @param {Resource} segment - A segment whose `whenComplete()` resolved.
+	* @returns {Resource|null}
+	*/
+	add(segment) {
+		if (segment.segmentIndex === 1) this.metadata = segment.metadata;
+		const data = segment.data;
+		this.segments.push(data);
+		this.bytes += data.length;
+		this.received++;
+		if (this.bytes > this.maxTotalSize) throw new Error("Split resource exceeded maximum total size");
+		if (segment.segmentIndex !== this.totalSegments) return null;
+		const assembled = new Resource({ link: this.link });
+		assembled.data = concatBytes(...this.segments);
+		assembled.metadata = this.metadata;
+		assembled.hasMetadata = this.metadata !== void 0;
+		assembled.originalHash = this.originalHash;
+		assembled.requestId = this.requestId;
+		assembled.isRequest = this.isRequest;
+		assembled.isResponse = this.isResponse;
+		assembled.segmentIndex = this.totalSegments;
+		assembled.totalSegments = this.totalSegments;
+		assembled.uncompressedSize = this.bytes;
+		assembled.status = ResourceStatus.COMPLETE;
+		return assembled;
+	}
+};
 //#endregion
 //#region node_modules/@reticulum/core/src/transport/channel.js
 /**
@@ -1667,7 +3767,6 @@ function isLinkPacketUnencrypted(packetType, contextByte) {
 * @returns {Promise<Uint8Array>}
 */
 async function linkIdFromLrPacket(packet) {
-	const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 	const lowFlags = packet.raw[0] & 15;
 	const offset = packet.headerType === HeaderType.HEADER_2 ? 18 : 2;
 	let body = packet.raw.subarray(offset);
@@ -2523,7 +4622,6 @@ var Link = class Link extends EventTarget {
 	* @private
 	*/
 	async _handleIdentify(packet) {
-		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const plaintext = packet.payload;
 		if (plaintext.length !== 128) return;
 		const publicKey = plaintext.subarray(0, 64);
@@ -2577,7 +4675,6 @@ var Link = class Link extends EventTarget {
 	*/
 	async request(path, data = null, options = {}) {
 		if (this.status !== LinkStatus.ACTIVE) throw new Error("Link must be ACTIVE to issue a REQUEST.");
-		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const pathHash = await Identity.truncatedHash(new TextEncoder().encode(path));
 		const envelope = [
 			Date.now() / 1e3,
@@ -2590,7 +4687,6 @@ var Link = class Link extends EventTarget {
 			const requestId = await Identity.truncatedHash(packedRequest);
 			const requestIdHex = toHex(requestId);
 			const responsePromise = this._registerPendingRequest(requestIdHex, path, timeout, options.onMetadata, options.onProgress);
-			const { Resource } = await Promise.resolve().then(() => resource_exports);
 			const resource = new Resource({
 				data: packedRequest,
 				link: this,
@@ -2673,7 +4769,6 @@ var Link = class Link extends EventTarget {
 	* @private
 	*/
 	async _handleRequest(originalPacket, decrypted) {
-		const { Identity } = await import("./identity-lzAPfTg7.js").then((n) => n.n);
 		const requestId = await Identity.truncatedHash(originalPacket.getHashablePart());
 		let decoded;
 		try {
@@ -2751,7 +4846,6 @@ var Link = class Link extends EventTarget {
 		}
 		if (response === null || response === void 0) return;
 		if (response instanceof ResourceResponse && response.metadata !== void 0) {
-			const { Resource } = await Promise.resolve().then(() => resource_exports);
 			await new Resource({
 				data: response.data,
 				metadata: response.metadata,
@@ -2778,7 +4872,6 @@ var Link = class Link extends EventTarget {
 	async _sendResponse(response, requestId, autoCompress) {
 		const packed = MicroMsgPack.encode([requestId, response]);
 		if (packed.length > this.mdu) {
-			const { Resource } = await Promise.resolve().then(() => resource_exports);
 			await new Resource({
 				data: packed,
 				link: this,
@@ -2995,7 +5088,6 @@ var Link = class Link extends EventTarget {
 	* @private
 	*/
 	async _trackSplitSegment(segment, packet) {
-		const { Resource, SplitResourceAssembler } = await Promise.resolve().then(() => resource_exports);
 		const key = toHex(segment.originalHash);
 		if (this.failedSplitResources.has(key)) {
 			await Resource._sendReject(this, segment.hash);
@@ -3110,7 +5202,6 @@ var Link = class Link extends EventTarget {
 				await this._routeResourcePart(decrypted.payload);
 				break;
 			case ContextType.RESOURCE_ADV: {
-				const { Resource, SplitResourceAssembler } = await Promise.resolve().then(() => resource_exports);
 				const incoming = await Resource.accept(this, decrypted, {
 					bz2: this.bz2,
 					maxSize: this.maxResourceSize
@@ -3341,6 +5432,21 @@ function appDataEquals(a, b) {
 * @property {Uint8Array|null} appData App-specific announce metadata, if any.
 */
 /**
+* Dispatched on a {@link Destination} each time one of its announces actually
+* goes on air — after the announce packet has been handed to the interface
+* layer for broadcast. Covers manual `announce()` calls, `path?` answers and
+* periodic re-announce ticks alike; announces that were dropped before
+* broadcast (failed transmission, stale in-flight straggler) do not emit it.
+*
+* @event Destination#announced
+* @type {CustomEvent}
+* @property {Object} detail
+* @property {Uint8Array} detail.destinationHash This destination's hash.
+* @property {number} detail.contextByte The announce packet's context byte
+*   (`NONE` for regular/periodic announces, `PATH_RESPONSE` for `path?`
+*   answers).
+*/
+/**
 * Represents a Reticulum destination — an addressable endpoint that can
 * announce, receive packets, encrypt/decrypt, and establish Links.
 * @extends EventTarget
@@ -3445,6 +5551,8 @@ var Destination = class Destination extends EventTarget {
 	*
 	* Emits with `context = NONE` (a regular periodic announce). Use
 	* {@link announcePathResponse} to answer a `path?` request.
+	*
+	* @fires Destination#announced
 	*/
 	async announce() {
 		await this._emitAnnounce(ContextType.NONE);
@@ -3463,6 +5571,7 @@ var Destination = class Destination extends EventTarget {
 	*
 	* @param {Uint8Array|null} [tag] The `path?` request tag that triggered
 	*   this response, when known.
+	* @fires Destination#announced
 	*/
 	async announcePathResponse(tag = null) {
 		await this._emitAnnounce(ContextType.PATH_RESPONSE, void 0, tag);
@@ -3508,6 +5617,7 @@ var Destination = class Destination extends EventTarget {
 	* @param {Object} [options]
 	* @param {number} [options.intervalMs] Cadence in ms (clamped to the floor).
 	* @returns {void}
+	* @fires Destination#announced
 	*/
 	startAnnouncing(options = {}) {
 		if (!this.identity) throw new Error("Destination requires an identity to announce.");
@@ -3633,6 +5743,10 @@ var Destination = class Destination extends EventTarget {
 			return;
 		}
 		this.interfaceLayer.broadcast(announcePacket);
+		this.dispatchEvent(new CustomEvent("announced", { detail: {
+			destinationHash: this.destinationHash,
+			contextByte
+		} }));
 	}
 	/**
 	* Drops {@link pathResponses} entries older than
@@ -4456,1076 +6570,6 @@ var PacketReceipt = class {
 		} catch (err) {
 			log("PacketReceipt", `failed callback threw: ${err}`, LogLevel.ERROR);
 		}
-	}
-};
-//#endregion
-//#region node_modules/@reticulum/core/src/core/resource_advertisement.js
-/**
-* @file resource_advertisement.js
-* @description RESOURCE_ADV msgpack encoding/decoding (PROTOCOL-SPEC.md §10.4).
-*/
-/**
-* Bit layout of the RESOURCE_ADV `f` flags byte (PROTOCOL-SPEC.md §10.4):
-*
-* ```
-* bit 0 : e — encrypted
-* bit 1 : c — compressed
-* bit 2 : s — split (multi-segment)
-* bit 3 : u — is_request  (Resource carries a Link REQUEST body)
-* bit 4 : p — is_response (Resource carries a Link RESPONSE body)
-* bit 5 : x — has_metadata
-* ```
-*
-* @enum {number}
-*/
-const ResourceFlag = {
-	ENCRYPTED: 1,
-	COMPRESSED: 2,
-	SPLIT: 4,
-	IS_REQUEST: 8,
-	IS_RESPONSE: 16,
-	HAS_METADATA: 32
-};
-/**
-* Represents a RESOURCE_ADV — the advertisement that opens a Resource transfer.
-*
-* The wire form is a single msgpack map (PROTOCOL-SPEC.md §10.4). The byte
-* fields (`h`, `r`, `o`, `m`, `q`) MUST be msgpack `bin`, not
-* arrays — encoding them via `Array.from(...)` produces a msgpack array and
-* silently breaks Python interop. Keys are emitted in a fixed order so the
-* packed bytes are deterministic.
-*
-* Note that `r` is the 4-byte integrity/hashmap salt (`get_random_hash()[:4]`),
-* NOT the leading wire prefix that the receiver strips (§10.2 step 3 / §10.8).
-*/
-var ResourceAdvertisement = class ResourceAdvertisement {
-	/**
-	* @param {Object} options
-	* @param {number} [options.t] - Transfer size (encrypted byte length on wire).
-	* @param {number} [options.d] - Total logical size (original uncompressed).
-	* @param {number} [options.n] - Number of parts in this segment.
-	* @param {Uint8Array} [options.h] - Resource hash `SHA-256(plaintext ‖ r)` (32B).
-	* @param {Uint8Array} [options.r] - Random hash salt (4B).
-	* @param {Uint8Array} [options.o] - Original hash of first segment (32B).
-	* @param {number} [options.i] - Segment index (1-based).
-	* @param {number} [options.l] - Total segments.
-	* @param {Uint8Array} [options.q] - Associated REQUEST id, or undefined/None.
-	* @param {number} [options.f] - Flags byte.
-	* @param {Uint8Array} [options.m] - Hashmap fragment (concatenated 4B map_hashes).
-	*/
-	constructor(options = {}) {
-		this.t = options.t || 0;
-		this.d = options.d || 0;
-		this.n = options.n || 0;
-		this.h = options.h || /* @__PURE__ */ new Uint8Array(0);
-		this.r = options.r || /* @__PURE__ */ new Uint8Array(0);
-		this.o = options.o || /* @__PURE__ */ new Uint8Array(0);
-		this.i = options.i || 0;
-		this.l = options.l || 0;
-		this.q = options.q || void 0;
-		this.f = options.f || 0;
-		this.m = options.m || /* @__PURE__ */ new Uint8Array(0);
-	}
-	/** @returns {boolean} */
-	get encrypted() {
-		return !!(this.f >> 0 & 1);
-	}
-	/** @returns {boolean} */
-	get compressed() {
-		return !!(this.f >> 1 & 1);
-	}
-	/** @returns {boolean} */
-	get split() {
-		return !!(this.f >> 2 & 1);
-	}
-	/** @returns {boolean} */
-	get isRequest() {
-		return !!(this.f >> 3 & 1);
-	}
-	/** @returns {boolean} */
-	get isResponse() {
-		return !!(this.f >> 4 & 1);
-	}
-	/** @returns {boolean} */
-	get hasMetadata() {
-		return !!(this.f >> 5 & 1);
-	}
-	/**
-	* Packs the advertisement into a msgpack `bin`-correct Uint8Array.
-	* @returns {Uint8Array}
-	*/
-	pack() {
-		/** @type {Record<string, any>} */
-		const dict = {
-			t: this.t,
-			d: this.d,
-			n: this.n,
-			h: this.h,
-			r: this.r,
-			o: this.o,
-			i: this.i,
-			l: this.l,
-			q: this.q ?? null,
-			f: this.f,
-			m: this.m
-		};
-		return MicroMsgPack.encode(dict);
-	}
-	/**
-	* Unpacks an advertisement from its msgpack wire form.
-	* @param {Uint8Array} data
-	* @returns {ResourceAdvertisement}
-	*/
-	static unpack(data) {
-		/** @type {any} */
-		const dict = MicroMsgPack.decode(data);
-		return new ResourceAdvertisement({
-			t: dict.t,
-			d: dict.d,
-			n: dict.n,
-			h: new Uint8Array(dict.h),
-			r: new Uint8Array(dict.r),
-			o: new Uint8Array(dict.o),
-			i: dict.i,
-			l: dict.l,
-			q: dict.q ? new Uint8Array(dict.q) : void 0,
-			f: dict.f,
-			m: new Uint8Array(dict.m)
-		});
-	}
-};
-//#endregion
-//#region node_modules/@reticulum/core/src/core/resource.js
-/**
-* @file resource.js
-* @description Resource fragmentation protocol (PROTOCOL-SPEC.md §10).
-*
-* Implements:
-*
-*   - sender preparation: random prefix, link-encrypt-whole-then-slice,
-*     hashmap construction with COLLISION_GUARD_SIZE collision avoidance.
-*   - RESOURCE_ADV advertisement with correct flags/context.
-*   - receiver accept with advertised-size cap (§10.4 bomb defense).
-*   - the receiver request loop (RESOURCE_REQ) with windowed pacing and
-*     RESOURCE_HMU hashmap continuation for resources with more parts than
-*     HASHMAP_MAX_LEN.
-*   - part matching by 4-byte map_hash (out-of-order tolerant).
-*   - assembly: link-decrypt, strip prefix, optional decompress, hash check.
-*   - RESOURCE_PRF proof handshake (receiver proves, sender validates).
-*   - RESOURCE_ICL / RESOURCE_RCL cancellation.
-*   - §10.3 multi-segment splitting: payloads over MAX_EFFICIENT_SIZE are
-*     sent as sequentially-advertised segments tied by the first segment's
-*     hash (`o`), and reassembled receiver-side by
-*     {@link SplitResourceAssembler}.
-*   - §10.4 `x` flag: response metadata traveling inside the hashed/
-*     compressed/encrypted blob (see {@link Resource.metadata}).
-*
-* Not yet implemented: sliding-window rate adaptation, watchdog /
-* advertisement retransmit, and the full decompression-bomb streaming bound
-* (a receive-time `d` cap is enforced now).
-*/
-var resource_exports = /* @__PURE__ */ __exportAll({
-	Resource: () => Resource,
-	ResourceStatus: () => ResourceStatus,
-	SplitResourceAssembler: () => SplitResourceAssembler
-});
-/**
-* Status of a {@link Resource} transfer, mirroring `RNS.ResourceStatus`
-* (NONE → QUEUED → ADVERTISED → TRANSFERRING → COMPLETE, plus the failure
-* states FAILED/CORRUPT/REJECTED).
-* @enum {number}
-*/
-const ResourceStatus = {
-	NONE: 0,
-	QUEUED: 1,
-	ADVERTISED: 2,
-	TRANSFERRING: 3,
-	ASSEMBLING: 4,
-	AWAITING_PROOF: 5,
-	COMPLETE: 6,
-	FAILED: 7,
-	CORRUPT: 8,
-	REJECTED: 9
-};
-/** Receiver-side RESOURCE_REQ hashmap-exhausted flag values (§10.5). */
-const HASHMAP_IS_NOT_EXHAUSTED = 0;
-const HASHMAP_IS_EXHAUSTED = 255;
-/**
-* Minimal bzip2 compressor/decompressor duck-type for Resource compression.
-* @typedef {object} Bzip2
-* @property {(data: Uint8Array) => Uint8Array} compress
-* @property {(data: Uint8Array, outputLen: number) => Uint8Array} decompress
-*/
-/**
-* A Reticulum Resource — a fragmented transfer riding on top of an ACTIVE Link.
-*
-* Construct with `data` for the sender side (then `await resource.advertise()`);
-* or via {@link Resource.accept} on the receiver side. Both sides emit
-* `progress` / `complete` / `failed` events, and expose `whenComplete()` for
-* promise-based consumers.
-*/
-var Resource = class Resource extends EventTarget {
-	/**
-	* Size of the throwaway random prefix prepended to the wire body (§10.2
-	* step 3). Distinct from the advertisement `r` field.
-	*/
-	static RANDOM_HASH_SIZE = 4;
-	/** `RNS.Reticulum.IFAC_MIN_SIZE` — reserved IFAC bytes when computing SDU. */
-	static IFAC_MIN_SIZE = 1;
-	/**
-	* `RNS.Packet.HEADER_MAXSIZE` — worst-case header after relay HEADER_1→HEADER_2
-	* conversion: flags(1) + hops(1) + transport_id(16) + dest_hash(16) + context(1).
-	*/
-	static HEADER_MAX_SIZE = 35;
-	/** Initial receiver request window (§10.10). */
-	static WINDOW = 4;
-	/** Default window cap used for the collision-guard span (§10.10 WINDOW_MAX_SLOW). */
-	static WINDOW_MAX_SLOW = 10;
-	/** Constants in the advertisement-size formula `HASHMAP_MAX_LEN = (MDU-134)/4`. */
-	static HASHMAP_FIXED_OVERHEAD = 134;
-	/** Cap on advertised transfer/logical size at accept time (§10.4 bomb defense). */
-	static DEFAULT_MAX_SIZE = 32 * 1024 * 1024;
-	/**
-	* Absolute cap on the advertised part count `n` at accept time. Defends
-	* against a single RESOURCE_ADV that advertises a tiny `t` but a huge `n`:
-	* the receiver allocates `new Array(n).fill(null)` for the parts, so an
-	* unbounded `n` is a one-packet OOM. Set generously enough that any
-	* legitimate transfer up to {@link DEFAULT_MAX_SIZE} at the minimum MTU
-	* (219 → sdu 183 → ~183k parts for 32 MiB) still fits, with headroom.
-	*/
-	static DEFAULT_MAX_PARTS = 262144;
-	/** Receiver request window during a transfer. */
-	window = Resource.WINDOW;
-	/** Max encodable metadata size: 3-byte length prefix limits it to 16 MiB-1. */
-	static METADATA_MAX_SIZE = 16777215;
-	/**
-	* Logical bytes per Resource segment (§10.3). Larger payloads are split
-	* into `l` sequentially-advertised segments tied together by the first
-	* segment's hash (`o`). Segment 1 counts the metadata prefix toward its
-	* budget, so its payload share is smaller by the prefix length.
-	*/
-	static MAX_EFFICIENT_SIZE = 1 * 1024 * 1024 - 1;
-	/** Sanity ceiling on an advertised total segment count `l`. */
-	static DEFAULT_MAX_SEGMENTS = 4096;
-	/**
-	* Ceiling on the reassembled logical size of a split Resource — the
-	* per-segment `t`/`d` caps bound each transfer, this bounds their sum.
-	*/
-	static DEFAULT_MAX_TOTAL_SIZE = 256 * 1024 * 1024;
-	/**
-	* @param {Object} options
-	* @param {Uint8Array|undefined} [options.data] - Sender-side payload.
-	* @param {any} [options.metadata] - Sender-side response metadata (§10.4
-	*   `x` flag). Encoded as msgpack and prepended to the payload as
-	*   `3-byte BE size ‖ packed metadata` before hashing/compression, matching
-	*   the reference implementation's file-with-metadata transfers. Receivers
-	*   expose the decoded value as {@link Resource.metadata} and strip it from
-	*   {@link Resource.data}.
-	* @param {import("../transport/link.js").Link|undefined} [options.link]
-	* @param {boolean} [options.autoCompress=true]
-	* @param {Uint8Array} [options.originalHash]
-	* @param {Uint8Array} [options.requestId] - Associated REQUEST id (§11).
-	* @param {boolean} [options.isRequest=false] - This Resource is a REQUEST body.
-	* @param {boolean} [options.isResponse=false] - This Resource is a RESPONSE body.
-	* @param {Bzip2} [options.bz2] - Injected bz2 module; never imported by the library.
-	*/
-	constructor(options = {}) {
-		super();
-		this.data = options.data;
-		/**
-		* Response metadata: the decoded value on the receiver (after assembly),
-		* or the caller-supplied value on the sender.
-		* @type {any}
-		*/
-		this.metadata = void 0;
-		this.hasMetadata = false;
-		/**
-		* Sender-side `3-byte BE size ‖ msgpack(metadata)` prefix (§10.4). The
-		* prefix is part of the hashed/compressed/encrypted blob on the wire.
-		* @type {Uint8Array|undefined}
-		*/
-		this.metadataPrefix = void 0;
-		if (options.metadata !== void 0 && options.metadata !== null) {
-			const packed = MicroMsgPack.encode(options.metadata);
-			if (packed.length > Resource.METADATA_MAX_SIZE) throw new Error("Resource metadata size exceeded");
-			const prefix = /* @__PURE__ */ new Uint8Array(3);
-			prefix[0] = packed.length >> 16;
-			prefix[1] = packed.length >> 8 & 255;
-			prefix[2] = packed.length & 255;
-			this.metadataPrefix = concatBytes(prefix, packed);
-			this.hasMetadata = true;
-			this.metadata = options.metadata;
-		}
-		/** @type {import("../transport/link.js").Link} */
-		this.link = options.link;
-		this.autoCompress = options.autoCompress ?? true;
-		this.originalHash = options.originalHash;
-		this.requestId = options.requestId;
-		this.isRequest = options.isRequest ?? false;
-		this.isResponse = options.isResponse ?? false;
-		/** @type {Bzip2|undefined} */
-		this.bz2 = options.bz2;
-		this.status = ResourceStatus.NONE;
-		/** @type {(Uint8Array|null)[]} */
-		this.parts = [];
-		/** @type {Uint8Array[]} */ this.hashmap = [];
-		this.receivedCount = 0;
-		this.totalParts = 0;
-		this.totalSize = 0;
-		this.size = 0;
-		/** @type {Uint8Array|undefined} */ this.hash = void 0;
-		/** @type {Uint8Array|undefined} */ this.randomHash = void 0;
-		/** @type {Uint8Array|undefined} */ this.expectedProof = void 0;
-		this.compressed = false;
-		this.encrypted = false;
-		this.split = false;
-		this.segmentIndex = 1;
-		this.totalSegments = 1;
-		this.uncompressedSize = 0;
-		/** Outstanding part requests in the current window (receiver). */
-		this.outstanding = 0;
-		/** Whether sender preparation is done. */
-		this._prepared = false;
-	}
-	/**
-	* Maximum part body size. Parts are raw slices of the already-encrypted
-	* whole, sent as `context=RESOURCE` packets which are NOT token-encrypted
-	* (§10.6 gotcha), so the full SDU is available for part data.
-	* @returns {number}
-	*/
-	get sdu() {
-		if (!this.link) return 0;
-		return this.link.mtu - Resource.HEADER_MAX_SIZE - Resource.IFAC_MIN_SIZE;
-	}
-	/**
-	* Number of 4-byte map_hashes that fit in one advertisement's `m` field
-	* (§10.4): `floor((link.mdu - 134) / 4)`. At the default MDU 431 this is 74.
-	* @returns {number}
-	*/
-	get hashmapMaxLen() {
-		if (!this.link) return 0;
-		return Math.floor((this.link.mdu - Resource.HASHMAP_FIXED_OVERHEAD) / 4);
-	}
-	/**
-	* Collision-guard span (§10.2 step 7): map_hashes must be unique within this
-	* many parts of any position.
-	* @returns {number}
-	*/
-	get collisionGuardSize() {
-		return 2 * Resource.WINDOW_MAX_SLOW + this.hashmapMaxLen;
-	}
-	/**
-	* Prepares the resource for sending (§10.2): optional compression, integrity
-	* material over the uncompressed plaintext, link-encrypt the whole
-	* `prefix ‖ body` blob, slice into SDU parts, and build the collision-guarded
-	* hashmap. Idempotent.
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _prepareSender() {
-		if (this._prepared) return;
-		if (!(this.data instanceof Uint8Array)) throw new TypeError("Resource sender data must be a Uint8Array");
-		const plaintext = this.metadataPrefix ? concatBytes(this.metadataPrefix, this.data) : this.data;
-		if (plaintext.length > Resource.MAX_EFFICIENT_SIZE) {
-			this.split = true;
-			this.segmentIndex = 1;
-			this.totalSegments = Math.floor((plaintext.length - 1) / Resource.MAX_EFFICIENT_SIZE) + 1;
-			this._fullPlaintext = plaintext;
-			await this._prepareSegment();
-			this._prepared = true;
-			return;
-		}
-		this.uncompressedSize = plaintext.length;
-		let body = plaintext;
-		if (this.autoCompress && this.bz2) {
-			const compressed = this.bz2.compress(plaintext);
-			if (compressed.length < plaintext.length) {
-				body = compressed;
-				this.compressed = true;
-			}
-		}
-		await this._buildIntegrityAndParts(plaintext, body);
-		this._prepared = true;
-	}
-	/**
-	* Prepares the segment at {@link Resource.segmentIndex} of a split
-	* resource: slices the full plaintext, re-evaluates per-segment compression,
-	* and rebuilds integrity material, parts and hashmap.
-	*
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _prepareSegment() {
-		const full = this._fullPlaintext;
-		const start = (this.segmentIndex - 1) * Resource.MAX_EFFICIENT_SIZE;
-		const plaintext = full.subarray(start, Math.min(start + Resource.MAX_EFFICIENT_SIZE, full.length));
-		this.uncompressedSize = plaintext.length;
-		this._sentPartIndices = /* @__PURE__ */ new Set();
-		let body = plaintext;
-		this.compressed = false;
-		if (this.autoCompress && this.bz2) {
-			const compressed = this.bz2.compress(plaintext);
-			if (compressed.length < plaintext.length) {
-				body = compressed;
-				this.compressed = true;
-			}
-		}
-		await this._buildIntegrityAndParts(plaintext, body);
-		if (this.segmentIndex === 1) this.originalHash = this.hash;
-	}
-	/**
-	* Computes the integrity material (hash, expected_proof, random_hash salt),
-	* link-encrypts `prefix ‖ body`, slices into parts, and builds the hashmap.
-	*
-	* Integrity is always over the uncompressed `plaintext` (§10.2 step 5), even
-	* when `body` is the compressed form — the receiver decompresses before the
-	* hash check.
-	*
-	* @param {Uint8Array} plaintext
-	* @param {Uint8Array} body
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _buildIntegrityAndParts(plaintext, body) {
-		for (let attempt = 0; attempt < 8; attempt++) {
-			this.randomHash = Identity.getRandomHash().slice(0, Resource.RANDOM_HASH_SIZE);
-			this.hash = await Identity.fullHash(concatBytes(plaintext, this.randomHash));
-			this.expectedProof = await Identity.fullHash(concatBytes(plaintext, this.hash));
-			const prefix = Identity.getRandomHash().slice(0, Resource.RANDOM_HASH_SIZE);
-			if (!this.link.token) throw new Error("Link token unavailable; handshake not complete.");
-			const encrypted = await this.link.token.encrypt(concatBytes(prefix, body));
-			this.encrypted = true;
-			this.totalSize = encrypted.length;
-			this.totalParts = Math.max(1, Math.ceil(encrypted.length / this.sdu));
-			this.parts = [];
-			for (let i = 0; i < this.totalParts; i++) {
-				const start = i * this.sdu;
-				this.parts.push(encrypted.subarray(start, Math.min(start + this.sdu, encrypted.length)));
-			}
-			this.hashmap = await Promise.all(this.parts.map((p) => this._mapHash(p)));
-			if (!this._hasCollision()) return;
-			log("Resource", `Hashmap collision on attempt ${attempt + 1}; regenerating salt`, LogLevel.DEBUG);
-		}
-		throw new Error("Failed to construct a collision-free resource hashmap");
-	}
-	/**
-	* 4-byte map_hash for a part: `SHA-256(part ‖ r)[:4]` (§10.6).
-	* @param {Uint8Array} part
-	* @returns {Promise<Uint8Array>}
-	* @private
-	*/
-	async _mapHash(part) {
-		return (await Identity.fullHash(concatBytes(part, this.randomHash))).slice(0, 4);
-	}
-	/**
-	* Returns true if any two map_hashes collide within COLLISION_GUARD_SIZE of
-	* each other (§10.2 step 7).
-	* @returns {boolean}
-	* @private
-	*/
-	_hasCollision() {
-		const span = this.collisionGuardSize;
-		for (let i = 0; i < this.hashmap.length; i++) {
-			const lo = Math.max(0, i - span);
-			for (let j = lo; j < i; j++) if (bytesEqual(this.hashmap[i], this.hashmap[j])) return true;
-		}
-		return false;
-	}
-	/**
-	* The hashmap fragment carried in this advertisement's `m` field: the first
-	* `hashmapMaxLen` 4-byte map_hashes concatenated (§10.4).
-	* @returns {Uint8Array}
-	* @private
-	*/
-	_advHashmapFragment() {
-		const count = Math.min(this.hashmap.length, this.hashmapMaxLen);
-		return concatBytes(...this.hashmap.slice(0, count));
-	}
-	/**
-	* Builds and sends the RESOURCE_ADV (§10.4). The link registers this
-	* resource as an outgoing transfer keyed by `hash`.
-	* @returns {Promise<void>}
-	*/
-	async advertise() {
-		if (!this.link) throw new Error("Resource.advertise requires a link");
-		await this._prepareSender();
-		if (this.status !== ResourceStatus.NONE) throw new Error("Resource already advertised or in progress");
-		this.status = ResourceStatus.QUEUED;
-		await this._advertiseSegment();
-		this.status = ResourceStatus.ADVERTISED;
-	}
-	/**
-	* Advertises the segment currently prepared on this resource. Split
-	* resources call this once per segment as their predecessors' proofs
-	* arrive; single-segment resources call it once from
-	* {@link Resource.advertise}.
-	*
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _advertiseSegment() {
-		let f = 0;
-		if (this.encrypted) f |= ResourceFlag.ENCRYPTED;
-		if (this.compressed) f |= ResourceFlag.COMPRESSED;
-		if (this.split) f |= ResourceFlag.SPLIT;
-		if (this.isRequest) f |= ResourceFlag.IS_REQUEST;
-		if (this.isResponse) f |= ResourceFlag.IS_RESPONSE;
-		if (this.hasMetadata) f |= ResourceFlag.HAS_METADATA;
-		const adv = new ResourceAdvertisement({
-			t: this.totalSize,
-			d: this.uncompressedSize,
-			n: this.totalParts,
-			h: this.hash,
-			r: this.randomHash,
-			o: this.originalHash || this.hash,
-			i: this.segmentIndex,
-			l: this.totalSegments,
-			q: this.requestId,
-			f,
-			m: this._advHashmapFragment()
-		});
-		const packet = new Packet({
-			packetType: PacketType.DATA,
-			destinationType: DestType.LINK,
-			destinationHash: this.link.linkId,
-			contextByte: ContextType.RESOURCE_ADV,
-			payload: adv.pack()
-		});
-		this.link._registerOutgoingResource(this);
-		await this.link.send(packet);
-		log("Resource", `Advertised ${this.totalParts} parts (${this.totalSize}B)` + (this.split ? ` segment ${this.segmentIndex}/${this.totalSegments}` : "") + ` h=${toHex(
-			/** @type {Uint8Array} */
-			this.hash.subarray(0, 8)
-		)}…`, LogLevel.DEBUG);
-	}
-	/**
-	* Sender: fulfils an inbound RESOURCE_REQ (§10.5/§10.7) — emits the
-	* requested RESOURCE part packets, and a RESOURCE_HMU continuation when the
-	* receiver signalled hashmap exhaustion.
-	* @param {Uint8Array} body
-	* @returns {Promise<void>}
-	*/
-	async handleRequest(body) {
-		const { requested, exhausted, lastMapHash } = this._parseRequest(body);
-		for (const mh of requested) {
-			const idx = this._findPartByMapHash(mh);
-			if (idx < 0) {
-				log("Resource", "Requested map_hash not found; skipping", LogLevel.DEBUG);
-				continue;
-			}
-			await this._sendPart(this.parts[idx]);
-			this._sentPartIndices ??= /* @__PURE__ */ new Set();
-			this._sentPartIndices.add(idx);
-			this.dispatchEvent(new CustomEvent("progress", { detail: {
-				sent: this._sentPartIndices.size,
-				total: this.totalParts,
-				progress: this.totalParts ? this._sentPartIndices.size / this.totalParts : 0
-			} }));
-		}
-		if (exhausted) await this._sendHashmapUpdate(lastMapHash);
-	}
-	/**
-	* Sends one RESOURCE part packet. Parts are NOT token-encrypted — they are
-	* raw slices of the already-encrypted whole (§10.6 gotcha); `Link.send`
-	* honours that because `isLinkPacketUnencrypted(DATA, RESOURCE)` is true.
-	* @param {Uint8Array} part
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _sendPart(part) {
-		const packet = new Packet({
-			packetType: PacketType.DATA,
-			destinationType: DestType.LINK,
-			destinationHash: this.link.linkId,
-			contextByte: ContextType.RESOURCE,
-			payload: part
-		});
-		await this.link.send(packet);
-	}
-	/**
-	* Sender: validates a RESOURCE_PRF (§10.8). Body is `resource_hash(32) ||
-	* full_proof(32)`; `full_proof` must equal the pre-computed `expected_proof`.
-	* @param {Uint8Array} body
-	* @returns {Promise<void>}
-	*/
-	async validateProof(body) {
-		if (body.length !== 64) {
-			log("Resource", `Bad RESOURCE_PRF length ${body.length}`, LogLevel.WARNING);
-			return;
-		}
-		if (this.status === ResourceStatus.FAILED || this.status === ResourceStatus.REJECTED || this.status === ResourceStatus.CORRUPT) return;
-		if (!bytesEqual(body.subarray(32, 64), this.expectedProof)) {
-			log("Resource", "RESOURCE_PRF full_proof mismatch", LogLevel.WARNING);
-			this.status = ResourceStatus.FAILED;
-			this._setFailed("Resource proof mismatch");
-			return;
-		}
-		if (this.split && this.segmentIndex < this.totalSegments) {
-			log("Resource", `Segment ${this.segmentIndex}/${this.totalSegments} proven; advertising next`, LogLevel.DEBUG);
-			this.link._unregisterOutgoingResource(this.hash);
-			this.segmentIndex++;
-			await this._prepareSegment();
-			this.status = ResourceStatus.QUEUED;
-			await this._advertiseSegment();
-			this.status = ResourceStatus.ADVERTISED;
-			return;
-		}
-		this.status = ResourceStatus.COMPLETE;
-		log("Resource", "Outgoing resource COMPLETE (proof validated)", LogLevel.DEBUG);
-		this.dispatchEvent(new CustomEvent("complete", { detail: { resource: this } }));
-	}
-	/**
-	* Sender: sends a RESOURCE_HMU carrying the hashmap window after
-	* `lastMapHash` (§10.7). Body = `resource_hash(32) ‖ msgpack([segment_index,
-	* hashmap_bytes])`.
-	* @param {Uint8Array} lastMapHash
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _sendHashmapUpdate(lastMapHash) {
-		const fromIdx = this.hashmap.findIndex((mh) => bytesEqual(mh, lastMapHash));
-		if (fromIdx < 0 || (fromIdx + 1) % this.hashmapMaxLen !== 0) {
-			log("Resource", "HMU sequencing error; cancelling", LogLevel.WARNING);
-			await this.cancel();
-			return;
-		}
-		const segIndex = Math.floor((fromIdx + 1) / this.hashmapMaxLen);
-		const start = (fromIdx + 1) % this.hashmap.length;
-		const end = Math.min(start + this.hashmapMaxLen, this.hashmap.length);
-		const segment = concatBytes(...this.hashmap.slice(start, end));
-		const inner = MicroMsgPack.encode([segIndex, segment]);
-		const payload = concatBytes(this.hash, inner);
-		const packet = new Packet({
-			packetType: PacketType.DATA,
-			destinationType: DestType.LINK,
-			destinationHash: this.link.linkId,
-			contextByte: ContextType.RESOURCE_HMU,
-			payload
-		});
-		await this.link.send(packet);
-	}
-	/**
-	* Finds the part index whose map_hash equals `mh`. The collision guard
-	* guarantees uniqueness within the resource.
-	* @param {Uint8Array} mh
-	* @returns {number}
-	* @private
-	*/
-	_findPartByMapHash(mh) {
-		for (let i = 0; i < this.hashmap.length; i++) if (bytesEqual(this.hashmap[i], mh)) return i;
-		return -1;
-	}
-	/**
-	* Parses a RESOURCE_REQ body (§10.5).
-	* @param {Uint8Array} body
-	* @returns {{requested: Uint8Array[], exhausted: boolean, lastMapHash: Uint8Array|null, resourceHash: Uint8Array}}
-	* @private
-	*/
-	_parseRequest(body) {
-		const exhausted = body[0] === HASHMAP_IS_EXHAUSTED;
-		let offset = 1;
-		/** @type {Uint8Array|null} */
-		let lastMapHash = null;
-		if (exhausted) {
-			lastMapHash = body.slice(1, 5);
-			offset = 5;
-		}
-		const resourceHash = body.slice(offset, offset + 32);
-		offset += 32;
-		const requested = [];
-		for (let i = offset; i + 4 <= body.length; i += 4) requested.push(body.slice(i, i + 4));
-		return {
-			requested,
-			exhausted,
-			lastMapHash,
-			resourceHash
-		};
-	}
-	/**
-	* Accepts an inbound RESOURCE_ADV and prepares to receive parts (§10.4/§10.5).
-	*
-	* @param {import("../transport/link.js").Link} link
-	* @param {import("./packet.js").Packet} advertisementPacket
-	* @param {object} [options]
-	* @param {Bzip2} [options.bz2]
-	* @param {number} [options.maxSize] - Reject advertisements whose `t` or `d`
-	*   exceeds this (§10.4 bomb defense). Defaults to 32 MiB.
-	* @param {number} [options.maxParts] - Reject advertisements whose part count
-	*   `n` exceeds this. Defaults to {@link Resource.DEFAULT_MAX_PARTS}.
-	* @param {number} [options.maxSegments] - Reject split advertisements whose
-	*   total segment count `l` exceeds this. Defaults to
-	*   {@link Resource.DEFAULT_MAX_SEGMENTS}.
-	* @returns {Promise<Resource|null>} null if the advertisement was rejected.
-	*/
-	static async accept(link, advertisementPacket, options = {}) {
-		const adv = ResourceAdvertisement.unpack(advertisementPacket.payload);
-		const maxSize = options.maxSize ?? Resource.DEFAULT_MAX_SIZE;
-		const maxParts = options.maxParts ?? Resource.DEFAULT_MAX_PARTS;
-		const maxSegments = options.maxSegments ?? Resource.DEFAULT_MAX_SEGMENTS;
-		if (adv.l > 1 && (adv.i < 1 || adv.i > adv.l || adv.l > maxSegments)) {
-			log("Resource", `Rejecting advertisement: bad segment bookkeeping i=${adv.i} l=${adv.l}`, LogLevel.WARNING);
-			await Resource._sendReject(link, adv.h);
-			return null;
-		}
-		const sdu = link.mtu - Resource.HEADER_MAX_SIZE - Resource.IFAC_MIN_SIZE;
-		const expectedParts = sdu > 0 ? Math.ceil(adv.t / sdu) : 0;
-		const partCountInsane = adv.n <= 0 || adv.n > maxParts || adv.n > adv.t || expectedParts > 0 && adv.n > expectedParts + 1;
-		if (adv.t > maxSize || adv.d > maxSize || partCountInsane) {
-			log("Resource", `Rejecting advertisement: size t=${adv.t} d=${adv.d} n=${adv.n} (cap size=${maxSize} parts=${maxParts}, expected≈${expectedParts})`, LogLevel.WARNING);
-			await Resource._sendReject(link, adv.h);
-			return null;
-		}
-		const resource = new Resource({
-			link,
-			bz2: options.bz2
-		});
-		resource.status = ResourceStatus.TRANSFERRING;
-		resource.totalSize = adv.t;
-		resource.uncompressedSize = adv.d;
-		resource.totalParts = adv.n;
-		resource.hash = adv.h;
-		resource.randomHash = adv.r;
-		resource.originalHash = adv.o;
-		resource.segmentIndex = adv.i;
-		resource.totalSegments = adv.l;
-		resource.requestId = adv.q;
-		resource.compressed = adv.compressed;
-		resource.encrypted = adv.encrypted;
-		resource.isRequest = adv.isRequest;
-		resource.isResponse = adv.isResponse;
-		resource.hasMetadata = adv.hasMetadata;
-		resource.parts = new Array(resource.totalParts).fill(null);
-		resource.hashmap = Resource._splitHashmap(adv.m);
-		resource.receivedCount = 0;
-		resource.outstanding = 0;
-		link._registerIncomingResource(resource);
-		log("Resource", `Accepted advertisement: ${resource.totalParts} parts, compressed=${resource.compressed}` + (resource.totalSegments > 1 ? ` segment ${resource.segmentIndex}/${resource.totalSegments}` : ""), LogLevel.DEBUG);
-		return resource;
-	}
-	/**
-	* Splits a concatenated hashmap fragment into its 4-byte map_hashes.
-	* @param {Uint8Array} fragment
-	* @returns {Uint8Array[]}
-	* @private
-	*/
-	static _splitHashmap(fragment) {
-		/** @type {Uint8Array[]} */
-		const out = [];
-		for (let i = 0; i + 4 <= fragment.length; i += 4) out.push(fragment.slice(i, i + 4));
-		return out;
-	}
-	/**
-	* Receiver: builds and sends the next RESOURCE_REQ for missing parts
-	* (§10.5). Windowed stop-and-wait for Phase 2 — requests up to `window`
-	* outstanding missing parts, then waits for them before requesting more.
-	* @returns {Promise<void>}
-	*/
-	async requestNext() {
-		if (this.status !== ResourceStatus.TRANSFERRING) return;
-		if (this.receivedCount >= this.totalParts) return;
-		/** @type {Uint8Array[]} */
-		const requested = [];
-		/** @type {Uint8Array|null} */
-		let lastKnown = null;
-		let exhausted = false;
-		for (let i = 0; i < this.hashmap.length && requested.length < this.window; i++) {
-			if (this.parts[i] === null) requested.push(this.hashmap[i]);
-			lastKnown = this.hashmap[i];
-		}
-		if (this.parts.some((p) => p === null) && requested.length === 0) exhausted = true;
-		if (!exhausted && requested.length === 0) return;
-		this.outstanding = requested.length;
-		await this._sendRequest(requested, exhausted, exhausted ? lastKnown : null);
-	}
-	/**
-	* Sends a RESOURCE_REQ (§10.5).
-	* @param {Uint8Array[]} mapHashes
-	* @param {boolean} exhausted
-	* @param {Uint8Array|null} lastMapHash
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _sendRequest(mapHashes, exhausted, lastMapHash) {
-		/** @type {Uint8Array[]} */
-		const parts = [new Uint8Array([exhausted ? HASHMAP_IS_EXHAUSTED : HASHMAP_IS_NOT_EXHAUSTED])];
-		if (exhausted && lastMapHash) parts.push(lastMapHash);
-		parts.push(this.hash);
-		for (const mh of mapHashes) parts.push(mh);
-		const payload = concatBytes(...parts);
-		const packet = new Packet({
-			packetType: PacketType.DATA,
-			destinationType: DestType.LINK,
-			destinationHash: this.link.linkId,
-			contextByte: ContextType.RESOURCE_REQ,
-			payload
-		});
-		await this.link.send(packet);
-	}
-	/**
-	* Receiver: places an incoming RESOURCE part by matching its 4-byte
-	* map_hash against the hashmap (§10.6). Returns true if the part was placed.
-	* @param {Uint8Array} chunk
-	* @returns {Promise<boolean>}
-	*/
-	async receivePart(chunk) {
-		if (this.status !== ResourceStatus.TRANSFERRING && this.status !== ResourceStatus.ASSEMBLING) return false;
-		const mh = await this._mapHash(chunk);
-		for (let i = 0; i < this.hashmap.length; i++) if (this.parts[i] === null && bytesEqual(this.hashmap[i], mh)) {
-			this.parts[i] = chunk;
-			this.receivedCount++;
-			if (this.outstanding > 0) this.outstanding--;
-			this.dispatchEvent(new CustomEvent("progress", { detail: {
-				received: this.receivedCount,
-				total: this.totalParts,
-				progress: this.getProgress()
-			} }));
-			if (this.receivedCount >= this.totalParts) await this.assemble();
-			else if (this.outstanding <= 0) await this.requestNext();
-			return true;
-		}
-		return false;
-	}
-	/**
-	* Receiver: applies a RESOURCE_HMU hashmap continuation (§10.7).
-	* @param {Uint8Array} body
-	* @returns {Promise<void>}
-	*/
-	async hashmapUpdate(body) {
-		const resourceHash = body.slice(0, 32);
-		const decoded = MicroMsgPack.decode(body.subarray(32));
-		if (!Array.isArray(decoded) || decoded.length < 2) return;
-		const segment = decoded[1];
-		if (!(segment instanceof Uint8Array)) return;
-		for (const mh of Resource._splitHashmap(segment)) this.hashmap.push(mh);
-		log("Resource", `Applied HMU (${this.hashmap.length} map_hashes known) for ${toHex(resourceHash.subarray(0, 8))}…`, LogLevel.DEBUG);
-		if (this.outstanding <= 0) await this.requestNext();
-	}
-	/**
-	* Receiver: assembles all parts, link-decrypts, strips the prefix, optional
-	* decompress, recomputes the integrity hash, and emits the RESOURCE_PRF
-	* (§10.8).
-	* @returns {Promise<void>}
-	*/
-	async assemble() {
-		this.status = ResourceStatus.ASSEMBLING;
-		try {
-			const encrypted = concatBytes(...this.parts);
-			if (!this.link.token) throw new Error("Link token unavailable; handshake not complete.");
-			const body = (await this.link.token.decrypt(encrypted)).subarray(Resource.RANDOM_HASH_SIZE);
-			let plaintext = body;
-			if (this.compressed) {
-				if (!this.bz2) throw new Error("Resource is compressed but no bz2 module was provided");
-				plaintext = this.bz2.decompress(body, this.uncompressedSize);
-			}
-			if (!bytesEqual(await Identity.fullHash(concatBytes(plaintext, this.randomHash)), this.hash)) {
-				this.status = ResourceStatus.CORRUPT;
-				await this.cancel();
-				this._setFailed("Resource integrity check failed");
-				return;
-			}
-			this.data = plaintext;
-			await this._sendProof();
-			if (this.hasMetadata && this.segmentIndex === 1) try {
-				const metadataSize = plaintext[0] << 16 | plaintext[1] << 8 | plaintext[2];
-				if (3 + metadataSize > plaintext.length) throw new Error(`metadata size ${metadataSize} exceeds plaintext`);
-				this.data = plaintext.subarray(3 + metadataSize);
-				this.metadata = MicroMsgPack.decode(plaintext.subarray(3, 3 + metadataSize));
-			} catch (err) {
-				log("Resource", `Could not parse resource metadata: ${err}`, LogLevel.WARNING);
-				this.metadata = void 0;
-			}
-			this.status = ResourceStatus.COMPLETE;
-			this.parts = [];
-			this.link._unregisterIncomingResource(this.hash);
-			log("Resource", "Incoming resource COMPLETE", LogLevel.DEBUG);
-			this.dispatchEvent(new CustomEvent("complete", { detail: {
-				resource: this,
-				data: this.data
-			} }));
-		} catch (err) {
-			log("Resource", `Assembly failed: ${err}`, LogLevel.ERROR);
-			this.status = ResourceStatus.CORRUPT;
-			this._setFailed(`Resource assembly failed: ${err}`);
-		}
-	}
-	/**
-	* Receiver: emits the RESOURCE_PRF (§10.8).
-	* `proof_data = resource_hash(32) ‖ SHA-256(plaintext ‖ resource_hash)(32)`.
-	* @returns {Promise<void>}
-	* @private
-	*/
-	async _sendProof() {
-		const fullProof = await Identity.fullHash(concatBytes(this.data, this.hash));
-		const payload = concatBytes(this.hash, fullProof);
-		const packet = new Packet({
-			packetType: PacketType.PROOF,
-			destinationType: DestType.LINK,
-			destinationHash: this.link.linkId,
-			contextByte: ContextType.RESOURCE_PRF,
-			payload
-		});
-		await this.link.send(packet);
-	}
-	/**
-	* Cancels the resource. Sender emits RESOURCE_ICL; receiver cancels locally
-	* (an ordinary receiver cancel does NOT emit RESOURCE_RCL per §10.9).
-	* @returns {Promise<void>}
-	*/
-	async cancel() {
-		if (this.status === ResourceStatus.COMPLETE) return;
-		if (this.parts.length > 0 && this._prepared && this.hashmap.length > 0 && this.status !== ResourceStatus.NONE) {
-			const payload = concatBytes(this.hash);
-			const packet = new Packet({
-				packetType: PacketType.DATA,
-				destinationType: DestType.LINK,
-				destinationHash: this.link.linkId,
-				contextByte: ContextType.RESOURCE_ICL,
-				payload
-			});
-			try {
-				await this.link.send(packet);
-			} catch (err) {
-				log("Resource", `Failed to send RESOURCE_ICL: ${err}`, LogLevel.WARNING);
-			}
-		}
-		this.status = ResourceStatus.FAILED;
-		this._setFailed("Resource cancelled");
-	}
-	/**
-	* Receiver: peer (initiator) cancelled via RESOURCE_ICL.
-	* @returns {Promise<void>}
-	*/
-	async handleIncomingCancel() {
-		this.status = ResourceStatus.FAILED;
-		this._setFailed("Remote cancelled the resource (RESOURCE_ICL)");
-	}
-	/**
-	* Sender: peer (receiver) rejected via RESOURCE_RCL.
-	* @returns {Promise<void>}
-	*/
-	async handleRejection() {
-		this.status = ResourceStatus.REJECTED;
-		this._setFailed("Resource rejected by receiver (RESOURCE_RCL)");
-	}
-	/**
-	* Emits a RESOURCE_RCL rejection for a resource hash.
-	* @param {import("../transport/link.js").Link} link
-	* @param {Uint8Array} resourceHash
-	* @returns {Promise<void>}
-	* @internal
-	*/
-	static async _sendReject(link, resourceHash) {
-		const packet = new Packet({
-			packetType: PacketType.DATA,
-			destinationType: DestType.LINK,
-			destinationHash: link.linkId,
-			contextByte: ContextType.RESOURCE_RCL,
-			payload: resourceHash
-		});
-		await link.send(packet);
-	}
-	/**
-	* Resolves when the transfer reaches a terminal state (COMPLETE/FAILED/etc).
-	* Rejects if the resource fails rather than completing.
-	* @returns {Promise<Resource>}
-	*/
-	whenComplete() {
-		return new Promise((resolve, reject) => {
-			const onComplete = (e) => {
-				this.removeEventListener("complete", onComplete);
-				this.removeEventListener("failed", onFailed);
-				resolve(this);
-			};
-			const onFailed = (e) => {
-				this.removeEventListener("complete", onComplete);
-				this.removeEventListener("failed", onFailed);
-				reject(new Error(e?.detail?.reason ?? "resource failed"));
-			};
-			if (this.status === ResourceStatus.COMPLETE) return resolve(this);
-			if (this.status === ResourceStatus.FAILED || this.status === ResourceStatus.CORRUPT || this.status === ResourceStatus.REJECTED) return reject(/* @__PURE__ */ new Error(`resource already ${this.status}`));
-			this.addEventListener("complete", onComplete);
-			this.addEventListener("failed", onFailed);
-		});
-	}
-	/** @param {string} reason @private */
-	_setFailed(reason) {
-		this.dispatchEvent(new CustomEvent("failed", { detail: {
-			resource: this,
-			reason
-		} }));
-	}
-	/**
-	* Current transfer progress as a float in [0.0, 1.0].
-	* @returns {number}
-	*/
-	getProgress() {
-		if (this.totalParts === 0) return 0;
-		return this.receivedCount / this.totalParts;
-	}
-};
-/**
-* Receiver-side accumulator for the segments of a split Resource (§10.3).
-*
-* Each segment transfers as an independent Resource (own hash, parts and
-* proof) tied to its siblings by the first segment's hash (`o`). The
-* assembler stashes completed segments in order and, when the final segment
-* arrives, produces a synthetic COMPLETE Resource carrying the reassembled
-* payload plus the segment-1 metadata — which the Link routes exactly like
-* a single-segment resource.
-*
-* Split resources transfer segments strictly one at a time (the sender
-* advertises the next only after the current proof), so segments complete
-* in order.
-*/
-var SplitResourceAssembler = class {
-	/**
-	* @param {Resource} firstSegment - The first accepted segment.
-	* @param {object} [options]
-	* @param {number} [options.maxTotalSize] - Cap on the reassembled
-	*   logical size; the per-segment accept checks bound each transfer, this
-	*   bounds their sum.
-	*/
-	constructor(firstSegment, options = {}) {
-		this.link = firstSegment.link;
-		this.totalSegments = firstSegment.totalSegments;
-		this.originalHash = firstSegment.originalHash;
-		this.requestId = firstSegment.requestId;
-		this.isRequest = firstSegment.isRequest;
-		this.isResponse = firstSegment.isResponse;
-		this.maxTotalSize = options.maxTotalSize ?? Resource.DEFAULT_MAX_TOTAL_SIZE;
-		/** @type {Uint8Array[]} */ this.segments = [];
-		/** @type {any} */ this.metadata = void 0;
-		this.received = 0;
-		this.bytes = 0;
-	}
-	/**
-	* Records a completed segment and returns a synthetic COMPLETE Resource
-	* for the whole transfer when `segment` is the final one, otherwise `null`.
-	*
-	* @param {Resource} segment - A segment whose `whenComplete()` resolved.
-	* @returns {Resource|null}
-	*/
-	add(segment) {
-		if (segment.segmentIndex === 1) this.metadata = segment.metadata;
-		const data = segment.data;
-		this.segments.push(data);
-		this.bytes += data.length;
-		this.received++;
-		if (this.bytes > this.maxTotalSize) throw new Error("Split resource exceeded maximum total size");
-		if (segment.segmentIndex !== this.totalSegments) return null;
-		const assembled = new Resource({ link: this.link });
-		assembled.data = concatBytes(...this.segments);
-		assembled.metadata = this.metadata;
-		assembled.hasMetadata = this.metadata !== void 0;
-		assembled.originalHash = this.originalHash;
-		assembled.requestId = this.requestId;
-		assembled.isRequest = this.isRequest;
-		assembled.isResponse = this.isResponse;
-		assembled.segmentIndex = this.totalSegments;
-		assembled.totalSegments = this.totalSegments;
-		assembled.uncompressedSize = this.bytes;
-		assembled.status = ResourceStatus.COMPLETE;
-		return assembled;
 	}
 };
 //#endregion
@@ -6442,11 +7486,16 @@ function configSuffix(ctx) {
 * @returns {string}
 */
 function buildConfigEntry(fields, backboneSupport = true) {
+	const sanitized = {
+		...fields,
+		ifacNetname: fields.ifacNetname && fields.ifacNetname !== "None" ? fields.ifacNetname : null,
+		ifacNetkey: fields.ifacNetkey && fields.ifacNetkey !== "None" ? fields.ifacNetkey : null
+	};
 	const ctx = {
-		name: fields.name,
-		transportIdHex: fields.transportIdHex,
-		ifacNetname: fields.ifacNetname ?? null,
-		ifacNetkey: fields.ifacNetkey ?? null
+		name: sanitized.name,
+		transportIdHex: sanitized.transportIdHex,
+		ifacNetname: sanitized.ifacNetname,
+		ifacNetkey: sanitized.ifacNetkey
 	};
 	const sfx = configSuffix(ctx);
 	switch (fields.type) {
@@ -6650,8 +7699,10 @@ async function buildDiscoveredInfo(unpacked, announcedIdentity, meta) {
 		height: unpacked[String(5)] ?? null
 	};
 	if (operatorLxmfAddress) info.operator_lxmf_address = toHex(operatorLxmfAddress);
-	if (unpacked[String(7)] !== void 0) info.ifac_netname = String(unpacked[String(7)]);
-	if (unpacked[String(8)] !== void 0) info.ifac_netkey = String(unpacked[String(8)]);
+	const rawNetname = unpacked[String(7)];
+	if (typeof rawNetname === "string" && rawNetname.length > 0) info.ifac_netname = rawNetname;
+	const rawNetkey = unpacked[String(8)];
+	if (typeof rawNetkey === "string" && rawNetkey.length > 0) info.ifac_netkey = rawNetkey;
 	/** @type {DiscoveredFields} */
 	const fields = {
 		type: interfaceType,
@@ -6943,6 +7994,8 @@ var InterfaceDiscovery = class extends EventTarget {
 		const stale = [];
 		for (const [key, info] of this._store) {
 			const heardDelta = now - (info.last_heard ?? info.received ?? now);
+			if (info.ifac_netname === "None") delete info.ifac_netname;
+			if (info.ifac_netkey === "None") delete info.ifac_netkey;
 			let shouldRemove = false;
 			if (heardDelta > 604800) shouldRemove = true;
 			else if (this.discoverySources && (!info.networkIdHex || !this.discoverySources.some((h) => bytesEqual(h, fromHex$1(info.networkIdHex))))) shouldRemove = true;
@@ -7926,6 +8979,7 @@ var TransportCore = class TransportCore extends EventTarget {
 	*/
 	async _handleAnnounce(packet, receivingInterface) {
 		const destHex = toHex(packet.destinationHash);
+		if ((packet.raw?.length ?? 0) > MTU) return receivingInterface?.protocolViolation?.(`Excessive announce packet frame size of ${packet.raw?.length} bytes`);
 		if (this.localDestinations.has(destHex)) {
 			log("Transport", `Ignoring ANNOUNCE for local destination ${destHex}`, LogLevel.DEBUG);
 			return;

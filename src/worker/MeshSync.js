@@ -946,6 +946,12 @@ export async function createMeshSync({
     // that connect later never learn this device's Delta-push destination.
     // Announce periodically like the room destination does
     dacarSyncServer.destination?.startAnnouncing?.({ intervalMs: 15_000 });
+    // The handoff's delta push depends on this destination being reachable,
+    // so its announce cadence matters for join debugging (work document
+    // #34); @reticulum/core 0.9.5 emits "announced" on broadcast
+    dacarSyncServer.destination?.addEventListener?.("announced", () => {
+      postMessage(progress("mesh.announce", "sync", "done"));
+    });
     return dacarSyncServer;
   }
 

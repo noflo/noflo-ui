@@ -33,6 +33,7 @@ const PHRASES = {
   "mesh.connect.discovery": "Working locally",
   "mesh.connect.discovered": "Discovered peer {peer}",
   "mesh.announce.room": "Announced the project room",
+  "mesh.announce.sync": "Announced the sync endpoint",
   "mesh.connect.path.request":
     "Requesting a path to peer {peer}",
   "mesh.connect.link.establish": "Establishing a link to peer {peer}",

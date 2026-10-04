@@ -18,7 +18,7 @@
 export const PROGRESS_OPERATIONS = {
   "identity.generate": ["restore", "generate"],
   "mesh.connect": ["starting", "transport", "discovery", "discovered"],
-  "mesh.announce": ["room"],
+  "mesh.announce": ["room", "sync"],
   "mesh.connect.path": ["request"],
   "mesh.connect.link": ["establish"],
   "mesh.connect.proof": ["verify"],

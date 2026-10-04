@@ -20,7 +20,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.0",
     "@noble/curves": "^2.4.0",
-    "@reticulum/core": "^0.9.4",
+    "@reticulum/core": "^0.9.5",
     "@reticulum/dacar": "^1.5.0",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",
