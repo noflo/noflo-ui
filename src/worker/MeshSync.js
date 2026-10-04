@@ -9,8 +9,18 @@
  * configured WebSocket interfaces attached.
  */
 
-import { pushDeltas, RnsSyncServer } from "../../vendor/dacar.js";
-import { fromHex, Identity, toHex } from "../../vendor/reticulum-core.js";
+import {
+  pushOne,
+  RnsSyncServer,
+  SYNC_REQUEST_PATH,
+} from "../../vendor/dacar.js";
+import {
+  Destination,
+  DestType,
+  fromHex,
+  Identity,
+  toHex,
+} from "../../vendor/reticulum-core.js";
 import { ReticulumProvider } from "../../vendor/y-reticulum.js";
 import {
   createIndexeddbStorage,
@@ -92,6 +102,10 @@ async function defaultCreateProvider(
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
+    // Faster peer discovery than the 60s upstream default: a freshly
+    // invited device should link within seconds of the handoff, not wait
+    // out a full announce cadence. Announces are small; the cost is modest.
+    announceIntervalMs: 15_000,
     // Dacar gate: peers with a non-revoked grant may sync; devices in
     // requester mode (empty grants, fresh join) may dial so the owner sees
     // the access request. Ignored by y-reticulum versions without the hook.
@@ -270,6 +284,8 @@ export async function createMeshSync({
   /** @type {Map<string, string>} */
   const entryStatuses = new Map();
   let reconciling = false;
+  /** Set when a reconcile is requested while one is already running. */
+  let pendingReconcile = false;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -697,8 +713,27 @@ export async function createMeshSync({
    * @returns {Promise<void>}
    */
   async function reconcileDacarState() {
-    if (reconciling) return;
+    if (reconciling) {
+      // A pass is in flight: queue exactly one trailing re-run so changes
+      // made mid-pass (the anchor write, a grants entry) are never lost to
+      // a swallowed trigger
+      pendingReconcile = true;
+      return;
+    }
     reconciling = true;
+    try {
+      for (;;) {
+        pendingReconcile = false;
+        await runReconcilePass();
+        if (!pendingReconcile) break;
+      }
+    } finally {
+      reconciling = false;
+    }
+  }
+
+  /** @returns {Promise<void>} */
+  async function runReconcilePass() {
     try {
       const grants = doc.getMap?.("grants");
       if (!grants) return;
@@ -753,6 +788,13 @@ export async function createMeshSync({
         if (ingestedEntries.get(id) === fingerprint) continue;
         ingestedEntries.set(id, fingerprint);
         await node.ingestAuthorization(plain.authorization);
+        // Every verified grant the device holds is cataloged in the wallet
+        // (§5.2): its own, the host's, and every peer's — the grants map is
+        // the replication, the wallet the local catalog
+        await saveWalletGrant(walletStorage, {
+          projectId,
+          authorization: plain.authorization,
+        }).catch(() => {});
       }
       // Evaluate every grants-map peer plus this device through the Engine
       const peers = new Set(identityHash ? [identityHash] : []);
@@ -786,8 +828,11 @@ export async function createMeshSync({
         }
       }
       await reportDacarState(grants, projectId);
-    } finally {
-      reconciling = false;
+    } catch (err) {
+      console.warn(
+        "Dacar reconcile pass failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
     }
   }
 
@@ -854,6 +899,10 @@ export async function createMeshSync({
       receiver: dacarPushReceiver,
       rns,
     });
+    // The one-shot announce at creation races interface readiness: peers
+    // that connect later never learn this device's Delta-push destination.
+    // Announce periodically like the room destination does
+    dacarSyncServer.destination?.startAnnouncing?.({ intervalMs: 15_000 });
     return dacarSyncServer;
   }
 
@@ -865,6 +914,7 @@ export async function createMeshSync({
     const destination = server.destination;
     if (destination) {
       try {
+        destination.stopAnnouncing?.();
         sharedRns?.transport?.unbindLocalDestination?.(destination);
         sharedRns?.deregisterDestination?.(destination);
       } catch {
@@ -1043,6 +1093,32 @@ export async function createMeshSync({
           const client = new WebSocketClientInterface(iface.options ?? {});
           await client.connect();
           rns.addInterface(client, true);
+        } else if (iface.type === "tcp") {
+          // Node-only (test harnesses and desktop runtimes): the browser
+          // worker has no TCP interfaces, so the import fails and skips
+          try {
+            const { TCPClientInterface, TCPServerInterface } = await import(
+              "@reticulum/node"
+            );
+            const options = iface.options ?? {};
+            const tcp = options.listen
+              ? new TCPServerInterface(/** @type {any} */ (options))
+              : new TCPClientInterface(options);
+            await tcp.connect();
+            if (options.listen) {
+              // The server interface wires its spawned child connections
+              // into the instance as they arrive
+              tcp.addEventListener("connection", (/** @type {any} */ event) => {
+                rns.addInterface(event.detail, true);
+              });
+            } else {
+              rns.addInterface(tcp, true);
+            }
+          } catch {
+            console.warn(
+              "Mesh interface type tcp requires @reticulum/node (Node); skipped",
+            );
+          }
         } else {
           console.warn(
             `Mesh interface type ${iface.type} is not available in the browser worker; skipped`,
@@ -1136,20 +1212,66 @@ export async function createMeshSync({
         deliverAuthorization: async (
           /** @type {string} */ joinerHash,
           /** @type {any} */ authorization,
+          /** @type {any} */ joinerIdentity,
         ) => {
           // §11 direct-link Delta push to the joiner's `dacar.sync.v1`
-          // endpoint; a lost or refused push is recovered by the joiner's
-          // CRDT sync, which carries the same grants-map entry
-          const results = await pushDeltas(
-            [base64ToBytes(authorization.deltas)],
-            fromHex(joinerHash),
-            { rns: reticulum },
-          );
-          if (!results[0]) {
+          // endpoint. The joiner's full identity comes from the bootstrap
+          // link's identify handshake, so the destination is derived
+          // directly — no identity recall involved. The joiner's announce
+          // may not have propagated when the handoff response lands, so
+          // retry until a path resolves; a finally-lost push is recovered
+          // by the joiner's CRDT sync, which carries the same grants-map
+          // entry
+          if (!joinerIdentity) {
             console.warn(
-              "Dacar delta push not applied; the grants map will recover the grant",
+              "Dacar delta push skipped: the joiner never identified",
             );
+            return;
           }
+          const destination = await Destination.OUT(
+            "dacar.sync.v1",
+            DestType.SINGLE,
+            joinerIdentity,
+            reticulum,
+          );
+          const destinationHash = destination.destinationHash;
+          for (let attempt = 0; attempt < 6; attempt++) {
+            try {
+              if (!reticulum.transport.hasPath?.(destinationHash)) {
+                await reticulum.transport
+                  .requestPath(destinationHash)
+                  .catch(() => {});
+              }
+              let waited = 0;
+              while (
+                !reticulum.transport.hasPath?.(destinationHash) &&
+                waited < 5_000
+              ) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+                waited += 200;
+              }
+              const link = await destination.createLink();
+              const accepted = await pushOne(
+                link,
+                SYNC_REQUEST_PATH,
+                base64ToBytes(authorization.deltas),
+                15_000,
+              );
+              await link.teardown().catch(() => {});
+              if (accepted) return;
+              console.warn("Dacar delta push refused by the joiner; retrying");
+            } catch (err) {
+              console.warn(
+                `Dacar delta push attempt ${attempt} failed: ${
+                  /** @type {any} */ (err)?.message ?? err
+                }`,
+              );
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1_000));
+          }
+          console.warn(
+            "Dacar delta push not applied; the grants map will recover the grant",
+          );
         },
         requestApproval: (/** @type {string} */ joinerHash) => {
           if (!joinRequests.has(joinerHash)) {
@@ -1269,13 +1391,22 @@ export async function createMeshSync({
         });
         return;
       }
-      // Hand the project identity to the Engine first — the grant write
-      // below triggers the Engine's approval watcher, which must see the
-      // pending invite by then
-      await hooks.onApproved?.(response.project ?? {});
-      // Provision the local Dacar node (§2.3): the anchor config gates every
-      // later verification, and the metadata anchor keeps peers that sync
-      // later on the same trust boundary
+      // Pin the Trust Anchor the handoff delivered BEFORE anything else —
+      // the out-of-band invite authenticated the host, so the delivered
+      // anchor is authoritative (§2.3). The device's own scratch project
+      // may have self-assigned its identity as the anchor with a LATER
+      // wall clock than the owner's original write; pinning immediately
+      // overwrites that stale claim with the correct value — a later write
+      // with the correct value wins the LWW race and heals every replica
+      // on sync. This is authorization metadata, not project setup: the
+      // project itself is still not adopted until the grant verifies.
+      const metadata = doc.getMap?.("metadata");
+      if (metadata) {
+        metadata.set("trust_anchor_hash", nodeConfig.anchor.hash);
+      }
+      invalidateDacarState();
+      // Provision the Dacar node config for the invited project (§2.3):
+      // device-local, held by this device's own storage
       await storage
         .set(dacarNodeConfigKey(invitedProjectId), {
           salt: nodeConfig.salt,
@@ -1283,34 +1414,61 @@ export async function createMeshSync({
           anchorPubkey: nodeConfig.anchor.pubkey,
         })
         .catch(() => {});
-      const metadata = doc.getMap?.("metadata");
-      if (metadata && !metadata.get("trust_anchor_hash")) {
-        metadata.set("trust_anchor_hash", nodeConfig.anchor.hash);
-      }
-      invalidateDacarState();
-      // Wait for the pushed grant to authorize this device through the
-      // Dacar Engine before materializing anything locally
+      // Wait for the pushed grant and verify it through a Dacar node built
+      // from the delivered anchor — BEFORE any project setup: the device
+      // does not adopt the invited project until it demonstrably holds the
+      // grants for it. A lost push fails the join cleanly; the pending
+      // invite survives so a reload re-dials (the host answers idempotently
+      // and re-pushes)
+      const tempNode = createDacarNode();
+      tempNode.configure({
+        anchorHashHex: nodeConfig.anchor.hash,
+        anchorPubkeyHex: nodeConfig.anchor.pubkey,
+        salt: nodeConfig.salt,
+      });
       const grantDeadline = Date.now() + GRANT_WAIT_MS;
+      let granted = false;
       for (;;) {
-        const node = await ensureDacarNode().catch(() => null);
+        for (const data of pendingPushes.splice(0)) {
+          await tempNode.ingestDeltas(data).catch(() => 0);
+        }
         if (
-          node &&
-          (await node.evaluate(invitedProjectId, "sync", identityHash)) === true
+          (await tempNode.evaluate(invitedProjectId, "sync", identityHash)) ===
+          true
         ) {
+          granted = true;
           break;
         }
-        if (Date.now() > grantDeadline) {
-          throw new Error("joiner grant not received before timeout");
-        }
+        if (Date.now() > grantDeadline) break;
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
+      if (!granted) {
+        postMessage({
+          kind: "mesh-bootstrap",
+          stage: "failed",
+          error:
+            "the pushed grant did not arrive — the invite stays pending; re-join to retry",
+        });
+        postMessage({
+          kind: "mesh-status",
+          error:
+            "Join failed: the pushed grant did not arrive; re-join to retry",
+        });
+        return;
+      }
+      // Granted. NOW set up the project: adopt the invited identity (the
+      // Engine binds pending materialization to the approval watcher), and
+      // write the verified grant into the grants map — whose verification
+      // completes the materialization
+      await hooks.onApproved?.(response.project ?? {});
+      invalidateDacarState();
       // Reconstruct the grant record from Dacar ground truth: the deltas
       // that granted us plus the permissions the Engine actually allows
       /** @type {string[]} */
       const grantedPermissions = [];
       for (const permission of ["sync", "write"]) {
         if (
-          (await dacarNode?.evaluate(
+          (await tempNode.evaluate(
             invitedProjectId,
             permission,
             identityHash,
@@ -1329,9 +1487,6 @@ export async function createMeshSync({
         expires: null,
         deltas: lastPushedBatch,
       };
-      // Catalog in the wallet (§5.2) and write the verified grant into the
-      // grants map — which triggers the approval watcher and materializes
-      // the project
       await writeGrantedAssertion(
         identityHash,
         grantedPermissions.includes("write") ? "developer" : "observer",
@@ -1344,7 +1499,10 @@ export async function createMeshSync({
       await storage.set("pendingInviteUri", "").catch(() => {});
       postMessage({
         kind: "mesh-bootstrap",
-        stage: "approved",
+        // "approved" is the wire response (the state machine's §5.1 state);
+        // "granted" means the pushed grant verified and the project is
+        // being adopted — the Glass keys its success message on this
+        stage: "granted",
         project: response.project ?? null,
       });
     } catch (err) {
@@ -1386,6 +1544,28 @@ export async function createMeshSync({
       // this device's identity as its Trust Anchor; invited devices wait
       // for the host's anchor instead
       ensureTrustAnchor();
+      // Self-heal an invited device that still claims the anchor (a stale
+      // self-assignment from its pre-join scratch project): a participant
+      // cannot hold the anchor's private key, so repair by overwriting with
+      // the anchor the grants map evidences — a later write with the
+      // correct value wins the LWW race and heals every replica. Deleting
+      // would wipe the anchor network-wide instead.
+      if (config.joinedViaInvite && trustAnchorHash() === identityHash) {
+        const grants = doc.getMap?.("grants");
+        let evidencedAnchor = "";
+        if (grants) {
+          for (const entry of grants.values()) {
+            const hash = entry.toJSON()?.authorization?.anchor?.hash;
+            if (typeof hash === "string" && /^[0-9a-f]{32}$/.test(hash)) {
+              evidencedAnchor = hash;
+              break;
+            }
+          }
+        }
+        if (evidencedAnchor) {
+          doc.getMap?.("metadata")?.set("trust_anchor_hash", evidencedAnchor);
+        }
+      }
       // The anchor signs itself like any other peer, so authorization is
       // uniform across devices (work document #25 §2.2)
       await ensureSelfAuthorization();
@@ -1467,35 +1647,6 @@ export async function createMeshSync({
         peers: peerCount,
       });
     });
-    // Announce diagnostics: log when the room's destination announces and
-    // when an announce from another room member arrives. This confirms
-    // whether the entry point propagates announces between peers.
-    const roomDest = provider.room?.dest;
-    if (roomDest) {
-      roomDest.addEventListener("announce", () => {
-        console.info(`[mesh] announced room destination ${room.slice(-12)}`);
-      });
-    }
-    provider.room?.rns?.transport?.addEventListener(
-      "announce",
-      (/** @type {any} */ event) => {
-        // Temporary: log ALL received announces with their nameHash so we
-        // can see exactly what the transport receives and what gets
-        // filtered. Remove once the join flow is stable.
-        if (!provider) return;
-        const detail = event.detail ?? {};
-        const nameHash = detail.nameHash ? toHex(detail.nameHash) : "none";
-        const identityHash = detail.identity
-          ? toHex(detail.identity.getSalt())
-          : "unidentified";
-        const roomNameHash = provider.room?.dest?.nameHash
-          ? toHex(provider.room.dest.nameHash)
-          : "none";
-        console.info(
-          `[mesh] announce: nameHash=${nameHash} identity=${identityHash} room=${roomNameHash} match=${nameHash === roomNameHash}`,
-        );
-      },
-    );
     provider.on("synced", (/** @type {any} */ event) => {
       postMessage({
         kind: "mesh-status",
@@ -1762,6 +1913,13 @@ export async function createMeshSync({
       config.joinedViaInvite = true;
       await saveMeshConfig(storage, config);
       doc.getMap?.("grants")?.clear();
+      // NOTE: a device that ran mesh before joining may have self-assigned
+      // the Trust Anchor of its own scratch project. That claim is void,
+      // but it must never be *deleted* from the CRDT: a delete carries a
+      // later clock than the owner's original write and would win the LWW
+      // race on sync, wiping the anchor on every device. The bootstrap
+      // handoff overwrites it with the real anchor instead (a later write
+      // with the correct value heals the whole network).
     },
     /**
      * @param {any} payload
