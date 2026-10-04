@@ -946,12 +946,6 @@ export async function createMeshSync({
     // that connect later never learn this device's Delta-push destination.
     // Announce periodically like the room destination does
     dacarSyncServer.destination?.startAnnouncing?.({ intervalMs: 15_000 });
-    // Narrate the sync endpoint's announce cycles as well (work document
-    // #34): the handoff's delta push depends on this destination being
-    // reachable, so its announce cadence matters for join debugging
-    dacarSyncServer.destination?.addEventListener?.("announced", () => {
-      postMessage(progress("mesh.announce", "sync", "done"));
-    });
     return dacarSyncServer;
   }
 
@@ -1752,10 +1746,19 @@ export async function createMeshSync({
     // document #34); the first peer event resolves it
     let discoveryDone = false;
     postMessage(progress("mesh.connect", "discovery", "running"));
-    // Every announce the room destination puts on air is narrated (work
-    // document #34): the announce cadence is exactly what offline-first
-    // discovery debugging needs to see
-    provider.room?.dest?.addEventListener?.("announced", () => {
+    // Narrate the discovery and announce facts as they happen (work
+    // document #34): a matching announce proves room propagation even when
+    // a subsequent link does not form, and each announce on air marks the
+    // cadence discovery depends on
+    provider.on("discovered", (/** @type {any} */ event) => {
+      const remoteHex = String(unwrap(event)?.remoteHex ?? "");
+      postMessage(
+        progress("mesh.connect", "discovered", "done", {
+          peer: remoteHex.slice(0, 8),
+        }),
+      );
+    });
+    provider.on("announced", () => {
       postMessage(progress("mesh.announce", "room", "done"));
     });
     // Bind awareness to this provider instance; dropped on unbind.

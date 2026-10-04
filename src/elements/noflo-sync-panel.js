@@ -75,6 +75,25 @@ function shortHash(hash) {
   return hash.length > 12 ? `${hash.slice(0, 4)}…${hash.slice(-4)}` : hash;
 }
 
+/**
+ * Icons for narrated operations, chosen for what the operation is rather
+ * than a generic wait: local work is a machine, loading is a store,
+ * connecting is a plug. Unmapped operations fall back to the hourglass.
+ *
+ * @param {string} operation
+ * @param {string} stage
+ * @returns {string}
+ */
+function narrationIcon(operation, stage) {
+  if (operation === "mesh.connect" && stage === "discovery") return "laptop";
+  if (operation === "mesh.connect") return "plug";
+  if (operation === "identity.generate") return "key";
+  if (operation === "persistence.load") return "database";
+  if (operation === "project.bind") return "link";
+  if (operation === "mesh.announce") return "bullhorn";
+  return "hourglass-half";
+}
+
 export class FlowSyncPanel extends HTMLElement {
   constructor() {
     super();
@@ -92,6 +111,8 @@ export class FlowSyncPanel extends HTMLElement {
     this._inviteUri = "";
     this._meshError = "";
     this._identityHash = "";
+    /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */
+    this._narration = null;
     this._pendingIntents = 0;
     this._readOnly = false;
     this._visible = false;
@@ -127,6 +148,18 @@ export class FlowSyncPanel extends HTMLElement {
    */
   setSyncStatus(status) {
     this._syncStatus = status;
+    this.render();
+  }
+
+  /**
+   * Sets the current operation narration (work document #34): the chip's
+   * stage segment shows the micro-phrase while an operation runs; a failed
+   * operation reads as attention. Null clears it.
+   *
+   * @param {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} narration
+   */
+  setNarration(narration) {
+    this._narration = narration ?? null;
     this.render();
   }
 
@@ -237,18 +270,27 @@ export class FlowSyncPanel extends HTMLElement {
       segments.push(
         `<span class="seg activity">${icon("hourglass-half")}<span class="label">joining…</span></span>`,
       );
+    } else if (this._narration) {
+      // Operation narration (work document #34): the phrase while the
+      // operation runs, with an icon that reflects the operation's nature
+      // rather than a generic wait; a failure reads as attention
+      segments.push(
+        this._narration.failed
+          ? `<span class="seg attention" title="${escapeHtml(this._narration.phrase)}">${icon("triangle-exclamation")}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`
+          : `<span class="seg">${icon(narrationIcon(this._narration.operation, this._narration.stage))}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`,
+      );
     } else if (status.stage && status.stage !== "already-running") {
       segments.push(
         `<span class="seg activity">${icon("hourglass-half")}<span class="label">${escapeHtml(status.stage)}…</span></span>`,
       );
     } else if (status.connected === true) {
-      // Terminology per Syncthing conventions (WD #28 feedback): "syncing"
-      // only while bits are moving; the connected idle state is "up to
-      // date"; a connected mesh with no peers is waiting for peers
+      // Offline-first (work document #28): having no peers online is the
+      // normal state of local work, not a stall — read as neutral "working
+      // locally", and synced returns once peers are actually connected
       const peerCount = this._peers.length || status.peers || 0;
       if (peerCount === 0) {
         segments.push(
-          `<span class="seg">${icon("plug")}<span class="label">waiting for peers</span></span>`,
+          `<span class="seg">${icon("laptop")}<span class="label">working locally</span></span>`,
         );
       } else if (status.synced === true) {
         segments.push(

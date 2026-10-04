@@ -151,13 +151,13 @@ export function normalizeMeshConfig(blob) {
 /**
  * @param {AsyncStorage} storage
  * @returns {Promise<MeshConfig>}
+ * @throws When the storage read fails: a transient failure must not be
+ *   masked with defaults, or the caller would treat the device as having no
+ *   stored identity and mint a new one over the real key (work document #28
+ *   finding — the identity is sacred).
  */
 export async function loadMeshConfig(storage) {
-  try {
-    return normalizeMeshConfig(await storage.get(MESH_CONFIG_KEY));
-  } catch {
-    return createDefaultMeshConfig();
-  }
+  return normalizeMeshConfig(await storage.get(MESH_CONFIG_KEY));
 }
 
 /**

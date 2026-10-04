@@ -1478,6 +1478,12 @@ function bytesEqual(a, b) {
 * @typedef {Object} RoomCallbacks
 * @property {(added: string[], removed: string[]) => void} onPeers
 *   Fired whenever peers are discovered or drop off. Ids are hex link_ids.
+* @property {(remoteHex: string) => void} [onDiscovered]
+*   Fired when an announce matching this room arrives, before any glare
+*   or policy decision — the room-propagation fact, narrable even when a
+*   subsequent link does not form.
+* @property {() => void} [onAnnounced]
+*   Fired each time this room's destination goes on air.
 * @property {(synced: boolean) => void} onSynced
 *   Fired when the room's overall sync state changes.
 * @property {(refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }>) => void} [onRefused]
@@ -1622,6 +1628,7 @@ var Room = class {
 		if (!bytesEqual(detail.nameHash, this.dest.nameHash)) return;
 		const remoteHex = toHex(detail.destinationHash);
 		if (remoteHex === this.myHex) return;
+		this.callbacks.onDiscovered?.(remoteHex);
 		if (this.peerConns.size >= this.maxConns) return;
 		if (this.linkedDestHexes.has(remoteHex)) {
 			const conns = [...this.peerConns.values()].filter((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex);
@@ -2181,6 +2188,8 @@ var ReticulumProvider = class extends ObservableV2 {
 					added,
 					removed
 				}]),
+				onDiscovered: (remoteHex) => this.emit("discovered", [{ remoteHex }]),
+				onAnnounced: () => this.emit("announced", [{}]),
 				onSynced: (synced) => this.emit("synced", [{ synced }]),
 				onRefused: (refusals) => this.emit("refused", [{ refusals }])
 			}
