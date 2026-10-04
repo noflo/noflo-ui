@@ -9,6 +9,7 @@ import {
   normalizeMeshConfig,
   saveMeshConfig,
 } from "../../src/crdt/MeshConfig.js";
+import { createProjectDoc } from "../../src/crdt/ProjectDoc.js";
 import { createMeshSync } from "../../src/worker/MeshSync.js";
 
 describe("mesh config (work document #21)", () => {
@@ -212,6 +213,74 @@ describe("mesh sync (work document #21)", () => {
     );
     assert.ok(failure, "failure surfaced as status with error");
     assert.match(failure.error, /no interfaces/);
+  });
+
+  it("mints a born-verified grant through the mesh layer (work document #27)", async () => {
+    const storage = createMemoryStorage();
+    /** @type {any[]} */
+    const messages = [];
+    const doc = createProjectDoc("Grant test");
+    const mesh = await createMeshSync({
+      doc,
+      postMessage: (m) => messages.push(m),
+      storage,
+      roomFor: () => "noflo-ui:grant-test",
+      createProvider: async () => ({ on: () => {}, destroy: async () => {} }),
+    });
+    await mesh.handleConfigure({ ...createDefaultMeshConfig(), enabled: true });
+    const peerHash = "a".repeat(32);
+    const minted = await mesh.grant({
+      identityHash: peerHash,
+      role: "operator",
+    });
+    assert.ok(minted, "the grant minted");
+    const entry = [...doc.getMap("grants").values()]
+      .map((/** @type {any} */ e) => e.toJSON())
+      .find((/** @type {any} */ g) => g.peerHash === peerHash);
+    assert.ok(entry?.authorization, "the entry is born verified");
+    assert.equal(entry.authorization.subject, peerHash);
+    assert.deepEqual(entry.authorization.permissions, ["sync", "write"]);
+    // The verification status the Glass renders comes from the Dacar pass;
+    // the trailing reconcile report lands just after grant() resolves
+    let grantReport;
+    for (let i = 0; i < 40 && grantReport?.status !== "verified"; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const report = messages.findLast((m) => m.kind === "mesh-dacar");
+      grantReport = report?.grants?.find(
+        (/** @type {any} */ g) => g.peerHash === peerHash,
+      );
+    }
+    assert.equal(grantReport?.status, "verified");
+  });
+
+  it("refuses to mint grants without the anchor's private key", async () => {
+    /** @type {any[]} */
+    const messages = [];
+    const doc = createProjectDoc("Grant refusal");
+    const mesh = await createMeshSync({
+      doc,
+      postMessage: (m) => messages.push(m),
+      storage: createMemoryStorage(),
+      roomFor: () => "noflo-ui:grant-refusal",
+      createProvider: async () => ({ on: () => {}, destroy: async () => {} }),
+    });
+    // An invited device holds no anchor: its grants map stays empty until
+    // the owner's grant arrives
+    await mesh.handleConfigure({
+      ...createDefaultMeshConfig(),
+      enabled: true,
+      joinedViaInvite: true,
+    });
+    const minted = await mesh.grant({
+      identityHash: "a".repeat(32),
+      role: "operator",
+    });
+    assert.ok(!minted, "an invited device cannot mint");
+    const failure = messages.find(
+      (m) => m.kind === "mesh-status" && /Trust Anchor/.test(m.error ?? ""),
+    );
+    assert.ok(failure, "the refusal surfaced with its reason");
+    assert.equal(doc.getMap("grants").size, 0, "no grant entry written");
   });
 });
 

@@ -945,36 +945,12 @@ export const GRANTS_MAP = "grants";
 export const GRANT_ROLES = ["observer", "operator", "developer"];
 
 /**
- * Issues a capability grant to a peer identity.
- *
- * @param {Y.Doc} doc
- * @param {string} peerHash Hex identity hash of the granted peer.
- * @param {string} role One of GRANT_ROLES.
- * @returns {{ id: string, peerHash: string, role: string, issued: number, revoked: null } | null}
- *   The grant, or null on invalid input.
- */
-export function grantPermission(doc, peerHash, role) {
-  if (typeof peerHash !== "string" || peerHash.length === 0) return null;
-  if (!(/** @type {string[]} */ (GRANT_ROLES).includes(role))) return null;
-  const grants = doc.getMap(GRANTS_MAP);
-  const id = `grant-${newProjectId()}`;
-  const entry = new Y.Map();
-  doc.transact(() => {
-    entry.set("peerHash", peerHash);
-    entry.set("role", role);
-    entry.set("issued", Date.now());
-    entry.set("revoked", null);
-    grants.set(id, entry);
-  });
-  return { id, peerHash, role, issued: entry.get("issued"), revoked: null };
-}
-
-/**
  * Issues a capability grant that carries its Dacar-signed authorization
- * (work document #25 §4.2): the entry syncs to all peers, and each peer
- * verifies the assertion against the project's Trust Anchor before treating
- * the granted peer as authorized. Writing the same authorization twice is
- * idempotent — the existing entry is returned instead of duplicated.
+ * (work document #25 §4.2, born verified per work document #27): the entry
+ * syncs to all peers, and each peer verifies the assertion against the
+ * project's Trust Anchor before treating the granted peer as authorized.
+ * Writing the same authorization twice is idempotent — the existing entry
+ * is returned instead of duplicated.
  *
  * @param {Y.Doc} doc
  * @param {string} peerHash Hex identity hash of the granted peer.

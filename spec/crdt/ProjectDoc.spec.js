@@ -24,7 +24,7 @@ import {
   getNode,
   getProjectMetadata,
   getSpecSuite,
-  grantPermission,
+  grantAssertion,
   graphAncestry,
   graphChildren,
   iipEdgeIdFor,
@@ -497,29 +497,36 @@ describe("graph hierarchy (work document #23)", () => {
 });
 
 describe("grants (work document #21)", () => {
-  it("issues grants with a tombstone-capable shape", () => {
+  it("issues born-verified grants with a tombstone-capable shape", () => {
     const doc = createProjectDoc("p");
-    const grant = grantPermission(doc, "abc123hash", "operator");
+    const grant = grantAssertion(doc, "abc123hash", "operator", {
+      anchor: { hash: "a" },
+    });
     assert.ok(grant);
     assert.equal(grant.peerHash, "abc123hash");
     assert.equal(grant.role, "operator");
     assert.equal(grant.revoked, null);
+    assert.ok(grant.authorization, "the entry carries its authorization");
     const grants = listGrants(doc);
     assert.equal(grants.length, 1);
     assert.equal(grants[0].id, grant.id);
   });
 
-  it("rejects unknown roles and empty peer hashes", () => {
+  it("rejects unknown roles, empty peer hashes, and missing authorizations", () => {
     const doc = createProjectDoc("p");
-    assert.equal(grantPermission(doc, "abc", "admin"), null);
-    assert.equal(grantPermission(doc, "", "operator"), null);
+    const authorization = { anchor: { hash: "a" } };
+    assert.equal(grantAssertion(doc, "abc", "admin", authorization), null);
+    assert.equal(grantAssertion(doc, "", "operator", authorization), null);
+    assert.equal(grantAssertion(doc, "abc", "operator", null), null);
     assert.equal(listGrants(doc).length, 0);
   });
 
   it("revokes by tombstone, never deletion", () => {
     const doc = createProjectDoc("p");
     const grant = /** @type {any} */ (
-      grantPermission(doc, "peerhash", "developer")
+      grantAssertion(doc, "peerhash", "developer", {
+        anchor: { hash: "a" },
+      })
     );
     assert.ok(revokePermission(doc, grant.id));
     const grants = listGrants(doc);

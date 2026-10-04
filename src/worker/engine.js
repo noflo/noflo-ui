@@ -427,6 +427,13 @@ export async function startEngine(io, options = {}) {
         postMeshConfig();
       } else if (message.command === "join") {
         joinProject(message.payload);
+      } else if (message.command === "grant") {
+        mesh
+          .grant(message.payload)
+          .then(() => postMeshConfig())
+          .catch((/** @type {any} */ err) =>
+            console.error("Grant failed:", err),
+          );
       } else if (message.command === "resolveRequest") {
         mesh.resolveRequest({
           identityHash: message.payload?.identityHash,

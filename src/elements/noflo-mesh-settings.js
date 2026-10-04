@@ -324,7 +324,6 @@ export class FlowMeshSettings extends HTMLElement {
       verified: "verified",
       refused: "refused",
       pending: "pending verification",
-      unsigned: "unsigned",
     };
     const owner = this._dacarState?.anchor?.owner === true;
     return grants
@@ -357,7 +356,8 @@ export class FlowMeshSettings extends HTMLElement {
 
   /**
    * The grant-minting form, enabled only for the Trust Anchor's device —
-   * a grant issued elsewhere could never be countersigned.
+   * grants are minted born-verified through the mesh layer (work document
+   * #27), which requires the anchor's private key.
    *
    * @returns {string}
    */

@@ -25,7 +25,6 @@ import {
   addExportIntent,
   addIIPIntent,
   addNodeIntent,
-  grantPermissionIntent,
   graphParent,
   makeSubgraphIntent,
   moveNodeIntent,
@@ -642,7 +641,14 @@ async function init() {
     });
   });
   settingsDialog?.addEventListener("mesh-grant", (/** @type {any} */ e) => {
-    sendIntent(grantPermissionIntent(e.detail.peerHash, e.detail.role));
+    // Grants are minted directly through the mesh layer (work document
+    // #27): the Trust Anchor's device signs the authorization and writes
+    // the born-verified entry — no unsigned intermediate grant
+    supervisor?.send({
+      type: "MESH",
+      command: "grant",
+      payload: { identityHash: e.detail.peerHash, role: e.detail.role },
+    });
   });
   settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
     sendIntent(revokePermissionIntent(e.detail.id));
@@ -671,9 +677,13 @@ async function init() {
       });
       return;
     }
-    // A sync-refusal peer holds no bootstrap link: the grant flows through
-    // the CRDT, and resolving just clears the request entry
-    sendIntent(grantPermissionIntent(e.detail.identityHash, "operator"));
+    // A sync-refusal peer holds no bootstrap link: the grant is minted
+    // through the mesh layer, and resolving just clears the request entry
+    supervisor?.send({
+      type: "MESH",
+      command: "grant",
+      payload: { identityHash: e.detail.identityHash, role: "operator" },
+    });
     supervisor?.send({
       type: "MESH",
       command: "resolveRequest",

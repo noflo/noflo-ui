@@ -214,6 +214,9 @@ async function defaultCreateProvider(
  *   Re-runs a persisted pending invite (resume on reload); false when none
  *   is stored.
  * @property {() => Promise<void>} stop
+ * @property {(payload: any) => Promise<boolean>} grant Mints a
+ *   Dacar-signed grant for a peer through the mesh layer (anchor only);
+ *   false when this device cannot mint.
  * @property {(payload: any) => Promise<void>} handleConfigure Validates,
  *   persists, and applies a new configuration, restarting the provider.
  * @property {(payload: any) => void} handleAwareness Handles a local
@@ -704,11 +707,12 @@ export async function createMeshSync({
    *   verify-on-ingest — unknown anchors (§7) and tampered deltas are
    *   refused, so they never authorize;
    * - tombstoned (revoked) entries leave the Dacar state via a rebuild;
-   * - plain grants (written through the Glass permission intents) are
-   *   countersigned by the anchor so peers can verify them too;
    * - verdicts land in the granted cache for synchronous policy checks.
    *
-   * The grants and metadata observers re-run this pass on every change.
+   * The grants observer re-runs this pass on every change. Grants are
+   * born verified (work document #27): the mesh layer's `grant` mints the
+   * Dacar-signed authorization directly, so there are no unsigned entries
+   * waiting for a countersign pass.
    *
    * @returns {Promise<void>}
    */
@@ -761,29 +765,16 @@ export async function createMeshSync({
           await node.ingestDeltas(data).catch(() => 0);
         }
       }
-      // Plain grants: the anchor countersigns them so every peer can verify
-      for (const entry of [...grants.values()]) {
-        const plain = entry.toJSON();
-        if (plain.revoked !== null || plain.authorization) continue;
-        if (
-          hasAuthority() &&
-          plain.peerHash !== identityHash &&
-          ROLE_PERMISSIONS[plain.role]
-        ) {
-          await mintPeerAuthorization(plain.peerHash, projectId, plain.role);
-        }
-      }
-      // Ingest authorization entries not yet in the Dacar state
+      // Ingest authorization entries not yet in the Dacar state. Entries
+      // without an authorization cannot verify and are skipped: grants are
+      // born verified through the mesh layer (work document #27)
       for (const [id, entry] of grants.entries()) {
         const plain = entry.toJSON();
         if (plain.revoked !== null) {
           entryStatuses.set(id, "revoked");
           continue;
         }
-        if (!plain.authorization) {
-          entryStatuses.set(id, "unsigned");
-          continue;
-        }
+        if (!plain.authorization) continue;
         const fingerprint = authorizationFingerprint(plain.authorization);
         if (ingestedEntries.get(id) === fingerprint) continue;
         ingestedEntries.set(id, fingerprint);
@@ -817,8 +808,6 @@ export async function createMeshSync({
         const plain = entry.toJSON();
         if (plain.revoked !== null) {
           entryStatuses.set(id, "revoked");
-        } else if (!plain.authorization) {
-          entryStatuses.set(id, "unsigned");
         } else if (!node.isConfigured()) {
           entryStatuses.set(id, "pending");
         } else if (grantedCache.get(plain.peerHash) === true) {
@@ -1937,6 +1926,45 @@ export async function createMeshSync({
     async rebind() {
       await stop();
       await start();
+    },
+    /**
+     * Mints a Dacar-signed grant for a peer directly through the mesh
+     * layer (work document #27): the Trust Anchor's device signs the
+     * authorization and writes the born-verified entry — no unsigned
+     * intermediate state, no asynchronous countersign pass. Fails with a
+     * status message when this device does not hold the project's anchor.
+     *
+     * @param {any} payload `{ identityHash: string, role: string }`.
+     * @returns {Promise<boolean>} Whether the grant was minted.
+     */
+    async grant(payload) {
+      const peerHash = String(payload?.identityHash ?? "");
+      const role = String(payload?.role ?? "");
+      const projectId = String(doc.getMap?.("metadata")?.get("id") ?? "");
+      if (
+        !/^[0-9a-f]{32}$/.test(peerHash) ||
+        !ROLE_PERMISSIONS[role] ||
+        !projectId
+      ) {
+        postMessage({
+          kind: "mesh-status",
+          error:
+            "Grant failed: a peer identity hash and a valid role are required",
+        });
+        return false;
+      }
+      await ensureLocalBinding();
+      if (!hasAuthority()) {
+        postMessage({
+          kind: "mesh-status",
+          error:
+            "Grant failed: only the project Trust Anchor's device can mint grants",
+        });
+        return false;
+      }
+      await mintPeerAuthorization(peerHash, projectId, role);
+      await reconcileDacarState().catch(() => {});
+      return true;
     },
     /**
      * @param {any} payload

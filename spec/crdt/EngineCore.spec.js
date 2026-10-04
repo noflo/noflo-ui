@@ -12,6 +12,7 @@ import {
   getGraph,
   getNode,
   getProjectMetadata,
+  grantAssertion,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 
@@ -1220,35 +1221,15 @@ describe("moveUp (work document #23)", () => {
   });
 });
 
-describe("grant intents (work document #21)", () => {
-  it("grants a Dacar role and echoes the acl grant", () => {
-    const doc = createProjectDoc("p");
-    const result = handleMessage(doc, createEngineState(), {
-      type: "INTENT",
-      command: "grantPermission",
-      payload: { peerHash: "abc123", role: "operator" },
-    });
-    assert.ok(result.accepted);
-    const echo = result.echoes[0];
-    assert.equal(echo.protocol, "acl");
-    assert.equal(echo.command, "grant");
-    assert.equal(echo.payload.peerHash, "abc123");
-    assert.equal(echo.payload.role, "operator");
-    assert.equal(echo.payload.revoked, null);
-
-    // The grant lives in the project CRDT
-    const grant = doc.getMap("grants").get(echo.payload.id);
-    assert.equal(grant.get("peerHash"), "abc123");
-  });
-
+describe("grant intents (work document #27)", () => {
   it("tombstone-revokes through an intent", () => {
     const doc = createProjectDoc("p");
-    const grant = handleMessage(doc, createEngineState(), {
-      type: "INTENT",
-      command: "grantPermission",
-      payload: { peerHash: "abc123", role: "observer" },
+    // Grants are born verified through the mesh layer's `MESH grant`
+    // (work document #27); the CRDT-level revoke intent remains
+    const grant = grantAssertion(doc, "abc123hash", "observer", {
+      anchor: { hash: "a" },
     });
-    const grantId = grant.echoes[0].payload.id;
+    const grantId = grant?.id ?? "";
     const result = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "revokePermission",
@@ -1261,14 +1242,8 @@ describe("grant intents (work document #21)", () => {
     assert.ok(doc.getMap("grants").get(grantId).get("revoked") > 0);
   });
 
-  it("rejects unknown roles and unknown grants", () => {
+  it("rejects unknown grants", () => {
     const doc = createProjectDoc("p");
-    const badRole = handleMessage(doc, createEngineState(), {
-      type: "INTENT",
-      command: "grantPermission",
-      payload: { peerHash: "abc", role: "root" },
-    });
-    assert.ok(!badRole.accepted);
     const ghost = handleMessage(doc, createEngineState(), {
       type: "INTENT",
       command: "revokePermission",

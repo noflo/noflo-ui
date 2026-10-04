@@ -121,16 +121,6 @@
  */
 
 /**
- * Appendix A extension (work document #21): issue a Dacar capability grant
- * to a peer identity. Grants are project data synced to all peers.
- *
- * @typedef {Object} IntentGrantPermissionMessage
- * @property {'INTENT'} type
- * @property {'grantPermission'} command
- * @property {{ peerHash: string, role: 'observer' | 'operator' | 'developer' }} payload
- */
-
-/**
  * Appendix A extension (work document #21): tombstone-revoke a grant.
  *
  * @typedef {Object} IntentRevokePermissionMessage
@@ -221,7 +211,6 @@
  *   | IntentRemoveGraphMessage
  *   | IntentMakeSubgraphMessage
  *   | IntentMoveUpMessage
- *   | IntentGrantPermissionMessage
  *   | IntentRevokePermissionMessage} UIWorkerMessage
  */
 
@@ -328,15 +317,6 @@
  */
 
 /**
- * Appendix A extension (work document #21): authoritative ACL echoes.
- *
- * @typedef {Object} AclGrantMessage
- * @property {'acl'} protocol
- * @property {'grant'} command
- * @property {{ id: string, peerHash: string, role: string, issued: number, revoked: number | null }} payload
- */
-
-/**
  * Appendix A extension (work document #21): authoritative ACL echo.
  *
  * @typedef {Object} AclRevokeMessage
@@ -363,7 +343,6 @@
  *   | GraphCreateGraphMessage
  *   | GraphRemoveGraphMessage
  *   | GraphSetComponentMessage
- *   | AclGrantMessage
  *   | AclRevokeMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
  */

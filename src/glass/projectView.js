@@ -322,19 +322,6 @@ export function nodeExists(doc, graphId, nodeId) {
 }
 
 /**
- * @param {string} peerHash
- * @param {"observer" | "operator" | "developer"} role
- * @returns {import("../crdt/Protocol.js").IntentGrantPermissionMessage}
- */
-export function grantPermissionIntent(peerHash, role) {
-  return {
-    type: "INTENT",
-    command: "grantPermission",
-    payload: { peerHash, role },
-  };
-}
-
-/**
  * @param {string} grantId
  * @returns {import("../crdt/Protocol.js").IntentRevokePermissionMessage}
  */
