@@ -326,6 +326,20 @@
  */
 
 /**
+ * Operation narration (work document #34): the Engine reports named
+ * operations as structured progress. `operation` and `stage` are enums the
+ * Glass renders micro-phrases from — never free-form Engine text. `detail`
+ * carries structured interpolation parameters (hashes, counts).
+ *
+ * @typedef {Object} ProgressMessage
+ * @property {'progress'} kind
+ * @property {string} operation Dotted operation name (e.g. `mesh.connect`).
+ * @property {string} stage Stage within the operation (e.g. `discovery`).
+ * @property {'running' | 'done' | 'failed'} state
+ * @property {Record<string, any>} [detail] Parameters for the phrase.
+ */
+
+/**
  * All messages the Engine may send to the Glass.
  *
  * @typedef {HeartbeatMessage
@@ -344,6 +358,7 @@
  *   | GraphRemoveGraphMessage
  *   | GraphSetComponentMessage
  *   | AclRevokeMessage
+ *   | ProgressMessage
  *   | NetworkFlowtraceMessage} EngineUIMessage
  */
 

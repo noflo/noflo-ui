@@ -22,6 +22,7 @@ import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import "./elements/noflo-selection-pills.js";
 import { createIntentMapper } from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
+import { progressPhrase } from "./glass/progressPhrases.js";
 import {
   addEdgeIntent,
   addExportIntent,
@@ -93,6 +94,12 @@ let syncStatus =
 /** Join progress reported by the Engine, for the sync panel. */
 let joinProgress =
   /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */ (
+    null
+  );
+/** The current operation narration (work document #34), rendered by the
+ * sync panel's stage segment; null when no operation is in flight. */
+let narration =
+  /** @type {{ phrase: string, operation: string, failed?: boolean } | null} */ (
     null
   );
 /** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
@@ -176,6 +183,22 @@ let intentMapper = null;
  * @param {any} data
  */
 function onEngineMessage(data) {
+  if (data?.kind === "progress") {
+    // Operation narration (work document #34): the phrase catalog renders
+    // the micro-phrase; a running operation replaces the previous one, its
+    // done clears it, a failure sticks until the next operation
+    const phrase = progressPhrase(data);
+    if (data.state === "running") {
+      narration = { phrase, operation: data.operation };
+    } else if (data.state === "failed") {
+      narration = { phrase, operation: data.operation, failed: true };
+    } else if (narration?.operation === data.operation) {
+      narration = null;
+    }
+    console.info(`[progress] ${phrase} (${data.state})`);
+    refreshSyncPanel();
+    return;
+  }
   if (data?.kind === "y-sync") {
     // Full state: establishes clock contiguity for the incremental stream
     Y.applyUpdate(mirrorDoc, data.update);
@@ -450,6 +473,7 @@ function refreshSyncPanel() {
     Boolean(meshConfig && (meshConfig.enabled || meshError)),
   );
   syncPanel.setSyncStatus(syncStatus);
+  syncPanel.setNarration(narration);
   syncPanel.setPeers(meshPeers);
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);

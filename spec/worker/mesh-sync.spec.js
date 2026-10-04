@@ -76,8 +76,10 @@ describe("mesh config (work document #21)", () => {
       },
       set: async () => {},
     };
-    const config = await loadMeshConfig(storage);
-    assert.equal(config.enabled, false);
+    // A storage failure is surfaced, not masked: defaulting would make the
+    // caller treat the device as having no stored identity (work document
+    // #28 finding — the identity is sacred)
+    await assert.rejects(loadMeshConfig(storage), /db closed/);
   });
 });
 
@@ -101,7 +103,10 @@ describe("mesh sync (work document #21)", () => {
       },
     });
     assert.equal(mesh.config.enabled, false);
-    assert.equal(messages.length, 0, "no status events while disabled");
+    // The identity restore narrates even while sync is off (work document
+    // #34 boot checklist); nothing else may fire before enabling
+    const noise = messages.filter((m) => m.kind !== "progress");
+    assert.equal(noise.length, 0, "no status events while disabled");
   });
 
   it("generates and persists an identity on first enable", async () => {

@@ -49,6 +49,7 @@ import {
 } from "./Dacar.js";
 import { createDacarLinkAuthorizer } from "./DacarLinkAuth.js";
 import { listWalletGrants, saveWalletGrant } from "./DacarWallet.js";
+import { progress } from "./Progress.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
 const GRANT_WAIT_MS = 30_000;
@@ -261,7 +262,24 @@ export async function createMeshSync({
    * lacks Ed25519): mesh sync cannot run, but the Engine keeps working.
    */
   let identityError = "";
-  let config = await loadMeshConfig(storage);
+  /** Whether the identity narration already fired (restores after the
+   * first are silent rebind noise). */
+  let identityNarrated = false;
+
+  /** @type {import("../crdt/MeshConfig.js").MeshConfig} */
+  let config;
+  try {
+    config = await loadMeshConfig(storage);
+  } catch (err) {
+    // A storage failure must never look like "no stored identity": the
+    // identity is the device's mesh address, and minting a new one over it
+    // silently invalidates every grant held for it (work document #28
+    // finding). Mesh stays off; the Engine keeps working.
+    config = normalizeMeshConfig(null);
+    identityError = `Mesh storage unavailable, sync stays off: ${
+      /** @type {any} */ (err)?.message ?? String(err)
+    }`;
+  }
   // Local Dacar wallet (work document #25 §5.2): its own IndexedDB store
   // (`dacar_grants`), falling back to the caller's storage where IndexedDB
   // is unavailable (tests, non-browser runtimes)
@@ -319,11 +337,26 @@ export async function createMeshSync({
   // independent of whether sync is enabled — peers and node admins need the
   // hash to grant access before sync is ever turned on. Failure here (old
   // WebKit without Ed25519 in WebCrypto) disables mesh but not the Engine.
-  try {
-    await ensureIdentity();
-  } catch (err) {
-    const reason = /** @type {any} */ (err)?.message ?? err;
-    identityError = `Identity generation failed: ${reason}`;
+  // When storage is unavailable, generation is skipped entirely: an
+  // unsaved identity is worth nothing, and a write over a temporarily
+  // unreadable store could destroy the real one.
+  if (!identityError) {
+    try {
+      await ensureIdentity();
+    } catch (err) {
+      const reason = /** @type {any} */ (err)?.message ?? err;
+      // ensureIdentity sets the precise identityError (restore failure vs
+      // generation failure); only fill in a generic message otherwise
+      identityError = identityError || `Identity generation failed: ${reason}`;
+      postMessage({
+        kind: "mesh-status",
+        connected: false,
+        synced: false,
+        peers: 0,
+        error: identityError,
+      });
+    }
+  } else {
     postMessage({
       kind: "mesh-status",
       connected: false,
@@ -441,21 +474,34 @@ export async function createMeshSync({
           throw new Error("stored identity could not be restored");
         }
         identityHash = toHex(restored.getSalt());
+        // Narrate the first restore so the boot checklist shows the
+        // identity came from device state, not fresh generation; later
+        // calls (rebinds) re-restore silently
+        if (!identityNarrated) {
+          identityNarrated = true;
+          postMessage(progress("identity.generate", "restore", "done"));
+        }
         return restored;
       } catch (err) {
-        // Surfaced: why the persisted identity could not be reused
-        console.warn(
-          "Mesh: stored identity could not be restored, regenerating:",
-          /** @type {any} */ (err)?.message ?? err,
+        // The stored identity is sacred (work document #28 finding): a
+        // failed restore never regenerates over it — that would silently
+        // change this device's mesh address and invalidate every grant
+        // held for it. Surface the failure and stop; recovery is explicit
+        // (import a backed-up identity, or factory reset).
+        const reason = /** @type {any} */ (err)?.message ?? String(err);
+        identityError = `Stored mesh identity could not be restored: ${reason}`;
+        postMessage(
+          progress("identity.generate", "restore", "failed", { error: reason }),
         );
-        // A corrupt stored identity is regenerated: it is only an address,
-        // and peers re-grant access to the new hash through the config UI
+        throw new Error(identityError);
       }
     }
+    postMessage(progress("identity.generate", "generate", "running"));
     const identity = await Identity.generate();
     config.identity = bytesToBase64(await identity.getPrivateKey());
     identityHash = toHex(identity.getSalt());
     await saveMeshConfig(storage, config);
+    postMessage(progress("identity.generate", "generate", "done"));
     return identity;
   }
 
@@ -900,6 +946,12 @@ export async function createMeshSync({
     // that connect later never learn this device's Delta-push destination.
     // Announce periodically like the room destination does
     dacarSyncServer.destination?.startAnnouncing?.({ intervalMs: 15_000 });
+    // Narrate the sync endpoint's announce cycles as well (work document
+    // #34): the handoff's delta push depends on this destination being
+    // reachable, so its announce cadence matters for join debugging
+    dacarSyncServer.destination?.addEventListener?.("announced", () => {
+      postMessage(progress("mesh.announce", "sync", "done"));
+    });
     return dacarSyncServer;
   }
 
@@ -1572,6 +1624,7 @@ export async function createMeshSync({
       postStartStatus("identity-error", identityError);
       return;
     }
+    postMessage(progress("mesh.connect", "starting", "running"));
     postStartStatus("starting");
     console.info("Mesh starting: gates passed");
     // A fresh instance connects through a random default entry point, so
@@ -1614,6 +1667,7 @@ export async function createMeshSync({
       room = roomFor();
       // The shared transport serves the provider AND the bootstrap pre-flow
       const reticulum = await ensureReticulum();
+      postMessage(progress("mesh.connect", "transport", "running"));
       postStartStatus("connecting");
       // A connect that never completes (a Safari stall, a half-open
       // interface) must be diagnosable, not silent: race the provider
@@ -1668,6 +1722,9 @@ export async function createMeshSync({
       // No ghost transport may outlive a failed provider start
       await releaseReticulum();
       const reason = /** @type {any} */ (err)?.message ?? err;
+      postMessage(
+        progress("mesh.connect", "transport", "failed", { error: reason }),
+      );
       postMessage({
         kind: "mesh-status",
         connected: false,
@@ -1688,6 +1745,18 @@ export async function createMeshSync({
       connected: true,
       synced: false,
       peers: peerCount,
+    });
+    postMessage(progress("mesh.connect", "transport", "done"));
+    // Discovery is where a quiet relay costs a full announce interval: the
+    // narration makes the wait legible instead of looking hung (work
+    // document #34); the first peer event resolves it
+    let discoveryDone = false;
+    postMessage(progress("mesh.connect", "discovery", "running"));
+    // Every announce the room destination puts on air is narrated (work
+    // document #34): the announce cadence is exactly what offline-first
+    // discovery debugging needs to see
+    provider.room?.dest?.addEventListener?.("announced", () => {
+      postMessage(progress("mesh.announce", "room", "done"));
     });
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
@@ -1723,6 +1792,12 @@ export async function createMeshSync({
       const payload = unwrap(event) ?? {};
       peerCount +=
         (payload.added ?? []).length - (payload.removed ?? []).length;
+      if (peerCount > 0 && !discoveryDone) {
+        discoveryDone = true;
+        postMessage(
+          progress("mesh.connect", "discovery", "done", { peers: peerCount }),
+        );
+      }
       postMessage({
         kind: "mesh-peers",
         added: payload.added ?? [],

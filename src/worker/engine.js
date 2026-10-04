@@ -32,6 +32,7 @@ import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
 import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { createMeshSync } from "./MeshSync.js";
+import { progress } from "./Progress.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
@@ -148,7 +149,10 @@ export async function startEngine(io, options = {}) {
     syncFullState(doc, io);
     mesh
       ?.rebind()
-      .then(() => postMeshConfig())
+      .then(() => {
+        io.postMessage(progress("project.bind", "rebind", "done"));
+        postMeshConfig();
+      })
       .catch((/** @type {any} */ err) =>
         console.error("Mesh rebinding failed:", err),
       );
@@ -160,6 +164,7 @@ export async function startEngine(io, options = {}) {
    * @param {string} storeName
    */
   const bindProjectPersistence = (storeName) => {
+    io.postMessage(progress("persistence.load", "load", "running"));
     persistence = bindDocumentPersistence(doc, storeName);
     whenPersisted(persistence)
       .then(() => {
@@ -171,10 +176,16 @@ export async function startEngine(io, options = {}) {
           meshStorage.set("activeProjectId", projectId).catch(() => {});
           bindProjectPersistence(`noflo-project-${projectId}`);
         } else {
+          io.postMessage(progress("persistence.load", "load", "done"));
           onProjectLoaded();
         }
       })
       .catch((err) => {
+        io.postMessage(
+          progress("persistence.load", "load", "failed", {
+            error: /** @type {any} */ (err)?.message ?? String(err),
+          }),
+        );
         console.error("Document persistence failed:", err);
         syncFullState(doc, io);
       });

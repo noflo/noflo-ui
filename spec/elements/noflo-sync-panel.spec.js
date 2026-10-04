@@ -88,11 +88,12 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setSyncStatus({ connected: true, synced: false, peers: 0 });
     let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const waiting = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
-    assert.match(waiting.textContent ?? "", /waiting for peers/);
+    assert.match(waiting.textContent ?? "", /working locally/);
     assert.ok(
       !waiting.classList.contains("activity") &&
-        !waiting.classList.contains("calm"),
-      "waiting is neutral",
+        !waiting.classList.contains("calm") &&
+        !waiting.classList.contains("attention"),
+      "working locally is the offline-first normal, not an error",
     );
     assert.equal(shadow.querySelectorAll(".chip .seg").length, 1);
     // A peer joined, bits moving: syncing (neutral)
