@@ -13,10 +13,13 @@
  * and the join form accordion open — the live-state sections that used to
  * live in the mesh settings modal.
  *
- * The corner element states: Hidden (mesh unused), Normal (the chip),
- * Expanded (accordions). Phone layouts compact the chip to icons.
+ * The corner element states come from the shared corner base (Hidden,
+ * Normal, Minified, Expanded); this element starts Hidden — the mesh
+ * unused means no corner UI.
  */
+
 import icons from "../../vendor/fontawesome-icons.js";
+import { FlowCornerElement } from "./CornerElement.js";
 
 /**
  * Escapes a value for interpolation into the shadow template.
@@ -94,10 +97,13 @@ function narrationIcon(operation, stage) {
   return "hourglass-half";
 }
 
-export class FlowSyncPanel extends HTMLElement {
+export class FlowSyncPanel extends FlowCornerElement {
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
+    // The mesh unused means no corner UI (work document #28's disclosure
+    // rules): the panel starts Hidden until app.js feeds it mesh state
+    this._visible = false;
+    this.chipTitle = "Mesh sync status";
     /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */
     this._syncStatus = null;
     /** @type {string[]} */
@@ -123,23 +129,6 @@ export class FlowSyncPanel extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render();
-  }
-
-  /**
-   * Shows or hides the whole corner element (Hidden state): the panel only
-   * exists once mesh is configured.
-   *
-   * @param {boolean} visible
-   */
-  setVisible(visible) {
-    this._visible = visible === true;
-    if (this._visible) {
-      this.removeAttribute("hidden");
-    } else {
-      this.setAttribute("hidden", "");
-      this.expanded = false;
-    }
     this.render();
   }
 
@@ -448,14 +437,8 @@ export class FlowSyncPanel extends HTMLElement {
     }
   }
 
-  render() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    if (!this._visible) {
-      shadow.innerHTML = "";
-      return;
-    }
-    shadow.innerHTML = `
-      <style>
+  styles() {
+    return `
         :host {
           position: fixed;
           bottom: 12px;
@@ -469,105 +452,6 @@ export class FlowSyncPanel extends HTMLElement {
           font-family: SourceCodePro, monospace;
           color: var(--node-text, #aaa);
         }
-        .fa {
-          font-family: "Font Awesome 7 Free";
-          font-weight: 900;
-          font-style: normal;
-        }
-        .chip {
-          display: inline-flex;
-          gap: 10px;
-          align-items: center;
-          padding: 6px 10px;
-          background: var(--ui-bg, rgb(20, 27, 35));
-          color: inherit;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: var(--ui-radius, 6px);
-          cursor: pointer;
-          font-size: 12px;
-          user-select: none;
-          backdrop-filter: blur(8px);
-        }
-        .seg {
-          display: inline-flex;
-          gap: 4px;
-          align-items: center;
-          color: var(--node-text, #aaa);
-        }
-        .seg.calm { color: var(--ui-age-calm); }
-        .seg.activity { color: var(--ui-age-activity); }
-        .seg.attention { color: var(--ui-age-attention); }
-        .seg.offline { color: var(--ui-age-offline); }
-        .seg .label { white-space: nowrap; }
-        .throb { animation: throb 1.2s ease-in-out infinite; }
-        @keyframes throb {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.45; }
-        }
-        .panel {
-          width: min(360px, calc(100vw - 24px));
-          background: var(--ui-bg, rgb(20, 27, 35));
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: var(--ui-radius, 6px);
-          padding: 10px 12px;
-          font-size: 12px;
-          backdrop-filter: blur(8px);
-        }
-        .panel-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-weight: bold;
-          margin-bottom: 6px;
-        }
-        details {
-          border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          padding: 4px 0;
-        }
-        summary {
-          cursor: pointer;
-          color: var(--ui-accent, rgb(0, 229, 255));
-          font-weight: bold;
-          padding: 2px 0;
-        }
-        button {
-          background: var(--ui-accent, rgb(0, 229, 255));
-          color: var(--ui-bg, rgb(20, 27, 35));
-          border: none;
-          border-radius: 4px;
-          padding: 3px 8px;
-          font-size: 11px;
-          cursor: pointer;
-        }
-        button.secondary {
-          background: transparent;
-          color: inherit;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-        }
-        button.danger { background: var(--ui-age-attention, #d9534f); color: var(--ui-bg); }
-        input {
-          background: transparent;
-          color: inherit;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: 4px;
-          padding: 3px 6px;
-          font-size: 12px;
-          flex: 1;
-          min-width: 0;
-        }
-        .row { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
-        .list-item {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          padding: 3px 0;
-          font-size: 11px;
-        }
-        .list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-        .hash-text {
-          font-family: SourceCodePro, monospace;
-          word-break: break-all;
-        }
         .badge {
           padding: 1px 6px;
           border-radius: 3px;
@@ -577,40 +461,11 @@ export class FlowSyncPanel extends HTMLElement {
         .badge.refused { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
         .badge.pending { background: color-mix(in srgb, var(--ui-age-activity) 25%, transparent); color: var(--ui-age-activity); }
         .badge.revoked { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
-        .status-line {
-          font-size: 11px;
-          padding: 4px 6px;
-          border-radius: 4px;
-          background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
-        }
-        .status-line.danger { color: var(--ui-age-attention); }
-        .status-line.success { color: var(--ui-age-calm); }
-        .hint {
-          font-size: 10px;
-          color: color-mix(in srgb, currentColor 60%, transparent);
-          margin-top: 3px;
-        }
-        /* Phone and compact layouts: at most one line of icons */
-        @media (max-width: 480px) {
-          .seg .label { display: none; }
-          .panel { width: calc(100vw - 24px); }
-        }
-      </style>
-      ${this.expandedHtml()}
-      <div class="chip" data-action="toggle" role="button" title="Mesh sync status">
-        ${this.chipHtml()}
-      </div>
     `;
-    this.wireEvents();
   }
 
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    const chip = shadow.querySelector("[data-action='toggle']");
-    chip?.addEventListener("click", () => {
-      this.expanded = !this.expanded;
-      this.render();
-    });
     shadow
       .querySelector("[data-action='collapse']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

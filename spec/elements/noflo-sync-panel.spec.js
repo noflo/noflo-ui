@@ -355,4 +355,22 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     assert.match(style, /\.seg \.label \{ display: none; \}/);
     el.remove();
   });
+
+  it("minifies on request: icons and counts only", () => {
+    const el = makeElement();
+    feedConnected(el);
+    assert.equal(el.cornerState, "normal");
+    el.setMinified(true);
+    assert.equal(el.cornerState, "minified");
+    assert.ok(el.hasAttribute("data-minified"));
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(shadow.querySelector(".chip"), "the chip stays");
+    assert.ok(
+      !shadow.querySelector(".panel"),
+      "still collapsed: minified is a chip state, not an expanded one",
+    );
+    el.setMinified(false);
+    assert.equal(el.cornerState, "normal");
+    el.remove();
+  });
 });
