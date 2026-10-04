@@ -1651,31 +1651,47 @@ var Room = class {
 		/** @type {string} */
 		let initiatorIdentityHash = "";
 		if (needsProvenIdentity) initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
+		await this._establishOutgoingLink(remoteHex, detail.identity, initiatorIdentityHash);
+	}
+	/**
+	* Establishes an outgoing peer link to a room peer: the link policy,
+	* signed identify, and application authorization phases all run before
+	* any room traffic. Shared by the announce-driven initiate and the
+	* direct dial (work document #34).
+	*
+	* @param {string} remoteHex Hex of the peer's room destination hash.
+	* @param {InstanceType<typeof Identity>} remoteIdentity The peer's full
+	*   identity, from the announce or from known state.
+	* @param {string} initiatorIdentityHash Hex of this device's truncated
+	*   identity hash, proven to the responder during the identify phase.
+	* @returns {Promise<boolean>} Whether a link was established.
+	*/
+	async _establishOutgoingLink(remoteHex, remoteIdentity, initiatorIdentityHash) {
 		if (this.linkPolicy) {
 			if (!await this.linkPolicy({
 				remoteIdentityHash: initiatorIdentityHash,
 				remoteDestinationHash: remoteHex,
 				initiator: true
 			})) {
-				this.pendingInitiates.delete(remoteHex);
 				this.callbacks.onRefused?.([{
 					destinationHash: remoteHex,
 					identityHash: initiatorIdentityHash,
 					initiator: true,
 					reason: "link-policy"
 				}]);
-				return;
+				return false;
 			}
 		}
 		let link = null;
 		try {
-			link = await (await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns)).createLink();
+			const out = await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns);
+			link = await out.createLink();
 			if (!this.connected) {
 				await link.teardown();
-				return;
+				return false;
 			}
 			this._primeChannel(link);
-			if (needsProvenIdentity) await link.identify(this.identity);
+			if (this.linkPolicy || this.authorizeLink) await link.identify(this.identity);
 			if (this.authorizeLink) {
 				const verdict = await this._authorizeLink(link, {
 					remoteIdentityHash: initiatorIdentityHash,
@@ -1691,16 +1707,39 @@ var Room = class {
 						initiator: true,
 						reason: verdict.timedOut ? "authorization-timeout" : "authorization"
 					}]);
-					return;
+					return false;
 				}
 			}
 			this.linkedDestHexes.add(remoteHex);
-			this._registerPeer(link, detail.destinationHash);
+			this._registerPeer(link, out.destinationHash);
+			return true;
 		} catch {
 			if (link) this._unprimeChannel(link);
+			return false;
 		} finally {
 			this.pendingInitiates.delete(remoteHex);
 		}
+	}
+	/**
+	* Dials a peer's room destination directly from a known identity, without
+	* waiting for announce-driven discovery (work document #34): the bootstrap
+	* handoff carries the host's identity, so the joiner can reach the room
+	* immediately after its rebind. Runs the same policy/identify/
+	* authorization sequence as the announce-driven initiate.
+	*
+	* @param {InstanceType<typeof Identity>} remoteIdentity The peer's full
+	*   identity.
+	* @returns {Promise<boolean>} Whether a link was established (true also
+	*   when an active link to this peer already existed).
+	*/
+	async dial(remoteIdentity) {
+		if (!this.connected || !this.dest) return false;
+		const remoteHex = toHex((await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns)).destinationHash);
+		if (remoteHex === this.myHex) return false;
+		if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status === LinkStatus.ACTIVE) || this.pendingInitiates.has(remoteHex)) return true;
+		this.pendingInitiates.add(remoteHex);
+		const initiatorIdentityHash = toHex(await Identity.truncatedHash(remoteIdentity.publicKey));
+		return await this._establishOutgoingLink(remoteHex, remoteIdentity, initiatorIdentityHash);
 	}
 	/**
 	* Responder path: a peer is opening a Link to us. Accept it. With a link
@@ -2130,9 +2169,12 @@ var Room = class {
 *   glare or policy decision — evidence the room propagates even when no
 *   link forms.
 * @property {(event: {}) => void} announced
-*   Fired when this peer's room destination goes on air: at connect and on
-*   each early-burst re-announce. The periodic re-announce cadence is
-*   delegated to `@reticulum/core` and does not fire this event.
+*   Fired each time this peer's room destination actually broadcasts an
+*   announce — the connect-time, early-burst and periodic cadences alike.
+* @property {(event: { error: string }) => void} announce-failed
+*   Fired when an early-burst announce attempt throws before broadcast,
+*   with the failure reason. Failures of the periodic re-announce cadence
+*   are logged by `@reticulum/core` and only skip that tick.
 * @property {(event: { refusals: Array<{ destinationHash: string | null, identityHash: string | null, initiator: boolean, reason?: string }> }) => void} refused
 *   Fired when a peer link was refused by the link policy or the
 *   authorization phase.
@@ -2211,6 +2253,17 @@ var ReticulumProvider = class extends ObservableV2 {
 		});
 		await this.room.connect();
 		this.emit("status", [{ connected: true }]);
+	}
+	/**
+	* Dials a peer's room destination directly from a known identity (work
+	* document #34): for flows that learned the peer's identity out-of-band,
+	* such as the bootstrap handoff carrying the host's identity key.
+	*
+	* @param {InstanceType<typeof Identity>} remoteIdentity
+	* @returns {Promise<boolean>} Whether a link was established.
+	*/
+	async dialPeer(remoteIdentity) {
+		return await this.room?.dial(remoteIdentity);
 	}
 	/** Stop announcing, tear down all peer Links, and release the destination. */
 	async disconnect() {

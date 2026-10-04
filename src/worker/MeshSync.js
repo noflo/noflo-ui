@@ -322,6 +322,12 @@ export async function createMeshSync({
    * Dacar node refuses may belong to the invited project, whose binding is
    * not the active one until the project is adopted. */
   let joinInFlight = false;
+  /** The host identity to dial directly after the join's rebind (work
+   * document #34): the handoff carries the host's identity key, so the
+   * joiner reaches the room without waiting for announce-driven discovery. */
+  let pendingHostDial = /** @type {{ identity: any, peer: string } | null} */ (
+    null
+  );
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -1475,6 +1481,14 @@ export async function createMeshSync({
           anchorPubkey: nodeConfig.anchor.pubkey,
         })
         .catch(() => {});
+      // The host's identity key is the anchor's: after the granted path's
+      // rebind, dial the host's room destination directly instead of waiting
+      // for announce-driven discovery (work document #34) — the announce
+      // exchange costs a full cycle even when it works
+      pendingHostDial = {
+        identity: await Identity.fromPublicKey(fromHex(nodeConfig.anchor.pubkey)),
+        peer: String(nodeConfig.anchor.hash).slice(0, 8),
+      };
       // Wait for the pushed grant and verify it through a Dacar node built
       // from the delivered anchor — BEFORE any project setup: the device
       // does not adopt the invited project until it demonstrably holds the
@@ -1790,6 +1804,26 @@ export async function createMeshSync({
         }),
       );
     });
+    if (pendingHostDial) {
+      // The join flow left a host identity to dial: reach the room directly
+      // instead of waiting for the host's next periodic announce (work
+      // document #34)
+      const dial = pendingHostDial;
+      pendingHostDial = null;
+      postMessage(
+        progress("mesh.connect.path", "request", "running", { peer: dial.peer }),
+      );
+      provider
+        .dialPeer?.(dial.identity)
+        .then((/** @type {any} */ established) => {
+          postMessage(
+            progress("mesh.connect.path", "request", established ? "done" : "failed", {
+              peer: dial.peer,
+            }),
+          );
+        })
+        .catch(() => {});
+    }
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe
