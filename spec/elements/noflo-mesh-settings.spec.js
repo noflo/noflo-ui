@@ -350,6 +350,28 @@ describe("mesh error display (work document #21)", () => {
     el.remove();
   });
 
+  it("arms and fires the factory-reset confirmation", () => {
+    const el = makeElement();
+    /** @type {boolean} */
+    let resetRequested = false;
+    el.addEventListener("mesh-factory-reset", () => {
+      resetRequested = true;
+    });
+    el.open({ enabled: true, identity: "", interfaces: [], webrtc: {} }, "");
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const button = /** @type {HTMLButtonElement} */ (
+      shadow.querySelector('[data-action="factory-reset"]')
+    );
+    assert.ok(button, "factory reset button rendered");
+    button.click();
+    assert.equal(resetRequested, false, "the first click only arms");
+    assert.equal(button.dataset.armed, "1");
+    assert.match(button.textContent ?? "", /Really erase/);
+    button.click();
+    assert.equal(resetRequested, true, "the second click dispatches");
+    el.remove();
+  });
+
   it("renders live sync status once the engine reports connectivity", () => {
     const el = makeElement();
     el.open(

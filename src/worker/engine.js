@@ -30,6 +30,7 @@ import {
 } from "../graphs/engine-dispatch.js";
 import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
+import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { createMeshSync } from "./MeshSync.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -365,6 +366,43 @@ export async function startEngine(io, options = {}) {
     }
   };
 
+  /**
+   * Factory reset (work document #26): wipes this device's local state —
+   * mesh config and identity, Dacar wallet and node configs, project
+   * stores — and tells the Glass to reload into a fresh boot. Safari
+   * blocks deleteDatabase while connections are open, so every connection
+   * the Engine owns is closed first and each delete is raced against a
+   * timeout.
+   */
+  async function factoryReset() {
+    console.warn("Factory reset: wiping local device state");
+    await mesh?.stop().catch(() => {});
+    if (persistence) {
+      await persistence.destroy().catch(() => {});
+      persistence = null;
+    }
+    meshStorage.close?.();
+    /** @type {string[]} */
+    const knownNames = ["noflo-mesh", "noflo-dacar", "noflo-project"];
+    if (typeof storedProjectId === "string" && storedProjectId) {
+      knownNames.push(`noflo-project-${storedProjectId}`);
+    }
+    if (typeof globalThis.indexedDB !== "undefined") {
+      const databaseNames = await listNofloDatabases(
+        globalThis.indexedDB,
+        knownNames,
+      );
+      await performFactoryReset({
+        indexeddb: globalThis.indexedDB,
+        storages: [meshStorage],
+        databaseNames,
+      });
+    }
+    // Without IndexedDB (tests, non-browser runtimes) there is nothing
+    // persistent to wipe: the reload respins the worker with fresh state
+    io.postMessage({ kind: "factory-reset" });
+  }
+
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
     if (message?.type === "MESH") {
@@ -402,6 +440,8 @@ export async function startEngine(io, options = {}) {
           .catch((/** @type {any} */ err) =>
             console.error("Invite creation failed:", err),
           );
+      } else if (message.command === "factoryReset") {
+        factoryReset();
       } else if (message.command === "importIdentity") {
         mesh
           .handleImportedIdentity(message.payload?.identity)

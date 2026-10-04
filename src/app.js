@@ -206,6 +206,10 @@ function onEngineMessage(data) {
   } else if (data?.kind === "mesh-requests") {
     joinRequests = data.requests ?? [];
     refreshMeshSettings();
+  } else if (data?.kind === "factory-reset") {
+    // The Engine wiped local state: reload into a fresh boot (which
+    // respawns the worker and re-runs leader election)
+    location.reload();
   } else if (data?.kind === "mesh-bootstrap") {
     // Joiner state-machine progress (work document #25 §5.1)
     joinProgress = data;
@@ -641,6 +645,9 @@ async function init() {
   });
   settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
     sendIntent(revokePermissionIntent(e.detail.id));
+  });
+  settingsDialog?.addEventListener("mesh-factory-reset", () => {
+    supervisor?.send({ type: "MESH", command: "factoryReset" });
   });
   settingsDialog?.addEventListener("mesh-create-invite", () => {
     supervisor?.send({ type: "MESH", command: "createInvite" });

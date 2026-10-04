@@ -92,6 +92,8 @@ export function createDefaultWebRTCConfig() {
  * @typedef {Object} AsyncStorage
  * @property {(key: string) => Promise<any>} get
  * @property {(key: string, value: any) => Promise<void>} set
+ * @property {() => void} [close] Releases the underlying connection, when
+ *   the implementation holds one.
  */
 
 /**
@@ -196,6 +198,17 @@ export function createIndexeddbStorage(dbName, storeName) {
     return dbPromise;
   };
   return {
+    /**
+     * Closes the underlying connection and forgets it: the next get/set
+     * reopens. Factory reset closes every wrapper first, because Safari
+     * blocks deleteDatabase while connections are open.
+     */
+    close() {
+      if (!dbPromise) return;
+      const pending = dbPromise;
+      dbPromise = null;
+      pending.then((db) => db.close()).catch(() => {});
+    },
     async get(key) {
       const db = await openDb();
       return new Promise((resolve, reject) => {

@@ -10,7 +10,8 @@
  * `open(config, identityHash, interfaceSchemas, ...)` plus live updates
  * (`setInvite`, `setSyncStatus`, `setJoinProgress`, `setDacarState`) and
  * reports intent through events (`mesh-configure`, `mesh-grant`,
- * `mesh-revoke`, `mesh-close`). The Dacar state — Trust Anchor, per-grant
+ * `mesh-revoke`, `mesh-factory-reset`, `mesh-close`). The Dacar state —
+ * Trust Anchor, per-grant
  * verification status, and the local wallet — comes from the Engine's
  * `mesh-dacar` report, so the UI shows what the Dacar Engine actually
  * verified, not merely what the grants map claims. Interface forms are
@@ -504,6 +505,11 @@ export class FlowMeshSettings extends HTMLElement {
         }
         .status-line.danger { color: var(--ui-danger, #d9534f); }
         .status-line.success { color: var(--ui-success, #5cb85c); }
+        .danger-zone {
+          margin-top: 16px;
+          padding-top: 10px;
+          border-top: 1px solid var(--ui-border, #333);
+        }
         .hint {
           font-size: 11px;
           color: color-mix(in srgb, currentColor 60%, transparent);
@@ -598,6 +604,11 @@ export class FlowMeshSettings extends HTMLElement {
         ${this.grantFormHtml()}
         <h3>This device's grants (wallet)</h3>
         ${this.walletHtml()}
+        <div class="danger-zone">
+          <h3>Factory reset</h3>
+          <div class="hint">Erases this device's mesh identity, configuration, Dacar grants and wallet, and all locally stored projects. The device can then be invited to a project from scratch. Peers are unaffected.</div>
+          <button class="danger" data-action="factory-reset">Factory reset this device</button>
+        </div>
       </div>
     `;
     this.wireEvents(editable);
@@ -859,6 +870,28 @@ export class FlowMeshSettings extends HTMLElement {
         /** @type {HTMLInputElement} */ (
           shadow.querySelector("#new-grant-peer")
         ).value = "";
+      });
+
+    // Factory reset is destructive: a two-step confirmation guards it.
+    // The first click arms the button for a few seconds; the second
+    // dispatches and the Glass reloads into a fresh boot
+    shadow
+      .querySelector('[data-action="factory-reset"]')
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        const button = /** @type {HTMLButtonElement} */ (event.currentTarget);
+        if (button.dataset.armed) {
+          this.dispatchEvent(
+            new CustomEvent("mesh-factory-reset", { bubbles: true }),
+          );
+          return;
+        }
+        button.dataset.armed = "1";
+        button.textContent = "Really erase everything?";
+        setTimeout(() => {
+          if (!button.isConnected) return;
+          delete button.dataset.armed;
+          button.textContent = "Factory reset this device";
+        }, 6_000);
       });
     for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
       shadow.querySelectorAll("[data-join-approve]")

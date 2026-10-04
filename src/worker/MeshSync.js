@@ -1694,6 +1694,9 @@ export async function createMeshSync({
     await stopBootstrapHost();
     await stopDacarSyncServer();
     await releaseReticulum();
+    // Release the wallet's connection so a factory reset's deleteDatabase
+    // is never blocked by it
+    walletStorage.close?.();
     // Clear any peer ghosts the Glass is rendering
     postMessage({ kind: "awareness", states: [] });
   }
