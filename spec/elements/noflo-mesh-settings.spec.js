@@ -386,14 +386,20 @@ describe("mesh error display (work document #21)", () => {
         .textContent ?? "",
       /cannot grant access/,
     );
-    el.setJoinProgress({ stage: "approved", project: { name: "Telemetry" } });
-    const approved = /** @type {HTMLElement} */ (
+    el.setJoinProgress({ stage: "approved" });
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#join-progress"))
+        .textContent ?? "",
+      /receiving the project grant/,
+    );
+    el.setJoinProgress({ stage: "granted", project: { name: "Telemetry" } });
+    const granted = /** @type {HTMLElement} */ (
       shadow.querySelector("#join-progress")
     );
-    assert.match(approved.textContent ?? "", /Telemetry/);
+    assert.match(granted.textContent ?? "", /Telemetry/);
     assert.ok(
-      approved.classList.contains("success"),
-      "approved reads as success",
+      granted.classList.contains("success"),
+      "granted reads as success",
     );
     el.remove();
   });

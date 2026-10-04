@@ -227,11 +227,15 @@ export class FlowMeshSettings extends HTMLElement {
     const progress = this._joinProgress;
     if (!progress?.stage) return "";
     const stage = progress.stage;
-    if (stage === "approved") {
+    if (stage === "granted") {
       const name = progress.project?.name ?? "the project";
       return `<div class="status-line success" id="join-progress">Approved — “${escapeHtml(
         String(name),
       )}” joined. Its content appears here once mesh sync delivers it.</div>`;
+    }
+    if (stage === "approved") {
+      // The wire response arrived; the grant is still on its way
+      return `<div class="status-line" id="join-progress">Approved by the host — receiving the project grant…</div>`;
     }
     if (stage === "declined") {
       return `<div class="status-line danger" id="join-progress">Join declined: ${escapeHtml(
