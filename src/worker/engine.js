@@ -225,14 +225,13 @@ export async function startEngine(io, options = {}) {
       const invitedId = pendingInviteId;
       if (!invitedId) return;
       materializePendingProject(invitedId);
-      whenPersisted(persistence)
-        .then(() => {
-          onProjectLoaded();
-          postMeshConfig();
-        })
-        .catch((/** @type {any} */ err) =>
-          console.error("Join materialization failed:", err),
-        );
+      // The mesh room derives from the adopted project identity, so the
+      // rebind runs NOW: gating it on the persistence sync would leave the
+      // provider on the scratch room forever if the sync stalls (Safari's
+      // IndexedDB can). onProjectLoaded runs again once the store syncs,
+      // which is harmless (migrations and full-state sync are idempotent)
+      onProjectLoaded();
+      postMeshConfig();
     },
     // With a bound project store, wait for the stored project id before
     // binding; a pending bootstrap invite resumes the join instead of

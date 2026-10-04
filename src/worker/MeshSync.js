@@ -305,6 +305,11 @@ export async function createMeshSync({
    */
   function notifyApprovalIfGranted() {
     if (approvalFired || !identityHash || !isGranted(identityHash)) return;
+    // Only an invited device materializes through the approval watcher: a
+    // device's own self-grant (the owner's, or a scratch project's) must
+    // never consume it — otherwise the flag is spent before the invited
+    // project's grant ever arrives, and the materialization never runs
+    if (!config.joinedViaInvite) return;
     approvalFired = true;
     onApproved?.();
   }
@@ -1430,7 +1435,12 @@ export async function createMeshSync({
       let granted = false;
       for (;;) {
         for (const data of pendingPushes.splice(0)) {
-          await tempNode.ingestDeltas(data).catch(() => 0);
+          const applied = await tempNode.ingestDeltas(data).catch(() => 0);
+          if (applied > 0) {
+            // The grant record reconstructs from the pushed deltas — the
+            // drain bypasses ingestPush, so track the applied batch here
+            lastPushedBatch = bytesToBase64(data);
+          }
         }
         if (
           (await tempNode.evaluate(invitedProjectId, "sync", identityHash)) ===
@@ -1915,6 +1925,9 @@ export async function createMeshSync({
       config.enabled = true;
       config.joinedViaInvite = true;
       await saveMeshConfig(storage, config);
+      // A fresh join means a fresh materialization: a previously spent
+      // approval (e.g. a scratch project's self-grant) must not block it
+      approvalFired = false;
       doc.getMap?.("grants")?.clear();
       // NOTE: a device that ran mesh before joining may have self-assigned
       // the Trust Anchor of its own scratch project. That claim is void,
