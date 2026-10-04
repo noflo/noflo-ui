@@ -432,3 +432,5 @@ export class FlowRadialMenu extends HTMLElement {
     return this._isMenuOpen;
   }
 }
+
+customElements.define("noflo-radial-menu", FlowRadialMenu);

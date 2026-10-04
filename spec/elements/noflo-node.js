@@ -2,9 +2,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowNode } from "../../src/elements/noflo-node.js";
-
-customElements.define("noflo-node", FlowNode);
+import "../../src/elements/noflo-node.js";
 
 describe("FlowNode Web Component", async () => {
   it("should render", async () => {

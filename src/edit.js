@@ -1,11 +1,11 @@
 import { Graph, graph } from "noflo";
 import { FlowEditor } from "./elements/noflo-editor.js";
-import { FlowExportedPort } from "./elements/noflo-exported-port.js";
+import "./elements/noflo-exported-port.js";
 import { FileSelector } from "./elements/noflo-file-selector.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
-import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
-import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import "./elements/noflo-radial-menu.js";
+import "./elements/noflo-selection-pills.js";
 import {
   createDebouncedSaver,
   graphFileNameFor,
@@ -17,14 +17,8 @@ import { ComponentSignature } from "./library/schema.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-modal.js";
 
-// Register Web Components
-customElements.define("noflo-editor", FlowEditor);
-customElements.define("noflo-exported-port", FlowExportedPort);
-customElements.define("noflo-iip", FlowIIP);
-customElements.define("noflo-node", FlowNode);
-customElements.define("noflo-radial-menu", FlowRadialMenu);
-customElements.define("noflo-selection-pills", SelectionPills);
-customElements.define("noflo-file-selector", FileSelector);
+// Element modules self-register their custom elements on import (the
+// tag name and its class are defined in the same module).
 
 /**
  * @typedef {import("./library/LibraryManager.js").ComponentDefinition} ComponentDefinition

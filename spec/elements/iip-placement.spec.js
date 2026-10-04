@@ -1,11 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import "./utils/register.js";
-import { FlowEditor } from "../../src/elements/noflo-editor.js";
-import { FlowNode } from "../../src/elements/noflo-node.js";
-
-customElements.define("noflo-editor", FlowEditor);
-customElements.define("noflo-node", FlowNode);
+import "../../src/elements/noflo-editor.js";
+import "../../src/elements/noflo-node.js";
 
 describe("IIP Placement", async () => {
   it("should place IIP to the left of the node when associated with an inport", async () => {

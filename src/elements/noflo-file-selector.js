@@ -269,3 +269,5 @@ export class FileSelector extends HTMLElement {
     }
   }
 }
+
+customElements.define("noflo-file-selector", FileSelector);

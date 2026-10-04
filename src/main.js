@@ -3,12 +3,12 @@
  */
 
 import { FlowEditor } from "./elements/noflo-editor.js";
-import { FlowExportedPort } from "./elements/noflo-exported-port.js";
-import { FlowHeatmap } from "./elements/noflo-heatmap.js";
+import "./elements/noflo-exported-port.js";
+import "./elements/noflo-heatmap.js";
 import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
-import { FlowRadialMenu } from "./elements/noflo-radial-menu.js";
-import { SelectionPills } from "./elements/noflo-selection-pills.js";
+import "./elements/noflo-radial-menu.js";
+import "./elements/noflo-selection-pills.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
@@ -27,14 +27,7 @@ async function init() {
   // Initialize backend
   backend.postMessage({ type: "INIT", payload: {} });
 
-  // Register Web Components
-  customElements.define("noflo-editor", FlowEditor);
-  customElements.define("noflo-heatmap", FlowHeatmap);
-  customElements.define("noflo-node", FlowNode);
-  customElements.define("noflo-iip", FlowIIP);
-  customElements.define("noflo-exported-port", FlowExportedPort);
-  customElements.define("noflo-radial-menu", FlowRadialMenu);
-  customElements.define("noflo-selection-pills", SelectionPills);
+  // Element modules self-register their custom elements on import
 
   // Initial setup
   const app = document.getElementById("app");

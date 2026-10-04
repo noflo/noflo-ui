@@ -2,9 +2,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowEditor } from "../../src/elements/noflo-editor.js";
-
-customElements.define("noflo-editor", FlowEditor);
+import "../../src/elements/noflo-editor.js";
 
 describe("FlowEditor Web Component", async () => {
   it("should render", async () => {

@@ -114,3 +114,5 @@ export class FlowExportedPort extends HTMLElement {
     `;
   }
 }
+
+customElements.define("noflo-exported-port", FlowExportedPort);

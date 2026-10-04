@@ -3,12 +3,12 @@ import { beforeEach, describe, it } from "node:test";
 
 import "../elements/utils/register.js";
 
-import { FlowEditor } from "../../src/elements/noflo-editor.js";
-import { FlowExportedPort } from "../../src/elements/noflo-exported-port.js";
-import { FlowIIP } from "../../src/elements/noflo-iip.js";
-import { FlowNode } from "../../src/elements/noflo-node.js";
-import { FlowRadialMenu } from "../../src/elements/noflo-radial-menu.js";
-import { SelectionPills } from "../../src/elements/noflo-selection-pills.js";
+import "../../src/elements/noflo-editor.js";
+import "../../src/elements/noflo-exported-port.js";
+import "../../src/elements/noflo-iip.js";
+import "../../src/elements/noflo-node.js";
+import "../../src/elements/noflo-radial-menu.js";
+import "../../src/elements/noflo-selection-pills.js";
 import { createIntentMapper } from "../../src/glass/intentMapping.js";
 import {
   makeSubgraphIntent,
@@ -19,13 +19,6 @@ import { renderGraphIntoEditor } from "../../src/glass/renderGraph.js";
 import { LibraryManager } from "../../src/library/LibraryManager.js";
 import { startEngine } from "../../src/worker/engine.js";
 import * as Y from "../../vendor/yjs.js";
-
-customElements.define("noflo-editor", FlowEditor);
-customElements.define("noflo-node", FlowNode);
-customElements.define("noflo-iip", FlowIIP);
-customElements.define("noflo-exported-port", FlowExportedPort);
-customElements.define("noflo-radial-menu", FlowRadialMenu);
-customElements.define("noflo-selection-pills", SelectionPills);
 
 /**
  * Runs the Glass loop against a real engine: a mirror doc fed by engine

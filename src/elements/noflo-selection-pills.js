@@ -145,3 +145,5 @@ export class SelectionPills extends HTMLElement {
     this.updatePills();
   }
 }
+
+customElements.define("noflo-selection-pills", SelectionPills);

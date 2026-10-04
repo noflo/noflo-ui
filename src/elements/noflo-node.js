@@ -507,3 +507,5 @@ export class FlowNode extends HTMLElement {
     }
   }
 }
+
+customElements.define("noflo-node", FlowNode);

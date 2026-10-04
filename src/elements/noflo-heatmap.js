@@ -145,3 +145,5 @@ export class FlowHeatmap extends HTMLElement {
     this.activityMap.set(key, Math.min(currentHeat + INCREMENT, MAX_HEAT));
   }
 }
+
+customElements.define("noflo-heatmap", FlowHeatmap);

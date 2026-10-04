@@ -3,9 +3,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowMeshSettings } from "../../src/elements/noflo-mesh-settings.js";
-
-customElements.define("noflo-mesh-settings", FlowMeshSettings);
+import "../../src/elements/noflo-mesh-settings.js";
 
 // Jedison cannot render in happy-dom; the settings element only mounts a
 // noflo-json-form and listens for its form-change events, so a stub that

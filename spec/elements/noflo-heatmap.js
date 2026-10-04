@@ -3,9 +3,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowHeatmap } from "../../src/elements/noflo-heatmap.js";
-
-customElements.define("noflo-heatmap", FlowHeatmap);
+import "../../src/elements/noflo-heatmap.js";
 
 describe("FlowHeatmap Web Component", () => {
   it("renders a canvas and starts its decay loop on connect", () => {

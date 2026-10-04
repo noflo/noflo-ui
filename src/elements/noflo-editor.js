@@ -2637,3 +2637,5 @@ export class FlowEditor extends HTMLElement {
     return null;
   }
 }
+
+customElements.define("noflo-editor", FlowEditor);

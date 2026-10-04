@@ -114,3 +114,5 @@ export class FlowIIP extends HTMLElement {
     `;
   }
 }
+
+customElements.define("noflo-iip", FlowIIP);

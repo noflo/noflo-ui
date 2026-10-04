@@ -3,11 +3,8 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowEditor } from "../../src/elements/noflo-editor.js";
-import { FlowNode } from "../../src/elements/noflo-node.js";
-
-customElements.define("noflo-editor", FlowEditor);
-customElements.define("noflo-node", FlowNode);
+import "../../src/elements/noflo-editor.js";
+import "../../src/elements/noflo-node.js";
 
 describe("FlowEditor subgraph gating (work document #23)", () => {
   it("treats only subgraph-typed components as openable", () => {
