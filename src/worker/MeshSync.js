@@ -1752,10 +1752,11 @@ export async function createMeshSync({
     // document #34); the first peer event resolves it
     let discoveryDone = false;
     postMessage(progress("mesh.connect", "discovery", "running"));
-    // Narrate the discovery and announce facts as they happen (work
+    // Narrate discovery and announce facts as they happen (work
     // document #34): a matching announce proves room propagation even when
     // a subsequent link does not form, and each announce on air marks the
-    // cadence discovery depends on
+    // cadence discovery depends on. The Room's immediate announce fired
+    // inside the factory, before these listeners — narrate it directly
     provider.on("discovered", (/** @type {any} */ event) => {
       const remoteHex = String(unwrap(event)?.remoteHex ?? "");
       postMessage(
@@ -1767,6 +1768,7 @@ export async function createMeshSync({
     provider.on("announced", () => {
       postMessage(progress("mesh.announce", "room", "done"));
     });
+    postMessage(progress("mesh.announce", "room", "done"));
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe
