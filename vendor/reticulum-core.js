@@ -5974,6 +5974,40 @@ var Destination = class Destination extends EventTarget {
 		return await Destination.create(name, Direction.OUT, type, identity, interfaceLayer);
 	}
 	/**
+	* Creates an OUT destination from a known destination hash (work document
+	* #34) — dialing a peer whose destination hash the application learned
+	* through its own channels (e.g. an `rns://` URL) instead of from a stored
+	* {@link Identity}.
+	*
+	* The peer's public key is required to verify the LRPROOF during link
+	* establishment (it is not carried on the wire, so a link request alone
+	* cannot authenticate the responder), so the identity is hydrated from the
+	* transport's known-destinations cache; when unknown, a path request is
+	* sent and the peer's announce awaited — its announce carries the public
+	* key that proves the peer's identity during the link proof phase.
+	*
+	* @param {string} name
+	* @param {Uint8Array} destinationHash 16-byte destination hash.
+	* @param {import("../core/reticulum.js").Reticulum|null} interfaceLayer - An object that manages destinations and dispatches link requests.
+	* @param {number} [timeoutMs=30000] How long to await the peer's announce
+	*   when the identity is not cached.
+	* @returns {Promise<Destination>}
+	* @throws {TypeError} when `destinationHash` is not a 16-byte Uint8Array.
+	* @throws {Error} when no `interfaceLayer` is bound.
+	* @throws {import("../transport/transport.js").UnknownIdentityError} when
+	*   the peer's identity is unknown and cannot be solicited in time.
+	* @throws {Error} when the recalled identity does not hash to
+	*   `destinationHash` under `name` (wrong app name for that hash?).
+	*/
+	static async recalled(name, destinationHash, interfaceLayer = null, timeoutMs = 3e4) {
+		if (!(destinationHash instanceof Uint8Array) || destinationHash.length !== Identity.TRUNCATED_HASH_LENGTH) throw new TypeError(`destinationHash must be a ${Identity.TRUNCATED_HASH_LENGTH}-byte Uint8Array`);
+		if (!interfaceLayer) throw new Error("Destination not bound to an RNS instance.");
+		const identity = await interfaceLayer.transport.recallOrSolicitIdentity(destinationHash, timeoutMs);
+		const dest = await Destination.OUT(name, DestType.SINGLE, identity, interfaceLayer);
+		if (!bytesEqual(dest.destinationHash, destinationHash)) throw new Error(`recalled identity for ${toHex(destinationHash)} does not hash to it under name "${name}" — wrong name for that destination?`);
+		return dest;
+	}
+	/**
 	* Creates a SINGLE destination.
 	* @param {string} name
 	* @param {Direction} direction

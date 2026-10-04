@@ -16,7 +16,7 @@ var BZip2Stub = class {
 	}
 };
 //#endregion
-//#region ../y-reticulum/src/compression.js
+//#region node_modules/y-reticulum/src/compression.js
 /**
 * @file compression.js
 * @description Shared bzip2 provider for compressing Reticulum Resources.
@@ -48,7 +48,7 @@ function getCompressionProvider() {
 	return initPromise;
 }
 //#endregion
-//#region ../y-reticulum/src/destination.js
+//#region node_modules/y-reticulum/src/destination.js
 /**
 * @file destination.js
 * @description Helpers mapping a Yjs room name to a Reticulum destination.
@@ -108,7 +108,7 @@ async function roomDestinationName(roomName) {
 	return `${DESTINATION_APP_PREFIX}.${hex}`;
 }
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/math.js
+//#region node_modules/lib0/math.js
 /**
 * Common Math expressions.
 *
@@ -131,7 +131,7 @@ const min = (a, b) => a < b ? a : b;
 const max = (a, b) => a > b ? a : b;
 Number.isNaN;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/number.js
+//#region node_modules/lib0/number.js
 /**
 * Utility helpers for working with numbers.
 *
@@ -143,7 +143,7 @@ Number.isInteger;
 Number.isNaN;
 Number.parseInt;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/set.js
+//#region node_modules/lib0/set.js
 /**
 * Utility module to work with sets.
 *
@@ -151,7 +151,7 @@ Number.parseInt;
 */
 const create$2 = () => /* @__PURE__ */ new Set();
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/array.js
+//#region node_modules/lib0/array.js
 /**
 * Transforms something array-like to an actual Array.
 *
@@ -163,7 +163,7 @@ const create$2 = () => /* @__PURE__ */ new Set();
 const from = Array.from;
 Array.isArray;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/string.js
+//#region node_modules/lib0/string.js
 /**
 * Utility module to work with strings.
 *
@@ -206,7 +206,7 @@ if (utf8TextDecoder && utf8TextDecoder.decode(/* @__PURE__ */ new Uint8Array()).
  /* c8 ignore next */
 utf8TextDecoder = null;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/error.js
+//#region node_modules/lib0/error.js
 /**
 * Error helpers.
 *
@@ -219,7 +219,7 @@ utf8TextDecoder = null;
 /* c8 ignore next */
 const create$1 = (s) => new Error(s);
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/encoding.js
+//#region node_modules/lib0/encoding.js
 /**
 * Efficient schema-less binary encoding with support for variable length encoding.
 *
@@ -400,7 +400,7 @@ const writeVarUint8Array = (encoder, uint8Array) => {
 	writeUint8Array(encoder, uint8Array);
 };
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/decoding.js
+//#region node_modules/lib0/decoding.js
 /**
 * Efficient schema-less binary decoding with support for variable length encoding.
 *
@@ -569,7 +569,7 @@ const _readVarStringNative = (decoder) => utf8TextDecoder.decode(readVarUint8Arr
 /* c8 ignore next */
 const readVarString = utf8TextDecoder ? _readVarStringNative : _readVarStringPolyfill;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/time.js
+//#region node_modules/lib0/time.js
 /**
 * Return current unix time.
 *
@@ -577,7 +577,7 @@ const readVarString = utf8TextDecoder ? _readVarStringNative : _readVarStringPol
 */
 const getUnixTime = Date.now;
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/map.js
+//#region node_modules/lib0/map.js
 /**
 * Utility module to work with key-value stores.
 *
@@ -619,7 +619,7 @@ const setIfUndefined = (map, key, createT) => {
 	return set;
 };
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/observable.js
+//#region node_modules/lib0/observable.js
 /**
 * Observable class prototype.
 *
@@ -760,10 +760,10 @@ var Observable = class {
 };
 /* c8 ignore end */
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/trait/equality.js
+//#region node_modules/lib0/trait/equality.js
 const EqualityTraitSymbol = Symbol("Equality");
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/object.js
+//#region node_modules/lib0/object.js
 /**
 * @param {Object<string,any>} obj
 */
@@ -782,7 +782,7 @@ const size = (obj) => keys(obj).length;
 */
 const hasProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 //#endregion
-//#region ../y-reticulum/node_modules/lib0/function.js
+//#region node_modules/lib0/function.js
 /* c8 ignore start */
 /**
 * @param {any} a
@@ -823,7 +823,7 @@ const equalityDeep = (a, b) => {
 	return true;
 };
 //#endregion
-//#region ../y-reticulum/node_modules/y-protocols/awareness.js
+//#region node_modules/y-protocols/awareness.js
 /**
 * @module awareness-protocol
 */
@@ -1141,7 +1141,7 @@ const readSyncMessage = (decoder, encoder, doc, transactionOrigin, errorHandler)
 	return messageType;
 };
 //#endregion
-//#region ../y-reticulum/src/messages.js
+//#region node_modules/y-reticulum/src/messages.js
 /**
 * @file messages.js
 * @description The Yjs sync wire protocol used over a peer Link.
@@ -1205,7 +1205,7 @@ function readMessage(doc, awareness, buf, origin, roomSynced, onSynced) {
 	return sendReply ? toUint8Array(encoder) : null;
 }
 //#endregion
-//#region ../y-reticulum/src/peer-conn.js
+//#region node_modules/y-reticulum/src/peer-conn.js
 /**
 * @file peer-conn.js
 * @description Wrapper around a Reticulum {@link Link} to a single Yjs peer.
@@ -1403,7 +1403,7 @@ var PeerConn = class {
 	}
 };
 //#endregion
-//#region ../y-reticulum/src/room.js
+//#region node_modules/y-reticulum/src/room.js
 /**
 * @file room.js
 * @description The per-room mesh for a {@link ReticulumProvider}.
@@ -1689,28 +1689,29 @@ var Room = class {
 	* @param {InstanceType<typeof Destination>} out The OUT destination
 	*   targeting the peer — from its announce identity, or recalled by hash
 	*   when the peer's identity hash is known from project state.
-	* @param {string} initiatorIdentityHash Hex of this device's truncated
-	*   identity hash, proven to the responder during the identify phase.
+	* @param {string} initiatorIdentityHash Hex of the remote peer's truncated
+	*   identity hash, proven by its announce (initiate path) or the transport's
+	*   identity recall (dial path); feeds the link-policy context.
 	* @returns {Promise<boolean>} Whether a link was established.
 	*/
 	async _establishOutgoingLink(remoteHex, out, initiatorIdentityHash) {
-		if (this.linkPolicy) {
-			if (!await this.linkPolicy({
-				remoteIdentityHash: initiatorIdentityHash,
-				remoteDestinationHash: remoteHex,
-				initiator: true
-			})) {
-				this.callbacks.onRefused?.([{
-					destinationHash: remoteHex,
-					identityHash: initiatorIdentityHash,
-					initiator: true,
-					reason: "link-policy"
-				}]);
-				return false;
-			}
-		}
 		let link = null;
 		try {
+			if (this.linkPolicy) {
+				if (!await this.linkPolicy({
+					remoteIdentityHash: initiatorIdentityHash,
+					remoteDestinationHash: remoteHex,
+					initiator: true
+				})) {
+					this.callbacks.onRefused?.([{
+						destinationHash: remoteHex,
+						identityHash: initiatorIdentityHash,
+						initiator: true,
+						reason: "link-policy"
+					}]);
+					return false;
+				}
+			}
 			link = await out.createLink();
 			if (!this.connected) {
 				await link.teardown();
@@ -1751,21 +1752,25 @@ var Room = class {
 	* without waiting for announce-driven discovery (work document #34): for
 	* peers whose room destination hash the application knows through its own
 	* channels. The peer proves its identity during the identify phase; the
-	* same policy/identify/authorization sequence as the announce-driven
-	* initiate applies.
+	*   same identify/authorization sequence as the announce-driven initiate
+	*   applies. The initiator-side link policy runs once the transport
+	*   recalls (or solicits) the peer's proven identity; when the peer stays
+	*   unknown the link is not attempted, so the responder-side policy
+	*   (evaluated after identify) remains the gate.
 	*
 	* @param {string} remoteHex Hex of the peer's room destination hash.
 	* @param {string} [remoteIdentityHashHex] Hex of the peer's identity
-	*   hash, when the application knows it — the link policy evaluates
-	*   against it before any link is opened.
+	*   hash, when the application knows it — reported in refusal payloads
+	*   and used as the policy context fallback.
 	* @returns {Promise<boolean>} Whether a link was established (true also
-	*   when an active link to this peer already existed).
+	*   when an active link to this peer already existed, or a link attempt
+	*   is in flight).
 	*/
 	async dialHash(remoteHex, remoteIdentityHashHex = "") {
 		if (!this.connected || !this.dest) return false;
 		const remoteHashBytes = fromHex(remoteHex);
 		if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status === LinkStatus.ACTIVE)) return true;
-		if (this.pendingInitiates.has(remoteHex)) return false;
+		if (this.pendingInitiates.has(remoteHex)) return true;
 		this.pendingInitiates.add(remoteHex);
 		try {
 			const remoteIdentity = await this.rns.transport.recallOrSolicitIdentity?.(remoteHashBytes, 1e4).catch(() => null) ?? null;
@@ -1791,11 +1796,12 @@ var Room = class {
 				while (!this.rns.transport.hasPath?.(remoteHashBytes) && Date.now() < pathDeadline) await new Promise((resolve) => setTimeout(resolve, 250));
 				if (!this.rns.transport.hasPath?.(remoteHashBytes)) return false;
 			}
-			const out = remoteIdentity ? await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns) : await Destination.recalled(this.appName, remoteHashBytes, this.rns);
+			const out = remoteIdentity ? await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns) : await Destination.recalled(this.appName, remoteHashBytes, this.rns, 1e4);
 			return await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
 		} catch {
-			this.pendingInitiates.delete(remoteHex);
 			return false;
+		} finally {
+			this.pendingInitiates.delete(remoteHex);
 		}
 	}
 	/**
@@ -1808,12 +1814,13 @@ var Room = class {
 	*/
 	async dial(remoteIdentity) {
 		if (!this.connected || !this.dest) return false;
-		const remoteHex = toHex((await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns)).destinationHash);
+		const out = await Destination.OUT(this.appName, DestType.SINGLE, remoteIdentity, this.rns);
+		const remoteHex = toHex(out.destinationHash);
 		if (remoteHex === this.myHex) return false;
 		if ([...this.peerConns.values()].some((conn) => conn.remoteDestHash && toHex(conn.remoteDestHash) === remoteHex && conn.link.status === LinkStatus.ACTIVE) || this.pendingInitiates.has(remoteHex)) return true;
 		this.pendingInitiates.add(remoteHex);
 		const initiatorIdentityHash = toHex(await Identity.truncatedHash(remoteIdentity.publicKey));
-		return await this._establishOutgoingLink(remoteHex, remoteIdentity, initiatorIdentityHash);
+		return await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
 	}
 	/**
 	* Responder path: a peer is opening a Link to us. Accept it. With a link
@@ -2174,7 +2181,7 @@ var Room = class {
 	}
 };
 //#endregion
-//#region ../y-reticulum/src/provider.js
+//#region node_modules/y-reticulum/src/provider.js
 /**
 * @file provider.js
 * @description Reticulum provider for Yjs.
@@ -2238,10 +2245,11 @@ var Room = class {
 *   Fired when sync state with the peer mesh changes. (Phase 3.)
 * @property {(event: { added: Array<string>, removed: Array<string> }) => void} peers
 *   Fired when peers are discovered or drop off.
-* @property {(event: { remoteHex: string }) => void} discovered
+* @property {(event: { remoteHex: string, publicKeyHex: string }) => void} discovered
 *   Fired when an announce for this room arrives from the mesh, before any
 *   glare or policy decision — evidence the room propagates even when no
-*   link forms.
+*   link forms. The peer's full public key (hex) rides along so apps can
+*   persist a peer cache and dial directly (see `dialPeer`).
 * @property {(event: {}) => void} announced
 *   Fired each time this peer's room destination actually broadcasts an
 *   announce — the connect-time, early-burst and periodic cadences alike.
@@ -2318,7 +2326,10 @@ var ReticulumProvider = class extends ObservableV2 {
 					added,
 					removed
 				}]),
-				onDiscovered: (remoteHex) => this.emit("discovered", [{ remoteHex }]),
+				onDiscovered: (remoteHex, publicKeyHex) => this.emit("discovered", [{
+					remoteHex,
+					publicKeyHex
+				}]),
 				onAnnounced: () => this.emit("announced", [{}]),
 				onAnnounceFailed: (error) => this.emit("announce-failed", [{ error }]),
 				onSynced: (synced) => this.emit("synced", [{ synced }]),
@@ -2339,7 +2350,7 @@ var ReticulumProvider = class extends ObservableV2 {
 	* @returns {Promise<boolean>} Whether a link was established.
 	*/
 	async dialHash(remoteHex, remoteIdentityHashHex = "") {
-		return await this.room?.dialHash(remoteHex, remoteIdentityHashHex);
+		return await this.room?.dialHash(remoteHex, remoteIdentityHashHex) ?? false;
 	}
 	/**
 	* Dials a peer's room destination directly from a known identity (work
@@ -2350,7 +2361,7 @@ var ReticulumProvider = class extends ObservableV2 {
 	* @returns {Promise<boolean>} Whether a link was established.
 	*/
 	async dialPeer(remoteIdentity) {
-		return await this.room?.dial(remoteIdentity);
+		return await this.room?.dial(remoteIdentity) ?? false;
 	}
 	/** Stop announcing, tear down all peer Links, and release the destination. */
 	async disconnect() {

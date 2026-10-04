@@ -20,7 +20,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.0",
     "@noble/curves": "^2.4.0",
-    "@reticulum/core": "^0.9.5",
+    "@reticulum/core": "^0.9.6",
     "@reticulum/dacar": "^1.5.0",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",
@@ -28,7 +28,7 @@
     "noflo-core": "^0.6.1",
     "source-code-pro": "^2.42.0",
     "y-indexeddb": "^9.0.12",
-    "y-reticulum": "^0.2.1",
+    "y-reticulum": "^0.4.0",
     "yjs": "^13.6.31"
   },
   "devDependencies": {
