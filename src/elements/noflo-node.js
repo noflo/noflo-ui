@@ -41,6 +41,8 @@ export class FlowNode extends HTMLElement {
     this._outPorts = [{ type: "regular" }];
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
+    /** @type {string | null} The running process's netpbm preview data URL. */
+    this._previewDataUrl = null;
 
     /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
     this._libraryManager = null;
@@ -235,8 +237,10 @@ export class FlowNode extends HTMLElement {
     if (this._libraryManager) {
       on(this._libraryManager, "component-changed", this._onComponentChanged);
     }
-    const compEl = this.shadowRoot?.querySelector(".node-component");
-    if (compEl) compEl.textContent = this._componentName;
+    for (const compEl of this.shadowRoot?.querySelectorAll(".node-component") ??
+      []) {
+      compEl.textContent = this._componentName;
+    }
 
     this._updatePortsFromLibrary();
     this._updateIconFromLibrary();
@@ -286,6 +290,7 @@ export class FlowNode extends HTMLElement {
         }
         .node-circle {
           flex-shrink: 0;
+          overflow: hidden;
           width: var(--node-size, 80px);
           height: var(--node-size, 80px);
           border-radius: 50%;
@@ -383,28 +388,24 @@ export class FlowNode extends HTMLElement {
           z-index: 10;
         }
         /* The expanded state (work document #5 update #16, per the
-           original design): the node name moves above the circle; inside
-           the circle top to bottom are the icon, the preview area, and the
-           component name. The preview area is a filled disc cut off top
-           and bottom where the icon and component name sit. */
+           original design): the preview is a full circle inside the node
+           circle, cut off top and bottom by the icon and component-name
+           bands overlaying it with the node's own background. */
         .node-depiction {
           display: none;
           position: absolute;
-          top: 50%;
-          left: 5%;
-          right: 5%;
-          height: 52%;
-          transform: translateY(-50%);
-          align-items: center;
-          justify-content: center;
+          inset: 8px;
           border-radius: 50%;
           background: color-mix(in srgb, var(--ui-bg, #111) 88%, #000);
           box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--node-border, #333) 60%, transparent);
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
           color: var(--node-text, #ccc);
           overflow: hidden;
           /* The circle is click-through; the preview is interactive */
           pointer-events: auto;
+          z-index: 1;
         }
         :host([selected]) .node-depiction {
           display: flex;
@@ -415,16 +416,18 @@ export class FlowNode extends HTMLElement {
           object-fit: contain;
           image-rendering: pixelated;
         }
-        /* The icon moves to the circle's top and shrinks when expanded */
+        /* The icon band overlays the preview's top */
         :host([selected]) .node-content {
-          align-items: flex-start;
-          padding-top: 7px;
+          height: 24px;
+          align-items: center;
+          background: var(--node-bg, #ccc);
+          z-index: 2;
         }
         :host([selected]) .node-content i {
-          font-size: calc(var(--node-size, 80px) * 0.18);
+          font-size: calc(var(--node-size, 80px) * 0.15);
         }
         :host([selected]) .node-icon-img {
-          width: calc(var(--node-size, 80px) * 0.22);
+          width: calc(var(--node-size, 80px) * 0.18);
         }
         .node-depiction.openable:hover {
           box-shadow:
@@ -449,6 +452,25 @@ export class FlowNode extends HTMLElement {
           text-align: center;
           padding: 0 4px;
         }
+        /* The component-name band overlays the preview's bottom */
+        .node-component-band {
+          display: none;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          align-items: center;
+          justify-content: center;
+          background: var(--node-bg, #ccc);
+          font-size: 10px;
+          color: var(--node-subtext, #666);
+          z-index: 2;
+          pointer-events: none;
+        }
+        :host([selected]) .node-component-band {
+          display: flex;
+        }
         /* On expansion: the node name moves above the circle, the
            component name sits inside the circle's bottom, and the status
            line stays below */
@@ -459,15 +481,6 @@ export class FlowNode extends HTMLElement {
           transform: translateX(-50%);
           max-width: none;
           white-space: nowrap;
-        }
-        :host([selected]) .node-component {
-          position: absolute;
-          bottom: 30px;
-          left: 0;
-          right: 0;
-          text-align: center;
-          z-index: 3;
-          color: var(--node-subtext, #999);
         }
         :host([selected]) .node-status {
           position: absolute;
@@ -513,6 +526,9 @@ export class FlowNode extends HTMLElement {
         .port-datatype {
           display: none;
           position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
           font-size: 9px;
           color: var(--node-subtext, #666);
           white-space: nowrap;
@@ -584,6 +600,7 @@ export class FlowNode extends HTMLElement {
       <div class="node-circle">
         <div class="node-content"></div>
         <div class="node-depiction">${this.depictionHtml()}</div>
+        <div class="node-component node-component-band"></div>
       </div>
       <div class="node-info">
         <span class="node-name">
@@ -704,7 +721,7 @@ export class FlowNode extends HTMLElement {
     label.dataset.portName = name;
     label.textContent = name;
 
-    label.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
+    label.style.left = `${this.radius + pos.x + (isOutport ? 10 : -10)}px`;
     label.style.top = `${this.radius + pos.y}px`;
     label.style.transform = isOutport
       ? "translateY(-50%)"
@@ -714,7 +731,7 @@ export class FlowNode extends HTMLElement {
     if (this.portsContainer) {
       this.portsContainer.appendChild(port);
       this.portsContainer.appendChild(label);
-      this._appendDatatypeTag(pos, isOutport, dataType);
+      this._appendDatatypeTag(label, dataType);
     }
   }
 
@@ -726,19 +743,18 @@ export class FlowNode extends HTMLElement {
    * @param {boolean} isOutport
    * @param {string | undefined} dataType
    */
-  _appendDatatypeTag(pos, isOutport, dataType) {
+  /**
+   * The datatype tag shown with a port label: under the expanded pill, or
+   * inline at high zoom levels (work document #5 update #16).
+   *
+   * @param {HTMLElement} label The port's label element.
+   * @param {string | undefined} dataType
+   */
+  _appendDatatypeTag(label, dataType) {
     const tag = document.createElement("div");
     tag.className = "port-datatype";
     tag.textContent = dataType || "all";
-    tag.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
-    tag.style.top = `${this.radius + pos.y + (isOutport ? 12 : -12)}px`;
-    tag.style.transform = isOutport
-      ? "translateY(-50%)"
-      : "translate(-100%, -50%)";
-    tag.style.textAlign = isOutport ? "left" : "right";
-    if (this.portsContainer) {
-      this.portsContainer.appendChild(tag);
-    }
+    label.appendChild(tag);
   }
 
   /**
