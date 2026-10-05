@@ -314,7 +314,9 @@ export class FlowNode extends HTMLElement {
           border-radius: 50%;
           border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
           pointer-events: none;
-          z-index: 1;
+          /* The ring stays continuous over the icon and component-name
+             bands (work document #5 update #16) */
+          z-index: 3;
         }
         .node-content {
           position: absolute;
@@ -472,8 +474,11 @@ export class FlowNode extends HTMLElement {
           display: flex;
         }
         /* On expansion: the node name moves above the circle, the
-           component name sits inside the circle's bottom, and the status
-           line stays below */
+           component name moves into the circle's bottom band (the info
+           block's copy hides), and the status line stays below */
+        :host([selected]) .node-info .node-component {
+          display: none;
+        }
         :host([selected]) .node-name {
           position: absolute;
           top: -18px;
@@ -614,6 +619,14 @@ export class FlowNode extends HTMLElement {
     this.portsContainer = this.shadowRoot.getElementById("ports-container");
     // Render ports based on stored config or defaults
     this.renderPorts(this._inPorts, this._outPorts);
+    // Re-apply the imperatively-rendered bits a shadow rebuild wipes: the
+    // icon and the component name (both render() calls — setPreviewImage's
+    // included — must carry them)
+    this._updateIconFromLibrary();
+    for (const compEl of this.shadowRoot?.querySelectorAll(".node-component") ??
+      []) {
+      compEl.textContent = this._componentName;
+    }
   }
 
   /**
@@ -721,7 +734,10 @@ export class FlowNode extends HTMLElement {
     label.dataset.portName = name;
     label.textContent = name;
 
-    label.style.left = `${this.radius + pos.x + (isOutport ? 10 : -10)}px`;
+    // The pill's dot lands exactly on the port element, so the port and
+    // the pill share one dot: the dot's center (padding + radius in) sits
+    // on the port's center
+    label.style.left = `${this.radius + pos.x + (isOutport ? -13 : 13)}px`;
     label.style.top = `${this.radius + pos.y}px`;
     label.style.transform = isOutport
       ? "translateY(-50%)"
@@ -808,6 +824,8 @@ export class FlowNode extends HTMLElement {
     const component = this._libraryManager?.getComponent(
       this._componentName ?? "",
     );
+    // Stubs say it already through the depiction's "Not implemented"
+    if (component?.type === "stub") return "";
     return component?.type ? String(component.type) : "";
   }
 

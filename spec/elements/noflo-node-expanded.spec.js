@@ -45,11 +45,10 @@ describe("FlowNode expanded state (work document #5 update #16)", () => {
       /Not implemented/,
       "stubs carry the placeholder depiction inside the circle",
     );
-    assert.match(
-      /** @type {any} */ (node.shadowRoot.querySelector(".node-status"))
-        .textContent ?? "",
-      /stub/,
-      "the status line names the component type in the info block",
+    assert.equal(
+      node.shadowRoot.querySelector(".node-status")?.textContent,
+      "",
+      "stubs carry no status line: the depiction's hint says it already",
     );
     node.remove();
   });
