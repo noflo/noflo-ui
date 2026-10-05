@@ -211,6 +211,8 @@ export class FlowEditor extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._zoomObserver?.disconnect();
+    this._zoomObserver = null;
     if (this._bodyObserver) {
       this._bodyObserver.disconnect();
     }
@@ -549,6 +551,21 @@ export class FlowEditor extends HTMLElement {
       spaceManager: this.spaceManager,
       getRect: () => this.getBoundingClientRect(),
     });
+
+    // High zoom levels reveal port datatypes (work document #5 update
+    // #16): the camera publishes its zoom through the host's --zoom-scale
+    // style, so observing the attribute keeps the nodes' detailed class in
+    // step without a camera callback
+    this._zoomObserver = new MutationObserver(() => {
+      const zoom = Number(
+        getComputedStyle(this).getPropertyValue("--zoom-scale") || 1,
+      );
+      const detailed = zoom >= 2;
+      for (const node of this.nodeLayer?.children ?? []) {
+        node.classList.toggle("detailed", detailed);
+      }
+    });
+    this._zoomObserver.observe(this, { attributeFilter: ["style"] });
 
     this.edgeManager = new EdgeManager({
       edgesGroup: /** @type {SVGElement} */ (this.edgesGroup),

@@ -1,11 +1,10 @@
 import icons from "../../vendor/fontawesome-icons.js";
-
 /**
  * @typedef {Object} Position
  * @property {number} x
  * @property {number} y
  */
-import { on } from "../events.js";
+import { emit, on } from "../events.js";
 
 /**
  * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
@@ -195,6 +194,42 @@ export class FlowNode extends HTMLElement {
       this.size = parseInt(sizeAttr, 10);
     }
     this.render();
+    // The expanded state's depiction navigation (work document #5 update
+    // #16): delegated on the shadow root so selection-driven re-renders
+    // never orphan the listener. Selection toggles re-render the shadow
+    // between pointerdown and click; a per-element listener would die.
+    if (!this._depictionWired) {
+      this._depictionWired = true;
+      // The depiction swallows its own presses (capture phase, so the stop
+      // happens before the event leaves the shadow): without this, the
+      // editor captures the pointer on node press and the selection-toggle
+      // re-render moves the depiction out from under the click
+      this.shadowRoot?.addEventListener(
+        "pointerdown",
+        (/** @type {Event} */ event) => {
+          const target = /** @type {HTMLElement} */ (event.target);
+          if (target?.closest?.(".node-depiction")) {
+            event.stopPropagation();
+          }
+        },
+        true,
+      );
+      this.shadowRoot?.addEventListener(
+        "click",
+        (/** @type {Event} */ event) => {
+          const target = /** @type {HTMLElement} */ (event.target);
+          if (!target?.closest?.(".node-depiction")) return;
+          const component = this._libraryManager?.getComponent(
+            this._componentName ?? "",
+          );
+          if (component?.type !== "subgraph") return;
+          event.stopPropagation();
+          emit(this, "navigate-down-attempt", {
+            node: this.getAttribute("name") ?? "",
+          });
+        },
+      );
+    }
 
     if (this._libraryManager) {
       on(this._libraryManager, "component-changed", this._onComponentChanged);
@@ -339,8 +374,78 @@ export class FlowNode extends HTMLElement {
         }
 
         :host([selected]) {
-          transform: scale(1.15);
+          transform: scale(1.35);
           z-index: 10;
+        }
+        /* The expanded state (work document #5 update #16): icon top, the
+           navigation depiction in the middle, status text at the bottom */
+        .node-expanded {
+          display: none;
+          position: absolute;
+          top: calc(var(--node-size, 80px) + 6px);
+          left: 50%;
+          transform: translateX(-50%);
+          width: 150px;
+          flex-direction: column;
+          gap: 6px;
+          background: var(--node-bg, #ccc);
+          border: 1px solid var(--node-border, #333);
+          border-radius: 8px;
+          padding: 8px;
+          box-shadow: 0 0 15px var(--node-glow, transparent);
+          z-index: 5;
+        }
+        :host([selected]) .node-expanded {
+          display: flex;
+        }
+        .node-depiction {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 56px;
+          border-radius: 6px;
+          background: color-mix(in srgb, var(--ui-accent, #007bff) 8%, transparent);
+          cursor: pointer;
+          color: var(--node-text, #333);
+        }
+        .depiction-node {
+          fill: var(--ui-accent, #007bff);
+        }
+        .depiction-wire {
+          stroke: var(--node-text, #666);
+          fill: none;
+          stroke-width: 1.5;
+        }
+        .depiction-code {
+          font-family: SourceCodePro, monospace;
+          font-size: 16px;
+          font-weight: bold;
+        }
+        .node-depiction .depiction-hint {
+          font-size: 10px;
+          color: var(--node-subtext, #666);
+        }
+        .node-depiction.openable:hover {
+          background: color-mix(in srgb, var(--ui-accent, #007bff) 20%, transparent);
+        }
+        .node-status {
+          font-size: 10px;
+          color: var(--node-subtext, #666);
+          text-align: center;
+        }
+        .port-datatype {
+          display: none;
+          position: absolute;
+          font-size: 9px;
+          color: var(--node-subtext, #666);
+          white-space: nowrap;
+          pointer-events: none;
+          z-index: 2;
+        }
+        /* High zoom levels show the port datatypes (work document #5
+           update #16): the editor toggles the detailed class */
+        :host(.detailed) .port-datatype {
+          display: block;
         }
         :host([selected]) .node-circle {
           box-shadow: 0 0 15px var(--node-glow), 0 0 30px var(--node-glow);
@@ -400,6 +505,10 @@ export class FlowNode extends HTMLElement {
       </style>
       <div class="node-circle">
         <div class="node-content"></div>
+      </div>
+      <div class="node-expanded">
+        <div class="node-depiction">${this.depictionHtml()}</div>
+        <div class="node-status">${this.statusHtml()}</div>
       </div>
       <div class="node-info">
         <span class="node-name">
@@ -528,8 +637,73 @@ export class FlowNode extends HTMLElement {
     if (this.portsContainer) {
       this.portsContainer.appendChild(port);
       this.portsContainer.appendChild(label);
+      this._appendDatatypeTag(pos, isOutport, dataType);
     }
   }
+
+  /**
+   * The datatype tag shown next to a port at high zoom levels (work
+   * document #5 update #16).
+   *
+   * @param {{ x: number, y: number }} pos
+   * @param {boolean} isOutport
+   * @param {string | undefined} dataType
+   */
+  _appendDatatypeTag(pos, isOutport, dataType) {
+    const tag = document.createElement("div");
+    tag.className = "port-datatype";
+    tag.textContent = dataType || "all";
+    tag.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
+    tag.style.top = `${this.radius + pos.y + (isOutport ? 12 : -12)}px`;
+    tag.style.transform = isOutport
+      ? "translateY(-50%)"
+      : "translate(-100%, -50%)";
+    tag.style.textAlign = isOutport ? "left" : "right";
+    if (this.portsContainer) {
+      this.portsContainer.appendChild(tag);
+    }
+  }
+
+  /**
+   * The navigation depiction of the expanded state (work document #5
+   * update #16): a mini graph depiction for subgraph components, an
+   * abstract code depiction for elementary ones, a placeholder for stubs.
+   * Clicking an openable depiction navigates down.
+   *
+   * @returns {string}
+   */
+  depictionHtml() {
+    const component = this._libraryManager?.getComponent(
+      this._componentName ?? "",
+    );
+    const name = this.getAttribute("name") ?? "";
+    if (component?.type === "subgraph") {
+      return `<svg class="openable" width="56" height="40" viewBox="0 0 56 40" aria-label="Open subgraph"><circle cx="12" cy="12" r="6" class="depiction-node"/><circle cx="44" cy="12" r="6" class="depiction-node"/><circle cx="28" cy="30" r="6" class="depiction-node"/><path d="M17 14 L39 14 M17 16 L24 27 M39 16 L32 27" class="depiction-wire"/></svg>`;
+    }
+    if (component && component.type !== "stub") {
+      return `<span class="depiction-code">&lt;/&gt;</span>`;
+    }
+    return `<span class="depiction-hint">Not implemented</span>`;
+  }
+
+  /**
+   * The status line of the expanded state: the component's type until the
+   * runtime status vocabulary (WD #15) feeds it.
+   *
+   * @returns {string}
+   */
+  statusHtml() {
+    const component = this._libraryManager?.getComponent(
+      this._componentName ?? "",
+    );
+    return component?.type ? String(component.type) : "";
+  }
+
+  /**
+   * Handles clicks on the expanded state's depiction: navigation down into
+   * subgraph components.
+   */
+  _wireDepiction() {}
 }
 
 customElements.define("noflo-node", FlowNode);
