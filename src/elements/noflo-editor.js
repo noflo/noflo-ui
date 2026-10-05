@@ -456,6 +456,48 @@ export class FlowEditor extends HTMLElement {
           animation: ghost-appear 0.2s ease-out, ghost-pulse 2s infinite ease-in-out;
           box-shadow: 0 0 5px var(--ui-accent);
         }
+        /* Appearing things animate in with springs; a shimmer marks new
+           things (possibly remote additions) for a while (work document #5
+           update #16). Disable via prefers-reduced-motion or the
+           data-animations="off" setting hook. */
+        @keyframes node-spring-in {
+          0% {
+            transform: scale(0);
+            opacity: 0;
+          }
+          60% {
+            transform: scale(1.15);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        @keyframes node-shimmer {
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 var(--ui-accent, rgb(0, 229, 255));
+          }
+          50% {
+            box-shadow: 0 0 18px 4px var(--ui-accent, rgb(0, 229, 255));
+          }
+        }
+        noflo-node.node-appear {
+          animation: node-spring-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        noflo-node.node-shimmer .node-circle {
+          animation: node-shimmer 1.2s ease-in-out 3;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          noflo-node.node-appear,
+          noflo-node.node-shimmer .node-circle {
+            animation: none;
+          }
+        }
+        :host([data-animations="off"]) noflo-node.node-appear,
+        :host([data-animations="off"]) noflo-node.node-shimmer .node-circle {
+          animation: none;
+        }
         .edge-flow {
           fill: none;
           stroke: var(--flow-color, var(--edge-color));
@@ -2181,6 +2223,30 @@ export class FlowEditor extends HTMLElement {
    */
   addEdge(portA, portB, routeId) {
     return this.edgeManager?.addEdge(portA, portB, routeId);
+  }
+
+  /**
+   * Animates freshly appeared nodes (work document #5 update #16): nodes
+   * that were not on the canvas during the previous render — locally
+   * created or arrived over mesh sync — spring in from a zero-size circle
+   * and shimmer for a while. The app tracks newness across renders (the
+   * editor element is rebuilt per render); this only applies the classes.
+   *
+   * @param {string[]} nodeIds
+   */
+  animateNewNodes(nodeIds) {
+    for (const id of nodeIds) {
+      const node = this.nodeLayer?.querySelector(`[name="${id}"]`);
+      if (!node) continue;
+      node.classList.add("node-appear", "node-shimmer");
+      node.addEventListener(
+        "animationend",
+        () => {
+          node.classList.remove("node-shimmer");
+        },
+        { once: true },
+      );
+    }
   }
 
   /**

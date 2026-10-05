@@ -127,6 +127,9 @@ let editor = null;
 let componentModal = null;
 /** @type {FlowComponentPicker | null} */
 let componentPicker = null;
+/** Node ids seen per graph, so freshly appeared nodes (local or synced)
+ * spring in and shimmer exactly once (work document #5 update #16). */
+const seenNodes = new Map();
 /** @type {any} */
 let componentForm = null;
 /** @type {LibraryManager | null} */
@@ -571,6 +574,20 @@ async function render() {
   );
   // Groups render behind the nodes (work document #5 update #16)
   ed.setGroups(view.groups ?? []);
+  // Freshly appeared nodes spring in and shimmer (work document #5
+  // update #16): the diff against what this graph showed before. The
+  // first sight of a graph seeds silently — a boot or a graph switch is
+  // not a set of new nodes.
+  const currentNodes = Object.keys(view.processes);
+  let seen = seenNodes.get(activeGraphId);
+  const firstSight = !seen;
+  if (!seen) {
+    seen = new Set();
+    seenNodes.set(activeGraphId, seen);
+  }
+  const fresh = firstSight ? [] : currentNodes.filter((id) => !seen.has(id));
+  for (const id of currentNodes) seen.add(id);
+  if (fresh.length > 0) ed.animateNewNodes(fresh);
   applyPendingState();
   ed.fitEntitiesToViewport();
 }

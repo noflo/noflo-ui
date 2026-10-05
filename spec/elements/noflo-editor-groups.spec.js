@@ -62,3 +62,27 @@ describe("FlowEditor groups (work document #5 update #16)", () => {
     ed.remove();
   });
 });
+
+describe("FlowEditor appearing-node animations (work document #5 update #16)", () => {
+  it("marks fresh nodes with the spring and shimmer classes", () => {
+    const ed = document.createElement("noflo-editor");
+    document.body.appendChild(ed);
+    ed.addNode("A", "c/X", { x: 100, y: 100 });
+    ed.addNode("B", "c/X", { x: 200, y: 100 });
+
+    ed.animateNewNodes(["A"]);
+    const shadow = /** @type {ShadowRoot} */ (ed.shadowRoot);
+    const nodeA = /** @type {any} */ (shadow.querySelector("[name='A']"));
+    const nodeB = /** @type {any} */ (shadow.querySelector("[name='B']"));
+    assert.ok(
+      nodeA.classList.contains("node-appear") &&
+        nodeA.classList.contains("node-shimmer"),
+      "the fresh node springs and shimmers",
+    );
+    assert.ok(
+      !nodeB.classList.contains("node-appear"),
+      "already-seen nodes stay still",
+    );
+    ed.remove();
+  });
+});
