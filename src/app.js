@@ -19,11 +19,18 @@ import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
+import {
+  CREATE_NEW_COMPONENT,
+  FlowComponentPicker,
+} from "./elements/noflo-component-picker.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import "./elements/noflo-selection-pills.js";
 import { on } from "./events.js";
-import { createIntentMapper } from "./glass/intentMapping.js";
+import {
+  compatibleComponents,
+  createIntentMapper,
+} from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
 import { progressPhrase } from "./glass/progressPhrases.js";
 import {
@@ -118,6 +125,8 @@ let contextChip = null;
 let editor = null;
 /** @type {NofloModal | null} */
 let componentModal = null;
+/** @type {FlowComponentPicker | null} */
+let componentPicker = null;
 /** @type {any} */
 let componentForm = null;
 /** @type {LibraryManager | null} */
@@ -448,56 +457,32 @@ async function openSignatureEditor(componentName) {
   if (!action) return;
   const newData = componentForm.data;
   const newName = String(newData.name || componentName);
+  const renamed = newName !== componentName;
 
   // Renaming through the editor forks: the fork takes over where the
-  // original was used, and the action applies to the fork
+  // original was used, and the action applies to the fork. An explicit
+  // Fork with an unchanged name forks to a `-fork` variant. The fork
+  // copies the original's signature, so the editor's edits are applied to
+  // the fork; a plain Save on an unrenamed original edits it directly.
   let target = componentName;
-  if (newName !== componentName) {
+  const wantsSignatureWrite =
+    action === "save" ||
+    action === "fork" ||
+    action === "implement-graph" ||
+    action === "implement-code";
+  if (renamed || action === "fork") {
+    const to = renamed ? newName : `${componentName}-fork`;
     sendIntent({
       type: "INTENT",
       command: "forkComponent",
-      payload: { component: componentName, to: newName },
+      payload: { component: componentName, to },
     });
-    target = newName;
+    target = to;
   }
-
-  if (action === "fork") {
-    const to = newName !== componentName ? newName : `${componentName}-fork`;
-    if (to !== componentName) {
-      sendIntent({
-        type: "INTENT",
-        command: "forkComponent",
-        payload: { component: componentName, to },
-      });
-      if (newName === componentName) {
-        sendIntent({
-          type: "INTENT",
-          command: "setSignature",
-          payload: {
-            component: to,
-            signature: {
-              inports: newData.inports,
-              outports: newData.outports,
-              description: newData.description,
-              icon: newData.icon,
-            },
-          },
-        });
-      }
-    }
-    return;
-  }
-
-  if (action === "open") {
-    router?.navigate(componentName);
-    return;
-  }
-
-  // The graph-implemented branch never reaches Save or the implement
-  // actions (they are not offered); guard anyway — the Engine refuses
-  if (mirrorDoc.getMap("graphs").has(target)) return;
-
-  if (action === "implement-graph" || action === "save") {
+  if (
+    wantsSignatureWrite &&
+    (renamed || action === "fork" || action === "save")
+  ) {
     sendIntent({
       type: "INTENT",
       command: "setSignature",
@@ -512,6 +497,16 @@ async function openSignatureEditor(componentName) {
       },
     });
   }
+
+  if (action === "open") {
+    router?.navigate(componentName);
+    return;
+  }
+
+  // The graph-implemented branch never reaches Save or the implement
+  // actions (they are not offered); guard anyway — the Engine refuses
+  if (mirrorDoc.getMap("graphs").has(target)) return;
+
   if (action === "implement-graph") {
     sendIntent({
       type: "INTENT",
@@ -794,6 +789,26 @@ async function init() {
     getLibrary: () => libraryManager,
     onDragging: (nodes) => sendDraggingAwareness(nodes),
     onDragEnd: () => sendDraggingAwareness([]),
+    // Typed-port guiding (work document #29 update #1): the candidate list
+    // narrows to compatible components, ending with the create option
+    pickComponent: async ({ x, y, startPort }) => {
+      if (!startPort) return window.prompt("Enter component name:");
+      if (!componentPicker) {
+        componentPicker = /** @type {FlowComponentPicker} */ (
+          /** @type {any} */ (document.createElement("noflo-component-picker"))
+        );
+        document.getElementById("app")?.appendChild(componentPicker);
+      }
+      const candidates = compatibleComponents(libraryManager, startPort);
+      const choice = await componentPicker.open({ x, y, candidates });
+      if (choice === CREATE_NEW_COMPONENT) {
+        const name = window.prompt(
+          "Enter component name (or leave empty to use 'New Node'):",
+        );
+        return name ? name.trim() : null;
+      }
+      return choice;
+    },
     navigation: {
       // Opening a node only makes sense when its component is a subgraph:
       // navigate to the graph registered under the component's name

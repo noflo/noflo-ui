@@ -16,8 +16,13 @@ import { on } from "../events.js";
  *   Emitted during node drags for peer awareness (throttled by the engine).
  * @property {(nodes: string[]) => void} [onDragEnd]
  *   Emitted when a node drag ends, clearing peer ghost states.
- * @property {() => { getComponent: (name: string) => any } | null} getLibrary
- *   The Glass-side library view, for default port names.
+ * @property {() => { getComponent: (name: string) => any, listComponents: () => string[] } | null} getLibrary
+ *   The Glass-side library view, for default port names and the candidate
+ *   lists of the typed-port guiding.
+ * @property {((options: { x: number, y: number, startPort: HTMLElement | null }) => Promise<string | null>)} [pickComponent]
+ *   Resolves the component for a new node (work document #29's typed-port
+ *   guiding): the shell shows the compatible-component picker. Null
+ *   cancels; absent, the mapper falls back to a window prompt.
  */
 
 /**
@@ -39,6 +44,31 @@ function hostOf(port) {
     return /** @type {HTMLElement | null} */ (root.host);
   }
   return port.closest("noflo-node") || port.closest("noflo-iip");
+}
+
+/**
+ * Narrows the library to the components compatible with a dragged port
+ * (work document #29 update #1): dragging from an outport lists components
+ * with a matching inport, and vice versa. Port types match when either side
+ * is `all` or the types are equal.
+ *
+ * @param {{ getComponent: (name: string) => any, listComponents: () => string[] } | null} library
+ * @param {HTMLElement} startPort The dragged port element.
+ * @returns {string[]}
+ */
+export function compatibleComponents(library, startPort) {
+  if (!library) return [];
+  const draggingOut = startPort.classList.contains("port-out");
+  const portType = startPort.dataset.portType || "all";
+  const wanted = draggingOut ? "inports" : "outports";
+  const compatible = (/** @type {any} */ port) => {
+    const type = port.type || "all";
+    return type === "all" || portType === "all" || type === portType;
+  };
+  return library.listComponents().filter((/** @type {string} */ name) => {
+    const component = library.getComponent(name);
+    return (component?.[wanted] ?? []).some(compatible);
+  });
 }
 
 /**
@@ -72,7 +102,7 @@ function edgeIdFor(src, tgt) {
  * First outport/inport name of a component, used when wiring a brand-new node
  * whose signature comes from the library.
  *
- * @param {{ getComponent: (name: string) => any } | null} library
+ * @param {{ getComponent: (name: string) => any, listComponents: () => string[] } | null} library
  * @param {string} componentName
  * @param {"inports" | "outports"} direction
  * @returns {string}
@@ -96,6 +126,7 @@ export function createIntentMapper({
   navigation,
   onDragging,
   onDragEnd,
+  pickComponent,
 }) {
   /** Intents held back until their target node appears in the replica. */
   const pendingAfterNode = new Map();
@@ -139,9 +170,11 @@ export function createIntentMapper({
       on(ed, "node-creation-attempt", async (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const { x, y, startPort } = event.detail;
-        const componentName = window.prompt(
-          "Enter component name (or leave empty to use 'New Node'):",
-        );
+        const componentName = pickComponent
+          ? await pickComponent({ x, y, startPort })
+          : window.prompt(
+              "Enter component name (or leave empty to use 'New Node'):",
+            );
         if (componentName === null) return;
         const name = componentName.trim() || "New Node";
         const nodeId = `node_${Date.now()}`;

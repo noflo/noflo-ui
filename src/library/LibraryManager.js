@@ -38,6 +38,27 @@ export class LibraryManager extends EventTarget {
   }
 
   /**
+   * Lists every component name in the library, qualified for modules other
+   * than the project's own (work document #29: the candidate list of the
+   * typed-port guiding).
+   *
+   * @returns {string[]}
+   */
+  listComponents() {
+    const names = [];
+    for (const [module, map] of this.modules.entries()) {
+      for (const component of map.keys()) {
+        names.push(
+          module === LibraryManager.PROJECT_MODULE
+            ? component
+            : `${module}/${component}`,
+        );
+      }
+    }
+    return names.sort();
+  }
+
+  /**
    * @param {string} compName
    * @returns {ComponentDefinition | undefined}
    */
