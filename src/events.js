@@ -77,6 +77,9 @@
  * @property {CustomEvent<{ iip: Element }>} iip-send-attempt
  * @property {CustomEvent<{ node: Element }>} edit-component-attempt
  * @property {CustomEvent<{ nodes: string[] }>} create-subgraph-attempt
+ * @property {CustomEvent<{ nodes: string[] }>} create-group-attempt
+ * @property {CustomEvent<{ groupId: string }>} remove-group-attempt
+ * @property {CustomEvent<{ memberships: Array<{ groupId: string, add: string[], remove: string[] }> }>} update-group-attempt
  * @property {CustomEvent<{ nodes: string[] }>} move-nodes-up-attempt
  * @property {CustomEvent<{ node: string }>} unpack-subgraph-attempt
  * @property {CustomEvent<{ edge: string, x: number, y: number }>} edge-menu-open

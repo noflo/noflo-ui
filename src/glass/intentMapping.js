@@ -437,6 +437,29 @@ export function createIntentMapper({
         navigation?.up();
       });
 
+      on(ed, "create-group-attempt", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "createGroup",
+          payload: { graphId: graphId(), nodeIds: e.detail.nodes },
+        });
+      });
+      on(ed, "remove-group-attempt", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "removeGroup",
+          payload: { graphId: graphId(), groupId: e.detail.groupId },
+        });
+      });
+      on(ed, "update-group-attempt", (e) => {
+        for (const membership of e.detail.memberships) {
+          sendIntent({
+            type: "INTENT",
+            command: "updateGroup",
+            payload: { graphId: graphId(), ...membership },
+          });
+        }
+      });
       on(ed, "create-subgraph-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         navigation?.createSubgraph(event.detail?.nodes ?? []);

@@ -569,6 +569,8 @@ async function render() {
   renderGraphIntoEditor(replica, ed, (name) =>
     libraryManager?.getComponent(name),
   );
+  // Groups render behind the nodes (work document #5 update #16)
+  ed.setGroups(view.groups ?? []);
   applyPendingState();
   ed.fitEntitiesToViewport();
 }

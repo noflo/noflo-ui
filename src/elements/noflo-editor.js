@@ -135,6 +135,8 @@ export class FlowEditor extends HTMLElement {
     this.draggingWirePointerId = null;
     /** @type {NoFloRadialMenu | null} */
     this.radialMenu = null;
+    /** @type {Array<{ id: string, name: string, nodes: string[] }>} */
+    this.groups = [];
     /** @type {number | null} */
     /** @type { ReturnType<typeof setTimeout> | null } */
     this.longPressTimer = null;
@@ -339,6 +341,29 @@ export class FlowEditor extends HTMLElement {
           z-index: 2;
           overflow: visible;
         }
+        #groups-layer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          overflow: visible;
+        }
+        .group-region {
+          fill: var(--group-fill, transparent);
+          stroke: var(--group-border, var(--node-border, #666));
+          stroke-width: 2;
+          stroke-dasharray: 8 4;
+          rx: 12;
+          ry: 12;
+          pointer-events: auto;
+          cursor: context-menu;
+        }
+        .group-label {
+          fill: var(--node-subtext, #666);
+          font-family: SourceCodePro, monospace;
+          font-size: 14px;
+          pointer-events: none;
+          user-select: none;
+        }
         #grid-layer {
           z-index: 1;
         }
@@ -473,6 +498,9 @@ export class FlowEditor extends HTMLElement {
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#dot-grid)" />
+          </svg>
+          <svg id="groups-layer">
+            <g id="groups-group" transform="translate(8000, 8000)"></g>
           </svg>
           <svg id="iip-wire-layer">
             <g id="iip-wires-group" transform="translate(8000, 8000)"></g>
@@ -1131,6 +1159,7 @@ export class FlowEditor extends HTMLElement {
           });
           this.updateEdges();
           emit(this, "nodes-moved", { nodes: movedNodes });
+          this.emitGroupMembershipChanges(movedNodes);
         }
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
@@ -1251,6 +1280,12 @@ export class FlowEditor extends HTMLElement {
         );
       })
     );
+    const clickedGroup = /** @type {Element | undefined} */ (
+      path.find((/** @type {EventTarget} */ el) => {
+        const element = /** @type {Element} */ (el);
+        return element.classList?.contains("group-region");
+      })
+    );
 
     const rect = this.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -1260,17 +1295,31 @@ export class FlowEditor extends HTMLElement {
       clickedPort,
       clickedNode,
       clickedEdge,
+      clickedGroup,
     });
   }
 
   /**
    * @param {number} x
    * @param {number} y
-   * @param {{clickedPort?: Element, clickedNode?: Element, clickedEdge?: Element}} context
+   * @param {{clickedPort?: Element, clickedNode?: Element, clickedEdge?: Element, clickedGroup?: Element}} context
    */
   showContextMenu(x, y, context) {
-    const { clickedPort, clickedNode, clickedEdge } = context;
+    const { clickedPort, clickedNode, clickedEdge, clickedGroup } = context;
     const items = [];
+
+    if (clickedGroup) {
+      const groupId = clickedGroup.getAttribute("data-group-id") ?? "";
+      const group = this.groups.find((entry) => entry.id === groupId);
+      items.push({
+        text: "Ungroup",
+        onClick: () => {
+          emit(this, "remove-group-attempt", { groupId });
+        },
+        icon: "object-ungroup",
+      });
+      return this.radialMenu?.open(x, y, items, group?.name || "Group");
+    }
 
     if (clickedPort) {
       const port = /** @type {HTMLElement} */ (clickedPort);
@@ -1436,6 +1485,20 @@ export class FlowEditor extends HTMLElement {
                 emit(this, "create-subgraph-attempt", { nodes: nodeIds });
               },
               icon: "folder-plus",
+            });
+            items.push({
+              text: "Group",
+              onClick: () => {
+                // Grouping works on the selection; a single clicked node
+                // groups itself, drag more nodes into the group later
+                const name = this.getNodeName(
+                  /** @type {GraphEntity} */ (clickedNode),
+                );
+                const selected = [...this.selectionManager.nodes];
+                const nodeIds = selected.includes(name) ? selected : [name];
+                emit(this, "create-group-attempt", { nodes: nodeIds });
+              },
+              icon: "object-group",
             });
           }
           items.push({
@@ -2103,8 +2166,136 @@ export class FlowEditor extends HTMLElement {
     return this.edgeManager?.addEdge(portA, portB, routeId);
   }
 
+  /**
+   * Sets the graph's groups (work document #5 update #16): the projected
+   * view's groups, rendered as bordered regions behind the nodes. Zone
+   * styling follows WD #35; this is the structural rendering.
+   *
+   * @param {Array<{ id: string, name: string, nodes: string[] }>} groups
+   */
+  setGroups(groups) {
+    this.groups = Array.isArray(groups) ? groups : [];
+    this.renderGroups();
+  }
+
+  /**
+   * Computes a group's bounding region in graph coordinates: the member
+   * nodes' bounding box plus the group padding. The padding must exceed
+   * half a node plus half a grid cell (80/2 + 80/2 = 80), or dropping a
+   * node into the adjacent grid cell would fall outside the region.
+   *
+   * @param {{ id: string, name: string, nodes: string[] }} group
+   * @returns {{ x: number, y: number, width: number, height: number } | null}
+   */
+  groupBounds(group) {
+    const size = 80;
+    const padding = 48;
+    const positions = group.nodes
+      .map((id) => this.nodeLayer?.querySelector(`[name="${id}"]`))
+      .filter((/** @type {any} */ node) => node?.position);
+    if (positions.length === 0) return null;
+    const minX = Math.min(
+      ...positions.map((/** @type {any} */ node) => node.position.x),
+    );
+    const minY = Math.min(
+      ...positions.map((/** @type {any} */ node) => node.position.y),
+    );
+    const maxX = Math.max(
+      ...positions.map((/** @type {any} */ node) => node.position.x + size),
+    );
+    const maxY = Math.max(
+      ...positions.map((/** @type {any} */ node) => node.position.y + size),
+    );
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2,
+    };
+  }
+
+  /**
+   * Emits the group-membership changes a drag produced: nodes dropped
+   * inside a group's area join it, dropped outside leave it (work document
+   * #5 update #16).
+   *
+   * @param {Array<{ name: string, position: { x: number, y: number } }>} movedNodes
+   */
+  emitGroupMembershipChanges(movedNodes) {
+    if (this.groups.length === 0 || movedNodes.length === 0) return;
+    const size = 80;
+    /** @type {Array<{ groupId: string, add: string[], remove: string[] }>} */
+    const memberships = [];
+    for (const group of this.groups) {
+      const bounds = this.groupBounds(group);
+      if (!bounds) continue;
+      /** @type {string[]} */
+      const add = [];
+      /** @type {string[]} */
+      const remove = [];
+      for (const moved of movedNodes) {
+        const centerX = moved.position.x + size / 2;
+        const centerY = moved.position.y + size / 2;
+        const inside =
+          centerX >= bounds.x &&
+          centerX <= bounds.x + bounds.width &&
+          centerY >= bounds.y &&
+          centerY <= bounds.y + bounds.height;
+        const isMember = group.nodes.includes(moved.name);
+        if (inside && !isMember) add.push(moved.name);
+        if (!inside && isMember) remove.push(moved.name);
+      }
+      if (add.length > 0 || remove.length > 0) {
+        memberships.push({ groupId: group.id, add, remove });
+      }
+    }
+    if (memberships.length > 0) {
+      emit(this, "update-group-attempt", { memberships });
+    }
+  }
+
+  /**
+   * Renders the group regions: a padded bounding box around each group's
+   * member nodes, labeled with the group's name. Zone styling follows WD
+   * #35; this is the structural rendering.
+   */
+  renderGroups() {
+    const layer = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "#groups-group",
+    );
+    if (!layer) return;
+    layer.innerHTML = "";
+    for (const group of this.groups) {
+      const bounds = this.groupBounds(group);
+      if (!bounds) continue;
+      const x = bounds.x + 8000;
+      const y = bounds.y + 8000;
+      const region = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect",
+      );
+      region.setAttribute("class", "group-region");
+      region.setAttribute("x", String(x));
+      region.setAttribute("y", String(y));
+      region.setAttribute("width", String(bounds.width));
+      region.setAttribute("height", String(bounds.height));
+      region.setAttribute("data-group-id", group.id);
+      layer.appendChild(region);
+      const label = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+      label.setAttribute("class", "group-label");
+      label.setAttribute("x", String(x + 10));
+      label.setAttribute("y", String(y + 20));
+      label.textContent = group.name || "Group";
+      layer.appendChild(label);
+    }
+  }
+
   updateEdges() {
     this.edgeManager?.updateEdges();
+    this.renderGroups();
   }
 
   updateIIPWires() {

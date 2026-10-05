@@ -98,6 +98,20 @@ export function projectGraph(doc, graphId) {
     result[direction] = projected;
   }
 
+  // Groups (work document #5 update #16): the graph's groups projected as
+  // { id, name, nodes } for the editor's region rendering
+  const groups = graph.get("groups");
+  result.groups = groups
+    ? [...groups.entries()].map(([id, group]) => {
+        const plain = toPlain(group);
+        return {
+          id,
+          name: plain.name ?? "",
+          nodes: plain.nodes ?? [],
+        };
+      })
+    : [];
+
   result.properties = toPlain(graph.get("metadata"));
   return result;
 }
