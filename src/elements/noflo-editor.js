@@ -258,6 +258,7 @@ export class FlowEditor extends HTMLElement {
       const name = node.getAttribute("name") ?? "";
       if (nodes.includes(name)) {
         node.setAttribute("selected", "");
+        this.applyPortRouteColors(node);
       } else {
         node.removeAttribute("selected");
       }
@@ -2223,6 +2224,34 @@ export class FlowEditor extends HTMLElement {
    */
   addEdge(portA, portB, routeId) {
     return this.edgeManager?.addEdge(portA, portB, routeId);
+  }
+
+  /**
+   * Colors a selected node's expanded port pills by the route of the wire
+   * connected to each port (work document #5 update #16, per the original
+   * design): the pill carries the route color of the first edge touching
+   * that port.
+   *
+   * @param {Element} node
+   */
+  applyPortRouteColors(node) {
+    const shadow = /** @type {any} */ (node).shadowRoot;
+    if (!shadow) return;
+    for (const port of shadow.querySelectorAll(".port")) {
+      const label = shadow.querySelector(
+        `.port-label[data-port-name="${port.dataset.portName}"]`,
+      );
+      if (!label) continue;
+      const edge = this.edges.find(
+        (/** @type {any} */ candidate) =>
+          candidate.portA === port || candidate.portB === port,
+      );
+      const route = edge?.routeId;
+      label.style.setProperty(
+        "--port-route-color",
+        route !== undefined && route !== null ? `var(--route-${route})` : "",
+      );
+    }
   }
 
   /**

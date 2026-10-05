@@ -5,6 +5,7 @@ import icons from "../../vendor/fontawesome-icons.js";
  * @property {number} y
  */
 import { emit, on } from "../events.js";
+import { netpbmToDataUrl } from "../library/netpbm.js";
 
 /**
  * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
@@ -378,37 +379,46 @@ export class FlowNode extends HTMLElement {
         }
 
         :host([selected]) {
-          transform: scale(1.35);
+          transform: scale(2);
           z-index: 10;
         }
-        /* The expanded state (work document #5 update #16): the icon moves
-           to the circle's top and the navigation depiction renders inside
-           the circle; the status line sits in the info block below */
+        /* The expanded state (work document #5 update #16, per the
+           original design): the node name moves above the circle; inside
+           the circle top to bottom are the icon, the preview area, and the
+           component name. The preview area is a filled disc cut off top
+           and bottom where the icon and component name sit. */
         .node-depiction {
           display: none;
           position: absolute;
-          top: 32px;
-          left: 10px;
-          right: 10px;
-          height: 36px;
+          top: 50%;
+          left: 5%;
+          right: 5%;
+          height: 52%;
+          transform: translateY(-50%);
           align-items: center;
           justify-content: center;
-          border-radius: 10px;
-          /* A filled-color portal carrying the implementation info */
-          background: var(--ui-accent, #007bff);
+          border-radius: 50%;
+          background: color-mix(in srgb, var(--ui-bg, #111) 88%, #000);
+          box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--node-border, #333) 60%, transparent);
           cursor: pointer;
-          color: var(--ui-bg, #fff);
+          color: var(--node-text, #ccc);
           overflow: hidden;
-          /* The circle is click-through; the portal is interactive */
+          /* The circle is click-through; the preview is interactive */
           pointer-events: auto;
         }
         :host([selected]) .node-depiction {
           display: flex;
         }
+        .node-depiction img.depiction-preview {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          image-rendering: pixelated;
+        }
         /* The icon moves to the circle's top and shrinks when expanded */
         :host([selected]) .node-content {
           align-items: flex-start;
-          padding-top: 8px;
+          padding-top: 7px;
         }
         :host([selected]) .node-content i {
           font-size: calc(var(--node-size, 80px) * 0.18);
@@ -417,13 +427,15 @@ export class FlowNode extends HTMLElement {
           width: calc(var(--node-size, 80px) * 0.22);
         }
         .node-depiction.openable:hover {
-          background: color-mix(in srgb, var(--ui-accent, #007bff) 25%, transparent);
+          box-shadow:
+            inset 0 0 0 2px var(--ui-accent, #007bff),
+            0 0 12px color-mix(in srgb, var(--ui-accent, #007bff) 40%, transparent);
         }
         .depiction-node {
-          fill: var(--ui-bg, #fff);
+          fill: var(--node-text, #ccc);
         }
         .depiction-wire {
-          stroke: var(--ui-bg, #fff);
+          stroke: var(--node-text, #ccc);
           fill: none;
           stroke-width: 1.5;
         }
@@ -433,14 +445,70 @@ export class FlowNode extends HTMLElement {
           font-weight: bold;
         }
         .depiction-hint {
-          font-size: 9px;
+          font-size: 8px;
           text-align: center;
           padding: 0 4px;
+        }
+        /* On expansion: the node name moves above the circle, the
+           component name sits inside the circle's bottom, and the status
+           line stays below */
+        :host([selected]) .node-name {
+          position: absolute;
+          top: -18px;
+          left: 50%;
+          transform: translateX(-50%);
+          max-width: none;
+          white-space: nowrap;
+        }
+        :host([selected]) .node-component {
+          position: absolute;
+          bottom: 30px;
+          left: 0;
+          right: 0;
+          text-align: center;
+          z-index: 3;
+          color: var(--node-subtext, #999);
+        }
+        :host([selected]) .node-status {
+          position: absolute;
+          top: 102%;
+          left: 0;
+          right: 0;
+          text-align: center;
         }
         .node-status {
           display: block;
           font-size: 10px;
           color: var(--node-subtext, #666);
+        }
+        /* Expanded port labels become pills with the port dot toward the
+           node, colored by the route of the connected wire */
+        :host([selected]) .port-label {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: var(--port-route-color, var(--ui-accent, #007bff));
+          color: var(--ui-bg, #111);
+          border-radius: 12px;
+          padding: 3px 9px;
+          font-size: 11px;
+          font-weight: bold;
+          white-space: nowrap;
+        }
+        :host([selected]) .port-label::after,
+        :host([selected]) .port-out-label::before {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          border: 2px solid var(--ui-bg, #111);
+          flex-shrink: 0;
+        }
+        :host([selected]) .port-out-label::after {
+          display: none;
+        }
+        :host([selected]) .port-in-label::before {
+          display: none;
         }
         .port-datatype {
           display: none;
@@ -632,7 +700,8 @@ export class FlowNode extends HTMLElement {
     port.style.top = `${this.radius + pos.y - 6}px`;
 
     const label = document.createElement("div");
-    label.className = "port-label";
+    label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}`;
+    label.dataset.portName = name;
     label.textContent = name;
 
     label.style.left = `${this.radius + pos.x + (isOutport ? 14 : -14)}px`;
@@ -673,6 +742,19 @@ export class FlowNode extends HTMLElement {
   }
 
   /**
+   * Sets the running process's preview image (work document #5 update
+   * #16): netpbm bytes (or ASCII text) rendered inside the expanded
+   * node's preview area. Most components never output netpbm; the
+   * depiction renders when no preview is set. Null clears it.
+   *
+   * @param {Uint8Array | string | null} pnm
+   */
+  setPreviewImage(pnm) {
+    this._previewDataUrl = pnm ? netpbmToDataUrl(pnm) : null;
+    this.render();
+  }
+
+  /**
    * The navigation depiction of the expanded state (work document #5
    * update #16): a mini graph depiction for subgraph components, an
    * abstract code depiction for elementary ones, a placeholder for stubs.
@@ -681,6 +763,12 @@ export class FlowNode extends HTMLElement {
    * @returns {string}
    */
   depictionHtml() {
+    // A running process's netpbm output takes the preview area when the
+    // component produces one (work document #15's streaming); most
+    // components never do, and the depictions below are the default
+    if (this._previewDataUrl) {
+      return `<img class="depiction-preview" src="${this._previewDataUrl}" alt="Running process preview">`;
+    }
     const component = this._libraryManager?.getComponent(
       this._componentName ?? "",
     );
