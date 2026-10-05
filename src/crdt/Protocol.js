@@ -215,6 +215,18 @@
  */
 
 /**
+ * Appendix A extension (work document #29): set a component's signature —
+ * the "specify" step of the implementation flow. Graph-implemented
+ * components are refused: their signatures are derived from the graph's
+ * exports.
+ *
+ * @typedef {Object} IntentSetSignatureMessage
+ * @property {'INTENT'} type
+ * @property {'setSignature'} command
+ * @property {{ component: string, signature: { inports?: Array<{ name: string, type?: string, addressable?: boolean }>, outports?: Array<{ name: string, type?: string, addressable?: boolean }>, description?: string, icon?: string } }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -311,6 +323,7 @@
  *   | IntentImplementAsGraphMessage
  *   | IntentImplementInCodeMessage
  *   | IntentForkComponentMessage
+ *   | IntentSetSignatureMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -363,6 +376,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "implementAsGraph" },
   { type: "INTENT", command: "implementInCode" },
   { type: "INTENT", command: "forkComponent" },
+  { type: "INTENT", command: "setSignature" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },

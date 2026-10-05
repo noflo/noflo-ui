@@ -222,3 +222,55 @@ describe("component implementation flow (work document #29)", () => {
     );
   });
 });
+
+describe("signature specification (work document #29)", () => {
+  it("setSignature writes the declared interface and echoes it", () => {
+    const { doc, send } = boot();
+    const result = send({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "sketchy",
+        signature: {
+          inports: [{ name: "in", type: "number" }],
+          outports: [{ name: "out" }],
+          description: "A sketched component",
+        },
+      },
+    });
+    assert.ok(result.accepted);
+    const signature = getComponentSignature(doc, "sketchy")?.toJSON();
+    assert.equal(signature?.inports?.[0]?.name, "in");
+    assert.equal(signature?.inports?.[0]?.type, "number");
+    assert.equal(signature?.description, "A sketched component");
+    assert.equal(result.echoes[0]?.protocol, "system");
+    assert.equal(result.echoes[0]?.command, "signature");
+  });
+
+  it("setSignature refuses invalid ports and graph-implemented components", () => {
+    const { doc, send } = boot();
+    const bad = send({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "sketchy",
+        signature: { inports: [{ type: "number" }] },
+      },
+    });
+    assert.ok(!bad.accepted, "a port without a name is refused");
+    send({
+      type: "INTENT",
+      command: "implementAsGraph",
+      payload: { component: "sketchy", parentGraph: "main" },
+    });
+    const graphed = send({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "sketchy",
+        signature: { inports: [{ name: "in" }] },
+      },
+    });
+    assert.ok(!graphed.accepted, "graph signatures are engine-derived");
+  });
+});

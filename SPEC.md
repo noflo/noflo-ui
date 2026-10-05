@@ -221,6 +221,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'implementAsGraph'; payload: { component: string; parentGraph: string } }
   | { type: 'INTENT'; command: 'implementInCode'; payload: { component: string; language: string; scaffold: string } }
   | { type: 'INTENT'; command: 'forkComponent'; payload: { component: string; to: string } }
+  | { type: 'INTENT'; command: 'setSignature'; payload: { component: string; signature: { inports?: Array<{ name: string }>; outports?: Array<{ name: string }>; description?: string; icon?: string } } }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
   | { type: 'MESH'; command: 'status' }
   | { type: 'MESH'; command: 'join'; payload: { invite: string } }

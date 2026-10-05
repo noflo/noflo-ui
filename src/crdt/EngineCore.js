@@ -143,6 +143,7 @@ export const INTENT_HANDLERS = {
   implementAsGraph: intentImplementAsGraph,
   implementInCode: intentImplementInCode,
   forkComponent: intentForkComponent,
+  setSignature: intentSetSignature,
 };
 
 /**
@@ -1243,6 +1244,61 @@ function intentRevokePermission(doc, payload) {
     protocol: "acl",
     command: "revoke",
     payload: { id: grantId },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Sets a component's signature (work document #29's "specify" step): the
+ * Glass's signature editor writes the declared interface through this
+ * intent. Graph-implemented components are refused: their signatures are
+ * derived from the graph's exports by the subgraph lifecycle.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetSignature(doc, payload) {
+  const { component, signature } = payload ?? {};
+  if (
+    typeof component !== "string" ||
+    component.length === 0 ||
+    !signature ||
+    typeof signature !== "object"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const portsOk = (/** @type {any} */ ports) =>
+    ports === undefined ||
+    (Array.isArray(ports) &&
+      ports.every(
+        (/** @type {any} */ port) =>
+          port && typeof port.name === "string" && port.name.length > 0,
+      ));
+  if (!portsOk(signature.inports) || !portsOk(signature.outports)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (getGraph(doc, component)) {
+    // A graph's signature is derived from its exports, not declared
+    return { accepted: false, echoes: [] };
+  }
+  setComponentSignature(doc, component, {
+    inports: signature.inports ?? [],
+    outports: signature.outports ?? [],
+    description:
+      typeof signature.description === "string"
+        ? signature.description
+        : undefined,
+    icon: typeof signature.icon === "string" ? signature.icon : undefined,
+  });
+  /** @type {import("./Protocol.js").SignatureMessage} */
+  const echo = {
+    protocol: "system",
+    command: "signature",
+    payload: {
+      componentName: component,
+      signature: getComponentSignature(doc, component)?.toJSON() ?? null,
+    },
   };
   return { accepted: true, echoes: [echo] };
 }
