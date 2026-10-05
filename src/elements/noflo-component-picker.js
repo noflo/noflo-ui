@@ -21,6 +21,15 @@ export class FlowComponentPicker extends HTMLElement {
     this._onOutsidePointerDown = () => {
       this._close(null);
     };
+    /** @type {(event: Event) => void} */
+    this._onAnyPointerDown = (event) => {
+      // Pointer events are composed: a press inside the shadow root is
+      // retargeted to the host element at the window level, so containment
+      // on the host covers the picker's own buttons
+      const target = /** @type {Node} */ (event.target);
+      if (target === this || this.contains(target)) return;
+      this._close(null);
+    };
     /** @type {(event: KeyboardEvent) => void} */
     this._onKeyDown = (event) => {
       if (event.key === "Escape") this._close(null);
@@ -36,12 +45,12 @@ export class FlowComponentPicker extends HTMLElement {
   }
 
   _addListeners() {
-    window.addEventListener("pointerdown", this._onOutsidePointerDown, true);
+    window.addEventListener("pointerdown", this._onAnyPointerDown, true);
     window.addEventListener("keydown", this._onKeyDown);
   }
 
   _removeListeners() {
-    window.removeEventListener("pointerdown", this._onOutsidePointerDown, true);
+    window.removeEventListener("pointerdown", this._onAnyPointerDown, true);
     window.removeEventListener("keydown", this._onKeyDown);
   }
 

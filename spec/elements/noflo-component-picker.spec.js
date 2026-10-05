@@ -119,3 +119,56 @@ describe("compatibleComponents (work document #29 update #1)", () => {
     assert.deepEqual(names, ["A", "B", "C"]);
   });
 });
+
+describe("FlowComponentPicker interaction fidelity (work document #29)", () => {
+  /**
+   * A pointerdown whose target retargets to the picker's host element, as
+   * the browser reports it to window-level listeners for presses inside the
+   * shadow root.
+   *
+   * @param {FlowComponentPicker} picker
+   */
+  function pressOn(picker) {
+    const event = new window.Event("pointerdown", {
+      bubbles: true,
+      composed: true,
+    });
+    Object.defineProperty(event, "target", { value: picker });
+    window.dispatchEvent(event);
+  }
+
+  it("an outside pointer press dismisses the picker", async () => {
+    const picker = /** @type {FlowComponentPicker} */ (
+      document.createElement("noflo-component-picker")
+    );
+    document.body.appendChild(picker);
+    const pending = picker.open({ x: 10, y: 10, candidates: ["core/A"] });
+    window.dispatchEvent(
+      new window.Event("pointerdown", { bubbles: true, composed: true }),
+    );
+    assert.equal(await pending, null, "an outside press dismisses");
+    assert.ok(!picker.hasAttribute("open"));
+    picker.remove();
+  });
+
+  it("a real pointer press on a candidate does not dismiss the picker", async () => {
+    const picker = /** @type {FlowComponentPicker} */ (
+      document.createElement("noflo-component-picker")
+    );
+    document.body.appendChild(picker);
+    const pending = picker.open({ x: 10, y: 10, candidates: ["core/A"] });
+    const button = /** @type {HTMLElement} */ (
+      /** @type {ShadowRoot} */ (picker.shadowRoot).querySelector(
+        "[data-component]",
+      )
+    );
+    // The real sequence: pointerdown (fires window capture listeners first),
+    // then pointerup, then click. A press ON the picker is retargeted to the
+    // host at the window level — the containment check must keep it open.
+    pressOn(picker);
+    assert.ok(picker.hasAttribute("open"), "a press on the picker stays open");
+    button.click();
+    assert.equal(await pending, "core/A");
+    picker.remove();
+  });
+});
