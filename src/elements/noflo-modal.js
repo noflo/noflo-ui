@@ -3,6 +3,11 @@
  * NofloModal Web Component
  * A modal using the HTML5 <dialog> element.
  *
+ * Actions are configurable (work document #29): `setActions` replaces the
+ * footer buttons, and `submit()` resolves with the chosen action's value
+ * (or `false` when the dialog is dismissed) — the signature editor uses
+ * this for its big primary actions alongside Save.
+ *
  * @extends HTMLElement
  */
 export class NofloModal extends HTMLElement {
@@ -11,13 +16,37 @@ export class NofloModal extends HTMLElement {
     this.attachShadow({ mode: "open" });
     /** @type {HTMLDialogElement} */
     this._dialog = null;
+    /** @type {Array<{ value: string, label: string, kind?: string }>} */
+    this._actions = [
+      { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+      { value: "save", label: "Save", kind: "btn-primary" },
+    ];
   }
 
   connectedCallback() {
     this.render();
   }
 
+  /**
+   * Replaces the footer actions. Call before `open()`: the footer renders
+   * once per render pass.
+   *
+   * @param {Array<{ value: string, label: string, kind?: string }>} actions
+   */
+  setActions(actions) {
+    this._actions = actions.length > 0 ? actions : this._actions;
+    if (this._dialog) this.render();
+  }
+
   render() {
+    const actions = this._actions
+      .map(
+        (action) =>
+          `<button type="submit" value="${action.value}" class="${
+            action.kind || "btn-primary"
+          }">${action.label}</button>`,
+      )
+      .join("");
     this.shadowRoot.innerHTML = `
       <style>
         dialog {
@@ -79,6 +108,12 @@ export class NofloModal extends HTMLElement {
           border: 1px solid #ccc;
           border-radius: 4px;
         }
+        .btn-action {
+          background: #e8f4e8;
+          border: 1px solid #9ccc9c;
+          border-radius: 4px;
+          font-weight: bold;
+        }
       </style>
       <dialog>
         <form method="dialog">
@@ -91,8 +126,7 @@ export class NofloModal extends HTMLElement {
               <slot></slot>
             </div>
             <div class="modal-footer">
-              <button type="submit" value="cancel" class="btn-secondary">Cancel</button>
-              <button type="submit" value="save" class="btn-primary">Save</button>
+              ${actions}
             </div>
           </div>
         </form>
@@ -116,6 +150,12 @@ export class NofloModal extends HTMLElement {
     }
   }
 
+  /**
+   * Resolves with the clicked action's value, or `false` when the dialog is
+   * dismissed without choosing (Escape, backdrop, close button).
+   *
+   * @returns {Promise<string | false>}
+   */
   async submit() {
     return new Promise((resolve) => {
       if (!this._dialog) {
@@ -125,7 +165,9 @@ export class NofloModal extends HTMLElement {
       this._dialog.addEventListener(
         "close",
         () => {
-          resolve(this._dialog.returnValue === "save");
+          resolve(
+            this._dialog.returnValue === "" ? false : this._dialog.returnValue,
+          );
         },
         { once: true },
       );

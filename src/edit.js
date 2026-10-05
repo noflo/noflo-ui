@@ -958,7 +958,7 @@ function setupEditorEventListeners(editor) {
     form.data = componentData;
 
     const submitted = await modal.submit();
-    if (submitted) {
+    if (submitted === "save") {
       const newData = form.data;
 
       const newComponentName = newData.name || componentName;
@@ -1039,7 +1039,7 @@ async function askForNewComponentDetails(componentName) {
   };
 
   const submitted = await componentModal.submit();
-  if (submitted) {
+  if (submitted === "save") {
     return /** @type {ComponentDefinition} */ (componentForm.data);
   }
   return undefined;

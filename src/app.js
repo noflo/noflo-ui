@@ -15,6 +15,7 @@ import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
 import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
+import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
@@ -46,6 +47,7 @@ import {
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
 import { LibraryManager } from "./library/LibraryManager.js";
+import { ComponentSignature } from "./library/schema.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
 
 // Element modules self-register their custom elements on import (the
@@ -114,6 +116,10 @@ let syncPanel = null;
 let contextChip = null;
 /** @type {FlowEditor | null} */
 let editor = null;
+/** @type {NofloModal | null} */
+let componentModal = null;
+/** @type {any} */
+let componentForm = null;
 /** @type {LibraryManager | null} */
 let libraryManager = null;
 /** @type {ReturnType<typeof createTabCoordinator> | null} */
@@ -371,6 +377,163 @@ function resolveActiveGraph() {
 }
 
 /**
+ * A default code scaffold for the "Implement in code" action (work document
+ * #29). The runtime language matrix is owned by the runtime work; stub mode
+ * scaffolds JavaScript.
+ *
+ * @param {string} componentName
+ * @returns {string}
+ */
+function codeScaffold(componentName) {
+  return `// ${componentName} — implemented in code (work document #29)\n// Replace this scaffold with the component's implementation. The ports\n// follow the declared signature.\nexport default function setup(runtime) {\n  // Register port handlers here.\n}\n`;
+}
+
+/**
+ * The component signature editor (work document #29): the adopted
+ * modal + JSON-form flow from the editor surface, now with the primary
+ * implementation actions. Save writes the declared interface through the
+ * `setSignature` intent; "Implement as graph" and "Implement in code"
+ * leave the Inferred era; renaming through the editor forks so references
+ * follow; graph-implemented components open instead of re-implementing.
+ *
+ * @param {string} componentName
+ * @returns {Promise<void>}
+ */
+async function openSignatureEditor(componentName) {
+  if (!componentModal || !componentForm) return;
+  const entry = mirrorDoc.getMap("registry").get(componentName);
+  const plain = entry?.toJSON() ?? {};
+  const implemented = Boolean(mirrorDoc.getMap("graphs").has(componentName));
+  const ports = (/** @type {any} */ list) =>
+    (list ?? []).map((/** @type {any} */ port) => ({
+      name: port.name,
+      type: port.type ?? "all",
+      addressable: Boolean(port.addressable),
+    }));
+
+  componentModal.setActions(
+    implemented
+      ? [
+          { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+          { value: "fork", label: "Fork", kind: "btn-action" },
+          { value: "open", label: "Open implementation", kind: "btn-primary" },
+        ]
+      : [
+          { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+          { value: "fork", label: "Fork", kind: "btn-action" },
+          {
+            value: "implement-code",
+            label: "Implement in code",
+            kind: "btn-action",
+          },
+          {
+            value: "implement-graph",
+            label: "Implement as graph",
+            kind: "btn-action",
+          },
+          { value: "save", label: "Save", kind: "btn-primary" },
+        ],
+  );
+  componentModal.open(`Component: ${componentName}`);
+  componentForm.schema = ComponentSignature;
+  componentForm.data = {
+    name: componentName,
+    icon: plain.icon || "gear",
+    description: plain.description || "",
+    inports: ports(plain.inports),
+    outports: ports(plain.outports),
+  };
+
+  const action = await componentModal.submit();
+  if (!action) return;
+  const newData = componentForm.data;
+  const newName = String(newData.name || componentName);
+
+  // Renaming through the editor forks: the fork takes over where the
+  // original was used, and the action applies to the fork
+  let target = componentName;
+  if (newName !== componentName) {
+    sendIntent({
+      type: "INTENT",
+      command: "forkComponent",
+      payload: { component: componentName, to: newName },
+    });
+    target = newName;
+  }
+
+  if (action === "fork") {
+    const to = newName !== componentName ? newName : `${componentName}-fork`;
+    if (to !== componentName) {
+      sendIntent({
+        type: "INTENT",
+        command: "forkComponent",
+        payload: { component: componentName, to },
+      });
+      if (newName === componentName) {
+        sendIntent({
+          type: "INTENT",
+          command: "setSignature",
+          payload: {
+            component: to,
+            signature: {
+              inports: newData.inports,
+              outports: newData.outports,
+              description: newData.description,
+              icon: newData.icon,
+            },
+          },
+        });
+      }
+    }
+    return;
+  }
+
+  if (action === "open") {
+    router?.navigate(componentName);
+    return;
+  }
+
+  // The graph-implemented branch never reaches Save or the implement
+  // actions (they are not offered); guard anyway — the Engine refuses
+  if (mirrorDoc.getMap("graphs").has(target)) return;
+
+  if (action === "implement-graph" || action === "save") {
+    sendIntent({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: target,
+        signature: {
+          inports: newData.inports,
+          outports: newData.outports,
+          description: newData.description,
+          icon: newData.icon,
+        },
+      },
+    });
+  }
+  if (action === "implement-graph") {
+    sendIntent({
+      type: "INTENT",
+      command: "implementAsGraph",
+      payload: { component: target, parentGraph: activeGraphId },
+    });
+    router?.navigate(target);
+  }
+  if (action === "implement-code") {
+    sendIntent({
+      type: "INTENT",
+      command: "implementInCode",
+      payload: {
+        component: target,
+        language: "javascript",
+        scaffold: codeScaffold(target),
+      },
+    });
+  }
+}
+
+/**
  * Re-renders the editor from the replica document.
  */
 async function render() {
@@ -393,6 +556,21 @@ async function render() {
   ed.unpackEnabled = true;
   editor = ed;
   intentMapper?.wire(ed);
+  // The component signature editor (work document #29): the shell hosts the
+  // modal; nodes open it through the editor's edit-component-attempt event
+  if (!componentModal) {
+    componentModal = /** @type {NofloModal} */ (
+      /** @type {any} */ (document.createElement("noflo-modal"))
+    );
+    componentForm = document.createElement("noflo-json-form");
+    componentModal.appendChild(componentForm);
+    app.appendChild(componentModal);
+  }
+  on(ed, "edit-component-attempt", (e) => {
+    const node = e.detail.node;
+    const componentName = node?.getAttribute?.("component");
+    if (componentName) openSignatureEditor(componentName);
+  });
   renderGraphIntoEditor(replica, ed, (name) =>
     libraryManager?.getComponent(name),
   );
