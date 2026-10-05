@@ -542,15 +542,19 @@ export class FlowNode extends HTMLElement {
           pointer-events: none;
           z-index: 2;
         }
-        /* Datatypes align away from the circle: left-aligned under the
-           inport pill, right-aligned under the outport pill, so they sit
-           outside the circle and stay readable (work document #5 update
-           #16) */
+        /* Datatypes align with the port name, away from the circle
+           (work document #5 update #16): under the inport pill the name
+           starts at the pill's padding; under the outport pill it starts
+           past the dot (padding 9 + dot 12 + gap 5) */
         .port-in-label .port-datatype {
+          left: 9px;
+          right: auto;
           text-align: left;
         }
         .port-out-label .port-datatype {
-          text-align: right;
+          left: 26px;
+          right: auto;
+          text-align: left;
         }
         /* Port datatypes show at high zoom levels (the editor toggles the
            detailed class) and whenever the node is expanded */
