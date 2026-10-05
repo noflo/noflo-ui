@@ -284,6 +284,7 @@ export class FlowNode extends HTMLElement {
           --node-size: 80px;
         }
         .node-circle {
+          flex-shrink: 0;
           width: var(--node-size, 80px);
           height: var(--node-size, 80px);
           border-radius: 50%;
@@ -386,48 +387,53 @@ export class FlowNode extends HTMLElement {
         .node-depiction {
           display: none;
           position: absolute;
-          top: 30px;
-          left: 8px;
-          right: 8px;
-          bottom: 8px;
+          top: 32px;
+          left: 10px;
+          right: 10px;
+          height: 36px;
           align-items: center;
           justify-content: center;
-          border-radius: 6px;
-          background: color-mix(in srgb, var(--ui-accent, #007bff) 10%, transparent);
+          border-radius: 10px;
+          /* A filled-color portal carrying the implementation info */
+          background: var(--ui-accent, #007bff);
           cursor: pointer;
-          color: var(--node-text, #333);
+          color: var(--ui-bg, #fff);
           overflow: hidden;
-          /* The circle is click-through; the depiction is interactive */
+          /* The circle is click-through; the portal is interactive */
           pointer-events: auto;
         }
         :host([selected]) .node-depiction {
           display: flex;
         }
-        /* The icon moves to the circle's top when expanded */
+        /* The icon moves to the circle's top and shrinks when expanded */
         :host([selected]) .node-content {
           align-items: flex-start;
-          padding-top: 10px;
+          padding-top: 8px;
+        }
+        :host([selected]) .node-content i {
           font-size: calc(var(--node-size, 80px) * 0.18);
+        }
+        :host([selected]) .node-icon-img {
+          width: calc(var(--node-size, 80px) * 0.22);
         }
         .node-depiction.openable:hover {
           background: color-mix(in srgb, var(--ui-accent, #007bff) 25%, transparent);
         }
         .depiction-node {
-          fill: var(--ui-accent, #007bff);
+          fill: var(--ui-bg, #fff);
         }
         .depiction-wire {
-          stroke: var(--node-text, #666);
+          stroke: var(--ui-bg, #fff);
           fill: none;
           stroke-width: 1.5;
         }
         .depiction-code {
           font-family: SourceCodePro, monospace;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: bold;
         }
         .depiction-hint {
           font-size: 9px;
-          color: var(--node-subtext, #666);
           text-align: center;
           padding: 0 4px;
         }
@@ -445,9 +451,10 @@ export class FlowNode extends HTMLElement {
           pointer-events: none;
           z-index: 2;
         }
-        /* High zoom levels show the port datatypes (work document #5
-           update #16): the editor toggles the detailed class */
-        :host(.detailed) .port-datatype {
+        /* Port datatypes show at high zoom levels (the editor toggles the
+           detailed class) and whenever the node is expanded */
+        :host(.detailed) .port-datatype,
+        :host([selected]) .port-datatype {
           display: block;
         }
         :host([selected]) .node-circle {
