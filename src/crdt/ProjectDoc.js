@@ -1056,3 +1056,135 @@ export function adoptProjectIdentity(doc, projectId) {
   doc.getMap(METADATA_MAP).set("id", projectId);
   return true;
 }
+
+// ---- groups (work document #29-adjacent graph structure; rendering as
+// tariff zones is WD #35's) --------------------------------------------------
+
+/**
+ * Root map name for a graph's groups.
+ *
+ * @param {Y.Map<any>} graph
+ * @returns {Y.Map<any>}
+ */
+function groupsOf(graph) {
+  let groups = /** @type {Y.Map<any> | undefined} */ (graph.get("groups"));
+  if (!groups) {
+    groups = new Y.Map();
+    graph.set("groups", groups);
+  }
+  return /** @type {Y.Map<any>} */ (groups);
+}
+
+/**
+ * Creates a group over a set of the graph's nodes.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @param {string} name
+ * @param {string[]} nodeIds
+ * @returns {boolean} False when the id is taken or a member is unknown.
+ */
+export function createGroup(graph, groupId, name, nodeIds) {
+  const groups = groupsOf(graph);
+  if (groups.has(groupId)) return false;
+  const nodes = nodesOf(graph);
+  if (!nodeIds.every((/** @type {string} */ id) => nodes.has(id))) {
+    return false;
+  }
+  const group = new Y.Map();
+  group.set("name", name);
+  const members = new Y.Array();
+  members.push(nodeIds);
+  group.set("nodes", members);
+  groups.set(groupId, group);
+  return true;
+}
+
+/**
+ * Returns a group entry, or undefined.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getGroup(graph, groupId) {
+  return /** @type {Y.Map<any> | undefined} */ (groupsOf(graph).get(groupId));
+}
+
+/**
+ * Removes a group; its members stay in the graph.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @returns {boolean} Whether the group existed.
+ */
+export function removeGroup(graph, groupId) {
+  const groups = groupsOf(graph);
+  if (!groups.has(groupId)) return false;
+  groups.delete(groupId);
+  return true;
+}
+
+/**
+ * Adds nodes to a group's membership.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @param {string[]} nodeIds
+ * @returns {boolean} False when the group or a node is unknown.
+ */
+export function addGroupNodes(graph, groupId, nodeIds) {
+  const group = getGroup(graph, groupId);
+  if (!group) return false;
+  const nodes = nodesOf(graph);
+  if (!nodeIds.every((/** @type {string} */ id) => nodes.has(id))) {
+    return false;
+  }
+  const members = /** @type {Y.Array<string>} */ (group.get("nodes"));
+  transact(group, () => {
+    const existing = members.toArray();
+    for (const id of nodeIds) {
+      if (!existing.includes(id)) members.push([id]);
+    }
+  });
+  return true;
+}
+
+/**
+ * Removes nodes from a group's membership.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @param {string[]} nodeIds
+ * @returns {boolean} Whether the group existed.
+ */
+export function removeGroupNodes(graph, groupId, nodeIds) {
+  const group = getGroup(graph, groupId);
+  if (!group) return false;
+  const members = /** @type {Y.Array<string>} */ (group.get("nodes"));
+  transact(group, () => {
+    for (const id of nodeIds) {
+      const index = members.toArray().indexOf(id);
+      if (index !== -1) members.delete(index, 1);
+    }
+  });
+  return true;
+}
+
+/**
+ * Drops a node from every group of the graph (node removal cleanup).
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} nodeId
+ */
+export function removeNodeFromGroups(graph, nodeId) {
+  const groups = /** @type {Y.Map<any> | undefined} */ (graph.get("groups"));
+  if (!groups) return;
+  for (const group of groups.values()) {
+    const members = /** @type {Y.Array<string>} */ (group.get("nodes"));
+    const index = members.toArray().indexOf(nodeId);
+    if (index !== -1) {
+      transact(group, () => members.delete(index, 1));
+    }
+  }
+}

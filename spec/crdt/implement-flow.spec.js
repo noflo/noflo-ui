@@ -274,3 +274,119 @@ describe("signature specification (work document #29)", () => {
     assert.ok(!graphed.accepted, "graph signatures are engine-derived");
   });
 });
+
+describe("graph groups (work document #5 update #16)", () => {
+  /**
+   * A project with two nodes on main.
+   */
+  function groupBoot() {
+    const doc = new Y.Doc();
+    const state = createEngineState();
+    const send = (message) => handleMessage(doc, state, message);
+    send({
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "main" },
+    });
+    for (const id of ["n1", "n2"]) {
+      send({
+        type: "INTENT",
+        command: "addNode",
+        payload: {
+          graphId: "main",
+          nodeId: id,
+          componentName: "sketchy",
+          metadata: { x: 10, y: 10 },
+        },
+      });
+    }
+    return { doc, send };
+  }
+
+  it("createGroup persists the selection as graph structure", () => {
+    const { doc, send } = groupBoot();
+    const result = send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1", "n2"], name: "Pipelining" },
+    });
+    assert.ok(result.accepted);
+    const groups = getGraph(doc, "main")?.get("groups");
+    assert.equal(groups?.size, 1, "one group");
+    const group = [...groups.values()][0];
+    assert.equal(group.get("name"), "Pipelining");
+    assert.deepEqual(group.get("nodes").toArray(), ["n1", "n2"]);
+  });
+
+  it("createGroup refuses unknown nodes", () => {
+    const { doc, send } = groupBoot();
+    const result = send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1", "ghost"] },
+    });
+    assert.ok(!result.accepted);
+    assert.equal(getGraph(doc, "main")?.get("groups")?.size, 0);
+  });
+
+  it("updateGroup moves members in and out", () => {
+    const { doc, send } = groupBoot();
+    send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1"] },
+    });
+    const groupId = [...getGraph(doc, "main").get("groups").keys()][0];
+    const joined = send({
+      type: "INTENT",
+      command: "updateGroup",
+      payload: { graphId: "main", groupId, add: ["n2"] },
+    });
+    assert.ok(joined.accepted);
+    let group = [...getGraph(doc, "main").get("groups").values()][0];
+    assert.deepEqual(group.get("nodes").toArray(), ["n1", "n2"]);
+    const left = send({
+      type: "INTENT",
+      command: "updateGroup",
+      payload: { graphId: "main", groupId, remove: ["n1"] },
+    });
+    assert.ok(left.accepted);
+    group = [...getGraph(doc, "main").get("groups").values()][0];
+    assert.deepEqual(group.get("nodes").toArray(), ["n2"]);
+  });
+
+  it("removeGroup keeps the members in the graph", () => {
+    const { doc, send } = groupBoot();
+    send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1", "n2"] },
+    });
+    const groupId = [...getGraph(doc, "main").get("groups").keys()][0];
+    const result = send({
+      type: "INTENT",
+      command: "removeGroup",
+      payload: { graphId: "main", groupId },
+    });
+    assert.ok(result.accepted);
+    assert.equal(getGraph(doc, "main")?.get("groups")?.size, 0);
+    const nodes = getGraph(doc, "main")?.get("nodes");
+    assert.ok(nodes.has("n1") && nodes.has("n2"), "members stay");
+  });
+
+  it("removing a node cleans its group memberships", () => {
+    const { doc, send } = groupBoot();
+    send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1", "n2"] },
+    });
+    send({
+      type: "INTENT",
+      command: "removeNode",
+      payload: { graphId: "main", nodeId: "n1" },
+    });
+    const group = [...getGraph(doc, "main").get("groups").values()][0];
+    assert.deepEqual(group.get("nodes").toArray(), ["n2"]);
+  });
+});

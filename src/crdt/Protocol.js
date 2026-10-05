@@ -227,6 +227,32 @@
  */
 
 /**
+ * Appendix A extension (work document #5 update #16): graph groups —
+ * labeled selections that persist as graph structure. The tariff-zone
+ * rendering is WD #35's; these intents own the structure. Membership
+ * changes come from nodes dragged into or out of a group's area.
+ *
+ * @typedef {Object} IntentCreateGroupMessage
+ * @property {'INTENT'} type
+ * @property {'createGroup'} command
+ * @property {{ graphId: string, nodeIds: string[], name?: string }} payload
+ */
+
+/**
+ * @typedef {Object} IntentRemoveGroupMessage
+ * @property {'INTENT'} type
+ * @property {'removeGroup'} command
+ * @property {{ graphId: string, groupId: string }} payload
+ */
+
+/**
+ * @typedef {Object} IntentUpdateGroupMessage
+ * @property {'INTENT'} type
+ * @property {'updateGroup'} command
+ * @property {{ graphId: string, groupId: string, add?: string[], remove?: string[] }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -324,6 +350,9 @@
  *   | IntentImplementInCodeMessage
  *   | IntentForkComponentMessage
  *   | IntentSetSignatureMessage
+ *   | IntentCreateGroupMessage
+ *   | IntentRemoveGroupMessage
+ *   | IntentUpdateGroupMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -377,6 +406,9 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "implementInCode" },
   { type: "INTENT", command: "forkComponent" },
   { type: "INTENT", command: "setSignature" },
+  { type: "INTENT", command: "createGroup" },
+  { type: "INTENT", command: "removeGroup" },
+  { type: "INTENT", command: "updateGroup" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },

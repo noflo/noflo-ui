@@ -11,24 +11,30 @@ import * as Y from "../../vendor/yjs.js";
 
 import {
   addEdge,
+  addGroupNodes,
   addIIP,
   addInport,
   addNode,
   addOutport,
   createGraph,
+  createGroup,
   deleteGraph,
   ensureComponent,
   getComponent,
   getComponentCode,
   getComponentSignature,
   getGraph,
+  getGroup,
   getNode,
   graphChildren,
   moveNode,
   removeComponentSignature,
   removeEdge,
   removeExportedPort,
+  removeGroup,
+  removeGroupNodes,
   removeNode,
+  removeNodeFromGroups,
   revokePermission,
   setComponentCode,
   setComponentSignature,
@@ -141,6 +147,9 @@ export const INTENT_HANDLERS = {
   moveUp: intentMoveUp,
   revokePermission: intentRevokePermission,
   implementAsGraph: intentImplementAsGraph,
+  createGroup: intentCreateGroup,
+  removeGroup: intentRemoveGroup,
+  updateGroup: intentUpdateGroup,
   implementInCode: intentImplementInCode,
   forkComponent: intentForkComponent,
   setSignature: intentSetSignature,
@@ -210,7 +219,7 @@ function handleIntent(doc, message) {
  *
  * Exported ports are connection-driven: every boundary connection exports
  * the port it crosses. With no boundary connections at all, the default
- * in0/out0 ports are exported, matching what the editor renders for
+ * in/out ports are exported, matching what the editor renders for
  * signature-less components.
  *
  * @param {Y.Doc} doc
@@ -424,10 +433,10 @@ function intentMakeSubgraph(doc, payload) {
   // With no boundary connections at all, export the default ports the
   // editor renders for signature-less components
   if (inPortNames.size === 0 && outPortNames.size === 0) {
-    addInport(child, "in0", replacementId, "in0");
-    addOutport(child, "out0", replacementId, "out0");
-    inPortNames.add("in0");
-    outPortNames.add("out0");
+    addInport(child, "in", replacementId, "in");
+    addOutport(child, "out", replacementId, "out");
+    inPortNames.add("in");
+    outPortNames.add("out");
   }
 
   /** @type {import("./Protocol.js").GraphSetComponentMessage} */
@@ -868,7 +877,7 @@ function intentAddNode(doc, payload) {
 }
 
 /**
- * Registers the default port signature (in0/out0) for a component that has
+ * Registers the default port signature (in/out) for a component that has
  * none, matching what the editor renders for signature-less components.
  * Components with real signatures keep them untouched.
  *
@@ -878,8 +887,8 @@ function intentAddNode(doc, payload) {
 function ensureDefaultSignature(doc, componentName) {
   if (getComponentSignature(doc, componentName)) return;
   setComponentSignature(doc, componentName, {
-    inports: [{ name: "in0", type: "all" }],
-    outports: [{ name: "out0", type: "all" }],
+    inports: [{ name: "in", type: "all" }],
+    outports: [{ name: "out", type: "all" }],
   });
 }
 
@@ -898,6 +907,7 @@ function intentRemoveNode(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   const removed = removeNode(graph, nodeId);
+  removeNodeFromGroups(graph, nodeId);
   if (!removed) {
     return { accepted: false, echoes: [] };
   }
@@ -1246,6 +1256,96 @@ function intentRevokePermission(doc, payload) {
     payload: { id: grantId },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Creates a group over a selection (work document #5 update #16): the
+ * grouping interaction's engine side. The group is graph structure; its
+ * tariff-zone rendering is WD #35's.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentCreateGroup(doc, payload) {
+  const { graphId, nodeIds, name } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    !Array.isArray(nodeIds) ||
+    nodeIds.length === 0 ||
+    !nodeIds.every((/** @type {any} */ id) => typeof id === "string")
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const groupId = `group_${Date.now()}`;
+  if (
+    !createGroup(graph, groupId, typeof name === "string" ? name : "", nodeIds)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Removes a group; its members stay in the graph (the "ungroup" action).
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRemoveGroup(doc, payload) {
+  const { graphId, groupId } = payload ?? {};
+  if (typeof graphId !== "string" || typeof groupId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!removeGroup(graph, groupId)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Updates a group's membership: nodes dragged into the group's area join it,
+ * nodes dragged out leave it (work document #5 update #16).
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentUpdateGroup(doc, payload) {
+  const { graphId, groupId, add, remove } = payload ?? {};
+  if (typeof graphId !== "string" || typeof groupId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const idsOk = (/** @type {any} */ ids) =>
+    ids === undefined ||
+    (Array.isArray(ids) &&
+      ids.every((/** @type {any} */ id) => typeof id === "string"));
+  if (!idsOk(add) || !idsOk(remove)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!add && !remove) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph || !getGroup(graph, groupId)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (add && !addGroupNodes(graph, groupId, add)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (remove && !removeGroupNodes(graph, groupId, remove)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
 }
 
 /**
