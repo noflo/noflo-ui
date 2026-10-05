@@ -205,6 +205,20 @@ export class FlowNode extends HTMLElement {
     return { x: this._x, y: this._y };
   }
 
+  /** @returns {string[]} */
+  static get observedAttributes() {
+    return ["selected"];
+  }
+
+  /**
+   * Re-runs the pill fan-out when the selection toggles.
+   *
+   * @param {string} name
+   */
+  attributeChangedCallback(name) {
+    if (name === "selected") this.resolveLabelCollisions();
+  }
+
   connectedCallback() {
     const sizeAttr = this.getAttribute("size");
     if (sizeAttr) {
@@ -563,34 +577,34 @@ export class FlowNode extends HTMLElement {
         /* The name span dissolves into the grid so the dot and the name
            text place into separate columns, and the datatype aligns under
            the name text */
-        .port-name {
-          display: contents;
-        }
-        :host([selected]) .port-out-label .port-name::before {
-          content: "";
+        .port-dot {
+          display: none;
           width: 8px;
           height: 8px;
           border-radius: 50%;
           border: 2px solid var(--ui-bg, #111);
-          grid-column: 1;
+        }
+        :host([selected]) .port-dot {
+          display: block;
           grid-row: 1;
         }
-        :host([selected]) .port-in-label .port-name::after {
-          content: "";
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          border: 2px solid var(--ui-bg, #111);
-          grid-column: 2;
-          grid-row: 1;
-        }
-        .port-in-label .port-datatype {
+        :host([selected]) .port-out-label .port-dot {
           grid-column: 1;
-          grid-row: 2;
         }
-        .port-out-label .port-datatype {
+        :host([selected]) .port-out-label .port-name {
           grid-column: 2;
-          grid-row: 2;
+        }
+        :host([selected]) .port-out-label .port-datatype {
+          grid-column: 3;
+        }
+        :host([selected]) .port-in-label .port-name {
+          grid-column: 1;
+        }
+        :host([selected]) .port-in-label .port-datatype {
+          grid-column: 2;
+        }
+        :host([selected]) .port-in-label .port-dot {
+          grid-column: 3;
         }
         .port-datatype {
           display: none;
@@ -638,6 +652,11 @@ export class FlowNode extends HTMLElement {
           z-index: 2;
           cursor: grab;
           transition: opacity 0.2s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+        }
+        /* Expanded: the pill's dot is the port's visual dot; the port
+           element stays for hit-testing */
+        :host([selected]) .port {
+          opacity: 0;
         }
         .port-label {
           position: absolute;
@@ -711,6 +730,35 @@ export class FlowNode extends HTMLElement {
     outPorts.forEach((portCfg, i) => {
       this.createPort(i, outPorts.length, true, portCfg);
     });
+    this.resolveLabelCollisions();
+  }
+
+  /**
+   * Fans out the expanded state's port pills so they never overlap: dense
+   * ports pack tighter than the pills are tall, so same-side pills that
+   * collide shift vertically apart, ordered by their ports' angles (work
+   * document #5 update #16). Unexpanded labels sit outside the circle and
+   * never collide.
+   */
+  resolveLabelCollisions() {
+    if (!this.portsContainer || !this.hasAttribute("selected")) return;
+    const minHeight = 24;
+    for (const direction of ["port-in-label", "port-out-label"]) {
+      const labels = [...this.portsContainer.querySelectorAll(`.${direction}`)]
+        .map((label) => ({
+          element: /** @type {HTMLElement} */ (label),
+          base: Number(/** @type {HTMLElement} */ (label).dataset.portY ?? 0),
+        }))
+        .sort((a, b) => a.base - b.base);
+      /** @type {number | null} */
+      let lastBottom = null;
+      for (const { element, base } of labels) {
+        /** @type {number} */
+        const top = lastBottom === null ? base : Math.max(base, lastBottom);
+        element.style.top = `${top}px`;
+        lastBottom = top + minHeight;
+      }
+    }
   }
 
   /**
@@ -802,14 +850,22 @@ export class FlowNode extends HTMLElement {
     const label = document.createElement("div");
     label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}${type === "array" ? " port-label-array" : ""}`;
     label.dataset.portName = name;
-    label.innerHTML = `<span class="port-name">${escapeHtml(
-      name,
-    )}</span><span class="port-datatype">${escapeHtml(dataType || "all")}</span>`;
+    // Explicit spans everywhere: the pill's dot is a real element, not a
+    // pseudo-element of a display:contents span — pseudo placement inside
+    // contentless boxes differs across engines
+    label.innerHTML = isOutport
+      ? `<span class="port-dot"></span><span class="port-name">${escapeHtml(
+          name,
+        )}</span><span class="port-datatype">${escapeHtml(dataType || "all")}</span>`
+      : `<span class="port-name">${escapeHtml(
+          name,
+        )}</span><span class="port-datatype">${escapeHtml(dataType || "all")}</span><span class="port-dot"></span>`;
 
     // The label anchors at the port's center; the state-aware transforms
     // in the stylesheet place it outside the circle normally, and with the
     // pill's dot on the port when expanded
     label.style.left = `${this.radius + pos.x}px`;
+    label.dataset.portY = String(this.radius + pos.y);
     label.style.top = `${this.radius + pos.y}px`;
 
     if (this.portsContainer) {
