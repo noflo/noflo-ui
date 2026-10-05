@@ -17,6 +17,9 @@ import {
   addOutport,
   createGraph,
   deleteGraph,
+  ensureComponent,
+  getComponent,
+  getComponentCode,
   getComponentSignature,
   getGraph,
   getNode,
@@ -27,9 +30,11 @@ import {
   removeExportedPort,
   removeNode,
   revokePermission,
+  setComponentCode,
   setComponentSignature,
   setNodeComponent,
   transferNode,
+  updateComponentMetadata,
 } from "./ProjectDoc.js";
 import { isUIWorkerMessage } from "./Protocol.js";
 
@@ -135,6 +140,9 @@ export const INTENT_HANDLERS = {
   makeSubgraph: intentMakeSubgraph,
   moveUp: intentMoveUp,
   revokePermission: intentRevokePermission,
+  implementAsGraph: intentImplementAsGraph,
+  implementInCode: intentImplementInCode,
+  forkComponent: intentForkComponent,
 };
 
 /**
@@ -1237,4 +1245,157 @@ function intentRevokePermission(doc, payload) {
     payload: { id: grantId },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Implements a component as a graph (work document #29): creates the
+ * component's subgraph under the implementing graph, so the component
+ * leaves the "Inferred" era and nodes referencing it become navigable
+ * subgraph instances. The declared signature stays as the component's
+ * interface; the graph's own exports grow as the implementation is wired.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentImplementAsGraph(doc, payload) {
+  const { component, parentGraph } = payload ?? {};
+  if (
+    typeof component !== "string" ||
+    component.length === 0 ||
+    typeof parentGraph !== "string" ||
+    component === parentGraph
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!getComponentSignature(doc, component) || !getGraph(doc, parentGraph)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (getGraph(doc, component)) {
+    // Already implemented as a graph: idempotent echo, no mutation
+    /** @type {import("./Protocol.js").GraphCreateGraphMessage} */
+    const existing = {
+      protocol: "graph",
+      command: "creategraph",
+      payload: {
+        id: component,
+        name: String(
+          getGraph(doc, component)?.get("metadata")?.get("name") ?? component,
+        ),
+        parent: String(
+          getGraph(doc, component)?.get("metadata")?.get("parent") ?? "",
+        ),
+      },
+    };
+    return { accepted: true, echoes: [existing] };
+  }
+  createGraph(doc, component, component, parentGraph);
+  /** @type {import("./Protocol.js").GraphCreateGraphMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "creategraph",
+    payload: { id: component, name: component, parent: parentGraph },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Implements a component in code (work document #29): records the
+ * implementation kind and language in the component's metadata and writes
+ * the scaffold into its collaborative code buffer. The runtime language
+ * matrix is the Glass's concern; the Engine stores what it is given.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentImplementInCode(doc, payload) {
+  const { component, language, scaffold } = payload ?? {};
+  if (
+    typeof component !== "string" ||
+    component.length === 0 ||
+    typeof language !== "string" ||
+    typeof scaffold !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!getComponentSignature(doc, component) || getGraph(doc, component)) {
+    // A graph implementation cannot also be a code implementation
+    return { accepted: false, echoes: [] };
+  }
+  const componentEntry = ensureComponent(doc, component, { name: component });
+  updateComponentMetadata(componentEntry, {
+    implementation: { kind: "code", language },
+  });
+  setComponentCode(componentEntry, scaffold);
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Forks a component (work document #29): copies its signature and code into
+ * the forked name and renames every reference in the project's graphs, so
+ * the fork immediately takes over where the original was used. The original
+ * component is untouched — a library component stays in the library.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentForkComponent(doc, payload) {
+  const { component, to } = payload ?? {};
+  if (
+    typeof component !== "string" ||
+    typeof to !== "string" ||
+    to.length === 0 ||
+    component === to
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const signature = getComponentSignature(doc, component);
+  if (!signature || getComponentSignature(doc, to) || getGraph(doc, to)) {
+    return { accepted: false, echoes: [] };
+  }
+  const plain = signature.toJSON();
+  setComponentSignature(doc, to, {
+    inports: plain.inports ?? [],
+    outports: plain.outports ?? [],
+    description: plain.description,
+    icon: plain.icon,
+  });
+
+  // Copy the implementation entry, if the original has one
+  const original = getComponent(doc, component);
+  if (original) {
+    const forked = ensureComponent(doc, to, {
+      .../** @type {Record<string, any>} */ (
+        original.get("metadata")?.toJSON()
+      ),
+      name: to,
+    });
+    const metadata =
+      /** @type {Record<string, any> | undefined} */
+      (original.get("metadata")?.toJSON());
+    if (metadata) updateComponentMetadata(forked, metadata);
+    setComponentCode(forked, getComponentCode(original).toString());
+  }
+
+  // The fork takes over: rename every reference in the project's graphs
+  /** @type {import("./Protocol.js").EngineUIMessage[]} */
+  const echoes = [];
+  const graphs = doc.getMap("graphs");
+  for (const [graphId, graph] of graphs.entries()) {
+    const nodes = /** @type {Y.Map<any>} */ (graph.get("nodes"));
+    for (const [nodeId, node] of nodes.entries()) {
+      if (node.get("component") !== component) continue;
+      setNodeComponent(/** @type {Y.Map<any>} */ (graph), nodeId, to);
+      /** @type {import("./Protocol.js").GraphSetComponentMessage} */
+      const echo = {
+        protocol: "graph",
+        command: "setcomponent",
+        payload: { id: nodeId, component: to },
+      };
+      echoes.push(echo);
+    }
+  }
+  return { accepted: true, echoes };
 }

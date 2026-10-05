@@ -218,6 +218,9 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'makeSubgraph'; payload: IntentMakeSubgraph }
   | { type: 'INTENT'; command: 'moveUp'; payload: IntentMoveUp }
   | { type: 'INTENT'; command: 'revokePermission'; payload: IntentRevokePermission }
+  | { type: 'INTENT'; command: 'implementAsGraph'; payload: { component: string; parentGraph: string } }
+  | { type: 'INTENT'; command: 'implementInCode'; payload: { component: string; language: string; scaffold: string } }
+  | { type: 'INTENT'; command: 'forkComponent'; payload: { component: string; to: string } }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
   | { type: 'MESH'; command: 'status' }
   | { type: 'MESH'; command: 'join'; payload: { invite: string } }
@@ -230,6 +233,14 @@ type UIWorkerMessage =
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
 // through `MESH grant` (work document #27); the intent only ever revokes.
+interface IntentRevokePermission { grantId: string }
+
+// Component implementation flow (work document #29): sketch to specify to
+// implement. `implementAsGraph` creates the component's subgraph (graph id =
+// component name, parent = the implementing graph); `implementInCode` records
+// the implementation kind and language and writes the scaffold into the
+// component's collaborative code buffer; `forkComponent` copies a component
+// into the forked name and renames every reference in the project's graphs.
 interface IntentRevokePermission { grantId: string }
 
 // Awareness: Throttled telemetry for mesh peers (does not mutate CRDT)

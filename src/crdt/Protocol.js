@@ -178,6 +178,43 @@
  */
 
 /**
+ * Appendix A extension (work document #29): implement a component as a
+ * graph. Creates the component's subgraph (graph id = component name) under
+ * the implementing graph; nodes referencing the component become navigable
+ * subgraph instances. Idempotent: re-implementing an already-implemented
+ * component echoes the existing graph without mutating.
+ *
+ * @typedef {Object} IntentImplementAsGraphMessage
+ * @property {'INTENT'} type
+ * @property {'implementAsGraph'} command
+ * @property {{ component: string, parentGraph: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #29): implement a component in code.
+ * Records the implementation kind and language in the component's metadata
+ * and writes the scaffold into its collaborative code buffer. Rejected for
+ * components already implemented as graphs.
+ *
+ * @typedef {Object} IntentImplementInCodeMessage
+ * @property {'INTENT'} type
+ * @property {'implementInCode'} command
+ * @property {{ component: string, language: string, scaffold: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #29): fork a component. Copies the
+ * signature and implementation into the forked name and renames every
+ * reference in the project's graphs, so the fork immediately takes over
+ * where the original was used. The original component is untouched.
+ *
+ * @typedef {Object} IntentForkComponentMessage
+ * @property {'INTENT'} type
+ * @property {'forkComponent'} command
+ * @property {{ component: string, to: string }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -271,6 +308,9 @@
  *   | IntentMakeSubgraphMessage
  *   | IntentMoveUpMessage
  *   | IntentRevokePermissionMessage
+ *   | IntentImplementAsGraphMessage
+ *   | IntentImplementInCodeMessage
+ *   | IntentForkComponentMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -320,6 +360,9 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "makeSubgraph" },
   { type: "INTENT", command: "moveUp" },
   { type: "INTENT", command: "revokePermission" },
+  { type: "INTENT", command: "implementAsGraph" },
+  { type: "INTENT", command: "implementInCode" },
+  { type: "INTENT", command: "forkComponent" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },
