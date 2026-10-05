@@ -597,10 +597,10 @@ export class FlowNode extends HTMLElement {
         :host([selected]) .port-out-label .port-datatype {
           grid-column: 3;
         }
-        :host([selected]) .port-in-label .port-name {
+        :host([selected]) .port-in-label .port-datatype {
           grid-column: 1;
         }
-        :host([selected]) .port-in-label .port-datatype {
+        :host([selected]) .port-in-label .port-name {
           grid-column: 2;
         }
         :host([selected]) .port-in-label .port-dot {
