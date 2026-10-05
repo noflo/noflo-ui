@@ -1,4 +1,5 @@
 import icons from "../../vendor/fontawesome-icons.js";
+import { emit } from "../events.js";
 
 /**
  * @typedef {Object} FileSelectorEventDetail
@@ -187,12 +188,7 @@ export class FileSelector extends HTMLElement {
   }
 
   handleNewGraph = () => {
-    this.dispatchEvent(
-      new CustomEvent("new-graph-requested", {
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    emit(this, "new-graph-requested", undefined);
   };
 
   handleExpand = () => {
@@ -227,13 +223,9 @@ export class FileSelector extends HTMLElement {
       this.uiElement("start-overlay").style.display = "none";
       this.uiElement("controls").style.display = "block";
 
-      this.dispatchEvent(
-        new CustomEvent("directory-selected", {
-          detail: { directoryHandle: this.directoryHandle },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      emit(this, "directory-selected", {
+        directoryHandle: this.directoryHandle,
+      });
 
       this.listFiles();
     } catch (err) {
@@ -256,13 +248,7 @@ export class FileSelector extends HTMLElement {
         const li = document.createElement("li");
         li.textContent = entry.name.split(".")[0];
         li.addEventListener("click", () => {
-          this.dispatchEvent(
-            new CustomEvent("file-selected", {
-              detail: { fileHandle: entry },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          emit(this, "file-selected", { fileHandle: entry });
         });
         fileList.appendChild(li);
       }

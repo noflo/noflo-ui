@@ -2,6 +2,7 @@
  * SelectionPills Web Component
  * Displays the number of selected nodes and edges, and provides a way to clear the selection.
  */
+import { emit, on } from "../events.js";
 
 export class SelectionPills extends HTMLElement {
   constructor() {
@@ -20,7 +21,7 @@ export class SelectionPills extends HTMLElement {
    */
   set selectionManager(val) {
     this._selectionManager = val;
-    this._selectionManager.addEventListener("selection-changed", () => {
+    on(this._selectionManager, "selection-changed", () => {
       this.updatePills();
     });
   }
@@ -73,13 +74,7 @@ export class SelectionPills extends HTMLElement {
     if (clearBtn) {
       clearBtn.addEventListener("pointerdown", (e) => {
         e.stopPropagation();
-        this.dispatchEvent(
-          new CustomEvent("clear-selection", {
-            detail: { type },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "clear-selection", { type });
       });
     }
     return pill;

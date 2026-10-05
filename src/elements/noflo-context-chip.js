@@ -13,6 +13,7 @@
  */
 
 import icons from "../../vendor/fontawesome-icons.js";
+import { emit } from "../events.js";
 import { FlowCornerElement } from "./CornerElement.js";
 
 /**
@@ -167,17 +168,13 @@ export class FlowContextChip extends FlowCornerElement {
       .querySelector("[data-action='settings']")
       ?.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
-        this.dispatchEvent(
-          new CustomEvent("open-settings", { bubbles: true, composed: true }),
-        );
+        emit(this, "open-settings", undefined);
       });
     shadow
       .querySelector("[data-action='up']")
       ?.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
-        this.dispatchEvent(
-          new CustomEvent("navigate-up", { bubbles: true, composed: true }),
-        );
+        emit(this, "navigate-up", undefined);
       });
   }
 }

@@ -3,6 +3,7 @@
  * Appendix A intent messages. Shared between the application shell and the
  * integration tests so the mapping is always exercised exactly as shipped.
  */
+import { on } from "../events.js";
 
 /**
  * @typedef {Object} IntentMapperOptions
@@ -135,73 +136,70 @@ export function createIntentMapper({
      * @param {any} ed
      */
     wire(ed) {
-      ed.addEventListener(
-        "node-creation-attempt",
-        async (/** @type {any} */ e) => {
-          const event = /** @type {CustomEvent} */ (e);
-          const { x, y, startPort } = event.detail;
-          const componentName = window.prompt(
-            "Enter component name (or leave empty to use 'New Node'):",
-          );
-          if (componentName === null) return;
-          const name = componentName.trim() || "New Node";
-          const nodeId = `node_${Date.now()}`;
-          sendIntent({
-            type: "INTENT",
-            command: "addNode",
-            payload: {
-              graphId: graphId(),
-              nodeId,
-              componentName: name,
-              metadata: { x, y },
-            },
-          });
+      on(ed, "node-creation-attempt", async (e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        const { x, y, startPort } = event.detail;
+        const componentName = window.prompt(
+          "Enter component name (or leave empty to use 'New Node'):",
+        );
+        if (componentName === null) return;
+        const name = componentName.trim() || "New Node";
+        const nodeId = `node_${Date.now()}`;
+        sendIntent({
+          type: "INTENT",
+          command: "addNode",
+          payload: {
+            graphId: graphId(),
+            nodeId,
+            componentName: name,
+            metadata: { x, y },
+          },
+        });
 
-          if (startPort) {
-            const port = /** @type {HTMLElement} */ (startPort);
-            const isOut = port.classList.contains("port-out");
-            const hostName = hostOf(port)?.getAttribute("name") ?? "unknown";
-            const portName = port.dataset.portName ?? "";
-            const index = port.dataset.portIndex;
-            const hostEndpoint = {
-              node: hostName,
-              port: portName,
-              ...(index !== undefined
-                ? { index: Number.parseInt(index, 10) }
-                : {}),
-            };
-            if (isOut) {
-              afterNode(nodeId, {
-                type: "INTENT",
-                command: "addEdge",
-                payload: {
-                  graphId: graphId(),
-                  src: hostEndpoint,
-                  tgt: {
-                    node: nodeId,
-                    port: defaultPortFor(getLibrary(), name, "inports"),
-                  },
+        if (startPort) {
+          const port = /** @type {HTMLElement} */ (startPort);
+          const isOut = port.classList.contains("port-out");
+          const hostName = hostOf(port)?.getAttribute("name") ?? "unknown";
+          const portName = port.dataset.portName ?? "";
+          const index = port.dataset.portIndex;
+          const hostEndpoint = {
+            node: hostName,
+            port: portName,
+            ...(index !== undefined
+              ? { index: Number.parseInt(index, 10) }
+              : {}),
+          };
+          if (isOut) {
+            afterNode(nodeId, {
+              type: "INTENT",
+              command: "addEdge",
+              payload: {
+                graphId: graphId(),
+                src: hostEndpoint,
+                tgt: {
+                  node: nodeId,
+                  port: defaultPortFor(getLibrary(), name, "inports"),
                 },
-              });
-            } else {
-              afterNode(nodeId, {
-                type: "INTENT",
-                command: "addEdge",
-                payload: {
-                  graphId: graphId(),
-                  src: {
-                    node: nodeId,
-                    port: defaultPortFor(getLibrary(), name, "outports"),
-                  },
-                  tgt: hostEndpoint,
+              },
+            });
+          } else {
+            afterNode(nodeId, {
+              type: "INTENT",
+              command: "addEdge",
+              payload: {
+                graphId: graphId(),
+                src: {
+                  node: nodeId,
+                  port: defaultPortFor(getLibrary(), name, "outports"),
                 },
-              });
-            }
+                tgt: hostEndpoint,
+              },
+            });
           }
-        },
-      );
+        }
+      });
 
-      ed.addEventListener("node-removal-attempt", (/** @type {any} */ e) => {
+      on(ed, "node-removal-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         for (const node of event.detail.nodes) {
           const name = node.getAttribute?.("name") ?? node.name;
@@ -213,7 +211,7 @@ export function createIntentMapper({
         }
       });
 
-      ed.addEventListener("nodes-moved", (/** @type {any} */ e) => {
+      on(ed, "nodes-moved", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         for (const node of event.detail.nodes) {
           if (node.type !== "noflo-node") continue;
@@ -229,7 +227,7 @@ export function createIntentMapper({
         }
       });
 
-      ed.addEventListener("wire-connection-attempt", (/** @type {any} */ e) => {
+      on(ed, "wire-connection-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         sendIntent({
           type: "INTENT",
@@ -242,7 +240,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("edge-removal-attempt", (/** @type {any} */ e) => {
+      on(ed, "edge-removal-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const descriptor = ed.getEdgeDescriptor(event.detail.edge);
         if (!descriptor) return;
@@ -271,7 +269,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("iip-creation-attempt", (/** @type {any} */ e) => {
+      on(ed, "iip-creation-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const value = window.prompt(
           "Value for the initial information packet:",
@@ -293,7 +291,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("iip-edit-attempt", (/** @type {any} */ e) => {
+      on(ed, "iip-edit-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const iip = /** @type {any} */ (event.detail.iip);
         const newValue = window.prompt("New value for the packet:", iip.value);
@@ -305,7 +303,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("iip-removal-attempt", (/** @type {any} */ e) => {
+      on(ed, "iip-removal-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const iip = /** @type {any} */ (event.detail.iip);
         if (typeof iip.id !== "string") return;
@@ -316,7 +314,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("port-exported", (/** @type {any} */ e) => {
+      on(ed, "port-exported", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const { name, direction, process, port, position } = event.detail;
         sendIntent({
@@ -332,7 +330,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("port-removed", (/** @type {any} */ e) => {
+      on(ed, "port-removed", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const { name, direction } = event.detail;
         sendIntent({
@@ -342,7 +340,7 @@ export function createIntentMapper({
         });
       });
 
-      ed.addEventListener("port-renamed", (/** @type {any} */ e) => {
+      on(ed, "port-renamed", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const { oldName, newName, direction } = event.detail;
         sendIntent({
@@ -360,40 +358,40 @@ export function createIntentMapper({
         });
       }
 
-      ed.addEventListener("nodes-dragging", (/** @type {any} */ e) => {
+      on(ed, "nodes-dragging", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         if (!onDragging) return;
         onDragging(event.detail?.nodes ?? []);
       });
 
-      ed.addEventListener("nodes-drag-end", (/** @type {any} */ e) => {
+      on(ed, "nodes-drag-end", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         if (!onDragEnd) return;
         onDragEnd(event.detail?.nodes ?? []);
       });
 
-      ed.addEventListener("move-nodes-up-attempt", (/** @type {any} */ e) => {
+      on(ed, "move-nodes-up-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         navigation?.moveUp(event.detail?.nodes ?? []);
       });
 
-      ed.addEventListener("unpack-subgraph-attempt", (/** @type {any} */ e) => {
+      on(ed, "unpack-subgraph-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const node = /** @type {string | undefined} */ (event.detail?.node);
         if (node) navigation?.unpack(node);
       });
 
-      ed.addEventListener("navigate-down-attempt", (/** @type {any} */ e) => {
+      on(ed, "navigate-down-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const node = /** @type {string | undefined} */ (event.detail?.node);
         if (node) navigation?.down(node);
       });
 
-      ed.addEventListener("navigate-up-attempt", () => {
+      on(ed, "navigate-up-attempt", () => {
         navigation?.up();
       });
 
-      ed.addEventListener("create-subgraph-attempt", (/** @type {any} */ e) => {
+      on(ed, "create-subgraph-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         navigation?.createSubgraph(event.detail?.nodes ?? []);
       });

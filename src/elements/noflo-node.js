@@ -5,6 +5,7 @@ import icons from "../../vendor/fontawesome-icons.js";
  * @property {number} x
  * @property {number} y
  */
+import { on } from "../events.js";
 
 /**
  * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
@@ -62,7 +63,7 @@ export class FlowNode extends HTMLElement {
         "component-changed",
         this._onComponentChanged,
       );
-      manager.addEventListener("component-changed", this._onComponentChanged);
+      on(manager, "component-changed", this._onComponentChanged);
     }
   }
 
@@ -192,10 +193,7 @@ export class FlowNode extends HTMLElement {
     this.render();
 
     if (this._libraryManager) {
-      this._libraryManager.addEventListener(
-        "component-changed",
-        this._onComponentChanged,
-      );
+      on(this._libraryManager, "component-changed", this._onComponentChanged);
     }
     const compEl = this.shadowRoot?.querySelector(".node-component");
     if (compEl) compEl.textContent = this._componentName;

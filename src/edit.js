@@ -23,6 +23,7 @@ import "./elements/noflo-modal.js";
 /**
  * @typedef {import("./library/LibraryManager.js").ComponentDefinition} ComponentDefinition
  */
+import { on } from "./events.js";
 
 /** @type {LibraryManager} */
 const libraryManager = new LibraryManager();
@@ -103,7 +104,7 @@ async function init() {
   componentModal.appendChild(componentForm);
   app.appendChild(componentModal);
 
-  fileSelector.addEventListener("directory-selected", async (e) => {
+  on(fileSelector, "directory-selected", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const handle = /** @type {FileSystemDirectoryHandle} */ (
       event.detail.directoryHandle
@@ -116,7 +117,7 @@ async function init() {
     }
   });
 
-  fileSelector.addEventListener("file-selected", async (e) => {
+  on(fileSelector, "file-selected", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const fileHandle = /** @type {FileSystemFileHandle} */ (
       event.detail.fileHandle
@@ -128,7 +129,7 @@ async function init() {
     }
   });
 
-  fileSelector.addEventListener("new-graph-requested", async () => {
+  on(fileSelector, "new-graph-requested", async () => {
     await createNewGraph();
   });
 }
@@ -171,7 +172,7 @@ function splitNodePort(key) {
  * @param {FlowEditor} editor
  */
 function setupEditorEventListeners(editor) {
-  editor.addEventListener("wire-connection-attempt", (e) => {
+  on(editor, "wire-connection-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const edge = editor.addEdge(event.detail.portA, event.detail.portB);
     if (currentGraph) {
@@ -209,7 +210,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("navigate-down-attempt", async (e) => {
+  on(editor, "navigate-down-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const nodeName = event.detail.node;
     if (!currentGraph || !directoryHandle) return;
@@ -231,7 +232,7 @@ function setupEditorEventListeners(editor) {
     }
   });
 
-  editor.addEventListener("navigate-up-attempt", async () => {
+  on(editor, "navigate-up-attempt", async () => {
     if (graphStack.length === 0) return;
     await graphSaver.flush();
     const parent = graphStack.pop();
@@ -241,7 +242,7 @@ function setupEditorEventListeners(editor) {
     }
   });
 
-  editor.addEventListener("create-subgraph-attempt", async (e) => {
+  on(editor, "create-subgraph-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     if (!currentGraph || !directoryHandle) return;
 
@@ -430,7 +431,7 @@ function setupEditorEventListeners(editor) {
     );
   });
 
-  editor.addEventListener("move-nodes-up-attempt", async (e) => {
+  on(editor, "move-nodes-up-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     if (!currentGraph || !directoryHandle) return;
     if (graphStack.length === 0) {
@@ -676,7 +677,7 @@ function setupEditorEventListeners(editor) {
     }
   });
 
-  editor.addEventListener("node-creation-attempt", async (e) => {
+  on(editor, "node-creation-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
 
@@ -727,7 +728,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("iip-creation-attempt", (e) => {
+  on(editor, "iip-creation-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { x, y, startPort } = event.detail;
     const iipId = `iip_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -774,12 +775,12 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("selection-changed", (e) => {
+  on(editor, "selection-changed", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     updateSelectionPills(event.detail);
   });
 
-  editor.addEventListener("node-removal-attempt", (e) => {
+  on(editor, "node-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const nodes = event.detail.nodes;
     if (currentGraph) {
@@ -792,7 +793,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("edge-removal-attempt", (e) => {
+  on(editor, "edge-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const edge = event.detail.edge;
     if (currentGraph) {
@@ -814,7 +815,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("iip-edit-attempt", (e) => {
+  on(editor, "iip-edit-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
     const iipElement = /** @type {FlowIIP} */ (iip);
@@ -848,7 +849,7 @@ function setupEditorEventListeners(editor) {
     }
   });
 
-  editor.addEventListener("iip-removal-attempt", (e) => {
+  on(editor, "iip-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
     editor.removeIIP(/** @type {FlowIIP} */ (iip));
@@ -864,7 +865,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("iip-send-attempt", (e) => {
+  on(editor, "iip-send-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
     const iipElement = /** @type {FlowIIP} */ (iip);
@@ -873,7 +874,7 @@ function setupEditorEventListeners(editor) {
     );
   });
 
-  editor.addEventListener("port-exported", (e) => {
+  on(editor, "port-exported", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { name, direction, position, process, port } = event.detail;
     if (currentGraph) {
@@ -886,7 +887,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("port-removed", (e) => {
+  on(editor, "port-removed", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { name, direction } = event.detail;
     if (currentGraph) {
@@ -899,7 +900,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("port-renamed", (e) => {
+  on(editor, "port-renamed", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { oldName, newName, direction, position } = event.detail;
     if (currentGraph) {
@@ -912,7 +913,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("nodes-moved", (e) => {
+  on(editor, "nodes-moved", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { nodes } = event.detail;
     if (currentGraph) {
@@ -933,7 +934,7 @@ function setupEditorEventListeners(editor) {
     debouncedSave();
   });
 
-  editor.addEventListener("edit-component-attempt", async (e) => {
+  on(editor, "edit-component-attempt", async (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { node } = event.detail;
     const componentName = node.getAttribute("component");

@@ -21,6 +21,8 @@
  * generated from the interface types' own JSON Schemas supplied by
  * @reticulum/core.
  */
+import { emit, on } from "../events.js";
+
 /** Cached jedison form styles (fetched once, injected into the shadow root). */
 /** @type {string | null} */
 let formStylesCache = null;
@@ -113,7 +115,7 @@ export class FlowMeshSettings extends HTMLElement {
     this._open = false;
     this.setAttribute("hidden", "");
     this.render();
-    this.dispatchEvent(new CustomEvent("mesh-close", { bubbles: true }));
+    emit(this, "mesh-close", undefined, { composed: false });
   }
 
   /**
@@ -497,7 +499,7 @@ export class FlowMeshSettings extends HTMLElement {
     let latest = options ?? {};
     /** @type {boolean} */
     let valid = false;
-    form.addEventListener("form-change", (/** @type {any} */ e) => {
+    on(form, "form-change", (/** @type {any} */ e) => {
       latest = e.detail?.data ?? {};
       valid = e.detail?.isValid === true;
     });
@@ -538,11 +540,11 @@ export class FlowMeshSettings extends HTMLElement {
     );
     enabled?.addEventListener("change", () => {
       this._config = { ...(this._config ?? {}), enabled: enabled.checked };
-      this.dispatchEvent(
-        new CustomEvent("mesh-configure", {
-          detail: { config: this._config },
-          bubbles: true,
-        }),
+      emit(
+        this,
+        "mesh-configure",
+        { config: this._config },
+        { composed: false },
       );
     });
     for (const [id, field] of [
@@ -562,11 +564,11 @@ export class FlowMeshSettings extends HTMLElement {
           [field]: checkbox.checked,
         };
         this._config = { ...(this._config ?? {}), webrtc };
-        this.dispatchEvent(
-          new CustomEvent("mesh-configure", {
-            detail: { config: this._config },
-            bubbles: true,
-          }),
+        emit(
+          this,
+          "mesh-configure",
+          { config: this._config },
+          { composed: false },
         );
       });
     }
@@ -588,11 +590,11 @@ export class FlowMeshSettings extends HTMLElement {
             ...(this._config ?? {}),
             interfaces: [...(this._config?.interfaces ?? []), iface],
           };
-          this.dispatchEvent(
-            new CustomEvent("mesh-configure", {
-              detail: { config: this._config },
-              bubbles: true,
-            }),
+          emit(
+            this,
+            "mesh-configure",
+            { config: this._config },
+            { composed: false },
           );
           this.render();
         });
@@ -605,11 +607,11 @@ export class FlowMeshSettings extends HTMLElement {
         const interfaces = [...(this._config?.interfaces ?? [])];
         interfaces.splice(index, 1);
         this._config = { ...(this._config ?? {}), interfaces };
-        this.dispatchEvent(
-          new CustomEvent("mesh-configure", {
-            detail: { config: this._config },
-            bubbles: true,
-          }),
+        emit(
+          this,
+          "mesh-configure",
+          { config: this._config },
+          { composed: false },
         );
         this.render();
       });
@@ -624,11 +626,11 @@ export class FlowMeshSettings extends HTMLElement {
             i === index ? { ...iface, enabled: checkbox.checked } : iface,
         );
         this._config = { ...(this._config ?? {}), interfaces };
-        this.dispatchEvent(
-          new CustomEvent("mesh-configure", {
-            detail: { config: this._config },
-            bubbles: true,
-          }),
+        emit(
+          this,
+          "mesh-configure",
+          { config: this._config },
+          { composed: false },
         );
       });
     }
@@ -645,11 +647,11 @@ export class FlowMeshSettings extends HTMLElement {
               i === index ? { ...entry, options } : entry,
           );
           this._config = { ...(this._config ?? {}), interfaces };
-          this.dispatchEvent(
-            new CustomEvent("mesh-configure", {
-              detail: { config: this._config },
-              bubbles: true,
-            }),
+          emit(
+            this,
+            "mesh-configure",
+            { config: this._config },
+            { composed: false },
           );
           this.render();
         });
@@ -666,12 +668,7 @@ export class FlowMeshSettings extends HTMLElement {
           shadow.querySelector("#new-grant-role")
         ).value;
         if (!peerHash) return;
-        this.dispatchEvent(
-          new CustomEvent("mesh-grant", {
-            detail: { peerHash, role },
-            bubbles: true,
-          }),
-        );
+        emit(this, "mesh-grant", { peerHash, role }, { composed: false });
         /** @type {HTMLInputElement} */ (
           shadow.querySelector("#new-grant-peer")
         ).value = "";
@@ -685,9 +682,7 @@ export class FlowMeshSettings extends HTMLElement {
       ?.addEventListener("click", (/** @type {any} */ event) => {
         const button = /** @type {HTMLButtonElement} */ (event.currentTarget);
         if (button.dataset.armed) {
-          this.dispatchEvent(
-            new CustomEvent("mesh-factory-reset", { bubbles: true }),
-          );
+          emit(this, "mesh-factory-reset", undefined, { composed: false });
           return;
         }
         button.dataset.armed = "1";
@@ -702,11 +697,11 @@ export class FlowMeshSettings extends HTMLElement {
       shadow.querySelectorAll("[data-grant-revoke]")
     )) {
       button.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("mesh-revoke", {
-            detail: { id: button.getAttribute("data-grant-revoke") },
-            bubbles: true,
-          }),
+        emit(
+          this,
+          "mesh-revoke",
+          { id: button.getAttribute("data-grant-revoke") },
+          { composed: false },
         );
       });
     }

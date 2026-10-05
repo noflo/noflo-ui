@@ -1,4 +1,5 @@
 import { graph } from "../../vendor/noflo.js";
+import { emit } from "../events.js";
 import { ComponentSignature } from "./schema.js";
 
 /**
@@ -73,10 +74,11 @@ export class LibraryManager extends EventTarget {
     definition.module = module;
     moduleMap.set(component, definition);
 
-    this.dispatchEvent(
-      new CustomEvent("component-changed", {
-        detail: { compName, definition },
-      }),
+    emit(
+      this,
+      "component-changed",
+      { compName, definition },
+      { bubbles: false, composed: false },
     );
   }
 
@@ -92,10 +94,11 @@ export class LibraryManager extends EventTarget {
 
     const moduleMap = this.modules.get(module);
     if (moduleMap && moduleMap.delete(component)) {
-      this.dispatchEvent(
-        new CustomEvent("component-changed", {
-          detail: { compName },
-        }),
+      emit(
+        this,
+        "component-changed",
+        { compName },
+        { bubbles: false, composed: false },
       );
     }
   }

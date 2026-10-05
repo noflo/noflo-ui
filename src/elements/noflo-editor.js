@@ -1,3 +1,4 @@
+import { emit, on } from "../events.js";
 import { Camera } from "../library/Camera.js";
 import { EdgeManager } from "../library/EdgeManager.js";
 import { SelectionManager } from "../library/SelectionManager.js";
@@ -182,14 +183,14 @@ export class FlowEditor extends HTMLElement {
     const pills = shadowRoot.querySelector("noflo-selection-pills");
     if (pills) {
       /** @type {any} */ (pills).selectionManager = this.selectionManager;
-      pills.addEventListener("clear-selection", (e) => {
+      on(pills, "clear-selection", (e) => {
         this.selectionManager.clearType(
           /** @type {CustomEvent} */ (e).detail.type,
         );
       });
     }
 
-    this.selectionManager.addEventListener("selection-changed", (e) => {
+    on(this.selectionManager, "selection-changed", (e) => {
       this._applySelection(/** @type {CustomEvent} */ (e).detail);
     });
 
@@ -821,15 +822,9 @@ export class FlowEditor extends HTMLElement {
         clickedNode &&
         this.isSubgraphNode(/** @type {Element} */ (clickedNode))
       ) {
-        this.dispatchEvent(
-          new CustomEvent("navigate-down-attempt", {
-            detail: {
-              node: this.getNodeName(/** @type {GraphEntity} */ (clickedNode)),
-            },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "navigate-down-attempt", {
+          node: this.getNodeName(/** @type {GraphEntity} */ (clickedNode)),
+        });
       }
     });
     this.addEventListener("pointerdown", (e) => {
@@ -1038,19 +1033,13 @@ export class FlowEditor extends HTMLElement {
               }
               // Ephemeral drag telemetry for mesh peers (work document #21):
               // the engine throttles this to ~250ms
-              this.dispatchEvent(
-                new CustomEvent("nodes-dragging", {
-                  detail: {
-                    nodes: idealMoves.map(({ node, x, y }) => ({
-                      node: this.getNodeName(node),
-                      x,
-                      y,
-                    })),
-                  },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "nodes-dragging", {
+                nodes: idealMoves.map(({ node, x, y }) => ({
+                  node: this.getNodeName(node),
+                  x,
+                  y,
+                })),
+              });
             } else {
               this.isDraggingNodeInCollision = true;
               if (this.isSpringing) {
@@ -1111,17 +1100,11 @@ export class FlowEditor extends HTMLElement {
           // Stop any in-flight spring so the snap-to-grid below is instant.
           this._endSpring();
           // Drag ended: mesh peers drop their ghost states immediately
-          this.dispatchEvent(
-            new CustomEvent("nodes-drag-end", {
-              detail: {
-                nodes: [...this.draggingNodesInitialPositions.keys()].map(
-                  (node) => this.getNodeName(node),
-                ),
-              },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          emit(this, "nodes-drag-end", {
+            nodes: [...this.draggingNodesInitialPositions.keys()].map((node) =>
+              this.getNodeName(node),
+            ),
+          });
           /** @type {Array<{name: string, position: Position, type: string, direction: any, portName: string | null}>} */
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {
@@ -1147,13 +1130,7 @@ export class FlowEditor extends HTMLElement {
             });
           });
           this.updateEdges();
-          this.dispatchEvent(
-            new CustomEvent("nodes-moved", {
-              detail: { nodes: movedNodes },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          emit(this, "nodes-moved", { nodes: movedNodes });
         }
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
@@ -1224,25 +1201,13 @@ export class FlowEditor extends HTMLElement {
             }
           });
           if (nodesToRemove.length > 0) {
-            this.dispatchEvent(
-              new CustomEvent("node-removal-attempt", {
-                detail: { nodes: nodesToRemove },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            emit(this, "node-removal-attempt", { nodes: nodesToRemove });
           }
         } else if (this.selectionManager.edges.size > 0) {
           this.selectionManager.edges.forEach((edgeId) => {
             const edge = this.edges.find((e) => this.getEdgeId(e) === edgeId);
             if (edge) {
-              this.dispatchEvent(
-                new CustomEvent("edge-removal-attempt", {
-                  detail: { edge },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "edge-removal-attempt", { edge });
             }
           });
         }
@@ -1336,13 +1301,11 @@ export class FlowEditor extends HTMLElement {
 
               // The Glass has no write authority: request the IIP via the
               // same event the wire-drop ghost flow uses
-              this.dispatchEvent(
-                new CustomEvent("iip-creation-attempt", {
-                  detail: { x: searchX, y: searchY, startPort: port },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "iip-creation-attempt", {
+                x: searchX,
+                y: searchY,
+                startPort: port,
+              });
             },
             icon: "circle-plus",
           });
@@ -1382,13 +1345,12 @@ export class FlowEditor extends HTMLElement {
             if (newName && newName !== name) {
               const direction = ep.direction;
               const position = ep.position;
-              this.dispatchEvent(
-                new CustomEvent("port-renamed", {
-                  detail: { oldName: name, newName, direction, position },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "port-renamed", {
+                oldName: name,
+                newName,
+                direction,
+                position,
+              });
               ep.setAttribute("name", newName);
               ep.dataset.portName = newName;
             }
@@ -1411,13 +1373,7 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Edit",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("iip-edit-attempt", {
-                  detail: { iip: clickedNode },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "iip-edit-attempt", { iip: clickedNode });
             },
             icon: "pen-to-square",
           });
@@ -1426,17 +1382,11 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Open",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("navigate-down-attempt", {
-                  detail: {
-                    node: this.getNodeName(
-                      /** @type {GraphEntity} */ (clickedNode),
-                    ),
-                  },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "navigate-down-attempt", {
+                node: this.getNodeName(
+                  /** @type {GraphEntity} */ (clickedNode),
+                ),
+              });
             },
             icon: "folder-open",
           });
@@ -1446,26 +1396,14 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Delete",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("iip-removal-attempt", {
-                  detail: { iip: clickedNode },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "iip-removal-attempt", { iip: clickedNode });
             },
             icon: "trash",
           });
           items.push({
             text: "Send now",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("iip-send-attempt", {
-                  detail: { iip: clickedNode },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "iip-send-attempt", { iip: clickedNode });
             },
             icon: "paper-plane",
           });
@@ -1473,26 +1411,14 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Edit Component",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("edit-component-attempt", {
-                  detail: { node: clickedNode },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "edit-component-attempt", { node: clickedNode });
             },
             icon: "pen-to-square",
           });
           items.push({
             text: "Remove",
             onClick: () => {
-              this.dispatchEvent(
-                new CustomEvent("node-removal-attempt", {
-                  detail: { nodes: [clickedNode] },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "node-removal-attempt", { nodes: [clickedNode] });
             },
             icon: "trash",
           });
@@ -1507,13 +1433,7 @@ export class FlowEditor extends HTMLElement {
                 );
                 const selected = [...this.selectionManager.nodes];
                 const nodeIds = selected.includes(name) ? selected : [name];
-                this.dispatchEvent(
-                  new CustomEvent("create-subgraph-attempt", {
-                    detail: { nodes: nodeIds },
-                    bubbles: true,
-                    composed: true,
-                  }),
-                );
+                emit(this, "create-subgraph-attempt", { nodes: nodeIds });
               },
               icon: "folder-plus",
             });
@@ -1528,13 +1448,7 @@ export class FlowEditor extends HTMLElement {
               );
               const selected = [...this.selectionManager.nodes];
               const nodes = selected.includes(name) ? selected : [name];
-              this.dispatchEvent(
-                new CustomEvent("move-nodes-up-attempt", {
-                  detail: { nodes },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              emit(this, "move-nodes-up-attempt", { nodes });
             },
             icon: "arrow-up-from-bracket",
           });
@@ -1545,17 +1459,11 @@ export class FlowEditor extends HTMLElement {
             items.push({
               text: "Unpack",
               onClick: () => {
-                this.dispatchEvent(
-                  new CustomEvent("unpack-subgraph-attempt", {
-                    detail: {
-                      node: this.getNodeName(
-                        /** @type {GraphEntity} */ (clickedNode),
-                      ),
-                    },
-                    bubbles: true,
-                    composed: true,
-                  }),
-                );
+                emit(this, "unpack-subgraph-attempt", {
+                  node: this.getNodeName(
+                    /** @type {GraphEntity} */ (clickedNode),
+                  ),
+                });
               },
               icon: "box-open",
             });
@@ -1572,51 +1480,27 @@ export class FlowEditor extends HTMLElement {
             /** @type {Element} */ (clickedEdge),
       );
       if (edge) {
-        this.dispatchEvent(
-          new CustomEvent("edge-menu-open", {
-            detail: { edge: this.getEdgeId(edge), x, y },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "edge-menu-open", { edge: this.getEdgeId(edge), x, y });
         items.push({
           text: "Remove",
           onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("edge-removal-attempt", {
-                detail: { edge },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            emit(this, "edge-removal-attempt", { edge });
           },
           icon: "trash",
         });
       }
     } else {
       const graphPos = this.viewportToGraph(x, y);
-      this.dispatchEvent(
-        new CustomEvent("canvas-menu-open", {
-          detail: { x, y, type: "canvas" },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      emit(this, "canvas-menu-open", { x, y, type: "canvas" });
       if (this.hasSpace(graphPos.x, graphPos.y, 80)) {
         items.push({
           text: "Add Node",
           onClick: () => {
-            this.dispatchEvent(
-              new CustomEvent("node-creation-attempt", {
-                detail: {
-                  x: graphPos.x - 40,
-                  y: graphPos.y - 40,
-                  startPort: null,
-                },
-                bubbles: true,
-                composed: true,
-              }),
-            );
+            emit(this, "node-creation-attempt", {
+              x: graphPos.x - 40,
+              y: graphPos.y - 40,
+              startPort: null,
+            });
           },
           icon: "plus",
         });
@@ -1624,12 +1508,7 @@ export class FlowEditor extends HTMLElement {
       items.push({
         text: "Close",
         onClick: () => {
-          this.dispatchEvent(
-            new CustomEvent("navigate-up-attempt", {
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          emit(this, "navigate-up-attempt", undefined);
         },
         icon: "xmark",
       });
@@ -2097,21 +1976,15 @@ export class FlowEditor extends HTMLElement {
       const endIsOut = endPort.classList.contains("port-out");
 
       if (startIsOut && !endIsOut) {
-        this.dispatchEvent(
-          new CustomEvent("wire-connection-attempt", {
-            detail: { portA: startPort, portB: endPort },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "wire-connection-attempt", {
+          portA: startPort,
+          portB: endPort,
+        });
       } else if (!startIsOut && endIsOut) {
-        this.dispatchEvent(
-          new CustomEvent("wire-connection-attempt", {
-            detail: { portA: endPort, portB: startPort },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "wire-connection-attempt", {
+          portA: endPort,
+          portB: startPort,
+        });
       } else {
         console.warn(
           "Cannot connect ports of the same type (both in or both out)",
@@ -2136,17 +2009,11 @@ export class FlowEditor extends HTMLElement {
         pos = this.snapToGrid(mouseX - size / 2, mouseY - size / 2);
       }
 
-      this.dispatchEvent(
-        new CustomEvent(eventName, {
-          detail: {
-            x: pos.x,
-            y: pos.y,
-            startPort: this.dragPort,
-          },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      emit(this, eventName, {
+        x: pos.x,
+        y: pos.y,
+        startPort: this.dragPort,
+      });
     }
 
     this.removeGhostNode();
@@ -2488,19 +2355,13 @@ export class FlowEditor extends HTMLElement {
       port,
     );
 
-    this.dispatchEvent(
-      new CustomEvent("port-exported", {
-        detail: {
-          name: finalName,
-          direction: isOutport ? "out" : "in",
-          position: finalExportPos,
-          process: node.getAttribute("name"),
-          port: portName,
-        },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    emit(this, "port-exported", {
+      name: finalName,
+      direction: isOutport ? "out" : "in",
+      position: finalExportPos,
+      process: node.getAttribute("name"),
+      port: portName,
+    });
   }
 
   /**
@@ -2516,13 +2377,7 @@ export class FlowEditor extends HTMLElement {
     const name = ep.getAttribute("name");
     const direction = /** @type {any} */ (ep).direction;
 
-    this.dispatchEvent(
-      new CustomEvent("port-removed", {
-        detail: { name, direction },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    emit(this, "port-removed", { name, direction });
 
     if (ep.parentNode) {
       ep.parentNode.removeChild(ep);

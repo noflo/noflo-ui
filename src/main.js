@@ -9,6 +9,7 @@ import { FlowIIP } from "./elements/noflo-iip.js";
 import { FlowNode } from "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import "./elements/noflo-selection-pills.js";
+import { on } from "./events.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 
 const backend = new Worker("src/backend.js", { type: "module" });
@@ -91,12 +92,12 @@ async function init() {
       type: "elementary",
     });
 
-    editor.addEventListener("wire-connection-attempt", (e) => {
+    on(editor, "wire-connection-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       editor.addEdge(event.detail.portA, event.detail.portB);
     });
 
-    editor.addEventListener("node-creation-attempt", (e) => {
+    on(editor, "node-creation-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
       const newNode = editor.addNode(
@@ -123,7 +124,7 @@ async function init() {
       }
     });
 
-    editor.addEventListener("iip-creation-attempt", (e) => {
+    on(editor, "iip-creation-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
       const newIIP = editor.addIIP(
@@ -135,22 +136,22 @@ async function init() {
       newIIP.id = `iip_${Date.now()}`;
     });
 
-    editor.addEventListener("selection-changed", (e) => {
+    on(editor, "selection-changed", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       console.log("selection", event.detail);
       updateSelectionPills(event.detail);
     });
 
-    editor.addEventListener("node-removal-attempt", (e) => {
+    on(editor, "node-removal-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       console.log("remove node", event.detail);
     });
-    editor.addEventListener("edge-removal-attempt", (e) => {
+    on(editor, "edge-removal-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       console.log("remove edge", event.detail);
     });
 
-    editor.addEventListener("iip-edit-attempt", (e) => {
+    on(editor, "iip-edit-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
       const iipElement = /** @type {FlowIIP} */ (iip);
@@ -160,13 +161,13 @@ async function init() {
       }
     });
 
-    editor.addEventListener("iip-removal-attempt", (e) => {
+    on(editor, "iip-removal-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
       editor.removeIIP(/** @type {FlowIIP} */ (iip));
     });
 
-    editor.addEventListener("iip-send-attempt", (e) => {
+    on(editor, "iip-send-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
       const iipElement = /** @type {FlowIIP} */ (iip);

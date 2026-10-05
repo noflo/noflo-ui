@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Jedison from "../../vendor/jedison.js";
+import { emit } from "../events.js";
 import { FontAwesomeEditor } from "../library/editors/fontawesome.js";
 
 class NofloJsonForm extends HTMLElement {
@@ -102,17 +103,11 @@ class NofloJsonForm extends HTMLElement {
         // Fallback to an empty array just in case it is perfectly valid and undefined
         const errors = this.editor.validation_results || [];
 
-        this.dispatchEvent(
-          new CustomEvent("form-change", {
-            detail: {
-              data: this.editor.getValue(),
-              isValid: errors.length === 0,
-              errors: errors,
-            },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "form-change", {
+          data: this.editor.getValue(),
+          isValid: errors.length === 0,
+          errors: errors,
+        });
       });
     });
   }

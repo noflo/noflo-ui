@@ -21,6 +21,7 @@ import "./elements/noflo-radial-menu.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import "./elements/noflo-selection-pills.js";
+import { on } from "./events.js";
 import { createIntentMapper } from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
 import { progressPhrase } from "./glass/progressPhrases.js";
@@ -162,7 +163,7 @@ function applyPendingState() {
 function spawnEngineWorker() {
   const worker = new Worker("src/worker/engine.js", { type: "module" });
   return {
-    postMessage: (/** @type {any} */ message) => worker.postMessage(message),
+    postMessage: (message) => worker.postMessage(message),
     onMessage: (/** @type {(event: { data: any }) => void} */ handler) => {
       worker.onmessage = (event) => handler(event);
     },
@@ -204,7 +205,7 @@ const echoHandlers = createEchoHandlers({
     // Remote peer drag ghosts; only the graph being rendered matters
     if (!editor) return;
     const visible = (states ?? []).filter(
-      (/** @type {any} */ state) =>
+      (state) =>
         state?.dragging?.graphId === activeGraphId || state?.dragging == null,
     );
     editor.setPeerGhosts(visible);
@@ -631,10 +632,8 @@ async function init() {
       // navigates in optimistically
       createSubgraph: (nodes) => {
         const names = nodes
-          .map((/** @type {any} */ n) =>
-            typeof n === "string" ? n : n?.getAttribute?.("name"),
-          )
-          .filter((/** @type {any} */ n) => typeof n === "string");
+          .map((n) => (typeof n === "string" ? n : n?.getAttribute?.("name")))
+          .filter((n) => typeof n === "string");
         if (names.length === 0) return;
         const childId = `${activeGraphId}/${names[0]}`;
         sendIntent(makeSubgraphIntent(activeGraphId, names));
@@ -644,10 +643,8 @@ async function init() {
       // Move up: lift the selection from this subgraph into its parent
       moveUp: (nodes) => {
         const names = nodes
-          .map((/** @type {any} */ n) =>
-            typeof n === "string" ? n : n?.getAttribute?.("name"),
-          )
-          .filter((/** @type {any} */ n) => typeof n === "string");
+          .map((n) => (typeof n === "string" ? n : n?.getAttribute?.("name")))
+          .filter((n) => typeof n === "string");
         if (names.length === 0) return;
         if (!graphParent(mirrorDoc, activeGraphId)) return;
         sendIntent({
@@ -707,10 +704,10 @@ async function init() {
   contextChip = /** @type {FlowContextChip | null} */ (
     /** @type {any} */ (document.getElementById("context-chip"))
   );
-  contextChip?.addEventListener("open-settings", () => openMeshSettings());
+  on(contextChip, "open-settings", () => openMeshSettings());
   // Up navigation from the Context corner: one level up, same path the
   // keyboard/gesture up-navigation takes
-  contextChip?.addEventListener("navigate-up", () => {
+  on(contextChip, "navigate-up", () => {
     const parent = graphParent(mirrorDoc, activeGraphId);
     if (parent) router?.navigate(parent);
   });
@@ -719,10 +716,9 @@ async function init() {
   syncPanel = /** @type {FlowSyncPanel | null} */ (
     /** @type {any} */ (document.getElementById("sync-panel"))
   );
-  syncPanel?.addEventListener("sync-approve", (/** @type {any} */ e) => {
+  on(syncPanel, "sync-approve", (e) => {
     const request = joinRequests.find(
-      (/** @type {any} */ entry) =>
-        entry.identityHash === e.detail.identityHash,
+      (entry) => entry.identityHash === e.detail.identityHash,
     );
     if (request?.source === "bootstrap") {
       // A bootstrap knocker is granted by the host decision engine
@@ -753,7 +749,7 @@ async function init() {
       },
     });
   });
-  syncPanel?.addEventListener("sync-decline", (/** @type {any} */ e) => {
+  on(syncPanel, "sync-decline", (e) => {
     supervisor?.send({
       type: "MESH",
       command: "resolveRequest",
@@ -763,13 +759,13 @@ async function init() {
       },
     });
   });
-  syncPanel?.addEventListener("sync-invite", () => {
+  on(syncPanel, "sync-invite", () => {
     supervisor?.send({ type: "MESH", command: "createInvite" });
   });
-  syncPanel?.addEventListener("sync-join", (/** @type {any} */ e) => {
+  on(syncPanel, "sync-join", (e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
   });
-  syncPanel?.addEventListener("sync-settings", () => openMeshSettings());
+  on(syncPanel, "sync-settings", () => openMeshSettings());
   // Graceful mesh shutdown on page unload: the Engine tears its links down
   // immediately, so peers clean their room state instead of waiting out the
   // Reticulum link timeout after this worker dies mid-session (Safari reload)
@@ -779,14 +775,14 @@ async function init() {
   const settingsDialog = /** @type {FlowMeshSettings | null} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
-  settingsDialog?.addEventListener("mesh-configure", (/** @type {any} */ e) => {
+  on(settingsDialog, "mesh-configure", (e) => {
     supervisor?.send({
       type: "MESH",
       command: "configure",
       payload: e.detail.config,
     });
   });
-  settingsDialog?.addEventListener("mesh-grant", (/** @type {any} */ e) => {
+  on(settingsDialog, "mesh-grant", (e) => {
     // Grants are minted directly through the mesh layer (work document
     // #27): the Trust Anchor's device signs the authorization and writes
     // the born-verified entry — no unsigned intermediate grant
@@ -796,19 +792,13 @@ async function init() {
       payload: { identityHash: e.detail.peerHash, role: e.detail.role },
     });
   });
-  settingsDialog?.addEventListener("mesh-revoke", (/** @type {any} */ e) => {
-    sendIntent(revokePermissionIntent(e.detail.id));
+  on(settingsDialog, "mesh-revoke", (e) => {
+    sendIntent(revokePermissionIntent(e.detail.id ?? ""));
   });
-  settingsDialog?.addEventListener("mesh-factory-reset", () => {
+  on(settingsDialog, "mesh-factory-reset", () => {
     supervisor?.send({ type: "MESH", command: "factoryReset" });
   });
-  settingsDialog?.addEventListener("mesh-create-invite", () => {
-    supervisor?.send({ type: "MESH", command: "createInvite" });
-  });
-  settingsDialog?.addEventListener("mesh-join", (/** @type {any} */ e) => {
-    supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
-  });
-  settingsDialog?.addEventListener("mesh-close", () => {});
+  on(settingsDialog, "mesh-close", () => {});
 
   const eviction = await checkEviction(/** @type {any} */ (navigator).storage);
   if (eviction?.level === "warning") {

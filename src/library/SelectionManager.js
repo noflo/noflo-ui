@@ -2,6 +2,7 @@
  * Manages the selection state of the NoFlo graph.
  * Extends EventTarget to natively emit events when selection changes.
  */
+import { emit } from "../events.js";
 export class SelectionManager extends EventTarget {
   /** @type {Set<string>} */
   nodes;
@@ -123,10 +124,9 @@ export class SelectionManager extends EventTarget {
    */
   _notify() {
     // Dispatch a standard CustomEvent with the new state
-    this.dispatchEvent(
-      new CustomEvent("selection-changed", {
-        detail: this.getSnapshot(),
-      }),
-    );
+    emit(this, "selection-changed", this.getSnapshot(), {
+      bubbles: false,
+      composed: false,
+    });
   }
 }

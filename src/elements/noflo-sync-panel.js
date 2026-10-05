@@ -19,6 +19,7 @@
  */
 
 import icons from "../../vendor/fontawesome-icons.js";
+import { emit } from "../events.js";
 import { FlowCornerElement } from "./CornerElement.js";
 
 /**
@@ -476,9 +477,7 @@ export class FlowSyncPanel extends FlowCornerElement {
     shadow
       .querySelector("[data-action='create-invite']")
       ?.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("sync-invite", { bubbles: true, composed: true }),
-        );
+        emit(this, "sync-invite", undefined);
       });
     shadow
       .querySelector("[data-action='copy-invite']")
@@ -491,42 +490,26 @@ export class FlowSyncPanel extends FlowCornerElement {
         const input = shadow.querySelector("#join-invite");
         const invite = String(/** @type {any} */ (input)?.value ?? "").trim();
         if (!invite) return;
-        this.dispatchEvent(
-          new CustomEvent("sync-join", {
-            detail: { invite },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "sync-join", { invite });
       });
     for (const button of shadow.querySelectorAll("[data-approve]")) {
       button.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("sync-approve", {
-            detail: { identityHash: button.getAttribute("data-approve") },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "sync-approve", {
+          identityHash: button.getAttribute("data-approve"),
+        });
       });
     }
     for (const button of shadow.querySelectorAll("[data-decline]")) {
       button.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("sync-decline", {
-            detail: { identityHash: button.getAttribute("data-decline") },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        emit(this, "sync-decline", {
+          identityHash: button.getAttribute("data-decline"),
+        });
       });
     }
     shadow
       .querySelector("[data-action='settings']")
       ?.addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("sync-settings", { bubbles: true, composed: true }),
-        );
+        emit(this, "sync-settings", undefined);
       });
   }
 }
