@@ -35,22 +35,21 @@ describe("FlowNode expanded state (work document #5 update #16)", () => {
     return node;
   }
 
-  it("shows the expanded panel with a hint for stubs when selected", () => {
+  it("shows the depiction inside the circle when selected", () => {
     const node = makeNode("stub");
     node.setAttribute("selected", "");
-    const panel = node.shadowRoot.querySelector(".node-expanded");
-    assert.ok(panel, "the expanded panel renders");
+    const depiction = node.shadowRoot.querySelector(".node-depiction");
+    assert.ok(depiction, "the depiction renders inside the circle");
+    assert.match(
+      /** @type {HTMLElement} */ (depiction).textContent ?? "",
+      /Not implemented/,
+      "stubs carry the placeholder depiction inside the circle",
+    );
     assert.match(
       /** @type {any} */ (node.shadowRoot.querySelector(".node-status"))
         .textContent ?? "",
       /stub/,
-      "the status line names the component type",
-    );
-    assert.match(
-      /** @type {any} */ (node.shadowRoot.querySelector(".node-depiction"))
-        .textContent ?? "",
-      /Not implemented/,
-      "stubs carry the placeholder depiction",
+      "the status line names the component type in the info block",
     );
     node.remove();
   });

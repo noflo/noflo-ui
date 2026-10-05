@@ -310,7 +310,10 @@ export class FlowNode extends HTMLElement {
           z-index: 1;
         }
         .node-content {
-          width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
           height: 100%;
           display: flex;
           align-items: center;
@@ -377,36 +380,37 @@ export class FlowNode extends HTMLElement {
           transform: scale(1.35);
           z-index: 10;
         }
-        /* The expanded state (work document #5 update #16): icon top, the
-           navigation depiction in the middle, status text at the bottom */
-        .node-expanded {
+        /* The expanded state (work document #5 update #16): the icon moves
+           to the circle's top and the navigation depiction renders inside
+           the circle; the status line sits in the info block below */
+        .node-depiction {
           display: none;
           position: absolute;
-          top: calc(var(--node-size, 80px) + 6px);
-          left: 50%;
-          transform: translateX(-50%);
-          width: 150px;
-          flex-direction: column;
-          gap: 6px;
-          background: var(--node-bg, #ccc);
-          border: 1px solid var(--node-border, #333);
-          border-radius: 8px;
-          padding: 8px;
-          box-shadow: 0 0 15px var(--node-glow, transparent);
-          z-index: 5;
-        }
-        :host([selected]) .node-expanded {
-          display: flex;
-        }
-        .node-depiction {
-          display: flex;
+          top: 30px;
+          left: 8px;
+          right: 8px;
+          bottom: 8px;
           align-items: center;
           justify-content: center;
-          height: 56px;
           border-radius: 6px;
-          background: color-mix(in srgb, var(--ui-accent, #007bff) 8%, transparent);
+          background: color-mix(in srgb, var(--ui-accent, #007bff) 10%, transparent);
           cursor: pointer;
           color: var(--node-text, #333);
+          overflow: hidden;
+          /* The circle is click-through; the depiction is interactive */
+          pointer-events: auto;
+        }
+        :host([selected]) .node-depiction {
+          display: flex;
+        }
+        /* The icon moves to the circle's top when expanded */
+        :host([selected]) .node-content {
+          align-items: flex-start;
+          padding-top: 10px;
+          font-size: calc(var(--node-size, 80px) * 0.18);
+        }
+        .node-depiction.openable:hover {
+          background: color-mix(in srgb, var(--ui-accent, #007bff) 25%, transparent);
         }
         .depiction-node {
           fill: var(--ui-accent, #007bff);
@@ -418,20 +422,19 @@ export class FlowNode extends HTMLElement {
         }
         .depiction-code {
           font-family: SourceCodePro, monospace;
-          font-size: 16px;
+          font-size: 14px;
           font-weight: bold;
         }
-        .node-depiction .depiction-hint {
-          font-size: 10px;
-          color: var(--node-subtext, #666);
-        }
-        .node-depiction.openable:hover {
-          background: color-mix(in srgb, var(--ui-accent, #007bff) 20%, transparent);
-        }
-        .node-status {
-          font-size: 10px;
+        .depiction-hint {
+          font-size: 9px;
           color: var(--node-subtext, #666);
           text-align: center;
+          padding: 0 4px;
+        }
+        .node-status {
+          display: block;
+          font-size: 10px;
+          color: var(--node-subtext, #666);
         }
         .port-datatype {
           display: none;
@@ -505,16 +508,14 @@ export class FlowNode extends HTMLElement {
       </style>
       <div class="node-circle">
         <div class="node-content"></div>
-      </div>
-      <div class="node-expanded">
         <div class="node-depiction">${this.depictionHtml()}</div>
-        <div class="node-status">${this.statusHtml()}</div>
       </div>
       <div class="node-info">
         <span class="node-name">
           <slot></slot>
         </span>
         <span class="node-component"></span>
+        <span class="node-status">${this.statusHtml()}</span>
       </div>
       <div id="ports-container" style="position: absolute; top: 0; left: 0; width: var(--node-size, 80px); height: var(--node-size, 80px);"></div>
     `;
