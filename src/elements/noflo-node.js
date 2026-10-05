@@ -8,6 +8,20 @@ import { emit, on } from "../events.js";
 import { netpbmToDataUrl } from "../library/netpbm.js";
 
 /**
+ * Escapes a value for interpolation into the shadow template.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/**
  * @typedef {import("./noflo-editor.js").PortConfig} PortConfig
  */
 
@@ -420,9 +434,10 @@ export class FlowNode extends HTMLElement {
           object-fit: contain;
           image-rendering: pixelated;
         }
-        /* The icon band overlays the preview's top */
+        /* The icon band overlays the preview's top; slightly taller so
+           the icon sits closer to the circle's center */
         :host([selected]) .node-content {
-          height: 24px;
+          height: 28px;
           align-items: center;
           background: var(--node-bg, #ccc);
           z-index: 2;
@@ -463,7 +478,7 @@ export class FlowNode extends HTMLElement {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 20px;
+          height: 24px;
           align-items: center;
           justify-content: center;
           background: var(--node-bg, #ccc);
@@ -471,6 +486,11 @@ export class FlowNode extends HTMLElement {
           color: var(--node-subtext, #666);
           z-index: 2;
           pointer-events: none;
+          /* Long component names ellipsize inside the band */
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          padding: 0 6px;
         }
         :host([selected]) .node-component-band {
           display: flex;
@@ -486,7 +506,9 @@ export class FlowNode extends HTMLElement {
           top: -18px;
           left: 50%;
           transform: translateX(-50%);
-          max-width: none;
+          max-width: 240px;
+          overflow: hidden;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
         :host([selected]) .node-status {
@@ -501,12 +523,29 @@ export class FlowNode extends HTMLElement {
           font-size: 10px;
           color: var(--node-subtext, #666);
         }
+        /* Port labels: anchored at the port's center, pushed outside the
+           circle; the dot rides with the name (before for outports, after
+           for inports) */
+        .port-label {
+          display: block;
+        }
+        .port-in-label {
+          transform: translate(calc(-100% - 4px), -50%);
+          text-align: right;
+        }
+        .port-out-label {
+          transform: translate(4px, -50%);
+          text-align: left;
+        }
         /* Expanded port labels become pills with the port dot toward the
-           node, colored by the route of the connected wire */
+           node, colored by the route of the connected wire; the datatype
+           aligns under the name through the shared grid column */
         :host([selected]) .port-label {
-          display: flex;
+          display: inline-grid;
+          grid-template-columns: auto auto;
+          column-gap: 5px;
           align-items: center;
-          gap: 5px;
+          text-align: left;
           background: var(--port-route-color, var(--ui-accent, #007bff));
           color: var(--ui-bg, #111);
           border-radius: 12px;
@@ -515,46 +554,57 @@ export class FlowNode extends HTMLElement {
           font-weight: bold;
           white-space: nowrap;
         }
-        :host([selected]) .port-label::after,
-        :host([selected]) .port-out-label::before {
+        :host([selected]) .port-in-label {
+          transform: translate(calc(-100% + 15px), -50%);
+        }
+        :host([selected]) .port-out-label {
+          transform: translate(-15px, -50%);
+        }
+        /* The name span dissolves into the grid so the dot and the name
+           text place into separate columns, and the datatype aligns under
+           the name text */
+        .port-name {
+          display: contents;
+        }
+        :host([selected]) .port-out-label .port-name::before {
           content: "";
           width: 8px;
           height: 8px;
           border-radius: 50%;
           border: 2px solid var(--ui-bg, #111);
-          flex-shrink: 0;
+          grid-column: 1;
+          grid-row: 1;
         }
-        :host([selected]) .port-out-label::after {
-          display: none;
+        :host([selected]) .port-in-label .port-name::after {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          border: 2px solid var(--ui-bg, #111);
+          grid-column: 2;
+          grid-row: 1;
         }
-        :host([selected]) .port-in-label::before {
-          display: none;
+        .port-in-label .port-datatype {
+          grid-column: 1;
+          grid-row: 2;
+        }
+        .port-out-label .port-datatype {
+          grid-column: 2;
+          grid-row: 2;
         }
         .port-datatype {
           display: none;
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
           font-size: 9px;
-          color: var(--node-subtext, #666);
+          font-weight: normal;
+          opacity: 0.85;
           white-space: nowrap;
           pointer-events: none;
-          z-index: 2;
         }
-        /* Datatypes align with the port name, away from the circle
-           (work document #5 update #16): under the inport pill the name
-           starts at the pill's padding; under the outport pill it starts
-           past the dot (padding 9 + dot 12 + gap 5) */
-        .port-in-label .port-datatype {
-          left: 9px;
-          right: auto;
-          text-align: left;
+        :host(.detailed) .port-datatype {
+          display: inline;
         }
-        .port-out-label .port-datatype {
-          left: 26px;
-          right: auto;
-          text-align: left;
+        :host([selected]) .port-datatype {
+          display: inline;
         }
         /* Port datatypes show at high zoom levels (the editor toggles the
            detailed class) and whenever the node is expanded */
@@ -686,7 +736,11 @@ export class FlowNode extends HTMLElement {
 
     const angleRange = Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;
-    const fraction = totalPorts > 1 ? index / (totalPorts - 1) : 0.5;
+    // Both directions read top to bottom in definition order (work
+    // document #5): outports start at the upper right and step down;
+    // inports mirror at the left, so their fraction runs the other way
+    const fraction =
+      totalPorts > 1 ? (isOutport ? index : 1 - index / (totalPorts - 1)) : 0.5;
     const baseAngle = centerAngle + (fraction - 0.5) * angleRange;
 
     if (!addressable) {
@@ -746,24 +800,21 @@ export class FlowNode extends HTMLElement {
     port.style.top = `${this.radius + pos.y - 6}px`;
 
     const label = document.createElement("div");
-    label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}`;
+    label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}${type === "array" ? " port-label-array" : ""}`;
     label.dataset.portName = name;
-    label.textContent = name;
+    label.innerHTML = `<span class="port-name">${escapeHtml(
+      name,
+    )}</span><span class="port-datatype">${escapeHtml(dataType || "all")}</span>`;
 
-    // The pill's dot lands exactly on the port element, so the port and
-    // the pill share one dot: the dot's center (padding + radius in) sits
-    // on the port's center
-    label.style.left = `${this.radius + pos.x + (isOutport ? -13 : 13)}px`;
+    // The label anchors at the port's center; the state-aware transforms
+    // in the stylesheet place it outside the circle normally, and with the
+    // pill's dot on the port when expanded
+    label.style.left = `${this.radius + pos.x}px`;
     label.style.top = `${this.radius + pos.y}px`;
-    label.style.transform = isOutport
-      ? "translateY(-50%)"
-      : "translate(-100%, -50%)";
-    label.style.textAlign = isOutport ? "left" : "right";
 
     if (this.portsContainer) {
       this.portsContainer.appendChild(port);
       this.portsContainer.appendChild(label);
-      this._appendDatatypeTag(label, dataType);
     }
   }
 
@@ -775,20 +826,6 @@ export class FlowNode extends HTMLElement {
    * @param {boolean} isOutport
    * @param {string | undefined} dataType
    */
-  /**
-   * The datatype tag shown with a port label: under the expanded pill, or
-   * inline at high zoom levels (work document #5 update #16).
-   *
-   * @param {HTMLElement} label The port's label element.
-   * @param {string | undefined} dataType
-   */
-  _appendDatatypeTag(label, dataType) {
-    const tag = document.createElement("div");
-    tag.className = "port-datatype";
-    tag.textContent = dataType || "all";
-    label.appendChild(tag);
-  }
-
   /**
    * Sets the running process's preview image (work document #5 update
    * #16): netpbm bytes (or ASCII text) rendered inside the expanded
