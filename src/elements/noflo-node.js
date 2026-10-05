@@ -742,21 +742,41 @@ export class FlowNode extends HTMLElement {
    */
   resolveLabelCollisions() {
     if (!this.portsContainer || !this.hasAttribute("selected")) return;
-    const minHeight = 24;
+    // Pill heights and the breathing room between them: arrayport instance
+    // pills of the same port cluster tightly (they are one port), regular
+    // pills keep more air (work document #5 update #16)
+    const regularHeight = 22;
+    const arrayHeight = 16;
+    const clusterGap = 1;
+    const airGap = 6;
     for (const direction of ["port-in-label", "port-out-label"]) {
       const labels = [...this.portsContainer.querySelectorAll(`.${direction}`)]
-        .map((label) => ({
-          element: /** @type {HTMLElement} */ (label),
-          base: Number(/** @type {HTMLElement} */ (label).dataset.portY ?? 0),
-        }))
+        .map((label) => {
+          const element = /** @type {HTMLElement} */ (label);
+          const name = element.dataset.portName ?? "";
+          return {
+            element,
+            base: Number(element.dataset.portY ?? 0),
+            height: /\[\d+\]$/.test(name) ? arrayHeight : regularHeight,
+            baseName: name.replace(/\[\d+\]$/, ""),
+          };
+        })
         .sort((a, b) => a.base - b.base);
       /** @type {number | null} */
       let lastBottom = null;
-      for (const { element, base } of labels) {
+      /** @type {string | null} */
+      let lastBaseName = null;
+      for (const { element, base, height, baseName } of labels) {
+        const gap =
+          lastBaseName !== null && lastBaseName === baseName
+            ? clusterGap
+            : airGap;
         /** @type {number} */
-        const top = lastBottom === null ? base : Math.max(base, lastBottom);
+        const top =
+          lastBottom === null ? base : Math.max(base, lastBottom + gap);
         element.style.top = `${top}px`;
-        lastBottom = top + minHeight;
+        lastBottom = top + height;
+        lastBaseName = baseName;
       }
     }
   }
