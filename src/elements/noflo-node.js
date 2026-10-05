@@ -396,7 +396,9 @@ export class FlowNode extends HTMLElement {
         .node-depiction {
           display: none;
           position: absolute;
-          inset: 8px;
+          /* Clearance from the ports and their pills: the disc must not
+             reach the circle's edge where the ports sit */
+          inset: 15px;
           border-radius: 50%;
           background: color-mix(in srgb, var(--ui-bg, #111) 88%, #000);
           box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--node-border, #333) 60%, transparent);
@@ -539,6 +541,16 @@ export class FlowNode extends HTMLElement {
           white-space: nowrap;
           pointer-events: none;
           z-index: 2;
+        }
+        /* Datatypes align away from the circle: left-aligned under the
+           inport pill, right-aligned under the outport pill, so they sit
+           outside the circle and stay readable (work document #5 update
+           #16) */
+        .port-in-label .port-datatype {
+          text-align: left;
+        }
+        .port-out-label .port-datatype {
+          text-align: right;
         }
         /* Port datatypes show at high zoom levels (the editor toggles the
            detailed class) and whenever the node is expanded */
