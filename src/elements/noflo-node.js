@@ -131,6 +131,10 @@ export class FlowNode extends HTMLElement {
    */
   set component(componentName) {
     this._componentName = componentName;
+    // Reflect to an attribute: consumers (the signature editor flow, event
+    // handlers) read the component through getAttribute, and an attribute is
+    // observable in the DOM inspector
+    this.setAttribute("component", componentName);
     this._updatePortsFromLibrary();
     this._updateIconFromLibrary();
     const compEl = this.shadowRoot?.querySelector(".node-component");

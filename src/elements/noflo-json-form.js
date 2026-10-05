@@ -53,7 +53,7 @@ class NofloJsonForm extends HTMLElement {
 
   /**
    * Captures properties set before the element was upgraded
-   * and routes:them through the class setters.
+   * and routes them through the class setters.
    */
   _upgradeProperty(prop) {
     if (Object.hasOwn(this, prop)) {
