@@ -911,7 +911,7 @@ describe("makeSubgraph (work document #23)", () => {
 });
 
 describe("default component signatures (work document #23)", () => {
-  it("registers in0/out0 for a component created without a signature", () => {
+  it("registers in/out for a component created without a signature", () => {
     const doc = createProjectDoc("p");
     handleMessage(doc, createEngineState(), {
       type: "INTENT",
@@ -927,11 +927,11 @@ describe("default component signatures (work document #23)", () => {
     assert.ok(signature, "signature registered");
     assert.deepEqual(
       signature.inports.map((/** @type {any} */ p) => p.name),
-      ["in0"],
+      ["in"],
     );
     assert.deepEqual(
       signature.outports.map((/** @type {any} */ p) => p.name),
-      ["out0"],
+      ["out"],
     );
   });
 

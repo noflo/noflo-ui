@@ -805,7 +805,24 @@ async function init() {
         const name = window.prompt(
           "Enter component name (or leave empty to use 'New Node'):",
         );
-        return name ? name.trim() : null;
+        if (!name) return null;
+        // Spec the new component to match the dragged port's shape (work
+        // document #29 update #1): the port on the connecting side carries
+        // the dragged port's datatype; the opposite side keeps the default.
+        // The names stay the engine defaults (in/out), so the wire the
+        // mapper adds stays valid.
+        const dataType = startPort.dataset.portDataType || "all";
+        const draggingOut = startPort.classList.contains("port-out");
+        const signature = draggingOut
+          ? {
+              inports: [{ name: "in", type: dataType }],
+              outports: [{ name: "out", type: "all" }],
+            }
+          : {
+              inports: [{ name: "in", type: "all" }],
+              outports: [{ name: "out", type: dataType }],
+            };
+        return { name: name.trim(), signature };
       }
       return choice;
     },

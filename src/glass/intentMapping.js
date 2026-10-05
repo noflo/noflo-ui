@@ -19,10 +19,11 @@ import { on } from "../events.js";
  * @property {() => { getComponent: (name: string) => any, listComponents: () => string[] } | null} getLibrary
  *   The Glass-side library view, for default port names and the candidate
  *   lists of the typed-port guiding.
- * @property {((options: { x: number, y: number, startPort: HTMLElement | null }) => Promise<string | null>)} [pickComponent]
+ * @property {((options: { x: number, y: number, startPort: HTMLElement | null }) => Promise<string | { name: string, signature?: { inports?: any[], outports?: any[] } } | null>)} [pickComponent]
  *   Resolves the component for a new node (work document #29's typed-port
- *   guiding): the shell shows the compatible-component picker. Null
- *   cancels; absent, the mapper falls back to a window prompt.
+ *   guiding): the shell shows the compatible-component picker and may
+ *   prefill the new component's signature to match the dragged port's
+ *   shape. Null cancels; absent, the mapper falls back to a window prompt.
  */
 
 /**
@@ -49,8 +50,9 @@ function hostOf(port) {
 /**
  * Narrows the library to the components compatible with a dragged port
  * (work document #29 update #1): dragging from an outport lists components
- * with a matching inport, and vice versa. Port types match when either side
- * is `all` or the types are equal.
+ * with a matching inport, and vice versa. Port datatypes match when either
+ * side is `all` or the datatypes are equal; the dragged port carries its
+ * declared datatype in `dataset.portDataType`.
  *
  * @param {{ getComponent: (name: string) => any, listComponents: () => string[] } | null} library
  * @param {HTMLElement} startPort The dragged port element.
@@ -59,11 +61,11 @@ function hostOf(port) {
 export function compatibleComponents(library, startPort) {
   if (!library) return [];
   const draggingOut = startPort.classList.contains("port-out");
-  const portType = startPort.dataset.portType || "all";
+  const draggedType = startPort.dataset.portDataType || "all";
   const wanted = draggingOut ? "inports" : "outports";
   const compatible = (/** @type {any} */ port) => {
     const type = port.type || "all";
-    return type === "all" || portType === "all" || type === portType;
+    return type === "all" || draggedType === "all" || type === draggedType;
   };
   return library.listComponents().filter((/** @type {string} */ name) => {
     const component = library.getComponent(name);
@@ -170,13 +172,14 @@ export function createIntentMapper({
       on(ed, "node-creation-attempt", async (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const { x, y, startPort } = event.detail;
-        const componentName = pickComponent
+        const picked = pickComponent
           ? await pickComponent({ x, y, startPort })
           : window.prompt(
               "Enter component name (or leave empty to use 'New Node'):",
             );
-        if (componentName === null) return;
-        const name = componentName.trim() || "New Node";
+        if (picked === null) return;
+        const pickedName = typeof picked === "string" ? picked : picked.name;
+        const name = pickedName.trim() || "New Node";
         const nodeId = `node_${Date.now()}`;
         sendIntent({
           type: "INTENT",
@@ -188,6 +191,16 @@ export function createIntentMapper({
             metadata: { x, y },
           },
         });
+        // The typed-port prefill (work document #29 update #1): once the
+        // node exists, the new component's signature is written to match
+        // the dragged port's shape
+        if (typeof picked !== "string" && picked.signature) {
+          afterNode(nodeId, {
+            type: "INTENT",
+            command: "setSignature",
+            payload: { component: name, signature: picked.signature },
+          });
+        }
 
         if (startPort) {
           const port = /** @type {HTMLElement} */ (startPort);

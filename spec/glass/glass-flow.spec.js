@@ -213,12 +213,12 @@ describe("Glass loop: all graph editing operations", () => {
     const outPort = /** @type {any} */ (
       harness
         .nodes(nodeA)
-        .shadowRoot.querySelector('.port[data-port-name="out0"]')
+        .shadowRoot.querySelector('.port[data-port-name="out"]')
     );
     const inPort = /** @type {any} */ (
       harness
         .nodes(nodeB)
-        .shadowRoot.querySelector('.port[data-port-name="in0"]')
+        .shadowRoot.querySelector('.port[data-port-name="in"]')
     );
     assert.ok(outPort && inPort, "default ports carry names");
 
@@ -236,10 +236,10 @@ describe("Glass loop: all graph editing operations", () => {
       (/** @type {any} */ c) => c.src?.process === nodeA,
     );
     assert.ok(edge, "edge persisted in the replica");
-    assert.equal(edge.src.port, "out0");
+    assert.equal(edge.src.port, "out");
     assert.equal(edge.src.process, nodeA);
-    assert.equal(edge.tgt.port, "in0");
-    const edgeId = `${nodeA}:out0[0]->${nodeB}:in0[0]`;
+    assert.equal(edge.tgt.port, "in");
+    const edgeId = `${nodeA}:out[0]->${nodeB}:in[0]`;
     assert.equal(
       edge.id ??
         `${edge.src.process}:${edge.src.port}[0]->${edge.tgt.process}:${edge.tgt.port}[0]`,
@@ -306,7 +306,7 @@ describe("Glass loop: all graph editing operations", () => {
     );
     assert.ok(iipConnection, "IIP persisted");
     assert.equal(iipConnection.data, "c/A", "stubbed prompt value");
-    const iipId = iipConnection.id ?? `DATA->${nodeB}:in0[0]`;
+    const iipId = iipConnection.id ?? `DATA->${nodeB}:in[0]`;
     assert.equal(iipConnection.tgt.process, nodeB);
 
     // ...and renders with the CRDT id so later edit/remove intents can
@@ -349,7 +349,7 @@ describe("Glass loop: all graph editing operations", () => {
           direction: "out",
           position: { x: 0, y: 0 },
           process: nodeA,
-          port: "out0",
+          port: "out",
         },
         bubbles: true,
         composed: true,
@@ -640,12 +640,12 @@ describe("make subgraph loop (work document #23)", () => {
       ?.toJSON();
     assert.ok(signature, "subgraph signature registered");
     assert.ok(
-      signature.inports.some((/** @type {any} */ p) => p.name === "in0"),
-      "in0 exported",
+      signature.inports.some((/** @type {any} */ p) => p.name === "in"),
+      "in exported",
     );
     assert.ok(
-      signature.outports.some((/** @type {any} */ p) => p.name === "out0"),
-      "out0 exported",
+      signature.outports.some((/** @type {any} */ p) => p.name === "out"),
+      "out exported",
     );
 
     localEngine.stop();

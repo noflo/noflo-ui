@@ -439,7 +439,17 @@ export class FlowNode extends HTMLElement {
    * @param {PortConfig} cfg
    */
   createPort(index, totalPorts, isOutport, cfg) {
-    const name = cfg.name || (isOutport ? `out${index}` : `in${index}`);
+    // The common default: a single in and out port (work document #29);
+    // further unnamed ports keep their index
+    const name =
+      cfg.name ||
+      (index === 0
+        ? isOutport
+          ? "out"
+          : "in"
+        : isOutport
+          ? `out${index}`
+          : `in${index}`);
     const addressable = cfg.addressable || false;
     const size = addressable ? 3 : 1;
 
@@ -453,7 +463,7 @@ export class FlowNode extends HTMLElement {
         x: this.radius * Math.cos(baseAngle),
         y: this.radius * Math.sin(baseAngle),
       };
-      this.addPortElement(pos, isOutport, name, "regular");
+      this.addPortElement(pos, isOutport, name, "regular", cfg.type);
     } else {
       // Use an angular step that makes 12px circles almost touch
       // Chord length approx 13px -> angle approx 0.32 radians
@@ -468,7 +478,14 @@ export class FlowNode extends HTMLElement {
           x: this.radius * Math.cos(angle),
           y: this.radius * Math.sin(angle),
         };
-        this.addPortElement(instancePos, isOutport, instanceName, "array", i);
+        this.addPortElement(
+          instancePos,
+          isOutport,
+          instanceName,
+          "array",
+          cfg.type,
+          i,
+        );
       }
     }
   }
@@ -478,14 +495,19 @@ export class FlowNode extends HTMLElement {
    * @param {boolean} isOutport
    * @param {string} name
    * @param {string} type
+   * @param {string} [dataType] The port's declared datatype.
    * @param {number} [index]
    */
-  addPortElement(pos, isOutport, name, type, index) {
+  addPortElement(pos, isOutport, name, type, dataType, index) {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
 
     port.dataset.portName = name;
     port.dataset.portType = type;
+    // The port's declared datatype (work document #29 update #1): the
+    // typed-port guiding matches on it; `portType` stays the structural
+    // kind (regular/array)
+    port.dataset.portDataType = dataType || "all";
     if (index !== undefined) port.dataset.portIndex = index.toString();
 
     // All ports are now 12px (radius 6px)

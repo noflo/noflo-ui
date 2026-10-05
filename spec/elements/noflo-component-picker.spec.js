@@ -100,7 +100,7 @@ describe("compatibleComponents (work document #29 update #1)", () => {
   function port(direction, type) {
     return {
       classList: { contains: (c) => c === direction },
-      dataset: { portType: type },
+      dataset: { portDataType: type },
     };
   }
 

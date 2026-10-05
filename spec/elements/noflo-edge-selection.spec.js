@@ -14,7 +14,7 @@ describe("FlowEditor Edge Selection", async () => {
     // Create nodes and connect them
     const nodeA = el.addNode("A", 0, 0);
     const nodeB = el.addNode("B", 100, 0);
-    el.connectNodes(nodeA, "out0", nodeB, "in0");
+    el.connectNodes(nodeA, "out", nodeB, "in");
 
     const edge = el.edges[0];
     assert.ok(edge, "Edge should be created");
