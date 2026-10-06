@@ -103,7 +103,10 @@ export class FlowContextChip extends FlowCornerElement {
           font-family: SourceCodePro, monospace;
           font-size: 12px;
           backdrop-filter: blur(8px);
-          max-width: min(60vw, 420px);
+          /* Corner constraint (work document #28): the chip stays inside
+             its corner and never reaches the screen's center, where the
+             selection pills live */
+          max-width: min(calc(33vw - 16px), 420px);
           cursor: default;
         }
         .context-label {

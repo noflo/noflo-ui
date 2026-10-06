@@ -1669,6 +1669,13 @@ export class FlowEditor extends HTMLElement {
               typeof edgeObject.routeId === "number"
                 ? edgeObject.routeId
                 : null;
+            // The cycler applies to the whole edge selection when the
+            // clicked edge is part of it (the same rule as Make subgraph
+            // and Group)
+            const selectedEdges = [...this.selectionManager.edges];
+            const targetIds = selectedEdges.includes(edgeId)
+              ? selectedEdges
+              : [edgeId];
             items.unshift({
               text: `Route: ${currentRoute ?? "none"}`,
               onClick: () => {
@@ -1678,10 +1685,12 @@ export class FlowEditor extends HTMLElement {
                     : currentRoute >= 9
                       ? null
                       : currentRoute + 1;
-                emit(this, "set-edge-route", {
-                  edgeId,
-                  route: next,
-                });
+                for (const targetId of targetIds) {
+                  emit(this, "set-edge-route", {
+                    edgeId: targetId,
+                    route: next,
+                  });
+                }
               },
               icon: "palette",
             });

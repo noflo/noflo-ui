@@ -85,11 +85,8 @@ export class SelectionPills extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host {
-          /* Below the Context chip's row (work document #28): a wide chip
-             (long project names plus the role badge) would otherwise run
-             over the selection pills */
           position: fixed;
-          top: 56px;
+          top: 20px;
           left: 50%;
           transform: translateX(-50%);
           z-index: 1000;
