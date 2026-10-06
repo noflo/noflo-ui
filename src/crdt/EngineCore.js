@@ -27,6 +27,8 @@ import {
   getGroup,
   getNode,
   graphChildren,
+  moveExport,
+  moveIIP,
   moveNode,
   removeComponentSignature,
   removeEdge,
@@ -151,6 +153,8 @@ export const INTENT_HANDLERS = {
   implementAsGraph: intentImplementAsGraph,
   setEdgeRoute: intentSetEdgeRoute,
   setPortRoute: intentSetPortRoute,
+  moveIIP: intentMoveIIP,
+  moveExport: intentMoveExport,
   createGroup: intentCreateGroup,
   removeGroup: intentRemoveGroup,
   updateGroup: intentUpdateGroup,
@@ -1389,6 +1393,65 @@ function intentSetPortRoute(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   if (!setPortRoute(graph, direction, name, route)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Moves an IIP (work document #5 follow-up): IIP positions sync like node
+ * positions.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentMoveIIP(doc, payload) {
+  const { graphId, id, x, y } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof id !== "string" ||
+    typeof x !== "number" ||
+    typeof y !== "number"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!moveIIP(graph, id, x, y)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Moves an exported port (work document #5 follow-up): export positions
+ * sync like node positions.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentMoveExport(doc, payload) {
+  const { graphId, name, direction, x, y } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof name !== "string" ||
+    typeof x !== "number" ||
+    typeof y !== "number"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const resolved = directionForCommand(
+    direction === "in" ? "addInport" : "addOutport",
+  );
+  if (!moveExport(graph, resolved, name, x, y)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };

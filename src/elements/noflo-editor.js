@@ -1310,7 +1310,7 @@ export class FlowEditor extends HTMLElement {
               this.getNodeName(node),
             ),
           });
-          /** @type {Array<{name: string, position: Position, type: string, direction: any, portName: string | null}>} */
+          /** @type {import("../events.js").MovedNode[]} */
           const movedNodes = [];
           this.draggingNodesInitialPositions.forEach((initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
@@ -1319,7 +1319,11 @@ export class FlowEditor extends HTMLElement {
               node.position,
             );
             const type = node.tagName.toLowerCase();
-            const name = this.getNodeName(node);
+            // The IIP's stable identity is its CRDT edge id (the element
+            // id); the name attribute is an editor-generated label (work
+            // document #5 follow-up)
+            const name =
+              type === "noflo-iip" ? node.id : this.getNodeName(node);
             let direction = null;
             let portName = null;
             if (type === "noflo-exported-port") {
@@ -1328,6 +1332,7 @@ export class FlowEditor extends HTMLElement {
             }
             movedNodes.push({
               name,
+              id: node.id,
               position: node.position,
               type,
               direction,

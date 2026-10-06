@@ -227,6 +227,8 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[] } }
   | { type: 'INTENT'; command: 'setEdgeRoute'; payload: { graphId: string; edgeId: string; route: number | null } }
   | { type: 'INTENT'; command: 'setPortRoute'; payload: { graphId: string; name: string; direction: 'inports' | 'outports'; route: number | null } }
+  | { type: 'INTENT'; command: 'moveIIP'; payload: { graphId: string; id: string; x: number; y: number } }
+  | { type: 'INTENT'; command: 'moveExport'; payload: { graphId: string; name: string; direction: 'in' | 'out'; x: number; y: number } }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
   | { type: 'MESH'; command: 'status' }
   | { type: 'MESH'; command: 'join'; payload: { invite: string } }

@@ -48,6 +48,8 @@
 /**
  * @typedef {Object} MovedNode
  * @property {string} name
+ * @property {string} id The element's stable id (the CRDT edge id for
+ *   IIPs).
  * @property {{ x: number, y: number }} position
  * @property {string} type
  * @property {any} direction

@@ -1246,3 +1246,51 @@ export function setPortRoute(graph, direction, name, route) {
   transact(info, () => info.set("metadata", metadataMap({ ...plain, route })));
   return true;
 }
+
+/**
+ * Moves an IIP: its position lives in the IIP edge's metadata (work
+ * document #5 follow-up: IIP moves sync like node moves).
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} iipId The IIP's CRDT edge id (`DATA->...`).
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean} Whether the IIP existed.
+ */
+export function moveIIP(graph, iipId, x, y) {
+  const edges = edgesOf(graph);
+  const edge = /** @type {Y.Map<any> | undefined} */ (edges.get(iipId));
+  if (!edge) return false;
+  const metadata = /** @type {Y.Map<any>} */ (edge.get("metadata"));
+  if (!metadata || typeof metadata.get !== "function") return false;
+  transact(edge, () => {
+    metadata.set("x", x);
+    metadata.set("y", y);
+  });
+  return true;
+}
+
+/**
+ * Moves an exported port: its position lives in the exported port's
+ * metadata (work document #5 follow-up: export moves sync like node
+ * moves).
+ *
+ * @param {Y.Map<any>} graph
+ * @param {"inports" | "outports"} direction
+ * @param {string} name The exported port's public name.
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean} Whether the exported port existed.
+ */
+export function moveExport(graph, direction, name, x, y) {
+  const ports = /** @type {Y.Map<any> | undefined} */ (graph.get(direction));
+  const info = /** @type {Y.Map<any> | undefined} */ (ports?.get(name));
+  if (!info) return false;
+  const metadata = info.get("metadata");
+  const plain =
+    metadata && typeof metadata.get === "function"
+      ? metadata.toJSON()
+      : (metadata ?? {});
+  transact(info, () => info.set("metadata", metadataMap({ ...plain, x, y })));
+  return true;
+}

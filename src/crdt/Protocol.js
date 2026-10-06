@@ -274,6 +274,23 @@
  */
 
 /**
+ * Appendix A extension (work document #5 follow-up): IIP and exported
+ * port positions sync like node positions.
+ *
+ * @typedef {Object} IntentMoveIIPMessage
+ * @property {'INTENT'} type
+ * @property {'moveIIP'} command
+ * @property {{ graphId: string, id: string, x: number, y: number }} payload
+ */
+
+/**
+ * @typedef {Object} IntentMoveExportMessage
+ * @property {'INTENT'} type
+ * @property {'moveExport'} command
+ * @property {{ graphId: string, name: string, direction: 'in' | 'out', x: number, y: number }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -376,6 +393,8 @@
  *   | IntentUpdateGroupMessage
  *   | IntentSetEdgeRouteMessage
  *   | IntentSetPortRouteMessage
+ *   | IntentMoveIIPMessage
+ *   | IntentMoveExportMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -434,6 +453,8 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "updateGroup" },
   { type: "INTENT", command: "setEdgeRoute" },
   { type: "INTENT", command: "setPortRoute" },
+  { type: "INTENT", command: "moveIIP" },
+  { type: "INTENT", command: "moveExport" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },
