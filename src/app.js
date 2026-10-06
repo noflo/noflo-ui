@@ -696,17 +696,6 @@ function updateContextChip() {
 }
 
 /**
- * Shows the leadership role in the context chip.
- */
-function updateRoleBadge() {
-  contextChip?.setRole({
-    leader: isLeader,
-    leaderId: coordinator?.leaderId() ?? undefined,
-  });
-  updateContextChip();
-}
-
-/**
  * Wires the cross-tab mirror: the leader broadcasts replica updates to
  * followers; followers apply them read-only. A follower that joins mid-stream
  * requests full state, since incremental updates alone cannot converge a
@@ -754,7 +743,6 @@ function onRoleChange() {
       payload: { graphId: activeGraphId },
     });
   }
-  updateRoleBadge();
 }
 
 /**
@@ -994,7 +982,6 @@ async function init() {
   }
 
   setupCrossTabMirror();
-  updateRoleBadge();
 
   // Context chip (work document #28, top-left corner): what am I editing,
   // the tab's engine role, and the entry into configuration — replaces the

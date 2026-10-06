@@ -390,3 +390,94 @@ describe("graph groups (work document #5 update #16)", () => {
     assert.deepEqual(group.get("nodes").toArray(), ["n2"]);
   });
 });
+
+describe("edge routes (work document #35)", () => {
+  /**
+   * A project with two wired nodes.
+   */
+  function routeBoot() {
+    const doc = new Y.Doc();
+    const state = createEngineState();
+    const send = (message) => handleMessage(doc, state, message);
+    send({
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main", name: "main" },
+    });
+    send({
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "a",
+        componentName: "c",
+        metadata: { x: 0, y: 0 },
+      },
+    });
+    send({
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "b",
+        componentName: "c",
+        metadata: { x: 100, y: 0 },
+      },
+    });
+    send({
+      type: "INTENT",
+      command: "addEdge",
+      payload: {
+        graphId: "main",
+        src: { node: "a", port: "out" },
+        tgt: { node: "b", port: "in" },
+      },
+    });
+    return { doc, send };
+  }
+
+  it("setEdgeRoute stores the route on the edge metadata", () => {
+    const { doc, send } = routeBoot();
+    const result = send({
+      type: "INTENT",
+      command: "setEdgeRoute",
+      payload: { graphId: "main", edgeId: "a:out[0]->b:in[0]", route: 4 },
+    });
+    assert.ok(result.accepted);
+    const edge = getGraph(doc, "main")?.get("edges")?.get("a:out[0]->b:in[0]");
+    assert.equal(edge?.get("metadata")?.get("route"), 4);
+  });
+
+  it("setEdgeRoute null clears the route", () => {
+    const { doc, send } = routeBoot();
+    send({
+      type: "INTENT",
+      command: "setEdgeRoute",
+      payload: { graphId: "main", edgeId: "a:out[0]->b:in[0]", route: 2 },
+    });
+    const result = send({
+      type: "INTENT",
+      command: "setEdgeRoute",
+      payload: { graphId: "main", edgeId: "a:out[0]->b:in[0]", route: null },
+    });
+    assert.ok(result.accepted);
+    const edge = getGraph(doc, "main")?.get("edges")?.get("a:out[0]->b:in[0]");
+    assert.equal(edge?.get("metadata")?.has("route"), false);
+  });
+
+  it("setEdgeRoute refuses out-of-range routes and unknown edges", () => {
+    const { doc, send } = routeBoot();
+    const bad = send({
+      type: "INTENT",
+      command: "setEdgeRoute",
+      payload: { graphId: "main", edgeId: "a:out[0]->b:in[0]", route: 12 },
+    });
+    assert.ok(!bad.accepted, "route 12 refused");
+    const ghost = send({
+      type: "INTENT",
+      command: "setEdgeRoute",
+      payload: { graphId: "main", edgeId: "a:out[0]->x:in[0]", route: 1 },
+    });
+    assert.ok(!ghost.accepted, "unknown edge refused");
+  });
+});

@@ -253,6 +253,17 @@
  */
 
 /**
+ * Appendix A extension (work document #35): set an edge's route — the
+ * route index colors the edge and drives the route highlighting; null
+ * clears it.
+ *
+ * @typedef {Object} IntentSetEdgeRouteMessage
+ * @property {'INTENT'} type
+ * @property {'setEdgeRoute'} command
+ * @property {{ graphId: string, edgeId: string, route: number | null }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -353,6 +364,7 @@
  *   | IntentCreateGroupMessage
  *   | IntentRemoveGroupMessage
  *   | IntentUpdateGroupMessage
+ *   | IntentSetEdgeRouteMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -409,6 +421,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "createGroup" },
   { type: "INTENT", command: "removeGroup" },
   { type: "INTENT", command: "updateGroup" },
+  { type: "INTENT", command: "setEdgeRoute" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },

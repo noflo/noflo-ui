@@ -225,6 +225,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'createGroup'; payload: { graphId: string; nodeIds: string[]; name?: string } }
   | { type: 'INTENT'; command: 'removeGroup'; payload: { graphId: string; groupId: string } }
   | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[] } }
+  | { type: 'INTENT'; command: 'setEdgeRoute'; payload: { graphId: string; edgeId: string; route: number | null } }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
   | { type: 'MESH'; command: 'status' }
   | { type: 'MESH'; command: 'join'; payload: { invite: string } }

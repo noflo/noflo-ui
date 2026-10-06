@@ -38,6 +38,7 @@ import {
   revokePermission,
   setComponentCode,
   setComponentSignature,
+  setEdgeRoute,
   setNodeComponent,
   transferNode,
   updateComponentMetadata,
@@ -147,6 +148,7 @@ export const INTENT_HANDLERS = {
   moveUp: intentMoveUp,
   revokePermission: intentRevokePermission,
   implementAsGraph: intentImplementAsGraph,
+  setEdgeRoute: intentSetEdgeRoute,
   createGroup: intentCreateGroup,
   removeGroup: intentRemoveGroup,
   updateGroup: intentUpdateGroup,
@@ -1343,6 +1345,37 @@ function intentUpdateGroup(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   if (remove && !removeGroupNodes(graph, groupId, remove)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Sets an edge's route (work document #35): the route index colors the
+ * edge and drives the route highlighting. Null clears the route.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetEdgeRoute(doc, payload) {
+  const { graphId, edgeId, route } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof edgeId !== "string" ||
+    ((typeof route !== "number" ||
+      !Number.isInteger(route) ||
+      route < 0 ||
+      route > 9) &&
+      route !== null)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!setEdgeRoute(graph, edgeId, route)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };

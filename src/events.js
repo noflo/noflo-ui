@@ -90,6 +90,7 @@
  * @property {CustomEvent<{ nodes: string[] }>} move-nodes-up-attempt
  * @property {CustomEvent<{ node: string }>} unpack-subgraph-attempt
  * @property {CustomEvent<{ edge: string, x: number, y: number }>} edge-menu-open
+ * @property {CustomEvent<{ edgeId: string, route: number | null }>} set-edge-route
  * @property {CustomEvent<{ edgeId: string, src: PortEndpoint, tgt: PortEndpoint, x: number, y: number }>} splice-node-attempt
  * @property {CustomEvent<{ x: number, y: number, type: "canvas" }>} canvas-menu-open
  * @property {CustomEvent<{ portA: Element, portB: Element }>} wire-connection-attempt

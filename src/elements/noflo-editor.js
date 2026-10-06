@@ -277,15 +277,38 @@ export class FlowEditor extends HTMLElement {
       }
     });
 
-    // 3. Update edges
+    // 3. Update edges. Selecting an edge with a route lights the whole
+    // line: every edge sharing that route plus the nodes they connect
+    // (work document #35)
+    const routeLines = new Set();
+    for (const edge of this.edges) {
+      if (edges.includes(this.getEdgeId(edge)) && edge.routeId !== undefined) {
+        routeLines.add(edge.routeId);
+      }
+    }
+    const lineNodes = new Set();
     this.edges.forEach((edge) => {
       const edgeId = this.getEdgeId(edge);
+      const onLine = edge.routeId !== undefined && routeLines.has(edge.routeId);
       if (edges.includes(edgeId)) {
         edge.visualPath.setAttribute("selected", "");
       } else {
         edge.visualPath.removeAttribute("selected");
       }
+      edge.visualPath.classList.toggle("route-highlight", onLine);
+      if (onLine) {
+        const hostA = /** @type {ShadowRoot} */ (edge.portA.getRootNode()).host;
+        const hostB = /** @type {ShadowRoot} */ (edge.portB.getRootNode()).host;
+        if (hostA) lineNodes.add(this.getNodeName(hostA));
+        if (hostB) lineNodes.add(this.getNodeName(hostB));
+      }
     });
+    for (const node of this.nodeLayer?.querySelectorAll("noflo-node") ?? []) {
+      node.classList.toggle(
+        "route-highlight",
+        lineNodes.has(node.getAttribute("name")),
+      );
+    }
   }
 
   render() {
@@ -510,6 +533,12 @@ export class FlowEditor extends HTMLElement {
           stroke: var(--ui-accent);
           stroke-width: calc(var(--edge-width, 4px) + 2px);
           stroke-dasharray: none;
+        }
+        /* Route highlighting (work document #35): selecting an edge on a
+           route lights the whole line */
+        .edge-flow.route-highlight {
+          stroke-width: calc(var(--edge-width, 4px) + 2px);
+          filter: drop-shadow(0 0 6px var(--flow-color, var(--edge-color)));
         }
         /* Pending state (work document #21): optimistic edges until the
            replica confirms the CRDT merge */
@@ -1636,6 +1665,26 @@ export class FlowEditor extends HTMLElement {
             (candidate) => this.getEdgeId(candidate) === edgeId,
           );
           if (edgeObject) {
+            const currentRoute =
+              typeof edgeObject.routeId === "number"
+                ? edgeObject.routeId
+                : null;
+            items.unshift({
+              text: `Route: ${currentRoute ?? "none"}`,
+              onClick: () => {
+                const next =
+                  currentRoute === null
+                    ? 0
+                    : currentRoute >= 9
+                      ? null
+                      : currentRoute + 1;
+                emit(this, "set-edge-route", {
+                  edgeId,
+                  route: next,
+                });
+              },
+              icon: "palette",
+            });
             items.unshift({
               text: "Add Node",
               onClick: () => {

@@ -516,6 +516,17 @@ export function createIntentMapper({
           payload: { graphId: graphId(), groupId: e.detail.groupId },
         });
       });
+      on(ed, "set-edge-route", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "setEdgeRoute",
+          payload: {
+            graphId: graphId(),
+            edgeId: e.detail.edgeId,
+            route: e.detail.route,
+          },
+        });
+      });
       on(ed, "splice-node-attempt", async (e) => {
         const { src, tgt, x, y } = e.detail;
         // The edge's datatypes drive the guiding and the wiring

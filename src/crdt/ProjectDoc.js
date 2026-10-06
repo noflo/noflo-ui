@@ -1188,3 +1188,27 @@ export function removeNodeFromGroups(graph, nodeId) {
     }
   }
 }
+
+/**
+ * Sets an edge's route (work document #35): the route index (0-9) colors
+ * the edge and drives the route highlighting; null clears it.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} edgeId
+ * @param {number | null} route
+ * @returns {boolean} Whether the edge existed and the route changed.
+ */
+export function setEdgeRoute(graph, edgeId, route) {
+  const edges = edgesOf(graph);
+  const edge = /** @type {Y.Map<any> | undefined} */ (edges.get(edgeId));
+  if (!edge) return false;
+  const metadata = /** @type {Y.Map<any>} */ (edge.get("metadata"));
+  if (route === null) {
+    if (!metadata.has("route")) return true;
+    transact(edge, () => metadata.delete("route"));
+    return true;
+  }
+  if (metadata.get("route") === route) return true;
+  transact(edge, () => metadata.set("route", route));
+  return true;
+}

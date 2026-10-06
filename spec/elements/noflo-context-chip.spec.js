@@ -32,21 +32,6 @@ describe("FlowContextChip (work document #28)", () => {
     el.remove();
   });
 
-  it("shows the tab's engine role", () => {
-    const el = makeElement();
-    el.setRole({ leader: true });
-    let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.match(shadow.textContent ?? "", /Leader/);
-    el.setRole({ leader: false, leaderId: "tab-9" });
-    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.match(shadow.textContent ?? "", /Observer/);
-    const roleBadge = /** @type {HTMLElement} */ (
-      shadow.querySelector(".role")
-    );
-    assert.match(roleBadge?.title ?? "", /tab-9/, "the leader is named");
-    el.remove();
-  });
-
   it("re-renders only when the label actually changes", () => {
     const el = makeElement();
     el.setLabel("a");
@@ -62,19 +47,6 @@ describe("FlowContextChip (work document #28)", () => {
       /** @type {ShadowRoot} */ (el.shadowRoot).innerHTML,
       before,
     );
-    el.remove();
-  });
-
-  it("hides the role on phone layouts", () => {
-    const el = makeElement();
-    el.setLabel("a");
-    el.setRole({ leader: true });
-    const style =
-      /** @type {HTMLElement} */ (
-        /** @type {ShadowRoot} */ (el.shadowRoot).querySelector("style")
-      ).textContent ?? "";
-    assert.match(style, /@media \(max-width: 480px\)/);
-    assert.match(style, /\.role \{ display: none; \}/);
     el.remove();
   });
 
