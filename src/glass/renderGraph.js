@@ -30,7 +30,14 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
       // Stored positions win over the computed column layout
       const px = info.metadata?.x ?? x;
       const py = info.metadata?.y ?? y + i * 60;
-      ed.addExportedPort(px, py, portName, direction, targetPort);
+      ed.addExportedPort(
+        px,
+        py,
+        portName,
+        direction,
+        targetPort,
+        info.metadata?.route,
+      );
     }
     i++;
   }
@@ -80,6 +87,7 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       y,
       /** @type {any} */ (port),
       iip.from?.data || "Value",
+      iip.metadata?.route,
     );
     newIIP.id = iipId;
     elementsMap.set(iipId, newIIP);

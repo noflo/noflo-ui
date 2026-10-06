@@ -264,6 +264,16 @@
  */
 
 /**
+ * Appendix A extension (work document #35): set an exported port's route
+ * — the route index colors the export wire; null clears it.
+ *
+ * @typedef {Object} IntentSetPortRouteMessage
+ * @property {'INTENT'} type
+ * @property {'setPortRoute'} command
+ * @property {{ graphId: string, name: string, direction: 'inports' | 'outports', route: number | null }} payload
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -365,6 +375,7 @@
  *   | IntentRemoveGroupMessage
  *   | IntentUpdateGroupMessage
  *   | IntentSetEdgeRouteMessage
+ *   | IntentSetPortRouteMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -422,6 +433,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "removeGroup" },
   { type: "INTENT", command: "updateGroup" },
   { type: "INTENT", command: "setEdgeRoute" },
+  { type: "INTENT", command: "setPortRoute" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },

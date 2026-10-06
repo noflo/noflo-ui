@@ -40,6 +40,7 @@ import {
   setComponentSignature,
   setEdgeRoute,
   setNodeComponent,
+  setPortRoute,
   transferNode,
   updateComponentMetadata,
 } from "./ProjectDoc.js";
@@ -149,6 +150,7 @@ export const INTENT_HANDLERS = {
   revokePermission: intentRevokePermission,
   implementAsGraph: intentImplementAsGraph,
   setEdgeRoute: intentSetEdgeRoute,
+  setPortRoute: intentSetPortRoute,
   createGroup: intentCreateGroup,
   removeGroup: intentRemoveGroup,
   updateGroup: intentUpdateGroup,
@@ -1215,12 +1217,22 @@ function intentRenameExport(doc, command, payload) {
   if (!info || ports.has(to)) {
     return { accepted: false, echoes: [] };
   }
-  // Yjs types cannot be re-integrated under a new key; copy the record
+  // Yjs types cannot be re-integrated under a new key; copy the record.
+  // The metadata keeps its Y.Map form: plain-object metadata would break
+  // later in-place updates (the route cycler hit this)
   const plain = info.toJSON();
   doc.transact(() => {
     ports.delete(from);
     const moved = new Y.Map();
     for (const key of Object.keys(plain)) {
+      if (key === "metadata") {
+        const metadataMap = new Y.Map();
+        for (const metaKey of Object.keys(plain[key] ?? {})) {
+          metadataMap.set(metaKey, (plain[key] ?? {})[metaKey]);
+        }
+        moved.set("metadata", metadataMap);
+        continue;
+      }
       moved.set(key, plain[key]);
     }
     ports.set(to, moved);
@@ -1345,6 +1357,38 @@ function intentUpdateGroup(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   if (remove && !removeGroupNodes(graph, groupId, remove)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Sets an exported port's route (work document #35): the route index
+ * colors the export wire. Null clears the route.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetPortRoute(doc, payload) {
+  const { graphId, name, direction, route } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof name !== "string" ||
+    (direction !== "inports" && direction !== "outports") ||
+    ((typeof route !== "number" ||
+      !Number.isInteger(route) ||
+      route < 0 ||
+      route > 9) &&
+      route !== null)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!setPortRoute(graph, direction, name, route)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };

@@ -10,7 +10,7 @@
  * @property {SVGPathElement} visualPath
  * @property {HTMLElement} portA
  * @property {HTMLElement} portB
- * @property {string} [routeId]
+ * @property {number} [routeId] The route index (0-9) coloring the edge.
  */
 
 /**
@@ -19,6 +19,7 @@
  * @property {SVGPathElement} visualPath
  * @property {HTMLElement} iip
  * @property {HTMLElement} port
+ * @property {number} [routeId] The route index coloring the wire.
  */
 
 /**
@@ -62,10 +63,10 @@ export class EdgeManager {
    * Create and register an edge outport -> inport.
    * @param {HTMLElement} portA outport
    * @param {HTMLElement} portB inport
-   * @param {string} [routeId]
+   * @param {number} [routeId]
    * @returns {Edge | undefined}
    */
-  addEdge(portA, portB, routeId) {
+  addEdge(portA, portB, /** @type {number | undefined} */ routeId) {
     if (
       !portA.classList.contains("port-out") ||
       !portB.classList.contains("port-in")
@@ -114,7 +115,7 @@ export class EdgeManager {
    * @param {string} portAName
    * @param {HTMLElement} nodeB
    * @param {string} portBName
-   * @param {string} [routeId]
+   * @param {number} [routeId]
    * @param {number | undefined} [portAIndex]
    * @param {number | undefined} [portBIndex]
    * @returns {Edge | undefined}
@@ -198,19 +199,24 @@ export class EdgeManager {
    * Create and register an IIP wire (IIP or exported-port -> port).
    * @param {HTMLElement} iip
    * @param {HTMLElement} port
+   * @param {number} [routeId] The route index coloring the wire (work
+   *   document #35).
    * @returns {IIPWire}
    */
-  connectIIP(iip, port) {
+  connectIIP(iip, port, routeId) {
     const hitPath = this._createPath("edge-hit-area");
     const visualPath = this._createPath("edge-flow");
 
     this._updatePathBetween(hitPath, visualPath, iip, port);
+    if (routeId !== undefined && routeId !== null) {
+      visualPath.style.setProperty("--flow-color", `var(--route-${routeId})`);
+    }
 
     this.iipWiresGroup.appendChild(hitPath);
     this.iipWiresGroup.appendChild(visualPath);
 
     /** @type {IIPWire} */
-    const wire = { hitPath, visualPath, iip, port };
+    const wire = { hitPath, visualPath, iip, port, routeId };
     this.iipWires.push(wire);
     return wire;
   }

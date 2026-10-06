@@ -737,6 +737,7 @@ function setupEditorEventListeners(editor) {
       y,
       /** @type {HTMLElement} */ (startPort),
       "Value",
+      undefined,
     );
     newIIP.id = iipId;
 
@@ -1201,7 +1202,14 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
       );
     }
     if (targetPort) {
-      ed.addExportedPort(x, y + i * 60, portName, direction, targetPort);
+      ed.addExportedPort(
+        x,
+        y + i * 60,
+        portName,
+        direction,
+        targetPort,
+        info.metadata?.route,
+      );
     }
     i++;
   }
@@ -1249,6 +1257,7 @@ function renderGraphIntoEditor(g, ed) {
       y,
       /** @type {any} */ (port),
       iip.from?.data || "Value",
+      iip.metadata?.route,
     );
     newIIP.id = iipId;
     elementsMap.set(iipId, newIIP);

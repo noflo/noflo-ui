@@ -242,16 +242,16 @@ async function init() {
     );
 
     // Initial connections
-    editor.connectNodes(source, "out", filter, "in", "0");
-    editor.connectNodes(source, "out", splitter, "in", "1");
+    editor.connectNodes(source, "out", filter, "in", 0);
+    editor.connectNodes(source, "out", splitter, "in", 1);
 
-    editor.connectNodes(filter, "out", logger, "in", "2");
+    editor.connectNodes(filter, "out", logger, "in", 2);
 
     // Connect only some ArrayPorts to allow testing
-    editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`, "3");
-    editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`, "3");
+    editor.connectNodes(splitter, `out[0]`, aggregator, `in[0]`, 3);
+    editor.connectNodes(splitter, `out[2]`, aggregator, `in[2]`, 3);
 
-    editor.connectNodes(aggregator, "out", sink, "in", "4");
+    editor.connectNodes(aggregator, "out", sink, "in", 4);
 
     editor.fitEntitiesToViewport();
 

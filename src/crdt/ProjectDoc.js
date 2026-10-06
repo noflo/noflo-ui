@@ -1212,3 +1212,37 @@ export function setEdgeRoute(graph, edgeId, route) {
   transact(edge, () => metadata.set("route", route));
   return true;
 }
+
+/**
+ * Sets an exported port's route (work document #35): the route index
+ * colors the export wire and drives the route highlighting; null clears
+ * it.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {"inports" | "outports"} direction
+ * @param {string} name The exported port's public name.
+ * @param {number | null} route
+ * @returns {boolean} Whether the exported port existed.
+ */
+export function setPortRoute(graph, direction, name, route) {
+  const ports = /** @type {Y.Map<any> | undefined} */ (graph.get(direction));
+  const info = /** @type {Y.Map<any> | undefined} */ (ports?.get(name));
+  if (!info) return false;
+  // The metadata may be a plain object: the rename flow rewrites entries
+  // from their plain projection (work document #35)
+  const metadata = info.get("metadata");
+  const plain =
+    metadata && typeof metadata.get === "function"
+      ? metadata.toJSON()
+      : (metadata ?? {});
+  if (route === null) {
+    if (plain.route === undefined) return true;
+    const next = { ...plain };
+    delete next.route;
+    transact(info, () => info.set("metadata", metadataMap(next)));
+    return true;
+  }
+  if (plain.route === route) return true;
+  transact(info, () => info.set("metadata", metadataMap({ ...plain, route })));
+  return true;
+}

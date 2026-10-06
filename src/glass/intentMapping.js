@@ -527,6 +527,18 @@ export function createIntentMapper({
           },
         });
       });
+      on(ed, "set-port-route", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "setPortRoute",
+          payload: {
+            graphId: graphId(),
+            name: e.detail.name,
+            direction: e.detail.direction,
+            route: e.detail.route,
+          },
+        });
+      });
       on(ed, "splice-node-attempt", async (e) => {
         const { src, tgt, x, y } = e.detail;
         // The edge's datatypes drive the guiding and the wiring

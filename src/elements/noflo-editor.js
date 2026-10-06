@@ -37,6 +37,7 @@ import { FlowHeatmap } from "./noflo-heatmap.js";
  *   position: Position,
  *   size: number,
  *   value: string,
+ *   routeId?: number,
  *   shadowRoot: ShadowRoot | null
  * }} NoFloIIP
  */
@@ -286,6 +287,17 @@ export class FlowEditor extends HTMLElement {
         routeLines.add(edge.routeId);
       }
     }
+    // IIP and exported-port wires join their routes: the wire's own id is
+    // selected when the IIP itself is (work document #35)
+    for (const wire of this.iipWires ?? []) {
+      const wireId = wire.iip.id || wire.iip.getAttribute("name") || "";
+      if (
+        wire.routeId !== undefined &&
+        (edges.includes(wireId) || iips.includes(wireId))
+      ) {
+        routeLines.add(wire.routeId);
+      }
+    }
     const lineNodes = new Set();
     this.edges.forEach((edge) => {
       const edgeId = this.getEdgeId(edge);
@@ -303,6 +315,14 @@ export class FlowEditor extends HTMLElement {
         if (hostB) lineNodes.add(this.getNodeName(hostB));
       }
     });
+    for (const wire of this.iipWires ?? []) {
+      const onLine = wire.routeId !== undefined && routeLines.has(wire.routeId);
+      wire.visualPath.classList.toggle("route-highlight", onLine);
+      if (onLine) {
+        const host = /** @type {ShadowRoot} */ (wire.port.getRootNode()).host;
+        if (host) lineNodes.add(this.getNodeName(host));
+      }
+    }
     for (const node of this.nodeLayer?.querySelectorAll("noflo-node") ?? []) {
       node.classList.toggle(
         "route-highlight",
@@ -817,6 +837,51 @@ export class FlowEditor extends HTMLElement {
    * @param {GraphEntity | string} node
    * @returns {string}
    */
+  /**
+   * Optimistically previews an edge's route (work document #35): the route
+   * change rides the intent pipeline, but the cycling should feel live —
+   * the edge's color and the line highlight update immediately, and the
+   * next render catches up from the replica.
+   *
+   * @param {string} edgeId
+   * @param {number | null} route
+   */
+  previewEdgeRoute(edgeId, route) {
+    const edge = this.edges.find(
+      (candidate) => this.getEdgeId(candidate) === edgeId,
+    );
+    if (!edge) {
+      // IIP and exported-port wires key by their element's id
+      const wire = this.iipWires?.find(
+        (candidate) =>
+          candidate.iip.id === edgeId ||
+          candidate.iip.getAttribute("name") === edgeId,
+      );
+      if (!wire) return;
+      wire.routeId = route ?? undefined;
+      if (route !== null && route !== undefined) {
+        wire.visualPath.style.setProperty(
+          "--flow-color",
+          `var(--route-${route})`,
+        );
+      } else {
+        wire.visualPath.style.removeProperty("--flow-color");
+      }
+      this._applySelection(this.selectionManager.getSnapshot());
+      return;
+    }
+    edge.routeId = route ?? undefined;
+    if (route !== null && route !== undefined) {
+      edge.visualPath.style.setProperty(
+        "--flow-color",
+        `var(--route-${route})`,
+      );
+    } else {
+      edge.visualPath.style.removeProperty("--flow-color");
+    }
+    this._applySelection(this.selectionManager.getSnapshot());
+  }
+
   /**
    * Derives a graph endpoint ({node, port, index}) from a port element
    * (work document #5 update #15: the edge menu's splice carries the
@@ -1526,6 +1591,32 @@ export class FlowEditor extends HTMLElement {
           },
           icon: "trash",
         });
+        // Export wires carry routes like any other wire (work document #35)
+        const exportRoute =
+          typeof (/** @type {any} */ (ep).routeId) === "number"
+            ? /** @type {any} */ (ep).routeId
+            : null;
+        items.push({
+          text: `Route: ${exportRoute ?? "none"}`,
+          keepOpen: true,
+          onClick: () => {
+            const next =
+              exportRoute === null
+                ? 0
+                : exportRoute >= 9
+                  ? null
+                  : exportRoute + 1;
+            emit(this, "set-port-route", {
+              name,
+              direction:
+                /** @type {any} */ (ep).direction === "out"
+                  ? "outports"
+                  : "inports",
+              route: next,
+            });
+          },
+          icon: "palette",
+        });
       } else {
         const isIIP = clickedNode.tagName === "NOFLO-IIP";
         const isSubgraph =
@@ -1567,6 +1658,29 @@ export class FlowEditor extends HTMLElement {
               emit(this, "iip-send-attempt", { iip: clickedNode });
             },
             icon: "paper-plane",
+          });
+          // IIPs are edges under the hood (the DATA-> key): the route
+          // cycler colors them like any other edge (work document #35)
+          const currentRoute =
+            typeof (/** @type {any} */ (clickedNode).routeId) === "number"
+              ? /** @type {any} */ (clickedNode).routeId
+              : null;
+          items.push({
+            text: `Route: ${currentRoute ?? "none"}`,
+            keepOpen: true,
+            onClick: () => {
+              const next =
+                currentRoute === null
+                  ? 0
+                  : currentRoute >= 9
+                    ? null
+                    : currentRoute + 1;
+              emit(this, "set-edge-route", {
+                edgeId: clickedNode.id,
+                route: next,
+              });
+            },
+            icon: "palette",
           });
         } else {
           items.push({
@@ -1654,6 +1768,13 @@ export class FlowEditor extends HTMLElement {
           /** @type {Element} */ (edge.visualPath) ===
             /** @type {Element} */ (clickedEdge),
       );
+      const wire = !edge
+        ? this.iipWires?.find(
+            (candidate) =>
+              candidate.hitPath === clickedEdge ||
+              candidate.visualPath === clickedEdge,
+          )
+        : undefined;
       if (edge) {
         emit(this, "edge-menu-open", { edge: this.getEdgeId(edge), x, y });
         const edgeId = this.getEdgeId(edge);
@@ -1678,6 +1799,7 @@ export class FlowEditor extends HTMLElement {
               : [edgeId];
             items.unshift({
               text: `Route: ${currentRoute ?? "none"}`,
+              keepOpen: true,
               onClick: () => {
                 const next =
                   currentRoute === null
@@ -1715,6 +1837,41 @@ export class FlowEditor extends HTMLElement {
             emit(this, "edge-removal-attempt", { edge });
           },
           icon: "trash",
+        });
+      } else if (wire) {
+        // IIP and exported-port wires carry routes like any other edge
+        // (work document #35): the cycler colors the wire
+        const isIIPWire = wire.iip.tagName === "NOFLO-IIP";
+        const currentRoute =
+          typeof wire.routeId === "number" ? wire.routeId : null;
+        items.push({
+          text: `Route: ${currentRoute ?? "none"}`,
+          keepOpen: true,
+          onClick: () => {
+            const next =
+              currentRoute === null
+                ? 0
+                : currentRoute >= 9
+                  ? null
+                  : currentRoute + 1;
+            if (isIIPWire) {
+              // The IIP's CRDT edge id is its element id
+              emit(this, "set-edge-route", {
+                edgeId: wire.iip.id,
+                route: next,
+              });
+            } else {
+              emit(this, "set-port-route", {
+                name: wire.iip.getAttribute("name") ?? "",
+                direction:
+                  /** @type {any} */ (wire.iip).direction === "out"
+                    ? "outports"
+                    : "inports",
+                route: next,
+              });
+            }
+          },
+          icon: "palette",
         });
       }
     } else {
@@ -2324,7 +2481,7 @@ export class FlowEditor extends HTMLElement {
   /**
    * @param {HTMLElement} portA
    * @param {HTMLElement} portB
-   * @param {string} [routeId]
+   * @param {number} [routeId]
    * @returns {import("../library/EdgeManager.js").Edge | undefined}
    */
   addEdge(portA, portB, routeId) {
@@ -2533,7 +2690,7 @@ export class FlowEditor extends HTMLElement {
    * @param {string} portAName
    * @param {NoFloNode | NoFloIIP} nodeB
    * @param {string} portBName
-   * @param {string} [routeId]
+   * @param {number} [routeId]
    * @param {number | undefined} [portAIndex]
    * @param {number | undefined} [portBIndex]
    * @returns {import("../library/EdgeManager.js").Edge | undefined}
@@ -2607,9 +2764,10 @@ export class FlowEditor extends HTMLElement {
    * @param {string} name
    * @param {'in' | 'out'} direction
    * @param {HTMLElement} [port]
+   * @param {number} [route] The route index coloring the export wire.
    * @returns {any}
    */
-  addExportedPort(x, y, name, direction = "out", port) {
+  addExportedPort(x, y, name, direction = "out", port, route) {
     const size = 20;
     const snapped = this.snapToGrid(x - size / 2, y - size / 2);
     const exportedPort = /** @type {any} */ (
@@ -2629,9 +2787,11 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
+      /** @type {any} */ (exportedPort).routeId = route;
       this.edgeManager?.connectIIP(
         /** @type {HTMLElement} */ (exportedPort),
         port,
+        route,
       );
     }
 
@@ -2643,9 +2803,10 @@ export class FlowEditor extends HTMLElement {
    * @param {number} y
    * @param {HTMLElement} port
    * @param {string} [value="Value"]
+   * @param {number} [route] The route index coloring the IIP wire.
    * @returns {NoFloIIP}
    */
-  addIIP(x, y, port, value = "Value") {
+  addIIP(x, y, port, value = "Value", route) {
     const size = 40;
     let centerX = x;
     let centerY = y;
@@ -2677,7 +2838,12 @@ export class FlowEditor extends HTMLElement {
     }
 
     if (port) {
-      this.edgeManager?.connectIIP(/** @type {HTMLElement} */ (iip), port);
+      iip.routeId = route;
+      this.edgeManager?.connectIIP(
+        /** @type {HTMLElement} */ (iip),
+        port,
+        route,
+      );
     }
 
     return iip;
