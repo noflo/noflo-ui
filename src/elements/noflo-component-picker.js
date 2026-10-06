@@ -113,6 +113,7 @@ export class FlowComponentPicker extends HTMLElement {
           color: var(--node-text, #aaa);
         }
         :host([open]) { display: block; }
+        .picker {
           background: var(--ui-bg, rgb(20, 27, 35));
           border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
           border-radius: var(--ui-radius, 6px);

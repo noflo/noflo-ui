@@ -585,6 +585,14 @@ export function createIntentMapper({
             tgt,
           },
         });
+        // The original edge goes away with the same flushed batch: the
+        // splice replaces the direct connection (work document #5 update
+        // #15)
+        afterNode(nodeId, {
+          type: "INTENT",
+          command: "removeEdge",
+          payload: { graphId: graphId(), id: e.detail.edgeId },
+        });
         // A prefilled signature rides the pick: the new component's ports
         // match the spliced edge's datatypes
         if (typeof picked !== "string" && picked.signature) {

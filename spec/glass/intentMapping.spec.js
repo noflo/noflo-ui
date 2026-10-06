@@ -184,6 +184,9 @@ describe("edge splice (work document #5 update #15)", () => {
       .filter((message) => message.command === "addEdge")
       .map((message) => message.payload);
     assert.equal(addEdges.length, 2, "the edge rewires through the node");
+    const removal = sent.find((message) => message.command === "removeEdge");
+    assert.ok(removal, "the original edge is removed");
+    assert.equal(removal.payload.id, "edge-1");
     assert.deepEqual(
       addEdges[0].src,
       { node: "src", port: "out" },
