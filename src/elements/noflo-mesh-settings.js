@@ -290,6 +290,7 @@ export class FlowMeshSettings extends HTMLElement {
         }
         .dialog {
           background: var(--ui-bg);
+          color: var(--node-text);
           border: 1px solid var(--ui-border, #333);
           border-radius: 8px;
           width: min(560px, 92vw);
@@ -401,7 +402,7 @@ export class FlowMeshSettings extends HTMLElement {
           <button class="secondary" data-action="theme-dark" ${this._currentTheme === "cyberpunk" ? "disabled" : ""}>Dark</button>
           <button class="secondary" data-action="theme-light" ${this._currentTheme === "tube" ? "disabled" : ""}>Light</button>
         </div>
-        <div class="hint">The choice is remembered on this device. The environment age stays abstract until a runtime connects (work document #3).</div>
+
         ${
           this._identityHash
             ? `<h3>Identity</h3><div class="hash" id="identity-hash">${this._identityHash}</div>
@@ -418,7 +419,7 @@ export class FlowMeshSettings extends HTMLElement {
         <div class="row">
           <label style="margin: 0"><input type="checkbox" id="mesh-enabled" ${config?.enabled ? "checked" : ""} ${editable && !this._meshError ? "" : "disabled"}> Enabled</label>
         </div>
-        <div class="hint">Live sync state lives in the sync panel at the bottom-right corner; this dialog is configuration only (work document #28).</div>
+        <div class="hint">Live sync state lives in the sync panel at the bottom-right corner; this dialog is configuration only.</div>
         <h3>WebRTC transport upgrade</h3>
         <div class="hint">WebSocket interfaces bootstrap the mesh; peers then upgrade to direct WebRTC data channels for collaboration traffic.</div>
         <div class="row" style="margin-top: 6px">

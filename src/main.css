@@ -17,6 +17,10 @@ html {
   height: 100%;
   overflow: hidden;
   font-family: SourceCodePro, monospace;
+  /* The body carries the theme's text color: dialogs and modals inherit
+     it, so every surface follows the theme */
+  color: var(--node-text);
+  background: var(--ui-bg);
 }
 #app {
   width: 100%;
@@ -160,6 +164,7 @@ button:hover {
 
   --ui-accent: rgb(0, 229, 255);
   --ui-panel-border: rgb(58, 63, 72);
+  --ui-border: rgb(58, 63, 72);
   --ui-radius: 6px;
 
   /* Ages state colors for corner HUD chips (work document #28): calm is
@@ -198,6 +203,7 @@ button:hover {
   --node-ring-inset: 0px;
   --ui-accent: rgb(0, 0, 0);
   --ui-panel-border: rgb(0, 0, 0);
+  --ui-border: rgb(0, 0, 0);
   --ui-radius: 0px;
 
   /* Tube Route Palette */

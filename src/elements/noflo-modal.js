@@ -62,13 +62,13 @@ export class NofloModal extends HTMLElement {
         .modal-content {
           max-height: 80vh;
           overflow: auto;
-          background: white;
+          background: var(--ui-bg, white);
           padding: 2rem;
           border-radius: 8px;
           max-width: 80%;
-          overflow: auto;
           position: relative;
-          color: black;
+          color: var(--node-text, black);
+          border: 1px solid var(--ui-panel-border, #ccc);
         }
         .modal-header {
           display: flex;
@@ -99,18 +99,20 @@ export class NofloModal extends HTMLElement {
         }
         .btn-primary {
           background: var(--ui-accent, #007bff);
-          color: white;
+          color: var(--ui-bg, white);
           border: none;
           border-radius: 4px;
         }
         .btn-secondary {
-          background: #eee;
-          border: 1px solid #ccc;
+          background: transparent;
+          color: inherit;
+          border: 1px solid var(--ui-panel-border, #ccc);
           border-radius: 4px;
         }
         .btn-action {
-          background: #e8f4e8;
-          border: 1px solid #9ccc9c;
+          background: color-mix(in srgb, var(--ui-accent, #007bff) 18%, var(--ui-bg, white));
+          border: 1px solid color-mix(in srgb, var(--ui-accent, #007bff) 55%, transparent);
+          color: inherit;
           border-radius: 4px;
           font-weight: bold;
         }
