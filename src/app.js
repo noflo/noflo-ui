@@ -757,7 +757,46 @@ function onRoleChange() {
   updateRoleBadge();
 }
 
+/**
+ * Applies a theme to the whole Glass (work document #5 follow-up): the
+ * themes are the body's data-theme values — cyberpunk is dark, tube is
+ * light. Remembered per device through localStorage and synced across
+ * tabs through the storage event.
+ *
+ * @param {string} theme
+ */
+function applyTheme(theme) {
+  document.body.setAttribute("data-theme", theme);
+  try {
+    localStorage.setItem("noflo.theme", theme);
+  } catch {
+    // Storage may be unavailable (privacy mode); the choice then lasts
+    // for the session only
+  }
+}
+
+/**
+ * Applies the remembered theme at boot, before the first render, so the
+ * Glass never paints in the wrong theme. The environment age stays
+ * abstract: without runtimes there is nothing to depict (work document
+ * #3; WD #15's runtime status drives the age once they exist).
+ */
+function applyAppearance() {
+  let theme = null;
+  try {
+    theme = localStorage.getItem("noflo.theme");
+  } catch {
+    theme = null;
+  }
+  document.body.setAttribute(
+    "data-theme",
+    theme === "cyberpunk" || theme === "tube" ? theme : "tube",
+  );
+  document.body.setAttribute("data-age", "abstract");
+}
+
 async function init() {
+  applyAppearance();
   const app = document.getElementById("app");
   if (!app) {
     console.error("App element not found");
@@ -1028,6 +1067,17 @@ async function init() {
     supervisor?.send({ type: "MESH", command: "factoryReset" });
   });
   on(settingsDialog, "mesh-close", () => {});
+  // Appearance (work document #5 follow-up): the theme is a device
+  // preference — applied, remembered on this device, and synced across
+  // the device's tabs
+  on(settingsDialog, "appearance-theme", (e) => {
+    applyTheme(e.detail.theme);
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === "noflo.theme" && event.newValue) {
+      applyTheme(event.newValue);
+    }
+  });
 
   const eviction = await checkEviction(/** @type {any} */ (navigator).storage);
   if (eviction?.level === "warning") {

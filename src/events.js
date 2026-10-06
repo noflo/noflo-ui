@@ -102,6 +102,7 @@
  * @property {CustomEvent<{ identityHash: string | null }>} sync-approve
  * @property {CustomEvent<{ identityHash: string | null }>} sync-decline
  * @property {CustomEvent<void>} sync-settings
+ * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
  * @property {CustomEvent<{ config: any }>} mesh-configure
  * @property {CustomEvent<{ peerHash: string, role: string }>} mesh-grant

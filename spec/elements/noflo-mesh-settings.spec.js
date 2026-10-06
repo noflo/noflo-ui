@@ -346,3 +346,30 @@ describe("mesh error display (work document #21)", () => {
     el.remove();
   });
 });
+
+describe("Appearance settings (work document #5 follow-up)", () => {
+  it("offers Dark and Light, disabling the active theme", () => {
+    const el = makeElement();
+    document.body.setAttribute("data-theme", "tube");
+    el.open({ enabled: false, interfaces: [] }, "", {});
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const dark = /** @type {HTMLButtonElement} */ (
+      shadow.querySelector("[data-action='theme-dark']")
+    );
+    const light = /** @type {HTMLButtonElement} */ (
+      shadow.querySelector("[data-action='theme-light']")
+    );
+    assert.ok(dark && light, "both theme options render");
+    assert.ok(!dark.disabled, "the inactive theme is offered");
+    assert.ok(light.disabled, "the active theme is disabled");
+    /** @type {any} */
+    let picked = null;
+    el.addEventListener("appearance-theme", (e) => {
+      picked = /** @type {any} */ (e).detail;
+    });
+    dark.click();
+    assert.deepEqual(picked, { theme: "cyberpunk" });
+    el.close();
+    el.remove();
+  });
+});

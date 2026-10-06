@@ -270,6 +270,7 @@ export class FlowMeshSettings extends HTMLElement {
     }
     const config = this._config;
     const editable = Boolean(config);
+    this._currentTheme = document.body.getAttribute("data-theme") ?? "tube";
     const formStyles = this._formStyles ?? "";
     this._renderedFormStyles = formStyles;
     const interfaces = config?.interfaces ?? [];
@@ -395,6 +396,12 @@ export class FlowMeshSettings extends HTMLElement {
           <h2 style="flex: 1">Mesh settings</h2>
           <button class="secondary" data-action="close">Close</button>
         </div>
+        <h3>Appearance</h3>
+        <div class="row" style="margin-top: 6px">
+          <button class="secondary" data-action="theme-dark" ${this._currentTheme === "cyberpunk" ? "disabled" : ""}>Dark</button>
+          <button class="secondary" data-action="theme-light" ${this._currentTheme === "tube" ? "disabled" : ""}>Light</button>
+        </div>
+        <div class="hint">The choice is remembered on this device. The environment age stays abstract until a runtime connects (work document #3).</div>
         ${
           this._identityHash
             ? `<h3>Identity</h3><div class="hash" id="identity-hash">${this._identityHash}</div>
@@ -534,6 +541,18 @@ export class FlowMeshSettings extends HTMLElement {
     shadow
       .querySelector('[data-action="close"]')
       ?.addEventListener("click", () => this.close());
+    // Appearance (work document #5 follow-up): the theme is a device
+    // preference the shell applies and remembers
+    for (const [action, theme] of [
+      ["theme-dark", "cyberpunk"],
+      ["theme-light", "tube"],
+    ]) {
+      shadow
+        .querySelector(`[data-action='${action}']`)
+        ?.addEventListener("click", () => {
+          emit(this, "appearance-theme", { theme }, { composed: false });
+        });
+    }
 
     const enabled = /** @type {HTMLInputElement | null} */ (
       shadow.querySelector("#mesh-enabled")
