@@ -849,28 +849,58 @@ async function init() {
     onDragEnd: () => sendDraggingAwareness([]),
     // Typed-port guiding (work document #29 update #1): the candidate list
     // narrows to compatible components, ending with the create option
-    pickComponent: async ({ x, y, startPort }) => {
-      if (!startPort) return window.prompt("Enter component name:");
+    pickComponent: async ({ x, y, startPort, edge }) => {
+      if (!startPort && !edge) {
+        return window.prompt("Enter component name:");
+      }
       if (!componentPicker) {
         componentPicker = /** @type {FlowComponentPicker} */ (
           /** @type {any} */ (document.createElement("noflo-component-picker"))
         );
         document.getElementById("app")?.appendChild(componentPicker);
       }
-      const candidates = compatibleComponents(libraryManager, startPort);
+      /** @param {any} ports @param {string} dataType */
+      const hasCompatible = (ports, dataType) =>
+        (ports ?? []).some((/** @type {any} */ port) => {
+          const type = port.type || "all";
+          return type === "all" || dataType === "all" || type === dataType;
+        });
+      /** Splice guiding (work document #5 update #15): candidates must fit
+       * the edge's datatype chain — an inport matching the source's output
+       * and an outport matching the target's input */
+      /** @param {any} comp */
+      const fits = (comp) =>
+        hasCompatible(comp?.inports, edge?.srcType ?? "all") &&
+        hasCompatible(comp?.outports, edge?.tgtType ?? "all");
+      const candidates = edge
+        ? (libraryManager?.listComponents() ?? []).filter((name) =>
+            fits(libraryManager?.getComponent(name)),
+          )
+        : compatibleComponents(libraryManager, /** @type {any} */ (startPort));
       const choice = await componentPicker.open({ x, y, candidates });
       if (choice === CREATE_NEW_COMPONENT) {
         const name = window.prompt(
           "Enter component name (or leave empty to use 'New Node'):",
         );
         if (!name) return null;
-        // Spec the new component to match the dragged port's shape (work
-        // document #29 update #1): the port on the connecting side carries
-        // the dragged port's datatype; the opposite side keeps the default.
-        // The names stay the engine defaults (in/out), so the wire the
-        // mapper adds stays valid.
-        const dataType = startPort.dataset.portDataType || "all";
-        const draggingOut = startPort.classList.contains("port-out");
+        // Spec the new component to match the connection's shape (work
+        // documents #29/#5): a port drag prefill carries the dragged
+        // port's datatype on the connecting side; an edge splice carries
+        // the edge's datatypes on both sides
+        if (edge) {
+          return {
+            name: name.trim(),
+            signature: {
+              inports: [{ name: "in", type: edge.srcType }],
+              outports: [{ name: "out", type: edge.tgtType }],
+            },
+          };
+        }
+        const dataType =
+          /** @type {any} */ (startPort).dataset.portDataType || "all";
+        const draggingOut = /** @type {any} */ (startPort).classList.contains(
+          "port-out",
+        );
         const signature = draggingOut
           ? {
               inports: [{ name: "in", type: dataType }],

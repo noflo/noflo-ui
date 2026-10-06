@@ -788,6 +788,29 @@ export class FlowEditor extends HTMLElement {
    * @param {GraphEntity | string} node
    * @returns {string}
    */
+  /**
+   * Derives a graph endpoint ({node, port, index}) from a port element
+   * (work document #5 update #15: the edge menu's splice carries the
+   * edge's endpoints so the Glass can rewire around the spliced node).
+   *
+   * @param {Element} port
+   * @returns {{ node: string, port: string, index?: number }}
+   */
+  endpointFromPort(port) {
+    const root = /** @type {ShadowRoot} */ (port.getRootNode());
+    const host = /** @type {HTMLElement} */ (root.host);
+    const index = /** @type {HTMLElement} */ (port).dataset.portIndex;
+    return {
+      node: this.getNodeName(host),
+      port: /** @type {HTMLElement} */ (port).dataset.portName ?? "",
+      ...(index !== undefined ? { index: Number.parseInt(index, 10) } : {}),
+    };
+  }
+
+  /**
+   * @param {Element | string} node
+   * @returns {string}
+   */
   getNodeName(node) {
     if (typeof node === "string") return node;
     return node.getAttribute("name") || "IIP";
@@ -1604,6 +1627,30 @@ export class FlowEditor extends HTMLElement {
       );
       if (edge) {
         emit(this, "edge-menu-open", { edge: this.getEdgeId(edge), x, y });
+        const edgeId = this.getEdgeId(edge);
+        // Splice: adding a node into the edge (work document #5 update
+        // #15) — offered when there is space for a node at the menu
+        const edgeGraphPos = this.viewportToGraph(x, y);
+        if (this.hasSpace(edgeGraphPos.x, edgeGraphPos.y, 80)) {
+          const edgeObject = this.edges.find(
+            (candidate) => this.getEdgeId(candidate) === edgeId,
+          );
+          if (edgeObject) {
+            items.unshift({
+              text: "Add Node",
+              onClick: () => {
+                emit(this, "splice-node-attempt", {
+                  edgeId,
+                  src: this.endpointFromPort(edgeObject.portA),
+                  tgt: this.endpointFromPort(edgeObject.portB),
+                  x: edgeGraphPos.x - 40,
+                  y: edgeGraphPos.y - 40,
+                });
+              },
+              icon: "circle-plus",
+            });
+          }
+        }
         items.push({
           text: "Remove",
           onClick: () => {

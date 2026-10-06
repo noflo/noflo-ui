@@ -19,7 +19,7 @@ import { on } from "../events.js";
  * @property {() => { getComponent: (name: string) => any, listComponents: () => string[] } | null} getLibrary
  *   The Glass-side library view, for default port names and the candidate
  *   lists of the typed-port guiding.
- * @property {((options: { x: number, y: number, startPort: HTMLElement | null }) => Promise<string | { name: string, signature?: { inports?: any[], outports?: any[] } } | null>)} [pickComponent]
+ * @property {((options: { x: number, y: number, startPort: HTMLElement | null, edge?: { src: { node: string, port: string, index?: number }, tgt: { node: string, port: string, index?: number }, srcType: string, tgtType: string } }) => Promise<string | { name: string, signature?: { inports?: any[], outports?: any[] } } | null>)} [pickComponent]
  *   Resolves the component for a new node (work document #29's typed-port
  *   guiding): the shell shows the compatible-component picker and may
  *   prefill the new component's signature to match the dragged port's
@@ -48,13 +48,78 @@ function hostOf(port) {
 }
 
 /**
+ * The Glass-side library view surface the mappers rely on.
+ *
+ * @typedef {{ getComponent: (name: string) => any, listComponents: () => string[] }} LibraryView
+ */
+
+/**
+ * The datatype of a port, resolved through the Glass-side library view.
+ *
+ * @param {LibraryView | null} library
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} portName
+ * @returns {string}
+ */
+export function portDataTypeFor(library, componentName, direction, portName) {
+  const component = /** @type {any} */ (library?.getComponent(componentName));
+  const ports = component?.[direction] ?? [];
+  const port = ports.find(
+    (/** @type {any} */ candidate) => candidate.name === portName,
+  );
+  return port?.type || "all";
+}
+
+/**
+ * Whether a port list carries a port compatible with a datatype.
+ *
+ * @param {any[]} ports
+ * @param {string} dataType
+ * @returns {boolean}
+ */
+export function hasCompatiblePort(ports, dataType) {
+  return (ports ?? []).some((/** @type {any} */ port) => {
+    const type = port.type || "all";
+    return type === "all" || dataType === "all" || type === dataType;
+  });
+}
+
+/**
+ * Picks the most compatible port of a component for a datatype: the
+ * canonical `in`/`out` name when it fits, then the first compatible port
+ * (work document #5 update #15).
+ *
+ * @param {LibraryView | null} library
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} dataType
+ * @returns {string}
+ */
+export function compatiblePortFor(library, componentName, direction, dataType) {
+  const component = /** @type {any} */ (library?.getComponent(componentName));
+  const ports = component?.[direction] ?? [];
+  const compatible = (/** @type {any} */ port) => {
+    const type = port.type || "all";
+    return type === "all" || dataType === "all" || type === dataType;
+  };
+  const canonical = direction === "inports" ? "in" : "out";
+  const preferred = ports.find(
+    (/** @type {any} */ port) => port.name === canonical && compatible(port),
+  );
+  if (preferred) return preferred.name;
+  const first = ports.find(compatible);
+  return first?.name ?? defaultPortFor(library, componentName, direction);
+}
+
+/**
  * Narrows the library to the components compatible with a dragged port
  * (work document #29 update #1): dragging from an outport lists components
  * with a matching inport, and vice versa. Port datatypes match when either
  * side is `all` or the datatypes are equal; the dragged port carries its
  * declared datatype in `dataset.portDataType`.
  *
- * @param {{ getComponent: (name: string) => any, listComponents: () => string[] } | null} library
+ * @param {LibraryView | null} library
  * @param {HTMLElement} startPort The dragged port element.
  * @returns {string[]}
  */
@@ -104,7 +169,7 @@ function edgeIdFor(src, tgt) {
  * First outport/inport name of a component, used when wiring a brand-new node
  * whose signature comes from the library.
  *
- * @param {{ getComponent: (name: string) => any, listComponents: () => string[] } | null} library
+ * @param {LibraryView | null} library
  * @param {string} componentName
  * @param {"inports" | "outports"} direction
  * @returns {string}
@@ -450,6 +515,85 @@ export function createIntentMapper({
           command: "removeGroup",
           payload: { graphId: graphId(), groupId: e.detail.groupId },
         });
+      });
+      on(ed, "splice-node-attempt", async (e) => {
+        const { src, tgt, x, y } = e.detail;
+        // The edge's datatypes drive the guiding and the wiring
+        const srcType = portDataTypeFor(
+          getLibrary(),
+          src.node,
+          "outports",
+          src.port,
+        );
+        const tgtType = portDataTypeFor(
+          getLibrary(),
+          tgt.node,
+          "inports",
+          tgt.port,
+        );
+        const picked = pickComponent
+          ? await pickComponent({
+              x,
+              y,
+              startPort: null,
+              edge: { src, tgt, srcType, tgtType },
+            })
+          : window.prompt("Enter component name:");
+        if (picked === null) return;
+        const pickedName = typeof picked === "string" ? picked : picked.name;
+        const name = pickedName.trim() || "New Node";
+        const nodeId = `node_${Date.now()}`;
+        sendIntent({
+          type: "INTENT",
+          command: "addNode",
+          payload: {
+            graphId: graphId(),
+            nodeId,
+            componentName: name,
+            metadata: { x, y },
+          },
+        });
+        // The splice rewires the edge through the new node, on the most
+        // compatible ports (work document #5 update #15)
+        const inPort = compatiblePortFor(
+          getLibrary(),
+          name,
+          "inports",
+          srcType,
+        );
+        const outPort = compatiblePortFor(
+          getLibrary(),
+          name,
+          "outports",
+          tgtType,
+        );
+        afterNode(nodeId, {
+          type: "INTENT",
+          command: "addEdge",
+          payload: {
+            graphId: graphId(),
+            src,
+            tgt: { node: nodeId, port: inPort },
+          },
+        });
+        afterNode(nodeId, {
+          type: "INTENT",
+          command: "addEdge",
+          payload: {
+            graphId: graphId(),
+            src: { node: nodeId, port: outPort },
+            tgt,
+          },
+        });
+        // A prefilled signature rides the pick: the new component's ports
+        // match the spliced edge's datatypes
+        if (typeof picked !== "string" && picked.signature) {
+          afterNode(nodeId, {
+            type: "INTENT",
+            command: "setSignature",
+            payload: { component: name, signature: picked.signature },
+          });
+        }
       });
       on(ed, "update-group-attempt", (e) => {
         for (const membership of e.detail.memberships) {

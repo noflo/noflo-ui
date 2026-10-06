@@ -20,6 +20,13 @@
  */
 
 /**
+ * A graph edge endpoint in the data-flow identifier form (work document
+ * #5): node name, port name, and the ArrayPort index when present.
+ *
+ * @typedef {{ node: string, port: string, index?: number }} PortEndpoint
+ */
+
+/**
  * The editor's rendered edge: its hit and visual paths plus the two port
  * elements it connects (EdgeManager's shape).
  *
@@ -83,6 +90,7 @@
  * @property {CustomEvent<{ nodes: string[] }>} move-nodes-up-attempt
  * @property {CustomEvent<{ node: string }>} unpack-subgraph-attempt
  * @property {CustomEvent<{ edge: string, x: number, y: number }>} edge-menu-open
+ * @property {CustomEvent<{ edgeId: string, src: PortEndpoint, tgt: PortEndpoint, x: number, y: number }>} splice-node-attempt
  * @property {CustomEvent<{ x: number, y: number, type: "canvas" }>} canvas-menu-open
  * @property {CustomEvent<{ portA: Element, portB: Element }>} wire-connection-attempt
  * @property {CustomEvent<{ oldName: string, newName: string, direction: any, position: { x: number, y: number } }>} port-renamed
