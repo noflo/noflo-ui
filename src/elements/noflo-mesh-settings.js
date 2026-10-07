@@ -534,10 +534,8 @@ export class FlowMeshSettings extends HTMLElement {
     host.appendChild(actions);
   }
 
-  /**
-   * @param {boolean} editable
-   */
-  wireEvents(editable) {
+  /** @param {boolean} [_editable] */
+  wireEvents(_editable) {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     shadow
       .querySelector('[data-action="close"]')

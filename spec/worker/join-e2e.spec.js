@@ -228,7 +228,7 @@ describe("full join E2E over a TCP loopback (work document #25)", () => {
       joinerMessages.filter(
         (m) =>
           (m.kind === "progress" && m.operation === "mesh.join") ||
-            (m.kind === "mesh-status" && m.error),
+          (m.kind === "mesh-status" && m.error),
       ),
     );
     console.log(

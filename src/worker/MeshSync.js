@@ -1328,7 +1328,7 @@ export async function createMeshSync({
           mintPeerAuthorization(peerHash, projectId),
         hasAuthority,
         deliverAuthorization: async (
-          /** @type {string} */ joinerHash,
+          /** @type {string} */ _joinerHash,
           /** @type {any} */ authorization,
           /** @type {any} */ joinerIdentity,
         ) => {

@@ -248,7 +248,7 @@ describe("signature specification (work document #29)", () => {
   });
 
   it("setSignature refuses invalid ports and graph-implemented components", () => {
-    const { doc, send } = boot();
+    const { send } = boot();
     const bad = send({
       type: "INTENT",
       command: "setSignature",
@@ -466,7 +466,7 @@ describe("edge routes (work document #35)", () => {
   });
 
   it("setEdgeRoute refuses out-of-range routes and unknown edges", () => {
-    const { doc, send } = routeBoot();
+    const { send } = routeBoot();
     const bad = send({
       type: "INTENT",
       command: "setEdgeRoute",

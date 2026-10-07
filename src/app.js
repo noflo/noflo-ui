@@ -14,7 +14,6 @@ import { FlowContextChip } from "./elements/noflo-context-chip.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
-import { FlowMeshSettings } from "./elements/noflo-mesh-settings.js";
 import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-node.js";
@@ -32,24 +31,12 @@ import {
   createIntentMapper,
 } from "./glass/intentMapping.js";
 import { createPendingTracker } from "./glass/pendingState.js";
-import { progressPhrase } from "./glass/progressPhrases.js";
 import {
-  addEdgeIntent,
-  addExportIntent,
-  addIIPIntent,
-  addNodeIntent,
   graphParent,
   makeSubgraphIntent,
-  moveNodeIntent,
   projectGraph,
-  removeEdgeIntent,
-  removeExportIntent,
-  removeIIPIntent,
-  removeNodeIntent,
-  renameExportIntent,
   revokePermissionIntent,
   subgraphComponentFor,
-  updateIIPIntent,
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
@@ -557,7 +544,9 @@ async function render() {
   const replica = await graph.loadJSON(view);
   const app = document.getElementById("app");
   if (!app) return;
-  app.querySelectorAll("noflo-editor").forEach((el) => el.remove());
+  app.querySelectorAll("noflo-editor").forEach((el) => {
+    el.remove();
+  });
   const ed = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
   app.appendChild(ed);
   ed.libraryManager = libraryManager;
@@ -706,7 +695,7 @@ function bootstrapLibrary() {
  * owned by the leader) but can still view grants.
  */
 function openMeshSettings() {
-  const dialog = /** @type {FlowMeshSettings | null} */ (
+  const dialog = /** @type {any} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
   if (!dialog) return;
@@ -722,10 +711,10 @@ function openMeshSettings() {
  * Refreshes the grants list while the settings dialog is open.
  */
 function refreshMeshSettings() {
-  const dialog = /** @type {FlowMeshSettings | null} */ (
+  const dialog = /** @type {any} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
-  if (!dialog || !dialog._open) return;
+  if (!dialog?._open) return;
   dialog.setDacarState(dacarState);
   if (meshConfig) {
     dialog._config = meshConfig;
@@ -843,7 +832,7 @@ function onRoleChange() {
  * @param {string} dataType The target port's datatype.
  * @returns {Promise<any | null>}
  */
-async function openIIPValueEditor(title, rawValue, dataType) {
+async function _openIIPValueEditor(title, rawValue, dataType) {
   if (!componentModal || !componentForm) return null;
   componentModal.setActions([
     { value: "cancel", label: "Cancel", kind: "btn-secondary" },
@@ -1066,7 +1055,7 @@ async function init() {
               inports: [{ name: "in", type: edge.srcType }],
               outports: [{ name: "out", type: edge.tgtType }],
             }
-          : startPort && startPort.classList.contains("port-out")
+          : startPort?.classList.contains("port-out")
             ? {
                 inports: [
                   { name: "in", type: startPort.dataset.portDataType || "all" },
@@ -1155,7 +1144,7 @@ async function init() {
       // the graph being edited
       unpack: (node) => {
         const childId = subgraphComponentFor(mirrorDoc, activeGraphId, node);
-        if (!childId || !childId.startsWith(`${activeGraphId}/`)) return;
+        if (!childId?.startsWith(`${activeGraphId}/`)) return;
         const childView = projectGraph(mirrorDoc, childId);
         const nodeIds = Object.keys(childView?.processes ?? {});
         if (nodeIds.length === 0) {
@@ -1267,7 +1256,7 @@ async function init() {
   globalThis.addEventListener("pagehide", () => {
     supervisor?.send({ type: "MESH", command: "stop" });
   });
-  const settingsDialog = /** @type {FlowMeshSettings | null} */ (
+  const settingsDialog = /** @type {any} */ (
     /** @type {any} */ (document.getElementById("mesh-settings-dialog"))
   );
   on(settingsDialog, "mesh-configure", (e) => {

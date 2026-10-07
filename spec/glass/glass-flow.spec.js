@@ -168,11 +168,11 @@ describe("Glass loop: all graph editing operations", () => {
     await harness.render();
     console.debug(
       "DEBUG posted kinds:",
-      posted.map((p) => p.kind ?? p.protocol + ":" + p.command),
+      posted.map((p) => p.kind ?? `${p.protocol}:${p.command}`),
       "mirror graphs:",
       [...[...harness.mirror.getMap("graphs").keys()]],
     );
-    assert.ok(harness.view.processes["node_"] === undefined);
+    assert.ok(harness.view.processes.node_ === undefined);
     const created = Object.keys(harness.view.processes);
     assert.equal(created.length, 1, "node added through the loop");
     const nodeA = created[0];

@@ -1,6 +1,4 @@
-import { graph } from "../../vendor/noflo.js";
 import { emit } from "../events.js";
-import { ComponentSignature } from "./schema.js";
 
 /**
  * @typedef {"subgraph" | "elementary" | "stub" | "inferred"} ComponentType
@@ -114,7 +112,7 @@ export class LibraryManager extends EventTarget {
     }
 
     const moduleMap = this.modules.get(module);
-    if (moduleMap && moduleMap.delete(component)) {
+    if (moduleMap?.delete(component)) {
       emit(
         this,
         "component-changed",
@@ -222,7 +220,7 @@ export class LibraryManager extends EventTarget {
    * @param {any} g
    */
   inferLibraryFromGraph(g) {
-    const isMain = g.properties && g.properties.main;
+    const isMain = g.properties?.main;
 
     if (!isMain) {
       // Graph itself is usable as subgraph, add to library

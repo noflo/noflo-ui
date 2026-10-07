@@ -119,7 +119,7 @@ describe("mesh sync (work document #21)", () => {
       postMessage: (m) => messages.push(m),
       storage,
       roomFor: () => "noflo-ui:test-project",
-      createProvider: async (config, identity, doc, room) => {
+      createProvider: async (_config, identity, doc, room) => {
         providerCalls.push({ room, identity, doc });
         return {
           on: () => {},
@@ -393,7 +393,7 @@ describe("awareness (work document #21)", () => {
       on(name, handler) {
         this.handlers.set(name, handler);
       },
-      off(name, handler) {
+      off(name, _handler) {
         this.handlers.delete(name);
       },
       setLocalStateField(field, value) {

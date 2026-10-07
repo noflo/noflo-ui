@@ -4,7 +4,6 @@ import { describe, it } from "node:test";
 import "../elements/utils/register.js";
 
 import {
-  compatiblePortFor,
   createIntentMapper,
   hasCompatiblePort,
   portDataTypeFor,

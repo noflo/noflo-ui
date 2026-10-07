@@ -30,7 +30,7 @@ const X25519_KEY = Symbol("x25519-polyfill-key");
  * @returns {PolyfilledX25519Key | null}
  */
 function asX25519Key(key) {
-  return key && key[X25519_KEY] ? key : null;
+  return key?.[X25519_KEY] ? key : null;
 }
 
 /** Cached @noble/curves module (loaded only when the polyfill is needed). */

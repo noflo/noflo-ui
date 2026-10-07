@@ -119,7 +119,7 @@ export class FlowNode extends HTMLElement {
     if (!this._libraryManager || !this._componentName) return;
     const comp = this._libraryManager.getComponent(this._componentName);
     console.log(comp);
-    if (comp && comp.icon) {
+    if (comp?.icon) {
       const iconEl = this.shadowRoot?.querySelector(".node-content");
       if (iconEl) {
         if (
@@ -937,7 +937,7 @@ export class FlowNode extends HTMLElement {
     const component = this._libraryManager?.getComponent(
       this._componentName ?? "",
     );
-    const name = this.getAttribute("name") ?? "";
+    const _name = this.getAttribute("name") ?? "";
     if (component?.type === "subgraph") {
       return `<svg class="openable" width="56" height="40" viewBox="0 0 56 40" aria-label="Open subgraph"><circle cx="12" cy="12" r="6" class="depiction-node"/><circle cx="44" cy="12" r="6" class="depiction-node"/><circle cx="28" cy="30" r="6" class="depiction-node"/><path d="M17 14 L39 14 M17 16 L24 27 M39 16 L32 27" class="depiction-wire"/></svg>`;
     }

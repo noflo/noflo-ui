@@ -1232,7 +1232,7 @@ function intentRenameExport(doc, command, payload) {
       if (key === "metadata") {
         const metadataMap = new Y.Map();
         for (const metaKey of Object.keys(plain[key] ?? {})) {
-          metadataMap.set(metaKey, (plain[key] ?? {})[metaKey]);
+          metadataMap.set(metaKey, plain[key]?.[metaKey]);
         }
         moved.set("metadata", metadataMap);
         continue;
@@ -1679,7 +1679,7 @@ function intentForkComponent(doc, payload) {
   /** @type {import("./Protocol.js").EngineUIMessage[]} */
   const echoes = [];
   const graphs = doc.getMap("graphs");
-  for (const [graphId, graph] of graphs.entries()) {
+  for (const [_graphId, graph] of graphs.entries()) {
     const nodes = /** @type {Y.Map<any>} */ (graph.get("nodes"));
     for (const [nodeId, node] of nodes.entries()) {
       if (node.get("component") !== component) continue;

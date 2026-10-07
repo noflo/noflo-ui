@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import { progress } from "../../src/worker/Progress.js";
 import { progressPhrase } from "../../src/glass/progressPhrases.js";
+import { progress } from "../../src/worker/Progress.js";
 
 describe("operation narration (work document #34)", () => {
   it("renders micro-phrases from the catalog", () => {

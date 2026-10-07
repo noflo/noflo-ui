@@ -266,8 +266,8 @@ describe("EdgeManager", () => {
         index: 1,
       });
       const inPort = makePort({ direction: "in", name: "in" });
-      const nodeA = makeNode("A", [out1]);
-      const nodeB = makeNode("B", [inPort]);
+      const _nodeA = makeNode("A", [out1]);
+      const _nodeB = makeNode("B", [inPort]);
 
       const edge = em.addEdge(out1, inPort);
       const descriptor = em.getEdgeDescriptor(/** @type {any} */ (edge));

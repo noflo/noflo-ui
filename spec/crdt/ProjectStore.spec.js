@@ -48,7 +48,7 @@ function makeFakeIdb() {
           const fakeDb = {
             createObjectStore: (
               /** @type {string} */ storeName,
-              /** @type {any} */ options,
+              /** @type {any} */ _options,
             ) => {
               const store = new Map();
               current.stores.set(storeName, store);
@@ -74,7 +74,7 @@ function makeFakeIdb() {
           name,
           close() {},
           /** @param {string} storeName @param {string} mode */
-          transaction: (storeName, mode = "readonly") => {
+          transaction: (storeName, _mode = "readonly") => {
             const store = stores.get(storeName);
             if (!store) {
               throw new Error(`no such store: ${storeName}`);
@@ -112,7 +112,7 @@ function makeFakeIdb() {
                 /** @param {any} value @param {any} key */
                 put: function (value, key) {
                   return this.request(() => {
-                    const recordKey = key ?? (value && value.id);
+                    const recordKey = key ?? value?.id;
                     if (recordKey === undefined) {
                       throw new Error("no key");
                     }

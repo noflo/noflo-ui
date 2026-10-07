@@ -1315,7 +1315,7 @@ export class FlowEditor extends HTMLElement {
           });
           /** @type {import("../events.js").MovedNode[]} */
           const movedNodes = [];
-          this.draggingNodesInitialPositions.forEach((initialPos, node) => {
+          this.draggingNodesInitialPositions.forEach((_initialPos, node) => {
             node.position = this.snapToGrid(node.position.x, node.position.y);
             this.spaceManager.updateEntity(
               node.getAttribute("name") || "",
@@ -2820,7 +2820,7 @@ export class FlowEditor extends HTMLElement {
     let centerX = x;
     let centerY = y;
 
-    if (!x && !y && port && port.classList.contains("port-in")) {
+    if (!x && !y && port?.classList.contains("port-in")) {
       const node =
         /** @type {any} */ (port.getRootNode()).host?.tagName === "NOFLO-NODE"
           ? /** @type {any} */ (port.getRootNode()).host
@@ -2897,7 +2897,6 @@ export class FlowEditor extends HTMLElement {
     const exportPosFound = this.spaceManager.findEmptySpace(
       exportPos.x,
       exportPos.y,
-      exportedSize,
       exportedSize,
     );
 

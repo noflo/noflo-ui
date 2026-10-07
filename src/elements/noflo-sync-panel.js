@@ -75,7 +75,7 @@ function declineReasonText(reason) {
  * @param {string} hash
  * @returns {string}
  */
-function shortHash(hash) {
+function _shortHash(hash) {
   return hash.length > 12 ? `${hash.slice(0, 4)}…${hash.slice(-4)}` : hash;
 }
 

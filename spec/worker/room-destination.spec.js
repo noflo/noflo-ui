@@ -23,8 +23,14 @@ describe("room destination derivation (work document #34)", () => {
 
   it("derives a different hash per peer", async () => {
     const room = "noflo-ui:2a2a0e0c-db9e-45a6-bbc4-0d2396e6617d";
-    const a = await roomDestinationHash(room, "9700b7faef4362bc46a672c8bc26facd");
-    const b = await roomDestinationHash(room, "00000000000000000000000000000000");
+    const a = await roomDestinationHash(
+      room,
+      "9700b7faef4362bc46a672c8bc26facd",
+    );
+    const b = await roomDestinationHash(
+      room,
+      "00000000000000000000000000000000",
+    );
     assert.notEqual(a, b);
   });
 });

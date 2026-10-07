@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import net from "node:net";
 import { describe, it } from "node:test";
 

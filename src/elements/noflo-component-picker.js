@@ -90,14 +90,11 @@ export class FlowComponentPicker extends HTMLElement {
   }
 
   /**
-   * @param {number} x
-   * @param {number} y
-   * @param {string[]} candidates
-   * @param {string} createLabel
+   * Renders the picker contents (the positioning was done by `open()`).
    */
   render(
-    x = 0,
-    y = 0,
+    _x = 0,
+    _y = 0,
     /** @type {string[]} */ candidates = [],
     createLabel = "Create new component…",
   ) {

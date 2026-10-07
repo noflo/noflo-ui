@@ -40,7 +40,7 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
   const joinerHash = toHex(joiner.getSalt());
   const projectId = "p1";
   const salt = "7f".repeat(32);
-  const { mintAuthorization: mint } = await import("../../src/worker/Dacar.js");
+  await import("../../src/worker/Dacar.js");
 
   const mintJoiner = () =>
     mintAuthorization({

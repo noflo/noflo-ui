@@ -2,8 +2,6 @@ import { Graph, graph } from "../vendor/noflo.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import { FileSelector } from "./elements/noflo-file-selector.js";
-import { FlowIIP } from "./elements/noflo-iip.js";
-import { FlowNode } from "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import "./elements/noflo-selection-pills.js";
 import {
@@ -261,7 +259,7 @@ function setupEditorEventListeners(editor) {
     if (names.length === 0) return;
 
     const raw = prompt("Name for the subgraph:");
-    if (!raw || !raw.trim()) return;
+    if (!raw?.trim()) return;
     const subName = raw.trim();
     const fileName = graphFileNameFor(subName);
     try {
@@ -742,7 +740,7 @@ function setupEditorEventListeners(editor) {
     newIIP.id = iipId;
 
     if (currentGraph) {
-      if (startPort && startPort.classList.contains("port-in")) {
+      if (startPort?.classList.contains("port-in")) {
         const nodeElement = startPort.closest("noflo-node");
         if (nodeElement) {
           const nodeName = nodeElement.getAttribute("name");
@@ -819,7 +817,7 @@ function setupEditorEventListeners(editor) {
   on(editor, "iip-edit-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
-    const iipElement = /** @type {FlowIIP} */ (iip);
+    const iipElement = /** @type {any} */ (iip);
     const newValue = prompt("Enter new IIP value:", iipElement.value);
     if (newValue !== null) {
       iipElement.value = newValue;
@@ -853,7 +851,7 @@ function setupEditorEventListeners(editor) {
   on(editor, "iip-removal-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
-    editor.removeIIP(/** @type {FlowIIP} */ (iip));
+    editor.removeIIP(/** @type {any} */ (iip));
     if (currentGraph) {
       const index = currentGraph.initializers.findIndex(
         (/** @type {any} */ init) => init.metadata?.id === iip.id,
@@ -869,7 +867,7 @@ function setupEditorEventListeners(editor) {
   on(editor, "iip-send-attempt", (e) => {
     const event = /** @type {CustomEvent} */ (e);
     const { iip } = event.detail;
-    const iipElement = /** @type {FlowIIP} */ (iip);
+    const iipElement = /** @type {any} */ (iip);
     console.log(
       `[Main] Sending IIP: ${iipElement.getAttribute("name")} with value: ${iipElement.value}`,
     );
@@ -903,7 +901,9 @@ function setupEditorEventListeners(editor) {
 
   on(editor, "port-renamed", (e) => {
     const event = /** @type {CustomEvent} */ (e);
-    const { oldName, newName, direction, position } = event.detail;
+    const newName = event.detail.newName;
+    const direction = event.detail.direction;
+    const oldName = event.detail.oldName;
     if (currentGraph) {
       if (direction === "in") {
         currentGraph.renameInport(oldName, newName);
@@ -1110,7 +1110,7 @@ async function inferLibraryFromFolder(directoryHandle) {
         if (!g.name) {
           g.name = entry.name.split(".")[0];
         }
-      } catch (e) {
+      } catch (_e) {
         // console.warn("Failed to parse FBP language graph file:", entry.name, e);
       }
     }
@@ -1368,7 +1368,7 @@ async function createNewGraph() {
   }
   graphStack = [];
   const raw = window.prompt("Name for the new graph:");
-  if (!raw || !raw.trim()) return;
+  if (!raw?.trim()) return;
   const name = raw.trim();
   const g = new Graph(name);
   const fileName = graphFileNameFor(name);

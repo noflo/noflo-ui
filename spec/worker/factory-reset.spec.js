@@ -13,7 +13,7 @@ import {
  * @param {{ completing: string[], blocked: string[] }} options
  * @returns {{ indexeddb: IDBFactory, deleted: string[] }}
  */
-function fakeIndexeddb({ completing, blocked }) {
+function fakeIndexeddb({ blocked }) {
   /** @type {string[]} */
   const deleted = [];
   const indexeddb = {

@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { TCPClientInterface, TCPServerInterface } from "@reticulum/node";
 import { Identity, Reticulum } from "../../vendor/reticulum-core.js";
 import { ReticulumProvider } from "../../vendor/y-reticulum.js";
 import * as Y from "../../vendor/yjs.js";
 
 const ROOM = "noflo-ui:join-flow-test-project-id";
 
-const hexToBytes = (/** @type {string} */ hex) =>
+const _hexToBytes = (/** @type {string} */ hex) =>
   Uint8Array.from(hex.match(/../g) ?? [], (/** @type {string} */ h) =>
     parseInt(h, 16),
   );

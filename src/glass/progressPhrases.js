@@ -37,11 +37,9 @@ const PHRASES = {
     failed: "Room announce failed: {error}",
   },
   "mesh.announce.sync": "Announced the sync endpoint",
-  "mesh.connect.path.request":
-    "Requesting a path to peer {peer}",
+  "mesh.connect.path.request": "Requesting a path to peer {peer}",
   "mesh.connect.link.establish": "Establishing a link to peer {peer}",
-  "mesh.connect.proof.verify":
-    "Validating link proof for peer {peer}",
+  "mesh.connect.proof.verify": "Validating link proof for peer {peer}",
   "mesh.join.requesting_path": "Resolving the host’s path",
   "mesh.join.linking": "Establishing a link to the host",
   "mesh.join.knocking": "Knocking on the host’s door",
@@ -70,9 +68,9 @@ export function progressPhrase(message) {
     typeof entry === "string"
       ? entry
       : entry
-        ? (message.state === "failed"
-            ? entry.failed ?? entry.running ?? fallback
-            : entry.done ?? entry.running ?? fallback)
+        ? message.state === "failed"
+          ? (entry.failed ?? entry.running ?? fallback)
+          : (entry.done ?? entry.running ?? fallback)
         : fallback;
   return String(template).replace(
     /\{(\w+)\}/g,

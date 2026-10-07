@@ -2,11 +2,8 @@
  * Main entry point for NoFlo UI
  */
 
-import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-heatmap.js";
-import { FlowIIP } from "./elements/noflo-iip.js";
-import { FlowNode } from "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import "./elements/noflo-selection-pills.js";
 import { on } from "./events.js";
@@ -33,9 +30,7 @@ async function init() {
   // Initial setup
   const app = document.getElementById("app");
   if (app) {
-    const editor = /** @type {FlowEditor} */ (
-      document.createElement("noflo-editor")
-    );
+    const editor = /** @type {any} */ (document.createElement("noflo-editor"));
     app.appendChild(editor);
 
     const libraryManager = new LibraryManager();
@@ -101,7 +96,7 @@ async function init() {
       const event = /** @type {CustomEvent} */ (e);
       const { x, y, startPort } = event.detail;
       const newNode = editor.addNode(
-        "new_node_" + Date.now(),
+        `new_node_${Date.now()}`,
         "project/New Node",
         { x, y },
       );
@@ -154,7 +149,7 @@ async function init() {
     on(editor, "iip-edit-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
-      const iipElement = /** @type {FlowIIP} */ (iip);
+      const iipElement = /** @type {any} */ (iip);
       const newValue = prompt("Enter new IIP value:", iipElement.value);
       if (newValue !== null) {
         iipElement.value = newValue;
@@ -164,20 +159,20 @@ async function init() {
     on(editor, "iip-removal-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
-      editor.removeIIP(/** @type {FlowIIP} */ (iip));
+      editor.removeIIP(/** @type {any} */ (iip));
     });
 
     on(editor, "iip-send-attempt", (e) => {
       const event = /** @type {CustomEvent} */ (e);
       const { iip } = event.detail;
-      const iipElement = /** @type {FlowIIP} */ (iip);
+      const iipElement = /** @type {any} */ (iip);
       console.log(
         `[Main] Sending IIP: ${iipElement.getAttribute("name")} with value: ${iipElement.value}`,
       );
     });
 
     // Add some sample nodes
-    const source = /** @type {FlowNode} */ (
+    const source = /** @type {any} */ (
       editor.addNode("node_source", "Source", {
         x: 100,
         y: 200,
@@ -186,7 +181,7 @@ async function init() {
       })
     );
 
-    const filter = /** @type {FlowNode} */ (
+    const filter = /** @type {any} */ (
       editor.addNode("node_filter", "Filter", {
         x: 300,
         y: 100,
@@ -195,7 +190,7 @@ async function init() {
       })
     );
 
-    const splitter = /** @type {FlowNode} */ (
+    const splitter = /** @type {any} */ (
       editor.addNode("node_splitter", "Splitter", {
         x: 300,
         y: 300,
@@ -204,7 +199,7 @@ async function init() {
       })
     );
 
-    const aggregator = /** @type {FlowNode} */ (
+    const aggregator = /** @type {any} */ (
       editor.addNode("node_aggregator", "Aggregator", {
         x: 500,
         y: 300,
@@ -213,7 +208,7 @@ async function init() {
       })
     );
 
-    const logger = /** @type {FlowNode} */ (
+    const logger = /** @type {any} */ (
       editor.addNode("node_logger", "Logger", {
         x: 700,
         y: 100,
@@ -222,7 +217,7 @@ async function init() {
       })
     );
 
-    const sink = /** @type {FlowNode} */ (
+    const sink = /** @type {any} */ (
       editor.addNode("node_sink", "Sink", {
         x: 700,
         y: 300,
@@ -231,7 +226,7 @@ async function init() {
       })
     );
 
-    const router = /** @type {FlowNode} */ (
+    const _router = /** @type {any} */ (
       editor.addNode("node_router", "Router", {
         x: 500,
         y: 100,
@@ -272,7 +267,7 @@ async function init() {
       if (Math.random() > 0.5 || edges.length === 0) {
         // Random node activity
         const nodeElement = nodes[Math.floor(Math.random() * nodes.length)];
-        const node = /** @type {FlowNode | FlowIIP} */ (nodeElement);
+        const node = /** @type {any} */ (nodeElement);
         editor.recordActivity(
           node.position.x + node.size / 2,
           node.position.y + node.size / 2,

@@ -153,10 +153,9 @@ export class SpaceManager {
    * @param {number} startX
    * @param {number} startY
    * @param {number} w
-   * @param {number} h
    * @returns {Position | null}
    */
-  findEmptySpace(startX, startY, w, h) {
+  findEmptySpace(startX, startY, w) {
     const cellSize = 40;
     const startXSnapped = this.snapToGrid(startX, startY).x;
     const startYSnapped = this.snapToGrid(startX, startY).y;

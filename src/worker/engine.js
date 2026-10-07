@@ -32,8 +32,8 @@ import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
 import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { createMeshSync } from "./MeshSync.js";
-import { progress } from "./Progress.js";
 import { routeMeshCommand } from "./mesh-commands.js";
+import { progress } from "./Progress.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
