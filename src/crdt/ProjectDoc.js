@@ -531,10 +531,28 @@ function endpointMap(endpoint) {
  * @param {string} nodeId
  * @param {string} port
  * @param {{ [key: string]: any }} [metadata]
+ * @param {number | undefined} [index] Slot index when the exported port is
+ *   addressable (the export pins that array slot, per the canonical
+ *   port-ref model)
  * @returns {boolean} False when the node is unknown or the name is taken.
  */
-export function addInport(graph, publicName, nodeId, port, metadata = {}) {
-  return addExportedPort(graph, "inports", publicName, nodeId, port, metadata);
+export function addInport(
+  graph,
+  publicName,
+  nodeId,
+  port,
+  metadata = {},
+  index = undefined,
+) {
+  return addExportedPort(
+    graph,
+    "inports",
+    publicName,
+    nodeId,
+    port,
+    metadata,
+    index,
+  );
 }
 
 /**
@@ -545,10 +563,27 @@ export function addInport(graph, publicName, nodeId, port, metadata = {}) {
  * @param {string} nodeId
  * @param {string} port
  * @param {{ [key: string]: any }} [metadata]
+ * @param {number} [index] Slot index when the exported port is addressable
+ *   (the export pins that array slot, per the canonical port-ref model)
  * @returns {boolean} False when the node is unknown or the name is taken.
  */
-export function addOutport(graph, publicName, nodeId, port, metadata = {}) {
-  return addExportedPort(graph, "outports", publicName, nodeId, port, metadata);
+export function addOutport(
+  graph,
+  publicName,
+  nodeId,
+  port,
+  metadata = {},
+  index = undefined,
+) {
+  return addExportedPort(
+    graph,
+    "outports",
+    publicName,
+    nodeId,
+    port,
+    metadata,
+    index,
+  );
 }
 
 /**
@@ -558,15 +593,33 @@ export function addOutport(graph, publicName, nodeId, port, metadata = {}) {
  * @param {string} nodeId
  * @param {string} port
  * @param {{ [key: string]: any }} metadata
+ * @param {number} [index]
  * @returns {boolean}
  */
-function addExportedPort(graph, direction, publicName, nodeId, port, metadata) {
+function addExportedPort(
+  graph,
+  direction,
+  publicName,
+  nodeId,
+  port,
+  metadata,
+  index,
+) {
   if (!getNode(graph, nodeId)) return false;
+  if (
+    index !== undefined &&
+    (typeof index !== "number" || !Number.isInteger(index) || index < 0)
+  ) {
+    return false;
+  }
   const ports = /** @type {Y.Map<any>} */ (graph.get(direction));
   if (ports.has(publicName)) return false;
   const info = new Y.Map();
   info.set("process", nodeId);
   info.set("port", port);
+  if (index !== undefined) {
+    info.set("index", index);
+  }
   info.set("metadata", metadataMap(metadata));
   ports.set(publicName, info);
   return true;

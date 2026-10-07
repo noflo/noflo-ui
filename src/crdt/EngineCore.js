@@ -341,13 +341,15 @@ function intentMakeSubgraph(doc, payload) {
    * @param {string} name
    * @param {string} nodeId
    * @param {string} port
+   * @param {number} [index] The addressable slot when the boundary
+   *   connection targets one
    */
-  const exportPort = (command, name, nodeId, port) => {
+  const exportPort = (command, name, nodeId, port, index) => {
     if (command === "addinport") {
-      addInport(child, name, nodeId, port);
+      addInport(child, name, nodeId, port, {}, index);
       inPortNames.add(name);
     } else {
-      addOutport(child, name, nodeId, port);
+      addOutport(child, name, nodeId, port, {}, index);
       outPortNames.add(name);
     }
     /** @type {import("./Protocol.js").GraphAddExportMessage} */
@@ -398,6 +400,7 @@ function intentMakeSubgraph(doc, payload) {
         uniqueName(plain.src.port, outPortNames),
         movedNode,
         plain.src.port,
+        plain.src.index,
       );
       continue;
     }
@@ -435,6 +438,7 @@ function intentMakeSubgraph(doc, payload) {
       uniqueName(plain.tgt.port, inPortNames),
       movedNode,
       plain.tgt.port,
+      plain.tgt.index,
     );
   }
 
@@ -512,24 +516,32 @@ function intentMoveUp(doc, payload) {
   }
 
   // Snapshot the pieces the rewiring logic needs before any mutation
-  /** @type {Map<string, { process: string, port: string }>} */
+  /** @type {Map<string, { process: string, port: string, index?: number }>} */
   const inportInfo = new Map();
   for (const [name, info] of /** @type {Y.Map<any>} */ (
     child.get("inports")
   ).entries()) {
     const plain = info.toJSON();
     if (typeof plain.process === "string" && typeof plain.port === "string") {
-      inportInfo.set(name, { process: plain.process, port: plain.port });
+      inportInfo.set(name, {
+        process: plain.process,
+        port: plain.port,
+        index: plain.index,
+      });
     }
   }
-  /** @type {Map<string, { process: string, port: string }>} */
+  /** @type {Map<string, { process: string, port: string, index?: number }>} */
   const outportInfo = new Map();
   for (const [name, info] of /** @type {Y.Map<any>} */ (
     child.get("outports")
   ).entries()) {
     const plain = info.toJSON();
     if (typeof plain.process === "string" && typeof plain.port === "string") {
-      outportInfo.set(name, { process: plain.process, port: plain.port });
+      outportInfo.set(name, {
+        process: plain.process,
+        port: plain.port,
+        index: plain.index,
+      });
     }
   }
   const parentEdges = [
@@ -644,26 +656,31 @@ function intentMoveUp(doc, payload) {
   }
 
   // Connections between moved and staying nodes reroute through new exports
-  // on the staying side
+  // on the staying side. Addressable slots are part of port identity, so
+  // the keys and the reuse lookups carry the index
   const childEdges = /** @type {Y.Map<any>} */ (child.get("edges"));
   /** @type {Map<string, string>} */
   const newInportNames = new Map();
   /** @type {Map<string, string>} */
   const newOutportNames = new Map();
+  /** @type {Map<string, number>} */
+  const newInportIndexes = new Map();
+  /** @type {Map<string, number>} */
+  const newOutportIndexes = new Map();
   const usedInNames = new Set([...inportInfo.keys()]);
   const usedOutNames = new Set([...outportInfo.keys()]);
   // Reverse lookups for reusing an existing export
   /** @type {Map<string, string>} */
   const existingInportFor = new Map(
     [...inportInfo.entries()].map(([name, info]) => [
-      `${info.process}:${info.port}`,
+      `${info.process}:${info.port}:${info.index ?? ""}`,
       name,
     ]),
   );
   /** @type {Map<string, string>} */
   const existingOutportFor = new Map(
     [...outportInfo.entries()].map(([name, info]) => [
-      `${info.process}:${info.port}`,
+      `${info.process}:${info.port}:${info.index ?? ""}`,
       name,
     ]),
   );
@@ -696,12 +713,15 @@ function intentMoveUp(doc, payload) {
     if (srcMoved) {
       // Moved node feeds a staying node: export an inport into the staying
       // node and wire the moved node to the subgraph node
-      const key = `${plain.tgt.node}:${plain.tgt.port}`;
+      const key = `${plain.tgt.node}:${plain.tgt.port}:${plain.tgt.index ?? ""}`;
       const existing = existingInportFor.get(key);
       const name =
         existing ?? uniqueName(plain.tgt.port, usedInNames) ?? plain.tgt.port;
       if (!existing) {
         newInportNames.set(key, name);
+        if (plain.tgt.index !== undefined) {
+          newInportIndexes.set(key, plain.tgt.index);
+        }
         usedInNames.add(name);
       }
       for (const sub of subNodes) {
@@ -721,12 +741,15 @@ function intentMoveUp(doc, payload) {
 
     // A staying node feeds the moved node: export an outport from the
     // staying node and wire it into the moved node
-    const key = `${plain.src.node}:${plain.src.port}`;
+    const key = `${plain.src.node}:${plain.src.port}:${plain.src.index ?? ""}`;
     const existing = existingOutportFor.get(key);
     const name =
       existing ?? uniqueName(plain.src.port, usedOutNames) ?? plain.src.port;
     if (!existing) {
       newOutportNames.set(key, name);
+      if (plain.src.index !== undefined) {
+        newOutportIndexes.set(key, plain.src.index);
+      }
       usedOutNames.add(name);
     }
     for (const sub of subNodes) {
@@ -741,11 +764,11 @@ function intentMoveUp(doc, payload) {
 
   for (const [key, name] of newInportNames) {
     const [nodeId, port] = /** @type {string[]} */ (key.split(":"));
-    addInport(child, name, nodeId, port);
+    addInport(child, name, nodeId, port, {}, newInportIndexes.get(key));
   }
   for (const [key, name] of newOutportNames) {
     const [nodeId, port] = /** @type {string[]} */ (key.split(":"));
-    addOutport(child, name, nodeId, port);
+    addOutport(child, name, nodeId, port, {}, newOutportIndexes.get(key));
   }
 
   // Exports whose far end moved up are no longer routed through the
@@ -1177,12 +1200,18 @@ function syncGraphSignature(doc, graphId) {
  * @returns {EngineResult}
  */
 function intentAddExport(doc, command, payload) {
-  const { graphId, name, nodeId, port, metadata } = payload ?? {};
+  const { graphId, name, nodeId, port, metadata, index } = payload ?? {};
   if (
     typeof graphId !== "string" ||
     typeof name !== "string" ||
     typeof nodeId !== "string" ||
     typeof port !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  if (
+    index !== undefined &&
+    (typeof index !== "number" || !Number.isInteger(index) || index < 0)
   ) {
     return { accepted: false, echoes: [] };
   }
@@ -1193,8 +1222,8 @@ function intentAddExport(doc, command, payload) {
   const direction = directionForCommand(command);
   const added =
     direction === "inports"
-      ? addInport(graph, name, nodeId, port, metadata ?? {})
-      : addOutport(graph, name, nodeId, port, metadata ?? {});
+      ? addInport(graph, name, nodeId, port, metadata ?? {}, index)
+      : addOutport(graph, name, nodeId, port, metadata ?? {}, index);
   if (!added) {
     return { accepted: false, echoes: [] };
   }
@@ -1204,6 +1233,9 @@ function intentAddExport(doc, command, payload) {
     command: /** @type {'addinport' | 'addoutport'} */ (command.toLowerCase()),
     payload: { name, nodeId, port, metadata: metadata ?? {} },
   };
+  if (index !== undefined) {
+    echo.payload.index = index;
+  }
   const signatureEcho = syncGraphSignature(doc, graphId);
   return {
     accepted: true,

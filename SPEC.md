@@ -278,13 +278,16 @@ interface IntentUpdateIIP { graphId: string; id: string; data: any }
 interface IntentRemoveIIP { graphId: string; id: string }
 
 // Exported ports. Metadata carries the Glass position of the exported port
-// element, persisted so layouts survive reloads.
+// element, persisted so layouts survive reloads. An `index` pins the array
+// slot when the exported port is addressable (the export exposes that one
+// slot, per the canonical port-ref model).
 interface IntentAddExport {
   graphId: string;
   name: string;
   nodeId: string;
   port: string;
   metadata?: { x: number; y: number };
+  index?: number;
 }
 interface IntentRemoveExport { graphId: string; name: string }
 interface IntentRenameExport { graphId: string; from: string; to: string }
@@ -366,6 +369,7 @@ interface GraphExport {
   nodeId: string;
   port: string;
   metadata?: { [key: string]: any };
+  index?: number;
 }
 interface GraphCreateGraph { id: string; name: string; parent: string }
 

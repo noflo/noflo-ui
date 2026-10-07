@@ -470,7 +470,8 @@ export function createIntentMapper({
 
       on(ed, "port-exported", (e) => {
         const event = /** @type {CustomEvent} */ (e);
-        const { name, direction, process, port, position } = event.detail;
+        const { name, direction, process, port, position, index } =
+          event.detail;
         sendIntent({
           type: "INTENT",
           command: direction === "in" ? "addInport" : "addOutport",
@@ -480,6 +481,8 @@ export function createIntentMapper({
             nodeId: process,
             port,
             metadata: position ? { x: position.x, y: position.y } : undefined,
+            // The slot the export pins, for addressable ports
+            index: Number.isInteger(index) ? index : undefined,
           },
         });
       });

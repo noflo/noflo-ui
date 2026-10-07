@@ -53,6 +53,11 @@ export class FlowNode extends HTMLElement {
     this._inPorts = [{ type: "regular" }];
     /** @type {PortConfig[]} */
     this._outPorts = [{ type: "regular" }];
+    /** Attached addressable slots per direction and port base name
+     * (work document #5): drives the instance count so at least one end
+     * slot stays free. */
+    /** @type {{ in?: Record<string, number[]>, out?: Record<string, number[]> }} */
+    this._portUsage = {};
     /** @type {HTMLElement | null} */
     this.portsContainer = null;
     /** @type {string | null} The running process's netpbm preview data URL. */
@@ -294,6 +299,23 @@ export class FlowNode extends HTMLElement {
     this._inPorts = inPorts;
     this._outPorts = outPorts;
 
+    if (this.portsContainer) {
+      this.renderPorts(this._inPorts, this._outPorts);
+    }
+  }
+
+  /**
+   * Declares which addressable slots are attached (an edge, an IIP, or an
+   * export occupying the slot — each slot holds one attachment, work
+   * document #5). The node grows its rendered instances so at least one
+   * end slot stays free: an array port with in[0]–in[2] attached renders
+   * an empty in[3], and so on.
+   *
+   * @param {{ in?: Record<string, number[]>, out?: Record<string, number[]> }} usage
+   *   Port base name -> attached slot indexes, per direction.
+   */
+  setPortUsage(usage) {
+    this._portUsage = usage;
     if (this.portsContainer) {
       this.renderPorts(this._inPorts, this._outPorts);
     }
@@ -757,12 +779,15 @@ export class FlowNode extends HTMLElement {
       const labels = [...this.portsContainer.querySelectorAll(`.${direction}`)]
         .map((label) => {
           const element = /** @type {HTMLElement} */ (label);
-          const name = element.dataset.portName ?? "";
           return {
             element,
             base: Number(element.dataset.portY ?? 0),
-            height: /\[\d+\]$/.test(name) ? arrayHeight : regularHeight,
-            baseName: name.replace(/\[\d+\]$/, ""),
+            // Array instance pills are one port's cluster: tighter than
+            // regular pills (work document #5 update #16)
+            height: element.classList.contains("port-label-array")
+              ? arrayHeight
+              : regularHeight,
+            baseName: element.dataset.portName ?? "",
           };
         })
         .sort((a, b) => a.base - b.base);
@@ -804,7 +829,14 @@ export class FlowNode extends HTMLElement {
           ? `out${index}`
           : `in${index}`);
     const addressable = cfg.addressable || false;
-    const size = addressable ? 3 : 1;
+    // Array instances grow with their attachments (work document #5): a
+    // slot holds at most one attachment — edge, IIP, or export — and at
+    // least one end slot stays free. Gaps don't count: the count follows
+    // the highest attached index, so only in[2] attached still renders
+    // in[0]–in[3]. Minimum is three so a sparse array stays discoverable.
+    const attached = this._portUsage?.[isOutport ? "out" : "in"]?.[name] ?? [];
+    const highest = attached.length > 0 ? Math.max(...attached) : -1;
+    const size = Math.max(3, highest + 2);
 
     const angleRange = Math.PI * 0.5;
     const centerAngle = isOutport ? 0 : Math.PI;
@@ -859,7 +891,12 @@ export class FlowNode extends HTMLElement {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
 
-    port.dataset.portName = name;
+    // Array instances identify by their base name plus the slot index in
+    // data-port-index — the canonical port-ref form. Name-based lookups
+    // (edge wiring, IIPs, exports, guiding) resolve uniformly; the label
+    // displays the indexed form
+    const baseName = name.replace(/\[\d+\]$/, "");
+    port.dataset.portName = baseName;
     port.dataset.portType = type;
     // The port's declared datatype (work document #29 update #1): the
     // typed-port guiding matches on it; `portType` stays the structural
@@ -873,7 +910,8 @@ export class FlowNode extends HTMLElement {
 
     const label = document.createElement("div");
     label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}${type === "array" ? " port-label-array" : ""}`;
-    label.dataset.portName = name;
+    label.dataset.portName = baseName;
+    if (index !== undefined) label.dataset.portIndex = index.toString();
     // Explicit spans everywhere: the pill's dot is a real element, not a
     // pseudo-element of a display:contents span — pseudo placement inside
     // contentless boxes differs across engines

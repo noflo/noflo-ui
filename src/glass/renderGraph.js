@@ -22,8 +22,12 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
     const nodeEl = elementsMap.get(info.process);
     let targetPort = null;
     if (nodeEl) {
+      // Addressable exports pin their array slot: the selector must match
+      // the indexed instance, not the first port with the name
       targetPort = nodeEl.shadowRoot?.querySelector(
-        `.port[data-port-name="${info.port}"]`,
+        info.index !== undefined
+          ? `.port[data-port-name="${info.port}"][data-port-index="${info.index}"]`
+          : `.port[data-port-name="${info.port}"]`,
       );
     }
     if (targetPort) {
@@ -77,7 +81,9 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       const toNode = elementsMap.get(iip.to.node);
       if (toNode) {
         port = toNode.shadowRoot?.querySelector(
-          `.port[data-port-name="${iip.to.port}"]`,
+          iip.to.index !== undefined
+            ? `.port[data-port-name="${iip.to.port}"][data-port-index="${iip.to.index}"]`
+            : `.port[data-port-name="${iip.to.port}"]`,
         );
       }
     }
@@ -128,6 +134,11 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       );
     }
   }
+
+  // Array instance fans grow with their attachments (work document #5):
+  // edges, IIPs, and exports all occupy their slot; at least one end slot
+  // stays free
+  ed.syncArrayPortUsage?.();
 
   return elementsMap;
 }

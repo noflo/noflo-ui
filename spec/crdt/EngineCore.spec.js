@@ -964,6 +964,65 @@ describe("makeSubgraph (work document #23)", () => {
     );
   });
 
+  it("addressable exports pin their array slot (canonical port refs)", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Hello");
+    addNode(graph, "B", "core/Other");
+    // B's addressable slot 2 feeds A's slot 1
+    addEdge(
+      graph,
+      { node: "B", port: "out", index: 2 },
+      { node: "A", port: "in", index: 1 },
+    );
+    setComponentSignature(doc, "core/Hello", {
+      inports: [{ name: "in", addressable: true }],
+      outports: [{ name: "out" }],
+    });
+
+    const made = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A"] },
+    });
+    assert.ok(made.accepted);
+    const child = getGraph(doc, "main/A");
+    // The boundary export pins the slot the connection targeted
+    assert.equal(child.get("inports").get("in").get("index"), 1);
+
+    // Exporting another slot of the same array port stores its own index
+    const exported = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addInport",
+      payload: {
+        graphId: "main/A",
+        name: "in3",
+        nodeId: "A",
+        port: "in",
+        index: 3,
+      },
+    });
+    assert.ok(exported.accepted);
+    assert.equal(exported.echoes[0].payload.index, 3);
+    assert.equal(child.get("inports").get("in3").get("index"), 3);
+
+    // Invalid indexes are refused
+    const invalid = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addInport",
+      payload: {
+        graphId: "main/A",
+        name: "bad",
+        nodeId: "A",
+        port: "in",
+        index: -1,
+      },
+    });
+    assert.equal(invalid.accepted, false);
+    assert.ok(!child.get("inports").has("bad"));
+  });
+
   it("rejects unknown nodes and already-subgraph nodes", () => {
     const doc = createProjectDoc("p");
     createGraph(doc, "main");

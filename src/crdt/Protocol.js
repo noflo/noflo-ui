@@ -340,12 +340,14 @@
 
 /**
  * Appendix A extension (work documents #18/#20): exported port mutations.
- * Metadata carries the Glass position for rendering.
+ * Metadata carries the Glass position for rendering. `index` pins the array
+ * slot when the exported port is addressable, matching the canonical
+ * port-ref model (the export exposes that one slot).
  *
  * @typedef {Object} IntentAddExportMessage
  * @property {'INTENT'} type
  * @property {'addInport' | 'addOutport'} command
- * @property {{ graphId: string, name: string, nodeId: string, port: string, metadata?: { x: number, y: number } }} payload
+ * @property {{ graphId: string, name: string, nodeId: string, port: string, metadata?: { x: number, y: number }, index?: number }} payload
  */
 
 /**
@@ -802,7 +804,7 @@ export const ECHO_MESSAGES = [
  * @typedef {Object} GraphAddExportMessage
  * @property {'graph'} protocol
  * @property {'addinport' | 'addoutport'} command
- * @property {{ name: string, nodeId: string, port: string, metadata?: { [key: string]: any } }} payload
+ * @property {{ name: string, nodeId: string, port: string, metadata?: { [key: string]: any }, index?: number }} payload
  */
 
 /**
