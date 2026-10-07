@@ -554,6 +554,8 @@ async function render() {
   app.appendChild(ed);
   ed.libraryManager = libraryManager;
   ed.unpackEnabled = true;
+  // Move up needs a parent: the root graph has none
+  ed.moveUpEnabled = Boolean(graphParent(mirrorDoc, activeGraphId));
   editor = ed;
   intentMapper?.wire(ed);
   // The component signature editor (work document #29): the shell hosts the

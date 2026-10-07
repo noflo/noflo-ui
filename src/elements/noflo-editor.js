@@ -101,6 +101,9 @@ export class FlowEditor extends HTMLElement {
     this.libraryManager = null;
     /** Whether the Unpack action is available (set by the embedding app). */
     this.unpackEnabled = false;
+    /** Whether nodes can move up into a parent graph: only subgraphs have
+     * one (set by the embedding app). */
+    this.moveUpEnabled = false;
     /** @type {EdgeManager | null} */
     this.edgeManager = null;
     /** @type {boolean} */
@@ -1795,20 +1798,24 @@ export class FlowEditor extends HTMLElement {
               icon: "object-group",
             });
           }
-          items.push({
-            text: "Move up",
-            onClick: () => {
-              // When the clicked node is part of the current selection, the
-              // whole selection moves up
-              const name = this.getNodeName(
-                /** @type {GraphEntity} */ (clickedNode),
-              );
-              const selected = [...this.selectionManager.nodes];
-              const nodes = selected.includes(name) ? selected : [name];
-              emit(this, "move-nodes-up-attempt", { nodes });
-            },
-            icon: "arrow-up-from-bracket",
-          });
+          // Move up needs a parent graph to move into: the root project
+          // graph is the top of the hierarchy, so the item drops out there
+          if (this.moveUpEnabled) {
+            items.push({
+              text: "Move up",
+              onClick: () => {
+                // When the clicked node is part of the current selection, the
+                // whole selection moves up
+                const name = this.getNodeName(
+                  /** @type {GraphEntity} */ (clickedNode),
+                );
+                const selected = [...this.selectionManager.nodes];
+                const nodes = selected.includes(name) ? selected : [name];
+                emit(this, "move-nodes-up-attempt", { nodes });
+              },
+              icon: "arrow-up-from-bracket",
+            });
+          }
           if (
             this.isSubgraphNode(/** @type {Element} */ (clickedNode)) &&
             this.unpackEnabled
