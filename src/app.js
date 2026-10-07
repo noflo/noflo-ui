@@ -130,6 +130,12 @@ let componentPicker = null;
 /** Node ids seen per graph, so freshly appeared nodes (local or synced)
  * spring in and shimmer exactly once (work document #5 update #16). */
 const seenNodes = new Map();
+/** A radial menu is open: renders defer until it closes, so cycling
+ * (routes) doesn't destroy the menu and the selection. */
+let menuOpen = false;
+let renderQueuedWhileMenuOpen = false;
+/** @type {import("./events.js").SelectionSnapshot} */
+let currentSelection = { nodes: [], iips: [], edges: [], ports: [] };
 /** @type {any} */
 let componentForm = null;
 /** @type {LibraryManager | null} */
@@ -365,6 +371,10 @@ function sendDraggingAwareness(nodes) {
  * Schedules a debounced re-render of the editor from the replica.
  */
 function scheduleRender() {
+  if (menuOpen) {
+    renderQueuedWhileMenuOpen = true;
+    return;
+  }
   if (renderTimer !== null) return;
   renderTimer = setTimeout(() => {
     renderTimer = null;
@@ -564,6 +574,30 @@ async function render() {
     componentModal.appendChild(componentForm);
     app.appendChild(componentModal);
   }
+  on(ed, "edge-menu-open", () => {
+    menuOpen = true;
+  });
+  on(ed, "canvas-menu-open", () => {
+    menuOpen = true;
+  });
+  window.addEventListener(
+    "pointerdown",
+    () => {
+      if (!menuOpen) return;
+      menuOpen = false;
+      if (renderQueuedWhileMenuOpen) {
+        renderQueuedWhileMenuOpen = false;
+        scheduleRender();
+      }
+    },
+    true,
+  );
+  on(ed, "selection-changed", (e) => {
+    currentSelection = e.detail;
+  });
+  on(ed, "set-edge-route", (e) => {
+    /** @type {any} */ (ed).previewEdgeRoute?.(e.detail.edgeId, e.detail.route);
+  });
   on(ed, "edit-component-attempt", (e) => {
     const node = e.detail.node;
     const componentName = node?.getAttribute?.("component");
@@ -589,6 +623,52 @@ async function render() {
   for (const id of currentNodes) seen.add(id);
   if (fresh.length > 0) ed.animateNewNodes(fresh);
   applyPendingState();
+  // Exported-port and IIP positions come from the view's metadata: the
+  // noflo graph's loadJSON may not preserve custom metadata on
+  // inports/outports, so the positions are applied from the projection
+  // directly (work document #5 follow-up)
+  for (const [name, info] of Object.entries(view.inports ?? {})) {
+    if (info.metadata?.x === undefined) continue;
+    const ep = /** @type {any} */ (
+      ed.shadowRoot?.querySelector(`noflo-exported-port[name="${name}"]`)
+    );
+    if (!ep) continue;
+    ep.position = { x: info.metadata.x, y: info.metadata.y };
+    ed.spaceManager.updateEntity(name, ep.position);
+  }
+  for (const [name, info] of Object.entries(view.outports ?? {})) {
+    if (info.metadata?.x === undefined) continue;
+    const ep = /** @type {any} */ (
+      ed.shadowRoot?.querySelector(`noflo-exported-port[name="${name}"]`)
+    );
+    if (!ep) continue;
+    ep.position = { x: info.metadata.x, y: info.metadata.y };
+    ed.spaceManager.updateEntity(name, ep.position);
+  }
+  for (const conn of view.connections ?? []) {
+    if (conn.data === undefined || !conn.metadata?.id) continue;
+    if (conn.metadata?.x === undefined) continue;
+    const iip = /** @type {any} */ (
+      ed.shadowRoot?.querySelector(`noflo-iip[id="${conn.metadata.id}"]`)
+    );
+    if (!iip) continue;
+    iip.position = { x: conn.metadata.x, y: conn.metadata.y };
+    ed.spaceManager.updateEntity(conn.metadata.id, iip.position);
+  }
+  // Restore the selection the previous editor element held (the Glass
+  // carries it across rebuilds)
+  const selection = currentSelection;
+  if (selection.nodes.length > 0) {
+    for (const id of selection.nodes) {
+      ed.selectionManager.select("nodes", id, true);
+    }
+  }
+  for (const id of selection.iips) {
+    ed.selectionManager.select("iips", id, true);
+  }
+  for (const id of selection.edges) {
+    ed.selectionManager.select("edges", id, true);
+  }
   ed.fitEntitiesToViewport();
 }
 
