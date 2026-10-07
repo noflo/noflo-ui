@@ -23,6 +23,7 @@ import {
   FlowComponentPicker,
 } from "./elements/noflo-component-picker.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
+import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
 import "./elements/noflo-selection-pills.js";
