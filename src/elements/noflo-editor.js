@@ -1687,8 +1687,6 @@ export class FlowEditor extends HTMLElement {
         });
       } else {
         const isIIP = clickedNode.tagName === "NOFLO-IIP";
-        const isSubgraph =
-          !isIIP && this.isSubgraphNode(/** @type {Element} */ (clickedNode));
         if (isIIP) {
           items.push({
             text: "Edit",
@@ -1702,20 +1700,10 @@ export class FlowEditor extends HTMLElement {
             icon: "pen-to-square",
           });
         }
-        if (isSubgraph) {
-          items.push({
-            text: "Open",
-            onClick: () => {
-              emit(this, "navigate-down-attempt", {
-                node: this.getNodeName(
-                  /** @type {GraphEntity} */ (clickedNode),
-                ),
-              });
-            },
-            icon: "folder-open",
-          });
-        }
 
+        // No separate "Open" for subgraphs: "Edit Component" opens the
+        // component's own editor, which the Glass branches by kind — the
+        // graph editor for subgraphs (guidelines §10's one primary edit)
         if (isIIP) {
           items.push({
             text: "Delete",

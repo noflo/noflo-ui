@@ -593,7 +593,17 @@ async function render() {
   on(ed, "edit-component-attempt", (e) => {
     const node = e.detail.node;
     const componentName = node?.getAttribute?.("component");
-    if (componentName) openSignatureEditor(componentName);
+    if (!componentName) return;
+    // One "Edit Component" per component kind (work document #5): a
+    // subgraph opens its graph editor; everything else opens the
+    // signature editor — the sketch→specify step for stubs, and the
+    // component's closest editor until the code editor lands (work
+    // document #29's implementation round)
+    if (mirrorDoc.getMap("graphs").has(componentName)) {
+      router?.navigate(componentName);
+      return;
+    }
+    openSignatureEditor(componentName);
   });
   // Exported-port rename (work document #5 update #36): the shell asks
   // for the new name in a modal, then rides the mapper's port-renamed path

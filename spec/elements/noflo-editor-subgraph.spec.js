@@ -40,7 +40,7 @@ describe("FlowEditor subgraph gating (work document #23)", () => {
 });
 
 describe("FlowEditor subgraph context menu (work document #23)", () => {
-  it("offers Open but not Make subgraph on subgraph nodes", () => {
+  it("offers Edit Component in place of Open on subgraph nodes (work document #5)", () => {
     const ed = /** @type {FlowEditor} */ (
       document.createElement("noflo-editor")
     );
@@ -67,7 +67,11 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
     subgraphNode.setAttribute("name", "sub");
     ed.showContextMenu(0, 0, { clickedNode: subgraphNode });
     const texts = opened[0].map((item) => item.text);
-    assert.ok(texts.includes("Open"), "Open is offered");
+    assert.ok(texts.includes("Edit Component"), "Edit Component is offered");
+    assert.ok(
+      !texts.includes("Open"),
+      "Open is gone — Edit Component opens the graph editor",
+    );
     assert.ok(!texts.includes("Make subgraph"), "Make subgraph is not");
 
     opened.length = 0;
@@ -78,8 +82,8 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
     plainNode.setAttribute("name", "plain");
     ed.showContextMenu(0, 0, { clickedNode: plainNode });
     const plainTexts = opened[0].map((item) => item.text);
+    assert.ok(plainTexts.includes("Edit Component"));
     assert.ok(plainTexts.includes("Make subgraph"), "elementary can convert");
-    assert.ok(!plainTexts.includes("Open"), "elementary cannot open");
   });
 });
 

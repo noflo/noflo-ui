@@ -883,6 +883,87 @@ describe("makeSubgraph (work document #23)", () => {
     );
   });
 
+  it("exporting a port inside a subgraph re-derives its signature (work document #5)", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Hello");
+    addNode(graph, "B", "core/Other");
+    addEdge(graph, { node: "B", port: "out" }, { node: "A", port: "in" });
+    setComponentSignature(doc, "core/Hello", {
+      inports: [{ name: "in" }],
+      outports: [{ name: "out" }],
+    });
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A"] },
+    });
+
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addOutport",
+      payload: {
+        graphId: "main/A",
+        name: "extra",
+        nodeId: "A",
+        port: "out2",
+      },
+    });
+
+    assert.ok(result.accepted);
+    // The export echo is followed by the re-derived signature echo, so
+    // parents re-render the subgraph node with the new port
+    assert.deepEqual(
+      result.echoes.map((e) => e.command),
+      ["addoutport", "signature"],
+    );
+    assert.equal(result.echoes[1].payload.componentName, "main/A");
+    const signature = doc.getMap("registry").get("main/A");
+    assert.deepEqual(
+      signature
+        .get("outports")
+        .toJSON()
+        .map((/** @type {any} */ p) => p.name),
+      ["extra"],
+      "the parent's node interface grows the new export",
+    );
+
+    // And removing it re-derives again
+    const removal = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "removeOutport",
+      payload: { graphId: "main/A", name: "extra" },
+    });
+    assert.ok(removal.accepted);
+    assert.deepEqual(
+      removal.echoes.map((e) => e.command),
+      ["removeoutport", "signature"],
+    );
+    assert.deepEqual(
+      doc.getMap("registry").get("main/A").get("outports").toJSON(),
+      [],
+    );
+  });
+
+  it("exports on the root project graph carry no signature echo", () => {
+    // The root graph is not a component: there is no registry signature
+    // to re-derive, and the plain export echo stays as-is
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    addNode(getGraph(doc, "main"), "A", "c");
+    const result = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addInport",
+      payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
+    });
+    assert.ok(result.accepted);
+    assert.deepEqual(
+      result.echoes.map((e) => e.command),
+      ["addinport"],
+    );
+  });
+
   it("rejects unknown nodes and already-subgraph nodes", () => {
     const doc = createProjectDoc("p");
     createGraph(doc, "main");

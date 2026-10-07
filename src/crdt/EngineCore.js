@@ -1131,6 +1131,46 @@ function directionForCommand(command) {
 }
 
 /**
+ * Re-derives a graph-implemented component's signature from its exports
+ * (work document #29): a graph's signature is derived, never declared —
+ * the same rule `intentSetSignature` enforces by refusing graphs. Called
+ * whenever a graph's exports change so the parent graph's subgraph nodes
+ * render the current interface. No-op for graphs that are not components.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} graphId
+ * @returns {import("./Protocol.js").SignatureMessage | null} The
+ *   signature echo, or null when the graph has no registered signature.
+ */
+function syncGraphSignature(doc, graphId) {
+  const graph = getGraph(doc, graphId);
+  const existing = getComponentSignature(doc, graphId);
+  if (!graph || !existing) return null;
+  const plain = existing.toJSON?.() ?? {};
+  setComponentSignature(doc, graphId, {
+    inports: [.../** @type {Y.Map<any>} */ (graph.get("inports")).keys()].map(
+      (name) => ({ name }),
+    ),
+    outports: [.../** @type {Y.Map<any>} */ (graph.get("outports")).keys()].map(
+      (name) => ({ name }),
+    ),
+    description:
+      typeof plain.description === "string"
+        ? plain.description
+        : `Subgraph of ${graphId}`,
+    icon: typeof plain.icon === "string" ? plain.icon : undefined,
+  });
+  return {
+    protocol: "system",
+    command: "signature",
+    payload: {
+      componentName: graphId,
+      signature: getComponentSignature(doc, graphId)?.toJSON() ?? null,
+    },
+  };
+}
+
+/**
  * @param {Y.Doc} doc
  * @param {'addInport' | 'addOutport'} command
  * @param {any} payload
@@ -1164,7 +1204,11 @@ function intentAddExport(doc, command, payload) {
     command: /** @type {'addinport' | 'addoutport'} */ (command.toLowerCase()),
     payload: { name, nodeId, port, metadata: metadata ?? {} },
   };
-  return { accepted: true, echoes: [echo] };
+  const signatureEcho = syncGraphSignature(doc, graphId);
+  return {
+    accepted: true,
+    echoes: signatureEcho ? [echo, signatureEcho] : [echo],
+  };
 }
 
 /**
@@ -1193,7 +1237,11 @@ function intentRemoveExport(doc, command, payload) {
     ),
     payload: { name },
   };
-  return { accepted: true, echoes: [echo] };
+  const signatureEcho = syncGraphSignature(doc, graphId);
+  return {
+    accepted: true,
+    echoes: signatureEcho ? [echo, signatureEcho] : [echo],
+  };
 }
 
 /**
@@ -1249,7 +1297,11 @@ function intentRenameExport(doc, command, payload) {
     ),
     payload: { from, to },
   };
-  return { accepted: true, echoes: [echo] };
+  const signatureEcho = syncGraphSignature(doc, graphId);
+  return {
+    accepted: true,
+    echoes: signatureEcho ? [echo, signatureEcho] : [echo],
+  };
 }
 
 /**
