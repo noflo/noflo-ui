@@ -40,6 +40,7 @@ export async function openTextPrompt({
     input.setAttribute("autocorrect", "off");
     input.setAttribute("spellcheck", "false");
     promptModal.appendChild(input);
+    promptModal.setAttribute("data-prompt", "text");
     app.appendChild(promptModal);
   }
   const input = /** @type {HTMLInputElement} */ (
@@ -60,6 +61,64 @@ export async function openTextPrompt({
   if (action !== "ok") return null;
   const trimmed = input.value.trim();
   return trimmed || null;
+}
+
+/** The lazily created JSON prompt modal, reused across prompts. */
+/** @type {HTMLElement | null} */
+let jsonPromptModal = null;
+
+/**
+ * Opens a modal asking for a JSON value in a textarea — the fallback for
+ * unconstrained datatypes (`all`), where no JSON Schema exists to derive
+ * typed widgets from (guidelines §12: raw JSON text only where no typed
+ * form is possible). Resolves the parsed JSON value; text that does not
+ * parse resolves as a raw string, the same convention the IIP store uses
+ * when loading. `null` on cancel, dismissal, or an empty value.
+ *
+ * @param {{ title: string, value?: string, confirmLabel?: string }} options
+ * @returns {Promise<any | null>}
+ */
+export async function openJsonPrompt({
+  title,
+  value = "",
+  confirmLabel = "OK",
+}) {
+  const app = document.getElementById("app");
+  if (!app) return null;
+  if (!jsonPromptModal) {
+    jsonPromptModal = /** @type {HTMLElement} */ (
+      /** @type {any} */ (document.createElement("noflo-modal"))
+    );
+    const textarea = document.createElement("textarea");
+    textarea.className = "form-control";
+    textarea.rows = 6;
+    textarea.setAttribute("autocapitalize", "off");
+    textarea.setAttribute("autocorrect", "off");
+    textarea.setAttribute("spellcheck", "false");
+    jsonPromptModal.appendChild(textarea);
+    jsonPromptModal.setAttribute("data-prompt", "json");
+    app.appendChild(jsonPromptModal);
+  }
+  const textarea = /** @type {HTMLTextAreaElement} */ (
+    jsonPromptModal.querySelector("textarea")
+  );
+  if (!textarea) return null;
+  /** @type {any} */ (jsonPromptModal).setActions([
+    { value: "ok", label: confirmLabel, kind: "btn-primary" },
+    { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+  ]);
+  textarea.value = value;
+  /** @type {any} */ (jsonPromptModal).open(title);
+  textarea.focus();
+  const action = await /** @type {any} */ (jsonPromptModal).submit();
+  if (action !== "ok") return null;
+  const text = textarea.value.trim();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 /**

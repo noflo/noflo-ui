@@ -5,6 +5,7 @@ import "../elements/utils/register.js";
 
 import "../../src/elements/noflo-modal.js";
 import {
+  openJsonPrompt,
   openTextPrompt,
   wireExportRename,
 } from "../../src/glass/text-prompt.js";
@@ -30,9 +31,11 @@ function appContainer() {
  * @param {string} value
  * @returns {void}
  */
-function clickAction(value) {
+function clickAction(value, kind = "text") {
   const modal = /** @type {HTMLElement} */ (
-    document.getElementById("app")?.querySelector("noflo-modal")
+    document
+      .getElementById("app")
+      ?.querySelector(`noflo-modal[data-prompt="${kind}"]`)
   );
   const button = /** @type {HTMLElement} */ (
     /** @type {ShadowRoot} */ (modal?.shadowRoot).querySelector(
@@ -81,6 +84,53 @@ describe("text prompt (work document #5 update #36)", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     clickAction("ok");
     assert.equal(await emptied, null, "an empty value is not a name");
+  });
+
+  it("the JSON prompt evaluates the textarea as JSON on save", async () => {
+    appContainer();
+    // A JSON object parses into a value
+    const object = openJsonPrompt({
+      title: "Value for the packet",
+      value: '{"a": 1}',
+      confirmLabel: "Save",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const modal = /** @type {HTMLElement} */ (
+      document
+        .getElementById("app")
+        ?.querySelector('noflo-modal[data-prompt="json"]')
+    );
+    const textarea = /** @type {HTMLTextAreaElement} */ (
+      modal.querySelector("textarea")
+    );
+    assert.equal(textarea.tagName, "TEXTAREA", "the editor is a textarea");
+    assert.equal(textarea.value, '{"a": 1}', "the stored value prefills it");
+    textarea.value = '{"b": [2, 3]}';
+    clickAction("ok", "json");
+    assert.deepEqual(await object, { b: [2, 3] });
+
+    // Text that does not parse stays a raw string
+    const raw = openJsonPrompt({ title: "t", value: "" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    /** @type {HTMLTextAreaElement} */ (
+      /** @type {HTMLElement} */ (
+        document
+          .getElementById("app")
+          ?.querySelector('noflo-modal[data-prompt="json"]')
+      ).querySelector("textarea")
+    ).value = "hello";
+    clickAction("ok", "json");
+    assert.equal(await raw, "hello", "non-JSON text is a string value");
+
+    // Cancel and empty resolve null
+    const cancelled = openJsonPrompt({ title: "t", value: "{}" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    clickAction("cancel", "json");
+    assert.equal(await cancelled, null);
+    const emptied = openJsonPrompt({ title: "t", value: "" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    clickAction("ok", "json");
+    assert.equal(await emptied, null);
   });
 });
 

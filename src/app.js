@@ -42,7 +42,7 @@ import {
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
-import { wireExportRename } from "./glass/text-prompt.js";
+import { openJsonPrompt, wireExportRename } from "./glass/text-prompt.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { ComponentSignature } from "./library/schema.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -840,6 +840,16 @@ function onRoleChange() {
  */
 async function _openIIPValueEditor(title, rawValue, dataType) {
   if (!componentModal || !componentForm) return null;
+  // Unconstrained datatypes (`all`, or any datatype without a JSON Schema
+  // mapping) have no typed widgets to derive: a raw JSON textarea takes
+  // their value, evaluated on save (work document #5 update #36)
+  if (dataType === "all" || datatypeToSchema(dataType) === null) {
+    return openJsonPrompt({
+      title,
+      value: rawValue ?? "",
+      confirmLabel: "Save",
+    });
+  }
   componentModal.setActions([
     { value: "cancel", label: "Cancel", kind: "btn-secondary" },
     { value: "save", label: "Save", kind: "btn-primary" },
@@ -915,7 +925,9 @@ function datatypeToSchema(dataType) {
     case "array":
       return { type: "array" };
     default:
-      return true;
+      // No schema to derive a typed form from — the caller falls back to
+      // the raw JSON textarea
+      return null;
   }
 }
 
