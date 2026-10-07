@@ -6,6 +6,8 @@ Read `SPEC.md` before planning any bigger changes.
 
 Read `VISUAL_GUIDELINES.md` before creating or modifying anything that renders (canvas, elements, panels, modals, menus).
 
+Keep `VISUAL_GUIDELINES.md`'s **[implemented]/[target]** tags truthful as status evolves: a change that makes a `[target]` rule real re-tags it `[implemented]` (and drops the tag once nothing depends on the distinction) as part of that same change; new rules written ahead of code are tagged `[target]`. Verify against the code before citing any rule as implemented.
+
 ## Code style
 
 - Standard JavaScript

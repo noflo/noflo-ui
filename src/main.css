@@ -158,9 +158,8 @@ button:hover {
   --node-subtext: #666;
   --node-icon: rgb(0, 229, 255);
 
-  --flow-color: #333;
-  --flow-dash: none;
   --edge-color: #333;
+  --edge-dash: none;
 
   --ui-accent: rgb(0, 229, 255);
   --ui-panel-border: rgb(58, 63, 72);
@@ -173,8 +172,21 @@ button:hover {
      palette so both themes follow for free */
   --ui-age-calm: var(--route-4);
   --ui-age-activity: var(--route-6);
-  --ui-age-attention: var(--route-1);
+  --ui-age-attention: var(--route-2);
   --ui-age-offline: var(--node-subtext);
+  --ui-age-crashed: rgb(226, 150, 133);
+
+  /* Caption and telemetry semantics: draft grey, secondary violet for
+     component type and numbers, data hue for string/URL values (kept
+     distinct from the activity cyan), decoration budget cap */
+  --ui-draft: var(--node-subtext);
+  --ui-secondary: var(--route-8);
+  --ui-data: var(--route-7);
+  --ui-decor-opacity: 0.08;
+
+  /* Age-independent focus ring: focus must stay legible when the age
+     turns accent red (crashed); kept ≥3:1 against both canvases */
+  --ui-focus: var(--route-7);
 
   /* Cyberpunk Route Palette */
   --route-0: rgb(224, 247, 250);
@@ -205,6 +217,8 @@ button:hover {
   --ui-panel-border: rgb(0, 0, 0);
   --ui-border: rgb(0, 0, 0);
   --ui-radius: 0px;
+  --ui-age-crashed: rgb(227, 32, 23);
+  --ui-decor-opacity: 0.06;
 
   /* Tube Route Palette */
   --route-0: rgb(0, 0, 0);
@@ -224,13 +238,13 @@ button:hover {
   --node-bg: rgb(58, 63, 72);
   --node-border: rgb(20, 27, 35);
   --node-icon: rgb(0, 229, 255);
-  --flow-color: rgb(58, 63, 72);
+  --edge-color: rgb(58, 63, 72);
 }
 [data-theme="tube"].state-abstract {
   --node-bg: white;
   --node-border: #777;
   --node-icon: black;
-  --flow-color: #777;
+  --edge-color: #777;
 }
 
 .state-golden {
@@ -238,14 +252,14 @@ button:hover {
   --node-border: rgb(0, 229, 255);
   --node-icon: rgb(0, 229, 255);
   --node-glow: rgba(176, 235, 236, 0.4);
-  --flow-color: rgb(0, 229, 255);
+  --edge-color: rgb(0, 229, 255);
   --ui-bg: rgb(31, 41, 49);
 }
 [data-theme="tube"].state-golden {
   --node-bg: white;
   --node-border: black;
   --node-icon: black;
-  --flow-color: black;
+  --edge-color: black;
   --ui-bg: white;
 }
 
@@ -253,15 +267,15 @@ button:hover {
   --node-bg: rgb(62, 76, 82);
   --node-border: rgb(101, 114, 125);
   --node-icon: rgb(101, 114, 125);
-  --flow-color: rgb(101, 114, 125);
-  --flow-dash: 5, 5;
+  --edge-color: rgb(101, 114, 125);
+  --edge-dash: 5, 5;
 }
 [data-theme="tube"].state-offline {
   --node-bg: white;
   --node-border: #777;
   --node-icon: #777;
-  --flow-color: #777;
-  --flow-dash: 5, 5;
+  --edge-color: #777;
+  --edge-dash: 5, 5;
 }
 
 .state-crashed {
@@ -269,13 +283,13 @@ button:hover {
   --node-border: rgb(226, 150, 133);
   --node-icon: rgb(226, 150, 133);
   --node-glow: rgb(226, 150, 133);
-  --flow-color: rgb(226, 150, 133);
-  --flow-dash: 5, 5;
+  --edge-color: rgb(226, 150, 133);
+  --edge-dash: 5, 5;
 }
 [data-theme="tube"].state-crashed {
   --node-bg: white;
   --node-border: rgb(227, 32, 23);
   --node-icon: black;
-  --flow-color: #777;
-  --flow-dash: 5, 5;
+  --edge-color: #777;
+  --edge-dash: 5, 5;
 }

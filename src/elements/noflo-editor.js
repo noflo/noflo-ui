@@ -547,9 +547,9 @@ export class FlowEditor extends HTMLElement {
         }
         .edge-flow {
           fill: none;
-          stroke: var(--flow-color, var(--edge-color));
+          stroke: var(--edge-color);
           stroke-width: calc(var(--edge-width, 4px) - 2px);
-          stroke-dasharray: var(--flow-dash);
+          stroke-dasharray: var(--edge-dash);
           pointer-events: none;
         }
         .edge-flow[selected] {
@@ -561,7 +561,7 @@ export class FlowEditor extends HTMLElement {
            route lights the whole line */
         .edge-flow.route-highlight {
           stroke-width: calc(var(--edge-width, 4px) + 2px);
-          filter: drop-shadow(0 0 6px var(--flow-color, var(--edge-color)));
+          filter: drop-shadow(0 0 6px var(--edge-color));
         }
         /* Pending state (work document #21): optimistic edges until the
            replica confirms the CRDT merge */
@@ -864,11 +864,11 @@ export class FlowEditor extends HTMLElement {
       wire.routeId = route ?? undefined;
       if (route !== null && route !== undefined) {
         wire.visualPath.style.setProperty(
-          "--flow-color",
+          "--edge-color",
           `var(--route-${route})`,
         );
       } else {
-        wire.visualPath.style.removeProperty("--flow-color");
+        wire.visualPath.style.removeProperty("--edge-color");
       }
       this._applySelection(this.selectionManager.getSnapshot());
       return;
@@ -876,11 +876,11 @@ export class FlowEditor extends HTMLElement {
     edge.routeId = route ?? undefined;
     if (route !== null && route !== undefined) {
       edge.visualPath.style.setProperty(
-        "--flow-color",
+        "--edge-color",
         `var(--route-${route})`,
       );
     } else {
-      edge.visualPath.style.removeProperty("--flow-color");
+      edge.visualPath.style.removeProperty("--edge-color");
     }
     this._applySelection(this.selectionManager.getSnapshot());
   }

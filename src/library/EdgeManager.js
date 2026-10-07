@@ -96,7 +96,7 @@ export class EdgeManager {
     this._updatePathBetween(hitPath, visualPath, portA, portB);
 
     if (routeId !== undefined) {
-      visualPath.style.setProperty("--flow-color", `var(--route-${routeId})`);
+      visualPath.style.setProperty("--edge-color", `var(--route-${routeId})`);
     }
 
     this.edgesGroup.appendChild(hitPath);
@@ -209,7 +209,7 @@ export class EdgeManager {
 
     this._updatePathBetween(hitPath, visualPath, iip, port);
     if (routeId !== undefined && routeId !== null) {
-      visualPath.style.setProperty("--flow-color", `var(--route-${routeId})`);
+      visualPath.style.setProperty("--edge-color", `var(--route-${routeId})`);
     }
 
     this.iipWiresGroup.appendChild(hitPath);
