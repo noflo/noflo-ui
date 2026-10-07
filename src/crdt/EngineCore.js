@@ -1407,12 +1407,12 @@ function intentSetPortRoute(doc, payload) {
  * @returns {EngineResult}
  */
 function intentMoveIIP(doc, payload) {
-  const { graphId, id, x, y } = payload ?? {};
+  const { graphId, id, metadata } = payload ?? {};
   if (
     typeof graphId !== "string" ||
     typeof id !== "string" ||
-    typeof x !== "number" ||
-    typeof y !== "number"
+    typeof metadata?.x !== "number" ||
+    typeof metadata?.y !== "number"
   ) {
     return { accepted: false, echoes: [] };
   }
@@ -1420,7 +1420,7 @@ function intentMoveIIP(doc, payload) {
   if (!graph) {
     return { accepted: false, echoes: [] };
   }
-  if (!moveIIP(graph, id, x, y)) {
+  if (!moveIIP(graph, id, metadata.x, metadata.y)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };
@@ -1435,12 +1435,12 @@ function intentMoveIIP(doc, payload) {
  * @returns {EngineResult}
  */
 function intentMoveExport(doc, payload) {
-  const { graphId, name, direction, x, y } = payload ?? {};
+  const { graphId, name, direction, metadata } = payload ?? {};
   if (
     typeof graphId !== "string" ||
     typeof name !== "string" ||
-    typeof x !== "number" ||
-    typeof y !== "number"
+    typeof metadata?.x !== "number" ||
+    typeof metadata?.y !== "number"
   ) {
     return { accepted: false, echoes: [] };
   }
@@ -1451,7 +1451,7 @@ function intentMoveExport(doc, payload) {
   const resolved = directionForCommand(
     direction === "in" ? "addInport" : "addOutport",
   );
-  if (!moveExport(graph, resolved, name, x, y)) {
+  if (!moveExport(graph, resolved, name, metadata.x, metadata.y)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };
