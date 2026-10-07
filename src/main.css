@@ -78,6 +78,14 @@ button {
   border-radius: var(--ui-radius);
   font-size: 12px;
   transition: all 0.2s;
+  box-sizing: border-box;
+  min-height: var(--ui-target);
+  min-width: var(--ui-target);
+}
+button:focus-visible {
+  border-color: var(--ui-accent);
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
 }
 button:hover {
   background: var(--ui-accent);
@@ -141,6 +149,14 @@ button:hover {
   border-color: var(--age-border);
 }
 
+/* The pointer state publisher (src/glass/input-state.js) mirrors the last
+   pointer type here; mouse pointers relax the 44px touch floor to the
+   WCAG 2.2 24px minimum. Everything else — touch, pen, no pointer seen
+   yet — keeps the 44px default */
+body[data-input="mouse"] {
+  --ui-target: 24px;
+}
+
 :root {
   /* Base Variables (Cyberpunk Dark) */
   --ui-bg: rgb(20, 27, 35);
@@ -188,6 +204,11 @@ button:hover {
      turns accent red (crashed); kept ≥3:1 against both canvases */
   --ui-focus: var(--route-7);
 
+  /* Minimum interactive target size (§13): 44px for touch and pen; the
+     published data-input relaxes it to the WCAG 2.2 mouse minimum. A
+     custom property so Shadow DOM elements consume it by inheritance */
+  --ui-target: 44px;
+
   /* Cyberpunk Route Palette */
   --route-0: rgb(224, 247, 250);
   --route-1: rgb(255, 82, 82);
@@ -219,6 +240,11 @@ button:hover {
   --ui-radius: 0px;
   --ui-age-crashed: rgb(227, 32, 23);
   --ui-decor-opacity: 0.06;
+
+  /* Focus must resolve against the active theme's palette: declared on
+     body (which carries data-theme), not inherited from :root, whose
+     route palette is always the cyberpunk one */
+  --ui-focus: var(--route-7);
 
   /* Tube Route Palette */
   --route-0: rgb(0, 0, 0);

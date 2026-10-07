@@ -11,9 +11,10 @@ Everything visual is driven by **the attributes on `<body>`, the state the edito
 - `data-theme` — `cyberpunk` (default, dark) or `tube` (light, London Underground)
 - `data-age` — `abstract`, `golden`, `offline`, or `crashed` (the environment's processing state)
 - `data-animations` — `on` (default) or `off` (the static-rendering hook, §11)
+- `data-input` — the last pointer type (`touch`, `mouse`, or `pen`), published from a window-level `pointerdown` listener (src/glass/input-state.js); branches target sizing through `--ui-target` (§13)
 - `data-handedness` — `right` (default) or `left`; mirrors the radial menus (§10) [target]
 
-The editor element mirrors the age as a `state-<age>` class and the last pointer type as `data-input` (`touch`/`mouse`/`pen` — branch on the active pointer, not the device class; hybrid devices exist) on itself [target]. No JavaScript may compute colors, shadows, stroke widths, or theme branches at render time: components render one structure, and CSS resolves the theme × age matrix through custom properties, which pierce Shadow DOM boundaries for free. JavaScript publishes **state** (attributes, classes, custom properties — camera zoom, selection, ages); CSS decides **how it looks**. No per-frame styling, ever — the one exception is user-attached motion (pan, drag, pinch), whose transforms stream live and publish `--zoom-scale`, which LOD consumers read at quantized steps (§8).
+The editor element mirrors the age as a `state-<age>` class and the body's `data-animations`/`data-input` state onto itself (its shadow styles select them with `:host(...)`; other elements consume the same state through the `--ui-*` custom properties, which pierce the shadow boundary). No JavaScript may compute colors, shadows, stroke widths, or theme branches at render time: components render one structure, and CSS resolves the theme × age matrix through custom properties, which pierce Shadow DOM boundaries for free. JavaScript publishes **state** (attributes, classes, custom properties — camera zoom, selection, ages); CSS decides **how it looks**. No per-frame styling, ever — the one exception is user-attached motion (pan, drag, pinch), whose transforms stream live and publish `--zoom-scale`, which LOD consumers read at quantized steps (§8).
 
 **MUST** express every visual decision as a CSS custom property lookup. **NEVER** hardcode a color, radius, font, or dash pattern in an element or component. **NEVER** duplicate theme logic in JS beyond publishing state: the attributes above, the mirror classes, and the documented custom properties.
 
@@ -53,6 +54,7 @@ The editor element mirrors the age as a `state-<age>` class and the last pointer
 | `--ui-data` | Data hue for string/URL telemetry values inside controls (§12); must stay distinct from `--ui-age-activity` cyan and error red |
 | `--ui-decor-opacity` | Decoration budget — the maximum opacity of any backdrop texture or ambient decoration (§4) |
 | `--ui-focus` | Age-independent focus ring color (route blue in both themes, ≥ 3:1); focus stays legible when the age turns accent red |
+| `--ui-target` | Minimum interactive target size (§13): 44px for touch/pen, relaxed to the 24px mouse minimum when the published `data-input` is `mouse` |
 | `--zoom-scale` | Published by the camera; drives level-of-detail via container queries |
 | `--port-route-color` | Set per expanded node from the connected edge's route (accent fallback when unconnected) |
 
@@ -217,7 +219,7 @@ Nodes are circular; ports distribute along the perimeter by trigonometry (outpor
 ## 12. Panels, forms, and controls
 
 - Strip default browser styling (`appearance: none`) on inputs, buttons, selects. Controls must feel like hardware: theme-colored 1px borders, transparent or `--ui-bg` backgrounds.
-- **Focus states are mandatory** and visible: border/accent transitions to `--ui-accent` **plus an offset outline** (`outline: 2px solid var(--ui-focus); outline-offset: 2px`) — `--ui-focus` is age-independent (route blue in both themes, ≥ 3:1 against both canvases), so focus never competes with the crashed age's red or a validation amber. Validation always pairs color with its adjacent message; focus never needs one. [target: the outline and `--ui-focus` consumption are not yet applied everywhere — the variable is defined]
+- **Focus states are mandatory** and visible: border/accent transitions to `--ui-accent` **plus an offset outline** (`outline: 2px solid var(--ui-focus); outline-offset: 2px`) — `--ui-focus` is age-independent (route blue in both themes, ≥ 3:1 against both canvases), so focus never competes with the crashed age's red or a validation amber. Validation always pairs color with its adjacent message; focus never needs one. [implemented on `main.css` buttons, JSON forms, mesh settings, modal, corner elements, selection pills, and the component picker]
 - Buttons: transparent background, 1px `--ui-accent` border, uppercase monospace; on hover/active invert (accent background, canvas-colored text).
 - Text/number inputs: transparent background with a solid bottom border (2px grey → accent on focus); monospace text. Prefer `type="text"` + `inputmode` (`numeric`/`decimal`) over `type="number"`; validate in JS and accept both `.` and `,` decimal separators — normalize commas before parsing, since some locales' keypads only emit them [target: no `inputmode` in today's forms]. For signed values beware iOS keypads without a minus key — use plain `type="number"` or a hemisphere/plus-minus toggle.
 - **Validation feedback:** an invalid control gets an `--ui-age-attention` border plus an adjacent message in the same semantic — never the crashed age (validation is attention, not failure; see §5). The message sits beside the control it describes, never a global toast for a local problem.
@@ -237,13 +239,13 @@ Nodes are circular; ports distribute along the perimeter by trigonometry (outpor
 
 ## 13. Responsiveness & ergonomics
 
-- Touch targets: **minimum 44×44px** for all interactive controls (radial menu center, pills, buttons). The editor is touch-first; mouse is the fallback, not the target.
+- Touch targets: **minimum 44×44px** for all interactive controls (radial menu center, pills, buttons), consumed as `--ui-target` so Shadow DOM elements inherit it. The editor is touch-first; mouse is the fallback, not the target.
 - Layouts are fluid: `clamp()`, CSS grid (`auto-fit`/`auto-fill`), flexbox; single-column collapse on phones. Avoid rigid breakpoints where fluid sizing works.
 - The UI must remain usable with animations off and on e-ink (tube theme carries this duty). Grayscale panels get pure luminance contrast and no glow dependency; color e-ink panels render hue but muted and desaturated — identification never rests on hue alone (§6).
 - Hit areas are screen-space (§8): the 44px floor holds at every zoom. Dense ports fan out (§9) rather than shrinking targets; arrayport clusters are the documented exception — the cluster is the hit target.
 - Every touch affordance has a WIMP equivalent (long-press ⇄ right-click, slide-select ⇄ modifier-click) and ideally a command-line path emitting the same intents.
 - Hover is enhancement only: hover styles wrap in `@media (hover: hover)` (which also kills iOS sticky-hover), and every hover-revealed thing has a touch equivalent [target].
-- Input sizing branches on the published `data-input` (last `pointerType`), never on device class: 44px targets for touch, 24px acceptable for mouse (the WCAG 2.2 minimum) [target].
+- Input sizing branches on the published `data-input` (last `pointerType`), never on device class: 44px targets for touch, 24px acceptable for mouse (the WCAG 2.2 minimum).
 - Inputs render at ≥ 16px font-size — below that iOS Safari zooms the page on focus, and `maximum-scale` is not the fix — and identifier/URL fields set `autocapitalize="off" autocorrect="off" spellcheck="false"` [target].
 - Overscroll and screen edges: `overscroll-behavior: none` on the canvas shell; controls keep inset from screen edges (OS back/home gestures) using `env(safe-area-inset-*)` with `viewport-fit=cover` and `dvh` units; the soft keyboard is handled through `VisualViewport`, never by shrinking `vh` [target].
 - Power and platform: slow ticks pause on `visibilitychange`; the underlay canvas tracks `devicePixelRatio` and orientation changes; `data-theme` defaults from `prefers-color-scheme` until the user chooses, and `color-scheme` is set so native scrollbars match [target].

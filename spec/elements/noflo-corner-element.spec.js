@@ -242,3 +242,84 @@ describe("FlowCornerElement viewport-driven minify (work document #28)", () => {
     await setViewport(1024);
   });
 });
+
+describe("FlowCornerElement accessibility (work document #41)", () => {
+  it("the chip is keyboard-operable: focusable, toggles on Enter and Space", () => {
+    const el = makeElement();
+    const chip = /** @type {HTMLElement} */ (
+      /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
+        "[data-action='toggle']",
+      )
+    );
+    assert.equal(chip.getAttribute("role"), "button");
+    assert.equal(chip.getAttribute("tabindex"), "0");
+    for (const key of ["Enter", " "]) {
+      // Each toggle re-renders, so re-query the chip every iteration
+      const currentChip = /** @type {HTMLElement} */ (
+        /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
+          "[data-action='toggle']",
+        )
+      );
+      currentChip.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key, bubbles: true }),
+      );
+      assert.equal(
+        el.cornerState,
+        key === "Enter" ? "expanded" : "normal",
+        `${key === "Enter" ? "Enter" : "Space"} toggles the corner`,
+      );
+    }
+    el.remove();
+  });
+
+  it("non-expandable chips carry no button role or tab stop", () => {
+    const el = /** @type {FlatCorner} */ (
+      document.createElement("flat-corner")
+    );
+    document.body.appendChild(el);
+    const chip = /** @type {HTMLElement} */ (
+      /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
+        "[data-action='toggle']",
+      )
+    );
+    assert.equal(chip.getAttribute("role"), null);
+    assert.equal(chip.getAttribute("tabindex"), null);
+    el.remove();
+  });
+
+  it("the throb is gated behind the motion settings", () => {
+    const el = makeElement();
+    const style =
+      /** @type {HTMLElement} */ (
+        /** @type {ShadowRoot} */ (el.shadowRoot).querySelector("style")
+      ).textContent ?? "";
+    assert.match(
+      style,
+      /@media \(prefers-reduced-motion: reduce\) \{\s*\.throb \{ animation: none; \}/,
+      "reduced motion stops the throb",
+    );
+    assert.match(
+      style,
+      /:host\(\[data-animations="off"\]\) \.throb \{ animation: none; \}/,
+      "the data-animations hook stops the throb",
+    );
+    el.remove();
+  });
+
+  it("mirrors the body's data-animations state onto the host", () => {
+    document.body.setAttribute("data-animations", "off");
+    const el = makeElement();
+    assert.equal(
+      el.getAttribute("data-animations"),
+      "off",
+      "the host attribute feeds :host([data-animations]) selectors",
+    );
+    document.body.removeAttribute("data-animations");
+    el.render();
+    assert.ok(
+      !el.hasAttribute("data-animations"),
+      "re-rendering re-mirrors the cleared state",
+    );
+    el.remove();
+  });
+});

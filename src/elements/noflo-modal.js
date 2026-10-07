@@ -96,6 +96,13 @@ export class NofloModal extends HTMLElement {
         button {
           padding: 0.5rem 1rem;
           cursor: pointer;
+          box-sizing: border-box;
+          min-height: var(--ui-target, 44px);
+          min-width: var(--ui-target, 44px);
+        }
+        button:focus-visible {
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: 2px;
         }
         .btn-primary {
           background: var(--ui-accent, #007bff);

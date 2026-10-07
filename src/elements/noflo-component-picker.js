@@ -141,10 +141,18 @@ export class FlowComponentPicker extends HTMLElement {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          box-sizing: border-box;
+          min-height: var(--ui-target, 44px);
         }
         button:hover, button:focus-visible {
           background: var(--ui-accent, rgb(0, 229, 255));
           color: var(--ui-bg, rgb(20, 27, 35));
+        }
+        button:focus-visible {
+          /* Inset outline: the picker scrolls, an outward offset would
+             clip at the container edge (guidelines §12) */
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: -2px;
         }
         button.create {
           border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));

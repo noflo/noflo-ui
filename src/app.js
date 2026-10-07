@@ -24,6 +24,7 @@ import {
 } from "./elements/noflo-component-picker.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
+import { trackInputState } from "./glass/input-state.js";
 import "./elements/noflo-selection-pills.js";
 import { on } from "./events.js";
 import {
@@ -961,6 +962,7 @@ function applyAppearance() {
 
 async function init() {
   applyAppearance();
+  trackInputState();
   const app = document.getElementById("app");
   if (!app) {
     console.error("App element not found");

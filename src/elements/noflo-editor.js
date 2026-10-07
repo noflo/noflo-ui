@@ -235,6 +235,18 @@ export class FlowEditor extends HTMLElement {
       this.setAttribute("data-theme", theme);
     }
 
+    // Mirror the remaining body state the shadow styles consume: the
+    // static-rendering hook (guidelines §11) and the last pointer type
+    // (guidelines §1, §13 — branch on the active pointer, not the device)
+    for (const attribute of ["data-animations", "data-input"]) {
+      const value = document.body.getAttribute(attribute);
+      if (value === null) {
+        this.removeAttribute(attribute);
+      } else {
+        this.setAttribute(attribute, value);
+      }
+    }
+
     // Handle age class
     const ageClass = `state-${age}`;
 
@@ -537,12 +549,16 @@ export class FlowEditor extends HTMLElement {
         }
         @media (prefers-reduced-motion: reduce) {
           noflo-node.node-appear,
-          noflo-node.node-shimmer .node-circle {
+          noflo-node.node-shimmer .node-circle,
+          .ghost-node,
+          .peer-ghost {
             animation: none;
           }
         }
         :host([data-animations="off"]) noflo-node.node-appear,
-        :host([data-animations="off"]) noflo-node.node-shimmer .node-circle {
+        :host([data-animations="off"]) noflo-node.node-shimmer .node-circle,
+        :host([data-animations="off"]) .ghost-node,
+        :host([data-animations="off"]) .peer-ghost {
           animation: none;
         }
         .edge-flow {

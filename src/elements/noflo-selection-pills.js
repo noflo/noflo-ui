@@ -67,12 +67,14 @@ export class SelectionPills extends HTMLElement {
   createPill(text, type) {
     const pill = document.createElement("div");
     pill.className = "selection-pill";
-    pill.innerHTML = `<span>${text}</span><span class="clear-btn">x</span>`;
+    // The clear affordance is a real button so keyboard and touch paths
+    // both activate it (guidelines §13); the label names what it clears
+    pill.innerHTML = `<span>${text}</span><button type="button" class="clear-btn" aria-label="Clear ${text}">x</button>`;
     const clearBtn = /** @type {HTMLElement} */ (
       pill.querySelector(".clear-btn")
     );
     if (clearBtn) {
-      clearBtn.addEventListener("pointerdown", (e) => {
+      clearBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         emit(this, "clear-selection", { type });
       });
@@ -111,11 +113,18 @@ export class SelectionPills extends HTMLElement {
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           cursor: default;
           transition: all 0.2s;
+          box-sizing: border-box;
+          min-height: var(--ui-target, 44px);
         }
         .selection-pill .clear-btn {
           cursor: pointer;
-          width: 16px;
-          height: 16px;
+          appearance: none;
+          border: none;
+          padding: 0;
+          font: inherit;
+          flex: none;
+          width: var(--ui-target, 44px);
+          height: var(--ui-target, 44px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -128,6 +137,12 @@ export class SelectionPills extends HTMLElement {
         .selection-pill .clear-btn:hover {
           background: var(--ui-age-attention, #ff4444);
           color: white;
+        }
+        .selection-pill .clear-btn:focus-visible {
+          background: var(--ui-age-attention, #ff4444);
+          color: white;
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: 2px;
         }
         [data-theme="tube"] .selection-pill {
           border: 2px solid black;

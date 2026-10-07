@@ -48,17 +48,19 @@ select.form-control {
   font-family: inherit;
   width: 100%;
   box-sizing: border-box;
+  min-height: var(--ui-target, 44px);
   transition:
     border-color 120ms ease,
     box-shadow 120ms ease;
 }
 
-input.form-control:focus,
-textarea.form-control:focus,
-select.form-select:focus,
-select.form-control:focus {
-  outline: none;
+input.form-control:focus-visible,
+textarea.form-control:focus-visible,
+select.form-select:focus-visible,
+select.form-control:focus-visible {
   border-color: var(--ui-accent, #4aa3df);
+  outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+  outline-offset: 2px;
   box-shadow: 0 0 8px
     color-mix(in srgb, var(--ui-accent, #4aa3df) 40%, transparent);
 }
@@ -118,9 +120,17 @@ input.form-range {
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--ui-target, 44px);
+  min-width: var(--ui-target, 44px);
   transition:
     filter 120ms ease,
     transform 80ms ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+  outline-offset: 2px;
 }
 
 .btn:hover {

@@ -301,7 +301,8 @@ export class FlowMeshSettings extends HTMLElement {
         h2 { margin: 0 0 12px; font-size: 16px; }
         h3 { margin: 16px 0 6px; font-size: 13px; color: var(--ui-accent); }
         label { display: block; font-size: 12px; margin: 8px 0 2px; }
-        input, select {
+        input:not([type="checkbox"]),
+        select {
           background: var(--ui-bg);
           color: inherit;
           border: 1px solid var(--ui-border, #333);
@@ -310,6 +311,13 @@ export class FlowMeshSettings extends HTMLElement {
           font-size: 13px;
           width: 100%;
           box-sizing: border-box;
+          min-height: var(--ui-target, 44px);
+        }
+        input:not([type="checkbox"]):focus-visible,
+        select:focus-visible {
+          border-color: var(--ui-accent);
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: 2px;
         }
         /* Checkboxes must keep their intrinsic size: the width: 100% rule
            collapses them to zero width on WebKit */
@@ -345,6 +353,13 @@ export class FlowMeshSettings extends HTMLElement {
           padding: 4px 10px;
           font-size: 12px;
           cursor: pointer;
+          box-sizing: border-box;
+          min-height: var(--ui-target, 44px);
+          min-width: var(--ui-target, 44px);
+        }
+        button:focus-visible {
+          outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+          outline-offset: 2px;
         }
         button.secondary {
           background: transparent;

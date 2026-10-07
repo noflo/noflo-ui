@@ -24,6 +24,8 @@
  * machine, the toggle behavior, and the shared visual grammar.
  */
 
+import { mirrorBodyState } from "./body-state.js";
+
 /** Viewport width under which corners auto-minify. Both the shared compact
  * media query and the resize-driven state machine read this, so the CSS and
  * the JS agree by construction. */
@@ -56,6 +58,13 @@ export function cornerStyles() {
     font-size: 12px;
     user-select: none;
     backdrop-filter: blur(8px);
+    box-sizing: border-box;
+    min-height: var(--ui-target, 44px);
+  }
+  .chip:focus-visible {
+    border-color: var(--ui-accent, rgb(0, 229, 255));
+    outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+    outline-offset: 2px;
   }
   .seg {
     display: inline-flex;
@@ -70,6 +79,13 @@ export function cornerStyles() {
   .seg .label { white-space: nowrap; }
   :host([data-minified]) .seg .label { display: none; }
   .throb { animation: throb 1.2s ease-in-out infinite; }
+  /* Motion gates (guidelines §11): the throb stops for reduced-motion
+     users and behind the data-animations="off" hook, mirrored from body
+     onto the host (shadow styles cannot select light-DOM ancestors) */
+  @media (prefers-reduced-motion: reduce) {
+    .throb { animation: none; }
+  }
+  :host([data-animations="off"]) .throb { animation: none; }
   @keyframes throb {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.45; }
@@ -108,6 +124,13 @@ export function cornerStyles() {
     padding: 3px 8px;
     font-size: 11px;
     cursor: pointer;
+    box-sizing: border-box;
+    min-height: var(--ui-target, 44px);
+    min-width: var(--ui-target, 44px);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+    outline-offset: 2px;
   }
   button.secondary {
     background: transparent;
@@ -127,6 +150,17 @@ export function cornerStyles() {
     font-size: 12px;
     flex: 1;
     min-width: 0;
+    min-height: var(--ui-target, 44px);
+    box-sizing: border-box;
+  }
+  input:focus-visible {
+    border-color: var(--ui-accent, rgb(0, 229, 255));
+    outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+    outline-offset: 2px;
+  }
+  summary:focus-visible {
+    outline: 2px solid var(--ui-focus, rgb(68, 138, 255));
+    outline-offset: 2px;
   }
   .row { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
   .list-item {
@@ -194,6 +228,7 @@ export class FlowCornerElement extends HTMLElement {
     // dynamic on its own; this side keeps the corner's *state* in step.
     this._trackViewport();
     window.addEventListener("resize", this._resizeHandler);
+    mirrorBodyState(this, ["data-animations"]);
     this._applyMinified();
     this.render();
   }
@@ -314,20 +349,33 @@ export class FlowCornerElement extends HTMLElement {
       shadow.innerHTML = "";
       return;
     }
+    // Re-mirror the body state on every render: the settings toggle may
+    // have flipped data-animations since the last one
+    mirrorBodyState(this, ["data-animations"]);
     shadow.innerHTML = `
       <style>${this.styles()}${cornerStyles()}</style>
       ${this.expandedHtml()}
-      <div class="chip" data-action="toggle" role="button" title="${this.chipTitle}">
+      <div class="chip" data-action="toggle"${
+        this.expandable ? ' role="button" tabindex="0"' : ""
+      } title="${this.chipTitle}">
         ${this.chipHtml()}
       </div>
     `;
     if (this.expandable) {
-      shadow
-        .querySelector("[data-action='toggle']")
-        ?.addEventListener("click", () => {
-          this.expanded = !this.expanded;
-          this.render();
-        });
+      const chip = shadow.querySelector("[data-action='toggle']");
+      const toggle = () => {
+        this.expanded = !this.expanded;
+        this.render();
+      };
+      chip?.addEventListener("click", toggle);
+      // Keyboard equivalence for the pointer-only toggle: Enter and Space
+      // activate a role="button" element
+      chip?.addEventListener("keydown", (/** @type {Event} */ event) => {
+        const key = /** @type {KeyboardEvent} */ (event).key;
+        if (key !== "Enter" && key !== " ") return;
+        event.preventDefault();
+        toggle();
+      });
     }
     this.wireEvents();
   }
