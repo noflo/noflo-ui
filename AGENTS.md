@@ -4,6 +4,8 @@
 
 Read `SPEC.md` before planning any bigger changes.
 
+Read `VISUAL_GUIDELINES.md` before creating or modifying anything that renders (canvas, elements, panels, modals, menus).
+
 ## Code style
 
 - Standard JavaScript
