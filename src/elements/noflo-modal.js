@@ -85,7 +85,7 @@ export class NofloModal extends HTMLElement {
           border: none;
           font-size: 1.5rem;
           cursor: pointer;
-          color: #666;
+          color: var(--node-subtext, #666);
         }
         .modal-footer {
           display: flex;

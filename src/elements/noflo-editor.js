@@ -2107,7 +2107,7 @@ export class FlowEditor extends HTMLElement {
       "http://www.w3.org/2000/svg",
       "path",
     );
-    this.activeWire.setAttribute("stroke", "#666");
+    this.activeWire.setAttribute("stroke", "var(--node-subtext, #666)");
     this.activeWire.setAttribute("stroke-width", "2");
     this.activeWire.setAttribute("fill", "none");
     this.activeWire.setAttribute("stroke-dasharray", "5,5");

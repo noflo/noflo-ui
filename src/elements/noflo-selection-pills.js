@@ -101,7 +101,7 @@ export class SelectionPills extends HTMLElement {
           color: var(--node-text);
           padding: 4px 12px;
           border-radius: var(--ui-radius);
-          font-family: SourceCodePro, monospace;
+          font-family: inherit;
           font-size: 12px;
           display: flex;
           align-items: center;
@@ -126,7 +126,7 @@ export class SelectionPills extends HTMLElement {
           color: var(--node-text);
         }
         .selection-pill .clear-btn:hover {
-          background: #ff4444;
+          background: var(--ui-age-attention, #ff4444);
           color: white;
         }
         [data-theme="tube"] .selection-pill {

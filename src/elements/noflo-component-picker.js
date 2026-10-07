@@ -105,7 +105,7 @@ export class FlowComponentPicker extends HTMLElement {
           position: fixed;
           z-index: 950;
           display: none;
-          font-family: SourceCodePro, monospace;
+          font-family: inherit;
           font-size: 12px;
           color: var(--node-text, #aaa);
         }
