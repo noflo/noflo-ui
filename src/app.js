@@ -27,7 +27,7 @@ import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
 import "./elements/noflo-selection-pills.js";
-import { on } from "./events.js";
+import { emit, on } from "./events.js";
 import {
   compatibleComponents,
   createIntentMapper,
@@ -42,6 +42,7 @@ import {
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
+import { wireExportRename } from "./glass/text-prompt.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { ComponentSignature } from "./library/schema.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -594,6 +595,9 @@ async function render() {
     const componentName = node?.getAttribute?.("component");
     if (componentName) openSignatureEditor(componentName);
   });
+  // Exported-port rename (work document #5 update #36): the shell asks
+  // for the new name in a modal, then rides the mapper's port-renamed path
+  wireExportRename(ed);
   renderGraphIntoEditor(replica, ed, (name) =>
     libraryManager?.getComponent(name),
   );
@@ -1014,6 +1018,10 @@ async function init() {
     getLibrary: () => libraryManager,
     onDragging: (nodes) => sendDraggingAwareness(nodes),
     onDragEnd: () => sendDraggingAwareness([]),
+    // IIP values edit in the datatype-aware shell editor (work document #5
+    // update #36): no window.prompt fallback in the Glass
+    editIIP: ({ title, datatype, value }) =>
+      _openIIPValueEditor(title, value ?? "", datatype),
     // Typed-port guiding (work document #29 update #1): the candidate list
     // narrows to compatible components, ending with the create option
     pickComponent: async ({ x, y, startPort, edge }) => {

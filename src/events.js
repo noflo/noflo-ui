@@ -99,7 +99,7 @@
  * @property {CustomEvent<{ edgeId: string, src: PortEndpoint, tgt: PortEndpoint, x: number, y: number }>} splice-node-attempt
  * @property {CustomEvent<{ x: number, y: number, type: "canvas" }>} canvas-menu-open
  * @property {CustomEvent<{ portA: Element, portB: Element }>} wire-connection-attempt
- * @property {CustomEvent<{ oldName: string, newName: string, direction: any, position: { x: number, y: number } }>} port-renamed
+ * @property {CustomEvent<{ oldName: string, newName: string, direction: string }>} port-renamed
  * @property {CustomEvent<{ name: string, direction: string }>} export-rename-attempt
  * @property {CustomEvent<{ name: string, direction: "in" | "out", position: { x: number, y: number }, process: string | null, port: string | null }>} port-exported
  * @property {CustomEvent<{ name: string | null, direction: any }>} port-removed
