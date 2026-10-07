@@ -2515,7 +2515,15 @@ export class FlowEditor extends HTMLElement {
    * @param {HTMLElement} port
    */
   getPortPosition(port) {
-    const rect = port.getBoundingClientRect();
+    // Exported ports are host elements whose connection point is the dot
+    // inside their shadow: the host rect also contains the name label
+    // below the dot, so its center is not the dot's center. The drag and
+    // hit-test paths resolve to the inner .port element the same way.
+    const dot =
+      /** @type {HTMLElement | null} */ (
+        /** @type {any} */ (port).shadowRoot?.querySelector(".port")
+      ) ?? port;
+    const rect = dot.getBoundingClientRect();
     const componentRect = this.getBoundingClientRect();
     return this.viewportToGraph(
       rect.left + rect.width / 2 - componentRect.left,
