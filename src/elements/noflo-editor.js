@@ -2536,8 +2536,9 @@ export class FlowEditor extends HTMLElement {
   /**
    * Colors a selected node's expanded port pills by the route of the wire
    * connected to each port (work document #5 update #16, per the original
-   * design): the pill carries the route color of the first edge touching
-   * that port.
+   * design): the pill carries the route color of the first wire touching
+   * that port. Regular edges and IIP/exported-port wires both count — an
+   * IIP or an exported port connecting a port colors its pill too.
    *
    * @param {Element} node
    */
@@ -2549,11 +2550,13 @@ export class FlowEditor extends HTMLElement {
         `.port-label[data-port-name="${port.dataset.portName}"]`,
       );
       if (!label) continue;
-      const edge = this.edges.find(
-        (/** @type {any} */ candidate) =>
-          candidate.portA === port || candidate.portB === port,
-      );
-      const route = edge?.routeId;
+      const wire =
+        this.edges.find(
+          (/** @type {any} */ candidate) =>
+            candidate.portA === port || candidate.portB === port,
+        ) ??
+        this.iipWires.find((/** @type {any} */ wire) => wire.port === port);
+      const route = wire?.routeId;
       label.style.setProperty(
         "--port-route-color",
         route !== undefined && route !== null ? `var(--route-${route})` : "",
