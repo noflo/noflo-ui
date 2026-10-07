@@ -886,6 +886,20 @@ export class FlowEditor extends HTMLElement {
       } else {
         wire.visualPath.style.removeProperty("--edge-color");
       }
+      // Exported ports wear their wire's route color on the ring
+      // (guidelines §9); IIP chips keep their own visual
+      if (/** @type {any} */ (wire.iip).tagName === "NOFLO-EXPORTED-PORT") {
+        if (route !== null && route !== undefined) {
+          /** @type {any} */ (wire.iip).style.setProperty(
+            "--port-route-color",
+            `var(--route-${route})`,
+          );
+        } else {
+          /** @type {any} */ (wire.iip).style.removeProperty(
+            "--port-route-color",
+          );
+        }
+      }
       this._applySelection(this.selectionManager.getSnapshot());
       return;
     }
@@ -2844,6 +2858,14 @@ export class FlowEditor extends HTMLElement {
 
     if (port) {
       /** @type {any} */ (exportedPort).routeId = route;
+      // The port's ring wears the route color (guidelines §9); accent
+      // fallback when unroute
+      if (route !== undefined && route !== null) {
+        exportedPort.style.setProperty(
+          "--port-route-color",
+          `var(--route-${route})`,
+        );
+      }
       this.edgeManager?.connectIIP(
         /** @type {HTMLElement} */ (exportedPort),
         port,

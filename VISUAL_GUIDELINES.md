@@ -191,6 +191,24 @@ Nodes are circular; ports distribute along the perimeter by trigonometry (outpor
 - Per-node status uses a **two-line caption stack**: the name in `--node-text` and a small uppercase status word beneath it, colored by the age semantics (running / draft / crashed), so node state is legible without selecting the node.
 - Groups render as padded, labeled regions **behind** member nodes; padding must exceed half a node plus half a grid cell (the shared `groupBounds` helper, 48px) so adjacent-cell drops still land inside.
 
+### Exported ports — the system boundary
+
+Exported ports are not processing nodes; they are the literal I/O boundary between the internal graph and the external application. Their visual metaphor contrasts with standard nodes accordingly — smaller, ring-led, hollow [implemented].
+
+- **Cyberpunk — the "data socket":** a physical I/O jack — a neon ring border around a hollow, deeply recessed dark center (the canvas showing through), implying a plug waiting for a connection.
+- **Tube — the "terminus / interchange":** the London Underground convention for stations that connect to other transport modes or end a line — a small circle with pure white fill and a thick colored border.
+- **Route color:** the ring carries the route color of the sub-flow the export belongs to (published as `--port-route-color` on the host by the editor, like expanded-node port pills); without a route it falls back to the default accent [implemented].
+- **Entity ages** apply the same four-state vocabulary to the ring. The styles are live; the status data that sets the classes arrives with work document #15 [target: the data wiring].
+
+| Age | Cyberpunk (data socket) | Tube (terminus) |
+| --- | --- | --- |
+| `abstract` | Dim, thin border; hollow dark center [implemented] | 2px grey border, white fill [implemented] |
+| `golden` | High-glow border in the route color; small pulsing inner ring [implemented] | 4px bold border in the route color, pure white fill [implemented] |
+| `offline` | Desaturated grey border, no glow [implemented] | 3px dashed grey border, white fill [implemented] |
+| `crashed` | The error red takes the ring; glitching animation [implemented] | Thick error-red border, pure white fill [implemented] |
+
+The golden pulse and the crashed glitch are gated behind `prefers-reduced-motion` and `data-animations="off"` like every other animation (§11). Crash red is the theme's `--ui-age-crashed`, never a literal; grey is the offline/muted semantic.
+
 ## 10. Interaction visuals
 
 - **Cursor states (mouse):** `grab` hovering grabbable things (nodes, ports), `grabbing` while dragging, `no-drop` over invalid drop targets. Keyboard and touch equivalents must exist for every mouse interaction (NUI primary, WIMP fallback, CLI power — all three paradigms dispatch the same intents).
