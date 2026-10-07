@@ -19,6 +19,10 @@ import { on } from "../events.js";
  * @property {() => { getComponent: (name: string) => any, listComponents: () => string[] } | null} getLibrary
  *   The Glass-side library view, for default port names and the candidate
  *   lists of the typed-port guiding.
+ * @property {((options: { title: string, datatype: string, value?: string }) => Promise<any | null>)} [editIIP]
+ *   Edits an IIP value with the datatype-aware editor in the shell (work
+ *   document #5 follow-up). Null cancels; absent, the mapper falls back
+ *   to a window prompt.
  * @property {((options: { x: number, y: number, startPort: HTMLElement | null, edge?: { src: { node: string, port: string, index?: number }, tgt: { node: string, port: string, index?: number }, srcType: string, tgtType: string } }) => Promise<string | { name: string, signature?: { inports?: any[], outports?: any[] } } | null>)} [pickComponent]
  *   Resolves the component for a new node (work document #29's typed-port
  *   guiding): the shell shows the compatible-component picker and may
@@ -194,6 +198,7 @@ export function createIntentMapper({
   onDragging,
   onDragEnd,
   pickComponent,
+  editIIP,
 }) {
   /** Intents held back until their target node appears in the replica. */
   const pendingAfterNode = new Map();
@@ -406,16 +411,23 @@ export function createIntentMapper({
         });
       });
 
-      on(ed, "iip-creation-attempt", (e) => {
+      on(ed, "iip-creation-attempt", async (e) => {
         const event = /** @type {CustomEvent} */ (e);
-        const value = window.prompt(
-          "Value for the initial information packet:",
-        );
-        if (value === null) return;
         const startPort = /** @type {HTMLElement | undefined} */ (
           event.detail.startPort
         );
         if (!startPort) return;
+        const datatype = startPort.dataset.portDataType || "all";
+        // The value comes from the datatype-aware editor in the shell
+        // (work document #5 follow-up): the prompt is gone
+        const value = editIIP
+          ? await editIIP({
+              title: "Value for the packet",
+              datatype,
+              value: undefined,
+            })
+          : window.prompt("Value for the initial information packet:");
+        if (value === null || value === undefined) return;
         sendIntent({
           type: "INTENT",
           command: "addIIP",
@@ -428,15 +440,22 @@ export function createIntentMapper({
         });
       });
 
-      on(ed, "iip-edit-attempt", (e) => {
+      on(ed, "iip-edit-attempt", async (e) => {
         const event = /** @type {CustomEvent} */ (e);
         const iip = /** @type {any} */ (event.detail.iip);
-        const newValue = window.prompt("New value for the packet:", iip.value);
-        if (newValue === null || typeof iip.id !== "string") return;
+        const value = editIIP
+          ? await editIIP({
+              title: "New value for the packet",
+              datatype: event.detail.dataType || "all",
+              value: iip.value,
+            })
+          : window.prompt("New value for the packet:", iip.value);
+        if (value === null || value === undefined) return;
+        if (typeof iip.id !== "string") return;
         sendIntent({
           type: "INTENT",
           command: "updateIIP",
-          payload: { graphId: graphId(), id: iip.id, data: newValue },
+          payload: { graphId: graphId(), id: iip.id, data: value },
         });
       });
 

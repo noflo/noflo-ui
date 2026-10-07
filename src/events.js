@@ -81,7 +81,7 @@
  * @property {CustomEvent<{ edge: EditorEdge }>} edge-removal-attempt
  * @property {CustomEvent<{ x: number, y: number, startPort: Element | null }>} iip-creation-attempt
  * @property {CustomEvent<{ x: number, y: number, startPort: Element | null }>} node-creation-attempt
- * @property {CustomEvent<{ iip: Element }>} iip-edit-attempt
+ * @property {CustomEvent<{ iip: Element, dataType: string }>} iip-edit-attempt
  * @property {CustomEvent<{ iip: Element }>} iip-removal-attempt
  * @property {CustomEvent<{ iip: Element }>} iip-send-attempt
  * @property {CustomEvent<{ node: Element }>} edit-component-attempt
@@ -98,6 +98,7 @@
  * @property {CustomEvent<{ x: number, y: number, type: "canvas" }>} canvas-menu-open
  * @property {CustomEvent<{ portA: Element, portB: Element }>} wire-connection-attempt
  * @property {CustomEvent<{ oldName: string, newName: string, direction: any, position: { x: number, y: number } }>} port-renamed
+ * @property {CustomEvent<{ name: string, direction: string }>} export-rename-attempt
  * @property {CustomEvent<{ name: string, direction: "in" | "out", position: { x: number, y: number }, process: string | null, port: string | null }>} port-exported
  * @property {CustomEvent<{ name: string | null, direction: any }>} port-removed
  * @property {CustomEvent<SelectionSnapshot>} selection-changed

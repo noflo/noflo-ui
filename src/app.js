@@ -753,6 +753,113 @@ function onRoleChange() {
  *
  * @param {string} theme
  */
+/**
+ * Opens the IIP value editor (work document #5 follow-up): a jedison form
+ * constrained by the port's datatype, replacing the window.prompt for IIP
+ * values. Resolves the parsed value, or null on cancellation.
+ *
+ * @param {string} title
+ * @param {string} rawValue The IIP's stored value.
+ * @param {string} dataType The target port's datatype.
+ * @returns {Promise<any | null>}
+ */
+async function openIIPValueEditor(title, rawValue, dataType) {
+  if (!componentModal || !componentForm) return null;
+  componentModal.setActions([
+    { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+    { value: "save", label: "Save", kind: "btn-primary" },
+  ]);
+  componentModal.open(title);
+  componentForm.schema = datatypeToSchema(dataType);
+  componentForm.data = parseIIPValue(rawValue);
+  const action = await componentModal.submit();
+  if (action !== "save") return null;
+  return componentForm.data;
+}
+
+/**
+ * Opens the signature editor in create mode (work document #5 follow-up):
+ * the component does not exist yet — the user names it in the form, and
+ * the resolved data carries the name plus the declared signature.
+ * Replaces the window.prompt in node creation and splicing.
+ *
+ * @param {any} prefillPorts Optional inport/outport prefill from the
+ *   typed-port guiding.
+ * @returns {Promise<{ name: string, signature: any } | null>}
+ */
+async function openSignatureEditorCreate(prefillPorts) {
+  if (!componentModal || !componentForm) return null;
+  componentModal.setActions([
+    { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+    { value: "save", label: "Create", kind: "btn-primary" },
+  ]);
+  componentModal.open("New component");
+  componentForm.schema = ComponentSignature;
+  componentForm.data = {
+    name: "New Node",
+    icon: "gear",
+    description: "",
+    inports: prefillPorts?.inports ?? [{ name: "in", type: "all" }],
+    outports: prefillPorts?.outports ?? [{ name: "out", type: "all" }],
+  };
+  const action = await componentModal.submit();
+  if (action !== "save") return null;
+  const data = componentForm.data;
+  const name = String(data.name || "").trim();
+  if (!name) return null;
+  return {
+    name,
+    signature: {
+      inports: data.inports,
+      outports: data.outports,
+      description: data.description,
+      icon: data.icon,
+    },
+  };
+}
+
+/**
+ * Maps a port datatype to the JSON Schema the IIP editor uses (work
+ * document #5 follow-up): string/number/boolean constrain directly;
+ * object and array get their structural type; all accepts anything. JSON
+ * Schemas for ports refine this once they exist.
+ *
+ * @param {string} dataType
+ * @returns {any}
+ */
+function datatypeToSchema(dataType) {
+  switch (dataType) {
+    case "string":
+      return { type: "string" };
+    case "number":
+      return { type: "number" };
+    case "boolean":
+      return { type: "boolean" };
+    case "object":
+      return { type: "object" };
+    case "array":
+      return { type: "array" };
+    default:
+      return true;
+  }
+}
+
+/**
+ * Parses an IIP's stored value into the form's initial value: JSON when
+ * it parses, the raw string otherwise.
+ *
+ * @param {string} raw
+ * @returns {any}
+ */
+function parseIIPValue(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/** @param {string} theme */
 function applyTheme(theme) {
   document.body.setAttribute("data-theme", theme);
   try {
@@ -838,9 +945,9 @@ async function init() {
     // Typed-port guiding (work document #29 update #1): the candidate list
     // narrows to compatible components, ending with the create option
     pickComponent: async ({ x, y, startPort, edge }) => {
-      if (!startPort && !edge) {
-        return window.prompt("Enter component name:");
-      }
+      // The canvas Add Node also goes through the picker: all components
+      // are candidates (no compatibility filter), ending with the create
+      // option (work document #5 follow-up)
       if (!componentPicker) {
         componentPicker = /** @type {FlowComponentPicker} */ (
           /** @type {any} */ (document.createElement("noflo-component-picker"))
@@ -864,17 +971,40 @@ async function init() {
         ? (libraryManager?.listComponents() ?? []).filter((name) =>
             fits(libraryManager?.getComponent(name)),
           )
-        : compatibleComponents(libraryManager, /** @type {any} */ (startPort));
+        : startPort
+          ? compatibleComponents(libraryManager, /** @type {any} */ (startPort))
+          : (libraryManager?.listComponents() ?? []);
       const choice = await componentPicker.open({ x, y, candidates });
       if (choice === CREATE_NEW_COMPONENT) {
-        const name = window.prompt(
-          "Enter component name (or leave empty to use 'New Node'):",
-        );
-        if (!name) return null;
-        // Spec the new component to match the connection's shape (work
-        // documents #29/#5): a port drag prefill carries the dragged
-        // port's datatype on the connecting side; an edge splice carries
-        // the edge's datatypes on both sides
+        // The user names the component in the signature editor (work
+        // document #5 follow-up): no window.prompt. The prefill comes from
+        // the guiding context: a port drag carries the dragged port's
+        // datatype on the connecting side; an edge splice carries the
+        // edge's datatypes on both sides.
+        const prefill = edge
+          ? {
+              inports: [{ name: "in", type: edge.srcType }],
+              outports: [{ name: "out", type: edge.tgtType }],
+            }
+          : startPort && startPort.classList.contains("port-out")
+            ? {
+                inports: [
+                  { name: "in", type: startPort.dataset.portDataType || "all" },
+                ],
+              }
+            : startPort
+              ? {
+                  outports: [
+                    {
+                      name: "out",
+                      type: startPort.dataset.portDataType || "all",
+                    },
+                  ],
+                }
+              : undefined;
+        const created = await openSignatureEditorCreate(prefill);
+        if (!created) return null;
+        const name = created.name;
         if (edge) {
           return {
             name: name.trim(),

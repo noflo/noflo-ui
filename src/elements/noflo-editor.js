@@ -136,6 +136,9 @@ export class FlowEditor extends HTMLElement {
     this.draggingWirePointerId = null;
     /** @type {NoFloRadialMenu | null} */
     this.radialMenu = null;
+    /** Set by the Glass when a runtime network is connected: gates
+     * runtime-only affordances such as the IIP "Send now". */
+    this.runtimeConnected = false;
     /** @type {Array<{ id: string, name: string, nodes: string[] }>} */
     this.groups = [];
     /** @type {number | null} */
@@ -1572,19 +1575,12 @@ export class FlowEditor extends HTMLElement {
         items.push({
           text: "Rename",
           onClick: () => {
-            const newName = window.prompt("Enter new name:", name);
-            if (newName && newName !== name) {
-              const direction = ep.direction;
-              const position = ep.position;
-              emit(this, "port-renamed", {
-                oldName: name,
-                newName,
-                direction,
-                position,
-              });
-              ep.setAttribute("name", newName);
-              ep.dataset.portName = newName;
-            }
+            // The rename moves to the Glass: the shell asks for the new
+            // name in a modal input (work document #5 follow-up)
+            emit(this, "export-rename-attempt", {
+              name,
+              direction: /** @type {any} */ (ep).direction,
+            });
           },
           icon: "pen-to-square",
         });
@@ -1630,7 +1626,11 @@ export class FlowEditor extends HTMLElement {
           items.push({
             text: "Edit",
             onClick: () => {
-              emit(this, "iip-edit-attempt", { iip: clickedNode });
+              const wire = this.iipWires?.find((w) => w.iip === clickedNode);
+              emit(this, "iip-edit-attempt", {
+                iip: clickedNode,
+                dataType: wire?.port?.dataset?.portDataType || "all",
+              });
             },
             icon: "pen-to-square",
           });
@@ -1657,13 +1657,17 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "trash",
           });
-          items.push({
-            text: "Send now",
-            onClick: () => {
-              emit(this, "iip-send-attempt", { iip: clickedNode });
-            },
-            icon: "paper-plane",
-          });
+          if (this.runtimeConnected) {
+            // Sending an IIP needs a running network: without one the item
+            // stays hidden (work document #5 follow-up)
+            items.push({
+              text: "Send now",
+              onClick: () => {
+                emit(this, "iip-send-attempt", { iip: clickedNode });
+              },
+              icon: "paper-plane",
+            });
+          }
           // IIPs are edges under the hood (the DATA-> key): the route
           // cycler colors them like any other edge (work document #35)
           const currentRoute =
