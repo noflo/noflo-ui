@@ -97,7 +97,7 @@ export class FlowContextChip extends FlowCornerElement {
           align-items: center;
           padding: 6px 10px;
           background: var(--ui-bg, rgb(20, 27, 35));
-          color: var(--node-text, #aaa);
+          color: var(--node-text);
           border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
           border-radius: var(--ui-radius, 6px);
           font-family: SourceCodePro, monospace;

@@ -79,11 +79,12 @@ export class FileSelector extends HTMLElement {
         }
 
         #overlay-content {
-          background: white;
+          background: var(--ui-bg);
+          color: var(--node-text);
+          border: 1px solid var(--ui-panel-border);
+          border-radius: var(--ui-radius);
           padding: 2rem;
-          border-radius: 8px;
           text-align: center;
-          color: black;
         }
 
         #controls {
@@ -99,11 +100,12 @@ export class FileSelector extends HTMLElement {
           position: fixed;
           top: 20px;
           left: 20px;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: white;
-          border: 1px solid #ccc;
+          width: var(--ui-target, 44px);
+          height: var(--ui-target, 44px);
+          border-radius: var(--ui-radius);
+          background: var(--ui-bg);
+          color: var(--node-text);
+          border: 1px solid var(--ui-border);
           cursor: pointer;
           display: none;
           justify-content: center;
@@ -113,6 +115,10 @@ export class FileSelector extends HTMLElement {
           box-shadow: 0 2px 5px rgba(0,0,0,0.2);
           pointer-events: auto;
         }
+        #minimize-btn:focus-visible {
+          outline: 2px solid var(--ui-focus);
+          outline-offset: 2px;
+        }
 
         #minimize-btn i {
           font-family: 'Font Awesome 7 Free';
@@ -121,9 +127,10 @@ export class FileSelector extends HTMLElement {
 
         .control-group {
           pointer-events: auto;
-          background: var(--ui-bg, #eee);
+          background: var(--ui-bg);
+          color: var(--node-text);
           padding: 1rem;
-          border-bottom: 1px solid #ccc;
+          border-bottom: 1px solid var(--ui-panel-border);
         }
 
         .control-label {
@@ -142,11 +149,17 @@ export class FileSelector extends HTMLElement {
         #file-list li {
           padding: 0.5rem;
           cursor: pointer;
-          border-bottom: 1px solid #ddd;
+          color: var(--node-text);
+          border-bottom: 1px solid var(--ui-border);
         }
 
         #file-list li:hover {
-          background-color: #f0f0f0;
+          background-color: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+        }
+
+        #file-list li:focus-visible {
+          outline: 2px solid var(--ui-focus);
+          outline-offset: -2px;
         }
 
         #new-graph-btn {

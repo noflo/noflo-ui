@@ -451,7 +451,7 @@ export class FlowSyncPanel extends FlowCornerElement {
           gap: 6px;
           max-width: min(360px, calc(100vw - 24px));
           font-family: SourceCodePro, monospace;
-          color: var(--node-text, #aaa);
+          color: var(--node-text);
         }
         .badge {
           padding: 1px 6px;

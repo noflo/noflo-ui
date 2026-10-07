@@ -107,7 +107,7 @@ export class FlowComponentPicker extends HTMLElement {
           display: none;
           font-family: inherit;
           font-size: 12px;
-          color: var(--node-text, #aaa);
+          color: var(--node-text);
         }
         :host([open]) { display: block; }
         .picker {
@@ -122,7 +122,7 @@ export class FlowComponentPicker extends HTMLElement {
         }
         .picker-head {
           padding: 4px 8px;
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -160,7 +160,7 @@ export class FlowComponentPicker extends HTMLElement {
           color: var(--ui-accent, rgb(0, 229, 255));
         }
         button.empty {
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
           cursor: default;
         }
       </style>

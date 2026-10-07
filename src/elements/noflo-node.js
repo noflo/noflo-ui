@@ -322,7 +322,7 @@ export class FlowNode extends HTMLElement {
           width: var(--node-size, 80px);
           height: var(--node-size, 80px);
           border-radius: 50%;
-          background-color: var(--node-bg, #ccc);
+          background-color: var(--node-bg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -340,7 +340,7 @@ export class FlowNode extends HTMLElement {
           right: var(--node-ring-inset, 4px);
           bottom: var(--node-ring-inset, 4px);
           border-radius: 50%;
-          border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
+          border: var(--node-stroke-width, 2px) solid var(--node-border);
           pointer-events: none;
           /* The ring stays continuous over the icon and component-name
              bands (work document #5 update #16) */
@@ -368,7 +368,7 @@ export class FlowNode extends HTMLElement {
         .node-name {
           font-size: 12px;
           font-weight: bold;
-          color: var(--node-text, #333);
+          color: var(--node-text);
           display: block;
           white-space: nowrap;
           overflow: hidden;
@@ -377,7 +377,7 @@ export class FlowNode extends HTMLElement {
         }
         .node-component {
           font-size: 10px;
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
           display: block;
           white-space: nowrap;
           overflow: hidden;
@@ -429,11 +429,11 @@ export class FlowNode extends HTMLElement {
           inset: 15px;
           border-radius: 50%;
           background: color-mix(in srgb, var(--ui-bg, #111) 88%, #000);
-          box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--node-border, #333) 60%, transparent);
+          box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--node-border) 60%, transparent);
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          color: var(--node-text, #ccc);
+          color: var(--node-text);
           overflow: hidden;
           /* The circle is click-through; the preview is interactive */
           pointer-events: auto;
@@ -453,7 +453,7 @@ export class FlowNode extends HTMLElement {
         :host([selected]) .node-content {
           height: 28px;
           align-items: center;
-          background: var(--node-bg, #ccc);
+          background: var(--node-bg);
           z-index: 2;
         }
         :host([selected]) .node-content i {
@@ -464,14 +464,14 @@ export class FlowNode extends HTMLElement {
         }
         .node-depiction.openable:hover {
           box-shadow:
-            inset 0 0 0 2px var(--ui-accent, #007bff),
-            0 0 12px color-mix(in srgb, var(--ui-accent, #007bff) 40%, transparent);
+            inset 0 0 0 2px var(--ui-accent),
+            0 0 12px color-mix(in srgb, var(--ui-accent) 40%, transparent);
         }
         .depiction-node {
-          fill: var(--node-text, #ccc);
+          fill: var(--node-text);
         }
         .depiction-wire {
-          stroke: var(--node-text, #ccc);
+          stroke: var(--node-text);
           fill: none;
           stroke-width: 1.5;
         }
@@ -495,9 +495,9 @@ export class FlowNode extends HTMLElement {
           height: 24px;
           align-items: center;
           justify-content: center;
-          background: var(--node-bg, #ccc);
+          background: var(--node-bg);
           font-size: 10px;
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
           z-index: 2;
           pointer-events: none;
           /* Long component names ellipsize inside the band */
@@ -535,7 +535,7 @@ export class FlowNode extends HTMLElement {
         .node-status {
           display: block;
           font-size: 10px;
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
         }
         /* Port labels: anchored at the port's center, pushed outside the
            circle; the dot rides with the name (before for outports, after
@@ -560,7 +560,7 @@ export class FlowNode extends HTMLElement {
           column-gap: 5px;
           align-items: center;
           text-align: left;
-          background: var(--port-route-color, var(--ui-accent, #007bff));
+          background: var(--port-route-color, var(--ui-accent));
           color: var(--ui-bg, #111);
           border-radius: 12px;
           padding: 3px 9px;
@@ -650,8 +650,8 @@ export class FlowNode extends HTMLElement {
           position: absolute;
           width: 12px;
           height: 12px;
-          background-color: var(--node-border, #333);
-          border: 2px solid var(--node-bg, #fff);
+          background-color: var(--node-border);
+          border: 2px solid var(--node-bg);
           border-radius: 50%;
           z-index: 2;
           cursor: grab;
@@ -665,20 +665,20 @@ export class FlowNode extends HTMLElement {
         .port-label {
           position: absolute;
           font-size: 10px;
-          color: var(--node-text, #666);
+          color: var(--node-text);
           white-space: nowrap;
           pointer-events: none;
           z-index: 2;
           transition: opacity 0.2s;
         }
         .port:hover {
-          background-color: var(--ui-accent, #007bff);
+          background-color: var(--ui-accent);
           transform: scale(1.2);
         }
         .port-compatible {
-          background-color: var(--ui-accent, #007bff) !important;
+          background-color: var(--ui-accent) !important;
           transform: scale(1.8) !important;
-          box-shadow: 0 0 10px var(--ui-accent, #007bff);
+          box-shadow: 0 0 10px var(--ui-accent);
           z-index: 10;
         }
         .port-incompatible {

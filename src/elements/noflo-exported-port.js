@@ -82,8 +82,8 @@ export class FlowExportedPort extends HTMLElement {
           width: calc(var(--exported-port-size, 20px) * 0.75);
           height: calc(var(--exported-port-size, 20px) * 0.75);
           box-sizing: border-box;
-          background-color: var(--node-bg, #ccc);
-          border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
+          background-color: var(--node-bg);
+          border: var(--node-stroke-width, 2px) solid var(--node-border);
           border-radius: 50%;
           position: relative;
           box-shadow: 0 0 10px var(--node-glow, transparent);
@@ -92,7 +92,7 @@ export class FlowExportedPort extends HTMLElement {
         .port-name-label {
           font-size: 10px;
           font-family: SourceCodePro, monospace;
-          color: var(--node-text, #333);
+          color: var(--node-text);
           text-align: center;
           margin-top: 2px;
           white-space: nowrap;

@@ -107,7 +107,7 @@ input.form-range {
 
 .form-text {
   font-size: 11px;
-  color: #888;
+  color: var(--node-subtext);
 }
 
 /* Buttons inside forms */
@@ -150,8 +150,8 @@ input.form-range {
 }
 
 .btn-danger {
-  background: var(--ui-danger, #d9534f);
-  color: #fff;
+  background: var(--ui-age-attention);
+  color: var(--ui-bg);
 }
 
 .btn-sm,
@@ -169,9 +169,9 @@ input.form-range {
 }
 
 .alert-danger {
-  background: color-mix(in srgb, var(--ui-danger, #d9534f) 15%, transparent);
-  border: 1px solid var(--ui-danger, #d9534f);
-  color: var(--ui-danger, #d9534f);
+  background: color-mix(in srgb, var(--ui-age-attention) 15%, transparent);
+  border: 1px solid var(--ui-age-attention);
+  color: var(--ui-age-attention);
 }
 
 /* Array/table rows: separators for repeated item editors */

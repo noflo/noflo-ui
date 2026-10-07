@@ -69,8 +69,8 @@ export class FlowIIP extends HTMLElement {
         .iip-box {
           width: 100%;
           height: 100%;
-          background-color: var(--node-bg, #ccc);
-          border: var(--node-stroke-width, 2px) solid var(--node-border, #333);
+          background-color: var(--node-bg);
+          border: var(--node-stroke-width, 2px) solid var(--node-border);
           border-radius: 8px;
           box-sizing: border-box;
           display: flex;
@@ -83,7 +83,7 @@ export class FlowIIP extends HTMLElement {
         .iip-value {
           font-size: 12px;
           font-family: SourceCodePro, monospace;
-          color: var(--node-text, #333);
+          color: var(--node-text);
           text-align: center;
           padding: 4px;
           word-break: break-all;

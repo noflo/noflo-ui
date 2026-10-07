@@ -62,13 +62,13 @@ export class NofloModal extends HTMLElement {
         .modal-content {
           max-height: 80vh;
           overflow: auto;
-          background: var(--ui-bg, white);
+          background: var(--ui-bg);
           padding: 2rem;
           border-radius: 8px;
           max-width: 80%;
           position: relative;
-          color: var(--node-text, black);
-          border: 1px solid var(--ui-panel-border, #ccc);
+          color: var(--node-text);
+          border: 1px solid var(--ui-panel-border);
         }
         .modal-header {
           display: flex;
@@ -85,7 +85,7 @@ export class NofloModal extends HTMLElement {
           border: none;
           font-size: 1.5rem;
           cursor: pointer;
-          color: var(--node-subtext, #666);
+          color: var(--node-subtext);
         }
         .modal-footer {
           display: flex;
@@ -105,20 +105,20 @@ export class NofloModal extends HTMLElement {
           outline-offset: 2px;
         }
         .btn-primary {
-          background: var(--ui-accent, #007bff);
-          color: var(--ui-bg, white);
+          background: var(--ui-accent);
+          color: var(--ui-bg);
           border: none;
           border-radius: 4px;
         }
         .btn-secondary {
           background: transparent;
           color: inherit;
-          border: 1px solid var(--ui-panel-border, #ccc);
+          border: 1px solid var(--ui-panel-border);
           border-radius: 4px;
         }
         .btn-action {
-          background: color-mix(in srgb, var(--ui-accent, #007bff) 18%, var(--ui-bg, white));
-          border: 1px solid color-mix(in srgb, var(--ui-accent, #007bff) 55%, transparent);
+          background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-bg));
+          border: 1px solid color-mix(in srgb, var(--ui-accent) 55%, transparent);
           color: inherit;
           border-radius: 4px;
           font-weight: bold;

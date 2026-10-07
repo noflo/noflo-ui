@@ -410,7 +410,7 @@ export class FlowEditor extends HTMLElement {
         }
         .group-region {
           fill: var(--group-fill, transparent);
-          stroke: var(--group-border, var(--node-border, #666));
+          stroke: var(--group-border, var(--node-border));
           stroke-width: 2;
           stroke-dasharray: 8 4;
           rx: 12;
@@ -419,7 +419,7 @@ export class FlowEditor extends HTMLElement {
           cursor: context-menu;
         }
         .group-label {
-          fill: var(--node-subtext, #666);
+          fill: var(--node-subtext);
           font-family: SourceCodePro, monospace;
           font-size: 14px;
           pointer-events: none;
@@ -454,13 +454,13 @@ export class FlowEditor extends HTMLElement {
           width: var(--node-size, 80px);
           height: var(--node-size, 80px);
           border-radius: var(--ghost-radius, 50%);
-          border: 2px dashed var(--ui-accent, #4aa3df);
-          background: color-mix(in srgb, var(--ui-accent, #4aa3df) 12%, transparent);
+          border: 2px dashed var(--ui-accent);
+          background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 11px;
-          color: var(--ui-fg, #eee);
+          color: var(--node-text);
           max-width: 120px;
           overflow: hidden;
           white-space: nowrap;
@@ -2123,7 +2123,7 @@ export class FlowEditor extends HTMLElement {
       "http://www.w3.org/2000/svg",
       "path",
     );
-    this.activeWire.setAttribute("stroke", "var(--node-subtext, #666)");
+    this.activeWire.setAttribute("stroke", "var(--node-subtext)");
     this.activeWire.setAttribute("stroke-width", "2");
     this.activeWire.setAttribute("fill", "none");
     this.activeWire.setAttribute("stroke-dasharray", "5,5");

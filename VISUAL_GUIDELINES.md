@@ -56,6 +56,10 @@ The editor element mirrors the age as a `state-<age>` class and the body's `data
 | `--ui-focus` | Age-independent focus ring color (route blue in both themes, ≥ 3:1); focus stays legible when the age turns accent red |
 | `--ui-target` | Minimum interactive target size (§13): 44px for touch/pen, relaxed to the 24px mouse minimum when the published `data-input` is `mouse` |
 | `--zoom-scale` | Published by the camera; drives level-of-detail via container queries |
+| `--ghost-size`, `--ghost-radius` | JS-owned ghost-node geometry, set inline by the editor from grid sizing (not themed) |
+| `--iip-size` | JS-owned IIP element geometry, set inline by `<noflo-iip>` (not themed) |
+| `--exported-port-size` | JS-owned exported-port geometry, set inline by `<noflo-exported-port>` (not themed) |
+| `--group-border`, `--group-fill` | Group region rendering knobs for the group renderer (work document #35); JS-owned, not themed |
 | `--port-route-color` | Set per expanded node from the connected edge's route (accent fallback when unconnected) |
 
 ## 4. Theme personalities

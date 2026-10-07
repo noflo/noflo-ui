@@ -291,7 +291,7 @@ export class FlowMeshSettings extends HTMLElement {
         .dialog {
           background: var(--ui-bg);
           color: var(--node-text);
-          border: 1px solid var(--ui-border, #333);
+          border: 1px solid var(--ui-border);
           border-radius: 8px;
           width: min(560px, 92vw);
           max-height: 86vh;
@@ -305,7 +305,7 @@ export class FlowMeshSettings extends HTMLElement {
         select {
           background: var(--ui-bg);
           color: inherit;
-          border: 1px solid var(--ui-border, #333);
+          border: 1px solid var(--ui-border);
           border-radius: 4px;
           padding: 4px 8px;
           font-size: 13px;
@@ -364,9 +364,9 @@ export class FlowMeshSettings extends HTMLElement {
         button.secondary {
           background: transparent;
           color: inherit;
-          border: 1px solid var(--ui-border, #333);
+          border: 1px solid var(--ui-border);
         }
-        button.danger { background: var(--ui-danger, #d9534f); color: var(--ui-bg); }
+        button.danger { background: var(--ui-age-attention); color: var(--ui-bg); }
         .hash {
           font-family: SourceCodePro, monospace;
           font-size: 12px;
@@ -380,11 +380,11 @@ export class FlowMeshSettings extends HTMLElement {
           gap: 8px;
           align-items: center;
           padding: 4px 0;
-          border-bottom: 1px solid var(--ui-border, #222);
+          border-bottom: 1px solid var(--ui-border);
           font-size: 12px;
         }
         .list-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-        .revoked { color: var(--ui-danger, #d9534f); }
+        .revoked { color: var(--ui-age-attention); }
         .status-line {
           font-size: 12px;
           margin-top: 6px;
@@ -392,12 +392,12 @@ export class FlowMeshSettings extends HTMLElement {
           border-radius: 4px;
           background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
         }
-        .status-line.danger { color: var(--ui-danger, #d9534f); }
-        .status-line.success { color: var(--ui-success, #5cb85c); }
+        .status-line.danger { color: var(--ui-age-attention); }
+        .status-line.success { color: var(--ui-age-calm); }
         .danger-zone {
           margin-top: 16px;
           padding-top: 10px;
-          border-top: 1px solid var(--ui-border, #333);
+          border-top: 1px solid var(--ui-border);
         }
         .hint {
           font-size: 11px;
@@ -405,7 +405,7 @@ export class FlowMeshSettings extends HTMLElement {
           margin-top: 4px;
         }
         noflo-json-form { display: block; margin: 8px 0; color: inherit; }
-        .iface-form-host { border: 1px solid var(--ui-border, #333); border-radius: 6px; padding: 8px; margin-top: 8px; }
+        .iface-form-host { border: 1px solid var(--ui-border); border-radius: 6px; padding: 8px; margin-top: 8px; }
       </style>
       <div class="dialog">
         <div class="row">

@@ -51,7 +51,7 @@ export function cornerStyles() {
     align-items: center;
     padding: 6px 10px;
     background: var(--ui-bg, rgb(20, 27, 35));
-    color: var(--node-text, #aaa);
+    color: var(--node-text);
     border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
     border-radius: var(--ui-radius, 6px);
     cursor: pointer;
@@ -70,7 +70,7 @@ export function cornerStyles() {
     display: inline-flex;
     gap: 4px;
     align-items: center;
-    color: var(--node-text, #aaa);
+    color: var(--node-text);
   }
   .seg.calm { color: var(--ui-age-calm); }
   .seg.activity { color: var(--ui-age-activity); }
@@ -138,7 +138,7 @@ export function cornerStyles() {
     border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
   }
   button.danger {
-    background: var(--ui-age-attention, #d9534f);
+    background: var(--ui-age-attention);
     color: var(--ui-bg);
   }
   input {
