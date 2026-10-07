@@ -2003,16 +2003,18 @@ export class FlowEditor extends HTMLElement {
         this.selectionChangedOnDown = false;
       }
     } else {
+      // A pointerdown on the only-selected node keeps it selected so a
+      // drag can move it (work document #5): the plain-click collapse is
+      // committed on pointerup, in commitNodeSelection — toggling here
+      // would collapse the node and empty the drag set before the move
+      // begins
       const isOnlyOneSelected =
         this.selectionManager[type].size === 1 &&
         this.selectionManager[type].has(id);
-      if (isOnlyOneSelected) {
-        this.selectionManager.toggle(type, id);
-        this.selectionChangedOnDown = false;
-      } else {
+      if (!isOnlyOneSelected) {
         this.selectionManager.select(type, id, false);
-        this.selectionChangedOnDown = true;
       }
+      this.selectionChangedOnDown = !isOnlyOneSelected;
     }
 
     n.setPointerCapture(e.pointerId);
