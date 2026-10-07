@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import "./utils/register.js";
 
 import "../../src/elements/noflo-editor.js";
+import "../../src/elements/noflo-exported-port.js";
 import "../../src/elements/noflo-node.js";
 
 /**
@@ -13,7 +14,7 @@ import "../../src/elements/noflo-node.js";
  * the real composed path would.
  *
  * @param {string} type
- * @param {{ clientX: number, clientY: number, pointerId?: number, pointerType?: string }} pos
+ * @param {{ clientX: number, clientY: number, pointerId?: number, pointerType?: string, shift?: boolean }} pos
  * @param {Element[]} path
  * @returns {Event}
  */
@@ -24,6 +25,8 @@ function pointerEvent(type, pos, path = []) {
   event.clientX = pos.clientX;
   event.clientY = pos.clientY;
   event.button = 0;
+  event.shiftKey = pos.shift ?? false;
+  event.ctrlKey = false;
   Object.defineProperty(event, "composedPath", {
     value: () => path,
     enumerable: true,
@@ -131,6 +134,68 @@ describe("expanded node dragging (work document #5)", () => {
       !editor.selectionManager.nodes.has("A"),
       "the click commits the collapse",
     );
+    editor.remove();
+  });
+
+  it("exported ports select as ports, not nodes, and multi-select", () => {
+    const editor = document.createElement("noflo-editor");
+    document.body.appendChild(editor);
+    const node = editor.addNode("A", "test", { x: 80, y: 80 });
+    const ep = /** @type {any} */ (
+      editor.addExportedPort(200, 200, "out", "out")
+    );
+    const dot = /** @type {HTMLElement} */ (
+      /** @type {ShadowRoot} */ (ep.shadowRoot).querySelector(".port")
+    );
+
+    // Clicking the exported port selects it in its own category
+    editor.dispatchEvent(
+      pointerEvent("pointerdown", { clientX: 300, clientY: 300 }, [
+        dot,
+        editor,
+      ]),
+    );
+    window.dispatchEvent(
+      pointerEvent("pointerup", { clientX: 300, clientY: 300 }),
+    );
+    assert.ok(
+      editor.selectionManager.ports.has("out"),
+      "the exported port selects as a port",
+    );
+    assert.ok(
+      !editor.selectionManager.nodes.has("out"),
+      "it is not mistaken for a node",
+    );
+    assert.ok(ep.hasAttribute("selected"), "the element renders selected");
+
+    // Shift-click a node: both stay selected, each in its own category
+    editor.dispatchEvent(
+      pointerEvent("pointerdown", { clientX: 100, clientY: 100, shift: true }, [
+        node,
+        editor,
+      ]),
+    );
+    window.dispatchEvent(
+      pointerEvent("pointerup", { clientX: 100, clientY: 100, shift: true }),
+    );
+    assert.ok(editor.selectionManager.nodes.has("A"));
+    assert.ok(editor.selectionManager.ports.has("out"));
+
+    // The selected export can be dragged
+    editor.dispatchEvent(
+      pointerEvent("pointerdown", { clientX: 300, clientY: 300 }, [
+        dot,
+        editor,
+      ]),
+    );
+    window.dispatchEvent(
+      pointerEvent("pointermove", { clientX: 380, clientY: 380 }),
+    );
+    assert.equal(editor.isDraggingNode, true, "the export joins the drag");
+    window.dispatchEvent(
+      pointerEvent("pointerup", { clientX: 380, clientY: 380 }),
+    );
+    assert.ok(editor.selectionManager.ports.has("out"), "drag keeps it");
     editor.remove();
   });
 });

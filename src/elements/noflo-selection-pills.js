@@ -37,6 +37,7 @@ export class SelectionPills extends HTMLElement {
     const nodesCount = this._selectionManager?.nodes.size || 0;
     const iipsCount = this._selectionManager?.iips.size || 0;
     const edgesCount = this._selectionManager?.edges.size || 0;
+    const portsCount = this._selectionManager?.ports.size || 0;
     const container = this.shadowRoot?.querySelector(".pills-container");
 
     if (!container) return;
@@ -55,6 +56,14 @@ export class SelectionPills extends HTMLElement {
 
     if (edgesCount > 0) {
       const pill = this.createPill(`${edgesCount} edges`, "edges");
+      container.appendChild(pill);
+    }
+
+    if (portsCount > 0) {
+      const pill = this.createPill(
+        portsCount === 1 ? "1 export" : `${portsCount} exports`,
+        "ports",
+      );
       container.appendChild(pill);
     }
   }

@@ -14,6 +14,7 @@ function fakeSelectionManager() {
     nodes: new Set(["a", "b"]),
     iips: new Set(),
     edges: new Set(["e1"]),
+    ports: new Set(["out"]),
     addEventListener() {},
     removeEventListener() {},
   };
@@ -28,9 +29,10 @@ describe("SelectionPills (work document #41)", () => {
     const pills = /** @type {NodeListOf<HTMLElement>} */ (
       el.shadowRoot?.querySelectorAll(".selection-pill")
     );
-    assert.equal(pills.length, 2, "one pill for nodes, one for edges");
+    assert.equal(pills.length, 3, "one pill per populated selection type");
     assert.match(pills[0].textContent ?? "", /2 nodes/);
     assert.match(pills[1].textContent ?? "", /1 edges/);
+    assert.match(pills[2].textContent ?? "", /1 export/);
     el.remove();
   });
 

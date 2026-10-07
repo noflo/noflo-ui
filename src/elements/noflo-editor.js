@@ -262,19 +262,25 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * @param {{nodes: string[], iips: string[], edges: string[]}} selection
+   * @param {{nodes: string[], iips: string[], edges: string[], ports: string[]}} selection
    * @private
    */
-  _applySelection({ nodes, iips, edges }) {
-    // 1. Update nodes and exported ports
+  _applySelection({ nodes, iips, edges, ports }) {
+    // 1. Update nodes and exported ports — each by its own selection type
     const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
       this.nodeLayer?.querySelectorAll("noflo-node, noflo-exported-port") || []
     );
     allNodes.forEach((node) => {
       const name = node.getAttribute("name") ?? "";
-      if (nodes.includes(name)) {
+      const selected =
+        node.tagName === "NOFLO-EXPORTED-PORT"
+          ? ports.includes(name)
+          : nodes.includes(name);
+      if (selected) {
         node.setAttribute("selected", "");
-        this.applyPortRouteColors(node);
+        if (node.tagName !== "NOFLO-EXPORTED-PORT") {
+          this.applyPortRouteColors(node);
+        }
       } else {
         node.removeAttribute("selected");
       }
@@ -1184,7 +1190,8 @@ export class FlowEditor extends HTMLElement {
         } else if (
           this.draggingNodePointerId === e.pointerId &&
           (this.selectionManager.nodes.size > 0 ||
-            this.selectionManager.iips.size > 0) &&
+            this.selectionManager.iips.size > 0 ||
+            this.selectionManager.ports.size > 0) &&
           !this.radialMenu?.isOpen
         ) {
           if (Math.hypot(dx, dy) > 3) {
@@ -1224,7 +1231,10 @@ export class FlowEditor extends HTMLElement {
                   this.selectionManager.nodes.has(
                     o.getAttribute("name") ?? "",
                   ) ||
-                  this.selectionManager.iips.has(o.getAttribute("name") ?? "")
+                  this.selectionManager.iips.has(
+                    o.getAttribute("name") ?? "",
+                  ) ||
+                  this.selectionManager.ports.has(o.getAttribute("name") ?? "")
                 ) {
                   continue;
                 }
@@ -1422,7 +1432,8 @@ export class FlowEditor extends HTMLElement {
       if (
         this.selectionManager.nodes.size === 0 &&
         this.selectionManager.edges.size === 0 &&
-        this.selectionManager.iips.size === 0
+        this.selectionManager.iips.size === 0 &&
+        this.selectionManager.ports.size === 0
       ) {
         this.selectMode = false;
       }
@@ -1448,7 +1459,8 @@ export class FlowEditor extends HTMLElement {
       if (e.key === "Delete" || e.key === "Backspace") {
         if (
           this.selectionManager.nodes.size > 0 ||
-          this.selectionManager.iips.size > 0
+          this.selectionManager.iips.size > 0 ||
+          this.selectionManager.ports.size > 0
         ) {
           const nodesToRemove = /** @type {HTMLElement[]} */ ([]);
           const allNodes = /** @type {NodeListOf<HTMLElement>} */ (
@@ -1457,11 +1469,16 @@ export class FlowEditor extends HTMLElement {
             ) || []
           );
           allNodes.forEach((n) => {
-            if (
-              this.selectionManager.nodes.has(n.getAttribute("name") ?? "") ||
-              this.selectionManager.iips.has(n.getAttribute("name") ?? "")
-            ) {
-              nodesToRemove.push(n);
+            const name = n.getAttribute("name") ?? "";
+            const type = this.selectionTypeFor(n);
+            if (this.selectionManager[type].has(name)) {
+              // Exported ports remove through their own path (the export
+              // direction picks the graph port to remove)
+              if (type === "ports") {
+                this.removeExportedPort(/** @type {any} */ (n));
+              } else {
+                nodesToRemove.push(n);
+              }
             }
           });
           if (nodesToRemove.length > 0) {
@@ -1979,6 +1996,20 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * The selection category an entity belongs to: exported ports are their
+   * own selection type ("ports"), not nodes — the selection pills label
+   * them separately and the drag set treats them by their own kind.
+   *
+   * @param {GraphEntity | Element} element
+   * @returns {"nodes" | "iips" | "ports"}
+   */
+  selectionTypeFor(element) {
+    if (element.tagName === "NOFLO-IIP") return "iips";
+    if (element.tagName === "NOFLO-EXPORTED-PORT") return "ports";
+    return "nodes";
+  }
+
+  /**
    * @param {PointerEvent} e
    * @param {GraphEntity} node
    * @param {boolean} isMultiple
@@ -1987,7 +2018,7 @@ export class FlowEditor extends HTMLElement {
     const n = /** @type {GraphEntity} */ (node);
     this.clickedNode = n;
     const id = n.getAttribute("name");
-    const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
+    const type = this.selectionTypeFor(n);
 
     if (isMultiple) {
       if (this.selectMode) {
@@ -2035,10 +2066,8 @@ export class FlowEditor extends HTMLElement {
     allNodes.forEach((element) => {
       const el = /** @type {GraphEntity} */ (element);
       const name = el.getAttribute("name");
-      if (
-        this.selectionManager.nodes.has(name) ||
-        this.selectionManager.iips.has(name)
-      ) {
+      const type = this.selectionTypeFor(el);
+      if (this.selectionManager[type].has(name)) {
         this.draggingNodesInitialPositions.set(el, { ...el.position });
       }
     });
@@ -2062,7 +2091,7 @@ export class FlowEditor extends HTMLElement {
     const n = /** @type {GraphEntity} */ (node);
     if (!n) return;
     const id = n.getAttribute("name");
-    const type = n.tagName === "NOFLO-IIP" ? "iips" : "nodes";
+    const type = this.selectionTypeFor(n);
 
     if (isMultiple) {
       if (this.selectionManager[type].has(id)) {
@@ -3054,7 +3083,8 @@ export class FlowEditor extends HTMLElement {
     if (
       this.isDraggingNode &&
       (this.selectionManager.nodes.size > 0 ||
-        this.selectionManager.iips.size > 0)
+        this.selectionManager.iips.size > 0 ||
+        this.selectionManager.ports.size > 0)
     ) {
       const node = this._getNearestEntity(clientX, clientY);
       if (node) {
@@ -3127,10 +3157,8 @@ export class FlowEditor extends HTMLElement {
     );
     for (const node of nodes) {
       const n = /** @type {GraphEntity} */ (node);
-      if (
-        this.selectionManager.nodes.has(n.getAttribute("name")) ||
-        this.selectionManager.iips.has(n.getAttribute("name"))
-      )
+      const type = this.selectionTypeFor(n);
+      if (this.selectionManager[type].has(n.getAttribute("name") ?? ""))
         continue;
       const rect = n.getBoundingClientRect();
       if (
