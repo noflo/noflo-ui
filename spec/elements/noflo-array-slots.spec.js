@@ -5,6 +5,7 @@ import "./utils/register.js";
 
 import "../../src/elements/noflo-node.js";
 import "../../src/elements/noflo-editor.js";
+import { renderGraphIntoEditor } from "../../src/glass/renderGraph.js";
 
 /**
  * @param {string} name
@@ -73,34 +74,63 @@ describe("addressable port slots (work document #5)", () => {
     node.remove();
   });
 
-  it("the editor syncs usage from edges, IIPs, and exports", () => {
+  it("renderGraph applies usage before wiring, so wires keep live ports", () => {
     const editor = document.createElement("noflo-editor");
     document.body.appendChild(editor);
-    const nodeA = editor.addNode("A", "test", { x: 80, y: 80 });
-    nodeA.setPorts(
-      [{ name: "in", type: "all", addressable: true }],
-      [{ name: "out" }],
+    const view = {
+      nodes: [
+        { id: "A", component: "test", metadata: { x: 80, y: 80 } },
+        { id: "B", component: "test", metadata: { x: 400, y: 80 } },
+      ],
+      edges: [
+        {
+          from: { node: "B", port: "out" },
+          to: { node: "A", port: "in", index: 1 },
+        },
+      ],
+      initializers: [
+        {
+          from: { data: "42" },
+          to: { node: "A", port: "in", index: 0 },
+          metadata: {},
+        },
+      ],
+      inports: {},
+      outports: {},
+      groups: [],
+      properties: { name: "main" },
+    };
+    /** @type {any} */ (editor.libraryManager) = {
+      getComponent: () => ({
+        name: "test",
+        inports: [{ name: "in", addressable: true }],
+        outports: [{ name: "out" }],
+      }),
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    const elements = renderGraphIntoEditor(
+      view,
+      editor,
+      (/** @type {string} */ name) =>
+        /** @type {any} */ (editor.libraryManager).getComponent(name),
     );
-    const nodeB = editor.addNode("B", "test", { x: 400, y: 80 });
-    nodeB.setPorts([{ name: "in" }], [{ name: "out" }]);
+    const nodeA = /** @type {any} */ (elements.get("A"));
+    const shadow = /** @type {ShadowRoot} */ (nodeA.shadowRoot);
 
-    // Edge into A's slot 1
-    editor.connectNodes(nodeB, "out", nodeA, "in", undefined, undefined, 1);
-    // IIP into A's slot 0
-    const slot0 = /** @type {HTMLElement} */ (
-      /** @type {ShadowRoot} */ (nodeA.shadowRoot).querySelector(
-        '.port[data-port-name="in"][data-port-index="0"]',
-      )
+    // Both attached slots drove the fan: in[2] renders free
+    assert.ok(
+      shadow.querySelector('.port[data-port-name="in"][data-port-index="2"]'),
+      "the free end slot renders",
     );
-    editor.addIIP(0, 0, slot0, "42");
-
-    editor.syncArrayPortUsage();
-    assert.deepEqual(nodeA._portUsage.in, { in: [0, 1] });
-    assert.deepEqual(
-      nodeB._portUsage,
-      {},
-      "nodes without addressable attachments are not touched",
-    );
+    // Every wire's port reference is a LIVE element: setPortUsage ran
+    // before the wires connected, so no render pass orphans them
+    for (const wire of editor.iipWires) {
+      assert.ok(wire.port?.isConnected, "the wire's port element is live");
+    }
+    for (const edge of editor.edges) {
+      assert.ok(edge.portA?.isConnected && edge.portB?.isConnected);
+    }
     editor.remove();
   });
 });

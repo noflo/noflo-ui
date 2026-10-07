@@ -2543,64 +2543,6 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * Recomputes which addressable slots are attached, from the rendered
-   * wires: edges, IIPs, and exports all occupy their port's slot (work
-   * document #5). The nodes grow their instance fans so at least one end
-   * slot stays free. Called after each render pass wires the graph.
-   *
-   * @returns {void}
-   */
-  syncArrayPortUsage() {
-    /** @type {Map<any, { in: Record<string, number[]>, out: Record<string, number[]> }>} */
-    const usage = new Map();
-    /**
-     * @param {Element} portEl
-     * @returns {void}
-     */
-    const record = (portEl) => {
-      const index = portEl.getAttribute("data-port-index");
-      if (index === null) return;
-      const host = /** @type {any} */ (portEl.getRootNode())?.host;
-      if (!host || host.tagName !== "NOFLO-NODE") return;
-      const direction = portEl.classList.contains("port-out") ? "out" : "in";
-      // Array instances identify by base name plus the slot index
-      const baseName = portEl.getAttribute("data-port-name") ?? "";
-      let perNode = usage.get(host);
-      if (!perNode) {
-        perNode = { in: {}, out: {} };
-        usage.set(host, perNode);
-      }
-      const slots =
-        perNode[direction][baseName] ?? (perNode[direction][baseName] = []);
-      const slotIndex = Number.parseInt(index, 10);
-      if (!slots.includes(slotIndex)) {
-        slots.push(slotIndex);
-        slots.sort((a, b) => a - b);
-      }
-    };
-    for (const edge of this.edges) {
-      record(edge.portA);
-      record(edge.portB);
-    }
-    for (const wire of this.iipWires) {
-      record(wire.port);
-    }
-    for (const [node, perNode] of usage) {
-      node.setPortUsage({
-        in: Object.fromEntries(
-          Object.entries(perNode.in).map(([name, slots]) => [name, [...slots]]),
-        ),
-        out: Object.fromEntries(
-          Object.entries(perNode.out).map(([name, slots]) => [
-            name,
-            [...slots],
-          ]),
-        ),
-      });
-    }
-  }
-
-  /**
    * @param {import("../library/EdgeManager.js").Edge} edge
    */
   removeEdge(edge) {

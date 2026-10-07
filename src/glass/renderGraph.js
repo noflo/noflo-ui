@@ -59,6 +59,52 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
 export function renderGraphIntoEditor(g, ed, getComponent) {
   const elementsMap = new Map();
 
+  // Array instance fans grow with their attachments (work document #5):
+  // an edge, an IIP, or an export occupying a slot counts, and at least
+  // one end slot stays free. Computed from the projected view and applied
+  // BEFORE any wires connect — setPortUsage re-renders the port elements,
+  // so applying it late would orphan every wire's port reference
+  /** @type {Map<string, { in: Record<string, number[]>, out: Record<string, number[]> }>} */
+  const usage = new Map();
+  /**
+   * @param {string} nodeId
+   * @param {"in" | "out"} direction
+   * @param {string} portName
+   * @param {number | undefined} index
+   * @returns {void}
+   */
+  const recordUse = (nodeId, direction, portName, index) => {
+    if (index === undefined || index === null) return;
+    let perNode = usage.get(nodeId);
+    if (!perNode) {
+      perNode = { in: {}, out: {} };
+      usage.set(nodeId, perNode);
+    }
+    const slots =
+      perNode[direction][portName] ?? (perNode[direction][portName] = []);
+    if (!slots.includes(index)) {
+      slots.push(index);
+      slots.sort((a, b) => a - b);
+    }
+  };
+  for (const conn of g.edges ?? []) {
+    recordUse(conn.from?.node, "out", conn.from?.port, conn.from?.index);
+    recordUse(conn.to?.node, "in", conn.to?.port, conn.to?.index);
+  }
+  for (const iip of g.initializers ?? []) {
+    recordUse(iip.to?.node, "in", iip.to?.port, iip.to?.index);
+  }
+  for (const direction of ["inports", "outports"]) {
+    for (const info of Object.values(g[direction] ?? {})) {
+      recordUse(
+        info.process,
+        direction === "inports" ? "in" : "out",
+        info.port,
+        info.index,
+      );
+    }
+  }
+
   for (const node of g.nodes) {
     const x = node.metadata?.x || 0;
     const y = node.metadata?.y || 0;
@@ -70,6 +116,10 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       icon: comp?.icon || "gear",
       componentName: node.component,
     });
+    const nodeUsage = usage.get(node.id);
+    if (nodeUsage) {
+      n.setPortUsage(nodeUsage);
+    }
     elementsMap.set(node.id, n);
   }
 
@@ -134,11 +184,6 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       );
     }
   }
-
-  // Array instance fans grow with their attachments (work document #5):
-  // edges, IIPs, and exports all occupy their slot; at least one end slot
-  // stays free
-  ed.syncArrayPortUsage?.();
 
   return elementsMap;
 }
