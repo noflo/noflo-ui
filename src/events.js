@@ -76,6 +76,8 @@
  * @property {CustomEvent<void>} navigate-up-attempt
  * @property {CustomEvent<{ nodes: NodeMove[] }>} nodes-dragging
  * @property {CustomEvent<{ nodes: string[] }>} nodes-drag-end
+ * @property {CustomEvent<{ iipId: string, x: number, y: number }>} iip-moved
+ * @property {CustomEvent<{ name: string, direction: string, x: number, y: number }>} export-moved
  * @property {CustomEvent<{ nodes: MovedNode[] }>} nodes-moved
  * @property {CustomEvent<{ nodes: EditorEntity[] }>} node-removal-attempt
  * @property {CustomEvent<{ edge: EditorEdge }>} edge-removal-attempt

@@ -1343,7 +1343,27 @@ export class FlowEditor extends HTMLElement {
             });
           });
           this.updateEdges();
-          emit(this, "nodes-moved", { nodes: movedNodes });
+          // Nodes, IIPs, and exported ports each emit their own move event
+          // so the routing is unambiguous (work document #5 follow-up)
+          for (const moved of movedNodes) {
+            if (moved.type === "noflo-iip") {
+              emit(this, "iip-moved", {
+                iipId: moved.id,
+                x: moved.position.x,
+                y: moved.position.y,
+              });
+            } else if (moved.type === "noflo-exported-port") {
+              emit(this, "export-moved", {
+                name: moved.name,
+                direction: moved.direction,
+                x: moved.position.x,
+                y: moved.position.y,
+              });
+            }
+          }
+          emit(this, "nodes-moved", {
+            nodes: movedNodes.filter((n) => n.type === "noflo-node"),
+          });
           this.emitGroupMembershipChanges(movedNodes);
         }
         this.isDraggingNode = false;

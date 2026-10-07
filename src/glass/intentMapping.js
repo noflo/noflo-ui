@@ -330,33 +330,6 @@ export function createIntentMapper({
       on(ed, "nodes-moved", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         for (const node of event.detail.nodes) {
-          // IIP and exported-port positions sync like node positions (work
-          // document #5 follow-up)
-          if (node.type === "noflo-iip") {
-            sendIntent({
-              type: "INTENT",
-              command: "moveIIP",
-              payload: {
-                graphId: graphId(),
-                id: node.id ?? node.name,
-                metadata: { x: node.position.x, y: node.position.y },
-              },
-            });
-            continue;
-          }
-          if (node.type === "noflo-exported-port") {
-            sendIntent({
-              type: "INTENT",
-              command: "moveExport",
-              payload: {
-                graphId: graphId(),
-                name: node.name,
-                direction: node.direction,
-                metadata: { x: node.position.x, y: node.position.y },
-              },
-            });
-            continue;
-          }
           sendIntent({
             type: "INTENT",
             command: "moveNode",
@@ -367,6 +340,31 @@ export function createIntentMapper({
             },
           });
         }
+      });
+      // IIP and exported-port moves use dedicated events (work document #5
+      // follow-up): the routing is unambiguous
+      on(ed, "iip-moved", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "moveIIP",
+          payload: {
+            graphId: graphId(),
+            id: e.detail.iipId,
+            metadata: { x: e.detail.x, y: e.detail.y },
+          },
+        });
+      });
+      on(ed, "export-moved", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "moveExport",
+          payload: {
+            graphId: graphId(),
+            name: e.detail.name,
+            direction: e.detail.direction,
+            metadata: { x: e.detail.x, y: e.detail.y },
+          },
+        });
       });
 
       on(ed, "wire-connection-attempt", (e) => {
