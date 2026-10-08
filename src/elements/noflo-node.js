@@ -560,12 +560,19 @@ export class FlowNode extends HTMLElement {
           color: var(--node-subtext);
         }
         /* Port labels: anchored at the port's center, pushed outside the
-           circle; the dot rides with the name (before for outports, after
-           for inports) */
+           circle. A flex row keeps name and datatype on one line — the
+           non-expanded label matches the expanded pill's single-line
+           grammar instead of stacking the datatype underneath, where it
+           collided with the next port's label (work document #5) */
         .port-label {
-          display: block;
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
         }
         .port-in-label {
+          /* The datatype rides the outer edge like the expanded pill:
+             for inports that is the left of the name */
+          flex-direction: row-reverse;
           transform: translate(calc(-100% - 4px), -50%);
           text-align: right;
         }
@@ -640,14 +647,9 @@ export class FlowNode extends HTMLElement {
           white-space: nowrap;
           pointer-events: none;
         }
-        :host(.detailed) .port-datatype {
-          display: inline;
-        }
-        :host([selected]) .port-datatype {
-          display: inline;
-        }
         /* Port datatypes show at high zoom levels (the editor toggles the
-           detailed class) and whenever the node is expanded */
+           detailed class) and whenever the node is expanded; as flex
+           items they join the label's single line */
         :host(.detailed) .port-datatype,
         :host([selected]) .port-datatype {
           display: block;

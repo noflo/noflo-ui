@@ -92,29 +92,27 @@ export class FlowContextChip extends FlowCornerElement {
           top: 10px;
           left: 10px;
           z-index: 900;
-          display: inline-flex;
-          gap: 10px;
-          align-items: center;
-          padding: 6px 10px;
-          background: var(--ui-bg, rgb(20, 27, 35));
-          color: var(--node-text);
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: var(--ui-radius, 6px);
-          font-family: SourceCodePro, monospace;
-          font-size: 12px;
-          backdrop-filter: blur(8px);
           /* Corner constraint (work document #28): the chip stays inside
              its corner and never reaches the screen's center, where the
-             selection pills live */
+             selection pills live. The chrome (background, border, radius,
+             padding) comes from the shared corner base's .chip — the host
+             carries positioning only, so the corner renders one box */
           max-width: min(calc(33vw - 16px), 420px);
           cursor: default;
+          font-family: SourceCodePro, monospace;
+          font-size: 12px;
+        }
+        .chip {
+          cursor: default;
+          max-width: 100%;
         }
         .context-label {
+          flex: 0 1 auto;
+          min-width: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .chip { cursor: default; }
     `;
   }
 
