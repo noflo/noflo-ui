@@ -15,8 +15,7 @@
     "prebuild-vendors": "npm run generate:noflo && npm run generate:fa && npm run generate:vendor-types",
     "generate:vendor-types": "node utils/generate-vendor-types.js",
     "build-vendors": " tsdown --config tsdown.config.js",
-    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js",
-    "serve": "npx serve -l 3001 ."
+    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.0",
@@ -54,5 +53,8 @@
   },
   "imports": {
     "#interfaces": "./src/node/interfaces.js"
+  },
+  "bin": {
+    "noflo-ui": "src/node/bridge.js"
   }
 }

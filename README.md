@@ -32,7 +32,6 @@ See also the [project specification](SPEC.md).
 
 There is no build process for the project itself. To serve the files, run:
 
-* `npm run serve`
 
 Development happens the old-school way, just edit a file and press reload in the browser.
 

@@ -226,7 +226,6 @@ The application relies on native `import`/`export` and `<script type="importmap"
 * `npm run lint`: Check code formatting
 * `npm run format`: Fixes linting/formatting errors automatically
 * `npm test`: Run unit, integration, and spatial (Playwright) tests
-* `npm run serve`: Start local development server
 * `npm run build-vendors`: Flatten `node_modules` into `vendor/` (strictly EUPL-1.2 compatible).
 
 ---
