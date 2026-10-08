@@ -30,7 +30,7 @@
     "qrcode": "^1.5.4",
     "source-code-pro": "^2.42.0",
     "y-indexeddb": "^9.0.12",
-    "y-reticulum": "^0.4.0",
+    "y-reticulum": "^0.4.1",
     "yjs": "^13.6.31"
   },
   "devDependencies": {

@@ -1939,54 +1939,105 @@ export async function createMeshSync({
     }
     const unwrap = (/** @type {any} */ event) =>
       Array.isArray(event) ? event[0] : event;
+    /** The transport's current link ids. */
+    const peerLinks = new Set();
+    /** Link id → identity hash, from the provider's peers event (work
+     * document #28). Unidentified links are absent until the provider
+     * reports their identity. */
+    const identityByLink = new Map();
+    /** Serialized identities of the last posted peers summary: the synced
+     * re-post only fires when the mapping actually changed. */
+    let lastIdentitiesSerialized = "[]";
+
+    /**
+     * The peers summary: identities de-duplicate reconnect links, so the
+     * count is unique peers — an unidentified link counts on its own until
+     * its identity resolves.
+     *
+     * @returns {{ count: number, identities: Record<string, string> }}
+     */
+    const peersSummary = () => {
+      /** @type {Set<string>} */
+      const identities = new Set();
+      let unidentified = 0;
+      for (const linkId of peerLinks) {
+        const identityHash = identityByLink.get(linkId);
+        if (identityHash) identities.add(identityHash);
+        else unidentified += 1;
+      }
+      return {
+        count: identities.size + unidentified,
+        identities: Object.fromEntries(identityByLink),
+      };
+    };
+
+    const resolveIdentities = (/** @type {any} */ payload) => {
+      for (const [linkId, identityHash] of Object.entries(
+        payload.identities ?? {},
+      )) {
+        if (identityHash) identityByLink.set(linkId, identityHash);
+      }
+      for (const linkId of payload.removed ?? []) {
+        identityByLink.delete(linkId);
+      }
+    };
+
     provider.on("status", (/** @type {any} */ event) => {
       const payload = unwrap(event) ?? {};
       postMessage({
         kind: "mesh-status",
         connected: payload.connected === true,
         synced: false,
-        peers: peerCount,
+        peers: peersSummary().count,
       });
     });
     provider.on("synced", (/** @type {any} */ event) => {
       const payload = unwrap(event) ?? {};
+      // Sync completion implies the identity is certainly known: resolve
+      // again, and re-post the mapping only when it changed
+      resolveIdentities(payload);
+      const summary = peersSummary();
+      peerCount = summary.count;
       postMessage({
         kind: "mesh-status",
         connected: true,
         synced: payload.synced === true,
-        peers: peerCount,
+        peers: summary.count,
       });
+      const serialized = JSON.stringify(summary.identities);
+      if (serialized !== lastIdentitiesSerialized) {
+        lastIdentitiesSerialized = serialized;
+        postMessage({
+          kind: "mesh-peers",
+          added: [],
+          removed: [],
+          peers: summary.count,
+          identities: summary.identities,
+        });
+      }
     });
-    /** Peer id → identity hash, from the provider's peers event (work
-     * document #28). Empty until the provider reports identities. */
-    const identityByPeer = new Map();
     provider.on("peers", (/** @type {any} */ event) => {
       const payload = unwrap(event) ?? {};
-      peerCount +=
-        (payload.added ?? []).length - (payload.removed ?? []).length;
-      // Peer id → identity hash, when the provider reports it (work
-      // document #28): the Glass's peers list reads identities, and the
-      // Dacar badges key on them
-      for (const [peerId, identityHash] of Object.entries(
-        payload.identities ?? {},
-      )) {
-        if (identityHash) identityByPeer.set(peerId, identityHash);
-      }
-      for (const peerId of payload.removed ?? []) {
-        identityByPeer.delete(peerId);
-      }
-      if (peerCount > 0 && !discoveryDone) {
+      for (const linkId of payload.added ?? []) peerLinks.add(linkId);
+      for (const linkId of payload.removed ?? []) peerLinks.delete(linkId);
+      resolveIdentities(payload);
+      const summary = peersSummary();
+      if (summary.count > 0 && !discoveryDone) {
         discoveryDone = true;
         postMessage(
-          progress("mesh.connect", "discovery", "done", { peers: peerCount }),
+          progress("mesh.connect", "discovery", "done", {
+            peers: summary.count,
+          }),
         );
       }
+      peerCount = summary.count;
+      lastIdentitiesSerialized = JSON.stringify(summary.identities);
       postMessage({
         kind: "mesh-peers",
         added: payload.added ?? [],
         removed: payload.removed ?? [],
-        peers: peerCount,
-        identities: Object.fromEntries(identityByPeer),
+        peers: summary.count,
+        identities: summary.identities,
       });
     });
     // Host side of the bootstrap pre-flow: invite others once the sync

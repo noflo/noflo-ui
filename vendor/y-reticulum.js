@@ -1289,16 +1289,25 @@ var PeerConn = class {
 	* @param {Uint8Array|null} options.remoteDestHash
 	*   The peer's destination hash. Known on the initiator side (from the
 	*   announce that triggered the link); `null` on the responder side.
+	* @param {string|null} options.remoteIdentityHash
+	*   Hex truncated identity hash of the remote peer, when it is known at
+	*   registration: proven on the initiator side by the announce or dial's
+	*   identity recall, on the responder side by the signed identify
+	*   handshake. `null` when the peer never proved its identity (no link
+	*   policy / authorization configured).
 	* @param {import("@digitaldefiance/bzip2-wasm").default | null} [options.bz2]
 	*   Shared bzip2 provider; set on the link so inbound Resources can be
 	*   decompressed, and used to compress outbound ones. `null` disables it.
 	* @param {(payload: Uint8Array, peer: PeerConn) => void} options.onData
 	* @param {(peer: PeerConn) => void} options.onClose
 	*/
-	constructor({ link, remoteDestHash, bz2, onData, onClose }) {
+	constructor({ link, remoteDestHash, remoteIdentityHash, bz2, onData, onClose }) {
 		this.link = link;
 		this.link.bz2 = bz2 ?? void 0;
 		this.remoteDestHash = remoteDestHash;
+		/** Hex truncated identity hash of the remote peer, or `null` when the
+		* peer never proved its identity (no policy / authorization). */
+		this.remoteIdentityHash = remoteIdentityHash ?? null;
 		/** @type {import("@digitaldefiance/bzip2-wasm").default | undefined} */
 		this.bz2 = bz2 ?? void 0;
 		/** Reliable typed-message channel over the link (retries + flow control). */
@@ -1499,7 +1508,11 @@ function bytesEqual(a, b) {
 */
 /**
 * @typedef {Object} RoomCallbacks
-* @property {(added: string[], removed: string[]) => void} onPeers
+* @property {(added: string[], removed: string[], identities?: Record<string, string | null>) => void} onPeers
+*   The third argument maps peer ids to the remote's truncated identity
+*   hash, when the peer proved its identity during establishment. Peer ids
+*   are hex link ids (symmetric across both ends); identity hashes are
+*   stable across reconnects and are what applications display.
 *   Fired whenever peers are discovered or drop off. Ids are hex link_ids.
 * @property {(remoteHex: string, publicKeyHex: string) => void} [onDiscovered]
 *   Fired when an announce matching this room arrives, before any glare
@@ -1639,7 +1652,7 @@ var Room = class {
 		this.linkedDestHexes.clear();
 		this.pendingInitiates.clear();
 		this.synced = false;
-		if (removed.length) this.callbacks.onPeers([], removed);
+		if (removed.length) this.callbacks.onPeers([], removed, {});
 		if (this.dest) {
 			this.rns.transport.unbindLocalDestination(this.dest);
 			this.dest = null;
@@ -1671,10 +1684,7 @@ var Room = class {
 		if (this.pendingInitiates.has(remoteHex)) return;
 		if (this.myHex > remoteHex) return;
 		this.pendingInitiates.add(remoteHex);
-		const needsProvenIdentity = Boolean(this.linkPolicy || this.authorizeLink);
-		/** @type {string} */
-		let initiatorIdentityHash = "";
-		if (needsProvenIdentity) initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
+		const initiatorIdentityHash = toHex(await Identity.truncatedHash(detail.identity.publicKey));
 		const out = await Destination.OUT(this.appName, DestType.SINGLE, detail.identity, this.rns);
 		await this._establishOutgoingLink(remoteHex, out, initiatorIdentityHash);
 	}
@@ -1737,7 +1747,7 @@ var Room = class {
 				}
 			}
 			this.linkedDestHexes.add(remoteHex);
-			this._registerPeer(link, out.destinationHash);
+			this._registerPeer(link, out.destinationHash, initiatorIdentityHash || null);
 			return true;
 		} catch {
 			if (link) this._unprimeChannel(link);
@@ -1839,8 +1849,9 @@ var Room = class {
 				return;
 			}
 			this._primeChannel(link);
+			let identityHash = null;
 			if (this.linkPolicy || this.authorizeLink) {
-				const identityHash = await this._awaitIdentify(link);
+				identityHash = await this._awaitIdentify(link);
 				if (!identityHash) {
 					this._unprimeChannel(link);
 					await link.teardown();
@@ -1888,7 +1899,7 @@ var Room = class {
 					}
 				}
 			}
-			this._registerPeer(link, null);
+			this._registerPeer(link, null, identityHash);
 		} catch {
 			if (link) this._unprimeChannel(link);
 		}
@@ -2053,18 +2064,21 @@ var Room = class {
 	* (syncStep1 + local awareness), mirroring y-webrtc's peer-on-connect path.
 	* @param {import("@reticulum/core").Link} link
 	* @param {Uint8Array|null} remoteDestHash
+	* @param {string|null} remoteIdentityHash Hex truncated identity hash of
+	*   the remote peer, when proven during establishment.
 	*/
-	_registerPeer(link, remoteDestHash) {
+	_registerPeer(link, remoteDestHash, remoteIdentityHash = null) {
 		const stashed = this._unprimeChannel(link);
 		const peer = new PeerConn({
 			link,
 			remoteDestHash,
+			remoteIdentityHash,
 			bz2: this.bz2,
 			onData: (payload, p) => this._onPeerData(payload, p),
 			onClose: (p) => this._onPeerClose(p)
 		});
 		this.peerConns.set(peer.peerId, peer);
-		this.callbacks.onPeers([peer.peerId], []);
+		this.callbacks.onPeers([peer.peerId], [], { [peer.peerId]: peer.remoteIdentityHash });
 		for (const payload of stashed) this._onPeerData(payload, peer);
 		this._sendInitialSync(peer);
 	}
@@ -2242,8 +2256,12 @@ var Room = class {
 *   Fired when the provider (dis)connects from the mesh.
 * @property {(event: { synced: boolean }) => void} synced
 *   Fired when sync state with the peer mesh changes. (Phase 3.)
-* @property {(event: { added: Array<string>, removed: Array<string> }) => void} peers
-*   Fired when peers are discovered or drop off.
+* @property {(event: { added: Array<string>, removed: Array<string>, identities: Record<string, string | null> }) => void} peers
+*   Fired when peers are discovered or drop off. `identities` maps each
+*   added peer id to the remote's truncated identity hash when the peer
+*   proved its identity during establishment (announce or signed identify
+*   handshake), `null` when it did not (no link policy / authorization
+*   configured on the responder side); empty when peers were removed.
 * @property {(event: { remoteHex: string, publicKeyHex: string }) => void} discovered
 *   Fired when an announce for this room arrives from the mesh, before any
 *   glare or policy decision — evidence the room propagates even when no
@@ -2321,9 +2339,10 @@ var ReticulumProvider = class extends ObservableV2 {
 			authorizeLink: this.authorizeLink,
 			authorizeTimeoutMs: this.authorizeTimeoutMs,
 			callbacks: {
-				onPeers: (added, removed) => this.emit("peers", [{
+				onPeers: (added, removed, identities) => this.emit("peers", [{
 					added,
-					removed
+					removed,
+					identities: identities ?? {}
 				}]),
 				onDiscovered: (remoteHex, publicKeyHex) => this.emit("discovered", [{
 					remoteHex,
