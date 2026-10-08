@@ -31,7 +31,9 @@ export function pickDefaultEntryPoint() {
  *
  * @typedef {Object} MeshInterface
  * @property {string} id Stable identifier for editing and removal
- * @property {'websocket' | 'tcp'} type
+ * @property {'websocket' | 'tcp' | 'shared' | 'autointerface'} type
+ *   `shared` and `autointerface` are Node-only (the bridge): the shared
+ *   rnsd instance and zero-config LAN discovery
  * @property {{ [key: string]: any }} options Constructor options per the interface type's JSON Schema
  * @property {boolean} enabled Whether the Engine should attach the interface
  */

@@ -1193,56 +1193,23 @@ export async function createMeshSync({
   let sharedRns = null;
 
   /**
-   * Returns the shared Reticulum instance, creating it (and connecting the
-   * enabled WebSocket interfaces) on first use.
+   * Returns the shared Reticulum instance, creating it on first use. The
+   * interface attachment is platform-resolved: the `#interfaces` module
+   * maps to the browser wiring in the import map and to the Node wiring
+   * (shared instance, AutoInterface, TCP) via the package's imports field
+   * (work document #44) — platform-specific deps never pollute the other
+   * side.
    *
    * @returns {Promise<any>}
    */
   async function ensureReticulum() {
     if (sharedRns) return sharedRns;
-    const { Reticulum, WebSocketClientInterface } = await import(
-      "../../vendor/reticulum-core.js"
-    );
+    const { Reticulum } = await import("../../vendor/reticulum-core.js");
     const rns = new Reticulum();
     try {
-      for (const iface of config.interfaces) {
-        if (!iface.enabled) continue;
-        if (iface.type === "websocket") {
-          const client = new WebSocketClientInterface(iface.options ?? {});
-          await client.connect();
-          rns.addInterface(client, true);
-        } else if (iface.type === "tcp") {
-          // Node-only (test harnesses and desktop runtimes): the browser
-          // worker has no TCP interfaces, so the import fails and skips
-          try {
-            const { TCPClientInterface, TCPServerInterface } = await import(
-              "@reticulum/node"
-            );
-            const options = iface.options ?? {};
-            const tcp = options.listen
-              ? new TCPServerInterface(/** @type {any} */ (options))
-              : new TCPClientInterface(options);
-            await tcp.connect();
-            if (options.listen) {
-              // The server interface wires its spawned child connections
-              // into the instance as they arrive
-              tcp.addEventListener("connection", (/** @type {any} */ event) => {
-                rns.addInterface(event.detail, true);
-              });
-            } else {
-              rns.addInterface(tcp, true);
-            }
-          } catch {
-            console.warn(
-              "Mesh interface type tcp requires @reticulum/node (Node); skipped",
-            );
-          }
-        } else {
-          console.warn(
-            `Mesh interface type ${iface.type} is not available in the browser worker; skipped`,
-          );
-        }
-      }
+      await import("#interfaces").then((/** @type {any} */ module) =>
+        module.attachInterfaces(rns, config.interfaces),
+      );
     } catch (err) {
       // A failed connect keeps an auto-reconnect loop alive: stop the whole
       // instance so no ghost connection outlives the failed start

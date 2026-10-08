@@ -51,5 +51,8 @@
   },
   "copyVendors": {
     "wgpu-matrix": "dist/3.x/wgpu-matrix.module.js"
+  },
+  "imports": {
+    "#interfaces": "./src/node/interfaces.js"
   }
 }
