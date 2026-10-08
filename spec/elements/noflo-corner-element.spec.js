@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
-import { FlowCornerElement } from "../../src/elements/CornerElement.js";
+import { FlowCornerElement } from "../../src/elements/corner-element.js";
 
 /**
  * A minimal corner for state-machine tests: one segment, one accordion.

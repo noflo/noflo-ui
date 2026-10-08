@@ -21,7 +21,7 @@
 import icons from "../../vendor/fontawesome-icons.js";
 import QRCode from "../../vendor/qrcode.js";
 import { emit } from "../events.js";
-import { FlowCornerElement } from "./CornerElement.js";
+import { FlowCornerElement } from "./corner-element.js";
 
 /**
  * Escapes a value for interpolation into the shadow template.
