@@ -564,9 +564,13 @@ export class FlowNode extends HTMLElement {
            non-expanded label matches the expanded pill's single-line
            grammar instead of stacking the datatype underneath, where it
            collided with the next port's label (work document #5). Items
-           center on a tight line-height so the mixed font sizes don't
-           drag the glyphs below the port's center via descender space */
+           center on a tight line-height, and the transform clears the
+           port dot's radius with breathing room plus a small optical
+           lift: the em box is ascent-heavy, so its geometric center sits
+           the glyphs low */
         .port-label {
+          --port-label-clearance: 12px;
+          --port-label-lift: 2px;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -576,11 +580,17 @@ export class FlowNode extends HTMLElement {
           /* The datatype rides the outer edge like the expanded pill:
              for inports that is the left of the name */
           flex-direction: row-reverse;
-          transform: translate(calc(-100% - 4px), -50%);
+          transform: translate(
+            calc(-100% - var(--port-label-clearance)),
+            calc(-50% - var(--port-label-lift))
+          );
           text-align: right;
         }
         .port-out-label {
-          transform: translate(4px, -50%);
+          transform: translate(
+            var(--port-label-clearance),
+            calc(-50% - var(--port-label-lift))
+          );
           text-align: left;
         }
         /* Expanded port labels become pills with the port dot toward the

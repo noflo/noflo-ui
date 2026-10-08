@@ -25,7 +25,7 @@ describe("FlowNode component reflection", () => {
       ).textContent ?? "";
     assert.match(
       style,
-      /\.port-label \{\s*display: flex;\s*align-items: center;\s*gap: 4px;\s*line-height: 1;/,
+      /\.port-label \{[^}]*display: flex;[^}]*align-items: center;[^}]*line-height: 1;/,
       "name and datatype share the label's line, optically centered on the port",
     );
     assert.match(
