@@ -231,18 +231,35 @@ async function main() {
     }
   });
 
-  // Mesh: join the seed invite or announce, per the config
+  // Mesh: join the seed invite or announce, per the config. The join
+  // boots the mesh with the stored config, so the transport interfaces
+  // must be configured first — without them the knock times out with
+  // "host path not resolved". The defaults: the shared rnsd instance and
+  // AutoInterface, per the Node interface wiring (work document #44)
+  const meshConfig = config.mesh ?? {};
+  if (!meshConfig.interfaces || meshConfig.interfaces.length === 0) {
+    meshConfig.interfaces = [
+      { id: "bridge-shared", type: "shared", options: {}, enabled: true },
+      {
+        id: "bridge-auto",
+        type: "autointerface",
+        options: { name: "auto" },
+        enabled: true,
+      },
+    ];
+  }
+  engine.handle({
+    type: "MESH",
+    command: "configure",
+    payload: { ...meshConfig, enabled: true },
+  });
+  // The mesh start is async: let the transport come up before the knock
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   if (config.invite) {
     engine.handle({
       type: "MESH",
       command: "join",
       payload: { invite: config.invite },
-    });
-  } else if (config.mesh) {
-    engine.handle({
-      type: "MESH",
-      command: "configure",
-      payload: { ...config.mesh, enabled: true },
     });
   }
 
