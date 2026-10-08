@@ -23,9 +23,15 @@ import { readFileSync } from "node:fs";
 const args = {};
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
-  if (argv[i].startsWith("--")) {
-    args[argv[i].slice(2)] = argv[i + 1]?.startsWith("--") ? "" : argv[i + 1];
-    if (args[argv[i].slice(2)] === "") i -= 1;
+  if (!argv[i].startsWith("--")) continue;
+  const key = argv[i].slice(2);
+  const next = argv[i + 1];
+  // Valueless flags (--announce, --verbose) get true: the following
+  // --flag is not consumed as their value
+  if (next === undefined || next.startsWith("--")) {
+    args[key] = true;
+  } else {
+    args[key] = next;
     i += 1;
   }
 }
@@ -95,15 +101,35 @@ if (args["add-node"]) {
 }
 
 // Mesh: either announce as a standalone peer, or join a live session.
-if (args.announce) {
-  const config = args.config
-    ? JSON.parse(readFileSync(args.config, "utf8"))
-    : { enabled: true, interfaces: [], webrtc: { enabled: false } };
+// The join boots the mesh with the engine's CURRENT config, so the
+// interface must be configured first — without one the bridge announces
+// into the void and the bootstrap knock times out with "host path not
+// resolved". Defaults to the same public entry point the browsers use.
+const meshConfig = args.config
+  ? JSON.parse(readFileSync(args.config, "utf8"))
+  : {
+      interfaces: [
+        {
+          id: "spike-ws",
+          type: "websocket",
+          options: { url: args.entry ?? "wss://cloud.lille-oe.de" },
+          enabled: true,
+        },
+      ],
+      webrtc: { enabled: false, autoConnect: true, rtcConfig: {} },
+    };
+const wait = (/** @type {number} */ ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+if (args.announce || args.invite) {
   inbound({
     type: "MESH",
     command: "configure",
-    payload: { ...config, enabled: true },
+    payload: { ...meshConfig, enabled: true },
   });
+  // The mesh start is async: let the transport come up before the knock,
+  // so the join's path request races nothing
+  await wait(1500);
 }
 if (args.invite) {
   inbound({
