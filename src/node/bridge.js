@@ -21,7 +21,9 @@
  *     "tls": { "cert": "...", "key": "..." },  // optional HTTPS
  *     "mesh": { ...mesh config, same shape the settings dialog manages },
  *     "invite": "noflo://join/...",  // optional seed invite
- *     "ownerContact": "<lxmf.delivery hex>",  // the owner's LXMF address
+ *     "ownerIdentity": "<identity hash hex>",  // the owner's Reticulum
+ *                                  // identity — trust anchor; the LXMF
+ *                                  // chat address derives from it
  *     "stateDir": "./companion-state",  // Companion state (LXMF identity)
  *     "piBin": "pi"                 // pi executable (discovered on PATH)
  *   }
@@ -36,7 +38,7 @@ import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
 import { createChatSurface } from "./chat.js";
 import { attachInterfaces } from "./interfaces.js";
-import { startLxmfLayer } from "./lxmf.js";
+import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
 import { createPiManager, discoverPi } from "./piManager.js";
 import { PRIMER_FILENAME, primerFor } from "./primer.js";
@@ -291,7 +293,12 @@ async function main() {
   // in the Companion's state dir, outside any project folder
   const stateDir =
     config.stateDir ?? path.join(path.dirname(configPath), "companion-state");
-  const ownerContact = config.ownerContact ?? null;
+  // The owner Reticulum identity hash IS the global trust anchor; the chat
+  // address derives from it — one config value, two uses (SPEC: "the owner
+  // identity is the default global trust anchor", work document #44 M2)
+  const ownerContact = config.ownerIdentity
+    ? await deriveDeliveryHash(config.ownerIdentity)
+    : null;
   /** @type {ReturnType<typeof createChatSurface> | null} */
   let chat = null;
   /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */

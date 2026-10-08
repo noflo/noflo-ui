@@ -33,6 +33,32 @@ const PEER_DISCOVERY_WAIT_MS = 30_000;
 const CHUNK_CHARS = 2500;
 
 /**
+ * Derives an `lxmf.delivery` destination hash from a Reticulum identity
+ * hash (hex). SINGLE-destination hashes are `SHA256(nameHash ||
+ * identityHash)[:16]` — a pure function of the identity hash, so the
+ * owner's chat address needs no second config value and no announce
+ * (SPEC: the owner Reticulum identity IS the default global trust anchor;
+ * the contact is derived, not configured).
+ *
+ * @param {string} identityHashHex - 32-hex-char identity hash.
+ * @returns {Promise<string>} The 32-hex-char `lxmf.delivery` hash.
+ */
+export async function deriveDeliveryHash(identityHashHex) {
+  const encoder = new TextEncoder();
+  const nameHashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode("lxmf.delivery"),
+  );
+  const nameHash = new Uint8Array(nameHashBuffer.slice(0, 10));
+  const identityHash = fromHex(identityHashHex);
+  const combined = new Uint8Array(nameHash.length + identityHash.length);
+  combined.set(nameHash, 0);
+  combined.set(identityHash, nameHash.length);
+  const destHashBuffer = await crypto.subtle.digest("SHA-256", combined);
+  return toHex(new Uint8Array(destHashBuffer.slice(0, 16)));
+}
+
+/**
  * Whether `e` is the typed unknown-identity failure the router throws when
  * a destination's identity is neither recallable nor solicitable.
  *

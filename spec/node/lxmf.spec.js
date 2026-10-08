@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { DestType, Identity } from "@reticulum/core";
 import { LXMFConstants } from "@reticulum/lxmf";
 import {
   chunkText,
@@ -48,5 +49,32 @@ describe("LXMF layer primitives (work document #44 M2)", () => {
   it("isUnknownIdentityError types the router's discovery failure", () => {
     assert.equal(isUnknownIdentityError(new Error("plain")), false);
     assert.equal(isUnknownIdentityError(null), false);
+  });
+});
+
+describe("deriveDeliveryHash", () => {
+  it("matches the Destination math for lxmf.delivery SINGLE destinations", async () => {
+    const { deriveDeliveryHash } = await import("../../src/node/lxmf.js");
+    const { Destination } = await import("@reticulum/core");
+    // A real identity: derive the destination through the library and
+    // through the pure function — they must agree
+    const identity = await Identity.generate();
+    const dest = await Destination.IN(
+      "lxmf.delivery",
+      DestType.SINGLE,
+      identity,
+      null,
+    );
+    const expected = Array.from(
+      /** @type {Uint8Array} */ (dest.destinationHash),
+    )
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    const derived = await deriveDeliveryHash(
+      Array.from(identity.identityHash)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(""),
+    );
+    assert.equal(derived, expected);
   });
 });
