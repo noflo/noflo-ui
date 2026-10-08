@@ -17,6 +17,7 @@
  */
 
 import { startEngine } from "../src/worker/engine.js";
+import { projectGraph } from "../src/glass/projectView.js";
 import { readFileSync } from "node:fs";
 
 /** @type {Record<string, string>} */
@@ -84,6 +85,29 @@ const engine = await startEngine(io, {
 });
 
 console.log(`bridge-spike  project ${String(engine.doc.getMap("metadata").get("id")).slice(0, 8)}  doc nodes: ${engine.doc.getMap("graphs").size}`);
+
+// Replica observability (work document #44): a debounced projection of the
+// bridge's doc — this is where remote CRDT changes become visible. The
+// awareness stream is ephemeral drag telemetry (work document #38); node
+// metadata rides the CRDT sync as y-updates, which the default log filters
+let printTimer = null;
+engine.doc.on("update", () => {
+  if (printTimer) return;
+  printTimer = setTimeout(() => {
+    printTimer = null;
+    const view = projectGraph(engine.doc, "main");
+    const nodes = Object.entries(view?.processes ?? {}).map(
+      ([id, p]) => `${id}(${p.component} @ ${p.metadata?.x ?? 0},${p.metadata?.y ?? 0})`,
+    );
+    log("replica", {
+      graph: "main",
+      nodes,
+      edges: view?.connections?.length ?? 0,
+    });
+  }, 500);
+});
+
+
 
 // Prove the intent seam: a graph mutation with no browser involved.
 if (args["add-node"]) {
