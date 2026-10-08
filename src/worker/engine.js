@@ -34,6 +34,7 @@ import {
 import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
 import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
+import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
 import { routeMeshCommand } from "./mesh-commands.js";
 import { progress } from "./Progress.js";
@@ -60,9 +61,11 @@ function syncFullState(doc, io) {
  *   postMessage: (message: any) => void,
  *   registerMessageHandler: (handler: (message: any) => void) => void,
  * }} io Injection point for the Worker messaging surface.
- * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage }} [options]
+ * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage, attachInterfaces?: (rns: any, interfaces: any[]) => Promise<void> }} [options]
  *   `meshStorage` injects the Engine-owned mesh configuration storage —
  *   used by tests to share device state across simulated reloads.
+ *   `attachInterfaces` overrides the browser interface wiring — the Node
+ *   bridge injects its own (work document #44).
  * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void }>}
  *   `handle` is the headless seam (work document #44): the same
  *   Dacar-checked dispatch the browser reaches over postMessage, callable

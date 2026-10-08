@@ -31,6 +31,7 @@ import * as https from "node:https";
 import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
+import { attachInterfaces } from "./interfaces.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");

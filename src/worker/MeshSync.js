@@ -229,6 +229,79 @@ async function defaultCreateProvider(
  */
 
 /**
+ * The default interface attachment (work document #44): the browser-safe
+ * set. WebSocket interfaces attach inline from the vendored reticulum-core;
+ * the Node-only types (shared, autointerface, tcp) load via a dynamic
+ * import that fails and skips in the browser. The Node bridge injects its
+ * own `attachInterfaces` with static imports and the shared/autointerface
+ * defaults instead.
+ *
+ * @param {any} rns The shared Reticulum instance.
+ * @param {import("../crdt/MeshConfig.js").MeshInterface[]} interfaces
+ * @returns {Promise<void>}
+ */
+async function defaultAttachInterfaces(rns, interfaces) {
+  const { WebSocketClientInterface } = await import(
+    "../../vendor/reticulum-core.js"
+  );
+  /** @type {any | null} */
+  let nodeInterfaces = null;
+  for (const iface of interfaces ?? []) {
+    if (!iface.enabled) continue;
+    const options = iface.options ?? {};
+    if (iface.type === "websocket") {
+      const client = new WebSocketClientInterface(options);
+      await client.connect();
+      rns.addInterface(client, true);
+    } else {
+      // The Node-only types load lazily: the browser worker has no
+      // @reticulum/node (no import-map entry), so the import fails and
+      // the interface types skip; the Node bridge resolves them natively
+      try {
+        if (!nodeInterfaces) {
+          nodeInterfaces = await import("@reticulum/node");
+        }
+        if (iface.type === "shared") {
+          const shared =
+            await nodeInterfaces.LocalClientInterface.connectToSharedInstance(
+              options,
+            );
+          if (shared) {
+            rns.addInterface(shared, true);
+          } else {
+            console.warn(
+              "Mesh interface type shared: no shared instance running; skipped",
+            );
+          }
+        } else if (iface.type === "autointerface") {
+          const auto = new nodeInterfaces.AutoInterface(options);
+          await auto.connect();
+          rns.addInterface(auto, true);
+        } else if (iface.type === "tcp") {
+          const tcp = options.listen
+            ? new nodeInterfaces.TCPServerInterface(
+                /** @type {any} */ (options),
+              )
+            : new nodeInterfaces.TCPClientInterface(options);
+          await tcp.connect();
+          if (options.listen) {
+            tcp.addEventListener("connection", (/** @type {any} */ event) => {
+              rns.addInterface(event.detail, true);
+            });
+          } else {
+            rns.addInterface(tcp, true);
+          }
+        }
+      } catch {
+        console.warn(
+          `Mesh interface type ${iface.type} requires @reticulum/node (Node); skipped`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Binds mesh sync to a project document.
  *
  * @param {{
@@ -236,6 +309,7 @@ async function defaultCreateProvider(
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
  *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
+ *   attachInterfaces?: (rns: any, interfaces: import("../crdt/MeshConfig.js").MeshInterface[]) => Promise<void>,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -247,6 +321,7 @@ export async function createMeshSync({
   postMessage,
   storage,
   createProvider = defaultCreateProvider,
+  attachInterfaces = undefined,
   awarenessThrottleMs = 250,
   roomFor = () => "noflo-ui",
   autostart = true,
@@ -1194,11 +1269,11 @@ export async function createMeshSync({
 
   /**
    * Returns the shared Reticulum instance, creating it on first use. The
-   * interface attachment is platform-resolved: the `#interfaces` module
-   * maps to the browser wiring in the import map and to the Node wiring
-   * (shared instance, AutoInterface, TCP) via the package's imports field
-   * (work document #44) — platform-specific deps never pollute the other
-   * side.
+   * interface attachment is injected (`attachInterfaces`) — the entry
+   * imports its platform's wiring (the browser wiring from the document's
+   * module graph, the Node wiring from the bridge), so import-map-less
+   * Workers and bare Node both resolve their own modules natively
+   * (work document #44).
    *
    * @returns {Promise<any>}
    */
@@ -1207,9 +1282,8 @@ export async function createMeshSync({
     const { Reticulum } = await import("../../vendor/reticulum-core.js");
     const rns = new Reticulum();
     try {
-      await import("#interfaces").then((/** @type {any} */ module) =>
-        module.attachInterfaces(rns, config.interfaces),
-      );
+      const attach = attachInterfaces ?? defaultAttachInterfaces;
+      await attach(rns, config.interfaces);
     } catch (err) {
       // A failed connect keeps an auto-reconnect loop alive: stop the whole
       // instance so no ghost connection outlives the failed start
