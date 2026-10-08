@@ -30,6 +30,8 @@ import { canonicalGraph, serializeGraph } from "./canonical.js";
  *
  * @typedef {Object} MaterializerFs
  * @property {(path: string, content: string) => Promise<void>} writeFile
+ * @property {(path: string) => Promise<void>} [remove] Drops a file the
+ *   CRDT no longer carries; optional — consumers may ignore deletions.
  */
 
 /**

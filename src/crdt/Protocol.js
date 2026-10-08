@@ -450,6 +450,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "implementInCode" },
   { type: "INTENT", command: "forkComponent" },
   { type: "INTENT", command: "setSignature" },
+  { type: "INTENT", command: "setComponentCode" },
   { type: "INTENT", command: "createGroup" },
   { type: "INTENT", command: "removeGroup" },
   { type: "INTENT", command: "updateGroup" },

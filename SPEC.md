@@ -222,6 +222,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'implementInCode'; payload: { component: string; language: string; scaffold: string } }
   | { type: 'INTENT'; command: 'forkComponent'; payload: { component: string; to: string } }
   | { type: 'INTENT'; command: 'setSignature'; payload: { component: string; signature: { inports?: Array<{ name: string }>; outports?: Array<{ name: string }>; description?: string; icon?: string } } }
+  | { type: 'INTENT'; command: 'setComponentCode'; payload: { component: string; code: string } }
   | { type: 'INTENT'; command: 'createGroup'; payload: { graphId: string; nodeIds: string[]; name?: string } }
   | { type: 'INTENT'; command: 'removeGroup'; payload: { graphId: string; groupId: string } }
   | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[] } }

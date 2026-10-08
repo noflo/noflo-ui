@@ -159,6 +159,7 @@ export const INTENT_HANDLERS = {
   removeGroup: intentRemoveGroup,
   updateGroup: intentUpdateGroup,
   implementInCode: intentImplementInCode,
+  setComponentCode: intentSetComponentCode,
   forkComponent: intentForkComponent,
   setSignature: intentSetSignature,
 };
@@ -1757,6 +1758,35 @@ function intentImplementAsGraph(doc, payload) {
     payload: { id: component, name: component, parent: parentGraph },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Sets a component's code buffer (work document #43): the file-facing
+ * code delta from the bridge's materializer. Ensures the component exists
+ * (a file may materialize a new component) and replaces the buffer
+ * atomically. No echo: the components-map mutation rides the CRDT stream,
+ * the same surface every component code edit already rides.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetComponentCode(doc, payload) {
+  const { component, code } = payload ?? {};
+  if (
+    typeof component !== "string" ||
+    component.length === 0 ||
+    typeof code !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  if (getGraph(doc, component)) {
+    // A graph implementation cannot also be a code implementation
+    return { accepted: false, echoes: [] };
+  }
+  const componentEntry = ensureComponent(doc, component, { name: component });
+  setComponentCode(componentEntry, code);
+  return { accepted: true, echoes: [] };
 }
 
 /**
