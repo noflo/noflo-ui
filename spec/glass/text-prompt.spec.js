@@ -166,6 +166,61 @@ describe("exported-port rename flow (work document #5 update #36)", () => {
     editor.remove();
   });
 
+  it("shows adjacent feedback for a taken name and re-prompts", async () => {
+    const editor = document.createElement("div");
+    document.body.appendChild(editor);
+    /** @type {any[]} */
+    const renames = [];
+    editor.addEventListener("port-renamed", (e) => {
+      renames.push(/** @type {CustomEvent} */ (e).detail);
+    });
+    const taken = /** @type {(direction: string, name: string) => boolean} */ (
+      (direction, name) => name === "taken"
+    );
+    wireExportRename(editor, taken);
+
+    editor.dispatchEvent(
+      new CustomEvent("export-rename-attempt", {
+        detail: { name: "out", direction: "out" },
+        bubbles: true,
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const modal = /** @type {HTMLElement} */ (
+      document
+        .getElementById("app")
+        ?.querySelector('noflo-modal[data-prompt="text"]')
+    );
+    const input = /** @type {HTMLInputElement} */ (
+      modal.querySelector("input")
+    );
+    assert.ok(
+      !modal.querySelector(".prompt-feedback")?.textContent,
+      "no feedback before a conflict",
+    );
+
+    // Confirming a taken name re-prompts with adjacent feedback
+    input.value = "taken";
+    clickAction("ok");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.deepEqual(renames, [], "a taken name renames nothing");
+    assert.match(
+      /** @type {HTMLElement} */ (modal.querySelector(".prompt-feedback"))
+        .textContent ?? "",
+      /already exists/,
+      "the conflict is named beside the input",
+    );
+
+    // A free name then renames
+    input.value = "free";
+    clickAction("ok");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.deepEqual(renames, [
+      { oldName: "out", newName: "free", direction: "out" },
+    ]);
+    editor.remove();
+  });
+
   it("an unchanged or cancelled name renames nothing", async () => {
     const editor = document.createElement("div");
     document.body.appendChild(editor);

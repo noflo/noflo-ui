@@ -40,7 +40,11 @@ import {
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
-import { openJsonPrompt, wireExportRename } from "./glass/text-prompt.js";
+import {
+  openJsonPrompt,
+  setModalFeedback,
+  wireExportRename,
+} from "./glass/text-prompt.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { ComponentSignature } from "./library/schema.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -454,7 +458,22 @@ async function openSignatureEditor(componentName) {
     outports: ports(plain.outports),
   };
 
-  const action = await componentModal.submit();
+  let action = await componentModal.submit();
+  // Port names are unique per direction (work document #5): duplicates
+  // re-open the editor with adjacent feedback instead of sending a
+  // silently-refused intent
+  while (action === "save") {
+    const duplicates = duplicatePortNames(componentForm.data);
+    if (duplicates.length === 0) break;
+    setModalFeedback(
+      componentModal,
+      `Port names must be unique per direction: ${duplicates.join(", ")}`,
+      componentForm,
+    );
+    componentModal.open(`Component: ${componentName}`);
+    action = await componentModal.submit();
+  }
+  setModalFeedback(componentModal, "", componentForm);
   if (!action) return;
   const newData = componentForm.data;
   const newName = String(newData.name || componentName);
@@ -610,10 +629,14 @@ async function render() {
   });
   // Exported-port rename (work document #5 update #36): the shell asks
   // for the new name in a modal, then rides the mapper's port-renamed path
-  wireExportRename(ed);
-  renderGraphIntoEditor(view, ed, (name) =>
-    libraryManager?.getComponent(name),
-  );
+  wireExportRename(ed, (direction, name) => {
+    // Port names are unique per direction (work document #5): check
+    // against the replica's current exports before sending the intent
+    const view = projectGraph(mirrorDoc, activeGraphId);
+    const ports = direction === "in" ? view?.inports : view?.outports;
+    return Boolean(ports?.[name]);
+  });
+  renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // Groups render behind the nodes (work document #5 update #16)
   ed.setGroups(view.groups ?? []);
   // Freshly appeared nodes spring in and shimmer (work document #5
@@ -900,7 +923,19 @@ async function openSignatureEditorCreate(prefillPorts) {
     inports: prefillPorts?.inports ?? [{ name: "in", type: "all" }],
     outports: prefillPorts?.outports ?? [{ name: "out", type: "all" }],
   };
-  const action = await componentModal.submit();
+  let action = await componentModal.submit();
+  while (action === "save") {
+    const duplicates = duplicatePortNames(componentForm.data);
+    if (duplicates.length === 0) break;
+    setModalFeedback(
+      componentModal,
+      `Port names must be unique per direction: ${duplicates.join(", ")}`,
+      componentForm,
+    );
+    componentModal.open("New component");
+    action = await componentModal.submit();
+  }
+  setModalFeedback(componentModal, "", componentForm);
   if (action !== "save") return null;
   const data = componentForm.data;
   const name = String(data.name || "").trim();
@@ -914,6 +949,31 @@ async function openSignatureEditorCreate(prefillPorts) {
       icon: data.icon,
     },
   };
+}
+
+/**
+ * Port names duplicated within one direction (work document #5): the same
+ * name across directions is fine — one "in" inport and one "in" outport
+ * coexist. Used by the signature editor's save validation; the Engine
+ * enforces the same rule on `setSignature`.
+ *
+ * @param {any} data The signature editor's form data.
+ * @returns {string[]} Duplicated names, in first-seen order.
+ */
+function duplicatePortNames(data) {
+  /** @type {string[]} */
+  const duplicates = [];
+  for (const direction of ["inports", "outports"]) {
+    const names = (data?.[direction] ?? [])
+      .map((/** @type {any} */ p) => p?.name)
+      .filter(Boolean);
+    const seen = new Set();
+    for (const name of names) {
+      if (seen.has(name) && !duplicates.includes(name)) duplicates.push(name);
+      seen.add(name);
+    }
+  }
+  return duplicates;
 }
 
 /**

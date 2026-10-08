@@ -1602,6 +1602,17 @@ function intentSetSignature(doc, payload) {
   if (!portsOk(signature.inports) || !portsOk(signature.outports)) {
     return { accepted: false, echoes: [] };
   }
+  // Port names are unique per direction (work document #5): one "in"
+  // inport, one "foo" outport — the same name across directions is fine
+  const uniquePerDirection = (/** @type {any[]} */ ports) =>
+    new Set((ports ?? []).map((/** @type {any} */ p) => p.name)).size ===
+    (ports ?? []).length;
+  if (
+    !uniquePerDirection(signature.inports) ||
+    !uniquePerDirection(signature.outports)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
   if (getGraph(doc, component)) {
     // A graph's signature is derived from its exports, not declared
     return { accepted: false, echoes: [] };

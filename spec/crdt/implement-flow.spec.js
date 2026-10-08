@@ -273,6 +273,44 @@ describe("signature specification (work document #29)", () => {
     });
     assert.ok(!graphed.accepted, "graph signatures are engine-derived");
   });
+
+  it("setSignature refuses duplicate names within a direction (work document #5)", () => {
+    const { doc, send } = boot();
+    const duplicated = send({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "sketchy",
+        signature: {
+          inports: [{ name: "in" }, { name: "in" }],
+          outports: [{ name: "out" }],
+        },
+      },
+    });
+    assert.ok(!duplicated.accepted, 'two "in" inports are refused');
+    assert.deepEqual(
+      getComponentSignature(doc, "sketchy")?.toJSON(),
+      {
+        inports: [{ name: "in", type: "all" }],
+        outports: [{ name: "out", type: "all" }],
+      },
+      "the refusal leaves the registered signature untouched",
+    );
+
+    // The same name across directions is fine
+    const crossed = send({
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "sketchy",
+        signature: {
+          inports: [{ name: "in" }],
+          outports: [{ name: "in" }],
+        },
+      },
+    });
+    assert.ok(crossed.accepted, '"in" inport and "in" outport coexist');
+  });
 });
 
 describe("graph groups (work document #5 update #16)", () => {

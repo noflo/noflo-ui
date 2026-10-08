@@ -9,6 +9,31 @@
 
 import { emit, on } from "../events.js";
 
+/**
+ * Renders (or hides) an adjacent validation feedback line inside a modal
+ * (guidelines §12): an attention-colored message beside the control it
+ * describes, placed before the given anchor element. Empty message hides.
+ *
+ * @param {HTMLElement} modal
+ * @param {string} message
+ * @param {Element} anchor
+ * @returns {void}
+ */
+export function setModalFeedback(modal, message, anchor) {
+  let feedback = modal.querySelector(".prompt-feedback");
+  if (message) {
+    if (!feedback) {
+      feedback = document.createElement("div");
+      feedback.className = "prompt-feedback alert alert-danger";
+      modal.insertBefore(feedback, anchor);
+    }
+    feedback.textContent = message;
+    /** @type {HTMLElement} */ (feedback).style.display = "";
+  } else if (feedback) {
+    /** @type {HTMLElement} */ (feedback).style.display = "none";
+  }
+}
+
 /** The lazily created prompt modal, reused across prompts. */
 /** @type {HTMLElement | null} */
 let promptModal = null;
@@ -18,13 +43,16 @@ let promptModal = null;
  * entered (trimmed) value, or `null` when the user cancels, dismisses the
  * dialog, or confirms an empty value.
  *
- * @param {{ title: string, value?: string, confirmLabel?: string }} options
+ * @param {{ title: string, value?: string, confirmLabel?: string, message?: string }} options
+ *   `message` renders an adjacent attention feedback line (a validation
+ *   error from a previous attempt, guidelines §12) above the input.
  * @returns {Promise<string | null>}
  */
 export async function openTextPrompt({
   title,
   value = "",
   confirmLabel = "OK",
+  message = "",
 }) {
   const app = document.getElementById("app");
   if (!app) return null;
@@ -47,6 +75,7 @@ export async function openTextPrompt({
     promptModal.querySelector("input")
   );
   if (!input) return null;
+  setModalFeedback(promptModal, message, input);
   // The confirm action is the footer's first button, so the input's
   // implicit Enter submission confirms rather than cancels
   /** @type {any} */ (promptModal).setActions([
@@ -126,26 +155,43 @@ export async function openJsonPrompt({
  * port menu's Rename item), the shell asks for the new name here, and the
  * resolved rename is emitted back through `port-renamed`, which the intent
  * mapper maps onto `renameInport`/`renameOutport` (work document #5
- * update #36).
+ * update #36). Port names are unique per direction: a taken name
+ * re-prompts with adjacent feedback instead of sending a refusing intent.
  *
  * @param {HTMLElement} editor
+ * @param {(direction: string, name: string) => boolean} isNameTaken
+ *   Whether the open graph already has an export of that direction under
+ *   the name.
  * @returns {void}
  */
-export function wireExportRename(editor) {
+export function wireExportRename(editor, isNameTaken = () => false) {
   on(editor, "export-rename-attempt", async (e) => {
     const detail =
       /** @type {CustomEvent<{ name: string, direction: string }>} */ (e)
         .detail;
-    const newName = await openTextPrompt({
-      title: `Rename ${detail.direction === "in" ? "inport" : "outport"}`,
-      value: detail.name,
-      confirmLabel: "Rename",
-    });
-    if (!newName || newName === detail.name) return;
-    emit(editor, "port-renamed", {
-      oldName: detail.name,
-      newName,
-      direction: detail.direction,
-    });
+    const directionLabel = detail.direction === "in" ? "inport" : "outport";
+    let candidate = detail.name;
+    let conflict = false;
+    for (;;) {
+      const renamed = await openTextPrompt({
+        title: `Rename ${directionLabel}`,
+        value: candidate,
+        confirmLabel: "Rename",
+        message: conflict
+          ? `An ${directionLabel} named "${candidate}" already exists`
+          : undefined,
+      });
+      if (!renamed || renamed === detail.name) return;
+      if (!isNameTaken(detail.direction, renamed)) {
+        emit(editor, "port-renamed", {
+          oldName: detail.name,
+          newName: renamed,
+          direction: detail.direction,
+        });
+        return;
+      }
+      candidate = renamed;
+      conflict = true;
+    }
   });
 }
