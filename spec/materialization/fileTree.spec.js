@@ -32,7 +32,7 @@ function seed(doc) {
 }
 
 describe("Y.Doc → file tree (work document #43)", () => {
-  it("materializes one canonical graph file per graph, subgraphs in directories", () => {
+  it("materializes one canonical graph file per graph, flat graphs, subgraph components skip", () => {
     const doc = createProjectDoc("p");
     seed(doc);
     const tree = docToFileTree(doc);
@@ -42,11 +42,11 @@ describe("Y.Doc → file tree (work document #43)", () => {
       [
         "components/fs/ReadFile.js",
         "components/fs/ReadFile.json",
+        "graphs/Pipeline.graph.json",
         "graphs/main.graph.json",
-        "graphs/main/Pipeline.graph.json",
         "project.json",
       ],
-      "subgraphs materialize into subdirectories (work document #43)",
+      "graphs are flat; the subgraph component (main/Pipeline) is defined by its graph file, not a component entry",
     );
   });
 

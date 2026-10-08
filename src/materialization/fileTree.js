@@ -35,14 +35,16 @@ import { canonicalGraph, serializeGraph } from "./canonical.js";
  */
 
 /**
- * The canonical on-disk path of a graph: graph ids are hierarchical
- * (`main/A`), so subgraphs materialize into subdirectories.
+ * The canonical on-disk path of a graph. Graph ids are hierarchical
+ * (`main/Pipeline`), but NoFlo projects keep graph files flat in `graphs/` —
+ * the file name is the graph's own name (the last id segment), not the
+ * hierarchical reference path.
  *
  * @param {string} graphId
  * @returns {string}
  */
 function graphPath(graphId) {
-  return `graphs/${graphId}.graph.json`;
+  return `graphs/${graphId.split("/").pop()}.graph.json`;
 }
 
 /**
@@ -118,7 +120,12 @@ export function docToFileTree(doc, options = {}) {
   // code buffers (Y.Text), the `registry` carries the declared signatures
   const components = doc.getMap(COMPONENTS_MAP);
   const registry = doc.getMap(REGISTRY_MAP);
-  const names = [...new Set([...components.keys(), ...registry.keys()].sort())];
+  // Graph-implemented components (subgraphs) skip: their definition is the
+  // graph file itself, not a component entry (work document #43)
+  const materializedGraphIds = new Set(doc.getMap("graphs").keys());
+  const names = [
+    ...new Set([...components.keys(), ...registry.keys()].sort()),
+  ].filter((name) => !materializedGraphIds.has(name));
   for (const name of names) {
     const component = components.get(name);
     const code = component ? getComponentCode(component) : null;
