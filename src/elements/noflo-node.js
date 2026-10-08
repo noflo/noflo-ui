@@ -565,12 +565,10 @@ export class FlowNode extends HTMLElement {
            grammar instead of stacking the datatype underneath, where it
            collided with the next port's label (work document #5). Items
            center on a tight line-height, and the transform clears the
-           port dot's radius with breathing room plus a small optical
-           lift: the em box is ascent-heavy, so its geometric center sits
-           the glyphs low */
+           port dot's radius with breathing room — mirrored exactly, now
+           that the dot itself is centered on the anchor */
         .port-label {
           --port-label-clearance: 12px;
-          --port-label-lift: 2px;
           display: flex;
           align-items: center;
           gap: 4px;
@@ -580,17 +578,11 @@ export class FlowNode extends HTMLElement {
           /* The datatype rides the outer edge like the expanded pill:
              for inports that is the left of the name */
           flex-direction: row-reverse;
-          transform: translate(
-            calc(-100% - var(--port-label-clearance)),
-            calc(-50% - var(--port-label-lift))
-          );
+          transform: translate(calc(-100% - var(--port-label-clearance)), -50%);
           text-align: right;
         }
         .port-out-label {
-          transform: translate(
-            var(--port-label-clearance),
-            calc(-50% - var(--port-label-lift))
-          );
+          transform: translate(var(--port-label-clearance), -50%);
           text-align: left;
         }
         /* Expanded port labels become pills with the port dot toward the
@@ -685,8 +677,12 @@ export class FlowNode extends HTMLElement {
         }
         .port {
           position: absolute;
-          width: 12px;
-          height: 12px;
+          /* Border-box: 16px total = the 12px dot plus its 2px casing ring,
+             centered on the port's anchor — content-box left the visual
+             dot off-center, skewing the label padding (work document #5) */
+          box-sizing: border-box;
+          width: 16px;
+          height: 16px;
           background-color: var(--node-border);
           border: 2px solid var(--node-bg);
           border-radius: 50%;
@@ -920,8 +916,8 @@ export class FlowNode extends HTMLElement {
     if (index !== undefined) port.dataset.portIndex = index.toString();
 
     // All ports are now 12px (radius 6px)
-    port.style.left = `${this.radius + pos.x - 6}px`;
-    port.style.top = `${this.radius + pos.y - 6}px`;
+    port.style.left = `${this.radius + pos.x - 8}px`;
+    port.style.top = `${this.radius + pos.y - 8}px`;
 
     const label = document.createElement("div");
     label.className = `port-label ${isOutport ? "port-out-label" : "port-in-label"}${type === "array" ? " port-label-array" : ""}`;
