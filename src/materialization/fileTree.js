@@ -105,6 +105,22 @@ export function docToFileTree(doc, options = {}) {
     "project.json":
       JSON.stringify({ ...metadata, format: "noflo-ui-project" }, null, 2) +
       "\n",
+    "package.json":
+      JSON.stringify(
+        {
+          name: String(metadata.name ?? "noflo-project")
+            .toLowerCase()
+            .replaceAll(/\s+/g, "-"),
+          version: "1.0.0",
+          description: String(metadata.description ?? ""),
+          private: true,
+          dependencies: {
+            noflo: "^1.5.2",
+          },
+        },
+        null,
+        2,
+      ) + "\n",
   };
 
   const graphIds = options.graphId
@@ -156,6 +172,39 @@ export function docToFileTree(doc, options = {}) {
         2,
       ) + "\n";
   }
+
+  // COMPONENTS.md: the component reference for file-based agents —
+  // available components, ports, datatypes, addressable flags
+  const lines = ["# Components", ""];
+  for (const name of names) {
+    const signature = getComponentSignature(doc, name)?.toJSON?.() ?? {};
+    const description = signature.description ?? "";
+    lines.push(`## ${name}`, "");
+    if (description) lines.push(description, "");
+    const ports =
+      /** @param {string} direction */
+      ((direction) =>
+        (signature[direction] ?? [])
+          .map((/** @type {any} */ port) => {
+            const type = port.type ?? "all";
+            const flags = port.addressable ? " (addressable)" : "";
+            return `- **${port.name}** (${type})${flags}`;
+          })
+          .join("\n"))("inports");
+    const outports =
+      /** @param {string} direction */
+      ((direction) =>
+        (signature[direction] ?? [])
+          .map((/** @type {any} */ port) => {
+            const type = port.type ?? "all";
+            const flags = port.addressable ? " (addressable)" : "";
+            return `- **${port.name}** (${type})${flags}`;
+          })
+          .join("\n"))("outports");
+    if (ports) lines.push("### Inports", "", ports, "");
+    if (outports) lines.push("### Outports", "", outports, "");
+  }
+  tree["COMPONENTS.md"] = lines.join("\n") + "\n";
 
   return tree;
 }

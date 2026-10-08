@@ -7,6 +7,7 @@ import {
   createProjectDoc,
   ensureComponent,
   setComponentCode,
+  setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import {
   docToFileTree,
@@ -28,6 +29,10 @@ function seed(doc) {
   addNode(sub, "Log", "core/Output", { x: 5, y: 5 });
   const component = ensureComponent(doc, "fs/ReadFile");
   setComponentCode(component, "export default function setup(runtime) {}\n");
+  setComponentSignature(doc, "fs/ReadFile", {
+    inports: [{ name: "source", type: "number" }],
+    outports: [{ name: "out", type: "string" }],
+  });
   return doc;
 }
 
@@ -40,10 +45,12 @@ describe("Y.Doc → file tree (work document #43)", () => {
     assert.deepEqual(
       paths,
       [
+        "COMPONENTS.md",
         "components/fs/ReadFile.js",
         "components/fs/ReadFile.json",
         "graphs/Pipeline.graph.json",
         "graphs/main.graph.json",
+        "package.json",
         "project.json",
       ],
       "graphs are flat; the subgraph component (main/Pipeline) is defined by its graph file, not a component entry",
@@ -74,6 +81,29 @@ describe("Y.Doc → file tree (work document #43)", () => {
     const signature = JSON.parse(tree["components/fs/ReadFile.json"]);
     assert.equal(signature.name, "fs/ReadFile");
     assert.ok(Array.isArray(signature.inports));
+  });
+
+  it("COMPONENTS.md references components with ports and datatypes", () => {
+    const doc = createProjectDoc("p");
+    seed(doc);
+    const tree = docToFileTree(doc);
+    const components = tree["COMPONENTS.md"];
+    assert.match(components, /## fs\/ReadFile/, "the component is listed");
+    assert.match(
+      components,
+      /- \*\*source\*\* \(number\)/,
+      "ports carry names and datatypes",
+    );
+  });
+
+  it("package.json is emitted for file-based tools", () => {
+    const doc = createProjectDoc("p");
+    seed(doc);
+    const tree = docToFileTree(doc);
+    const pkg = JSON.parse(tree["package.json"]);
+    assert.equal(pkg.name, "p", "the project name drives the package name");
+    assert.equal(pkg.private, true);
+    assert.ok(pkg.dependencies, "dependencies are declared");
   });
 
   it("writeFileTree persists through the fs adapter", async () => {
