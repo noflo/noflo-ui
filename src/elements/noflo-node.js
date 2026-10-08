@@ -563,11 +563,14 @@ export class FlowNode extends HTMLElement {
            circle. A flex row keeps name and datatype on one line — the
            non-expanded label matches the expanded pill's single-line
            grammar instead of stacking the datatype underneath, where it
-           collided with the next port's label (work document #5) */
+           collided with the next port's label (work document #5). Items
+           center on a tight line-height so the mixed font sizes don't
+           drag the glyphs below the port's center via descender space */
         .port-label {
           display: flex;
-          align-items: baseline;
+          align-items: center;
           gap: 4px;
+          line-height: 1;
         }
         .port-in-label {
           /* The datatype rides the outer edge like the expanded pill:

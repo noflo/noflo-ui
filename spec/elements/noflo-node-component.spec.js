@@ -25,8 +25,8 @@ describe("FlowNode component reflection", () => {
       ).textContent ?? "";
     assert.match(
       style,
-      /\.port-label \{\s*display: flex;\s*align-items: baseline;/,
-      "name and datatype share the label's line",
+      /\.port-label \{\s*display: flex;\s*align-items: center;\s*gap: 4px;\s*line-height: 1;/,
+      "name and datatype share the label's line, optically centered on the port",
     );
     assert.match(
       style,
@@ -49,7 +49,7 @@ describe("Context chip chrome (work document #28)", () => {
     // Comments stripped: the host block's own doc comment names the chrome
     // words it deliberately does not carry
     const style = /** @type {HTMLElement} */ (
-      (/** @type {ShadowRoot} */ (chip.shadowRoot).querySelector("style"))
+      /** @type {ShadowRoot} */ (chip.shadowRoot).querySelector("style")
         .textContent ?? ""
     ).replace(/\/\*[\s\S]*?\*\//g, "");
     const hostBlock = /:host \{[^}]+\}/.exec(style)?.[0] ?? "";
