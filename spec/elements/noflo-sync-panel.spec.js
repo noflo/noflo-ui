@@ -306,6 +306,28 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.remove();
   });
 
+  it("de-duplicates multiple links to one peer by identity (work document #28)", () => {
+    const el = makeElement();
+    feedConnected(el);
+    // Reconnects: two links, one identity
+    el.setPeers(["link-1", "link-2"], {
+      "link-1": PEER_HASH,
+      "link-2": PEER_HASH,
+    });
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const items = [...shadow.querySelectorAll(".list-item")];
+    assert.equal(
+      items.length,
+      1,
+      "one identity, one entry — reconnect links collapse",
+    );
+    assert.match(items[0].textContent ?? "", new RegExp(PEER_HASH));
+    assert.ok(items[0].querySelector(".badge"), "the badge still matches");
+    el.remove();
+  });
+
   it("renders raw peer ids when no mapping is known yet", () => {
     const el = makeElement();
     feedConnected(el);

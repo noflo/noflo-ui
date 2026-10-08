@@ -384,18 +384,23 @@ export class FlowSyncPanel extends FlowCornerElement {
     for (const grant of this._dacarState?.grants ?? []) {
       grantStatus.set(grant.peerHash, grant.status);
     }
-    const peers = this._peers
-      .map((peerId) => {
-        // The peers event keys by transport peer id; the identity is what
-        // the user reads and what the Dacar badges key on (work document
-        // #28). Without the mapping the raw id renders as-is
-        const hash = this._peerIdentities?.[peerId] ?? peerId;
-        const self = hash === this._identityHash;
-        const status = grantStatus.get(hash);
+    // De-duplicate by identity (work document #28): a peer can hold
+    // several links (reconnects), and each link keys its own entry in the
+    // transport's peers event — the identity is the peer. Unmapped links
+    // render as their raw ids until the identity resolves
+    const seenIdentities = new Map();
+    for (const peerId of this._peers) {
+      const identity = this._peerIdentities?.[peerId] ?? peerId;
+      if (!seenIdentities.has(identity)) seenIdentities.set(identity, peerId);
+    }
+    const peers = [...seenIdentities.keys()]
+      .map((identity) => {
+        const self = identity === this._identityHash;
+        const status = grantStatus.get(identity);
         const badge = status
           ? `<span class="badge ${escapeHtml(status)}">${escapeHtml(status)}</span>`
           : "";
-        return `<div class="list-item"><span class="grow hash-text">${escapeHtml(hash)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}</div>`;
+        return `<div class="list-item"><span class="grow hash-text">${escapeHtml(identity)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}</div>`;
       })
       .join("");
     // Inviting mints grants: only the Trust Anchor's device offers the
