@@ -86,20 +86,21 @@ class GlassHarness {
   async render() {
     const view = projectGraph(this.mirror, "main") ?? {
       processes: {},
+      nodes: [],
+      edges: [],
+      initializers: [],
       connections: [],
       inports: {},
       outports: {},
+      groups: [],
       properties: { name: "main" },
     };
-    // @ts-expect-error test shim: view matches fbp-graph JSON
-    const noflo = await import("noflo");
-    const replica = await noflo.graph.loadJSON(view);
     this.editor?.remove();
     this.editor = /** @type {any} */ (document.createElement("noflo-editor"));
     document.body.appendChild(this.editor);
     this.editor.libraryManager = this.libraryManager;
     this.mapper.wire(this.editor);
-    renderGraphIntoEditor(replica, this.editor, (/** @type {string} */ name) =>
+    renderGraphIntoEditor(view, this.editor, (/** @type {string} */ name) =>
       this.libraryManager.getComponent(name),
     );
     await new Promise((resolve) => setTimeout(resolve, 10));

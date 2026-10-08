@@ -71,6 +71,32 @@ describe("projectGraph", () => {
     assert.equal(view.properties.name, "Main");
   });
 
+  it("normalizes legacy suffixed port refs into base name + index (work document #5)", () => {
+    // Records written before the port-ref normalization carried the
+    // indexed form ("in[1]") as the port name
+    const doc = createProjectDoc("p");
+    const graph = seedGraph(doc);
+    addIIP(graph, "42", { node: "Log", port: "in[1]" });
+    addEdge(
+      graph,
+      { node: "Read", port: "out" },
+      { node: "Log", port: "in[2]" },
+    );
+    graph.get("outports").set("tap", { process: "Log", port: "out[3]" });
+
+    const view = projectGraph(doc, "main");
+    const iip = view.initializers.find(
+      (/** @type {any} */ i) => i.to.port === "in" && i.to.index === 1,
+    );
+    assert.ok(iip, "the legacy IIP ref resolves to base name + slot");
+    const edge = view.edges.find(
+      (/** @type {any} */ e) => e.to.port === "in" && e.to.index === 2,
+    );
+    assert.ok(edge, "the legacy edge ref resolves too");
+    assert.equal(view.outports.tap.port, "out");
+    assert.equal(view.outports.tap.index, 3);
+  });
+
   it("returns null for unknown graphs", () => {
     const doc = createProjectDoc("p");
     assert.equal(projectGraph(doc, "nope"), null);

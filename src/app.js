@@ -6,8 +6,6 @@
  */
 
 import * as Y from "yjs";
-import { graph } from "../vendor/noflo.js";
-
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
@@ -539,12 +537,15 @@ async function render() {
   bootstrapLibrary();
   const view = projectGraph(mirrorDoc, activeGraphId) ?? {
     processes: {},
+    nodes: [],
+    edges: [],
+    initializers: [],
     connections: [],
     inports: {},
     outports: {},
+    groups: [],
     properties: { name: activeGraphId },
   };
-  const replica = await graph.loadJSON(view);
   const app = document.getElementById("app");
   if (!app) return;
   app.querySelectorAll("noflo-editor").forEach((el) => {
@@ -610,7 +611,7 @@ async function render() {
   // Exported-port rename (work document #5 update #36): the shell asks
   // for the new name in a modal, then rides the mapper's port-renamed path
   wireExportRename(ed);
-  renderGraphIntoEditor(replica, ed, (name) =>
+  renderGraphIntoEditor(view, ed, (name) =>
     libraryManager?.getComponent(name),
   );
   // Groups render behind the nodes (work document #5 update #16)

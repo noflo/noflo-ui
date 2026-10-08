@@ -1,7 +1,9 @@
 /**
- * @file Glass rendering: projects a loaded fbp-graph (the read replica view)
- * into the `noflo-editor` Web Component. Shared rendering logic for the
- * CRDT-driven application shell.
+ * @file Glass rendering: projects the CRDT read replica (the `projectGraph`
+ * view, src/glass/projectView.js) into the `noflo-editor` Web Component.
+ * The projection is the only render source — the legacy fbp-graph format
+ * is an interchange serialization, not a rendering structure (SPEC "The
+ * Source of Truth: CRDT vs. Files").
  */
 
 /**
@@ -50,7 +52,7 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
 /**
  * Renders a graph's nodes, IIPs, exported ports, and edges into an editor.
  *
- * @param {any} g Loaded noflo graph.
+ * @param {any} g The projected replica view (`projectGraph`).
  * @param {any} ed Editor instance to render into.
  * @param {(componentName: string) => any} getComponent Resolves component
  *   definitions from the Glass-side library view.

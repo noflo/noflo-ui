@@ -27,13 +27,36 @@ function toPlain(value) {
 }
 
 /**
- * Projects one CRDT graph into the fbp-graph JSON format (processes,
- * connections, inports, outports) so it can be loaded with
- * `noflo.graph.loadJSON` and rendered into the editor.
+ * Normalizes a legacy port reference: array instances were once stored
+ * with the indexed form (`in[1]`) as the port name; the canonical ref
+ * carries the base name plus the slot index. The suffix merges into the
+ * index when the record has none, so records written before the
+ * normalization keep resolving against the rendered instances.
+ *
+ * @param {{ node?: string, port?: string, index?: number } | undefined} ref
+ * @returns {{ node?: string, port?: string, index?: number } | undefined}
+ */
+function normalizePortRef(ref) {
+  if (!ref) return ref;
+  const match = /(.*)\[(\d+)\]$/.exec(ref.port ?? "");
+  if (!match) return ref;
+  return {
+    ...ref,
+    port: match[1],
+    index: ref.index ?? Number.parseInt(match[2], 10),
+  };
+}
+
+/**
+ * Projects one CRDT graph into the render view: the render-shaped fields
+ * (nodes, edges, initializers) feed `renderGraphIntoEditor` directly — no
+ * legacy graph round-trip, which was lossy for addressable ports (work
+ * document #5) — plus `processes`/`connections` for the Glass's own
+ * consumers (pending reconciliation, position restore, intent mapping).
  *
  * @param {import("yjs").Doc} doc
  * @param {string} graphId
- * @returns {any | null} fbp-graph JSON, or null when the graph does not exist.
+ * @returns {any | null} The projected view, or null when the graph does not exist.
  */
 export function projectGraph(doc, graphId) {
   const graph = doc.getMap("graphs").get(graphId);
@@ -44,56 +67,100 @@ export function projectGraph(doc, graphId) {
 
   /** @type {Record<string, any>} */
   const processes = {};
+  /** @type {any[]} */
+  const nodeList = [];
   for (const [nodeId, node] of nodes.entries()) {
     const plain = toPlain(node);
     processes[nodeId] = {
       component: plain.component,
       metadata: plain.metadata ?? {},
     };
+    nodeList.push({
+      id: nodeId,
+      component: plain.component,
+      metadata: plain.metadata ?? {},
+    });
   }
 
   /** @type {any[]} */
   const connections = [];
+  /** @type {any[]} */
+  const edgeList = [];
+  /** @type {any[]} */
+  const initializers = [];
   for (const [, edge] of edges.entries()) {
     const plain = toPlain(edge);
+    // Edges carry both endpoints structurally; the cast keeps the
+    // normalized refs' types honest for the accesses below
+    const src = /** @type {{ node: string, port: string, index?: number }} */ (
+      normalizePortRef(plain.src)
+    );
+    const tgt = /** @type {{ node: string, port: string, index?: number }} */ (
+      normalizePortRef(plain.tgt)
+    );
     // fbp-graph JSON names the endpoint node "process"; the CRDT (SPEC
     // Appendix B) calls it "node", so the projection translates
     if (typeof plain.id === "string" && plain.id.startsWith("DATA->")) {
       connections.push({
         data: plain.data,
         tgt: {
-          process: plain.tgt.node,
-          port: plain.tgt.port,
-          index: plain.tgt.index,
+          process: tgt.node,
+          port: tgt.port,
+          index: tgt.index,
+        },
+        metadata: { id: plain.id, ...(plain.metadata ?? {}) },
+      });
+      initializers.push({
+        from: { data: plain.data },
+        to: {
+          node: tgt.node,
+          port: tgt.port,
+          index: tgt.index,
         },
         metadata: { id: plain.id, ...(plain.metadata ?? {}) },
       });
     } else {
       connections.push({
         src: {
-          process: plain.src.node,
-          port: plain.src.port,
-          index: plain.src.index,
+          process: src.node,
+          port: src.port,
+          index: src.index,
         },
         tgt: {
-          process: plain.tgt.node,
-          port: plain.tgt.port,
-          index: plain.tgt.index,
+          process: tgt.node,
+          port: tgt.port,
+          index: tgt.index,
         },
+        metadata: plain.metadata ?? {},
+      });
+      edgeList.push({
+        from: { node: src.node, port: src.port, index: src.index },
+        to: { node: tgt.node, port: tgt.port, index: tgt.index },
         metadata: plain.metadata ?? {},
       });
     }
   }
 
   /** @type {any} */
-  const result = { processes, connections };
+  const result = {
+    processes,
+    nodes: nodeList,
+    edges: edgeList,
+    initializers,
+    connections,
+  };
 
   for (const direction of ["inports", "outports"]) {
     const ports = graph.get(direction);
     /** @type {Record<string, any>} */
     const projected = {};
     for (const [name, info] of ports.entries()) {
-      projected[name] = toPlain(info);
+      const plain = toPlain(info);
+      projected[name] = {
+        ...plain,
+        // Exports may carry legacy suffixed port names too
+        ...normalizePortRef(plain),
+      };
     }
     result[direction] = projected;
   }
