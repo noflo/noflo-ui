@@ -1162,7 +1162,9 @@ function deriveGraphSignature(doc, graph) {
   const readDirection = (/** @type {"inports" | "outports"} */ direction) =>
     [.../** @type {Y.Map<any>} */ (graph.get(direction)).entries()].map(
       ([name, info]) => {
-        const plain = info.toJSON();
+        // Export records are Y.Maps (ProjectDoc's writes), but tolerate
+        // plain-object records set directly
+        const plain = typeof info?.toJSON === "function" ? info.toJSON() : info;
         /** @type {{ name: string, type?: string }} */
         const port = { name };
         // The datatype comes from the referenced component's port; the
@@ -1190,6 +1192,30 @@ function deriveGraphSignature(doc, graph) {
 }
 
 /**
+ * Computes a graph-implemented component's full derived signature: the
+ * exported ports (with inherited datatypes) plus the preserved
+ * description/icon. Null for graphs that are not components.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} graphId
+ * @returns {{ inports: Array<{ name: string, type?: string }>, outports: Array<{ name: string, type?: string }>, description?: string, icon?: string } | null}
+ */
+function derivedSignature(doc, graphId) {
+  const graph = getGraph(doc, graphId);
+  const existing = getComponentSignature(doc, graphId);
+  if (!graph || !existing) return null;
+  const plain = existing.toJSON?.() ?? {};
+  return {
+    ...deriveGraphSignature(doc, graph),
+    description:
+      typeof plain.description === "string"
+        ? plain.description
+        : `Subgraph of ${graphId}`,
+    icon: typeof plain.icon === "string" ? plain.icon : undefined,
+  };
+}
+
+/**
  * Re-derives a graph-implemented component's signature from its exports
  * (work document #29): a graph's signature is derived, never declared —
  * the same rule `intentSetSignature` enforces by refusing graphs. Called
@@ -1202,18 +1228,9 @@ function deriveGraphSignature(doc, graph) {
  *   signature echo, or null when the graph has no registered signature.
  */
 function syncGraphSignature(doc, graphId) {
-  const graph = getGraph(doc, graphId);
-  const existing = getComponentSignature(doc, graphId);
-  if (!graph || !existing) return null;
-  const plain = existing.toJSON?.() ?? {};
-  setComponentSignature(doc, graphId, {
-    ...deriveGraphSignature(doc, graph),
-    description:
-      typeof plain.description === "string"
-        ? plain.description
-        : `Subgraph of ${graphId}`,
-    icon: typeof plain.icon === "string" ? plain.icon : undefined,
-  });
+  const signature = derivedSignature(doc, graphId);
+  if (!signature) return null;
+  setComponentSignature(doc, graphId, signature);
   return {
     protocol: "system",
     command: "signature",
@@ -1222,6 +1239,27 @@ function syncGraphSignature(doc, graphId) {
       signature: getComponentSignature(doc, graphId)?.toJSON() ?? null,
     },
   };
+}
+
+/**
+ * Refreshes every graph-implemented component's derived signature (work
+ * document #29): derived state can go stale across engine upgrades — the
+ * pre-datatype-inheritance derivations wrote name-only signatures — so
+ * the boot refresh brings every derived interface back in step with its
+ * graph's exports. Signatures whose derivation matches are left
+ * untouched, so an unchanged project boots without CRDT churn.
+ *
+ * @param {Y.Doc} doc
+ * @returns {void}
+ */
+export function refreshDerivedSignatures(doc) {
+  for (const graphId of doc.getMap("graphs").keys()) {
+    const signature = derivedSignature(doc, graphId);
+    if (!signature) continue;
+    const existing = getComponentSignature(doc, graphId)?.toJSON?.() ?? {};
+    if (JSON.stringify(signature) === JSON.stringify(existing)) continue;
+    setComponentSignature(doc, graphId, signature);
+  }
 }
 
 /**

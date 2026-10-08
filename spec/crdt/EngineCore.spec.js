@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
+import {
+  createEngineState,
+  handleMessage,
+  refreshDerivedSignatures,
+} from "../../src/crdt/EngineCore.js";
 import {
   addEdge,
   addIIP,
@@ -9,6 +13,7 @@ import {
   addNode,
   createGraph,
   createProjectDoc,
+  getComponentSignature,
   getGraph,
   getNode,
   getProjectMetadata,
@@ -908,6 +913,49 @@ describe("makeSubgraph (work document #23)", () => {
       .get("outports")
       .toJSON();
     assert.deepEqual(outports, [{ name: "result", type: "string" }]);
+  });
+
+  it("boot refresh re-derives stale signatures (work document #29)", () => {
+    // A subgraph whose signature was written by a pre-datatype-inheritance
+    // engine: name-only ports, derived state gone stale on disk
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const main = doc.getMap("graphs").get("main");
+    addNode(main, "S", "main/child", { x: 0, y: 0 });
+    createGraph(doc, "main/child");
+    const child = doc.getMap("graphs").get("main/child");
+    addNode(child, "A", "core/Typed", { x: 10, y: 10 });
+    child.get("inports").set("in", { process: "A", port: "in" });
+    setComponentSignature(doc, "core/Typed", {
+      inports: [{ name: "in", type: "number" }],
+    });
+    // The stale derived signature: names only, no types
+    setComponentSignature(doc, "main/child", {
+      inports: [{ name: "in" }],
+      description: "Subgraph of main",
+    });
+
+    const before = getComponentSignature(doc, "main/child");
+    refreshDerivedSignatures(doc);
+    assert.deepEqual(
+      getComponentSignature(doc, "main/child")?.toJSON(),
+      {
+        inports: [{ name: "in", type: "number" }],
+        outports: [],
+        description: "Subgraph of main",
+      },
+      "the stale signature comes back in step with its exports",
+    );
+
+    // An in-step signature is left untouched: no CRDT churn at boot
+    const fresh = getComponentSignature(doc, "main/child");
+    assert.notEqual(fresh, before, "the stale entry was replaced");
+    refreshDerivedSignatures(doc);
+    assert.equal(
+      getComponentSignature(doc, "main/child"),
+      fresh,
+      "an in-step signature keeps its identity across a refresh",
+    );
   });
 
   it("exports connection ports even without a registry signature", () => {

@@ -13,7 +13,10 @@ import * as Y from "../../vendor/yjs.js";
 /** NoFlo's shipped types omit the default export; the runtime API is stable. */
 const NoFlo = /** @type {any} */ (noflo);
 
-import { createEngineState } from "../crdt/EngineCore.js";
+import {
+  createEngineState,
+  refreshDerivedSignatures,
+} from "../crdt/EngineCore.js";
 import {
   createIndexeddbStorage,
   createMemoryStorage,
@@ -147,6 +150,10 @@ export async function startEngine(io, options = {}) {
   const onProjectLoaded = () => {
     projectLoaded = true;
     migrateLoadedProject(doc);
+    // Derived signatures are engine-computed state: re-derive them at load
+    // so interfaces written by older engines (e.g. name-only, pre-datatype
+    // inheritance) come back in step with their graphs (work document #29)
+    refreshDerivedSignatures(doc);
     syncFullState(doc, io);
     mesh
       ?.rebind()
