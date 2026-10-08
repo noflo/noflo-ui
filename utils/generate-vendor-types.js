@@ -46,6 +46,27 @@ const shims = [
     // the named-export surface; the sibling lib/NoFlo.d.ts carries it
     body: 'export * from "../node_modules/noflo/lib/NoFlo.js";\nexport { default } from "../node_modules/noflo/lib/NoFlo.js";\n',
   },
+  {
+    // The QR encoder ships no types: the shim types the surface the
+    // application uses — SVG string rendering for invites and connection
+    // URIs (work document #28 update #3)
+    name: "qrcode",
+    body: [
+      "declare const QRCode: {",
+      "  /** Renders text as an SVG document string */",
+      "  toString(",
+      "    text: string,",
+      "    options?: {",
+      '      type?: "svg" | "utf8" | "terminal";',
+      "      margin?: number;",
+      "      width?: number;",
+      "    },",
+      "  ): Promise<string>;",
+      "};",
+      "export default QRCode;",
+      "",
+    ].join("\n"),
+  },
 ];
 
 for (const shim of shims) {
@@ -171,9 +192,12 @@ for (const pkg of generated) {
       { stdio: "inherit" },
     );
 
-    // The thin re-export shim: one line per entry export, pointing at the
-    // emitted declaration relative to vendor/<name>.d.ts
-    const shimLines = modules.map((modulePath) => {
+    // The thin re-export shim: one block per entry export, pointing at the
+    // emitted declaration relative to vendor/<name>.d.ts. Modules whose
+    // entry re-exports a default get the default carried over too —
+    // `export *` does not re-export defaults (qrcode's browser surface is
+    // default-only)
+    const shimLines = modules.flatMap((modulePath) => {
       const emitted = relative(
         resolve(root, "vendor"),
         resolve(
@@ -182,7 +206,20 @@ for (const pkg of generated) {
           relative(commonRoot, resolve(staging, modulePath)),
         ),
       ).replaceAll("\\", "/");
-      return `export * from "./${emitted}";`;
+      const from = `from "./${emitted}"`;
+      const lines = [`export * ${from};`];
+      // The entry's own specifier, resolved back from the staged module
+      // path: the shim carries a default re-export only when the entry
+      // exports one from that module
+      const entrySpecifier = `../node_modules/${modulePath}`;
+      if (
+        new RegExp(
+          `export\\s+\\{[^}]*default[^}]*\\}\\s+from\\s+["']${entrySpecifier.replaceAll("/", "\\/")}["']`,
+        ).test(entrySource)
+      ) {
+        lines.push(`export { default } ${from};`);
+      }
+      return lines;
     });
     writeFileSync(
       resolve(root, `vendor/${pkg.name}.d.ts`),

@@ -19,6 +19,7 @@
  */
 
 import icons from "../../vendor/fontawesome-icons.js";
+import QRCode from "../../vendor/qrcode.js";
 import { emit } from "../events.js";
 import { FlowCornerElement } from "./CornerElement.js";
 
@@ -116,6 +117,9 @@ export class FlowSyncPanel extends FlowCornerElement {
     /** @type {{ projectId?: string, anchor?: { hash: string, owner: boolean }, grants?: Array<any>, wallet?: Array<any> } | null} */
     this._dacarState = null;
     this._inviteUri = "";
+    /** Rendered invite QR SVGs, cached per URI (work document #28). */
+    /** @type {Map<string, string>} */
+    this._qrCache = new Map();
     this._meshError = "";
     this._identityHash = "";
     /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */
@@ -201,6 +205,47 @@ export class FlowSyncPanel extends FlowCornerElement {
   setInvite(uri) {
     this._inviteUri = uri ?? "";
     this.render();
+  }
+
+  /**
+   * Renders the invite URI as a QR code into the invite section's tile
+   * (work document #28 update #3): wherever an invite URI exists, a QR is
+   * one glance away. Generation is async; the SVG caches per URI so
+   * re-renders don't regenerate.
+   *
+   * @returns {void}
+   */
+  renderInviteQr() {
+    const host = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "#panel-invite-qr",
+    );
+    if (!host) return;
+    const uri = this._inviteUri;
+    if (!uri) {
+      host.innerHTML = "";
+      return;
+    }
+    const cached = this._qrCache.get(uri);
+    if (cached) {
+      host.innerHTML = cached;
+      return;
+    }
+    host.innerHTML = "";
+    QRCode.toString(uri, { type: "svg", margin: 1, width: 132 })
+      .then((svg) => {
+        // Machine-readable encoding is not themed chrome: the modules and
+        // their background are black-on-white so every phone camera scans
+        // them in both themes
+        if (this._inviteUri !== uri) return;
+        this._qrCache.set(uri, svg);
+        const current = /** @type {ShadowRoot} */ (
+          this.shadowRoot
+        ).querySelector("#panel-invite-qr");
+        if (current) current.innerHTML = svg;
+      })
+      .catch((/** @type {any} */ error) => {
+        console.error("QR rendering failed:", error);
+      });
   }
 
   /**
@@ -376,7 +421,8 @@ export class FlowSyncPanel extends FlowCornerElement {
             : `<details open><summary>Invite</summary>
           ${
             this._inviteUri
-              ? `<div class="row"><span class="grow hash-text" id="panel-invite">${escapeHtml(this._inviteUri)}</span><button class="secondary" data-action="copy-invite">${icon("copy")} Copy</button></div>`
+              ? `<div class="row"><span class="grow hash-text" id="panel-invite">${escapeHtml(this._inviteUri)}</span><button class="secondary" data-action="copy-invite">${icon("copy")} Copy</button></div>
+          <div class="invite-qr" id="panel-invite-qr"></div>`
               : `<button data-action="create-invite">Generate invite</button>`
           }
           <div class="hint">Send this invite to a collaborator. The token expires in 24 hours.</div>
@@ -462,11 +508,27 @@ export class FlowSyncPanel extends FlowCornerElement {
         .badge.refused { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
         .badge.pending { background: color-mix(in srgb, var(--ui-age-activity) 25%, transparent); color: var(--ui-age-activity); }
         .badge.revoked { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
+        /* The invite QR tile: machine-readable encoding, not themed chrome —
+           black modules on white so phone cameras scan it in both themes
+           (work document #28 update #3) */
+        .invite-qr {
+          margin-top: 8px;
+          padding: 8px;
+          border-radius: var(--ui-radius, 6px);
+          background: white;
+          width: fit-content;
+        }
+        .invite-qr svg {
+          display: block;
+          width: 132px;
+          height: 132px;
+        }
     `;
   }
 
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    this.renderInviteQr();
     shadow
       .querySelector("[data-action='collapse']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

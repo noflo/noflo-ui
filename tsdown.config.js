@@ -64,6 +64,16 @@ export default defineConfig([
   },
   {
     entry: {
+      // The browser surface: SVG rendering only — the invite QR codes are
+      // SVG strings injected into Shadow DOM (no canvas)
+      qrcode: 'node_modules/qrcode/lib/browser.js',
+    },
+    ...vendor,
+    // Inline all dependencies (dijkstrajs et al.)
+    noExternal: [/./],
+  },
+  {
+    entry: {
       yjs: 'node_modules/yjs/dist/yjs.mjs',
     },
     ...vendor,

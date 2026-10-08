@@ -213,7 +213,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.remove();
   });
 
-  it("handles invites: generation intent, URI display with copy", () => {
+  it("handles invites: generation intent, URI display with copy", async () => {
     const el = makeElement();
     feedConnected(el);
     el.expanded = true;
@@ -236,6 +236,16 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     assert.ok(
       shadow.querySelector("[data-action='copy-invite']"),
       "copy button shown for the generated URI",
+    );
+    // The invite renders as a scannable QR tile (work document #28 update
+    // #3): the SVG generation is async, so it lands after a tick
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const qr = shadow.querySelector("#panel-invite-qr svg");
+    assert.ok(qr, "the invite renders an SVG QR code");
+    assert.match(
+      qr.getAttribute("viewBox") ?? "",
+      /\d+ \d+ \d+ \d+/,
+      "the QR encodes the invite",
     );
     el.remove();
   });
