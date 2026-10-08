@@ -63,7 +63,10 @@ function syncFullState(doc, io) {
  * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage }} [options]
  *   `meshStorage` injects the Engine-owned mesh configuration storage —
  *   used by tests to share device state across simulated reloads.
- * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void }>}
+ * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void }>}
+ *   `handle` is the headless seam (work document #44): the same
+ *   Dacar-checked dispatch the browser reaches over postMessage, callable
+ *   directly by Node entries.
  */
 export async function startEngine(io, options = {}) {
   // WebKit ships Ed25519 but not X25519 in WebCrypto: intercept X25519
@@ -462,8 +465,12 @@ export async function startEngine(io, options = {}) {
     socket.send(message);
   };
 
+  // The headless seam (work document #44): the same dispatch the browser
+  // reaches over postMessage, callable directly — the Node bridge submits
+  // intents and mesh commands through it, Dacar-checked identically
   return {
     doc,
+    handle: (/** @type {any} */ message) => routeMessage(message),
     stop() {
       clearInterval(heartbeat);
       mesh.stop().catch(() => {});
