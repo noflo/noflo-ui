@@ -33,6 +33,7 @@ import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
 import { attachInterfaces } from "./interfaces.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
+import { PRIMER_FILENAME, primerFor } from "./primer.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 
@@ -219,6 +220,17 @@ async function main() {
   });
 
   await materializer.materialize();
+
+  // The agent primer: context provisioning for file-based tools (work
+  // document #44 M2). A pre-existing AGENTS.md is never overwritten
+  // (work document #43 update #4 overlay rule)
+  const primer = primerFor({
+    exists: (file) => fsSync.existsSync(path.join(folder, file)),
+  });
+  if (primer !== null) {
+    await fs.writeFile(path.join(folder, PRIMER_FILENAME), primer);
+    console.log(`bridge  primer written to ${PRIMER_FILENAME}`);
+  }
 
   // The folder watcher: edits stream back as intents (the snapshot
   // advanced at absorption, so the bridge's own writes diff to nothing)
