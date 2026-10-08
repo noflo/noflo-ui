@@ -460,8 +460,7 @@ function intentMakeSubgraph(doc, payload) {
   echoes.push(setComponentEcho);
 
   setComponentSignature(doc, childId, {
-    inports: [...inPortNames].map((name) => ({ name })),
-    outports: [...outPortNames].map((name) => ({ name })),
+    ...deriveGraphSignature(doc, child),
     description: `Subgraph of ${graphId}`,
   });
 
@@ -798,12 +797,7 @@ function intentMoveUp(doc, payload) {
   } else {
     // Keep the signature in sync with the remaining exports
     setComponentSignature(doc, graphId, {
-      inports: [.../** @type {Y.Map<any>} */ (child.get("inports")).keys()].map(
-        (name) => ({ name }),
-      ),
-      outports: [
-        .../** @type {Y.Map<any>} */ (child.get("outports")).keys(),
-      ].map((name) => ({ name })),
+      ...deriveGraphSignature(doc, child),
       description: `Subgraph of ${parentId}`,
     });
   }
@@ -1154,6 +1148,48 @@ function directionForCommand(command) {
 }
 
 /**
+ * Derives a graph-implemented component's signature from its exports
+ * (work document #29): the interface is the exports, and each port
+ * inherits the datatype of the internal component port the export
+ * references. An exported port is a single address slot, so
+ * addressability never carries over to the derived signature.
+ *
+ * @param {Y.Doc} doc
+ * @param {Y.Map<any>} graph
+ * @returns {{ inports: Array<{ name: string, type?: string }>, outports: Array<{ name: string, type?: string }> }}
+ */
+function deriveGraphSignature(doc, graph) {
+  const readDirection = (/** @type {"inports" | "outports"} */ direction) =>
+    [.../** @type {Y.Map<any>} */ (graph.get(direction)).entries()].map(
+      ([name, info]) => {
+        const plain = info.toJSON();
+        /** @type {{ name: string, type?: string }} */
+        const port = { name };
+        // The datatype comes from the referenced component's port; the
+        // export's port name may carry a legacy slot suffix
+        const internalName = String(plain.port ?? "").replace(/\[\d+\]$/, "");
+        const component = getNode(graph, plain.process)?.get("component");
+        const nodeSignature = component
+          ? (getComponentSignature(doc, component)?.toJSON?.() ?? {})
+          : {};
+        const internal = (
+          direction === "inports"
+            ? nodeSignature.inports
+            : nodeSignature.outports
+        )?.find((/** @type {any} */ p) => p?.name === internalName);
+        if (internal && internal.type !== undefined) {
+          port.type = internal.type;
+        }
+        return port;
+      },
+    );
+  return {
+    inports: readDirection("inports"),
+    outports: readDirection("outports"),
+  };
+}
+
+/**
  * Re-derives a graph-implemented component's signature from its exports
  * (work document #29): a graph's signature is derived, never declared —
  * the same rule `intentSetSignature` enforces by refusing graphs. Called
@@ -1171,12 +1207,7 @@ function syncGraphSignature(doc, graphId) {
   if (!graph || !existing) return null;
   const plain = existing.toJSON?.() ?? {};
   setComponentSignature(doc, graphId, {
-    inports: [.../** @type {Y.Map<any>} */ (graph.get("inports")).keys()].map(
-      (name) => ({ name }),
-    ),
-    outports: [.../** @type {Y.Map<any>} */ (graph.get("outports")).keys()].map(
-      (name) => ({ name }),
-    ),
+    ...deriveGraphSignature(doc, graph),
     description:
       typeof plain.description === "string"
         ? plain.description

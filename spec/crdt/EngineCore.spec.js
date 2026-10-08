@@ -861,6 +861,55 @@ describe("makeSubgraph (work document #23)", () => {
     );
   });
 
+  it("the derived signature inherits types from the exported component ports (work document #29)", () => {
+    const doc = createProjectDoc("p");
+    createGraph(doc, "main");
+    const graph = getGraph(doc, "main");
+    addNode(graph, "A", "core/Typed");
+    addNode(graph, "B", "core/Other");
+    addEdge(graph, { node: "B", port: "out" }, { node: "A", port: "in" });
+    setComponentSignature(doc, "core/Typed", {
+      inports: [{ name: "in", type: "number", addressable: true }],
+      outports: [{ name: "out", type: "string" }],
+    });
+    setComponentSignature(doc, "core/Other", {
+      inports: [{ name: "in" }],
+      outports: [{ name: "out", type: "boolean" }],
+    });
+
+    const made = handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "makeSubgraph",
+      payload: { graphId: "main", nodeIds: ["A"] },
+    });
+    assert.ok(made.accepted);
+    const signature = doc.getMap("registry").get("main/A");
+    const inports = signature.get("inports").toJSON();
+    assert.deepEqual(
+      inports,
+      [{ name: "in", type: "number" }],
+      "the boundary export inherits the internal port's datatype — as a single address slot, never addressable",
+    );
+
+    // An export added later inherits its internal port's type too
+    handleMessage(doc, createEngineState(), {
+      type: "INTENT",
+      command: "addOutport",
+      payload: {
+        graphId: "main/A",
+        name: "result",
+        nodeId: "A",
+        port: "out",
+      },
+    });
+    const outports = doc
+      .getMap("registry")
+      .get("main/A")
+      .get("outports")
+      .toJSON();
+    assert.deepEqual(outports, [{ name: "result", type: "string" }]);
+  });
+
   it("exports connection ports even without a registry signature", () => {
     const doc = createProjectDoc("p");
     createGraph(doc, "main");
