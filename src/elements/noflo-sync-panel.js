@@ -110,6 +110,9 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._syncStatus = null;
     /** @type {string[]} */
     this._peers = [];
+    /** Peer id → identity hash, when the transport reports identities. */
+    /** @type {Record<string, string> | null} */
+    this._peerIdentities = null;
     /** @type {Array<{ identityHash: string, destinationHash: string | null, firstSeen: number, source?: string }>} */
     this._joinRequests = [];
     /** @type {{ stage: string, reason?: string, project?: any, error?: string } | null} */
@@ -158,10 +161,15 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   /**
-   * @param {string[]} peers Peer identity hashes.
+   * @param {string[]} peers Peer ids from the transport's peers event —
+   *   link ids today, to become identity hashes once the provider reports
+   *   them (work document #28).
+   * @param {Record<string, string> | null} [identities] Peer id → identity
+   *   hash, when the transport reports the mapping.
    */
-  setPeers(peers) {
+  setPeers(peers, identities = null) {
     this._peers = Array.isArray(peers) ? peers : [];
+    this._peerIdentities = identities ?? null;
     this.render();
   }
 
@@ -377,7 +385,11 @@ export class FlowSyncPanel extends FlowCornerElement {
       grantStatus.set(grant.peerHash, grant.status);
     }
     const peers = this._peers
-      .map((hash) => {
+      .map((peerId) => {
+        // The peers event keys by transport peer id; the identity is what
+        // the user reads and what the Dacar badges key on (work document
+        // #28). Without the mapping the raw id renders as-is
+        const hash = this._peerIdentities?.[peerId] ?? peerId;
         const self = hash === this._identityHash;
         const status = grantStatus.get(hash);
         const badge = status
@@ -386,11 +398,13 @@ export class FlowSyncPanel extends FlowCornerElement {
         return `<div class="list-item"><span class="grow hash-text">${escapeHtml(hash)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}</div>`;
       })
       .join("");
+    // Inviting mints grants: only the Trust Anchor's device offers the
+    // invite UI at all — participants never see it (work document #28)
+    const owner = this._dacarState?.anchor?.owner === true;
     const requests = this._joinRequests
       .map((/** @type {any} */ request) => {
         // Approving mints a Dacar grant: only the Trust Anchor's device can
         // act on a request; participants see it as information
-        const owner = this._dacarState?.anchor?.owner === true;
         const actions =
           this._readOnly || !owner
             ? `<div class="hint">Only the project's Trust Anchor can approve access.</div>`
@@ -416,7 +430,7 @@ export class FlowSyncPanel extends FlowCornerElement {
         }
         ${this._joinRequests.length > 0 ? `<details open><summary>Join requests</summary>${requests}</details>` : ""}
         ${
-          this._readOnly
+          this._readOnly || !owner
             ? ""
             : `<details open><summary>Invite</summary>
           ${
@@ -426,8 +440,12 @@ export class FlowSyncPanel extends FlowCornerElement {
               : `<button data-action="create-invite">Generate invite</button>`
           }
           <div class="hint">Send this invite to a collaborator. The token expires in 24 hours.</div>
-        </details>
-        <details><summary>Join a project</summary>
+        </details>`
+        }
+        ${
+          this._readOnly
+            ? ""
+            : `<details><summary>Join a project</summary>
           <div class="row">
             <input id="join-invite" placeholder="Paste an invite (noflo://join/...)">
             <button data-action="join">Join</button>

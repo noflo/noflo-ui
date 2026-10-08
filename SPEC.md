@@ -337,7 +337,7 @@ type EngineUIMessage =
   | { kind: 'awareness'; states: Array<Record<string, any>> }
   | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
-  | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number }
+  | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
   | { kind: 'mesh-requests'; requests: Array<{ identityHash: string; destinationHash: string | null; firstSeen: number; source?: string }> }
   | { kind: 'mesh-dacar'; projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
   | { kind: 'mesh-invite'; uri: string }

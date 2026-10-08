@@ -1957,10 +1957,24 @@ export async function createMeshSync({
         peers: peerCount,
       });
     });
+    /** Peer id → identity hash, from the provider's peers event (work
+     * document #28). Empty until the provider reports identities. */
+    const identityByPeer = new Map();
     provider.on("peers", (/** @type {any} */ event) => {
       const payload = unwrap(event) ?? {};
       peerCount +=
         (payload.added ?? []).length - (payload.removed ?? []).length;
+      // Peer id → identity hash, when the provider reports it (work
+      // document #28): the Glass's peers list reads identities, and the
+      // Dacar badges key on them
+      for (const [peerId, identityHash] of Object.entries(
+        payload.identities ?? {},
+      )) {
+        if (identityHash) identityByPeer.set(peerId, identityHash);
+      }
+      for (const peerId of payload.removed ?? []) {
+        identityByPeer.delete(peerId);
+      }
       if (peerCount > 0 && !discoveryDone) {
         discoveryDone = true;
         postMessage(
@@ -1972,6 +1986,7 @@ export async function createMeshSync({
         added: payload.added ?? [],
         removed: payload.removed ?? [],
         peers: peerCount,
+        identities: Object.fromEntries(identityByPeer),
       });
     });
     // Host side of the bootstrap pre-flow: invite others once the sync

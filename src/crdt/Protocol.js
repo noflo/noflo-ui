@@ -623,13 +623,17 @@ export const UI_MESSAGES = [
  */
 
 /**
- * Peer-set changes on the sync room.
+ * Peer-set changes on the sync room. Peer ids are the transport's own keys
+ * (link ids); the Glass renders identities, so the echo carries the
+ * peer-id → identity-hash mapping when the provider reports it (work
+ * document #28).
  *
  * @typedef {Object} MeshPeersEcho
  * @property {'mesh-peers'} kind
  * @property {string[]} added
  * @property {string[]} removed
  * @property {number} [peers]
+ * @property {Record<string, string>} [identities]
  */
 
 /**

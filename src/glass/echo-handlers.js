@@ -29,8 +29,9 @@ import { progressPhrase } from "./progressPhrases.js";
  * @property {(data: any) => void} ingestMeshConfig Take a full mesh-state
  *   report into the Glass's mesh state.
  * @property {(uri: string) => void} setMeshInvite Store a minted invite URI.
- * @property {(added: string[], removed: string[], peers: number) => void} updateMeshPeers
- *   Apply a peer-set change.
+ * @property {(added: string[], removed: string[], peers: number, identities?: Record<string, string>) => void} updateMeshPeers
+ *   Apply a peer-set change, with the peer-id → identity-hash mapping when
+ *   the provider reports it (work document #28).
  * @property {(requests: any[]) => void} setJoinRequests
  * @property {() => void} reloadIntoFreshBoot Reload after a factory reset.
  * @property {(state: any) => void} setDacarState
@@ -119,6 +120,7 @@ export function createEchoHandlers(deps) {
         data.added ?? [],
         data.removed ?? [],
         data.peers ?? 0,
+        data.identities ?? {},
       );
     },
     "kind:mesh-requests": (data) => {

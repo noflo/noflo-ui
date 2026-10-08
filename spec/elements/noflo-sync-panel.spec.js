@@ -250,6 +250,77 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.remove();
   });
 
+  it("participants have no invite UI, but keep joining and peers (work document #28)", () => {
+    const el = makeElement();
+    feedConnected(el);
+    // A participant: connected mesh, holds only the public anchor
+    el.setDacarState({
+      projectId: "p",
+      anchor: { hash: OWNER_HASH, owner: false },
+      grants: [],
+      wallet: [],
+    });
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(
+      !shadow.querySelector("[data-action='create-invite']"),
+      "no invite generation for participants",
+    );
+    assert.ok(
+      !shadow.querySelector("#panel-invite"),
+      "no invite accordion at all",
+    );
+    assert.ok(
+      shadow.querySelector("[data-action='join']"),
+      "participants still join projects",
+    );
+    assert.ok(
+      shadow.querySelector("#panel-invite-qr") === null ||
+        !shadow.querySelector("#panel-invite-qr").nextElementSibling,
+      "no invite QR for participants",
+    );
+    el.remove();
+  });
+
+  it("renders peers as identities when the mapping reports them", () => {
+    const el = makeElement();
+    feedConnected(el);
+    // The transport keys peers by link id; the Engine maps them to
+    // identity hashes (work document #28)
+    el.setPeers(["link-1"], { "link-1": PEER_HASH });
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const items = [...shadow.querySelectorAll(".list-item")].map(
+      (item) => item.textContent ?? "",
+    );
+    assert.ok(
+      items.some((text) => text.includes(PEER_HASH)),
+      "the peer renders as its identity hash",
+    );
+    assert.ok(
+      items.some((text) => text.includes("verified")),
+      "the Dacar badge keys on the identity and matches",
+    );
+    el.remove();
+  });
+
+  it("renders raw peer ids when no mapping is known yet", () => {
+    const el = makeElement();
+    feedConnected(el);
+    el.setPeers(["link-1"]);
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      shadow.querySelector(".list-item")?.textContent ?? "",
+      /link-1/,
+      "the unmapped peer id renders as-is",
+    );
+    el.remove();
+  });
+
   it("emits the join intent with the pasted invite", () => {
     const el = makeElement();
     feedConnected(el);

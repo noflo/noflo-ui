@@ -107,7 +107,11 @@ let narration =
   );
 /** Dacar authorization state (anchor, grants, wallet) reported by the Engine. */
 let dacarState = /** @type {any} */ (null);
-/** Connected peer identity hashes, from the Engine's mesh-peers events. */
+/** Connected peer ids, from the Engine's mesh-peers events. Peer ids are
+ * the transport's link ids; identities arrive alongside (work document
+ * #28). */
+/** @type {Record<string, string>} */
+let meshPeerIdentities = {};
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -246,10 +250,21 @@ const echoHandlers = createEchoHandlers({
     refreshMeshSettings();
     refreshSyncPanel();
   },
-  updateMeshPeers: (added, removed) => {
-    meshPeers = meshPeers.filter((hash) => !removed.includes(hash));
-    for (const hash of added) {
-      if (!meshPeers.includes(hash)) meshPeers.push(hash);
+  updateMeshPeers: (
+    added,
+    removed,
+    /** @type {number} */ _peers = 0,
+    /** @type {Record<string, string>} */ identities = {},
+  ) => {
+    meshPeers = meshPeers.filter((peerId) => !removed.includes(peerId));
+    for (const peerId of added) {
+      if (!meshPeers.includes(peerId)) meshPeers.push(peerId);
+    }
+    // The Glass renders identities: the mapping merges with what arrived
+    // before (peer ids are the transport's link ids, work document #28)
+    meshPeerIdentities = { ...meshPeerIdentities, ...identities };
+    for (const peerId of removed) {
+      delete meshPeerIdentities[peerId];
     }
     refreshSyncPanel();
   },
@@ -780,7 +795,7 @@ function refreshSyncPanel() {
   );
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
-  syncPanel.setPeers(meshPeers);
+  syncPanel.setPeers(meshPeers, meshPeerIdentities);
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);
