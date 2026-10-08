@@ -7,6 +7,11 @@
 
 import { createInterface } from "node:readline";
 
+if (process.argv.includes("--fake-version")) {
+  process.stdout.write("stub-pi 1.0.0\n");
+  process.exit(0);
+}
+
 const rl = createInterface({ input: process.stdin, terminal: false });
 rl.on("line", (line) => {
   if (line.length === 0) return;
