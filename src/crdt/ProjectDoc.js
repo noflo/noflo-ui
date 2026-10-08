@@ -23,6 +23,7 @@ export const COMPONENTS_MAP = "components";
 export const REGISTRY_MAP = "registry";
 /** Root map name for structural test suites. */
 export const SPECS_MAP = "specs";
+export const DOCS_MAP = "docs";
 
 /**
  * One endpoint of an edge: the node id, the port name, and the ArrayPort
@@ -714,6 +715,72 @@ export function setComponentCode(component, code) {
     text.delete(0, text.length);
     text.insert(0, code);
   });
+}
+
+/**
+ * Returns the docs map: collaborative Markdown documents keyed by name
+ * (project-carried documentation, work document #43).
+ *
+ * @param {Y.Doc} doc
+ * @returns {Y.Map<any>}
+ */
+function docsOf(doc) {
+  return doc.getMap(DOCS_MAP);
+}
+
+/**
+ * Ensures a documentation entry exists, returning its content buffer.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @returns {Y.Map<any>}
+ */
+export function ensureDoc(doc, name) {
+  const docs = docsOf(doc);
+  const existing = /** @type {Y.Map<any> | undefined} */ (docs.get(name));
+  if (existing) return existing;
+  const entry = new Y.Map();
+  entry.set("content", new Y.Text());
+  docs.set(name, entry);
+  return entry;
+}
+
+/**
+ * Returns a documentation entry's collaborative text buffer, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @returns {Y.Text | undefined}
+ */
+export function getDocText(doc, name) {
+  const entry = /** @type {Y.Map<any> | undefined} */ (docsOf(doc).get(name));
+  return /** @type {Y.Text | undefined} */ (entry?.get("content"));
+}
+
+/**
+ * Replaces a documentation entry's content atomically (single transaction,
+ * single delete+insert pair), preserving concurrent edits on other character
+ * ranges through Yjs merging.
+ *
+ * @param {Y.Map<any>} entry
+ * @param {string} content
+ */
+export function setDocText(entry, content) {
+  const text = /** @type {Y.Text} */ (entry.get("content"));
+  transact(entry, () => {
+    text.delete(0, text.length);
+    text.insert(0, content);
+  });
+}
+
+/**
+ * Removes a documentation entry.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ */
+export function removeDoc(doc, name) {
+  docsOf(doc).delete(name);
 }
 
 /**

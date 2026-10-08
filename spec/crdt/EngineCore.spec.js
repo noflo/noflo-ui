@@ -14,6 +14,7 @@ import {
   createGraph,
   createProjectDoc,
   getComponentSignature,
+  getDocText,
   getGraph,
   getNode,
   getProjectMetadata,
@@ -107,6 +108,50 @@ describe("intents", () => {
     const node = getNode(getGraph(doc, "main"), "Read");
     assert.ok(node, "node is in the CRDT");
     assert.equal(node.get("component"), "fs/ReadFile");
+  });
+
+  it("setDoc writes collaborative docs; path-unsafe names are refused", () => {
+    const doc = createProjectDoc("p");
+    assert.equal(
+      handle(doc, {
+        type: "INTENT",
+        command: "setDoc",
+        payload: { name: "AGENTS", content: "# Conventions\n" },
+      }).accepted,
+      true,
+    );
+    const text = getDocText(doc, "AGENTS");
+    assert.equal(text?.toString(), "# Conventions\n");
+
+    for (const name of ["../escape", "sub/Name", ".hidden", "Notes.md"]) {
+      assert.equal(
+        handle(doc, {
+          type: "INTENT",
+          command: "setDoc",
+          payload: { name, content: "x" },
+        }).accepted,
+        false,
+        `${name} is not a path-safe doc name`,
+      );
+    }
+  });
+
+  it("removeDoc drops the doc entry", () => {
+    const doc = createProjectDoc("p");
+    handle(doc, {
+      type: "INTENT",
+      command: "setDoc",
+      payload: { name: "AGENTS", content: "x" },
+    });
+    assert.equal(
+      handle(doc, {
+        type: "INTENT",
+        command: "removeDoc",
+        payload: { name: "AGENTS" },
+      }).accepted,
+      true,
+    );
+    assert.equal(getDocText(doc, "AGENTS"), undefined);
   });
 
   it("addNode rejects duplicates without mutating", () => {

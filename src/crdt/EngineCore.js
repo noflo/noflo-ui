@@ -20,6 +20,7 @@ import {
   createGroup,
   deleteGraph,
   ensureComponent,
+  ensureDoc,
   getComponent,
   getComponentCode,
   getComponentSignature,
@@ -31,6 +32,7 @@ import {
   moveIIP,
   moveNode,
   removeComponentSignature,
+  removeDoc,
   removeEdge,
   removeExportedPort,
   removeGroup,
@@ -40,6 +42,7 @@ import {
   revokePermission,
   setComponentCode,
   setComponentSignature,
+  setDocText,
   setEdgeRoute,
   setNodeComponent,
   setPortRoute,
@@ -160,6 +163,8 @@ export const INTENT_HANDLERS = {
   updateGroup: intentUpdateGroup,
   implementInCode: intentImplementInCode,
   setComponentCode: intentSetComponentCode,
+  setDoc: intentSetDoc,
+  removeDoc: intentRemoveDoc,
   forkComponent: intentForkComponent,
   setSignature: intentSetSignature,
 };
@@ -1786,6 +1791,48 @@ function intentSetComponentCode(doc, payload) {
   }
   const componentEntry = ensureComponent(doc, component, { name: component });
   setComponentCode(componentEntry, code);
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Sets a project-carried documentation document's content (work document
+ * #43): collaborative Markdown keyed by a path-safe name.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetDoc(doc, payload) {
+  const { name, content } = payload ?? {};
+  if (
+    typeof name !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) ||
+    name.endsWith(".md") ||
+    typeof content !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  setDocText(ensureDoc(doc, name), content);
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Removes a project-carried documentation document.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRemoveDoc(doc, payload) {
+  const { name } = payload ?? {};
+  if (
+    typeof name !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) ||
+    name.endsWith(".md")
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  removeDoc(doc, name);
   return { accepted: true, echoes: [] };
 }
 

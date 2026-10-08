@@ -6,8 +6,10 @@ import {
   createGraph,
   createProjectDoc,
   ensureComponent,
+  ensureDoc,
   setComponentCode,
   setComponentSignature,
+  setDocText,
 } from "../../src/crdt/ProjectDoc.js";
 import {
   docToFileTree,
@@ -81,6 +83,14 @@ describe("Y.Doc → file tree (work document #43)", () => {
     const signature = JSON.parse(tree["components/fs/ReadFile.json"]);
     assert.equal(signature.name, "fs/ReadFile");
     assert.ok(Array.isArray(signature.inports));
+  });
+
+  it("project docs materialize as docs/*.md", () => {
+    const doc = createProjectDoc("p");
+    seed(doc);
+    setDocText(ensureDoc(doc, "AGENTS"), "# Conventions\nKeep graphs flat.\n");
+    const tree = docToFileTree(doc);
+    assert.equal(tree["docs/AGENTS.md"], "# Conventions\nKeep graphs flat.\n");
   });
 
   it("COMPONENTS.md references components with ports and datatypes", () => {

@@ -173,6 +173,13 @@ export function docToFileTree(doc, options = {}) {
       ) + "\n";
   }
 
+  // Project-carried documentation: each entry materializes as a Markdown
+  // file under docs/ (work document #43)
+  const docs = sorted(doc.getMap("docs").toJSON());
+  for (const [name, entry] of Object.entries(docs)) {
+    tree[`docs/${name}.md`] = `${entry.content ?? ""}`;
+  }
+
   // COMPONENTS.md: the component reference for file-based agents —
   // available components, ports, datatypes, addressable flags
   const lines = ["# Components", ""];

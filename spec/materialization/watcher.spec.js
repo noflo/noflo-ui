@@ -212,6 +212,20 @@ describe("project materializer (work document #43)", () => {
 });
 
 describe("graph file serialization helper", () => {
+  it("a docs/*.md edit produces setDoc; deletion produces removeDoc", async () => {
+    const { materializer, intents } = boot();
+    await materializer.materialize();
+    await materializer.handleFileEvent("docs/AGENTS.md", "# Conventions\n");
+    const set = intents.at(-1);
+    assert.equal(set.command, "setDoc");
+    assert.equal(set.payload.name, "AGENTS");
+    assert.equal(set.payload.content, "# Conventions\n");
+    await materializer.handleFileEvent("docs/AGENTS.md", null);
+    const remove = intents.at(-1);
+    assert.equal(remove.command, "removeDoc");
+    assert.equal(remove.payload.name, "AGENTS");
+  });
+
   it("the materialized file parses back to the projected view", async () => {
     const harness = boot();
     await materialized(harness);

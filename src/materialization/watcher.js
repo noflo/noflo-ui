@@ -159,6 +159,28 @@ export function createMaterializer(options) {
         return;
       }
 
+      if (path.startsWith("docs/") && path.endsWith(".md")) {
+        const name = path.slice("docs/".length, -".md".length);
+        if (content === null) {
+          emitIntent({
+            type: "INTENT",
+            command: "removeDoc",
+            payload: { name },
+          });
+          delete snapshot[path];
+          return;
+        }
+        const intent = diffCode(base, content);
+        if (intent === null) return;
+        emitIntent({
+          type: "INTENT",
+          command: "setDoc",
+          payload: { name, content: intent },
+        });
+        snapshot[path] = content;
+        return;
+      }
+
       if (path.startsWith("components/") && path.endsWith(".json")) {
         const componentName = path.slice("components/".length, -".json".length);
         if (content === null) return;
