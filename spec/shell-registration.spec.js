@@ -18,7 +18,6 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 /** @type {Array<[string, string]>} shell, entry module (repo-relative) */
 const SHELLS = [
   ["index.html", "src/main.js"],
-  ["edit.html", "src/edit.js"],
   ["app.html", "src/app.js"],
 ];
 

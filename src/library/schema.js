@@ -76,6 +76,7 @@ export const ComponentSignature = {
     },
     inports: {
       type: "array",
+      uniquePortNames: true,
       description: "Definition of component inports",
       minItems: 0,
       uniqueItems: true,
@@ -83,6 +84,7 @@ export const ComponentSignature = {
     },
     outports: {
       type: "array",
+      uniquePortNames: true,
       description: "Definition of component outports",
       minItems: 0,
       uniqueItems: true,

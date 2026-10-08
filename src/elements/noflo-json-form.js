@@ -93,23 +93,49 @@ class NofloJsonForm extends HTMLElement {
       schema: this._schema,
       startval: this._data,
       customEditors: [FontAwesomeEditor],
+      // Custom schema constraints (work document #5): the validator merges
+      // these with the JSON Schema draft's built-ins, so schemas carrying
+      // the `uniquePortNames` keyword flag duplicates live — on every
+      // change, not only on save
+      constraints: {
+        uniquePortNames: ({ value, path }) => {
+          const names = (value ?? [])
+            .map((/** @type {any} */ port) => port?.name)
+            .filter(Boolean);
+          const duplicates = [
+            ...new Set(
+              names.filter((name, index) => names.indexOf(name) !== index),
+            ),
+          ];
+          if (duplicates.length === 0) return [];
+          return [
+            {
+              type: "error",
+              path,
+              constraint: "uniquePortNames",
+              messages: [
+                `Port names must be unique per direction: ${duplicates.join(", ")}`,
+              ],
+            },
+          ];
+        },
+      },
     });
 
-    // 2. Wait for the engine to finish its initial render and data binding
-    this.editor.on("ready", () => {
-      // 3. Now it is safe to listen for actual user changes
-      this.editor.on("change", () => {
-        // 4. Access the auto-generated validation results directly
-        // Fallback to an empty array just in case it is perfectly valid and undefined
-        const errors = this.editor.validation_results || [];
-
-        emit(this, "form-change", {
-          data: this.editor.getValue(),
-          isValid: errors.length === 0,
-          errors: errors,
-        });
+    // The live stream: jedison re-validates on every change, so
+    // duplicates surface as the user types, not on save. Jedison does
+    // not emit for the constructor's startval, so the initial state
+    // forwards once here (work document #5)
+    const forwardChange = () => {
+      const errors = this.editor.getErrors();
+      emit(this, "form-change", {
+        data: this.editor.getValue(),
+        isValid: errors.length === 0,
+        errors,
       });
-    });
+    };
+    this.editor.on("change", forwardChange);
+    forwardChange();
   }
 }
 
