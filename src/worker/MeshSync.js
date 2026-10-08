@@ -194,6 +194,9 @@ async function defaultCreateProvider(
  *   the identity is generated or restored.
  * @property {string} identityError Set when identity generation is
  *   impossible (WebCrypto without Ed25519); mesh sync cannot run.
+ * @property {() => any} getReticulum The shared Reticulum instance once the
+ *   mesh started (null before). The Companion's LXMF layer rides the same
+ *   stack (work document #47).
  * @property {string} room The room the project syncs through, derived from
  *   the project identity.
  * @property {() => Promise<void>} rebind Restarts the provider with a
@@ -2169,6 +2172,16 @@ export async function createMeshSync({
     },
     get identityHash() {
       return identityHash;
+    },
+    /**
+     * The shared Reticulum instance once the mesh started (null before).
+     * The Companion's LXMF layer rides the same stack — one mesh node
+     * (work document #47).
+     *
+     * @returns {any}
+     */
+    getReticulum() {
+      return sharedRns;
     },
     get identityError() {
       return identityError;

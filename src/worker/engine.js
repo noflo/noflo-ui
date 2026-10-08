@@ -66,7 +66,7 @@ function syncFullState(doc, io) {
  *   used by tests to share device state across simulated reloads.
  *   `attachInterfaces` overrides the browser interface wiring — the Node
  *   bridge injects its own (work document #44).
- * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void }>}
+ * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void, getReticulum: () => any }>}}
  *   `handle` is the headless seam (work document #44): the same
  *   Dacar-checked dispatch the browser reaches over postMessage, callable
  *   directly by Node entries.
@@ -474,6 +474,14 @@ export async function startEngine(io, options = {}) {
   return {
     doc,
     handle: (/** @type {any} */ message) => routeMessage(message),
+    /**
+     * The shared Reticulum instance once the mesh started (null before).
+     * The Companion's LXMF layer rides the same stack (work document #47).
+     *
+     * @returns {any}
+     */
+    getReticulum: () => mesh?.getReticulum() ?? null,
+    // eslint-disable-line @typescript-eslint/no-invalid-void-type -- any: the Reticulum type lives in the vendored bundle
     stop() {
       clearInterval(heartbeat);
       mesh.stop().catch(() => {});

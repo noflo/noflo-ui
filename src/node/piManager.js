@@ -98,7 +98,7 @@ export async function discoverPi(options = {}) {
  * @param {Function} [options.spawnFn] - Injectable spawn (tests).
  * @param {Function} [options.execFile] - Injectable exec for discovery (tests).
  * @param {(msg: string) => void} [options.log]
- * @returns {{ prompt: (text: string) => Promise<any>, suspend: () => void, stop: () => void, status: () => Promise<any>, client: PiRpcClient | null, isRunning: () => boolean, addEventListener: PiRpcClient["addEventListener"] }}
+ * @returns {{ prompt: (text: string) => Promise<any>, suspend: () => void, stop: () => void, status: () => Promise<any>, compact: (customInstructions?: string) => Promise<any|null>, setModel: (provider: string, modelId: string) => Promise<any|null>, newSession: () => Promise<any|null>, client: PiRpcClient | null, isRunning: () => boolean, addEventListener: PiRpcClient["addEventListener"] }}
  */
 export function createPiManager(options) {
   const workdir = options.workdir;
@@ -211,6 +211,25 @@ export function createPiManager(options) {
   }
 
   /**
+   * Adds a session file to the persisted resume index (the `/sessions`
+   * surface), newest first, capped.
+   *
+   * @param {string} file
+   * @returns {Promise<void>}
+   */
+  async function rememberSession(file) {
+    const index = await state
+      .get("sessions")
+      .then((list) => (Array.isArray(list) ? list : []))
+      .catch(() => []);
+    const next = [
+      { file, mtimeMs: Date.now() },
+      ...index.filter((/** @type {any} */ entry) => entry?.file !== file),
+    ].slice(0, 20);
+    await state.set("sessions", next);
+  }
+
+  /**
    * Tracks session-file changes from `get_state`-carrying events and
    * persists the pointer. pi emits a `get_state` result in its
    * `agent_start`/`session` events; the manager also probes state after
@@ -225,6 +244,7 @@ export function createPiManager(options) {
     state
       .set("session", { sessionFile: file, workdir })
       .catch((error) => log(`companion: session pointer not saved: ${error}`));
+    rememberSession(file).catch(() => {});
   }
 
   return {
@@ -291,6 +311,46 @@ export function createPiManager(options) {
       } catch {
         return null;
       }
+    },
+
+    /**
+     * Compacts the active session (the `/compact` surface). Resolves null
+     * when pi is not running.
+     *
+     * @param {string} [customInstructions]
+     * @returns {Promise<any|null>}
+     */
+    async compact(customInstructions) {
+      if (!client) return null;
+      return client.compact(customInstructions);
+    },
+
+    /**
+     * Switches the model of the active session (the `/model` surface).
+     *
+     * @param {string} provider
+     * @param {string} modelId
+     * @returns {Promise<any|null>}
+     */
+    async setModel(provider, modelId) {
+      if (!client) return null;
+      return client.setModel(provider, modelId);
+    },
+
+    /**
+     * Starts a fresh session (the `/new` surface); the previous session
+     * file stays on disk and is added to the resume index.
+     *
+     * @returns {Promise<any|null>}
+     */
+    async newSession() {
+      if (!client) return null;
+      const previous = sessionPath;
+      const result = await client.newSession();
+      if (typeof previous === "string" && previous) {
+        await rememberSession(previous);
+      }
+      return result;
     },
 
     /** @returns {boolean} Whether a child is running. */

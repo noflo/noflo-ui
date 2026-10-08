@@ -2,3 +2,6 @@
 dist/
 node_modules/
 utils/icon-map.js
+bridge.json
+join-flow-worker-test.html
+join-worker-repro.js

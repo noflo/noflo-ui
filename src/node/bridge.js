@@ -20,7 +20,10 @@
  *     "port": 3000,                 // HTTP serving port (0 = off)
  *     "tls": { "cert": "...", "key": "..." },  // optional HTTPS
  *     "mesh": { ...mesh config, same shape the settings dialog manages },
- *     "invite": "noflo://join/..."  // optional seed invite
+ *     "invite": "noflo://join/...",  // optional seed invite
+ *     "ownerContact": "<lxmf.delivery hex>",  // the owner's LXMF address
+ *     "stateDir": "./companion-state",  // Companion state (LXMF identity)
+ *     "piBin": "pi"                 // pi executable (discovered on PATH)
  *   }
  */
 
@@ -31,8 +34,11 @@ import * as https from "node:https";
 import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
+import { createChatSurface } from "./chat.js";
 import { attachInterfaces } from "./interfaces.js";
+import { startLxmfLayer } from "./lxmf.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
+import { createPiManager, discoverPi } from "./piManager.js";
 import { PRIMER_FILENAME, primerFor } from "./primer.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -279,8 +285,90 @@ async function main() {
     await serveUi(config.port ?? 3000, config.tls ?? {});
   }
 
+  // ---- The agent layer (work document #44 M2) ----
+  // LXMF: the always-on, addressable endpoint. Rides the engine's shared
+  // Reticulum stack (one mesh node, work document #47); the identity lives
+  // in the Companion's state dir, outside any project folder
+  const stateDir =
+    config.stateDir ?? path.join(path.dirname(configPath), "companion-state");
+  const ownerContact = config.ownerContact ?? null;
+  /** @type {ReturnType<typeof createChatSurface> | null} */
+  let chat = null;
+  /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */
+  let lxmf = null;
+  const piAvailable = await discoverPi({ piBin: config.piBin ?? "pi" });
+  if (!piAvailable.available) {
+    console.log("bridge  pi not found — the agent layer stays unavailable");
+  }
+  let manager = null;
+  if (piAvailable.available) {
+    manager = createPiManager({
+      workdir: folder,
+      state: {
+        get: (key) => meshStorage.get(`pi:${key}`),
+        set: (key, value) => meshStorage.set(`pi:${key}`, value),
+      },
+      piBin: config.piBin ?? "pi",
+      log: (msg) => console.log(msg),
+    });
+  }
+  const rns = engine.getReticulum();
+  if (rns) {
+    lxmf = await startLxmfLayer({
+      rns,
+      stateDir,
+      name: config.name ?? "noflo-ui Companion",
+      log: (msg) => console.log(msg),
+    });
+    console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
+    if (manager) {
+      chat = createChatSurface({
+        ownerContact,
+        sendText: lxmf.sendText,
+        verifySender: lxmf.verifySender,
+        pi: manager,
+        state: {
+          get: (key) => meshStorage.get(`pi:${key}`),
+          set: (key, value) => meshStorage.set(`pi:${key}`, value),
+        },
+        log: (msg) => console.log(msg),
+      });
+      lxmf.onMessage((event) => {
+        chat?.handleInbound(event).catch(() => {});
+      });
+      // Narration: pi lifecycle moments reach the owner as chat
+      if (ownerContact) {
+        manager.addEventListener("narration", (/** @type {any} */ e) => {
+          lxmf
+            ?.sendText(ownerContact, e.detail.text, {
+              title: "Companion narration",
+            })
+            .catch(() => {});
+        });
+      }
+    }
+    // Hello world: the boot announce to the owner contact (work document
+    // #44 bootstrap). Once #47's unclaimed/claim-code mode lands, this
+    // branch becomes the claimed path of it
+    if (ownerContact) {
+      lxmf
+        .sendText(
+          ownerContact,
+          `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
+          { title: "Companion hello" },
+        )
+        .catch((error) =>
+          console.log(`bridge  hello world failed: ${error.message}`),
+        );
+    }
+  } else {
+    console.log("bridge  mesh not started — the LXMF layer stays offline");
+  }
+
   process.on("SIGINT", async () => {
     console.log("bridge  stopping");
+    manager?.stop();
+    lxmf?.stop();
     await persistence.destroy();
     engine.stop();
     process.exit(0);
