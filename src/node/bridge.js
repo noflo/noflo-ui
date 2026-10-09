@@ -46,6 +46,7 @@ import { attachInterfaces } from "./interfaces.js";
 import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
 import { createPiManager, discoverPi } from "./piManager.js";
+import { assistantText } from "./piRpc.js";
 import { PRIMER_FILENAME, primerFor } from "./primer.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -453,6 +454,30 @@ async function main() {
             title: "Companion narration",
           })
           .catch(() => {});
+      });
+      // pi output is Markdown; the LXMF renderer field is already set, so
+      // assistant replies render readably in the chat client
+      manager.addEventListener("event", (/** @type {any} */ e) => {
+        const event = e.detail;
+        if (
+          event?.type === "message_end" &&
+          event.message?.role === "assistant"
+        ) {
+          const text = assistantText(event.message);
+          if (text) {
+            chat?.reply(text, "pi").catch(() => {});
+          }
+        }
+        // Dialogs hang the run with nobody at a terminal: decline and note
+        if (event?.type === "extension_ui_request") {
+          manager.client?.respondUi(event.id, { cancelled: true });
+          chat
+            ?.reply(
+              `⛔ dismissed a dialog (${event.title ?? event.method}) — nobody is at a terminal.`,
+              "pi",
+            )
+            .catch(() => {});
+        }
       });
     }
     // Hello world: the boot announce to the owner contact (work document

@@ -97,6 +97,27 @@ export function createJsonlReader(onLine) {
 }
 
 /**
+ * Extracts the concatenated text blocks of an assistant (or any) message.
+ *
+ * @param {{role?: string, content?: string|Array<{type?: string, text?: string, [key: string]: any}>}} message
+ * @returns {string}
+ */
+export function assistantText(message) {
+  if (!message || typeof message !== "object") return "";
+  const content = message.content;
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .filter(
+      (block) =>
+        block && block.type === "text" && typeof block.text === "string",
+    )
+    .map((block) => block.text)
+    .join("\n\n")
+    .trim();
+}
+
+/**
  * A supervised client for `pi --mode rpc`.
  *
  * Emits EventTarget events:
