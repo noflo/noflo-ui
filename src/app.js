@@ -608,16 +608,13 @@ async function openSignatureEditor(componentName) {
  */
 async function openCodeEditor(componentName, language) {
   if (!codeEditor) return;
-  const entry = /** @type {any} */ (
-    mirrorDoc.getMap("components").get(componentName)
-  );
-  const ytext = entry?.get("code");
+  const map = /** @type {any} */ (mirrorDoc.getMap("components"));
+  let ytext = /** @type {any} */ (map.get(componentName)?.get("code"));
   if (!ytext) {
     // The mirror may lag the intent echo briefly (the implement intent
     // was just sent): wait for the component's code buffer to appear
     // rather than silently doing nothing
-    const appeared = await new Promise((resolve) => {
-      const map = mirrorDoc.getMap("components");
+    ytext = await new Promise((resolve) => {
       const timeout = setTimeout(() => {
         map.unobserve(observe);
         resolve(null);
@@ -637,7 +634,7 @@ async function openCodeEditor(componentName, language) {
         resolve(map.get(componentName).get("code"));
       }
     });
-    if (!appeared) {
+    if (!ytext) {
       console.warn(
         `The component ${componentName} did not reach the mirror in time`,
       );
@@ -646,7 +643,7 @@ async function openCodeEditor(componentName, language) {
   }
   // Bind: yCollab renders whatever the buffer holds and follows it live
   codeEditor.open({
-    ytext: entry.get("code"),
+    ytext,
     name: componentName,
     language,
     onSendDelta: (/** @type {any[]} */ delta) => {
