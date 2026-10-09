@@ -463,9 +463,9 @@ async function main() {
     });
     // The mesh start is async: let the transport come up before the knock
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    if (config.invite && projectId === undefined) {
-      // Seed invites apply to the FIRST project only: a project that has
-      // already joined ignores it (the knock is idempotent anyway)
+    if (config.invite) {
+      // Seed invites join the active project (the knock is idempotent:
+      // an already-granted project re-answers the handoff)
       engine.handle({
         type: "MESH",
         command: "join",
