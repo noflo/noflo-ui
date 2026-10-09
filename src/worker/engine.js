@@ -61,7 +61,7 @@ function syncFullState(doc, io) {
  *   postMessage: (message: any) => void,
  *   registerMessageHandler: (handler: (message: any) => void) => void,
  * }} io Injection point for the Worker messaging surface.
- * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage, attachInterfaces?: (rns: any, interfaces: any[]) => Promise<void> }} [options]
+ * @param {{ name?: string, meshStorage?: import("../crdt/MeshConfig.js").AsyncStorage, attachInterfaces?: (rns: any, interfaces: any[]) => Promise<void>, reticulum?: any }} [options]
  *   `meshStorage` injects the Engine-owned mesh configuration storage —
  *   used by tests to share device state across simulated reloads.
  *   `attachInterfaces` overrides the browser interface wiring — the Node
@@ -244,6 +244,7 @@ export async function startEngine(io, options = {}) {
     doc,
     postMessage: io.postMessage,
     storage: meshStorage,
+    reticulum: options.reticulum ?? undefined,
     roomFor: projectRoom,
     // With a bound project store, wait for the stored project id before
     // binding; a pending bootstrap invite resumes the join instead of

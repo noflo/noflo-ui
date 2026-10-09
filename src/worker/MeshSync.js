@@ -365,12 +365,18 @@ async function defaultAttachInterfaces(
 /**
  * Binds mesh sync to a project document.
  *
+ * The `reticulum` option injects a process-owned Reticulum instance (the
+ * Companion daemon): it is used instead of building one and never stopped
+ * by mesh stop — its owner manages the lifetime, so project engines can
+ * restart around a stable mesh node (work document #47, multi-project).
+ *
  * @param {{
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
  *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
  *   attachInterfaces?: (rns: any, interfaces: import("../crdt/MeshConfig.js").MeshInterface[]) => Promise<void>,
+ *   reticulum?: any,
  *   awarenessThrottleMs?: number,
  *   roomFor?: () => string,
  *   autostart?: boolean,
@@ -383,6 +389,7 @@ export async function createMeshSync({
   storage,
   createProvider = defaultCreateProvider,
   attachInterfaces = undefined,
+  reticulum = undefined,
   awarenessThrottleMs = 250,
   roomFor = () => "noflo-ui",
   autostart = true,
@@ -1338,8 +1345,18 @@ export async function createMeshSync({
    *
    * @returns {Promise<any>}
    */
+  /** Whether the shared instance is process-owned (injected): the daemon
+   * hands one Reticulum instance down so the LXMF layer and project
+   * engines share a single mesh node — mesh stop must not stop it. */
+  const injectedRns = reticulum ?? null;
+
   async function ensureReticulum() {
     if (sharedRns) return sharedRns;
+    if (injectedRns) {
+      // Process-owned: interfaces were attached by the owner already
+      sharedRns = injectedRns;
+      return sharedRns;
+    }
     const { Reticulum } = await import("../../vendor/reticulum-core.js");
     const rns = new Reticulum();
     try {
@@ -1355,11 +1372,14 @@ export async function createMeshSync({
     return rns;
   }
 
-  /** Stops and discards the shared Reticulum instance. */
+  /** Stops and discards the shared Reticulum instance. A process-owned
+   * instance is only released, never stopped: its owner manages its
+   * lifetime (work document #47, multi-project). */
   async function releaseReticulum() {
     if (!sharedRns) return;
     const rns = sharedRns;
     sharedRns = null;
+    if (injectedRns) return;
     await rns.stop().catch(() => {});
   }
 
