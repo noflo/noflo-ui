@@ -668,7 +668,7 @@ async function main() {
             );
             fsSync.renameSync(tempPath, configPath);
             const contact = await deriveDeliveryHash(identityHash);
-            chat.setOwnerContact(contact);
+            chat?.setOwnerContact(contact);
             console.log(
               `bridge  claimed by ${identityHash} — ownerIdentity written to ${configPath}`,
             );
