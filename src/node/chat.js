@@ -19,6 +19,7 @@
  */
 
 import { toHex as coreToHex } from "../../vendor/reticulum-core.js";
+import { messageClaims } from "./claim.js";
 
 /** A parsed inbound chat message. */
 export class ChatMessage {
@@ -74,27 +75,27 @@ export function parseChatMessage(sourceHex, text) {
  *
  * @param {object} deps
  * @param {string|null} deps.ownerContact - The owner's `lxmf.delivery` hash
- *   (hex); messages from other identities are dropped. Null disables the
- *   gate (tests only).
+ *   (hex); messages from other identities are dropped. Null = unclaimed
+ *   mode: only the claim check admits messages (tests/claim setup).
+ *   Mutable after claiming via the surface's `setOwnerContact`.
  * @param {(destinationHex: string, text: string, options?: {title?: string}) => Promise<void>} deps.sendText
  * @param {(message: any) => Promise<"verified"|"unknown"|"invalid">} deps.verifySender
- * @param {{
- *   prompt: (text: string) => Promise<any>,
- *   status: () => Promise<any>,
- *   compact: (customInstructions?: string) => Promise<any|null>,
- *   setModel: (provider: string, modelId: string) => Promise<any|null>,
- *   newSession: () => Promise<any|null>,
- *   suspend: () => void,
- *   stop: () => void,
- *   isRunning: () => boolean,
- *   client: { abort: () => void } | null,
- * }} deps.pi - The pi lifecycle manager.
+ * @param {import("./piManager.js").PiManagerHandle | null} deps.pi - The pi
+ *   lifecycle manager; null when pi is unavailable (the surface answers
+ *   diagnostics instead).
+ * @param {{ code: string, onClaim: (ownerIdentityHash: string) => Promise<void> } | null} [deps.claim]
+ *   The unclaimed-mode bootstrap (work document #47 scope item 1): the
+ *   first verified sender whose message contains the code becomes the
+ *   owner. Inactive once claimed.
+ * @param {((message: any) => Promise<string | null>) | null} [deps.senderIdentityHash]
+ *   Recalls the sender's Reticulum identity hash (the claim persists it).
  * @param {{ get: (key: string) => Promise<any>, set: (key: string, value: any) => Promise<void> }} deps.state
  * @param {(msg: string) => void} [deps.log]
  * @returns {{
  *   handleInbound: (event: { message: any }) => Promise<void>,
  *   chatMessage: (sourceHex: string, text: string) => Promise<void>,
  *   reply: (text: string, title?: string) => Promise<void>,
+ *   setOwnerContact: (contact: string) => void,
  * }}
  */
 export function createChatSurface({
@@ -103,11 +104,17 @@ export function createChatSurface({
   verifySender,
   pi,
   state,
+  claim = null,
+  senderIdentityHash = null,
   log = () => {},
 }) {
   /** Serialization chain: inbound messages run strictly in arrival order. */
   /** @type {Promise<void>} */
   let queue = Promise.resolve();
+  /** The claimed owner's contact; set through `setOwnerContact`. */
+  let owner = ownerContact;
+  /** Whether the claim code is still open (unclaimed mode). */
+  let claimOpen = claim != null;
 
   /**
    * Sends a reply to the owner contact.
@@ -117,11 +124,11 @@ export function createChatSurface({
    * @returns {Promise<void>}
    */
   async function reply(text, title = "Companion") {
-    if (!ownerContact) {
+    if (!owner) {
       log("companion: reply dropped (no owner contact configured)");
       return;
     }
-    await sendText(ownerContact, text, { title });
+    await sendText(owner, text, { title });
   }
 
   /**
@@ -150,6 +157,10 @@ export function createChatSurface({
     const message = parseChatMessage(sourceHex, text);
     if (!message.isCommand) {
       // Free text is a prompt for the active project
+      if (!pi) {
+        await reply("pi is not available on this Companion");
+        return;
+      }
       try {
         await pi.prompt(message.text);
       } catch (e) {
@@ -171,7 +182,7 @@ export function createChatSurface({
   async function runCommand(message) {
     switch (message.command) {
       case "sessions": {
-        const current = pi.isRunning() ? await pi.status() : null;
+        const current = pi?.isRunning() ? await pi.status() : null;
         /** @type {string[]} */
         const lines = [];
         if (current?.sessionFile) {
@@ -203,12 +214,12 @@ export function createChatSurface({
         // Point the manager at the target session and sleep: the next
         // prompt respawns with `--session` (work document #44 lifecycle)
         await state.set("session", { sessionFile: target.file, workdir: null });
-        pi.suspend();
+        pi?.suspend();
         await reply(`${target.file} resumes on the next prompt`);
         return;
       }
       case "session": {
-        const current = pi.isRunning() ? await pi.status() : null;
+        const current = pi?.isRunning() ? await pi.status() : null;
         if (!current) {
           await reply("pi is not running — a prompt starts it");
           return;
@@ -223,7 +234,7 @@ export function createChatSurface({
         return;
       }
       case "compact": {
-        if (!pi.isRunning()) {
+        if (!pi?.isRunning()) {
           await reply("pi is not running — nothing to compact");
           return;
         }
@@ -238,7 +249,7 @@ export function createChatSurface({
         return;
       }
       case "new": {
-        if (!pi.isRunning()) {
+        if (!pi?.isRunning()) {
           await reply("pi is not running — a prompt starts it");
           return;
         }
@@ -255,13 +266,13 @@ export function createChatSurface({
         return;
       }
       case "abort": {
-        pi.client?.abort();
+        pi?.client?.abort();
         await reply("abort sent");
         return;
       }
       case "model": {
         if (!message.argument) {
-          const current = pi.isRunning() ? await pi.status() : null;
+          const current = pi?.isRunning() ? await pi.status() : null;
           await reply(`model: ${current?.model ?? "not running"}`);
           return;
         }
@@ -274,8 +285,9 @@ export function createChatSurface({
           return;
         }
         try {
-          const model = await pi.setModel(provider, modelId);
+          const model = await pi?.setModel(provider, modelId);
           await reply(`model set to ${model?.id ?? message.argument}`);
+          return;
         } catch (e) {
           await reply(
             `⚠️ model switch failed: ${e instanceof Error ? e.message : e}`,
@@ -284,6 +296,10 @@ export function createChatSurface({
         return;
       }
       case "suspend": {
+        if (!pi) {
+          await reply("pi is not available on this Companion");
+          return;
+        }
         pi.suspend();
         await reply("pi suspended — the session resumes on the next prompt");
         return;
@@ -303,10 +319,9 @@ export function createChatSurface({
   }
 
   /**
-   * Gates and dispatches one inbound LXMF message. The gate: the sender
-   * must be the configured owner contact AND carry a verified signature —
-   * "unknown" (identity not recalled yet) is dropped; a re-sync after the
-   * announce lands re-delivers it.
+   * Gates and dispatches one inbound LXMF message. In unclaimed mode the
+   * claim check runs on every verified sender; once claimed (or when an
+   * owner is configured) the gate admits only the owner contact.
    *
    * @param {{ message: any }} event
    * @returns {Promise<void>}
@@ -315,10 +330,6 @@ export function createChatSurface({
     const message = event?.message;
     if (!message?.sourceHash) return;
     const sourceHex = coreToHex(message.sourceHash);
-    if (ownerContact && sourceHex !== ownerContact.toLowerCase()) {
-      log(`companion: inbound from ${sourceHex} dropped (not the owner)`);
-      return;
-    }
     const proof = await verifySender(message);
     if (proof !== "verified") {
       log(`companion: inbound from ${sourceHex} dropped (${proof} signature)`);
@@ -329,6 +340,29 @@ export function createChatSurface({
         ? message.content
         : new TextDecoder().decode(message.content ?? new Uint8Array());
     if (!text.trim()) return;
+    // Unclaimed mode: the first verified sender of the claim code wins
+    if (claimOpen && claim) {
+      if (!messageClaims(text, claim.code)) {
+        log(
+          `companion: inbound from ${sourceHex} dropped (unclaimed, not the claim code)`,
+        );
+        return;
+      }
+      const identityHash = senderIdentityHash
+        ? await senderIdentityHash(message)
+        : null;
+      if (!identityHash) {
+        log("companion: claimant identity not recalled; claim not processed");
+        return;
+      }
+      claimOpen = false;
+      await claim.onClaim(identityHash);
+      return;
+    }
+    if (owner && sourceHex !== owner.toLowerCase()) {
+      log(`companion: inbound from ${sourceHex} dropped (not the owner)`);
+      return;
+    }
     // Serialize: prompts and commands keep order
     const run = queue
       .then(() => chatMessage(sourceHex, text))
@@ -343,5 +377,17 @@ export function createChatSurface({
     await run;
   }
 
-  return { handleInbound, chatMessage, reply };
+  return {
+    handleInbound,
+    chatMessage,
+    reply,
+    /**
+     * Switches the gate to a newly claimed owner's contact.
+     *
+     * @param {string} contact - The owner's `lxmf.delivery` hash (hex).
+     */
+    setOwnerContact(contact) {
+      owner = contact;
+    },
+  };
 }

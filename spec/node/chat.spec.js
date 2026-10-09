@@ -178,6 +178,71 @@ describe("chat command surface (work document #44 M2)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("unclaimed mode: the first verified sender of the claim code becomes owner", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "noflo-claim-"));
+    /** @type {string | null} */
+    let owner = null;
+    /** @type {Array<{ to: string, text: string }>} */
+    const sent = [];
+    const surface = createChatSurface({
+      ownerContact: null,
+      sendText: async (to, text) => {
+        sent.push({ to, text });
+      },
+      verifySender: async () => "verified",
+      pi: null,
+      state: { get: async () => null, set: async () => {} },
+      claim: {
+        code: "claim-me-42",
+        onClaim: async (/** @type {string} */ identityHash) => {
+          owner = identityHash;
+          surface.setOwnerContact("cc".repeat(32));
+          // The bridge's onClaim sends the confirmation (mimicked here)
+          sent.push({
+            to: "cc".repeat(32),
+            text: "You are now the owner of this Companion",
+          });
+        },
+      },
+      senderIdentityHash: async () => "dd".repeat(16),
+      log: () => {},
+    });
+    // Non-code chatter is inert while unclaimed
+    await surface.handleInbound(inbound(OTHER, "hello?"));
+    assert.equal(owner, null);
+    assert.deepEqual(sent, []);
+    // The claim: verified sender + the code
+    await surface.handleInbound(inbound(OTHER, "please claim: claim-me-42"));
+    assert.equal(owner, "dd".repeat(16));
+    assert.match(sent[0]?.text ?? "", /owner of this Companion/);
+    // After claiming the gate switches to the new owner; strangers drop
+    await surface.handleInbound(inbound(OTHER, "/help"));
+    assert.equal(sent.length, 1, "the ex-claimant is no longer admitted");
+    // The new owner gets commands
+    await surface.handleInbound(inbound("cc".repeat(32), "/help"));
+    assert.match(sent[1]?.text ?? "", /commands:/);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("pi unavailable: prompts answer with a diagnostic", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "noflo-chat-"));
+    const surface = createChatSurface({
+      ownerContact: OWNER,
+      sendText: async (to, text) => {
+        sent2.push({ to, text });
+      },
+      verifySender: async () => "verified",
+      pi: null,
+      state: { get: async () => null, set: async () => {} },
+      log: () => {},
+    });
+    /** @type {Array<{ to: string, text: string }>} */
+    const sent2 = [];
+    await surface.handleInbound(inbound(OWNER, "do a thing"));
+    assert.match(sent2.at(-1)?.text ?? "", /pi is not available/);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("inbound messages run in arrival order", async () => {
     const { surface, sent, pi, dir } = await boot();
     await Promise.all([

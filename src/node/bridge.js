@@ -40,6 +40,7 @@ import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
 import { createChatSurface } from "./chat.js";
+import { claimInstructions, createClaimCode } from "./claim.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
 import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
@@ -384,31 +385,74 @@ async function main() {
       log: (msg) => console.log(msg),
     });
     console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
-    if (manager) {
-      chat = createChatSurface({
-        ownerContact,
-        sendText: lxmf.sendText,
-        verifySender: lxmf.verifySender,
-        pi: manager,
-        state: {
-          get: (key) => meshStorage.get(`pi:${key}`),
-          set: (key, value) => meshStorage.set(`pi:${key}`, value),
-        },
-        log: (msg) => console.log(msg),
+    // Unclaimed mode (work document #47 scope item 1): without a
+    // configured owner the claim code is the only way in; the first
+    // verified sender of the code becomes the owner, persisted to the
+    // config file
+    /** @type {string | null} */
+    let claimCode = null;
+    if (!ownerContact) {
+      claimCode = createClaimCode();
+      const instructions = await claimInstructions(
+        claimCode,
+        lxmf.deliveryHash,
+        lxmf.identityHash,
+      );
+      console.log(instructions);
+    }
+    chat = createChatSurface({
+      ownerContact,
+      sendText: lxmf.sendText,
+      verifySender: lxmf.verifySender,
+      pi: manager,
+      state: {
+        get: (key) => meshStorage.get(`pi:${key}`),
+        set: (key, value) => meshStorage.set(`pi:${key}`, value),
+      },
+      claim: claimCode
+        ? {
+            code: claimCode,
+            onClaim: async (/** @type {string} */ identityHash) => {
+              // The claimed owner: persist to the config file (the same
+              // shape a power user would write), derive the contact, and
+              // confirm over chat
+              const configRaw = fsSync.readFileSync(configPath, "utf8");
+              const parsed = JSON.parse(configRaw);
+              parsed.ownerIdentity = identityHash;
+              const tempPath = `${configPath}.claim-tmp`;
+              fsSync.writeFileSync(
+                tempPath,
+                `${JSON.stringify(parsed, null, 2)}\n`,
+              );
+              fsSync.renameSync(tempPath, configPath);
+              const contact = await deriveDeliveryHash(identityHash);
+              chat?.setOwnerContact(contact);
+              console.log(
+                `bridge  claimed by ${identityHash} — ownerIdentity written to ${configPath}`,
+              );
+              await /** @type {any} */ (lxmf).sendText(
+                contact,
+                `You are now the owner of this Companion ("${config.name ?? "noflo-ui Companion"}").\npi: ${piAvailable.version ?? "not found"}\nSend /help for the command surface.`,
+                { title: "Companion claimed" },
+              );
+            },
+          }
+        : undefined,
+      senderIdentityHash: lxmf.senderIdentityHash,
+      log: (msg) => console.log(msg),
+    });
+    lxmf.onMessage((event) => {
+      chat?.handleInbound(event).catch(() => {});
+    });
+    // Narration: pi lifecycle moments reach the owner as chat
+    if (ownerContact && manager) {
+      manager.addEventListener("narration", (/** @type {any} */ e) => {
+        lxmf
+          ?.sendText(ownerContact, e.detail.text, {
+            title: "Companion narration",
+          })
+          .catch(() => {});
       });
-      lxmf.onMessage((event) => {
-        chat?.handleInbound(event).catch(() => {});
-      });
-      // Narration: pi lifecycle moments reach the owner as chat
-      if (ownerContact) {
-        manager.addEventListener("narration", (/** @type {any} */ e) => {
-          lxmf
-            ?.sendText(ownerContact, e.detail.text, {
-              title: "Companion narration",
-            })
-            .catch(() => {});
-        });
-      }
     }
     // Hello world: the boot announce to the owner contact (work document
     // #44 bootstrap). Once #47's unclaimed/claim-code mode lands, this

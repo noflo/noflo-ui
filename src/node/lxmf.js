@@ -132,6 +132,7 @@ export function chunkText(text, size = CHUNK_CHARS) {
  *   deliveryHash: string,
  *   sendText: (destinationHex: string, text: string, options?: {title?: string}) => Promise<void>,
  *   verifySender: (message: any) => Promise<"verified"|"unknown"|"invalid">,
+ *   senderIdentityHash: (message: any) => Promise<string | null>,
  *   onMessage: (handler: (event: { message: any, link?: any }) => void) => void,
  *   stop: () => void
  * }>}
@@ -228,6 +229,19 @@ export async function startLxmfLayer({
     return (await message.verifySignature(sender)) ? "verified" : "invalid";
   }
 
+  /**
+   * Recalls the sender's Reticulum identity hash (hex), or null when the
+   * identity is not yet known. The claim bootstrap persists this hash as
+   * the owner identity (work document #47 scope item 1).
+   *
+   * @param {any} message
+   * @returns {Promise<string | null>}
+   */
+  async function senderIdentityHash(message) {
+    const sender = await rns.transport.recallIdentity(message.sourceHash);
+    return sender ? toHex(sender.identityHash) : null;
+  }
+
   /** @type {Array<(event: { message: any, link?: any }) => void>} */
   const handlers = [];
   const onData = async (/** @type {any} */ event) => {
@@ -256,6 +270,7 @@ export async function startLxmfLayer({
     deliveryHash,
     sendText,
     verifySender,
+    senderIdentityHash,
     /**
      * Subscribes to inbound messages. Multiple handlers allowed; the
      * caller owns gating (owner check, signature verification, ordering).

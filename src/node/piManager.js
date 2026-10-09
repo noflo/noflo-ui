@@ -79,6 +79,21 @@ export async function discoverPi(options = {}) {
 }
 
 /**
+ * The lifecycle manager's surface, as the chat command surface consumes it.
+ *
+ * @typedef {Object} PiManagerHandle
+ * @property {() => boolean} isRunning Whether a child is running.
+ * @property {(text: string) => Promise<any>} prompt Work-driven entry.
+ * @property {() => Promise<any|null>} status The pi state, or null.
+ * @property {(customInstructions?: string) => Promise<any|null>} compact
+ * @property {(provider: string, modelId: string) => Promise<any|null>} setModel
+ * @property {() => Promise<any|null>} newSession
+ * @property {() => void} suspend Immediate sleep; the pointer persists.
+ * @property {() => void} stop Final shutdown.
+ * @property {import("./piRpc.js").PiRpcClient | null} client
+ */
+
+/**
  * A per-project pi lifecycle manager. Phase A: one active project.
  *
  * Emits EventTarget events:
