@@ -27,8 +27,15 @@
  * @returns {any[]} Extensions for the EditorView.
  */
 export function codeEditorTheme(cm) {
-  // Feature-tolerant: stripped surfaces (tests) degrade to chrome-only
+  // Feature-tolerant: stripped surfaces (tests) degrade to chrome-only.
+  // In the app a missing API means a stale cached vendor bundle — say so
+  // instead of silently shipping the default theme
   if (typeof cm.HighlightStyle?.define !== "function" || !cm.tags) {
+    if (typeof cm.EditorView?.theme === "function") {
+      console.warn(
+        "code editor: the vendored CodeMirror surface lacks the highlight API — serving a stale cache? Hard-reload to pick up vendor/codemirror.js",
+      );
+    }
     return [];
   }
   const highlight = cm.HighlightStyle.define([
