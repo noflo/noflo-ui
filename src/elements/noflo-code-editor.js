@@ -50,16 +50,25 @@ export class NofloCodeEditor extends HTMLElement {
         :host([open]) {
           display: block;
         }
-        .scrim {
-          position: fixed;
-          inset: 0;
+        dialog {
+          padding: 0;
+          border: none;
+          background: transparent;
+          max-width: none;
+          max-height: none;
+          width: 90vw;
+          height: 90vh;
+        }
+        dialog::backdrop {
+          /* The one sanctioned raw color: a full-screen scrim is light
+             management, not themed chrome (VISUAL_GUIDELINES) */
           background: rgba(0, 0, 0, 0.5);
         }
         .panel {
-          position: fixed;
-          inset: 5vh 5vw;
           display: flex;
           flex-direction: column;
+          width: 100%;
+          height: 100%;
           background: var(--ui-panel-bg, #16161c);
           border: 1px solid var(--ui-border, #33333d);
           border-radius: 6px;
@@ -187,8 +196,18 @@ export class NofloCodeEditor extends HTMLElement {
     this.shadowRoot.querySelector(".name").textContent = name;
     this.shadowRoot.querySelector(".lang").textContent = language;
     this.setAttribute("open", "");
+    const dialog = /** @type {HTMLDialogElement} */ (
+      this.shadowRoot.querySelector("dialog")
+    );
+    // showModal puts the panel in the top layer — above canvas layers
+    // and the #app backdrop-filter's containing block. Test environments
+    // without the dialog API fall back to the attribute-driven display
+    if (dialog && typeof dialog.showModal === "function") {
+      dialog.showModal();
+    }
 
     this._binding = yCollab(ytext);
+    console.log("[code-editor] mounting CodeMirror");
     this._view = new extensions.EditorView({
       doc: ytext.toString(),
       extensions: [
@@ -211,11 +230,24 @@ export class NofloCodeEditor extends HTMLElement {
     };
     ytext.observe(this._observer);
     this._view.focus();
+    console.log("[code-editor] mounted ok");
   }
 
-  /** Closes the editor, unbinding the collaborative binding. */
+  /** Closes the editor and runs the teardown. */
   close() {
+    const dialog = /** @type {HTMLDialogElement | null} */ (
+      this.shadowRoot.querySelector("dialog")
+    );
+    if (dialog && dialog.open) {
+      dialog.close(); // the close event also tears down
+      return;
+    }
     this.removeAttribute("open");
+    this.teardown();
+  }
+
+  /** Unbinds the collaborative binding. */
+  teardown() {
     if (this._ytext && this._observer) {
       this._ytext.unobserve(this._observer);
     }
