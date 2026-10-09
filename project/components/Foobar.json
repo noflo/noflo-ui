@@ -1,0 +1,17 @@
+{
+  "description": "",
+  "icon": "gear",
+  "inports": [
+    {
+      "name": "in0",
+      "type": "all"
+    }
+  ],
+  "name": "Foobar",
+  "outports": [
+    {
+      "name": "out0",
+      "type": "all"
+    }
+  ]
+}

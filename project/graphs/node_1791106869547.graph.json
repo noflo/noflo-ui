@@ -1,0 +1,49 @@
+{
+  "properties": {
+    "created": 1791406979333,
+    "name": "node_1791106869547",
+    "parent": "main"
+  },
+  "processes": {
+    "node_1791106869547": {
+      "component": "Foo",
+      "metadata": {
+        "x": 320,
+        "y": 200
+      }
+    }
+  },
+  "connections": [],
+  "inports": {
+    "arr": {
+      "process": "node_1791106869547",
+      "port": "arr",
+      "index": 0,
+      "metadata": {
+        "x": 120,
+        "y": 320
+      }
+    },
+    "opt": {
+      "process": "node_1791106869547",
+      "port": "opt",
+      "metadata": {
+        "x": 120,
+        "y": 160
+      }
+    }
+  },
+  "outports": {
+    "out0": {
+      "process": "node_1791106869547",
+      "port": "out0",
+      "metadata": {}
+    },
+    "out02": {
+      "process": "node_1791106869547",
+      "port": "out0",
+      "metadata": {}
+    }
+  },
+  "groups": []
+}

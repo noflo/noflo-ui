@@ -1,0 +1,9 @@
+{
+  "name": "untitled-project",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "dependencies": {
+    "noflo": "^1.5.2"
+  }
+}

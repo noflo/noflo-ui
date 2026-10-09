@@ -1,0 +1,239 @@
+{
+  "properties": {
+    "created": 1791106869553,
+    "name": "main",
+    "parent": ""
+  },
+  "processes": {
+    "node_1791106869547": {
+      "component": "main/node_1791106869547",
+      "metadata": {
+        "x": 320,
+        "y": 160
+      }
+    },
+    "node_1791106872612": {
+      "component": "Bar",
+      "metadata": {
+        "x": 640,
+        "y": 0
+      }
+    },
+    "node_1791107099730": {
+      "component": "Baz",
+      "metadata": {
+        "x": 840,
+        "y": 160
+      }
+    },
+    "node_1791170298475": {
+      "component": "Foo",
+      "metadata": {
+        "x": 280,
+        "y": -240
+      }
+    },
+    "node_1791240200932": {
+      "component": "Foobar",
+      "metadata": {
+        "x": 880,
+        "y": -200
+      }
+    },
+    "node_1791251452711": {
+      "component": "Foo",
+      "metadata": {
+        "x": 560,
+        "y": -200
+      }
+    }
+  },
+  "connections": [
+    {
+      "data": true,
+      "tgt": {
+        "process": "node_1791106869547",
+        "port": "opt"
+      },
+      "metadata": {
+        "id": "DATA->node_1791106869547:opt[0]",
+        "route": 3,
+        "x": 120,
+        "y": 200
+      }
+    },
+    {
+      "data": 2,
+      "tgt": {
+        "process": "node_1791251452711",
+        "port": "arr",
+        "index": 1
+      },
+      "metadata": {
+        "id": "DATA->node_1791251452711:arr[1][1]",
+        "x": 280,
+        "y": -40
+      }
+    },
+    {
+      "data": 3,
+      "tgt": {
+        "process": "node_1791251452711",
+        "port": "arr",
+        "index": 2
+      },
+      "metadata": {
+        "id": "DATA->node_1791251452711:arr[2][2]",
+        "x": 280,
+        "y": 40
+      }
+    },
+    {
+      "data": 1,
+      "tgt": {
+        "process": "node_1791251452711",
+        "port": "arr",
+        "index": 0
+      },
+      "metadata": {
+        "id": "DATA->node_1791251452711:arr[0][0]",
+        "x": 280,
+        "y": -120
+      }
+    },
+    {
+      "src": {
+        "process": "node_1791106869547",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791106872612",
+        "port": "in0"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "node_1791106869547",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791107099730",
+        "port": "in0"
+      },
+      "metadata": {
+        "route": 4
+      }
+    },
+    {
+      "src": {
+        "process": "node_1791106872612",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791107099730",
+        "port": "in0"
+      },
+      "metadata": {}
+    },
+    {
+      "src": {
+        "process": "node_1791106872612",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791240200932",
+        "port": "in0"
+      },
+      "metadata": {
+        "route": 3
+      }
+    },
+    {
+      "src": {
+        "process": "node_1791170298475",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791251452711",
+        "port": "in0"
+      },
+      "metadata": {
+        "route": 1
+      }
+    },
+    {
+      "src": {
+        "process": "node_1791251452711",
+        "port": "out0"
+      },
+      "tgt": {
+        "process": "node_1791240200932",
+        "port": "in0"
+      },
+      "metadata": {
+        "route": 1
+      }
+    }
+  ],
+  "inports": {
+    "in": {
+      "process": "node_1791106872612",
+      "port": "in0",
+      "metadata": {
+        "x": 120,
+        "y": 120
+      }
+    },
+    "inn": {
+      "process": "node_1791170298475",
+      "port": "opt",
+      "metadata": {
+        "x": 120,
+        "y": -200
+      }
+    }
+  },
+  "outports": {
+    "out": {
+      "process": "node_1791240200932",
+      "port": "out0",
+      "metadata": {
+        "route": 1,
+        "x": 1040,
+        "y": -200
+      }
+    }
+  },
+  "groups": [
+    {
+      "id": "group_1791256411784",
+      "name": "",
+      "nodes": [
+        "node_1791106872612"
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "group_1791256420189",
+      "name": "",
+      "nodes": [
+        "node_1791106872612",
+        "node_1791240200932",
+        "node_1791251452711"
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "group_1791407163136",
+      "name": "",
+      "nodes": [
+        "node_1791240200932",
+        "node_1791251452711"
+      ],
+      "metadata": {}
+    }
+  ]
+}

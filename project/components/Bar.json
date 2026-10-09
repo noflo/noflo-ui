@@ -1,0 +1,17 @@
+{
+  "description": "",
+  "icon": "ghost",
+  "inports": [
+    {
+      "name": "in0",
+      "type": "string"
+    }
+  ],
+  "name": "Bar",
+  "outports": [
+    {
+      "name": "out0",
+      "type": "boolean"
+    }
+  ]
+}

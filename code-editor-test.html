@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Code editor repro</title>
+    <style>
+      body { font-family: monospace; background: #16161c; color: #e8e8ef; padding: 1em; }
+      #log { white-space: pre-wrap; border: 1px solid #33333d; padding: 1em; }
+    </style>
+    <script type="importmap">
+      { "imports": { "yjs": "./vendor/yjs.js" } }
+    </script>
+  </head>
+  <body>
+    <h1>Code editor repro</h1>
+    <div id="log"></div>
+    <div id="host"></div>
+    <script type="module">
+      const log = (line) => {
+        document.getElementById("log").textContent += line + "\n";
+        console.log(line);
+      };
+      const step = async (name, fn) => {
+        try {
+          log(`▸ ${name}`);
+          return await fn();
+        } catch (e) {
+          log(`✖ ${name}: ${e.message}\n${e.stack}`);
+          throw e;
+        }
+      };
+
+      const Y = await step("import yjs", () => import("./vendor/yjs.js"));
+      const cm = await step("import codemirror vendor", () =>
+        import("./vendor/codemirror.js"),
+      );
+      await step("import element", () => import("./src/elements/noflo-code-editor.js"));
+
+      const doc = new Y.Doc();
+      doc.getText("code").insert(0, "export default function setup(runtime) {\n}\n");
+
+      const editor = document.createElement("noflo-code-editor");
+      document.getElementById("host").appendChild(editor);
+      await step("element upgraded", () => {
+        if (!editor.shadowRoot) throw new Error("no shadow root");
+        if (!customElements.get("noflo-code-editor")) {
+          throw new Error("element not registered");
+        }
+      });
+      await step("open", () => {
+        editor.open({
+          ytext: doc.getText("code"),
+          name: "fs/Count",
+          language: "javascript",
+          onSendDelta: (delta) => log(`↩ delta: ${JSON.stringify(delta)}`),
+          yCollab: cm.yCollab,
+          extensions: cm,
+        });
+      });
+      await step("verify view", () => {
+        const view = editor.shadowRoot.querySelector(".editor .cm-editor");
+        log(view ? "✔ CodeMirror mounted" : "✖ no .cm-editor in the editor area");
+        log(`host open attr: ${editor.hasAttribute("open")}`);
+      });
+      // Simulate a local edit through the binding origin
+      await step("local edit relay", () => {
+        const ytext = doc.getText("code");
+        // The binding origin is internal to yCollab; drive it through the
+        // editor's own dispatch instead — type via the view
+        const view = editor._view;
+        view.dispatch({ changes: { from: 0, insert: "// hello\n" } });
+        setTimeout(() => log("✔ dispatched"), 50);
+      });
+    </script>
+  </body>
+</html>
