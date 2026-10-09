@@ -35,6 +35,9 @@ import {
 /** How long a send may wait for a peer's announce before giving up. */
 const PEER_DISCOVERY_WAIT_MS = 30_000;
 
+/** How long an inbound verification may wait for the sender's announce. */
+const SENDER_SOLICIT_WAIT_MS = 15_000;
+
 /** Default chunking for outbound text (LXMF bodies are sized for mesh links). */
 const CHUNK_CHARS = 2500;
 
@@ -225,9 +228,36 @@ export async function startLxmfLayer({
    * @returns {Promise<"verified"|"unknown"|"invalid">}
    */
   async function verifySender(message) {
-    const sender = await rns.transport.recallIdentity(message.sourceHash);
+    const sender = await recallOrSolicit(message.sourceHash);
     if (!sender) return "unknown";
     return (await message.verifySignature(sender)) ? "verified" : "invalid";
+  }
+
+  /**
+   * Recalls an identity for a destination hash, soliciting it (path
+   * request → awaited announce) when not yet known. Inbound messages on
+   * first contact arrive without the sender's announce — opportunistic
+   * delivery needs only the recipient's path — so without solicitation
+   * the sender's signature is unverifiable and the message lost. The
+   * claimant's client is online at claim time, so a short wait suffices.
+   *
+   * @param {Uint8Array} destinationHash
+   * @returns {Promise<any | null>}
+   */
+  async function recallOrSolicit(destinationHash) {
+    const recall = await rns.transport.recallIdentity(destinationHash);
+    if (recall) return recall;
+    if (typeof rns.transport.recallOrSolicitIdentity !== "function") {
+      return null;
+    }
+    try {
+      return await rns.transport.recallOrSolicitIdentity(
+        destinationHash,
+        SENDER_SOLICIT_WAIT_MS,
+      );
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -239,7 +269,7 @@ export async function startLxmfLayer({
    * @returns {Promise<string | null>}
    */
   async function senderIdentityHash(message) {
-    const sender = await rns.transport.recallIdentity(message.sourceHash);
+    const sender = await recallOrSolicit(message.sourceHash);
     return sender ? toHex(sender.identityHash) : null;
   }
 
