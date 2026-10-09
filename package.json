@@ -14,7 +14,7 @@
     "generate:fa": "node utils/generate-icon-map.js",
     "prebuild-vendors": "npm run generate:noflo && npm run generate:fa && npm run generate:vendor-types",
     "generate:vendor-types": "node utils/generate-vendor-types.js",
-    "build-vendors": " tsdown --config tsdown.config.js",
+    "build-vendors": "node utils/build-vendors.js",
     "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js"
   },
   "dependencies": {
@@ -35,10 +35,10 @@
     "yjs": "^13.6.31"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "happy-dom": "^20.10.6",
     "js-yaml": "^5.1.0",
     "noflo-component-loader": "^0.4.1",
-    "tsdown": "^0.22.3",
     "typescript": "^6.0.3"
   },
   "esinstall": {

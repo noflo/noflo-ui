@@ -1,5 +1,5 @@
 /**
- * @typedef {import("../delta.js").DeltaReceiver} DeltaReceiverType
+ * @typedef {import("../delta.js").DeltaReceiver} DeltaReceiver
  * @typedef {import("@reticulum/core").Destination} DestinationType
  * @typedef {import("@reticulum/core").Link} LinkType
  * @typedef {import("@reticulum/core").Identity} IdentityType
@@ -29,11 +29,11 @@ export function unpackAck(data: Uint8Array | null | undefined): number | null;
  * binary elements. Resolves with the number of Deltas applied (0 = decoded
  * but nothing accepted, or undecodable garbage — never rejects: a request
  * handler must not crash on arbitrary bytes).
- * @param {DeltaReceiverType} receiver
+ * @param {DeltaReceiver} receiver
  * @param {Uint8Array} data
  * @returns {Promise<number>}
  */
-export function handlePush(receiver: DeltaReceiverType, data: Uint8Array): Promise<number>;
+export function handlePush(receiver: DeltaReceiver, data: Uint8Array): Promise<number>;
 /**
  * @callback ResponseGenerator
  * @param {string} path
@@ -52,10 +52,10 @@ export function handlePush(receiver: DeltaReceiverType, data: Uint8Array): Promi
  * bytes. Every outcome yields a response — even `{applied: 0}` — so the
  * pusher can distinguish "node refused (kept in outbox)" from "request lost
  * (retry)".
- * @param {DeltaReceiverType} receiver
+ * @param {DeltaReceiver} receiver
  * @returns {ResponseGenerator}
  */
-export function syncRequestHandler(receiver: DeltaReceiverType): ResponseGenerator;
+export function syncRequestHandler(receiver: DeltaReceiver): ResponseGenerator;
 /**
  * Build the OUT `dacar.sync.v1` destination for a recalled identity and await
  * a transport path to it.
@@ -160,7 +160,7 @@ export class RnsSyncServer {
      * @param {Object} opts
      * @param {IdentityType} opts.identity The node identity (deltas are ingested
      *   by issuer signatures, not the server's — this signs nothing).
-     * @param {DeltaReceiverType} opts.receiver The shared receive boundary.
+     * @param {DeltaReceiver} opts.receiver The shared receive boundary.
      * @param {ReticulumType} opts.rns A running Reticulum instance.
      * @param {string} [opts.appName] Override the `dacar` app name.
      * @param {readonly string[]} [opts.aspects] Override the `sync.v1` aspects.
@@ -169,20 +169,20 @@ export class RnsSyncServer {
      */
     static create({ identity, receiver, rns, appName, aspects, announce, }: {
         identity: IdentityType;
-        receiver: DeltaReceiverType;
+        receiver: DeltaReceiver;
         rns: ReticulumType;
         appName?: string | undefined;
         aspects?: readonly string[] | undefined;
         announce?: boolean | undefined;
     }): Promise<RnsSyncServer>;
-    /** @param {DeltaReceiverType} receiver */
-    constructor(receiver: DeltaReceiverType);
-    /** @type {DeltaReceiverType} */
-    _receiver: DeltaReceiverType;
+    /** @param {DeltaReceiver} receiver */
+    constructor(receiver: DeltaReceiver);
+    /** @type {DeltaReceiver} */
+    _receiver: DeltaReceiver;
     /** @type {DestinationType | null} */
     _destination: DestinationType | null;
-    /** @returns {DeltaReceiverType} */
-    get receiver(): DeltaReceiverType;
+    /** @returns {DeltaReceiver} */
+    get receiver(): DeltaReceiver;
     /** @returns {DestinationType | null} */
     get destination(): DestinationType | null;
     /** @returns {Uint8Array | null} The 16-byte destination hash. */
@@ -193,7 +193,7 @@ export class RnsSyncServer {
      */
     announce(): Promise<void>;
 }
-export type DeltaReceiverType = import("../delta.js").DeltaReceiver;
+export type DeltaReceiver = import("../delta.js").DeltaReceiver;
 export type DestinationType = import("@reticulum/core").Destination;
 export type LinkType = import("@reticulum/core").Link;
 export type IdentityType = import("@reticulum/core").Identity;
