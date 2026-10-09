@@ -12,7 +12,9 @@
  * process later; this entry is the whole M1 surface.
  *
  * Usage:
- *   node src/node/bridge.js --config bridge.json
+ *   noflo-ui                       (zero-config: XDG defaults, first run
+ *                                   writes a starter config)
+ *   noflo-ui --config bridge.json  (power users, multi-instance setups)
  *
  * Config shape (`bridge.json`):
  *   {
@@ -38,6 +40,7 @@ import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
 import { createChatSurface } from "./chat.js";
+import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
 import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
@@ -68,7 +71,7 @@ const MIME = {
  * @param {{ cert?: string, key?: string }} tls
  * @returns {Promise<void>}
  */
-function serveUi(port, tls) {
+function serveUi(port, tls, host = "localhost") {
   const handler = (/** @type {any} */ req, /** @type {any} */ response) => {
     const url = new URL(
       req.url ?? "/",
@@ -102,9 +105,9 @@ function serveUi(port, tls) {
         )
       : http.createServer(handler);
   return new Promise((resolve) => {
-    server.listen(port, () => {
+    server.listen(port, host, () => {
       console.log(
-        `bridge  UI served on http${tls?.cert ? "s" : ""}://localhost:${port}`,
+        `bridge  UI served on http${tls?.cert ? "s" : ""}://${host}:${port}`,
       );
       resolve();
     });
@@ -151,14 +154,22 @@ async function main() {
   let inbound = () => {};
   const argv = process.argv.slice(2);
   const configIndex = argv.indexOf("--config");
-  const configPath =
-    configIndex > -1 ? path.resolve(argv[configIndex + 1]) : null;
-  if (!configPath) {
-    console.error("usage: node src/node/bridge.js --config bridge.json");
-    process.exit(1);
+  // Zero-configuration defaults (work document #47 scope item 8): the
+  // XDG config path is auto-created on first run; --config stays for
+  // power users and multiple-Companion setups
+  const resolved = resolveCompanionPaths({
+    configPath: configIndex > -1 ? path.resolve(argv[configIndex + 1]) : null,
+  });
+  const configPath = resolved.configPath;
+  const config = resolved.exists
+    ? JSON.parse(fsSync.readFileSync(configPath, "utf8"))
+    : {};
+  if (!resolved.exists) {
+    console.log(`bridge  started with a fresh config at ${configPath}`);
   }
-  const config = JSON.parse(fsSync.readFileSync(configPath, "utf8"));
-  const folder = path.resolve(config.folder ?? "./project");
+  const folder = path.resolve(
+    config.folder ?? resolved.defaults.folder ?? "./project",
+  );
   const docPath = path.join(folder, ".noflo-doc.bin");
 
   await fs.mkdir(folder, { recursive: true });
@@ -284,16 +295,19 @@ async function main() {
     });
   }
 
-  if ((config.port ?? 3000) > 0) {
-    await serveUi(config.port ?? 3000, config.tls ?? {});
+  if ((config.port ?? resolved.defaults.port) > 0) {
+    await serveUi(
+      config.port ?? resolved.defaults.port,
+      config.tls ?? {},
+      config.host ?? resolved.defaults.host,
+    );
   }
 
   // ---- The agent layer (work document #44 M2) ----
   // LXMF: the always-on, addressable endpoint. Rides the engine's shared
   // Reticulum stack (one mesh node, work document #47); the identity lives
   // in the Companion's state dir, outside any project folder
-  const stateDir =
-    config.stateDir ?? path.join(path.dirname(configPath), "companion-state");
+  const stateDir = config.stateDir ?? resolved.stateDir;
   // The owner Reticulum identity hash IS the global trust anchor; the chat
   // address derives from it — one config value, two uses (SPEC: "the owner
   // identity is the default global trust anchor", work document #44 M2)
