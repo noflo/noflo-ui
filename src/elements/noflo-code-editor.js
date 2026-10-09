@@ -51,13 +51,22 @@ export class NofloCodeEditor extends HTMLElement {
           display: block;
         }
         dialog {
+          /* Explicit centered geometry: WebKit's modal-dialog UA sheet
+             anchors top and sizes fit-content, which collapses the panel
+             into a top strip (VISUAL_GUIDELINES: modals are opaque,
+             theme-driven, bordered) */
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          translate: -50% -50%;
+          width: min(1100px, 92vw);
+          height: min(720px, 86vh);
           padding: 0;
-          border: none;
-          background: transparent;
-          max-width: none;
-          max-height: none;
-          width: 90vw;
-          height: 90vh;
+          border: 1px solid var(--ui-panel-border);
+          border-radius: 6px;
+          background: var(--ui-bg);
+          color: var(--node-text);
+          font-family: SourceCodePro, monospace;
         }
         dialog::backdrop {
           /* The one sanctioned raw color: a full-screen scrim is light
@@ -69,99 +78,110 @@ export class NofloCodeEditor extends HTMLElement {
           flex-direction: column;
           width: 100%;
           height: 100%;
-          background: var(--ui-panel-bg, #16161c);
-          border: 1px solid var(--ui-border, #33333d);
-          border-radius: 6px;
           overflow: hidden;
         }
         header {
           display: flex;
           align-items: baseline;
           gap: 0.75em;
-          padding: 0.75em 1em;
-          border-bottom: 1px solid var(--ui-border, #33333d);
+          padding: 0.6em 1em;
+          border-bottom: 1px solid var(--ui-panel-border);
         }
         header .name {
           font-weight: 700;
-          color: var(--ui-text, #e8e8ef);
+          color: var(--node-text);
         }
         header .lang {
           font-size: 0.85em;
-          color: var(--ui-text-dim, #9a9aa8);
+          color: color-mix(in srgb, var(--node-text) 55%, transparent);
         }
         .editor {
           flex: 1;
           overflow: auto;
-          background: var(--ui-panel-bg, #16161c);
+          background: var(--ui-bg);
         }
         .editor .cm-editor {
           height: 100%;
           background: transparent;
-          color: var(--ui-text, #e8e8ef);
+          color: var(--node-text);
+          font-size: 13px;
         }
         .editor .cm-editor.cm-focused {
           outline: none;
         }
         .editor .cm-gutters {
           background: transparent;
-          border-right: 1px solid var(--ui-border, #33333d);
-          color: var(--ui-text-dim, #9a9aa8);
+          border-right: 1px solid var(--ui-panel-border);
+          color: color-mix(in srgb, var(--node-text) 45%, transparent);
         }
         .editor .cm-activeLine {
-          background: color-mix(in srgb, var(--ui-accent, #4a9eff) 8%, transparent);
+          background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
         }
-        .editor .cm-cursor {
-          border-color: var(--ui-accent, #4a9eff);
+        .editor .cm-activeLineGutter {
+          background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+        }
+        .editor .cm-cursor,
+        .editor .cm-dropCursor {
+          border-color: var(--ui-accent);
+        }
+        .editor ::selection {
+          background: color-mix(in srgb, var(--ui-accent) 30%, transparent);
         }
         footer {
           display: flex;
           justify-content: flex-end;
           gap: 0.5em;
-          padding: 0.75em 1em;
-          border-top: 1px solid var(--ui-border, #33333d);
+          padding: 0.6em 1em;
+          border-top: 1px solid var(--ui-panel-border);
         }
         button {
           font: inherit;
           padding: 0.4em 1.1em;
           border-radius: 4px;
-          border: 1px solid var(--ui-border, #33333d);
+          border: 1px solid var(--ui-panel-border);
           background: transparent;
-          color: var(--ui-text, #e8e8ef);
+          color: var(--node-text);
           cursor: pointer;
         }
         button:focus-visible {
-          border-color: var(--ui-accent, #4a9eff);
-          outline: 2px solid var(--ui-focus, #4a9eff);
+          border-color: var(--ui-accent);
+          outline: 2px solid var(--ui-focus);
           outline-offset: 2px;
-        }
-        button.primary {
-          background: var(--ui-accent, #4a9eff);
-          border-color: var(--ui-accent, #4a9eff);
-          color: var(--ui-panel-bg, #16161c);
         }
         .hint {
           margin-right: auto;
           font-size: 0.85em;
-          color: var(--ui-text-dim, #9a9aa8);
+          color: color-mix(in srgb, var(--node-text) 55%, transparent);
           align-self: center;
         }
       </style>
-      <div class="scrim"></div>
-      <div class="panel" role="dialog" aria-label="Code editor">
-        <header>
-          <span class="name"></span>
-          <span class="lang"></span>
-        </header>
-        <div class="editor"></div>
-        <footer>
-          <span class="hint">Edits sync live with every participant</span>
-          <button type="button" class="done">Done</button>
-        </footer>
-      </div>
+      <dialog>
+        <div class="panel" aria-label="Code editor">
+          <header>
+            <span class="name"></span>
+            <span class="lang"></span>
+          </header>
+          <div class="editor"></div>
+          <footer>
+            <span class="hint">Edits sync live with every participant</span>
+            <button type="button" class="done">Done</button>
+          </footer>
+        </div>
+      </dialog>
     `;
     this.shadowRoot
       .querySelector("button.done")
       .addEventListener("click", () => this.close());
+    // Test-environment parsers may not create <dialog> from innerHTML;
+    // real browsers do, and its close event covers Esc dismissal
+    const dialog = /** @type {HTMLDialogElement | null} */ (
+      this.shadowRoot.querySelector("dialog")
+    );
+    dialog?.addEventListener("close", () => {
+      // Esc key / user-agent dismissal also tears down
+      this.removeAttribute("open");
+      this.teardown();
+    });
     this.shadowRoot
       .querySelector(".scrim")
       .addEventListener("click", () => this.close());
