@@ -40,6 +40,11 @@ import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
 import { createChatSurface } from "./chat.js";
+
+/** The blocking pi dialog methods (the pi-lxmf set); other
+ * extension_ui_request methods (e.g. setStatus) are ignored. */
+const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
+
 import { claimInstructions, createClaimCode } from "./claim.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
@@ -405,6 +410,7 @@ async function main() {
     chat = createChatSurface({
       ownerContact,
       sendText: lxmf.sendText,
+      sendReaction: lxmf.sendReaction,
       verifySender: lxmf.verifySender,
       pi: manager,
       state: {

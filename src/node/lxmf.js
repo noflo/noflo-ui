@@ -135,6 +135,7 @@ export function chunkText(text, size = CHUNK_CHARS) {
  *   identity: any,
  *   deliveryHash: string,
  *   sendText: (destinationHex: string, text: string, options?: {title?: string}) => Promise<void>,
+ *   sendReaction: (destinationHex: string, targetMessageId: Uint8Array, emoji: string) => Promise<void>,
  *   verifySender: (message: any) => Promise<"verified"|"unknown"|"invalid">,
  *   senderIdentityHash: (message: any) => Promise<string | null>,
  *   onMessage: (handler: (event: { message: any, link?: any }) => void) => void,
@@ -216,6 +217,37 @@ export async function startLxmfLayer({
         );
       }
     }
+  }
+
+  /**
+   * Sends an LXMF reaction (FIELD_REACTION) to `destinationHex`, targeting
+   * the message whose `messageId` is `targetMessageId`. Rendered natively
+   * by Sideband/Columba; no `content` is set so no separate chat bubble
+   * appears. Same router-escalated delivery as `sendText`.
+   *
+   * @param {string} destinationHex
+   * @param {Uint8Array} targetMessageId
+   * @param {string} emoji
+   * @returns {Promise<void>}
+   */
+  async function sendReaction(destinationHex, targetMessageId, emoji) {
+    const reaction = new Map();
+    reaction.set(LXMFConstants.REACTION_TO, targetMessageId);
+    reaction.set(
+      LXMFConstants.REACTION_CONTENT,
+      new TextEncoder().encode(emoji),
+    );
+    const fields = new Map();
+    fields.set(LXMFConstants.FIELD_REACTION, reaction);
+    const message = new LXMessage({
+      sourceHash: /** @type {Uint8Array} */ (deliveryDest.destinationHash),
+      destinationHash: fromHex(destinationHex),
+      fields,
+    });
+    await lxmf.send(message, identity, {
+      fallback: "opportunistic",
+      timeoutMs: peerWaitMs,
+    });
   }
 
   /**
@@ -301,6 +333,7 @@ export async function startLxmfLayer({
     identity,
     deliveryHash,
     sendText,
+    sendReaction,
     verifySender,
     senderIdentityHash,
     /**

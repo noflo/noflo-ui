@@ -79,6 +79,7 @@ export function parseChatMessage(sourceHex, text) {
  *   mode: only the claim check admits messages (tests/claim setup).
  *   Mutable after claiming via the surface's `setOwnerContact`.
  * @param {(destinationHex: string, text: string, options?: {title?: string}) => Promise<void>} deps.sendText
+ * @param {((destinationHex: string, targetMessageId: Uint8Array, emoji: string) => Promise<void>) | null} [deps.sendReaction]
  * @param {(message: any) => Promise<"verified"|"unknown"|"invalid">} deps.verifySender
  * @param {import("./piManager.js").PiManagerHandle | null} deps.pi - The pi
  *   lifecycle manager; null when pi is unavailable (the surface answers
@@ -93,14 +94,16 @@ export function parseChatMessage(sourceHex, text) {
  * @param {(msg: string) => void} [deps.log]
  * @returns {{
  *   handleInbound: (event: { message: any }) => Promise<void>,
- *   chatMessage: (sourceHex: string, text: string) => Promise<void>,
+ *   chatMessage: (sourceHex: string, text: string, triggerMessageId?: Uint8Array | null) => Promise<void>,
  *   reply: (text: string, title?: string) => Promise<void>,
+ *   clearReaction: () => void,
  *   setOwnerContact: (contact: string) => void,
  * }}
  */
 export function createChatSurface({
   ownerContact,
   sendText,
+  sendReaction = null,
   verifySender,
   pi,
   state,
@@ -113,6 +116,15 @@ export function createChatSurface({
   let queue = Promise.resolve();
   /** The claimed owner's contact; set through `setOwnerContact`. */
   let owner = ownerContact;
+  /** The "thinking" acknowledgement (the pi-lxmf pattern): a reaction to
+   * the prompt message after a debounce, cleared when the real reply
+   * lands — fast runs never get the extra ping. */
+  const REACTION_EMOJI = "🤔";
+  const REACTION_DEBOUNCE_MS = 2000;
+  /** @type {NodeJS.Timeout | null} */
+  let reactionTimer = null;
+  /** @type {Uint8Array | null} */
+  let reactionTarget = null;
   /** Whether the claim code is still open (unclaimed mode). */
   let claimOpen = claim != null;
 
@@ -147,15 +159,56 @@ export function createChatSurface({
   }
 
   /**
+   * Schedules the run-start reaction to `messageId` (best effort). Only
+   * meaningful when a reaction channel and an owner exist.
+   *
+   * @param {Uint8Array | null} messageId
+   */
+  function scheduleReaction(messageId) {
+    clearReaction();
+    if (!sendReaction || !owner || !messageId) return;
+    const contact = owner;
+    const send = sendReaction;
+    reactionTarget = messageId;
+    reactionTimer = setTimeout(() => {
+      reactionTimer = null;
+      if (!reactionTarget) return;
+      const target = reactionTarget;
+      reactionTarget = null;
+      send(contact, target, REACTION_EMOJI).catch((error) =>
+        log(
+          `companion: reaction send failed: ${
+            error instanceof Error ? error.message : error
+          }`,
+        ),
+      );
+    }, REACTION_DEBOUNCE_MS);
+    if (reactionTimer.unref) reactionTimer.unref();
+  }
+
+  /**
+   * Cancels any pending run-start reaction. Idempotent.
+   */
+  function clearReaction() {
+    if (reactionTimer) {
+      clearTimeout(reactionTimer);
+      reactionTimer = null;
+    }
+    reactionTarget = null;
+  }
+
+  /**
    * Runs one admitted inbound message through the dispatch.
    *
    * @param {string} sourceHex
    * @param {string} text
+   * @param {Uint8Array | null} [triggerMessageId]
    * @returns {Promise<void>}
    */
-  async function chatMessage(sourceHex, text) {
+  async function chatMessage(sourceHex, text, triggerMessageId = null) {
     const message = parseChatMessage(sourceHex, text);
     if (!message.isCommand) {
+      scheduleReaction(triggerMessageId);
       // Free text is a prompt for the active project
       if (!pi) {
         await reply("pi is not available on this Companion");
@@ -373,8 +426,11 @@ export function createChatSurface({
       return;
     }
     // Serialize: prompts and commands keep order
+    const triggerMessageId = /** @type {Uint8Array | null} */ (
+      message.messageId ?? null
+    );
     const run = queue
-      .then(() => chatMessage(sourceHex, text))
+      .then(() => chatMessage(sourceHex, text, triggerMessageId))
       .catch((e) => {
         log(
           `companion: inbound handling failed: ${
@@ -390,6 +446,8 @@ export function createChatSurface({
     handleInbound,
     chatMessage,
     reply,
+    /** Cancels a pending run-start reaction (the reply landed). */
+    clearReaction,
     /**
      * Switches the gate to a newly claimed owner's contact.
      *
