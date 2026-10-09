@@ -243,7 +243,42 @@ async function defaultCreateProvider(
  * @param {import("../crdt/MeshConfig.js").MeshInterface[]} interfaces
  * @returns {Promise<void>}
  */
-async function defaultAttachInterfaces(rns, interfaces) {
+/**
+ * Whether the local Companion hub probe applies: a webapp served from
+ * localhost over plain HTTP, with no already-configured WebSocket
+ * interface targeting the local hub. The probe is additive — a
+ * cloud-hosted WebSocket stays configured alongside (the Companion is
+ * not a transport node yet and cannot relay to the wider mesh).
+ *
+ * @param {import("../crdt/MeshConfig.js").MeshInterface[]} interfaces
+ * @returns {boolean}
+ */
+export function needsLocalHubProbe(interfaces) {
+  const location = /** @type {any} */ (globalThis).location;
+  if (!location) return false;
+  if (location.protocol !== "http:") return false; // HTTPS pages cannot open ws://
+  const hostname = location.hostname;
+  if (
+    hostname !== "localhost" &&
+    hostname !== "127.0.0.1" &&
+    hostname !== "[::1]"
+  ) {
+    return false;
+  }
+  return !(interfaces ?? []).some(
+    (iface) =>
+      iface.enabled &&
+      iface.type === "websocket" &&
+      /localhost|127\.0\.0\.1|\[::1\]/.test(
+        JSON.stringify(iface.options ?? {}),
+      ),
+  );
+}
+
+async function defaultAttachInterfaces(
+  /** @type {any} */ rns,
+  /** @type {import("../crdt/MeshConfig.js").MeshInterface[]} */ interfaces,
+) {
   const { WebSocketClientInterface } = await import(
     "../../vendor/reticulum-core.js"
   );
@@ -301,6 +336,29 @@ async function defaultAttachInterfaces(rns, interfaces) {
         );
       }
     }
+  }
+
+  // Auto-detect (SPEC): a webapp served from localhost also tries the
+  // local Companion's hub — additive to any configured cloud WebSocket,
+  // since the Companion is not a transport node yet and cannot relay
+  // traffic onward. A failed probe is never fatal: the reconnect loop
+  // picks the hub up whenever the Companion starts
+  if (needsLocalHubProbe(interfaces)) {
+    const local = new WebSocketClientInterface({
+      url: "ws://localhost:3569",
+      name: "companion-local-hub",
+    });
+    let added = false;
+    local.addEventListener("connected", () => {
+      if (added) return;
+      added = true;
+      rns.addInterface(local, true);
+    });
+    await local.connect().catch(() => {
+      console.warn(
+        "Mesh: no local Companion hub on ws://localhost:3569 yet; retrying in the background",
+      );
+    });
   }
 }
 
