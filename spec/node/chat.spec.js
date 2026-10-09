@@ -193,7 +193,7 @@ describe("chat command surface (work document #44 M2)", () => {
       pi: null,
       state: { get: async () => null, set: async () => {} },
       claim: {
-        code: "claim-me-42",
+        code: "legally orbit zoo situate",
         onClaim: async (/** @type {string} */ identityHash) => {
           owner = identityHash;
           surface.setOwnerContact("cc".repeat(32));
@@ -212,7 +212,9 @@ describe("chat command surface (work document #44 M2)", () => {
     assert.equal(owner, null);
     assert.deepEqual(sent, []);
     // The claim: verified sender + the code
-    await surface.handleInbound(inbound(OTHER, "please claim: claim-me-42"));
+    await surface.handleInbound(
+      inbound(OTHER, "please claim: legally orbit zoo situate"),
+    );
     assert.equal(owner, "dd".repeat(16));
     assert.match(sent[0]?.text ?? "", /owner of this Companion/);
     // After claiming the gate switches to the new owner; strangers drop

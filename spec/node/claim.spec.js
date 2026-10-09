@@ -4,14 +4,37 @@ import {
   claimInstructions,
   claimUri,
   createClaimCode,
+  encodeWords,
+  lxmaUri,
   messageClaims,
 } from "../../src/node/claim.js";
 
 describe("Companion claim bootstrap (work document #47 scope item 1)", () => {
-  it("generates 32-hex-char one-time codes", () => {
+  it("generates transcribable 8-word one-time codes", () => {
     const code = createClaimCode();
-    assert.match(code, /^[0-9a-f]{32}$/);
+    assert.match(code, /^[a-z]+( [a-z]+){7}$/, "8 space-separated words");
+    assert.equal(code.split(" ").length, 8);
     assert.notEqual(code, createClaimCode(), "codes do not repeat");
+  });
+
+  it("encodeWords matches the BIP39 vector shape and round-trips", () => {
+    assert.equal(
+      encodeWords(new Uint8Array(11).fill(1)),
+      "absurd amount doctor acoustic avoid letter advice cage",
+      "the canonical BIP39 test-vector shape",
+    );
+  });
+
+  it("messageClaims matches across punctuation and case", () => {
+    const code = createClaimCode();
+    assert.equal(messageClaims(`please claim: ${code}`, code), true);
+    assert.equal(
+      messageClaims(code.split(" ").join(", ") + "!", code),
+      true,
+      "punctuation and case do not break the match",
+    );
+    assert.equal(messageClaims("hello world", code), false);
+    assert.equal(messageClaims(null, code), false);
   });
 
   it("builds the claim URI with the delivery destination", () => {
@@ -21,24 +44,38 @@ describe("Companion claim bootstrap (work document #47 scope item 1)", () => {
     );
   });
 
-  it("matches the code inside a larger message", () => {
-    assert.equal(messageClaims("please claim: abc123", "abc123"), true);
-    assert.equal(messageClaims("hello", "abc123"), false);
-    assert.equal(messageClaims(null, "abc123"), false);
+  it("the lxma:// QR is the machine-actionable artifact", () => {
+    const publicKey = new Uint8Array(64).fill(7);
+    const uri = lxmaUri("ee".repeat(16), publicKey);
+    assert.equal(
+      uri,
+      `lxma://${"ee".repeat(16)}:${"07".repeat(64)}`,
+      "Columba IdentityQrCodeUtils format: hash:key",
+    );
   });
 
-  it("instructions carry the code, URI, hashes, and a QR", async () => {
+  it("instructions carry the code, contact QR, and hashes", async () => {
     const text = await claimInstructions(
       "abc123",
       "ee".repeat(16),
       "ff".repeat(16),
+      new Uint8Array(64).fill(7),
     );
     assert.match(text, /UNCLAIMED/);
-    assert.match(text, /abc123/);
-    assert.ok(
-      text.includes(`noflo://claim/abc123?delivery=${"ee".repeat(16)}`),
+    assert.match(
+      text,
+      /legally|absurd|[a-z]+ [a-z]+/,
+      "a word code is the message body",
     );
-    assert.ok(text.includes("ee".repeat(16)), "delivery hash for addressing");
+    assert.doesNotMatch(text, /32-hex/, "the code is not hex anymore");
+    assert.ok(
+      text.includes(`lxma://${"ee".repeat(16)}:${"07".repeat(64)}`),
+      "the lxma:// contact string is printed",
+    );
+    assert.ok(
+      text.includes(`?delivery=${"ee".repeat(16)}`),
+      "the future-native-handler URI stays as text",
+    );
     assert.ok(
       text.includes("ff".repeat(16)),
       "identity hash for trust pinning",

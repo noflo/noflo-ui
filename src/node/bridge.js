@@ -397,6 +397,7 @@ async function main() {
         claimCode,
         lxmf.deliveryHash,
         lxmf.identityHash,
+        lxmf.identity.publicKey,
       );
       console.log(instructions);
     }

@@ -129,6 +129,7 @@ export function chunkText(text, size = CHUNK_CHARS) {
  * @param {(msg: string) => void} [options.log]
  * @returns {Promise<{
  *   identityHash: string,
+ *   identity: any,
  *   deliveryHash: string,
  *   sendText: (destinationHex: string, text: string, options?: {title?: string}) => Promise<void>,
  *   verifySender: (message: any) => Promise<"verified"|"unknown"|"invalid">,
@@ -267,6 +268,7 @@ export async function startLxmfLayer({
 
   return {
     identityHash,
+    identity,
     deliveryHash,
     sendText,
     verifySender,

@@ -16,29 +16,91 @@
  */
 
 import QRCode from "qrcode";
+import { toHex } from "../../vendor/reticulum-core.js";
+import { BIP39_WORDS } from "./bip39-words.js";
 
 /**
- * Generates a one-time claim code: 16 random bytes as hex.
+ * Generates a one-time claim code as BIP39 words: 11 random bytes ->
+ * 88 bits -> 8 dictionary words. Human-transcribable (unique four-letter
+ * prefixes per word), and the text form round-trips through the claim
+ * match without a machine-readable channel.
  *
- * @returns {string}
+ * @returns {string} The 8 words, space-separated.
  */
 export function createClaimCode() {
-  const bytes = new Uint8Array(16);
+  const bytes = new Uint8Array(11);
   globalThis.crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return encodeWords(bytes);
 }
 
 /**
- * Builds the claim URI for the unclaimed Companion.
+ * Encodes bytes as BIP39 words (11 bits per word, most-significant
+ * first; the final partial chunk is zero-padded, mirroring the BIP39
+ * convention).
+ *
+ * @param {Uint8Array} bytes
+ * @returns {string} Space-separated words.
+ */
+export function encodeWords(bytes) {
+  const wordCount = Math.ceil((bytes.length * 8) / 11);
+  /** @type {number[]} */
+  const indices = [];
+  for (let i = 0; i < wordCount; i++) {
+    let index = 0;
+    for (let bit = 0; bit < 11; bit++) {
+      const position = i * 11 + bit;
+      const byte = Math.floor(position / 8);
+      const bitInByte = 7 - (position % 8);
+      if (byte < bytes.length && (bytes[byte] & (1 << bitInByte)) !== 0) {
+        index |= 1 << (10 - bit);
+      }
+    }
+    indices.push(index);
+  }
+  return indices.map((index) => BIP39_WORDS[index]).join(" ");
+}
+
+/**
+ * Normalizes message text for the claim match: lowercase, punctuation
+ * and whitespace collapsed to single spaces, so "legally, orbit zoo..."
+ * and "legally orbit zoo" match alike.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function normalizeClaimText(text) {
+  return text
+    .toLowerCase()
+    .replaceAll(/[^a-z]+/g, " ")
+    .trim();
+}
+
+/**
+ * Builds the claim URI for the unclaimed Companion. Not machine-actionable
+ * today (no LXMF client handles the scheme; a native app would register
+ * it) — the machine-actionable artifact is the `lxma://` QR.
  *
  * @param {string} code - The one-time claim code.
  * @param {string} deliveryHash - The Companion's `lxmf.delivery` hash (hex).
  * @returns {string}
  */
 export function claimUri(code, deliveryHash) {
-  return `noflo://claim/${code}?delivery=${deliveryHash}`;
+  return `noflo://claim/${code.replaceAll(" ", "-")}?delivery=${deliveryHash}`;
+}
+
+/**
+ * Builds the `lxma://` identity string LXMF clients ingest from a QR:
+ * `lxma://<destination_hash_hex>:<public_key_hex>` (Columba
+ * `IdentityQrCodeUtils` format; Sideband's manual entry accepts the same
+ * parts). Scanning it adds the Companion as an addressable contact —
+ * then the user sends the claim code to it.
+ *
+ * @param {string} deliveryHash - The Companion's `lxmf.delivery` hash (hex).
+ * @param {Uint8Array} publicKey - The 64-byte Reticulum public key.
+ * @returns {string}
+ */
+export function lxmaUri(deliveryHash, publicKey) {
+  return `lxma://${deliveryHash}:${toHex(publicKey)}`;
 }
 
 /**
@@ -50,7 +112,8 @@ export function claimUri(code, deliveryHash) {
  * @returns {boolean}
  */
 export function messageClaims(text, code) {
-  return typeof text === "string" && text.includes(code);
+  if (typeof text !== "string" || typeof code !== "string") return false;
+  return normalizeClaimText(text).includes(normalizeClaimText(code));
 }
 
 /**
@@ -60,22 +123,34 @@ export function messageClaims(text, code) {
  * @param {string} code
  * @param {string} deliveryHash
  * @param {string} identityHash - The Companion's LXMF identity hash (hex).
+ * @param {Uint8Array} publicKey - The Companion's 64-byte Reticulum public key.
  * @returns {Promise<string>}
  */
-export async function claimInstructions(code, deliveryHash, identityHash) {
+export async function claimInstructions(
+  code,
+  deliveryHash,
+  identityHash,
+  publicKey,
+) {
   const uri = claimUri(code, deliveryHash);
-  const qr = await QRCode.toString(uri, { type: "terminal", small: true });
+  const contact = lxmaUri(deliveryHash, publicKey);
+  const qr = await QRCode.toString(contact, { type: "terminal", small: true });
   return [
     "",
     "This Companion is UNCLAIMED — no owner is configured.",
     "",
-    `Claim code: ${code}`,
-    `Claim URI:  ${uri}`,
+    "1. Scan the QR below with your LXMF client (or paste the lxma://",
+    "   string / delivery hash as a contact):",
     "",
-    "Send this code as an LXMF message to the delivery destination below;",
-    "the first verified sender becomes the owner (global trust anchor).",
+    `   ${contact}`,
     "",
-    `Companion LXMF delivery: ${deliveryHash}`,
+    "2. Send it the claim code as a message:",
+    "",
+    `   ${code}`,
+    "",
+    "The first verified sender of the code becomes the owner.",
+    "",
+    `Claim URI (future native handler): ${uri}`,
     `Companion LXMF identity: ${identityHash}`,
     "",
     qr,
