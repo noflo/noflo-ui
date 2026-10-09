@@ -288,10 +288,11 @@ async function main() {
   // non-localhost stays deliberate config
   if (config.hub !== false) {
     const hub = typeof config.hub === "object" ? config.hub : {};
-    const already = meshConfig.interfaces.some(
-      (/** @type {any} */ iface) => iface.type === "websocketserver",
-    );
-    if (!already) {
+    const already = (/** @type {string} */ type) =>
+      meshConfig.interfaces.some(
+        (/** @type {any} */ iface) => iface.type === type,
+      );
+    if (!already("websocketserver")) {
       meshConfig.interfaces.push({
         id: "bridge-hub",
         type: "websocketserver",
@@ -299,6 +300,22 @@ async function main() {
           listenIp: hub.listen ?? config.host ?? resolved.defaults.host,
           listenPort: hub.port ?? 3569,
           ...(hub.tls ? { ssl: true, ...hub.tls } : {}),
+        },
+        enabled: true,
+      });
+    }
+    // The TCP sibling: Node-side tools (pi's rngit skills, other
+    // reticulum-js processes) attach to the same stack as clients.
+    // Deliberate config (`hub.tcp`), never a default: the shared rnsd
+    // instance is the Node-side on-ramp when one runs
+    if (hub.tcp && !already("tcp")) {
+      meshConfig.interfaces.push({
+        id: "bridge-hub-tcp",
+        type: "tcp",
+        options: {
+          listen: true,
+          listen_ip: hub.tcp.listen ?? "localhost",
+          port: hub.tcp.port ?? 4242,
         },
         enabled: true,
       });
