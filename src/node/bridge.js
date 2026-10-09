@@ -39,6 +39,7 @@ import { createRequire } from "node:module";
 import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
+import { createBackupWriter } from "./backup.js";
 import { createChatSurface } from "./chat.js";
 
 /** The blocking pi dialog methods (the pi-lxmf set); other
@@ -209,9 +210,24 @@ async function main() {
   // adoptProjectIdentity restores it onto the fresh doc
   const persistence = bindFilePersistence(engine.doc, docPath);
   await persistence.ready;
-  meshStorage
-    .set("activeProjectId", engine.doc.getMap("metadata").get("id"))
-    .catch(() => {});
+  const projectId = /** @type {string} */ (
+    engine.doc.getMap("metadata").get("id")
+  );
+  meshStorage.set("activeProjectId", projectId).catch(() => {});
+
+  // Server-side CRDT backup (work document #47 scope item 5): snapshots
+  // into the Companion state dir, never inside the project folder. Boot
+  // and shutdown snapshot immediately; live changes debounce
+  const backup = createBackupWriter({
+    doc: engine.doc,
+    dir: path.join(resolved.stateDir, "backups"),
+    projectId,
+  });
+  backup.addEventListener("snapshot", (/** @type {any} */ e) =>
+    console.log(`bridge  CRDT snapshot ${path.basename(e.detail.file)}`),
+  );
+  await backup.snapshotNow().catch(() => {});
+  backup.start();
 
   // The materializer: CRDT → folder, folder → intents through the seam
   const materializer = createMaterializer({
@@ -538,6 +554,8 @@ async function main() {
     console.log("bridge  stopping");
     manager?.stop();
     lxmf?.stop();
+    backup.stop();
+    await backup.snapshotNow().catch(() => {});
     await persistence.destroy();
     engine.stop();
     process.exit(0);
