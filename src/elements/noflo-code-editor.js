@@ -58,6 +58,12 @@ export class NofloCodeEditor extends HTMLElement {
           position: fixed;
           top: 50%;
           left: 50%;
+          /* Kill the modal UA sheet's inset:0 + margin:auto — with our
+             top/left they over-constrain the box into the bottom half and
+             push the top off-screen on short viewports */
+          right: auto;
+          bottom: auto;
+          margin: 0;
           translate: -50% -50%;
           width: min(1100px, 92vw);
           height: min(720px, 86vh);
