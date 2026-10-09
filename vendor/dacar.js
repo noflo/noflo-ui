@@ -1614,7 +1614,7 @@ var RnsSyncServer = class _RnsSyncServer {
    * @param {Object} opts
    * @param {IdentityType} opts.identity The node identity (deltas are ingested
    *   by issuer signatures, not the server's — this signs nothing).
-   * @param {DeltaReceiver} opts.receiver The shared receive boundary.
+   * @param {DeltaReceiverType} opts.receiver The shared receive boundary.
    * @param {ReticulumType} opts.rns A running Reticulum instance.
    * @param {string} [opts.appName] Override the `dacar` app name.
    * @param {readonly string[]} [opts.aspects] Override the `sync.v1` aspects.
@@ -1647,12 +1647,12 @@ var RnsSyncServer = class _RnsSyncServer {
     self._destination = dest;
     return self;
   }
-  /** @param {DeltaReceiver} receiver */
+  /** @param {DeltaReceiverType} receiver */
   constructor(receiver) {
     this._receiver = receiver;
     this._destination = null;
   }
-  /** @returns {DeltaReceiver} */
+  /** @returns {DeltaReceiverType} */
   get receiver() {
     return this._receiver;
   }

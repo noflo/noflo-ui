@@ -1777,12 +1777,8 @@ function intentImplementAsGraph(doc, payload) {
  * @returns {EngineResult}
  */
 function intentSetComponentCode(doc, payload) {
-  const { component, code } = payload ?? {};
-  if (
-    typeof component !== "string" ||
-    component.length === 0 ||
-    typeof code !== "string"
-  ) {
+  const { component, code, delta } = payload ?? {};
+  if (typeof component !== "string" || component.length === 0) {
     return { accepted: false, echoes: [] };
   }
   if (getGraph(doc, component)) {
@@ -1790,8 +1786,40 @@ function intentSetComponentCode(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   const componentEntry = ensureComponent(doc, component, { name: component });
+  if (delta !== undefined) {
+    // A Y.Text delta (the collaborative editor's keystroke stream):
+    // applied onto the authoritative buffer, merged with concurrent
+    // remote edits at character level by Yjs
+    if (!isValidTextDelta(delta)) return { accepted: false, echoes: [] };
+    if (delta.length === 0) return { accepted: true, echoes: [] };
+    getComponentCode(componentEntry).applyDelta(/** @type {any} */ (delta));
+    return { accepted: true, echoes: [] };
+  }
+  if (typeof code !== "string") {
+    return { accepted: false, echoes: [] };
+  }
   setComponentCode(componentEntry, code);
   return { accepted: true, echoes: [] };
+}
+
+/**
+ * Validates a Y.Text delta for the intent path: an array of retain /
+ * insert / delete operations, inserts string-only (the editor's edits
+ * are plain text).
+ *
+ * @param {any} delta
+ * @returns {boolean}
+ */
+function isValidTextDelta(delta) {
+  if (!Array.isArray(delta)) return false;
+  return delta.every(
+    (op) =>
+      op !== null &&
+      typeof op === "object" &&
+      ((typeof op.retain === "number" && op.retain >= 0) ||
+        typeof op.insert === "string" ||
+        (typeof op.delete === "number" && op.delete >= 0)),
+  );
 }
 
 /**

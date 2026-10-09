@@ -12,8 +12,16 @@ import { FlowContextChip } from "./elements/noflo-context-chip.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
+import {
+  basicSetup,
+  EditorView,
+  javascript,
+  markdown,
+  yCollab,
+} from "../vendor/codemirror.js";
 import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
+import "./elements/noflo-code-editor.js";
 import "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import {
@@ -121,6 +129,20 @@ let contextChip = null;
 let editor = null;
 /** @type {NofloModal | null} */
 let componentModal = null;
+/** The component code editor (work document #29): CodeMirror bound to the
+ * mirror's collaborative code buffer through yCollab; local deltas relay
+ * as setComponentCode intents (the Worker holds write authority). */
+/** @type {any} */
+let codeEditor = null;
+/** The vendored CodeMirror surface, handed to the editor element (one
+ * module instance per context: the vendor bundle). */
+const codeMirrorSurface = {
+  EditorView,
+  basicSetup,
+  javascript,
+  markdown,
+  yCollab,
+};
 /** @type {FlowComponentPicker | null} */
 let componentPicker = null;
 /** Node ids seen per graph, so freshly appeared nodes (local or synced)
@@ -534,6 +556,15 @@ async function openSignatureEditor(componentName) {
   }
 
   if (action === "open") {
+    const implementation = /** @type {any} */ (
+      mirrorDoc.getMap("components").get(componentName)
+    )
+      ?.get("metadata")
+      ?.get("implementation");
+    if (implementation?.kind === "code") {
+      openCodeEditor(componentName, implementation.language ?? "javascript");
+      return;
+    }
     router?.navigate(componentName);
     return;
   }
@@ -560,7 +591,44 @@ async function openSignatureEditor(componentName) {
         scaffold: codeScaffold(target),
       },
     });
+    // Straight into the editor (work document #29): the scaffold is on
+    // its way through the intent path; the collaborative binding picks
+    // the buffer up from the mirror once the echo lands
+    openCodeEditor(target, "javascript");
   }
+}
+
+/**
+ * Opens the component code editor (work document #29): CodeMirror bound
+ * to the mirror's Y.Text via yCollab — remote edits stream in through
+ * the y-update echo channel, local keystrokes relay as delta intents.
+ *
+ * @param {string} componentName
+ * @param {string} language
+ */
+function openCodeEditor(componentName, language) {
+  if (!codeEditor) return;
+  const entry = /** @type {any} */ (
+    mirrorDoc.getMap("components").get(componentName)
+  );
+  const ytext = entry?.get("code");
+  if (!ytext) return;
+  // The mirror may lag the intent echo briefly: bind now — yCollab
+  // renders whatever the buffer holds and follows it live
+  codeEditor.open({
+    ytext,
+    name: componentName,
+    language,
+    onSendDelta: (/** @type {any[]} */ delta) => {
+      sendIntent({
+        type: "INTENT",
+        command: "setComponentCode",
+        payload: { component: componentName, delta },
+      });
+    },
+    yCollab: codeMirrorSurface.yCollab,
+    extensions: codeMirrorSurface,
+  });
 }
 
 /**
@@ -602,6 +670,8 @@ async function render() {
     componentForm = document.createElement("noflo-json-form");
     componentModal.appendChild(componentForm);
     app.appendChild(componentModal);
+    codeEditor = document.createElement("noflo-code-editor");
+    app.appendChild(codeEditor);
   }
   on(ed, "edge-menu-open", () => {
     menuOpen = true;
@@ -638,6 +708,15 @@ async function render() {
     // document #29's implementation round)
     if (mirrorDoc.getMap("graphs").has(componentName)) {
       router?.navigate(componentName);
+      return;
+    }
+    const implementation = /** @type {any} */ (
+      mirrorDoc.getMap("components").get(componentName)
+    )
+      ?.get("metadata")
+      ?.get("implementation");
+    if (implementation?.kind === "code") {
+      openCodeEditor(componentName, implementation.language ?? "javascript");
       return;
     }
     openSignatureEditor(componentName);

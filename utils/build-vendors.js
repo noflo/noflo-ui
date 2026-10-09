@@ -189,6 +189,15 @@ const builds = [
     plugins: [siblingExternals(coreSibling)],
   },
   {
+    // CodeMirror + the yjs collaborative binding: CodeMirror's package
+    // graph (@codemirror/*, lib0, y-protocols) inlines; yjs stays external
+    // and re-points to the sibling bundle — yCollab must bind the same
+    // yjs copy the CRDT layer uses (see codemirror-entry.js)
+    entryPoints: { codemirror: resolve(here, "./codemirror-entry.js") },
+    ...vendor,
+    plugins: [siblingExternals(yjsSibling)],
+  },
+  {
     entryPoints: {
       "fontawesome-icons": resolve(here, "./icon-map.js"),
     },

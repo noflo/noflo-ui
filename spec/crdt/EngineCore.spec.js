@@ -136,6 +136,68 @@ describe("intents", () => {
     }
   });
 
+  it("setComponentCode accepts Y.Text deltas for the collaborative editor", () => {
+    const doc = createProjectDoc("p");
+    // A signature + implementation record, then delta edits
+    handle(doc, {
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "fs/Count",
+        signature: { inports: [], outports: [] },
+      },
+    });
+    handle(doc, {
+      type: "INTENT",
+      command: "implementInCode",
+      payload: {
+        component: "fs/Count",
+        language: "javascript",
+        scaffold: "export default function setup(runtime) {\n}\n",
+      },
+    });
+
+    // A collaborative editor's keystroke: insert at the start
+    const result = handle(doc, {
+      type: "INTENT",
+      command: "setComponentCode",
+      payload: {
+        component: "fs/Count",
+        delta: [{ insert: "// counted\n" }],
+      },
+    });
+    assert.equal(result.accepted, true);
+    const componentEntry = doc.getMap("components").get("fs/Count");
+    assert.match(componentEntry.get("code").toString(), /^\/\/ counted\n/);
+
+    // A delete + retain mix applies positionally: retain 2 keeps "//",
+    // delete 6 removes " count" from "// counted\n"
+    handle(doc, {
+      type: "INTENT",
+      command: "setComponentCode",
+      payload: { component: "fs/Count", delta: [{ retain: 2 }, { delete: 6 }] },
+    });
+    assert.equal(
+      componentEntry.get("code").toString().startsWith("//ed"),
+      true,
+    );
+
+    // Malformed deltas are refused, never applied
+    for (const bad of [
+      { component: "fs/Count", delta: [{ insert: 42 }] },
+      { component: "fs/Count", delta: "not-an-array" },
+    ]) {
+      assert.equal(
+        handle(doc, {
+          type: "INTENT",
+          command: "setComponentCode",
+          payload: bad,
+        }).accepted,
+        false,
+      );
+    }
+  });
+
   it("removeDoc drops the doc entry", () => {
     const doc = createProjectDoc("p");
     handle(doc, {
