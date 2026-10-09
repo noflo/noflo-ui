@@ -702,10 +702,9 @@ async function render() {
     const componentName = node?.getAttribute?.("component");
     if (!componentName) return;
     // One "Edit Component" per component kind (work document #5): a
-    // subgraph opens its graph editor; everything else opens the
-    // signature editor — the sketch→specify step for stubs, and the
-    // component's closest editor until the code editor lands (work
-    // document #29's implementation round)
+    // subgraph opens its graph editor; a code implementation opens the
+    // collaborative code editor; everything else opens the signature
+    // editor — the sketch→specify step for stubs (work document #29)
     if (mirrorDoc.getMap("graphs").has(componentName)) {
       router?.navigate(componentName);
       return;
