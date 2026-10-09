@@ -17,11 +17,12 @@
  *   `./reticulum-core.js`) the import maps resolve.
  * - Everything else is inlined: import maps cannot resolve nested bare
  *   specifiers inside third-party modules.
- * - Banner-injected code is prepended to the output verbatim: the noflo
- *   `require`/`fs` stubs must stay the first statements (fbp-graph's
- *   journal persistence is stubbed out), and the reticulum-core crypto
- *   import shadows the global so browsers without native X25519 (WebKit)
- *   can run the full stack.
+ * - Banner-injected code is prepended to the output verbatim: the
+ *   reticulum-core crypto import shadows the global so browsers without
+ *   native X25519 (WebKit) can run the full stack.
+ * - NoFlo 2.x is native ESM with no Node builtins, so its bundle carries no
+ *   shims or stubs; components from @noflo/core are vendored per component
+ *   (the publish-time manifest shape), not as a package monolith.
  *
  * Type declarations are generated, not hand-written — see
  * utils/generate-vendor-types.js.
@@ -103,20 +104,24 @@ const yjsAndCoreSiblings = { ...yjsSibling, ...coreSibling };
 const builds = [
   {
     entryPoints: {
-      noflo: resolve(here, "../node_modules/noflo/src/lib/NoFlo.js"),
+      noflo: resolve(here, "../node_modules/@noflo/noflo/src/lib/NoFlo.js"),
     },
     ...vendor,
-    alias: {
-      "node:events": resolve(here, "../src/shims/event-emitter.js"),
-      events: resolve(here, "../src/shims/event-emitter.js"),
-      // fbp-graph requires fs for journal file persistence, never used in
-      // the browser
-      fs: resolve(here, "../src/worker/empty-fs.js"),
-      "node:fs": resolve(here, "../src/worker/empty-fs.js"),
+  },
+  {
+    // @noflo/core components, vendored per component: the registry literal
+    // in src/graphs/engine-dispatch.js imports them by these paths. The
+    // component's own @noflo/noflo import stays external — all contexts
+    // must share ONE NoFlo runtime (one Component/IP class identity),
+    // served as the sibling vendor/noflo.js bundle
+    entryPoints: {
+      "core/Repeat": resolve(
+        here,
+        "../node_modules/@noflo/core/components/Repeat.js",
+      ),
     },
-    banner: {
-      js: "var require = () => ({}); var fs = {};",
-    },
+    ...vendor,
+    plugins: [siblingExternals({ "@noflo/noflo": "../noflo.js" })],
   },
   {
     // The browser surface: SVG rendering only — the invite QR codes are SVG

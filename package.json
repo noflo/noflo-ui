@@ -10,9 +10,8 @@
     "lint": "npx @biomejs/biome check src/ spec/ index.html",
     "format": "npx @biomejs/biome check --use-editorconfig=true --write src/ spec/ index.html",
     "types": "npx tsc --checkJs --noEmit --allowJs --skipLibCheck --ignoreConfig src/*.js src/**/*.js src/*.d.ts",
-    "generate:noflo": "node utils/generate-noflo-loader.js",
     "generate:fa": "node utils/generate-icon-map.js",
-    "prebuild-vendors": "npm run generate:noflo && npm run generate:fa && npm run generate:vendor-types",
+    "prebuild-vendors": "npm run generate:fa && npm run generate:vendor-types",
     "generate:vendor-types": "node utils/generate-vendor-types.js",
     "build-vendors": "node utils/build-vendors.js",
     "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js"
@@ -20,14 +19,14 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.0",
     "@noble/curves": "^2.4.0",
+    "@noflo/core": "2.0.0-alpha.1",
+    "@noflo/noflo": "2.0.0-alpha.2",
     "@reticulum/core": "^0.9.6",
     "@reticulum/dacar": "^1.5.0",
     "@reticulum/lxmf": "^0.9.7",
     "@reticulum/websocket-server-node": "^0.9.7",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",
-    "noflo": "^1.5.2",
-    "noflo-core": "^0.6.1",
     "qrcode": "^1.5.4",
     "source-code-pro": "^2.42.0",
     "y-indexeddb": "^9.0.12",
@@ -38,7 +37,6 @@
     "esbuild": "^0.28.2",
     "happy-dom": "^20.10.6",
     "js-yaml": "^5.1.0",
-    "noflo-component-loader": "^0.4.1",
     "typescript": "^6.0.3"
   },
   "esinstall": {

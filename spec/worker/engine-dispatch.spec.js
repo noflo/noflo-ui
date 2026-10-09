@@ -8,9 +8,10 @@ import {
 } from "../../src/crdt/ProjectDoc.js";
 import {
   createDispatcherGraph,
-  registerEngineComponents,
+  createEngineRegistry,
+  wireEngineContext,
 } from "../../src/graphs/engine-dispatch.js";
-import noflo from "../../vendor/noflo.js";
+import { createNetwork, internalSocket } from "../../vendor/noflo.js";
 
 /**
  * Starts a dispatcher network wired to an in-memory echo sink.
@@ -20,23 +21,22 @@ import noflo from "../../vendor/noflo.js";
  * @returns {Promise<{ network: any, send: (message: any) => void, echoes: any[] }>}
  */
 async function startNetwork(doc, state) {
-  const loader = new noflo.ComponentLoader(".");
-  registerEngineComponents(loader);
   const graph = createDispatcherGraph();
-  graph.addInitial(doc, "apply", "doc");
-  graph.addInitial(state, "apply", "state");
   /** @type {any[]} */
   const echoes = [];
-  graph.addInitial(
-    (/** @type {any} */ echo) => echoes.push(echo),
-    "send",
-    "callback",
-  );
-  const network = await noflo.createNetwork(graph, { componentLoader: loader });
+  const network = await createNetwork(graph, {
+    registry: createEngineRegistry(),
+  });
+  wireEngineContext(network, {
+    doc,
+    state,
+    callback: (/** @type {any} */ echo) => echoes.push(echo),
+  });
 
   const gateway = network.getNode("gateway");
-  const socket = noflo.internalSocket.createSocket();
-  /** @type {any} */ (gateway.component.inPorts).in.attach(socket);
+  if (!gateway) throw new Error("dispatcher lost its gateway");
+  const socket = internalSocket.createSocket();
+  gateway.component.inPorts.in.attach(socket);
   return {
     network,
     echoes,

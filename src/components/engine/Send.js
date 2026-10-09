@@ -3,19 +3,21 @@
  * to the Glass via an injected postMessage-style callback.
  */
 
-import noflo from "../../../vendor/noflo.js";
+import { Component } from "../../../vendor/noflo.js";
 
-/** NoFlo's shipped types omit the default export; the runtime API is stable. */
-const NoFlo = /** @type {any} */ (noflo);
-
-/** * @returns {any} */
+/**
+ * @returns {import("@noflo/noflo").Component} The configured component
+ */
 export function getComponent() {
-  const component = new NoFlo.Component();
-  component.description = "Sends echo messages to the Glass";
-  component.icon = "paper-plane";
-  component.inPorts.add("in", { datatype: "all" });
-  component.inPorts.add("callback", { datatype: "all", control: true });
-  component.process((/** @type {any} */ input, /** @type {any} */ output) => {
+  const component = new Component({
+    description: "Sends echo messages to the Glass",
+    icon: "paper-plane",
+    inPorts: {
+      in: { datatype: "all" },
+      callback: { datatype: "all", control: true },
+    },
+  });
+  component.process((input, output) => {
     if (!input.hasData("callback")) return;
     if (!input.has("in")) return;
 

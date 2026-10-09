@@ -3,10 +3,7 @@
  * routes valid messages onward for application against the CRDT.
  */
 
-import noflo from "../../../vendor/noflo.js";
-
-/** NoFlo's shipped types omit the default export; the runtime API is stable. */
-const NoFlo = /** @type {any} */ (noflo);
+import { Component } from "../../../vendor/noflo.js";
 
 import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
 
@@ -19,16 +16,27 @@ import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
  */
 const UI_KEYS = new Set(UI_MESSAGES.map((key) => `${key.type}/${key.command}`));
 
-/** * @returns {any} */
+/**
+ * @returns {import("@noflo/noflo").Component} The configured component
+ */
 export function getComponent() {
-  const component = new NoFlo.Component();
-  component.description =
-    "Validates the Glass message envelope and routes it to the engine";
-  component.icon = "filter";
-  component.inPorts.add("in", { datatype: "object" });
-  component.outPorts.add("engine", { datatype: "object" });
-  component.outPorts.add("invalid", { datatype: "object" });
-  component.process((/** @type {any} */ input, /** @type {any} */ output) => {
+  const component = new Component({
+    description:
+      "Validates the Glass message envelope and routes it to the engine",
+    icon: "filter",
+    inPorts: {
+      in: { datatype: "object" },
+    },
+    outPorts: {
+      // The error routing of this component is the `invalid` port: its whole
+      // job is envelope validation, so malformed input is data on `invalid`,
+      // not a failure (the port is left unconnected — malformed messages are
+      // logged and dropped)
+      engine: { datatype: "object" },
+      invalid: { datatype: "object" },
+    },
+  });
+  component.process((input, output) => {
     if (!input.has("in")) return;
     const message = input.getData("in");
     if (!isUIWorkerMessage(message)) {

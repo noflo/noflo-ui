@@ -33,7 +33,7 @@ import { relative, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 
 /**
- * Re-export shims for packages that ship their own declarations. Plain
+ * Re-export shims for packages whose own declarations are shipped. Plain
  * re-export shims sidestep the bundler entirely: TypeScript resolves the
  * packages' own declarations natively, and the vendor-path imports resolve
  * to the same types.
@@ -42,11 +42,11 @@ const root = resolve(import.meta.dirname, "..");
  */
 const shims = [
   {
+    // NoFlo 2.x ships per-module declarations next to every source module:
+    // the shim re-exports the package entry's surface and TypeScript picks
+    // the sibling .d.ts files up through the relative import chain
     name: "noflo",
-    // The explicit declaration-file path sidesteps noflo's exports map,
-    // which resolves to the JS source under bundler resolution and drops
-    // the named-export surface; the sibling lib/NoFlo.d.ts carries it
-    body: 'export * from "../node_modules/noflo/lib/NoFlo.js";\nexport { default } from "../node_modules/noflo/lib/NoFlo.js";\n',
+    body: 'export * from "../node_modules/@noflo/noflo/src/lib/NoFlo.js";\nexport { default } from "../node_modules/@noflo/noflo/src/lib/NoFlo.js";\n',
   },
   {
     // The QR encoder ships no types: the shim types the surface the

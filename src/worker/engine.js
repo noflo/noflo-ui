@@ -6,12 +6,9 @@
  * monitors the heartbeat emitted here and respins the worker when it dies.
  */
 
-import noflo from "../../vendor/noflo.js";
+import { createNetwork, internalSocket } from "../../vendor/noflo.js";
 import { WebSocketClientInterface } from "../../vendor/reticulum-core.js";
 import * as Y from "../../vendor/yjs.js";
-
-/** NoFlo's shipped types omit the default export; the runtime API is stable. */
-const NoFlo = /** @type {any} */ (noflo);
 
 import {
   createEngineState,
@@ -29,7 +26,8 @@ import {
 } from "../crdt/ProjectPersistence.js";
 import {
   createDispatcherGraph,
-  registerEngineComponents,
+  createEngineRegistry,
+  wireEngineContext,
 } from "../graphs/engine-dispatch.js";
 import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
@@ -104,19 +102,22 @@ export async function startEngine(io, options = {}) {
   const projectId = doc.getMap("metadata").get("id");
   const state = createEngineState();
 
-  const loader = new NoFlo.ComponentLoader(".");
-  registerEngineComponents(loader);
   const graph = createDispatcherGraph();
-  graph.addInitial(doc, "apply", "doc");
-  graph.addInitial(state, "apply", "state");
-  graph.addInitial(io.postMessage, "send", "callback");
-  const network = await new NoFlo.createNetwork(graph, {
-    componentLoader: loader,
+  const network = await createNetwork(graph, {
+    registry: createEngineRegistry(),
+  });
+  wireEngineContext(network, {
+    doc,
+    state,
+    callback: io.postMessage,
   });
 
   const gateway = network.getNode("gateway");
-  const socket = NoFlo.internalSocket.createSocket();
-  /** @type {any} */ (gateway.component.inPorts).in.attach(socket);
+  if (!gateway?.component) {
+    throw new Error("Engine dispatcher lost its gateway");
+  }
+  const socket = internalSocket.createSocket();
+  gateway.component.inPorts.in.attach(socket);
   // Single mutable delegate: the mesh-aware router replaces the plain socket
   // forwarder once mesh sync has booted
   let routeMessage = (/** @type {any} */ message) => {

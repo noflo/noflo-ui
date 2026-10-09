@@ -248,7 +248,7 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
         payload: {
           graphId: "main",
           nodeId: "Joined",
-          componentName: "noflo-core/Repeat",
+          componentName: "core/Repeat",
           metadata: { x: 10, y: 20 },
         },
       });
@@ -318,7 +318,7 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
         payload: {
           graphId: "main",
           nodeId: "AfterReload",
-          componentName: "noflo-core/Repeat",
+          componentName: "core/Repeat",
           metadata: { x: 30, y: 40 },
         },
       });
@@ -341,7 +341,7 @@ describe("engine-level join E2E over a TCP loopback (work document #25)", () => 
         payload: {
           graphId: "main",
           nodeId: "FromReloaded",
-          componentName: "noflo-core/Repeat",
+          componentName: "core/Repeat",
           metadata: { x: 50, y: 60 },
         },
       });
