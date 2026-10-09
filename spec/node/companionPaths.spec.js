@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { describe, it } from "node:test";
 import {
   configHome,
+  DEFAULT_HUB_PORT,
   DEFAULT_PORT,
   dataHome,
   inDocker,
@@ -27,7 +28,8 @@ describe("Companion zero-configuration defaults (work document #47)", () => {
       assert.equal(resolved.stateDir, path.join(dir, "data", "noflo-ui"));
       assert.equal(resolved.exists, false);
       assert.equal(resolved.defaults.port, DEFAULT_PORT);
-      assert.equal(DEFAULT_PORT, 3569, '"flow" in T9, like noflo-nodejs');
+      assert.equal(DEFAULT_PORT, 3000, "the UI serving port");
+      assert.equal(DEFAULT_HUB_PORT, 3569, '"flow" in T9, like noflo-nodejs');
     } finally {
       delete process.env.XDG_CONFIG_HOME;
       delete process.env.XDG_DATA_HOME;

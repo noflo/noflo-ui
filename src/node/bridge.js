@@ -280,6 +280,30 @@ async function main() {
       },
     ];
   }
+  // Hub mode (work document #44 M3, SPEC auto-detect defaults): a
+  // WebSocketServer on ws://localhost:3569 ("flow" in T9, like
+  // noflo-nodejs) — the zero-config mesh on-ramp for webapps on this
+  // machine. Deliberate binding: explicit `hub` config controls it
+  // (host, port, TLS); `hub: false` turns it off. LAN needs TLS, so
+  // non-localhost stays deliberate config
+  if (config.hub !== false) {
+    const hub = typeof config.hub === "object" ? config.hub : {};
+    const already = meshConfig.interfaces.some(
+      (/** @type {any} */ iface) => iface.type === "websocketserver",
+    );
+    if (!already) {
+      meshConfig.interfaces.push({
+        id: "bridge-hub",
+        type: "websocketserver",
+        options: {
+          listenIp: hub.listen ?? config.host ?? resolved.defaults.host,
+          listenPort: hub.port ?? 3569,
+          ...(hub.tls ? { ssl: true, ...hub.tls } : {}),
+        },
+        enabled: true,
+      });
+    }
+  }
   engine.handle({
     type: "MESH",
     command: "configure",

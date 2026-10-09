@@ -23,6 +23,7 @@
     "@reticulum/core": "^0.9.6",
     "@reticulum/dacar": "^1.5.0",
     "@reticulum/lxmf": "^0.9.7",
+    "@reticulum/websocket-server-node": "^0.9.7",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",
     "noflo": "^1.5.2",

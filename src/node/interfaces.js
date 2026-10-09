@@ -20,6 +20,7 @@ import {
   TCPClientInterface,
   TCPServerInterface,
 } from "@reticulum/node";
+import { WebSocketServerInterface } from "@reticulum/websocket-server-node";
 import { WebSocketClientInterface } from "../../vendor/reticulum-core.js";
 
 /**
@@ -78,6 +79,18 @@ export async function attachInterfaces(rns, interfaces = []) {
       } else {
         rns.addInterface(tcp, true);
       }
+    } else if (iface.type === "websocketserver") {
+      // Hub mode (work document #44 M3): inbound WebSocket connections
+      // spawn client interfaces, announced via the connection event —
+      // the zero-config mesh on-ramp for browsers. Server-only type:
+      // it never appears in the browser's mesh settings (the stored
+      // config's normalizer drops it); the Companion appends it to the
+      // interface list it hands the engine
+      const server = new WebSocketServerInterface(/** @type {any} */ (options));
+      await server.connect();
+      server.addEventListener("connection", (/** @type {any} */ event) => {
+        rns.addInterface(event.detail, true);
+      });
     } else {
       console.warn(
         `Mesh interface type ${iface.type} is not available on Node; skipped`,

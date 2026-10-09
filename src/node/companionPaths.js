@@ -12,16 +12,23 @@
  *   the LXMF identity and pi session pointers live here, never inside
  *   project folders (SPEC: multiple Companions on one machine each use
  *   a different identity and work dir)
- * - Serving port 3569 ("flow" in T9, like noflo-nodejs), listening on
- *   localhost only (`0.0.0.0` when inside Docker)
+ * - UI serving port 3000; the hub's WebSocketServer takes 3569
+ *   ("flow" in T9, like noflo-nodejs), localhost only (`0.0.0.0` when
+ *   inside Docker)
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import * as path from "node:path";
 
-/** The default serving port: "flow" in T9, like noflo-nodejs. */
-export const DEFAULT_PORT = 3569;
+/** The default UI serving port. */
+export const DEFAULT_PORT = 3000;
+
+/**
+ * The default hub port: "flow" in T9, like noflo-nodejs — the
+ * WebSocketServer on-ramp for localhost webapps (work document #44 M3).
+ */
+export const DEFAULT_HUB_PORT = 3569;
 
 /**
  * The XDG config home, honoring the spec'd env override.
