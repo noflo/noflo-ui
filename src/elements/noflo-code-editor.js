@@ -227,12 +227,6 @@ export class NofloCodeEditor extends HTMLElement {
           outline: 2px solid var(--ui-focus);
           outline-offset: 2px;
         }
-        .hint {
-          margin-right: auto;
-          font-size: 0.85em;
-          color: color-mix(in srgb, var(--node-text) 55%, transparent);
-          align-self: center;
-        }
       </style>
       <dialog>
         <div class="panel" aria-label="Code editor">
@@ -242,7 +236,6 @@ export class NofloCodeEditor extends HTMLElement {
           </header>
           <div class="editor"></div>
           <footer>
-            <span class="hint">Edits sync live with every participant</span>
             <button type="button" class="done">Done</button>
           </footer>
         </div>
@@ -307,8 +300,11 @@ export class NofloCodeEditor extends HTMLElement {
     this._view = new extensions.EditorView({
       doc: ytext.toString(),
       extensions: [
-        extensions.basicSetup,
+        // The custom theme precedes basicSetup: the first highlight
+        // style in the extension list wins, and basicSetup ships a
+        // default highlighter that would otherwise mask ours
         ...codeEditorTheme(extensions),
+        extensions.basicSetup,
         language === "markdown"
           ? extensions.markdown()
           : extensions.javascript(),
