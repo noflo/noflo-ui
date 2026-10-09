@@ -364,9 +364,14 @@ async function main() {
           `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
           { title: "Companion hello" },
         )
+        .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
         .catch((error) =>
           console.log(`bridge  hello world failed: ${error.message}`),
         );
+    } else {
+      console.log(
+        "bridge  no ownerIdentity configured — no hello world; the chat surface stays dormant (unclaimed mode per work document #47 arrives later)",
+      );
     }
   } else {
     console.log("bridge  mesh not started — the LXMF layer stays offline");
