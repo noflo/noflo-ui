@@ -5,3 +5,4 @@ utils/icon-map.js
 bridge.json
 join-flow-worker-test.html
 join-worker-repro.js
+code-editor-test.html
