@@ -17,6 +17,81 @@
  *
  * @extends HTMLElement
  */
+/**
+ * Builds the editor's look: a syntax palette over the theme's route
+ * tokens (keywords carry the accent, strings/numbers/functions take
+ * distinct route colors, comments dim), chrome via CSS variables. Both
+ * themes and all ages inherit automatically.
+ *
+ * @param {any} cm - The vendored CodeMirror surface.
+ * @returns {any[]} Extensions for the EditorView.
+ */
+export function codeEditorTheme(cm) {
+  // Feature-tolerant: stripped surfaces (tests) degrade to chrome-only
+  if (typeof cm.HighlightStyle?.define !== "function" || !cm.tags) {
+    return [];
+  }
+  const highlight = cm.HighlightStyle.define([
+    { tag: cm.tags.keyword, color: "var(--ui-accent)" },
+    { tag: [cm.tags.name, cm.tags.propertyName], color: "var(--node-text)" },
+    {
+      tag: [
+        cm.tags.function(cm.tags.variableName),
+        cm.tags.function(cm.tags.propertyName),
+      ],
+      color: "var(--route-7)",
+    },
+    { tag: cm.tags.string, color: "var(--route-4)" },
+    {
+      tag: [cm.tags.number, cm.tags.bool, cm.tags.null],
+      color: "var(--route-8)",
+    },
+    {
+      tag: [cm.tags.comment, cm.tags.lineComment, cm.tags.blockComment],
+      color: "color-mix(in srgb, var(--node-text) 45%, transparent)",
+      fontStyle: "italic",
+    },
+    { tag: [cm.tags.typeName, cm.tags.className], color: "var(--route-2)" },
+    {
+      tag: [cm.tags.operator, cm.tags.punctuation, cm.tags.bracket],
+      color: "color-mix(in srgb, var(--node-text) 75%, transparent)",
+    },
+    { tag: cm.tags.definition(cm.tags.variableName), color: "var(--route-5)" },
+    { tag: cm.tags.invalid, color: "var(--route-1)" },
+  ]);
+  return [
+    cm.EditorView.theme({
+      "&": { color: "var(--node-text)", fontSize: "13px" },
+      ".cm-content": { caretColor: "var(--ui-accent)" },
+      ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--ui-accent)" },
+      "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+        {
+          backgroundColor:
+            "color-mix(in srgb, var(--ui-accent) 25%, transparent)",
+        },
+      ".cm-activeLine": {
+        backgroundColor: "color-mix(in srgb, var(--ui-accent) 6%, transparent)",
+      },
+      ".cm-activeLineGutter": {
+        backgroundColor:
+          "color-mix(in srgb, var(--ui-accent) 10%, transparent)",
+        color: "var(--node-text)",
+      },
+      ".cm-gutters": {
+        backgroundColor: "transparent",
+        color: "color-mix(in srgb, var(--node-text) 45%, transparent)",
+        borderRight: "1px solid var(--ui-panel-border)",
+      },
+      ".cm-foldPlaceholder": {
+        backgroundColor: "transparent",
+        border: "none",
+        color: "color-mix(in srgb, var(--node-text) 45%, transparent)",
+      },
+    }),
+    cm.syntaxHighlighting(highlight),
+  ];
+}
+
 export class NofloCodeEditor extends HTMLElement {
   constructor() {
     super();
@@ -109,8 +184,6 @@ export class NofloCodeEditor extends HTMLElement {
         .editor .cm-editor {
           height: 100%;
           background: transparent;
-          color: var(--node-text);
-          font-size: 13px;
         }
         .editor .cm-editor.cm-focused {
           outline: none;
@@ -235,6 +308,7 @@ export class NofloCodeEditor extends HTMLElement {
       doc: ytext.toString(),
       extensions: [
         extensions.basicSetup,
+        ...codeEditorTheme(extensions),
         language === "markdown"
           ? extensions.markdown()
           : extensions.javascript(),
