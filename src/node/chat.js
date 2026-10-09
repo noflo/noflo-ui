@@ -88,6 +88,9 @@ export function parseChatMessage(sourceHex, text) {
  *   The unclaimed-mode bootstrap (work document #47 scope item 1): the
  *   first verified sender whose message contains the code becomes the
  *   owner. Inactive once claimed.
+ * @param {Record<string, (argument: string) => Promise<string | void>>} [deps.commands]
+ *   Bridge-level commands (e.g. /projects, /switch, /leave) dispatched
+ *   before the built-ins; the return value (a string) is the reply.
  * @param {((message: any) => Promise<string | null>) | null} [deps.senderIdentityHash]
  *   Recalls the sender's Reticulum identity hash (the claim persists it).
  * @param {{ get: (key: string) => Promise<any>, set: (key: string, value: any) => Promise<void> }} deps.state
@@ -97,6 +100,7 @@ export function parseChatMessage(sourceHex, text) {
  *   chatMessage: (sourceHex: string, text: string, triggerMessageId?: Uint8Array | null) => Promise<void>,
  *   reply: (text: string, title?: string) => Promise<void>,
  *   clearReaction: () => void,
+ *   setPi: (manager: import("./piManager.js").PiManagerHandle | null) => void,
  *   setOwnerContact: (contact: string) => void,
  * }}
  */
@@ -108,6 +112,7 @@ export function createChatSurface({
   pi,
   state,
   claim = null,
+  commands = {},
   senderIdentityHash = null,
   log = () => {},
 }) {
@@ -116,6 +121,8 @@ export function createChatSurface({
   let queue = Promise.resolve();
   /** The claimed owner's contact; set through `setOwnerContact`. */
   let owner = ownerContact;
+  /** The active project's pi manager; swapped on project switches. */
+  let activePi = pi;
   /** The "thinking" acknowledgement (the pi-lxmf pattern): a reaction to
    * the prompt message after a debounce, cleared when the real reply
    * lands — fast runs never get the extra ping. */
@@ -210,12 +217,12 @@ export function createChatSurface({
     if (!message.isCommand) {
       scheduleReaction(triggerMessageId);
       // Free text is a prompt for the active project
-      if (!pi) {
+      if (!activePi) {
         await reply("pi is not available on this Companion");
         return;
       }
       try {
-        await pi.prompt(message.text);
+        await activePi.prompt(message.text);
       } catch (e) {
         await reply(
           `⚠️ pi could not take the prompt: ${
@@ -233,9 +240,15 @@ export function createChatSurface({
    * @returns {Promise<void>}
    */
   async function runCommand(message) {
+    const bridgeCommand = commands[message.command];
+    if (bridgeCommand) {
+      const result = await bridgeCommand(message.argument);
+      if (typeof result === "string") await reply(result);
+      return;
+    }
     switch (message.command) {
       case "sessions": {
-        const current = pi?.isRunning() ? await pi.status() : null;
+        const current = activePi?.isRunning() ? await activePi.status() : null;
         /** @type {string[]} */
         const lines = [];
         if (current?.sessionFile) {
@@ -272,7 +285,7 @@ export function createChatSurface({
         return;
       }
       case "session": {
-        const current = pi?.isRunning() ? await pi.status() : null;
+        const current = activePi?.isRunning() ? await activePi.status() : null;
         if (!current) {
           await reply("pi is not running — a prompt starts it");
           return;
@@ -287,12 +300,12 @@ export function createChatSurface({
         return;
       }
       case "compact": {
-        if (!pi?.isRunning()) {
+        if (!activePi?.isRunning()) {
           await reply("pi is not running — nothing to compact");
           return;
         }
         try {
-          await pi.compact(message.argument || undefined);
+          await activePi.compact(message.argument || undefined);
           await reply("compacted");
         } catch (e) {
           await reply(
@@ -302,12 +315,12 @@ export function createChatSurface({
         return;
       }
       case "new": {
-        if (!pi?.isRunning()) {
+        if (!activePi?.isRunning()) {
           await reply("pi is not running — a prompt starts it");
           return;
         }
         try {
-          await pi.newSession();
+          await activePi.newSession();
           await reply(
             "fresh session started; the previous one is in /sessions",
           );
@@ -319,13 +332,15 @@ export function createChatSurface({
         return;
       }
       case "abort": {
-        pi?.client?.abort();
+        activePi?.client?.abort();
         await reply("abort sent");
         return;
       }
       case "model": {
         if (!message.argument) {
-          const current = pi?.isRunning() ? await pi.status() : null;
+          const current = activePi?.isRunning()
+            ? await activePi.status()
+            : null;
           await reply(`model: ${current?.model ?? "not running"}`);
           return;
         }
@@ -338,7 +353,7 @@ export function createChatSurface({
           return;
         }
         try {
-          const model = await pi?.setModel(provider, modelId);
+          const model = await activePi?.setModel(provider, modelId);
           await reply(`model set to ${model?.id ?? message.argument}`);
           return;
         } catch (e) {
@@ -349,11 +364,11 @@ export function createChatSurface({
         return;
       }
       case "suspend": {
-        if (!pi) {
+        if (!activePi) {
           await reply("pi is not available on this Companion");
           return;
         }
-        pi.suspend();
+        activePi.suspend();
         await reply("pi suspended — the session resumes on the next prompt");
         return;
       }
@@ -371,6 +386,12 @@ export function createChatSurface({
             "- `/model provider:model` — switch models (e.g. `anthropic:claude-sonnet-4-5`)",
             "- `/suspend` — sleep pi now; it resumes on the next prompt",
             "- `/help` — this list",
+            "",
+            "**Companion-level**",
+            "",
+            "- `/projects` — list the registered projects",
+            "- `/switch [n]` — switch active project",
+            "- `/leave` — drop the active project (workdir untouched)",
           ].join("\n"),
         );
         return;
@@ -448,6 +469,15 @@ export function createChatSurface({
     reply,
     /** Cancels a pending run-start reaction (the reply landed). */
     clearReaction,
+    /**
+     * Swaps the pi manager (project switches): prompts go to the new
+     * project's agent from now on.
+     *
+     * @param {import("./piManager.js").PiManagerHandle | null} manager
+     */
+    setPi(manager) {
+      activePi = manager;
+    },
     /**
      * Switches the gate to a newly claimed owner's contact.
      *

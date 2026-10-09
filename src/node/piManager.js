@@ -91,6 +91,8 @@ export async function discoverPi(options = {}) {
  * @property {() => void} suspend Immediate sleep; the pointer persists.
  * @property {() => void} stop Final shutdown.
  * @property {import("./piRpc.js").PiRpcClient | null} client
+ * @property {PiRpcClient["addEventListener"]} addEventListener Lifecycle
+ *   and pi events (spawned, stopped, narration, forwarded pi events).
  */
 
 /**

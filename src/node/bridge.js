@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * @file The noflo-ui bridge (work document #44, M1): a Node daemon running
- * the engine headless — the same `startEngine` the browser Worker runs,
- * via the `handle` seam — with the materializer keeping a project folder
- * in sync, file-backed persistence, and an HTTP(S) server handing the UI
- * to browsers on the network (off-localhost serving must be HTTPS:
- * the Reticulum identity code requires a secure context).
+ * @file The NoFlo UI Companion (work documents #44 and #47): a Node
+ * daemon running the engine headless — the same `startEngine` the browser
+ * Worker runs, via the `handle` seam — with per-project materialization
+ * keeping invited project folders in sync, file-backed persistence, an
+ * HTTP(S) server handing the UI to browsers, an LXMF chatbot driving a
+ * pi coding agent, and hub-mode mesh on-ramps.
  *
- * The agent layer (pi, LXMF chat — work document #44's M2) rides the same
- * process later; this entry is the whole M1 surface.
+ * Multi-project (work document #47 scope item 2) mirrors the webapp's
+ * model: process-level state (mesh identity, Dacar wallet, the
+ * active-project pointer) lives in the Companion state dir; project
+ * content lives in per-project workdirs. Switching projects restarts the
+ * engine with the other scope — the daemon equivalent of the webapp's
+ * page reload — while the process-level mesh node, LXMF layer, and chat
+ * stay up.
  *
  * Usage:
  *   noflo-ui                       (zero-config: XDG defaults, first run
@@ -18,15 +23,18 @@
  *
  * Config shape (`bridge.json`):
  *   {
- *     "folder": "./project",       // the materialized project folder
- *     "port": 3000,                 // HTTP serving port (0 = off)
+ *     "name": "Companion",
+ *     "folder": "./project",        // the active project's workdir
+ *     "port": 3000,                 // UI serving port (0 = off)
+ *     "host": "localhost",          // serving bind host
  *     "tls": { "cert": "...", "key": "..." },  // optional HTTPS
+ *     "hub": { "port": 3569 },      // the WebSocket on-ramp; false = off
  *     "mesh": { ...mesh config, same shape the settings dialog manages },
  *     "invite": "noflo://join/...",  // optional seed invite
- *     "ownerIdentity": "<identity hash hex>",  // the owner's Reticulum
- *                                  // identity — trust anchor; the LXMF
+ *     "ownerIdentity": "<identity hash hex>",  // trust anchor; the LXMF
  *                                  // chat address derives from it
- *     "stateDir": "./companion-state",  // Companion state (LXMF identity)
+ *     "stateDir": "...",            // Companion state (registry, backups,
+ *                                   // LXMF identity) — default XDG
  *     "piBin": "pi"                 // pi executable (discovered on PATH)
  *   }
  */
@@ -37,16 +45,16 @@ import * as http from "node:http";
 import * as https from "node:https";
 import { createRequire } from "node:module";
 import * as path from "node:path";
-import { createMaterializer } from "../materialization/watcher.js";
-import { startEngine } from "../worker/engine.js";
 import { createBackupWriter } from "./backup.js";
 import { createChatSurface } from "./chat.js";
+import { claimInstructions, createClaimCode } from "./claim.js";
 
 /** The blocking pi dialog methods (the pi-lxmf set); other
  * extension_ui_request methods (e.g. setStatus) are ignored. */
 const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 
-import { claimInstructions, createClaimCode } from "./claim.js";
+import { createMaterializer } from "../materialization/watcher.js";
+import { startEngine } from "../worker/engine.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
 import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
@@ -54,6 +62,12 @@ import { bindFilePersistence, createFileStorage } from "./persistence.js";
 import { createPiManager, discoverPi } from "./piManager.js";
 import { assistantText } from "./piRpc.js";
 import { PRIMER_FILENAME, primerFor } from "./primer.js";
+import {
+  loadProjectsRegistry,
+  registerProject,
+  removeProject,
+  setActiveProject,
+} from "./projects.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 
@@ -77,6 +91,7 @@ const MIME = {
  *
  * @param {number} port
  * @param {{ cert?: string, key?: string }} tls
+ * @param {string} host
  * @returns {Promise<void>}
  */
 function serveUi(port, tls, host = "localhost") {
@@ -126,18 +141,19 @@ function serveUi(port, tls, host = "localhost") {
  * The project folder watcher: file events read the content and feed the
  * materializer. `fs.watch` recursive covers macOS, Windows, and current
  * Linux Node; chokidar is the robustness upgrade if platforms complain.
- * Debounced: editors write in bursts.
+ * Debounced: editors write in bursts. Returns the watcher so a project
+ * switch can close it.
  *
  * @param {string} folder
  * @param {(path: string, content: string | null) => Promise<void>} handle
- * @returns {void}
+ * @returns {import("node:fs").FSWatcher}
  */
 function watchFolder(folder, handle) {
   /** @type {NodeJS.Timeout | null} */
   let timer = null;
   /** @type {Map<string, string | null>} */
   const queued = new Map();
-  fsSync.watch(folder, { recursive: true }, (_event, file) => {
+  return fsSync.watch(folder, { recursive: true }, (_event, file) => {
     if (!file) return;
     const relative = file.replaceAll("\\", "/");
     queued.set(relative, null);
@@ -175,122 +191,23 @@ async function main() {
   if (!resolved.exists) {
     console.log(`bridge  started with a fresh config at ${configPath}`);
   }
-  const folder = path.resolve(
-    config.folder ?? resolved.defaults.folder ?? "./project",
-  );
-  const docPath = path.join(folder, ".noflo-doc.bin");
 
-  await fs.mkdir(folder, { recursive: true });
-  const meshStorage = createFileStorage(path.join(folder, ".noflo-mesh.json"));
-
-  const engine = await startEngine(
-    {
-      postMessage: (message) => {
-        const kind = `${message.protocol ?? "system"}/${message.command ?? message.kind ?? "?"}`;
-        if (
-          message.kind === "y-update" ||
-          message.kind === "y-sync" ||
-          message.command === "heartbeat"
-        ) {
-          return;
-        }
-        console.log(
-          `${kind.padEnd(14)} ${JSON.stringify(message.payload ?? message)}`,
-        );
-      },
-      registerMessageHandler: (handler) => {
-        inbound = handler;
-      },
-    },
-    { name: config.name ?? "noflo-ui bridge", meshStorage },
+  // ---- Process-level state (the webapp's device-level split) ----
+  // Mesh identity, Dacar wallet, and the active-project pointer live in
+  // the Companion state dir — ONE mesh identity across all projects
+  const stateDir = config.stateDir ?? resolved.stateDir;
+  const meshStorage = createFileStorage(
+    path.join(stateDir, "companion-mesh.json"),
   );
 
-  // File-backed persistence: the doc snapshot survives restarts. The
-  // project id rides the mesh storage, so the next boot's
-  // adoptProjectIdentity restores it onto the fresh doc
-  const persistence = bindFilePersistence(engine.doc, docPath);
-  await persistence.ready;
-  const projectId = /** @type {string} */ (
-    engine.doc.getMap("metadata").get("id")
-  );
-  meshStorage.set("activeProjectId", projectId).catch(() => {});
+  // The process-owned Reticulum instance: built once, handed to every
+  // project engine (work document #47, multi-project) and shared with the
+  // LXMF layer — one mesh node. Interfaces attach here, not per engine
+  const { Reticulum } = await import("../../vendor/reticulum-core.js");
+  const rns = new Reticulum();
 
-  // Server-side CRDT backup (work document #47 scope item 5): snapshots
-  // into the Companion state dir, never inside the project folder. Boot
-  // and shutdown snapshot immediately; live changes debounce
-  const backup = createBackupWriter({
-    doc: engine.doc,
-    dir: path.join(resolved.stateDir, "backups"),
-    projectId,
-  });
-  backup.addEventListener("snapshot", (/** @type {any} */ e) =>
-    console.log(`bridge  CRDT snapshot ${path.basename(e.detail.file)}`),
-  );
-  await backup.snapshotNow().catch(() => {});
-  backup.start();
-
-  // The materializer: CRDT → folder, folder → intents through the seam
-  const materializer = createMaterializer({
-    doc: engine.doc,
-    fs: {
-      writeFile: async (file, content) => {
-        await fs.mkdir(path.dirname(path.join(folder, file)), {
-          recursive: true,
-        });
-        await fs.writeFile(path.join(folder, file), content);
-      },
-      remove: async (file) => {
-        await fs.rm(path.join(folder, file)).catch(() => {});
-      },
-    },
-    emitIntent: (intent) => engine.handle(intent),
-    onDiagnostic: (file, diagnostic) => {
-      console.error(`materializer  ${file}: ${diagnostic}`);
-    },
-  });
-
-  // Remote CRDT changes → absorb: rewrite the folder, advance the snapshot
-  let absorbing = false;
-  engine.doc.on("update", () => {
-    if (absorbing) return;
-    absorbing = true;
-    materializer
-      .absorbRemote()
-      .catch((error) => console.error("Absorption failed:", error))
-      .finally(() => {
-        absorbing = false;
-      });
-  });
-
-  await materializer.materialize();
-
-  // The agent primer: context provisioning for file-based tools (work
-  // document #44 M2). A pre-existing AGENTS.md is never overwritten
-  // (work document #43 update #4 overlay rule)
-  const primer = primerFor({
-    exists: (file) => fsSync.existsSync(path.join(folder, file)),
-  });
-  if (primer !== null) {
-    await fs.writeFile(path.join(folder, PRIMER_FILENAME), primer);
-    console.log(`bridge  primer written to ${PRIMER_FILENAME}`);
-  }
-
-  // The folder watcher: edits stream back as intents (the snapshot
-  // advanced at absorption, so the bridge's own writes diff to nothing)
-  watchFolder(folder, async (relative, content) => {
-    absorbing = true;
-    try {
-      await materializer.handleFileEvent(relative, content);
-    } finally {
-      absorbing = false;
-    }
-  });
-
-  // Mesh: join the seed invite or announce, per the config. The join
-  // boots the mesh with the stored config, so the transport interfaces
-  // must be configured first — without them the knock times out with
-  // "host path not resolved". The defaults: the shared rnsd instance and
-  // AutoInterface, per the Node interface wiring (work document #44)
+  // Interfaces: the stored mesh config (or the defaults), plus the hub
+  // on-ramps. Attach directly to the process-owned instance
   const meshConfig = config.mesh ?? {};
   if (!meshConfig.interfaces || meshConfig.interfaces.length === 0) {
     meshConfig.interfaces = [
@@ -344,20 +261,301 @@ async function main() {
       });
     }
   }
-  engine.handle({
-    type: "MESH",
-    command: "configure",
-    payload: { ...meshConfig, enabled: true },
-  });
-  // The mesh start is async: let the transport come up before the knock
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  if (config.invite) {
+  await attachInterfaces(rns, meshConfig.interfaces);
+
+  const piAvailable = await discoverPi({ piBin: config.piBin ?? "pi" });
+  if (!piAvailable.available) {
+    console.log("bridge  pi not found — the agent layer stays unavailable");
+  }
+
+  // ---- Per-project lifecycle ----
+  /** @type {any} */
+  let active = null;
+  /** Whether a project transition is in progress (chat gate). */
+  let switching = false;
+
+  /**
+   * Boots the engine for one project scope and wires its per-project
+   * surfaces (persistence, backup, materializer, watcher, pi). Mirrors
+   * the webapp's project load: engine start adopts the active pointer
+   * from mesh storage, the room derives from the project identity, and
+   * the process-level mesh node survives the swap.
+   *
+   * @param {{ folder: string }} project
+   * @returns {Promise<any>}
+   */
+  async function startProject(project) {
+    const folder = path.resolve(project.folder);
+    await fs.mkdir(folder, { recursive: true });
+    const docPath = path.join(folder, ".noflo-doc.bin");
+
+    const engine = await startEngine(
+      {
+        postMessage: (message) => {
+          const kind = `${message.protocol ?? "system"}/${message.command ?? message.kind ?? "?"}`;
+          if (
+            message.kind === "y-update" ||
+            message.kind === "y-sync" ||
+            message.command === "heartbeat"
+          ) {
+            return;
+          }
+          console.log(
+            `${kind.padEnd(14)} ${JSON.stringify(message.payload ?? message)}`,
+          );
+        },
+        registerMessageHandler: (handler) => {
+          inbound = handler;
+        },
+      },
+      {
+        name: config.name ?? "noflo-ui Companion",
+        meshStorage,
+        reticulum: rns,
+      },
+    );
+
+    // File-backed persistence: the doc snapshot survives restarts. The
+    // project id rides the mesh storage, so the next boot's
+    // adoptProjectIdentity restores it onto the fresh doc
+    const persistence = bindFilePersistence(engine.doc, docPath);
+    await persistence.ready;
+    const projectId = /** @type {string} */ (
+      engine.doc.getMap("metadata").get("id")
+    );
+    meshStorage.set("activeProjectId", projectId).catch(() => {});
+    console.log(`bridge  project ${projectId} (${folder})`);
+
+    // Server-side CRDT backup (work document #47 scope item 5): snapshots
+    // into the Companion state dir, never inside the project folder. Boot
+    // and shutdown snapshot immediately; live changes debounce
+    const backup = createBackupWriter({
+      doc: engine.doc,
+      dir: path.join(stateDir, "backups"),
+      projectId,
+    });
+    backup.addEventListener("snapshot", (/** @type {any} */ e) =>
+      console.log(`bridge  CRDT snapshot ${path.basename(e.detail.file)}`),
+    );
+    await backup.snapshotNow().catch(() => {});
+    backup.start();
+
+    // The materializer: CRDT → folder, folder → intents through the seam
+    const materializer = createMaterializer({
+      doc: engine.doc,
+      fs: {
+        writeFile: async (file, content) => {
+          await fs.mkdir(path.dirname(path.join(folder, file)), {
+            recursive: true,
+          });
+          await fs.writeFile(path.join(folder, file), content);
+        },
+        remove: async (file) => {
+          await fs.rm(path.join(folder, file)).catch(() => {});
+        },
+      },
+      emitIntent: (intent) => engine.handle(intent),
+      onDiagnostic: (file, diagnostic) => {
+        console.error(`materializer  ${file}: ${diagnostic}`);
+      },
+    });
+
+    // Remote CRDT changes → absorb: rewrite the folder, advance the snapshot
+    let absorbing = false;
+    engine.doc.on("update", () => {
+      if (absorbing) return;
+      absorbing = true;
+      materializer
+        .absorbRemote()
+        .catch((error) => console.error("Absorption failed:", error))
+        .finally(() => {
+          absorbing = false;
+        });
+    });
+
+    await materializer.materialize();
+
+    // The agent primer: context provisioning for file-based tools (work
+    // document #44 M2). A pre-existing AGENTS.md is never overwritten
+    // (work document #43 update #4 overlay rule)
+    const primer = primerFor({
+      exists: (file) => fsSync.existsSync(path.join(folder, file)),
+    });
+    if (primer !== null) {
+      await fs.writeFile(path.join(folder, PRIMER_FILENAME), primer);
+      console.log(`bridge  primer written to ${PRIMER_FILENAME}`);
+    }
+
+    // The folder watcher: edits stream back as intents (the snapshot
+    // advanced at absorption, so the bridge's own writes diff to nothing)
+    const watcher = watchFolder(folder, async (relative, content) => {
+      absorbing = true;
+      try {
+        await materializer.handleFileEvent(relative, content);
+      } finally {
+        absorbing = false;
+      }
+    });
+
+    // pi: one supervised client per project (the workdir is the scope)
+    /** @type {import("./piManager.js").PiManagerHandle | null} */
+    let manager = null;
+    if (piAvailable.available) {
+      manager = createPiManager({
+        workdir: folder,
+        state: {
+          get: (key) => meshStorage.get(`pi:${projectId}:${key}`),
+          set: (key, value) => meshStorage.set(`pi:${projectId}:${key}`, value),
+        },
+        piBin: config.piBin ?? "pi",
+        log: (msg) => console.log(msg),
+      });
+      chat?.setPi(manager);
+      // Narration: pi lifecycle moments reach the owner as chat
+      if (ownerContact) {
+        manager.addEventListener("narration", (/** @type {any} */ e) => {
+          lxmf
+            ?.sendText(ownerContact, e.detail.text, {
+              title: "Companion narration",
+            })
+            .catch(() => {});
+        });
+        // pi output is Markdown; the LXMF renderer field is already set,
+        // so assistant replies render readably in the chat client
+        manager.addEventListener("event", (/** @type {any} */ e) => {
+          const event = e.detail;
+          if (
+            event?.type === "message_end" &&
+            event.message?.role === "assistant"
+          ) {
+            const text = assistantText(event.message);
+            if (text) {
+              chat?.clearReaction();
+              chat?.reply(text, "pi").catch(() => {});
+            }
+          }
+          // Blocking dialogs hang the run with nobody at a terminal:
+          // decline and note. pi also fires non-blocking requests (e.g.
+          // setStatus on every startup) — those are ignored silently
+          if (event?.type === "extension_ui_request") {
+            const method = /** @type {string} */ (event.method);
+            if (!DIALOG_METHODS.has(method)) return;
+            manager?.client?.respondUi(event.id, { cancelled: true });
+            chat
+              ?.reply(
+                `⛔ dismissed a dialog (${event.title ?? method}) — nobody is at a terminal.`,
+                "pi",
+              )
+              .catch(() => {});
+          }
+        });
+      }
+    }
+
+    // Mesh: the engine rebinds its provider onto the process-owned node.
+    // The join boots the mesh with the stored config, so the transport
+    // interfaces must be configured first — without them the knock times
+    // out with "host path not resolved"
     engine.handle({
       type: "MESH",
-      command: "join",
-      payload: { invite: config.invite },
+      command: "configure",
+      payload: { ...meshConfig, enabled: true },
     });
+    // The mesh start is async: let the transport come up before the knock
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (config.invite && projectId === undefined) {
+      // Seed invites apply to the FIRST project only: a project that has
+      // already joined ignores it (the knock is idempotent anyway)
+      engine.handle({
+        type: "MESH",
+        command: "join",
+        payload: { invite: config.invite },
+      });
+    }
+
+    // Registry: the project is now known by its CRDT identity
+    registerProject(stateDir, {
+      id: projectId,
+      name:
+        /** @type {string} */ (engine.doc.getMap("metadata").get("name")) ??
+        "Untitled project",
+      folder,
+    });
+
+    return {
+      engine,
+      persistence,
+      backup,
+      materializer,
+      watcher,
+      manager,
+      folder,
+      projectId,
+    };
   }
+
+  /**
+   * Quiesces the active project: backup snapshot, pi stopped, watcher
+   * closed, persistence flushed, engine stopped. The process-level mesh
+   * node, LXMF layer, and chat stay up.
+   *
+   * @returns {Promise<void>}
+   */
+  async function stopProject() {
+    if (!active) return;
+    const current = active;
+    active = null;
+    chat?.setPi(null);
+    current.backup.stop();
+    await current.backup.snapshotNow().catch(() => {});
+    current.manager?.stop();
+    current.watcher.close();
+    await current.persistence.destroy();
+    current.engine.stop();
+  }
+
+  /**
+   * Switches the active project: the daemon equivalent of the webapp's
+   * page reload — the engine restarts with the other scope while the
+   * process-level surfaces stay up.
+   *
+   * @param {string} projectId
+   * @returns {Promise<string>} A report line for the chat surface.
+   */
+  async function switchProject(projectId) {
+    if (switching) return "a project switch is already in progress";
+    switching = true;
+    try {
+      const registry = loadProjectsRegistry(stateDir);
+      const target = registry.projects.find((p) => p.id === projectId);
+      if (!target) return `unknown project ${projectId}`;
+      await stopProject();
+      meshStorage.set("activeProjectId", projectId).catch(() => {});
+      active = await startProject(target);
+      setActiveProject(stateDir, projectId);
+      return `switched to "${target.name}" (${target.folder})`;
+    } finally {
+      switching = false;
+    }
+  }
+
+  // ---- Boot the active project ----
+  // Resolution order mirrors the webapp: the stored active pointer first,
+  // then the config folder (registered on first sight), else a fresh
+  // project in the config folder
+  const configFolder = path.resolve(
+    config.folder ?? resolved.defaults.folder ?? "./project",
+  );
+  const registry = loadProjectsRegistry(stateDir);
+  const activeProject = registry.projects.find(
+    (p) => p.id === registry.activeProjectId,
+  ) ??
+    registry.projects.find((p) => p.folder === configFolder) ?? {
+      id: "new",
+      name: "Untitled project",
+      folder: configFolder,
+    };
+  active = await startProject(activeProject);
 
   if ((config.port ?? resolved.defaults.port) > 0) {
     await serveUi(
@@ -368,196 +566,171 @@ async function main() {
   }
 
   // ---- The agent layer (work document #44 M2) ----
-  // LXMF: the always-on, addressable endpoint. Rides the engine's shared
-  // Reticulum stack (one mesh node, work document #47); the identity lives
-  // in the Companion's state dir, outside any project folder
-  const stateDir = config.stateDir ?? resolved.stateDir;
+  // LXMF: the always-on, addressable endpoint. Rides the process-owned
+  // Reticulum stack (one mesh node, work document #47); the identity
+  // lives in the Companion state dir, outside any project folder
   // The owner Reticulum identity hash IS the global trust anchor; the chat
   // address derives from it — one config value, two uses (SPEC: "the owner
   // identity is the default global trust anchor", work document #44 M2)
   const ownerContact = config.ownerIdentity
     ? await deriveDeliveryHash(config.ownerIdentity)
     : null;
-  /** @type {ReturnType<typeof createChatSurface> | null} */
-  let chat = null;
   /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */
   let lxmf = null;
-  const piAvailable = await discoverPi({ piBin: config.piBin ?? "pi" });
-  if (!piAvailable.available) {
-    console.log("bridge  pi not found — the agent layer stays unavailable");
+  lxmf = await startLxmfLayer({
+    rns,
+    stateDir,
+    name: config.name ?? "noflo-ui Companion",
+    log: (msg) => console.log(msg),
+  });
+  console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
+
+  // Unclaimed mode (work document #47 scope item 1): without a
+  // configured owner the claim code is the only way in; the first
+  // verified sender of the code becomes the owner, persisted to the
+  // config file
+  /** @type {string | null} */
+  let claimCode = null;
+  if (!ownerContact) {
+    claimCode = createClaimCode();
+    const instructions = await claimInstructions(
+      claimCode,
+      lxmf.deliveryHash,
+      lxmf.identityHash,
+      lxmf.identity.publicKey,
+    );
+    console.log(instructions);
   }
-  let manager = null;
-  if (piAvailable.available) {
-    manager = createPiManager({
-      workdir: folder,
-      state: {
-        get: (key) => meshStorage.get(`pi:${key}`),
-        set: (key, value) => meshStorage.set(`pi:${key}`, value),
-      },
-      piBin: config.piBin ?? "pi",
-      log: (msg) => console.log(msg),
-    });
-  }
-  const rns = engine.getReticulum();
-  if (rns) {
-    lxmf = await startLxmfLayer({
-      rns,
-      stateDir,
-      name: config.name ?? "noflo-ui Companion",
-      log: (msg) => console.log(msg),
-    });
-    console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
-    // Unclaimed mode (work document #47 scope item 1): without a
-    // configured owner the claim code is the only way in; the first
-    // verified sender of the code becomes the owner, persisted to the
-    // config file
-    /** @type {string | null} */
-    let claimCode = null;
-    if (!ownerContact) {
-      claimCode = createClaimCode();
-      const instructions = await claimInstructions(
-        claimCode,
-        lxmf.deliveryHash,
-        lxmf.identityHash,
-        lxmf.identity.publicKey,
-      );
-      console.log(instructions);
-    }
-    chat = createChatSurface({
-      ownerContact,
-      sendText: lxmf.sendText,
-      sendReaction: lxmf.sendReaction,
-      verifySender: lxmf.verifySender,
-      pi: manager,
-      state: {
-        get: (key) => meshStorage.get(`pi:${key}`),
-        set: (key, value) => meshStorage.set(`pi:${key}`, value),
-      },
-      claim: claimCode
-        ? {
-            code: claimCode,
-            onClaim: async (/** @type {string} */ identityHash) => {
-              // The claimed owner: persist to the config file (the same
-              // shape a power user would write), derive the contact, and
-              // confirm over chat
-              const configRaw = fsSync.readFileSync(configPath, "utf8");
-              const parsed = JSON.parse(configRaw);
-              parsed.ownerIdentity = identityHash;
-              const tempPath = `${configPath}.claim-tmp`;
-              fsSync.writeFileSync(
-                tempPath,
-                `${JSON.stringify(parsed, null, 2)}\n`,
-              );
-              fsSync.renameSync(tempPath, configPath);
-              const contact = await deriveDeliveryHash(identityHash);
-              chat?.setOwnerContact(contact);
-              console.log(
-                `bridge  claimed by ${identityHash} — ownerIdentity written to ${configPath}`,
-              );
-              await /** @type {any} */ (lxmf).sendText(
-                contact,
-                `You are now the owner of this Companion ("${config.name ?? "noflo-ui Companion"}").\npi: ${piAvailable.version ?? "not found"}\nSend /help for the command surface.`,
-                { title: "Companion claimed" },
-              );
+  const chat = createChatSurface({
+    ownerContact,
+    sendText: lxmf.sendText,
+    sendReaction: lxmf.sendReaction,
+    verifySender: lxmf.verifySender,
+    pi: active?.manager ?? null,
+    state: {
+      get: (key) => meshStorage.get(`pi:${active?.projectId}:${key}`),
+      set: (key, value) =>
+        meshStorage.set(`pi:${active?.projectId}:${key}`, value),
+    },
+    // Bridge-level commands (multi-project, work document #47 scope
+    // item 2) dispatch before the built-ins
+    commands:
+      /** @type {Record<string, (argument: string) => Promise<string | void>>} */ ({
+        projects: async () => {
+          const current = loadProjectsRegistry(stateDir);
+          const lines = current.projects.map(
+            (
+              /** @type {{ id: string, name: string, folder: string }} */ p,
+              index,
+            ) => {
+              const marker = p.id === active?.projectId ? " (active)" : "";
+              return `${index + 1}. ${p.name}${marker} — ${p.folder}`;
             },
-          }
-        : undefined,
-      senderIdentityHash: lxmf.senderIdentityHash,
-      log: (msg) => console.log(msg),
-    });
-    lxmf.onMessage((event) => {
-      chat?.handleInbound(event).catch(() => {});
-    });
-    // Narration: pi lifecycle moments reach the owner as chat
-    if (ownerContact && manager) {
-      manager.addEventListener("narration", (/** @type {any} */ e) => {
-        lxmf
-          ?.sendText(ownerContact, e.detail.text, {
-            title: "Companion narration",
-          })
-          .catch(() => {});
-      });
-      // pi output is Markdown; the LXMF renderer field is already set, so
-      // assistant replies render readably in the chat client
-      manager.addEventListener("event", (/** @type {any} */ e) => {
-        const event = e.detail;
-        if (
-          event?.type === "message_end" &&
-          event.message?.role === "assistant"
-        ) {
-          const text = assistantText(event.message);
-          if (text) {
-            chat?.reply(text, "pi").catch(() => {});
+          );
+          return lines.length > 0 ? lines.join("\n") : "no registered projects";
+        },
+        switch: async (argument) => {
+          const index = Number.parseInt(argument, 10) - 1;
+          const current = loadProjectsRegistry(stateDir);
+          const target = Number.isInteger(index)
+            ? current.projects[index]
+            : current.projects.find((p) => p.id !== active?.projectId);
+          if (!target) return "no project to switch to — /projects lists them";
+          if (target.id === active?.projectId) return "already active";
+          return switchProject(target.id);
+        },
+        leave: async () => {
+          if (!active) return "no active project";
+          const name = active.projectId;
+          await stopProject();
+          removeProject(stateDir, name);
+          return `left ${name} — the workdir on disk was not touched; /projects and /switch pick up another one`;
+        },
+      }),
+    claim: claimCode
+      ? {
+          code: claimCode,
+          onClaim: async (/** @type {string} */ identityHash) => {
+            // The claimed owner: persist to the config file (the same
+            // shape a power user would write), derive the contact, and
+            // confirm over chat
+            const configRaw = fsSync.readFileSync(configPath, "utf8");
+            const parsed = JSON.parse(configRaw);
+            parsed.ownerIdentity = identityHash;
+            const tempPath = `${configPath}.claim-tmp`;
+            fsSync.writeFileSync(
+              tempPath,
+              `${JSON.stringify(parsed, null, 2)}\n`,
+            );
+            fsSync.renameSync(tempPath, configPath);
+            const contact = await deriveDeliveryHash(identityHash);
+            chat.setOwnerContact(contact);
+            console.log(
+              `bridge  claimed by ${identityHash} — ownerIdentity written to ${configPath}`,
+            );
+            await lxmf.sendText(
+              contact,
+              `You are now the owner of this Companion ("${config.name ?? "noflo-ui Companion"}").\npi: ${piAvailable.version ?? "not found"}\nSend /help for the command surface.`,
+              { title: "Companion claimed" },
+            );
+          },
+        }
+      : undefined,
+    senderIdentityHash: lxmf.senderIdentityHash,
+    log: (msg) => console.log(msg),
+  });
+  lxmf.onMessage((event) => {
+    chat.handleInbound(event).catch(() => {});
+  });
+
+  // Hello world: the boot announce to the owner contact (work document
+  // #44 bootstrap)
+  if (ownerContact) {
+    const pkg = JSON.parse(
+      fsSync.readFileSync(path.join(ROOT, "package.json"), "utf8"),
+    );
+    // The installed noflo version (the exports map blocks the package.json
+    // self-reference, and the main entry sits in a subdir, so ascend from
+    // the resolved main until the owning package.json is found)
+    let nofloVersion = pkg.dependencies?.noflo ?? "unknown";
+    try {
+      let dir = path.dirname(createRequire(import.meta.url).resolve("noflo"));
+      for (let i = 0; i < 5; i++) {
+        const manifest = path.join(dir, "package.json");
+        if (fsSync.existsSync(manifest)) {
+          const parsed = JSON.parse(fsSync.readFileSync(manifest, "utf8"));
+          if (parsed.name === "noflo") {
+            nofloVersion = parsed.version;
+            break;
           }
         }
-        // Dialogs hang the run with nobody at a terminal: decline and note
-        if (event?.type === "extension_ui_request") {
-          manager.client?.respondUi(event.id, { cancelled: true });
-          chat
-            ?.reply(
-              `⛔ dismissed a dialog (${event.title ?? event.method}) — nobody is at a terminal.`,
-              "pi",
-            )
-            .catch(() => {});
-        }
-      });
-    }
-    // Hello world: the boot announce to the owner contact (work document
-    // #44 bootstrap). Once #47's unclaimed/claim-code mode lands, this
-    // branch becomes the claimed path of it
-    if (ownerContact) {
-      const pkg = JSON.parse(
-        fsSync.readFileSync(path.join(ROOT, "package.json"), "utf8"),
-      );
-      // The installed noflo version (the exports map blocks the package.json
-      // self-reference, and the main entry sits in a subdir, so ascend from
-      // the resolved main until the owning package.json is found)
-      let nofloVersion = pkg.dependencies?.noflo ?? "unknown";
-      try {
-        let dir = path.dirname(createRequire(import.meta.url).resolve("noflo"));
-        for (let i = 0; i < 5; i++) {
-          const manifest = path.join(dir, "package.json");
-          if (fsSync.existsSync(manifest)) {
-            const parsed = JSON.parse(fsSync.readFileSync(manifest, "utf8"));
-            if (parsed.name === "noflo") {
-              nofloVersion = parsed.version;
-              break;
-            }
-          }
-          const parent = path.dirname(dir);
-          if (parent === dir) break;
-          dir = parent;
-        }
-      } catch {
-        /* keep the declared range */
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
       }
-      lxmf
-        .sendText(
-          ownerContact,
-          `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nnoflo-ui ${pkg.version}, noflo ${nofloVersion}\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
-          { title: "Companion hello" },
-        )
-        .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
-        .catch((error) =>
-          console.log(`bridge  hello world failed: ${error.message}`),
-        );
-    } else {
-      console.log(
-        "bridge  no ownerIdentity configured — no hello world; the chat surface stays dormant (unclaimed mode per work document #47 arrives later)",
-      );
+    } catch {
+      /* keep the declared range */
     }
+    lxmf
+      .sendText(
+        ownerContact,
+        `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nnoflo-ui ${pkg.version}, noflo ${nofloVersion}\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
+        { title: "Companion hello" },
+      )
+      .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
+      .catch((error) =>
+        console.log(`bridge  hello world failed: ${error.message}`),
+      );
   } else {
-    console.log("bridge  mesh not started — the LXMF layer stays offline");
+    console.log(
+      "bridge  no ownerIdentity configured — the Companion is unclaimed; send the claim code below to become the owner",
+    );
   }
 
   process.on("SIGINT", async () => {
     console.log("bridge  stopping");
-    manager?.stop();
+    await stopProject();
     lxmf?.stop();
-    backup.stop();
-    await backup.snapshotNow().catch(() => {});
-    await persistence.destroy();
-    engine.stop();
     process.exit(0);
   });
 }
