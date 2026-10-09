@@ -30,17 +30,20 @@ describe("local Companion hub probe (SPEC auto-detect)", () => {
     enabled: true,
   };
 
-  it("probes on a localhost http page, additively to a cloud interface", () => {
+  it("probes on a localhost http page with no other WebSocket interface", () => {
     withLocation("localhost", "http:", () => {
       assert.equal(needsLocalHubProbe([]), true);
-      assert.equal(needsLocalHubProbe([cloud]), true, "cloud stays alongside");
+      // The hub yields to a configured cloud interface: reticulum-js
+      // cannot relay yet, and a hub attached beside it splits the path
+      // table (announces prefer the shorter hub path whose requests die)
+      assert.equal(needsLocalHubProbe([cloud]), false, "cloud wins");
     });
     withLocation("127.0.0.1", "http:", () => {
       assert.equal(needsLocalHubProbe([]), true);
     });
   });
 
-  it("skips when a local target is already configured", () => {
+  it("skips when any WebSocket interface is configured", () => {
     withLocation("localhost", "http:", () => {
       assert.equal(needsLocalHubProbe([localHub]), false);
       assert.equal(needsLocalHubProbe([cloud, localHub]), false);

@@ -265,13 +265,15 @@ export function needsLocalHubProbe(interfaces) {
   ) {
     return false;
   }
+  // The hub is an on-ramp for the pure-localhost scenario only:
+  // reticulum-js cannot relay yet (transport-node announce propagation is
+  // future work), so a hub attached beside a cloud interface splits the
+  // path table — announces heard via the hub make RNS prefer the bridge
+  // as the path, and path requests routed there die (work document #44
+  // M3 live finding). A configured cloud interface wins; the probe
+  // stands down.
   return !(interfaces ?? []).some(
-    (iface) =>
-      iface.enabled &&
-      iface.type === "websocket" &&
-      /localhost|127\.0\.0\.1|\[::1\]/.test(
-        JSON.stringify(iface.options ?? {}),
-      ),
+    (iface) => iface.enabled && iface.type === "websocket",
   );
 }
 
