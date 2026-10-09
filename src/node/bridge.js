@@ -33,6 +33,7 @@ import * as fsSync from "node:fs";
 import * as fs from "node:fs/promises";
 import * as http from "node:http";
 import * as https from "node:https";
+import { createRequire } from "node:module";
 import * as path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 import { startEngine } from "../worker/engine.js";
@@ -358,10 +359,35 @@ async function main() {
     // #44 bootstrap). Once #47's unclaimed/claim-code mode lands, this
     // branch becomes the claimed path of it
     if (ownerContact) {
+      const pkg = JSON.parse(
+        fsSync.readFileSync(path.join(ROOT, "package.json"), "utf8"),
+      );
+      // The installed noflo version (the exports map blocks the package.json
+      // self-reference, and the main entry sits in a subdir, so ascend from
+      // the resolved main until the owning package.json is found)
+      let nofloVersion = pkg.dependencies?.noflo ?? "unknown";
+      try {
+        let dir = path.dirname(createRequire(import.meta.url).resolve("noflo"));
+        for (let i = 0; i < 5; i++) {
+          const manifest = path.join(dir, "package.json");
+          if (fsSync.existsSync(manifest)) {
+            const parsed = JSON.parse(fsSync.readFileSync(manifest, "utf8"));
+            if (parsed.name === "noflo") {
+              nofloVersion = parsed.version;
+              break;
+            }
+          }
+          const parent = path.dirname(dir);
+          if (parent === dir) break;
+          dir = parent;
+        }
+      } catch {
+        /* keep the declared range */
+      }
       lxmf
         .sendText(
           ownerContact,
-          `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
+          `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nnoflo-ui ${pkg.version}, noflo ${nofloVersion}\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
           { title: "Companion hello" },
         )
         .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
