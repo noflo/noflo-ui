@@ -163,6 +163,30 @@ export default defineConfig([
     },
   },
   {
+    // @reticulum/lxmf: external to the shared sibling @reticulum/core
+    // bundle, same contract as y-reticulum and dacar — one core instance
+    // per process (the split-brain warning must never fire)
+    entry: {
+      lxmf: './utils/lxmf-entry.js',
+    },
+    ...vendor,
+    external: ['@reticulum/core'],
+    // The lxmf package itself is inlined; only @reticulum/core stays
+    // external. Declarations flow from the package's shipped types through
+    // the type-only build at the bottom of this file.
+    noExternal: [/^@reticulum\/lxmf/],
+    splitting: false,
+    outputOptions: {
+      paths: {
+        '@reticulum/core': './reticulum-core.js',
+        // The lxmf stamper deep-imports core's stamper; rewrite it to the
+        // sibling vendor bundle (which re-exports the stamper) so no
+        // second core copy enters the process
+        '@reticulum/core/src/utils/stamper.js': './reticulum-core.js',
+      },
+    },
+  },
+  {
     entry: {
       'fontawesome-icons': './utils/icon-map.js',
     },
@@ -204,6 +228,7 @@ export default defineConfig([
       yjs: './utils/yjs-entry.js',
       'y-indexeddb': './utils/y-indexeddb-entry.js',
       'reticulum-core': './utils/reticulum-core-types-entry.js',
+      'lxmf': './utils/lxmf-entry.js',
       'noble-curves': './utils/noble-curves-entry.js',
       'y-reticulum': './utils/y-reticulum-types-entry.js',
     },

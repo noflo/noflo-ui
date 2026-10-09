@@ -18,7 +18,7 @@
  * permission list.
  */
 
-import { toHex as coreToHex } from "@reticulum/core";
+import { toHex as coreToHex } from "../../vendor/reticulum-core.js";
 
 /** A parsed inbound chat message. */
 export class ChatMessage {

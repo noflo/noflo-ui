@@ -17,14 +17,20 @@
 
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { FileStorageAdapter } from "@reticulum/node";
+import { LXMessage, LXMFConstants, LXMRouter } from "../../vendor/lxmf.js";
+// One copy of the core protocol classes per process: the vendor bundles
+// (vendor/lxmf.js re-points @reticulum/core to the sibling
+// vendor/reticulum-core.js). Importing the npm packages here would put
+// two physical copies of @reticulum/core in the process — the library
+// itself warns and cross-copy instanceof checks fail (work document #44
+// M2 live-test finding)
 import {
   fromHex,
   Identity,
   toHex,
   UnknownIdentityError,
-} from "@reticulum/core";
-import { LXMessage, LXMFConstants, LXMRouter } from "@reticulum/lxmf";
-import { FileStorageAdapter } from "@reticulum/node";
+} from "../../vendor/reticulum-core.js";
 
 /** How long a send may wait for a peer's announce before giving up. */
 const PEER_DISCOVERY_WAIT_MS = 30_000;

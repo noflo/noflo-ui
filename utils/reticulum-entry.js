@@ -10,3 +10,7 @@
  */
 export * from "@reticulum/core";
 export { WebSocketClientInterface } from "@reticulum/core/src/interfaces/websocket.js";
+// The LXMF stamper re-exports core's work-stamping primitives via a deep
+// path the package specifier rewrite does not cover; exposing them here
+// lets the sibling lxmf vendor bundle import them from this one core copy
+export * from "@reticulum/core/src/utils/stamper.js";
