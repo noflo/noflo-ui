@@ -268,6 +268,17 @@ async function main() {
     console.log("bridge  pi not found — the agent layer stays unavailable");
   }
 
+  // The owner Reticulum identity hash IS the global trust anchor; the chat
+  // address derives from it — one config value, two uses (SPEC: "the owner
+  // identity is the default global trust anchor", work document #44 M2)
+  const ownerContact = config.ownerIdentity
+    ? await deriveDeliveryHash(config.ownerIdentity)
+    : null;
+  /** The process-level LXMF layer (the agent-layer section binds it once
+   * the process-owned Reticulum instance is up). */
+  /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */
+  let lxmf = null;
+
   // ---- Per-project lifecycle ----
   /** @type {any} */
   let active = null;
@@ -573,14 +584,6 @@ async function main() {
   // LXMF: the always-on, addressable endpoint. Rides the process-owned
   // Reticulum stack (one mesh node, work document #47); the identity
   // lives in the Companion state dir, outside any project folder
-  // The owner Reticulum identity hash IS the global trust anchor; the chat
-  // address derives from it — one config value, two uses (SPEC: "the owner
-  // identity is the default global trust anchor", work document #44 M2)
-  const ownerContact = config.ownerIdentity
-    ? await deriveDeliveryHash(config.ownerIdentity)
-    : null;
-  /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */
-  let lxmf = null;
   lxmf = await startLxmfLayer({
     rns,
     stateDir,
