@@ -307,8 +307,17 @@ export function createChatSurface({
       case "help": {
         await reply(
           [
-            "commands: /sessions /resume [n] /session /compact /new /abort /model provider:model /suspend /help",
-            "free text goes to pi as a prompt",
+            "**Companion commands**",
+            "",
+            "- `/sessions` — list known pi sessions",
+            "- `/resume [n]` — pick a session to resume (default: newest)",
+            "- `/session` — show the active session and model",
+            "- `/compact` — compact the active session's context",
+            "- `/new` — start a fresh session (the old one stays in /sessions)",
+            "- `/abort` — interrupt the current run",
+            "- `/model provider:model` — switch models (e.g. `anthropic:claude-sonnet-4-5`)",
+            "- `/suspend` — sleep pi now; it resumes on the next prompt",
+            "- `/help` — this list",
           ].join("\n"),
         );
         return;

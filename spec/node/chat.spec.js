@@ -155,16 +155,18 @@ describe("chat command surface (work document #44 M2)", () => {
     const { surface, sent, pi, dir } = await boot();
     await surface.handleInbound(inbound(OWNER, "/help"));
     const text = sent.at(-1)?.text ?? "";
+    assert.match(text, /\*\*Companion commands\*\*/, "markdown header");
     for (const command of [
       "/sessions",
       "/resume",
       "/session",
       "/compact",
+      "/new",
       "/abort",
       "/model",
       "/suspend",
     ]) {
-      assert.match(text, new RegExp(command.replace("/", "\\/")));
+      assert.match(text, new RegExp(`- \\\`${command}`), `${command} listed`);
     }
     pi.stop();
     rmSync(dir, { recursive: true, force: true });
@@ -222,7 +224,7 @@ describe("chat command surface (work document #44 M2)", () => {
     assert.equal(sent.length, 1, "the ex-claimant is no longer admitted");
     // The new owner gets commands
     await surface.handleInbound(inbound("cc".repeat(32), "/help"));
-    assert.match(sent[1]?.text ?? "", /commands:/);
+    assert.match(sent[1]?.text ?? "", /Companion commands/);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -253,7 +255,7 @@ describe("chat command surface (work document #44 M2)", () => {
       surface.handleInbound(inbound(OWNER, "/session")),
     ]);
     const texts = sent.map((entry) => entry.text);
-    const helpAt = texts.findIndex((t) => t.includes("commands:"));
+    const helpAt = texts.findIndex((t) => t.includes("**Companion commands**"));
     const unknownAt = texts.findIndex((t) => t.includes("/frobnicate"));
     const sessionAt = texts.findIndex((t) => t.includes("pi is not running"));
     assert.ok(helpAt < unknownAt && unknownAt < sessionAt, "ordered");
