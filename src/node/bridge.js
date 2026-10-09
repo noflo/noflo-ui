@@ -273,6 +273,10 @@ async function main() {
   let active = null;
   /** Whether a project transition is in progress (chat gate). */
   let switching = false;
+  /** The chat surface (created after the first project boots; the
+   * per-project lifecycle references it defensively). */
+  /** @type {ReturnType<typeof createChatSurface> | null} */
+  let chat = null;
 
   /**
    * Boots the engine for one project scope and wires its per-project
@@ -601,7 +605,7 @@ async function main() {
     );
     console.log(instructions);
   }
-  const chat = createChatSurface({
+  chat = createChatSurface({
     ownerContact,
     sendText: lxmf.sendText,
     sendReaction: lxmf.sendReaction,
