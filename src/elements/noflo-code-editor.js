@@ -182,9 +182,6 @@ export class NofloCodeEditor extends HTMLElement {
       this.removeAttribute("open");
       this.teardown();
     });
-    this.shadowRoot
-      .querySelector(".scrim")
-      .addEventListener("click", () => this.close());
   }
 
   /**
