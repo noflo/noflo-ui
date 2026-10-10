@@ -19,55 +19,18 @@
  */
 
 import { toHex as coreToHex } from "../../vendor/reticulum-core.js";
+import { evaluateGate } from "./chat-gate.js";
 import { messageClaims } from "./claim.js";
 
-/** A parsed inbound chat message. */
-export class ChatMessage {
-  /**
-   * @param {object} parts
-   * @param {string} parts.sourceHex - Sender's `lxmf.delivery` hash (hex).
-   * @param {string} parts.text - The message body.
-   * @param {boolean} parts.isCommand - Whether the text is a `/command`.
-   * @param {string} parts.command - The command verb (lowercase, no slash),
-   *   empty when not a command.
-   * @param {string} parts.argument - Everything after the verb (trimmed).
-   */
-  constructor({ sourceHex, text, isCommand, command, argument }) {
-    this.sourceHex = sourceHex;
-    this.text = text;
-    this.isCommand = isCommand;
-    this.command = command;
-    this.argument = argument;
-  }
-}
+export { ChatMessage, parseChatMessage } from "./chat-parse.js";
 
-/**
- * Parses inbound text into a ChatMessage shape.
- *
- * @param {string} sourceHex
- * @param {string} text
- * @returns {ChatMessage}
- */
-export function parseChatMessage(sourceHex, text) {
-  const trimmed = text.trim();
-  const commandMatch = /^\/([A-Za-z]+)(?:\s+([\s\S]*))?$/.exec(trimmed);
-  if (commandMatch) {
-    return new ChatMessage({
-      sourceHex,
-      text: trimmed,
-      isCommand: true,
-      command: commandMatch[1].toLowerCase(),
-      argument: (commandMatch[2] ?? "").trim(),
-    });
-  }
-  return new ChatMessage({
-    sourceHex,
-    text: trimmed,
-    isCommand: false,
-    command: "",
-    argument: "",
-  });
-}
+import { createNetwork, internalSocket } from "../../vendor/noflo.js";
+import {
+  createChatGraph,
+  createChatRegistry,
+  wireChatContext,
+} from "../graphs/chat-dispatch.js";
+import { ChatMessage, parseChatMessage } from "./chat-parse.js";
 
 /**
  * Creates the chat surface. Inbound handling is serialized so prompts and
@@ -409,6 +372,9 @@ export function createChatSurface({
    * @param {{ message: any }} event
    * @returns {Promise<void>}
    */
+  /**
+   * @param {any} event
+   */
   async function handleInbound(event) {
     const message = event?.message;
     if (!message?.sourceHash) return;
@@ -423,27 +389,25 @@ export function createChatSurface({
         ? message.content
         : new TextDecoder().decode(message.content ?? new Uint8Array());
     if (!text.trim()) return;
-    // Unclaimed mode: the first verified sender of the claim code wins
-    if (claimOpen && claim) {
-      if (!messageClaims(text, claim.code)) {
-        log(
-          `companion: inbound from ${sourceHex} dropped (unclaimed, not the claim code)`,
-        );
-        return;
-      }
-      const identityHash = senderIdentityHash
-        ? await senderIdentityHash(message)
-        : null;
-      if (!identityHash) {
-        log("companion: claimant identity not recalled; claim not processed");
-        return;
-      }
-      claimOpen = false;
-      await claim.onClaim(identityHash);
+    // The gate (work document #53 extraction 3): the pure module's
+    // decision, applied with the live closure state
+    const identityHash = senderIdentityHash
+      ? await senderIdentityHash(message)
+      : null;
+    const decision = evaluateGate({
+      sourceHex,
+      text,
+      identityHash,
+      ownerContact: owner,
+      claim: claimOpen && claim ? { code: claim.code } : null,
+    });
+    if (decision.verdict === "dropped") {
+      log(`companion: inbound from ${sourceHex} dropped (${decision.reason})`);
       return;
     }
-    if (owner && sourceHex !== owner.toLowerCase()) {
-      log(`companion: inbound from ${sourceHex} dropped (not the owner)`);
+    if (decision.admittedAs === "claim") {
+      claimOpen = false;
+      if (claim) await claim.onClaim(identityHash ?? "");
       return;
     }
     // Serialize: prompts and commands keep order
