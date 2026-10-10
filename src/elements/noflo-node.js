@@ -123,7 +123,6 @@ export class FlowNode extends HTMLElement {
   _updateIconFromLibrary() {
     if (!this._libraryManager || !this._componentName) return;
     const comp = this._libraryManager.getComponent(this._componentName);
-    console.log(comp);
     if (comp?.icon) {
       const iconEl = this.shadowRoot?.querySelector(".node-content");
       if (iconEl) {
