@@ -120,6 +120,11 @@ let dacarState = /** @type {any} */ (null);
  * #28). */
 /** @type {Record<string, string>} */
 let meshPeerIdentities = {};
+/** Peer reachability (work document #47): granted peers are online or
+ * offline — offline is the mesh's normal state, rendered as such instead
+ * of a path request that looks stuck. */
+/** @type {Record<string, "online" | "offline">} */
+let peerReachability = {};
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -288,6 +293,10 @@ const echoHandlers = createEchoHandlers({
     for (const peerId of removed) {
       delete meshPeerIdentities[peerId];
     }
+    refreshSyncPanel();
+  },
+  updatePeerReachability: (states) => {
+    peerReachability = states ?? {};
     refreshSyncPanel();
   },
   setJoinRequests: (requests) => {
@@ -913,7 +922,7 @@ function refreshSyncPanel() {
   );
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
-  syncPanel.setPeers(meshPeers, meshPeerIdentities);
+  syncPanel.setPeers(meshPeers, meshPeerIdentities, peerReachability);
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);

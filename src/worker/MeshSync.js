@@ -479,6 +479,20 @@ export async function createMeshSync({
   /** Room destination hashes whose direct dial failed and has not yet
    * succeeded: re-dialed when a matching announce refreshes the path. */
   const failedDials = new Set();
+  /** The identity hashes currently holding a transport link, maintained
+   * by the provider's peers handler (the reachability surface reads it). */
+  const onlineIdentities = new Set();
+  /** Per-peer dial bookkeeping (work document #47): offline peers are the
+   * default scenario, so redials back off per peer instead of churning. */
+  /** @type {Map<string, { attempts: number, lastDialAt: number }>} */
+  const peerDialState = new Map();
+  const REDIAL_BASE_MS = 60_000;
+  const REDIAL_MAX_MS = 10 * 60_000;
+  /** The redial tick: the cadence dialKnownPeers runs on; per-peer
+   * backoff windows gate which peers actually dial each tick. */
+  const REDIAL_TICK_MS = 30_000;
+  /** @type {ReturnType<typeof setInterval> | null} */
+  let redialTimer = null;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -936,6 +950,9 @@ export async function createMeshSync({
       }
     } finally {
       reconciling = false;
+      // Grants changed: the reachability surface gains or loses peers
+      // (a newly granted peer is offline until its first dial)
+      postPeerReachability();
     }
   }
 
@@ -1140,6 +1157,18 @@ export async function createMeshSync({
   }
 
   /**
+   * The per-peer redial backoff: one attempt a minute at first, doubling
+   * to a ten-minute ceiling. A peer's counter resets when it comes online.
+   *
+   * @param {{ attempts: number, lastDialAt: number } | undefined} state
+   * @returns {number}
+   */
+  function nextRedialDelay(state) {
+    const attempts = state?.attempts ?? 0;
+    return Math.min(REDIAL_BASE_MS * 2 ** attempts, REDIAL_MAX_MS);
+  }
+
+  /**
    * Dials every granted peer's room destination directly (work document
    * #34): the grants map carries each granted peer's identity hash, and the
    * room destination hash is derivable from it — restarts recover without
@@ -1160,28 +1189,58 @@ export async function createMeshSync({
       if (peerHash === identityHash) continue;
       if (!/^[0-9a-f]{32}$/.test(peerHash) || dialed.has(peerHash)) continue;
       dialed.add(peerHash);
+      // Offline peers are the mesh's normal state (work document #47):
+      // the boot pass dials everyone once; the periodic redial backs off
+      // per peer so an absent participant costs one attempt per window,
+      // not a continuous retry churn
+      const dialState = peerDialState.get(peerHash);
+      const now = Date.now();
+      const notBefore =
+        (dialState?.lastDialAt ?? 0) + nextRedialDelay(dialState);
+      if (dialState && now < notBefore) continue;
+      peerDialState.set(peerHash, {
+        attempts: (dialState?.attempts ?? 0) + 1,
+        lastDialAt: now,
+      });
       const destHash = await roomDestinationHash(room, peerHash);
-      postMessage(
-        progress("mesh.connect.path", "request", "running", {
-          peer: peerHash,
-        }),
-      );
       const established = await provider
         .dialHash?.(destHash, peerHash)
         .catch(() => false);
-      if (established) failedDials.delete(destHash);
-      else failedDials.add(destHash);
-      postMessage(
-        progress(
-          "mesh.connect.path",
-          "request",
-          established ? "done" : "failed",
-          {
-            peer: peerHash,
-          },
-        ),
-      );
+      if (established) {
+        failedDials.delete(destHash);
+        peerDialState.set(peerHash, { attempts: 0, lastDialAt: Date.now() });
+      } else {
+        failedDials.add(destHash);
+      }
+      postPeerReachability();
     }
+  }
+
+  /**
+   * Reports peer reachability (work document #47): granted peers are
+   * either online (a transport link exists) or offline (a normal state
+   * in a store-and-forward mesh — they will be re-dialed with backoff).
+   * The Glass renders offline granted peers as offline instead of
+   * showing a path request that looks stuck.
+   *
+   * @returns {void}
+   */
+  function postPeerReachability() {
+    const online = onlineIdentities;
+    const grants = doc.getMap?.("grants");
+    if (!grants) return;
+    /** @type {Record<string, "online" | "offline">} */
+    const states = {};
+    for (const entry of grants.values()) {
+      const plain = entry.toJSON();
+      if (plain.revoked !== null || !plain.authorization) continue;
+      const peerHash = String(plain.peerHash ?? "");
+      if (!/^[0-9a-f]{32}$/.test(peerHash) || peerHash === identityHash) {
+        continue;
+      }
+      states[peerHash] = online.has(peerHash) ? "online" : "offline";
+    }
+    postMessage({ kind: "mesh-peer-reachability", states });
   }
 
   /**
@@ -1979,6 +2038,17 @@ export async function createMeshSync({
       postMessage(
         progress("mesh.connect", "discovered", "done", { peer: remoteHex }),
       );
+      // An announce means the peer is reachable right now (work document
+      // #47): reachability refreshes, and the dial backoff resets so the
+      // retry runs immediately
+      const announcedPeerHash = identityByLink.get(remoteHex) ?? null;
+      if (announcedPeerHash) {
+        peerDialState.set(announcedPeerHash, {
+          attempts: 0,
+          lastDialAt: 0,
+        });
+      }
+      postPeerReachability();
       // The announce just refreshed the path table: retry a direct dial
       // that failed at start, when the path may still have pointed at the
       // peer's previous session (work document #34). The retry's done
@@ -2051,6 +2121,16 @@ export async function createMeshSync({
     // destination directly, derived from the grants map — announce-driven
     // discovery is the fallback
     dialKnownPeers().catch(() => {});
+    // The patient redial (work document #47): offline peers are the mesh's
+    // default state, so granted peers re-dial with per-peer backoff until
+    // they appear. Announces shortcut the backoff (a peer's announce means
+    // it is reachable now); the poll is the fallback for silent starts
+    if (redialTimer) clearInterval(redialTimer);
+    redialTimer = setInterval(() => {
+      if (!provider) return;
+      dialKnownPeers().catch(() => {});
+    }, REDIAL_TICK_MS);
+    if (redialTimer.unref) redialTimer.unref();
     // Bind awareness to this provider instance; dropped on unbind.
     // y-protocols Awareness extends lib0's Observable: the API is
     // on/off, not observe
@@ -2145,6 +2225,10 @@ export async function createMeshSync({
       for (const linkId of payload.added ?? []) peerLinks.add(linkId);
       for (const linkId of payload.removed ?? []) peerLinks.delete(linkId);
       resolveIdentities(payload);
+      onlineIdentities.clear();
+      for (const identityHash of Object.values(identityByLink)) {
+        onlineIdentities.add(String(identityHash));
+      }
       const summary = peersSummary();
       if (summary.count > 0 && !discoveryDone) {
         discoveryDone = true;
@@ -2163,6 +2247,8 @@ export async function createMeshSync({
         peers: summary.count,
         identities: summary.identities,
       });
+      // A peer that connected or dropped flips its reachability state
+      postPeerReachability();
     });
     // Host side of the bootstrap pre-flow: invite others once the sync
     // provider is live (work document #25)
@@ -2170,6 +2256,10 @@ export async function createMeshSync({
   }
 
   async function stop() {
+    if (redialTimer) {
+      clearInterval(redialTimer);
+      redialTimer = null;
+    }
     if (!provider) return;
     if (unobserveAwareness) {
       unobserveAwareness();

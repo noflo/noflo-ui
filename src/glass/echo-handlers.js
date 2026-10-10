@@ -29,6 +29,9 @@ import { progressPhrase } from "./progressPhrases.js";
  * @property {(data: any) => void} ingestMeshConfig Take a full mesh-state
  *   report into the Glass's mesh state.
  * @property {(uri: string) => void} setMeshInvite Store a minted invite URI.
+ * @property {((states: Record<string, "online" | "offline">) => void) | undefined} [updatePeerReachability]
+ *   Peer reachability states (work document #47): granted peers are
+ *   online or offline — offline is the mesh's normal state.
  * @property {(added: string[], removed: string[], peers: number, identities?: Record<string, string>) => void} updateMeshPeers
  *   Apply a peer-set change, with the peer-id → identity-hash mapping when
  *   the provider reports it (work document #28).
@@ -122,6 +125,9 @@ export function createEchoHandlers(deps) {
         data.peers ?? 0,
         data.identities ?? {},
       );
+    },
+    "kind:mesh-peer-reachability": (data) => {
+      deps.updatePeerReachability?.(data.states ?? {});
     },
     "kind:mesh-requests": (data) => {
       deps.setJoinRequests(data.requests ?? []);

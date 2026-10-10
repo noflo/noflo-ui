@@ -110,6 +110,9 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._syncStatus = null;
     /** @type {string[]} */
     this._peers = [];
+    /** @type {Record<string, "online" | "offline"> | null} */
+    /** @type {Record<string, "online" | "offline"> | null} */
+    this._peerReachability = null;
     /** Peer id → identity hash, when the transport reports identities. */
     /** @type {Record<string, string> | null} */
     this._peerIdentities = null;
@@ -167,9 +170,23 @@ export class FlowSyncPanel extends FlowCornerElement {
    * @param {Record<string, string> | null} [identities] Peer id → identity
    *   hash, when the transport reports the mapping.
    */
-  setPeers(peers, identities = null) {
+  /**
+   * Sets the connected peers and the reachability map (work document
+   * #47): granted-but-offline peers render as offline instead of being
+   * invisible while a path request retries.
+   *
+   * @param {string[]} peers Transport peer ids.
+   * @param {Record<string, string> | null} [identities] Peer id → identity
+   *   hash.
+   * @param {Record<string, "online" | "offline"> | null} [reachability]
+   *   identity hash → reachability state.
+   */
+  setPeers(peers, identities = null, reachability = null) {
     this._peers = Array.isArray(peers) ? peers : [];
+    /** @type {Record<string, string> | null} */
     this._peerIdentities = identities ?? null;
+    /** @type {Record<string, "online" | "offline"> | null} */
+    this._peerReachability = reachability ?? {};
     this.render();
   }
 
@@ -393,6 +410,22 @@ export class FlowSyncPanel extends FlowCornerElement {
       const identity = this._peerIdentities?.[peerId] ?? peerId;
       if (!seenIdentities.has(identity)) seenIdentities.set(identity, peerId);
     }
+    const onlineIdentities = new Set(seenIdentities.keys());
+    // Offline granted peers are the mesh's normal state (work document
+    // #47): they render with an offline badge instead of being invisible
+    const offline = (this._dacarState?.grants ?? [])
+      .map((/** @type {any} */ grant) => grant.peerHash)
+      .filter(
+        (
+          /** @type {string} */ hash,
+          /** @type {number} */ index,
+          /** @type {string[]} */ all,
+        ) =>
+          /^[0-9a-f]{32}$/.test(hash) &&
+          all.indexOf(hash) === index &&
+          !onlineIdentities.has(hash) &&
+          hash !== this._identityHash,
+      );
     const peers = [...seenIdentities.keys()]
       .map((identity) => {
         const self = identity === this._identityHash;
@@ -403,6 +436,15 @@ export class FlowSyncPanel extends FlowCornerElement {
         return `<div class="list-item"><span class="grow hash-text">${escapeHtml(identity)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}</div>`;
       })
       .join("");
+    const offlinePeers = offline
+      .map(
+        (/** @type {string} */ hash) =>
+          `<div class="list-item"><span class="grow hash-text" style="opacity:0.55">${escapeHtml(hash)}</span><span class="badge offline">offline</span></div>`,
+      )
+      .join("");
+    const offlineBlock = offlinePeers
+      ? `<div class="list-head hint">Granted, not reachable now — retried automatically</div>${offlinePeers}`
+      : "";
     // Inviting mints grants: only the Trust Anchor's device offers the
     // invite UI at all — participants never see it (work document #28)
     const owner = this._dacarState?.anchor?.owner === true;
@@ -430,7 +472,7 @@ export class FlowSyncPanel extends FlowCornerElement {
         </div>
         ${
           peers
-            ? `<details open><summary>Peers</summary>${peers}</details>`
+            ? `<details open><summary>Peers</summary>${peers}${offlineBlock}</details>`
             : `<details open><summary>Peers</summary><div class="hint">No peers connected.</div></details>`
         }
         ${this._joinRequests.length > 0 ? `<details open><summary>Join requests</summary>${requests}</details>` : ""}

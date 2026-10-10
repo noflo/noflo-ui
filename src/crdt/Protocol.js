@@ -755,6 +755,7 @@ export const ECHO_MESSAGES = [
   { kind: "mesh-config" },
   { kind: "mesh-status" },
   { kind: "mesh-peers" },
+  { kind: "mesh-peer-reachability" },
   { kind: "mesh-requests" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
