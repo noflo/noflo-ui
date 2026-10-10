@@ -26,7 +26,6 @@ export { ChatMessage, parseChatMessage } from "./chat-parse.js";
 
 import { createNetwork, internalSocket } from "../../vendor/noflo.js";
 import {
-  createChatGraph,
   createChatRegistry,
   wireChatContext,
 } from "../graphs/chat-dispatch.js";
@@ -372,6 +371,7 @@ export function createChatSurface({
    * @param {{ message: any }} event
    * @returns {Promise<void>}
    */
+  // ---- The chat pipeline's graph (work document #53 extraction 3) ----
   /**
    * @param {any} event
    */
