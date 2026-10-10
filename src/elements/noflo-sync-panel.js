@@ -372,12 +372,12 @@ export class FlowSyncPanel extends FlowCornerElement {
         `<span class="seg attention throb">${icon("user-plus")}<span class="label">${this._joinRequests.length} request${this._joinRequests.length === 1 ? "" : "s"}</span></span>`,
       );
     }
+    const owner = this._dacarState?.anchor?.owner === true;
     if (this._pendingIntents > 0) {
       segments.push(
         `<span class="seg activity">${icon("pen")}<span class="label">${this._pendingIntents} pending</span></span>`,
       );
     }
-    const owner = this._dacarState?.anchor?.owner === true;
     if (this._dacarState?.anchor?.hash) {
       segments.push(
         owner
@@ -411,6 +411,29 @@ export class FlowSyncPanel extends FlowCornerElement {
       if (!seenIdentities.has(identity)) seenIdentities.set(identity, peerId);
     }
     const onlineIdentities = new Set(seenIdentities.keys());
+    // Grant ids per peer: the revoke affordance targets the grant, and
+    // the tombstone propagates through CRDT sync to every participant
+    const grantIdByPeer = new Map();
+    for (const grant of this._dacarState?.grants ?? []) {
+      if (grant.revoked) continue;
+      const hash = String(grant.peerHash ?? "");
+      if (/^[0-9a-f]{32}$/.test(hash) && !grantIdByPeer.has(hash)) {
+        grantIdByPeer.set(hash, String(grant.id ?? ""));
+      }
+    }
+    // Owner-only revocation (work document #54): the two-step inline
+    // confirm replaces a modal — the list item is already the context
+    const revokeButton = (
+      /** @type {string | undefined} */ peerHash,
+      /** @type {boolean} */ self,
+    ) => {
+      if (self || this._readOnly || this._dacarState?.anchor?.owner !== true) {
+        return "";
+      }
+      const grantId = grantIdByPeer.get(peerHash);
+      if (!grantId) return "";
+      return `<button class="danger" data-revoke="${escapeHtml(grantId)}">Revoke</button>`;
+    };
     // Offline granted peers are the mesh's normal state (work document
     // #47): they render with an offline badge instead of being invisible
     const offline = (this._dacarState?.grants ?? [])
@@ -433,13 +456,13 @@ export class FlowSyncPanel extends FlowCornerElement {
         const badge = status
           ? `<span class="badge ${escapeHtml(status)}">${escapeHtml(status)}</span>`
           : "";
-        return `<div class="list-item"><span class="grow hash-text">${escapeHtml(identity)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}</div>`;
+        return `<div class="list-item"><span class="grow hash-text">${escapeHtml(identity)}${self ? " <strong>(this device)</strong>" : ""}</span>${badge}${revokeButton(identity, self)}</div>`;
       })
       .join("");
     const offlinePeers = offline
       .map(
         (/** @type {string} */ hash) =>
-          `<div class="list-item"><span class="grow hash-text" style="opacity:0.55">${escapeHtml(hash)}</span><span class="badge offline">offline</span></div>`,
+          `<div class="list-item"><span class="grow hash-text" style="opacity:0.55">${escapeHtml(hash)}</span><span class="badge offline">offline</span>${revokeButton(hash, false)}</div>`,
       )
       .join("");
     const offlineBlock = offlinePeers
@@ -630,6 +653,19 @@ export class FlowSyncPanel extends FlowCornerElement {
       button.addEventListener("click", () => {
         emit(this, "sync-decline", {
           identityHash: button.getAttribute("data-decline"),
+        });
+      });
+    }
+    for (const button of shadow.querySelectorAll("[data-revoke]")) {
+      button.addEventListener("click", () => {
+        const el = /** @type {any} */ (button);
+        if (el.dataset.confirming !== "true") {
+          el.dataset.confirming = "true";
+          button.textContent = "Confirm revoke";
+          return;
+        }
+        emit(this, "sync-revoke-grant", {
+          grantId: String(button.getAttribute("data-revoke") ?? ""),
         });
       });
     }

@@ -116,6 +116,7 @@
  * @property {CustomEvent<{ invite: string }>} sync-join
  * @property {CustomEvent<{ identityHash: string | null }>} sync-approve
  * @property {CustomEvent<{ identityHash: string | null }>} sync-decline
+ * @property {CustomEvent<{ grantId: string }>} sync-revoke-grant
  * @property {CustomEvent<void>} sync-settings
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close

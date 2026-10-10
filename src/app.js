@@ -1471,6 +1471,17 @@ async function init() {
       },
     });
   });
+  on(syncPanel, "sync-revoke-grant", (e) => {
+    // Revocation tombstones the grant in the CRDT: the tombstone
+    // propagates through Yjs sync to every participant, and y-reticulum
+    // 0.5.0's teardown evicts the revoked peer's live links on their
+    // next reconcile (work document #54)
+    sendIntent({
+      type: "INTENT",
+      command: "revokePermission",
+      payload: { grantId: e.detail.grantId },
+    });
+  });
   on(syncPanel, "sync-decline", (e) => {
     supervisor?.send({
       type: "MESH",
