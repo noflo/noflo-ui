@@ -289,6 +289,9 @@ export async function startEngine(io, options = {}) {
       interfaceSchemas: {
         websocket: WebSocketClientInterface.getConfigurationSchema(),
       },
+      // Interfaces the mesh layer attached by default (work document
+      // #47's legibility): the settings dialog renders them read-only
+      runtimeInterfaces: mesh.getRuntimeInterfaces?.() ?? null,
     });
   };
   // The Glass learns the mesh state proactively at boot: the corner sync

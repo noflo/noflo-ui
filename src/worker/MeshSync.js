@@ -213,6 +213,9 @@ async function defaultCreateProvider(
  * @property {() => any} getReticulum The shared Reticulum instance once the
  *   mesh started (null before). The Companion's LXMF layer rides the same
  *   stack (work document #47).
+ * @property {() => Array<{ type: string, options: Record<string, any>, reason: string }> | null} getRuntimeInterfaces
+ *   Interfaces the mesh layer attached by default rather than from the
+ *   stored config (the settings dialog renders them read-only).
  * @property {string} room The room the project syncs through, derived from
  *   the project identity.
  * @property {() => Promise<void>} rebind Restarts the provider with a
@@ -288,6 +291,16 @@ export function needsLocalHubProbe(interfaces) {
   // as the path, and path requests routed there die (work document #44
   // M3 live finding). A configured cloud interface wins; the probe
   // stands down.
+  // A user-disabled probe persists as a negative entry (work document
+  // #47's interface legibility): the user stays in control without
+  // editing files
+  if (
+    (interfaces ?? []).some(
+      (iface) => iface.type === "local-hub" && iface.enabled === false,
+    )
+  ) {
+    return false;
+  }
   return !(interfaces ?? []).some(
     (iface) => iface.enabled && iface.type === "websocket",
   );
@@ -302,6 +315,15 @@ async function defaultAttachInterfaces(
   );
   /** @type {any | null} */
   let nodeInterfaces = null;
+  /**
+   * Interfaces the mesh layer attached by default rather than from the
+   * stored config (work document #47's interface legibility): the
+   * settings dialog renders them read-only so an invisible mesh surface
+   * never surprises the user again.
+   *
+   * @type {Array<{ type: string, options: Record<string, any>, reason: string }>}
+   */
+  const runtimeAttached = [];
   for (const iface of interfaces ?? []) {
     if (!iface.enabled) continue;
     const options = iface.options ?? {};
@@ -362,8 +384,15 @@ async function defaultAttachInterfaces(
   // traffic onward. A failed probe is never fatal: the reconnect loop
   // picks the hub up whenever the Companion starts
   if (needsLocalHubProbe(interfaces)) {
+    const probeOptions = { url: "ws://localhost:3569" };
+    runtimeAttached.push({
+      type: "local-hub",
+      options: probeOptions,
+      reason:
+        "Local Companion hub (auto-detected; a localhost webapp reaches its Companion through it)",
+    });
     const local = new WebSocketClientInterface({
-      url: "ws://localhost:3569",
+      ...probeOptions,
       name: "companion-local-hub",
     });
     let added = false;
@@ -378,6 +407,7 @@ async function defaultAttachInterfaces(
       );
     });
   }
+  return runtimeAttached;
 }
 
 /**
@@ -1463,6 +1493,10 @@ export async function createMeshSync({
   // #9 now lives here).
   /** @type {any} */
   let sharedRns = null;
+  /** Interfaces the mesh layer attached by default (the settings dialog
+   * renders them read-only — work document #47's legibility). */
+  /** @type {Array<{ type: string, options: Record<string, any>, reason: string }> | null} */
+  let runtimeInterfaces = null;
 
   /**
    * Returns the shared Reticulum instance, creating it on first use. The
@@ -1490,7 +1524,10 @@ export async function createMeshSync({
     const rns = new Reticulum();
     try {
       const attach = attachInterfaces ?? defaultAttachInterfaces;
-      await attach(rns, config.interfaces);
+      const runtimeAttached = await attach(rns, config.interfaces);
+      if (Array.isArray(runtimeAttached)) {
+        runtimeInterfaces = runtimeAttached;
+      }
     } catch (err) {
       // A failed connect keeps an auto-reconnect loop alive: stop the whole
       // instance so no ghost connection outlives the failed start
@@ -2420,6 +2457,16 @@ export async function createMeshSync({
      */
     getReticulum() {
       return sharedRns;
+    },
+    /**
+     * Interfaces the mesh layer attached by default rather than from the
+     * stored config (work document #47's legibility): the settings
+     * dialog renders them read-only.
+     *
+     * @returns {Array<{ type: string, options: Record<string, any>, reason: string }> | null}
+     */
+    getRuntimeInterfaces() {
+      return runtimeInterfaces;
     },
     get identityError() {
       return identityError;

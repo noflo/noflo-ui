@@ -31,7 +31,10 @@ export function pickDefaultEntryPoint() {
  *
  * @typedef {Object} MeshInterface
  * @property {string} id Stable identifier for editing and removal
- * @property {'websocket' | 'tcp' | 'shared' | 'autointerface'} type
+ * @property {'websocket' | 'tcp' | 'shared' | 'autointerface' | 'local-hub'} type
+ *   `local-hub` is a negative entry only: `enabled: false` disables the
+ *   runtime's auto-detected local Companion hub probe (work document #47
+ *   interface legibility)
  *   `shared` and `autointerface` are Node-only (the bridge): the shared
  *   rnsd instance and zero-config LAN discovery
  * @property {{ [key: string]: any }} options Constructor options per the interface type's JSON Schema

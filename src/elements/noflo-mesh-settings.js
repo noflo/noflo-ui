@@ -68,6 +68,12 @@ export class FlowMeshSettings extends HTMLElement {
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
     this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+    /** Interfaces the mesh layer attached by default (read-only in the
+     * settings dialog — work document #47's legibility). */
+    this._runtimeInterfaces =
+      /** @type {Array<{ type: string, options: Record<string, any>, reason: string }> | null} */ (
+        null
+      );
     /** @type {string | null} */
     this._formStyles = null;
     /** @type {string} */
@@ -260,6 +266,39 @@ export class FlowMeshSettings extends HTMLElement {
           </div>`;
       })
       .join("");
+  }
+
+  /**
+   * The read-only auto-detected interface section (work document #47's
+   * interface legibility): surfaces what the mesh layer attached by
+   * default, with a disable affordance that persists a negative entry —
+   * an invisible mesh surface never surprises the user again.
+   *
+   * @returns {string}
+   */
+  runtimeInterfacesHtml(/** @type {boolean} */ editable) {
+    const runtime = this._runtimeInterfaces ?? [];
+    if (runtime.length === 0) return "";
+    const disabled = (this._config?.interfaces ?? []).some(
+      (/** @type {any} */ iface) =>
+        iface.type === "local-hub" && iface.enabled === false,
+    );
+    return `
+      <h3>Auto-detected</h3>
+      ${runtime
+        .map((/** @type {any} */ iface) => {
+          const off = iface.type === "local-hub" && disabled;
+          return `
+          <div class="list-item">
+            <span class="grow">${escapeHtml(iface.reason)}${off ? ' <span class="hint">(disabled)</span>' : ""}</span>
+            ${
+              editable && iface.type === "local-hub"
+                ? `<button class="secondary" data-runtime-disable="${escapeHtml(iface.type)}" ${off ? "disabled" : ""}>Disable</button>`
+                : ""
+            }
+          </div>`;
+        })
+        .join("")}`;
   }
 
   render() {
@@ -455,6 +494,7 @@ export class FlowMeshSettings extends HTMLElement {
             )
             .join("")}
         </div>
+        ${this.runtimeInterfacesHtml(editable)}
         <div id="interface-form-host" class="iface-form-host" hidden></div>
         ${editable ? (Object.keys(this._interfaceSchemas).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
         ${this.trustAnchorHtml()}
@@ -632,6 +672,33 @@ export class FlowMeshSettings extends HTMLElement {
           this.render();
         });
       });
+    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
+      shadow.querySelectorAll("[data-runtime-disable]")
+    )) {
+      button.addEventListener("click", () => {
+        // A negative entry: the runtime's default-attachment logic
+        // respects it (work document #47's legibility)
+        const interfaces = [
+          ...(this._config?.interfaces ?? []).filter(
+            (/** @type {any} */ iface) => iface.type !== "local-hub",
+          ),
+          {
+            id: "auto-local-hub",
+            type: "local-hub",
+            options: {},
+            enabled: false,
+          },
+        ];
+        this._config = { ...(this._config ?? {}), interfaces };
+        emit(
+          this,
+          "mesh-configure",
+          { config: this._config },
+          { composed: false },
+        );
+        this.render();
+      });
+    }
     for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (
       shadow.querySelectorAll("[data-iface-remove]")
     )) {

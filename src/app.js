@@ -97,6 +97,12 @@ let joinRequests =
 let meshInviteUri = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
 let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+/** Interfaces the mesh layer attached by default (work document #47's
+ * legibility): the settings dialog renders them read-only. */
+let meshRuntimeInterfaces =
+  /** @type {Array<{ type: string, options: Record<string, any>, reason: string }> | null} */ (
+    null
+  );
 /** Live sync status reported by the Engine, for the settings dialog. */
 let syncStatus =
   /** @type {{ connected?: boolean, synced?: boolean, peers?: number, stage?: string } | null} */ (
@@ -261,6 +267,7 @@ const echoHandlers = createEchoHandlers({
     meshConfig = data.config ?? null;
     meshIdentityHash = data.identityHash ?? "";
     meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    meshRuntimeInterfaces = data.runtimeInterfaces ?? null;
     joinRequests = data.joinRequests ?? joinRequests;
     // The engine's identity state is authoritative: recovered or still
     // failing, the dialog reflects it
@@ -904,6 +911,7 @@ function refreshMeshSettings() {
     dialog._config = meshConfig;
     dialog._identityHash = meshIdentityHash;
     dialog._interfaceSchemas = meshInterfaceSchemas;
+    dialog._runtimeInterfaces = meshRuntimeInterfaces;
     dialog._meshError = meshError;
     dialog.render();
   }
