@@ -14,4 +14,4 @@ export { EditorView, basicSetup, minimalSetup } from "codemirror";
 export { EditorState, HighlightStyle, syntaxHighlighting, tags };
 export { javascript } from "@codemirror/lang-javascript";
 export { markdown } from "@codemirror/lang-markdown";
-export { yCollab } from "y-codemirror.next";
+export { yCollab, ySyncFacet } from "y-codemirror.next";

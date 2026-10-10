@@ -623,13 +623,6 @@ async function openSignatureEditor(componentName) {
  * @param {string} language
  */
 async function openCodeEditor(componentName, language) {
-  console.log(
-    "[code-editor] open requested:",
-    componentName,
-    language,
-    "host:",
-    Boolean(codeEditor),
-  );
   if (!codeEditor) return;
   const map = /** @type {any} */ (mirrorDoc.getMap("components"));
   let ytext = /** @type {any} */ (map.get(componentName)?.get("code"));
@@ -665,12 +658,6 @@ async function openCodeEditor(componentName, language) {
     }
   }
   // Bind: yCollab renders whatever the buffer holds and follows it live
-  console.log(
-    "[code-editor] binding",
-    componentName,
-    "len",
-    ytext.toString().length,
-  );
   codeEditor.open({
     ytext,
     name: componentName,

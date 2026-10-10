@@ -108,7 +108,7 @@ export class NofloCodeEditor extends HTMLElement {
     /** @type {any} The bound Y.Text. */
     this._ytext = null;
     /** @type {any} The yCollab binding (its origin marks local edits). */
-    this._binding = null;
+    this._conf = null;
     /** @type {(delta: any[]) => void} */
     this._onSendDelta = () => {};
     /** @type {any} The Y.Text observer for the local-delta relay. */
@@ -302,8 +302,7 @@ export class NofloCodeEditor extends HTMLElement {
       dialog.showModal();
     }
 
-    this._binding = yCollab(ytext);
-    console.log("[code-editor] mounting CodeMirror");
+    const plugins = yCollab(ytext);
     this._view = new extensions.EditorView({
       doc: ytext.toString(),
       extensions: [
@@ -315,22 +314,26 @@ export class NofloCodeEditor extends HTMLElement {
         language === "markdown"
           ? extensions.markdown()
           : extensions.javascript(),
-        this._binding,
+        ...plugins,
       ],
       parent: this.shadowRoot.querySelector(".editor"),
     });
 
-    // The local-delta relay: yCollab applies local edits with the binding
-    // as the transaction origin; remote edits arrive via the y-update
-    // echo with a different (null) origin — only locals are relayed
+    // The local-delta relay (work document #29 fix): yCollab applies
+    // local edits with its internal YSyncConfig as the transaction
+    // origin — retrievable from the view's facet. The extension array
+    // yCollab returns is NOT the origin, and comparing against it
+    // silently dropped every local edit (no persistence, no peer sync).
+    // Remote edits arrive via the y-update echo with a null origin —
+    // only locals are relayed.
+    this._conf = this._view.state?.facet?.(extensions.ySyncFacet) ?? null;
     this._observer = (/** @type {any} */ event) => {
-      if (event.transaction.origin !== this._binding) return;
+      if (!this._conf || event.transaction.origin !== this._conf) return;
       const delta = event.delta;
       if (delta && delta.length > 0) this._onSendDelta(delta);
     };
     ytext.observe(this._observer);
     this._view.focus();
-    console.log("[code-editor] mounted ok");
   }
 
   /** Closes the editor and runs the teardown. */
@@ -356,7 +359,7 @@ export class NofloCodeEditor extends HTMLElement {
       this._view.destroy();
     }
     this._view = null;
-    this._binding = null;
+    this._conf = null;
     this._ytext = null;
   }
 

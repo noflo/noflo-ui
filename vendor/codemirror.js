@@ -31997,5 +31997,6 @@ export {
   minimalSetup,
   syntaxHighlighting,
   tags,
-  yCollab
+  yCollab,
+  ySyncFacet
 };
