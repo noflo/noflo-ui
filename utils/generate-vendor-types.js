@@ -97,6 +97,12 @@ const shims = [
     body: 'export * from "@reticulum/lxmf";\n',
   },
   {
+    // CodeMirror + the yjs collaborative binding (work document #29):
+    // the curated surface re-exports through the entry file
+    name: "codemirror",
+    body: 'export * from "@codemirror/view";\nexport * from "@codemirror/state";\nexport { basicSetup, minimalSetup } from "codemirror";\nexport { javascript } from "@codemirror/lang-javascript";\nexport { markdown } from "@codemirror/lang-markdown";\nexport * from "y-codemirror.next";\n',
+  },
+  {
     name: "noble-curves",
     body: 'export * from "@noble/curves/ed25519.js";\n',
   },
