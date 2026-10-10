@@ -100,7 +100,7 @@ const shims = [
     // CodeMirror + the yjs collaborative binding (work document #29):
     // the curated surface re-exports through the entry file
     name: "codemirror",
-    body: 'export * from "@codemirror/view";\nexport * from "@codemirror/state";\nexport { basicSetup, minimalSetup } from "codemirror";\nexport { javascript } from "@codemirror/lang-javascript";\nexport { markdown } from "@codemirror/lang-markdown";\nexport * from "y-codemirror.next";\n',
+    body: 'export * from "@codemirror/view";\nexport * from "@codemirror/state";\nexport * from "@codemirror/language";\nexport * from "@lezer/highlight";\nexport { basicSetup, minimalSetup } from "codemirror";\nexport { javascript } from "@codemirror/lang-javascript";\nexport { markdown } from "@codemirror/lang-markdown";\nexport * from "y-codemirror.next";\n',
   },
   {
     name: "noble-curves",

@@ -106,7 +106,10 @@ describe("browser smoke: the code editor journey (work document #56)", {
     consoleErrors = [];
     page = await browser.newPage();
     page.on("console", (/** @type {any} */ message) => {
-      if (message.type() === "error") consoleErrors.push(message.text());
+      // warn joins errors: the theme/diagnostic signals surface as warns
+      if (message.type() === "error" || message.type() === "warning") {
+        consoleErrors.push(message.text());
+      }
     });
     page.on("pageerror", (/** @type {any} */ error) =>
       consoleErrors.push(String(error)),
@@ -239,6 +242,9 @@ describe("browser smoke: the code editor journey (work document #56)", {
       { timeout: 5000 },
     );
     await page.keyboard.type("// smoke");
+
+    // No diagnostic signals: the surface must be complete and the relay
+    // armed (a stale bundle or missing surface member shows here)
     const relayErrors = consoleErrors.filter((text) =>
       /facet|ySyncFacet|highlight API|reading 'id'/.test(text),
     );
@@ -246,6 +252,38 @@ describe("browser smoke: the code editor journey (work document #56)", {
       relayErrors,
       [],
       "the code editor's module graph and surface must be intact",
+    );
+
+    // Persistence end to end (the bug this journey exists for: the relay
+    // looked armed while edits silently never reached the engine):
+    // reload the page — the edit must come back from the engine's doc
+    await page.reload();
+    await page.waitForSelector("noflo-editor", { timeout: 15_000 });
+    // Re-open the same component's editor through the real flow
+    const nodeAfterReload = page.locator("noflo-node").first();
+    await nodeAfterReload.waitFor({ timeout: 10_000 });
+    await nodeAfterReload.click({ button: "right" });
+    await page
+      .locator("noflo-radial-menu")
+      .locator("text=Edit")
+      .first()
+      .click();
+    // A code-implemented component opens its code editor DIRECTLY (the
+    // edit-attempt routes by implementation kind — the modal's
+    // "Open implementation" is the signature-editor path)
+    await page.waitForFunction(
+      () => Boolean(document.querySelector("noflo-code-editor")?.hasAttribute("open")),
+      { timeout: 10_000 },
+    );
+    // The typed comment survives: the engine applied the update
+    const editorText = await page.evaluate(() => {
+      const editor = document.querySelector("noflo-code-editor");
+      return editor?._view?.state?.doc?.toString() ?? "";
+    });
+    assert.match(
+      editorText,
+      /\/\/ smoke/,
+      "the edit persisted over reload — the relay reached the engine",
     );
   });
 });

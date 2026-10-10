@@ -15,8 +15,11 @@ import "./elements/noflo-iip.js";
 import {
   basicSetup,
   EditorView,
+  HighlightStyle,
   javascript,
   markdown,
+  syntaxHighlighting,
+  tags,
   yCollab,
   ySyncFacet,
 } from "../vendor/codemirror.js";
@@ -154,7 +157,32 @@ const codeMirrorSurface = {
   javascript,
   markdown,
   yCollab,
+  ySyncFacet,
+  HighlightStyle,
+  syntaxHighlighting,
+  tags,
 };
+// The boot log (work document #56's diagnosability thrust): what the
+// RUNNING app actually holds — a stale served copy or cached modules
+// show up here as missing surface members instead of silent breakage.
+console.info(
+  `[noflo-ui] boot — codemirror surface: ${[
+    "EditorView",
+    "basicSetup",
+    "javascript",
+    "markdown",
+    "yCollab",
+    "ySyncFacet",
+    "HighlightStyle",
+    "syntaxHighlighting",
+    "tags",
+  ]
+    .map(
+      (name) =>
+        `${name}=${typeof codeMirrorSurface[/** @type {keyof typeof codeMirrorSurface} */ (name)]}`,
+    )
+    .join(", ")}`,
+);
 /** @type {FlowComponentPicker | null} */
 let componentPicker = null;
 /** Node ids seen per graph, so freshly appeared nodes (local or synced)
@@ -471,7 +499,16 @@ async function openSignatureEditor(componentName) {
   if (!componentModal || !componentForm) return;
   const entry = mirrorDoc.getMap("registry").get(componentName);
   const plain = entry?.toJSON() ?? {};
-  const implemented = Boolean(mirrorDoc.getMap("graphs").has(componentName));
+  // "Implemented" covers both kinds (work document #29): a graph
+  // implementation opens the graph editor; a code implementation opens
+  // the code editor. Before this, a code-implemented component's editor
+  // offered "Implement in code" again — re-clicking it re-scaffolded and
+  // wiped the implementation.
+  const implemented =
+    Boolean(mirrorDoc.getMap("graphs").has(componentName)) ||
+    /** @type {any} */ (mirrorDoc.getMap("components").get(componentName))
+      ?.get("metadata")
+      ?.get("implementation")?.kind === "code";
   const ports = (/** @type {any} */ list) =>
     (list ?? []).map((/** @type {any} */ port) => ({
       name: port.name,
