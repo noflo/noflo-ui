@@ -3,7 +3,7 @@
  * routes valid messages onward for application against the CRDT.
  */
 
-import { Component } from "../../../vendor/noflo.js";
+import { Component } from "@noflo/assembly";
 
 import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
 
@@ -17,26 +17,34 @@ import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
 const UI_KEYS = new Set(UI_MESSAGES.map((key) => `${key.type}/${key.command}`));
 
 /**
- * @returns {import("@noflo/noflo").Component} The configured component
+ * The engine's envelope-validation capability as an assembly component
+ * (work document #53).
  */
-export function getComponent() {
-  const component = new Component({
-    description:
-      "Validates the Glass message envelope and routes it to the engine",
-    icon: "filter",
-    inPorts: {
-      in: { datatype: "object" },
-    },
-    outPorts: {
-      // The error routing of this component is the `invalid` port: its whole
-      // job is envelope validation, so malformed input is data on `invalid`,
-      // not a failure (the port is left unconnected — malformed messages are
-      // logged and dropped)
-      engine: { datatype: "object" },
-      invalid: { datatype: "object" },
-    },
-  });
-  component.process((input, output) => {
+export class Gateway extends Component {
+  constructor() {
+    super({
+      description:
+        "Validates the Glass message envelope and routes it to the engine",
+      icon: "filter",
+      inPorts: {
+        in: { datatype: "object" },
+      },
+      outPorts: {
+        // The error routing of this component is the `invalid` port: its
+        // whole job is envelope validation, so malformed input is data on
+        // `invalid`, not a failure (the port is left unconnected —
+        // malformed messages are logged and dropped)
+        engine: { datatype: "object" },
+        invalid: { datatype: "object" },
+      },
+    });
+  }
+
+  /**
+   * @param {any} input
+   * @param {any} output
+   */
+  processMessage(input, output) {
     if (!input.has("in")) return;
     const message = input.getData("in");
     if (!isUIWorkerMessage(message)) {
@@ -56,6 +64,12 @@ export function getComponent() {
     }
     output.send({ engine: message });
     output.done();
-  });
-  return component;
+  }
+}
+
+/**
+ * @returns {import("@noflo/noflo").Component} The configured component
+ */
+export function getComponent() {
+  return new Gateway();
 }

@@ -761,6 +761,7 @@ async function main() {
 }
 
 main().catch((error) => {
+  process.title = "noflo-ui";
   console.error("bridge failed:", error);
   process.exit(1);
 });

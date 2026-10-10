@@ -124,6 +124,16 @@ const builds = [
     plugins: [siblingExternals({ "@noflo/noflo": "../noflo.js" })],
   },
   {
+    // @noflo/assembly: the message-relay conventions the application's
+    // components are authored against (work document #53): shared
+    // envelope, validation, the relay/processMessage Component base.
+    // @noflo/noflo stays external to the sibling bundle — one runtime
+    // class identity per process
+    entryPoints: { assembly: resolve(here, "../node_modules/@noflo/assembly/src/index.js") },
+    ...vendor,
+    plugins: [siblingExternals({ "@noflo/noflo": "../noflo.js" })],
+  },
+  {
     // The browser surface: SVG rendering only — the invite QR codes are SVG
     // strings injected into Shadow DOM (no canvas)
     entryPoints: {

@@ -22,6 +22,7 @@
     "@codemirror/lang-markdown": "^6.5.2",
     "@fortawesome/fontawesome-free": "^7.3.0",
     "@noble/curves": "^2.4.0",
+    "@noflo/assembly": "^2.0.0-alpha.2",
     "@noflo/core": "2.0.0-alpha.1",
     "@noflo/noflo": "2.0.0-alpha.2",
     "@reticulum/core": "^0.9.6",
