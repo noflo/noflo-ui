@@ -113,6 +113,9 @@ function serveUi(port, tls, host = "localhost") {
       }
       response.writeHead(200, {
         "content-type": MIME[path.extname(file)] ?? "application/octet-stream",
+        // A dev server serving live files: heuristic caching has twice
+        // stranded the browser on a stale vendor bundle
+        "cache-control": "no-store",
       });
       response.end(data);
     });
