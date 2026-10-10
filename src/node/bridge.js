@@ -106,18 +106,33 @@ function serveUi(port, tls, host = "localhost") {
       response.writeHead(403).end();
       return;
     }
-    fsSync.readFile(file, (error, data) => {
-      if (error) {
+    fsSync.stat(file, (statError, stat) => {
+      if (statError) {
         response.writeHead(404).end("not found");
         return;
       }
-      response.writeHead(200, {
-        "content-type": MIME[path.extname(file)] ?? "application/octet-stream",
-        // A dev server serving live files: heuristic caching has twice
-        // stranded the browser on a stale vendor bundle
-        "cache-control": "no-store",
+      // A dev server serving live files: heuristic caching twice
+      // stranded the browser on a stale vendor bundle. ETag =
+      // mtime+size, always revalidated — efficient AND always fresh.
+      const etag = `"${stat.size}-${stat.mtimeMs}"`;
+      if (req.headers["if-none-match"] === etag) {
+        response.writeHead(304);
+        response.end();
+        return;
+      }
+      fsSync.readFile(file, (readError, data) => {
+        if (readError) {
+          response.writeHead(404).end("not found");
+          return;
+        }
+        response.writeHead(200, {
+          "content-type":
+            MIME[path.extname(file)] ?? "application/octet-stream",
+          "cache-control": "no-cache",
+          etag,
+        });
+        response.end(data);
       });
-      response.end(data);
     });
   };
   const server =
