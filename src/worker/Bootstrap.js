@@ -156,10 +156,47 @@ export function parseInviteUri(uri) {
  * @param {number} now
  * @returns {boolean}
  */
+/**
+ * A constant-time string comparison for secret material (work document
+ * #54): compares every character position and XORs the differences, so
+ * the comparison time does not leak the token's contents through an
+ * early exit. The tokens are 128-bit random over an encrypted link, so
+ * the practical risk was negligible — the compare is still cheap.
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+function constantTimeEquals(a, b) {
+  if (a.length !== b.length) {
+    // Length differences are not secret (the token format is known):
+    // compare against a fixed-length dummy to keep the timing shape
+    let dummy = 0;
+    for (let i = 0; i < a.length; i++) dummy |= a.charCodeAt(i) ^ 97;
+    return dummy === 1 && false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * Whether an invite record still validates for the presented token.
+ * Tokens are multi-use within their TTL (every knock from an ungranted
+ * peer needs host approval anyway), and the comparison is
+ * constant-time (work document #54).
+ *
+ * @param {{ token?: string, expiresAt?: number } | null} record
+ * @param {string} token
+ * @param {number} now
+ * @returns {boolean}
+ */
 export function isInviteRecordValid(record, token, now) {
   if (!record || typeof record.token !== "string") return false;
-  if (record.token.toLowerCase() !== token.toLowerCase()) return false;
-  return now < record.expiresAt;
+  if (!constantTimeEquals(record.token.toLowerCase(), token.toLowerCase())) {
+    return false;
+  }
+  return typeof record.expiresAt === "number" && now < record.expiresAt;
 }
 
 /**
@@ -484,11 +521,28 @@ export async function createBootstrapHost({
         await link.teardown();
         return;
       }
-      // Idempotent: remembered decisions answer without re-evaluation
-      let response = decisions.get(joinerHash);
+      // Remembered decisions answer without re-evaluation, with two
+      // work-document-#54 guards: an APPROVED decision re-validates
+      // against isGranted — an approved-then-REVOKED peer re-knocking
+      // must fall through to full evaluation, not receive the cached
+      // handoff — and every entry expires with the invite TTL, so a
+      // stale decision never outlives the token that earned it. A
+      // DECLINE keeps its idempotence within the TTL (a re-dial gets
+      // the same answer without a new prompt), which is also the
+      // availability fix for the old forever-sticky cache.
+      let remembered = decisions.get(joinerHash);
+      if (remembered && Date.now() - remembered.at > INVITE_TOKEN_TTL_MS) {
+        decisions.delete(joinerHash);
+        remembered = null;
+      }
+      let response = remembered?.response ?? null;
+      if (response?.status === "approved" && !isGranted(joinerHash)) {
+        decisions.delete(joinerHash);
+        response = null;
+      }
       if (!response) {
         response = await evaluate(body, joinerHash);
-        decisions.set(joinerHash, response);
+        decisions.set(joinerHash, { response, at: Date.now() });
       }
       // The wire response carries only the small node bootstrap (§10);
       // the signed grant travels via the §11 direct-link Delta push

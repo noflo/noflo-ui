@@ -134,26 +134,53 @@ export function createPayloadReassembler() {
  * @param {{
  *   isInRequesterMode: () => boolean,
  *   isGranted: (peerHash: string) => boolean,
+ *   peerRole?: ((peerHash: string) => string | null) | null,
+ *   localAnchorHash?: (() => string | null) | null,
  *   ownAuthorization: () => any | null,
  *   ensureDacarNode: () => Promise<any | null>,
  *   projectId: () => string,
  * }} hooks `ownAuthorization` returns the Dacar grant naming this device
  *   (the one whose subject is the local identity hash), or null when the
- *   device holds none.
- * @returns {(context: any) => Promise<boolean>}
+ *   device holds none. `peerRole` returns the granted peer's project role
+ *   (an observer gets a read-only capability verdict, work document #54).
+ *   `localAnchorHash` returns the project anchor hash once the bootstrap
+ *   handoff delivered it; requester-mode initiator links must target it.
+ * @returns {(context: any) => Promise<boolean | { sync: boolean, write: boolean }>}
  */
 export function createDacarLinkAuthorizer({
   isInRequesterMode,
   isGranted,
+  peerRole = null,
   ownAuthorization,
   ensureDacarNode,
+  localAnchorHash = null,
   projectId,
 }) {
   return async (/** @type {any} */ context) => {
     const remoteHash = context?.remoteIdentityHash;
     if (typeof remoteHash !== "string" || !remoteHash) return false;
-    if (isGranted(remoteHash)) return true;
-    if (isInRequesterMode()) return true;
+    // A granted peer's capabilities ride the grant's role (work document
+    // #54, unblocked by y-reticulum 0.5.0's capability verdicts): an
+    // observer gets { sync: true, write: false } — the transport drops
+    // the peer's inbound Doc updates while awareness and our updates
+    // still flow — and every other role is full sync+write.
+    if (isGranted(remoteHash)) {
+      const role = peerRole?.(remoteHash) ?? null;
+      if (role === "observer") return { sync: true, write: false };
+      return true;
+    }
+    // Requester mode (work document #54): only links THIS device
+    // initiated are the join dial — responder-side inbound links stay
+    // refused (they surface as join requests). And when the bootstrap
+    // handoff has already delivered the project's anchor, the peer we
+    // initiated to must BE the anchor: an attacker announcing the same
+    // project room must not inherit the join window's full access.
+    if (isInRequesterMode()) {
+      if (context.initiator !== true) return false;
+      const anchorHash = localAnchorHash?.() ?? null;
+      if (anchorHash && remoteHash !== anchorHash) return false;
+      return true;
+    }
 
     // Both sides send first, then read: no deadlock
     const own = ownAuthorization();
@@ -179,6 +206,13 @@ export function createDacarLinkAuthorizer({
       if (authorization?.subject !== remoteHash) return false;
       await node.ingestAuthorization(authorization);
     }
-    return (await node.evaluate(projectId(), "sync", remoteHash)) === true;
+    // The exchange path evaluates both relations: the verdict is the
+    // capability object the transport enforces (work document #54)
+    const sync =
+      (await node.evaluate(projectId(), "sync", remoteHash)) === true;
+    if (!sync) return { sync: false, write: false };
+    const write =
+      (await node.evaluate(projectId(), "write", remoteHash)) === true;
+    return { sync: true, write };
   };
 }

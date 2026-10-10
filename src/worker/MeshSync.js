@@ -104,7 +104,7 @@ function base64ToBytes(base64) {
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
  * @param {string} room
- * @param {{ isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }} access
+ * @param {{ isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }} access
  *   Dacar access-control hooks (work document #21): the link policy gates
  *   sync to granted peers; refusals surface as join requests.
  * @param {any} reticulum Shared Reticulum instance built from the enabled
@@ -131,13 +131,21 @@ async function defaultCreateProvider(
     // over the link channel: a slow multi-hop mesh hop needs more than
     // y-reticulum's 10 s default before the link is torn down
     authorizeTimeoutMs: 30_000,
-    // Dacar gate: peers with a non-revoked grant may sync; devices in
-    // requester mode (empty grants, fresh join) may dial so the owner sees
-    // the access request. Ignored by y-reticulum versions without the hook.
+    // Dacar gate (work document #54): a granted peer syncs; requester
+    // mode (empty grants, fresh join) accepts ONLY its own outbound
+    // dials — the access request is the dial — and responder-side
+    // inbound links stay refused (they surface as join requests, which
+    // is the existing UX). The old `isInRequesterMode() || isGranted`
+    // failed open on both gates: any peer that linked to an ungranted
+    // device got read AND write.
     linkPolicy: (/** @type {any} */ context) => {
-      const allowed =
-        access.isInRequesterMode() ||
-        access.isGranted(context.remoteIdentityHash);
+      const allowed = evaluateLinkPolicy(
+        {
+          isInRequesterMode: access.isInRequesterMode,
+          isGranted: access.isGranted,
+        },
+        context,
+      );
       console.info(
         `[mesh] linkPolicy: peer …${context.remoteIdentityHash?.slice(-12) ?? "unidentified"}, ${context.initiator ? "initiator" : "responder"}, ${allowed ? "ALLOW" : "REFUSE"}`,
       );
@@ -373,6 +381,26 @@ async function defaultAttachInterfaces(
 }
 
 /**
+ * The link policy decision (work document #54): a granted peer syncs; a
+ * device in requester mode (empty grants, fresh join) accepts ONLY links
+ * it initiated itself — "the access request is the dial" — and
+ * responder-side inbound links are refused (they surface as join
+ * requests instead of full read/write sync with any peer that links to
+ * an ungranted device).
+ *
+ * @param {{ isInRequesterMode: () => boolean, isGranted: (hash?: string) => boolean }} access
+ * @param {{ remoteIdentityHash?: string, initiator?: boolean }} context
+ *   Y-reticulum's LinkAuthorizationContext subset: the proven remote
+ *   identity and whether this side initiated the link.
+ * @returns {boolean}
+ */
+export function evaluateLinkPolicy(access, context) {
+  if (access.isGranted(context.remoteIdentityHash)) return true;
+  if (access.isInRequesterMode() && context.initiator === true) return true;
+  return false;
+}
+
+/**
  * Binds mesh sync to a project document.
  *
  * The `reticulum` option injects a process-owned Reticulum instance (the
@@ -384,7 +412,7 @@ async function defaultAttachInterfaces(
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
  *   attachInterfaces?: (rns: any, interfaces: import("../crdt/MeshConfig.js").MeshInterface[]) => Promise<void>,
  *   reticulum?: any,
  *   awarenessThrottleMs?: number,
@@ -923,7 +951,15 @@ export async function createMeshSync({
    * @param {string} peerHash
    * @returns {boolean}
    */
+  /**
+   * Whether a peer holds a non-revoked grant (synchronous policy check).
+   * Accepts an undefined hash (an unidentified peer): the answer is no.
+   *
+   * @param {string | undefined} peerHash
+   * @returns {boolean}
+   */
   function isGranted(peerHash) {
+    if (!peerHash) return false;
     if (peerHash && peerHash === trustAnchorHash()) return true;
     return grantedCache.get(peerHash) === true;
   }
@@ -988,6 +1024,12 @@ export async function createMeshSync({
           node.reset();
           ingestedEntries.clear();
           grantedCache.clear();
+          // The revocation must also reach ESTABLISHED links (work
+          // document #54, unblocked by y-reticulum 0.5.0's teardown
+          // API): a tombstoned grant blocks re-initiates, but the
+          // peer's live connection used to keep syncing indefinitely.
+          // The peer's identity hash is the grant's subject key.
+          provider?.revokePeer?.(String(plain.peerHash ?? ""));
         }
       }
       // Replay pushes that arrived before the node was configured
@@ -1350,6 +1392,18 @@ export async function createMeshSync({
    */
   const authorizeLink = createDacarLinkAuthorizer({
     isGranted,
+    peerRole: (/** @type {string} */ hash) => {
+      const grants = doc.getMap?.("grants");
+      if (!grants) return null;
+      for (const entry of grants.values()) {
+        const plain = entry.toJSON();
+        if (plain.peerHash === hash && plain.revoked === null) {
+          return String(plain.role ?? "") || null;
+        }
+      }
+      return null;
+    },
+    localAnchorHash: () => localBinding?.anchorHash ?? null,
     isInRequesterMode,
     ownAuthorization: () =>
       identityHash ? findAuthorization(identityHash) : null,
@@ -1965,7 +2019,7 @@ export async function createMeshSync({
             {
               isGranted,
               isInRequesterMode,
-              authorizeLink,
+              authorizeLink: /** @type {any} */ (authorizeLink),
               onRefused: (/** @type {any[]} */ refusals) => {
                 for (const refusal of refusals) {
                   // Narrate every refusal with its reason (work document

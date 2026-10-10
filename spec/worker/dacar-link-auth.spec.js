@@ -97,6 +97,7 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
       projectId: () => projectId,
     });
     const { exchange, sent } = fakeExchange();
+    // The fast path without a role accessor: full capability
     assert.equal(
       await authorizer({
         remoteIdentityHash: joinerHash,
@@ -104,10 +105,30 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
       }),
       true,
     );
+  });
+
+  it("an observer-role peer gets a read-only capability verdict (work document #54)", async () => {
+    const authorizer = createDacarLinkAuthorizer({
+      isGranted: (hash) => hash === joinerHash,
+      peerRole: (hash) => (hash === joinerHash ? "observer" : null),
+      isInRequesterMode: () => false,
+      ownAuthorization: () => null,
+      ensureDacarNode: configuredNode,
+      projectId: () => projectId,
+    });
+    const { exchange, sent } = fakeExchange();
+    assert.deepEqual(
+      await authorizer({
+        remoteIdentityHash: joinerHash,
+        exchange,
+      }),
+      { sync: true, write: false },
+      "the transport drops the peer's inbound Doc updates; awareness and our updates still flow",
+    );
     assert.equal(sent.length, 0, "no exchange needed for locally known peers");
   });
 
-  it("allows a requester-mode device to dial", async () => {
+  it("allows a requester-mode device's own dial (initiator)", async () => {
     const authorizer = createDacarLinkAuthorizer({
       isGranted: () => false,
       isInRequesterMode: () => true,
@@ -117,10 +138,70 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
     });
     const { exchange, sent } = fakeExchange();
     assert.equal(
-      await authorizer({ remoteIdentityHash: joinerHash, exchange }),
+      await authorizer({
+        remoteIdentityHash: joinerHash,
+        initiator: true,
+        exchange,
+      }),
       true,
     );
     assert.equal(sent.length, 0);
+  });
+
+  it("refuses an inbound link to a requester-mode device (work document #54)", async () => {
+    // The audit's Critical finding: requester mode used to fail open on
+    // both gates — an attacker linking to an ungranted device got full
+    // read AND write. Responder-side acceptance stays refused; those
+    // surface as join requests instead.
+    const authorizer = createDacarLinkAuthorizer({
+      isGranted: () => false,
+      isInRequesterMode: () => true,
+      ownAuthorization: () => null,
+      ensureDacarNode: configuredNode,
+      projectId: () => projectId,
+    });
+    const { exchange } = fakeExchange();
+    assert.equal(
+      await authorizer({
+        remoteIdentityHash: joinerHash,
+        initiator: false,
+        exchange,
+      }),
+      false,
+    );
+  });
+
+  it("a requester-mode initiator must target the known anchor (work document #54)", async () => {
+    // The bootstrap handoff delivered the project's anchor: an attacker
+    // announcing the same project room must not inherit the join
+    // window's full access.
+    const authorizer = createDacarLinkAuthorizer({
+      isGranted: () => false,
+      isInRequesterMode: () => true,
+      localAnchorHash: () => "9".repeat(32),
+      ownAuthorization: () => null,
+      ensureDacarNode: configuredNode,
+      projectId: () => projectId,
+    });
+    const { exchange } = fakeExchange();
+    assert.equal(
+      await authorizer({
+        remoteIdentityHash: joinerHash,
+        initiator: true,
+        exchange,
+      }),
+      false,
+      "not the anchor: refused",
+    );
+    assert.equal(
+      await authorizer({
+        remoteIdentityHash: "9".repeat(32),
+        initiator: true,
+        exchange,
+      }),
+      true,
+      "the anchor itself: accepted",
+    );
   });
 
   it("verifies a peer presenting its own valid assertion", async () => {
@@ -136,9 +217,9 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
       projectId: () => projectId,
     });
     const { exchange, sent } = fakeExchange(chunks);
-    assert.equal(
+    assert.deepEqual(
       await authorizer({ remoteIdentityHash: joinerHash, exchange }),
-      true,
+      { sync: true, write: true },
       "the Engine allows the verified grantee",
     );
     assert.ok(sent.length > 0, "our own assertion was presented");
@@ -178,9 +259,9 @@ describe("Dacar link authorization (work document #25 §6.2)", async () => {
       projectId: () => projectId,
     });
     const { exchange } = fakeExchange(chunks);
-    assert.equal(
+    assert.deepEqual(
       await authorizer({ remoteIdentityHash: joinerHash, exchange }),
-      false,
+      { sync: false, write: false },
     );
   });
 
