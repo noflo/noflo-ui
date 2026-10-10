@@ -4,7 +4,7 @@
  * messages.
  */
 
-import { Component } from "@noflo/assembly";
+import { Component } from "../../../vendor/assembly.js";
 
 import { handleMessage } from "../../crdt/EngineCore.js";
 

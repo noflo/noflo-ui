@@ -3,7 +3,7 @@
  * routes valid messages onward for application against the CRDT.
  */
 
-import { Component } from "@noflo/assembly";
+import { Component } from "../../../vendor/assembly.js";
 
 import { isUIWorkerMessage, UI_MESSAGES } from "../../crdt/Protocol.js";
 

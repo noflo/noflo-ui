@@ -79,6 +79,14 @@ let mirrorHandler = /** @type {((event: { data: any }) => void) | null} */ (
 
 /** @type {Y.Doc} */
 let mirrorDoc = new Y.Doc();
+// The debug handle (work document #56's diagnosability): the smoke layer
+// and flight recorder read the Glass's live state through it. Named
+// deliberately; not used by the application itself.
+window.__nofloDebug = {
+  get mirrorDoc() {
+    return mirrorDoc;
+  },
+};
 
 /** @type {ReturnType<typeof createRouter> | null} */
 let router = null;

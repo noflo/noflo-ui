@@ -131,7 +131,11 @@ const builds = [
     // class identity per process
     entryPoints: { assembly: resolve(here, "../node_modules/@noflo/assembly/src/index.js") },
     ...vendor,
-    plugins: [siblingExternals({ "@noflo/noflo": "../noflo.js" })],
+    // assembly sits at vendor/assembly.js — one level up from the
+    // per-component directory layout core/Repeat uses, so the sibling is
+    // "./noflo.js" (the wrong depth here 404'd the whole worker module
+    // graph at boot: vendor/assembly.js → ../noflo.js → repo root)
+    plugins: [siblingExternals({ "@noflo/noflo": "./noflo.js" })],
   },
   {
     // The browser surface: SVG rendering only — the invite QR codes are SVG

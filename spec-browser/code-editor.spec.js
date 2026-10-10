@@ -79,6 +79,7 @@ async function serve(req, res) {
     });
     res.end(data);
   } catch {
+    console.log(`[server] 404: ${req.url}`);
     res.writeHead(404).end("not found");
   }
 }
@@ -114,14 +115,33 @@ describe("browser smoke: the code editor journey (work document #56)", {
     page.on("pageerror", (/** @type {any} */ error) =>
       consoleErrors.push(String(error)),
     );
+    // Worker diagnostics: the engine worker's console and errors do not
+    // surface through the page's handlers (work document #56)
+    page.on("worker", (/** @type {any} */ worker) => {
+      console.log(`[smoke] worker appeared: ${worker.url?.() ?? worker.url}`);
+      worker.on("console", (/** @type {any} */ message) => {
+        const text = message.text();
+        if (/Mesh start|gates|Requesting|addnode|echo|progress/i.test(text)) {
+          console.log(`[worker ${worker.url?.().slice(-12)}] ${text.slice(0, 140)}`);
+        }
+        if (["error", "warning"].includes(message.type())) {
+          consoleErrors.push(`[worker] ${text}`);
+        }
+      });
+      worker.on("pageerror", (/** @type {any} */ error) =>
+        consoleErrors.push(`[worker error] ${String(error)}`),
+      );
+    });
     await page.goto(`http://localhost:${PORT}/app.html`);
     await page.waitForSelector("noflo-editor", { timeout: 15_000 });
   });
 
   afterEach(async () => {
+    // Always capture: the journey's evidence is the page state, not just
+    // the assertion (work document #56's failure artifacts)
+    await page.screenshot({ path: "/tmp/noflo-smoke-last.png" });
     if (consoleErrors.length > 0) {
       console.log("console errors during the journey:", consoleErrors);
-      await page.screenshot({ path: "/tmp/noflo-smoke-failure.png" });
     }
     await page.close();
   });
@@ -195,27 +215,70 @@ describe("browser smoke: the code editor journey (work document #56)", {
       .first();
     await nameInput.waitFor({ timeout: 10_000 });
     await nameInput.fill("SmokeComponent");
+    // The form's model must reflect the fill: jedison's hidden input
+    // carries the serialized form data
+    const formData = await page.evaluate(() => {
+      const hidden = document.querySelector('noflo-json-form input[name="json"]');
+      return hidden ? JSON.parse(hidden.value).name : null;
+    });
+    console.log("form data name after fill:", JSON.stringify(formData));
     await page.locator("noflo-modal").locator("text=Create").first().click();
 
-    // Implement: select the node, open its radial menu, implement in code
+    // Implement: select the node, open its radial menu, implement in code.
+    // The intent must reach the engine: the Glass's mirror doc (read
+    // through the debug handle) is the authoritative echo channel.
     await page.waitForTimeout(1500);
-    const diag = await page.evaluate(() => {
-      const editor = document.querySelector("noflo-editor");
-      const nodes = editor?.shadowRoot?.querySelectorAll("noflo-node");
-      const modal = document.querySelector("noflo-modal");
-      const modalOpen = Boolean(
-        modal?.shadowRoot?.querySelector("dialog[open]"),
-      );
-      const registry = window.__smokeMirror
-        ? Array.from(window.__smokeMirror.getMap("registry").keys())
-        : null;
+    const applied = await page.evaluate(() => {
+      const mirror = window.__nofloDebug?.mirrorDoc;
+      const main = mirror?.getMap("graphs")?.get("main");
       return {
-        nodesInLayer: nodes ? nodes.length : -1,
-        modalOpen,
-        registry,
+        graphs: mirror ? Array.from(mirror.getMap("graphs").keys()) : null,
+        mainKeys: main ? Array.from(main.keys()) : null,
       };
     });
-    console.log("after create:", JSON.stringify(diag));
+    console.log("after create, mirror state:", JSON.stringify(applied));
+    if (!applied.mainKeys?.includes("SmokeComponent")) {
+      // Probe the worker directly: spawn a fresh engine worker inside the
+      // page and capture its load/boot error — the supervisor does not
+      // wire onerror, so a worker that fails to boot dies silently
+      // (work document #56: the failure the smoke layer surfaces)
+      const bootProbe = await page.evaluate(
+        () =>
+          new Promise((resolve) => {
+            const worker = new Worker("/src/worker/engine.js", {
+              type: "module",
+            });
+            const finish = (result) => resolve(result);
+            // The module graph's real failure: import the same entry from
+            // the page context — the boot guard skips startEngine here,
+            // but any unresolved specifier or broken module surfaces with
+            // a real stack
+            // Walk the graph: which import 404s? The server logs 404s —
+            // intercept and collect them instead
+            window.__failedImports = [];
+            const originalFetch = window.fetch;
+            window.fetch = async (...args) => {
+              const response = await originalFetch(...args);
+              if (response.status === 404) {
+                window.__failedImports.push(String(args[0]));
+              }
+              return response;
+            };
+            import("/src/worker/engine.js").catch((error) =>
+              finish({ importError: String(error?.stack ?? error).slice(0, 600) }),
+            );
+            worker.onerror = (/** @type {any} */ event) =>
+              finish({ error: event.message ?? event.type });
+            worker.onmessage = (/** @type {any} */ event) =>
+              finish({ firstMessage: event.data?.kind ?? event.data?.type ?? "message" });
+            setTimeout(() => finish({ timeout: "no error, no message in 8s" }), 8000);
+          }),
+      );
+      console.log(
+        "MIRROR STATE MISSING the created node — worker boot probe:",
+        JSON.stringify(bootProbe),
+      );
+    }
     const node = page.locator("noflo-node").first();
     await node.waitFor({ timeout: 10_000 });
     await node.click({ button: "right" });

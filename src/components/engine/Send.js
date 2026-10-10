@@ -3,7 +3,7 @@
  * to the Glass via an injected postMessage-style callback.
  */
 
-import { Component } from "@noflo/assembly";
+import { Component } from "../../../vendor/assembly.js";
 
 /**
  * The engine's send capability as an assembly component (work document
