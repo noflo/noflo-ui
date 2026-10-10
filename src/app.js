@@ -138,6 +138,26 @@ let dacarState = /** @type {any} */ (null);
  * #28). */
 /** @type {Record<string, string>} */
 let meshPeerIdentities = {};
+/**
+ * Narrates a worker death (work document #34 vocabulary, work document
+ * #56's finding): a worker whose module graph fails to load dies
+ * silently — the watchdog respawns it, but the Glass must say what
+ * happened.
+ *
+ * @param {{ message: string, filename?: string, lineno?: number }} error
+ */
+function narrateWorkerError(error) {
+  narration = {
+    phrase: "The engine worker failed to load",
+    operation: "engine.boot",
+    stage: "failed",
+    failed: true,
+  };
+  refreshSyncPanel();
+  console.error(
+    `Engine worker error: ${error.message}${error.filename ? ` (${error.filename}:${error.lineno ?? "?"})` : ""}`,
+  );
+}
 /** Peer reachability (work document #47): granted peers are online or
  * offline — offline is the mesh's normal state, rendered as such instead
  * of a path request that looks stuck. */
@@ -248,10 +268,22 @@ function applyPendingState() {
 /**
  * Adapts a real Worker to the supervisor's messaging interface.
  *
+ * @param {(error: { message: string, filename?: string, lineno?: number }) => void} onError
+ *   The worker's error-event surface (work document #56: a module-graph
+ *   failure dies silently without it).
  * @returns {import("./worker/EngineSupervisor.js").WorkerLike}
  */
-function spawnEngineWorker() {
+function spawnEngineWorker(onError) {
   const worker = new Worker("src/worker/engine.js", { type: "module" });
+  // Register the error handler on the worker's error event (work
+  // document #56): a worker whose module graph fails to load dies
+  // silently without it
+  worker.onerror = (event) =>
+    onError?.({
+      message: event.message ?? "unknown worker error",
+      filename: event.filename,
+      lineno: event.lineno,
+    });
   return {
     postMessage: (message) => worker.postMessage(message),
     onMessage: (/** @type {(event: { data: any }) => void} */ handler) => {
@@ -1030,6 +1062,7 @@ function onRoleChange() {
     supervisor = createSupervisor({
       createWorker: spawnEngineWorker,
       onMessage: onEngineMessage,
+      onError: narrateWorkerError,
     });
     supervisor.send({
       type: "LIFECYCLE",
@@ -1449,6 +1482,7 @@ async function init() {
     supervisor = createSupervisor({
       createWorker: spawnEngineWorker,
       onMessage: onEngineMessage,
+      onError: narrateWorkerError,
     });
     supervisor.send({
       type: "LIFECYCLE",

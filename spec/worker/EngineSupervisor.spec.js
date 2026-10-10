@@ -11,6 +11,10 @@ function makeFakeWorker() {
     terminated: false,
     /** @type {any[]} */
     sent: [],
+    /** @type {((error: any) => void) | null} The registered error
+     * handler (work document #56): real workers fire their error event
+     * when the module graph fails to load. */
+    onError: null,
     onMessage(handler) {
       handlers.push(handler);
     },
@@ -23,6 +27,10 @@ function makeFakeWorker() {
     /** @param {any} data */
     emit(data) {
       for (const handler of handlers) handler({ data });
+    },
+    /** @param {any} error */
+    emitError(error) {
+      this.onError?.(error);
     },
   };
 }
@@ -130,5 +138,76 @@ describe("EngineSupervisor", () => {
     assert.equal(workers[1].sent.length, 1);
     supervisor.stop();
     assert.equal(workers[1].terminated, true);
+  });
+});
+
+describe("EngineSupervisor error narration (work document #56)", () => {
+  it("narrates a worker whose module graph fails to load", () => {
+    const clock = makeClock();
+    const worker = makeFakeWorker();
+    /** @type {any[]} */
+    const errors = [];
+    const supervisor = createSupervisor({
+      createWorker: (onError) => {
+        worker.onError = onError;
+        return worker;
+      },
+      onMessage: () => {},
+      onError: (error) => errors.push(error),
+      timers: clock,
+    });
+
+    // The worker's module graph fails to load: the error event fires and
+    // the narrator receives it (the silent-respawn gap this closes)
+    worker.emitError({
+      message: "Failed to fetch dynamically imported module",
+      filename: "/src/worker/engine.js",
+      lineno: 1,
+    });
+
+    console.log(
+      "debug errors:",
+      JSON.stringify(
+        errors.map((e) => (typeof e === "object" ? e : String(e))),
+      ),
+    );
+    console.log("debug worker.onError type:", typeof worker.onError);
+
+    assert.deepEqual(errors, [
+      {
+        message: "Failed to fetch dynamically imported module",
+        filename: "/src/worker/engine.js",
+        lineno: 1,
+      },
+    ]);
+    supervisor.stop();
+  });
+
+  it("the respawned worker narrates its own errors too", () => {
+    const clock = makeClock();
+    const workers = [makeFakeWorker(), makeFakeWorker()];
+    let index = 0;
+    /** @type {any[]} */
+    const errors = [];
+    const supervisor = createSupervisor({
+      createWorker: (onError) => {
+        workers[index].onError = onError;
+        return workers[index++];
+      },
+      onMessage: () => {},
+      onError: (error) => errors.push(error),
+      heartbeatTimeoutMs: 30000,
+      timers: clock,
+    });
+
+    // The first worker never heartbeats: the watchdog respawns it. The
+    // respawned worker's error surfaces through the same narrator.
+    clock.advance(40000);
+    clock.tick();
+    assert.equal(supervisor.respins, 1);
+    workers[1].emitError({ message: "load failed again" });
+    assert.equal(errors.length, 1);
+    assert.equal(errors[0].message, "load failed again");
+    supervisor.stop();
   });
 });

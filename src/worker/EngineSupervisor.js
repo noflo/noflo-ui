@@ -23,10 +23,18 @@ const DEFAULT_TIMERS = {
 
 /**
  * @typedef {Object} SupervisorOptions
- * @property {() => WorkerLike} createWorker Factory creating a fresh worker.
+ * @property {((onError: (error: { message: string, filename?: string, lineno?: number }) => void) => WorkerLike)} createWorker
+ *   Factory creating a fresh worker; the supervisor hands it its error
+ *   sink so the worker's error events reach the narrator.
  * @property {(message: any) => void} onMessage Echoes and heartbeats from the Engine.
  * @property {() => void} [onRespin] Called after a worker was respawned, so the
  *   Glass can re-subscribe.
+ * @property {((error: { message: string, filename?: string, lineno?: number }) => void)} [onError]
+ *   Called when the worker fires an error event — a load or module-graph
+ *   failure. The heartbeat watchdog respawns such a worker on its own
+ *   schedule; this hook exists so the death is *narrated* (work document
+ *   #34) instead of respawning silently (work document #56's finding: two
+ *   worker spawns and an empty mirror were the only symptoms).
  * @property {number} [heartbeatTimeoutMs]
  * @property {number} [checkIntervalMs]
  * @property {{ setTimeout: typeof setTimeout, clearTimeout: typeof clearTimeout, setInterval: typeof setInterval, clearInterval: typeof clearInterval, now: () => number }} [timers]
@@ -40,6 +48,9 @@ const DEFAULT_TIMERS = {
  * @property {(message: any) => void} postMessage
  * @property {(handler: (event: { data: any }) => void) => void} onMessage
  * @property {() => void} terminate
+ * @property {((handler: (event: { message?: string, filename?: string, lineno?: number }) => void) => void) | undefined} [onError]
+ *   Optional: REGISTERS the worker's error handler, symmetric with
+ *   `onMessage` (module-graph failures die silently without it).
  */
 
 /**
@@ -50,6 +61,7 @@ export function createSupervisor({
   createWorker,
   onMessage,
   onRespin,
+  onError,
   heartbeatTimeoutMs = HEARTBEAT_TIMEOUT_MS,
   checkIntervalMs = CHECK_INTERVAL_MS,
   timers = DEFAULT_TIMERS,
@@ -63,7 +75,18 @@ export function createSupervisor({
   let respins = 0;
 
   const spinUp = () => {
-    worker = createWorker();
+    // The factory receives the error handler to REGISTER on the worker
+    // (symmetric with onMessage): a worker whose module graph fails to
+    // load fires the error event instead of ever heartbeating — the
+    // watchdog's silent respawn would otherwise be the only symptom
+    // (work document #56)
+    worker = createWorker((/** @type {any} */ event) =>
+      onError?.({
+        message: event?.message ?? "unknown worker error",
+        filename: event?.filename,
+        lineno: event?.lineno,
+      }),
+    );
     lastHeartbeat = timers.now();
     worker.onMessage((event) => {
       if (
