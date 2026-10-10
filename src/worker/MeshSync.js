@@ -123,6 +123,14 @@ async function defaultCreateProvider(
   const provider = new ReticulumProvider(room, doc, {
     reticulum,
     identity,
+    // The room re-announce keeps cached mesh paths warm: a peer coming
+    // online announces immediately (the fast discovery path), so the
+    // steady-state cadence can sit at the desktop class (SPEC §9.7)
+    announceIntervalMs: 10 * 60_000,
+    // The §6.2 assertion exchange sends our grants and awaits the peer's
+    // over the link channel: a slow multi-hop mesh hop needs more than
+    // y-reticulum's 10 s default before the link is torn down
+    authorizeTimeoutMs: 30_000,
     // Dacar gate: peers with a non-revoked grant may sync; devices in
     // requester mode (empty grants, fresh join) may dial so the owner sees
     // the access request. Ignored by y-reticulum versions without the hook.
@@ -486,11 +494,15 @@ export async function createMeshSync({
    * default scenario, so redials back off per peer instead of churning. */
   /** @type {Map<string, { attempts: number, lastDialAt: number }>} */
   const peerDialState = new Map();
-  const REDIAL_BASE_MS = 60_000;
-  const REDIAL_MAX_MS = 10 * 60_000;
+  const REDIAL_BASE_MS = 10 * 60_000;
+  const REDIAL_MAX_MS = 60 * 60_000;
   /** The redial tick: the cadence dialKnownPeers runs on; per-peer
-   * backoff windows gate which peers actually dial each tick. */
-  const REDIAL_TICK_MS = 30_000;
+   * backoff windows gate which peers actually dial each tick. Reticulum
+   * is patient by design — path requests and announces are the mesh's
+   * control traffic, and a ten-minute class keeps it quiet (SPEC §9.7
+   * recommends 30-60 min for desktop clients; a peer coming online
+   * announces immediately, which is the fast path). */
+  const REDIAL_TICK_MS = 10 * 60_000;
   /** @type {ReturnType<typeof setInterval> | null} */
   let redialTimer = null;
   /** Pushes received before the node was configured, replayed after. */
@@ -1123,7 +1135,9 @@ export async function createMeshSync({
     // The one-shot announce at creation races interface readiness: peers
     // that connect later never learn this device's Delta-push destination.
     // Announce periodically like the room destination does
-    dacarSyncServer.destination?.startAnnouncing?.({ intervalMs: 15_000 });
+    dacarSyncServer.destination?.startAnnouncing?.({
+      intervalMs: 10 * 60_000,
+    });
     // The handoff's delta push depends on this destination being reachable,
     // so its announce cadence matters for join debugging (work document
     // #34); @reticulum/core 0.9.5 emits "announced" on broadcast

@@ -362,7 +362,7 @@ export async function createBootstrapHost({
   requestApproval,
   isValidInviteToken,
   deliverAuthorization,
-  announceIntervalMs = 60_000,
+  announceIntervalMs = 10 * 60_000,
 }) {
   const dest = await Destination.IN(
     BOOTSTRAP_APP_NAME,

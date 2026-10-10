@@ -34,7 +34,7 @@
     "source-code-pro": "^2.42.0",
     "y-codemirror.next": "^0.3.6",
     "y-indexeddb": "^9.0.12",
-    "y-reticulum": "^0.4.1",
+    "y-reticulum": "^0.5.0",
     "yjs": "^13.6.31"
   },
   "devDependencies": {
