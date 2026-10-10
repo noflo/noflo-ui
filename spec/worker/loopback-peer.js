@@ -12,15 +12,25 @@ export const HOST = "127.0.0.1";
 
 /** Resolves with a free localhost TCP port (ephemeral, immediately released). */
 export function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const probe = net.createServer();
-    probe.unref();
-    probe.on("error", reject);
-    probe.listen({ host: HOST, port: 0 }, () => {
-      const { port } = /** @type {net.AddressInfo} */ (probe.address());
-      probe.close(() => resolve(port));
+  // The probe-close-reuse pattern races under the parallel test suite:
+  // another worker can claim the port between close() and the bind.
+  // Retry a few times before giving up.
+  const attempt = (/** @type {number} */ tries) =>
+    new Promise((resolve, reject) => {
+      const probe = net.createServer();
+      probe.unref();
+      probe.on("error", reject);
+      probe.listen({ host: HOST, port: 0 }, () => {
+        const { port } = /** @type {net.AddressInfo} */ (probe.address());
+        probe.close(() => resolve(port));
+      });
+    }).catch((e) => {
+      if (tries <= 0) throw e;
+      return new Promise((r) => setTimeout(r, 50)).then(() =>
+        attempt(tries - 1),
+      );
     });
-  });
+  return attempt(5);
 }
 
 /**

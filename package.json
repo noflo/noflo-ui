@@ -14,7 +14,8 @@
     "prebuild-vendors": "npm run generate:fa && npm run generate:vendor-types",
     "generate:vendor-types": "node utils/generate-vendor-types.js",
     "build-vendors": "node utils/build-vendors.js",
-    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js"
+    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js",
+    "test:browser": "node --test --test-force-exit --test-timeout 120000 spec-browser/*.js"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -41,6 +42,7 @@
     "esbuild": "^0.28.2",
     "happy-dom": "^20.10.6",
     "js-yaml": "^5.1.0",
+    "playwright": "^1.64.0",
     "typescript": "^6.0.3"
   },
   "esinstall": {

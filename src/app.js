@@ -1317,11 +1317,11 @@ async function init() {
             },
           };
         }
-        const dataType =
-          /** @type {any} */ (startPort).dataset.portDataType || "all";
-        const draggingOut = /** @type {any} */ (startPort).classList.contains(
-          "port-out",
-        );
+        // A canvas-menu add carries no port context (work document #56's
+        // smoke found this crash: the create-new-component path threw
+        // before placing the node when startPort was null)
+        const dataType = startPort?.dataset.portDataType || "all";
+        const draggingOut = startPort?.classList.contains("port-out") === true;
         const signature = draggingOut
           ? {
               inports: [{ name: "in", type: dataType }],
