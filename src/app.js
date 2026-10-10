@@ -18,7 +18,8 @@ import {
   javascript,
   markdown,
   yCollab,
-} from "../vendor/codemirror.js";
+  ySyncFacet,
+} from "../vendor/codemirror.js?v=2";
 import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-code-editor.js";
