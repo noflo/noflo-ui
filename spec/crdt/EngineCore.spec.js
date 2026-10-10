@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
 import {
   createEngineState,
   handleMessage,
@@ -21,6 +20,7 @@ import {
   grantAssertion,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
+import * as Y from "../../vendor/yjs.js";
 
 /** @param {import("yjs").Doc} doc @param {any} message */
 function handle(doc, message) {
@@ -136,10 +136,9 @@ describe("intents", () => {
     }
   });
 
-  it("setComponentCode accepts Y.Text deltas for the collaborative editor", () => {
-    const doc = createProjectDoc("p");
-    // A signature + implementation record, then delta edits
-    handle(doc, {
+  it("setComponentCode applies a binary update from the mirror (work document #29)", () => {
+    const engineDoc = createProjectDoc("p");
+    handle(engineDoc, {
       type: "INTENT",
       command: "setSignature",
       payload: {
@@ -147,55 +146,72 @@ describe("intents", () => {
         signature: { inports: [], outports: [] },
       },
     });
-    handle(doc, {
+    handle(engineDoc, {
       type: "INTENT",
       command: "implementInCode",
       payload: {
         component: "fs/Count",
         language: "javascript",
-        scaffold: "export default function setup(runtime) {\n}\n",
+        scaffold: "const a = 1;\n",
       },
     });
 
-    // A collaborative editor's keystroke: insert at the start
-    const result = handle(doc, {
+    // The Glass's mirror: a bare Y.Doc mirroring the engine via the
+    // y-update echo channel. Bare matters: a mirror that writes its own
+    // metadata would create client items the engine never sees, and its
+    // transaction diffs would pend forever (the createProjectDoc
+    // variant reproduces exactly that).
+    const mirror = new Y.Doc();
+    Y.applyUpdate(mirror, Y.encodeStateAsUpdate(engineDoc));
+
+    // A local edit in the mirror, then its transaction diff as the intent
+    const ytext = mirror.getMap("components").get("fs/Count").get("code");
+    assert.ok(ytext, "the mirror carries the component's code buffer");
+    /** @type {Uint8Array | null} */
+    let captured = null;
+    mirror.on("update", (/** @type {Uint8Array} */ update) => {
+      captured = update;
+    });
+    mirror.transact(() => {
+      ytext.insert(0, "// counted\n");
+    });
+    assert.ok(captured, "the transaction produced a diff");
+
+    const result = handle(engineDoc, {
       type: "INTENT",
       command: "setComponentCode",
-      payload: {
-        component: "fs/Count",
-        delta: [{ insert: "// counted\n" }],
-      },
+      payload: { component: "fs/Count", update: captured },
     });
     assert.equal(result.accepted, true);
-    const componentEntry = doc.getMap("components").get("fs/Count");
-    assert.match(componentEntry.get("code").toString(), /^\/\/ counted\n/);
 
-    // A delete + retain mix applies positionally: retain 2 keeps "//",
-    // delete 6 removes " count" from "// counted\n"
-    handle(doc, {
-      type: "INTENT",
-      command: "setComponentCode",
-      payload: { component: "fs/Count", delta: [{ retain: 2 }, { delete: 6 }] },
-    });
+    // The authoritative buffer holds the SAME items the mirror created:
+    // content matches and a re-applied mirror update is idempotent
+    const engineCode = engineDoc
+      .getMap("components")
+      .get("fs/Count")
+      .get("code");
+    assert.equal(engineCode.toString(), "// counted\nconst a = 1;\n");
+    const before = engineDoc
+      .getMap("components")
+      .get("fs/Count")
+      .get("code")
+      .toString();
+    Y.applyUpdate(engineDoc, Y.encodeStateAsUpdate(mirror));
     assert.equal(
-      componentEntry.get("code").toString().startsWith("//ed"),
-      true,
+      engineDoc.getMap("components").get("fs/Count").get("code").toString(),
+      before,
+      "the echo is idempotent: no duplicated text",
     );
 
-    // Malformed deltas are refused, never applied
-    for (const bad of [
-      { component: "fs/Count", delta: [{ insert: 42 }] },
-      { component: "fs/Count", delta: "not-an-array" },
-    ]) {
-      assert.equal(
-        handle(doc, {
-          type: "INTENT",
-          command: "setComponentCode",
-          payload: bad,
-        }).accepted,
-        false,
-      );
-    }
+    // Malformed updates are refused
+    assert.equal(
+      handle(engineDoc, {
+        type: "INTENT",
+        command: "setComponentCode",
+        payload: { component: "fs/Count", update: "not-binary" },
+      }).accepted,
+      false,
+    );
   });
 
   it("removeDoc drops the doc entry", () => {

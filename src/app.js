@@ -662,11 +662,11 @@ async function openCodeEditor(componentName, language) {
     ytext,
     name: componentName,
     language,
-    onSendDelta: (/** @type {any[]} */ delta) => {
+    onSendUpdate: (/** @type {Uint8Array} */ update) => {
       sendIntent({
         type: "INTENT",
         command: "setComponentCode",
-        payload: { component: componentName, delta },
+        payload: { component: componentName, update },
       });
     },
     yCollab: codeMirrorSurface.yCollab,

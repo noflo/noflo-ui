@@ -1,15 +1,20 @@
 // @ts-nocheck
+import * as Y from "../../vendor/yjs.js";
 /**
  * NofloCodeEditor Web Component (work document #29): a modal-hosted
  * CodeMirror editor bound to a component's collaborative code buffer.
  *
  * The binding is `yCollab` over a Y.Text of the Glass's mirror document —
  * remote edits arrive through the existing `y-update` echo channel and
- * appear live; local keystrokes flow out through `onSendDelta` as
- * `setComponentCode` delta intents (the Glass has no write authority:
- * the Worker's authoritative buffer applies the delta, and its echo
- * reconciles the mirror idempotently). There is no Save: edits stream,
- * per the live-sync etiquette.
+ * appear live. Local keystrokes flow out through `onSendUpdate` as
+ * `setComponentCode` UPDATE intents: the transaction's binary Yjs diff
+ * (encodeStateAsUpdate over the transaction's beforeState), carrying the
+ * edit's item structure so the Worker's authoritative buffer integrates
+ * the SAME items and its echo reconciles the mirror idempotently (a
+ * content delta would re-create the edit with the engine's clientID and
+ * diverge the two docs). The Glass has no write authority; the Worker
+ * applies the update through the same intent dispatch as every other
+ * mutation. There is no Save: edits stream, per the live-sync etiquette.
  *
  * Visual rules (VISUAL_GUIDELINES.md): opaque theme-driven background,
  * panel border, scrim behind, focus states with offset outline, theme
@@ -109,10 +114,10 @@ export class NofloCodeEditor extends HTMLElement {
     this._ytext = null;
     /** @type {any} The yCollab binding (its origin marks local edits). */
     this._conf = null;
-    /** @type {(delta: any[]) => void} */
-    this._onSendDelta = () => {};
-    /** @type {any} The Y.Text observer for the local-delta relay. */
-    this._observer = null;
+    /** @type {(update: Uint8Array) => void} */
+    this._onSendUpdate = () => {};
+    /** @type {any} The mirror doc's update listener (local-diff relay). */
+    this._docUpdate = null;
   }
 
   connectedCallback() {
@@ -273,8 +278,9 @@ export class NofloCodeEditor extends HTMLElement {
    * @param {string} options.name - Component name (header display).
    * @param {string} [options.language] - `javascript` (default) or
    *   `markdown` (the docs buffers ride the same editor).
-   * @param {(delta: any[]) => void} options.onSendDelta - Relays one
-   *   local edit as a `setComponentCode` delta intent.
+   * @param {(update: Uint8Array) => void} options.onSendUpdate - Relays
+   *   one local transaction's binary Yjs diff as a `setComponentCode`
+   *   update intent.
    * @param {any} options.yCollab - The vendored binding factory.
    * @param {any} options.extensions - CodeMirror extensions (language
    *   support, setup) from the vendored surface.
@@ -283,12 +289,12 @@ export class NofloCodeEditor extends HTMLElement {
     ytext,
     name,
     language = "javascript",
-    onSendDelta,
+    onSendUpdate,
     yCollab,
     extensions,
   }) {
     this._ytext = ytext;
-    this._onSendDelta = onSendDelta;
+    this._onSendUpdate = onSendUpdate;
     this.shadowRoot.querySelector(".name").textContent = name;
     this.shadowRoot.querySelector(".lang").textContent = language;
     this.setAttribute("open", "");
@@ -319,20 +325,23 @@ export class NofloCodeEditor extends HTMLElement {
       parent: this.shadowRoot.querySelector(".editor"),
     });
 
-    // The local-delta relay (work document #29 fix): yCollab applies
-    // local edits with its internal YSyncConfig as the transaction
-    // origin — retrievable from the view's facet. The extension array
-    // yCollab returns is NOT the origin, and comparing against it
-    // silently dropped every local edit (no persistence, no peer sync).
-    // Remote edits arrive via the y-update echo with a null origin —
-    // only locals are relayed.
+    // The local-update relay (work document #29): yCollab applies local
+    // edits with its internal YSyncConfig as the transaction origin —
+    // retrievable from the view's facet. The extension array yCollab
+    // returns is NOT the origin, and comparing against it silently
+    // dropped every local edit (no persistence, no peer sync). The
+    // transaction's diff travels as a binary Yjs update (beforeState →
+    // now), so the Worker integrates the same items the mirror created;
+    // its echo reconciles the mirror idempotently.
     this._conf = this._view.state?.facet?.(extensions.ySyncFacet) ?? null;
-    this._observer = (/** @type {any} */ event) => {
-      if (!this._conf || event.transaction.origin !== this._conf) return;
-      const delta = event.delta;
-      if (delta && delta.length > 0) this._onSendDelta(delta);
+    this._docUpdate = (
+      /** @type {Uint8Array} */ update,
+      /** @type {any} */ origin,
+    ) => {
+      if (!this._conf || origin !== this._conf) return;
+      this._onSendUpdate(update);
     };
-    ytext.observe(this._observer);
+    ytext.doc.on("update", this._docUpdate);
     this._view.focus();
   }
 
@@ -351,10 +360,10 @@ export class NofloCodeEditor extends HTMLElement {
 
   /** Unbinds the collaborative binding. */
   teardown() {
-    if (this._ytext && this._observer) {
-      this._ytext.unobserve(this._observer);
+    if (this._ytext?.doc && this._docUpdate) {
+      this._ytext.doc.off("update", this._docUpdate);
     }
-    this._observer = null;
+    this._docUpdate = null;
     if (this._view) {
       this._view.destroy();
     }

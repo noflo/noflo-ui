@@ -9,18 +9,23 @@ import "../../src/elements/noflo-code-editor.js";
 /** A fake CodeMirror surface: enough for the element's binding lifecycle
  * without rendering a real editor (that is browser-verified). */
 function stubSurface() {
-  const origin = Symbol("yCollab-binding");
+  // The real shape: yCollab returns PLUGINS, and the local-edit
+  // transaction origin is the YSyncConfig conf, retrievable from the
+  // view's facet (the bug the stub must not mask again)
+  const conf = Symbol("ySyncConfig");
+  const ySyncFacet = { facet: true };
   return {
-    origin,
-    yCollab: (/** @type {any} */ ytext) => {
-      // The real binding applies local edits with itself as the origin;
-      // the stub records the buffer so tests can transact as the editor
-      ytext.__bindingOrigin = origin;
-      return origin;
-    },
+    conf,
+    yCollab: () => [{ plugin: true }],
     extensions: {
+      ySyncFacet,
       EditorView: class {
-        constructor() {}
+        constructor() {
+          this.state = {
+            facet: (/** @type {any} */ facet) =>
+              facet === ySyncFacet ? conf : null,
+          };
+        }
         focus() {}
         destroy() {}
       },
@@ -46,7 +51,7 @@ describe("code editor element (work document #29)", () => {
       ytext,
       name: "fs/Count",
       language: "javascript",
-      onSendDelta: (/** @type {any[]} */ delta) => relayed.push(delta),
+      onSendUpdate: (/** @type {Uint8Array} */ update) => relayed.push(update),
       yCollab: surface.yCollab,
       extensions: surface.extensions,
     });
@@ -55,27 +60,30 @@ describe("code editor element (work document #29)", () => {
     // A local keystroke: the binding's origin marks the transaction
     doc.transact(() => {
       ytext.insert(4, "b");
-    }, surface.origin);
-    assert.equal(relayed.length, 1, "the local delta was relayed");
-    assert.deepEqual(relayed[0], [{ retain: 4 }, { insert: "b" }]);
+    }, surface.conf);
+    assert.equal(relayed.length, 1, "the local update was relayed");
+    assert.ok(relayed[0] instanceof Uint8Array, "a binary Yjs update");
 
     // A remote edit (echo from the engine, no origin): rendered, not relayed
     ytext.insert(0, "// remote\n");
     assert.equal(relayed.length, 1, "the remote delta was not relayed");
     assert.match(ytext.toString(), /^\/\/ remote/);
 
-    // Deleting a range relays positionally
+    // Deleting a range relays its own binary update
     doc.transact(() => {
       ytext.delete(11, 3);
-    }, surface.origin);
-    assert.deepEqual(relayed[1], [{ retain: 11 }, { delete: 3 }]);
+    }, surface.conf);
+    assert.ok(
+      relayed[1] instanceof Uint8Array,
+      "the delete relayed as an update",
+    );
 
     editor.close();
     assert.equal(editor.hasAttribute("open"), false);
     // After close: no further relays (the observer is detached)
     doc.transact(() => {
       ytext.insert(0, "nope");
-    }, surface.origin);
+    }, surface.conf);
     assert.equal(relayed.length, 2, "the binding unobserved on close");
   });
 
@@ -88,7 +96,7 @@ describe("code editor element (work document #29)", () => {
       ytext: doc.getText("doc"),
       name: "AGENTS",
       language: "markdown",
-      onSendDelta: () => {},
+      onSendUpdate: () => {},
       yCollab: surface.yCollab,
       extensions: surface.extensions,
     });

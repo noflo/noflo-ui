@@ -1777,7 +1777,7 @@ function intentImplementAsGraph(doc, payload) {
  * @returns {EngineResult}
  */
 function intentSetComponentCode(doc, payload) {
-  const { component, code, delta } = payload ?? {};
+  const { component, code, update } = payload ?? {};
   if (typeof component !== "string" || component.length === 0) {
     return { accepted: false, echoes: [] };
   }
@@ -1786,13 +1786,17 @@ function intentSetComponentCode(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   const componentEntry = ensureComponent(doc, component, { name: component });
-  if (delta !== undefined) {
-    // A Y.Text delta (the collaborative editor's keystroke stream):
-    // applied onto the authoritative buffer, merged with concurrent
-    // remote edits at character level by Yjs
-    if (!isValidTextDelta(delta)) return { accepted: false, echoes: [] };
-    if (delta.length === 0) return { accepted: true, echoes: [] };
-    getComponentCode(componentEntry).applyDelta(/** @type {any} */ (delta));
+  if (update !== undefined) {
+    // A binary Yjs update carrying the collaborative editor's local
+    // transaction (work document #29): applied with item structure
+    // intact, so the Glass's mirror and this authoritative buffer share
+    // the same items and the echo is idempotent. A content delta would
+    // re-create the edit with the engine's clientID and diverge from
+    // the mirror — the reason the delta form is gone.
+    if (!(update instanceof Uint8Array) || update.length === 0) {
+      return { accepted: false, echoes: [] };
+    }
+    Y.applyUpdate(doc, update);
     return { accepted: true, echoes: [] };
   }
   if (typeof code !== "string") {
