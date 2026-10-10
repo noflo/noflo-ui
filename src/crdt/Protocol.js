@@ -471,6 +471,23 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "importIdentity" },
 ];
 
+/**
+ * The contract registry's MESH command names: the mesh plane's route
+ * outports mirror these, and the contract tripwire keeps them aligned
+ * (work document #37).
+ */
+export const MESH_COMMANDS = [
+  "configure",
+  "status",
+  "join",
+  "grant",
+  "resolveRequest",
+  "createInvite",
+  "factoryReset",
+  "stop",
+  "importIdentity",
+];
+
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
 
 /**

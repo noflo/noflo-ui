@@ -7,7 +7,7 @@ import {
 } from "../../src/crdt/EngineCore.js";
 import { ECHO_MESSAGES, UI_MESSAGES } from "../../src/crdt/Protocol.js";
 import { createEchoHandlers, echoKey } from "../../src/glass/echo-handlers.js";
-import { MESH_HANDLERS } from "../../src/worker/mesh-commands.js";
+import { createMeshRegistry } from "../../src/graphs/mesh-dispatch.js";
 
 describe("IPC contract registries (work document #37)", () => {
   it("the Glass → Engine registry has no duplicate keys", () => {
@@ -85,10 +85,16 @@ describe("IPC contract registries (work document #37)", () => {
     const registryCommands = UI_MESSAGES.filter(
       (key) => key.type === "MESH",
     ).map((key) => key.command);
+    // The mesh plane's dispatch graph is the router now: the registry's
+    // component names map 1:1 to the commands (mesh/<Command>)
+    const meshComponents = createMeshRegistry().list();
+    const componentCommands = Object.keys(meshComponents)
+      .filter((name) => name.startsWith("mesh/") && name !== "mesh/route")
+      .map((name) => name.slice("mesh/".length));
     assert.deepEqual(
       registryCommands.sort(),
-      Object.keys(MESH_HANDLERS).sort(),
-      "registry MESH commands and the router table must match exactly",
+      componentCommands.sort(),
+      "registry MESH commands and the mesh dispatch components must match exactly",
     );
   });
 

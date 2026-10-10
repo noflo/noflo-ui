@@ -29,12 +29,16 @@ import {
   createEngineRegistry,
   wireEngineContext,
 } from "../graphs/engine-dispatch.js";
+import {
+  createMeshGraph,
+  createMeshRegistry,
+  wireMeshContext,
+} from "../graphs/mesh-dispatch.js";
 import { probeX25519Support } from "../shims/x25519-subtle.js";
 import { parseInviteUri } from "./Bootstrap.js";
 import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
-import { routeMeshCommand } from "./mesh-commands.js";
 import { progress } from "./Progress.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -449,19 +453,34 @@ export async function startEngine(io, options = {}) {
     io.postMessage({ kind: "factory-reset" });
   }
 
+  // The mesh plane's dispatch network (work document #53 extraction 1):
+  // the same structure as the Engine's command dispatch — MESH commands
+  // enter through a gateway socket, the route fans them out to
+  // per-command components, and the components call into the mesh layer
+  // through their injected context
+  const meshContext = {
+    mesh,
+    postMessage: (/** @type {any} */ echo) => io.postMessage(echo),
+    postMeshConfig,
+    joinProject,
+    factoryReset,
+  };
+  const meshGraph = createMeshGraph();
+  const meshNetwork = await createNetwork(meshGraph, {
+    registry: createMeshRegistry(),
+  });
+  wireMeshContext(meshNetwork, meshContext);
+  const meshGateway = meshNetwork.getNode("route");
+  if (!meshGateway?.component) {
+    throw new Error("Mesh dispatch lost its route");
+  }
+  const meshSocket = internalSocket.createSocket();
+  meshGateway.component.inPorts.in.attach(meshSocket);
+
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
     if (message?.type === "MESH") {
-      routeMeshCommand(
-        {
-          mesh,
-          postMessage: (echo) => io.postMessage(echo),
-          postMeshConfig,
-          joinProject,
-          factoryReset,
-        },
-        message,
-      );
+      meshSocket.send(message);
       return;
     }
     if (message?.type === "AWARENESS") {
