@@ -7,3 +7,4 @@ join-flow-worker-test.html
 join-worker-repro.js
 code-editor-test.html
 project/
+utils/bridge-check.mjs
