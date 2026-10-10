@@ -9,3 +9,11 @@ declare module "qrcode" {
   import QRCode from "../vendor/qrcode.js";
   export default QRCode;
 }
+
+interface Window {
+  /** The Glass's debug handle (work document #56): the smoke layer and
+   * flight recorder read the live mirror document through it. */
+  __nofloDebug: {
+    mirrorDoc: unknown;
+  };
+}

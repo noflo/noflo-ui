@@ -174,7 +174,7 @@ export const INTENT_HANDLERS = {
  * @param {import("./Protocol.js").LifecycleSubscribeMessage} message
  * @returns {EngineResult}
  */
-function handleLifecycle(state, message) {
+export function handleLifecycle(state, message) {
   if (message.command !== "subscribe") {
     return { accepted: false, echoes: [] };
   }
@@ -190,7 +190,7 @@ function handleLifecycle(state, message) {
  * @param {import("./Protocol.js").QueryGetSignatureMessage} message
  * @returns {EngineResult}
  */
-function handleQuery(doc, message) {
+export function handleQuery(doc, message) {
   if (message.command !== "getSignature") {
     return { accepted: false, echoes: [] };
   }
@@ -213,7 +213,7 @@ function handleQuery(doc, message) {
  * @param {import("./Protocol.js").UIWorkerMessage} message
  * @returns {EngineResult}
  */
-function handleIntent(doc, message) {
+export function handleIntent(doc, message) {
   const payload = message.payload;
   const handler = INTENT_HANDLERS[message.command];
   if (!handler) {

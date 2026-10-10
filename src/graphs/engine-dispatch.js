@@ -18,8 +18,11 @@
 
 import * as Repeat from "../../vendor/core/Repeat.js";
 import { GraphModel, internalSocket } from "../../vendor/noflo.js";
-import * as ApplyMessage from "../components/engine/ApplyMessage.js";
 import * as Gateway from "../components/engine/Gateway.js";
+import * as Intent from "../components/engine/Intent.js";
+import * as Lifecycle from "../components/engine/Lifecycle.js";
+import * as Query from "../components/engine/Query.js";
+import * as Route from "../components/engine/Route.js";
 import * as Send from "../components/engine/Send.js";
 
 /**
@@ -42,7 +45,10 @@ export function createEngineRegistry() {
   return {
     list: () => ({
       "engine/Gateway": Gateway,
-      "engine/ApplyMessage": ApplyMessage,
+      "engine/Route": Route,
+      "engine/Lifecycle": Lifecycle,
+      "engine/Query": Query,
+      "engine/Intent": Intent,
       "engine/Send": Send,
       "core/Repeat": Repeat,
     }),
@@ -52,24 +58,52 @@ export function createEngineRegistry() {
 /**
  * Builds the dispatcher graph:
  *
- *     Gateway in -> message ApplyMessage -> in Send
+ *     Gateway in -> Route
+ *       Route lifecycle -> Lifecycle message -> Lifecycle echo -> Send in
+ *       Route query    -> Query message    -> Query echo    -> Send in
+ *       Route intent   -> Intent message   -> Intent echo   -> Send in
  *
  * The `invalid` outport of the gateway is left unconnected: malformed
- * messages are logged and dropped.
+ * messages are logged and dropped. The route's awareness path is
+ * accepted-and-dropped (ephemeral: rebroadcast only) and stays
+ * unconnected too.
  *
  * @returns {GraphModel}
  */
 export function createDispatcherGraph() {
   const graph = new GraphModel({ name: "engine-dispatch" });
   graph.addNode({ entity_id: "gateway", component: "engine/Gateway" });
-  graph.addNode({ entity_id: "apply", component: "engine/ApplyMessage" });
+  graph.addNode({ entity_id: "route", component: "engine/Route" });
+  graph.addNode({ entity_id: "lifecycle", component: "engine/Lifecycle" });
+  graph.addNode({ entity_id: "query", component: "engine/Query" });
+  graph.addNode({ entity_id: "intent", component: "engine/Intent" });
   graph.addNode({ entity_id: "send", component: "engine/Send" });
   graph.addEdge({
     from: { node: "gateway", port: "engine" },
-    to: { node: "apply", port: "message" },
+    to: { node: "route", port: "in" },
   });
   graph.addEdge({
-    from: { node: "apply", port: "echo" },
+    from: { node: "route", port: "lifecycle" },
+    to: { node: "lifecycle", port: "message" },
+  });
+  graph.addEdge({
+    from: { node: "route", port: "query" },
+    to: { node: "query", port: "message" },
+  });
+  graph.addEdge({
+    from: { node: "route", port: "intent" },
+    to: { node: "intent", port: "message" },
+  });
+  graph.addEdge({
+    from: { node: "lifecycle", port: "echo" },
+    to: { node: "send", port: "in" },
+  });
+  graph.addEdge({
+    from: { node: "query", port: "echo" },
+    to: { node: "send", port: "in" },
+  });
+  graph.addEdge({
+    from: { node: "intent", port: "echo" },
     to: { node: "send", port: "in" },
   });
   return graph;
@@ -89,8 +123,9 @@ export function createDispatcherGraph() {
  */
 export function wireEngineContext(network, { doc, state, callback }) {
   const wiring = [
-    ["apply", "doc", doc],
-    ["apply", "state", state],
+    ["query", "doc", doc],
+    ["intent", "doc", doc],
+    ["lifecycle", "state", state],
     ["send", "callback", callback],
   ];
   for (const [nodeId, port, value] of wiring) {
