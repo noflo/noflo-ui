@@ -181,10 +181,7 @@ describe("edge splice (work document #5 update #15)", () => {
     const splice = sent[0].payload;
     assert.equal(splice.edgeId, "edge-1");
     assert.equal(splice.componentName, "fresh");
-    assert.deepEqual(
-      { x: splice.x, y: splice.y },
-      { x: 10, y: 20 },
-    );
+    assert.deepEqual({ x: splice.x, y: splice.y }, { x: 10, y: 20 });
     assert.ok(splice.nodeId, "the Glass picks the node id");
     ed.remove();
   });

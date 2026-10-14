@@ -1373,6 +1373,41 @@ export class FlowEditor extends HTMLElement {
         if (this.isDraggingNode) {
           // Stop any in-flight spring so the snap-to-grid below is instant.
           this._endSpring();
+          // Splice-on-drop (work document #5): a single node dropped with
+          // its pointer on an unrelated edge routes that edge through the
+          // node — one intent, one undo step. The mapper checks type
+          // compatibility and falls back to a plain move when the node's
+          // ports do not fit.
+          const draggedList = [...this.draggingNodesInitialPositions.keys()];
+          let spliced = false;
+          if (
+            draggedList.length === 1 &&
+            draggedList[0].tagName === "NOFLO-NODE"
+          ) {
+            const draggedNode = /** @type {any} */ (draggedList[0]);
+            const hit = this.edgeManager?.edgeAtClientPoint({
+              x: e.clientX,
+              y: e.clientY,
+            });
+            if (hit && !this.edgeManager?.edgeTouchesNode(hit, draggedNode)) {
+              const position = this.snapToGrid(
+                draggedNode.position.x,
+                draggedNode.position.y,
+              );
+              emit(this, "node-splice-attempt", {
+                nodeId: this.getNodeName(draggedNode),
+                component: draggedNode.getAttribute("component") ?? "",
+                edgeId: /** @type {EdgeManager} */ (this.edgeManager).getEdgeId(
+                  hit,
+                ),
+                src: this.endpointFromPort(hit.portA),
+                tgt: this.endpointFromPort(hit.portB),
+                x: position.x,
+                y: position.y,
+              });
+              spliced = true;
+            }
+          }
           // Drag ended: mesh peers drop their ghost states immediately
           emit(this, "nodes-drag-end", {
             nodes: [...this.draggingNodesInitialPositions.keys()].map((node) =>
@@ -1411,6 +1446,19 @@ export class FlowEditor extends HTMLElement {
           this.updateEdges();
           // Nodes, IIPs, and exported ports each emit their own move event
           // so the routing is unambiguous (work document #5 follow-up)
+          if (spliced) {
+            // The splice intent carries the move: no move events for the
+            // spliced node (the mapper falls back to a plain move when
+            // the types do not fit)
+            this.isDraggingNode = false;
+            this.draggingNodePointerId = null;
+            this.clickedNode = null;
+            this.selectionChangedOnDown = false;
+            this.draggingStartPointerPos = null;
+            this.draggingNodesInitialPositions.clear();
+            this.isDraggingNodeInCollision = false;
+            return;
+          }
           for (const moved of movedNodes) {
             if (moved.type === "noflo-iip") {
               emit(this, "iip-moved", {

@@ -225,6 +225,50 @@ export class EdgeManager {
    * Stable identifier for an edge, derived from its endpoint graph elements
    * and port metadata.
    * @param {Edge} edge
+  /**
+   * Whether an edge attaches to a node element on either end (work
+   * document #5's splice drag must skip the dragged node's own edges).
+   *
+   * @param {Edge} edge
+   * @param {HTMLElement} nodeEl
+   * @returns {boolean}
+   */
+  edgeTouchesNode(edge, nodeEl) {
+    return (
+      this._hostOf(edge.portA) === nodeEl || this._hostOf(edge.portB) === nodeEl
+    );
+  }
+
+  /**
+   * The edge whose hit path passes through a client point (work document
+   * #5's splice drag): `isPointInStroke` in each path's own user space,
+   * reached through the path's screen CTM — the transform layer's pan/zoom
+   * and the SVG groups' offsets are all inside that matrix, so the caller
+   * needs nothing but the pointer position.
+   *
+   * @param {{ x: number, y: number }} clientPoint
+   * @returns {Edge | undefined}
+   */
+  edgeAtClientPoint(clientPoint) {
+    const point = new DOMPoint(clientPoint.x, clientPoint.y);
+    return this.edges.find((/** @type {Edge} */ edge) => {
+      try {
+        const ctm = edge.hitPath.getScreenCTM();
+        if (!ctm) return false;
+        return edge.hitPath.isPointInStroke(
+          point.matrixTransform(ctm.inverse()),
+        );
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  /**
+   * The edge's deterministic id (work document #43): the canonical edge id
+   * both endpoints' graph-space port identities produce.
+   *
+   * @param {Edge} edge
    * @returns {string}
    */
   getEdgeId(edge) {

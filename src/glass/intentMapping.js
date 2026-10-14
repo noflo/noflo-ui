@@ -646,6 +646,55 @@ export function createIntentMapper({
           });
         }
       });
+      // Splice-on-drop (work document #5): a node dropped onto an edge
+      // routes the edge through it — type-aware. When the node's ports do
+      // not fit the edge's endpoint datatypes, the drop falls back to the
+      // plain move it would have been: no surprise, no half state
+      on(ed, "node-splice-attempt", (e) => {
+        const event = /** @type {CustomEvent} */ (e);
+        const { nodeId, component, edgeId, src, tgt, x, y } = event.detail;
+        const srcType = portDataTypeFor(
+          getLibrary(),
+          src.node,
+          "outports",
+          src.port,
+        );
+        const tgtType = portDataTypeFor(
+          getLibrary(),
+          tgt.node,
+          "inports",
+          tgt.port,
+        );
+        const fits =
+          hasCompatiblePort(
+            /** @type {any} */ (getLibrary()?.getComponent(component))?.inports,
+            srcType,
+          ) &&
+          hasCompatiblePort(
+            /** @type {any} */ (getLibrary()?.getComponent(component))
+              ?.outports,
+            tgtType,
+          );
+        if (!fits) {
+          // The plain move the drag was already going to make
+          sendIntent({
+            type: "INTENT",
+            command: "moveNode",
+            payload: {
+              graphId: graphId(),
+              nodeId,
+              metadata: { x, y },
+            },
+          });
+          return;
+        }
+        sendIntent({
+          type: "INTENT",
+          command: "spliceNode",
+          payload: { graphId: graphId(), edgeId, nodeId, x, y },
+        });
+      });
+
       on(ed, "update-group-attempt", (e) => {
         for (const membership of e.detail.memberships) {
           sendIntent({
