@@ -60,11 +60,6 @@ import "./noflo-minimap.js";
  * }} NoFloRadialMenu
  */
 
-/** The splice preview's hover delay (work document #5): the same cadence
- * as the peer-ghost awareness broadcasts (~250 ms), so a pass-over never
- * triggers the spring — only a settled hover does. */
-const SPLICE_PREVIEW_DELAY_MS = 250;
-
 /**
  * Duration (in ms) of the spring animation used when a dragged node jumps from
  * a blocked (colliding) position to a legal one. Kept short so the jump feels
@@ -699,9 +694,7 @@ export class FlowEditor extends HTMLElement {
       /** @type {((component: string, src: any, tgt: any) => boolean) | null} */ (
         null
       );
-    /** The splice preview's debounce timer and node (work document #5). */
-    this._splicePreviewTimer =
-      /** @type {ReturnType<typeof setTimeout> | null} */ (null);
+    /** The node currently previewing its spliced form (work document #5). */
     this._splicePreviewNode = /** @type {HTMLElement | null} */ (null);
     this.camera = new Camera({
       transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
@@ -1422,6 +1415,7 @@ export class FlowEditor extends HTMLElement {
                 draggedNode.position.y,
               );
               this.edgeManager?.setSpliceCandidate(null);
+              this._clearSplicePreview();
               emit(this, "node-splice-attempt", {
                 nodeId: this.getNodeName(draggedNode),
                 component: draggedNode.getAttribute("component") ?? "",
@@ -1509,6 +1503,7 @@ export class FlowEditor extends HTMLElement {
           this.emitGroupMembershipChanges(movedNodes);
         }
         this.edgeManager?.setSpliceCandidate(null);
+        this._clearSplicePreview();
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
         this.clickedNode = null;
@@ -1648,6 +1643,7 @@ export class FlowEditor extends HTMLElement {
       draggedList[0].tagName !== "NOFLO-NODE" ||
       !this._spliceChecker
     ) {
+      this._clearSplicePreview();
       return;
     }
     const draggedNode = /** @type {any} */ (draggedList[0]);
@@ -1656,6 +1652,7 @@ export class FlowEditor extends HTMLElement {
       y: e.clientY,
     });
     if (!hit || this.edgeManager.edgeTouchesNode(hit, draggedNode)) {
+      this._clearSplicePreview();
       return;
     }
     const fits = this._spliceChecker(
@@ -1663,9 +1660,29 @@ export class FlowEditor extends HTMLElement {
       this.endpointFromPort(hit.portA),
       this.endpointFromPort(hit.portB),
     );
-    if (fits) {
-      this.edgeManager.setSpliceCandidate(hit);
+    if (!fits) {
+      this._clearSplicePreview();
+      return;
     }
+    this.edgeManager.setSpliceCandidate(hit);
+    // The node springs to its non-expanded shape as the edge highlights:
+    // the drop's outcome — where the node sits and what shape it takes —
+    // shows at the same moment, not on a delayed second beat
+    if (
+      draggedNode.hasAttribute("selected") &&
+      !draggedNode.hasAttribute("data-splice-preview")
+    ) {
+      this._splicePreviewNode = draggedNode;
+      draggedNode.setAttribute("data-splice-preview", "");
+    }
+  }
+
+  /**
+   * Ends the splice preview: the node springs back to its own state.
+   */
+  _clearSplicePreview() {
+    this._splicePreviewNode?.removeAttribute("data-splice-preview");
+    this._splicePreviewNode = null;
   }
 
   /**
