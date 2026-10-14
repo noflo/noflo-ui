@@ -321,6 +321,8 @@ export class FlowWorkDocView extends HTMLElement {
         }
         .composer textarea:focus { outline: 1px solid var(--ui-accent, rgb(90, 200, 250)); }
       </style>
+      <dialog>
+      <div class="panel">
       <div class="head">
         <button class="secondary" data-action="back" title="Back">◀</button>
         <input class="title" value="${escapeHtml(doc.title)}" aria-label="Document title">
@@ -338,6 +340,8 @@ export class FlowWorkDocView extends HTMLElement {
         <textarea class="composer-input" placeholder="Post an update… (immutable once posted)"></textarea>
         <button data-action="post">Post update</button>
       </div>
+      </div>
+      </dialog>
     `;
     // The body: read state renders the mirror's text; edit state binds
     // the collaborative editor (the binding targets the .body host)

@@ -525,6 +525,9 @@ function scheduleRender() {
  * means the initial sync has not arrived yet.
  */
 function resolveActiveGraph() {
+  // The document route (work document #9) is not a graph route: the
+  // workdoc view owns it, the graph fallback must not redirect it
+  if (activeGraphId.startsWith("doc/")) return;
   const graphs = mirrorDoc.getMap("graphs");
   if (graphs.size === 0) return;
   if (graphs.has(activeGraphId)) return;
@@ -1425,6 +1428,11 @@ async function init() {
     },
   });
   activeGraphId = router.graphId();
+  // A reload can land on the document route: process it like any route
+  // change (the hashchange event never fires for the initial load)
+  if (activeGraphId.startsWith("doc/")) {
+    openWorkDoc(activeGraphId.slice(4));
+  }
 
   intentMapper = createIntentMapper({
     sendIntent,
