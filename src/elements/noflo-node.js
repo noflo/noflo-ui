@@ -438,6 +438,14 @@ export class FlowNode extends HTMLElement {
           transform: scale(2);
           z-index: 10;
         }
+        /* The splice preview (work document #5): while a dragged node
+           hovers a candidate edge, it springs back to its non-expanded
+           form — showing the shape it would occupy in the splice. A
+           visual-only state: the node stays selected, the drag continues */
+        :host([data-splice-preview]) {
+          transform: scale(1);
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
         /* The expanded state (work document #5 update #16, per the
            original design): the preview is a full circle inside the node
            circle, cut off top and bottom by the icon and component-name

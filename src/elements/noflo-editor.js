@@ -60,6 +60,11 @@ import "./noflo-minimap.js";
  * }} NoFloRadialMenu
  */
 
+/** The splice preview's hover delay (work document #5): the same cadence
+ * as the peer-ghost awareness broadcasts (~250 ms), so a pass-over never
+ * triggers the spring — only a settled hover does. */
+const SPLICE_PREVIEW_DELAY_MS = 250;
+
 /**
  * Duration (in ms) of the spring animation used when a dragged node jumps from
  * a blocked (colliding) position to a legal one. Kept short so the jump feels
@@ -694,6 +699,10 @@ export class FlowEditor extends HTMLElement {
       /** @type {((component: string, src: any, tgt: any) => boolean) | null} */ (
         null
       );
+    /** The splice preview's debounce timer and node (work document #5). */
+    this._splicePreviewTimer =
+      /** @type {ReturnType<typeof setTimeout> | null} */ (null);
+    this._splicePreviewNode = /** @type {HTMLElement | null} */ (null);
     this.camera = new Camera({
       transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
       host: this,
