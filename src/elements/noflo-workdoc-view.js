@@ -383,6 +383,15 @@ export class FlowWorkDocView extends HTMLElement {
     shadow
       .querySelector("[data-action='post']")
       ?.addEventListener("click", post);
+    // A rebuild replaces the dialog element: the top-layer presentation
+    // re-establishes on the fresh one (the edit toggle and the replica
+    // refreshes must never close the panel)
+    const dialog = /** @type {HTMLDialogElement | null} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
+    );
+    if (dialog && !dialog.open && typeof dialog.showModal === "function") {
+      dialog.showModal();
+    }
     composerInput.addEventListener(
       "keydown",
       (/** @type {KeyboardEvent} */ e) => {

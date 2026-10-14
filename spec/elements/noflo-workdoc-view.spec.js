@@ -201,6 +201,24 @@ describe("FlowWorkDocView (work document #9)", () => {
     view.remove();
   });
 
+  it("the edit toggle keeps the dialog open (the top layer re-establishes)", () => {
+    const view = makeView();
+    const { record, content } = makeDoc();
+    view.open({ doc: docState(), ytext: content, cm: stubSurface() });
+    // The dialog API exists in happy-dom? The element falls back to host
+    // visibility when it does not — assert the invariant: after the edit
+    // toggle the panel is still presented
+    const visibleBefore =
+      view.hidden === false || view.shadowRoot.querySelector("dialog")?.open;
+    view.toggleEdit();
+    const visibleAfter =
+      view.hidden === false || view.shadowRoot.querySelector("dialog")?.open;
+    assert.ok(visibleBefore, "open presents the panel");
+    assert.ok(visibleAfter, "the edit toggle never closes it");
+    view.toggleEdit();
+    view.remove();
+  });
+
   it("refresh updates the thread and scope state without touching the editor", () => {
     const view = makeView();
     const { record, content } = makeDoc();

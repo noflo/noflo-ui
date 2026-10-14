@@ -1429,9 +1429,12 @@ async function init() {
   });
   activeGraphId = router.graphId();
   // A reload can land on the document route: process it like any route
-  // change (the hashchange event never fires for the initial load)
+  // change (the hashchange event never fires for the initial load). The
+  // graph underneath normalizes to the root — the document view owns the
+  // route, the editor needs a real graph under the panel
   if (activeGraphId.startsWith("doc/")) {
-    openWorkDoc(activeGraphId.slice(4));
+    activeGraphId = "main";
+    openWorkDoc(router.route().graphId.slice(4));
   }
 
   intentMapper = createIntentMapper({
