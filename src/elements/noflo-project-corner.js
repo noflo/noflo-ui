@@ -147,6 +147,10 @@ export class FlowProjectCorner extends FlowCornerElement {
    * @returns {string}
    */
   expandedHtml() {
+    // The base renders expandedHtml() unconditionally: the guard is the
+    // subclass's job (the sync panel's pattern — the accordion is closed
+    // unless the chip toggled it)
+    if (!this.expanded) return "";
     if (this._docs.length === 0) {
       return `<div class="panel">
         <div class="empty">No work documents yet.</div>

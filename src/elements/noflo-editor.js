@@ -392,7 +392,10 @@ export class FlowEditor extends HTMLElement {
         #minimap {
           position: absolute;
           left: 12px;
-          bottom: 12px;
+          /* Above the Project corner's collapsed strip (work document #9):
+             the corner owns the screen's bottom-left, the minimap docks
+             inside the canvas above it */
+          bottom: 60px;
           width: 160px;
           height: 110px;
           z-index: 5;

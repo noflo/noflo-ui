@@ -53,6 +53,20 @@ describe("FlowProjectCorner (work document #9)", () => {
     el.remove();
   });
 
+  it("the panel stays closed until the chip toggles it", () => {
+    const el = makeCorner();
+    el.setWorkDocs(docs());
+    assert.equal(
+      el.shadowRoot.querySelector(".panel"),
+      null,
+      "no accordion by default",
+    );
+    el.expanded = true;
+    el.render();
+    assert.ok(el.shadowRoot.querySelector(".panel"), "the chip opens it");
+    el.remove();
+  });
+
   it("the chip carries the count, proposed separated", () => {
     const el = makeCorner();
     el.setWorkDocs(docs());
