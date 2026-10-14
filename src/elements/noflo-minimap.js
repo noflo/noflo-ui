@@ -21,6 +21,8 @@ export class FlowMinimap extends HTMLElement {
     this._view = { processes: {}, connections: [] };
     /** @type {any} */
     this._viewport = null;
+    /** @type {any} */
+    this._layout = null;
     /** Whether a pointer drag is navigating. */
     this._navigating = false;
   }
@@ -58,8 +60,46 @@ export class FlowMinimap extends HTMLElement {
     });
   }
 
+  /**
+   * Updates only the viewport rectangle (guidelines §14: granular updates):
+   * the dots and wires are unchanged by camera motion. Falls back to a
+   * full render when the rect appears or disappears.
+   *
+   * @param {{ x: number, y: number, w: number, h: number } | null} viewport
+   */
+  setViewport(viewport) {
+    this._viewport = viewport;
+    const layout = this._layout;
+    if (!layout || layout.scale === 0) return;
+    const svg = /** @type {any} */ (this.shadowRoot)?.querySelector("svg");
+    if (!svg) return;
+    const projected = viewport
+      ? {
+          x: viewport.x * layout.scale + layout.origin.x,
+          y: viewport.y * layout.scale + layout.origin.y,
+          w: viewport.w * layout.scale,
+          h: viewport.h * layout.scale,
+        }
+      : null;
+    const rect = svg.querySelector(".viewport");
+    if (!projected) {
+      rect?.remove();
+      return;
+    }
+    if (!rect) {
+      // The rect appeared: a full render is the honest path
+      this.render();
+      return;
+    }
+    rect.setAttribute("x", projected.x.toFixed(1));
+    rect.setAttribute("y", projected.y.toFixed(1));
+    rect.setAttribute("width", projected.w.toFixed(1));
+    rect.setAttribute("height", projected.h.toFixed(1));
+  }
+
   render() {
     const layout = this.layout();
+    this._layout = layout;
     const dots = layout.nodes
       .map(
         (node) =>

@@ -1,9 +1,11 @@
 import { emit, on } from "../events.js";
 import { Camera } from "../library/Camera.js";
 import { EdgeManager } from "../library/EdgeManager.js";
+import { viewportRectFromCamera } from "../library/minimap.js";
 import { SelectionManager } from "../library/SelectionManager.js";
 import { SpaceManager } from "../library/SpaceManager.js";
 import { FlowHeatmap } from "./noflo-heatmap.js";
+import "./noflo-minimap.js";
 
 /** @typedef {any} FlowExportedPort */
 /**
@@ -383,6 +385,17 @@ export class FlowEditor extends HTMLElement {
         #viewport:active {
           cursor: grabbing;
         }
+        /* The minimap docks bottom-left (work document #5): the occupied
+           corners are the Context chip (top-left) and the sync panel
+           (bottom-right). Panels over canvas, per guidelines §10. */
+        #minimap {
+          position: absolute;
+          left: 12px;
+          bottom: 12px;
+          width: 160px;
+          height: 110px;
+          z-index: 5;
+        }
         #transform-layer {
           position: absolute;
           top: 0;
@@ -607,6 +620,7 @@ export class FlowEditor extends HTMLElement {
       </style>
       <div id="viewport">
         <noflo-selection-pills></noflo-selection-pills>
+        <noflo-minimap id="minimap"></noflo-minimap>
         <div id="transform-layer">
           <noflo-heatmap></noflo-heatmap>
           <svg id="grid-layer">
@@ -665,12 +679,17 @@ export class FlowEditor extends HTMLElement {
       "#peer-layer",
     );
 
+    this._minimapView = null;
     this.camera = new Camera({
       transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
       host: this,
       spaceManager: this.spaceManager,
       getRect: () => this.getBoundingClientRect(),
+      // The minimap's viewport rect tracks every applied transform
+      onChange: () => this._updateMinimapViewport(),
     });
+
+    this.wireMinimap();
 
     // High zoom levels reveal port datatypes (work document #5 update
     // #16): the camera publishes its zoom through the host's --zoom-scale
@@ -1524,6 +1543,57 @@ export class FlowEditor extends HTMLElement {
         }
       }
     });
+  }
+
+  /**
+   * Wires the minimap panel's navigation onto the camera. Called after
+   * every render — the element is recreated with the shadow DOM.
+   */
+  wireMinimap() {
+    const minimap = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#minimap")
+    );
+    if (!minimap) return;
+    minimap.addEventListener("minimap-navigate", (/** @type {any} */ e) => {
+      this.camera?.centerOn(e.detail.x, e.detail.y);
+    });
+    this._updateMinimapViewport();
+  }
+
+  /**
+   * Feeds the minimap a fresh graph view (work document #5): positions
+   * come from the projected view, the viewport from the camera transform.
+   *
+   * @param {any} view The projected graph view (`projectGraph`).
+   */
+  updateMinimap(view) {
+    this._minimapView = view;
+    const minimap = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#minimap")
+    );
+    if (!minimap) return;
+    minimap.update(view, this._minimapViewport());
+  }
+
+  /** @returns {{ x: number, y: number, w: number, h: number } | null} */
+  _minimapViewport() {
+    if (!this.camera) return null;
+    return viewportRectFromCamera(
+      this.spaceManager.offset ?? { x: 0, y: 0 },
+      this.spaceManager.zoom ?? 1,
+      (() => {
+        const rect = this.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      })(),
+    );
+  }
+
+  /** Updates only the viewport rect in place (camera motion). */
+  _updateMinimapViewport() {
+    const minimap = /** @type {any} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("#minimap")
+    );
+    minimap?.setViewport?.(this._minimapViewport());
   }
 
   /**

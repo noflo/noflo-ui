@@ -10,6 +10,8 @@
  * @property {HTMLElement} host Element to publish the `--zoom-scale` CSS var on.
  * @property {SpaceManager} spaceManager Spatial authority, kept in sync for coordinate conversions.
  * @property {() => DOMRect} getRect Editor viewport bounding rect.
+ * @property {() => void} [onChange] Notified on every applied transform —
+ *   the minimap's viewport tracking subscribes here.
  */
 
 import { SpaceManager } from "./SpaceManager.js";
@@ -33,7 +35,7 @@ export class Camera {
   /**
    * @param {CameraDeps} deps
    */
-  constructor({ transformLayer, host, spaceManager, getRect }) {
+  constructor({ transformLayer, host, spaceManager, getRect, onChange }) {
     /** @type {number} */
     this.zoom = 1.0;
     /** @type {Position} */
@@ -46,6 +48,8 @@ export class Camera {
     this.spaceManager = spaceManager;
     /** @type {() => DOMRect} */
     this.getRect = getRect;
+    /** @type {(() => void) | undefined} */
+    this.onChange = onChange;
 
     // pan gesture state
     /** @type {boolean} */
@@ -75,6 +79,21 @@ export class Camera {
       this.host.style.setProperty("--zoom-scale", this.zoom.toString());
     }
     this.spaceManager.updateViewport(this.zoom, this.offset);
+    this.onChange?.();
+  }
+
+  /**
+   * Centers the viewport on a graph point: the minimap navigation and the
+   * other "go to" flows land here.
+   *
+   * @param {number} graphX
+   * @param {number} graphY
+   */
+  centerOn(graphX, graphY) {
+    const rect = this.getRect();
+    this.offset.x = rect.width / 2 - graphX * this.zoom;
+    this.offset.y = rect.height / 2 - graphY * this.zoom;
+    this.apply();
   }
 
   // ---- pan -----------------------------------------------------------

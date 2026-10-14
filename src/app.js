@@ -857,6 +857,8 @@ async function render() {
     return Boolean(ports?.[name]);
   });
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
+  // The minimap tracks the same projection (work document #5)
+  ed.updateMinimap?.(view);
   // Groups render behind the nodes (work document #5 update #16)
   ed.setGroups(view.groups ?? []);
   // Freshly appeared nodes spring in and shimmer (work document #5
