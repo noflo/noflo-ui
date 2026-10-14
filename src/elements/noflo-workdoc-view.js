@@ -78,14 +78,10 @@ export class FlowWorkDocView extends HTMLElement {
     this.render();
   }
 
-  /** Swaps between the read and edit states. */
+  /** Swaps between the read and edit states; render owns the binding. */
   toggleEdit() {
     this._editing = !this._editing;
-    if (this._editing) {
-      this._bindEditor();
-    } else {
-      this._teardownEditor();
-    }
+    if (!this._editing) this._teardownEditor();
     this.render();
   }
 
@@ -94,6 +90,7 @@ export class FlowWorkDocView extends HTMLElement {
    * #29's binding, per the code editor's documented pitfalls).
    */
   _bindEditor() {
+    if (this._view) return;
     if (!this._cm || !this._ytext) return;
     const host = /** @type {any} */ (this.shadowRoot).querySelector(".body");
     if (!host) return;
@@ -133,6 +130,59 @@ export class FlowWorkDocView extends HTMLElement {
     this._conf = null;
   }
 
+  /**
+   * Refreshes the open view's metadata from the replica (work document
+   * #9): the thread, title, scope state, and board number — targeted
+   * updates, never touching the collaborative editor mid-typing.
+   *
+   * @param {{ title?: string, scope?: string, pendingScope?: string, boardId?: number | string | null, updates?: any[] }} next
+   */
+  refresh(next) {
+    if (!this._doc) return;
+    this._doc.title = next?.title ?? this._doc.title;
+    this._doc.scope = next?.scope ?? this._doc.scope;
+    this._doc.pendingScope = next?.pendingScope;
+    this._doc.boardId = next?.boardId ?? null;
+    this._doc.updates = next?.updates ?? this._doc.updates;
+    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    if (!shadow.innerHTML) return;
+    // Targeted: the thread block and the head's badges
+    const thread = /** @type {HTMLElement} */ (shadow.querySelector(".thread"));
+    if (thread) {
+      const updates = this._doc.updates ?? [];
+      const list = updates
+        .map(
+          (/** @type {any} */ update) => `<div class="update">
+              <span class="update-meta">#${update.id} · ${escapeHtml(
+                String(update.author ?? "").slice(0, 8),
+              )} · ${new Date(update.created ?? 0).toLocaleString()}</span>
+              <div class="update-content">${escapeHtml(update.content ?? "")}</div>
+            </div>`,
+        )
+        .join("");
+      thread.innerHTML = `<div class="thread-head">Updates — append-only, materialized as the board's comments</div>${list}`;
+    }
+    const head = /** @type {HTMLElement} */ (shadow.querySelector(".head"));
+    if (head) {
+      const scopeLabel = this._doc.pendingScope
+        ? `${this._doc.scope} → ${this._doc.pendingScope} (requested)`
+        : this._doc.scope;
+      const badge = head.querySelector(".badge");
+      if (badge) {
+        badge.className = `badge ${escapeHtml(this._doc.scope)}`;
+        badge.textContent = scopeLabel;
+      }
+      const board = head.querySelector(".doc-board");
+      if (this._doc.boardId && !board) {
+        const id = head.querySelector(".doc-id");
+        id?.insertAdjacentHTML(
+          "afterend",
+          `<span class="doc-board" title="Materialized on the board">#${escapeHtml(String(this._doc.boardId))}</span>`,
+        );
+      }
+    }
+  }
+
   /** Tears everything down (close). */
   _teardown() {
     this._teardownEditor();
@@ -154,7 +204,7 @@ export class FlowWorkDocView extends HTMLElement {
     const updates = doc.updates ?? [];
     const thread = updates
       .map(
-        (update) => `<div class="update">
+        (/** @type {any} */ update) => `<div class="update">
             <span class="update-meta">#${update.id} · ${escapeHtml(
               String(update.author ?? "").slice(0, 8),
             )} · ${new Date(update.created ?? 0).toLocaleString()}</span>
@@ -275,12 +325,10 @@ export class FlowWorkDocView extends HTMLElement {
     `;
     // The body: read state renders the mirror's text; edit state binds
     // the collaborative editor (the binding targets the .body host)
-    if (this._editing) {
+    if (this._editing && !this._view) {
       this._bindEditor();
-    } else {
-      const body = /** @type {HTMLElement} */ (
-        shadow.querySelector(".body")
-      );
+    } else if (!this._editing) {
+      const body = /** @type {HTMLElement} */ (shadow.querySelector(".body"));
       if (body && this._ytext) body.textContent = this._ytext.toString();
     }
     const titleInput = /** @type {HTMLInputElement} */ (
@@ -315,13 +363,16 @@ export class FlowWorkDocView extends HTMLElement {
     shadow
       .querySelector("[data-action='post']")
       ?.addEventListener("click", post);
-    composerInput.addEventListener("keydown", (/** @type {KeyboardEvent} */ e) => {
-      // Ctrl/Cmd+Enter posts; plain Enter inserts a newline
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        post();
-      }
-    });
+    composerInput.addEventListener(
+      "keydown",
+      (/** @type {KeyboardEvent} */ e) => {
+        // Ctrl/Cmd+Enter posts; plain Enter inserts a newline
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          post();
+        }
+      },
+    );
   }
 }
 

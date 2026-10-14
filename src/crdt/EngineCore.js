@@ -45,7 +45,6 @@ import {
   removeNode,
   removeNodeFromGroups,
   requestWorkDocScope,
-  setWorkDocTitle,
   revokePermission,
   setComponentCode,
   setComponentSignature,
@@ -53,6 +52,7 @@ import {
   setEdgeRoute,
   setNodeComponent,
   setPortRoute,
+  setWorkDocTitle,
   transferNode,
   updateComponentMetadata,
 } from "./ProjectDoc.js";

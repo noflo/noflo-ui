@@ -1701,16 +1701,34 @@ async function init() {
       payload: { title },
     });
   });
-  // The document view's editing rides the intent path: the debounced
-  // flush sends the accumulated content (work document #9)
+  // The document view's flows ride the intent path (work document #9):
+  // body edits relay as binary diffs, the composer posts thread entries,
+  // the title renames
   const workdocView = /** @type {any} */ (
     document.getElementById("workdoc-view")
   );
-  workdocView?.addEventListener("workdoc-save", (/** @type {any} */ e) => {
+  workdocView?.addEventListener(
+    "workdoc-body-update",
+    (/** @type {any} */ e) => {
+      sendIntent({
+        type: "INTENT",
+        command: "setWorkDocBody",
+        payload: { docId: e.detail.docId, update: e.detail.update },
+      });
+    },
+  );
+  workdocView?.addEventListener("workdoc-post", (/** @type {any} */ e) => {
     sendIntent({
       type: "INTENT",
       command: "updateWorkDoc",
       payload: { docId: e.detail.docId, content: e.detail.content },
+    });
+  });
+  workdocView?.addEventListener("workdoc-title", (/** @type {any} */ e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "setWorkDocTitle",
+      payload: { docId: e.detail.docId, title: e.detail.title },
     });
   });
   workdocView?.addEventListener("workdoc-close", () => {
