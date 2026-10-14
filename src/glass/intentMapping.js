@@ -646,6 +646,38 @@ export function createIntentMapper({
           });
         }
       });
+      // The splice-candidate hover needs type knowledge the editor does
+      // not hold: the mapper injects the compatibility check (the same
+      // rule the drop applies — work document #5)
+      ed.setSpliceChecker?.(
+        (
+          /** @type {string} */ component,
+          /** @type {any} */ src,
+          /** @type {any} */ tgt,
+        ) => {
+          const library = getLibrary();
+          const srcType = portDataTypeFor(
+            library,
+            src.node,
+            "outports",
+            src.port,
+          );
+          const tgtType = portDataTypeFor(
+            library,
+            tgt.node,
+            "inports",
+            tgt.port,
+          );
+          const componentEntry = /** @type {any} */ (
+            library?.getComponent(component)
+          );
+          return (
+            hasCompatiblePort(componentEntry?.inports, srcType) &&
+            hasCompatiblePort(componentEntry?.outports, tgtType)
+          );
+        },
+      );
+
       // Splice-on-drop (work document #5): a node dropped onto an edge
       // routes the edge through it — type-aware. When the node's ports do
       // not fit the edge's endpoint datatypes, the drop falls back to the

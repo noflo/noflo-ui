@@ -595,6 +595,15 @@ export class FlowEditor extends HTMLElement {
           stroke-width: calc(var(--edge-width, 4px) + 2px);
           stroke-dasharray: none;
         }
+        /* The splice candidate (work document #5): the edge a dragged node
+           would splice into highlights while the types fit — a lighter
+           accent than selection, so the two states read apart */
+        .edge-flow.splice-candidate {
+          stroke: var(--ui-accent);
+          stroke-width: calc(var(--edge-width, 4px) + 1px);
+          stroke-dasharray: none;
+          opacity: 0.85;
+        }
         /* Route highlighting (work document #35): selecting an edge on a
            route lights the whole line */
         .edge-flow.route-highlight {
@@ -680,6 +689,11 @@ export class FlowEditor extends HTMLElement {
     );
 
     this._minimapView = null;
+    /** The mapper-injected splice compatibility checker (work document #5). */
+    this._spliceChecker =
+      /** @type {((component: string, src: any, tgt: any) => boolean) | null} */ (
+        null
+      );
     this.camera = new Camera({
       transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
       host: this,
@@ -1231,6 +1245,10 @@ export class FlowEditor extends HTMLElement {
           }
 
           if (this.isDraggingNode) {
+            // The splice-candidate hover (work document #5): the edge
+            // under a single-node drag highlights while the types fit —
+            // the drop's outcome is visible before it happens
+            this._updateSpliceCandidate(e);
             /** @type {Array<{node: GraphEntity, x: number, y: number}>} */
             const idealMoves = [];
             this.draggingNodesInitialPositions.forEach((initialPos, node) => {
@@ -1394,6 +1412,7 @@ export class FlowEditor extends HTMLElement {
                 draggedNode.position.x,
                 draggedNode.position.y,
               );
+              this.edgeManager?.setSpliceCandidate(null);
               emit(this, "node-splice-attempt", {
                 nodeId: this.getNodeName(draggedNode),
                 component: draggedNode.getAttribute("component") ?? "",
@@ -1480,6 +1499,7 @@ export class FlowEditor extends HTMLElement {
           });
           this.emitGroupMembershipChanges(movedNodes);
         }
+        this.edgeManager?.setSpliceCandidate(null);
         this.isDraggingNode = false;
         this.draggingNodePointerId = null;
         this.clickedNode = null;
@@ -1591,6 +1611,52 @@ export class FlowEditor extends HTMLElement {
         }
       }
     });
+  }
+
+  /**
+   * Installs the splice compatibility checker (work document #5): the
+   * mapper owns the library, so type knowledge is injected at wiring time.
+   *
+   * @param {(component: string, src: any, tgt: any) => boolean} checker
+   */
+  setSpliceChecker(checker) {
+    this._spliceChecker = checker;
+  }
+
+  /**
+   * The splice-candidate hover: hit-test the edge under the pointer and
+   * mark it when the drop would splice — single-node drags only, and the
+   * dragged node's own edges never qualify.
+   *
+   * @param {PointerEvent} e
+   */
+  _updateSpliceCandidate(e) {
+    if (!this.edgeManager) return;
+    this.edgeManager.setSpliceCandidate(null);
+    const draggedList = [...this.draggingNodesInitialPositions.keys()];
+    if (
+      draggedList.length !== 1 ||
+      draggedList[0].tagName !== "NOFLO-NODE" ||
+      !this._spliceChecker
+    ) {
+      return;
+    }
+    const draggedNode = /** @type {any} */ (draggedList[0]);
+    const hit = this.edgeManager.edgeAtClientPoint({
+      x: e.clientX,
+      y: e.clientY,
+    });
+    if (!hit || this.edgeManager.edgeTouchesNode(hit, draggedNode)) {
+      return;
+    }
+    const fits = this._spliceChecker(
+      draggedNode.getAttribute("component") ?? "",
+      this.endpointFromPort(hit.portA),
+      this.endpointFromPort(hit.portB),
+    );
+    if (fits) {
+      this.edgeManager.setSpliceCandidate(hit);
+    }
   }
 
   /**

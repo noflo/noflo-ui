@@ -51,6 +51,35 @@ describe("EdgeManager", () => {
     assert.ok(edge.hitPath.classList.contains("edge-hit-area"));
   });
 
+  it("marks and clears the splice candidate (work document #5)", () => {
+    const { em } = makeManager();
+    const portA = makePort({ direction: "out", name: "out" });
+    const portB = makePort({ direction: "in", name: "in" });
+    const edge = /** @type {any} */ (em.addEdge(portA, portB));
+
+    em.setSpliceCandidate(edge);
+    assert.ok(
+      edge.visualPath.classList.contains("splice-candidate"),
+      "the candidate edge highlights",
+    );
+
+    const other = makePort({ direction: "out", name: "out2" });
+    const otherPort = makePort({ direction: "in", name: "in2" });
+    const edge2 = /** @type {any} */ (em.addEdge(other, otherPort));
+    em.setSpliceCandidate(edge2);
+    assert.ok(
+      !edge.visualPath.classList.contains("splice-candidate"),
+      "the previous candidate clears",
+    );
+    assert.ok(edge2.visualPath.classList.contains("splice-candidate"));
+
+    em.setSpliceCandidate(null);
+    assert.ok(
+      !edge2.visualPath.classList.contains("splice-candidate"),
+      "a null candidate clears",
+    );
+  });
+
   it("rejects same-direction ports", () => {
     const { em, edgesGroup } = makeManager();
     const a = makePort({ direction: "in", name: "in" });

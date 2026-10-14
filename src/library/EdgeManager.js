@@ -49,6 +49,8 @@ export class EdgeManager {
   constructor({ edgesGroup, iipWiresGroup, getPortPosition }) {
     /** @type {Edge[]} */
     this.edges = [];
+    /** The edge currently marked as the splice candidate (work document #5). */
+    this._spliceCandidate = /** @type {Edge | null} */ (null);
     /** @type {IIPWire[]} */
     this.iipWires = [];
     /** @type {SVGElement} */
@@ -222,9 +224,19 @@ export class EdgeManager {
   }
 
   /**
-   * Stable identifier for an edge, derived from its endpoint graph elements
-   * and port metadata.
-   * @param {Edge} edge
+   * Marks the splice candidate: the edge the dragged node would splice
+   * into highlights while the drag hovers it (work document #5), and a
+   * null candidate clears the previous marking.
+   *
+   * @param {Edge | null} edge
+   */
+  setSpliceCandidate(edge) {
+    if (this._spliceCandidate === edge) return;
+    this._spliceCandidate?.visualPath.classList.remove("splice-candidate");
+    this._spliceCandidate = edge;
+    edge?.visualPath.classList.add("splice-candidate");
+  }
+
   /**
    * Whether an edge attaches to a node element on either end (work
    * document #5's splice drag must skip the dragged node's own edges).
@@ -265,9 +277,8 @@ export class EdgeManager {
   }
 
   /**
-   * The edge's deterministic id (work document #43): the canonical edge id
-   * both endpoints' graph-space port identities produce.
-   *
+   * Stable identifier for an edge, derived from its endpoint graph elements
+   * and port metadata.
    * @param {Edge} edge
    * @returns {string}
    */
