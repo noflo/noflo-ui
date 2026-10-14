@@ -593,7 +593,7 @@ export function createIntentMapper({
         });
       });
       on(ed, "splice-node-attempt", async (e) => {
-        const { src, tgt, x, y } = e.detail;
+        const { edgeId, src, tgt, x, y } = e.detail;
         // The edge's datatypes drive the guiding and the wiring
         const srcType = portDataTypeFor(
           getLibrary(),
@@ -619,60 +619,27 @@ export function createIntentMapper({
         const pickedName = typeof picked === "string" ? picked : picked.name;
         const name = pickedName.trim() || "New Node";
         const nodeId = `node_${Date.now()}`;
+        // The splice is ONE intent (work document #5, #39): the engine
+        // removes the edge, creates the node, and rewires through the
+        // most compatible ports in a single transaction — undo is one
+        // action, and an incompatible component refuses the whole splice
         sendIntent({
           type: "INTENT",
-          command: "addNode",
+          command: "spliceNode",
           payload: {
             graphId: graphId(),
+            edgeId,
             nodeId,
             componentName: name,
-            metadata: { x, y },
+            x,
+            y,
           },
-        });
-        // The splice rewires the edge through the new node, on the most
-        // compatible ports (work document #5 update #15)
-        const inPort = compatiblePortFor(
-          getLibrary(),
-          name,
-          "inports",
-          srcType,
-        );
-        const outPort = compatiblePortFor(
-          getLibrary(),
-          name,
-          "outports",
-          tgtType,
-        );
-        afterNode(nodeId, {
-          type: "INTENT",
-          command: "addEdge",
-          payload: {
-            graphId: graphId(),
-            src,
-            tgt: { node: nodeId, port: inPort },
-          },
-        });
-        afterNode(nodeId, {
-          type: "INTENT",
-          command: "addEdge",
-          payload: {
-            graphId: graphId(),
-            src: { node: nodeId, port: outPort },
-            tgt,
-          },
-        });
-        // The original edge goes away with the same flushed batch: the
-        // splice replaces the direct connection (work document #5 update
-        // #15)
-        afterNode(nodeId, {
-          type: "INTENT",
-          command: "removeEdge",
-          payload: { graphId: graphId(), id: e.detail.edgeId },
         });
         // A prefilled signature rides the pick: the new component's ports
-        // match the spliced edge's datatypes
+        // match the spliced edge's datatypes (the engine's default
+        // in/out signature is already registered by the splice)
         if (typeof picked !== "string" && picked.signature) {
-          afterNode(nodeId, {
+          sendIntent({
             type: "INTENT",
             command: "setSignature",
             payload: { component: name, signature: picked.signature },

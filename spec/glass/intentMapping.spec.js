@@ -172,34 +172,20 @@ describe("edge splice (work document #5 update #15)", () => {
       }),
     );
     await new Promise((resolve) => setTimeout(resolve, 10));
+    // The splice is ONE intent (work document #5, #39): the engine owns
+    // the rewiring, the port choice, and the single undo step
     assert.deepEqual(
       sent.map((message) => message.command),
-      ["addNode"],
+      ["spliceNode"],
     );
-    const nodeId = sent[0].payload.nodeId;
-    mapper.flushPending(() => true);
-
-    const addEdges = sent
-      .filter((message) => message.command === "addEdge")
-      .map((message) => message.payload);
-    assert.equal(addEdges.length, 2, "the edge rewires through the node");
-    const removal = sent.find((message) => message.command === "removeEdge");
-    assert.ok(removal, "the original edge is removed");
-    assert.equal(removal.payload.id, "edge-1");
+    const splice = sent[0].payload;
+    assert.equal(splice.edgeId, "edge-1");
+    assert.equal(splice.componentName, "fresh");
     assert.deepEqual(
-      addEdges[0].src,
-      { node: "src", port: "out" },
-      "the source stays",
+      { x: splice.x, y: splice.y },
+      { x: 10, y: 20 },
     );
-    assert.equal(addEdges[0].tgt.node, nodeId);
-    assert.equal(
-      addEdges[0].tgt.port,
-      "in",
-      "the preferred in port wins over data",
-    );
-    assert.equal(addEdges[1].src.node, nodeId);
-    assert.equal(addEdges[1].src.port, "out", "the preferred out port");
-    assert.deepEqual(addEdges[1].tgt, { node: "tgt", port: "in" });
+    assert.ok(splice.nodeId, "the Glass picks the node id");
     ed.remove();
   });
 

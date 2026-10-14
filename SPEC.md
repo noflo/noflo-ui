@@ -294,6 +294,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setPortRoute'; payload: { graphId: string; name: string; direction: 'inports' | 'outports'; route: number | null } }
   | { type: 'INTENT'; command: 'moveIIP'; payload: { graphId: string; id: string; x: number; y: number } }
   | { type: 'INTENT'; command: 'moveExport'; payload: { graphId: string; name: string; direction: 'in' | 'out'; x: number; y: number } }
+  | { type: 'INTENT'; command: 'spliceNode'; payload: IntentSpliceNode }
   | { type: 'INTENT'; command: 'undo'; payload: Record<string, never> }
   | { type: 'INTENT'; command: 'redo'; payload: Record<string, never> }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
@@ -323,6 +324,11 @@ interface AwarenessDragging { peerId: string; graphId: string; nodeId: string; x
 
 // Intents: Requests to mutate the CRDT
 interface IntentAddNode { graphId: string; nodeId: string; componentName: string; metadata: { x: number; y: number } }
+// `componentName` present: the menu path creates the node; absent: the drag
+// path moves an existing node into the splice. The engine picks the most
+// compatible ports unless both are pinned; a node without ports compatible
+// with the edge's endpoint datatypes is refused whole
+interface IntentSpliceNode { graphId: string; edgeId: string; nodeId: string; x: number; y: number; componentName?: string; inPort?: string; outPort?: string }
 interface IntentRemoveNode { graphId: string; nodeId: string; }
 interface IntentMoveNode { graphId: string; nodeId: string; x: number; y: number; }
 interface IntentAddEdge {
