@@ -32,6 +32,7 @@ import {
   CREATE_NEW_COMPONENT,
   FlowComponentPicker,
 } from "./elements/noflo-component-picker.js";
+import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
@@ -165,6 +166,8 @@ function narrateWorkerError(error) {
 let peerReachability = {};
 /** The Engine's undo-journal availability report (work document #39). */
 let undoState = /** @type {any} */ (null);
+/** The project's work documents (work document #9), newest edit first. */
+let workDocs = /** @type {any[]} */ ([]);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -324,6 +327,7 @@ const echoHandlers = createEchoHandlers({
   applyMirrorUpdate: (update) => {
     Y.applyUpdate(mirrorDoc, update);
     updateContextChip();
+    refreshProjectCorner();
   },
   showPeerGhosts: (states) => {
     // Remote peer drag ghosts; only the graph being rendered matters
@@ -756,6 +760,45 @@ async function openCodeEditor(componentName, language) {
     yCollab: codeMirrorSurface.yCollab,
     extensions: codeMirrorSurface,
   });
+}
+
+/**
+ * Projects the mirror's work documents for the Project corner (work
+ * document #9): the rows the corner renders, newest edit first.
+ */
+function refreshProjectCorner() {
+  const projectCorner = /** @type {any} */ (
+    document.getElementById("project-corner")
+  );
+  if (!projectCorner) return;
+  const workdocs = mirrorDoc?.getMap("workdocs");
+  if (!workdocs) {
+    projectCorner.setWorkDocs([]);
+    return;
+  }
+  workDocs = [...workdocs.values()].map((/** @type {any} */ record) => {
+    const plain = record.toJSON();
+    return {
+      id: plain.id,
+      title: plain.title,
+      scope: plain.scope,
+      pendingScope: plain.pendingScope,
+      boardId: plain.boardId ?? null,
+      edited: plain.edited ?? 0,
+    };
+  });
+  projectCorner.setWorkDocs(workDocs);
+}
+
+/**
+ * Opens a work document's view (work document #9): the document screen
+ * rides the app's routing; until that lands, the corner logs the intent
+ * and the flow is visible in the console timeline.
+ *
+ * @param {string} docId
+ */
+function openWorkDoc(docId) {
+  console.info(`[workdoc] open ${docId}`);
 }
 
 /**
@@ -1584,6 +1627,14 @@ async function init() {
   });
   on(syncPanel, "sync-join", (e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
+  });
+  // The Project corner (work document #9): the work-document read client.
+  // Opening a document is the document view's route (step B of the plan)
+  const projectCorner = /** @type {any} */ (
+    document.getElementById("project-corner")
+  );
+  projectCorner?.addEventListener("workdoc-open", (/** @type {any} */ e) => {
+    openWorkDoc(e.detail.docId);
   });
   // Undo/redo (work document #39): the Engine owns the journal; the Glass
   // only requests

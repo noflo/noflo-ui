@@ -121,6 +121,7 @@
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate
+ * @property {CustomEvent<{ docId: string }>} workdoc-open
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
