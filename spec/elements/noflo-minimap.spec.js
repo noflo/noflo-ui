@@ -71,6 +71,55 @@ describe("FlowMinimap (work document #5)", () => {
     el.remove();
   });
 
+  it("grabbing the viewport rect drags relatively, not by teleport", () => {
+    const el = makeElement();
+    // A small viewport leaves outside room to tap-jump
+    el.update(view(), { x: -40, y: -40, w: 120, h: 80 });
+    const shadow = el.shadowRoot;
+    const layout = el.layout();
+    const vp = layout.viewport;
+    // Pointerdown INSIDE the rect: no navigation yet (a grab, not a jump)
+    const grabPoint = {
+      x: vp.x + vp.w * 0.25,
+      y: vp.y + vp.h * 0.5,
+    };
+    const svg = shadow.querySelector("svg");
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointerdown", {
+        clientX: grabPoint.x,
+        clientY: grabPoint.y,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    /** @type {any[]} */
+    const navigations = [];
+    el.addEventListener("minimap-navigate", (/** @type {any} */ e) =>
+      navigations.push(e.detail),
+    );
+    assert.equal(navigations.length, 0, "grabbing does not jump");
+    // Dragging right by 20 minimap pixels shifts the requested center by
+    // the same graph-space delta
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointermove", {
+        clientX: grabPoint.x + 20,
+        clientY: grabPoint.y,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    assert.equal(navigations.length, 1);
+    const expected = 20 / layout.scale;
+    // The center is in graph space: the raw viewport's center (the layout's
+    // viewport is the projected pixel rect, a different basis)
+    const before = { x: -40 + 120 / 2, y: -40 + 80 / 2 };
+    assert.ok(
+      Math.abs(navigations[0].x - (before.x + expected)) < 0.01,
+      `center shifted by the drag delta: ${JSON.stringify(navigations[0])}`,
+    );
+    el.remove();
+  });
+
   it("tapping emits minimap-navigate with graph coordinates", () => {
     const el = makeElement();
     el.update(view(), null);

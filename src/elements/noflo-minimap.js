@@ -25,6 +25,11 @@ export class FlowMinimap extends HTMLElement {
     this._layout = null;
     /** Whether a pointer drag is navigating. */
     this._navigating = false;
+    /** The active viewport-grab: the grab point and the viewport center. */
+    this._grab =
+      /** @type {{ pointer: { x: number, y: number }, center: { x: number, y: number } } | null} */ (
+        null
+      );
   }
 
   connectedCallback() {
@@ -164,17 +169,59 @@ export class FlowMinimap extends HTMLElement {
     svg.addEventListener("pointerdown", (/** @type {PointerEvent} */ e) => {
       this._navigating = true;
       svg.setPointerCapture(e.pointerId);
-      this._navigate(e);
+      const graph = this._graphAtPointer(e);
+      // Grabbing the viewport indicator drags it relatively: the camera
+      // follows the pointer delta instead of jumping to the pointer —
+      // the standard minimap grab (work document #5)
+      const vp = this._viewport;
+      const grabbed =
+        vp !== null &&
+        graph.x >= vp.x &&
+        graph.x <= vp.x + vp.w &&
+        graph.y >= vp.y &&
+        graph.y <= vp.y + vp.h;
+      this._grab = grabbed
+        ? {
+            pointer: graph,
+            center: { x: vp.x + vp.w / 2, y: vp.y + vp.h / 2 },
+          }
+        : null;
+      if (!grabbed) this._navigate(e);
     });
     svg.addEventListener("pointermove", (/** @type {PointerEvent} */ e) => {
-      if (this._navigating) this._navigate(e);
+      if (!this._navigating) return;
+      if (this._grab) {
+        const graph = this._graphAtPointer(e);
+        emit(this, "minimap-navigate", {
+          x: this._grab.center.x + (graph.x - this._grab.pointer.x),
+          y: this._grab.center.y + (graph.y - this._grab.pointer.y),
+        });
+        return;
+      }
+      this._navigate(e);
     });
     svg.addEventListener("pointerup", () => {
       this._navigating = false;
+      this._grab = null;
     });
     svg.addEventListener("pointerleave", () => {
-      this._navigating = false;
+      if (!this._grab) this._navigating = false;
     });
+  }
+
+  /**
+   * The graph coordinates under a pointer event, via the current layout.
+   *
+   * @param {PointerEvent} e
+   * @returns {{ x: number, y: number }}
+   */
+  _graphAtPointer(e) {
+    const rect = this.getBoundingClientRect();
+    const layout = this.layout();
+    return minimapPointToGraph(
+      { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      layout,
+    );
   }
 
   /**
