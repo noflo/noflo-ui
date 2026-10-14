@@ -1,5 +1,5 @@
 // node_modules/@noflo/assembly/src/index.js
-import { Component as NoFloComponent } from "../noflo.js";
+import { Component as NoFloComponent } from "./noflo.js";
 var validators = {
   def: (val) => val !== void 0,
   set: (val) => val !== void 0 && val !== null,

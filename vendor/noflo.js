@@ -1188,7 +1188,7 @@ function requireGroupNodes(nodes) {
   return nodes.map((id) => requireString(id, "group.nodes[]"));
 }
 
-// node_modules/@noflo/noflo/src/lib/LegacyEvents.js
+// node_modules/@noflo/noflo/src/lib/EventBase.js
 var makeDetailEvent = typeof globalThis.CustomEvent === "function" ? (type, detail) => new globalThis.CustomEvent(type, {
   detail,
   bubbles: false,
@@ -1207,8 +1207,8 @@ function registryFor(instance) {
   }
   return registry;
 }
-function LegacyEventMixin(Base) {
-  return class LegacyEventBase extends Base {
+function EventTargetMixin(Base) {
+  return class EventBase extends Base {
     /**
      * Track listener registrations, so `listeners()` can answer the
      * "is anyone listening" question EventTarget can't, and so
@@ -1307,7 +1307,7 @@ function LegacyEventMixin(Base) {
     }
   };
 }
-var LegacyEventBase = LegacyEventMixin(EventTarget);
+var EventBase = EventTargetMixin(EventTarget);
 
 // node_modules/@noflo/noflo/src/lib/BasePort.js
 var validTypes = [
@@ -1326,10 +1326,7 @@ var validTypes = [
   "stream"
 ];
 function handleOptions(options) {
-  let datatype = options.datatype || "all";
-  if (datatype === "integer") {
-    datatype = "int";
-  }
+  const datatype = options.datatype || "all";
   const required = options.required || false;
   if (validTypes.indexOf(datatype) === -1) {
     throw new Error(
@@ -1352,7 +1349,7 @@ function handleOptions(options) {
     scoped
   });
 }
-var BasePort = class extends LegacyEventBase {
+var BasePort = class extends EventBase {
   /**
    * @param {BaseOptions} options
    */
@@ -1506,6 +1503,10 @@ var BasePort = class extends LegacyEventBase {
 // node_modules/@noflo/noflo/src/lib/InPort.js
 var InPort = class extends BasePort {
   /**
+   * Create an input port. Control, scoping, and triggering behavior default
+   * to non-control, scoped, and triggering respectively; the buffer
+   * structures are prepared for regular and addressable use.
+   *
    * @param {PortOptions} [options]
    */
   constructor(options = {}) {
@@ -1527,7 +1528,9 @@ var InPort = class extends BasePort {
     this.prepareBuffer();
   }
   /**
-   * Assign a delegate for retrieving data should this inPort
+   * Subscribe the port to a socket and forward its events into the port's
+   * buffers and lifecycle events. Installs the default-value data delegate
+   * when the port has one.
    *
    * @param {import("./InternalSocket.js").InternalSocket} socket
    * @param {number|null} [localId]
@@ -1536,32 +1539,38 @@ var InPort = class extends BasePort {
     if (this.hasDefault()) {
       socket.setDataDelegate(() => this.options.default);
     }
-    const forward = (type, detail) => this.handleSocketEvent(type, detail, localId);
-    socket.addEventListener("connect", () => forward("connect", socket));
-    socket.addEventListener(
-      "begingroup",
-      (event) => forward("begingroup", event.detail)
-    );
-    socket.addEventListener("data", (event) => {
-      this.validateData(event.detail);
-      return forward("data", event.detail);
+    socket.addEventListener("connect", () => {
+      if (this.isAddressable()) {
+        this.dispatchLifecycleEvent("connect", [socket, localId]);
+        return;
+      }
+      this.dispatchLifecycleEvent("connect", socket);
     });
-    socket.addEventListener(
-      "endgroup",
-      (event) => forward("endgroup", event.detail)
-    );
-    socket.addEventListener("disconnect", () => forward("disconnect", socket));
+    socket.addEventListener("disconnect", () => {
+      if (this.isAddressable()) {
+        this.dispatchLifecycleEvent("disconnect", [socket, localId]);
+        return;
+      }
+      this.dispatchLifecycleEvent("disconnect", socket);
+    });
     socket.addEventListener(
       "ip",
       (event) => this.handleIP(event.detail, localId)
     );
   }
   /**
+   * Receive an Information Packet from a socket: validate it against the
+   * port's `values` list, stamp it with ownership, index, and port
+   * datatype/schema, buffer it, and emit the `ip` event.
+   *
    * @param {import("./IP.js").default} packet
    * @param {number|null} [index]
    */
   handleIP(packet, index = null) {
     const ip = packet;
+    if (ip.type === "data") {
+      this.validateData(ip.data);
+    }
     ip.owner = this.nodeInstance;
     if (this.isAddressable()) {
       ip.index = index;
@@ -1585,18 +1594,20 @@ var InPort = class extends BasePort {
     this.dispatchLifecycleEvent("ip", ip);
   }
   /**
-   * @param {string} event
-   * @param {any} payload
+   * Check whether the port has a default value to send when no packet
+   * arrives.
+   *
+   * @returns {boolean}
    */
-  handleSocketEvent(event, payload, id) {
-    if (this.isAddressable()) {
-      return this.dispatchLifecycleEvent(event, [payload, id]);
-    }
-    return this.dispatchLifecycleEvent(event, payload);
-  }
   hasDefault() {
     return this.options.default !== void 0;
   }
+  /**
+   * Initialize the port's packet buffers: per-scope and per-index structures
+   * for scoped and/or addressable ports, plus the separate IIP buffer.
+   *
+   * @returns {void}
+   */
   prepareBuffer() {
     if (this.isAddressable()) {
       if (this.options.scoped) {
@@ -1613,6 +1624,10 @@ var InPort = class extends BasePort {
     this.buffer = [];
   }
   /**
+   * Pick the buffer an incoming IP belongs to, creating missing scope or
+   * index entries as needed: the scoped buffer for scoped IPs, the IIP
+   * buffer for initial packets, and the regular buffer otherwise.
+   *
    * @param {import("./IP.js").default} ip
    * @returns {Array<import("./IP.js").default>}
    */
@@ -1650,7 +1665,11 @@ var InPort = class extends BasePort {
     return this.buffer;
   }
   /**
+   * Validate incoming data against the port's `values` list, when one is
+   * configured. Throws on values outside the list.
+   *
    * @param {any} data
+   * @returns {void}
    */
   validateData(data) {
     if (!this.options.values) {
@@ -1663,6 +1682,9 @@ var InPort = class extends BasePort {
     }
   }
   /**
+   * Get the packet buffer for a given scope and addressable-port index.
+   * Returns `undefined` when the scope or index has no buffer yet.
+   *
    * @param {string|null} scope
    * @param {number|null} index
    * @param {boolean} [initial]
@@ -1702,6 +1724,10 @@ var InPort = class extends BasePort {
     return this.buffer;
   }
   /**
+   * Fetch the next packet from the buffer for a given scope and index.
+   * Control ports read non-consumingly, returning the latest data IP of the
+   * buffered stream instead of shifting it.
+   *
    * @param {string|null} scope
    * @param {number|null} index
    * @param {boolean} [initial]
@@ -1754,6 +1780,9 @@ var InPort = class extends BasePort {
     return false;
   }
   /**
+   * Check whether the port holds an initial information packet for the given
+   * addressable-port index, optionally validated.
+   *
    * @param {number|null} index
    * @param {HasValidationCallback} validate
    */
@@ -1808,7 +1837,11 @@ var InPort = class extends BasePort {
   ready(scope) {
     return this.length(scope) > 0;
   }
-  // Clears inport buffers
+  /**
+   * Clear all inport buffers, resetting the port to an empty state.
+   *
+   * @returns {void}
+   */
   clear() {
     return this.prepareBuffer();
   }
@@ -1816,17 +1849,19 @@ var InPort = class extends BasePort {
 
 // node_modules/@noflo/noflo/src/lib/IP.js
 var IP = class _IP {
-  // Detects if an arbitrary value is an IP
   /**
+   * Detect whether an arbitrary value is an IP object.
+   *
    * @param {any} obj
    * @returns {boolean}
    */
   static isIP(obj) {
     return obj && typeof obj === "object" && obj.isIP === true;
   }
-  // Creates as new IP object
-  // Valid types: 'data', 'openBracket', 'closeBracket'
   /**
+   * Create a new IP object. Valid types are `data`, `openBracket`, and
+   * `closeBracket`; options are applied onto the instance as properties.
+   *
    * @param {string} type
    * @param {any} data
    * @param {IPOptions} [options]
@@ -1848,8 +1883,10 @@ var IP = class _IP {
       });
     }
   }
-  // Creates a new IP copying its contents by value not reference
   /**
+   * Create a new IP copying its contents by value, not reference. The owner
+   * is not copied.
+   *
    * @returns {IP}
    */
   clone() {
@@ -1870,15 +1907,20 @@ var IP = class _IP {
     });
     return ip;
   }
-  // Moves an IP to a different owner
   /**
+   * Move the IP to a different owning component.
+   *
    * @param {import("./Component.js").Component|null} owner
    */
   move(owner) {
     this.owner = owner;
     return this;
   }
-  // Frees IP contents
+  /**
+   * Free the IP contents. The packet object becomes empty and unusable.
+   *
+   * @returns {void}
+   */
   drop() {
     Object.keys(this).forEach((key) => {
       delete this[key];
@@ -1886,41 +1928,10 @@ var IP = class _IP {
   }
 };
 
-// node_modules/@noflo/noflo/src/lib/Platform.js
-function isBrowser() {
-  if (typeof process !== "undefined" && process.versions && (process.versions.node || process.versions.deno || process.versions.bun)) {
-    return false;
-  }
-  return true;
-}
-function deprecated(message) {
-  if (isBrowser()) {
-    console.warn(message);
-    return;
-  }
-  if (process.env.NOFLO_FATAL_DEPRECATED) {
-    throw new Error(message);
-  }
-  console.warn(message);
-}
-function makeAsync(func, sameLoop = false) {
-  if (isBrowser()) {
-    setTimeout(func, 0);
-    return;
-  }
-  if (sameLoop) {
-    setImmediate(() => {
-      func();
-    });
-    return;
-  }
-  process.nextTick(func);
-}
-
 // node_modules/@noflo/noflo/src/lib/logger.js
 function getPattern() {
-  if (!isBrowser()) {
-    if (typeof process === "undefined" || !process.env) return null;
+  if (typeof process !== "undefined" && process.versions) {
+    if (!process.env) return null;
     return process.env.DEBUG || null;
   }
   const stored = globalThis.localStorage?.getItem("debug");
@@ -1991,6 +2002,9 @@ function createDebug(namespace) {
 // node_modules/@noflo/noflo/src/lib/OutPort.js
 var OutPort = class extends BasePort {
   /**
+   * Create an output port. Ports are scoped by default; caching (resending
+   * the latest data to newly attached sockets) is off unless requested.
+   *
    * @param {PortOptions} options - Options for the outport
    */
   constructor(options = {}) {
@@ -2009,6 +2023,9 @@ var OutPort = class extends BasePort {
     this.lastWrite = Promise.resolve();
   }
   /**
+   * Attach a socket to the port. With caching enabled, the cached value for
+   * the slot is sent to the new socket immediately.
+   *
    * @param {import("./InternalSocket.js").InternalSocket} socket
    * @param {number|null} [index]
    */
@@ -2019,6 +2036,10 @@ var OutPort = class extends BasePort {
     }
   }
   /**
+   * Connect the port's socket(s), checking required ports first. On
+   * addressable ports only the given slot is affected; on regular ports all
+   * attached sockets are.
+   *
    * @param {number|null} [index]
    */
   connect(index = null) {
@@ -2032,20 +2053,9 @@ var OutPort = class extends BasePort {
     });
   }
   /**
-   * @param {string} group
-   * @param {number|null} [index]
-   */
-  beginGroup(group, index = null) {
-    const sockets = this.getSockets(index);
-    this.checkRequired(sockets);
-    sockets.forEach((socket) => {
-      if (!socket) {
-        return;
-      }
-      socket.beginGroup(group);
-    });
-  }
-  /**
+   * Send a data packet to the port's socket(s). With caching enabled the
+   * value is kept for resend on new connections.
+   *
    * @param {any} data
    * @param {number|null} [index]
    */
@@ -2063,19 +2073,8 @@ var OutPort = class extends BasePort {
     });
   }
   /**
-   * @param {number|null} [index]
-   */
-  endGroup(index = null) {
-    const sockets = this.getSockets(index);
-    this.checkRequired(sockets);
-    sockets.forEach((socket) => {
-      if (!socket) {
-        return;
-      }
-      socket.endGroup();
-    });
-  }
-  /**
+   * Disconnect the port's socket(s).
+   *
    * @param {number|null} [index]
    */
   disconnect(index = null) {
@@ -2089,6 +2088,12 @@ var OutPort = class extends BasePort {
     });
   }
   /**
+   * Send an Information Packet to the port's socket(s), stamping it with the
+   * port's datatype and schema, updating the cache, and returning `this`.
+   * The admission Promise for the send is available on
+   * {@link OutPort#lastWrite}; it resolves once every receiving edge has
+   * admitted the packet per its high-water mark.
+   *
    * @param {string|IP} type
    * @param {any} [data]
    * @param {import("./IP.js").IPOptions} [options]
@@ -2142,6 +2147,8 @@ var OutPort = class extends BasePort {
     return this;
   }
   /**
+   * Send an open-bracket IP to the port.
+   *
    * @param {string|null} data
    * @param {import("./IP.js").IPOptions} options
    * @param {number|null} [index]
@@ -2150,6 +2157,8 @@ var OutPort = class extends BasePort {
     return this.sendIP("openBracket", data, options, index);
   }
   /**
+   * Send a data IP to the port.
+   *
    * @param {any} data
    * @param {import("./IP.js").IPOptions} options
    * @param {number|null} [index]
@@ -2158,6 +2167,8 @@ var OutPort = class extends BasePort {
     return this.sendIP("data", data, options, index);
   }
   /**
+   * Send a close-bracket IP to the port.
+   *
    * @param {string|null} data
    * @param {import("./IP.js").IPOptions} options
    * @param {number|null} [index]
@@ -2166,7 +2177,10 @@ var OutPort = class extends BasePort {
     return this.sendIP("closeBracket", data, options, index);
   }
   /**
+   * Throw when the port is required but none of its sockets are connected.
+   *
    * @param {Array<import("./InternalSocket.js").InternalSocket|void>} sockets
+   * @returns {void}
    */
   checkRequired(sockets) {
     if (sockets.length === 0 && this.isRequired()) {
@@ -2174,6 +2188,9 @@ var OutPort = class extends BasePort {
     }
   }
   /**
+   * Get the socket(s) a send should target: the single slot for addressable
+   * ports (index required), or all attached sockets for regular ports.
+   *
    * @param {number|null} index
    * @returns {Array<import("./InternalSocket.js").InternalSocket|void>}
    */
@@ -2198,6 +2215,12 @@ var OutPort = class extends BasePort {
     }
     return this.sockets;
   }
+  /**
+   * Check whether the port resends its latest value to newly attached
+   * sockets.
+   *
+   * @returns {boolean}
+   */
   isCaching() {
     if (this.options.caching) {
       return true;
@@ -2207,8 +2230,11 @@ var OutPort = class extends BasePort {
 };
 
 // node_modules/@noflo/noflo/src/lib/Ports.js
-var Ports = class extends LegacyEventBase {
+var Ports = class extends EventBase {
   /**
+   * Create a ports collection. Port definitions are given as a map of port
+   * name to port instance or port options; entries are added in order.
+   *
    * @param {Object<string, import("./BasePort.js").default|PortOptions>} ports
    * @param {typeof import("./BasePort.js").default} model
    */
@@ -2225,6 +2251,11 @@ var Ports = class extends LegacyEventBase {
     });
   }
   /**
+   * Add a port to the collection, replacing any previous port with the same
+   * name. The port is also exposed as a property of the collection under its
+   * name. Port names must be lowercase alphanumeric characters, underscores,
+   * dots, or slashes; `add` and `remove` are reserved.
+   *
    * @param {string} name
    * @param {Object|import("./BasePort.js").default|PortOptions} [options]
    */
@@ -2255,6 +2286,8 @@ var Ports = class extends LegacyEventBase {
     return this;
   }
   /**
+   * Remove a port from the collection.
+   *
    * @param {string} name
    */
   remove(name) {
@@ -2269,6 +2302,8 @@ var Ports = class extends LegacyEventBase {
 };
 var InPorts = class extends Ports {
   /**
+   * Create an input-ports collection holding {@link InPort} instances.
+   *
    * @param {InPortsOptions} [ports]
    */
   constructor(ports = {}) {
@@ -2280,6 +2315,8 @@ var InPorts = class extends Ports {
 };
 var OutPorts = class extends Ports {
   /**
+   * Create an output-ports collection holding {@link OutPort} instances.
+   *
    * @param {OutPortsOptions} [ports]
    */
   constructor(ports = {}) {
@@ -2288,6 +2325,13 @@ var OutPorts = class extends Ports {
     this.ports = /** @type {Object<string, OutPort>} */
     basePorts;
   }
+  /**
+   * Connect an output port, either to a specific attached socket or to all
+   * of them. See {@link OutPort#connect}.
+   *
+   * @param {string} name
+   * @param {number|null} [socketId]
+   */
   connect(name, socketId) {
     const port = (
       /** @type {OutPort} */
@@ -2298,16 +2342,13 @@ var OutPorts = class extends Ports {
     }
     port.connect(socketId);
   }
-  beginGroup(name, group, socketId) {
-    const port = (
-      /** @type {OutPort} */
-      this.ports[name]
-    );
-    if (!port) {
-      throw new Error(`Port ${name} not available`);
-    }
-    port.beginGroup(group, socketId);
-  }
+  /**
+   * Send a data packet to an output port. See {@link OutPort#send}.
+   *
+   * @param {string} name
+   * @param {any} data
+   * @param {number|null} [socketId]
+   */
   send(name, data, socketId) {
     const port = (
       /** @type {OutPort} */
@@ -2318,16 +2359,12 @@ var OutPorts = class extends Ports {
     }
     port.send(data, socketId);
   }
-  endGroup(name, socketId) {
-    const port = (
-      /** @type {OutPort} */
-      this.ports[name]
-    );
-    if (!port) {
-      throw new Error(`Port ${name} not available`);
-    }
-    port.endGroup(socketId);
-  }
+  /**
+   * Disconnect an output port. See {@link OutPort#disconnect}.
+   *
+   * @param {string} name
+   * @param {number|null} [socketId]
+   */
   disconnect(name, socketId) {
     const port = (
       /** @type {OutPort} */
@@ -2983,7 +3020,7 @@ var ProcessOutput = class {
     const componentPorts = [];
     let mapIsInPorts = false;
     Object.keys(this.ports.ports).forEach((port) => {
-      if (port !== "error" && port !== "ports" && port !== "_callbacks") {
+      if (port !== "error" && port !== "ports") {
         componentPorts.push(port);
       }
       if (!mapIsInPorts && outputMap != null && typeof outputMap === "object" && Object.keys(outputMap).indexOf(port) !== -1) {
@@ -3115,8 +3152,13 @@ var ProcessOutput = class {
 var debugComponent3 = createDebug("noflo:component");
 var debugBrackets = createDebug("noflo:component:brackets");
 var debugSend = createDebug("noflo:component:send");
-var Component = class extends LegacyEventBase {
+var Component = class extends EventBase {
   /**
+   * Create a component. Ports, icon, description, ordering behavior, and the
+   * process function can all be provided via options, or set up imperatively
+   * afterwards (ports via `component.inPorts.add`, the process function via
+   * {@link Component#process}).
+   *
    * @param {ComponentOptions} [options]
    */
   constructor(options = {}) {
@@ -3125,19 +3167,11 @@ var Component = class extends LegacyEventBase {
     if (!opts.inPorts) {
       opts.inPorts = {};
     }
-    if (opts.inPorts instanceof InPorts) {
-      this.inPorts = opts.inPorts;
-    } else {
-      this.inPorts = new InPorts(opts.inPorts);
-    }
+    this.inPorts = opts.inPorts instanceof InPorts ? opts.inPorts : new InPorts(opts.inPorts);
     if (!opts.outPorts) {
       opts.outPorts = {};
     }
-    if (opts.outPorts instanceof OutPorts) {
-      this.outPorts = opts.outPorts;
-    } else {
-      this.outPorts = new OutPorts(opts.outPorts);
-    }
+    this.outPorts = opts.outPorts instanceof OutPorts ? opts.outPorts : new OutPorts(opts.outPorts);
     this.icon = opts.icon ? opts.icon : "";
     this.description = opts.description ? opts.description : "";
     this.componentName = null;
@@ -3156,37 +3190,61 @@ var Component = class extends LegacyEventBase {
       opts.forwardBrackets = { in: ["out", "error"] };
     }
     this.forwardBrackets = opts.forwardBrackets;
+    this.handle = typeof opts.process === "function" ? opts.process : null;
     if (typeof opts.process === "function") {
       this.process(opts.process);
     }
     this.nodeId = null;
-    this.__openConnections = 0;
   }
+  /**
+   * Get the component description.
+   *
+   * @returns {string}
+   */
   getDescription() {
     return this.description;
   }
+  /**
+   * Check whether the component is ready to be started. Always true for
+   * elementary components; subclasses may override with actual readiness
+   * checks.
+   *
+   * @returns {boolean}
+   */
   isReady() {
     return true;
   }
+  /**
+   * Check whether the component is a subgraph. Always false for elementary
+   * components; the subgraph component class overrides this.
+   *
+   * @returns {boolean}
+   */
   isSubgraph() {
     return false;
   }
   /**
+   * Set the component icon and inform the network about the change.
+   *
    * @param {string} icon - Updated icon for the component
    */
   setIcon(icon) {
     this.icon = icon;
     this.dispatchLifecycleEvent("icon", this.icon);
   }
+  /**
+   * Get the component icon name.
+   *
+   * @returns {string}
+   */
   getIcon() {
     return this.icon;
   }
-  // ### Error emitting helper
-  //
-  // If component has an `error` outport that is connected, errors
-  // are sent as IP objects there. If the port is not connected,
-  // errors are thrown.
   /**
+   * Report an error from the component. If the component has an `error`
+   * outport that is connected, errors are sent as IP objects there. If the
+   * port is not connected and not optional, errors are thrown.
+   *
    * @param {Error} e
    * @param {Array<string>} [groups]
    * @param {string} [errorPort]
@@ -3210,40 +3268,30 @@ var Component = class extends LegacyEventBase {
     throw e;
   }
   /**
-   * @callback ErrorableCallback
-   * @param {Error | null} error
-   */
-  // ### Setup
-  //
-  // The setUp method is for component-specific initialization.
-  // Called at network start-up.
-  //
-  // Override in component implementation to do component-specific
-  // setup work.
-  /**
+   * Component-specific initialization, called at network start-up. Override
+   * in a component implementation to do component-specific setup work.
+   * Return a Promise to delay start-up until it resolves; throw to fail the
+   * network start.
+   *
    * @returns {Promise<void>}
    */
   setUp() {
     return Promise.resolve();
   }
-  // ### Teardown
-  //
-  // The tearDown method is for component-specific cleanup. Called
-  // at network shutdown
-  //
-  // Override in component implementation to do component-specific
-  // cleanup work, like clearing any accumulated state.
   /**
+   * Component-specific cleanup, called at network shutdown. Override in a
+   * component implementation to do component-specific cleanup work, like
+   * clearing any accumulated state.
+   *
    * @returns {Promise<void>}
    */
   tearDown() {
     return Promise.resolve();
   }
-  // ### Start
-  //
-  // Called when network starts. This sets calls the setUp
-  // method and sets the component to a started state.
   /**
+   * Start the component: calls {@link Component#setUp} and marks the
+   * component started. Called by the network on start-up.
+   *
    * @returns {Promise<void>}
    */
   start() {
@@ -3255,15 +3303,12 @@ var Component = class extends LegacyEventBase {
       this.dispatchLifecycleEvent("start");
     });
   }
-  // ### Shutdown
-  //
-  // Called when network is shut down. This sets calls the
-  // tearDown method and sets the component back to a
-  // non-started state.
-  //
-  // The returned Promise settles when tearDown finishes and
-  // all active processing contexts have ended.
   /**
+   * Shut the component down: calls {@link Component#tearDown}, waits for all
+   * active processing contexts to finish, clears the inport buffers and
+   * bracket contexts, and marks the component stopped. Called by the network
+   * on shutdown.
+   *
    * @returns {Promise<void>}
    */
   shutdown() {
@@ -3306,10 +3351,20 @@ var Component = class extends LegacyEventBase {
       return Promise.resolve();
     });
   }
+  /**
+   * Check whether the component is currently started.
+   *
+   * @returns {boolean}
+   */
   isStarted() {
     return this.started;
   }
-  // Ensures bracket forwarding map is correct for the existing ports
+  /**
+   * Ensure the bracket forwarding map only references ports that actually
+   * exist on the component.
+   *
+   * @returns {void}
+   */
   prepareForwarding() {
     Object.keys(this.forwardBrackets).forEach((inPort) => {
       const outPorts = this.forwardBrackets[inPort];
@@ -3330,16 +3385,9 @@ var Component = class extends LegacyEventBase {
       }
     });
   }
-  // Method for determining if a component is using the modern
-  // NoFlo Process API
-  isLegacy() {
-    if (this.handle) {
-      return false;
-    }
-    return true;
-  }
-  // Sets process handler function
   /**
+   * Set the Process API handler function for the component.
+   *
    * @param {ProcessingFunction} handle - Processing function
    * @returns {this}
    */
@@ -3366,9 +3414,9 @@ var Component = class extends LegacyEventBase {
     });
     return this;
   }
-  // Method for checking if a given inport is set up for
-  // automatic bracket forwarding
   /**
+   * Check whether a given inport is set up for automatic bracket forwarding.
+   *
    * @param {InPort|string} port
    * @returns {boolean}
    */
@@ -3384,9 +3432,10 @@ var Component = class extends LegacyEventBase {
     }
     return false;
   }
-  // Method for checking if a given outport is set up for
-  // automatic bracket forwarding
   /**
+   * Check whether a given inport/outport pair is set up for automatic
+   * bracket forwarding.
+   *
    * @param {InPort|string} inport
    * @param {OutPort|string} outport
    * @returns {boolean}
@@ -3415,8 +3464,12 @@ var Component = class extends LegacyEventBase {
     }
     return false;
   }
-  // Method for checking whether the component sends packets
-  // in the same order they were received.
+  /**
+   * Check whether the component sends packets in the same order they were
+   * received.
+   *
+   * @returns {boolean}
+   */
   isOrdered() {
     if (this.ordered) {
       return true;
@@ -3426,12 +3479,10 @@ var Component = class extends LegacyEventBase {
     }
     return false;
   }
-  // ### Handling IP objects
-  //
-  // The component has received an Information Packet. Call the
-  // processing function so that firing pattern preconditions can
-  // be checked and component can do processing as needed.
   /**
+   * Handle an Information Packet that arrived on an inport: check the firing
+   * pattern preconditions and invoke the process function as needed.
+   *
    * @param {IP} ip
    * @param {InPort} port
    * @returns {void}
@@ -3567,6 +3618,9 @@ var Component = class extends LegacyEventBase {
   }
   // Get the current bracket forwarding context for an IP object
   /**
+   * Get (or initialize) the bracket forwarding contexts for a port in a
+   * given direction and scope.
+   *
    * @param {string} type
    * @param {string} port
    * @param {string|null} scope
@@ -3591,9 +3645,9 @@ var Component = class extends LegacyEventBase {
     }
     return this.bracketContext[type][name][scope];
   }
-  // Add an IP object to the list of results to be sent in
-  // order
   /**
+   * Add an IP object to the list of results to be sent in order.
+   *
    * @param {ProcessResult} result
    * @param {Object} port
    * @param {IP} packet
@@ -3624,9 +3678,15 @@ var Component = class extends LegacyEventBase {
     }
     res[name][method](ip);
   }
-  // Get contexts that can be forwarded with this in/outport
-  // pair.
-  /** @private */
+  /**
+   * Get bracket contexts that can be forwarded with this inport/outport
+   * pair.
+   *
+   * @private
+   * @param inport
+   * @param outport
+   * @param contexts
+   */
   getForwardableContexts(inport, outport, contexts) {
     const { name, index } = normalizePortName(outport);
     const forwardable = [];
@@ -3652,8 +3712,12 @@ var Component = class extends LegacyEventBase {
     });
     return forwardable;
   }
-  // Add any bracket forwards needed to the result queue
-  /** @private */
+  /**
+   * Add any bracket forwards needed to the result queue.
+   *
+   * @private
+   * @param result
+   */
   addBracketForwards(result) {
     const res = result;
     if (res.__bracketClosingBefore != null ? res.__bracketClosingBefore.length : void 0) {
@@ -3767,9 +3831,13 @@ var Component = class extends LegacyEventBase {
     delete res.__bracketContext;
     delete res.__bracketClosingAfter;
   }
-  // Whenever an execution context finishes, send all resolved
-  // output from the queue in the order it is in.
-  /** @private */
+  /**
+   * Send all resolved output from the output queue in order. Called whenever
+   * an execution context finishes.
+   *
+   * @private
+   * @returns {void}
+   */
   processOutputQueue() {
     while (this.outputQ.length > 0) {
       if (!this.outputQ[0].__resolved) {
@@ -3840,6 +3908,9 @@ var Component = class extends LegacyEventBase {
   // Signal that component has activated. There may be multiple
   // activated contexts at the same time
   /**
+   * Signal that a processing context has activated. There may be multiple
+   * activated contexts at the same time.
+   *
    * @param {Object} context
    * @param {boolean} context.activated
    * @param {boolean} context.deactivated
@@ -3857,9 +3928,10 @@ var Component = class extends LegacyEventBase {
       this.outputQ.push(context.result);
     }
   }
-  // Signal that component has deactivated. There may be multiple
-  // activated contexts at the same time
   /**
+   * Signal that a processing context has deactivated. There may be multiple
+   * activated contexts at the same time.
+   *
    * @param {Object} context
    * @param {boolean} context.activated
    * @param {boolean} context.deactivated
@@ -3880,56 +3952,63 @@ var Component = class extends LegacyEventBase {
 Component.description = "";
 Component.icon = null;
 
+// node_modules/@noflo/noflo/src/lib/Platform.js
+function makeAsync(func, sameLoop = false) {
+  if (typeof process !== "undefined" && typeof process.nextTick === "function") {
+    if (sameLoop && typeof setImmediate === "function") {
+      setImmediate(() => {
+        func();
+      });
+      return;
+    }
+    process.nextTick(func);
+    return;
+  }
+  setTimeout(func, 0);
+}
+
 // node_modules/@noflo/noflo/src/components/Subgraph.js
 var Subgraph = class extends Component {
   /**
-   * @param {Object<string, any>} [metadata]
+   * Create a subgraph component for the given graph definition, taking the
+   * same options a `Network` takes.
+   *
+   * @param {import("@noflo/graph").GraphModel|Object<string, any>} graph
+   *   A live graph model or an FBP JSON definition
+   * @param {SubgraphOptions} [options]
    */
-  constructor(metadata) {
+  constructor(graph, options = {}) {
     super();
-    this.metadata = metadata;
+    if (graph === void 0 || graph === null) {
+      throw new Error(
+        "Subgraph requires a graph definition: pass a GraphModel or FBP JSON document"
+      );
+    }
+    this.metadata = options.metadata;
     this.network = null;
     this.ready = true;
     this.started = false;
     this.starting = false;
-    this.loader = null;
     this.load = 0;
-    this.inPorts = new InPorts({
-      graph: {
-        datatype: "all",
-        description: "NoFlo graph definition to be used with the subgraph component",
-        required: true
-      }
-    });
-    this.outPorts = new OutPorts();
-    this.inPorts.ports.graph.addEventListener("ip", (event) => {
-      const packet = event.detail;
-      if (packet.type !== "data") {
-        return;
-      }
-      deprecated(
-        "Sending graph packets into a subgraph at runtime is deprecated; register pre-parsed graph models with the component loader or construct networks directly"
-      );
-      this.setGraph(packet.data).catch(this.error);
-    });
-  }
-  /**
-   * @param {import("@noflo/graph").GraphModel|Object<string, any>} graph
-   *   A live graph model or an FBP JSON definition
-   * @returns {Promise<void>}
-   */
-  setGraph(graph) {
+    this.startingPromise = null;
+    this.inPorts = new InPorts({});
+    this.outPorts = new OutPorts({});
     this.ready = false;
-    if (graph instanceof GraphModel) {
-      return this.createNetwork(graph);
-    }
-    return this.createNetwork(importFbpJson(graph));
+    this.prepared = this.createNetwork(
+      graph instanceof GraphModel ? graph : importFbpJson(graph),
+      options
+    );
   }
   /**
+   * Build the internal network for the graph, wiring it up and mapping the
+   * exported ports onto this component.
+   *
+   * @protected
    * @param {import("@noflo/graph").GraphModel} graph
+   * @param {SubgraphOptions} [options]
    * @returns {Promise<void>}
    */
-  createNetwork(graph) {
+  createNetwork(graph, options = {}) {
     const graphMetadata = graph.graphMetadata();
     this.description = graphMetadata.description || "";
     this.icon = graphMetadata.icon || this.icon;
@@ -3937,10 +4016,8 @@ var Subgraph = class extends Component {
     if (!graphObj.name && this.nodeId) {
       graphObj.name = this.nodeId;
     }
-    const network = new Network(graphObj, {
-      componentLoader: this.loader || void 0
-    });
-    return network.loader.listComponents().then(() => {
+    const network = new Network(graphObj, options);
+    return Promise.resolve().then(() => {
       this.network = network;
       this.dispatchLifecycleEvent("network", network);
       this.subscribeNetwork(network);
@@ -4017,21 +4094,14 @@ var Subgraph = class extends Component {
     return false;
   }
   setToReady() {
-    if (!isBrowser()) {
-      process.nextTick(() => {
-        this.ready = true;
-        return this.dispatchLifecycleEvent("ready");
-      });
-    } else {
-      setTimeout(() => {
-        this.ready = true;
-        return this.dispatchLifecycleEvent("ready");
-      }, 0);
-    }
+    makeAsync(() => {
+      this.ready = true;
+      this.dispatchLifecycleEvent("ready");
+    });
   }
   /**
    * @param {string} name
-   * @param {import("../lib/BaseNetwork.js").NetworkProcess} process
+   * @param {import("../lib/Network.js").NetworkProcess} process
    * @returns {boolean}
    */
   findEdgePorts(name, process2) {
@@ -4077,26 +4147,33 @@ var Subgraph = class extends Component {
   isSubgraph() {
     return true;
   }
-  isLegacy() {
-    return false;
-  }
   setUp() {
-    this.starting = true;
     if (!this.isReady()) {
-      return new Promise((resolve, reject) => {
+      this.startingPromise = new Promise((resolve, reject) => {
         const onReady = (_event) => {
           this.removeEventListener("ready", onReady);
           this.setUp().then(resolve, reject);
         };
         this.addEventListener("ready", onReady);
       });
+      return this.startingPromise;
     }
+    if (this.starting) {
+      return this.startingPromise;
+    }
+    this.starting = true;
     if (!this.network) {
+      this.starting = false;
       return Promise.resolve();
     }
-    return this.network.start().then(() => {
+    if (this.network.isStarted()) {
+      this.starting = false;
+      return Promise.resolve();
+    }
+    this.startingPromise = this.network.start().then(() => {
       this.starting = false;
     });
+    return this.startingPromise;
   }
   tearDown() {
     this.starting = false;
@@ -4111,6 +4188,11 @@ var Subgraph = class extends Component {
 // node_modules/@noflo/noflo/src/lib/ComponentLoader.js
 var ComponentLoader = class {
   /**
+   * Create a component loader. When an application registry is supplied, its
+   * catalog is read synchronously at construction and the loader subscribes
+   * to its `change` and `invalidate` events (if any) to keep the cache in
+   * sync.
+   *
    * @param {ComponentLoaderOptions} [options]
    */
   constructor(options = {}) {
@@ -4160,17 +4242,18 @@ var ComponentLoader = class {
       });
     }
   }
-  // Get the library prefix for a given module name. This
-  // is mostly used for generating valid names for namespaced
-  // NPM modules, as well as for convenience renaming all
-  // `noflo-` prefixed modules with just their base name.
-  //
-  // Examples:
-  //
-  // * `my-project` becomes `my-project`
-  // * `@foo/my-project` becomes `my-project`
-  // * `noflo-core` becomes `core`
   /**
+   * Get the library prefix for a given module name. This is mostly used for
+   * generating valid names for namespaced NPM modules, as well as for
+   * convenience renaming all `noflo-` prefixed modules with just their base
+   * name.
+   *
+   * Examples:
+   *
+   * - `my-project` becomes `my-project`
+   * - `@foo/my-project` becomes `my-project`
+   * - `noflo-core` becomes `core`
+   *
    * @param {string} name
    * @returns {string}
    */
@@ -4187,20 +4270,21 @@ var ComponentLoader = class {
     }
     return res.replace(/^noflo-/, "");
   }
-  // Get the list of all available components. Promise-returning
-  // accessor per work document #8; the catalog is already populated
-  // at construction.
   /**
+   * Get the list of all available components. The catalog is already
+   * populated at construction, so the returned Promise resolves
+   * immediately.
+   *
    * @returns {Promise<ComponentList>} Promise resolving to list of loaded components
    */
   listComponents() {
     return Promise.resolve(this.components);
   }
-  // Load an instance of a specific component. If the
-  // registered component is a graph model or FBP JSON definition,
-  // it will be loaded as an instance of the NoFlo subgraph
-  // component.
   /**
+   * Load an instance of a specific component. If the registered component is
+   * a graph model or FBP JSON definition, it will be loaded as an instance of
+   * the NoFlo subgraph component.
+   *
    * @param {string} name - Component name
    * @param {Object<string, any>} [meta] - Node metadata
    * @returns {Promise<import("./Component.js").Component>}
@@ -4260,11 +4344,6 @@ var ComponentLoader = class {
           if (typeof name === "string") {
             inst.componentName = name;
           }
-          if (inst.isLegacy()) {
-            deprecated(
-              `Component ${name} uses legacy NoFlo APIs. Please port to Process API`
-            );
-          }
           this.setIcon(name, inst);
           return inst;
         }
@@ -4310,9 +4389,11 @@ var ComponentLoader = class {
     }
     return Promise.resolve(instance);
   }
-  // Check if a given value is a graph definition
   /**
-   * @param {import("@noflo/graph").GraphModel|object} cPath
+   * Check whether a given value is a graph definition: a live graph model,
+   * an FBP JSON object with a `nodes` array, or a `.json`/`.fbp` file path.
+   *
+   * @param {import("@noflo/graph").GraphModel|object|string} cPath
    * @returns {boolean}
    */
   isGraph(cPath) {
@@ -4332,6 +4413,8 @@ var ComponentLoader = class {
   }
   // Load a graph as a NoFlo subgraph component instance
   /**
+   * Load a graph definition as an instance of the subgraph component.
+   *
    * @protected
    * @param {string} name
    * @param {import("@noflo/graph").GraphModel} component
@@ -4339,19 +4422,28 @@ var ComponentLoader = class {
    * @returns {Promise<Subgraph>}
    */
   loadGraph(name, component, metadata) {
-    const subgraph = new Subgraph(metadata);
-    subgraph.loader = this;
-    subgraph.inPorts.remove("graph");
+    const subgraph = new Subgraph(component, {
+      // Cast bridges the source-inferred and declaration-emitted identities
+      // of ComponentLoader (the protected loadGraph member makes them
+      // nominal)
+      componentLoader: (
+        /** @type {import("./ComponentLoader.js").ComponentLoader} */
+        /** @type {unknown} */
+        this
+      ),
+      metadata
+    });
     this.setIcon(name, subgraph);
-    return subgraph.setGraph(component).then(() => subgraph);
+    return subgraph.prepared.then(() => subgraph);
   }
   // Set icon for the component instance. If the instance
   // has an icon set, then this is a no-op. Otherwise we
-  // determine an icon based on the module it is coming
-  // from, or use a fallback icon separately for subgraphs
-  // and elementary components.
   /**
-   * @param {string} name - Icon to set
+   * Determine an icon for a loaded component based on the module it comes
+   * from, or use a fallback icon separately for subgraphs and elementary
+   * components. Does nothing when the component already carries an icon.
+   *
+   * @param {string} name - Component name to derive the library icon from
    * @param {import("./Component.js").Component} instance
    */
   setIcon(name, instance) {
@@ -4370,6 +4462,8 @@ var ComponentLoader = class {
     instance.setIcon("gear");
   }
   /**
+   * Get the icon name registered for a library prefix, if any.
+   *
    * @param {string} prefix
    * @returns {string|null}
    */
@@ -4380,6 +4474,9 @@ var ComponentLoader = class {
     return null;
   }
   /**
+   * Register an icon name for a library prefix, used when instantiating
+   * components from that library.
+   *
    * @param {string} prefix
    * @param {string} icon
    */
@@ -4387,6 +4484,10 @@ var ComponentLoader = class {
     this.libraryIcons[prefix] = icon;
   }
   /**
+   * Build the full component name for a component inside a library,
+   * normalizing the library prefix via the module prefix rules. A component
+   * registered without a package id keeps its bare name.
+   *
    * @param {string} packageId
    * @param {string} name
    * @returns {string}
@@ -4400,19 +4501,10 @@ var ComponentLoader = class {
     return fullName;
   }
   /**
-   * @callback ErrorableCallback
-   * @param {Error|null} error
-   * @returns {void}
-   */
-  // ### Registering components at runtime
-  //
-  // In addition to components provided by the registry,
-  // it is possible to register components at runtime.
-  //
-  // With the `registerComponent` method you can register
-  // a NoFlo Component constructor or factory method
-  // as a component available for loading.
-  /**
+   * Register a NoFlo Component constructor or factory method as a component
+   * available for loading, in addition to the components provided by the
+   * registry.
+   *
    * @param {string} packageId
    * @param {string} name
    * @param {ComponentDefinition} cPath
@@ -4423,9 +4515,9 @@ var ComponentLoader = class {
     this.components[fullName] = cPath;
     return Promise.resolve();
   }
-  // With the `registerGraph` method you can register new
-  // graphs as loadable components.
   /**
+   * Register a graph model as a loadable component.
+   *
    * @param {string} packageId
    * @param {string} name
    * @param {import("@noflo/graph").GraphModel} gPath
@@ -4434,34 +4526,36 @@ var ComponentLoader = class {
   registerGraph(packageId, name, gPath) {
     return this.registerComponent(packageId, name, gPath);
   }
-  // With `registerLoader` you can register custom component
-  // loaders. They will be called immediately and can register
-  // any components or graphs they wish. Registry implementations
-  // like `@noflo/loader-node` drive this hook for `noflo.loader`
-  // plugin modules discovered in package manifests; core accepts
-  // plugins, it never discovers them.
   /**
+   * Register a custom component loader plugin. The plugin is invoked
+   * immediately with the loader, and can register components, graphs, and
+   * library icons. The plugin performs its asynchronous work before
+   * resolving the Promise it returns; a rejection (or a synchronous throw)
+   * fails the registration. Registry implementations like
+   * `@noflo/loader-node` drive this hook for `noflo.loader` plugin modules
+   * discovered in package manifests; core accepts plugins, it never
+   * discovers them.
+   *
    * @callback CustomLoader
    * @param {ComponentLoader} loader
-   * @param {ErrorableCallback} callback
-   * @returns {void}
+   * @returns {Promise<void>|void}
    */
   /**
+   * Register a custom component loader plugin.
+   *
    * @param {CustomLoader} loader
    * @returns {Promise<void>}
    */
   registerLoader(loader) {
-    const promise = new Promise((resolve, reject) => {
-      loader(this, (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      });
+    return Promise.resolve().then(() => loader(this)).then(() => {
     });
-    return promise;
   }
+  /**
+   * Empty the component catalog and re-read the registry catalog, if one is
+   * configured.
+   *
+   * @returns {void}
+   */
   clear() {
     this.components = {};
     if (this.registry && typeof this.registry.list === "function") {
@@ -4780,43 +4874,7 @@ __export(InternalSocket_exports, {
   InternalSocket: () => InternalSocket,
   createSocket: () => createSocket
 });
-function legacyToIp(event, payload) {
-  if (IP.isIP(payload)) {
-    return payload;
-  }
-  switch (event) {
-    case "begingroup":
-      return new IP("openBracket", payload);
-    case "endgroup":
-      return new IP("closeBracket");
-    case "data":
-      return new IP("data", payload);
-    default:
-      return null;
-  }
-}
-function ipToLegacy(ip) {
-  switch (ip.type) {
-    case "openBracket":
-      return {
-        event: "begingroup",
-        payload: ip.data
-      };
-    case "data":
-      return {
-        event: "data",
-        payload: ip.data
-      };
-    case "closeBracket":
-      return {
-        event: "endgroup",
-        payload: ip.data
-      };
-    default:
-      return null;
-  }
-}
-var InternalSocket = class extends LegacyEventBase {
+var InternalSocket = class extends EventBase {
   /**
    * @private
    */
@@ -4886,24 +4944,12 @@ var InternalSocket = class extends LegacyEventBase {
     });
   }
   /**
-   * Deliver an IP from the edge to the socket's listeners: the modern
-   * `ip` event plus the derived legacy event.
+   * Deliver an IP from the edge to the socket's listeners.
    *
    * @param {IP} ip
    */
   #deliverIP(ip) {
     this.emitEvent("ip", ip);
-    if (!ip?.type) {
-      return;
-    }
-    const legacy = ipToLegacy(ip);
-    if (legacy.event === "connect") {
-      this.connected = true;
-    }
-    if (legacy.event === "disconnect") {
-      this.connected = false;
-    }
-    this.emitEvent(legacy.event, legacy.payload);
   }
   emitEvent(event, data) {
     if (this.debug) {
@@ -4975,10 +5021,9 @@ var InternalSocket = class extends LegacyEventBase {
   // message queues can be used as additional packet relay mechanisms.
   send(data) {
     if (data === void 0 && typeof this.dataDelegate === "function") {
-      this.handleSocketEvent("data", this.dataDelegate());
-      return;
+      data = this.dataDelegate();
     }
-    this.handleSocketEvent("data", data);
+    return this.post(new IP("data", data), false);
   }
   // ## Sending information packets without open bracket
   //
@@ -5005,9 +5050,31 @@ var InternalSocket = class extends LegacyEventBase {
     if (!this.isConnected() && this.brackets.length === 0) {
       this.connect();
     }
-    const write = this.handleSocketEvent("ip", ip, false);
-    if (write) {
-      write.catch(() => {
+    let write;
+    if (ip.type === "closeBracket" && this.brackets.length === 0) {
+    } else {
+      if (ip.type === "openBracket") {
+        this.brackets.push(ip.data);
+      }
+      if (ip.type === "closeBracket") {
+        if (ip.data == null) {
+          ip.data = this.brackets[this.brackets.length - 1];
+        }
+        this.brackets.pop();
+      }
+      write = this.edge.write(ip);
+      write.catch((error) => {
+        if (this.listeners("error").length === 0) {
+          setImmediate(() => {
+            throw error;
+          });
+          return;
+        }
+        this.dispatchLifecycleEvent("error", {
+          id: this.to ? this.to.process.id : null,
+          error,
+          metadata: this.metadata
+        });
       });
     }
     if (autoDisconnect && this.isConnected() && this.brackets.length === 0) {
@@ -5015,41 +5082,24 @@ var InternalSocket = class extends LegacyEventBase {
     }
     return write;
   }
-  // ## Information Packet grouping
+  // ## Brackets and streams
   //
-  // Processes sending data to sockets may also group the packets
-  // when necessary. This allows transmitting tree structures as
-  // a stream of packets.
+  // Packets can carry structure as bracket substreams: an `openBracket`
+  // IP opens a stream, the packets belonging to it follow, and a
+  // `closeBracket` IP closes it. Brackets nest, so tree structures can be
+  // transmitted as a stream of packets. The stream name travels in the
+  // bracket IP payloads — an `openBracket` for `article` followed by data
+  // for its fields reads as:
   //
-  // For example, an object could be split into multiple packets
-  // where each property is identified by a separate grouping:
+  // * `openBracket "article"`
+  // * `data "Lorem ipsum"` (title)
+  // * `data "Henri Bergius"` (author)
+  // * `closeBracket "article"`
   //
-  //     # Group by object ID
-  //     @outPorts.out.beginGroup object.id
-  //
-  //     for property, value of object
-  //       @outPorts.out.beginGroup property
-  //       @outPorts.out.send value
-  //       @outPorts.out.endGroup()
-  //
-  //     @outPorts.out.endGroup()
-  //
-  // This would cause a tree structure to be sent to the receiving
-  // process as a stream of packets. So, an article object may be
-  // as packets like:
-  //
-  // * `/<article id>/title/Lorem ipsum`
-  // * `/<article id>/author/Henri Bergius`
-  //
-  // Components are free to ignore groupings, but are recommended
-  // to pass received groupings onward if the data structures remain
-  // intact through the component's processing.
-  beginGroup(group) {
-    this.handleSocketEvent("begingroup", group);
-  }
-  endGroup() {
-    this.handleSocketEvent("endgroup");
-  }
+  // Components are free to ignore brackets, but are recommended to
+  // forward them onward if the data structures remain intact through
+  // the component's processing — a stream that arrives grouped should
+  // leave grouped.
   // ## Socket data delegation
   //
   // Sockets have the option to receive data from a delegate function
@@ -5088,51 +5138,6 @@ var InternalSocket = class extends LegacyEventBase {
       return `DATA -> ${toStr(this.to)}`;
     }
     return `${fromStr(this.from)} -> ${toStr(this.to)}`;
-  }
-  /* eslint-disable no-param-reassign */
-  handleSocketEvent(event, payload, autoConnect = true) {
-    const isIP = event === "ip" && IP.isIP(payload);
-    const ip = isIP ? payload : legacyToIp(event, payload);
-    if (!ip) {
-      return;
-    }
-    if (!this.isConnected() && autoConnect && this.brackets.length === 0) {
-      this.connect();
-    }
-    if (event === "begingroup") {
-      this.brackets.push(payload);
-    }
-    if (isIP && ip.type === "openBracket") {
-      this.brackets.push(ip.data);
-    }
-    if (event === "endgroup") {
-      if (this.brackets.length === 0) {
-        return;
-      }
-      ip.data = this.brackets.pop();
-      payload = ip.data;
-    }
-    if (isIP && payload.type === "closeBracket") {
-      if (this.brackets.length === 0) {
-        return;
-      }
-      this.brackets.pop();
-    }
-    const write = this.edge.write(ip);
-    write.catch((error) => {
-      if (this.listeners("error").length === 0) {
-        setImmediate(() => {
-          throw error;
-        });
-        return;
-      }
-      this.dispatchLifecycleEvent("error", {
-        id: this.to ? this.to.process.id : null,
-        error,
-        metadata: this.metadata
-      });
-    });
-    return write;
   }
 };
 function createSocket(metadata = {}, options = {}) {
@@ -5178,7 +5183,7 @@ function debounce(func, wait, immediate) {
   };
 }
 
-// node_modules/@noflo/noflo/src/lib/BaseNetwork.js
+// node_modules/@noflo/noflo/src/lib/Network.js
 function connectPort(socket, process2, port, index, inbound) {
   if (inbound) {
     socket.to = {
@@ -5219,7 +5224,7 @@ function connectPort(socket, process2, port, index, inbound) {
   process2.component.outPorts.ports[port].attach(socket);
   return Promise.resolve(socket);
 }
-var BaseNetwork = class extends LegacyEventBase {
+var Network = class extends EventBase {
   /**
    * All NoFlo networks are instantiated with a graph. Upon instantiation
    * they will load all the needed components, instantiate them, and
@@ -5246,23 +5251,19 @@ var BaseNetwork = class extends LegacyEventBase {
     this.startupDate = null;
     if (options.componentLoader) {
       this.loader = options.componentLoader;
-    } else if (this.graph.graphMetadata().componentLoader) {
-      deprecated(
-        "Passing componentLoader via Graph properties is deprecated, pass via Network options instead"
-      );
-      this.loader = this.graph.graphMetadata().componentLoader;
     } else {
       this.loader = new ComponentLoader({
         registry: options.registry
       });
     }
+    this.flowtrace = null;
     this.flowtraceName = null;
     this.setFlowtrace(options.flowtrace || false, null);
   }
-  // The uptime of the network is the current time minus the start-up
-  // time, in seconds.
   /**
-   * @returns {number}
+   * The uptime of the network: current time minus start-up time.
+   *
+   * @returns {number} Uptime in milliseconds
    */
   uptime() {
     if (!this.startupDate) {
@@ -5271,6 +5272,8 @@ var BaseNetwork = class extends LegacyEventBase {
     return Date.now() - this.startupDate.getTime();
   }
   /**
+   * Get the IDs of processes that are currently actively processing.
+   *
    * @returns {string[]}
    */
   getActiveProcesses() {
@@ -5286,16 +5289,16 @@ var BaseNetwork = class extends LegacyEventBase {
       if (process2.component.load > 0) {
         active.push(name);
       }
-      if (process2.component.__openConnections > 0) {
-        active.push(name);
-      }
     });
     return active;
   }
   /**
+   * Record a network event to Flowtrace, when tracing is enabled. The main
+   * graph logs events from its subgraphs as well.
+   *
+   * @private
    * @param {string} event
    * @param {any} payload
-   * @private
    */
   traceEvent(event, payload) {
     if (!this.flowtrace) {
@@ -5348,9 +5351,13 @@ var BaseNetwork = class extends LegacyEventBase {
     }
   }
   /**
+   * Emit a network lifecycle event, buffering events emitted before the
+   * network has started and flushing the buffer on start. Errors, icons, and
+   * network end are emitted immediately.
+   *
+   * @protected
    * @param {string} event
    * @param {any} payload
-   * @protected
    */
   bufferedEmit(event, payload) {
     this.traceEvent(event, payload);
@@ -5372,28 +5379,11 @@ var BaseNetwork = class extends LegacyEventBase {
       });
       this.eventBuffer = [];
     }
-    if (event === "ip") {
-      switch (payload.type) {
-        case "openBracket":
-          this.bufferedEmit("begingroup", payload);
-          return;
-        case "closeBracket":
-          this.bufferedEmit("endgroup", payload);
-          return;
-        case "data":
-          this.bufferedEmit("data", payload);
-          break;
-        default:
-      }
-    }
   }
-  // ## Loading components
-  //
-  // Components can be passed to the NoFlo network in two ways:
-  //
-  // * As direct, instantiated JavaScript objects
-  // * As filenames
   /**
+   * Load a component instance by name through the network's component
+   * loader.
+   *
    * @param {string} component
    * @param {Object<string, any>} metadata
    * @returns {Promise<import("./Component.js").Component>}
@@ -5402,31 +5392,16 @@ var BaseNetwork = class extends LegacyEventBase {
     return this.loader.load(component, metadata);
   }
   // ## Add a process to the network
-  //
-  // Processes can be added to a network at either start-up time
-  // or later. The processes are added with a node definition object
-  // that includes the following properties:
-  //
-  // * `id`: Identifier of the process in the network. Typically a string
-  // * `component`: Filename or path of a NoFlo component, or a component instance object
   /**
-   * @callback AddNodeCallback
-   * @param {Error|null} error
-   * @param {NetworkProcess} [process]
-   * @returns {void}
-   */
-  /**
+   * Add a process to the network. The process is also registered with the
+   * current graph. Processes can be added at start-up time or later; the
+   * node definition carries the component to instantiate and its metadata.
+   *
    * @param {import("@noflo/graph").GraphNode} node
-   * @param {Object} options
-   * @param {AddNodeCallback} [callback]
+   * @param {Object} [options]
    * @returns {Promise<NetworkProcess>}
    */
-  addNode(node, options, callback) {
-    if (typeof options === "function") {
-      callback = /** @type {AddNodeCallback} */
-      options;
-      options = {};
-    }
+  addNode(node, options = {}) {
     let promise;
     if (this.processes[node.entity_id]) {
       promise = Promise.resolve(this.processes[node.entity_id]);
@@ -5463,9 +5438,17 @@ var BaseNetwork = class extends LegacyEventBase {
         });
       }
     }
-    return promise;
+    return promise.then((process2) => {
+      if (!options.initial && !this.graph.hasNode(node.entity_id)) {
+        this.graph.addNode(node);
+      }
+      return process2;
+    });
   }
   /**
+   * Remove a process from the network. The process is shut down and also
+   * removed from the current graph.
+   *
    * @param {import("@noflo/graph").GraphNode} node
    * @returns {Promise<void>}
    */
@@ -5474,16 +5457,24 @@ var BaseNetwork = class extends LegacyEventBase {
     if (!process2) {
       return Promise.reject(new Error(`Node ${node.entity_id} not found`));
     }
+    let promise;
     if (!process2.component) {
       delete this.processes[node.entity_id];
-      return Promise.resolve();
+      promise = Promise.resolve();
+    } else {
+      promise = process2.component.shutdown().then(() => {
+        delete this.processes[node.entity_id];
+        return Promise.resolve();
+      });
     }
-    return process2.component.shutdown().then(() => {
-      delete this.processes[node.entity_id];
-      return Promise.resolve();
+    return promise.then(() => {
+      this.graph.removeNode(node.entity_id);
     });
   }
   /**
+   * Rename a process in the network. Renaming also rewrites the process's
+   * entry in the current graph, informing the ports of the new name.
+   *
    * @param {string} oldId
    * @param {string} newId
    * @returns {Promise<void>}
@@ -5514,17 +5505,24 @@ var BaseNetwork = class extends LegacyEventBase {
     }
     this.processes[newId] = process2;
     delete this.processes[oldId];
-    return Promise.resolve();
+    return Promise.resolve().then(() => {
+      this.graph.renameNode(oldId, newId);
+    });
   }
-  // Get process by its ID.
   /**
-   * @param {string} id compone
+   * Get a process of this network by its node id.
+   *
+   * @param {string} id - Identifier of the process
    * @returns {NetworkProcess|void}
    */
   getNode(id) {
     return this.processes[id];
   }
   /**
+   * Wire the network up: instantiate every node, edge, and IIP from the
+   * current graph, then attach default-value sockets. This is the step that
+   * turns a graph model into running processes and connected sockets.
+   *
    * @returns {Promise<this>}
    */
   connect() {
@@ -5540,6 +5538,9 @@ var BaseNetwork = class extends LegacyEventBase {
     return promise;
   }
   /**
+   * Subscribe to a subgraph component's internal network, re-emitting its
+   * `ip` and `process-error` events with the subgraph path prepended.
+   *
    * @private
    * @param {NetworkProcess} node
    */
@@ -5594,12 +5595,14 @@ var BaseNetwork = class extends LegacyEventBase {
       emitSub("process-error", event.detail);
     });
   }
-  // Subscribe to events from all connected sockets and re-emit them
   /**
+   * Subscribe to events from a socket: forward packet traffic to the edge
+   * observers and the network `ip` event, and escalate process errors when
+   * nobody listens.
+   *
    * @param {internalSocket.InternalSocket} socket
-   * @param {NetworkProcess} [source]
    */
-  subscribeSocket(socket, source) {
+  subscribeSocket(socket) {
     socket.edge.observe((ip, next) => {
       let advanced = false;
       const advance = () => {
@@ -5634,30 +5637,11 @@ var BaseNetwork = class extends LegacyEventBase {
       }
       this.bufferedEmit("process-error", errEvent);
     });
-    if (!source?.component?.isLegacy()) {
-      return;
-    }
-    const comp = (
-      /** @type {import("./Component.js").Component} */
-      source.component
-    );
-    socket.addEventListener("connect", () => {
-      if (!comp.__openConnections) {
-        comp.__openConnections = 0;
-      }
-      comp.__openConnections += 1;
-    });
-    socket.addEventListener("disconnect", () => {
-      comp.__openConnections -= 1;
-      if (comp.__openConnections < 0) {
-        comp.__openConnections = 0;
-      }
-      if (comp.__openConnections === 0) {
-        this.checkIfFinished();
-      }
-    });
   }
   /**
+   * Subscribe to a component's lifecycle events: activation counts for
+   * end-detection, and icon changes.
+   *
    * @param {NetworkProcess} node
    */
   subscribeNode(node) {
@@ -5694,6 +5678,9 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Wait until a node's component is ready to be wired up, rejecting when
+   * the node or its component is missing.
+   *
    * @protected
    * @param {string} node
    * @param {string} direction
@@ -5742,11 +5729,14 @@ var BaseNetwork = class extends LegacyEventBase {
     return this;
   }
   /**
+   * Add a connection to the network: create the socket, attach it between
+   * the two ports, and register the edge with the current graph.
+   *
    * @param {import("@noflo/graph").GraphEdge} edge
-   * @param {Object} [_options]
+   * @param {Object} [options]
    * @returns {Promise<internalSocket.InternalSocket>}
    */
-  addEdge(edge, _options = {}) {
+  addEdge(edge, options = {}) {
     const promise = this.ensureNode(edge.from.node, "outbound").then((from) => {
       const sourcePort = (
         /** @type {any} */
@@ -5763,7 +5753,7 @@ var BaseNetwork = class extends LegacyEventBase {
         )
       });
       return this.ensureNode(edge.to.node, "inbound").then((to) => {
-        this.subscribeSocket(socket, from);
+        this.subscribeSocket(socket);
         return connectPort(socket, to, edge.to.port, edge.to.index, true);
       }).then(
         () => connectPort(socket, from, edge.from.port, edge.from.index, false)
@@ -5772,9 +5762,21 @@ var BaseNetwork = class extends LegacyEventBase {
         return socket;
       });
     });
-    return promise;
+    return promise.then((socket) => {
+      if (!options.initial) {
+        this.graph.addEdge({
+          from: edge.from,
+          to: edge.to,
+          ...edge.metadata === void 0 ? {} : { metadata: edge.metadata }
+        });
+      }
+      return socket;
+    });
   }
   /**
+   * Remove a connection from the network: detach the socket from both of
+   * its ports and remove the edge from the current graph.
+   *
    * @param {import("@noflo/graph").GraphEdge} edge
    * @returns {Promise<void>}
    */
@@ -5796,9 +5798,14 @@ var BaseNetwork = class extends LegacyEventBase {
       }
       this.connections.splice(this.connections.indexOf(connection), 1);
     });
-    return Promise.resolve();
+    return Promise.resolve().then(() => {
+      this.removeGraphEdge(edge);
+    });
   }
   /**
+   * Attach default-value sockets to any ports with defaults that are not
+   * already attached. Called during connect for every node.
+   *
    * @protected
    * @param {import("@noflo/graph").GraphNode} node
    * @returns {Promise<void>}
@@ -5831,11 +5838,15 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Add an initial Information Packet to the network: create and attach its
+   * socket, queue the packet, and register the IIP with the current graph.
+   * When the network is running, the IIP is sent immediately.
+   *
    * @param {import("@noflo/graph").GraphIIP} initializer
-   * @param {Object} [_options]
+   * @param {Object} [options]
    * @returns {Promise<internalSocket.InternalSocket>}
    */
-  addInitial(initializer, _options = {}) {
+  addInitial(initializer, options = {}) {
     const promise = this.ensureNode(initializer.to.node, "inbound").then((to) => {
       const socket = createSocket(initializer.metadata, {
         debug: this.debug,
@@ -5865,9 +5876,21 @@ var BaseNetwork = class extends LegacyEventBase {
       }
       return socket;
     });
-    return promise;
+    return promise.then((socket) => {
+      if (!options.initial) {
+        this.graph.addIIP({
+          data: initializer.from.data,
+          to: initializer.to,
+          ...initializer.metadata === void 0 ? {} : { metadata: initializer.metadata }
+        });
+      }
+      return socket;
+    });
   }
   /**
+   * Remove an initial Information Packet from the network and the current
+   * graph.
+   *
    * @param {import("@noflo/graph").GraphIIP} initializer
    * @returns {Promise<void>}
    */
@@ -5904,9 +5927,45 @@ var BaseNetwork = class extends LegacyEventBase {
         this.nextInitials.splice(this.nextInitials.indexOf(init), 1);
       }
     });
-    return Promise.resolve();
+    return Promise.resolve().then(() => {
+      this.removeGraphIIP(initializer);
+    });
   }
   /**
+   * Remove the edge matching the given connection from the graph.
+   *
+   * @param {import("@noflo/graph").GraphEdge} edge
+   * @returns {void}
+   */
+  removeGraphEdge(edge) {
+    const match = this.graph.edges().find(
+      (candidate) => sameRef(candidate.from, edge.from) && sameRef(candidate.to, edge.to)
+    );
+    if (!match) {
+      throw new Error(
+        `No edge from ${edge.from.node}:${edge.from.port} to ${edge.to.node}:${edge.to.port} to remove`
+      );
+    }
+    this.graph.removeEdge(match.entity_id);
+  }
+  /**
+   * Remove the IIP matching the given initializer from the graph.
+   *
+   * @param {import("@noflo/graph").GraphIIP} iip
+   * @returns {void}
+   */
+  removeGraphIIP(iip) {
+    const match = this.graph.iips().find((candidate) => sameRef(candidate.to, iip.to));
+    if (!match) {
+      throw new Error(
+        `No IIP targeting ${iip.to.node}:${iip.to.port} to remove`
+      );
+    }
+    this.graph.removeIIP(match.entity_id);
+  }
+  /**
+   * Send all queued initial Information Packets and clear the queue.
+   *
    * @returns Promise<void>
    */
   sendInitials() {
@@ -5929,18 +5988,35 @@ var BaseNetwork = class extends LegacyEventBase {
       return Promise.resolve();
     });
   }
+  /**
+   * Check whether the network is currently started.
+   *
+   * @returns {boolean}
+   */
   isStarted() {
     return this.started;
   }
+  /**
+   * Check whether the network is currently stopped.
+   *
+   * @returns {boolean}
+   */
   isStopped() {
     return this.stopped;
   }
+  /**
+   * Check whether the network has any actively processing components.
+   *
+   * @returns {boolean}
+   */
   isRunning() {
     return this.getActiveProcesses().length > 0;
   }
   /**
+   * Start every component in the network, in parallel.
+   *
    * @protected
-   * @returns {Promise<void>}
+   * @returns Promise<void>
    */
   startComponents() {
     if (!this.processes || !Object.keys(this.processes).length) {
@@ -5958,6 +6034,10 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Send default values to any inports that have them but no connection or
+   * IIP supplying data.
+   *
+   * @protected
    * @returns Promise<void>
    */
   sendDefaults() {
@@ -5975,6 +6055,10 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Start the network: start all components, send the initial Information
+   * Packets, and then send port defaults. Starting an already-started
+   * network stops it first.
+   *
    * @returns {Promise<this>}
    */
   start() {
@@ -5992,6 +6076,9 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Stop the network: disconnect all connections and shut every component
+   * down. Stopping an already-stopped network resolves immediately.
+   *
    * @returns {Promise<this>}
    */
   stop() {
@@ -6031,6 +6118,9 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Mark the network started or ended, emitting the corresponding lifecycle
+   * event and maintaining the start-up timestamp.
+   *
    * @param {boolean} started
    */
   setStarted(started) {
@@ -6055,6 +6145,13 @@ var BaseNetwork = class extends LegacyEventBase {
       start: this.startupDate
     });
   }
+  /**
+   * End the network (emit `end`) once no process is active anymore, debounced
+   * so that bursts of deactivations do not produce premature ends.
+   *
+   * @protected
+   * @returns {void}
+   */
   checkIfFinished() {
     if (this.isRunning()) {
       return;
@@ -6073,10 +6170,18 @@ var BaseNetwork = class extends LegacyEventBase {
     }
     this.debouncedEnd();
   }
+  /**
+   * Get the current debug mode of the network.
+   *
+   * @returns {boolean}
+   */
   getDebug() {
     return this.debug;
   }
   /**
+   * Enable or disable debug mode, propagating the setting to all sockets and
+   * subgraph networks.
+   *
    * @param {boolean} active
    */
   setDebug(active) {
@@ -6103,6 +6208,9 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Enable or disable asynchronous packet delivery, propagating the setting
+   * to all sockets and subgraph networks.
+   *
    * @param {boolean} active
    */
   setAsyncDelivery(active) {
@@ -6129,6 +6237,10 @@ var BaseNetwork = class extends LegacyEventBase {
     });
   }
   /**
+   * Enable Flowtrace recording for this network, registering the graph and
+   * all existing subgraph networks under the given name. Passing a falsy
+   * value disables tracing.
+   *
    * @param {Object|null} flowtrace
    * @param {string|null} [name]
    * @param {boolean} [main]
@@ -6160,118 +6272,6 @@ var BaseNetwork = class extends LegacyEventBase {
       }
       inst.network.setFlowtrace(this.flowtrace, node.componentName, false);
     });
-  }
-};
-
-// node_modules/@noflo/noflo/src/lib/Network.js
-var Network = class extends BaseNetwork {
-  // Add a process to the network. The node will also be registered
-  // with the current graph.
-  /**
-   * @param {import("@noflo/graph").GraphNode} node
-   * @param {Object} options
-   * @returns {Promise<NetworkProcess>}
-   */
-  /**
-   * @param {import("@noflo/graph").GraphNode} node
-   * @param {Object} [options]
-   * @returns {Promise<NetworkProcess>}
-   */
-  addNode(node, options = {}) {
-    return super.addNode(node, options).then((process2) => {
-      if (!options.initial && !this.graph.hasNode(node.entity_id)) {
-        this.graph.addNode(node);
-      }
-      return process2;
-    });
-  }
-  // Remove a process from the network. The node will also be removed
-  // from the current graph.
-  removeNode(node) {
-    return super.removeNode(node).then(() => {
-      this.graph.removeNode(node.entity_id);
-    });
-  }
-  // Rename a process in the network. Renaming a process also modifies
-  // the current graph.
-  renameNode(oldId, newId) {
-    return super.renameNode(oldId, newId).then(() => {
-      this.graph.renameNode(oldId, newId);
-    });
-  }
-  // Add a connection to the network. The edge will also be registered
-  // with the current graph.
-  addEdge(edge, options = {}) {
-    return super.addEdge(edge, options).then((socket) => {
-      if (!options.initial) {
-        this.graph.addEdge({
-          from: edge.from,
-          to: edge.to,
-          ...edge.metadata === void 0 ? {} : { metadata: edge.metadata }
-        });
-      }
-      return socket;
-    });
-  }
-  // Remove a connection from the network. The edge will also be removed
-  // from the current graph.
-  removeEdge(edge) {
-    return super.removeEdge(edge).then(() => {
-      this.removeGraphEdge(edge);
-    });
-  }
-  // Add an IIP to the network. The IIP will also be registered with the
-  // current graph. If the network is running, the IIP will be sent immediately.
-  addInitial(iip, options = {}) {
-    return super.addInitial(iip, options).then((socket) => {
-      if (!options.initial) {
-        this.graph.addIIP({
-          data: iip.from.data,
-          to: iip.to,
-          ...iip.metadata === void 0 ? {} : { metadata: iip.metadata }
-        });
-      }
-      return socket;
-    });
-  }
-  // Remove an IIP from the network. The IIP will also be removed from the
-  // current graph.
-  removeInitial(iip) {
-    return super.removeInitial(iip).then(() => {
-      this.removeGraphIIP(iip);
-    });
-  }
-  /**
-   * Remove the edge matching the given connection from the graph.
-   *
-   * @param {import("@noflo/graph").GraphEdge} edge
-   * @returns {void}
-   */
-  removeGraphEdge(edge) {
-    const match = this.graph.edges().find(
-      (candidate) => sameRef(candidate.from, edge.from) && sameRef(candidate.to, edge.to)
-    );
-    if (!match) {
-      throw new Error(
-        `No edge from ${edge.from.node}:${edge.from.port} to ${edge.to.node}:${edge.to.port} to remove`
-      );
-    }
-    this.graph.removeEdge(match.entity_id);
-  }
-  /**
-   * Remove the IIP matching the given initializer from the graph.
-   *
-   * @param {import("@noflo/graph").GraphIIP} iip
-   * @returns {void}
-   */
-  removeGraphIIP(iip) {
-    const match = this.graph.iips().find((candidate) => sameRef(candidate.to, iip.to));
-    if (!match) {
-      throw new Error(
-        `No IIP targeting ${iip.to.node}:${iip.to.port} to remove`
-      );
-    }
-    this.graph.removeIIP(match.entity_id);
   }
 };
 
@@ -6599,20 +6599,15 @@ function asCallback(component, options) {
 // node_modules/@noflo/noflo/src/lib/NoFlo.js
 function createNetwork(graphInstance, options = {}) {
   const network = new Network(graphInstance, options);
-  const promise = network.loader.listComponents().then(() => {
+  const promise = Promise.resolve().then(() => {
     if (options.delay) {
-      return Promise.resolve(network);
+      return network;
     }
-    const connected = (
-      /** @type {Promise<Network>} */
-      network.connect()
-    );
-    return connected.then(() => network.start());
+    return network.connect().then(() => network.start());
   });
   return promise;
 }
 var NoFlo_default = {
-  isBrowser,
   GraphModel,
   importFbpJson,
   exportFbpJson,
@@ -6635,6 +6630,7 @@ export {
   IP,
   InPort,
   InPorts,
+  Network,
   OutPort,
   OutPorts,
   asCallback,
@@ -6643,6 +6639,5 @@ export {
   NoFlo_default as default,
   exportFbpJson,
   importFbpJson,
-  InternalSocket_exports as internalSocket,
-  isBrowser
+  InternalSocket_exports as internalSocket
 };
