@@ -35,6 +35,9 @@
  *   rectangle in minimap coordinates; null when no viewport was given or
  *   the graph is empty.
  * @property {number} scale Graph units → minimap units.
+ * @property {{ x: number, y: number }} origin The projection offset: a
+ *   graph point maps to `point * scale + origin` — the inverse mapping and
+ *   in-place viewport updates need it without recomputing the layout.
  */
 
 /** Padding around the content bounds, in graph units. */
@@ -63,7 +66,13 @@ export function minimapLayout({ view, viewport, size }) {
   }
 
   if (positions.size === 0) {
-    return { nodes: [], edges: [], viewport: null, scale: 0 };
+    return {
+      nodes: [],
+      edges: [],
+      viewport: null,
+      scale: 0,
+      origin: { x: 0, y: 0 },
+    };
   }
 
   let minX = Infinity;
@@ -117,7 +126,13 @@ export function minimapLayout({ view, viewport, size }) {
     };
   }
 
-  return { nodes, edges, viewport: mappedViewport, scale };
+  return {
+    nodes,
+    edges,
+    viewport: mappedViewport,
+    scale,
+    origin: { x: offsetX, y: offsetY },
+  };
 }
 
 /**
@@ -145,36 +160,11 @@ export function viewportRectFromCamera(offset, zoom, pixels) {
  *
  * @param {{ x: number, y: number }} point A minimap-local point.
  * @param {MinimapLayout} layout The layout the point was clicked in.
- * @param {{ width: number, height: number }} size The minimap box size.
- * @param {MinimapView} view The same view the layout was computed from.
  * @returns {{ x: number, y: number }}
  */
-export function minimapPointToGraph(point, layout, size, view) {
-  const positions = new Map();
-  for (const [id, process] of Object.entries(view?.processes ?? {})) {
-    const { x, y } = process?.metadata ?? {};
-    if (typeof x === "number" && typeof y === "number") {
-      positions.set(id, { x, y });
-    }
-  }
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const { x, y } of positions.values()) {
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
-  }
-  const contentWidth = maxX - minX + CONTENT_PADDING * 2;
-  const contentHeight = maxY - minY + CONTENT_PADDING * 2;
-  const offsetX =
-    (size.width - (maxX - minX) * layout.scale) / 2 - minX * layout.scale;
-  const offsetY =
-    (size.height - (maxY - minY) * layout.scale) / 2 - minY * layout.scale;
+export function minimapPointToGraph(point, layout) {
   return {
-    x: (point.x - offsetX) / layout.scale,
-    y: (point.y - offsetY) / layout.scale,
+    x: (point.x - layout.origin.x) / layout.scale,
+    y: (point.y - layout.origin.y) / layout.scale,
   };
 }

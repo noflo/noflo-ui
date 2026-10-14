@@ -150,12 +150,7 @@ export class FlowMinimap extends HTMLElement {
       y: e.clientY - rect.top,
     };
     const layout = this.layout();
-    const graph = minimapPointToGraph(
-      point,
-      layout,
-      { width: rect.width || 160, height: rect.height || 110 },
-      this._view,
-    );
+    const graph = minimapPointToGraph(point, layout);
     emit(this, "minimap-navigate", { x: graph.x, y: graph.y });
   }
 }

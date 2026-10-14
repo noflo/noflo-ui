@@ -79,7 +79,13 @@ describe("minimap layout (work document #5)", () => {
       viewport: { x: 0, y: 0, w: 10, h: 10 },
       size: { width: 100, height: 100 },
     });
-    assert.deepEqual(empty, { nodes: [], edges: [], viewport: null, scale: 0 });
+    assert.deepEqual(empty, {
+      nodes: [],
+      edges: [],
+      viewport: null,
+      scale: 0,
+      origin: { x: 0, y: 0 },
+    });
   });
 
   it("maps the viewport rect into minimap coordinates", () => {
@@ -119,12 +125,7 @@ describe("minimap layout (work document #5)", () => {
     });
     // Round-trip: each node's minimap position maps back to its graph position
     for (const node of layout.nodes) {
-      const graph = minimapPointToGraph(
-        { x: node.x, y: node.y },
-        layout,
-        { width: 120, height: 80 },
-        view(),
-      );
+      const graph = minimapPointToGraph({ x: node.x, y: node.y }, layout);
       const original = view().processes[node.id].metadata;
       assert.ok(
         Math.abs(graph.x - original.x) < 0.01 &&
