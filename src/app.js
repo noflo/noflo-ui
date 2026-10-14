@@ -34,6 +34,7 @@ import {
 } from "./elements/noflo-component-picker.js";
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
+import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
 import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
@@ -788,17 +789,49 @@ function refreshProjectCorner() {
     };
   });
   projectCorner.setWorkDocs(workDocs);
+  // An open document view confirms from the replica (work document #9):
+  // the flush's authoritative content arrived, or a peer's edit streamed
+  // in. `confirmed` only settles when the local buffer matches, so an
+  // in-progress edit is never clobbered
+  const view = /** @type {any} */ (document.getElementById("workdoc-view"));
+  if (!view?._doc) return;
+  const record = /** @type {any} */ (workdocs.get(view._doc.id));
+  if (record) {
+    view.confirmed(record.toJSON().content ?? "");
+  }
 }
 
 /**
- * Opens a work document's view (work document #9): the document screen
- * rides the app's routing; until that lands, the corner logs the intent
- * and the flow is visible in the console timeline.
+ * Opens a work document's view (work document #9): the primary element
+ * with the title, the scope state, and the collaborative content.
  *
  * @param {string} docId
  */
 function openWorkDoc(docId) {
-  console.info(`[workdoc] open ${docId}`);
+  const view = /** @type {any} */ (document.getElementById("workdoc-view"));
+  const workdocs = mirrorDoc?.getMap("workdocs");
+  const record = /** @type {any} */ (workdocs?.get(docId));
+  if (!view || !record) {
+    console.warn(`[workdoc] ${docId} not found`);
+    return;
+  }
+  const plain = record.toJSON();
+  view.open({
+    id: plain.id,
+    title: plain.title,
+    scope: plain.scope,
+    pendingScope: plain.pendingScope,
+    content: plain.content ?? "",
+    boardId: plain.boardId ?? null,
+    edited: plain.edited,
+  });
+}
+
+/**
+ * Closes the work document view (back to the graph route).
+ */
+function closeWorkDoc() {
+  /** @type {any} */ (document.getElementById("workdoc-view"))?.close();
 }
 
 /**
@@ -1357,6 +1390,13 @@ async function init() {
 
   router = createRouter({
     onRouteChange: (route) => {
+      // The document route (work document #9): `doc/<id>` in the graph
+      // segment opens the document view — a primary element per #28
+      if (route.graphId.startsWith("doc/")) {
+        openWorkDoc(route.graphId.slice(4));
+        return;
+      }
+      closeWorkDoc();
       if (route.graphId === activeGraphId) return;
       activeGraphId = route.graphId;
       intentMapper?.flushPending((nodeId) =>
@@ -1634,7 +1674,23 @@ async function init() {
     document.getElementById("project-corner")
   );
   projectCorner?.addEventListener("workdoc-open", (/** @type {any} */ e) => {
-    openWorkDoc(e.detail.docId);
+    router?.navigate(`doc/${e.detail.docId}`);
+  });
+  // The document view's editing rides the intent path: the debounced
+  // flush sends the accumulated content (work document #9)
+  const workdocView = /** @type {any} */ (
+    document.getElementById("workdoc-view")
+  );
+  workdocView?.addEventListener("workdoc-save", (/** @type {any} */ e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "updateWorkDoc",
+      payload: { docId: e.detail.docId, content: e.detail.content },
+    });
+  });
+  workdocView?.addEventListener("workdoc-close", () => {
+    // Back to the graph the user came from
+    router?.navigate(activeGraphId || "main");
   });
   // Undo/redo (work document #39): the Engine owns the journal; the Glass
   // only requests
