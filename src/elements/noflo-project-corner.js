@@ -178,11 +178,18 @@ export class FlowProjectCorner extends FlowCornerElement {
           <button class="secondary" data-action="collapse" title="Collapse">▾</button>
         </div>
         ${rows}
+        <button class="secondary" data-action="create-doc">New document</button>
       </div>`;
   }
 
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    shadow
+      .querySelector("[data-action='create-doc']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        emit(this, "workdoc-create", undefined);
+      });
     for (const row of shadow.querySelectorAll("[data-doc]")) {
       row.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();

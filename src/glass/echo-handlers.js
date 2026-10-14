@@ -43,6 +43,9 @@ import { progressPhrase } from "./progressPhrases.js";
  * @property {(state: any) => void} setUndoState Take the Engine's
  *   undo-journal availability report (work document #39) into the Glass's
  *   undo chip state.
+ * @property {(payload: any) => void} [workDocCreated] A work document was
+ *   created (work document #9): the creation flow navigates to the new
+ *   document's view when the echo is its own.
  */
 
 /**
@@ -151,8 +154,8 @@ export function createEchoHandlers(deps) {
     },
     "workdoc/created": (data) => {
       // Work-document echoes (work document #9): the Glass renders from
-      // the CRDT mirror; these are protocol legibility until the Project
-      // corner's workdoc surface consumes them
+      // the CRDT mirror; the creation flow navigates to its own document
+      deps.workDocCreated?.(data.payload);
       console.debug(`[echo] workdoc/created ${data.payload?.id ?? ""}`);
     },
     "workdoc/updated": (data) => {

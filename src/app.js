@@ -56,6 +56,7 @@ import { renderGraphIntoEditor } from "./glass/renderGraph.js";
 import { createRouter } from "./glass/router.js";
 import {
   openJsonPrompt,
+  openTextPrompt,
   setModalFeedback,
   wireExportRename,
 } from "./glass/text-prompt.js";
@@ -169,6 +170,8 @@ let peerReachability = {};
 let undoState = /** @type {any} */ (null);
 /** The project's work documents (work document #9), newest edit first. */
 let workDocs = /** @type {any[]} */ ([]);
+/** Whether the next workdoc/created echo is this session's own creation. */
+let pendingWorkDocCreate = false;
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -398,6 +401,13 @@ const echoHandlers = createEchoHandlers({
   setUndoState: (state) => {
     undoState = state;
     refreshSyncPanel();
+  },
+  workDocCreated: (payload) => {
+    if (!pendingWorkDocCreate) return;
+    pendingWorkDocCreate = false;
+    // The document exists: open its view (the e2e loop lands the user in
+    // the editor they just named)
+    router?.navigate(`doc/${payload.id}`);
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -1675,6 +1685,21 @@ async function init() {
   );
   projectCorner?.addEventListener("workdoc-open", (/** @type {any} */ e) => {
     router?.navigate(`doc/${e.detail.docId}`);
+  });
+  // Creation: the title prompt, then the intent — the document appears in
+  // the corner as proposed and the view opens (work document #9)
+  projectCorner?.addEventListener("workdoc-create", async () => {
+    const title = await openTextPrompt({
+      title: "New work document",
+      confirmLabel: "Create",
+    });
+    if (!title) return;
+    pendingWorkDocCreate = true;
+    sendIntent({
+      type: "INTENT",
+      command: "createWorkDoc",
+      payload: { title },
+    });
   });
   // The document view's editing rides the intent path: the debounced
   // flush sends the accumulated content (work document #9)

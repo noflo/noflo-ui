@@ -122,6 +122,7 @@
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate
  * @property {CustomEvent<{ docId: string }>} workdoc-open
+ * @property {CustomEvent<void>} workdoc-create
  * @property {CustomEvent<{ docId: string, content: string }>} workdoc-save
  * @property {CustomEvent<{ docId: string }>} workdoc-close
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt

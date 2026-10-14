@@ -90,6 +90,22 @@ describe("FlowProjectCorner (work document #9)", () => {
     el.remove();
   });
 
+  it("the create affordance emits workdoc-create", () => {
+    const el = makeCorner();
+    el.setWorkDocs(docs());
+    el.expanded = true;
+    el.render();
+    let creates = 0;
+    el.addEventListener("workdoc-create", () => {
+      creates += 1;
+    });
+    /** @type {HTMLElement} */ (
+      el.shadowRoot.querySelector("[data-action='create-doc']")
+    ).click();
+    assert.equal(creates, 1);
+    el.remove();
+  });
+
   it("clicking a row emits workdoc-open with the document's id", () => {
     const el = makeCorner();
     el.setWorkDocs(docs());
