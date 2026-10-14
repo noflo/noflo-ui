@@ -53,6 +53,57 @@ describe("FlowNode expanded state (work document #5 update #16)", () => {
     node.remove();
   });
 
+  it("a subgraph's depiction renders the child graph's real layout (work document #5)", () => {
+    const node = makeNode("sub");
+    node.depictionSource = (name) =>
+      name === "sub"
+        ? {
+            processes: {
+              x: { metadata: { x: 0, y: 0 } },
+              y: { metadata: { x: 120, y: 60 } },
+            },
+            connections: [{ src: { process: "x" }, tgt: { process: "y" } }],
+          }
+        : null;
+    node.setAttribute("selected", "");
+    const svg = /** @type {any} */ (
+      node.shadowRoot.querySelector(".node-depiction svg")
+    );
+    assert.ok(svg, "the depiction svg renders");
+    // The child graph's actual nodes replace the static sketch
+    assert.equal(
+      svg.querySelectorAll(".depiction-node").length,
+      2,
+      "one dot per child node",
+    );
+    assert.equal(
+      svg.querySelectorAll(".depiction-wire").length,
+      1,
+      "the child edge draws",
+    );
+    // The dots land inside the sketch box, at the projected positions
+    const dots = [...svg.querySelectorAll(".depiction-node")];
+    for (const dot of dots) {
+      const cx = parseFloat(dot.getAttribute("cx"));
+      assert.ok(cx >= 0 && cx <= 56, `dot inside the box: ${cx}`);
+    }
+    node.remove();
+  });
+
+  it("without a source the static sketch stands in (work document #5)", () => {
+    const node = makeNode("sub");
+    node.setAttribute("selected", "");
+    const svg = /** @type {any} */ (
+      node.shadowRoot.querySelector(".node-depiction svg")
+    );
+    assert.equal(
+      svg.querySelectorAll(".depiction-node").length,
+      3,
+      "the static three-circle sketch",
+    );
+    node.remove();
+  });
+
   it("a subgraph's depiction navigates down on click", () => {
     const node = makeNode("sub");
     node.setAttribute("selected", "");

@@ -783,6 +783,9 @@ async function render() {
   const ed = /** @type {FlowEditor} */ (document.createElement("noflo-editor"));
   app.appendChild(ed);
   ed.libraryManager = libraryManager;
+  // The expanded nodes' subgraph depictions render the child graph's
+  // actual layout (work document #5): the shared minimap geometry
+  ed.depictionSource = (name) => projectGraph(mirrorDoc, name);
   ed.unpackEnabled = true;
   // Move up needs a parent: the root graph has none
   ed.moveUpEnabled = Boolean(graphParent(mirrorDoc, activeGraphId));

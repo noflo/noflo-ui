@@ -28,6 +28,7 @@ import "./noflo-minimap.js";
  *   size: number,
  *   component?: string | null,
  *   libraryManager?: import("../library/LibraryManager.js").LibraryManager | null,
+ *   depictionSource?: (componentName: string) => any | null,
  *   setPorts: (inPorts: PortConfig[], outPorts: PortConfig[]) => void,
  *   setMetadata: (metadata: Record<string, any>) => void,
  *   shadowRoot: ShadowRoot | null
@@ -696,6 +697,9 @@ export class FlowEditor extends HTMLElement {
       );
     /** The node currently previewing its spliced form (work document #5). */
     this._splicePreviewNode = /** @type {HTMLElement | null} */ (null);
+    /** The subgraph depiction's graph source (work document #5). */
+    this._depictionSource =
+      /** @type {((componentName: string) => any | null) | null} */ (null);
     this.camera = new Camera({
       transformLayer: /** @type {HTMLElement} */ (this.transformLayer),
       host: this,
@@ -1615,6 +1619,19 @@ export class FlowEditor extends HTMLElement {
         }
       }
     });
+  }
+
+  /**
+   * The subgraph depiction's graph source (work document #5): propagated
+   * to every node, existing and future.
+   *
+   * @param {(componentName: string) => any | null} source
+   */
+  set depictionSource(source) {
+    this._depictionSource = source;
+    for (const node of this.nodeLayer?.querySelectorAll("noflo-node") ?? []) {
+      /** @type {any} */ (node).depictionSource = source;
+    }
   }
 
   /**
@@ -3084,6 +3101,9 @@ export class FlowEditor extends HTMLElement {
 
     if (this.libraryManager) {
       node.libraryManager = this.libraryManager;
+    }
+    if (this._depictionSource) {
+      node.depictionSource = this._depictionSource;
     }
 
     if (metadata.name || metadata.componentName || metadata.icon) {

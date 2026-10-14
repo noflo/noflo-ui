@@ -5,6 +5,7 @@ import icons from "../../vendor/fontawesome-icons.js";
  * @property {number} y
  */
 import { emit, on } from "../events.js";
+import { minimapLayout } from "../library/minimap.js";
 import { netpbmToDataUrl } from "../library/netpbm.js";
 
 /**
@@ -65,6 +66,9 @@ export class FlowNode extends HTMLElement {
 
     /** @type {import("../library/LibraryManager.js").LibraryManager | null} */
     this._libraryManager = null;
+    /** The subgraph depiction's graph source (work document #5). */
+    this._depictionSource =
+      /** @type {((componentName: string) => any | null) | null} */ (null);
     /** @type {string | null} */
     this._componentName = null;
     /** @type {MutationObserver | null} */
@@ -93,6 +97,18 @@ export class FlowNode extends HTMLElement {
    */
   get libraryManager() {
     return this._libraryManager;
+  }
+
+  /**
+   * The subgraph depiction's graph source (work document #5): the owner
+   * projects the child graph — the same shared minimap layout the canvas
+   * navigation uses renders it, closing the deferral's "single unit".
+   *
+   * @param {(componentName: string) => any | null} source
+   */
+  set depictionSource(source) {
+    this._depictionSource = source;
+    this.render();
   }
 
   /**
@@ -995,6 +1011,30 @@ export class FlowNode extends HTMLElement {
     );
     const _name = this.getAttribute("name") ?? "";
     if (component?.type === "subgraph") {
+      // The child graph's actual layout (work document #5): the shared
+      // minimap geometry — tiny dots and lines, muted — replaces the
+      // static sketch when the owner can project the child graph
+      const view = this._depictionSource?.(this._componentName ?? "") ?? null;
+      if (view && Object.keys(view.processes ?? {}).length > 0) {
+        const layout = minimapLayout({
+          view,
+          viewport: null,
+          size: { width: 56, height: 40 },
+        });
+        const dots = layout.nodes
+          .map(
+            (node) =>
+              `<circle class="depiction-node" cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="5"></circle>`,
+          )
+          .join("");
+        const wires = layout.edges
+          .map(
+            (edge) =>
+              `<path class="depiction-wire" d="M ${edge.x1.toFixed(1)} ${edge.y1.toFixed(1)} L ${edge.x2.toFixed(1)} ${edge.y2.toFixed(1)}"></path>`,
+          )
+          .join("");
+        return `<svg class="openable" width="56" height="40" viewBox="0 0 56 40" aria-label="Open subgraph">${wires}${dots}</svg>`;
+      }
       return `<svg class="openable" width="56" height="40" viewBox="0 0 56 40" aria-label="Open subgraph"><circle cx="12" cy="12" r="6" class="depiction-node"/><circle cx="44" cy="12" r="6" class="depiction-node"/><circle cx="28" cy="30" r="6" class="depiction-node"/><path d="M17 14 L39 14 M17 16 L24 27 M39 16 L32 27" class="depiction-wire"/></svg>`;
     }
     if (component && component.type !== "stub") {
