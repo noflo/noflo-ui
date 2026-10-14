@@ -291,6 +291,21 @@
  */
 
 /**
+ * Splices a node into an edge (work document #5): the edge menu's
+ * create-a-node path (with `componentName`) and the drag's existing-node
+ * path share the intent. The original edge is removed, the node is
+ * created or moved to the splice position, and the endpoints reconnect
+ * through the node's most compatible ports — one transaction, one undo
+ * step (work document #39). Refused when the node has no ports compatible
+ * with the edge's endpoint datatypes.
+ *
+ * @typedef {Object} IntentSpliceNodeMessage
+ * @property {'INTENT'} type
+ * @property {'spliceNode'} command
+ * @property {{ graphId: string, edgeId: string, nodeId: string, x: number, y: number, componentName?: string, inPort?: string, outPort?: string }} payload
+ */
+
+/**
  * Undo (work document #39): pops the Engine-owned journal's latest step —
  * this device's own intent transactions only — and applies its inverse at
  * the CRDT operation level. The Engine reports the stack state on the
@@ -432,6 +447,7 @@
  *   | IntentSetPortRouteMessage
  *   | IntentMoveIIPMessage
  *   | IntentMoveExportMessage
+ *   | IntentSpliceNodeMessage
  *   | IntentUndoMessage
  *   | IntentRedoMessage
  *   | MeshConfigureMessage
@@ -497,6 +513,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "setPortRoute" },
   { type: "INTENT", command: "moveIIP" },
   { type: "INTENT", command: "moveExport" },
+  { type: "INTENT", command: "spliceNode" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },

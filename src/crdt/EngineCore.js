@@ -19,6 +19,7 @@ import {
   createGraph,
   createGroup,
   deleteGraph,
+  edgeIdFor,
   ensureComponent,
   ensureDoc,
   getComponent,
@@ -143,6 +144,7 @@ const TRACKED_INTENTS = new Set([
   "setPortRoute",
   "moveIIP",
   "moveExport",
+  "spliceNode",
 ]);
 
 /** How long consecutive tracked transactions merge into one undo step
@@ -412,6 +414,7 @@ export const INTENT_HANDLERS = {
   setPortRoute: intentSetPortRoute,
   moveIIP: intentMoveIIP,
   moveExport: intentMoveExport,
+  spliceNode: intentSpliceNode,
   undo: intentUndo,
   redo: intentRedo,
   createGroup: intentCreateGroup,
@@ -1461,6 +1464,277 @@ function intentRemoveEdge(doc, payload) {
     payload: { id },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * The datatype of one of a component's ports (work document #5's splice):
+ * read from the registry signature; a missing signature or port type is
+ * the permissive `all`, matching the Glass library's convention.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} portName
+ * @returns {string}
+ */
+/**
+ * A component signature's port list as plain records: the registry stores
+ * port collections as Y.Arrays of Y.Maps (named records) — normalize both
+ * that and the keyed-map form into `{ name, type }` pairs.
+ *
+ * @param {Y.Map<any> | undefined} signature
+ * @param {"inports" | "outports"} direction
+ * @returns {Array<{ name: string, type: string }> | null}
+ */
+function signaturePorts(signature, direction) {
+  if (!signature) return null;
+  const raw = signature.get(direction);
+  if (raw instanceof Y.Map) {
+    return [...raw.entries()].map(([name, port]) => ({
+      name,
+      type: /** @type {any} */ (port)?.get?.("type"),
+    }));
+  }
+  if (raw instanceof Y.Array) {
+    return raw.toJSON().map((/** @type {any} */ port) => ({
+      name: port?.name,
+      type: port?.type,
+    }));
+  }
+  return null;
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} portName
+ * @returns {string}
+ */
+function componentPortType(doc, componentName, direction, portName) {
+  const ports = signaturePorts(
+    getComponentSignature(doc, componentName),
+    direction,
+  );
+  if (!ports) return "all";
+  const port = ports.find((candidate) => candidate.name === portName);
+  return typeof port?.type === "string" && port.type ? port.type : "all";
+}
+
+/**
+ * Whether one of a component's ports is compatible with a datatype (work
+ * document #5): `all` wildcards match anything, otherwise the types are
+ * equal.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} portName
+ * @param {string} dataType
+ * @returns {boolean}
+ */
+function portIsCompatible(doc, componentName, direction, portName, dataType) {
+  const portType = componentPortType(doc, componentName, direction, portName);
+  return portType === "all" || dataType === "all" || portType === dataType;
+}
+
+/**
+ * The most compatible port of a component for a datatype (work document #5
+ * update #15's preference order): the canonical `in`/`out` port first,
+ * then the first compatible one. There is NO default-port fallback — an
+ * incompatible component refuses the splice outright instead of silently
+ * mismatching.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {"inports" | "outports"} direction
+ * @param {string} dataType
+ * @returns {string | null}
+ */
+function compatiblePort(doc, componentName, direction, dataType) {
+  const ports = signaturePorts(
+    getComponentSignature(doc, componentName),
+    direction,
+  );
+  if (!ports) return null;
+  const canonical = direction === "inports" ? "in" : "out";
+  if (
+    ports.some((port) => port.name === canonical) &&
+    portIsCompatible(doc, componentName, direction, canonical, dataType)
+  ) {
+    return canonical;
+  }
+  for (const port of ports) {
+    if (portIsCompatible(doc, componentName, direction, port.name, dataType)) {
+      return port.name;
+    }
+  }
+  return null;
+}
+
+/**
+ * Routes an edge through a node (work document #5's splice — the edge
+ * menu's create-a-node path and the drag's existing-node path share the
+ * intent): the original edge is removed, the node is created or moved to
+ * the splice position, and the edge's endpoints reconnect through the
+ * node's most compatible ports. One intent = one transaction = one undo
+ * step (work document #39).
+ *
+ * Type-aware: the splice is refused unless the node has ports compatible
+ * with the edge's endpoint datatypes — an incompatible component never
+ * half-splices the graph. All validation runs before the first mutation:
+ * a refusal leaves the transaction empty.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSpliceNode(doc, payload) {
+  const { graphId, edgeId, nodeId, componentName, x, y, inPort, outPort } =
+    payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof edgeId !== "string" ||
+    typeof nodeId !== "string" ||
+    typeof x !== "number" ||
+    typeof y !== "number" ||
+    (componentName !== undefined && typeof componentName !== "string") ||
+    (inPort !== undefined && typeof inPort !== "string") ||
+    (outPort !== undefined && typeof outPort !== "string")
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  const edgeRecord = /** @type {Y.Map<any> | undefined} */ (
+    graph.get("edges").get(edgeId)
+  );
+  if (!edgeRecord) {
+    return { accepted: false, echoes: [] };
+  }
+  const edge = edgeRecord.toJSON();
+  const src = edge.src;
+  const tgt = edge.tgt;
+  if (!src?.node || !tgt?.node) {
+    return { accepted: false, echoes: [] };
+  }
+
+  // The spliced node: created (menu path) or moved into place (drag path)
+  const creating = componentName !== undefined;
+  const existing = getNode(graph, nodeId);
+  if (creating && existing) {
+    // addNode would refuse duplicates mid-splice: refuse before mutating
+    return { accepted: false, echoes: [] };
+  }
+  const component = creating ? componentName : existing?.get("component");
+  if (typeof component !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+
+  // The edge endpoints' datatypes come from their nodes' components
+  const srcNode = getNode(graph, src.node);
+  const tgtNode = getNode(graph, tgt.node);
+  if (!srcNode || !tgtNode) {
+    return { accepted: false, echoes: [] };
+  }
+  const srcType = componentPortType(
+    doc,
+    /** @type {string} */ (srcNode.get("component")),
+    "outports",
+    src.port,
+  );
+  const tgtType = componentPortType(
+    doc,
+    /** @type {string} */ (tgtNode.get("component")),
+    "inports",
+    tgt.port,
+  );
+
+  // Port selection: the Glass may pin the ports; the engine otherwise
+  // picks the most compatible — and refuses when the node has none or a
+  // pinned port is incompatible
+  const chosenIn = inPort ?? compatiblePort(doc, component, "inports", srcType);
+  const chosenOut =
+    outPort ?? compatiblePort(doc, component, "outports", tgtType);
+  if (
+    !chosenIn ||
+    !chosenOut ||
+    !portIsCompatible(doc, component, "inports", chosenIn, srcType) ||
+    !portIsCompatible(doc, component, "outports", chosenOut, tgtType)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+
+  // The new edges' deterministic ids must not collide with existing edges
+  const newEdgeAId = edgeIdFor(src, { node: nodeId, port: chosenIn });
+  const newEdgeBId = edgeIdFor({ node: nodeId, port: chosenOut }, tgt);
+  const edges = graph.get("edges");
+  if (edges.has(newEdgeAId) || edges.has(newEdgeBId)) {
+    return { accepted: false, echoes: [] };
+  }
+
+  // ---- mutations (one transaction, one undo step) ----
+  removeEdge(graph, edgeId);
+  if (creating) {
+    const created = addNode(graph, nodeId, component, { x, y });
+    if (!created) {
+      return { accepted: false, echoes: [] };
+    }
+    ensureDefaultSignature(doc, component);
+  } else {
+    moveNode(graph, nodeId, x, y);
+  }
+  const edgeA = addEdge(graph, src, { node: nodeId, port: chosenIn });
+  const edgeB = addEdge(graph, { node: nodeId, port: chosenOut }, tgt);
+  if (!edgeA || !edgeB) {
+    // Unreachable after the pre-validation, but never half-report
+    return { accepted: false, echoes: [] };
+  }
+
+  /** @type {Array<import("./Protocol.js").EngineUIMessage>} */
+  const echoes = [
+    {
+      protocol: "graph",
+      command: "removeedge",
+      payload: { id: edgeId },
+    },
+  ];
+  if (creating) {
+    echoes.push({
+      protocol: "graph",
+      command: "addnode",
+      payload: { id: nodeId, component, metadata: { x, y } },
+    });
+  } else {
+    echoes.push({
+      protocol: "graph",
+      command: "movenode",
+      payload: { id: nodeId, metadata: { x, y } },
+    });
+  }
+  echoes.push({
+    protocol: "graph",
+    command: "addedge",
+    payload: {
+      id: edgeA,
+      src,
+      tgt: { node: nodeId, port: chosenIn },
+      metadata: {},
+    },
+  });
+  echoes.push({
+    protocol: "graph",
+    command: "addedge",
+    payload: {
+      id: edgeB,
+      src: { node: nodeId, port: chosenOut },
+      tgt,
+      metadata: {},
+    },
+  });
+  return { accepted: true, echoes };
 }
 
 /**
