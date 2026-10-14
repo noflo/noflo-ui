@@ -299,7 +299,7 @@
  * @typedef {Object} IntentUndoMessage
  * @property {'INTENT'} type
  * @property {'undo'} command
- * @property {Record<string, never>} [payload]
+ * @property {Record<string, never>} payload
  */
 
 /**
@@ -309,7 +309,7 @@
  * @typedef {Object} IntentRedoMessage
  * @property {'INTENT'} type
  * @property {'redo'} command
- * @property {Record<string, never>} [payload]
+ * @property {Record<string, never>} payload
  */
 
 /**

@@ -1583,10 +1583,10 @@ async function init() {
   // Undo/redo (work document #39): the Engine owns the journal; the Glass
   // only requests
   on(syncPanel, "undo-attempt", () => {
-    sendIntent({ type: "INTENT", command: "undo" });
+    sendIntent({ type: "INTENT", command: "undo", payload: {} });
   });
   on(syncPanel, "redo-attempt", () => {
-    sendIntent({ type: "INTENT", command: "redo" });
+    sendIntent({ type: "INTENT", command: "redo", payload: {} });
   });
   on(syncPanel, "sync-settings", () => openMeshSettings());
   // Graceful mesh shutdown on page unload: the Engine tears its links down

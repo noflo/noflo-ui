@@ -527,7 +527,8 @@ function undoConflict(entry) {
       graphId === "*"
         ? Math.max(0, ...entry.ledger.values())
         : (entry.ledger.get(graphId) ?? 0);
-    if (touchedAt > /** @type {any} */ ((item.meta).t ?? 0)) {
+    const capturedAt = /** @type {any} */ (item.meta).t ?? 0;
+    if (touchedAt > capturedAt) {
       conflicted.add(graphId);
     }
   }
