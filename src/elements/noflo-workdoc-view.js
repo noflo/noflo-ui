@@ -58,23 +58,39 @@ export class FlowWorkDocView extends HTMLElement {
    * @param {{ id: string, title: string, scope: string, pendingScope?: string, boardId?: number | string | null, edited?: number, updates?: any[] }} options.doc
    * @param {any} options.ytext The mirror's content Y.Text for this document.
    * @param {any} options.cm The vendored CodeMirror surface.
+   * @param {boolean} [options.editing] Open directly in edit mode (fresh
+   *   documents: naming is the whole prompt, the body is the point).
    */
-  open({ doc, ytext, cm }) {
+  open({ doc, ytext, cm, editing = false }) {
     this._doc = doc;
     this._ytext = ytext;
     this._cm = cm;
-    this._editing = false;
-    this.hidden = false;
+    // A freshly created document lands in edit mode: naming it is the
+    // whole prompt — writing the body is the point (work document #9)
+    this._editing = editing;
     this.render();
+    const dialog = /** @type {HTMLDialogElement | null} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
+    );
+    // showModal puts the panel in the top layer; environments without
+    // the dialog API fall back to the host's visibility
+    if (dialog && typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      this.hidden = false;
+    }
   }
 
   /** Closes the view and tears the collaborative binding down. */
   close() {
+    const dialog = /** @type {HTMLDialogElement | null} */ (
+      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
+    );
+    if (dialog?.open) dialog.close();
     this._teardown();
     this._doc = null;
     this._ytext = null;
     this._cm = null;
-    this.hidden = true;
     this.render();
   }
 

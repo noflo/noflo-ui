@@ -405,9 +405,10 @@ const echoHandlers = createEchoHandlers({
   workDocCreated: (payload) => {
     if (!pendingWorkDocCreate) return;
     pendingWorkDocCreate = false;
-    // The document exists: open its view (the e2e loop lands the user in
-    // the editor they just named)
+    // The document exists: open its view in edit mode (the e2e loop
+    // lands the user in the editor they just named)
     router?.navigate(`doc/${payload.id}`);
+    openWorkDoc(payload.id, true);
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -817,7 +818,7 @@ function refreshProjectCorner() {
  *
  * @param {string} docId
  */
-function openWorkDoc(docId) {
+function openWorkDoc(docId, editing = false) {
   const view = /** @type {any} */ (document.getElementById("workdoc-view"));
   const workdocs = mirrorDoc?.getMap("workdocs");
   const record = /** @type {any} */ (workdocs?.get(docId));
@@ -827,13 +828,20 @@ function openWorkDoc(docId) {
   }
   const plain = record.toJSON();
   view.open({
-    id: plain.id,
-    title: plain.title,
-    scope: plain.scope,
-    pendingScope: plain.pendingScope,
-    content: plain.content ?? "",
-    boardId: plain.boardId ?? null,
-    edited: plain.edited,
+    doc: {
+      id: plain.id,
+      title: plain.title,
+      scope: plain.scope,
+      pendingScope: plain.pendingScope,
+      boardId: plain.boardId ?? null,
+      edited: plain.edited,
+      updates: plain.updates ?? [],
+    },
+    ytext: record.get("content"),
+    cm: codeMirrorSurface,
+    // A freshly created document lands in edit mode: naming it is the
+    // whole prompt, writing the body is the point
+    editing,
   });
 }
 
