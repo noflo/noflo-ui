@@ -22,6 +22,8 @@ export class Intent extends Component {
       inPorts: {
         message: { datatype: "object" },
         doc: { datatype: "object", control: true },
+        // The engine session state (the undo journal's identity origin)
+        state: { datatype: "object", control: true },
       },
       outPorts: {
         echo: { datatype: "object" },
@@ -43,9 +45,10 @@ export class Intent extends Component {
 
     const doc = input.getData("doc");
     const message = input.getData("message");
+    const state = input.hasData("state") ? input.getData("state") : null;
 
     try {
-      const result = handleIntent(doc, message);
+      const result = handleIntent(doc, state, message);
       for (const echo of result.echoes) {
         output.send({ echo });
       }

@@ -40,6 +40,9 @@ import { progressPhrase } from "./progressPhrases.js";
  * @property {(state: any) => void} setDacarState
  * @property {(data: any) => void} ingestMeshStatus Take a mesh-status
  *   report into the Glass's sync state.
+ * @property {(state: any) => void} setUndoState Take the Engine's
+ *   undo-journal availability report (work document #39) into the Glass's
+ *   undo chip state.
  */
 
 /**
@@ -145,6 +148,11 @@ export function createEchoHandlers(deps) {
     },
     "kind:mesh-status": (data) => {
       deps.ingestMeshStatus(data);
+    },
+    "kind:undo": (data) => {
+      // Undo/redo availability (work document #39): the corner chips
+      // render from this report, never from guessed stack state
+      deps.setUndoState(data);
     },
     "system/heartbeat": () => {
       // Liveness only: the Glass renders from the replica, not the heartbeat

@@ -122,6 +122,10 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._joinProgress = null;
     /** @type {{ projectId?: string, anchor?: { hash: string, owner: boolean }, grants?: Array<any>, wallet?: Array<any> } | null} */
     this._dacarState = null;
+    /** The Engine's undo-journal availability report (work document #39). */
+    this._undoState = /** @type {any} */ (null);
+    /** The last announced history change (aria-live, guidelines §13). */
+    this._undoAnnouncement = "";
     this._inviteUri = "";
     /** Rendered invite QR SVGs, cached per URI (work document #28). */
     /** @type {Map<string, string>} */
@@ -213,6 +217,28 @@ export class FlowSyncPanel extends FlowCornerElement {
    */
   setJoinProgress(progress) {
     this._joinProgress = progress;
+    this.render();
+  }
+
+  /**
+   * Refreshes in place with a new undo-journal availability report (work
+   * document #39): the chips re-render, and a depth change announces
+   * through the aria-live line (guidelines §13).
+   *
+   * @param {{ canUndo?: boolean, canRedo?: boolean, undoDepth?: number, redoDepth?: number }} state
+   */
+  setUndoState(state) {
+    const previous = this._undoState;
+    this._undoState = state;
+    const depth = (/** @type {any} */ x) =>
+      `${x?.undoDepth ?? 0}/${x?.redoDepth ?? 0}`;
+    if (previous && state && depth(previous) !== depth(state)) {
+      const delta = (state.undoDepth ?? 0) - (previous.undoDepth ?? 0);
+      this._undoAnnouncement =
+        delta < 0
+          ? `Undid ${-delta} step${-delta === 1 ? "" : "s"}`
+          : `Redone ${delta} step${delta === 1 ? "" : "s"}`;
+    }
     this.render();
   }
 
@@ -498,6 +524,14 @@ export class FlowSyncPanel extends FlowCornerElement {
             ? `<details open><summary>Peers</summary>${peers}${offlineBlock}</details>`
             : `<details open><summary>Peers</summary><div class="hint">No peers connected.</div></details>`
         }
+        <details open><summary>Edit history</summary>
+          <div class="row">
+            <button data-action="undo" ${this._undoState?.canUndo ? "" : "disabled"}>Undo${this._undoState?.undoDepth ? ` (${this._undoState.undoDepth})` : ""}</button>
+            <button data-action="redo" ${this._undoState?.canRedo ? "" : "disabled"}>Redo${this._undoState?.redoDepth ? ` (${this._undoState.redoDepth})` : ""}</button>
+          </div>
+          <div class="hint">Your edits only — each device undoes its own changes. Keyboard: Ctrl/Cmd+Z, Shift to redo.</div>
+          <div class="status-line" aria-live="polite" id="panel-undo-live">${escapeHtml(this._undoAnnouncement)}</div>
+        </details>
         ${this._joinRequests.length > 0 ? `<details open><summary>Join requests</summary>${requests}</details>` : ""}
         ${
           this._readOnly || !owner
@@ -628,6 +662,16 @@ export class FlowSyncPanel extends FlowCornerElement {
       .querySelector("[data-action='create-invite']")
       ?.addEventListener("click", () => {
         emit(this, "sync-invite", undefined);
+      });
+    shadow
+      .querySelector("[data-action='undo']")
+      ?.addEventListener("click", () => {
+        emit(this, "undo-attempt", undefined);
+      });
+    shadow
+      .querySelector("[data-action='redo']")
+      ?.addEventListener("click", () => {
+        emit(this, "redo-attempt", undefined);
       });
     shadow
       .querySelector("[data-action='copy-invite']")

@@ -315,6 +315,13 @@ export function createIntentMapper({
         }
       });
 
+      // Undo/redo (work document #39): the Engine owns the journal
+      on(ed, "undo-attempt", () => {
+        sendIntent({ type: "INTENT", command: "undo" });
+      });
+      on(ed, "redo-attempt", () => {
+        sendIntent({ type: "INTENT", command: "redo" });
+      });
       on(ed, "node-removal-attempt", (e) => {
         const event = /** @type {CustomEvent} */ (e);
         for (const node of event.detail.nodes) {

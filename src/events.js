@@ -118,6 +118,8 @@
  * @property {CustomEvent<{ identityHash: string | null }>} sync-decline
  * @property {CustomEvent<{ grantId: string }>} sync-revoke-grant
  * @property {CustomEvent<void>} sync-settings
+ * @property {CustomEvent<void>} undo-attempt
+ * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
  * @property {CustomEvent<{ config: any }>} mesh-configure

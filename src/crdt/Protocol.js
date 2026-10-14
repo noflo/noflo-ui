@@ -291,6 +291,41 @@
  */
 
 /**
+ * Undo (work document #39): pops the Engine-owned journal's latest step —
+ * this device's own intent transactions only — and applies its inverse at
+ * the CRDT operation level. The Engine reports the stack state on the
+ * `kind:undo` echo either way.
+ *
+ * @typedef {Object} IntentUndoMessage
+ * @property {'INTENT'} type
+ * @property {'undo'} command
+ * @property {Record<string, never>} [payload]
+ */
+
+/**
+ * Redo (work document #39): the symmetric forward stack; a new tracked
+ * operation clears it.
+ *
+ * @typedef {Object} IntentRedoMessage
+ * @property {'INTENT'} type
+ * @property {'redo'} command
+ * @property {Record<string, never>} [payload]
+ */
+
+/**
+ * Undo/redo availability (work document #39): appended to every accepted
+ * intent's echoes, so the Glass's corner chips render stack state without
+ * guessing. Depths are the journal's step counts.
+ *
+ * @typedef {Object} UndoStateEcho
+ * @property {'undo'} kind
+ * @property {boolean} canUndo
+ * @property {boolean} canRedo
+ * @property {number} undoDepth
+ * @property {number} redoDepth
+ */
+
+/**
  * Payload-less MESH commands: `status` (re-report mesh state),
  * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
  * unload).
@@ -397,6 +432,8 @@
  *   | IntentSetPortRouteMessage
  *   | IntentMoveIIPMessage
  *   | IntentMoveExportMessage
+ *   | IntentUndoMessage
+ *   | IntentRedoMessage
  *   | MeshConfigureMessage
  *   | MeshJoinMessage
  *   | MeshGrantMessage
@@ -460,6 +497,8 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "setPortRoute" },
   { type: "INTENT", command: "moveIIP" },
   { type: "INTENT", command: "moveExport" },
+  { type: "INTENT", command: "undo" },
+  { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },
   { type: "MESH", command: "status" },
   { type: "MESH", command: "join" },
@@ -743,6 +782,7 @@ export const MESH_COMMANDS = [
  *   | MeshDacarEcho
  *   | MeshInviteEcho
  *   | FactoryResetEcho
+ *   | UndoStateEcho
  *   | YSyncMessage
  *   | YUpdateMessage
  *   | AwarenessEcho
@@ -777,6 +817,7 @@ export const ECHO_MESSAGES = [
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
   { kind: "factory-reset" },
+  { kind: "undo" },
   { protocol: "system", command: "heartbeat" },
   { protocol: "system", command: "signature" },
   { protocol: "graph", command: "addnode" },

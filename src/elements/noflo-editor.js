@@ -1463,6 +1463,29 @@ export class FlowEditor extends HTMLElement {
     }
 
     window.addEventListener("keydown", (e) => {
+      // Undo/redo (work document #39): the Engine owns the journal; the
+      // editor only emits attempts. Guards: a consumed event (CodeMirror's
+      // keymap, the collaborative code editor's own undo) is respected, and
+      // text fields keep their native undo
+      const inTextField = (() => {
+        const target = /** @type {Element | null} */ (e.target);
+        return (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          /** @type {any} */ (target)?.isContentEditable === true
+        );
+      })();
+      const undoKeys = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z";
+      const redoKeys =
+        ((e.ctrlKey || e.metaKey) &&
+          e.key.toLowerCase() === "z" &&
+          e.shiftKey) ||
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y");
+      if ((undoKeys || redoKeys) && !e.defaultPrevented && !inTextField) {
+        e.preventDefault();
+        emit(this, redoKeys ? "redo-attempt" : "undo-attempt", undefined);
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (
           this.selectionManager.nodes.size > 0 ||

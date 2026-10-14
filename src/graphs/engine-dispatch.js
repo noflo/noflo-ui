@@ -125,6 +125,7 @@ export function wireEngineContext(network, { doc, state, callback }) {
   const wiring = [
     ["query", "doc", doc],
     ["intent", "doc", doc],
+    ["intent", "state", state],
     ["lifecycle", "state", state],
     ["send", "callback", callback],
   ];

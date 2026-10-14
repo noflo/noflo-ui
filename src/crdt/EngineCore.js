@@ -56,6 +56,9 @@ import { isUIWorkerMessage } from "./Protocol.js";
  *
  * @typedef {Object} EngineState
  * @property {Set<string>} subscriptions Graph ids the Glass has subscribed to.
+ * @property {string} [intentOrigin] This device's Reticulum identity hash
+ *   (the undo journal's tracked origin), set when the mesh config reports
+ *   it.
  */
 
 /**
@@ -63,6 +66,257 @@ import { isUIWorkerMessage } from "./Protocol.js";
  */
 export function createEngineState() {
   return { subscriptions: new Set() };
+}
+
+/**
+ * The per-document undo managers (work document #39). Keyed by document so
+ * a project rebind (a new doc) gets a fresh journal and a dropped doc's
+ * manager is collectable. The journal is session-scoped by decision: it is
+ * not persisted, and a fresh boot starts with an empty stack.
+ *
+ * @type {WeakMap<Y.Doc, { manager: Y.UndoManager, lastCommand: string | null, ledger: Map<string, number> }>}
+ */
+const undoManagers = new WeakMap();
+
+/**
+ * Transaction origin for intents the Glass issued on this device: the only
+ * origin the undo manager tracks (work document #39 — undo applies the
+ * user's own changes, never anybody's). The origin is **this device's
+ * Reticulum identity hash** — identity-attributable in Yjs internals,
+ * stable across the tab leader's engine lifetime, and the door to per-peer
+ * attribution later (work document #38's vocabulary). Remote CRDT updates,
+ * persistence loads, and mesh-plane writes all carry other origins and
+ * never enter the stack. The fallback covers the window before the mesh
+ * config reports the identity (intents cannot realistically precede the
+ * project bind, but the manager must not silently lose tracking).
+ *
+ * @type {symbol}
+ */
+const FALLBACK_INTENT_ORIGIN = Symbol("noflo-ui:intent");
+
+/**
+ * The tracked transaction origin for this device's intents: the Reticulum
+ * identity hash once the mesh layer reports it, the process-local fallback
+ * before then.
+ *
+ * @param {EngineState} state
+ * @returns {string | symbol}
+ */
+function intentOrigin(state) {
+  return state.intentOrigin ?? FALLBACK_INTENT_ORIGIN;
+}
+
+/**
+ * Intents whose mutations are tracked by the undo manager (work document
+ * #39 milestone 1: graph structure and attributes — nodes, edges, IIPs,
+ * exported ports, groups, moves, graph lifecycle, subgraph structure).
+ * Everything else applies with `SYSTEM_INTENT_ORIGIN` and is invisible to
+ * undo — the Yjs scope set is the second gate (only the `graphs` and
+ * `registry` subtrees are scoped), so a future tracked-classification bug
+ * cannot pull grants or file-tree state into the stack.
+ *
+ * @type {Set<string>}
+ */
+const TRACKED_INTENTS = new Set([
+  "addNode",
+  "removeNode",
+  "moveNode",
+  "addEdge",
+  "removeEdge",
+  "addIIP",
+  "updateIIP",
+  "removeIIP",
+  "addInport",
+  "addOutport",
+  "removeInport",
+  "removeOutport",
+  "renameInport",
+  "renameOutport",
+  "createGraph",
+  "removeGraph",
+  "makeSubgraph",
+  "moveUp",
+  "createGroup",
+  "removeGroup",
+  "updateGroup",
+  "setEdgeRoute",
+  "setPortRoute",
+  "moveIIP",
+  "moveExport",
+]);
+
+/** How long consecutive tracked transactions merge into one undo step
+ * (work document #39's gesture grouping: one drag = one step, rapid
+ * bursts collapse). The Glass emits a drag's node moves together at
+ * pointer-up, so the burst lands well inside the window. */
+const UNDO_CAPTURE_TIMEOUT_MS = 500;
+
+/**
+ * Transaction origin for intents that are deliberately outside the undo
+ * journal (work document #39's milestone split): grants, code buffers,
+ * project-file registry, signatures. They still apply authoritatively.
+ *
+ * @type {symbol}
+ */
+export const SYSTEM_INTENT_ORIGIN = Symbol("noflo-ui:system-intent");
+
+/**
+ * The graphs the intent currently being applied touches (the stack-item
+ * metadata source). Null outside a tracked intent.
+ *
+ * @type {Set<string> | null}
+ */
+let pendingIntentGraphs = null;
+
+/**
+ * Monotonic logical clock for the conflict ledger (work document #39):
+ * wall-clock timestamps collide inside one millisecond — the capture and
+ * a peer edit routinely land on the same tick — so ordering uses a
+ * process-local counter.
+ *
+ * @type {number}
+ */
+let undoClock = 0;
+
+/** @returns {number} */
+function undoTick() {
+  undoClock += 1;
+  return undoClock;
+}
+
+/**
+ * The conflict ledger (work document #39): per graph, the timestamp of the
+ * last remote-origin change inside it. An undo step whose graphs a peer
+ * touched after the step was captured is skipped with narration — undo
+ * never clobbers a peer's work, and it stops at the first conflict rather
+ * than risk clobbering through an older enclosing step.
+ *
+ * @param {Y.Doc} doc
+ * @param {{ manager: Y.UndoManager, ledger: Map<string, number> }} entry
+ */
+function wireUndoConflictLedger(doc, entry) {
+  const graphs = doc.getMap("graphs");
+  const watch = (/** @type {string} */ graphId) => {
+    const graph = graphs.get(graphId);
+    if (!(graph instanceof Y.Map)) return;
+    graph.observeDeep((/** @type {any[]} */ _events, /** @type {any} */ tr) => {
+      // Only changes we did not author poison the ledger: our intents
+      // carry the tracked identity origin; the manager's own undo/redo
+      // transactions carry the manager as their origin
+      if (
+        tr.origin === entry.manager ||
+        entry.manager.trackedOrigins.has(tr.origin)
+      ) {
+        return;
+      }
+      entry.ledger.set(graphId, undoTick());
+    });
+  };
+  graphs.observe((/** @type {any} */ event) => {
+    event.changes.keys.forEach(
+      (/** @type {any} */ change, /** @type {string} */ key) => {
+        if (change.action === "add") watch(key);
+      },
+    );
+  });
+  for (const graphId of graphs.keys()) watch(graphId);
+  // The stack items learn their graph scope from the dispatch side
+  // (`pendingIntentGraphs`) and their capture time from here
+  entry.manager.on(
+    "stack-item-added",
+    (/** @type {{ stackItem: any }} */ { stackItem }) => {
+      stackItem.meta.graphs = pendingIntentGraphs
+        ? new Set(pendingIntentGraphs)
+        : new Set(["*"]);
+      stackItem.meta.t = undoTick();
+    },
+  );
+  entry.manager.on(
+    "stack-item-updated",
+    (/** @type {{ stackItem: any }} */ { stackItem }) => {
+      if (pendingIntentGraphs) {
+        const graphs = stackItem.meta.graphs ?? new Set();
+        for (const g of pendingIntentGraphs) graphs.add(g);
+        stackItem.meta.graphs = graphs;
+      }
+    },
+  );
+}
+
+/**
+ * The undo manager for the bound document, created lazily on the first
+ * intent — after persistence load and the initial mesh sync, so neither
+ * ever enters the stack. Scoped to the graphs and registry subtrees with
+ * this device's identity as the only tracked origin: the shared-stack trap
+ * from the Yjs undo discussions cannot occur, because each device's manager
+ * only ever sees that device's own Glass intents. The identity can arrive
+ * after the manager did (mesh config is asynchronous), so the tracked-origin
+ * set is reconciled on every call — an earlier origin (the fallback, or a
+ * pre-rekey identity) stays tracked and its stack items remain undoable.
+ *
+ * @param {Y.Doc} doc
+ * @param {EngineState} state
+ * @returns {Y.UndoManager}
+ */
+function ensureUndoManager(doc, state) {
+  let entry = undoManagers.get(doc);
+  if (!entry) {
+    const manager = new Y.UndoManager(
+      [doc.getMap("graphs"), doc.getMap("registry")],
+      {
+        trackedOrigins: new Set(),
+        captureTimeout: UNDO_CAPTURE_TIMEOUT_MS,
+      },
+    );
+    entry = { manager, lastCommand: null, ledger: new Map() };
+    wireUndoConflictLedger(doc, entry);
+    undoManagers.set(doc, entry);
+  }
+  const origin = intentOrigin(state);
+  if (!entry.manager.trackedOrigins.has(origin)) {
+    entry.manager.trackedOrigins.add(origin);
+  }
+  return entry.manager;
+}
+
+/**
+ * Forces the next tracked transaction into a fresh undo step (work
+ * document #39): the worker calls it on project rebind and graph switch so
+ * a step never spans a navigation boundary. The Glass's own gesture
+ * boundaries come from the command-change rule in `handleIntent`.
+ *
+ * @param {Y.Doc} doc
+ * @param {EngineState} state
+ */
+export function stopUndoCapture(doc, state) {
+  undoManagers.get(doc)?.manager.stopCapturing();
+}
+
+/**
+ * The undo/redo availability report appended to every intent's echoes (work
+ * document #39): the Glass renders the corner chips from it and never
+ * guesses stack state.
+ *
+ * @param {Y.UndoManager | null} manager
+ * @returns {import("./Protocol.js").UndoStateEcho}
+ */
+function undoStateEcho(manager) {
+  if (!manager) {
+    return {
+      kind: "undo",
+      canUndo: false,
+      canRedo: false,
+      undoDepth: 0,
+      redoDepth: 0,
+    };
+  }
+  return {
+    kind: "undo",
+    canUndo: manager.canUndo(),
+    canRedo: manager.canRedo(),
+    undoDepth: manager.undoStack.length,
+    redoDepth: manager.redoStack.length,
+  };
 }
 
 /**
@@ -120,7 +374,7 @@ export const CORE_TYPE_HANDLERS = {
   // Ephemeral: accepted for mesh rebroadcast (mesh work document), never
   // echoes back and never mutates the CRDT.
   AWARENESS: () => ({ accepted: true, echoes: [] }),
-  INTENT: (doc, _state, message) => handleIntent(doc, message),
+  INTENT: (doc, state, message) => handleIntent(doc, state, message),
 };
 
 /**
@@ -158,6 +412,8 @@ export const INTENT_HANDLERS = {
   setPortRoute: intentSetPortRoute,
   moveIIP: intentMoveIIP,
   moveExport: intentMoveExport,
+  undo: intentUndo,
+  redo: intentRedo,
   createGroup: intentCreateGroup,
   removeGroup: intentRemoveGroup,
   updateGroup: intentUpdateGroup,
@@ -213,13 +469,178 @@ export function handleQuery(doc, message) {
  * @param {import("./Protocol.js").UIWorkerMessage} message
  * @returns {EngineResult}
  */
-export function handleIntent(doc, message) {
+/**
+ * Pops the journal's latest step and applies its inverse at the CRDT
+ * operation level (work document #39). The manager's own transactions are
+ * untracked by construction, so undo-of-undo composes through redo. An
+ * empty stack is a valid no-op: the availability echo tells the Glass why
+ * the chip is inert.
+ *
+ * @param {Y.Doc} doc
+ * @returns {EngineResult}
+ */
+function intentUndo(doc) {
+  const entry = undoManagers.get(doc);
+  if (!entry) {
+    return { accepted: true, echoes: [undoStateEcho(null)] };
+  }
+  const conflict = undoConflict(entry);
+  if (conflict) {
+    // Skip-and-report (work document #39): the step is not applied and is
+    // removed from the stack — undo never clobbers a peer's work, and it
+    // stops at the first conflict rather than risk clobbering through an
+    // older enclosing step
+    entry.manager.undoStack.pop();
+    return {
+      accepted: true,
+      echoes: [
+        {
+          kind: "progress",
+          operation: "graph.undo",
+          stage: "conflict",
+          state: "failed",
+          detail: { graphs: [...conflict] },
+        },
+        undoStateEcho(entry.manager),
+      ],
+    };
+  }
+  return undoRedoResult(entry.manager, entry.manager.undo(), "undo");
+}
+
+/**
+ * The top stack item's conflict verdict (work document #39): the graphs a
+ * peer touched after the step was captured, or null when the step is
+ * clean.
+ *
+ * @param {{ manager: Y.UndoManager, ledger: Map<string, number> }} entry
+ * @returns {Set<string> | null}
+ */
+function undoConflict(entry) {
+  const item = entry.manager.undoStack.at(-1);
+  if (!item) return null;
+  /** @type {Set<string>} */
+  const scope = /** @type {any} */ (item.meta).graphs ?? new Set(["*"]);
+  const conflicted = new Set();
+  for (const graphId of scope) {
+    const touchedAt =
+      graphId === "*"
+        ? Math.max(0, ...entry.ledger.values())
+        : (entry.ledger.get(graphId) ?? 0);
+    if (touchedAt > /** @type {any} */ ((item.meta).t ?? 0)) {
+      conflicted.add(graphId);
+    }
+  }
+  return conflicted.size > 0 ? conflicted : null;
+}
+
+/**
+ * The symmetric forward stack (work document #39): a new tracked operation
+ * clears it — Yjs semantics, enforced by the manager.
+ *
+ * @param {Y.Doc} doc
+ * @returns {EngineResult}
+ */
+function intentRedo(doc) {
+  const entry = undoManagers.get(doc);
+  if (!entry) {
+    return { accepted: true, echoes: [undoStateEcho(null)] };
+  }
+  return undoRedoResult(entry.manager, entry.manager.redo(), "redo");
+}
+
+/**
+ * Assembles the undo/redo result: narration (work document #34 — undo/redo
+ * are operations like any other; per-entity step phrases land with the
+ * detail work) plus the availability report.
+ *
+ * @param {Y.UndoManager} manager
+ * @param {any} applied
+ * @param {"undo" | "redo"} op
+ * @returns {EngineResult}
+ */
+function undoRedoResult(manager, applied, op) {
+  if (!applied) {
+    return { accepted: true, echoes: [undoStateEcho(manager)] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        kind: "progress",
+        operation: `graph.${op}`,
+        stage: op,
+        state: "done",
+      },
+      undoStateEcho(manager),
+    ],
+  };
+}
+
+/**
+ * Validates and applies one Glass intent.
+ *
+ * Undo/redo (work document #39) route to the Engine-owned Y.UndoManager:
+ * the manager tracks only `INTENT_ORIGIN` transactions scoped to the graphs
+ * and registry subtrees, so undoing applies this device's own changes at the
+ * operation level — concurrent remote edits are preserved by CRDT merge
+ * semantics, and a peer's work is never destroyed by another participant's
+ * undo. Tracked intents apply inside a transaction tagged with that origin;
+ * everything outside the milestone-1 scope applies untracked. Every
+ * accepted intent's echoes carry the undo-state report for the corner chips.
+ *
+ * @param {Y.Doc} doc
+ * @param {EngineState} state
+ * @param {any} message
+ * @returns {EngineResult}
+ */
+export function handleIntent(doc, state, message) {
   const payload = message.payload;
   const handler = INTENT_HANDLERS[message.command];
   if (!handler) {
     return { accepted: false, echoes: [] };
   }
-  return handler(doc, payload);
+  if (message.command === "undo" || message.command === "redo") {
+    // Ensure the manager (and its tracked-origin set) exists before the
+    // handler pops it; the manager applies its own transactions
+    ensureUndoManager(doc, state);
+    return handler(doc, payload);
+  }
+  const tracked = TRACKED_INTENTS.has(message.command);
+  let manager = null;
+  if (tracked) {
+    manager = ensureUndoManager(doc, state);
+    const entry = /** @type {{ lastCommand: string | null }} */ (
+      undoManagers.get(doc)
+    );
+    // A command change is a gesture boundary (work document #39): one
+    // drag's move burst merges into one step, but an add followed by a
+    // drag never shares a step — even inside the capture window
+    if (entry.lastCommand !== message.command) {
+      manager.stopCapturing();
+    }
+    entry.lastCommand = message.command;
+    // The stack-item metadata learns the touched graphs from the intent
+    // payload (the conflict ledger's granularity)
+    pendingIntentGraphs =
+      typeof payload?.graphId === "string" ? new Set([payload.graphId]) : null;
+  }
+  /** @type {EngineResult} */
+  let result = { accepted: false, echoes: [] };
+  try {
+    doc.transact(
+      () => {
+        result = handler(doc, payload);
+      },
+      tracked ? intentOrigin(state) : SYSTEM_INTENT_ORIGIN,
+    );
+  } finally {
+    pendingIntentGraphs = null;
+  }
+  if (result.accepted && manager) {
+    result.echoes.push(undoStateEcho(manager));
+  }
+  return result;
 }
 
 /**

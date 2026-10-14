@@ -24,7 +24,21 @@ import * as Y from "../../vendor/yjs.js";
 
 /** @param {import("yjs").Doc} doc @param {any} message */
 function handle(doc, message) {
-  return handleMessage(doc, createEngineState(), message);
+  const result = handleMessage(doc, createEngineState(), message);
+  // The undo-availability report rides every accepted tracked intent
+  // (work document #39); these specs assert the graph-protocol echoes
+  return { ...result, echoes: graphEchoes(result.echoes) };
+}
+
+/**
+ * Strips the undo-availability report from an echo list: the report rides
+ * every accepted tracked intent (work document #39), and these specs
+ * assert the graph-protocol echoes.
+ * @param {any[]} echoes
+ * @returns {any[]}
+ */
+function graphEchoes(echoes) {
+  return echoes.filter((/** @type {any} */ e) => e.kind !== "undo");
 }
 
 describe("envelope validation", () => {
@@ -813,7 +827,7 @@ describe("exported port intents", () => {
 
 describe("graph lifecycle (work document #23)", () => {
   it("creates a root graph and echoes creategraph", () => {
-    const result = handleMessage(createProjectDoc("p"), createEngineState(), {
+    const result = handle(createProjectDoc("p"), {
       type: "INTENT",
       command: "createGraph",
       payload: { graphId: "main", name: "Main" },
@@ -840,6 +854,7 @@ describe("graph lifecycle (work document #23)", () => {
       command: "createGraph",
       payload: { graphId: "main/A", name: "A", parent: "main" },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     assert.equal(result.echoes[0].payload.parent, "main");
   });
@@ -856,6 +871,7 @@ describe("graph lifecycle (work document #23)", () => {
       command: "createGraph",
       payload: { graphId: "main", name: "Main" },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     assert.deepEqual(result.echoes[0].payload, {
       id: "main",
@@ -911,6 +927,7 @@ describe("graph lifecycle (work document #23)", () => {
       command: "removeGraph",
       payload: { graphId: "main/A" },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     assert.deepEqual(result.echoes, [
       { protocol: "graph", command: "removegraph", payload: { id: "main/A" } },
@@ -936,6 +953,7 @@ describe("makeSubgraph (work document #23)", () => {
       command: "makeSubgraph",
       payload: { graphId: "main", nodeIds: ["A"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
 
     // Echo sequence: create, populate, export, switch. Exports are
@@ -1094,6 +1112,7 @@ describe("makeSubgraph (work document #23)", () => {
       command: "makeSubgraph",
       payload: { graphId: "main", nodeIds: ["A"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     const child = getGraph(doc, "main/A");
     assert.ok(child.get("inports").get("in0"), "connected in port exported");
@@ -1135,7 +1154,7 @@ describe("makeSubgraph (work document #23)", () => {
     // The export echo is followed by the re-derived signature echo, so
     // parents re-render the subgraph node with the new port
     assert.deepEqual(
-      result.echoes.map((e) => e.command),
+      graphEchoes(result.echoes).map((e) => e.command),
       ["addoutport", "signature"],
     );
     assert.equal(result.echoes[1].payload.componentName, "main/A");
@@ -1157,7 +1176,7 @@ describe("makeSubgraph (work document #23)", () => {
     });
     assert.ok(removal.accepted);
     assert.deepEqual(
-      removal.echoes.map((e) => e.command),
+      graphEchoes(removal.echoes).map((e) => e.command),
       ["removeoutport", "signature"],
     );
     assert.deepEqual(
@@ -1177,6 +1196,7 @@ describe("makeSubgraph (work document #23)", () => {
       command: "addInport",
       payload: { graphId: "main", name: "input", nodeId: "A", port: "in" },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     assert.deepEqual(
       result.echoes.map((e) => e.command),
@@ -1341,6 +1361,7 @@ describe("makeSubgraph with multiple nodes (work document #23)", () => {
       command: "makeSubgraph",
       payload: { graphId: "main", nodeIds: ["A", "B"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
 
     const child = getGraph(doc, "main/A");
@@ -1440,6 +1461,7 @@ describe("moveUp (work document #23)", () => {
       command: "moveUp",
       payload: { graphId: "main/A", nodeIds: ["B"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
 
     // B lives in the parent again
@@ -1491,6 +1513,7 @@ describe("moveUp (work document #23)", () => {
       command: "moveUp",
       payload: { graphId: "main/A", nodeIds: ["B", "C"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
 
     // Nodes and their internal wiring are in the parent
@@ -1531,6 +1554,7 @@ describe("moveUp (work document #23)", () => {
       command: "moveUp",
       payload: { graphId: "main/A", nodeIds: ["A"] },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
 
     // The moved node took over the id with its original component
@@ -1595,6 +1619,7 @@ describe("grant intents (work document #27)", () => {
       command: "revokePermission",
       payload: { grantId },
     });
+    result.echoes = graphEchoes(result.echoes);
     assert.ok(result.accepted);
     assert.deepEqual(result.echoes, [
       { protocol: "acl", command: "revoke", payload: { id: grantId } },

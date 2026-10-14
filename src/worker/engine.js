@@ -281,6 +281,11 @@ export async function startEngine(io, options = {}) {
    * the interface schemas the settings UI renders forms from).
    */
   const postMeshConfig = () => {
+    // The device's Reticulum identity is the undo journal's tracked
+    // origin (work document #39): intents apply with it from now on
+    if (typeof mesh.identityHash === "string" && mesh.identityHash) {
+      state.intentOrigin = mesh.identityHash;
+    }
     io.postMessage({
       kind: "mesh-config",
       config: mesh.config,

@@ -63,7 +63,12 @@ describe("engine dispatcher graph", () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    assert.equal(session.echoes.length, 1);
+    // The undo-availability report rides every accepted tracked intent
+    // (work document #39)
+    assert.equal(
+      session.echoes.filter((/** @type {any} */ e) => e.kind !== "undo").length,
+      1,
+    );
     assert.equal(session.echoes[0].protocol, "graph");
     assert.equal(session.echoes[0].command, "addnode");
     assert.equal(session.echoes[0].payload.id, "Read");

@@ -163,6 +163,8 @@ function narrateWorkerError(error) {
  * of a path request that looks stuck. */
 /** @type {Record<string, "online" | "offline">} */
 let peerReachability = {};
+/** The Engine's undo-journal availability report (work document #39). */
+let undoState = /** @type {any} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -386,6 +388,10 @@ const echoHandlers = createEchoHandlers({
   setDacarState: (state) => {
     dacarState = state;
     refreshMeshSettings();
+    refreshSyncPanel();
+  },
+  setUndoState: (state) => {
+    undoState = state;
     refreshSyncPanel();
   },
   ingestMeshStatus: (data) => {
@@ -999,6 +1005,7 @@ function refreshSyncPanel() {
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);
+  syncPanel.setUndoState(undoState);
   syncPanel.setInvite(meshInviteUri);
   syncPanel.setMeshError(meshError);
   syncPanel.setIdentityHash(meshIdentityHash);
@@ -1572,6 +1579,14 @@ async function init() {
   });
   on(syncPanel, "sync-join", (e) => {
     supervisor?.send({ type: "MESH", command: "join", payload: e.detail });
+  });
+  // Undo/redo (work document #39): the Engine owns the journal; the Glass
+  // only requests
+  on(syncPanel, "undo-attempt", () => {
+    sendIntent({ type: "INTENT", command: "undo" });
+  });
+  on(syncPanel, "redo-attempt", () => {
+    sendIntent({ type: "INTENT", command: "redo" });
   });
   on(syncPanel, "sync-settings", () => openMeshSettings());
   // Graceful mesh shutdown on page unload: the Engine tears its links down
