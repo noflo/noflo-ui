@@ -294,6 +294,8 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setPortRoute'; payload: { graphId: string; name: string; direction: 'inports' | 'outports'; route: number | null } }
   | { type: 'INTENT'; command: 'moveIIP'; payload: { graphId: string; id: string; x: number; y: number } }
   | { type: 'INTENT'; command: 'moveExport'; payload: { graphId: string; name: string; direction: 'in' | 'out'; x: number; y: number } }
+  | { type: 'INTENT'; command: 'undo'; payload: Record<string, never> }
+  | { type: 'INTENT'; command: 'redo'; payload: Record<string, never> }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
   | { type: 'MESH'; command: 'status' }
   | { type: 'MESH'; command: 'join'; payload: { invite: string } }
@@ -407,6 +409,7 @@ type EngineUIMessage =
   | { kind: 'mesh-dacar'; projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
   | { kind: 'mesh-invite'; uri: string }
   | { kind: 'factory-reset' }
+  | { kind: 'undo'; canUndo: boolean; canRedo: boolean; undoDepth: number; redoDepth: number }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)

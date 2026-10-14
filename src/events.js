@@ -120,6 +120,7 @@
  * @property {CustomEvent<void>} sync-settings
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
+ * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
  * @property {CustomEvent<{ config: any }>} mesh-configure
