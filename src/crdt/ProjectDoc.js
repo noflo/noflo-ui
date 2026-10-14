@@ -11,7 +11,7 @@
 import * as Y from "../../vendor/yjs.js";
 
 /** Current CRDT schema version of the project document. */
-export const PROJECT_SCHEMA_VERSION = 1;
+export const PROJECT_SCHEMA_VERSION = 2;
 
 /** Root map name for project metadata (name, id, schema version). */
 export const METADATA_MAP = "metadata";
@@ -24,6 +24,7 @@ export const REGISTRY_MAP = "registry";
 /** Root map name for structural test suites. */
 export const SPECS_MAP = "specs";
 export const DOCS_MAP = "docs";
+export const WORKDOCS_MAP = "workdocs";
 
 /**
  * One endpoint of an edge: the node id, the port name, and the ArrayPort
@@ -58,6 +59,11 @@ export const DOCS_MAP = "docs";
  */
 const MIGRATIONS = {
   1: () => {},
+  // Schema 2 adds the work-document collection (work document #9): the
+  // root map's existence is the migration — documents are created on use
+  2: (/** @type {Y.Doc} */ doc) => {
+    doc.getMap(WORKDOCS_MAP);
+  },
 };
 
 /**
@@ -860,6 +866,179 @@ export function setComponentSignature(doc, componentName, signature) {
     }
     registry.set(componentName, entry);
   });
+}
+
+// ---- Work documents (work document #9) -------------------------------------
+
+/**
+ * The work-document collection map (work document #9): CRDT-native project
+ * work documents, materialized to the project's rngit repository where the
+ * governed lifecycle happens. Created on demand — older documents (schema 1)
+ * gain the map through the schema-2 migration or first use.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Y.Map<any>}
+ */
+export function workDocsMap(doc) {
+  return doc.getMap(WORKDOCS_MAP);
+}
+
+let workDocCounter = 0;
+
+/**
+ * Generates a work-document id: deterministic-ish, unique within the
+ * project. rngit recycles its own numbers on deletion, so the CRDT id is
+ * the stable local identity and materialization maps it to the board's
+ * number per document.
+ *
+ * @returns {string}
+ */
+function newWorkDocId() {
+  workDocCounter += 1;
+  return `wd_${Date.now().toString(36)}_${workDocCounter.toString(36)}${Math.random()
+    .toString(36)
+    .slice(2, 6)}`;
+}
+
+/**
+ * The valid work-document scopes (work document #9): the rngit document
+ * model's states. The CRDT's scope is the materialization mirror — rngit's
+ * stricter rules are authoritative ("theirs"), and local transitions ride
+ * `pendingScope` until the board confirms them.
+ *
+ * @typedef {"proposed" | "active" | "completed"} WorkDocScope
+ */
+
+/**
+ * Creates a work document: title, initial Markdown content, the author's
+ * identity hash, and optional entity links. Returns the document's record
+ * (a Y.Map) or null when the validation fails. Never mutates on refusal.
+ *
+ * @param {Y.Doc} doc
+ * @param {Object} options
+ * @param {string} options.title
+ * @param {string} [options.content] Initial Markdown body.
+ * @param {string} options.author The author's identity hash.
+ * @param {string[]} [options.links] Entity ids the document references.
+ * @returns {Y.Map<any> | null}
+ */
+export function createWorkDoc(doc, { title, content, author, links }) {
+  if (typeof title !== "string" || !title.trim()) return null;
+  if (typeof author !== "string" || !author) return null;
+  if (content !== undefined && typeof content !== "string") return null;
+  if (links !== undefined && !Array.isArray(links)) return null;
+  const workdocs = workDocsMap(doc);
+  const id = newWorkDocId();
+  if (workdocs.has(id)) return null;
+  const record = new Y.Map();
+  const now = Date.now();
+  workdocs.set(id, record);
+  record.set("id", id);
+  record.set("title", title.trim());
+  const text = new Y.Text();
+  if (content) text.insert(0, content);
+  record.set("content", text);
+  record.set("scope", "proposed");
+  const authors = new Y.Array();
+  authors.push([author]);
+  record.set("authors", authors);
+  record.set("created", now);
+  record.set("edited", now);
+  const updates = new Y.Array();
+  updates.push([
+    {
+      id: 1,
+      created: now,
+      author,
+      content: content ?? "",
+    },
+  ]);
+  record.set("updates", updates);
+  const linkList = new Y.Array();
+  if (links && links.length > 0) linkList.push(links);
+  record.set("links", linkList);
+  return record;
+}
+
+/**
+ * Returns one work document's record, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getWorkDoc(doc, docId) {
+  return /** @type {Y.Map<any> | undefined} */ (workDocsMap(doc).get(docId));
+}
+
+/**
+ * Appends an update to a work document's thread (work document #9):
+ * updates are append-only — rngit materialization lands each change as a
+ * new thread entry, one-to-one with the board's comments. Returns the
+ * update's ordinal id, or null when the document is missing.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @param {Object} update
+ * @param {string} update.author The author's identity hash.
+ * @param {string} update.content The new accumulated content.
+ * @returns {number | null}
+ */
+export function appendWorkDocUpdate(doc, docId, { author, content }) {
+  if (typeof author !== "string" || !author) return null;
+  if (typeof content !== "string") return null;
+  const record = getWorkDoc(doc, docId);
+  if (!record) return null;
+  const updates = record.get("updates");
+  if (!(updates instanceof Y.Array)) return null;
+  const now = Date.now();
+  const ordinal = updates.length + 1;
+  updates.push([{ id: ordinal, created: now, author, content }]);
+  record.set("edited", now);
+  return ordinal;
+}
+
+/**
+ * Requests a scope transition for a work document (work document #9): the
+ * request rides `pendingScope` — the materialization loop proposes it to
+ * rngit, and reconciliation ("theirs") sets `scope` and clears the pending
+ * marker when the board confirms. Returns the document or null.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @param {"proposed" | "active" | "completed"} scope
+ * @returns {Y.Map<any> | null}
+ */
+export function requestWorkDocScope(doc, docId, scope) {
+  if (scope !== "proposed" && scope !== "active" && scope !== "completed") {
+    return null;
+  }
+  const record = getWorkDoc(doc, docId);
+  if (!record) return null;
+  record.set("pendingScope", scope);
+  return record;
+}
+
+/** Reconciles a work document's scope from the materialization ("theirs",
+ * work document #9): the board's state wins, and a pending request that
+ * matches is cleared. Used by the materializer, not by intents.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @param {"proposed" | "active" | "completed"} scope
+ * @returns {boolean}
+ */
+export function reconcileWorkDocScope(doc, docId, scope) {
+  if (scope !== "proposed" && scope !== "active" && scope !== "completed") {
+    return false;
+  }
+  const record = getWorkDoc(doc, docId);
+  if (!record) return false;
+  record.set("scope", scope);
+  if (record.get("pendingScope") === scope) {
+    record.delete("pendingScope");
+  }
+  return true;
 }
 
 /**

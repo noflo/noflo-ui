@@ -16,8 +16,10 @@ import {
   addInport,
   addNode,
   addOutport,
+  appendWorkDocUpdate,
   createGraph,
   createGroup,
+  createWorkDoc,
   deleteGraph,
   edgeIdFor,
   ensureComponent,
@@ -28,6 +30,7 @@ import {
   getGraph,
   getGroup,
   getNode,
+  getWorkDoc,
   graphChildren,
   moveExport,
   moveIIP,
@@ -40,6 +43,7 @@ import {
   removeGroupNodes,
   removeNode,
   removeNodeFromGroups,
+  requestWorkDocScope,
   revokePermission,
   setComponentCode,
   setComponentSignature,
@@ -415,6 +419,9 @@ export const INTENT_HANDLERS = {
   moveIIP: intentMoveIIP,
   moveExport: intentMoveExport,
   spliceNode: intentSpliceNode,
+  createWorkDoc: intentCreateWorkDoc,
+  updateWorkDoc: intentUpdateWorkDoc,
+  setWorkDocScope: intentSetWorkDocScope,
   undo: intentUndo,
   redo: intentRedo,
   createGroup: intentCreateGroup,
@@ -610,6 +617,17 @@ export function handleIntent(doc, state, message) {
     ensureUndoManager(doc, state);
     return handler(doc, payload);
   }
+  // Work-document operations attribute their author from the device
+  // identity (work document #9); they apply outside the undo journal
+  // like the other registry-family intents
+  pendingWorkDocAuthor =
+    message.command === "createWorkDoc" ||
+    message.command === "updateWorkDoc" ||
+    message.command === "setWorkDocScope"
+      ? typeof intentOrigin(state) === "string"
+        ? /** @type {string} */ (intentOrigin(state))
+        : null
+      : null;
   const tracked = TRACKED_INTENTS.has(message.command);
   let manager = null;
   if (tracked) {
@@ -640,6 +658,7 @@ export function handleIntent(doc, state, message) {
     );
   } finally {
     pendingIntentGraphs = null;
+    pendingWorkDocAuthor = null;
   }
   if (result.accepted && manager) {
     result.echoes.push(undoStateEcho(manager));
@@ -1464,6 +1483,122 @@ function intentRemoveEdge(doc, payload) {
     payload: { id },
   };
   return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * The work-document operations' author (work document #9): the device's
+ * identity hash, set by `handleIntent` alongside the tracked-transaction
+ * origin. The update threads attribute materialized changes per author.
+ *
+ * @type {string | null}
+ */
+let pendingWorkDocAuthor = null;
+
+/**
+ * Creates a work document (work document #9): title, optional Markdown
+ * content, the author from the device identity, optional entity links.
+ * The document starts proposed; scope transitions to the governed states
+ * ride `setWorkDocScope` + materialization.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentCreateWorkDoc(doc, payload) {
+  const { title, content, links } = payload ?? {};
+  const author = pendingWorkDocAuthor;
+  if (!author) {
+    return { accepted: false, echoes: [] };
+  }
+  const record = createWorkDoc(doc, {
+    title,
+    content,
+    author,
+    links,
+  });
+  if (!record) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "created",
+        payload: {
+          id: record.get("id"),
+          title: record.get("title"),
+          scope: record.get("scope"),
+          author,
+        },
+      },
+    ],
+  };
+}
+
+/**
+ * Appends an update to a work document's thread (work document #9):
+ * updates are append-only — content changes land as new thread entries,
+ * one-to-one with rngit's comments on materialization.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentUpdateWorkDoc(doc, payload) {
+  const { docId, content } = payload ?? {};
+  const author = pendingWorkDocAuthor;
+  if (!author || typeof docId !== "string" || typeof content !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const ordinal = appendWorkDocUpdate(doc, docId, { author, content });
+  if (ordinal === null) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "updated",
+        payload: { id: docId, updateId: ordinal, author },
+      },
+    ],
+  };
+}
+
+/**
+ * Requests a work document's scope transition (work document #9): the
+ * request rides `pendingScope` — rngit's stricter rules are authoritative
+ * ("theirs"), and the materialization loop confirms or the reconciliation
+ * reverts. The intent records the request; it does not decide it.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetWorkDocScope(doc, payload) {
+  const { docId, scope } = payload ?? {};
+  if (typeof docId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  if (scope !== "proposed" && scope !== "active" && scope !== "completed") {
+    return { accepted: false, echoes: [] };
+  }
+  const record = requestWorkDocScope(doc, docId, scope);
+  if (!record) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "scoped",
+        payload: { id: docId, pendingScope: scope },
+      },
+    ],
+  };
 }
 
 /**

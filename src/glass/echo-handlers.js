@@ -149,6 +149,22 @@ export function createEchoHandlers(deps) {
     "kind:mesh-status": (data) => {
       deps.ingestMeshStatus(data);
     },
+    "workdoc/created": (data) => {
+      // Work-document echoes (work document #9): the Glass renders from
+      // the CRDT mirror; these are protocol legibility until the Project
+      // corner's workdoc surface consumes them
+      console.debug(`[echo] workdoc/created ${data.payload?.id ?? ""}`);
+    },
+    "workdoc/updated": (data) => {
+      console.debug(
+        `[echo] workdoc/updated ${data.payload?.id ?? ""} #${data.payload?.updateId ?? ""}`,
+      );
+    },
+    "workdoc/scoped": (data) => {
+      console.debug(
+        `[echo] workdoc/scoped ${data.payload?.id ?? ""} → ${data.payload?.pendingScope ?? ""}`,
+      );
+    },
     "kind:undo": (data) => {
       // Undo/redo availability (work document #39): the corner chips
       // render from this report, never from guessed stack state

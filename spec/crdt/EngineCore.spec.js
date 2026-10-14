@@ -18,6 +18,7 @@ import {
   getNode,
   getProjectMetadata,
   grantAssertion,
+  PROJECT_SCHEMA_VERSION,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import * as Y from "../../vendor/yjs.js";
@@ -518,7 +519,11 @@ describe("schema integrity", () => {
         metadata: { x: 0, y: 0 },
       },
     });
-    assert.equal(getProjectMetadata(doc).get("schemaVersion"), 1);
+    assert.equal(
+      getProjectMetadata(doc).get("schemaVersion"),
+      PROJECT_SCHEMA_VERSION,
+      "the current schema version is untouched by engine operations",
+    );
   });
 });
 

@@ -306,6 +306,40 @@
  */
 
 /**
+ * Creates a work document (work document #9): the CRDT-native project
+ * work document — collaborative Markdown, the update thread, entity
+ * links. Starts proposed; the governed lifecycle happens at
+ * materialization (work document #9's "theirs" reconciliation).
+ *
+ * @typedef {Object} IntentCreateWorkDocMessage
+ * @property {'INTENT'} type
+ * @property {'createWorkDoc'} command
+ * @property {{ title: string, content?: string, links?: string[] }} payload
+ */
+
+/**
+ * Appends an update to a work document's thread (work document #9):
+ * updates are append-only, one-to-one with rngit's comments on
+ * materialization.
+ *
+ * @typedef {Object} IntentUpdateWorkDocMessage
+ * @property {'INTENT'} type
+ * @property {'updateWorkDoc'} command
+ * @property {{ docId: string, content: string }} payload
+ */
+
+/**
+ * Requests a work document's scope transition (work document #9): rides
+ * `pendingScope` until rngit confirms ("theirs"); the intent records the
+ * request, it does not decide it.
+ *
+ * @typedef {Object} IntentSetWorkDocScopeMessage
+ * @property {'INTENT'} type
+ * @property {'setWorkDocScope'} command
+ * @property {{ docId: string, scope: 'proposed' | 'active' | 'completed' }} payload
+ */
+
+/**
  * Undo (work document #39): pops the Engine-owned journal's latest step —
  * this device's own intent transactions only — and applies its inverse at
  * the CRDT operation level. The Engine reports the stack state on the
@@ -338,6 +372,25 @@
  * @property {boolean} canRedo
  * @property {number} undoDepth
  * @property {number} redoDepth
+ */
+
+/**
+ * Work-document echoes (work document #9): legibility for the replica
+ * stream — the Glass renders from the CRDT mirror, these carry the
+ * protocol visibility.
+ *
+ * @typedef {Object} WorkDocCreatedEcho
+ * @property {'workdoc'} protocol
+ * @property {'created'} command
+ * @property {{ id: string, title: string, scope: string, author: string }} payload
+ * @typedef {Object} WorkDocUpdatedEcho
+ * @property {'workdoc'} protocol
+ * @property {'updated'} command
+ * @property {{ id: string, updateId: number, author: string }} payload
+ * @typedef {Object} WorkDocScopedEcho
+ * @property {'workdoc'} protocol
+ * @property {'scoped'} command
+ * @property {{ id: string, pendingScope: 'proposed' | 'active' | 'completed' }} payload
  */
 
 /**
@@ -448,6 +501,9 @@
  *   | IntentMoveIIPMessage
  *   | IntentMoveExportMessage
  *   | IntentSpliceNodeMessage
+ *   | IntentCreateWorkDocMessage
+ *   | IntentUpdateWorkDocMessage
+ *   | IntentSetWorkDocScopeMessage
  *   | IntentUndoMessage
  *   | IntentRedoMessage
  *   | MeshConfigureMessage
@@ -514,6 +570,9 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "moveIIP" },
   { type: "INTENT", command: "moveExport" },
   { type: "INTENT", command: "spliceNode" },
+  { type: "INTENT", command: "createWorkDoc" },
+  { type: "INTENT", command: "updateWorkDoc" },
+  { type: "INTENT", command: "setWorkDocScope" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },
@@ -800,6 +859,9 @@ export const MESH_COMMANDS = [
  *   | MeshInviteEcho
  *   | FactoryResetEcho
  *   | UndoStateEcho
+ *   | WorkDocCreatedEcho
+ *   | WorkDocUpdatedEcho
+ *   | WorkDocScopedEcho
  *   | YSyncMessage
  *   | YUpdateMessage
  *   | AwarenessEcho
@@ -835,6 +897,9 @@ export const ECHO_MESSAGES = [
   { kind: "mesh-invite" },
   { kind: "factory-reset" },
   { kind: "undo" },
+  { protocol: "workdoc", command: "created" },
+  { protocol: "workdoc", command: "updated" },
+  { protocol: "workdoc", command: "scoped" },
   { protocol: "system", command: "heartbeat" },
   { protocol: "system", command: "signature" },
   { protocol: "graph", command: "addnode" },
