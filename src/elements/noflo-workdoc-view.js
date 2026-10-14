@@ -1,22 +1,25 @@
 /**
  * @file Work document view (work document #9, #28): the document's primary
- * element — a full screen with the title, the scope state (including the
- * pending request vocabulary), and the content as an editable Markdown
- * surface.
+ * element — read and edit states, the title field, the body as a
+ * collaborative CodeMirror surface, and the immutable update thread with
+ * its always-ready composer at the bottom.
  *
- * Editing rides the intent path (the Glass has no write authority, SPEC
- * Appendix A): local edits are optimistic, and a debounced flush sends the
- * accumulated content as an `updateWorkDoc` intent — the engine appends
- * the update thread entry, the replica confirms, and materialization
- * carries it to the board. Concurrent peer edits stream in through the
- * mirror's Y.Text on the next flush cycle (the v1 window is the session;
- * character-level live merging is the yCollab refinement).
+ * The body binding is the component code editor's pattern: `yCollab` over
+ * the mirror document's workdoc Y.Text — remote edits arrive through the
+ * y-update stream and appear live; local transactions relay out as
+ * `setWorkDocBody` binary-update intents (the transaction's beforeState
+ * diff), so the engine's authoritative buffer integrates the SAME items
+ * and its echo reconciles every mirror idempotently. The Glass has no
+ * write authority; the engine applies the update through the same intent
+ * dispatch as every other mutation.
+ *
+ * The thread is the immutable record (work document #12's rules): the
+ * composer at the bottom posts entries via `updateWorkDoc` — append-only,
+ * attributed, materialized one-to-one as the board's comments.
  */
 
 import { emit } from "../events.js";
-
-/** The idle period after the last keystroke before the flush fires. */
-const SAVE_DEBOUNCE_MS = 800;
+import { codeEditorTheme } from "./noflo-code-editor.js";
 
 /** @param {unknown} value @returns {string} */
 function escapeHtml(value) {
@@ -34,69 +37,109 @@ export class FlowWorkDocView extends HTMLElement {
     this.attachShadow({ mode: "open" });
     /** @type {any} */
     this._doc = null;
-    /** The local working buffer: optimistic edits between flushes. */
-    this._buffer = "";
-    /** @type {ReturnType<typeof setTimeout> | null} */
-    this._saveTimer = null;
-    /** Whether the flush is in flight (the replica has not confirmed). */
-    this._pendingSave = false;
+    /** The collaborative body surface: the mirror's Y.Text. */
+    this._ytext = null;
+    /** The vendored CodeMirror surface, injected at open. */
+    this._cm = null;
+    /** @type {any} */
+    this._view = null;
+    /** @type {((update: Uint8Array, origin: any) => void) | null} */
+    this._docUpdate = null;
+    /** @type {any} */
+    this._conf = null;
+    /** Read is the default state; editing swaps the body to the editor. */
+    this._editing = false;
   }
 
   /**
-   * Opens the document view with a work document's state (work document
-   * #9): the projection from the mirror.
+   * Opens the document view (work document #9).
    *
-   * @param {{ id: string, title: string, scope: string, pendingScope?: string, content: string, boardId?: number | string | null, edited?: number }} doc
+   * @param {Object} options
+   * @param {{ id: string, title: string, scope: string, pendingScope?: string, boardId?: number | string | null, edited?: number, updates?: any[] }} options.doc
+   * @param {any} options.ytext The mirror's content Y.Text for this document.
+   * @param {any} options.cm The vendored CodeMirror surface.
    */
-  open(doc) {
+  open({ doc, ytext, cm }) {
     this._doc = doc;
-    this._buffer = doc.content ?? "";
-    this._pendingSave = false;
+    this._ytext = ytext;
+    this._cm = cm;
+    this._editing = false;
     this.hidden = false;
     this.render();
   }
 
-  /** Closes the view, flushing any pending edit first. */
+  /** Closes the view and tears the collaborative binding down. */
   close() {
-    this.flush();
+    this._teardown();
     this._doc = null;
+    this._ytext = null;
+    this._cm = null;
     this.hidden = true;
     this.render();
   }
 
-  /** Sends the accumulated buffer as the document's latest content. */
-  flush() {
-    if (this._saveTimer) {
-      clearTimeout(this._saveTimer);
-      this._saveTimer = null;
+  /** Swaps between the read and edit states. */
+  toggleEdit() {
+    this._editing = !this._editing;
+    if (this._editing) {
+      this._bindEditor();
+    } else {
+      this._teardownEditor();
     }
-    if (!this._doc) return;
-    if (this._buffer === (this._doc.content ?? "")) {
-      this._pendingSave = false;
-      this.render();
-      return;
-    }
-    this._pendingSave = true;
-    emit(this, "workdoc-save", {
-      docId: this._doc.id,
-      content: this._buffer,
-    });
     this.render();
   }
 
   /**
-   * The mirror confirmed the flush: the authoritative content arrived.
-   *
-   * @param {string} content
+   * Binds the collaborative editor to the mirror's Y.Text (work document
+   * #29's binding, per the code editor's documented pitfalls).
    */
-  confirmed(content) {
-    if (!this._doc) return;
-    this._doc.content = content;
-    if (this._pendingSave && this._buffer === content) {
-      this._pendingSave = false;
-    }
-    this.render();
+  _bindEditor() {
+    if (!this._cm || !this._ytext) return;
+    const host = /** @type {any} */ (this.shadowRoot).querySelector(".body");
+    if (!host) return;
+    const plugins = this._cm.yCollab(this._ytext);
+    this._view = new this._cm.EditorView({
+      doc: this._ytext.toString(),
+      extensions: [
+        ...codeEditorTheme(this._cm),
+        this._cm.basicSetup,
+        this._cm.markdown(),
+        ...plugins,
+      ],
+      parent: host,
+    });
+    this._conf = this._view.state?.facet?.(this._cm.ySyncFacet) ?? null;
+    this._docUpdate = (
+      /** @type {Uint8Array} */ update,
+      /** @type {any} */ origin,
+    ) => {
+      if (!this._conf || origin !== this._conf) return;
+      emit(this, "workdoc-body-update", {
+        docId: this._doc.id,
+        update,
+      });
+    };
+    this._ytext.doc.on("update", this._docUpdate);
   }
+
+  /** Unbinds the collaborative editor. */
+  _teardownEditor() {
+    if (this._ytext?.doc && this._docUpdate) {
+      this._ytext.doc.off("update", this._docUpdate);
+    }
+    this._docUpdate = null;
+    this._view?.destroy();
+    this._view = null;
+    this._conf = null;
+  }
+
+  /** Tears everything down (close). */
+  _teardown() {
+    this._teardownEditor();
+  }
+
+  /** The mirror confirmed body edits: nothing to do — the yCollab
+   * binding renders the replica's state live. */
 
   render() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
@@ -108,6 +151,17 @@ export class FlowWorkDocView extends HTMLElement {
     const scopeLabel = doc.pendingScope
       ? `${doc.scope} → ${doc.pendingScope} (requested)`
       : doc.scope;
+    const updates = doc.updates ?? [];
+    const thread = updates
+      .map(
+        (update) => `<div class="update">
+            <span class="update-meta">#${update.id} · ${escapeHtml(
+              String(update.author ?? "").slice(0, 8),
+            )} · ${new Date(update.created ?? 0).toLocaleString()}</span>
+            <div class="update-content">${escapeHtml(update.content ?? "")}</div>
+          </div>`,
+      )
+      .join("");
     shadow.innerHTML = `
       <style>
         :host {
@@ -127,11 +181,19 @@ export class FlowWorkDocView extends HTMLElement {
           padding: 10px 14px;
           border-bottom: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
         }
-        .head .title {
+        .head input.title {
           flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: inherit;
+          font: inherit;
+          font-size: 14px;
+          padding: 2px 4px;
+          border-radius: var(--ui-radius, 6px);
+        }
+        .head input.title:focus {
+          outline: 1px solid var(--ui-accent, rgb(90, 200, 250));
         }
         .badge {
           padding: 1px 6px;
@@ -143,68 +205,123 @@ export class FlowWorkDocView extends HTMLElement {
         .badge.active { background: color-mix(in srgb, var(--ui-age-calm, #7ee3a0) 25%, transparent); color: var(--ui-age-calm, #7ee3a0); }
         .badge.completed { background: color-mix(in srgb, var(--ui-muted, #889) 25%, transparent); color: var(--ui-muted, #889); }
         .badge.pending { outline: 1px dashed var(--ui-age-attention, #e3a17e); }
-        textarea {
+        .doc-id { font-size: 10px; opacity: 0.6; }
+        .body {
           flex: 1;
-          resize: none;
-          border: none;
-          outline: none;
+          overflow: auto;
           padding: 14px;
-          background: transparent;
-          color: inherit;
-          font: inherit;
           font-size: 13px;
           line-height: 1.5;
-          tab-size: 2;
+          white-space: pre-wrap;
         }
-        .status {
-          padding: 6px 14px;
-          font-size: 10px;
-          opacity: 0.65;
+        .body .cm-editor { height: 100%; background: transparent; }
+        .body .cm-editor.cm-focused { outline: none; }
+        .thread {
           border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          max-height: 40%;
+          overflow: auto;
+          padding: 8px 14px;
         }
+        .thread .thread-head {
+          font-size: 10px;
+          opacity: 0.6;
+          margin-bottom: 6px;
+        }
+        .update {
+          padding: 4px 0;
+          border-bottom: 1px solid color-mix(in srgb, var(--ui-panel-border, rgb(58, 63, 72)) 40%, transparent);
+        }
+        .update-meta { font-size: 10px; opacity: 0.6; }
+        .update-content { font-size: 12px; white-space: pre-wrap; }
+        .composer {
+          display: flex;
+          gap: 8px;
+          padding: 8px 14px;
+          border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          align-items: flex-end;
+        }
+        .composer textarea {
+          flex: 1;
+          resize: none;
+          height: 44px;
+          background: transparent;
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: var(--ui-radius, 6px);
+          color: inherit;
+          font: inherit;
+          font-size: 12px;
+          padding: 6px 8px;
+          outline: none;
+        }
+        .composer textarea:focus { outline: 1px solid var(--ui-accent, rgb(90, 200, 250)); }
       </style>
       <div class="head">
         <button class="secondary" data-action="back" title="Back">◀</button>
-        <span class="title">${escapeHtml(doc.title)}</span>
+        <input class="title" value="${escapeHtml(doc.title)}" aria-label="Document title">
         <span class="doc-id" title="Stable work document id">${escapeHtml(doc.id.slice(0, 8))}</span>
         ${doc.boardId ? `<span class="doc-board" title="Materialized on the board">#${escapeHtml(String(doc.boardId))}</span>` : ""}
         <span class="badge ${escapeHtml(doc.scope)}">${escapeHtml(scopeLabel)}</span>
+        <button class="secondary" data-action="toggle-edit" title="${this._editing ? "Stop editing" : "Edit body"}">${this._editing ? "Read" : "Edit"}</button>
       </div>
-      <textarea spellcheck="false" placeholder="Write the document…">${escapeHtml(this._buffer)}</textarea>
-      <div class="status" aria-live="polite">${
-        this._pendingSave
-          ? "Saving…"
-          : "Editing — changes save automatically. Content materializes to the project's rngit repository, where scope and signatures are governed."
-      }</div>
+      <div class="body"></div>
+      <div class="thread">
+        <div class="thread-head">Updates — append-only, materialized as the board's comments</div>
+        ${thread || `<div class="update-meta">No updates yet.</div>`}
+      </div>
+      <div class="composer">
+        <textarea class="composer-input" placeholder="Post an update… (immutable once posted)"></textarea>
+        <button data-action="post">Post update</button>
+      </div>
     `;
-    const textarea = /** @type {HTMLTextAreaElement} */ (
-      shadow.querySelector("textarea")
-    );
-    textarea.addEventListener("input", () => {
-      this._buffer = textarea.value;
-      if (this._saveTimer) clearTimeout(this._saveTimer);
-      this._saveTimer = setTimeout(() => this.flush(), SAVE_DEBOUNCE_MS);
-      const status = /** @type {HTMLElement} */ (
-        shadow.querySelector(".status")
+    // The body: read state renders the mirror's text; edit state binds
+    // the collaborative editor (the binding targets the .body host)
+    if (this._editing) {
+      this._bindEditor();
+    } else {
+      const body = /** @type {HTMLElement} */ (
+        shadow.querySelector(".body")
       );
-      if (status) status.textContent = "Editing — unsaved changes…";
-    });
-    textarea.addEventListener("keydown", (/** @type {KeyboardEvent} */ e) => {
-      // Tab inserts two spaces instead of leaving the editing surface
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        textarea.setRangeText("  ", start, end, "end");
-        this._buffer = textarea.value;
-        textarea.dispatchEvent(new Event("input", { bubbles: false }));
+      if (body && this._ytext) body.textContent = this._ytext.toString();
+    }
+    const titleInput = /** @type {HTMLInputElement} */ (
+      shadow.querySelector("input.title")
+    );
+    titleInput.addEventListener("change", () => {
+      const title = titleInput.value.trim();
+      if (title && title !== doc.title) {
+        emit(this, "workdoc-title", { docId: doc.id, title });
       }
     });
+    titleInput.addEventListener("keydown", (/** @type {KeyboardEvent} */ e) => {
+      if (e.key === "Enter") titleInput.blur();
+    });
+    shadow
+      .querySelector("[data-action='toggle-edit']")
+      ?.addEventListener("click", () => this.toggleEdit());
     shadow
       .querySelector("[data-action='back']")
       ?.addEventListener("click", () => {
-        emit(this, "workdoc-close", { docId: this._doc.id });
+        emit(this, "workdoc-close", { docId: doc.id });
       });
+    const composerInput = /** @type {HTMLTextAreaElement} */ (
+      shadow.querySelector(".composer-input")
+    );
+    const post = () => {
+      const content = composerInput.value;
+      if (!content.trim()) return;
+      emit(this, "workdoc-post", { docId: doc.id, content });
+      composerInput.value = "";
+    };
+    shadow
+      .querySelector("[data-action='post']")
+      ?.addEventListener("click", post);
+    composerInput.addEventListener("keydown", (/** @type {KeyboardEvent} */ e) => {
+      // Ctrl/Cmd+Enter posts; plain Enter inserts a newline
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        post();
+      }
+    });
   }
 }
 

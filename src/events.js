@@ -125,6 +125,9 @@
  * @property {CustomEvent<void>} workdoc-create
  * @property {CustomEvent<{ docId: string, content: string }>} workdoc-save
  * @property {CustomEvent<{ docId: string }>} workdoc-close
+ * @property {CustomEvent<{ docId: string, update: Uint8Array }>} workdoc-body-update
+ * @property {CustomEvent<{ docId: string, title: string }>} workdoc-title
+ * @property {CustomEvent<{ docId: string, content: string }>} workdoc-post
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close

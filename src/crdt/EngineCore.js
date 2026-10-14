@@ -17,6 +17,7 @@ import {
   addNode,
   addOutport,
   appendWorkDocUpdate,
+  applyWorkDocBodyUpdate,
   createGraph,
   createGroup,
   createWorkDoc,
@@ -44,6 +45,7 @@ import {
   removeNode,
   removeNodeFromGroups,
   requestWorkDocScope,
+  setWorkDocTitle,
   revokePermission,
   setComponentCode,
   setComponentSignature,
@@ -422,6 +424,8 @@ export const INTENT_HANDLERS = {
   createWorkDoc: intentCreateWorkDoc,
   updateWorkDoc: intentUpdateWorkDoc,
   setWorkDocScope: intentSetWorkDocScope,
+  setWorkDocBody: intentSetWorkDocBody,
+  setWorkDocTitle: intentSetWorkDocTitle,
   undo: intentUndo,
   redo: intentRedo,
   createGroup: intentCreateGroup,
@@ -623,7 +627,8 @@ export function handleIntent(doc, state, message) {
   pendingWorkDocAuthor =
     message.command === "createWorkDoc" ||
     message.command === "updateWorkDoc" ||
-    message.command === "setWorkDocScope"
+    message.command === "setWorkDocScope" ||
+    message.command === "setWorkDocTitle"
       ? typeof intentOrigin(state) === "string"
         ? /** @type {string} */ (intentOrigin(state))
         : null
@@ -1562,6 +1567,69 @@ function intentUpdateWorkDoc(doc, payload) {
         protocol: "workdoc",
         command: "updated",
         payload: { id: docId, updateId: ordinal, author },
+      },
+    ],
+  };
+}
+
+/**
+ * Relays a binary Yjs update into a work document's body (work document
+ * #9): the live editing path — the document view's collaborative binding
+ * relays local transactions as binary diffs (the component code editor's
+ * pattern), so the engine's authoritative buffer integrates the SAME
+ * items and its echo reconciles every mirror idempotently. The update
+ * thread is untouched: body edits are live state, the composer at the
+ * bottom posts the immutable thread entries.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetWorkDocBody(doc, payload) {
+  const { docId, update } = payload ?? {};
+  if (typeof docId !== "string" || !(update instanceof Uint8Array)) {
+    return { accepted: false, echoes: [] };
+  }
+  const applied = applyWorkDocBodyUpdate(doc, docId, update);
+  if (!applied) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "edited",
+        payload: { id: docId },
+      },
+    ],
+  };
+}
+
+/**
+ * Sets a work document's title (work document #9): user-owned data edited
+ * in the document view; materialization carries it as-is.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetWorkDocTitle(doc, payload) {
+  const { docId, title } = payload ?? {};
+  if (typeof docId !== "string" || typeof title !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const record = setWorkDocTitle(doc, docId, title);
+  if (!record) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "titled",
+        payload: { id: docId, title: record.get("title") },
       },
     ],
   };

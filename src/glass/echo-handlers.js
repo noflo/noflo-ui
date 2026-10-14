@@ -168,6 +168,12 @@ export function createEchoHandlers(deps) {
         `[echo] workdoc/scoped ${data.payload?.id ?? ""} → ${data.payload?.pendingScope ?? ""}`,
       );
     },
+    "workdoc/edited": (data) => {
+      console.debug(`[echo] workdoc/edited ${data.payload?.id ?? ""}`);
+    },
+    "workdoc/titled": (data) => {
+      console.debug(`[echo] workdoc/titled ${data.payload?.id ?? ""}`);
+    },
     "kind:undo": (data) => {
       // Undo/redo availability (work document #39): the corner chips
       // render from this report, never from guessed stack state

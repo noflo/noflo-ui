@@ -1005,6 +1005,50 @@ export function appendWorkDocUpdate(doc, docId, { author, content }) {
 }
 
 /**
+ * Sets a work document's title (work document #9): the title is
+ * user-owned data edited in the document view; materialization carries it
+ * as-is (the id marker lives in the body's first line at push time, never
+ * in the title). Returns the record or null.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @param {string} title
+ * @returns {Y.Map<any> | null}
+ */
+export function setWorkDocTitle(doc, docId, title) {
+  if (typeof title !== "string" || !title.trim()) return null;
+  const record = getWorkDoc(doc, docId);
+  if (!record) return null;
+  record.set("title", title.trim());
+  record.set("edited", Date.now());
+  return record;
+}
+
+/**
+ * Applies a binary Yjs update to a work document's body (work document
+ * #9): the live editing path — the Glass's collaborative binding relays
+ * local transactions as binary diffs (the component code editor's
+ * pattern), so the engine's authoritative buffer integrates the SAME
+ * items and its echo reconciles every mirror idempotently. The update
+ * thread is untouched: body edits are live state, the thread records
+ * posted updates.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} docId
+ * @param {Uint8Array} update
+ * @returns {boolean}
+ */
+export function applyWorkDocBodyUpdate(doc, docId, update) {
+  if (!(update instanceof Uint8Array)) return false;
+  const record = getWorkDoc(doc, docId);
+  if (!record) return false;
+  if (!(record.get("content") instanceof Y.Text)) return false;
+  Y.applyUpdate(doc, update);
+  record.set("edited", Date.now());
+  return true;
+}
+
+/**
  * Requests a scope transition for a work document (work document #9): the
  * request rides `pendingScope` — the materialization loop proposes it to
  * rngit, and reconciliation ("theirs") sets `scope` and clears the pending

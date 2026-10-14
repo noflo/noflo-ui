@@ -329,6 +329,28 @@
  */
 
 /**
+ * Relays a binary Yjs update into a work document's body (work document
+ * #9): the live editing path — the collaborative binding relays local
+ * transactions as binary diffs, the engine integrating the same items
+ * (the component code editor's pattern). The update thread is untouched.
+ *
+ * @typedef {Object} IntentSetWorkDocBodyMessage
+ * @property {'INTENT'} type
+ * @property {'setWorkDocBody'} command
+ * @property {{ docId: string, update: Uint8Array }} payload
+ */
+
+/**
+ * Sets a work document's title (work document #9): user-owned data,
+ * materialized as-is.
+ *
+ * @typedef {Object} IntentSetWorkDocTitleMessage
+ * @property {'INTENT'} type
+ * @property {'setWorkDocTitle'} command
+ * @property {{ docId: string, title: string }} payload
+ */
+
+/**
  * Requests a work document's scope transition (work document #9): rides
  * `pendingScope` until rngit confirms ("theirs"); the intent records the
  * request, it does not decide it.
@@ -391,6 +413,14 @@
  * @property {'workdoc'} protocol
  * @property {'scoped'} command
  * @property {{ id: string, pendingScope: 'proposed' | 'active' | 'completed' }} payload
+ * @typedef {Object} WorkDocEditedEcho
+ * @property {'workdoc'} protocol
+ * @property {'edited'} command
+ * @property {{ id: string }} payload
+ * @typedef {Object} WorkDocTitledEcho
+ * @property {'workdoc'} protocol
+ * @property {'titled'} command
+ * @property {{ id: string, title: string }} payload
  */
 
 /**
@@ -504,6 +534,8 @@
  *   | IntentCreateWorkDocMessage
  *   | IntentUpdateWorkDocMessage
  *   | IntentSetWorkDocScopeMessage
+ *   | IntentSetWorkDocBodyMessage
+ *   | IntentSetWorkDocTitleMessage
  *   | IntentUndoMessage
  *   | IntentRedoMessage
  *   | MeshConfigureMessage
@@ -573,6 +605,8 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "createWorkDoc" },
   { type: "INTENT", command: "updateWorkDoc" },
   { type: "INTENT", command: "setWorkDocScope" },
+  { type: "INTENT", command: "setWorkDocBody" },
+  { type: "INTENT", command: "setWorkDocTitle" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },
@@ -862,6 +896,8 @@ export const MESH_COMMANDS = [
  *   | WorkDocCreatedEcho
  *   | WorkDocUpdatedEcho
  *   | WorkDocScopedEcho
+ *   | WorkDocEditedEcho
+ *   | WorkDocTitledEcho
  *   | YSyncMessage
  *   | YUpdateMessage
  *   | AwarenessEcho
@@ -900,6 +936,8 @@ export const ECHO_MESSAGES = [
   { protocol: "workdoc", command: "created" },
   { protocol: "workdoc", command: "updated" },
   { protocol: "workdoc", command: "scoped" },
+  { protocol: "workdoc", command: "edited" },
+  { protocol: "workdoc", command: "titled" },
   { protocol: "system", command: "heartbeat" },
   { protocol: "system", command: "signature" },
   { protocol: "graph", command: "addnode" },
