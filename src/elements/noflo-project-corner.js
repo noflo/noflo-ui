@@ -49,7 +49,10 @@ export class FlowProjectCorner extends FlowCornerElement {
    */
   setWorkDocs(docs) {
     this._docs = (docs ?? []).slice().sort((a, b) => b.edited - a.edited);
-    this._visible = this._docs.length > 0;
+    // Visible whenever a project is open — the creation affordance lives
+    // here, so an empty project must still reach it (the Hidden state's
+    // "no documents" rule predates the create affordance; amending)
+    this._visible = true;
     this.render();
   }
 
@@ -145,7 +148,10 @@ export class FlowProjectCorner extends FlowCornerElement {
    */
   expandedHtml() {
     if (this._docs.length === 0) {
-      return `<div class="panel"><div class="empty">No work documents yet.</div></div>`;
+      return `<div class="panel">
+        <div class="empty">No work documents yet.</div>
+        <button class="secondary" data-action="create-doc">New document</button>
+      </div>`;
     }
     const rows = this._docs
       .map((doc) => {

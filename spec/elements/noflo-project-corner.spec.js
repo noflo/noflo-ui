@@ -36,11 +36,20 @@ describe("FlowProjectCorner (work document #9)", () => {
     document.body.innerHTML = "";
   });
 
-  it("hides when the project holds no documents", () => {
+  it("stays reachable with zero documents: the create affordance lives here", () => {
     const el = makeCorner();
     el.setWorkDocs([]);
-    assert.equal(el._visible, false, "nothing to show: hidden");
-    assert.equal(el.shadowRoot.innerHTML, "", "the corner renders nothing");
+    assert.equal(el._visible, true, "the corner shows on an empty project");
+    const chip = /** @type {HTMLElement} */ (
+      el.shadowRoot.querySelector(".chip")
+    );
+    assert.match(chip.textContent ?? "", /work docs 0/);
+    el.expanded = true;
+    el.render();
+    assert.ok(
+      el.shadowRoot.querySelector("[data-action='create-doc']"),
+      "the create affordance is reachable on an empty project",
+    );
     el.remove();
   });
 
