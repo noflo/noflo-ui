@@ -38,6 +38,10 @@ describe("work documents (work document #9)", () => {
       "The parser needs a sketch.",
     );
     assert.equal(record.get("updates").length, 1);
+    // The id is a stable 32-hex hash (16 bytes) — the app's opaque
+    // identifier shape; rngit's number is stamped separately on
+    // materialization and recycles on deletion
+    assert.match(record.get("id"), /^[0-9a-f]{32}$/);
     assert.equal(record.get("updates").get(0).author, "a".repeat(32));
     assert.equal(
       record.get("links").length,

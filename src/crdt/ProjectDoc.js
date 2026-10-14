@@ -883,21 +883,27 @@ export function workDocsMap(doc) {
   return doc.getMap(WORKDOCS_MAP);
 }
 
-let workDocCounter = 0;
-
 /**
- * Generates a work-document id: deterministic-ish, unique within the
- * project. rngit recycles its own numbers on deletion, so the CRDT id is
- * the stable local identity and materialization maps it to the board's
- * number per document.
+ * Generates a work-document id: a stable 32-hex hash (16 random bytes),
+ * the same opaque identifier shape the app uses everywhere (identity
+ * hashes, grant ids). rngit assigns its own document numbers at
+ * materialization and recycles them on deletion, so the CRDT hash is the
+ * stable local identity and the board's number is stamped onto the record
+ * as metadata when it exists.
  *
  * @returns {string}
  */
 function newWorkDocId() {
-  workDocCounter += 1;
-  return `wd_${Date.now().toString(36)}_${workDocCounter.toString(36)}${Math.random()
-    .toString(36)
-    .slice(2, 6)}`;
+  const bytes = new Uint8Array(16);
+  const cryptoObject = /** @type {any} */ (globalThis).crypto;
+  if (cryptoObject?.getRandomValues) {
+    cryptoObject.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
