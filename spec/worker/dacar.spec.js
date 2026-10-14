@@ -60,7 +60,10 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
     assert.ok(authorization.deltas.length > 0, "carries a signed batch");
 
     const node = await recipient();
-    assert.equal(await node.ingestAuthorization(authorization), 2);
+    assert.deepEqual(await node.ingestAuthorization(authorization), {
+      applied: 2,
+      reason: null,
+    });
     assert.equal(
       await node.evaluate(projectId, "sync", joinerHash),
       true,
@@ -82,7 +85,10 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
   it("grants observer only the sync permission", async () => {
     const authorization = await mint(joinerHash, "observer");
     const node = await recipient();
-    assert.equal(await node.ingestAuthorization(authorization), 1);
+    assert.deepEqual(await node.ingestAuthorization(authorization), {
+      applied: 1,
+      reason: null,
+    });
     assert.equal(await node.evaluate(projectId, "sync", joinerHash), true);
     assert.equal(await node.evaluate(projectId, "write", joinerHash), false);
   });
@@ -131,7 +137,10 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
       anchorPubkeyHex: toHex(await anchor.getPublicKey()),
       salt: "cd".repeat(32),
     });
-    assert.equal(await node.ingestAuthorization(authorization), 2);
+    assert.deepEqual(await node.ingestAuthorization(authorization), {
+      applied: 2,
+      reason: null,
+    });
     assert.equal(await node.evaluate(projectId, "sync", joinerHash), false);
   });
 
@@ -159,7 +168,11 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
     const node = await recipient();
     // The recipient is configured for the real anchor: the impostor's grant
     // is bound against the designated anchor and refused before ingestion
-    assert.equal(await node.ingestAuthorization(authorization), 0);
+    // with a reason the grants UI can show (work document #26)
+    assert.deepEqual(await node.ingestAuthorization(authorization), {
+      applied: 0,
+      reason: "foreign-anchor",
+    });
     assert.equal(await node.evaluate(projectId, "sync", joinerHash), false);
   });
 
@@ -174,7 +187,10 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
         pubkey: toHex(await other.getPublicKey()),
       },
     };
-    assert.equal(await node.ingestAuthorization(forged), 0);
+    assert.deepEqual(await node.ingestAuthorization(forged), {
+      applied: 0,
+      reason: "forged-pubkey",
+    });
     assert.equal(await node.evaluate(projectId, "sync", joinerHash), false);
   });
 
@@ -187,6 +203,32 @@ describe("Dacar grants (work document #25 §2, §4.2)", async () => {
       0,
     );
     assert.equal(await node.evaluate(projectId, "sync", joinerHash), null);
+    // The reasoned ingest path names the state, for the grants UI
+    assert.deepEqual(await node.ingestAuthorization(authorization), {
+      applied: 0,
+      reason: "unconfigured",
+    });
+  });
+
+  it("names tampered payloads in the refusal reason (work document #26)", async () => {
+    const authorization = await mint(joinerHash);
+    const node = await recipient();
+    // Corrupt every contained delta: flip a byte inside each payload's
+    // trailing signature. Verify-on-ingest then drops everything and the
+    // refusal carries a reason the grants UI can show.
+    const raw = atob(authorization.deltas);
+    const corrupted =
+      raw.slice(0, 3) +
+      String.fromCharCode(raw.charCodeAt(3) ^ 0xff) +
+      raw.slice(4, raw.length - 5) +
+      String.fromCharCode(raw.charCodeAt(raw.length - 5) ^ 0xff) +
+      raw.slice(raw.length - 4);
+    const tampered = { ...authorization, deltas: btoa(corrupted) };
+    assert.deepEqual(await node.ingestAuthorization(tampered), {
+      applied: 0,
+      reason: "tampered",
+    });
+    assert.equal(await node.evaluate(projectId, "sync", joinerHash), false);
   });
 
   it("resets state on demand (tombstone rebuilds)", async () => {

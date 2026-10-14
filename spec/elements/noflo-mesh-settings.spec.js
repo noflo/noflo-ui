@@ -234,6 +234,83 @@ describe("FlowMeshSettings (work document #21)", () => {
     el.remove();
   });
 
+  it("renders the participant path: disabled mint form and refused reasons (work document #26)", () => {
+    const el = makeElement();
+    el.open({ enabled: false, room: "r", identity: "", interfaces: [] }, "", {
+      websocket: websocketSchema,
+    });
+    el.setDacarState({
+      anchor: { hash: "b".repeat(32), owner: false },
+      configured: true,
+      grants: [
+        {
+          id: "grant-3",
+          peerHash: "deadbeefdeadbeef",
+          role: "operator",
+          issued: 1,
+          revoked: null,
+          status: "refused",
+          refusedReason: "foreign-anchor",
+        },
+      ],
+      wallet: [],
+    });
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    // Participant: the anchor panel names the role, the mint form is off
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#trust-anchor-role"))
+        .textContent ?? "",
+      /Participant/,
+    );
+    const peer = /** @type {HTMLInputElement} */ (
+      shadow.querySelector("#new-grant-peer")
+    );
+    assert.ok(peer.disabled, "mint form disabled off the anchor's device");
+    assert.ok(
+      /** @type {HTMLButtonElement} */ (
+        shadow.querySelector('[data-action="add-grant"]')
+      ).disabled,
+    );
+    // The refused badge carries its reason (work document #26's reason codes)
+    assert.match(
+      /** @type {HTMLElement} */ (shadow.querySelector("#grant-list"))
+        .textContent ?? "",
+      /refused — unknown anchor/,
+    );
+    // Revocation is owner-only: no revoke button for participants
+    assert.equal(shadow.querySelector('[data-grant-revoke="grant-3"]'), null);
+    el.remove();
+  });
+
+  it("shows the unconfigured notice instead of pending badges (work document #26)", () => {
+    const el = makeElement();
+    el.open({ enabled: false, room: "r", identity: "", interfaces: [] }, "", {
+      websocket: websocketSchema,
+    });
+    el.setDacarState({
+      anchor: { hash: "b".repeat(32), owner: false },
+      configured: false,
+      grants: [
+        {
+          id: "grant-4",
+          peerHash: "cafebabecafebabe",
+          role: "observer",
+          issued: 1,
+          revoked: null,
+          status: "unverified",
+        },
+      ],
+      wallet: [],
+    });
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const list = /** @type {HTMLElement} */ (
+      shadow.querySelector("#grant-list")
+    );
+    assert.match(list.textContent ?? "", /Trust anchor not yet learned/);
+    assert.match(list.textContent ?? "", /unverified/);
+    el.remove();
+  });
+
   it("emits grant and revoke intents", () => {
     const el = makeElement();
     /** @type {any[]} */

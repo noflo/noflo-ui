@@ -529,6 +529,8 @@ export async function createMeshSync({
   /** Per-entry verification status, reported to the Glass. */
   /** @type {Map<string, string>} */
   const entryStatuses = new Map();
+  /** Why a grant's authorization was refused at ingest (work document #26). */
+  const entryRefusalReasons = new Map();
   let reconciling = false;
   /** Set when a reconcile is requested while one is already running. */
   let pendingReconcile = false;
@@ -913,6 +915,7 @@ export async function createMeshSync({
     ingestedEntries.clear();
     entryRevocations.clear();
     entryStatuses.clear();
+    entryRefusalReasons.clear();
     dacarNode = null;
     dacarNodeAnchorHash = "";
     dacarNodeProjectId = "";
@@ -926,9 +929,11 @@ export async function createMeshSync({
    *
    * @param {any} grants
    * @param {string} projectId
+   * @param {boolean} configured Whether the Dacar node has its designated
+   *   anchor (drives the Glass's report-level pending notice).
    * @returns {Promise<void>}
    */
-  async function reportDacarState(grants, projectId) {
+  async function reportDacarState(grants, projectId, configured) {
     /** @type {Array<any>} */
     const grantReports = [];
     for (const [id, entry] of grants.entries()) {
@@ -939,7 +944,8 @@ export async function createMeshSync({
         role: plain.role,
         issued: plain.issued,
         revoked: plain.revoked,
-        status: entryStatuses.get(id) ?? "pending",
+        status: entryStatuses.get(id) ?? "unverified",
+        refusedReason: entryRefusalReasons.get(id) ?? null,
       });
     }
     /** @type {Array<any>} */
@@ -966,6 +972,7 @@ export async function createMeshSync({
         hash: trustAnchorHash(),
         owner: hasAuthority(),
       },
+      configured,
       grants: grantReports,
       wallet,
     });
@@ -1078,11 +1085,24 @@ export async function createMeshSync({
           entryStatuses.set(id, "revoked");
           continue;
         }
-        if (!plain.authorization) continue;
+        if (!plain.authorization) {
+          // Pre-#27 grants carry no authorization: they can never verify
+          // (work document #26's report shows why instead of a bare
+          // refusal)
+          entryRefusalReasons.set(id, "unsigned");
+          continue;
+        }
         const fingerprint = authorizationFingerprint(plain.authorization);
         if (ingestedEntries.get(id) === fingerprint) continue;
         ingestedEntries.set(id, fingerprint);
-        await node.ingestAuthorization(plain.authorization);
+        const { reason } = await node.ingestAuthorization(plain.authorization);
+        if (reason) {
+          // The refusal is the entry's report status until the grant is
+          // corrected or revoked (work document #26)
+          entryRefusalReasons.set(id, reason);
+          continue;
+        }
+        entryRefusalReasons.delete(id);
         // Every verified grant the device holds is cataloged in the wallet
         // (§5.2): its own, the host's, and every peer's — the grants map is
         // the replication, the wallet the local catalog
@@ -1104,23 +1124,31 @@ export async function createMeshSync({
           (await node.evaluate(projectId, "sync", peerHash)) === true,
         );
       }
-      // Per-entry verification status for the Glass: a grant entry is
-      // verified when the Engine allows its peer, refused when the peer is
-      // known but unauthorized, pending while the Dacar node is still
-      // unconfigured (no designated anchor or salt learned yet)
+      // Per-entry verification status for the Glass (work document #26's
+      // reduced enum): a grant entry is verified when the Engine allows its
+      // peer, refused when the authorization failed ingest (reasoned) or
+      // the engine denies the peer, revoked when tombstoned. While the
+      // node is unconfigured nothing can verify: entries report
+      // "unverified" and the report-level `configured` flag tells the
+      // Glass why.
       for (const [id, entry] of grants.entries()) {
         const plain = entry.toJSON();
         if (plain.revoked !== null) {
           entryStatuses.set(id, "revoked");
         } else if (!node.isConfigured()) {
-          entryStatuses.set(id, "pending");
+          entryStatuses.set(id, "unverified");
         } else if (grantedCache.get(plain.peerHash) === true) {
           entryStatuses.set(id, "verified");
         } else {
           entryStatuses.set(id, "refused");
+          if (!entryRefusalReasons.has(id)) {
+            // Ingested fine but the engine denies the peer (wrong
+            // subject, expired, foreign salt, deny op)
+            entryRefusalReasons.set(id, "unauthorized");
+          }
         }
       }
-      await reportDacarState(grants, projectId);
+      await reportDacarState(grants, projectId, node.isConfigured());
     } catch (err) {
       console.warn(
         "Dacar reconcile pass failed:",

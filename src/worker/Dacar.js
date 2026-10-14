@@ -228,14 +228,29 @@ function base64ToBytes(/** @type {string} */ base64) {
  * @property {(batchBytes: Uint8Array) => Promise<number>} ingestDeltas
  *   Authenticates and applies received bytes — one §5.3 payload or a §11.1
  *   batch — returning the applied count.
- * @property {(authorization: Authorization) => Promise<number>} ingestAuthorization
+ * @property {(authorization: Authorization) => Promise<{ applied: number, reason: RefusalReason | null }>} ingestAuthorization
  *   Structurally binds a grant to the designated anchor (unknown anchors and
- *   forged pubkeys are rejected) and ingests its deltas.
+ *   forged pubkeys are rejected) and ingests its deltas. On refusal the
+ *   reason names the failure class (work document #26): nothing reached the
+ *   state.
  * @property {(projectId: string, relation: string, subjectHex: string) => Promise<boolean | null>} evaluate
  *   Dacar Engine evaluation (§7) of `(resource, relation, grantee)`; null
  *   while unconfigured.
  * @property {() => void} reset Discards all ingested state (used when the
  *   grants map's tombstones require a rebuild).
+ */
+
+/**
+ * Why an authorization was refused at ingest (work document #26's reason
+ * codes for the grants UI). `null` means the deltas were accepted.
+ *
+ * - `unconfigured`: no designated anchor yet — nothing can verify.
+ * - `foreign-anchor`: the grant names an anchor other than the designated
+ *   one (an unknown authority).
+ * - `forged-pubkey`: the anchor pubkey does not hash to the claimed hash.
+ * - `tampered`: the deltas failed verify-on-ingest (signature or framing).
+ *
+ * @typedef {"unconfigured" | "foreign-anchor" | "forged-pubkey" | "tampered"} RefusalReason
  */
 
 /**
@@ -304,7 +319,7 @@ export function createDacarNode() {
       return await ingestRaw(batchBytes);
     },
     async ingestAuthorization(authorization) {
-      if (!config) return 0;
+      if (!config) return { applied: 0, reason: "unconfigured" };
       // Bind the grant to the designated anchor before any crypto runs: a
       // forged pubkey or a foreign anchor never reaches the state (§7)
       const designatedAnchor = /** @type {Set<string>} */ (
@@ -313,16 +328,19 @@ export function createDacarNode() {
         .values()
         .next().value;
       if (authorization?.anchor?.hash !== designatedAnchor) {
-        return 0;
+        return { applied: 0, reason: "foreign-anchor" };
       }
       if (
         toHex(
           await Identity.truncatedHash(fromHex(authorization.anchor.pubkey)),
         ) !== authorization.anchor.hash
       ) {
-        return 0;
+        return { applied: 0, reason: "forged-pubkey" };
       }
-      return await ingestRaw(base64ToBytes(authorization.deltas));
+      const applied = await ingestRaw(base64ToBytes(authorization.deltas));
+      return applied > 0
+        ? { applied, reason: null }
+        : { applied: 0, reason: "tampered" };
     },
     async evaluate(projectId, relation, subjectHex) {
       if (!engine) return null;

@@ -178,24 +178,45 @@ export class FlowMeshSettings extends HTMLElement {
    */
   grantsListHtml() {
     const grants = this._dacarState?.grants ?? [];
+    const notices = [];
+    if (this._dacarState && this._dacarState.configured === false) {
+      notices.push(
+        `<div class="hint">Trust anchor not yet learned — grant verification is pending until the bootstrap handoff delivers it.</div>`,
+      );
+    }
     if (grants.length === 0) {
-      return `<div class="hint">No grants yet. Peers receive grants through invites or access requests.</div>`;
+      return `${notices.join("")}<div class="hint">No grants yet. Peers receive grants through invites or access requests.</div>`;
     }
     const badges = {
       verified: "verified",
       refused: "refused",
-      pending: "pending verification",
+      unverified: "unverified",
+    };
+    const refusalLabels = {
+      "foreign-anchor": "unknown anchor",
+      "forged-pubkey": "forged key material",
+      tampered: "tampered payload",
+      unauthorized: "denied by the engine",
+      unsigned: "legacy grant without authorization",
     };
     const owner = this._dacarState?.anchor?.owner === true;
-    return grants
+    return `${notices.join("")}${grants
       .map((/** @type {any} */ grant) => {
+        const reason =
+          grant.status === "refused" && grant.refusedReason
+            ? ` — ${
+                /** @type {Record<string, string>} */ (refusalLabels)[
+                  grant.refusedReason
+                ] ?? escapeHtml(grant.refusedReason)
+              }`
+            : "";
         const badge =
           grant.revoked !== null
             ? `<span class="revoked">revoked</span>`
             : `<span class="badge ${escapeHtml(grant.status)}">${
                 /** @type {Record<string, string>} */ (badges)[grant.status] ??
                 escapeHtml(grant.status)
-              }</span>`;
+              }${reason}</span>`;
         const revoke =
           owner && grant.revoked === null
             ? `<button class="danger" data-grant-revoke="${escapeHtml(grant.id)}">Revoke</button>`
@@ -212,7 +233,7 @@ export class FlowMeshSettings extends HTMLElement {
             ${revoke}
           </div>`;
       })
-      .join("");
+      .join("")}`;
   }
 
   /**

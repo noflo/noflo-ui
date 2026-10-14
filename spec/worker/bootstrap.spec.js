@@ -159,9 +159,9 @@ describe("bootstrap host decision engine (work document #25 §3.1)", () => {
         anchorPubkeyHex: response.config.anchor.pubkey,
         salt: response.config.salt,
       });
-      assert.equal(
+      assert.deepEqual(
         await node.ingestAuthorization(pair.deliveries[0].authorization),
-        2,
+        { applied: 2, reason: null },
       );
       assert.equal(
         await node.evaluate(pair.projectId, "sync", pair.joinerHash),
