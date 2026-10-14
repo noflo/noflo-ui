@@ -104,6 +104,7 @@ describe("FlowMinimap (work document #5)", () => {
       new el.ownerDocument.defaultView.PointerEvent("pointermove", {
         clientX: grabPoint.x + 20,
         clientY: grabPoint.y,
+        buttons: 1,
         bubbles: true,
         composed: true,
       }),
@@ -117,6 +118,69 @@ describe("FlowMinimap (work document #5)", () => {
       Math.abs(navigations[0].x - (before.x + expected)) < 0.01,
       `center shifted by the drag delta: ${JSON.stringify(navigations[0])}`,
     );
+    el.remove();
+  });
+
+  it("pointer events do not reach the canvas pan gesture", () => {
+    const el = makeElement();
+    el.update(view(), { x: -40, y: -40, w: 120, h: 80 });
+    // The editor's pan gesture listens above the minimap: a bubbled
+    // pointerdown there starts a canvas pan alongside the minimap grab
+    /** @type {Event[]} */
+    const leaked = [];
+    document.body.addEventListener("pointerdown", (e) => leaked.push(e));
+    const svg = el.shadowRoot.querySelector("svg");
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointerdown", {
+        clientX: 40,
+        clientY: 30,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    assert.equal(leaked.length, 0, "the minimap isolates its gestures");
+    el.remove();
+  });
+
+  it("a released button ends a grab even if pointerup was lost", () => {
+    const el = makeElement();
+    el.update(view(), { x: -40, y: -40, w: 120, h: 80 });
+    const svg = el.shadowRoot.querySelector("svg");
+    const layout = el.layout();
+    const vp = layout.viewport;
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointerdown", {
+        clientX: vp.x + vp.w / 2,
+        clientY: vp.y + vp.h / 2,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    // The button releases without a pointerup reaching us
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointermove", {
+        clientX: vp.x + vp.w / 2 + 5,
+        clientY: vp.y + vp.h / 2,
+        buttons: 0,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    // A later move must not navigate: the drag ended
+    /** @type {any[]} */
+    const navigations = [];
+    el.addEventListener("minimap-navigate", (/** @type {any} */ e) =>
+      navigations.push(e.detail),
+    );
+    svg.dispatchEvent(
+      new el.ownerDocument.defaultView.PointerEvent("pointermove", {
+        clientX: vp.x + vp.w / 2 + 10,
+        clientY: vp.y + vp.h / 2,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    assert.equal(navigations.length, 0, "the stale grab was cleared");
     el.remove();
   });
 

@@ -166,7 +166,13 @@ export class FlowMinimap extends HTMLElement {
   _wirePointer() {
     const svg = /** @type {any} */ (this.shadowRoot)?.querySelector("svg");
     if (!svg) return;
+    // The minimap lives inside the editor's #viewport: its pointer events
+    // MUST NOT reach the canvas pan gesture — a bubbled pointerdown would
+    // start a canvas pan alongside the minimap grab, and the competing
+    // capture steals the pointerup, wedging the grab open. Isolate here.
+    const isolate = (/** @type {Event} */ e) => e.stopPropagation();
     svg.addEventListener("pointerdown", (/** @type {PointerEvent} */ e) => {
+      isolate(e);
       this._navigating = true;
       svg.setPointerCapture(e.pointerId);
       const graph = this._graphAtPointer(e);
@@ -189,7 +195,14 @@ export class FlowMinimap extends HTMLElement {
       if (!grabbed) this._navigate(e);
     });
     svg.addEventListener("pointermove", (/** @type {PointerEvent} */ e) => {
+      isolate(e);
       if (!this._navigating) return;
+      // Safety: a pointerup we never saw (a stolen capture elsewhere)
+      // must not wedge the grab — a released button ends the drag
+      if (e.buttons === 0) {
+        this._endDrag();
+        return;
+      }
       if (this._grab) {
         const graph = this._graphAtPointer(e);
         emit(this, "minimap-navigate", {
@@ -200,13 +213,19 @@ export class FlowMinimap extends HTMLElement {
       }
       this._navigate(e);
     });
-    svg.addEventListener("pointerup", () => {
-      this._navigating = false;
-      this._grab = null;
-    });
-    svg.addEventListener("pointerleave", () => {
-      if (!this._grab) this._navigating = false;
-    });
+    const end = (/** @type {Event} */ e) => {
+      isolate(e);
+      this._endDrag();
+    };
+    svg.addEventListener("pointerup", end);
+    svg.addEventListener("pointercancel", end);
+    svg.addEventListener("lostpointercapture", () => this._endDrag());
+  }
+
+  /** Ends any active drag: the grab and the navigation state clear. */
+  _endDrag() {
+    this._navigating = false;
+    this._grab = null;
   }
 
   /**
