@@ -32,12 +32,14 @@ import * as Y from "../../vendor/yjs.js";
  * @property {(fields: Record<string, any>) => Promise<any>} send One
  *   `/mgmt/work` request; resolves the decoded payload, throws on a
  *   non-OK status.
+ * @property {() => Promise<void>} [connect] Establishes the link when the
+ *   transport manages one (the real rngit transport; fakes may omit it).
  */
 
 /**
  * @typedef {Object} MaterializerReport
  * @property {string} docId
- * @property {"proposed" | "commented" | "edited" | "activated" | "completed" | "skipped"} action
+ * @property {"proposed" | "commented" | "edited" | "activated" | "completed" | "fetched" | "skipped"} action
  * @property {string} [detail] The narration-relevant detail (why a step
  *   was skipped, for the #34 channel).
  */
@@ -69,6 +71,21 @@ export class WorkDocMaterializer {
     this.doc = doc;
     this.transport = transport;
     this.authorIdentityHash = authorIdentityHash;
+    /** Whether the transport's link is established (the connect narration
+     * fires once). */
+    this.connected = false;
+  }
+
+  /**
+   * Establishes the transport's link (idempotent): the connect narration
+   * is the caller's.
+   *
+   * @returns {Promise<void>}
+   */
+  async connect() {
+    if (this.connected) return;
+    if (this.transport.connect) await this.transport.connect();
+    this.connected = true;
   }
 
   /**
@@ -212,6 +229,114 @@ export class WorkDocMaterializer {
         record.delete("pendingScope");
       }
     }
+  }
+
+  /**
+   * The board → CRDT reconciliation (work document #9's "theirs" rule):
+   * lists the board's documents, matches them to local records by the
+   * marker line, pulls thread entries the board holds beyond the local
+   * watermark, adopts the board's scope decisions, and detects deletions
+   * (a document gone from the board leaves the CRDT too — its number
+   * recycles, so absence is absence, not a tombstone).
+   *
+   * New board documents without a marker line (created rngit-side) are
+   * outside this pass — importing them is a later decision.
+   *
+   * @returns {Promise<MaterializerReport[]>}
+   */
+  async reconcileFromBoard() {
+    /** @type {MaterializerReport[]} */
+    const reports = [];
+    const workdocs = this.doc.getMap("workdocs");
+    const listing = await this.transport.send({
+      operation: "list",
+      scope: "all",
+    });
+    const boardDocs = [
+      ...(listing?.active ?? []),
+      ...(listing?.proposed ?? []),
+      ...(listing?.completed ?? []),
+    ];
+
+    // Adopt the board's state per matched document
+    for (const boardDoc of boardDocs) {
+      const marker = /noflo-ui-work-doc: ([0-9a-f]{32})/.exec(
+        boardDoc.content ?? "",
+      );
+      if (!marker) continue;
+      const docId = marker[1];
+      const record = /** @type {Y.Map<any> | undefined} */ (
+        workdocs.get(docId)
+      );
+      if (!record) continue;
+      const plain = record.toJSON();
+
+      // The board's scope is the state ("theirs")
+      if (boardDoc.scope && boardDoc.scope !== plain.scope) {
+        record.set("scope", boardDoc.scope);
+        if (record.get("pendingScope") === boardDoc.scope) {
+          record.delete("pendingScope");
+        }
+        reports.push({
+          docId,
+          action: "activated",
+          detail: `the board moved it to ${boardDoc.scope}`,
+        });
+      }
+
+      // The board's comments beyond the local watermark: pull them into
+      // the thread, attributed to their board authors
+      const boardComments = boardDoc.comments ?? [];
+      const localUpdates = plain.updates ?? [];
+      const watermark = plain.boardComments ?? 0;
+      const localMaterialized = plain.boardComments ?? 0;
+      if (boardComments.length > localMaterialized) {
+        const updates = record.get("updates");
+        for (
+          let index = localMaterialized;
+          index < boardComments.length;
+          index++
+        ) {
+          const comment = boardComments[index];
+          updates.push([
+            {
+              id: localUpdates.length + 1,
+              created: (comment.created ?? 0) * 1000,
+              author: comment.author ?? "",
+              content: comment.content ?? "",
+            },
+          ]);
+        }
+        record.set("boardComments", boardComments.length);
+        record.set("edited", Date.now());
+        reports.push({
+          docId,
+          action: "fetched",
+          detail: `${boardComments.length - localMaterialized} update${
+            boardComments.length - localMaterialized === 1 ? "" : "s"
+          } from the board`,
+        });
+      }
+    }
+
+    // Deletions: a local record whose board document vanished disappears
+    // (work document #9 update #5 — the number recycles, absence is final)
+    const boardIds = new Set(
+      boardDocs.map((/** @type {any} */ d) => d.meta?.author && d.id),
+    );
+    for (const [docId, record] of workdocs.entries()) {
+      const boardId = record.toJSON().boardId;
+      if (!boardId) continue;
+      if (!boardDocs.some((/** @type {any} */ d) => d.id === boardId)) {
+        workdocs.delete(docId);
+        reports.push({
+          docId,
+          action: "skipped",
+          detail: "the board no longer holds this document — removed locally",
+        });
+      }
+    }
+    return reports;
   }
 
   /**

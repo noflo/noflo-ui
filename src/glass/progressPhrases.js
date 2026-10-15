@@ -51,6 +51,25 @@ const PHRASES = {
   "project.bind.adopt": "Adopting the joined project",
   "project.bind.rebind": "Binding sync to the project room",
   "mesh.connect.transport.failed": "Mesh transport failed: {error}",
+  "workdocs.remote.connect": {
+    running: "Connecting to the rngit remote {repo}",
+    done: "Connected to the rngit remote {repo}",
+    failed: "The rngit remote {repo} could not be reached: {error}",
+  },
+  "workdocs.materialize.proposed": "Proposed work doc {title} as #{board}",
+  "workdocs.materialize.commented":
+    "Added {count} update(s) to work doc {title}",
+  "workdocs.materialize.edited": "Pushed edits to work doc {title}",
+  "workdocs.materialize.fetched": "Fetched work doc {board}: {detail}",
+  "workdocs.materialize.activated": "The board activated work doc {title}",
+  "workdocs.materialize.completed": "The board completed work doc {title}",
+  "workdocs.materialize.skipped": {
+    done: "Work doc {title}: {detail}",
+    failed: "Work doc {title}: {detail}",
+  },
+  "workdocs.materialize.sync": {
+    failed: "Materialization failed: {error}",
+  },
 };
 
 /**

@@ -42,6 +42,22 @@ export const RNGIT_IDX_REPOSITORY = 0;
 /** The OK status byte (the Python client's response statuses). */
 const STATUS_OK = 0;
 
+/**
+ * Parses an rngit remote URL — `rns://<destination-hash>/<group>/<repo>` —
+ * into the transport's target parts (work document #9; the same remote
+ * the git client will use, per #62's shared-surface thinking). Null when
+ * the URL does not parse.
+ *
+ * @param {string} url
+ * @returns {{ targetHash: string, group: string, repo: string } | null}
+ */
+export function parseRngitUrl(url) {
+  if (typeof url !== "string") return null;
+  const match = /^rns:\/\/([0-9a-f]{32})\/([^/]+)\/([^/?#]+)/.exec(url.trim());
+  if (!match) return null;
+  return { targetHash: match[1], group: match[2], repo: match[3] };
+}
+
 /** The pause after `identify()` so the responder records the identity
  * before the first request (the Python client's LINKIDENTIFY cadence). */
 const IDENTIFY_DELAY_MS = 150;

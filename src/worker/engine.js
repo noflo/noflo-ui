@@ -40,6 +40,8 @@ import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
 import { progress } from "./Progress.js";
+import { parseRngitUrl, RngitTransport } from "./RngitTransport.js";
+import { WorkDocMaterializer } from "./WorkDocMaterializer.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
@@ -279,6 +281,154 @@ export async function startEngine(io, options = {}) {
       );
   }
 
+  // ---- Work-document materialization (work document #9, step C) ----
+  // The materializer pushes CRDT work documents to the project's rngit
+  // repository when the configuration names one (the general rngit
+  // remote, work document #62's shared-surface thinking); every response
+  // reconciles the governed fields ("theirs"), and the board moves
+  // without the app, so a reconciliation timer rides the push cadence.
+  /** @type {WorkDocMaterializer | null} */
+  let workDocMaterializer = null;
+  /** @type {Map<string, ReturnType<typeof setTimeout>>} */
+  const workDocSyncTimers = new Map();
+  /** The configured rngit repository path, for the activity narration. */
+  let rngitRepoPath = "";
+  /** The board-reconciliation cadence: the board moves without the app,
+   * so the materializer reconciles periodically. */
+  const RNGIT_RECONCILE_INTERVAL_MS = 60_000;
+  /** @type {ReturnType<typeof setInterval> | null} */
+  let rngitReconcileTimer = null;
+
+  async function ensureWorkDocMaterializer() {
+    if (workDocMaterializer) return;
+    const target = parseRngitUrl(mesh?.config?.rngit?.url ?? "");
+    if (!target) return;
+    if (!mesh?.getReticulum()) return;
+    let identity = null;
+    try {
+      identity = await mesh.getIdentity();
+    } catch {
+      // The identity's restore failure is narrated by the mesh layer
+      return;
+    }
+    rngitRepoPath = `${target.group}/${target.repo}`;
+    const transport = new RngitTransport({
+      rns: mesh.getReticulum(),
+      identity,
+      targetHash: target.targetHash,
+      group: target.group,
+      repo: target.repo,
+    });
+    workDocMaterializer = new WorkDocMaterializer({
+      doc,
+      transport,
+      authorIdentityHash: state.intentOrigin ?? mesh.identityHash ?? "",
+    });
+    const workdocs = doc.getMap("workdocs");
+    workdocs.observe((/** @type {any} */ event) => {
+      for (const key of event.keys.keys()) {
+        scheduleWorkDocSync(key);
+      }
+    });
+    // The initial pass: anything unsynced materializes once configured
+    for (const docId of workdocs.keys()) scheduleWorkDocSync(docId);
+    startRngitReconcileTimer();
+    io.postMessage(
+      progress("workdocs.remote.connect", "configure", "done", {
+        repo: rngitRepoPath,
+      }),
+    );
+  }
+
+  /**
+   * Narrates a materializer pass: each report renders as its human phrase
+   * with the document's title and the board number where present (the
+   * transparency rule — the log says what happened, in the review's
+   * vocabulary: "fetched work doc 4", "added 2 comments to work doc
+   * vdv233").
+   *
+   * @param {any[]} reports
+   */
+  function narrateMaterializerReports(reports) {
+    for (const report of reports) {
+      const record = /** @type {any} */ (
+        doc.getMap("workdocs").get(report.docId)
+      );
+      const title = record?.get("title") ?? "";
+      const board = record?.get("boardId") ?? "";
+      const stage = report.action;
+      io.postMessage(
+        progress(
+          "workdocs.materialize",
+          stage,
+          stage === "skipped" ? "failed" : "done",
+          {
+            title,
+            board,
+            detail: report.detail ?? "",
+          },
+        ),
+      );
+    }
+  }
+
+  /**
+   * @param {string} docId
+   */
+  function scheduleWorkDocSync(docId) {
+    if (!workDocMaterializer) return;
+    const existing = workDocSyncTimers.get(docId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(async () => {
+      workDocSyncTimers.delete(docId);
+      if (!workDocMaterializer) return;
+      try {
+        if (!workDocMaterializer.connected) {
+          await workDocMaterializer.connect();
+          io.postMessage(
+            progress("workdocs.remote.connect", "connect", "done", {
+              repo: rngitRepoPath,
+            }),
+          );
+        }
+        await workDocMaterializer.reconcileFromBoard();
+        narrateMaterializerReports(await workDocMaterializer.syncDoc(docId));
+      } catch (error) {
+        io.postMessage(
+          progress("workdocs.materialize", "sync", "failed", {
+            error: error instanceof Error ? error.message : String(error ?? ""),
+          }),
+        );
+      }
+    }, WORKDOC_SYNC_DEBOUNCE_MS);
+    workDocSyncTimers.set(docId, timer);
+  }
+
+  function startRngitReconcileTimer() {
+    if (rngitReconcileTimer) return;
+    rngitReconcileTimer = setInterval(async () => {
+      if (!workDocMaterializer) return;
+      try {
+        if (!workDocMaterializer.connected) {
+          await workDocMaterializer.connect();
+          io.postMessage(
+            progress("workdocs.remote.connect", "connect", "done", {
+              repo: rngitRepoPath,
+            }),
+          );
+        }
+        await workDocMaterializer.reconcileFromBoard();
+        narrateMaterializerReports(await workDocMaterializer.syncAll());
+      } catch (error) {
+        io.postMessage(
+          progress("workdocs.materialize", "sync", "failed", {
+            error: error instanceof Error ? error.message : String(error ?? ""),
+          }),
+        );
+      }
+    }, RNGIT_RECONCILE_INTERVAL_MS);
+  }
+
   /**
    * Reports the full mesh state to the Glass (config, identity, room, and
    * the interface schemas the settings UI renders forms from).
@@ -289,6 +439,9 @@ export async function startEngine(io, options = {}) {
     if (typeof mesh.identityHash === "string" && mesh.identityHash) {
       state.intentOrigin = mesh.identityHash;
     }
+    // The materializer constructs when the configuration names the rngit
+    // remote (work document #9)
+    ensureWorkDocMaterializer();
     io.postMessage({
       kind: "mesh-config",
       config: mesh.config,
