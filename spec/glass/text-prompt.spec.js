@@ -11,18 +11,14 @@ import {
 } from "../../src/glass/text-prompt.js";
 
 /**
- * The container the prompt mounts its modal into (the app shell's #app).
+ * The prompt modal mounts into the document body: #app hides while other
+ * screens are active (work document #62), and a display:none ancestor
+ * suppresses even the top layer.
  *
  * @returns {HTMLElement}
  */
 function appContainer() {
-  let app = document.getElementById("app");
-  if (!app) {
-    app = document.createElement("div");
-    app.id = "app";
-    document.body.appendChild(app);
-  }
-  return app;
+  return document.body;
 }
 
 /**
@@ -33,9 +29,7 @@ function appContainer() {
  */
 function clickAction(value, kind = "text") {
   const modal = /** @type {HTMLElement} */ (
-    document
-      .getElementById("app")
-      ?.querySelector(`noflo-modal[data-prompt="${kind}"]`)
+    document.querySelector(`noflo-modal[data-prompt="${kind}"]`)
   );
   const button = /** @type {HTMLElement} */ (
     /** @type {ShadowRoot} */ (modal?.shadowRoot).querySelector(
@@ -55,7 +49,7 @@ describe("text prompt (work document #5 update #36)", () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 10));
     const modal = /** @type {any} */ (
-      document.getElementById("app")?.querySelector("noflo-modal")
+      document.body.querySelector("noflo-modal")
     );
     const input = /** @type {HTMLInputElement} */ (
       modal.querySelector("input")
@@ -75,9 +69,7 @@ describe("text prompt (work document #5 update #36)", () => {
 
     const dismissed = openTextPrompt({ title: "t", value: "x" });
     await new Promise((resolve) => setTimeout(resolve, 10));
-    /** @type {any} */ (
-      document.getElementById("app")?.querySelector("noflo-modal")
-    ).close();
+    /** @type {any} */ (document.body.querySelector("noflo-modal")).close();
     assert.equal(await dismissed, null);
 
     const emptied = openTextPrompt({ title: "t", value: "  " });
@@ -96,9 +88,7 @@ describe("text prompt (work document #5 update #36)", () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 10));
     const modal = /** @type {HTMLElement} */ (
-      document
-        .getElementById("app")
-        ?.querySelector('noflo-modal[data-prompt="json"]')
+      document.body.querySelector('noflo-modal[data-prompt="json"]')
     );
     const textarea = /** @type {HTMLTextAreaElement} */ (
       modal.querySelector("textarea")
@@ -114,9 +104,7 @@ describe("text prompt (work document #5 update #36)", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     /** @type {HTMLTextAreaElement} */ (
       /** @type {HTMLElement} */ (
-        document
-          .getElementById("app")
-          ?.querySelector('noflo-modal[data-prompt="json"]')
+        document.body.querySelector('noflo-modal[data-prompt="json"]')
       ).querySelector("textarea")
     ).value = "hello";
     clickAction("ok", "json");
@@ -154,7 +142,7 @@ describe("exported-port rename flow (work document #5 update #36)", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     const input = /** @type {HTMLInputElement} */ (
       /** @type {HTMLElement} */ (
-        document.getElementById("app")?.querySelector("noflo-modal")
+        document.body.querySelector("noflo-modal")
       ).querySelector("input")
     );
     input.value = "result";
@@ -187,9 +175,7 @@ describe("exported-port rename flow (work document #5 update #36)", () => {
     );
     await new Promise((resolve) => setTimeout(resolve, 10));
     const modal = /** @type {HTMLElement} */ (
-      document
-        .getElementById("app")
-        ?.querySelector('noflo-modal[data-prompt="text"]')
+      document.body.querySelector('noflo-modal[data-prompt="text"]')
     );
     const input = /** @type {HTMLInputElement} */ (
       modal.querySelector("input")

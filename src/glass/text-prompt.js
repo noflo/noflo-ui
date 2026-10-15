@@ -113,8 +113,6 @@ export async function openJsonPrompt({
   value = "",
   confirmLabel = "OK",
 }) {
-  const app = document.getElementById("app");
-  if (!app) return null;
   if (!jsonPromptModal) {
     jsonPromptModal = /** @type {HTMLElement} */ (
       /** @type {any} */ (document.createElement("noflo-modal"))
@@ -127,7 +125,7 @@ export async function openJsonPrompt({
     textarea.setAttribute("spellcheck", "false");
     jsonPromptModal.appendChild(textarea);
     jsonPromptModal.setAttribute("data-prompt", "json");
-    app.appendChild(jsonPromptModal);
+    document.body.appendChild(jsonPromptModal);
   }
   const textarea = /** @type {HTMLTextAreaElement} */ (
     jsonPromptModal.querySelector("textarea")

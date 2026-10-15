@@ -1425,12 +1425,16 @@ async function init() {
         // document #9: naming is the whole prompt, the body is the point)
         const editing = docId === pendingWorkDocCreateId;
         pendingWorkDocCreateId = null;
-        projectCorner?.setActiveDoc(docId);
+        /** @type {any} */ (
+          document.getElementById("project-corner")
+        )?.setActiveDoc(docId);
         openWorkDoc(docId, editing);
         return;
       }
       app.style.display = "";
-      projectCorner?.setActiveDoc(null);
+      /** @type {any} */ (
+        document.getElementById("project-corner")
+      )?.setActiveDoc(null);
       closeWorkDoc();
       if (route.graphId === activeGraphId) return;
       activeGraphId = route.graphId;
@@ -1448,7 +1452,9 @@ async function init() {
   // route, the editor needs a real graph under the panel
   if (activeGraphId.startsWith("doc/")) {
     activeGraphId = "main";
-    projectCorner?.setActiveDoc(router.route().graphId.slice(4));
+    /** @type {any} */ (
+      document.getElementById("project-corner")
+    )?.setActiveDoc(router.route().graphId.slice(4));
     openWorkDoc(router.route().graphId.slice(4));
   }
 
