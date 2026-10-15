@@ -111,6 +111,10 @@ const shims = [
     body: 'export * from "@noble/curves/ed25519.js";\n',
   },
   {
+    name: "bz2",
+    body: 'export { BZip2 as default } from "@digitaldefiance/bzip2-wasm";\n',
+  },
+  {
     name: "y-reticulum",
     body: 'export * from "y-reticulum";\n',
   },

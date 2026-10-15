@@ -295,6 +295,11 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'moveIIP'; payload: { graphId: string; id: string; x: number; y: number } }
   | { type: 'INTENT'; command: 'moveExport'; payload: { graphId: string; name: string; direction: 'in' | 'out'; x: number; y: number } }
   | { type: 'INTENT'; command: 'spliceNode'; payload: IntentSpliceNode }
+  | { type: 'INTENT'; command: 'createWorkDoc'; payload: IntentCreateWorkDoc }
+  | { type: 'INTENT'; command: 'updateWorkDoc'; payload: IntentUpdateWorkDoc }
+  | { type: 'INTENT'; command: 'setWorkDocScope'; payload: IntentSetWorkDocScope }
+  | { type: 'INTENT'; command: 'setWorkDocBody'; payload: { docId: string; update: Uint8Array } }
+  | { type: 'INTENT'; command: 'setWorkDocTitle'; payload: { docId: string; title: string } }
   | { type: 'INTENT'; command: 'undo'; payload: Record<string, never> }
   | { type: 'INTENT'; command: 'redo'; payload: Record<string, never> }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
@@ -329,6 +334,11 @@ interface IntentAddNode { graphId: string; nodeId: string; componentName: string
 // compatible ports unless both are pinned; a node without ports compatible
 // with the edge's endpoint datatypes is refused whole
 interface IntentSpliceNode { graphId: string; edgeId: string; nodeId: string; x: number; y: number; componentName?: string; inPort?: string; outPort?: string }
+
+// Work documents (work document #9): CRDT-native, rngit-materialized
+interface IntentCreateWorkDoc { title: string; content?: string; links?: string[] }
+interface IntentUpdateWorkDoc { docId: string; content: string }
+interface IntentSetWorkDocScope { docId: string; scope: 'proposed' | 'active' | 'completed' }
 interface IntentRemoveNode { graphId: string; nodeId: string; }
 interface IntentMoveNode { graphId: string; nodeId: string; x: number; y: number; }
 interface IntentAddEdge {
@@ -416,6 +426,11 @@ type EngineUIMessage =
   | { kind: 'mesh-invite'; uri: string }
   | { kind: 'factory-reset' }
   | { kind: 'undo'; canUndo: boolean; canRedo: boolean; undoDepth: number; redoDepth: number }
+  | { protocol: 'workdoc'; command: 'created'; payload: { id: string; title: string; scope: string; author: string } }
+  | { protocol: 'workdoc'; command: 'updated'; payload: { id: string; updateId: number; author: string } }
+  | { protocol: 'workdoc'; command: 'scoped'; payload: { id: string; pendingScope: string } }
+  | { protocol: 'workdoc'; command: 'edited'; payload: { id: string } }
+  | { protocol: 'workdoc'; command: 'titled'; payload: { id: string; title: string } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)
@@ -494,6 +509,7 @@ const graphs     = doc.getMap('graphs');     // Y.Map<graphId, Y.Map>
 const components = doc.getMap('components'); // Y.Map<componentId, Y.Map> (metadata and Y.Text buffer)
 const registry   = doc.getMap('registry');   // Y.Map<componentName, Y.Map> (Signatures)
 const specs      = doc.getMap('specs');      // Y.Map<specId, Y.Map> (fbp-spec testing)
+const workdocs   = doc.getMap('workdocs');   // Y.Map<docId, Y.Map> (work documents, Appendix B.1)
 
 ```
 
@@ -530,6 +546,26 @@ Exported port metadata carries the Glass position (`x`, `y`) so exported port la
 ### Registry Signatures
 
 The registry holds the ports a component exposes, used by the UI to render nodes. When a node is added referencing a component without a signature, the engine registers the default `in0`/`out0` signature — the same fallback the editor renders for signature-less components — so the registry and the UI stay consistent. Existing signatures are never overwritten.
+
+### Work Documents (work document #9)
+
+Work documents are CRDT-native: the project is their live, collaborative surface, and the project's rngit repository is their governed materialization target. The document model mirrors rngit's field-for-field (id, title, author, scope, created, edited, content, updates) so materialization is a mapping, not a translation.
+
+```typescript
+// Inside doc.getMap('workdocs').get(docId)
+id: string;              // CRDT-native id; rngit recycles its own numbers on deletion
+title: string;
+content: Y.Text;         // Collaborative Markdown
+scope: 'proposed' | 'active' | 'completed';  // The materialization mirror ("theirs")
+pendingScope?: string;   // A requested transition, until rngit confirms it
+authors: Y.Array<string>;    // Identity hashes, first author first
+created: number;
+edited: number;
+updates: Y.Array<Y.Map<{ id: number, created: number, author: string, content: string }>>;
+links: Y.Array<string>;  // Entity ids the document references
+```
+
+Governance is asymmetric by design: the CRDT is the loose, live editing surface for content; **rngit's stricter rules are authoritative for scope, authorship, and ids — materialization merges "theirs", always**. Local scope transitions ride `pendingScope` until the board confirms; reconciliation overwrites the governed fields and reverts unconfirmed local flips. Updates are append-only, one-to-one with rngit's comments; a deleted rngit document disappears (ids recycle, so references validate `created`/`title` before resolving). The materializer pushes as the document's author, or — failing that — as whoever runs the rngit server connection.
 
 ### Graph & Edge Determinism
 

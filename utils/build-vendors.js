@@ -203,6 +203,16 @@ const builds = [
     plugins: [siblingExternals(coreSibling)],
   },
   {
+    // @digitaldefiance/bzip2-wasm's BZip2 class: standalone — the wasm
+    // loads beside the bundle at runtime (scriptDirectory), no siblings.
+    // The emscripten glue carries node-environment require calls
+    // (path/fs/module) that never execute in the browser: external keeps
+    // them as inert runtime references
+    entryPoints: { bz2: resolve(here, "../node_modules/@digitaldefiance/bzip2-wasm/index.js") },
+    external: ["path", "fs", "module", "crypto", "util"],
+    ...vendor,
+  },
+  {
     // CodeMirror + the yjs collaborative binding: CodeMirror's package
     // graph (@codemirror/*, lib0, y-protocols) inlines; yjs stays external
     // and re-points to the sibling bundle — yCollab must bind the same
@@ -240,6 +250,19 @@ const builds = [
 for (const build of builds) {
   await esbuild.build(build);
 }
+
+// bz2 (work document #9): rngit's responses are bz2-compressed, and the
+// link needs a compression provider. The package's BZip2 class bundles
+// standalone; its wasm loads beside the bundle via the emscripten glue's
+// scriptDirectory — so the wasm copies to the bundle's directory
+mkdirSync(resolve(here, "../vendor"), { recursive: true });
+copyFileSync(
+  resolve(
+    here,
+    "../node_modules/@digitaldefiance/bzip2-wasm/bzip2-1.0.8/bzip2.wasm",
+  ),
+  resolve(here, "../vendor/bzip2.wasm"),
+);
 
 // Versioned webfont copies: the fonts are the one vendor artifact whose
 // file names carry versions (they are referenced from CSS, not import maps)
