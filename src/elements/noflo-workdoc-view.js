@@ -68,29 +68,17 @@ export class FlowWorkDocView extends HTMLElement {
     // A freshly created document lands in edit mode: naming it is the
     // whole prompt — writing the body is the point (work document #9)
     this._editing = editing;
+    this.hidden = false;
     this.render();
-    const dialog = /** @type {HTMLDialogElement | null} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
-    );
-    // showModal puts the panel in the top layer; environments without
-    // the dialog API fall back to the host's visibility
-    if (dialog && typeof dialog.showModal === "function") {
-      dialog.showModal();
-    } else {
-      this.hidden = false;
-    }
   }
 
   /** Closes the view and tears the collaborative binding down. */
   close() {
-    const dialog = /** @type {HTMLDialogElement | null} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
-    );
-    if (dialog?.open) dialog.close();
     this._teardown();
     this._doc = null;
     this._ytext = null;
     this._cm = null;
+    this.hidden = true;
     this.render();
   }
 
@@ -231,14 +219,32 @@ export class FlowWorkDocView extends HTMLElement {
     shadow.innerHTML = `
       <style>
         :host {
+          /* The full screen (work document #62): the workdoc editor is a
+             top-level surface, equal to the graph editor. The corners are
+             app chrome above it; the content reserves the chip strips'
+             footprint and may flow under an expanded accordion —
+             dismissed in one interaction, per #62 update #1 */
           position: fixed;
           inset: 0;
-          z-index: 800;
+          z-index: 100;
           display: flex;
           flex-direction: column;
           background: var(--ui-bg, rgb(20, 27, 35));
           color: var(--node-text);
           font-family: SourceCodePro, monospace;
+          overflow: auto;
+        }
+        .column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          /* Chip-strip clearance: the context chip above, the two bottom
+             corner chips below (work document #62 update #2) */
+          padding: 56px 24px 64px;
+          max-width: min(760px, calc(100vw - 48px));
+          margin: 0 auto;
+          width: 100%;
+          gap: 10px;
         }
         .head {
           display: flex;
@@ -321,8 +327,7 @@ export class FlowWorkDocView extends HTMLElement {
         }
         .composer textarea:focus { outline: 1px solid var(--ui-accent, rgb(90, 200, 250)); }
       </style>
-      <dialog>
-      <div class="panel">
+      <div class="column">
       <div class="head">
         <button class="secondary" data-action="back" title="Back">◀</button>
         <input class="title" value="${escapeHtml(doc.title)}" aria-label="Document title">
@@ -341,7 +346,6 @@ export class FlowWorkDocView extends HTMLElement {
         <button data-action="post">Post update</button>
       </div>
       </div>
-      </dialog>
     `;
     // The body: read state renders the mirror's text; edit state binds
     // the collaborative editor (the binding targets the .body host)
@@ -383,15 +387,7 @@ export class FlowWorkDocView extends HTMLElement {
     shadow
       .querySelector("[data-action='post']")
       ?.addEventListener("click", post);
-    // A rebuild replaces the dialog element: the top-layer presentation
-    // re-establishes on the fresh one (the edit toggle and the replica
-    // refreshes must never close the panel)
-    const dialog = /** @type {HTMLDialogElement | null} */ (
-      /** @type {ShadowRoot} */ (this.shadowRoot).querySelector("dialog")
-    );
-    if (dialog && !dialog.open && typeof dialog.showModal === "function") {
-      dialog.showModal();
-    }
+
     composerInput.addEventListener(
       "keydown",
       (/** @type {KeyboardEvent} */ e) => {

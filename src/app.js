@@ -1414,9 +1414,13 @@ async function init() {
       // The document route (work document #9): `doc/<id>` in the graph
       // segment opens the document view — a primary element per #28
       if (route.graphId.startsWith("doc/")) {
+        // The document screen owns the viewport (work document #62):
+        // the graph editor yields, its state living in the CRDT
+        app.style.display = "none";
         openWorkDoc(route.graphId.slice(4));
         return;
       }
+      app.style.display = "";
       closeWorkDoc();
       if (route.graphId === activeGraphId) return;
       activeGraphId = route.graphId;
@@ -1753,6 +1757,25 @@ async function init() {
   workdocView?.addEventListener("workdoc-close", () => {
     // Back to the graph the user came from
     router?.navigate(activeGraphId || "main");
+  });
+  // Corner dismissal on the static screens (work document #62): an
+  // interaction with the screen's content collapses the expanded corners
+  // — chips never overlap content, expanded forms may but dismiss in one
+  // interaction. The graph editor is exempt: corners overlay the canvas
+  // freely, pan and zoom is its own dismissal
+  const collapseExpandedCorners = (/** @type {Event} */ e) => {
+    const path = e.composedPath();
+    for (const corner of [projectCorner, syncPanel]) {
+      if (!corner || path.includes(corner)) continue;
+      if (corner.expanded) {
+        corner.expanded = false;
+        corner.render();
+      }
+    }
+  };
+  workdocView?.addEventListener("pointerdown", collapseExpandedCorners);
+  window.addEventListener("keydown", (/** @type {KeyboardEvent} */ e) => {
+    if (e.key === "Escape") collapseExpandedCorners(e);
   });
   // Undo/redo (work document #39): the Engine owns the journal; the Glass
   // only requests
