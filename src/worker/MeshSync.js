@@ -210,6 +210,9 @@ async function defaultCreateProvider(
  *   the identity is generated or restored.
  * @property {string} identityError Set when identity generation is
  *   impossible (WebCrypto without Ed25519); mesh sync cannot run.
+ * @property {() => Promise<any>} getIdentity This device's mesh identity
+ *   once restored or generated (null/error before) — the work-document
+ *   materializer signs with it (work document #9).
  * @property {() => any} getReticulum The shared Reticulum instance once the
  *   mesh started (null before). The Companion's LXMF layer rides the same
  *   stack (work document #47).
@@ -471,6 +474,12 @@ export async function createMeshSync({
   let room = roomFor();
   /** Hex identity hash for display in the config UI; empty until generated. */
   let identityHash = "";
+  /** The device's mesh identity object, cached by ensureIdentity (work
+   * document #9's materializer signs with it).
+   *
+   * @type {any}
+   */
+  let identityInstance = null;
   /**
    * Set when identity generation is impossible (e.g. WebKit's WebCrypto
    * lacks Ed25519): mesh sync cannot run, but the Engine keeps working.
@@ -708,6 +717,7 @@ export async function createMeshSync({
    * use so the peer's Reticulum address stays stable across restarts.
    */
   async function ensureIdentity() {
+    if (identityInstance) return identityInstance;
     if (config.identity) {
       try {
         const restored = await Identity.fromBytes(
@@ -716,6 +726,7 @@ export async function createMeshSync({
         if (!restored) {
           throw new Error("stored identity could not be restored");
         }
+        identityInstance = restored;
         identityHash = toHex(restored.getSalt());
         // Narrate the first restore so the boot checklist shows the
         // identity came from device state, not fresh generation; later
@@ -744,6 +755,7 @@ export async function createMeshSync({
     config.identity = bytesToBase64(await identity.getPrivateKey());
     identityHash = toHex(identity.getSalt());
     await saveMeshConfig(storage, config);
+    identityInstance = identity;
     postMessage(progress("identity.generate", "generate", "done"));
     return identity;
   }
@@ -2485,6 +2497,17 @@ export async function createMeshSync({
      */
     getReticulum() {
       return sharedRns;
+    },
+    /**
+     * This device's mesh identity once restored or generated (null
+     * before). The work-document materializer signs with it (work
+     * document #9): the link presents it and the materialized payloads
+     * carry its signature.
+     *
+     * @returns {Promise<any>}
+     */
+    async getIdentity() {
+      return ensureIdentity();
     },
     /**
      * Interfaces the mesh layer attached by default rather than from the

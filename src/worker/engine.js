@@ -105,6 +105,9 @@ export async function startEngine(io, options = {}) {
   }
   const projectId = doc.getMap("metadata").get("id");
   const state = createEngineState();
+  /** The workdoc materialization debounce: bursts of edits collapse into
+   * one push per document (work document #9). */
+  const WORKDOC_SYNC_DEBOUNCE_MS = 1500;
 
   const graph = createDispatcherGraph();
   const network = await createNetwork(graph, {

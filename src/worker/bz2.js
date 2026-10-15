@@ -30,8 +30,10 @@ export async function createBz2() {
   await bz.init();
   instance = {
     compress: (/** @type {Uint8Array} */ data) => bz.compress(data),
-    decompress: (/** @type {Uint8Array} */ data, /** @type {number} */ outputLen) =>
-      bz.decompress(data, outputLen),
+    decompress: (
+      /** @type {Uint8Array} */ data,
+      /** @type {number} */ outputLen,
+    ) => bz.decompress(data, outputLen),
   };
   return instance;
 }
