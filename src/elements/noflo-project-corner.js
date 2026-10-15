@@ -48,6 +48,9 @@ export class FlowProjectCorner extends FlowCornerElement {
    * @param {Array<{ id: string, title: string, scope: string, pendingScope?: string, boardId?: number | string | null, edited: number }>} docs
    */
   setWorkDocs(docs) {
+    /** The document currently open (work document #9): the accordion
+     * highlights it while its view is active. */
+    this._activeDocId = /** @type {string | null} */ (null);
     this._docs = (docs ?? []).slice().sort((a, b) => b.edited - a.edited);
     // Visible whenever a project is open — the creation affordance lives
     // here, so an empty project must still reach it (the Hidden state's
@@ -79,8 +82,12 @@ export class FlowProjectCorner extends FlowCornerElement {
           cursor: pointer;
           border-radius: var(--ui-radius, 6px);
         }
-        .doc-row:hover {
+        .doc-row:hover,
+        .doc-row.active-doc {
           background: color-mix(in srgb, var(--ui-accent, rgb(90, 200, 250)) 12%, transparent);
+        }
+        .doc-row.active-doc .doc-title {
+          color: var(--ui-accent, rgb(90, 200, 250));
         }
         .doc-title {
           flex: 1;
@@ -141,6 +148,17 @@ export class FlowProjectCorner extends FlowCornerElement {
   }
 
   /**
+   * Marks the document whose view is open (work document #9): the
+   * accordion highlights it while the document screen is active.
+   *
+   * @param {string | null} docId
+   */
+  setActiveDoc(docId) {
+    this._activeDocId = docId;
+    this.render();
+  }
+
+  /**
    * The expanded accordion: the document list, newest first, each row
    * opening the document view (a primary element per #28).
    *
@@ -173,7 +191,8 @@ export class FlowProjectCorner extends FlowCornerElement {
           month: "short",
           day: "numeric",
         });
-        return `<div class="doc-row" data-doc="${escapeHtml(doc.id)}" title="Open document">
+        const active = doc.id === this._activeDocId ? " active-doc" : "";
+        return `<div class="doc-row${active}" data-doc="${escapeHtml(doc.id)}" title="Open document">
             <span class="doc-title">${escapeHtml(doc.title)}</span>
             ${board}
             <span class="doc-edited">${escapeHtml(edited)}</span>

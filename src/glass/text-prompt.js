@@ -54,8 +54,9 @@ export async function openTextPrompt({
   confirmLabel = "OK",
   message = "",
 }) {
-  const app = document.getElementById("app");
-  if (!app) return null;
+  // The modals live on the body: #app hides while other screens are
+  // active (work document #62), and a display:none ancestor suppresses
+  // even the top layer
   if (!promptModal) {
     promptModal = /** @type {HTMLElement} */ (
       /** @type {any} */ (document.createElement("noflo-modal"))
@@ -69,7 +70,7 @@ export async function openTextPrompt({
     input.setAttribute("spellcheck", "false");
     promptModal.appendChild(input);
     promptModal.setAttribute("data-prompt", "text");
-    app.appendChild(promptModal);
+    document.body.appendChild(promptModal);
   }
   const input = /** @type {HTMLInputElement} */ (
     promptModal.querySelector("input")

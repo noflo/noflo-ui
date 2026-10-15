@@ -172,6 +172,8 @@ let undoState = /** @type {any} */ (null);
 let workDocs = /** @type {any[]} */ ([]);
 /** Whether the next workdoc/created echo is this session's own creation. */
 let pendingWorkDocCreate = false;
+/** The document id whose first open should land in edit mode. */
+let pendingWorkDocCreateId = /** @type {string | null} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -405,10 +407,11 @@ const echoHandlers = createEchoHandlers({
   workDocCreated: (payload) => {
     if (!pendingWorkDocCreate) return;
     pendingWorkDocCreate = false;
-    // The document exists: open its view in edit mode (the e2e loop
-    // lands the user in the editor they just named)
+    pendingWorkDocCreateId = payload.id;
+    // The document exists: the route opens its view in edit mode (the
+    // pending flag tells the route handler the creation is this
+    // session's own, so the fresh document lands in the editor)
     router?.navigate(`doc/${payload.id}`);
-    openWorkDoc(payload.id, true);
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -1417,10 +1420,17 @@ async function init() {
         // The document screen owns the viewport (work document #62):
         // the graph editor yields, its state living in the CRDT
         app.style.display = "none";
-        openWorkDoc(route.graphId.slice(4));
+        const docId = route.graphId.slice(4);
+        // A creation this session just made lands in edit mode (work
+        // document #9: naming is the whole prompt, the body is the point)
+        const editing = docId === pendingWorkDocCreateId;
+        pendingWorkDocCreateId = null;
+        projectCorner?.setActiveDoc(docId);
+        openWorkDoc(docId, editing);
         return;
       }
       app.style.display = "";
+      projectCorner?.setActiveDoc(null);
       closeWorkDoc();
       if (route.graphId === activeGraphId) return;
       activeGraphId = route.graphId;
@@ -1438,6 +1448,7 @@ async function init() {
   // route, the editor needs a real graph under the panel
   if (activeGraphId.startsWith("doc/")) {
     activeGraphId = "main";
+    projectCorner?.setActiveDoc(router.route().graphId.slice(4));
     openWorkDoc(router.route().graphId.slice(4));
   }
 
@@ -1707,11 +1718,17 @@ async function init() {
     document.getElementById("project-corner")
   );
   projectCorner?.addEventListener("workdoc-open", (/** @type {any} */ e) => {
+    // Navigating away from the accordion's context collapses it (work
+    // document #62's dismissal: the document screen owns the viewport)
+    projectCorner.expanded = false;
+    projectCorner.render();
     router?.navigate(`doc/${e.detail.docId}`);
   });
   // Creation: the title prompt, then the intent — the document appears in
   // the corner as proposed and the view opens (work document #9)
   projectCorner?.addEventListener("workdoc-create", async () => {
+    projectCorner.expanded = false;
+    projectCorner.render();
     const title = await openTextPrompt({
       title: "New work document",
       confirmLabel: "Create",
