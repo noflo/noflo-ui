@@ -358,6 +358,16 @@ export class FlowWorkDocView extends HTMLElement {
     const titleInput = /** @type {HTMLInputElement} */ (
       shadow.querySelector("input.title")
     );
+    // A fresh, untitled document opened in edit mode: the title is the
+    // first thing to replace
+    if (
+      this._editing &&
+      this._doc.title === "Untitled" &&
+      document.activeElement === null
+    ) {
+      titleInput.focus();
+      titleInput.select();
+    }
     titleInput.addEventListener("change", () => {
       const title = titleInput.value.trim();
       if (title && title !== doc.title) {

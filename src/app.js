@@ -1732,19 +1732,17 @@ async function init() {
   });
   // Creation: the title prompt, then the intent — the document appears in
   // the corner as proposed and the view opens (work document #9)
-  projectCorner?.addEventListener("workdoc-create", async () => {
+  projectCorner?.addEventListener("workdoc-create", () => {
+    // No naming gate: the document is created untitled and the view opens
+    // in edit mode, where the title field and the body are both at hand
+    // (work document #9)
     projectCorner.expanded = false;
     projectCorner.render();
-    const title = await openTextPrompt({
-      title: "New work document",
-      confirmLabel: "Create",
-    });
-    if (!title) return;
     pendingWorkDocCreate = true;
     sendIntent({
       type: "INTENT",
       command: "createWorkDoc",
-      payload: { title },
+      payload: { title: "Untitled" },
     });
   });
   // The document view's flows ride the intent path (work document #9):
