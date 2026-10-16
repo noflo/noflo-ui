@@ -134,6 +134,9 @@
  * @property {CustomEvent<{ name: string, body: string }>} schema-save The
  *   whole-save round: the meta-schema gate lives in the view.
  * @property {CustomEvent<void>} schema-close
+ * @property {CustomEvent<{ kind: string, id: string }>} explorer-navigate
+ *   A tree entry navigates (work document #63): the router owns the
+ *   transition.
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate

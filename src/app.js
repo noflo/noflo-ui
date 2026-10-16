@@ -11,6 +11,7 @@ import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
+import { FlowProjectExplorer } from "./elements/noflo-project-explorer.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
 import {
@@ -220,6 +221,9 @@ let syncPanel = null;
 let runtimeCorner = null;
 /** The schema editor view (work document #57 update #1). */
 let schemaView = null;
+/** @type {FlowProjectExplorer | null} The project explorer (work
+ * document #63): the navigation tree. */
+let projectExplorer = null;
 /** The pending schema-fetch awaiters (work document #57): the echoes
  * resolve them once the bodies ingest. */
 const schemaCachePendingResolvers = /** @type {Array<() => void>} */ ([]);
@@ -1316,6 +1320,46 @@ function refreshSchemaView(_name, _action) {
 }
 
 /**
+ * Feeds the project explorer (work document #63): the mirror's navigable
+ * contents — graphs with their subgraph hierarchy, components, schemas,
+ * specs, and work documents.
+ */
+function refreshProjectExplorer() {
+  if (!projectExplorer || !mirrorDoc) return;
+  const graphs = [...mirrorDoc.getMap("graphs").entries()].map(
+    ([graphId, graph]) => ({
+      name: graphId,
+      parent: String(
+        /** @type {any} */ (graph)?.get?.("metadata")?.get("parent") ?? "",
+      ),
+    }),
+  );
+  const components = [...mirrorDoc.getMap("registry").keys()];
+  const schemas = getSchemas(mirrorDoc).map((record) => record.name);
+  const specs = [...mirrorDoc.getMap("specs").keys()];
+  const workDocs = [...mirrorDoc.getMap("workdocs").entries()].map(
+    ([id, record]) => ({
+      id,
+      title: String(/** @type {any} */ (record)?.get?.("title") ?? id),
+    }),
+  );
+  projectExplorer.setContents({
+    projectName: String(mirrorDoc.getMap("metadata").get("name") ?? "Project"),
+    graphs,
+    components,
+    schemas,
+    specs,
+    workDocs,
+  });
+  const route = router?.route();
+  projectExplorer.setActive(
+    route?.kind && route.kind !== "graph"
+      ? { kind: route.kind, id: String(route.id ?? "") }
+      : { kind: "graph", id: String(route?.graphId ?? "") },
+  );
+}
+
+/**
  * Re-queries the runtime population from the Engine (work document #59):
  * discovery is push-based (announces echo as they arrive), but the Glass
  * asks on panel expansion so a quiet mesh still shows its cached
@@ -1817,6 +1861,7 @@ async function init() {
       Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
     );
     scheduleRender();
+    refreshProjectExplorer();
   });
 
   channel = new BroadcastChannel(CHANNEL_NAME);
@@ -1839,6 +1884,7 @@ async function init() {
   router = createRouter({
     onRouteChange: (route) => {
       activateScreen(routeToScreen(route));
+      refreshProjectExplorer();
     },
   });
   // The initial route activates exactly like a route change (work
@@ -2036,6 +2082,15 @@ async function init() {
     /** @type {any} */ (document.getElementById("context-chip"))
   );
   on(contextChip, "open-settings", () => openMeshSettings());
+  // The project explorer (work document #63): the Context corner's
+  // navigation tree — entries navigate through the router's
+  // kind-addressed screens
+  projectExplorer = /** @type {FlowProjectExplorer | null} */ (
+    /** @type {any} */ (document.getElementById("project-explorer"))
+  );
+  on(projectExplorer, "explorer-navigate", (e) => {
+    router?.navigate({ kind: e.detail.kind, id: e.detail.id });
+  });
   // Up navigation from the Context corner: one level up, same path the
   // keyboard/gesture up-navigation takes
   on(contextChip, "navigate-up", () => {
