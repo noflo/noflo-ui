@@ -105,7 +105,7 @@ function base64ToBytes(base64) {
  * @param {InstanceType<typeof Identity>} identity
  * @param {import("yjs").Doc} doc
  * @param {string} room
- * @param {{ isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }} access
+ * @param {{ isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void, onLinkPolicy?: (remoteIdentityHash: string | undefined, initiator: boolean, allowed: boolean) => void }} access
  *   Dacar access-control hooks (work document #21): the link policy gates
  *   sync to granted peers; refusals surface as join requests.
  * @param {any} reticulum Shared Reticulum instance built from the enabled
@@ -149,6 +149,14 @@ async function defaultCreateProvider(
       );
       console.info(
         `[mesh] linkPolicy: peer …${context.remoteIdentityHash?.slice(-12) ?? "unidentified"}, ${context.initiator ? "initiator" : "responder"}, ${allowed ? "ALLOW" : "REFUSE"}`,
+      );
+      // The verdict is the sync narrative's diagnosis line (work document
+      // #63 M2 review): why sync does not happen with a peer is answered
+      // here, on the wires stream beside the console
+      access.onLinkPolicy?.(
+        context.remoteIdentityHash,
+        context.initiator === true,
+        allowed,
       );
       return allowed;
     },
@@ -446,7 +454,7 @@ export function evaluateLinkPolicy(access, context) {
  *   doc: import("yjs").Doc,
  *   postMessage: (message: any) => void,
  *   storage: import("../crdt/MeshConfig.js").AsyncStorage,
- *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void }, reticulum: any) => Promise<any>,
+ *   createProvider?: (config: import("../crdt/MeshConfig.js").MeshConfig, identity: InstanceType<typeof Identity>, doc: import("yjs").Doc, room: string, access: { isGranted: (peerHash?: string) => boolean, isInRequesterMode: () => boolean, authorizeLink: (context: any) => Promise<boolean>, onRefused: (refusals: any[]) => void, onLinkPolicy?: (remoteIdentityHash: string | undefined, initiator: boolean, allowed: boolean) => void }, reticulum: any) => Promise<any>,
  *   attachInterfaces?: (rns: any, interfaces: import("../crdt/MeshConfig.js").MeshInterface[]) => Promise<void>,
  *   reticulum?: any,
  *   awarenessThrottleMs?: number,
@@ -1553,9 +1561,15 @@ export async function createMeshSync({
    * hands one Reticulum instance down so the LXMF layer and project
    * engines share a single mesh node — mesh stop must not stop it. */
   const injectedRns = reticulum ?? null;
-  // The Reticulum telemetry tap (work document #63 M2): announces and
-  // interface lifecycle echoed for the wires layer's mesh stream
-  const meshTelemetry = createMeshTelemetry({ postMessage });
+  // The Reticulum telemetry tap (work document #63 M2): announces,
+  // interface lifecycle, and peer links echoed for the wires layer's mesh
+  // stream. The announce filter is the mesh layer's own grant decision:
+  // FBP runtime announces always pass, every other announce shows only
+  // for granted peers
+  const meshTelemetry = createMeshTelemetry({
+    postMessage,
+    isPeer: (identityHash) => isGranted(identityHash),
+  });
 
   async function ensureReticulum() {
     if (sharedRns) return sharedRns;
@@ -2102,6 +2116,13 @@ export async function createMeshSync({
             {
               isGranted,
               isInRequesterMode,
+              onLinkPolicy: (
+                /** @type {any} */ hash,
+                /** @type {boolean} */ initiator,
+                /** @type {boolean} */ allowed,
+              ) => {
+                meshTelemetry.linkPolicy(hash, initiator, allowed);
+              },
               authorizeLink: /** @type {any} */ (authorizeLink),
               onRefused: (/** @type {any[]} */ refusals) => {
                 for (const refusal of refusals) {
@@ -2398,6 +2419,27 @@ export async function createMeshSync({
         peers: summary.count,
         identities: summary.identities,
       });
+      // The peer links are the mesh log's connection narrative (work
+      // document #63 M2 review): established and closed, labeled with the
+      // peer's identity when the mapping resolved it
+      for (const linkId of payload.added ?? []) {
+        const identityHash = String(identityByLink.get(linkId) ?? "");
+        meshTelemetry.peerEvent(
+          true,
+          identityHash
+            ? `…${identityHash.slice(-12)}`
+            : `link …${String(linkId).slice(-12)}`,
+        );
+      }
+      for (const linkId of payload.removed ?? []) {
+        const identityHash = String(identityByLink.get(linkId) ?? "");
+        meshTelemetry.peerEvent(
+          false,
+          identityHash
+            ? `…${identityHash.slice(-12)}`
+            : `link …${String(linkId).slice(-12)}`,
+        );
+      }
       // A peer that connected or dropped flips its reachability state
       postPeerReachability();
     });

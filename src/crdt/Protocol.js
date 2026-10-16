@@ -980,10 +980,15 @@ export const MESH_COMMANDS = [
  *
  * @typedef {Object} MeshTelemetryEcho
  * @property {'mesh-telemetry'} kind
- * @property {'announce' | 'interface'} category
+ * @property {'announce' | 'interface' | 'peer'} category
  * @property {string} message The legible main column for the wires log.
+ * @property {string} status The bracketed status tag the wires log
+ *   renders (`FBP`, `ANNOUNCE`, `UP`, `DOWN`, `RETRY`, `JOIN`, `LEFT`,
+ *   `ALLOW`, `REFUSE`).
  * @property {number} time Wall-clock milliseconds of the event.
  * @property {"ok" | "fail" | ""} [tone]
+ * @property {Record<string, any>} [detail] The structured facts (announce
+ *   destination and identity hashes, FBP name and version).
  */
 
 /**

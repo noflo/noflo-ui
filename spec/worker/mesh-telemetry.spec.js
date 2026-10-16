@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { encodeAnnounceAppData } from "@noflo/fbp-protocol";
 import { createMeshTelemetry } from "../../src/worker/MeshTelemetry.js";
 
 /**
@@ -24,31 +25,71 @@ function mockRns() {
 }
 
 describe("mesh telemetry tap (work document #63 M2)", () => {
-  it("echoes announces with the compact hash form", () => {
+  it("announces: FBP passes with declared facts, others need the grant", () => {
     const { rns } = mockRns();
     /** @type {any[]} */
     const echoes = [];
     const tap = createMeshTelemetry({
       postMessage: (echo) => echoes.push(echo),
+      isPeer: (identityHash) => identityHash.startsWith("4242"),
     });
     tap.attach(rns);
+    const unknownIdentity = { identityHash: new Uint8Array(16).fill(0x99) };
+    const grantedIdentity = { identityHash: new Uint8Array(16).fill(0x42) };
+    const dest = new Uint8Array([
+      0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+      0x07, 0x08, 0x09, 0x0a,
+    ]);
+    // A non-FBP announce from an unknown peer: filtered — the wider
+    // mesh's LXMF-class destinations are not this device's business
     rns.transport.dispatchEvent(
       new CustomEvent("announce", {
         detail: {
-          destinationHash: new Uint8Array([
-            0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01, 0x02, 0x03, 0x04, 0x05,
-            0x06, 0x07, 0x08, 0x09, 0x0a,
-          ]),
+          destinationHash: dest,
+          identity: unknownIdentity,
           ratchet: true,
+          appData: new TextEncoder().encode("hello from lxmf"),
+        },
+      }),
+    );
+    assert.equal(echoes.filter((e) => e.kind === "mesh-telemetry").length, 0);
+    // FBP runtime announces always pass, with their declared facts
+    rns.transport.dispatchEvent(
+      new CustomEvent("announce", {
+        detail: {
+          destinationHash: dest,
+          appData: encodeAnnounceAppData({
+            destinationHash: dest,
+            nodeName: "workshop",
+          }),
         },
       }),
     );
     const echo = echoes.find((e) => e.kind === "mesh-telemetry");
-    assert.ok(echo, "the announce echoes");
-    assert.equal(echo.category, "announce");
-    assert.match(echo.message, /announce heard · …0708090a/);
-    assert.match(echo.message, /ratcheted/);
-    assert.ok(echo.time > 0);
+    assert.ok(echo, "the FBP announce passes without any grant");
+    assert.equal(echo.status, "FBP");
+    assert.match(echo.message, /runtime "workshop" · v2 · …0708090a/);
+    assert.equal(echo.detail.nodeName, "workshop");
+    assert.equal(echo.detail.aspect, "fbp.runtime");
+    assert.equal(echo.time > 0, true);
+    // A granted peer's announce shows with its app-data summary
+    rns.transport.dispatchEvent(
+      new CustomEvent("announce", {
+        detail: {
+          destinationHash: dest,
+          identity: grantedIdentity,
+          ratchet: true,
+          appData: new TextEncoder().encode("hello from lxmf"),
+        },
+      }),
+    );
+    const granted = echoes.filter((e) => e.kind === "mesh-telemetry")[1];
+    assert.ok(granted, "the granted peer's announce echoes");
+    assert.equal(granted.status, "ANNOUNCE");
+    assert.match(granted.message, /announce · …0708090a/);
+    assert.match(granted.message, /app-data "hello from lxmf"/);
+    assert.match(granted.message, /ratcheted/);
+    assert.match(granted.detail.identityHash, /^4242/);
   });
 
   it("echoes the interface lifecycle with semantic tones", () => {
@@ -65,11 +106,11 @@ describe("mesh telemetry tap (work document #63 M2)", () => {
     iface.dispatchEvent(new Event("reconnecting"));
     const messages = echoes
       .filter((e) => e.kind === "mesh-telemetry")
-      .map((e) => `${e.message}|${e.tone ?? ""}`);
+      .map((e) => `${e.status}/${e.message}|${e.tone ?? ""}`);
     assert.deepEqual(messages, [
-      "tcp-client-127.0.0.1:4242 connected|ok",
-      "tcp-client-127.0.0.1:4242 disconnected|",
-      "tcp-client-127.0.0.1:4242 reconnecting|fail",
+      "UP/tcp-client-127.0.0.1:4242 connected|ok",
+      "DOWN/tcp-client-127.0.0.1:4242 disconnected|",
+      "RETRY/tcp-client-127.0.0.1:4242 reconnecting|fail",
     ]);
   });
 
@@ -80,6 +121,7 @@ describe("mesh telemetry tap (work document #63 M2)", () => {
     const echoes = [];
     const tap = createMeshTelemetry({
       postMessage: (echo) => echoes.push(echo),
+      isPeer: () => true,
     });
     tap.attach(first.rns);
     first.rns.transport.interfaces = [first.iface];
@@ -89,7 +131,10 @@ describe("mesh telemetry tap (work document #63 M2)", () => {
     tap.attach(second.rns); // idempotent: no double listeners
     second.rns.transport.dispatchEvent(
       new CustomEvent("announce", {
-        detail: { destinationHash: new Uint8Array(16).fill(1) },
+        detail: {
+          destinationHash: new Uint8Array(16).fill(1),
+          identity: { identityHash: new Uint8Array(16).fill(1) },
+        },
       }),
     );
     const announceEchoes = echoes.filter(

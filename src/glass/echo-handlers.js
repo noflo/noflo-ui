@@ -199,18 +199,12 @@ export function createEchoHandlers(deps) {
       );
     },
     "kind:mesh-telemetry": (data) => {
-      // The Reticulum stream (work document #63 M2): mesh presence and
-      // interface lifecycle for the wires layer's mesh accordion
+      // The Reticulum stream (work document #63 M2): mesh presence,
+      // interface lifecycle, peer links, and link-policy verdicts for the
+      // wires layer's mesh accordion — the engine owns the status tag
       deps.emitTelemetry?.("reticulum", {
         message: data.message,
-        status:
-          data.category === "announce"
-            ? "ANNOUNCE"
-            : data.message.includes("reconnecting")
-              ? "RETRY"
-              : data.message.includes("connected")
-                ? "UP"
-                : "DOWN",
+        status: data.status,
         tone: data.tone ?? "",
       });
     },
