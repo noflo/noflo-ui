@@ -329,7 +329,6 @@ export class FlowWorkDocView extends HTMLElement {
       </style>
       <div class="column">
       <div class="head">
-        <button class="secondary" data-action="back" title="Back">◀</button>
         <input class="title" value="${escapeHtml(doc.title)}" aria-label="Document title">
         <span class="doc-id" title="Stable work document id">${escapeHtml(doc.id.slice(0, 8))}</span>
         ${doc.boardId ? `<span class="doc-board" title="Materialized on the board">#${escapeHtml(String(doc.boardId))}</span>` : ""}
@@ -380,11 +379,7 @@ export class FlowWorkDocView extends HTMLElement {
     shadow
       .querySelector("[data-action='toggle-edit']")
       ?.addEventListener("click", () => this.toggleEdit());
-    shadow
-      .querySelector("[data-action='back']")
-      ?.addEventListener("click", () => {
-        emit(this, "workdoc-close", { docId: doc.id });
-      });
+
     const composerInput = /** @type {HTMLTextAreaElement} */ (
       shadow.querySelector(".composer-input")
     );

@@ -822,8 +822,10 @@ function refreshProjectCorner() {
   // document #9)
   if (pendingWorkDocOpen && workdocs.get(pendingWorkDocOpen)) {
     const docId = pendingWorkDocOpen;
+    const editing = pendingWorkDocEditing;
     pendingWorkDocOpen = null;
-    openWorkDoc(docId);
+    pendingWorkDocEditing = false;
+    activateScreen({ kind: "doc", id: docId }, { editing });
   }
   // The open document view's metadata refreshes from the replica (work
   // document #9): the body renders live through the collaborative
@@ -874,6 +876,7 @@ function openWorkDoc(docId, editing = false) {
     // whole prompt, writing the body is the point
     editing,
   });
+  updateContextChip();
 }
 
 /**
@@ -1148,6 +1151,20 @@ function refreshSyncPanel() {
 function updateContextChip() {
   if (!contextChip) return;
   const projectName = String(mirrorDoc?.getMap("metadata")?.get("name") ?? "");
+  // The workdoc screen (work document #9, #62's unified nav): the chip's
+  // label is the document's title and up navigates back to the graph
+  // The open document's id: the deferred route (pending) or the live view
+  const openView = /** @type {any} */ (document.getElementById("workdoc-view"));
+  const workdocId = pendingWorkDocOpen ?? openView?._doc?.id ?? null;
+  if (workdocId) {
+    const record = /** @type {any} */ (
+      mirrorDoc?.getMap("workdocs")?.get(workdocId)
+    );
+    const title = record?.toJSON().title ?? "Work document";
+    contextChip.setWorkDoc(workdocId, `${projectName} · ${title}`);
+    return;
+  }
+  contextChip.clearWorkDoc();
   contextChip.setLabel(
     projectName && activeGraphId
       ? `${projectName} · ${activeGraphId}`
@@ -1821,8 +1838,7 @@ async function init() {
       payload: { docId: e.detail.docId, title: e.detail.title },
     });
   });
-  workdocView?.addEventListener("workdoc-close", () => {
-    // Back to the graph the user came from
+  contextChip?.addEventListener("workdoc-close", (/** @type {any} */ e) => {
     router?.navigate(activeGraphId || "main");
   });
   // The rngit remote (work document #60's project scope): the intent

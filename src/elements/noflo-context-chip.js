@@ -50,6 +50,9 @@ export class FlowContextChip extends FlowCornerElement {
     /** The graph one level up; empty at root graphs, where the up button
      * hides (the graph→Home hop lands with the Home graph, WD #32). */
     this._up = "";
+    /** Workdoc screen state (work document #9): the chip's label is the
+     * document's title and up navigates back to the graph. */
+    this._docId = null;
   }
 
   connectedCallback() {
@@ -73,6 +76,29 @@ export class FlowContextChip extends FlowCornerElement {
    * parent (the up button navigates one level up, WD #28's app-level
    * navigation); hidden at root graphs.
    *
+   * @param {string} parentGraphId
+   */
+  /**
+   * Sets the workdoc screen state (work document #62): while a document
+   * is active the chip's label carries its title and up navigates back.
+   *
+   * @param {string | null} docId
+   * @param {string} title
+   */
+  setWorkDoc(docId, title) {
+    this._docId = docId;
+    if (docId) {
+      this.setLabel(title);
+      this.setUp("__workdoc__");
+    }
+  }
+
+  /** Clears the workdoc screen state. */
+  clearWorkDoc() {
+    this._docId = null;
+  }
+
+  /**
    * @param {string} parentGraphId
    */
   setUp(parentGraphId) {
@@ -124,7 +150,7 @@ export class FlowContextChip extends FlowCornerElement {
    */
   chipHtml() {
     return `
-      ${this._up ? `<button class="secondary" data-action="up" title="Back to ${escapeHtml(this._up)}">${icon("arrow-up")}</button>` : ""}
+      ${this._up ? `<button class="secondary" data-action="up" title="${this._docId ? "Back to the graph" : `Back to ${escapeHtml(this._up)}`}">${icon("arrow-up")}</button>` : ""}
       <span class="context-label">${escapeHtml(this._label)}</span>
       <button class="secondary" data-action="settings" title="Mesh and device settings">${icon("gear")}</button>
     `;
@@ -142,6 +168,10 @@ export class FlowContextChip extends FlowCornerElement {
       .querySelector("[data-action='up']")
       ?.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
+        if (this._docId) {
+          emit(this, "workdoc-close", { docId: this._docId });
+          return;
+        }
         emit(this, "navigate-up", undefined);
       });
   }
