@@ -36,6 +36,146 @@ const SCHEMA = {
 };
 
 describe("schema form (work document #57)", () => {
+  it("resolves $ref through the schema cache's published form", async () => {
+    const { createSchemaCache } = await import(
+      "../../src/library/schemaCache.js"
+    );
+    const cache = createSchemaCache({
+      storage: (() => {
+        const records = new Map();
+        return {
+          get: async (digest) => records.get(digest) ?? null,
+          put: async (record) => {
+            records.set(record.digest, record);
+          },
+          all: async () => [...records.values()],
+        };
+      })(),
+    });
+    const point = {
+      type: "object",
+      properties: { x: { type: "number" }, y: { type: "number" } },
+      required: ["x"],
+    };
+    const digest = await cache.put(point, "ui/point");
+    const el = makeForm();
+    el.refResolver = (/** @type {string} */ ref) => cache.getRef(ref);
+    el.schema = {
+      type: "object",
+      properties: {
+        origin: { $ref: `urn:noflo:ui/point@${digest}` },
+      },
+    };
+    el.data = { origin: { y: 2 } };
+    await el.building;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      shadow.textContent ?? "",
+      /origin/,
+      "the referenced property renders",
+    );
+    // The referenced schema's required x validates through the resolved
+    // subtree
+    assert.match(shadow.textContent ?? "", /required property 'x'/);
+    el.remove();
+  });
+
+  it("an unresolvable $ref falls back per subtree, never blank", async () => {
+    const el = makeForm();
+    el.schema = {
+      type: "object",
+      properties: {
+        origin: { $ref: `urn:noflo:ui/point@${"0".repeat(64)}` },
+      },
+    };
+    await el.building;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      shadow.textContent ?? "",
+      /cannot be resolved in this session/,
+    );
+    assert.ok(
+      shadow.querySelector("textarea"),
+      "the raw JSON fallback renders",
+    );
+    el.remove();
+  });
+
+  it("a oneOf with a discriminator renders the picker", async () => {
+    const el = makeForm();
+    el.schema = {
+      type: "object",
+      oneOf: [
+        {
+          type: "object",
+          title: "Color fill",
+          properties: {
+            kind: { const: "color" },
+            value: { type: "string", format: "color" },
+          },
+          required: ["kind"],
+        },
+        {
+          type: "object",
+          title: "Fixed value",
+          properties: { kind: { const: "fixed" }, value: { type: "integer" } },
+          required: ["kind"],
+        },
+      ],
+      discriminator: { propertyName: "kind" },
+    };
+    el.data = { kind: "fixed", value: 3 };
+    await el.building;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const select = shadow.querySelector("select");
+    assert.ok(select, "the discriminator picker renders");
+    const options = [...shadow.querySelectorAll("select option")].map(
+      (o) => o.textContent,
+    );
+    assert.deepEqual(options, ["Color fill", "Fixed value"]);
+    // The selected branch renders its own widgets; the other branch's
+    // widgets do not
+    assert.ok(
+      shadow.querySelector('input[type="text"]'),
+      "the fixed branch's integer widget",
+    );
+    assert.ok(
+      !shadow.querySelector('input[type="color"]'),
+      "the unselected branch does not render",
+    );
+    // Switching the picker swaps the branch
+    select.value = JSON.stringify("color");
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.ok(
+      /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
+        'input[type="color"]',
+      ),
+      "the color branch renders after the switch",
+    );
+    assert.equal(
+      el.data.kind,
+      "color",
+      "the selector's value wrote into the data",
+    );
+    el.remove();
+  });
+
+  it("a oneOf without a discriminator falls back", async () => {
+    const el = makeForm();
+    el.schema = { oneOf: [{ type: "string" }, { type: "integer" }] };
+    await el.building;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.match(
+      /** @type {ShadowRoot} */ (el.shadowRoot).textContent ?? "",
+      /without a discriminator/,
+    );
+    el.remove();
+  });
+
   it("renders the typed widgets for the declared subset", async () => {
     const el = makeForm();
     el.schema = SCHEMA;

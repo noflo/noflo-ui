@@ -20,6 +20,7 @@
  * state renders with visible errors, never blank.
  */
 
+import { collectSchemaRefs } from "../../vendor/fbp-protocol.js";
 import { emit } from "../events.js";
 import { buildFormNode } from "../library/forms/subset.js";
 import { tierBValidate } from "../library/forms/tierB.js";
@@ -185,6 +186,35 @@ function normalizePath(path) {
   return path === "#" ? "" : path.replace(/^#/, "");
 }
 
+/**
+ * Substitutes resolved references into a schema document: a `$ref` whose
+ * target the session resolved replaces with the referenced body (the
+ * validator then sees the resolved document); unresolvable refs keep
+ * their `$ref` — the render tree falls back per subtree, and validation
+ * never silently passes.
+ *
+ * @param {any} node
+ * @param {Map<string, any>} refs
+ * @param {number} depth
+ * @returns {any}
+ */
+function substituteRefs(node, refs, depth) {
+  if (depth > 16) return node;
+  if (Array.isArray(node)) {
+    return node.map((item) => substituteRefs(item, refs, depth + 1));
+  }
+  if (node === null || typeof node !== "object") return node;
+  if (typeof node.$ref === "string" && refs.has(node.$ref)) {
+    return substituteRefs(refs.get(node.$ref), refs, depth + 1);
+  }
+  /** @type {any} */
+  const result = {};
+  for (const [key, value] of Object.entries(node)) {
+    result[key] = substituteRefs(value, refs, depth + 1);
+  }
+  return result;
+}
+
 export class NofloSchemaForm extends HTMLElement {
   constructor() {
     super();
@@ -197,6 +227,15 @@ export class NofloSchemaForm extends HTMLElement {
     this._root = null;
     /** @type {((value: any, schema: any) => import("../library/forms/validate.js").ValidationError[]) | null} */
     this._validator = null;
+    /** @type {((ref: string) => Promise<any | null>) | null} The schema
+     * reference resolver (the schema cache, work document #57): urn refs
+     * resolve through it, local pointers through the document itself. */
+    this._refResolver = null;
+    /** @type {Promise<void> | null} The in-flight schema preparation. */
+    this._building = null;
+    /** @type {any} The schema with resolved refs inlined (validation and
+     * render see the resolved document). */
+    this._preparedSchema = null;
     /** The default chain runs when no explicit validator is set. */
     this._defaultValidator = defaultValidator;
     /** @type {Map<string, HTMLElement>} Error message elements by control path. */
@@ -206,7 +245,47 @@ export class NofloSchemaForm extends HTMLElement {
   /** The JSON Schema document the form renders. */
   set schema(value) {
     this._schema = value ?? {};
-    this._root = buildFormNode(this._schema);
+    this._building = this._prepare();
+  }
+
+  /** The in-flight schema preparation, for callers that await the build. */
+  get building() {
+    return this._building ?? Promise.resolve();
+  }
+
+  /**
+   * Resolves the document's references (the refs the session can reach),
+   * then builds the render tree. Unresolvable refs fall back per subtree
+   * — the offline degradation ladder.
+   *
+   * @returns {Promise<void>}
+   */
+  async _prepare() {
+    /** @type {Map<string, any>} */
+    const refs = new Map();
+    if (this._refResolver) {
+      for (const ref of collectSchemaRefs(this._schema) ?? []) {
+        try {
+          const body = await this._refResolver(ref);
+          if (body !== null && body !== undefined) refs.set(ref, body);
+        } catch {
+          // Unresolvable: the subtree falls back with its reason
+        }
+      }
+    }
+    // The prepared schema inlines the resolved references: both the
+    // validators (Ajv cannot compile an unresolvable urn ref, and the
+    // subset validator does not follow them) and the render tree see the
+    // resolved document. Unresolvable refs keep their $ref — the render
+    // tree falls back per subtree, and validation never silently passes
+    this._preparedSchema = substituteRefs(
+      structuredClone(this._schema),
+      refs,
+      0,
+    );
+    this._root = buildFormNode(this._preparedSchema, 0, {
+      root: this._preparedSchema,
+    });
     if (this._data === undefined) {
       // Schema default prefill (work document #37 §3.4): prefill, no
       // runtime behavior — the defaults tree walks the render tree
@@ -216,6 +295,14 @@ export class NofloSchemaForm extends HTMLElement {
       this.render();
       this.revalidate();
     }
+  }
+
+  /**
+   * The schema reference resolver seam (work document #57): urn refs
+   * resolve through it — the schema cache is the intended provider.
+   */
+  set refResolver(/** @type {((ref: string) => Promise<any | null>) | null} */ fn) {
+    this._refResolver = typeof fn === "function" ? fn : null;
   }
 
   /**
@@ -292,7 +379,8 @@ export class NofloSchemaForm extends HTMLElement {
   /** Runs validation and reports the change. */
   revalidate() {
     const validator = this._validator ?? this._defaultValidator;
-    this._errors = validator(this._data, this._schema) ?? [];
+    this._errors =
+      validator(this._data, this._preparedSchema ?? this._schema) ?? [];
     emit(this, "form-change", {
       data: this._data,
       isValid: this._errors.length === 0,
@@ -425,6 +513,52 @@ export class NofloSchemaForm extends HTMLElement {
       error.className = "error";
       this._errorSlots.set(normalizePath(pointer), error);
       field.appendChild(error);
+      return field;
+    }
+
+    if (node.kind === "picker" && node.picker) {
+      const picker = node.picker;
+      const field = document.createElement("div");
+      field.className = "field";
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      legend.textContent = node.title ?? label ?? "";
+      field.appendChild(legend);
+      const selected = value?.[picker.propertyName];
+      const select = document.createElement("select");
+      for (const branch of picker.branches) {
+        const optionEl = document.createElement("option");
+        optionEl.value = JSON.stringify(branch.value);
+        optionEl.textContent = branch.label;
+        optionEl.selected =
+          JSON.stringify(branch.value) === JSON.stringify(selected);
+        select.appendChild(optionEl);
+      }
+      select.addEventListener("change", () => {
+        // Switching implementations: the selector's value writes into the
+        // data, the branch's form re-renders around it
+        const branchValue = JSON.parse(select.value);
+        const next = { ...(value ?? {}), [picker.propertyName]: branchValue };
+        this._data = next;
+        this.render();
+        this.revalidate();
+      });
+      field.appendChild(select);
+      const active = picker.branches.find(
+        (branch) => JSON.stringify(branch.value) === JSON.stringify(selected),
+      );
+      if (active) {
+        const branchField = document.createElement("div");
+        branchField.className = "control";
+        branchField.appendChild(
+          this.buildControl(active.node, pointer, value, null),
+        );
+        field.appendChild(branchField);
+      }
+      const pickerError = document.createElement("div");
+      pickerError.className = "error";
+      this._errorSlots.set(normalizePath(pointer), pickerError);
+      field.appendChild(pickerError);
       return field;
     }
 

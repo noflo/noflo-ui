@@ -38,6 +38,9 @@ export const FORM_KEYWORDS = new Set([
   "exclusiveMinimum",
   "exclusiveMaximum",
   "allOf",
+  "$ref",
+  "oneOf",
+  "discriminator",
 ]);
 
 /** Annotations ignored rather than treated as fallback triggers. */
@@ -69,8 +72,6 @@ export const DECLARED_FORMATS = new Set([
 
 /** The keywords that force a subtree to the raw JSON fallback. */
 export const FALLBACK_KEYWORDS = [
-  "$ref",
-  "oneOf",
   "anyOf",
   "if",
   "then",
@@ -84,13 +85,12 @@ export const FALLBACK_KEYWORDS = [
   "dependentSchemas",
   "dependentRequired",
   "propertyNames",
-  "discriminator",
 ];
 
 /**
  * The rendered node kinds.
  *
- * @typedef {"object" | "array" | "string" | "number" | "integer" | "boolean" | "enum" | "const" | "fallback"} NodeKind
+ * @typedef {"object" | "array" | "string" | "number" | "integer" | "boolean" | "enum" | "const" | "picker" | "fallback"} NodeKind
  */
 
 /**
@@ -113,6 +113,7 @@ export const FALLBACK_KEYWORDS = [
  * @property {any[]} [enum]
  * @property {any} [const]
  * @property {string} [fallbackReason] Why this subtree fell back.
+ * @property {{ propertyName: string, branches: Array<{ value: any, label: string, node: FormNode }> }} [picker]
  */
 
 /**
@@ -172,13 +173,64 @@ function mergeAllOf(members) {
 }
 
 /**
+ * The walk context: the root document (local `$ref` resolution), and the
+ * resolved reference map the element prepared — refs the session could
+ * not resolve fall back, per the offline degradation ladder.
+ *
+ * @typedef {Object} WalkContext
+ * @property {any} [root]
+ * @property {Map<string, any>} [refs]
+ */
+
+/**
+ * Resolves a `$ref`: local pointers into the root document, prepared
+ * refs by their published form, or unresolved.
+ *
+ * @param {string} ref
+ * @param {WalkContext | undefined} ctx
+ * @returns {any | null} The referenced schema, or null.
+ */
+function resolveRef(ref, ctx) {
+  if (!ctx) return null;
+  const prepared = ctx.refs?.get(ref);
+  if (prepared !== undefined) return prepared;
+  if (ref.startsWith("#") && ctx.root) {
+    // Local pointer: #/$defs/name walks the root document
+    const pointer = ref.slice(1);
+    if (pointer === "") return ctx.root;
+    let current = ctx.root;
+    for (const segment of pointer.split("/").filter(Boolean)) {
+      current = current?.[segment.replaceAll("~1", "/").replaceAll("~0", "~")];
+    }
+    return current ?? null;
+  }
+  return null;
+}
+
+/**
  * Classifies and renders a schema into the forms render tree.
  *
  * @param {any} schema
  * @param {number} [depth] Recursion guard for pathological documents.
+ * @param {WalkContext} [ctx]
  * @returns {FormNode}
  */
-export function buildFormNode(schema, depth = 0) {
+export function buildFormNode(schema, depth = 0, ctx) {
+  // $ref: resolve first, then classify the target — a ref the session
+  // cannot resolve falls back (the offline degradation ladder), and a
+  // resolvable one renders its target's form
+  if (schema?.$ref !== undefined) {
+    const resolved = resolveRef(schema.$ref, ctx);
+    if (resolved === null || resolved === undefined) {
+      return {
+        kind: "fallback",
+        schema,
+        fallbackReason: `the "$ref" "${schema.$ref}" cannot be resolved in this session`,
+      };
+    }
+    return buildFormNode(resolved, depth + 1, ctx);
+  }
+
   const reason = fallbackReason(schema ?? {});
   if (reason) {
     return { kind: "fallback", schema: schema ?? {}, fallbackReason: reason };
@@ -219,6 +271,66 @@ export function buildFormNode(schema, depth = 0) {
   if (Array.isArray(resolved.enum)) {
     node.kind = "enum";
     node.enum = resolved.enum;
+    return node;
+  }
+
+  // The oneOf picker (work document #57): OpenAPI-style discriminator —
+  // the property whose value selects the implementation, with the
+  // optional value-to-reference mapping resolved through the prepared
+  // refs. A oneOf without a discriminator stays a fallback: pickers
+  // need the selector
+  if (Array.isArray(resolved.oneOf)) {
+    const discriminator = resolved.discriminator;
+    if (
+      !discriminator ||
+      typeof discriminator.propertyName !== "string" ||
+      depth > 8
+    ) {
+      return {
+        kind: "fallback",
+        schema: resolved,
+        fallbackReason: 'a "oneOf" without a discriminator',
+      };
+    }
+    const propertyName = discriminator.propertyName;
+    /** @type {Array<{ value: any, label: string, node: FormNode }>} */
+    const branches = [];
+    if (discriminator.mapping && typeof discriminator.mapping === "object") {
+      for (const [value, ref] of Object.entries(discriminator.mapping)) {
+        const resolvedBranch = resolveRef(ref, ctx);
+        if (resolvedBranch === null || resolvedBranch === undefined) {
+          return {
+            kind: "fallback",
+            schema: resolved,
+            fallbackReason: `the discriminator mapping's "${ref}" cannot be resolved in this session`,
+          };
+        }
+        const branchNode = buildFormNode(resolvedBranch, depth + 1, ctx);
+        branches.push({ value, label: value, node: branchNode });
+      }
+    } else {
+      for (const member of resolved.oneOf) {
+        const selector = member?.properties?.[propertyName];
+        const value =
+          selector?.const ??
+          (Array.isArray(selector?.enum) ? selector.enum[0] : undefined);
+        if (value === undefined) {
+          return {
+            kind: "fallback",
+            schema: resolved,
+            fallbackReason: 'a "oneOf" branch without a selector value',
+          };
+        }
+        const label = member.title ?? selector.title ?? String(value);
+        branches.push({
+          value,
+          label,
+          node: buildFormNode(member, depth + 1, ctx),
+        });
+      }
+    }
+    node.kind = "picker";
+    node.picker = { propertyName, branches };
     return node;
   }
 
