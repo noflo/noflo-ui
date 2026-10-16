@@ -107,6 +107,39 @@ const builds = [
       noflo: resolve(here, "../node_modules/@noflo/noflo/src/lib/NoFlo.js"),
     },
     ...vendor,
+    // @noflo/noflo 2.x imports GraphModel from @noflo/noflo/graph — the
+    // graph model must be ONE instance per process (the runtime client's
+    // graph mirrors and the NoFlo runtime itself must agree on entity
+    // identity), so it externalizes to the shared sibling bundle
+    plugins: [siblingExternals({ "@noflo/graph": "./graph.js" })],
+  },
+  {
+    // @noflo/graph: the entity-model graph NoFlo 2.x and the FBP Protocol
+    // 2.0 runtime client share. Zero external dependencies of its own
+    entryPoints: {
+      graph: resolve(here, "../node_modules/@noflo/graph/src/index.js"),
+    },
+    ...vendor,
+  },
+  {
+    // @noflo/runtime-client (work document #59): the FBP Protocol 2.0
+    // client that runs in the mesh Worker beside y-reticulum, against the
+    // same injected Reticulum instance. @noflo/fbp-protocol inlines (its
+    // only first-party consumer today); its @reticulum/core import stays
+    // external to the shared sibling like every other core consumer
+    entryPoints: {
+      "runtime-client": resolve(
+        here,
+        "../node_modules/@noflo/runtime-client/src/index.js",
+      ),
+    },
+    ...vendor,
+    plugins: [
+      siblingExternals({
+        "@reticulum/core": "./reticulum-core.js",
+        "@noflo/graph": "./graph.js",
+      }),
+    ],
   },
   {
     // @noflo/core components, vendored per component: the registry literal
@@ -129,7 +162,9 @@ const builds = [
     // envelope, validation, the relay/processMessage Component base.
     // @noflo/noflo stays external to the sibling bundle — one runtime
     // class identity per process
-    entryPoints: { assembly: resolve(here, "../node_modules/@noflo/assembly/src/index.js") },
+    entryPoints: {
+      assembly: resolve(here, "../node_modules/@noflo/assembly/src/index.js"),
+    },
     ...vendor,
     // assembly sits at vendor/assembly.js — one level up from the
     // per-component directory layout core/Repeat uses, so the sibling is
@@ -208,7 +243,12 @@ const builds = [
     // The emscripten glue carries node-environment require calls
     // (path/fs/module) that never execute in the browser: external keeps
     // them as inert runtime references
-    entryPoints: { bz2: resolve(here, "../node_modules/@digitaldefiance/bzip2-wasm/index.js") },
+    entryPoints: {
+      bz2: resolve(
+        here,
+        "../node_modules/@digitaldefiance/bzip2-wasm/index.js",
+      ),
+    },
     external: ["path", "fs", "module", "crypto", "util"],
     ...vendor,
   },

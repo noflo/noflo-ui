@@ -586,10 +586,8 @@ var Identity = class _Identity extends EventTarget {
       throw new Error(`Failed to read identity from storage: ${e}`);
     }
     if (savedBytes) {
-      if (savedBytes.length === 128) {
-        const identity = await _Identity.fromBytes(savedBytes);
-        if (identity) return identity;
-      }
+      const identity = await _Identity.fromBytes(savedBytes);
+      if (identity) return identity;
       log(
         "Identity",
         "Stored identity key is present but could not be loaded (corrupt or wrong length). Refusing to overwrite; remove the file manually to regenerate.",
@@ -705,8 +703,14 @@ var Identity = class _Identity extends EventTarget {
     );
   }
   /**
-   * Get the raw private key bytes (64 bytes).
-   * @returns {Promise<Uint8Array>}
+   * Get the raw private key bytes.
+   *
+   * Matches upstream `RNS.Identity.get_private_key()`: 64 bytes =
+   * `X25519_priv(32) || Ed25519_priv(32)`, without the public halves — these
+   * are derived from the private scalars on load by
+   * {@link Identity.fromPrivateKey}. Key files in this format are
+   * interchangeable with Python Reticulum tooling.
+   * @returns {Promise<Uint8Array>} 64 bytes of private key material.
    */
   async getPrivateKey() {
     if (!this.x25519Priv || !this.ed25519Priv)
@@ -715,13 +719,9 @@ var Identity = class _Identity extends EventTarget {
       );
     const x25519PrivBytes = await exportRawPrivateKey(this.x25519Priv);
     const ed25519PrivBytes = await exportRawPrivateKey(this.ed25519Priv);
-    const x25519PubBytes = await exportPublicKey(this.x25519Pub);
-    const ed25519PubBytes = await exportPublicKey(this.ed25519Pub);
-    const privKey = new Uint8Array(128);
+    const privKey = new Uint8Array(64);
     privKey.set(x25519PrivBytes, 0);
-    privKey.set(x25519PubBytes, 32);
-    privKey.set(ed25519PrivBytes, 64);
-    privKey.set(ed25519PubBytes, 96);
+    privKey.set(ed25519PrivBytes, 32);
     return privKey;
   }
   /**
@@ -740,10 +740,12 @@ var Identity = class _Identity extends EventTarget {
    * Build an identity from a 64-byte private-key blob.
    *
    * The input is **private key material only** — the first 32 bytes are the
-   * X25519 private key, the last
-   * 32 bytes the Ed25519 private key — and the public keys are derived from
-   * them (rather than supplied, as in {@link Identity.fromBytes}, which takes
-   * the full 128-byte priv+pub export).
+   * X25519 private key, the last 32 bytes the Ed25519 private key — and the
+   * public keys are derived from them. This is the Python reference's
+   * canonical format (`RNS.Identity.from_bytes` / `get_private_key`), so a
+   * key file saved by Python Reticulum loads here directly.
+   * {@link Identity.fromBytes} accepts the same 64 bytes plus the legacy
+   * 128-byte private+public export.
    *
    * Used to instantiate the {@link import("./ifac.js").deriveIfac IFAC
    * identity} from an HKDF-derived 64-byte key, matching upstream
@@ -785,11 +787,22 @@ var Identity = class _Identity extends EventTarget {
   }
   /**
    * Load an identity from raw bytes.
-   * @param {Uint8Array} bytes
+   *
+   * Accepts both on-disk key formats:
+   *  - 64 bytes: `X25519_priv(32) || Ed25519_priv(32)` — the canonical format
+   *    shared with the Python reference (`get_private_key` / `from_bytes`);
+   *    the public keys are derived from the private ones.
+   *  - 128 bytes: `X25519_priv || X25519_pub || Ed25519_priv || Ed25519_pub` —
+   *    the legacy reticulum-js export written before the format was aligned;
+   *    the embedded public halves are used as-is.
+   * @param {Uint8Array} bytes 64 or 128 bytes of stored key material.
    * @returns {Promise<Identity|null>}
    */
   static async fromBytes(bytes) {
     try {
+      if (bytes.length === 64) {
+        return await _Identity.fromPrivateKey(bytes);
+      }
       const x25519Priv = await importRawX25519PrivateKey(bytes.slice(0, 32));
       const x25519Pub = await importX25519PublicKey(bytes.slice(32, 64));
       const ed25519Priv = await importRawEd25519PrivateKey(bytes.slice(64, 96));

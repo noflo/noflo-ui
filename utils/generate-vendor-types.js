@@ -118,6 +118,21 @@ const shims = [
     name: "y-reticulum",
     body: 'export * from "y-reticulum";\n',
   },
+  {
+    // @noflo/graph 2.x ships sibling .d.ts beside its main entry; the shim
+    // re-exports the package surface and TypeScript picks the declarations
+    // up natively (work document #59: one graph model per process)
+    name: "graph",
+    body: 'export * from "@noflo/graph";\n',
+  },
+  {
+    // @noflo/runtime-client ships its own declarations next to the entry;
+    // the generated declarations reference @noflo/fbp-protocol (inlined
+    // into the bundle) and @noflo/graph + @reticulum/core (siblings), all
+    // resolving through node_modules
+    name: "runtime-client",
+    body: 'export * from "@noflo/runtime-client";\n',
+  },
 ];
 
 for (const shim of shims) {

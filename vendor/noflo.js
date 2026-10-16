@@ -4,1189 +4,17 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// node_modules/@noflo/graph/src/graph/entities.js
-function sameRef(a, b) {
-  return a.node === b.node && a.port === b.port && (a.index ?? void 0) === (b.index ?? void 0);
-}
-var GraphModelError = class extends Error {
-  /**
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = "GraphModelError";
-  }
-};
-function requireString(value, field) {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new GraphModelError(`${field} must be a non-empty string`);
-  }
-  return value;
-}
-function requirePortRef(value, field) {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new GraphModelError(`${field} must be a { node, port } reference`);
-  }
-  const ref = (
-    /** @type {Record<string, unknown>} */
-    value
-  );
-  requireString(ref.node, `${field}.node`);
-  requireString(ref.port, `${field}.port`);
-  const out = {
-    node: (
-      /** @type {string} */
-      ref.node
-    ),
-    port: (
-      /** @type {string} */
-      ref.port
-    )
-  };
-  if (ref.index !== void 0) {
-    if (typeof ref.index !== "number" || !Number.isInteger(ref.index) || ref.index < 0) {
-      throw new GraphModelError(
-        `${field}.index must be a non-negative integer`
-      );
-    }
-    out.index = ref.index;
-  }
-  return out;
-}
-function freezeMetadata(value, field) {
-  if (value === void 0 || value === null) {
-    return void 0;
-  }
-  if (typeof value !== "object" || Array.isArray(value)) {
-    throw new GraphModelError(`${field} must be an object`);
-  }
-  return deepFreeze(structuredClone(value));
-}
-function freezeIipData(value) {
-  if (value === null || typeof value !== "object") {
-    return value;
-  }
-  let data = value;
-  try {
-    data = structuredClone(value);
-  } catch {
-  }
-  return deepFreeze(data);
-}
-function deepFreeze(value) {
-  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const key of Object.keys(value)) {
-      deepFreeze(value[key]);
-    }
-    Object.freeze(value);
-  }
-  return value;
-}
-var KIND_PREFIX = (
-  /** @type {Record<EntityKind, string>} */
-  {
-    node: "n",
-    edge: "e",
-    iip: "i",
-    export: "x",
-    group: "g"
-  }
-);
-function makeEntityId(kind, counter) {
-  return `${KIND_PREFIX[kind]}${counter}`;
-}
-function compareEntityIds(a, b) {
-  if (a.entity_id < b.entity_id) {
-    return -1;
-  }
-  if (a.entity_id > b.entity_id) {
-    return 1;
-  }
-  return 0;
-}
+// node_modules/@noflo/noflo/src/lib/NoFlo.js
+import { exportFbpJson as exportFbpJson2, GraphModel as GraphModel4, importFbpJson as importFbpJson2 } from "./graph.js";
 
-// node_modules/@noflo/graph/src/graph/canonical.js
-function stableStringify(value) {
-  return JSON.stringify(canonicalize(value, /* @__PURE__ */ new Set()));
-}
-function canonicalize(value, ancestors) {
-  if (Array.isArray(value)) {
-    return value.map((element) => canonicalize(element, ancestors));
-  }
-  if (value !== null && typeof value === "object") {
-    if (ancestors.has(value)) {
-      throw new GraphModelError("Cannot canonicalize a cyclic structure");
-    }
-    ancestors.add(value);
-    const out = {};
-    for (const key of Object.keys(value).sort()) {
-      out[key] = canonicalize(value[key], ancestors);
-    }
-    ancestors.delete(value);
-    return out;
-  }
-  return value;
-}
+// node_modules/@noflo/noflo/src/lib/Network.js
+import { exportFbpJson, sameRef } from "./graph.js";
 
-// node_modules/@noflo/graph/src/graph/GraphModel.js
-function edgeKey(from, to) {
-  return `${from.node}\0${from.port}\0${from.index ?? ""}${to.node}\0${to.port}\0${to.index ?? ""}`;
-}
-var GraphModel = class _GraphModel extends EventTarget {
-  /** @type {string|undefined} */
-  #name;
-  /** @type {Map<string, GraphNode>} */
-  #nodes = /* @__PURE__ */ new Map();
-  /** @type {Map<string, GraphEdge>} */
-  #edges = /* @__PURE__ */ new Map();
-  /** Lookup index for duplicate-edge detection: ref-key → entity_id */
-  #edgeIndex = /* @__PURE__ */ new Map();
-  /** @type {Map<string, GraphIIP>} */
-  #iips = /* @__PURE__ */ new Map();
-  /** @type {Map<string, GraphExport>} */
-  #exports = /* @__PURE__ */ new Map();
-  /** @type {Map<string, GraphGroup>} */
-  #groups = /* @__PURE__ */ new Map();
-  /** @type {Object<string, any>} */
-  #metadata = {};
-  /** @type {number} */
-  #counter = 0;
-  /**
-   * @param {GraphModelOptions} [options]
-   */
-  constructor(options = {}) {
-    super();
-    if (options.name !== void 0) {
-      this.#name = requireString(options.name, "name");
-    }
-  }
-  // ## Identity
-  /**
-   * @returns {string|undefined}
-   */
-  get name() {
-    return this.#name;
-  }
-  /**
-   * @param {string} value
-   */
-  set name(value) {
-    this.#name = requireString(value, "name");
-  }
-  // ## Graph-level metadata
-  /**
-   * Return a mutable deep clone of the graph-level metadata.
-   *
-   * @returns {Object<string, any>}
-   */
-  graphMetadata() {
-    return structuredClone(this.#metadata);
-  }
-  /**
-   * Set a graph-level metadata key.
-   *
-   * @param {string} key
-   * @param {any} value
-   * @returns {void}
-   */
-  setGraphMetadata(key, value) {
-    requireString(key, "key");
-    this.#metadata[key] = value;
-    this.#emit("changeProperties", { key, value });
-  }
-  /**
-   * Remove a graph-level metadata key.
-   *
-   * @param {string} key
-   * @returns {void}
-   */
-  removeGraphMetadata(key) {
-    requireString(key, "key");
-    delete this.#metadata[key];
-    this.#emit("changeProperties", { key, value: void 0 });
-  }
-  // ## Nodes
-  /**
-   * Add a node. When `entity_id` is omitted a compact generated id is
-   * assigned (`n1`, `n2`, …). Node ids are unique within the graph. The
-   * `component` may be omitted for placeholder nodes — the engine
-   * registers them without instantiating a process.
-   *
-   * @param {{ entity_id?: string, component?: string, metadata?: Object<string, any> }} definition
-   * @returns {GraphNode} The frozen stored entity
-   */
-  addNode(definition) {
-    const entityId = definition.entity_id === void 0 ? this.#nextId("node") : requireString(definition.entity_id, "entity_id");
-    if (this.#nodes.has(entityId)) {
-      throw new GraphModelError(`Node "${entityId}" already exists`);
-    }
-    const component = definition.component === void 0 ? void 0 : requireString(definition.component, "component");
-    const metadata = freezeMetadata(definition.metadata, "metadata");
-    const node = Object.freeze({
-      entity_id: entityId,
-      ...component === void 0 ? {} : { component },
-      ...metadata === void 0 ? {} : { metadata }
-    });
-    this.#nodes.set(entityId, node);
-    this.#emit("addNode", { entity: node });
-    return node;
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphNode|undefined}
-   */
-  node(entityId) {
-    return this.#nodes.get(entityId);
-  }
-  /**
-   * @param {string} entityId
-   * @returns {boolean}
-   */
-  hasNode(entityId) {
-    return this.#nodes.has(entityId);
-  }
-  /**
-   * All nodes, in insertion order.
-   *
-   * @returns {GraphNode[]}
-   */
-  nodes() {
-    return [...this.#nodes.values()];
-  }
-  /**
-   * Rename a node, rewriting every reference: edges, IIPs, exports, and
-   * group memberships keep pointing at the same node under its new id.
-   * Emits `renameNode` after the change events of rewritten references.
-   *
-   * @param {string} previous
-   * @param {string} next
-   * @returns {GraphNode} The renamed entity
-   */
-  renameNode(previous, next) {
-    requireString(previous, "previous");
-    requireString(next, "next");
-    const node = this.#requireEntity(this.#nodes, "node", previous);
-    if (previous === next) {
-      return node;
-    }
-    if (this.#nodes.has(next)) {
-      throw new GraphModelError(`Node "${next}" already exists`);
-    }
-    this.#nodes.delete(previous);
-    const renamed = Object.freeze({
-      entity_id: next,
-      component: node.component,
-      ...node.metadata === void 0 ? {} : { metadata: node.metadata }
-    });
-    this.#nodes.set(next, renamed);
-    for (const edge of [...this.#edges.values()]) {
-      if (edge.from.node === previous || edge.to.node === previous) {
-        const from = edge.from.node === previous ? { node: next, port: edge.from.port } : edge.from;
-        const to = edge.to.node === previous ? { node: next, port: edge.to.port } : edge.to;
-        this.#edgeIndex.delete(edgeKey(edge.from, edge.to));
-        this.#edges.set(
-          edge.entity_id,
-          this.#freezeEdge(edge.entity_id, from, to, edge.metadata)
-        );
-        this.#edgeIndex.set(edgeKey(from, to), edge.entity_id);
-        this.#emit("changeEdge", {
-          entity: this.#edges.get(edge.entity_id)
-        });
-      }
-    }
-    for (const iip of [...this.#iips.values()]) {
-      if (iip.to.node === previous) {
-        this.#iips.set(
-          iip.entity_id,
-          this.#freezeIip(
-            iip.entity_id,
-            iip.from,
-            { node: next, port: iip.to.port },
-            iip.metadata
-          )
-        );
-        this.#emit("changeIIP", {
-          entity: this.#iips.get(iip.entity_id)
-        });
-      }
-    }
-    for (const exp of [...this.#exports.values()]) {
-      if (exp.internal.node === previous) {
-        this.#exports.set(
-          exp.entity_id,
-          this.#freezeExport(
-            exp.entity_id,
-            exp.direction,
-            exp.public,
-            { node: next, port: exp.internal.port },
-            exp.metadata
-          )
-        );
-        this.#emit("changeExport", {
-          entity: this.#exports.get(exp.entity_id)
-        });
-      }
-    }
-    for (const group of [...this.#groups.values()]) {
-      if (group.nodes.includes(previous)) {
-        this.#groups.set(
-          group.entity_id,
-          Object.freeze({
-            ...group,
-            nodes: Object.freeze(
-              group.nodes.map((id) => id === previous ? next : id)
-            )
-          })
-        );
-        this.#emit("changeGroup", {
-          entity: this.#groups.get(group.entity_id)
-        });
-      }
-    }
-    this.#emit("renameNode", { entity: renamed, previous });
-    return renamed;
-  }
-  /**
-   * Remove a node and everything attached to it: incident edges, IIPs
-   * targeting it, exports exposing it, and its group memberships. Each
-   * removal emits its own event; `removeNode` is emitted last.
-   *
-   * @param {string} entityId
-   * @returns {GraphNode} The removed entity
-   */
-  removeNode(entityId) {
-    const node = this.#requireEntity(this.#nodes, "node", entityId);
-    for (const edge of [...this.#edges.values()]) {
-      if (edge.from.node === entityId || edge.to.node === entityId) {
-        this.#edgeIndex.delete(edgeKey(edge.from, edge.to));
-        this.#edges.delete(edge.entity_id);
-        this.#emit("removeEdge", { entity: edge });
-      }
-    }
-    for (const iip of [...this.#iips.values()]) {
-      if (iip.to.node === entityId) {
-        this.#removeEntity(this.#iips, "iip", iip.entity_id, "removeIIP");
-      }
-    }
-    for (const exp of [...this.#exports.values()]) {
-      if (exp.internal.node === entityId) {
-        this.#removeEntity(
-          this.#exports,
-          "export",
-          exp.entity_id,
-          "removeExport"
-        );
-      }
-    }
-    for (const group of [...this.#groups.values()]) {
-      if (group.nodes.includes(entityId)) {
-        this.#groups.set(
-          group.entity_id,
-          Object.freeze({
-            ...group,
-            nodes: Object.freeze(group.nodes.filter((id) => id !== entityId))
-          })
-        );
-        this.#emit("changeGroup", {
-          entity: this.#groups.get(group.entity_id)
-        });
-      }
-    }
-    this.#nodes.delete(entityId);
-    this.#emit("removeNode", { entity: node });
-    return node;
-  }
-  /**
-   * Set one metadata key on a node.
-   *
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value - Pass `undefined` to remove the key
-   * @returns {GraphNode} The updated entity
-   */
-  setNodeMetadata(entityId, key, value) {
-    return this.#setMetadata(
-      this.#nodes,
-      "node",
-      entityId,
-      key,
-      value,
-      "changeNode"
-    );
-  }
-  // ## Edges
-  /**
-   * Add an edge between two existing node ports. Duplicate edges (same
-   * source and target pair) are rejected.
-   *
-   * @param {{ from: GraphPortRef, to: GraphPortRef, metadata?: Object<string, any>, entity_id?: string }} definition
-   * @returns {GraphEdge} The frozen stored entity
-   */
-  addEdge(definition) {
-    const entityId = definition.entity_id === void 0 ? this.#nextId("edge") : requireString(definition.entity_id, "entity_id");
-    if (this.#edges.has(entityId)) {
-      throw new GraphModelError(`Edge "${entityId}" already exists`);
-    }
-    const from = requirePortRef(definition.from, "from");
-    const to = requirePortRef(definition.to, "to");
-    this.#requireNodeRef(from.node, "from.node");
-    this.#requireNodeRef(to.node, "to.node");
-    const duplicateId = this.#edgeIndex.get(edgeKey(from, to));
-    if (duplicateId !== void 0) {
-      throw new GraphModelError(
-        `Edge "${duplicateId}" already connects ${from.node}:${from.port} to ${to.node}:${to.port}`
-      );
-    }
-    const edge = this.#freezeEdge(entityId, from, to, definition.metadata);
-    this.#edges.set(entityId, edge);
-    this.#edgeIndex.set(edgeKey(from, to), entityId);
-    this.#emit("addEdge", { entity: edge });
-    return edge;
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphEdge|undefined}
-   */
-  edge(entityId) {
-    return this.#edges.get(entityId);
-  }
-  /**
-   * All edges, in insertion order.
-   *
-   * @returns {GraphEdge[]}
-   */
-  edges() {
-    return [...this.#edges.values()];
-  }
-  /**
-   * All edges with the given node as their source.
-   *
-   * @param {string} nodeId
-   * @returns {GraphEdge[]}
-   */
-  edgesFrom(nodeId) {
-    return this.edges().filter((edge) => edge.from.node === nodeId);
-  }
-  /**
-   * All edges with the given node as their target.
-   *
-   * @param {string} nodeId
-   * @returns {GraphEdge[]}
-   */
-  edgesTo(nodeId) {
-    return this.edges().filter((edge) => edge.to.node === nodeId);
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphEdge} The removed entity
-   */
-  removeEdge(entityId) {
-    const edge = this.#requireEntity(this.#edges, "edge", entityId);
-    this.#edgeIndex.delete(edgeKey(edge.from, edge.to));
-    this.#edges.delete(entityId);
-    this.#emit("removeEdge", { entity: edge });
-    return edge;
-  }
-  /**
-   * Set one metadata key on an edge.
-   *
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value
-   * @returns {GraphEdge}
-   */
-  setEdgeMetadata(entityId, key, value) {
-    return this.#setMetadata(
-      this.#edges,
-      "edge",
-      entityId,
-      key,
-      value,
-      "changeEdge"
-    );
-  }
-  // ## IIPs
-  /**
-   * Add an initial Information Packet targeting an existing node port.
-   *
-   * @param {{ data: any, to: GraphPortRef, metadata?: Object<string, any>, entity_id?: string }} definition
-   * @returns {GraphIIP} The frozen stored entity
-   */
-  addIIP(definition) {
-    const entityId = definition.entity_id === void 0 ? this.#nextId("iip") : requireString(definition.entity_id, "entity_id");
-    if (this.#iips.has(entityId)) {
-      throw new GraphModelError(`IIP "${entityId}" already exists`);
-    }
-    const to = requirePortRef(definition.to, "to");
-    this.#requireNodeRef(to.node, "to.node");
-    const from = Object.freeze({ data: freezeIipData(definition.data) });
-    const iip = this.#freezeIip(entityId, from, to, definition.metadata);
-    this.#iips.set(entityId, iip);
-    this.#emit("addIIP", { entity: iip });
-    return iip;
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphIIP|undefined}
-   */
-  iip(entityId) {
-    return this.#iips.get(entityId);
-  }
-  /**
-   * All IIPs, in insertion order.
-   *
-   * @returns {GraphIIP[]}
-   */
-  iips() {
-    return [...this.#iips.values()];
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphIIP} The removed entity
-   */
-  removeIIP(entityId) {
-    return this.#removeEntity(this.#iips, "iip", entityId, "removeIIP");
-  }
-  /**
-   * Set one metadata key on an IIP.
-   *
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value
-   * @returns {GraphIIP}
-   */
-  setIIPMetadata(entityId, key, value) {
-    return this.#setMetadata(
-      this.#iips,
-      "iip",
-      entityId,
-      key,
-      value,
-      "changeIIP"
-    );
-  }
-  // ## Exports
-  /**
-   * Add an export exposing an internal port on the graph boundary. Public
-   * names are unique within their direction.
-   *
-   * @param {{ direction: "inport"|"outport", public: string, internal: GraphPortRef, metadata?: Object<string, any>, entity_id?: string }} definition
-   * @returns {GraphExport} The frozen stored entity
-   */
-  addExport(definition) {
-    const entityId = definition.entity_id === void 0 ? this.#nextId("export") : requireString(definition.entity_id, "entity_id");
-    if (this.#exports.has(entityId)) {
-      throw new GraphModelError(`Export "${entityId}" already exists`);
-    }
-    if (definition.direction !== "inport" && definition.direction !== "outport") {
-      throw new GraphModelError('direction must be "inport" or "outport"');
-    }
-    const publicName = requireString(definition.public, "public");
-    const internal = requirePortRef(definition.internal, "internal");
-    this.#requireNodeRef(internal.node, "internal.node");
-    const clash = [...this.#exports.values()].find(
-      (exp2) => exp2.direction === definition.direction && exp2.public === publicName
-    );
-    if (clash) {
-      throw new GraphModelError(
-        `${definition.direction} "${publicName}" is already exported by "${clash.entity_id}"`
-      );
-    }
-    const exp = this.#freezeExport(
-      entityId,
-      definition.direction,
-      publicName,
-      internal,
-      definition.metadata
-    );
-    this.#exports.set(entityId, exp);
-    this.#emit("addExport", { entity: exp });
-    return exp;
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphExport|undefined}
-   */
-  export(entityId) {
-    return this.#exports.get(entityId);
-  }
-  /**
-   * All exports, in insertion order.
-   *
-   * @returns {GraphExport[]}
-   */
-  exports() {
-    return [...this.#exports.values()];
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphExport} The removed entity
-   */
-  removeExport(entityId) {
-    return this.#removeEntity(
-      this.#exports,
-      "export",
-      entityId,
-      "removeExport"
-    );
-  }
-  /**
-   * Set one metadata key on an export.
-   *
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value
-   * @returns {GraphExport}
-   */
-  setExportMetadata(entityId, key, value) {
-    return this.#setMetadata(
-      this.#exports,
-      "export",
-      entityId,
-      key,
-      value,
-      "changeExport"
-    );
-  }
-  // ## Groups
-  /**
-   * Add a visual-only group over existing nodes.
-   *
-   * @param {{ name: string, nodes: readonly string[], metadata?: Object<string, any>, entity_id?: string }} definition
-   * @returns {GraphGroup} The frozen stored entity
-   */
-  addGroup(definition) {
-    const entityId = definition.entity_id === void 0 ? this.#nextId("group") : requireString(definition.entity_id, "entity_id");
-    if (this.#groups.has(entityId)) {
-      throw new GraphModelError(`Group "${entityId}" already exists`);
-    }
-    const name = requireString(definition.name, "name");
-    if (!Array.isArray(definition.nodes)) {
-      throw new GraphModelError("nodes must be an array of node ids");
-    }
-    for (const nodeId of definition.nodes) {
-      this.#requireNodeRef(nodeId, "group member");
-    }
-    const group = Object.freeze({
-      entity_id: entityId,
-      name,
-      nodes: Object.freeze([...definition.nodes]),
-      ...definition.metadata === void 0 ? {} : { metadata: freezeMetadata(definition.metadata, "metadata") }
-    });
-    this.#groups.set(entityId, group);
-    this.#emit("addGroup", { entity: group });
-    return group;
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphGroup|undefined}
-   */
-  group(entityId) {
-    return this.#groups.get(entityId);
-  }
-  /**
-   * All groups, in insertion order.
-   *
-   * @returns {GraphGroup[]}
-   */
-  groups() {
-    return [...this.#groups.values()];
-  }
-  /**
-   * @param {string} entityId
-   * @returns {GraphGroup} The removed entity
-   */
-  removeGroup(entityId) {
-    return this.#removeEntity(this.#groups, "group", entityId, "removeGroup");
-  }
-  /**
-   * Set one metadata key on a group.
-   *
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value
-   * @returns {GraphGroup}
-   */
-  setGroupMetadata(entityId, key, value) {
-    return this.#setMetadata(
-      this.#groups,
-      "group",
-      entityId,
-      key,
-      value,
-      "changeGroup"
-    );
-  }
-  // ## Canonical serialization
-  /**
-   * Canonical, deterministic representation: entity collections sorted by
-   * `entity_id`, graph metadata as-is. Two models holding the same graph
-   * serialize identically regardless of the order entities were added in.
-   *
-   * @returns {CanonicalGraph}
-   */
-  serialize() {
-    return {
-      ...this.#name === void 0 ? {} : { name: this.#name },
-      metadata: structuredClone(this.#metadata),
-      nodes: this.nodes().sort(compareEntityIds),
-      edges: this.edges().sort(compareEntityIds),
-      iips: this.iips().sort(compareEntityIds),
-      exports: this.exports().sort(compareEntityIds),
-      groups: this.groups().sort(compareEntityIds)
-    };
-  }
-  /**
-   * Rebuild a model from a canonical representation produced by
-   * {@link GraphModel#serialize}.
-   *
-   * @param {CanonicalGraph} canonical
-   * @returns {GraphModel}
-   */
-  static fromCanonical(canonical) {
-    const model = new _GraphModel(
-      canonical.name === void 0 ? {} : { name: canonical.name }
-    );
-    for (const [key, value] of Object.entries(canonical.metadata ?? {})) {
-      model.setGraphMetadata(key, value);
-    }
-    for (const node of canonical.nodes ?? []) {
-      model.addNode(node);
-    }
-    for (const edge of canonical.edges ?? []) {
-      model.addEdge(edge);
-    }
-    for (const iip of canonical.iips ?? []) {
-      model.addIIP({
-        entity_id: iip.entity_id,
-        data: iip.from.data,
-        to: iip.to,
-        ...iip.metadata === void 0 ? {} : { metadata: iip.metadata }
-      });
-    }
-    for (const exp of canonical.exports ?? []) {
-      model.addExport(exp);
-    }
-    for (const group of canonical.groups ?? []) {
-      model.addGroup(group);
-    }
-    return model;
-  }
-  /**
-   * Canonical JSON string for content addressing (epoch snapshots).
-   *
-   * @returns {string}
-   */
-  canonicalString() {
-    return stableStringify(this.serialize());
-  }
-  /**
-   * Deep clone of the whole model.
-   *
-   * @returns {GraphModel}
-   */
-  clone() {
-    return _GraphModel.fromCanonical(structuredClone(this.serialize()));
-  }
-  // ## Internals
-  /**
-   * @param {string} type
-   * @param {any} detail
-   * @returns {void}
-   */
-  #emit(type, detail) {
-    this.dispatchEvent(new globalThis.CustomEvent(type, { detail }));
-  }
-  /**
-   * @param {EntityKind} kind
-   * @returns {string}
-   */
-  #nextId(kind) {
-    let id;
-    do {
-      this.#counter += 1;
-      id = makeEntityId(kind, this.#counter);
-    } while (this.#nodes.has(id) || this.#edges.has(id) || this.#iips.has(id) || this.#exports.has(id) || this.#groups.has(id));
-    return id;
-  }
-  /**
-   * @param {Map<string, any>} map
-   * @param {EntityKind} kind
-   * @param {string} entityId
-   * @returns {any}
-   */
-  #requireEntity(map, kind, entityId) {
-    const entity = map.get(entityId);
-    if (entity === void 0) {
-      throw new GraphModelError(`No such ${kind}: "${entityId}"`);
-    }
-    return entity;
-  }
-  /**
-   * @param {string} nodeId
-   * @param {string} field
-   * @returns {void}
-   */
-  #requireNodeRef(nodeId, field) {
-    if (!this.#nodes.has(nodeId)) {
-      throw new GraphModelError(`${field} references unknown node "${nodeId}"`);
-    }
-  }
-  /**
-   * @param {string} entityId
-   * @param {GraphPortRef} from
-   * @param {GraphPortRef} to
-   * @param {Object<string, any>|undefined} metadata
-   * @returns {GraphEdge}
-   */
-  #freezeEdge(entityId, from, to, metadata) {
-    const frozenMetadata = freezeMetadata(metadata, "metadata");
-    return frozenMetadata === void 0 ? Object.freeze({
-      entity_id: entityId,
-      from: Object.freeze(from),
-      to: Object.freeze(to)
-    }) : Object.freeze({
-      entity_id: entityId,
-      from: Object.freeze(from),
-      to: Object.freeze(to),
-      metadata: frozenMetadata
-    });
-  }
-  /**
-   * @param {string} entityId
-   * @param {{ data: any }} from
-   * @param {GraphPortRef} to
-   * @param {Object<string, any>|undefined} metadata
-   * @returns {GraphIIP}
-   */
-  #freezeIip(entityId, from, to, metadata) {
-    const frozenMetadata = freezeMetadata(metadata, "metadata");
-    return frozenMetadata === void 0 ? Object.freeze({
-      entity_id: entityId,
-      from: Object.freeze(from),
-      to: Object.freeze(to)
-    }) : Object.freeze({
-      entity_id: entityId,
-      from: Object.freeze(from),
-      to: Object.freeze(to),
-      metadata: frozenMetadata
-    });
-  }
-  /**
-   * @param {string} entityId
-   * @param {"inport"|"outport"} direction
-   * @param {string} publicName
-   * @param {GraphPortRef} internal
-   * @param {Object<string, any>|undefined} metadata
-   * @returns {GraphExport}
-   */
-  #freezeExport(entityId, direction, publicName, internal, metadata) {
-    const frozenMetadata = freezeMetadata(metadata, "metadata");
-    return frozenMetadata === void 0 ? Object.freeze({
-      entity_id: entityId,
-      direction,
-      public: publicName,
-      internal: Object.freeze(internal)
-    }) : Object.freeze({
-      entity_id: entityId,
-      direction,
-      public: publicName,
-      internal: Object.freeze(internal),
-      metadata: frozenMetadata
-    });
-  }
-  /**
-   * Remove an entity from a collection and emit its removal event.
-   *
-   * @template T
-   * @param {Map<string, T>} map
-   * @param {EntityKind} kind
-   * @param {string} entityId
-   * @param {string} eventType
-   * @returns {T} The removed entity
-   */
-  #removeEntity(map, kind, entityId, eventType) {
-    const entity = this.#requireEntity(map, kind, entityId);
-    map.delete(entityId);
-    this.#emit(eventType, { entity });
-    return entity;
-  }
-  /**
-   * Replace an entity with a copy carrying an updated metadata map, and
-   * emit its change event.
-   *
-   * @template T
-   * @param {Map<string, T>} map
-   * @param {EntityKind} kind
-   * @param {string} entityId
-   * @param {string} key
-   * @param {any} value
-   * @param {string} eventType
-   * @returns {T} The updated entity
-   */
-  #setMetadata(map, kind, entityId, key, value, eventType) {
-    const entity = this.#requireEntity(map, kind, entityId);
-    requireString(key, "key");
-    const metadata = {
-      .../** @type {{ metadata?: Object<string, any> }} */
-      entity.metadata ?? {}
-    };
-    if (value === void 0) {
-      delete metadata[key];
-    } else {
-      metadata[key] = value;
-    }
-    const { metadata: previousMetadata, ...rest } = (
-      /** @type {{ metadata?: Object<string, any> }} */
-      entity
-    );
-    const updated = (
-      /** @type {T} */
-      Object.freeze({
-        ...rest,
-        ...Object.keys(metadata).length === 0 ? {} : { metadata: deepFreeze(metadata) }
-      })
-    );
-    map.set(entityId, updated);
-    this.#emit(eventType, { entity: updated, key, value });
-    return updated;
-  }
-};
+// node_modules/@noflo/noflo/src/lib/ComponentLoader.js
+import { GraphModel as GraphModel2 } from "./graph.js";
 
-// node_modules/@noflo/graph/src/graph/fbpJson.js
-function importFbpJson(json) {
-  if (typeof json !== "object" || json === null || Array.isArray(json)) {
-    throw new GraphModelError("FBP JSON document must be an object");
-  }
-  const document = normalizeLegacyFbpJson(json);
-  const options = (
-    /** @type {GraphModelOptions} */
-    {}
-  );
-  if (json.name !== void 0) {
-    options.name = requireString(json.name, "name");
-  }
-  const model = new GraphModel(options);
-  for (const [key, value] of Object.entries(document.properties ?? {})) {
-    model.setGraphMetadata(key, value);
-  }
-  for (const node of document.nodes ?? []) {
-    model.addNode({
-      entity_id: requireString(node?.id, "node.id"),
-      ...node?.component === void 0 ? {} : { component: requireString(node.component, "node.component") },
-      ...node?.metadata === void 0 ? {} : { metadata: node.metadata }
-    });
-  }
-  for (const edge of document.edges ?? []) {
-    model.addEdge({
-      from: jsonPortRef(edge?.source, "edge.source"),
-      to: jsonPortRef(edge?.target, "edge.target"),
-      ...edge?.metadata === void 0 ? {} : { metadata: edge.metadata }
-    });
-  }
-  const iips = document.inits ?? document.case ?? [];
-  for (const iip of iips) {
-    model.addIIP({
-      data: iip?.data,
-      to: jsonPortRef(iip?.target, "iip.target"),
-      ...iip?.metadata === void 0 ? {} : { metadata: iip.metadata }
-    });
-  }
-  for (const [publicName, def] of Object.entries(document.inports ?? {})) {
-    model.addExport({
-      direction: "inport",
-      public: publicName,
-      internal: requirePortRef(
-        { node: def?.process, port: def?.port },
-        `inports.${publicName}`
-      ),
-      ...withDefinedMetadata(exportMetadata(def))
-    });
-  }
-  for (const [publicName, def] of Object.entries(document.outports ?? {})) {
-    model.addExport({
-      direction: "outport",
-      public: publicName,
-      internal: requirePortRef(
-        { node: def?.process, port: def?.port },
-        `outports.${publicName}`
-      ),
-      ...withDefinedMetadata(exportMetadata(def))
-    });
-  }
-  for (const group of document.groups ?? []) {
-    model.addGroup({
-      name: requireString(group?.name, "group.name"),
-      nodes: requireGroupNodes(group?.nodes),
-      ...withDefinedMetadata(group?.metadata)
-    });
-  }
-  return model;
-}
-function normalizeLegacyFbpJson(json) {
-  if (json.processes === void 0 && json.connections === void 0) {
-    return json;
-  }
-  const document = (
-    /** @type {Object<string, any>} */
-    {}
-  );
-  if (json.properties !== void 0) {
-    document.properties = json.properties;
-  }
-  if (json.processes !== void 0) {
-    document.nodes = Object.entries(json.processes).map(([id, def]) => ({
-      id,
-      component: def?.component,
-      ...def?.metadata === void 0 ? {} : { metadata: def.metadata }
-    }));
-  }
-  if (json.connections !== void 0) {
-    const edges = (
-      /** @type {Object<string, any>[]} */
-      []
-    );
-    const inits = (
-      /** @type {Object<string, any>[]} */
-      []
-    );
-    for (const connection of json.connections) {
-      if (connection?.data !== void 0) {
-        inits.push({
-          data: connection.data,
-          target: jsonRefIn(connection.tgt),
-          ...connection.metadata === void 0 ? {} : { metadata: connection.metadata }
-        });
-      } else if (connection?.src && connection?.tgt) {
-        edges.push({
-          source: jsonRefIn(connection.src),
-          target: jsonRefIn(connection.tgt),
-          ...connection.metadata === void 0 ? {} : { metadata: connection.metadata }
-        });
-      } else {
-        throw new GraphModelError(
-          "Legacy JSON connection must have both src and tgt, or data and tgt"
-        );
-      }
-    }
-    document.edges = edges;
-    if (inits.length > 0) {
-      document.inits = inits;
-    }
-  }
-  if (json.inports !== void 0) {
-    document.inports = json.inports;
-  }
-  if (json.outports !== void 0) {
-    document.outports = json.outports;
-  }
-  if (json.groups !== void 0) {
-    document.groups = json.groups;
-  }
-  return document;
-}
-function jsonRefIn(ref) {
-  if (ref === void 0) {
-    return void 0;
-  }
-  return {
-    id: ref.process,
-    port: ref.port,
-    ...ref.index === void 0 ? {} : { index: ref.index }
-  };
-}
-function exportFbpJson(model) {
-  const result = (
-    /** @type {Object<string, any>} */
-    {
-      properties: model.graphMetadata()
-    }
-  );
-  const inports = (
-    /** @type {Object<string, any>} */
-    {}
-  );
-  const outports = (
-    /** @type {Object<string, any>} */
-    {}
-  );
-  for (const exp of model.exports()) {
-    const target = exp.direction === "inport" ? inports : outports;
-    target[exp.public] = {
-      process: exp.internal.node,
-      port: exp.internal.port,
-      ...exp.metadata === void 0 ? {} : { metadata: exp.metadata }
-    };
-  }
-  if (Object.keys(inports).length > 0) {
-    result.inports = inports;
-  }
-  if (Object.keys(outports).length > 0) {
-    result.outports = outports;
-  }
-  const groups = model.groups().map((group) => ({
-    name: group.name,
-    nodes: [...group.nodes],
-    ...group.metadata === void 0 ? {} : { metadata: group.metadata }
-  }));
-  if (groups.length > 0) {
-    result.groups = groups;
-  }
-  result.nodes = model.nodes().map((node) => ({
-    id: node.entity_id,
-    component: node.component,
-    ...node.metadata === void 0 ? {} : { metadata: node.metadata }
-  }));
-  result.edges = model.edges().map((edge) => ({
-    source: jsonRefOut(edge.from),
-    target: jsonRefOut(edge.to),
-    ...edge.metadata === void 0 ? {} : { metadata: edge.metadata }
-  }));
-  const iips = model.iips().map((iip) => ({
-    data: iip.from.data,
-    target: jsonRefOut(iip.to),
-    ...iip.metadata === void 0 ? {} : { metadata: iip.metadata }
-  }));
-  if (iips.length > 0) {
-    result.inits = iips;
-  }
-  return result;
-}
-function exportMetadata(def) {
-  const metadata = { ...def?.metadata ?? {} };
-  for (const field of ["schema", "type", "required", "values"]) {
-    if (def?.[field] !== void 0) {
-      metadata[field] = def[field];
-    }
-  }
-  return Object.keys(metadata).length === 0 ? void 0 : metadata;
-}
-function jsonRefOut(ref) {
-  return {
-    id: ref.node,
-    port: ref.port,
-    ...ref.index === void 0 ? {} : { index: ref.index }
-  };
-}
-function jsonPortRef(ref, field) {
-  return requirePortRef(
-    {
-      node: ref?.id,
-      port: ref?.port,
-      ...ref?.index === void 0 ? {} : { index: ref.index }
-    },
-    field
-  );
-}
-function withDefinedMetadata(metadata) {
-  return metadata === void 0 ? {} : { metadata };
-}
-function requireGroupNodes(nodes) {
-  if (!Array.isArray(nodes)) {
-    throw new GraphModelError("group.nodes must be an array of node ids");
-  }
-  return nodes.map((id) => requireString(id, "group.nodes[]"));
-}
+// node_modules/@noflo/noflo/src/components/Subgraph.js
+import { GraphModel, importFbpJson } from "./graph.js";
 
 // node_modules/@noflo/noflo/src/lib/EventBase.js
 var makeDetailEvent = typeof globalThis.CustomEvent === "function" ? (type, detail) => new globalThis.CustomEvent(type, {
@@ -1334,10 +162,13 @@ function handleOptions(options) {
     );
   }
   const schema = options.schema || options.type;
-  if (schema && schema.indexOf("/") === -1) {
-    throw new Error(
-      `Invalid port schema '${schema}' specified. Should be URL or MIME type`
-    );
+  if (schema !== null && schema !== void 0) {
+    const validSchema = typeof schema === "string" && /^[a-z][a-z0-9_-]*\/[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(schema) || typeof schema === "object" && !Array.isArray(schema);
+    if (!validSchema) {
+      throw new Error(
+        `Invalid port schema '${typeof schema === "string" ? schema : "[complex]"}' specified. Use a ns/name schema artifact id or an inline JSON Schema object`
+      );
+    }
   }
   const scoped = typeof options.scoped === "boolean" ? options.scoped : true;
   const description = options.description || "";
@@ -1529,16 +360,12 @@ var InPort = class extends BasePort {
   }
   /**
    * Subscribe the port to a socket and forward its events into the port's
-   * buffers and lifecycle events. Installs the default-value data delegate
-   * when the port has one.
+   * buffers and lifecycle events.
    *
    * @param {import("./InternalSocket.js").InternalSocket} socket
    * @param {number|null} [localId]
    */
   attachSocket(socket, localId = null) {
-    if (this.hasDefault()) {
-      socket.setDataDelegate(() => this.options.default);
-    }
     socket.addEventListener("connect", () => {
       if (this.isAddressable()) {
         this.dispatchLifecycleEvent("connect", [socket, localId]);
@@ -1559,18 +386,14 @@ var InPort = class extends BasePort {
     );
   }
   /**
-   * Receive an Information Packet from a socket: validate it against the
-   * port's `values` list, stamp it with ownership, index, and port
-   * datatype/schema, buffer it, and emit the `ip` event.
+   * Receive an Information Packet from a socket: stamp it with ownership,
+   * index, and port datatype/schema, buffer it, and emit the `ip` event.
    *
    * @param {import("./IP.js").default} packet
    * @param {number|null} [index]
    */
   handleIP(packet, index = null) {
     const ip = packet;
-    if (ip.type === "data") {
-      this.validateData(ip.data);
-    }
     ip.owner = this.nodeInstance;
     if (this.isAddressable()) {
       ip.index = index;
@@ -1592,15 +415,6 @@ var InPort = class extends BasePort {
     }
     buf.push(ip);
     this.dispatchLifecycleEvent("ip", ip);
-  }
-  /**
-   * Check whether the port has a default value to send when no packet
-   * arrives.
-   *
-   * @returns {boolean}
-   */
-  hasDefault() {
-    return this.options.default !== void 0;
   }
   /**
    * Initialize the port's packet buffers: per-scope and per-index structures
@@ -1663,23 +477,6 @@ var InPort = class extends BasePort {
       return this.iipBuffer;
     }
     return this.buffer;
-  }
-  /**
-   * Validate incoming data against the port's `values` list, when one is
-   * configured. Throws on values outside the list.
-   *
-   * @param {any} data
-   * @returns {void}
-   */
-  validateData(data) {
-    if (!this.options.values) {
-      return;
-    }
-    if (this.options.values.indexOf(data) === -1) {
-      throw new Error(
-        `Invalid data='${data}' received, not in [${this.options.values}]`
-      );
-    }
   }
   /**
    * Get the packet buffer for a given scope and addressable-port index.
@@ -1844,6 +641,56 @@ var InPort = class extends BasePort {
    */
   clear() {
     return this.prepareBuffer();
+  }
+  /**
+   * Counts the IPs currently buffered on this port, across the regular,
+   * IIP, scoped, and indexed buffer shapes. Used by the component's
+   * shutdown path to report unconsumed data.
+   *
+   * @returns {number}
+   */
+  /**
+   * Counts the IPs currently buffered on this port, across the regular,
+   * IIP, scoped, and indexed buffer shapes. Used by the component's
+   * shutdown path to report unconsumed data.
+   *
+   * Control ports always buffer their latest stream non-consumingly by
+   * design, so they are excluded: a configured control port holding its
+   * value at shutdown is correct usage, not a footgun.
+   *
+   * @returns {number}
+   */
+  countBuffered() {
+    if (this.options.control) {
+      return 0;
+    }
+    let count = 0;
+    if (this.isAddressable()) {
+      if (this.options.scoped) {
+        Object.keys(this.indexedScopedBuffer ?? {}).forEach((scope) => {
+          Object.keys(this.indexedScopedBuffer[scope] ?? {}).forEach(
+            (index) => {
+              count += (this.indexedScopedBuffer[scope][index] ?? []).length;
+            }
+          );
+        });
+      }
+      Object.keys(this.indexedIipBuffer ?? {}).forEach((index) => {
+        count += (this.indexedIipBuffer[index] ?? []).length;
+      });
+      Object.keys(this.indexedBuffer ?? {}).forEach((index) => {
+        count += (this.indexedBuffer[index] ?? []).length;
+      });
+      return count;
+    }
+    if (this.options.scoped) {
+      Object.keys(this.scopedBuffer ?? {}).forEach((scope) => {
+        count += (this.scopedBuffer[scope] ?? []).length;
+      });
+    }
+    count += (this.iipBuffer ?? []).length;
+    count += (this.buffer ?? []).length;
+    return count;
   }
 };
 
@@ -2210,7 +1057,7 @@ var OutPort = class extends BasePort {
     }
     if (index !== null) {
       throw new Error(
-        `${this.getId()} is not addressable port and index ${index} provided`
+        `${this.getId()} is not addressable, but the packet carries index ${index} \u2014 clear ip.index before sending to a non-addressable port`
       );
     }
     return this.sockets;
@@ -2498,7 +1345,7 @@ var ProcessInput = class {
    * @typedef {GetArgument|HasValidationCallback} HasArgument
    */
   /**
-   * @param {...HasArgument} params
+   * @param {...(string | HasArgument | Array<string|number>)} params
    */
   has(...params) {
     let validate;
@@ -2559,7 +1406,9 @@ var ProcessInput = class {
   }
   // Returns true if the ports contain data packets
   /**
-   * @param {...string} params - Port names to check for data packets
+   * @param {...(string | Array<string|number>)} params - Port names to
+   *   check for data packets; addressable access passes `(port, index)`
+   *   pairs as arrays
    * @returns {boolean}
    */
   hasData(...params) {
@@ -2578,7 +1427,9 @@ var ProcessInput = class {
   }
   // Returns true if a port has a complete stream in its input buffer.
   /**
-   * @param {...HasArgument} params - Port names to check for streams
+   * @param {...(string | HasArgument | Array<string|number>)} params - Port
+   *   names to check for streams; addressable access passes `(port, index)`
+   *   pairs as arrays
    * @returns {boolean}
    */
   hasStream(...params) {
@@ -3164,6 +2015,30 @@ var Component = class extends EventBase {
   constructor(options = {}) {
     super();
     const opts = options;
+    const knownOptionKeys = [
+      "inPorts",
+      "outPorts",
+      "icon",
+      "description",
+      "process",
+      "ordered",
+      "autoOrdering",
+      "activateOnInput",
+      "forwardBrackets"
+    ];
+    Object.keys(opts).forEach((key) => {
+      if (knownOptionKeys.includes(key)) {
+        return;
+      }
+      const caseMatch = knownOptionKeys.find(
+        (known) => known.toLowerCase() === key.toLowerCase()
+      );
+      if (caseMatch) {
+        debugComponent3(
+          `${this.nodeId ?? "component"} received unknown option '${key}' \u2014 did you mean '${caseMatch}'? Unknown options are silently ignored`
+        );
+      }
+    });
     if (!opts.inPorts) {
       opts.inPorts = {};
     }
@@ -3328,6 +2203,32 @@ var Component = class extends EventBase {
         resolve();
       })
     ).then(() => {
+      const inPortsForReport = this.inPorts.ports || this.inPorts;
+      Object.keys(inPortsForReport).forEach((portName) => {
+        const reportedPort = (
+          /** @type {InPort} */
+          inPortsForReport[portName]
+        );
+        if (typeof reportedPort.countBuffered !== "function") {
+          return;
+        }
+        const buffered = reportedPort.countBuffered();
+        if (buffered > 0) {
+          debugComponent3(
+            `${this.nodeId} port '${portName}' holds ${buffered} unconsumed IPs at shutdown. Either data arrived that no activation consumed, or an activation consumed data it should not have before waiting for more \u2014 in that case the pending activation never re-invokes (check the has/get order)`
+          );
+        }
+      });
+      Object.keys(this.bracketContext.out).forEach((portName) => {
+        Object.keys(this.bracketContext.out[portName]).forEach((scope) => {
+          const opens = this.bracketContext.out[portName][scope];
+          if (opens.length > 0) {
+            debugBrackets(
+              `${this.nodeId} bracket context on '${portName}' discarded at shutdown with ${opens.length} unattached open brackets \u2014 forwarded brackets attach to actual sends`
+            );
+          }
+        });
+      });
       const inPorts = this.inPorts.ports || this.inPorts;
       Object.keys(inPorts).forEach((portName) => {
         const inPort = (
@@ -4397,7 +3298,7 @@ var ComponentLoader = class {
    * @returns {boolean}
    */
   isGraph(cPath) {
-    if (cPath instanceof GraphModel) {
+    if (cPath instanceof GraphModel2) {
       return true;
     }
     if (typeof cPath !== "object") {
@@ -5241,7 +4142,6 @@ var Network = class extends EventBase {
     this.edgeObservers = [];
     this.initials = [];
     this.nextInitials = [];
-    this.defaults = [];
     this.graph = graph;
     this.started = false;
     this.stopped = true;
@@ -5258,7 +4158,7 @@ var Network = class extends EventBase {
     }
     this.flowtrace = null;
     this.flowtraceName = null;
-    this.setFlowtrace(options.flowtrace || false, null);
+    this.setFlowtrace(options.flowtrace || null, null);
   }
   /**
    * The uptime of the network: current time minus start-up time.
@@ -5344,6 +4244,13 @@ var Network = class extends EventBase {
       }
       case "end": {
         this.flowtrace.addNetworkStopped(this.flowtraceName);
+        break;
+      }
+      case "process-error": {
+        this.flowtrace.addNetworkError(
+          this.flowtraceName,
+          payload?.error ?? payload
+        );
         break;
       }
       default: {
@@ -5534,7 +4441,7 @@ var Network = class extends EventBase {
       ),
       Promise.resolve()
     );
-    const promise = Promise.resolve().then(() => handleAll(this.graph.nodes(), "addNode")).then(() => handleAll(this.graph.edges(), "addEdge")).then(() => handleAll(this.graph.iips(), "addInitial")).then(() => handleAll(this.graph.nodes(), "addDefaults")).then(() => this);
+    const promise = Promise.resolve().then(() => handleAll(this.graph.nodes(), "addNode")).then(() => handleAll(this.graph.edges(), "addEdge")).then(() => handleAll(this.graph.iips(), "addInitial")).then(() => this);
     return promise;
   }
   /**
@@ -5803,41 +4710,6 @@ var Network = class extends EventBase {
     });
   }
   /**
-   * Attach default-value sockets to any ports with defaults that are not
-   * already attached. Called during connect for every node.
-   *
-   * @protected
-   * @param {import("@noflo/graph").GraphNode} node
-   * @returns {Promise<void>}
-   */
-  addDefaults(node) {
-    return this.ensureNode(node.entity_id, "inbound").then(
-      (process2) => Promise.all(
-        Object.keys(process2.component.inPorts.ports).map((key) => {
-          const port = process2.component.inPorts.ports[key];
-          if (!port.hasDefault() || port.isAttached()) {
-            return Promise.resolve();
-          }
-          const socket = createSocket(
-            {},
-            {
-              debug: this.debug,
-              async: this.asyncDelivery
-            }
-          );
-          this.subscribeSocket(socket);
-          return connectPort(socket, process2, key, void 0, true).then(
-            () => {
-              this.connections.push(socket);
-              this.defaults.push(socket);
-            }
-          );
-        })
-      )
-    ).then(() => {
-    });
-  }
-  /**
    * Add an initial Information Packet to the network: create and attach its
    * socket, queue the packet, and register the IIP with the current graph.
    * When the network is running, the IIP is sent immediately.
@@ -6034,29 +4906,8 @@ var Network = class extends EventBase {
     });
   }
   /**
-   * Send default values to any inports that have them but no connection or
-   * IIP supplying data.
-   *
-   * @protected
-   * @returns Promise<void>
-   */
-  sendDefaults() {
-    return Promise.all(
-      this.defaults.map((socket) => {
-        if (socket.to.process.component.inPorts[socket.to.port].sockets.length !== 1) {
-          return Promise.resolve();
-        }
-        socket.connect();
-        socket.send();
-        socket.disconnect();
-        return Promise.resolve();
-      })
-    ).then(() => {
-    });
-  }
-  /**
    * Start the network: start all components, send the initial Information
-   * Packets, and then send port defaults. Starting an already-started
+   * Packets. Starting an already-started
    * network stops it first.
    *
    * @returns {Promise<this>}
@@ -6070,7 +4921,7 @@ var Network = class extends EventBase {
     }
     this.initials = this.nextInitials.slice(0);
     this.eventBuffer = [];
-    return this.startComponents().then(() => this.sendInitials()).then(() => this.sendDefaults()).then(() => {
+    return this.startComponents().then(() => this.sendInitials()).then(() => {
       this.setStarted(true);
       return Promise.resolve(this);
     });
@@ -6241,7 +5092,7 @@ var Network = class extends EventBase {
    * all existing subgraph networks under the given name. Passing a falsy
    * value disables tracing.
    *
-   * @param {Object|null} flowtrace
+   * @param {import("./Flowtrace.js").Flowtrace|null} flowtrace
    * @param {string|null} [name]
    * @param {boolean} [main]
    */
@@ -6275,7 +5126,224 @@ var Network = class extends EventBase {
   }
 };
 
+// node_modules/@noflo/noflo/src/lib/NoFlo.js
+import { exportFbpJson as exportFbpJson3, GraphModel as GraphModel5, importFbpJson as importFbpJson3 } from "./graph.js";
+
+// node_modules/@noflo/noflo/src/lib/Flowtrace.js
+var EVENT_TYPE = {
+  DATA: 1,
+  BEGIN_BRACKET: 2,
+  END_BRACKET: 3,
+  ERROR: 4,
+  CONSOLE: 5,
+  LIFECYCLE: 6
+};
+var LIFECYCLE_CODE = {
+  START: 1,
+  STOP: 2,
+  SAFE_MODE: 3,
+  FAILED: 4,
+  PAUSED: 5,
+  RESUMED: 6
+};
+var TRACE_FORMAT_VERSION = 1;
+function frugalize(value) {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== "object" && typeof value !== "function") {
+    return value;
+  }
+  try {
+    JSON.stringify(value);
+    return value;
+  } catch {
+    return `DATA ${typeof value}`;
+  }
+}
+var Flowtrace = class {
+  /**
+   * @param {object} [options]
+   * @param {any} [options.runtimeMetadata] Free-form identifying
+   *   information embedded in the snapshot (runtime name, host, version).
+   * @param {number} [options.timestampMs] Recording start time; defaults to
+   *   construction time.
+   */
+  constructor(options = {}) {
+    const { runtimeMetadata = null, timestampMs = Date.now() } = options ?? {};
+    this.graphs = {};
+    this.mainGraphName = null;
+    this.runtimeMetadata = runtimeMetadata;
+    this.timestampMs = timestampMs;
+    this.events = [];
+  }
+  /**
+   * Name of the main graph, as the duck-typed contract exposes it.
+   *
+   * @returns {string|null}
+   */
+  get mainGraph() {
+    return this.mainGraphName;
+  }
+  /**
+   * Register a graph definition with the recording. The main network passes
+   * its definition with `main = true`; subgraph networks register under
+   * their component names.
+   *
+   * @param {string} graphName
+   * @param {any} graphDefinition
+   * @param {boolean} [main]
+   * @returns {void}
+   */
+  addGraph(graphName, graphDefinition, main = false) {
+    this.graphs[graphName] = graphDefinition;
+    if (main || this.mainGraphName === null) {
+      this.mainGraphName = graphName;
+    }
+  }
+  /**
+   * Record a network packet event. Accepts the duck-typed event names the
+   * network emits: `network:data`, `network:begingroup`,
+   * `network:endgroup`.
+   *
+   * @param {string} event
+   * @param {FlowtracePacketPort|null} src
+   * @param {FlowtracePacketPort|null} tgt
+   * @param {string} graph
+   * @param {object} payload
+   * @returns {void}
+   */
+  addNetworkPacket(event, src, tgt, graph, payload) {
+    let eventType;
+    let value;
+    switch (event) {
+      case "network:data": {
+        eventType = EVENT_TYPE.DATA;
+        value = payload.data;
+        break;
+      }
+      case "network:begingroup": {
+        eventType = EVENT_TYPE.BEGIN_BRACKET;
+        value = payload.data ?? payload.group ?? "";
+        break;
+      }
+      case "network:endgroup": {
+        eventType = EVENT_TYPE.END_BRACKET;
+        value = payload.data ?? payload.group ?? "";
+        break;
+      }
+      default: {
+        throw new Error(`Unknown network packet event ${event}`);
+      }
+    }
+    this.#record(eventType, value, {
+      graph,
+      subgraph: payload.subgraph ?? null,
+      src: src ?? null,
+      tgt: tgt ?? null,
+      datatype: payload.datatype ?? null,
+      schema: payload.schema ?? null
+    });
+  }
+  /**
+   * Record a network start as a `0x06 LIFECYCLE` START event.
+   *
+   * @param {string} graph
+   * @returns {void}
+   */
+  addNetworkStarted(graph) {
+    this.#record(EVENT_TYPE.LIFECYCLE, LIFECYCLE_CODE.START, { graph });
+  }
+  /**
+   * Record a network stop as a `0x06 LIFECYCLE` STOP event.
+   *
+   * @param {string} graph
+   * @returns {void}
+   */
+  addNetworkStopped(graph) {
+    this.#record(EVENT_TYPE.LIFECYCLE, LIFECYCLE_CODE.STOP, { graph });
+  }
+  /**
+   * Record a process error as a `0x04 ERROR` event. The payload is the
+   * exception string, exactly as the wire carries it; the detail an
+   * exception object would add is intentionally not preserved.
+   *
+   * @param {string} graph
+   * @param {any} error
+   * @returns {void}
+   */
+  addNetworkError(graph, error) {
+    const err = error ?? "unknown error";
+    const message = typeof err?.message === "string" ? err.message : String(err);
+    this.#record(EVENT_TYPE.ERROR, message, { graph });
+  }
+  /**
+   * Record process output as a `0x05 CONSOLE` event. The payload is the
+   * positional tuple `[stream_id, log_string]`.
+   *
+   * @param {string} graph
+   * @param {object} payload
+   * @param {string} [payload.stream]
+   * @param {any} [payload.message]
+   * @returns {void}
+   */
+  addNetworkOutput(graph, payload) {
+    const message = typeof payload?.message === "string" ? payload.message : String(payload?.message ?? "");
+    this.#record(EVENT_TYPE.CONSOLE, [payload?.stream ?? "output", message], {
+      graph
+    });
+  }
+  /**
+   * Append an event to the stream.
+   *
+   * @param {number} eventType
+   * @param {any} payload
+   * @param {FlowtraceEventMeta} meta
+   * @returns {void}
+   */
+  #record(eventType, payload, meta) {
+    this.events.push({
+      timestampMs: Date.now(),
+      eventType,
+      payload,
+      meta
+    });
+  }
+  /**
+   * Export the recording as the JSON rendering of the streamable trace file
+   * (work document #4 §10): the `0xF0` snapshot content first, then the
+   * event stream as delta-encoded tuples. Payloads are frugalized lazily at
+   * export time — an unserializable DATA value becomes a type-named
+   * placeholder instead of failing the recording.
+   *
+   * The binary encoding of this state is
+   * `assembleTraceFileFromRecorder` in `@noflo/fbp-protocol`; a round-trip
+   * spec in `@noflo/runtime` pins the two representations together.
+   *
+   * @returns {FlowtraceJson}
+   */
+  toJSON() {
+    return {
+      snapshot: {
+        formatVersion: TRACE_FORMAT_VERSION,
+        timestampMs: this.timestampMs,
+        runtimeMetadata: this.runtimeMetadata,
+        graphDefinition: this.mainGraphName ? this.graphs[this.mainGraphName] ?? null : null,
+        graphs: { ...this.graphs },
+        main: this.mainGraphName
+      },
+      chunks: this.events.map((event) => [
+        Math.max(0, event.timestampMs - this.timestampMs),
+        event.eventType,
+        frugalize(event.payload),
+        event.meta
+      ])
+    };
+  }
+};
+
 // node_modules/@noflo/noflo/src/lib/AsCallback.js
+import { GraphModel as GraphModel3 } from "./graph.js";
 function normalizeOptions(options, component) {
   if (!options) {
     options = {};
@@ -6297,7 +5365,7 @@ function normalizeOptions(options, component) {
   return options;
 }
 function prepareNetwork(component, options) {
-  if (component instanceof GraphModel) {
+  if (component instanceof GraphModel3) {
     const network = new Network(component, {
       ...options,
       componentLoader: options.loader
@@ -6308,7 +5376,7 @@ function prepareNetwork(component, options) {
     return Promise.reject(new Error("No component loader provided"));
   }
   return options.loader.load(component, {}).then((instance) => {
-    const graph = new GraphModel(
+    const graph = new GraphModel3(
       options.name === void 0 ? {} : { name: options.name }
     );
     const nodeName = options.name || "AsCallback";
@@ -6608,9 +5676,9 @@ function createNetwork(graphInstance, options = {}) {
   return promise;
 }
 var NoFlo_default = {
-  GraphModel,
-  importFbpJson,
-  exportFbpJson,
+  GraphModel: GraphModel4,
+  importFbpJson: importFbpJson2,
+  exportFbpJson: exportFbpJson2,
   ComponentLoader,
   Component,
   InPorts,
@@ -6626,10 +5694,13 @@ var NoFlo_default = {
 export {
   Component,
   ComponentLoader,
-  GraphModel,
+  EVENT_TYPE,
+  Flowtrace,
+  GraphModel5 as GraphModel,
   IP,
   InPort,
   InPorts,
+  LIFECYCLE_CODE,
   Network,
   OutPort,
   OutPorts,
@@ -6637,7 +5708,7 @@ export {
   asPromise,
   createNetwork,
   NoFlo_default as default,
-  exportFbpJson,
-  importFbpJson,
+  exportFbpJson3 as exportFbpJson,
+  importFbpJson3 as importFbpJson,
   InternalSocket_exports as internalSocket
 };
