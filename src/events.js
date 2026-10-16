@@ -118,6 +118,10 @@
  * @property {CustomEvent<{ identityHash: string | null }>} sync-decline
  * @property {CustomEvent<{ grantId: string }>} sync-revoke-grant
  * @property {CustomEvent<void>} sync-settings
+ * @property {CustomEvent<void>} runtime-refresh The sync panel expanded:
+ *   re-query the runtime population (work document #59).
+ * @property {CustomEvent<{ destinationHash: string }>} runtime-connect
+ * @property {CustomEvent<{ destinationHash: string }>} runtime-disconnect
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate

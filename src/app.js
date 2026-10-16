@@ -1162,6 +1162,7 @@ function refreshSyncPanel() {
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
   syncPanel.setPeers(meshPeers, meshPeerIdentities, peerReachability);
+  syncPanel.setRuntimes(runtimeRuntimes, runtimeConnections);
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);
@@ -1800,6 +1801,27 @@ async function init() {
         identityHash: e.detail.identityHash,
         decision: "declined",
       },
+    });
+  });
+  // Runtime surfaces (work document #59): a runtime is just another mesh
+  // counterpart with a protocol version — discovery refreshes on panel
+  // expansion, connect/disconnect address the runtime by its destination
+  // hash
+  on(syncPanel, "runtime-refresh", () => {
+    refreshRuntimes();
+  });
+  on(syncPanel, "runtime-connect", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeConnect",
+      payload: { destinationHash: e.detail.destinationHash },
+    });
+  });
+  on(syncPanel, "runtime-disconnect", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeDisconnect",
+      payload: { destinationHash: e.detail.destinationHash },
     });
   });
   on(syncPanel, "sync-invite", () => {

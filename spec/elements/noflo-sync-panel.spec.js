@@ -477,3 +477,170 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.remove();
   });
 });
+
+describe("sync panel runtime surface (work document #59)", () => {
+  const RUNTIME_HASH = "c".repeat(32);
+
+  /**
+   * A panel with one discovered runtime and no connection state.
+   *
+   * @returns {FlowSyncPanel}
+   */
+  function feedRuntime() {
+    const el = makeElement();
+    feedConnected(el);
+    el.setRuntimes([
+      {
+        destinationHash: RUNTIME_HASH,
+        nodeName: "workshop-runtime",
+        protocolVersion: 2,
+        lastSeen: Date.now(),
+      },
+    ]);
+    return el;
+  }
+
+  it("the chip summarizes the runtime population", () => {
+    const el = feedRuntime();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      shadow.textContent ?? "",
+      /1 runtime/,
+      "the chip carries the count",
+    );
+    el.remove();
+  });
+
+  it("the expanded panel lists runtimes with state and capabilities", () => {
+    const el = feedRuntime();
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [
+          RUNTIME_HASH,
+          {
+            state: "connected",
+            nodeName: "workshop-runtime",
+            capabilityMask: 0b11,
+            capabilities: ["graph.read", "graph.edit"],
+            protocolVersion: 2,
+          },
+        ],
+      ]),
+    );
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(shadow.textContent ?? "", /workshop-runtime/);
+    assert.match(shadow.textContent ?? "", /connected/);
+    assert.match(
+      shadow.textContent ?? "",
+      /graph\.read, graph\.edit/,
+      "the advertised mask renders as relation names, not raw bits",
+    );
+    assert.ok(
+      shadow.querySelector("[data-runtime-disconnect]"),
+      "a connected runtime offers disconnect",
+    );
+    el.remove();
+  });
+
+  it("a discovered runtime offers connect; an error shows beside the row", () => {
+    const el = feedRuntime();
+    el.expanded = true;
+    el.render();
+    let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(
+      shadow.querySelector("[data-runtime-connect]"),
+      "a discovered runtime offers connect",
+    );
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [
+          RUNTIME_HASH,
+          {
+            state: "error",
+            nodeName: "workshop-runtime",
+            error: "timed out waiting for the 0x02 auth response",
+          },
+        ],
+      ]),
+    );
+    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(shadow.textContent ?? "", /error/);
+    assert.match(
+      shadow.textContent ?? "",
+      /timed out waiting for the 0x02 auth response/,
+      "the failure reason renders beside the row it describes",
+    );
+    el.remove();
+  });
+
+  it("emits connect, disconnect, and refresh events", () => {
+    const el = feedRuntime();
+    /** @type {any[]} */
+    const events = [];
+    el.addEventListener("runtime-refresh", () => events.push("refresh"));
+    el.addEventListener("runtime-connect", (e) =>
+      events.push(["connect", /** @type {any} */ e.detail.destinationHash]),
+    );
+    el.addEventListener("runtime-disconnect", (e) =>
+      events.push(["disconnect", /** @type {any} */ e.detail.destinationHash]),
+    );
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(
+      events.includes("refresh"),
+      "expansion asks the Engine for a fresh discovery",
+    );
+    shadow
+      .querySelector("[data-runtime-connect]")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(events[1], ["connect", RUNTIME_HASH]);
+    // The connection state arrives: the row's affordance flips to
+    // disconnect, addressing the same destination hash
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [
+          RUNTIME_HASH,
+          {
+            state: "connected",
+            nodeName: "workshop-runtime",
+            capabilityMask: 0b11,
+            capabilities: ["graph.read", "graph.edit"],
+            protocolVersion: 2,
+          },
+        ],
+      ]),
+    );
+    /** @type {ShadowRoot} */ (el.shadowRoot)
+      .querySelector("[data-runtime-disconnect]")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(events[2], ["disconnect", RUNTIME_HASH]);
+    el.remove();
+  });
+});
