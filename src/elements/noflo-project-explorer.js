@@ -225,9 +225,12 @@ export class FlowProjectExplorer extends FlowCornerElement {
   styles() {
     return `
         :host {
+          /* Stacked under the Context chip in the same corner (work
+             document #28's corner system): the chip occupies the top
+             strip, the explorer hangs below it */
           position: fixed;
-          top: 12px;
-          left: 12px;
+          top: 62px;
+          left: 10px;
           z-index: 890;
           display: flex;
           flex-direction: column;
