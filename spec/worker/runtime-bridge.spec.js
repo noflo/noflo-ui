@@ -35,6 +35,58 @@ function mockReticulum() {
 const hexOf = (fill) => fill.toString(16).padStart(2, "0").repeat(16);
 
 /**
+ * A mock runtime client: the event surface and execution client the
+ * bridge wires, with a controllable mirror for the deploy path.
+ *
+ * @param {{ entities?: string[] }} [options]
+ * @returns {any}
+ */
+function mockClient(options = {}) {
+  const listeners = new Map();
+  const sentOps = [];
+  const client = {
+    listeners,
+    sentOps,
+    clientId: null,
+    addEventListener(type, listener) {
+      if (!listeners.has(type)) listeners.set(type, []);
+      listeners.get(type).push(listener);
+    },
+    removeEventListener(type, listener) {
+      const list = listeners.get(type);
+      if (list) list.splice(list.indexOf(listener), 1);
+    },
+    dispatch(type, detail) {
+      for (const listener of listeners.get(type) ?? []) {
+        listener({ detail });
+      }
+    },
+    execution: {
+      requestProcesses: async () => {},
+      runControl: async () => {},
+    },
+    syncGraph: async () => ({
+      upToDate: true,
+      epochId: "epoch-1",
+      graph: {
+        node: (id) =>
+          options.entities?.includes(id) ? { entity_id: id } : undefined,
+        edge: () => undefined,
+        iip: () => undefined,
+        export: () => undefined,
+        group: () => undefined,
+      },
+    }),
+    sendGraphOp: async (op) => {
+      // The real client stamps the op with the client's own id
+      sentOps.push({ ...op, clientId: op.clientId ?? client.clientId });
+    },
+    close: async () => {},
+  };
+  return client;
+}
+
+/**
  * Announces a runtime through the transport, the way a validated announce
  * reaches the bridge.
  *
@@ -144,14 +196,14 @@ describe("runtime bridge (work document #59)", () => {
     let connectCalls = 0;
     const bridge = createRuntimeBridge({
       getReticulum: () => ({ transport }),
-      getIdentity: async () => ({ identity: "mock" }),
+      getIdentity: async () => ({ identityHash: "feed" }),
       postMessage: (echo) => echoes.push(echo),
       establishLink: async () => {
         connectCalls += 1;
         return {
           link: {},
           auth: { protocolVersion: 2, capabilityMask: 0b11 },
-          client: { close: async () => {} },
+          client: mockClient(),
         };
       },
     });
@@ -176,5 +228,101 @@ describe("runtime bridge (work document #59)", () => {
         echo.kind === "runtime-connection" && echo.state === "disconnected",
     );
     assert.ok(dropped, "the disconnect echoes");
+  });
+
+  it("deploys the projected graph as ops and reports the outcome", async () => {
+    const { transport } = mockReticulum();
+    /** @type {any[]} */
+    const echoes = [];
+    const client = mockClient({ entities: ["a"] });
+    const bridge = createRuntimeBridge({
+      getReticulum: () => ({ transport }),
+      getIdentity: async () => ({ identityHash: "feed" }),
+      projectGraph: (graphId) =>
+        graphId === "main"
+          ? {
+              nodes: [
+                { id: "a", component: "core/Repeat", metadata: {} },
+                { id: "b", component: "core/Repeat", metadata: {} },
+              ],
+              edges: [],
+              initializers: [],
+              inports: {},
+              outports: {},
+              groups: [],
+            }
+          : null,
+      postMessage: (echo) => echoes.push(echo),
+      establishLink: async () => ({
+        link: {},
+        auth: { protocolVersion: 2, capabilityMask: 0xff },
+        client,
+      }),
+    });
+    bridge.attach();
+    announce(transport, 0xcc, "runtime-two");
+    await bridge.connect(hexOf(0xcc));
+    // The op-stream identity is the device's mesh identity hash
+    assert.equal(client.clientId, "feed");
+    await bridge.deploy(hexOf(0xcc), "main");
+    // Entity "a" is already in the mirror: skipped, not re-sent
+    assert.deepEqual(
+      client.sentOps.map((op) => op.entityId),
+      ["b"],
+    );
+    assert.equal(client.sentOps[0].clientId, "feed");
+    const deployed = echoes.filter((echo) => echo.kind === "runtime-deploy");
+    assert.deepEqual(
+      deployed.map((echo) => echo.state),
+      ["deploying", "deployed"],
+    );
+    assert.equal(deployed[1].ops, 1);
+    assert.equal(deployed[1].skipped, 1);
+    // An unknown graph reports the failure, never a crash
+    await bridge.deploy(hexOf(0xcc), "nope");
+    const failed = echoes.find(
+      (echo) => echo.kind === "runtime-deploy" && echo.state === "error",
+    );
+    assert.match(failed.error, /unknown graph/);
+  });
+
+  it("runs the runtime's network and echoes run state", async () => {
+    const { transport } = mockReticulum();
+    /** @type {any[]} */
+    const echoes = [];
+    const client = mockClient();
+    const bridge = createRuntimeBridge({
+      getReticulum: () => ({ transport }),
+      getIdentity: async () => ({ identityHash: "feed" }),
+      projectGraph: () => null,
+      postMessage: (echo) => echoes.push(echo),
+      establishLink: async () => ({
+        link: {},
+        auth: { protocolVersion: 2, capabilityMask: 0xff },
+        client,
+      }),
+    });
+    bridge.attach();
+    announce(transport, 0xcc, "runtime-two");
+    await bridge.connect(hexOf(0xcc));
+    await bridge.run(hexOf(0xcc), "start");
+    let run = echoes.find((echo) => echo.kind === "runtime-run");
+    assert.equal(run.state, "running");
+    // The runtime's 0x40 echo supersedes the requested state
+    client.dispatch("execution", { cmd: 0x40, action: 0x04 });
+    run = echoes.filter((echo) => echo.kind === "runtime-run").pop();
+    assert.equal(run.state, "running");
+    assert.equal(run.requested, undefined);
+    // Process listings ride the processlist event
+    client.dispatch("processlist", {
+      epochId: "epoch-2",
+      entries: { a: { component: "core/Repeat", type: "component", state: 1 } },
+    });
+    const processes = echoes.find((echo) => echo.kind === "runtime-processes");
+    assert.equal(processes.epochId, "epoch-2");
+    assert.equal(processes.entries.a.component, "core/Repeat");
+    await bridge.run(hexOf(0xcc), "stop");
+    run = echoes.filter((echo) => echo.kind === "runtime-run").pop();
+    assert.equal(run.state, "stopped");
   });
 });

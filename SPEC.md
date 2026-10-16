@@ -329,6 +329,8 @@ type UIWorkerMessage =
   | { type: 'MESH'; command: 'importIdentity'; payload: { identity: string } }
   | { type: 'MESH'; command: 'runtimeDiscover' }
   | { type: 'MESH'; command: 'runtimeConnect'; payload: { destinationHash: string } }
+  | { type: 'MESH'; command: 'runtimeDeploy'; payload: { destinationHash: string; graphId: string } }
+  | { type: 'MESH'; command: 'runtimeRun'; payload: { destinationHash: string; action: 'start' | 'stop' } }
   | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } };
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
@@ -450,6 +452,10 @@ type EngineUIMessage =
   | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
   | { kind: 'runtime-discovered'; runtimes: Array<{ destinationHash: string; nodeName: string; protocolVersion: number; lastSeen: number }> }
   | { kind: 'runtime-connection'; destinationHash: string; state: 'connected' | 'disconnected' | 'error'; nodeName: string | null; capabilityMask?: number; capabilities?: string[]; protocolVersion?: number; error?: string }
+  | { kind: 'runtime-deploy'; destinationHash: string; graphId: string; state: 'deploying' | 'deployed' | 'error'; ops?: number; skipped?: number; error?: string }
+  | { kind: 'runtime-processes'; destinationHash: string; epochId: string | null; entries: Record<string, { component: string; type: string; state: number | string }> }
+  | { kind: 'runtime-run'; destinationHash: string; state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown'; action?: number; requested?: boolean; error?: string }
+  | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
   | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
   | { kind: 'mesh-peer-reachability'; states: { [identityHash: string]: 'online' | 'offline' } }
@@ -527,6 +533,33 @@ interface RuntimeConnection {
   nodeName: string | null;
   capabilityMask?: number;
   protocolVersion?: number;
+  error?: string;
+}
+
+// Deploy + observe (work document #59 Phase A): the run action serializes
+// the project's graph and streams it onto the runtime's main plane as 0x14
+// ops for entities the runtime's mirror lacks (the entity-model canonical,
+// never the fbp-graph interchange form — the canonical-forms gap); run
+// control is fire-and-forget, the runtime's 0x40 echoes carry the state.
+// Edits while running are stop → edit → redeploy until Phase B.
+interface RuntimeDeploy {
+  destinationHash: string;
+  graphId: string;
+  state: 'deploying' | 'deployed' | 'error';
+  ops?: number;
+  skipped?: number;
+  error?: string;
+}
+interface RuntimeProcesses {
+  destinationHash: string;
+  epochId: string | null;
+  entries: Record<string, { component: string; type: string; state: number | string }>;
+}
+interface RuntimeRun {
+  destinationHash: string;
+  state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown';
+  action?: number;
+  requested?: boolean;
   error?: string;
 }
 

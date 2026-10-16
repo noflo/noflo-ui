@@ -462,6 +462,30 @@
  */
 
 /**
+ * Appendix A extension (work document #59): deploy a project graph onto a
+ * connected runtime's main plane (Phase A: deploy + observe — the graph
+ * streams as `0x14` ops for entities the runtime's mirror lacks; edits
+ * while running are stop → edit → redeploy until Phase B). The outcome
+ * rides the `runtime-deploy` echo.
+ *
+ * @typedef {Object} MeshRuntimeDeployMessage
+ * @property {'MESH'} type
+ * @property {'runtimeDeploy'} command
+ * @property {{ destinationHash: string, graphId: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #59): run control over a connected
+ * runtime's main plane. Fire-and-forget on the wire; the runtime's `0x40`
+ * echoes arrive as `runtime-run` state.
+ *
+ * @typedef {Object} MeshRuntimeRunMessage
+ * @property {'MESH'} type
+ * @property {'runtimeRun'} command
+ * @property {{ destinationHash: string, action: 'start' | 'stop' }} payload
+ */
+
+/**
  * Appendix A extension (work document #59): tear a runtime connection
  * down. Disconnecting an unknown runtime is idempotent — the echo carries
  * the disconnected state either way.
@@ -583,6 +607,8 @@
  *   | MeshResolveRequestMessage
  *   | MeshImportIdentityMessage
  *   | MeshRuntimeConnectMessage
+ *   | MeshRuntimeDeployMessage
+ *   | MeshRuntimeRunMessage
  *   | MeshRuntimeDisconnectMessage
  *   | MeshPlainMessage} UIWorkerMessage
  */
@@ -662,6 +688,8 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "importIdentity" },
   { type: "MESH", command: "runtimeDiscover" },
   { type: "MESH", command: "runtimeConnect" },
+  { type: "MESH", command: "runtimeDeploy" },
+  { type: "MESH", command: "runtimeRun" },
   { type: "MESH", command: "runtimeDisconnect" },
 ];
 
@@ -682,6 +710,8 @@ export const MESH_COMMANDS = [
   "importIdentity",
   "runtimeDiscover",
   "runtimeConnect",
+  "runtimeDeploy",
+  "runtimeRun",
   "runtimeDisconnect",
 ];
 
@@ -892,6 +922,57 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * A deploy's progress and outcome (work document #59 Phase A).
+ *
+ * @typedef {Object} RuntimeDeployEcho
+ * @property {'runtime-deploy'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {string} graphId The graph that was (or is being) deployed.
+ * @property {'deploying' | 'deployed' | 'error'} state
+ * @property {number} [ops] Ops streamed (deployed only).
+ * @property {number} [skipped] Entities the mirror already held.
+ * @property {string} [error]
+ */
+
+/**
+ * The runtime's process listing (`0x45`, work document #4 §8): the
+ * authoritative view of what the runtime runs, keyed by node id.
+ *
+ * @typedef {Object} RuntimeProcessesEcho
+ * @property {'runtime-processes'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {string | null} epochId The listing's graph epoch.
+ * @property {Record<string, { component: string, type: string, state: number | string }>} entries
+ */
+
+/**
+ * Run state for a runtime's main plane, from the runtime's `0x40`
+ * echoes and the Glass's own requests.
+ *
+ * @typedef {Object} RuntimeRunEcho
+ * @property {'runtime-run'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {'running' | 'stopped' | 'paused' | 'error' | 'unknown'} state
+ * @property {number} [action] The wire's run action, when the echo
+ *   originates from a runtime `0x40` frame.
+ * @property {boolean} [requested] True when the Glass requested the
+ *   state (the runtime's echo supersedes it).
+ * @property {string} [error]
+ */
+
+/**
+ * An op rejection (`0x17`, work document #4 updates #34/#35): the
+ * runtime's explicit "no". Phase B wires these into the pending-state
+ * round; today they surface as deploy/observation failures.
+ *
+ * @typedef {Object} RuntimeOpRejectedEcho
+ * @property {'runtime-op-rejected'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {number | null} rejectedCmd
+ * @property {any} detail
+ */
+
+/**
  * Dacar authorization state: the project's Trust Anchor, per-grant
  * verification status, and the local wallet's cataloged grants.
  *
@@ -969,6 +1050,10 @@ export const MESH_COMMANDS = [
  *   | MeshRequestsEcho
  *   | RuntimeDiscoveredEcho
  *   | RuntimeConnectionEcho
+ *   | RuntimeDeployEcho
+ *   | RuntimeProcessesEcho
+ *   | RuntimeRunEcho
+ *   | RuntimeOpRejectedEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
  *   | FactoryResetEcho
@@ -1012,6 +1097,10 @@ export const ECHO_MESSAGES = [
   { kind: "mesh-requests" },
   { kind: "runtime-discovered" },
   { kind: "runtime-connection" },
+  { kind: "runtime-deploy" },
+  { kind: "runtime-processes" },
+  { kind: "runtime-run" },
+  { kind: "runtime-op-rejected" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
   { kind: "factory-reset" },

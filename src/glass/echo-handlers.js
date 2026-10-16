@@ -41,6 +41,12 @@ import { progressPhrase } from "./progressPhrases.js";
  *   Glass's runtime state.
  * @property {(connection: any) => void} setRuntimeConnection Take one
  *   runtime connection's state into the Glass's runtime state.
+ * @property {(deploy: any) => void} setRuntimeDeploy Take one deploy's
+ *   progress or outcome into the Glass's runtime state.
+ * @property {(report: any) => void} setRuntimeProcesses Take a runtime's
+ *   process listing into the Glass's runtime state.
+ * @property {(report: any) => void} setRuntimeRun Take a runtime's run
+ *   state into the Glass's runtime state.
  * @property {() => void} reloadIntoFreshBoot Reload after a factory reset.
  * @property {(state: any) => void} setDacarState
  * @property {(data: any) => void} ingestMeshStatus Take a mesh-status
@@ -150,6 +156,24 @@ export function createEchoHandlers(deps) {
     },
     "kind:runtime-connection": (data) => {
       deps.setRuntimeConnection(data);
+    },
+    "kind:runtime-deploy": (data) => {
+      deps.setRuntimeDeploy(data);
+    },
+    "kind:runtime-processes": (data) => {
+      deps.setRuntimeProcesses(data);
+    },
+    "kind:runtime-run": (data) => {
+      deps.setRuntimeRun(data);
+    },
+    "kind:runtime-op-rejected": (data) => {
+      // The runtime's explicit "no" (work document #4 updates #34/#35):
+      // Phase B wires these into the pending-state round; today they
+      // surface as deploy/observation failures in the console
+      console.warn(
+        `[runtime] op rejected (cmd ${data.rejectedCmd}):`,
+        data.detail,
+      );
     },
     "kind:factory-reset": () => {
       // The Engine wiped local state: reload into a fresh boot (which

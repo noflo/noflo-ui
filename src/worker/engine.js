@@ -28,6 +28,7 @@ import {
   migrateLoadedProject,
   whenPersisted,
 } from "../crdt/ProjectPersistence.js";
+import { projectGraph } from "../glass/projectView.js";
 import {
   createDispatcherGraph,
   createEngineRegistry,
@@ -632,6 +633,9 @@ export async function startEngine(io, options = {}) {
   const runtimeBridge = createRuntimeBridge({
     getReticulum: () => mesh?.getReticulum() ?? null,
     getIdentity: () => mesh?.getIdentity() ?? Promise.resolve(null),
+    // The deploy path projects by graph id; the document is the boot's
+    // CRDT doc (the bridge stays CRDT-agnostic)
+    projectGraph: (graphId) => projectGraph(doc, graphId),
     postMessage: (/** @type {any} */ echo) => io.postMessage(echo),
   });
   const meshContext = {

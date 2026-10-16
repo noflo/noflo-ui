@@ -174,7 +174,22 @@ let runtimeRuntimes =
 /** Per-runtime connection state (work document #59), keyed by the hex
  * destination hash: the `runtime-connection` echoes, latest per runtime. */
 const runtimeConnections =
-  /** @type {Map<string, { state: string, nodeName: string | null, capabilityMask?: number, protocolVersion?: number, error?: string }>} */
+  /** @type {Map<string, { state: string, nodeName: string | null, capabilityMask?: number, capabilities?: string[], protocolVersion?: number, error?: string }>} */
+  (new Map());
+/** Per-runtime deploy state (work document #59 Phase A), keyed by the hex
+ * destination hash: the latest `runtime-deploy` echo per runtime. */
+const runtimeDeploys =
+  /** @type {Map<string, { graphId: string, state: string, ops?: number, skipped?: number, error?: string }>} */
+  (new Map());
+/** Per-runtime process listings (work document #59 Phase A), keyed by the
+ * hex destination hash: node id → { component, type, state }. */
+const runtimeProcesses =
+  /** @type {Map<string, Record<string, { component: string, type: string, state: number | string }>>} */
+  (new Map());
+/** Per-runtime run state (work document #59 Phase A), keyed by the hex
+ * destination hash: the latest `runtime-run` echo per runtime. */
+const runtimeRuns =
+  /** @type {Map<string, { state: string, error?: string }>} */
   (new Map());
 /** The Engine's undo-journal availability report (work document #39). */
 let undoState = /** @type {any} */ (null);
@@ -379,6 +394,10 @@ const echoHandlers = createEchoHandlers({
     }
     refreshMeshSettings();
     refreshSyncPanel();
+    // The Runtime corner shares the disclosure gate (work document #59):
+    // the mesh coming up is when the corner may show, even before any
+    // runtime has announced
+    refreshRuntimeCorner();
   },
   setMeshInvite: (uri) => {
     meshInviteUri = uri;
@@ -418,6 +437,21 @@ const echoHandlers = createEchoHandlers({
   },
   setRuntimeConnection: (connection) => {
     runtimeConnections.set(connection.destinationHash, connection);
+    refreshRuntimeCorner();
+  },
+  setRuntimeDeploy: (deploy) => {
+    runtimeDeploys.set(deploy.destinationHash, deploy);
+    refreshRuntimeCorner();
+  },
+  setRuntimeProcesses: (report) => {
+    runtimeProcesses.set(report.destinationHash, report.entries ?? {});
+    refreshRuntimeCorner();
+  },
+  setRuntimeRun: (report) => {
+    runtimeRuns.set(report.destinationHash, {
+      state: report.state,
+      error: report.error,
+    });
     refreshRuntimeCorner();
   },
   reloadIntoFreshBoot: () => {
@@ -1163,6 +1197,7 @@ function refreshRuntimeCorner() {
   // corner UI
   corner.setVisible(Boolean(meshConfig && (meshConfig.enabled || meshError)));
   corner.setRuntimes(runtimeRuntimes, runtimeConnections);
+  corner.setRuntimeActivity(runtimeProcesses, runtimeRuns, runtimeDeploys);
 }
 
 /**
@@ -1830,6 +1865,30 @@ async function init() {
       type: "MESH",
       command: "runtimeDisconnect",
       payload: { destinationHash: e.detail.destinationHash },
+    });
+  });
+  // Deploy + observe (work document #59 Phase A): the deploy targets the
+  // active graph — the corner addresses the runtime, the Glass knows what
+  // is on the canvas
+  on(runtimeCorner, "runtime-deploy", (e) => {
+    if (!activeGraphId) return;
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeDeploy",
+      payload: {
+        destinationHash: e.detail.destinationHash,
+        graphId: activeGraphId,
+      },
+    });
+  });
+  on(runtimeCorner, "runtime-run", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeRun",
+      payload: {
+        destinationHash: e.detail.destinationHash,
+        action: e.detail.action,
+      },
     });
   });
   on(syncPanel, "sync-decline", (e) => {

@@ -203,6 +203,123 @@ describe("runtime corner (work documents #59/#15/#28)", () => {
     el.remove();
   });
 
+  it("a connected runtime gains the run affordances, gated on the mask", () => {
+    const el = feedRuntime(makeElement());
+    const connection = {
+      state: "connected",
+      nodeName: "workshop-runtime",
+      capabilityMask: 0xff,
+      capabilities: ["all"],
+      protocolVersion: 2,
+    };
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([[RUNTIME_HASH, connection]]),
+    );
+    el.setRuntimeActivity(
+      new Map([
+        [
+          RUNTIME_HASH,
+          { a: { component: "core/Repeat", type: "component", state: 1 } },
+        ],
+      ]),
+      new Map([[RUNTIME_HASH, { state: "running" }]]),
+      new Map([
+        [
+          RUNTIME_HASH,
+          { graphId: "main", state: "deployed", ops: 3, skipped: 1 },
+        ],
+      ]),
+    );
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(shadow.textContent ?? "", /1 process/);
+    assert.match(shadow.textContent ?? "", /running/);
+    assert.match(
+      shadow.textContent ?? "",
+      /Deployed — 3 ops sent, 1 already present/,
+    );
+    assert.ok(
+      shadow.querySelector("[data-runtime-deploy]"),
+      "deploy affordance",
+    );
+    const stop = shadow.querySelector("[data-runtime-run]");
+    assert.ok(stop, "run affordance");
+    assert.equal(
+      stop?.getAttribute("data-run-action"),
+      "stop",
+      "a running runtime offers stop",
+    );
+    /** @type {any[]} */
+    const events = [];
+    el.addEventListener("runtime-deploy", (/** @type {any} */ e) =>
+      events.push(["deploy", e.detail.destinationHash]),
+    );
+    el.addEventListener("runtime-run", (/** @type {any} */ e) =>
+      events.push(["run", e.detail.destinationHash, e.detail.action]),
+    );
+    shadow
+      .querySelector("[data-runtime-deploy]")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    stop?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(events, [
+      ["deploy", RUNTIME_HASH],
+      ["run", RUNTIME_HASH, "stop"],
+    ]);
+    el.remove();
+  });
+
+  it("no lifecycle.ctrl capability means no run affordance", () => {
+    const el = feedRuntime(makeElement());
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "observer-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [
+          RUNTIME_HASH,
+          {
+            state: "connected",
+            nodeName: "observer-runtime",
+            capabilityMask: 0b1001,
+            capabilities: ["graph.read", "telemetry.read"],
+            protocolVersion: 2,
+          },
+        ],
+      ]),
+    );
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(
+      !shadow.querySelector("[data-runtime-deploy]"),
+      "no deploy affordance without graph.edit",
+    );
+    assert.ok(
+      !shadow.querySelector("[data-runtime-run]"),
+      "no run affordance without lifecycle.ctrl",
+    );
+    assert.match(
+      shadow.textContent ?? "",
+      /connected/,
+      "observe-only still shows the connection",
+    );
+    el.remove();
+  });
+
   it("emits connect, disconnect, and refresh events", () => {
     const el = feedRuntime(makeElement());
     /** @type {any[]} */

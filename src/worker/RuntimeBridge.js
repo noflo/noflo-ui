@@ -16,11 +16,12 @@
  * `runtime-discovered` / `runtime-connection` echo (Appendix A).
  */
 
-import { CAPABILITY } from "../../vendor/fbp-protocol.js";
+import { CAPABILITY, RUN_ACTION } from "../../vendor/fbp-protocol.js";
 import {
   connectRuntime,
   decodeAnnounceAppData,
 } from "../../vendor/runtime-client.js";
+import { graphViewToOps } from "./runtimeDeploy.js";
 
 /**
  * A runtime in the discovered population: the decoded FBP announce plus
@@ -73,6 +74,18 @@ export function decodeCapabilityMask(mask) {
 }
 
 /**
+ * Run-state words for the `0x40` execution echoes, keyed by the wire's
+ * run actions (work document #4 §7).
+ */
+const RUN_STATE = {
+  [RUN_ACTION.START]: "running",
+  [RUN_ACTION.RESUME]: "running",
+  [RUN_ACTION.PAUSE]: "paused",
+  [RUN_ACTION.STOP]: "stopped",
+  [RUN_ACTION.STEP]: "running",
+};
+
+/**
  * Creates the runtime bridge.
  *
  * @param {Object} options
@@ -80,6 +93,9 @@ export function decodeCapabilityMask(mask) {
  *   instance accessor (null before the mesh started).
  * @param {() => Promise<any>} options.getIdentity The device's mesh
  *   identity accessor — the protocol client identity (`link.identify`).
+ * @param {(graphId: string) => any} options.projectGraph The graph
+ *   projection: the Engine binds the project document, the bridge asks by
+ *   graph id (the Appendix B view the deploy path converts).
  * @param {(echo: any) => void} options.postMessage The Engine → Glass
  *   echo channel.
  * @param {(options: any) => Promise<any>} [options.establishLink] The link
@@ -90,12 +106,15 @@ export function decodeCapabilityMask(mask) {
  *   report: () => void,
  *   connect: (destinationHashHex: string) => Promise<void>,
  *   disconnect: (destinationHashHex: string) => Promise<void>,
+ *   deploy: (destinationHashHex: string, graphId: string) => Promise<void>,
+ *   run: (destinationHashHex: string, action: 'start' | 'stop') => Promise<void>,
  *   stop: () => Promise<void>,
  * }}
  */
 export function createRuntimeBridge({
   getReticulum,
   getIdentity,
+  projectGraph,
   postMessage,
   establishLink = /** @type {any} */ (connectRuntime),
 }) {
@@ -290,6 +309,16 @@ export function createRuntimeBridge({
           known?.destinationHashBytes ?? fromHex(destinationHashHex),
         identity,
       });
+      // The CRDT op-stream identity (work document #59's Phase A
+      // decision): the device's mesh identity hash, a stable per-device
+      // string. The Yjs numeric-clientID mapping stays open for Phase B.
+      try {
+        client.clientId = await identityHashOf(identity);
+      } catch {
+        // Ops without a client id cannot be sent; the deploy path
+        // surfaces the gap when it hits it
+      }
+      wireClientEvents(destinationHashHex, client);
       connections.set(destinationHashHex, {
         client,
         link,
@@ -302,11 +331,245 @@ export function createRuntimeBridge({
         capabilityMask: auth.capabilityMask,
         protocolVersion: auth.protocolVersion,
       });
+      // The initial process list rides the connection: an observe-only
+      // runtime shows its state without a deploy first
+      client.execution.requestProcesses().catch(() => {});
     } catch (/** @type {any} */ err) {
       postConnection(destinationHashHex, "error", {
         error: err?.message ?? String(err),
       });
     }
+  }
+
+  /**
+   * Derives the CRDT client id from the device's mesh identity: the
+   * identity's public key hex, the same string the mesh layer displays
+   * as the identity hash.
+   *
+   * @param {any} identity
+   * @returns {Promise<string>}
+   */
+  async function identityHashOf(identity) {
+    if (typeof identity === "string") return identity;
+    if (typeof identity.identityHash === "string") return identity.identityHash;
+    const { toHex } = await import("../../vendor/reticulum-core.js");
+    return toHex(await identity.getPublicKey());
+  }
+
+  /**
+   * Wires the client's event surface to the echo channel: process lists
+   * (`0x45`), op rejections (`0x17`), and execution-control echoes
+   * (`0x40` family). The listeners ride the connection's lifetime.
+   *
+   * @param {string} destinationHashHex
+   * @param {any} client
+   */
+  function wireClientEvents(destinationHashHex, client) {
+    const listeners = [
+      [
+        "processlist",
+        (/** @type {any} */ event) => {
+          postMessage({
+            kind: "runtime-processes",
+            destinationHash: destinationHashHex,
+            epochId: event.detail?.epochId ?? null,
+            entries: event.detail?.entries ?? {},
+          });
+        },
+      ],
+      [
+        "oprejected",
+        (/** @type {any} */ event) => {
+          postMessage({
+            kind: "runtime-op-rejected",
+            destinationHash: destinationHashHex,
+            rejectedCmd: event.detail?.rejectedCmd ?? null,
+            detail: event.detail?.detail ?? null,
+          });
+        },
+      ],
+      [
+        "execution",
+        (/** @type {any} */ event) => {
+          const decoded = event.detail ?? {};
+          if (decoded.cmd !== 0x40) return;
+          postMessage({
+            kind: "runtime-run",
+            destinationHash: destinationHashHex,
+            state: RUN_STATE[decoded.action] ?? "unknown",
+            action: decoded.action,
+          });
+        },
+      ],
+    ];
+    for (const [type, listener] of listeners) {
+      client.addEventListener(type, listener);
+    }
+    connectionListeners.set(destinationHashHex, listeners);
+  }
+
+  /** Per-connection event listener pairs, for teardown. */
+  const connectionListeners = new Map();
+
+  /**
+   * Removes a connection's echo listeners.
+   *
+   * @param {string} destinationHashHex
+   * @param {any} client
+   */
+  function unwireClientEvents(destinationHashHex, client) {
+    const listeners = connectionListeners.get(destinationHashHex);
+    if (!listeners) return;
+    for (const [type, listener] of listeners) {
+      client.removeEventListener(type, listener);
+    }
+    connectionListeners.delete(destinationHashHex);
+  }
+
+  /**
+   * Whether the runtime's graph mirror already holds an entity: the
+   * per-kind accessors are the GraphModel's surface — a `hasEntity` does
+   * not exist.
+   *
+   * @param {any} mirror
+   * @param {string} entityId
+   * @returns {boolean}
+   */
+  function mirrorHasEntity(mirror, entityId) {
+    if (!mirror) return false;
+    return Boolean(
+      mirror.node?.(entityId) ||
+        mirror.edge?.(entityId) ||
+        mirror.iip?.(entityId) ||
+        mirror.export?.(entityId) ||
+        mirror.group?.(entityId),
+    );
+  }
+
+  /**
+   * Deploys a project graph onto a connected runtime (work document #59
+   * Phase A): sync the runtime's mirror, then stream the projected graph
+   * as `0x14` ops for entities the mirror lacks, then read the mirror
+   * back. Deploy and run are separate commands; the deploy does not start
+   * the network.
+   *
+   * @param {string} destinationHashHex
+   * @param {string} graphId
+   */
+  async function deploy(destinationHashHex, graphId) {
+    const connection = connections.get(destinationHashHex);
+    const client = connection?.client;
+    postMessage({
+      kind: "runtime-deploy",
+      destinationHash: destinationHashHex,
+      graphId,
+      state: "deploying",
+    });
+    if (!client) {
+      postMessage({
+        kind: "runtime-deploy",
+        destinationHash: destinationHashHex,
+        graphId,
+        state: "error",
+        error: "not connected",
+      });
+      return;
+    }
+    const view = projectView(graphId);
+    if (!view) {
+      postMessage({
+        kind: "runtime-deploy",
+        destinationHash: destinationHashHex,
+        graphId,
+        state: "error",
+        error: `unknown graph ${graphId}`,
+      });
+      return;
+    }
+    try {
+      const { graph: mirror } = await client.syncGraph({ timeoutMs: 30_000 });
+      const ops = graphViewToOps(view);
+      let sent = 0;
+      for (const op of ops) {
+        if (mirrorHasEntity(mirror, op.entityId)) {
+          // The mirror already holds the entity: the deploy converges
+          // onto the same entity ids rather than duplicating
+          continue;
+        }
+        await client.sendGraphOp({
+          planeId: null,
+          opType: op.opType,
+          entityId: op.entityId,
+          payload: op.payload,
+        });
+        sent += 1;
+      }
+      // Read the mirror back: the runtime's epoch advanced if it applied
+      // the ops, and the re-sync is the deploy's verification
+      await client.syncGraph({ timeoutMs: 30_000 }).catch(() => {});
+      postMessage({
+        kind: "runtime-deploy",
+        destinationHash: destinationHashHex,
+        graphId,
+        state: "deployed",
+        ops: sent,
+        skipped: ops.length - sent,
+      });
+      // The deploy may have started processes: refresh the listing
+      client.execution.requestProcesses().catch(() => {});
+    } catch (/** @type {any} */ err) {
+      postMessage({
+        kind: "runtime-deploy",
+        destinationHash: destinationHashHex,
+        graphId,
+        state: "error",
+        error: err?.message ?? String(err),
+      });
+    }
+  }
+
+  /**
+   * Run control over a connected runtime's main plane (work document #59
+   * Phase A): the command is fire-and-forget on the wire; the runtime's
+   * `0x40` echoes arrive as `runtime-run` state.
+   *
+   * @param {string} destinationHashHex
+   * @param {'start' | 'stop'} action
+   */
+  async function run(destinationHashHex, action) {
+    const connection = connections.get(destinationHashHex);
+    const wireAction = action === "start" ? RUN_ACTION.START : RUN_ACTION.STOP;
+    try {
+      if (!connection) throw new Error("not connected");
+      await connection.client.execution.runControl(wireAction);
+      postMessage({
+        kind: "runtime-run",
+        destinationHash: destinationHashHex,
+        state: action === "start" ? "running" : "stopped",
+        requested: true,
+      });
+      // The listing follows the run state change
+      connection.client.execution.requestProcesses().catch(() => {});
+    } catch (/** @type {any} */ err) {
+      postMessage({
+        kind: "runtime-run",
+        destinationHash: destinationHashHex,
+        state: "error",
+        error: err?.message ?? String(err),
+      });
+    }
+  }
+
+  /**
+   * The projected graph view for the deploy path: the Engine injects the
+   * projection function and holds the document (the bridge stays
+   * CRDT-agnostic).
+   *
+   * @param {string} graphId
+   */
+  function projectView(graphId) {
+    if (!projectGraph) return null;
+    return projectGraph(graphId);
   }
 
   /**
@@ -319,6 +582,7 @@ export function createRuntimeBridge({
     const existing = connections.get(destinationHashHex);
     connections.delete(destinationHashHex);
     if (existing) {
+      unwireClientEvents(destinationHashHex, existing.client);
       await existing.client.close().catch(() => {});
     }
     postConnection(destinationHashHex, "disconnected", {
@@ -333,6 +597,7 @@ export function createRuntimeBridge({
   async function stop() {
     for (const [hex, existing] of connections) {
       connections.delete(hex);
+      unwireClientEvents(hex, existing.client);
       await existing.client.close().catch(() => {});
     }
     if (attachedTransport) {
@@ -341,7 +606,7 @@ export function createRuntimeBridge({
     }
   }
 
-  return { attach, report, connect, disconnect, stop };
+  return { attach, report, connect, disconnect, deploy, run, stop };
 }
 
 /**

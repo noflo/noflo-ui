@@ -57,6 +57,15 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     /** Per-runtime connection state, keyed by hex destination hash. */
     /** @type {Map<string, { state: string, nodeName: string | null, capabilityMask?: number, capabilities?: string[], protocolVersion?: number, error?: string }>} */
     this._runtimeConnections = new Map();
+    /** Per-runtime process listings (node id → entry). */
+    /** @type {Map<string, Record<string, { component: string, type: string, state: number | string }>>} */
+    this._processes = new Map();
+    /** Per-runtime run state. */
+    /** @type {Map<string, { state: string, error?: string }>} */
+    this._runs = new Map();
+    /** Per-runtime deploy state (the latest echo per runtime). */
+    /** @type {Map<string, { graphId: string, state: string, ops?: number, skipped?: number, error?: string }>} */
+    this._deploys = new Map();
     /** Whether the previous render was expanded: the transition asks the
      * Engine for a fresh discovery (work document #59). */
     this._wasExpanded = false;
@@ -74,6 +83,24 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     this._runtimes = Array.isArray(runtimes) ? runtimes : [];
     this._runtimeConnections =
       connections instanceof Map ? connections : /** @type {any} */ (new Map());
+    this.render();
+  }
+
+  /**
+   * Refreshes in place with the execution state (work document #59
+   * Phase A): process listings, run state, and deploy progress per
+   * runtime.
+   *
+   * @param {Map<string, Record<string, { component: string, type: string, state: number | string }>> | null} processes
+   * @param {Map<string, { state: string, error?: string }>} runs
+   * @param {Map<string, { graphId: string, state: string, ops?: number, skipped?: number, error?: string }>} deploys
+   */
+  setRuntimeActivity(processes, runs, deploys) {
+    this._processes =
+      processes instanceof Map ? processes : /** @type {any} */ (new Map());
+    this._runs = runs instanceof Map ? runs : /** @type {any} */ (new Map());
+    this._deploys =
+      deploys instanceof Map ? deploys : /** @type {any} */ (new Map());
     this.render();
   }
 
@@ -132,6 +159,43 @@ export class FlowRuntimeCorner extends FlowCornerElement {
           state === "connected"
             ? `<button class="secondary" data-runtime-disconnect="${escapeHtml(runtime.destinationHash)}">Disconnect</button>`
             : `<button data-runtime-connect="${escapeHtml(runtime.destinationHash)}">Connect</button>`;
+        // Deploy + observe (work document #59 Phase A): a connected
+        // runtime gains the run affordances — deploy the active graph,
+        // start/stop the network, the process count and run state as the
+        // observability line. The capability gate: no `lifecycle.ctrl`
+        // means no run affordance (the mask's feature detection)
+        const known = connection?.capabilities ?? [];
+        const canRun =
+          known.includes("all") || known.includes("lifecycle.ctrl");
+        const runState = this._runs.get(runtime.destinationHash);
+        const processes = this._processes.get(runtime.destinationHash) ?? {};
+        const processCount = Object.keys(processes).length;
+        const deploy = this._deploys.get(runtime.destinationHash);
+        const runWord =
+          runState && runState.state !== "error"
+            ? `<span class="badge pending">${escapeHtml(runState.state)}</span>`
+            : runState
+              ? `<span class="badge refused">run error</span>`
+              : "";
+        const observeLine =
+          state === "connected"
+            ? `<div class="hint">${processCount} process${processCount === 1 ? "" : "es"}${runState && runState.state !== "error" ? ` · ${escapeHtml(runState.state)}` : ""}</div>`
+            : "";
+        const runActions =
+          state === "connected" && canRun
+            ? `<button data-runtime-deploy="${escapeHtml(runtime.destinationHash)}" title="Deploy the active graph onto this runtime">Deploy</button>${
+                runState?.state === "running"
+                  ? `<button class="secondary" data-runtime-run="${escapeHtml(runtime.destinationHash)}" data-run-action="stop">Stop</button>`
+                  : `<button data-runtime-run="${escapeHtml(runtime.destinationHash)}" data-run-action="start">Run</button>`
+              }`
+            : "";
+        const deployLine = deploy
+          ? deploy.state === "deploying"
+            ? `<div class="hint">Deploying…</div>`
+            : deploy.state === "deployed"
+              ? `<div class="hint">Deployed — ${deploy.ops ?? 0} op${(deploy.ops ?? 0) === 1 ? "" : "s"} sent${deploy.skipped ? `, ${deploy.skipped} already present` : ""}.</div>`
+              : `<div class="status-line danger">Deploy failed: ${escapeHtml(deploy.error ?? "unknown reason")}</div>`
+          : "";
         const errorLine =
           state === "error"
             ? `<div class="status-line danger">${escapeHtml(connection?.error ?? "connection failed")}</div>`
@@ -140,9 +204,9 @@ export class FlowRuntimeCorner extends FlowCornerElement {
       <div class="runtime">
         <div class="list-item">
           <span class="grow"><span>${escapeHtml(runtime.nodeName || "unnamed runtime")}</span> <span class="hash-text">${escapeHtml(shortHash(runtime.destinationHash))}</span></span>
-          ${badge}${action}
+          ${badge}${runWord}${action}
         </div>
-        ${capabilities}${errorLine}
+        ${capabilities}${runActions}${observeLine}${deployLine}${errorLine}
       </div>`;
       })
       .join("");
@@ -216,6 +280,28 @@ export class FlowRuntimeCorner extends FlowCornerElement {
           destinationHash: String(
             button.getAttribute("data-runtime-disconnect") ?? "",
           ),
+        });
+      });
+    }
+    for (const button of shadow.querySelectorAll("[data-runtime-deploy]")) {
+      button.addEventListener("click", () => {
+        emit(this, "runtime-deploy", {
+          destinationHash: String(
+            button.getAttribute("data-runtime-deploy") ?? "",
+          ),
+        });
+      });
+    }
+    for (const button of shadow.querySelectorAll("[data-runtime-run]")) {
+      button.addEventListener("click", () => {
+        emit(this, "runtime-run", {
+          destinationHash: String(
+            button.getAttribute("data-runtime-run") ?? "",
+          ),
+          action:
+            button.getAttribute("data-run-action") === "stop"
+              ? "stop"
+              : "start",
         });
       });
     }

@@ -122,6 +122,10 @@
  *   re-query the runtime population (work document #59).
  * @property {CustomEvent<{ destinationHash: string }>} runtime-connect
  * @property {CustomEvent<{ destinationHash: string }>} runtime-disconnect
+ * @property {CustomEvent<{ destinationHash: string }>} runtime-deploy The
+ *   active graph deploys onto the addressed runtime; the Glass attaches
+ *   the graph id (work document #59 Phase A).
+ * @property {CustomEvent<{ destinationHash: string, action: 'start' | 'stop' }>} runtime-run
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate
