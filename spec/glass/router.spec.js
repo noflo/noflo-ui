@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
 import {
-  buildHash,
   buildScreenHash,
   createRouter,
   parseRoute,
@@ -57,27 +56,31 @@ describe("glass URL router (work document #23)", () => {
   });
 
   it("parses project and graph segments", () => {
-    assert.deepEqual(parseRoute("#/p/default/main"), {
-      projectId: "default",
-      kind: "graph",
-      id: "main",
-      graphId: "main",
-    });
+    assert.equal(
+      parseRoute("#/p/default/main"),
+      null,
+      "the legacy shape is gone",
+    );
     // Hierarchical subgraph ids keep their slashes
-    assert.deepEqual(parseRoute("#/p/myproject/main/A/deep"), {
+    assert.deepEqual(parseRoute("#/p/myproject/graph/main/A/deep"), {
       projectId: "myproject",
       kind: "graph",
       id: "main/A/deep",
-      graphId: "main/A/deep",
       graphId: "main/A/deep",
     });
     assert.equal(parseRoute("#/other"), null);
     assert.equal(parseRoute(""), null);
   });
 
-  it("builds hash routes from project and graph", () => {
-    assert.equal(buildHash("default", "main"), "#/p/default/main");
-    assert.equal(buildHash("default", "main/A"), "#/p/default/main/A");
+  it("builds kind-addressed hash routes", () => {
+    assert.equal(
+      buildScreenHash("default", { kind: "graph", id: "main" }),
+      "#/p/default/graph/main",
+    );
+    assert.equal(
+      buildScreenHash("default", { kind: "graph", id: "main/A" }),
+      "#/p/default/graph/main/A",
+    );
   });
 
   it("normalizes an unrouted URL to the default graph without history noise", () => {
@@ -86,13 +89,13 @@ describe("glass URL router (work document #23)", () => {
       onRouteChange: (route) => routes.push(route),
     });
     assert.equal(router.graphId(), "main");
-    assert.equal(window.location.hash, "#/p/default/main");
+    assert.equal(window.location.hash, "#/p/default/graph/main");
     assert.equal(routes.length, 0, "initial normalization emits no event");
     router.destroy();
   });
 
   it("adopts the route from the URL on boot", () => {
-    window.location.hash = "#/p/default/main/A";
+    window.location.hash = "#/p/default/graph/main/A";
     const router = createRouter({});
     assert.equal(router.graphId(), "main/A");
     router.destroy();
@@ -114,7 +117,7 @@ describe("glass URL router (work document #23)", () => {
     const router = createRouter({ onRouteChange: (r) => routes.push(r) });
     router.navigate("main/B", { replace: true });
     assert.equal(router.graphId(), "main/B");
-    assert.equal(window.location.hash, "#/p/default/main/B");
+    assert.equal(window.location.hash, "#/p/default/graph/main/B");
     assert.equal(routes.length, 0);
     router.destroy();
   });
@@ -163,9 +166,10 @@ describe("glass URL router (work document #23)", () => {
   it("supports back/forward via external hash changes", () => {
     const routes = [];
     const router = createRouter({ onRouteChange: (r) => routes.push(r) });
+    // (route shapes updated below per the kind-addressed form)
     router.navigate("main/A");
     // Simulate the browser going back: the URL changes externally
-    window.location.hash = "#/p/default/main";
+    window.location.hash = "#/p/default/graph/main";
     assert.equal(router.graphId(), "main");
     assert.equal(routes.length, 2);
     router.destroy();

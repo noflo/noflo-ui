@@ -39,18 +39,17 @@ export function parseRoute(hash) {
   const projectId = decodeURIComponent(match[1]);
   const rest = match[2];
   const kinded = /^([^/]+)\/(.*)$/.exec(rest);
-  if (kinded && SCREEN_KINDS.includes(kinded[1])) {
-    const id = decodeURIComponent(kinded[2]);
-    return {
-      projectId,
-      kind: kinded[1],
-      id,
-      // The graph kind's id IS the graph id; other kinds carry none
-      graphId: kinded[1] === "graph" ? id : "",
-    };
+  if (!kinded || !SCREEN_KINDS.includes(kinded[1])) {
+    return null;
   }
-  // Legacy graph shape: the whole rest is the (hierarchical) graph id
-  return { projectId, kind: "graph", id: rest, graphId: rest };
+  const id = decodeURIComponent(kinded[2]);
+  return {
+    projectId,
+    kind: kinded[1],
+    id,
+    // The graph kind's id IS the graph id; other kinds carry none
+    graphId: kinded[1] === "graph" ? id : "",
+  };
 }
 
 /**
@@ -61,14 +60,6 @@ export function parseRoute(hash) {
  * @param {string} graphId
  * @returns {string}
  */
-export function buildHash(projectId, graphId) {
-  const project = encodeURIComponent(projectId);
-  const graph = graphId
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-  return `#/p/${project}/${graph}`;
-}
 
 /**
  * Builds a screen-route hash (work document #62): the durable URL for
@@ -79,10 +70,15 @@ export function buildHash(projectId, graphId) {
  * @returns {string}
  */
 export function buildScreenHash(projectId, screen) {
-  if (screen.kind === "graph") {
-    return buildHash(projectId, screen.id ?? "main");
-  }
   const project = encodeURIComponent(projectId);
+  // The graph kind's hierarchical id keeps its slashes
+  const id = (screen.id ?? "main")
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  if (screen.kind === "graph") {
+    return `#/p/${project}/graph/${id}`;
+  }
   return `#/p/${project}/${screen.kind}/${encodeURIComponent(screen.id ?? "")}`;
 }
 

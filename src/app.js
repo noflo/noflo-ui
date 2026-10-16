@@ -1481,18 +1481,11 @@ async function init() {
       activateScreen(routeToScreen(route));
     },
   });
-  activeGraphId = router.graphId();
-  // A reload can land on the document route: process it like any route
-  // change (the hashchange event never fires for the initial load). The
-  // graph underneath normalizes to the root — the document view owns the
-  // route, the editor needs a real graph under the panel
-  if (activeGraphId.startsWith("doc/")) {
-    activeGraphId = "main";
-    /** @type {any} */ (
-      document.getElementById("project-corner")
-    )?.setActiveDoc(router.route().graphId.slice(4));
-    openWorkDoc(router.route().graphId.slice(4));
-  }
+  // The initial route activates exactly like a route change (work
+  // document #62): a reload on a document route re-opens the document.
+  // The workdocs arrive with the project load, so the activation defers
+  // its open until the projection has data
+  activateScreen(routeToScreen(router.route()));
 
   intentMapper = createIntentMapper({
     sendIntent,
