@@ -198,6 +198,22 @@ export function createEchoHandlers(deps) {
         data.detail,
       );
     },
+    "kind:mesh-telemetry": (data) => {
+      // The Reticulum stream (work document #63 M2): mesh presence and
+      // interface lifecycle for the wires layer's mesh accordion
+      deps.emitTelemetry?.("reticulum", {
+        message: data.message,
+        status:
+          data.category === "announce"
+            ? "ANNOUNCE"
+            : data.message.includes("reconnecting")
+              ? "RETRY"
+              : data.message.includes("connected")
+                ? "UP"
+                : "DOWN",
+        tone: data.tone ?? "",
+      });
+    },
     "kind:factory-reset": () => {
       // The Engine wiped local state: reload into a fresh boot (which
       // respawns the worker and re-runs leader election)

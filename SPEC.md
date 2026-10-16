@@ -456,6 +456,7 @@ type EngineUIMessage =
   | { kind: 'runtime-processes'; destinationHash: string; epochId: string | null; entries: Record<string, { component: string; type: string; state: number | string }> }
   | { kind: 'runtime-run'; destinationHash: string; state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown'; action?: number; requested?: boolean; error?: string }
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
+  | { kind: 'mesh-telemetry'; category: 'announce' | 'interface'; message: string; time: number; tone?: 'ok' | 'fail' | '' }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
   | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
   | { kind: 'mesh-peer-reachability'; states: { [identityHash: string]: 'online' | 'offline' } }
@@ -561,6 +562,17 @@ interface RuntimeRun {
   action?: number;
   requested?: boolean;
   error?: string;
+}
+
+// Reticulum telemetry (work document #63 M2): the mesh layer's
+// observability tap — announces and interface lifecycle over state the
+// Engine already holds for discovery. One legible event per echo; link-
+// level telemetry lives in the subsystems that own their links.
+interface MeshTelemetry {
+  category: 'announce' | 'interface';
+  message: string;
+  time: number;
+  tone?: 'ok' | 'fail' | '';
 }
 
 // Network Protocol (Batched telemetry chunks)

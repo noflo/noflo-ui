@@ -973,6 +973,20 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * Reticulum telemetry (work document #63 M2): one legible mesh event per
+ * echo — the announce stream and the interface lifecycle, over state the
+ * Engine already holds for discovery. Link-level telemetry lives in the
+ * subsystems that own their links.
+ *
+ * @typedef {Object} MeshTelemetryEcho
+ * @property {'mesh-telemetry'} kind
+ * @property {'announce' | 'interface'} category
+ * @property {string} message The legible main column for the wires log.
+ * @property {number} time Wall-clock milliseconds of the event.
+ * @property {"ok" | "fail" | ""} [tone]
+ */
+
+/**
  * Dacar authorization state: the project's Trust Anchor, per-grant
  * verification status, and the local wallet's cataloged grants.
  *
@@ -1054,6 +1068,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeProcessesEcho
  *   | RuntimeRunEcho
  *   | RuntimeOpRejectedEcho
+ *   | MeshTelemetryEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
  *   | FactoryResetEcho
@@ -1101,6 +1116,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-processes" },
   { kind: "runtime-run" },
   { kind: "runtime-op-rejected" },
+  { kind: "mesh-telemetry" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
   { kind: "factory-reset" },

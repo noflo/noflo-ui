@@ -136,16 +136,31 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._identityHash = "";
     /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */
     this._narration = null;
-    /** The Yjs telemetry accordion (work document #63): toggled from its
-     * own chip segment, independent of the functional panel's expand
-     * state. */
-    this._yjsOpen = false;
-    /** @type {(() => void) | null} The live bus subscription while open. */
-    this._yjsUnsubscribe = null;
+    /** The telemetry streams (work document #63): each is its own
+     * segment-toggled accordion — Yjs replication and mesh activity —
+     * named for what it shows, with subscription-on-open semantics. */
+    this._telemetry = {
+      yjs: {
+        open: false,
+        unsubscribe: null,
+        log: null,
+        title: "Yjs telemetry",
+        hint: "The replication stream between this device's mirror and the Engine's authoritative document.",
+        icon: "terminal",
+        label: "yjs",
+      },
+      reticulum: {
+        open: false,
+        unsubscribe: null,
+        log: null,
+        title: "Mesh activity",
+        hint: "Announces and interface lifecycle heard on the mesh.",
+        icon: "tower-broadcast",
+        label: "mesh",
+      },
+    };
     /** Whether the edit-history accordion (undo/redo) is open. */
     this._historyOpen = false;
-    /** @type {any} The persistent telemetry log element (lazily created). */
-    this.__yjsLog = null;
     this._pendingIntents = 0;
     this._readOnly = false;
     this._visible = false;
@@ -424,11 +439,13 @@ export class FlowSyncPanel extends FlowCornerElement {
       );
     }
     // The segment-toggled accordions (work document #63): each segment is
-    // its own toggle and names what it shows — the Yjs replication stream
-    // and the edit history. Open reads calm; closed is neutral
-    segments.push(
-      `<span class="seg ${this._yjsOpen ? "calm" : ""}" data-segment-toggle="yjs" role="button" tabindex="0" title="The replication stream this device exchanges with the Engine">${icon("terminal")}<span class="label">yjs</span></span>`,
-    );
+    // its own toggle and names what it shows. Open reads calm; closed is
+    // neutral
+    for (const [id, stream] of Object.entries(this._telemetry)) {
+      segments.push(
+        `<span class="seg ${stream.open ? "calm" : ""}" data-segment-toggle="${id}" role="button" tabindex="0" title="${stream.title}: ${stream.hint}">${icon(stream.icon)}<span class="label">${stream.label}</span></span>`,
+      );
+    }
     segments.push(
       `<span class="seg ${this._historyOpen ? "calm" : ""}" data-segment-toggle="history" role="button" tabindex="0" title="Undo and redo for this device's edits">${icon("clock-rotate-left")}<span class="label">history</span></span>`,
     );
@@ -681,15 +698,16 @@ export class FlowSyncPanel extends FlowCornerElement {
    */
   segmentHtml() {
     let html = "";
-    if (this._yjsOpen) {
+    for (const [id, stream] of Object.entries(this._telemetry)) {
+      if (!stream.open) continue;
       html += `
-      <div class="panel telemetry">
+      <div class="panel telemetry" data-telemetry="${id}">
         <div class="panel-head">
-          <span>Yjs telemetry</span>
-          <button class="secondary" data-action="close-yjs" title="Close">▾</button>
+          <span>${stream.title}</span>
+          <button class="secondary" data-action="close-telemetry" data-stream="${id}" title="Close">▾</button>
         </div>
-        <div class="telemetry-slot" id="panel-yjs-log"></div>
-        <div class="hint">The replication stream between this device's mirror and the Engine's authoritative document.</div>
+        <div class="telemetry-slot" id="panel-telemetry-${id}"></div>
+        <div class="hint">${stream.hint}</div>
       </div>
     `;
     }
@@ -722,18 +740,21 @@ export class FlowSyncPanel extends FlowCornerElement {
    * @param {string} id
    */
   toggleSegment(id) {
-    if (id === "yjs") {
-      this._yjsOpen = !this._yjsOpen;
-      if (this._yjsOpen) {
-        this.yjsLog.setHistory(telemetryBus().history("yjs"));
-        this._yjsUnsubscribe = telemetryBus().subscribe(
-          "yjs",
-          (/** @type {any} */ entry) => this.yjsLog.push(entry),
+    const stream = /** @type {any} */ (this._telemetry)[id];
+    if (stream) {
+      stream.open = !stream.open;
+      if (stream.open) {
+        // Subscription-on-open: the bus replays its ring buffer as the
+        // history, then live traffic flows
+        this.telemetryLog(id).setHistory(telemetryBus().history(id));
+        stream.unsubscribe = telemetryBus().subscribe(
+          id,
+          (/** @type {any} */ entry) => this.telemetryLog(id).push(entry),
           { history: false },
         );
       } else {
-        this._yjsUnsubscribe?.();
-        this._yjsUnsubscribe = null;
+        stream.unsubscribe?.();
+        stream.unsubscribe = null;
       }
     } else if (id === "history") {
       this._historyOpen = !this._historyOpen;
@@ -744,6 +765,23 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   /**
+   * The persistent telemetry log element for one stream: the elements
+   * survive re-renders so an opened accordion's buffer outlives the
+   * panel's DOM churn.
+   *
+   * @param {string} id
+   */
+  telemetryLog(id) {
+    const stream = /** @type {any} */ (this._telemetry)[id];
+    if (!stream.log) {
+      stream.log = /** @type {any} */ (
+        document.createElement("flow-telemetry-log")
+      );
+    }
+    return stream.log;
+  }
+
+  /**
    * Hiding the corner closes the segment-toggled accordions too: the Yjs
    * subscription is the live traffic, and a hidden corner carries none.
    *
@@ -751,43 +789,38 @@ export class FlowSyncPanel extends FlowCornerElement {
    */
   setVisible(visible) {
     if (!visible) {
-      // Hiding the corner closes the segment-toggled accordions: the Yjs
-      // subscription is the live traffic, and a hidden corner carries none
-      if (this._yjsOpen) this.toggleSegment("yjs");
+      // Hiding the corner closes the segment-toggled accordions: the
+      // subscriptions are the live traffic, and a hidden corner carries
+      // none
+      for (const id of Object.keys(this._telemetry)) {
+        if (/** @type {any} */ (this._telemetry)[id].open) {
+          this.toggleSegment(id);
+        }
+      }
       this._historyOpen = false;
     }
     super.setVisible(visible);
   }
 
-  /**
-   * The persistent Yjs log element: it survives re-renders so the opened
-   * accordion's buffer outlives the panel's DOM churn.
-   */
-  get yjsLog() {
-    if (!this.__yjsLog) {
-      this.__yjsLog = /** @type {any} */ (
-        document.createElement("flow-telemetry-log")
-      );
-    }
-    return this.__yjsLog;
-  }
-
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     this.renderInviteQr();
-    // The telemetry accordion's persistent log rides the render: the
-    // element is adopted into the slot each time, its buffer surviving the
-    // churn
-    const telemetrySlot = shadow.querySelector("#panel-yjs-log");
-    if (telemetrySlot && this._yjsOpen) {
-      telemetrySlot.appendChild(this.yjsLog);
+    // The telemetry accordions' persistent logs ride the render: each
+    // element is adopted into its slot, its buffer surviving the churn
+    for (const id of Object.keys(this._telemetry)) {
+      const slot = shadow.querySelector(`#panel-telemetry-${id}`);
+      if (slot && /** @type {any} */ (this._telemetry)[id].open) {
+        slot.appendChild(this.telemetryLog(id));
+      }
     }
-    shadow
-      .querySelector("[data-action='close-yjs']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
+    for (const button of shadow.querySelectorAll(
+      "[data-action='close-telemetry']",
+    )) {
+      button.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
-        this.toggleSegment("yjs");
+        this.toggleSegment(String(button.getAttribute("data-stream") ?? ""));
       });
+    }
     shadow
       .querySelector("[data-action='close-history']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

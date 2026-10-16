@@ -67,10 +67,10 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: up to date (calm), peers, Owner, yjs, history — pending
-    // intents drop out
+    // Segments: up to date (calm), peers, Owner, yjs, mesh, history —
+    // pending intents drop out
     const segments = shadow.querySelectorAll(".chip .seg");
-    assert.equal(segments.length, 5, "empty states drop out");
+    assert.equal(segments.length, 6, "empty states drop out");
     assert.match(chip.textContent ?? "", /up to date/);
     assert.match(chip.textContent ?? "", /2 peers/);
     assert.match(chip.textContent ?? "", /Owner/);
@@ -97,7 +97,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       "working locally is the offline-first normal, not an error",
     );
     // The status segment plus the segment toggles (work document #63)
-    assert.equal(shadow.querySelectorAll(".chip .seg").length, 3);
+    assert.equal(shadow.querySelectorAll(".chip .seg").length, 4);
     // A peer joined, bits moving: syncing (neutral)
     el.setPeers([PEER_HASH]);
     el.setSyncStatus({ connected: true, synced: false, peers: 1 });
@@ -534,7 +534,7 @@ describe("sync panel segment accordions (work document #63)", () => {
     );
     // Closing through its own affordance
     shadow
-      .querySelector("[data-action='close-yjs']")
+      .querySelector("[data-action='close-telemetry'][data-stream='yjs']")
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     assert.ok(
       !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".telemetry")),
@@ -562,7 +562,7 @@ describe("sync panel segment accordions (work document #63)", () => {
       "open accordion receives live traffic",
     );
     shadow
-      .querySelector("[data-action='close-yjs']")
+      .querySelector("[data-action='close-telemetry'][data-stream='yjs']")
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     telemetryBus().publish("yjs", {
       message: "while closed · 4.0 KB",

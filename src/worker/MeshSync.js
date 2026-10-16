@@ -52,6 +52,7 @@ import {
 } from "./Dacar.js";
 import { createDacarLinkAuthorizer } from "./DacarLinkAuth.js";
 import { listWalletGrants, saveWalletGrant } from "./DacarWallet.js";
+import { createMeshTelemetry } from "./MeshTelemetry.js";
 import { progress } from "./Progress.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
@@ -1552,12 +1553,16 @@ export async function createMeshSync({
    * hands one Reticulum instance down so the LXMF layer and project
    * engines share a single mesh node — mesh stop must not stop it. */
   const injectedRns = reticulum ?? null;
+  // The Reticulum telemetry tap (work document #63 M2): announces and
+  // interface lifecycle echoed for the wires layer's mesh stream
+  const meshTelemetry = createMeshTelemetry({ postMessage });
 
   async function ensureReticulum() {
     if (sharedRns) return sharedRns;
     if (injectedRns) {
       // Process-owned: interfaces were attached by the owner already
       sharedRns = injectedRns;
+      meshTelemetry.attach(sharedRns);
       return sharedRns;
     }
     const { Reticulum } = await import("../../vendor/reticulum-core.js");
@@ -1575,6 +1580,7 @@ export async function createMeshSync({
       throw err;
     }
     sharedRns = rns;
+    meshTelemetry.attach(sharedRns);
     return rns;
   }
 
