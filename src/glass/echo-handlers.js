@@ -198,6 +198,15 @@ export function createEchoHandlers(deps) {
         data.detail,
       );
     },
+    "kind:runtime-telemetry": (data) => {
+      // The FBP protocol stream (work document #63 M3): per-runtime bus
+      // stream, so multiple runtimes never interleave
+      deps.emitTelemetry?.(`fbp:${data.destinationHash}`, {
+        message: data.message,
+        status: data.status,
+        tone: data.tone ?? "",
+      });
+    },
     "kind:mesh-telemetry": (data) => {
       // The Reticulum stream (work document #63 M2): mesh presence,
       // interface lifecycle, peer links, and link-policy verdicts for the

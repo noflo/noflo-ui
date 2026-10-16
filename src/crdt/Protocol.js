@@ -973,6 +973,22 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * One FBP Protocol 2.0 frame the client exchanged with a connected
+ * runtime (work document #63 M3): the wires stream of the wire itself —
+ * both directions, decoded to the wire's own vocabulary. Undecodable
+ * frames report as a byte count, never a guess.
+ *
+ * @typedef {Object} RuntimeTelemetryEcho
+ * @property {'runtime-telemetry'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {'in' | 'out'} direction
+ * @property {string} message The legible main column for the wires log.
+ * @property {'TX' | 'RX'} status The direction tag the wires log renders.
+ * @property {number} time Wall-clock milliseconds of the frame.
+ * @property {"ok" | "fail" | ""} [tone]
+ */
+
+/**
  * Reticulum telemetry (work document #63 M2): one legible mesh event per
  * echo — the announce stream and the interface lifecycle, over state the
  * Engine already holds for discovery. Link-level telemetry lives in the
@@ -1073,6 +1089,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeProcessesEcho
  *   | RuntimeRunEcho
  *   | RuntimeOpRejectedEcho
+ *   | RuntimeTelemetryEcho
  *   | MeshTelemetryEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
@@ -1121,6 +1138,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-processes" },
   { kind: "runtime-run" },
   { kind: "runtime-op-rejected" },
+  { kind: "runtime-telemetry" },
   { kind: "mesh-telemetry" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },

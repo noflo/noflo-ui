@@ -16,7 +16,57 @@
  * `runtime-discovered` / `runtime-connection` echo (Appendix A).
  */
 
+import * as fbpProtocol from "../../vendor/fbp-protocol.js";
 import { CAPABILITY, RUN_ACTION } from "../../vendor/fbp-protocol.js";
+
+/**
+ * The wire's opcode names, derived from the protocol package's constants:
+ * the frame tap's messages name commands without hand-writing a table
+ * that would drift from the wire.
+ * @type {Record<number, string>}
+ */
+const CMD_NAMES = {};
+for (const [name, value] of Object.entries(fbpProtocol)) {
+  if (name.startsWith("CMD_") && typeof value === "number") {
+    CMD_NAMES[value] = name.slice(4);
+  }
+}
+
+/**
+ * Describes one frame for the wires layer: the direction arrow, the
+ * opcode, its name, and the fields that identify the command's target
+ * when the decode carries them. Undecodable frames stay honest — a byte
+ * count, not a guess.
+ *
+ * @param {Uint8Array} payload
+ * @param {"TX" | "RX"} direction
+ * @returns {{ message: string, status: string, tone?: "ok" | "fail" | "" }}
+ */
+function describeFrame(payload, direction) {
+  const arrow = direction === "TX" ? "→" : "←";
+  try {
+    const decoded = fbpProtocol.decodeFrame(payload);
+    const name = CMD_NAMES[decoded.cmd] ?? `0x${decoded.cmd.toString(16)}`;
+    const target =
+      /** @type {any} */ (decoded).entityId !== undefined
+        ? ` · ${/** @type {any} */ (decoded).entityId}`
+        : /** @type {any} */ (decoded).planeId !== null &&
+            /** @type {any} */ (decoded).planeId !== undefined
+          ? ` · plane ${/** @type {any} */ (decoded).planeId}`
+          : "";
+    return {
+      message: `${arrow} 0x${decoded.cmd.toString(16)} ${name}${target}`,
+      status: direction,
+    };
+  } catch {
+    return {
+      message: `${arrow} frame · ${payload.length} B (undecodable)`,
+      status: direction,
+      tone: "fail",
+    };
+  }
+}
+
 import {
   connectRuntime,
   decodeAnnounceAppData,
@@ -365,6 +415,38 @@ export function createRuntimeBridge({
    * @param {any} client
    */
   function wireClientEvents(destinationHashHex, client) {
+    // The FBP protocol stream (work document #63 M3): every frame the
+    // client exchanges with the runtime, both directions, decoded to the
+    // wire's own vocabulary. Inbound frames ride the client's frame
+    // event; outbound frames ride a send wrapper restored at teardown.
+    const frameListener = (/** @type {any} */ event) => {
+      if (!event.detail?.payload) return;
+      const described = describeFrame(event.detail.payload, "RX");
+      postMessage({
+        kind: "runtime-telemetry",
+        destinationHash: destinationHashHex,
+        direction: "in",
+        time: Date.now(),
+        ...described,
+      });
+    };
+    client.addEventListener("frame", frameListener);
+    const originalSend = client.send.bind(client);
+    /** @type {any} */ (client).send = (/** @type {Uint8Array} */ payload) => {
+      const described = describeFrame(payload, "TX");
+      postMessage({
+        kind: "runtime-telemetry",
+        destinationHash: destinationHashHex,
+        direction: "out",
+        time: Date.now(),
+        ...described,
+      });
+      return originalSend(payload);
+    };
+    connectionRestores.set(destinationHashHex, () => {
+      client.removeEventListener("frame", frameListener);
+      /** @type {any} */ (client).send = originalSend;
+    });
     const listeners = [
       [
         "processlist",
@@ -410,6 +492,8 @@ export function createRuntimeBridge({
 
   /** Per-connection event listener pairs, for teardown. */
   const connectionListeners = new Map();
+  /** Per-connection restores for the taps that wrap client surfaces. */
+  const connectionRestores = new Map();
 
   /**
    * Removes a connection's echo listeners.
@@ -424,6 +508,8 @@ export function createRuntimeBridge({
       client.removeEventListener(type, listener);
     }
     connectionListeners.delete(destinationHashHex);
+    connectionRestores.get(destinationHashHex)?.();
+    connectionRestores.delete(destinationHashHex);
   }
 
   /**

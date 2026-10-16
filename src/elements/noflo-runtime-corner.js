@@ -13,7 +13,9 @@
 
 import icons from "../../vendor/fontawesome-icons.js";
 import { emit } from "../events.js";
+import { telemetryBus } from "../glass/telemetryBus.js";
 import { cornerStyles, FlowCornerElement } from "./corner-element.js";
+import "./noflo-telemetry-log.js";
 
 /**
  * Escapes a value for interpolation into the shadow template.
@@ -66,6 +68,12 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     /** Per-runtime deploy state (the latest echo per runtime). */
     /** @type {Map<string, { graphId: string, state: string, ops?: number, skipped?: number, error?: string }>} */
     this._deploys = new Map();
+    /** The FBP protocol stream per connected runtime (work document #63
+     * M3): each connection gets its own segment-toggled wires accordion,
+     * keyed by the hex destination hash — subscription-on-open from the
+     * bus stream `fbp:<hash>`. */
+    /** @type {Map<string, { open: boolean, unsubscribe: (() => void) | null, log: any }>} */
+    this._wires = new Map();
     /** Whether the previous render was expanded: the transition asks the
      * Engine for a fresh discovery (work document #59). */
     this._wasExpanded = false;
@@ -83,6 +91,12 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     this._runtimes = Array.isArray(runtimes) ? runtimes : [];
     this._runtimeConnections =
       connections instanceof Map ? connections : /** @type {any} */ (new Map());
+    // A disconnected runtime's wire closes: the stream is the live link
+    for (const [hash, connection] of this._runtimeConnections) {
+      if (connection.state !== "connected" && this._wires.get(hash)?.open) {
+        this.closeWire(hash);
+      }
+    }
     this.render();
   }
 
@@ -121,7 +135,43 @@ export class FlowRuntimeCorner extends FlowCornerElement {
       : connected > 0
         ? "calm"
         : "";
-    return `<span class="seg ${cls}" title="FBP runtimes discovered on the mesh">${icon("satellite-dish")}<span class="label">${this._runtimes.length} runtime${this._runtimes.length === 1 ? "" : "s"}${connected > 0 ? ` · ${connected} connected` : ""}</span></span>`;
+    const segments = [
+      `<span class="seg ${cls}" title="FBP runtimes discovered on the mesh">${icon("satellite-dish")}<span class="label">${this._runtimes.length} runtime${this._runtimes.length === 1 ? "" : "s"}${connected > 0 ? ` · ${connected} connected` : ""}</span></span>`,
+    ];
+    // The FBP protocol stream's segments (work document #63 M3): one per
+    // connected runtime, named for the runtime it shows
+    for (const [hash, connection] of this._runtimeConnections) {
+      if (connection.state !== "connected") continue;
+      const wire = this._wires.get(hash);
+      const name = connection.nodeName || `runtime ${shortHash(hash)}`;
+      segments.push(
+        `<span class="seg ${wire?.open ? "calm" : ""}" data-segment-toggle="fbp:${hash}" role="button" tabindex="0" title="The FBP protocol frames exchanged with ${name}">${icon("terminal")}<span class="label">${name}</span></span>`,
+      );
+    }
+    return segments.join("");
+  }
+
+  /**
+   * The FBP protocol stream accordion for one runtime (work document #63
+   * M3): the wire itself as a read-only wires log — every frame both
+   * directions, decoded to the wire's own vocabulary.
+   *
+   * @param {string} hash
+   * @param {any} connection
+   * @returns {string}
+   */
+  wirePanelHtml(hash, connection) {
+    const name = connection.nodeName || "this runtime";
+    return `
+      <div class="panel telemetry" data-telemetry="${hash}">
+        <div class="panel-head">
+          <span>FBP protocol · ${escapeHtml(name)}</span>
+          <button class="secondary" data-action="close-wire" data-runtime="${escapeHtml(hash)}" title="Close">▾</button>
+        </div>
+        <div class="telemetry-slot" id="wire-log-${escapeHtml(hash)}"></div>
+        <div class="hint">Every frame exchanged with ${escapeHtml(name)}, both directions. The wire's own vocabulary.</div>
+      </div>
+    `;
   }
 
   /**
@@ -222,6 +272,77 @@ export class FlowRuntimeCorner extends FlowCornerElement {
     `;
   }
 
+  /**
+   * The open wires accordions, one per connected runtime.
+   *
+   * @returns {string}
+   */
+  segmentHtml() {
+    let html = "";
+    for (const [hash, wire] of this._wires) {
+      if (!wire.open) continue;
+      const connection = this._runtimeConnections.get(hash);
+      if (connection?.state !== "connected") continue;
+      html += this.wirePanelHtml(hash, connection);
+    }
+    return html;
+  }
+
+  /**
+   * The segment-as-toggle hook (work document #63): opens and closes a
+   * runtime's FBP protocol stream. Subscription-on-open from the bus
+   * stream `fbp:<hash>`.
+   *
+   * @param {string} id
+   */
+  toggleSegment(id) {
+    if (!id.startsWith("fbp:")) return;
+    const hash = id.slice(4);
+    const wire = this._wires.get(hash) ?? {
+      open: false,
+      unsubscribe: null,
+      log: null,
+    };
+    wire.open = !wire.open;
+    if (wire.open) {
+      wire.log = wire.log ?? this.newWireLog();
+      wire.log.setHistory(telemetryBus().history(id));
+      wire.unsubscribe = telemetryBus().subscribe(
+        id,
+        (/** @type {any} */ entry) => wire.log.push(entry),
+        { history: false },
+      );
+      this._wires.set(hash, wire);
+    } else {
+      wire.unsubscribe?.();
+      wire.unsubscribe = null;
+    }
+    this.render();
+  }
+
+  /**
+   * A persistent wires log element for one runtime's stream.
+   *
+   * @returns {any}
+   */
+  newWireLog() {
+    return /** @type {any} */ (document.createElement("flow-telemetry-log"));
+  }
+
+  /**
+   * A disconnected runtime's wire closes: the stream is the live link.
+   *
+   * @param {string} hash
+   */
+  closeWire(hash) {
+    const wire = this._wires.get(hash);
+    if (!wire) return;
+    wire.open = false;
+    wire.unsubscribe?.();
+    wire.unsubscribe = null;
+    this._wires.set(hash, wire);
+  }
+
   styles() {
     return `
         :host {
@@ -246,11 +367,29 @@ export class FlowRuntimeCorner extends FlowCornerElement {
         .runtime .badge { margin-left: 4px; }
         .runtime button { flex-shrink: 0; }
         .badge.offline { background: color-mix(in srgb, var(--ui-age-offline) 25%, transparent); color: var(--ui-age-offline); }
+        /* The FBP protocol stream's accordion (work document #63 M3) */
+        .telemetry-slot { margin-top: 4px; }
     `;
   }
 
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    // The wires accordions' persistent logs ride the render
+    for (const [hash, wire] of this._wires) {
+      if (!wire.open || !wire.log) continue;
+      const slot = shadow.querySelector(`#wire-log-${hash}`);
+      if (slot) slot.appendChild(wire.log);
+    }
+    for (const button of shadow.querySelectorAll(
+      "[data-action='close-wire']",
+    )) {
+      button.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        this.toggleSegment(
+          `fbp:${String(button.getAttribute("data-runtime") ?? "")}`,
+        );
+      });
+    }
     shadow
       .querySelector("[data-action='collapse']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

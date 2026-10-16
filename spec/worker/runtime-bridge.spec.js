@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { encodeAnnounceAppData } from "@noflo/fbp-protocol";
+import {
+  encodeAnnounceAppData,
+  encodeCrdtUpToDate,
+  encodeProcessListReq,
+  encodeRunCtrl,
+} from "@noflo/fbp-protocol";
 
 import { createRuntimeBridge } from "../../src/worker/RuntimeBridge.js";
 
@@ -62,8 +67,12 @@ function mockClient(options = {}) {
       }
     },
     execution: {
-      requestProcesses: async () => {},
-      runControl: async () => {},
+      requestProcesses: async () => {
+        await client.send(encodeProcessListReq());
+      },
+      runControl: async (/** @type {number} */ action) => {
+        await client.send(encodeRunCtrl(action));
+      },
     },
     syncGraph: async () => ({
       upToDate: true,
@@ -80,6 +89,10 @@ function mockClient(options = {}) {
     sendGraphOp: async (op) => {
       // The real client stamps the op with the client's own id
       sentOps.push({ ...op, clientId: op.clientId ?? client.clientId });
+    },
+    sentFrames: [],
+    send: async (payload) => {
+      client.sentFrames.push(payload);
     },
     close: async () => {},
   };
@@ -228,6 +241,68 @@ describe("runtime bridge (work document #59)", () => {
         echo.kind === "runtime-connection" && echo.state === "disconnected",
     );
     assert.ok(dropped, "the disconnect echoes");
+  });
+
+  it("taps the FBP protocol stream in both directions", async () => {
+    const { transport } = mockReticulum();
+    /** @type {any[]} */
+    const echoes = [];
+    const client = mockClient();
+    const bridge = createRuntimeBridge({
+      getReticulum: () => ({ transport }),
+      getIdentity: async () => ({ identityHash: "feed" }),
+      projectGraph: () => null,
+      postMessage: (echo) => echoes.push(echo),
+      establishLink: async () => ({
+        link: {},
+        auth: { protocolVersion: 2, capabilityMask: 0xff },
+        client,
+      }),
+    });
+    bridge.attach();
+    announce(transport, 0xcc, "runtime-two");
+    await bridge.connect(hexOf(0xcc));
+
+    // Outbound: the bridge's own request lands as a TX line, decoded
+    await bridge.run(hexOf(0xcc), "start");
+    const tx = echoes.find(
+      (echo) =>
+        echo.kind === "runtime-telemetry" &&
+        echo.direction === "out" &&
+        /RUN_CTRL/.test(echo.message),
+    );
+    assert.ok(tx, "the run-control frame echoes");
+    assert.equal(tx.destinationHash, hexOf(0xcc));
+    assert.match(tx.message, /→ 0x40 RUN_CTRL/);
+    assert.equal(tx.status, "TX");
+
+    // Inbound: the runtime's reply arrives as an RX line
+    client.dispatch("frame", { payload: encodeCrdtUpToDate(null, "epoch-1") });
+    const rx = echoes.find(
+      (echo) => echo.kind === "runtime-telemetry" && echo.direction === "in",
+    );
+    assert.ok(rx, "an inbound frame echoes");
+    assert.match(rx.message, /← 0x11 CRDT_UP_TO_DATE/);
+    assert.equal(rx.status, "RX");
+
+    // Undecodable frames stay honest: a byte count, not a guess
+    client.dispatch("frame", { payload: new Uint8Array([0xff, 0xff]) });
+    const unknown = echoes.find(
+      (echo) =>
+        echo.kind === "runtime-telemetry" && /undecodable/.test(echo.message),
+    );
+    assert.ok(unknown, "the undecodable frame echoes as bytes");
+    assert.equal(unknown.tone, "fail");
+
+    // Teardown restores the client's send: no telemetry after disconnect
+    await bridge.disconnect(hexOf(0xcc));
+    const before = echoes.filter((e) => e.kind === "runtime-telemetry").length;
+    await client.send(new Uint8Array([0x01]));
+    assert.equal(
+      echoes.filter((e) => e.kind === "runtime-telemetry").length,
+      before,
+      "the wrapped send is restored",
+    );
   });
 
   it("deploys the projected graph as ops and reports the outcome", async () => {

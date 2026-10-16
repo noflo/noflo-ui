@@ -456,6 +456,7 @@ type EngineUIMessage =
   | { kind: 'runtime-processes'; destinationHash: string; epochId: string | null; entries: Record<string, { component: string; type: string; state: number | string }> }
   | { kind: 'runtime-run'; destinationHash: string; state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown'; action?: number; requested?: boolean; error?: string }
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
+  | { kind: 'runtime-telemetry'; destinationHash: string; direction: 'in' | 'out'; message: string; status: 'TX' | 'RX'; time: number; tone?: 'ok' | 'fail' | '' }
   | { kind: 'mesh-telemetry'; category: 'announce' | 'interface' | 'peer'; message: string; status: string; time: number; tone?: 'ok' | 'fail' | ''; detail?: Record<string, any> }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
   | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
@@ -568,6 +569,18 @@ interface RuntimeRun {
 // observability tap — announces and interface lifecycle over state the
 // Engine already holds for discovery. One legible event per echo; link-
 // level telemetry lives in the subsystems that own their links.
+// The FBP protocol stream (work document #63 M3): the wire itself as a
+// wires stream — every frame the client exchanges with a runtime, both
+// directions, decoded to the wire's vocabulary. The bus stream is per
+// runtime (fbp:<destinationHash>) so multiple runtimes never interleave.
+interface RuntimeTelemetry {
+  destinationHash: string;
+  direction: 'in' | 'out';
+  message: string;
+  status: 'TX' | 'RX';
+  time: number;
+  tone?: 'ok' | 'fail' | '';
+}
 interface MeshTelemetry {
   category: 'announce' | 'interface' | 'peer';
   message: string;

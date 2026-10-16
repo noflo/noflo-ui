@@ -373,3 +373,82 @@ describe("runtime corner (work documents #59/#15/#28)", () => {
     el.remove();
   });
 });
+
+describe("runtime corner FBP protocol stream (work document #63 M3)", () => {
+  it("a connected runtime gains its frame stream accordion", async () => {
+    const el = feedRuntime(makeElement());
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [
+          RUNTIME_HASH,
+          {
+            state: "connected",
+            nodeName: "workshop-runtime",
+            capabilityMask: 0xff,
+            capabilities: ["all"],
+            protocolVersion: 2,
+          },
+        ],
+      ]),
+    );
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(
+      shadow.textContent ?? "",
+      /workshop-runtime/,
+      "the segment renders",
+    );
+    assert.ok(!shadow.querySelector(".telemetry"), "closed: no wire accordion");
+    shadow
+      .querySelector(`[data-segment-toggle="fbp:${RUNTIME_HASH}"]`)
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.equal(
+      el.expanded,
+      false,
+      "the segment leaves the rows panel closed",
+    );
+    const panel = shadow.querySelector(".telemetry");
+    assert.ok(panel, "the wire accordion opens independently");
+    assert.match(panel.textContent ?? "", /FBP protocol · workshop-runtime/);
+    // Live frames for this runtime's stream arrive on the bus
+    const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
+    telemetryBus().publish(`fbp:${RUNTIME_HASH}`, {
+      message: "→ 0x40 RUN_CTRL",
+      status: "TX",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const log = panel.querySelector("flow-telemetry-log");
+    assert.ok(log, "the wires log renders");
+    assert.match(
+      /** @type {any} */ (log).shadowRoot?.textContent ?? "",
+      /→ 0x40 RUN_CTRL/,
+      "the live frames flow",
+    );
+    // Disconnecting closes the stream: it is the live link
+    el.setRuntimes(
+      [
+        {
+          destinationHash: RUNTIME_HASH,
+          nodeName: "workshop-runtime",
+          protocolVersion: 2,
+          lastSeen: Date.now(),
+        },
+      ],
+      new Map([
+        [RUNTIME_HASH, { state: "disconnected", nodeName: "workshop-runtime" }],
+      ]),
+    );
+    assert.ok(
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".telemetry")),
+      "a disconnected runtime's wire closes",
+    );
+    el.remove();
+  });
+});
