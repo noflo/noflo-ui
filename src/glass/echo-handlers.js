@@ -15,6 +15,17 @@
 import { progressPhrase } from "./progressPhrases.js";
 
 /**
+ * Formats a byte count for the telemetry streams' main column.
+ *
+ * @param {Uint8Array | undefined} bytes
+ * @returns {string}
+ */
+function formatBytes(bytes) {
+  const size = bytes?.byteLength ?? 0;
+  return size >= 1024 ? `${(size / 1024).toFixed(1)} KB` : `${size} B`;
+}
+
+/**
  * Everything the echo handlers need from the running Glass.
  *
  * @typedef {Object} EchoHandlerDeps
@@ -47,6 +58,9 @@ import { progressPhrase } from "./progressPhrases.js";
  *   process listing into the Glass's runtime state.
  * @property {(report: any) => void} setRuntimeRun Take a runtime's run
  *   state into the Glass's runtime state.
+ * @property {(stream: string, entry: { message: string, status?: string, tone?: "ok" | "fail" | "" }) => void} [emitTelemetry]
+ *   Publish a legible telemetry entry on the Glass's bus (work document
+ *   #63): the fan-out point for the wires layer.
  * @property {() => void} reloadIntoFreshBoot Reload after a factory reset.
  * @property {(state: any) => void} setDacarState
  * @property {(data: any) => void} ingestMeshStatus Take a mesh-status
@@ -121,9 +135,18 @@ export function createEchoHandlers(deps) {
     "kind:y-sync": (data) => {
       // Full state: establishes clock contiguity for the incremental stream
       deps.applyMirrorUpdate(data.update);
+      deps.emitTelemetry?.("yjs", {
+        message: `full state · ${formatBytes(data.update)}`,
+        status: "SYNC",
+        tone: "ok",
+      });
     },
     "kind:y-update": (data) => {
       deps.applyMirrorUpdate(data.update);
+      deps.emitTelemetry?.("yjs", {
+        message: `update · ${formatBytes(data.update)}`,
+        status: "DELTA",
+      });
     },
     "kind:awareness": (data) => {
       deps.showPeerGhosts(data.states ?? []);

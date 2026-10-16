@@ -182,7 +182,7 @@ async function bootRuntime({ port, anchorHashHex, anchorPubkeyHex, saltHex }) {
     capabilities: 0xff,
     autostart: false,
   });
-  // Upstream gap (@noflo/runtime, PR noflo/noflo#1085 pending release):
+  // Upstream gap (@noflo/runtime; the fix is merged on noflo master, PR noflo/noflo#1085, pending its alpha.6 release):
   // `0x44` has no handler — the §8 process listing is not implemented yet,
   // so a client's request draws silence. The harness derives the listing
   // from the graph model: declared components, elementary kind, execution

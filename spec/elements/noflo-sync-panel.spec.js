@@ -67,9 +67,10 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: up to date (calm), peers, Owner — pending intents drop out
+    // Segments: up to date (calm), peers, Owner, wires — pending intents
+    // drop out
     const segments = shadow.querySelectorAll(".chip .seg");
-    assert.equal(segments.length, 3, "empty states drop out");
+    assert.equal(segments.length, 4, "empty states drop out");
     assert.match(chip.textContent ?? "", /up to date/);
     assert.match(chip.textContent ?? "", /2 peers/);
     assert.match(chip.textContent ?? "", /Owner/);
@@ -95,7 +96,8 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
         !waiting.classList.contains("attention"),
       "working locally is the offline-first normal, not an error",
     );
-    assert.equal(shadow.querySelectorAll(".chip .seg").length, 1);
+    // The status segment plus the wires toggle (work document #63)
+    assert.equal(shadow.querySelectorAll(".chip .seg").length, 2);
     // A peer joined, bits moving: syncing (neutral)
     el.setPeers([PEER_HASH]);
     el.setSyncStatus({ connected: true, synced: false, peers: 1 });
@@ -474,6 +476,110 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     );
     el.setMinified(false);
     assert.equal(el.cornerState, "normal");
+    el.remove();
+  });
+});
+
+describe("sync panel wires layer (work document #63)", () => {
+  /**
+   * A visible panel with wire traffic already on the bus: the bus is the
+   * app-level singleton, so the fixture publishes before the panel opens.
+   *
+   * @returns {Promise<FlowSyncPanel>}
+   */
+  async function feedWires() {
+    const el = makeElement();
+    feedConnected(el);
+    const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
+    const bus = telemetryBus();
+    bus.publish("yjs", { message: "update · 1.0 KB", status: "DELTA" });
+    bus.publish("yjs", {
+      message: "full state · 2.5 KB",
+      status: "SYNC",
+      tone: "ok",
+    });
+    return el;
+  }
+
+  it("the wires segment opens its own accordion, not the panel", async () => {
+    const el = await feedWires();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(shadow.textContent ?? "", /wires/, "the segment renders");
+    assert.ok(!shadow.querySelector(".wires"), "closed: no wires accordion");
+    shadow
+      .querySelector('[data-wires-toggle="yjs"]')
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.equal(
+      el.expanded,
+      false,
+      "the segment toggle leaves the functional panel closed",
+    );
+    const wires = shadow.querySelector(".wires");
+    assert.ok(wires, "the wires accordion opens independently");
+    assert.match(wires.textContent ?? "", /Yjs telemetry/);
+    // The ring buffer replays: history, not a blank panel — the log's
+    // content lives in the log element's own shadow root
+    const log = wires.querySelector("flow-telemetry-log");
+    assert.ok(log, "the wires log renders in the accordion");
+    assert.match(
+      /** @type {any} */ (log).shadowRoot?.textContent ?? "",
+      /update · 1\.0 KB/,
+    );
+    assert.match(
+      /** @type {any} */ (log).shadowRoot?.textContent ?? "",
+      /\[ SYNC \]/,
+    );
+    // Closing through its own affordance
+    shadow
+      .querySelector("[data-action='close-wires']")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.ok(
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".wires")),
+      "the wires accordion closes",
+    );
+    el.remove();
+  });
+
+  it("live traffic paints while open and stops when closed", async () => {
+    const el = await feedWires();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    shadow
+      .querySelector('[data-wires-toggle="yjs"]')
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
+    telemetryBus().publish("yjs", {
+      message: "live · 3.0 KB",
+      status: "DELTA",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const liveLog = shadow.querySelector(".wires flow-telemetry-log");
+    assert.match(
+      /** @type {any} */ (liveLog).shadowRoot?.textContent ?? "",
+      /live · 3\.0 KB/,
+      "open accordion receives live traffic",
+    );
+    shadow
+      .querySelector("[data-action='close-wires']")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    telemetryBus().publish("yjs", {
+      message: "while closed · 4.0 KB",
+      status: "DELTA",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    assert.ok(
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".wires")),
+      "closed: no accordion",
+    );
+    // Reopening replays the closed-window traffic: the bus buffered it
+    shadow
+      .querySelector('[data-wires-toggle="yjs"]')
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    const reopenedLog = shadow.querySelector(".wires flow-telemetry-log");
+    assert.match(
+      /** @type {any} */ (reopenedLog).shadowRoot?.textContent ?? "",
+      /while closed · 4\.0 KB/,
+      "the ring buffer holds the closed-window history",
+    );
     el.remove();
   });
 });

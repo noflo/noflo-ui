@@ -36,6 +36,7 @@ import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
+import { telemetryBus } from "./glass/telemetryBus.js";
 import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
@@ -453,6 +454,11 @@ const echoHandlers = createEchoHandlers({
       error: report.error,
     });
     refreshRuntimeCorner();
+  },
+  // The telemetry bus (work document #63): the wires layer's fan-out —
+  // the echo dispatch publishes, the bus buffers and fans out
+  emitTelemetry: (stream, entry) => {
+    telemetryBus().publish(stream, entry);
   },
   reloadIntoFreshBoot: () => {
     location.reload();

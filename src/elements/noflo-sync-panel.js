@@ -21,7 +21,9 @@
 import icons from "../../vendor/fontawesome-icons.js";
 import QRCode from "../../vendor/qrcode.js";
 import { emit } from "../events.js";
+import { telemetryBus } from "../glass/telemetryBus.js";
 import { FlowCornerElement } from "./corner-element.js";
+import "./noflo-telemetry-log.js";
 
 /**
  * Escapes a value for interpolation into the shadow template.
@@ -134,6 +136,13 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._identityHash = "";
     /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */
     this._narration = null;
+    /** The Yjs wires accordion (work document #63): toggled from its own
+     * chip segment, independent of the functional panel's expand state. */
+    this._wiresOpen = false;
+    /** @type {(() => void) | null} The live bus subscription while open. */
+    this._wiresUnsubscribe = null;
+    /** @type {any} The persistent telemetry log element (lazily created). */
+    this.__yjsLog = null;
     this._pendingIntents = 0;
     this._readOnly = false;
     this._visible = false;
@@ -411,6 +420,12 @@ export class FlowSyncPanel extends FlowCornerElement {
           : `<span class="seg" title="This device holds only the public anchor: grants are minted on the owner's device">${icon("id-badge")}<span class="label">Participant</span></span>`,
       );
     }
+    // The wires layer (work document #63): the segment is its own toggle —
+    // it opens the Yjs telemetry accordion without touching the functional
+    // panel's expand state. Open reads calm; closed is neutral
+    segments.push(
+      `<span class="seg ${this._wiresOpen ? "calm" : ""}" data-wires-toggle="yjs" role="button" tabindex="0" title="The replication stream this device exchanges with the Engine">${icon("terminal")}<span class="label">wires</span></span>`,
+    );
     return segments.join("");
   }
 
@@ -631,6 +646,14 @@ export class FlowSyncPanel extends FlowCornerElement {
         .badge.pending { background: color-mix(in srgb, var(--ui-age-activity) 25%, transparent); color: var(--ui-age-activity); }
         .badge.revoked { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
         .badge.offline { background: color-mix(in srgb, var(--ui-age-offline) 25%, transparent); color: var(--ui-age-offline); }
+        /* The wires layer (work document #63): the terminal grammar's
+           surface — the log element carries its own typography */
+        .wires {
+          min-width: 260px;
+        }
+        .wires-slot {
+          margin-top: 4px;
+        }
         /* The invite QR tile: machine-readable encoding, not themed chrome —
            black modules on white so phone cameras scan it in both themes
            (work document #28 update #3) */
@@ -649,9 +672,95 @@ export class FlowSyncPanel extends FlowCornerElement {
     `;
   }
 
+  /**
+   * The wires layer (work document #63): the Yjs telemetry accordion,
+   * toggled from its own chip segment — read-only engine output in the
+   * terminal grammar, never a processed summary and never a second
+   * authority.
+   *
+   * @returns {string}
+   */
+  wiresHtml() {
+    if (!this._wiresOpen) return "";
+    return `
+      <div class="panel wires">
+        <div class="panel-head">
+          <span>Yjs telemetry</span>
+          <button class="secondary" data-action="close-wires" title="Close">▾</button>
+        </div>
+        <div class="wires-slot" id="panel-yjs-log"></div>
+        <div class="hint">The replication stream between this device's mirror and the Engine's authoritative document.</div>
+      </div>
+    `;
+  }
+
+  /**
+   * The segment-as-toggle hook (work document #63): opens and closes the
+   * Yjs telemetry accordion. Subscription-on-open: the accordion
+   * subscribes when opened — the bus replays its ring buffer as the
+   * history — and unsubscribes when closed, so closed telemetry costs
+   * nothing.
+   *
+   * @param {string} id
+   */
+  toggleWires(id) {
+    if (id !== "yjs") return;
+    this._wiresOpen = !this._wiresOpen;
+    if (this._wiresOpen) {
+      this.yjsLog.setHistory(telemetryBus().history("yjs"));
+      this._wiresUnsubscribe = telemetryBus().subscribe(
+        "yjs",
+        (/** @type {any} */ entry) => this.yjsLog.push(entry),
+        { history: false },
+      );
+    } else {
+      this._wiresUnsubscribe?.();
+      this._wiresUnsubscribe = null;
+    }
+    this.render();
+  }
+
+  /**
+   * Hiding the corner closes the wires accordion too: its subscription is
+   * the live traffic, and a hidden corner carries none.
+   *
+   * @param {boolean} visible
+   */
+  setVisible(visible) {
+    if (!visible && this._wiresOpen) {
+      this.toggleWires("yjs");
+    }
+    super.setVisible(visible);
+  }
+
+  /**
+   * The persistent Yjs log element: it survives re-renders so the opened
+   * accordion's buffer outlives the panel's DOM churn.
+   */
+  get yjsLog() {
+    if (!this.__yjsLog) {
+      this.__yjsLog = /** @type {any} */ (
+        document.createElement("flow-telemetry-log")
+      );
+    }
+    return this.__yjsLog;
+  }
+
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     this.renderInviteQr();
+    // The wires accordion's persistent log rides the render: the element
+    // is adopted into the slot each time, its buffer surviving the churn
+    const wiresSlot = shadow.querySelector("#panel-yjs-log");
+    if (wiresSlot && this._wiresOpen) {
+      wiresSlot.appendChild(this.yjsLog);
+    }
+    shadow
+      .querySelector("[data-action='close-wires']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        this.toggleWires("yjs");
+      });
     shadow
       .querySelector("[data-action='collapse']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

@@ -339,6 +339,26 @@ export class FlowCornerElement extends HTMLElement {
   }
 
   /**
+   * The wires layer (work document #63): read-only telemetry accordions
+   * toggled independently of the chip's expand state, rendered beside the
+   * functional accordions. Empty unless the corner opts in.
+   *
+   * @returns {string}
+   */
+  wiresHtml() {
+    return "";
+  }
+
+  /**
+   * The segment-as-toggle hook: a chip child with a data-wires-toggle
+   * marker toggles its own accordion. Empty until the corner opts in.
+   *
+   * @param {string} _id The toggled segment's marker.
+   */
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: the hook is the base's contract; corners override it
+  toggleWires(_id) {}
+
+  /**
    * Hook for wiring events inside the expanded panel after each render.
    */
   wireEvents() {}
@@ -355,6 +375,7 @@ export class FlowCornerElement extends HTMLElement {
     shadow.innerHTML = `
       <style>${this.styles()}${cornerStyles()}</style>
       ${this.expandedHtml()}
+      ${this.wiresHtml()}
       <div class="chip" data-action="toggle"${
         this.expandable ? ' role="button" tabindex="0"' : ""
       } title="${this.chipTitle}">
@@ -363,18 +384,50 @@ export class FlowCornerElement extends HTMLElement {
     `;
     if (this.expandable) {
       const chip = shadow.querySelector("[data-action='toggle']");
-      const toggle = () => {
+      // The segment-as-toggle grammar (work document #63): a chip child
+      // carrying a data-wires-toggle marker owns its click — it toggles
+      // its own accordion through the corner's hook, not the chip's
+      // expand state
+      const wiresTarget = (/** @type {Event} */ event) => {
+        const path = event?.composedPath?.() ?? [];
+        const inPath = path.find((/** @type {any} */ el) =>
+          el?.getAttribute?.("data-wires-toggle"),
+        );
+        if (inPath) return inPath;
+        // Synthetic dispatches may carry an empty composed path; the
+        // target's closest marker is the same answer for real input
+        return (
+          /** @type {any} */ (event?.target)?.closest?.(
+            "[data-wires-toggle]",
+          ) ?? null
+        );
+      };
+      const toggle = (/** @type {Event} */ event) => {
+        if (wiresTarget(event)) return;
         this.expanded = !this.expanded;
         this.render();
       };
-      chip?.addEventListener("click", toggle);
+      chip?.addEventListener("click", (/** @type {any} */ event) => {
+        const segment = wiresTarget(event);
+        if (segment) {
+          this.toggleWires(segment.getAttribute("data-wires-toggle"));
+          return;
+        }
+        toggle(event);
+      });
       // Keyboard equivalence for the pointer-only toggle: Enter and Space
-      // activate a role="button" element
+      // activate a role="button" element — the segment's own marker when
+      // the focus is on it, the chip's expand state otherwise
       chip?.addEventListener("keydown", (/** @type {Event} */ event) => {
         const key = /** @type {KeyboardEvent} */ (event).key;
         if (key !== "Enter" && key !== " ") return;
         event.preventDefault();
-        toggle();
+        const segment = wiresTarget(event);
+        if (segment) {
+          this.toggleWires(segment.getAttribute("data-wires-toggle"));
+          return;
+        }
+        toggle(event);
       });
     }
     this.wireEvents();
