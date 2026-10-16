@@ -316,6 +316,9 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setWorkDocBody'; payload: { docId: string; update: Uint8Array } }
   | { type: 'INTENT'; command: 'setWorkDocTitle'; payload: { docId: string; title: string } }
   | { type: 'INTENT'; command: 'setWorkdocsRepo'; payload: { url: string | null } }
+  | { type: 'INTENT'; command: 'setSchema'; payload: { name: string; body: string } }
+  | { type: 'INTENT'; command: 'updateSchema'; payload: { name: string; update: Uint8Array } }
+  | { type: 'INTENT'; command: 'removeSchema'; payload: { name: string } }
   | { type: 'INTENT'; command: 'undo'; payload: Record<string, never> }
   | { type: 'INTENT'; command: 'redo'; payload: Record<string, never> }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
@@ -358,11 +361,24 @@ interface IntentSpliceNode { graphId: string; edgeId: string; nodeId: string; x:
 
 // Work documents (work document #9): CRDT-native, rngit-materialized
 interface IntentCreateWorkDoc { title: string; content?: string; links?: string[] }
+
+// Schema lifecycle echoes (work document #57 update #1): the CRDT is
+// authoritative — the schema view and the project corner refresh from
+// the mirror on the echo
 interface IntentUpdateWorkDoc { docId: string; content: string }
 interface IntentSetWorkDocScope { docId: string; scope: 'proposed' | 'active' | 'completed' }
 // The project's rngit remote: PROJECT state per work document #60's scope
 // rule — CRDT metadata, propagated to peers
 interface IntentSetWorkdocsRepo { url: string | null }
+
+// Project schemas (work document #57 update #1): a top-level entity.
+// `setSchema` is the create-or-whole-save write; the body is a JSON
+// buffer validated against the 2020-12 meta-schema at send time (Tier B —
+// an invalid body is refused, never silently saved); `updateSchema`
+// carries the live Yjs delta for collaborators
+interface IntentSetSchema { name: string; body: string }
+interface IntentUpdateSchema { name: string; update: Uint8Array }
+interface IntentRemoveSchema { name: string }
 interface IntentRemoveNode { graphId: string; nodeId: string; }
 interface IntentMoveNode { graphId: string; nodeId: string; x: number; y: number; }
 interface IntentAddEdge {
@@ -472,6 +488,7 @@ type EngineUIMessage =
   | { protocol: 'workdoc'; command: 'edited'; payload: { id: string } }
   | { protocol: 'workdoc'; command: 'titled'; payload: { id: string; title: string } }
   | { protocol: 'workdoc'; command: 'repo'; payload: { url: string | null } }
+  | { protocol: 'schema'; command: 'created' | 'edited' | 'removed'; payload: { name: string } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)

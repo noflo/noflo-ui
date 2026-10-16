@@ -339,6 +339,26 @@
  */
 
 /**
+ * Project schema lifecycle (work document #57 update #1). `setSchema` is
+ * the create-or-whole-save write: the body is a JSON buffer validated
+ * against the 2020-12 meta-schema — an invalid body is refused, never
+ * silently saved. `updateSchema` carries the live Yjs delta.
+ *
+ * @typedef {Object} IntentSetSchemaMessage
+ * @property {'INTENT'} type
+ * @property {'setSchema'} command
+ * @property {{ name: string, body: string }} payload
+ * @typedef {Object} IntentUpdateSchemaMessage
+ * @property {'INTENT'} type
+ * @property {'updateSchema'} command
+ * @property {{ name: string, update: Uint8Array }} payload
+ * @typedef {Object} IntentRemoveSchemaMessage
+ * @property {'INTENT'} type
+ * @property {'removeSchema'} command
+ * @property {{ name: string }} payload
+ */
+
+/**
  * Relays a binary Yjs update into a work document's body (work document
  * #9): the live editing path — the collaborative binding relays local
  * transactions as binary diffs, the engine integrating the same items
@@ -435,6 +455,16 @@
  * @property {'workdoc'} protocol
  * @property {'repo'} command
  * @property {{ url: string | null }} payload
+ */
+
+/**
+ * Schema lifecycle echoes (work document #57 update #1): the CRDT is
+ * authoritative — the Glass refreshes from the mirror on the echo.
+ *
+ * @typedef {Object} SchemaEcho
+ * @property {'schema'} protocol
+ * @property {'created' | 'edited' | 'removed'} command
+ * @property {{ name: string }} payload
  */
 
 /**
@@ -599,6 +629,9 @@
  *   | IntentSetWorkDocBodyMessage
  *   | IntentSetWorkDocTitleMessage
  *   | IntentSetWorkdocsRepoMessage
+ *   | IntentSetSchemaMessage
+ *   | IntentUpdateSchemaMessage
+ *   | IntentRemoveSchemaMessage
  *   | IntentUndoMessage
  *   | IntentRedoMessage
  *   | MeshConfigureMessage
@@ -674,6 +707,9 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "setWorkDocScope" },
   { type: "INTENT", command: "setWorkDocBody" },
   { type: "INTENT", command: "setWorkDocTitle" },
+  { type: "INTENT", command: "setSchema" },
+  { type: "INTENT", command: "updateSchema" },
+  { type: "INTENT", command: "removeSchema" },
   { type: "INTENT", command: "setWorkdocsRepo" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
@@ -1101,6 +1137,7 @@ export const MESH_COMMANDS = [
  *   | WorkDocEditedEcho
  *   | WorkDocTitledEcho
  *   | WorkDocRepoEcho
+ *   | SchemaEcho
  *   | YSyncMessage
  *   | YUpdateMessage
  *   | AwarenessEcho
@@ -1150,6 +1187,9 @@ export const ECHO_MESSAGES = [
   { protocol: "workdoc", command: "edited" },
   { protocol: "workdoc", command: "titled" },
   { protocol: "workdoc", command: "repo" },
+  { protocol: "schema", command: "created" },
+  { protocol: "schema", command: "edited" },
+  { protocol: "schema", command: "removed" },
   { protocol: "system", command: "heartbeat" },
   { protocol: "system", command: "signature" },
   { protocol: "graph", command: "addnode" },

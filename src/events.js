@@ -126,6 +126,14 @@
  *   active graph deploys onto the addressed runtime; the Glass attaches
  *   the graph id (work document #59 Phase A).
  * @property {CustomEvent<{ destinationHash: string, action: 'start' | 'stop' }>} runtime-run
+ * @property {CustomEvent<{ name: string }>} schema-open A project schema
+ *   opens its editor (work document #57 update #1).
+ * @property {CustomEvent<void>} schema-create
+ * @property {CustomEvent<{ name: string, update: Uint8Array }>} schema-body-update
+ *   The live draft delta (work document #57 update #1).
+ * @property {CustomEvent<{ name: string, body: string }>} schema-save The
+ *   whole-save round: the meta-schema gate lives in the view.
+ * @property {CustomEvent<void>} schema-close
  * @property {CustomEvent<void>} undo-attempt
  * @property {CustomEvent<void>} redo-attempt
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate

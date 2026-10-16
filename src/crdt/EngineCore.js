@@ -7,8 +7,9 @@
  * directly.
  */
 
+import Ajv2020 from "../../vendor/ajv.js";
+import { digestSchema } from "../../vendor/fbp-protocol.js";
 import * as Y from "../../vendor/yjs.js";
-
 import {
   addEdge,
   addGroupNodes,
@@ -17,9 +18,11 @@ import {
   addNode,
   addOutport,
   appendWorkDocUpdate,
+  applySchemaBodyUpdate,
   applyWorkDocBodyUpdate,
   createGraph,
   createGroup,
+  createSchema,
   createWorkDoc,
   deleteGraph,
   edgeIdFor,
@@ -31,6 +34,8 @@ import {
   getGraph,
   getGroup,
   getNode,
+  getSchema,
+  getSchemas,
   getWorkDoc,
   graphChildren,
   moveExport,
@@ -45,6 +50,7 @@ import {
   removeGroupNodes,
   removeNode,
   removeNodeFromGroups,
+  removeSchema,
   requestWorkDocScope,
   revokePermission,
   setComponentCode,
@@ -53,6 +59,7 @@ import {
   setEdgeRoute,
   setNodeComponent,
   setPortRoute,
+  setSchemaBody,
   setWorkDocTitle,
   transferNode,
   updateComponentMetadata,
@@ -435,6 +442,9 @@ export const INTENT_HANDLERS = {
   updateGroup: intentUpdateGroup,
   implementInCode: intentImplementInCode,
   setComponentCode: intentSetComponentCode,
+  setSchema: intentSetSchema,
+  updateSchema: intentUpdateSchema,
+  removeSchema: intentRemoveSchema,
   setDoc: intentSetDoc,
   removeDoc: intentRemoveDoc,
   forkComponent: intentForkComponent,
@@ -2763,6 +2773,140 @@ function isValidTextDelta(delta) {
         typeof op.insert === "string" ||
         (typeof op.delete === "number" && op.delete >= 0)),
   );
+}
+
+/**
+ * Sets a project-carried documentation document's content (work document
+ * #43): collaborative Markdown keyed by a path-safe name.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+/**
+ * The Tier B meta-schema enforcement (work document #57 update #1): a
+ * schema body is valid JSON Schema 2020-12 or it is not saved. Ajv
+ * bundles the 2020-12 meta natively; the noflo extension vocabulary is
+ * declared optional, so our keywords are ignored rather than refused.
+ *
+ * @type {((data: any) => boolean) | null}
+ */
+let metaSchemaValidator = null;
+
+/**
+ * Validates a schema body against the 2020-12 meta-schema.
+ *
+ * @param {any} body The parsed schema body.
+ * @returns {string | null} The first error message, or null when valid.
+ */
+function validateSchemaBody(body) {
+  if (!metaSchemaValidator) {
+    metaSchemaValidator = new Ajv2020({
+      allErrors: true,
+      strict: false,
+    }).compile({ $ref: "https://json-schema.org/draft/2020-12/schema" });
+  }
+  const valid = metaSchemaValidator(body);
+  if (valid) return null;
+  const errors = /** @type {any} */ (metaSchemaValidator).errors;
+  return errors?.[0]?.message ?? "not a valid 2020-12 schema";
+}
+
+/**
+ * Creates or whole-save updates a project schema (work document #57
+ * update #1): the body must parse as JSON and pass the 2020-12
+ * meta-schema (Tier B, hard enforcement at send time — an invalid body
+ * is never silently saved); the digest derives from the body and lands
+ * on the record. Creating requires the `ns/name` vocabulary form.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {{ accepted: boolean, echoes: any[] }}
+ */
+// biome-ignore lint/correctness/noExplicitAny: the payload crosses the IPC boundary untyped
+function intentSetSchema(doc, payload) {
+  const { name, body } = payload ?? {};
+  if (typeof name !== "string" || typeof body !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {any} */
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return { accepted: false, echoes: [] };
+  }
+  const metaError = validateSchemaBody(parsed);
+  if (metaError) {
+    console.warn(`[engine] schema ${name} refused: ${metaError}`);
+    return { accepted: false, echoes: [] };
+  }
+  const existing = getSchema(doc, name);
+  // The digest is not stored at write time: it derives from the body
+  // (content-addressed by definition), and the sync intent boundary
+  // cannot await the async canonicalization — readers compute it on
+  // demand via digestSchema
+  const ok = existing
+    ? setSchemaBody(doc, name, body)
+    : createSchema(doc, { name, body, provenance: "authored" }) !== null;
+  if (!ok) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "schema",
+        command: existing ? "edited" : "created",
+        payload: { name },
+      },
+    ],
+  };
+}
+
+/**
+ * Applies a live Yjs delta to a schema's body buffer (work document #57
+ * update #1): collaborators converge through the CRDT; the record's
+ * digest stays stale by design until the next whole-save.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {{ accepted: boolean, echoes: any[] }}
+ */
+function intentUpdateSchema(doc, payload) {
+  const { name, update } = payload ?? {};
+  if (typeof name !== "string" || !(update instanceof Uint8Array)) {
+    return { accepted: false, echoes: [] };
+  }
+  const applied = applySchemaBodyUpdate(doc, name, update);
+  if (!applied) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [{ protocol: "schema", command: "edited", payload: { name } }],
+  };
+}
+
+/**
+ * Removes a project schema.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {{ accepted: boolean, echoes: any[] }}
+ */
+function intentRemoveSchema(doc, payload) {
+  const { name } = payload ?? {};
+  if (typeof name !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  if (!removeSchema(doc, name)) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [{ protocol: "schema", command: "removed", payload: { name } }],
+  };
 }
 
 /**

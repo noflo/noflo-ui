@@ -35,9 +35,33 @@ export class FlowProjectCorner extends FlowCornerElement {
     super();
     /** @type {Array<any>} */
     this._docs = [];
+    /** The project's schemas (work document #57 update #1). */
+    /** @type {Array<{ name: string, provenance: string }>} */
+    this._schemas = [];
     /** Corners hide when there is nothing to show (work document #28). */
     this._visible = false;
     this.chipTitle = "Project work documents";
+  }
+
+  /**
+   * Refreshes in place with the project's work documents (work document
+   * #9): newest edit first, the proposed scope carrying its own
+   * indicator (agents may only propose — the distinction is visible).
+   *
+   * @param {Array<{ id: string, title: string, scope: string, pendingScope?: string, boardId?: number | string | null, edited: number }>} docs
+   */
+  /**
+   * Refreshes in place with the project's schemas (work document #57
+   * update #1): the rows the Schemas accordion lists, with their
+   * provenance.
+   *
+   * @param {Array<{ name: string, provenance: string }>} schemas
+   */
+  setSchemas(schemas) {
+    this._schemas = /** @type {Array<{ name: string, provenance: string }>} */ (
+      schemas ?? []
+    );
+    this.render();
   }
 
   /**
@@ -246,7 +270,25 @@ export class FlowProjectCorner extends FlowCornerElement {
         </div>
         ${rows}
         <button class="secondary" data-action="create-doc">New document</button>
-      </div>`;
+
+        <details><summary>Schemas</summary>
+          ${
+            this._schemas.length > 0
+              ? this._schemas
+                  .map(
+                    (schema) => `
+          <div class="doc-row">
+            <span class="grow">${escapeHtml(schema.name)}</span>
+            <span class="badge ${schema.provenance === "authored" ? "active" : "pending"}">${escapeHtml(schema.provenance)}</span>
+            <button class="secondary" data-schema-open="${escapeHtml(schema.name)}">Open</button>
+          </div>`,
+                  )
+                  .join("")
+              : '<div class="hint">No project schemas yet.</div>'
+          }
+          <button class="secondary" data-action="create-schema">New schema</button>
+          <div class="hint">JSON Schema 2020-12 artifacts the project's ports and metadata declare against. Referenced by signatures; saved as project state.</div>
+        </details>      </div>`;
   }
 
   wireEvents() {
@@ -257,6 +299,20 @@ export class FlowProjectCorner extends FlowCornerElement {
         event.stopPropagation();
         emit(this, "workdoc-create", undefined);
       });
+    shadow
+      .querySelector("[data-action='create-schema']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        emit(this, "schema-create", undefined);
+      });
+    for (const button of shadow.querySelectorAll("[data-schema-open]")) {
+      button.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        emit(this, "schema-open", {
+          name: String(button.getAttribute("data-schema-open") ?? ""),
+        });
+      });
+    }
     shadow
       .querySelector("[data-action='save-remote']")
       ?.addEventListener("click", (/** @type {any} */ event) => {

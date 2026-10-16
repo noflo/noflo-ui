@@ -14,7 +14,7 @@ export const DEFAULT_PROJECT_ID = "default";
 /** The route kinds addressing top-level screens (work document #62):
  * the graph kind keeps the legacy URL shape (no kind segment) so existing
  * links keep working. */
-export const SCREEN_KINDS = ["graph", "doc", "component", "spec"];
+export const SCREEN_KINDS = ["graph", "doc", "component", "spec", "schema"];
 
 /**
  * A parsed route: the project id plus either a kind-addressed entity

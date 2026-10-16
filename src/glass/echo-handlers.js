@@ -71,6 +71,9 @@ function formatBytes(bytes) {
  * @property {(payload: any) => void} [workDocCreated] A work document was
  *   created (work document #9): the creation flow navigates to the new
  *   document's view when the echo is its own.
+ * @property {(name: string | undefined, action: string) => void} [schemaChanged]
+ *   A project schema changed (work document #57): the schema view and
+ *   the project corner refresh from the mirror.
  */
 
 /**
@@ -230,6 +233,17 @@ export function createEchoHandlers(deps) {
     },
     "kind:mesh-status": (data) => {
       deps.ingestMeshStatus(data);
+    },
+    "schema/created": (data) => {
+      // Project schemas (work document #57 update #1): the CRDT is
+      // authoritative — the surfaces refresh from the mirror
+      deps.schemaChanged?.(data.payload?.name, "created");
+    },
+    "schema/edited": (data) => {
+      deps.schemaChanged?.(data.payload?.name, "edited");
+    },
+    "schema/removed": (data) => {
+      deps.schemaChanged?.(data.payload?.name, "removed");
     },
     "workdoc/created": (data) => {
       // Work-document echoes (work document #9): the Glass renders from

@@ -8,6 +8,7 @@
  * these primitives.
  */
 
+import { isValidSchemaId } from "../../vendor/fbp-protocol.js";
 import * as Y from "../../vendor/yjs.js";
 
 /** Current CRDT schema version of the project document. */
@@ -23,6 +24,10 @@ export const COMPONENTS_MAP = "components";
 export const REGISTRY_MAP = "registry";
 /** Root map name for structural test suites. */
 export const SPECS_MAP = "specs";
+/** Root map name for project schema artifacts (work document #57 update
+ * #1): schemas are a top-level entity — referenced by signatures, IIP
+ * forms, and plugin keys — not a corner of another editor. */
+export const SCHEMAS_MAP = "schemas";
 export const DOCS_MAP = "docs";
 export const WORKDOCS_MAP = "workdocs";
 
@@ -919,6 +924,176 @@ function newWorkDocId() {
  * Creates a work document: title, initial Markdown content, the author's
  * identity hash, and optional entity links. Returns the document's record
  * (a Y.Map) or null when the validation fails. Never mutates on refusal.
+ *
+ * @param {Y.Doc} doc
+ * @param {Object} options
+ * @param {string} options.title
+ * @param {string} [options.content] Initial Markdown body.
+ * @param {string} options.author The author's identity hash.
+ * @param {string[]} [options.links] Entity ids the document references.
+ * @returns {Y.Map<any> | null}
+ */
+/**
+ * A project schema record (work document #57 update #1): the schema body
+ * as an editable `Y.Text` buffer (file-level authoring — no visual schema
+ * builder), the declaration-level provenance, and the content-addressed
+ * digest derived from the body. Provenance governs mutability: only
+ * authored entries are mutable from the editor — imported/remote entries
+ * are read-only until copied into a project-owned entry.
+ *
+ * @typedef {Object} SchemaRecord
+ * @property {string} name The `ns/name` identifier.
+ * @property {"authored" | "imported" | "remote"} provenance
+ * @property {Y.Text} body The editable JSON buffer.
+ * @property {string} [digest] The hex digest over the body, recomputed
+ *   at whole-save; live delta edits leave it stale by design — digests
+ *   pin bytes, and a port reference keeps the digest it was pinned to.
+ * @property {string} [origin] Where an imported/remote entry came from.
+ * @property {number} [edited]
+ */
+
+/**
+ * The schemas collection.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Y.Map<any>}
+ */
+function schemasOf(doc) {
+  return doc.getMap(SCHEMAS_MAP);
+}
+
+/**
+ * Every project schema record, plain.
+ *
+ * @param {Y.Doc} doc
+ * @returns {Array<{ name: string, provenance: string, body: string, digest?: string, origin?: string, edited?: number }>}
+ */
+export function getSchemas(doc) {
+  /** @type {Array<{ name: string, provenance: string, body: string, digest?: string, origin?: string, edited?: number }>} */
+  const records = [];
+  for (const [name, record] of schemasOf(doc).entries()) {
+    const plain = record.toJSON();
+    records.push({
+      name,
+      provenance: plain.provenance ?? "authored",
+      body: plain.body ?? "",
+      ...(plain.digest === undefined ? {} : { digest: plain.digest }),
+      ...(plain.origin === undefined ? {} : { origin: plain.origin }),
+      ...(plain.edited === undefined ? {} : { edited: plain.edited }),
+    });
+  }
+  return records;
+}
+
+/**
+ * One schema record.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @returns {Y.Map<any> | undefined}
+ */
+export function getSchema(doc, name) {
+  return schemasOf(doc).get(name);
+}
+
+/**
+ * Creates a project schema record. The identifier is the schema
+ * vocabulary's `ns/name` form (validated through the protocol's own
+ * rule); the body must parse as JSON at this boundary — deeper
+ * meta-schema validation is the intent layer's Tier B enforcement.
+ *
+ * @param {Y.Doc} doc
+ * @param {{ name: string, body?: string, provenance?: "authored" | "imported" | "remote", origin?: string, digest?: string }} options
+ * @returns {Y.Map<any> | null} The created record, or null on refusal.
+ */
+export function createSchema(
+  doc,
+  { name, body = "", provenance = "authored", origin, digest },
+) {
+  if (!isValidSchemaId(name)) return null;
+  if (schemasOf(doc).has(name)) return null;
+  try {
+    JSON.parse(body);
+  } catch {
+    return null;
+  }
+  const record = new Y.Map();
+  schemasOf(doc).set(name, record);
+  record.set("provenance", provenance);
+  record.set("body", new Y.Text(body));
+  record.set("edited", Date.now());
+  if (digest !== undefined) record.set("digest", digest);
+  if (origin !== undefined) record.set("origin", origin);
+  return record;
+}
+
+/**
+ * Replaces a schema body wholesale (one whole-save per edit round;
+ * work document #57 update #1). Only authored entries are mutable from
+ * the editor.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @param {string} body
+ * @param {{ digest?: string }} [options]
+ * @returns {boolean}
+ */
+export function setSchemaBody(doc, name, body, options = {}) {
+  try {
+    JSON.parse(body);
+  } catch {
+    return false;
+  }
+  const record = getSchema(doc, name);
+  if (!record) return false;
+  if (record.get("provenance") !== "authored") return false;
+  const buffer = record.get("body");
+  if (!(buffer instanceof Y.Text)) return false;
+  buffer.delete(0, buffer.length);
+  buffer.insert(0, body);
+  record.set("edited", Date.now());
+  if (options.digest !== undefined) record.set("digest", options.digest);
+  return true;
+}
+
+/**
+ * Applies a Yjs delta to a schema's body buffer (the live-editing path —
+ * collaborators converge through the CRDT; the digest stays stale by
+ * design until the next whole-save).
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @param {Uint8Array} update
+ * @returns {boolean}
+ */
+export function applySchemaBodyUpdate(doc, name, update) {
+  if (!(update instanceof Uint8Array)) return false;
+  const record = getSchema(doc, name);
+  if (!record) return false;
+  const buffer = record.get("body");
+  if (!(buffer instanceof Y.Text)) return false;
+  Y.applyUpdate(doc, update);
+  record.set("edited", Date.now());
+  return true;
+}
+
+/**
+ * Removes a schema record.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function removeSchema(doc, name) {
+  if (!schemasOf(doc).has(name)) return false;
+  schemasOf(doc).delete(name);
+  return true;
+}
+
+/**
+ * Creates a work document (work document #9): a scoped record with a
+ * collaborative `Y.Text` body, or null when the validation fails. Never
+ * mutates on refusal.
  *
  * @param {Y.Doc} doc
  * @param {Object} options

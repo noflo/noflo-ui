@@ -6,6 +6,7 @@
  */
 
 import * as Y from "yjs";
+import { getSchema, getSchemas } from "./crdt/ProjectDoc.js";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
@@ -34,6 +35,7 @@ import {
 } from "./elements/noflo-component-picker.js";
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
+import "./elements/noflo-schema-view.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
 import { telemetryBus } from "./glass/telemetryBus.js";
@@ -213,6 +215,8 @@ let meshPeers = /** @type {string[]} */ ([]);
 let syncPanel = null;
 /** @type {FlowRuntimeCorner | null} */
 let runtimeCorner = null;
+/** The schema editor view (work document #57 update #1). */
+let schemaView = null;
 /** @type {FlowContextChip | null} */
 let contextChip = null;
 /** @type {FlowEditor | null} */
@@ -471,6 +475,10 @@ const echoHandlers = createEchoHandlers({
   setUndoState: (state) => {
     undoState = state;
     refreshSyncPanel();
+  },
+  schemaChanged: (name, action) => {
+    refreshProjectCorner();
+    refreshSchemaView(name, action);
   },
   workDocCreated: (payload) => {
     if (!pendingWorkDocCreate) return;
@@ -877,6 +885,9 @@ function refreshProjectCorner() {
     };
   });
   projectCorner.setWorkDocs(workDocs);
+  projectCorner.setSchemas(
+    getSchemas(mirrorDoc).map(({ name, provenance }) => ({ name, provenance })),
+  );
   // A deferred document route opens once its data exists: a reload lands
   // on the route before the project loads from persistence (work
   // document #9)
@@ -935,6 +946,32 @@ function openWorkDoc(docId, editing = false) {
     // A freshly created document lands in edit mode: naming it is the
     // whole prompt, writing the body is the point
     editing,
+  });
+  updateContextChip();
+}
+
+/**
+ * Opens the schema view (work document #57 update #1): the mirror's
+ * record binds as the collaborative buffer; the meta-schema gate lives in
+ * the view.
+ *
+ * @param {string} name
+ */
+function openSchemaView(name) {
+  const view = /** @type {any} */ (document.getElementById("schema-view"));
+  const record = /** @type {any} */ (getSchema(mirrorDoc, name));
+  if (!view || !record) {
+    console.warn(`[schema] ${name} not found`);
+    return;
+  }
+  view.open({
+    name,
+    provenance: record.get("provenance") ?? "authored",
+    origin: record.get("origin") ?? null,
+    digest: record.get("digest") ?? "",
+    ytext: record.get("body"),
+    cm: codeMirrorSurface,
+    readOnly: record.get("provenance") !== "authored",
   });
   updateContextChip();
 }
@@ -1179,6 +1216,20 @@ function refreshMeshSettings() {
     dialog._meshError = meshError;
     dialog.render();
   }
+}
+
+/**
+ * A project schema changed (work document #57): the schema view refreshes
+ * from the mirror; the route's schema screens re-open their replica
+ * state.
+ *
+ * @param {string | undefined} _name
+ * @param {string} _action
+ */
+function refreshSchemaView(_name, _action) {
+  const view = /** @type {any} */ (document.getElementById("schema-view"));
+  if (router?.route()?.kind !== "schema") return;
+  view?.refresh();
 }
 
 /**
@@ -1542,6 +1593,14 @@ function activateScreen(screen, options = {}) {
     }
     return;
   }
+  if (screen.kind === "schema") {
+    const appElement = document.getElementById("app");
+    if (appElement) appElement.style.display = "none";
+    if (mirrorDoc && getSchema(mirrorDoc, screen.id ?? "")) {
+      openSchemaView(screen.id ?? "");
+    }
+    return;
+  }
   // The graph screen
   pendingWorkDocOpen = null;
   pendingWorkDocEditing = false;
@@ -1549,6 +1608,10 @@ function activateScreen(screen, options = {}) {
     null,
   );
   if (view && !view.hidden) view.close();
+  const schemaView = /** @type {any} */ (
+    document.getElementById("schema-view")
+  );
+  if (schemaView && !schemaView.hidden) schemaView.close();
   const appElement = document.getElementById("app");
   if (appElement) appElement.style.display = "";
   if (screen.id && screen.id !== activeGraphId) {
@@ -1927,6 +1990,52 @@ async function init() {
   });
   // Creation: the title prompt, then the intent — the document appears in
   // the corner as proposed and the view opens (work document #9)
+  // Project schemas (work document #57 update #1): opening navigates to
+  // the schema screen; creation prompts for the ns/name and lands there
+  projectCorner?.addEventListener("schema-open", (/** @type {any} */ e) => {
+    projectCorner.expanded = false;
+    projectCorner.render();
+    router?.navigate({ kind: "schema", id: e.detail.name });
+  });
+  projectCorner?.addEventListener("schema-create", async () => {
+    projectCorner.expanded = false;
+    projectCorner.render();
+    const name = await openTextPrompt({
+      title: "New schema",
+      message: "Name the schema (ns/name):",
+      value: "project/",
+    });
+    if (!name) return;
+    sendIntent({
+      type: "INTENT",
+      command: "setSchema",
+      payload: {
+        name,
+        body: JSON.stringify({ type: "object", properties: {} }, null, 2),
+      },
+    });
+    router?.navigate({ kind: "schema", id: name });
+  });
+  // The schema view's events (work document #57 update #1): the live
+  // draft delta and the whole-save round
+  schemaView = /** @type {any} */ (document.getElementById("schema-view"));
+  on(schemaView, "schema-body-update", (e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "updateSchema",
+      payload: { name: e.detail.name, update: e.detail.update },
+    });
+  });
+  on(schemaView, "schema-save", (e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "setSchema",
+      payload: { name: e.detail.name, body: e.detail.body },
+    });
+  });
+  on(schemaView, "schema-close", () => {
+    router?.navigate({ kind: "graph", id: activeGraphId });
+  });
   projectCorner?.addEventListener("workdoc-create", () => {
     // No naming gate: the document is created untitled and the view opens
     // in edit mode, where the title field and the body are both at hand
