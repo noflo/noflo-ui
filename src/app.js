@@ -224,6 +224,9 @@ let schemaView = null;
 /** @type {NofloComponentView | null} The full-screen component editor
  * (work document #62): signature + code in one surface. */
 let componentView = null;
+/** The component route pending its mirror data (the workdoc flow's
+ * deferred-open pattern, work document #57's boot lag). */
+let pendingComponentOpen = /** @type {string | null} */ (null);
 
 /** The pending schema-fetch awaiters (work document #57): the echoes
  * resolve them once the bodies ingest. */
@@ -741,6 +744,16 @@ function refreshProjectCorner() {
   projectCorner.setSchemas(
     getSchemas(mirrorDoc).map(({ name, provenance }) => ({ name, provenance })),
   );
+  // A deferred component route opens once its data exists: the mirror
+  // lags the route at boot (work document #57's editor)
+  if (
+    pendingComponentOpen &&
+    mirrorDoc.getMap("registry").has(pendingComponentOpen)
+  ) {
+    const name = pendingComponentOpen;
+    pendingComponentOpen = null;
+    activateScreen({ kind: "component", id: name });
+  }
   // A deferred document route opens once its data exists: a reload lands
   // on the route before the project loads from persistence (work
   // document #9)
@@ -878,10 +891,121 @@ async function render() {
     componentForm = document.createElement("noflo-json-form");
     componentModal.appendChild(componentForm);
     app.appendChild(componentModal);
-    componentView = /** @type {NofloComponentView | null} */ (
+    componentView = /** @type {NofloComponentView} */ (
       /** @type {any} */ (document.createElement("noflo-component-view"))
     );
-    app.appendChild(/** @type {Node} */ (componentView));
+    // The view lives on the body: #app hides while non-graph screens are
+    // active, and a display:none ancestor would hide the view with it
+    // (the modals' hosting rule). Its event wiring rides the creation —
+    // render() runs deferred, so the init-time on(componentView) would
+    // attach to a null element (the events.on no-op)
+    componentView.hidden = true;
+    document.body.appendChild(/** @type {Node} */ (componentView));
+    on(componentView, "component-action", async (e) => {
+      const { action, component } = e.detail;
+      const current = String(componentView?._component ?? component);
+      if (action === "close") {
+        router?.navigate({ kind: "graph", id: activeGraphId });
+        return;
+      }
+      if (action === "save") {
+        const data = /** @type {any} */ (componentView?._form?.data);
+        if (!data) return;
+        const newName = String(data.name || component);
+        const renamed = newName !== component;
+        let target = component;
+        if (renamed) {
+          sendIntent({
+            type: "INTENT",
+            command: "forkComponent",
+            payload: { component, to: newName },
+          });
+          target = newName;
+        }
+        sendIntent({
+          type: "INTENT",
+          command: "setSignature",
+          payload: {
+            component: target,
+            signature: {
+              inports: data.inports,
+              outports: data.outports,
+              description: data.description,
+              icon: data.icon,
+            },
+          },
+        });
+        if (renamed) {
+          // The fork takes over: the route follows the new name
+          router?.navigate({ kind: "component", id: newName });
+        }
+        return;
+      }
+      if (action === "fork") {
+        const to = `${component}-fork`;
+        sendIntent({
+          type: "INTENT",
+          command: "forkComponent",
+          payload: { component, to },
+        });
+        router?.navigate({ kind: "component", id: to });
+        return;
+      }
+      if (action === "implement-code") {
+        sendIntent({
+          type: "INTENT",
+          command: "implementInCode",
+          payload: {
+            component,
+            language: "javascript",
+            scaffold: codeScaffold(component),
+          },
+        });
+        // The scaffold lands through the intent path; the code area binds
+        // when the mirror picks the buffer up
+        const map = /** @type {any} */ (mirrorDoc.getMap("components"));
+        const ytext = await new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            map.unobserve(observe);
+            resolve(null);
+          }, 2000);
+          const observe = (/** @type {any} */ event) => {
+            if (event.target === map && map.get(component)?.get("code")) {
+              clearTimeout(timeout);
+              map.unobserve(observe);
+              resolve(map.get(component).get("code"));
+            }
+          };
+          map.observe(observe);
+          if (map.get(component)?.get("code")) {
+            clearTimeout(timeout);
+            map.unobserve(observe);
+            resolve(map.get(component).get("code"));
+          }
+        });
+        if (ytext) componentView?.bindCode(ytext, "javascript");
+        return;
+      }
+      if (action === "implement-graph") {
+        sendIntent({
+          type: "INTENT",
+          command: "implementAsGraph",
+          payload: { component, parentGraph: activeGraphId },
+        });
+        router?.navigate(component);
+        return;
+      }
+      if (action === "open-implementation") {
+        router?.navigate(component);
+      }
+    });
+    on(componentView, "component-code-update", (e) => {
+      sendIntent({
+        type: "INTENT",
+        command: "setComponentCode",
+        payload: { component: e.detail.component, update: e.detail.update },
+      });
+    });
   }
   on(ed, "edge-menu-open", () => {
     menuOpen = true;
@@ -1652,7 +1776,14 @@ function activateScreen(screen, options = {}) {
   if (screen.kind === "component") {
     const appElement = document.getElementById("app");
     if (appElement) appElement.style.display = "none";
-    openComponentView(screen.id ?? "");
+    if (mirrorDoc?.getMap("registry").has(screen.id ?? "")) {
+      openComponentView(screen.id ?? "");
+    } else {
+      // The mirror lags the route at boot (the persistence sync is
+      // async): the deferred-open pattern the workdoc flow uses — the
+      // refresh re-activates the screen once the registry lands
+      pendingComponentOpen = screen.id;
+    }
     return;
   }
   // The graph screen
@@ -1667,6 +1798,7 @@ function activateScreen(screen, options = {}) {
   );
   if (schemaView && !schemaView.hidden) schemaView.close();
   if (componentView && !componentView.hidden) componentView.close();
+  pendingComponentOpen = null;
   const appElement = document.getElementById("app");
   if (appElement) appElement.style.display = "";
   if (screen.id && screen.id !== activeGraphId) {
@@ -2104,111 +2236,6 @@ async function init() {
   // The component view (work document #62): the actions ride the
   // sketch → specify → implement ladder. Save applies the rename-fork
   // rule; implement actions carry the scaffold and navigate
-  on(componentView, "component-action", async (e) => {
-    const { action, component } = e.detail;
-    const current = String(componentView?._component ?? component);
-    if (action === "close") {
-      router?.navigate({ kind: "graph", id: activeGraphId });
-      return;
-    }
-    if (action === "save") {
-      const data = /** @type {any} */ (componentView?._form?.data);
-      if (!data) return;
-      const newName = String(data.name || component);
-      const renamed = newName !== component;
-      let target = component;
-      if (renamed) {
-        sendIntent({
-          type: "INTENT",
-          command: "forkComponent",
-          payload: { component, to: newName },
-        });
-        target = newName;
-      }
-      sendIntent({
-        type: "INTENT",
-        command: "setSignature",
-        payload: {
-          component: target,
-          signature: {
-            inports: data.inports,
-            outports: data.outports,
-            description: data.description,
-            icon: data.icon,
-          },
-        },
-      });
-      if (renamed) {
-        // The fork takes over: the route follows the new name
-        router?.navigate({ kind: "component", id: newName });
-      }
-      return;
-    }
-    if (action === "fork") {
-      const to = `${component}-fork`;
-      sendIntent({
-        type: "INTENT",
-        command: "forkComponent",
-        payload: { component, to },
-      });
-      router?.navigate({ kind: "component", id: to });
-      return;
-    }
-    if (action === "implement-code") {
-      sendIntent({
-        type: "INTENT",
-        command: "implementInCode",
-        payload: {
-          component,
-          language: "javascript",
-          scaffold: codeScaffold(component),
-        },
-      });
-      // The scaffold lands through the intent path; the code area binds
-      // when the mirror picks the buffer up
-      const map = /** @type {any} */ (mirrorDoc.getMap("components"));
-      const ytext = await new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          map.unobserve(observe);
-          resolve(null);
-        }, 2000);
-        const observe = (/** @type {any} */ event) => {
-          if (event.target === map && map.get(component)?.get("code")) {
-            clearTimeout(timeout);
-            map.unobserve(observe);
-            resolve(map.get(component).get("code"));
-          }
-        };
-        map.observe(observe);
-        if (map.get(component)?.get("code")) {
-          clearTimeout(timeout);
-          map.unobserve(observe);
-          resolve(map.get(component).get("code"));
-        }
-      });
-      if (ytext) componentView?.bindCode(ytext, "javascript");
-      return;
-    }
-    if (action === "implement-graph") {
-      sendIntent({
-        type: "INTENT",
-        command: "implementAsGraph",
-        payload: { component, parentGraph: activeGraphId },
-      });
-      router?.navigate(component);
-      return;
-    }
-    if (action === "open-implementation") {
-      router?.navigate(component);
-    }
-  });
-  on(componentView, "component-code-update", (e) => {
-    sendIntent({
-      type: "INTENT",
-      command: "setComponentCode",
-      payload: { component: e.detail.component, update: e.detail.update },
-    });
-  });
   projectCorner?.addEventListener("workdoc-create", () => {
     // No naming gate: the document is created untitled and the view opens
     // in edit mode, where the title field and the body are both at hand

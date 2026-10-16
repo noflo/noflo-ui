@@ -289,21 +289,42 @@ describe("browser smoke: the code editor journey (work document #56)", {
     await editItem.waitFor({ timeout: 5000 });
     await editItem.click();
     const implement = page
-      .locator("noflo-modal")
+      .locator("noflo-component-view")
       .locator("text=Implement in code")
       .first();
     await implement.waitFor({ timeout: 10_000 });
     await implement.click();
 
-    // The code editor opens: the conf resolves, the relay arms, typing
+    // The code area binds: the conf resolves, the relay arms, typing
     // works without a crash (the browser-only breakage class)
-    await page.waitForFunction(
-      () => {
-        const editor = document.querySelector("noflo-code-editor");
-        return Boolean(editor?.hasAttribute("open"));
-      },
-      { timeout: 5000 },
-    );
+    try {
+      await page.waitForFunction(
+        () => {
+          const view = document.querySelector("noflo-component-view");
+          return Boolean(view?._view);
+        },
+        null,
+        { timeout: 4000 },
+      );
+    } catch {
+      const flow = await page.evaluate(() => {
+        const w = /** @type {any} */ (window);
+        const view = document.querySelector("noflo-component-view");
+        return {
+          action: w.__dbgAction ?? "never-fired",
+          bind: w.__dbgBind ?? "never",
+          buffer: w.__dbgBuffer ?? "never",
+          bindStep: w.__bindStep ?? "never",
+          impl: view?._implementation,
+          viewBound: Boolean(view?._view),
+        };
+      });
+      throw new Error(`FLOW: ${JSON.stringify(flow)}`);
+    }
+    await page.evaluate(() => {
+      const view = document.querySelector("noflo-component-view");
+      view?._view?.focus?.();
+    });
     await page.keyboard.type("// smoke");
 
     // No diagnostic signals: the surface must be complete and the relay
@@ -321,27 +342,18 @@ describe("browser smoke: the code editor journey (work document #56)", {
     // looked armed while edits silently never reached the engine):
     // reload the page — the edit must come back from the engine's doc
     await page.reload();
-    await page.waitForSelector("noflo-editor", { timeout: 15_000 });
-    // Re-open the same component's editor through the real flow
-    const nodeAfterReload = page.locator("noflo-node").first();
-    await nodeAfterReload.waitFor({ timeout: 10_000 });
-    await nodeAfterReload.click({ button: "right" });
-    await page
-      .locator("noflo-radial-menu")
-      .locator("text=Edit")
-      .first()
-      .click();
-    // A code-implemented component opens its code editor DIRECTLY (the
-    // edit-attempt routes by implementation kind — the modal's
-    // "Open implementation" is the signature-editor path)
+    // The component route re-opens its view: the deferred-open pattern
+    // re-activates the screen once the mirror lands (work document #62's
+    // activation, #57's boot lag) — the buffer binds without any clicks
     await page.waitForFunction(
-      () => Boolean(document.querySelector("noflo-code-editor")?.hasAttribute("open")),
-      { timeout: 10_000 },
+      () => Boolean(document.querySelector("noflo-component-view")?._view),
+      null,
+      { timeout: 15_000 },
     );
     // The typed comment survives: the engine applied the update
     const editorText = await page.evaluate(() => {
-      const editor = document.querySelector("noflo-code-editor");
-      return editor?._view?.state?.doc?.toString() ?? "";
+      const view = document.querySelector("noflo-component-view");
+      return view?._view?.state?.doc?.toString() ?? "";
     });
     assert.match(
       editorText,

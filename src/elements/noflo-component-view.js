@@ -15,6 +15,7 @@
  */
 
 import { emit } from "../events.js";
+import { codeEditorTheme } from "./noflo-code-editor.js";
 
 /** The styles for the signature form, fetched once (the mesh settings'
  * pattern — the jedison-generated markup needs the shared theme). */
@@ -42,6 +43,8 @@ export class NofloComponentView extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    // Custom element constructors must not touch attributes: the shell
+    // renders empty until open() — the overlay appears with the route
     this._component = "";
     /** @type {"stub" | "code" | "graph"} The implementation kind. */
     this._implementation = "stub";
@@ -59,10 +62,14 @@ export class NofloComponentView extends HTMLElement {
     this._docUpdate = null;
     /** The language the code buffer edits in. */
     this._language = "javascript";
+    /** Whether a route opened the view (the shell renders from then on). */
+    this._opened = false;
   }
 
   connectedCallback() {
-    this.render();
+    // The shell renders only once a route opened it: the element's
+    // pre-open state is an empty shadow, not a full-screen overlay
+    if (this._opened) this.render();
   }
 
   /**
@@ -93,6 +100,7 @@ export class NofloComponentView extends HTMLElement {
     this._implementation = implementation;
     this._cm = cm;
     this._language = codeLanguage;
+    this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
     this._mountSignatureForm(formSchema, signature);
@@ -221,7 +229,10 @@ export class NofloComponentView extends HTMLElement {
     this._view = new this._cm.EditorView({
       doc: this._ytext.toString(),
       extensions: [
-        ...this._cm.codeEditorTheme(this._cm),
+        // The custom theme precedes basicSetup: the first highlight
+        // style in the extension list wins (the code editor's documented
+        // pitfall)
+        ...codeEditorTheme(this._cm),
         this._cm.basicSetup,
         this._cm.javascript(),
         ...plugins,
