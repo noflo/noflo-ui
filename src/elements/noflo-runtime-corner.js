@@ -107,6 +107,9 @@ export class FlowRuntimeCorner extends FlowCornerElement {
    * @returns {string}
    */
   expandedHtml() {
+    // The base renders expandedHtml() unconditionally: the guard is the
+    // expansion state (the project corner's note)
+    if (!this.expanded) return "";
     const rows = this._runtimes
       .map((/** @type {any} */ runtime) => {
         const connection = this._runtimeConnections.get(
@@ -170,6 +173,11 @@ export class FlowRuntimeCorner extends FlowCornerElement {
           font-family: SourceCodePro, monospace;
           color: var(--node-text);
         }
+        /* Top corners stack the chip above their accordions (work document
+           #28's corner rule: bottom corners grow upward, top corners grow
+           downward) — the base's DOM order is panel-first for the bottom
+           corners, so the chip re-orders here */
+        .chip { order: -1; }
         .runtime { margin: 2px 0; }
         .runtime .badge { margin-left: 4px; }
         .runtime button { flex-shrink: 0; }
@@ -179,6 +187,13 @@ export class FlowRuntimeCorner extends FlowCornerElement {
 
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    shadow
+      .querySelector("[data-action='collapse']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        this.expanded = false;
+        this.render();
+      });
     // Expansion asks the Engine for a fresh runtime discovery (work
     // document #59): a quiet mesh still shows its cached population, and
     // the request rides the expansion transition, not every render

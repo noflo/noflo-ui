@@ -47,6 +47,49 @@ describe("runtime corner (work documents #59/#15/#28)", () => {
     el.remove();
   });
 
+  it("collapsed by default: the panel renders only while expanded", () => {
+    const el = feedRuntime(makeElement());
+    let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(shadow.querySelector(".chip"), "the chip stays");
+    assert.ok(
+      !shadow.querySelector(".panel"),
+      "collapsed renders no panel: the base calls expandedHtml() unconditionally",
+    );
+    el.expanded = true;
+    el.render();
+    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(shadow.querySelector(".panel"), "expanded renders the panel");
+    // Collapse closes: the panel is gone again
+    shadow
+      .querySelector("[data-action='collapse']")
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.equal(el.expanded, false, "the collapse button collapses");
+    assert.ok(
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".panel")),
+      "collapsed again: no panel",
+    );
+    el.remove();
+  });
+
+  it("top corners stack the chip above the accordion", () => {
+    const el = feedRuntime(makeElement());
+    el.expanded = true;
+    el.render();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(shadow.querySelector(".chip") && shadow.querySelector(".panel"));
+    // The corner grows downward: the chip re-orders ahead of the panel
+    // (the base's DOM order is panel-first for the bottom corners)
+    const style =
+      /** @type {HTMLElement} */ (shadow.querySelector("style")).textContent ??
+      "";
+    assert.match(
+      style,
+      /\.chip \{ order: -1; \}/,
+      "top corners grow downward: the chip leads visually",
+    );
+    el.remove();
+  });
+
   it("the chip summarizes the runtime population and its state", () => {
     const el = feedRuntime(makeElement());
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
