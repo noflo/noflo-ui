@@ -158,6 +158,7 @@ const RUN_STATE = {
  *   disconnect: (destinationHashHex: string) => Promise<void>,
  *   deploy: (destinationHashHex: string, graphId: string) => Promise<void>,
  *   run: (destinationHashHex: string, action: 'start' | 'stop') => Promise<void>,
+ *   fetchSchemas: (destinationHashHex: string, digests: string[]) => Promise<void>,
  *   stop: () => Promise<void>,
  * }}
  */
@@ -692,7 +693,59 @@ export function createRuntimeBridge({
     }
   }
 
-  return { attach, report, connect, disconnect, deploy, run, stop };
+  /**
+   * Fetches schema bodies from a connected runtime over `0x28`/`0x29`
+   * (work document #57): the runtime digest-verifies before serving;
+   * the bodies echo for the Glass's schema cache.
+   *
+   * @param {string} destinationHashHex
+   * @param {string[]} digests
+   */
+  async function fetchSchemas(destinationHashHex, digests) {
+    const connection = connections.get(destinationHashHex);
+    const client = connection?.client;
+    if (!client) {
+      postMessage({
+        kind: "runtime-schemas",
+        destinationHash: destinationHashHex,
+        schemas: [],
+      });
+      return;
+    }
+    try {
+      await client.schemas.fetch(digests);
+      const schemas = [];
+      for (const digest of digests) {
+        const body = client.schemas.body(digest);
+        if (body) schemas.push({ digest, body });
+      }
+      postMessage({
+        kind: "runtime-schemas",
+        destinationHash: destinationHashHex,
+        schemas,
+      });
+    } catch (/** @type {any} */ err) {
+      // The fetch failing is the ladder's miss: an empty answer, never a
+      // crash
+      postMessage({
+        kind: "runtime-schemas",
+        destinationHash: destinationHashHex,
+        schemas: [],
+      });
+      console.warn(`[runtime] schema fetch failed: ${err?.message ?? err}`);
+    }
+  }
+
+  return {
+    attach,
+    report,
+    connect,
+    disconnect,
+    deploy,
+    run,
+    fetchSchemas,
+    stop,
+  };
 }
 
 /**

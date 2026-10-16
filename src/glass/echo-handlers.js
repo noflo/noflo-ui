@@ -58,6 +58,9 @@ function formatBytes(bytes) {
  *   process listing into the Glass's runtime state.
  * @property {(report: any) => void} setRuntimeRun Take a runtime's run
  *   state into the Glass's runtime state.
+ * @property {(destinationHash: string, schemas: Array<{ digest: string, body: any }>) => void} [runtimeSchemasFetched]
+ *   The runtime-schemas echo arrived (work document #57): the Glass's
+ *   schema cache ingests the digest-verified bodies.
  * @property {(stream: string, entry: { message: string, status?: string, tone?: "ok" | "fail" | "" }) => void} [emitTelemetry]
  *   Publish a legible telemetry entry on the Glass's bus (work document
  *   #63): the fan-out point for the wires layer.
@@ -209,6 +212,11 @@ export function createEchoHandlers(deps) {
         status: data.status,
         tone: data.tone ?? "",
       });
+    },
+    "kind:runtime-schemas": (data) => {
+      // The digest-verified bodies (work document #57): the Glass's
+      // schema cache ingests — foreign pins resolve from here onward
+      deps.runtimeSchemasFetched?.(data.destinationHash, data.schemas ?? []);
     },
     "kind:mesh-telemetry": (data) => {
       // The Reticulum stream (work document #63 M2): mesh presence,

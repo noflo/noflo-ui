@@ -334,7 +334,8 @@ type UIWorkerMessage =
   | { type: 'MESH'; command: 'runtimeConnect'; payload: { destinationHash: string } }
   | { type: 'MESH'; command: 'runtimeDeploy'; payload: { destinationHash: string; graphId: string } }
   | { type: 'MESH'; command: 'runtimeRun'; payload: { destinationHash: string; action: 'start' | 'stop' } }
-  | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } };
+  | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } }
+  | { type: 'MESH'; command: 'runtimeSchemas'; payload: { destinationHash: string; digests: string[] } };
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
 // through `MESH grant` (work document #27); the intent only ever revokes.
@@ -472,6 +473,7 @@ type EngineUIMessage =
   | { kind: 'runtime-processes'; destinationHash: string; epochId: string | null; entries: Record<string, { component: string; type: string; state: number | string }> }
   | { kind: 'runtime-run'; destinationHash: string; state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown'; action?: number; requested?: boolean; error?: string }
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
+  | { kind: 'runtime-schemas'; destinationHash: string; schemas: Array<{ digest: string; body: any }> }
   | { kind: 'runtime-telemetry'; destinationHash: string; direction: 'in' | 'out'; message: string; status: 'TX' | 'RX'; time: number; tone?: 'ok' | 'fail' | '' }
   | { kind: 'mesh-telemetry'; category: 'announce' | 'interface' | 'peer'; message: string; status: string; time: number; tone?: 'ok' | 'fail' | ''; detail?: Record<string, any> }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
@@ -597,6 +599,13 @@ interface RuntimeTelemetry {
   status: 'TX' | 'RX';
   time: number;
   tone?: 'ok' | 'fail' | '';
+}
+// Schema retrieval (work document #57): the digest-verified 0x28/0x29
+// fetch for foreign schema pins — the offline ladder's exception path.
+// The bodies ride into the Glass's schema cache.
+interface RuntimeSchemas {
+  destinationHash: string;
+  schemas: Array<{ digest: string; body: any }>;
 }
 interface MeshTelemetry {
   category: 'announce' | 'interface' | 'peer';

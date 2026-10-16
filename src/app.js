@@ -219,6 +219,9 @@ let syncPanel = null;
 let runtimeCorner = null;
 /** The schema editor view (work document #57 update #1). */
 let schemaView = null;
+/** The pending schema-fetch awaiters (work document #57): the echoes
+ * resolve them once the bodies ingest. */
+const schemaCachePendingResolvers = /** @type {Array<() => void>} */ ([]);
 /** @type {FlowContextChip | null} */
 let contextChip = null;
 /** @type {FlowEditor | null} */
@@ -465,6 +468,15 @@ const echoHandlers = createEchoHandlers({
   // fan-out — the echo dispatch publishes, the bus buffers and fans out
   emitTelemetry: (stream, entry) => {
     telemetryBus().publish(stream, entry);
+  },
+  runtimeSchemasFetched: (_destinationHash, schemas) => {
+    for (const { body } of schemas) {
+      schemaCache().put(body);
+      if (schemaCachePendingResolvers.length > 0) {
+        const resolve = schemaCachePendingResolvers.shift();
+        resolve?.();
+      }
+    }
   },
   reloadIntoFreshBoot: () => {
     location.reload();
@@ -1413,6 +1425,41 @@ function isOpaqueDatatype(dataType) {
 }
 
 /**
+ * Fetches schema bodies from every connected runtime (work document #57):
+ * the bridge fetches over 0x28/0x29 digest-verified, and the echoes
+ * ingest into the Glass's schema cache.
+ *
+ * @param {string[]} digests
+ * @returns {Promise<void>} Resolves once the echoes have had their window.
+ */
+async function fetchRuntimeSchemas(digests) {
+  const destinations = [...runtimeConnections.entries()]
+    .filter(([, connection]) => connection.state === "connected")
+    .map(([hash]) => hash);
+  if (destinations.length === 0) return;
+  const awaiters = digests.map(
+    () =>
+      new Promise((resolve) => {
+        schemaCachePendingResolvers.push(() => resolve(undefined));
+      }),
+  );
+  for (const hash of destinations) {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeSchemas",
+      payload: { destinationHash: hash, digests },
+    });
+  }
+  // The echoes ingest as they arrive; a quiet window is the ladder's
+  // miss — the editor falls through to the fallback
+  await Promise.race([
+    Promise.all(awaiters),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
+  schemaCachePendingResolvers.length = 0;
+}
+
+/**
  * Opens the IIP value editor (work document #5 follow-up, upgraded per
  * #57): the schema-driven form renders from the port's schema reference
  * when one is declared — resolved through the project's schemas and the
@@ -1444,8 +1491,14 @@ async function _openIIPValueEditor(title, rawValue, dataType, schemaRef) {
         // The authored body is unparseable: fall through to the catalog
       }
     } else if (schemaRef.digest) {
-      // A foreign pin: the schema cache resolves by digest
-      const body = await schemaCache().get(schemaRef.digest);
+      // A foreign pin: the schema cache resolves by digest; a miss asks
+      // the connected runtimes (the 0x28/0x29 fetch — the offline
+      // ladder's exception path) and re-reads once the echoes ingest
+      let body = await schemaCache().get(schemaRef.digest);
+      if (!body) {
+        await fetchRuntimeSchemas([schemaRef.digest]);
+        body = await schemaCache().get(schemaRef.digest);
+      }
       if (body) {
         schema = body;
         schemaLabel = schemaRef.id;

@@ -527,6 +527,17 @@
  */
 
 /**
+ * Appendix A extension (work document #57): fetch schema bodies from a
+ * connected runtime over `0x28`/`0x29` — the digest-verified retrieval
+ * for foreign schema pins. The bodies ride the `runtime-schemas` echo.
+ *
+ * @typedef {Object} MeshRuntimeSchemasMessage
+ * @property {'MESH'} type
+ * @property {'runtimeSchemas'} command
+ * @property {{ destinationHash: string, digests: string[] }} payload
+ */
+
+/**
  * Appendix A extension (work document #23): turn nodes into a subgraph.
  * The engine creates the child graph, moves the nodes into it, exports the
  * boundary connections as ports, replaces the nodes with a single subgraph
@@ -643,6 +654,7 @@
  *   | MeshRuntimeDeployMessage
  *   | MeshRuntimeRunMessage
  *   | MeshRuntimeDisconnectMessage
+ *   | MeshRuntimeSchemasMessage
  *   | MeshPlainMessage} UIWorkerMessage
  */
 
@@ -727,6 +739,7 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "runtimeDeploy" },
   { type: "MESH", command: "runtimeRun" },
   { type: "MESH", command: "runtimeDisconnect" },
+  { type: "MESH", command: "runtimeSchemas" },
 ];
 
 /**
@@ -749,6 +762,7 @@ export const MESH_COMMANDS = [
   "runtimeDeploy",
   "runtimeRun",
   "runtimeDisconnect",
+  "runtimeSchemas",
 ];
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -1030,6 +1044,19 @@ export const MESH_COMMANDS = [
  * Engine already holds for discovery. Link-level telemetry lives in the
  * subsystems that own their links.
  *
+ * @typedef {Object} RuntimeSchemasEcho
+ * @property {'runtime-schemas'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {Array<{ digest: string, body: any }>} schemas The
+ *   digest-verified bodies the runtime served.
+ */
+
+/**
+ * Reticulum telemetry (work document #63 M2): one legible mesh event per
+ * echo — the announce stream and the interface lifecycle, over state the
+ * Engine already holds for discovery. Link-level telemetry lives in the
+ * subsystems that own their links.
+ *
  * @typedef {Object} MeshTelemetryEcho
  * @property {'mesh-telemetry'} kind
  * @property {'announce' | 'interface' | 'peer'} category
@@ -1126,6 +1153,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeRunEcho
  *   | RuntimeOpRejectedEcho
  *   | RuntimeTelemetryEcho
+ *   | RuntimeSchemasEcho
  *   | MeshTelemetryEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
@@ -1176,6 +1204,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-run" },
   { kind: "runtime-op-rejected" },
   { kind: "runtime-telemetry" },
+  { kind: "runtime-schemas" },
   { kind: "mesh-telemetry" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
