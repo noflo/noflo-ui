@@ -3,12 +3,9 @@ import net from "node:net";
 import { describe, it } from "node:test";
 import * as Repeat from "@noflo/core/components/Repeat.js";
 import {
-  CMD_CRDT_SYNC_REQ,
   CMD_PROCESS_LIST_REQ,
   COMPONENT_TYPE,
   EXECUTION_STATE,
-  encodeCrdtStaleEpoch,
-  encodeCrdtUpToDate,
   encodeProcessList,
 } from "@noflo/fbp-protocol";
 import { GraphModel } from "@noflo/graph";
@@ -182,38 +179,16 @@ async function bootRuntime({ port, anchorHashHex, anchorPubkeyHex, saltHex }) {
     catalog: { signatures: () => ({}) },
     componentLoader: loader,
     capabilityPolicy,
+    capabilities: 0xff,
     autostart: false,
   });
-  // Upstream bug (@noflo/runtime 2.0.0-alpha.1): the graph protocol's
-  // sync-reply encoders drop the plane id — encodeCrdtStaleEpoch(current,
-  // hash) puts the epoch in the plane-id slot and the resource hash goes
-  // undefined, and encodeCrdtUpToDate() runs without plane or epoch. The
-  // wire format (noflo board WD #4 update #26) is three- and two-argument;
-  // the harness re-registers the handler until the package fixes it.
-  runtime.server.registerHandler(
-    CMD_CRDT_SYNC_REQ,
-    async (/** @type {any} */ decoded, /** @type {any} */ context) => {
-      const current = await runtime.graph.epoch();
-      if (decoded.epochId === current) {
-        runtime.server.send(
-          encodeCrdtUpToDate(decoded.planeId, current),
-          context,
-        );
-        return;
-      }
-      const bytes = new TextEncoder().encode(graph.canonicalString());
-      const resourceHash = await runtime.graph.resourceProvider(bytes);
-      runtime.server.send(
-        encodeCrdtStaleEpoch(decoded.planeId, current, resourceHash),
-        context,
-      );
-    },
-  );
-  // Upstream gap (@noflo/runtime 2.0.0-alpha.1): `0x44` has no handler —
-  // the §8 process listing is not implemented yet, so a client's request
-  // draws silence. The harness derives the listing from the graph model:
-  // declared components, elementary kind, execution state from whether a
-  // network is built.
+  // Upstream gap (@noflo/runtime, PR noflo/noflo#1085 pending release):
+  // `0x44` has no handler — the §8 process listing is not implemented yet,
+  // so a client's request draws silence. The harness derives the listing
+  // from the graph model: declared components, elementary kind, execution
+  // state from whether a network is built. The graph protocol's sync-reply
+  // plane-id bug needed the same treatment until alpha.5, where it is
+  // fixed upstream and this harness dropped its patch.
   runtime.server.registerHandler(
     CMD_PROCESS_LIST_REQ,
     (/** @type {any} */ decoded, /** @type {any} */ context) => {
