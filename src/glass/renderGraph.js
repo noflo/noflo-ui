@@ -82,8 +82,8 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       perNode = { in: {}, out: {} };
       usage.set(nodeId, perNode);
     }
-    const slots =
-      perNode[direction][portName] ?? (perNode[direction][portName] = []);
+    if (!perNode[direction][portName]) perNode[direction][portName] = [];
+    const slots = perNode[direction][portName];
     if (!slots.includes(index)) {
       slots.push(index);
       slots.sort((a, b) => a - b);

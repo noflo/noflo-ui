@@ -17,7 +17,8 @@ function makeDeps() {
   const record =
     (/** @type {string} */ name) =>
     (...args) => {
-      (calls[name] ??= []).push(args);
+      if (!calls[name]) calls[name] = [];
+      calls[name].push(args);
     };
   return {
     calls,
@@ -28,7 +29,8 @@ function makeDeps() {
       return this.narration;
     },
     setNarration(/** @type {any} */ narration) {
-      (calls.setNarration ??= []).push([narration]);
+      if (!calls.setNarration) calls.setNarration = [];
+      calls.setNarration.push([narration]);
       this.narration = narration;
     },
     refreshSyncPanel: record("refreshSyncPanel"),

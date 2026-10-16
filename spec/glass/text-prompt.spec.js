@@ -32,7 +32,7 @@ function clickAction(value, kind = "text") {
     document.querySelector(`noflo-modal[data-prompt="${kind}"]`)
   );
   const button = /** @type {HTMLElement} */ (
-    /** @type {ShadowRoot} */ (modal?.shadowRoot).querySelector(
+    /** @type {ShadowRoot} */ (modal.shadowRoot).querySelector(
       `.modal-footer button[value='${value}']`,
     )
   );
