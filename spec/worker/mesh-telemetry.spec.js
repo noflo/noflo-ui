@@ -68,7 +68,10 @@ describe("mesh telemetry tap (work document #63 M2)", () => {
     const echo = echoes.find((e) => e.kind === "mesh-telemetry");
     assert.ok(echo, "the FBP announce passes without any grant");
     assert.equal(echo.status, "FBP");
-    assert.match(echo.message, /runtime "workshop" · v2 · …0708090a/);
+    assert.match(
+      echo.message,
+      /runtime "workshop" · v2 · aabbccddeeff0102030405060708090a/,
+    );
     assert.equal(echo.detail.nodeName, "workshop");
     assert.equal(echo.detail.aspect, "fbp.runtime");
     assert.equal(echo.time > 0, true);
@@ -86,7 +89,10 @@ describe("mesh telemetry tap (work document #63 M2)", () => {
     const granted = echoes.filter((e) => e.kind === "mesh-telemetry")[1];
     assert.ok(granted, "the granted peer's announce echoes");
     assert.equal(granted.status, "ANNOUNCE");
-    assert.match(granted.message, /announce · …0708090a/);
+    assert.match(
+      granted.message,
+      /announce · aabbccddeeff0102030405060708090a/,
+    );
     assert.match(granted.message, /app-data "hello from lxmf"/);
     assert.match(granted.message, /ratcheted/);
     assert.match(granted.detail.identityHash, /^4242/);

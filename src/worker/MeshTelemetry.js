@@ -20,19 +20,16 @@ import { decodeAnnounceAppData } from "../../vendor/fbp-protocol.js";
 import { toHex } from "../../vendor/reticulum-core.js";
 
 /**
- * The last four bytes of a hash, for the compact display form.
+ * The full hash in hex: the wires log is a developer surface, and a
+ * truncated Reticulum hash cannot be copied or correlated — the peers
+ * list, the grants, and the runtime corner all speak full hashes.
  *
  * @param {Uint8Array | string | null | undefined} hash
  * @returns {string}
  */
-function hashSuffix(hash) {
+function hashLabel(hash) {
   if (!hash) return "unknown";
-  const bytes =
-    typeof hash === "string"
-      ? // Hex form: the suffix is the last four bytes' hex
-        hash.slice(-8)
-      : toHex(hash.slice(-4));
-  return `…${bytes}`;
+  return typeof hash === "string" ? hash : toHex(hash);
 }
 
 /**
@@ -134,7 +131,7 @@ export function createMeshTelemetry({ postMessage, isPeer = () => false }) {
       post({
         category: "announce",
         status: "FBP",
-        message: `runtime "${fbp.nodeName}" · v${fbp.protocolVersion} · ${hashSuffix(detail.destinationHash)}`,
+        message: `runtime "${fbp.nodeName}" · v${fbp.protocolVersion} · ${hashLabel(detail.destinationHash)}`,
         detail: {
           destinationHash: destinationHex,
           ...(identityHex ? { identityHash: identityHex } : {}),
@@ -154,7 +151,7 @@ export function createMeshTelemetry({ postMessage, isPeer = () => false }) {
     post({
       category: "announce",
       status: "ANNOUNCE",
-      message: `announce · ${hashSuffix(detail.destinationHash)}${summary}${ratchet}`,
+      message: `announce · ${hashLabel(detail.destinationHash)}${summary}${ratchet}`,
       detail: {
         destinationHash: destinationHex,
         ...(identityHex ? { identityHash: identityHex } : {}),
@@ -169,8 +166,8 @@ export function createMeshTelemetry({ postMessage, isPeer = () => false }) {
    * show.
    *
    * @param {boolean} established
-   * @param {string} label The peer's identity suffix when resolved, the
-   *   link id's otherwise.
+   * @param {string} label The peer's full identity hash when resolved,
+   *   the full link id otherwise.
    */
   function peerEvent(established, label) {
     post({
@@ -194,9 +191,7 @@ export function createMeshTelemetry({ postMessage, isPeer = () => false }) {
    * @param {boolean} allowed The policy's verdict.
    */
   function linkPolicy(remoteIdentityHash, initiator, allowed) {
-    const peer = remoteIdentityHash
-      ? `…${remoteIdentityHash.slice(-12)}`
-      : "unidentified";
+    const peer = remoteIdentityHash ?? "unidentified";
     post({
       category: "peer",
       status: allowed ? "ALLOW" : "REFUSE",

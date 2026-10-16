@@ -148,7 +148,7 @@ async function defaultCreateProvider(
         context,
       );
       console.info(
-        `[mesh] linkPolicy: peer …${context.remoteIdentityHash?.slice(-12) ?? "unidentified"}, ${context.initiator ? "initiator" : "responder"}, ${allowed ? "ALLOW" : "REFUSE"}`,
+        `[mesh] linkPolicy: peer ${context.remoteIdentityHash ?? "unidentified"}, ${context.initiator ? "initiator" : "responder"}, ${allowed ? "ALLOW" : "REFUSE"}`,
       );
       // The verdict is the sync narrative's diagnosis line (work document
       // #63 M2 review): why sync does not happen with a peer is answered
@@ -2424,20 +2424,13 @@ export async function createMeshSync({
       // peer's identity when the mapping resolved it
       for (const linkId of payload.added ?? []) {
         const identityHash = String(identityByLink.get(linkId) ?? "");
-        meshTelemetry.peerEvent(
-          true,
-          identityHash
-            ? `…${identityHash.slice(-12)}`
-            : `link …${String(linkId).slice(-12)}`,
-        );
+        meshTelemetry.peerEvent(true, identityHash || `link ${String(linkId)}`);
       }
       for (const linkId of payload.removed ?? []) {
         const identityHash = String(identityByLink.get(linkId) ?? "");
         meshTelemetry.peerEvent(
           false,
-          identityHash
-            ? `…${identityHash.slice(-12)}`
-            : `link …${String(linkId).slice(-12)}`,
+          identityHash || `link ${String(linkId)}`,
         );
       }
       // A peer that connected or dropped flips its reachability state
