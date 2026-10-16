@@ -28,6 +28,7 @@
     "@reticulum/dacar": "^1.5.0",
     "@reticulum/lxmf": "^0.9.7",
     "@reticulum/websocket-server-node": "^0.9.7",
+    "ajv": "^8.20.0",
     "codemirror": "^6.0.2",
     "eventemitter3": "^5.0.4",
     "jedison": "^1.13.0",

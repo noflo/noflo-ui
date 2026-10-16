@@ -109,8 +109,8 @@ describe("schema form (work document #57)", () => {
     const rows = [...shadow.querySelectorAll(".row")];
     const invalid = rows.filter((row) => row.classList.contains("invalid"));
     assert.ok(invalid.length >= 2, "the invalid controls are flagged");
-    assert.match(shadow.textContent ?? "", /expected string/);
-    assert.match(shadow.textContent ?? "", /≤ 10/);
+    assert.match(shadow.textContent ?? "", /must be string/);
+    assert.match(shadow.textContent ?? "", /must be <= 10/);
     // Fix both invalid controls: the count row's bounds error clears with
     // the name row's type error
     const nameInput = /** @type {HTMLInputElement} */ (
@@ -133,6 +133,33 @@ describe("schema form (work document #57)", () => {
       countInput.dispatchEvent(new Event("change", { bubbles: true }));
     });
     assert.equal(change.isValid, true, "fixing the values clears the errors");
+    el.remove();
+  });
+
+  it("the full Tier B vocabulary validates the fallback subtree", async () => {
+    // `pattern` is outside the rendering subset: the subtree falls back
+    // to the raw JSON editor, and the full validator still enforces it —
+    // the form and the validator never silently disagree
+    const el = makeForm();
+    el.schema = {
+      type: "object",
+      properties: { fancy: { type: "string", pattern: "^a" } },
+    };
+    el.data = { fancy: "bee" };
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.match(shadow.textContent ?? "", /must match pattern/);
+    // A matching value clears it
+    const textarea = /** @type {HTMLTextAreaElement} */ (
+      shadow.querySelector("textarea")
+    );
+    textarea.value = '"apple"';
+    textarea.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.doesNotMatch(
+      /** @type {ShadowRoot} */ (el.shadowRoot).textContent ?? "",
+      /must match pattern/,
+    );
     el.remove();
   });
 

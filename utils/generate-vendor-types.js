@@ -126,6 +126,12 @@ const shims = [
     body: 'export * from "@noflo/graph";\n',
   },
   {
+    // Ajv 8 ships its own declarations for the 2020-12 entry; the class
+    // is the module's default export
+    name: "ajv",
+    body: 'import Ajv2020 from "ajv/dist/2020";\nexport default Ajv2020;\nexport * from "ajv/dist/2020";\n',
+  },
+  {
     // @noflo/runtime-client ships its own declarations next to the entry;
     // the generated declarations reference @noflo/fbp-protocol,
     // @noflo/graph + @reticulum/core (siblings), all resolving through

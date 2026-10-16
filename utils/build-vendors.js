@@ -278,6 +278,16 @@ const builds = [
     plugins: [siblingExternals(yjsSibling)],
   },
   {
+    // Ajv's 2020-12 class: the editor's Tier B validator (work document
+    // #57; the noflo-side normative rule set puts full JSON Schema
+    // validation in editor bundles). Ajv compiles schemas to functions at
+    // runtime — the app shells carry no CSP that would restrict it
+    entryPoints: {
+      ajv: resolve(here, "../node_modules/ajv/dist/2020.js"),
+    },
+    ...vendor,
+  },
+  {
     entryPoints: {
       "fontawesome-icons": resolve(here, "./icon-map.js"),
     },

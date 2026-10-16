@@ -22,7 +22,24 @@
 
 import { emit } from "../events.js";
 import { buildFormNode } from "../library/forms/subset.js";
-import { validate } from "../library/forms/validate.js";
+import { tierBValidate } from "../library/forms/tierB.js";
+import { validate as subsetValidate } from "../library/forms/validate.js";
+
+/**
+ * The default validator chain: the full Tier B vocabulary first — a
+ * schema that compiles validates fully, whatever keywords it carries —
+ * falling back to the in-repo subset validator when the schema does not
+ * compile. Validation never silently passes.
+ *
+ * @param {any} value
+ * @param {any} schema
+ * @returns {import("../library/forms/validate.js").ValidationError[]}
+ */
+function defaultValidator(value, schema) {
+  const full = tierBValidate(value, schema);
+  if (full) return full;
+  return subsetValidate(value, schema);
+}
 
 /** Styles: the §12 form-row grammar (muted label, control, hairlines). */
 const STYLES = `
@@ -180,6 +197,8 @@ export class NofloSchemaForm extends HTMLElement {
     this._root = null;
     /** @type {((value: any, schema: any) => import("../library/forms/validate.js").ValidationError[]) | null} */
     this._validator = null;
+    /** The default chain runs when no explicit validator is set. */
+    this._defaultValidator = defaultValidator;
     /** @type {Map<string, HTMLElement>} Error message elements by control path. */
     this._errorSlots = new Map();
   }
@@ -272,10 +291,7 @@ export class NofloSchemaForm extends HTMLElement {
 
   /** Runs validation and reports the change. */
   revalidate() {
-    const validator =
-      this._validator ??
-      ((/** @type {any} */ value, /** @type {any} */ schema) =>
-        validate(value, schema));
+    const validator = this._validator ?? this._defaultValidator;
     this._errors = validator(this._data, this._schema) ?? [];
     emit(this, "form-change", {
       data: this._data,
