@@ -102,7 +102,7 @@ export function routeToScreen(route) {
  *   route: () => GlassRoute,
  *   graphId: () => string,
  *   projectId: () => string,
- *   navigate: (graphId: string, options?: { replace?: boolean }) => void,
+ *   navigate: (target: string | { kind: string, id: string | null }, options?: { replace?: boolean }) => void,
  *   destroy: () => void,
  * }}
  */
@@ -168,10 +168,14 @@ export function createRouter(options = {}) {
      * Navigates to a screen (work document #62): a graph id keeps the
      * legacy shape, a screen descriptor builds the kind route.
      *
-     * @param {string | { kind: string, id: string | null }} target
+     * @param {string | { kind: string, id: string | null }} target A
+     *   graph id (string form) or a screen descriptor.
      * @param {{ replace?: boolean }} [navOptions]
      */
-    navigate(target, navOptions = {}) {
+    navigate(
+      /** @type {string | { kind: string, id: string | null }} */ target,
+      /** @type {{ replace?: boolean }} */ navOptions = {},
+    ) {
       const screen =
         typeof target === "string" ? { kind: "graph", id: target } : target;
       const hash = buildScreenHash(current.projectId, screen);

@@ -179,6 +179,9 @@ let pendingWorkDocCreate = false;
 let pendingWorkDocOpen = /** @type {string | null} */ (null);
 /** Whether the deferred open lands in edit mode (a fresh creation). */
 let pendingWorkDocEditing = false;
+/** The freshly created document whose first open lands in edit mode (work
+ * document #9: naming is the whole prompt). */
+let pendingWorkDocEditId = /** @type {string | null} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -412,9 +415,11 @@ const echoHandlers = createEchoHandlers({
   workDocCreated: (payload) => {
     if (!pendingWorkDocCreate) return;
     pendingWorkDocCreate = false;
-    // The document exists: its screen opens in edit mode (the e2e loop
-    // lands the user in the editor they just named)
-    activateScreen({ kind: "doc", id: payload.id }, { editing: true });
+    // The document exists: navigate to its screen (the route change
+    // activates it — edit mode for a fresh creation rides the deferred
+    // open, since the replica may confirm after the echo)
+    pendingWorkDocEditId = payload.id;
+    router?.navigate({ kind: "doc", id: payload.id });
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -1413,13 +1418,19 @@ function activateScreen(screen, options = {}) {
       document.getElementById("project-corner")
     )?.setActiveDoc(screen.id);
     const workdocs = mirrorDoc?.getMap("workdocs");
+    // A fresh creation's first open lands in edit mode (naming is the
+    // whole prompt); the pairing consumes once
+    const editing = options.editing ?? screen.id === pendingWorkDocEditId;
+    if (screen.id === pendingWorkDocEditId) {
+      pendingWorkDocEditId = null;
+    }
     if (mirrorDoc && workdocs?.get(screen.id ?? "")) {
-      openWorkDoc(screen.id ?? "", options.editing ?? false);
+      openWorkDoc(screen.id ?? "", editing);
     } else {
       // The mirror has not loaded the document yet: the first projection
       // opens the view (the reload path, work document #9)
       pendingWorkDocOpen = screen.id;
-      pendingWorkDocEditing = options.editing ?? false;
+      pendingWorkDocEditing = editing;
     }
     return;
   }
