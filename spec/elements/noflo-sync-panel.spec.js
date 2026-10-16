@@ -5,6 +5,30 @@ import "./utils/register.js";
 
 import "../../src/elements/noflo-sync-panel.js";
 
+/**
+ * A query surface that spans the corner's own shadow (chip content) and
+ * the panel portal's shadow (panel content) — the space manager moved
+ * the panels into the side containers, and the tests need to see both.
+ *
+ * @param {any} el
+ */
+function _dualShadow(el) {
+  const chip = el.shadowRoot;
+  const panel = el._panelPortal?.shadowRoot ?? null;
+  return {
+    querySelector: (/** @type {string} */ s) =>
+      chip?.querySelector(s) ?? panel?.querySelector(s) ?? null,
+    querySelectorAll: (/** @type {string} */ s) => {
+      const a = [...(chip?.querySelectorAll(s) ?? [])];
+      const b = [...(panel?.querySelectorAll(s) ?? [])];
+      return a.length > 0 ? a : b;
+    },
+    get textContent() {
+      return (chip?.textContent ?? "") + (panel?.textContent ?? "");
+    },
+  };
+}
+
 const OWNER_HASH = "a".repeat(32);
 const PEER_HASH = "b".repeat(32);
 
@@ -64,7 +88,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
   it("renders the segmented chip in the airline grammar when connected", () => {
     const el = makeElement();
     feedConnected(el);
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
     // Segments: up to date (calm), peers, Owner, yjs, mesh, history —
@@ -87,7 +128,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setVisible(true);
     // Connected but no peers yet: the mesh is waiting, not syncing
     el.setSyncStatus({ connected: true, synced: false, peers: 0 });
-    let shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    let shadow = el.shadowRoot;
     const waiting = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
     assert.match(waiting.textContent ?? "", /working locally/);
     assert.ok(
@@ -101,7 +142,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     // A peer joined, bits moving: syncing (neutral)
     el.setPeers([PEER_HASH]);
     el.setSyncStatus({ connected: true, synced: false, peers: 1 });
-    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    shadow = el.shadowRoot;
     const syncing = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
     assert.match(syncing.textContent ?? "", /syncing/);
     assert.ok(
@@ -110,7 +151,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       "the steady syncing state is neutral: color is reserved for states that need attention",
     );
     el.setSyncStatus({ connected: false, synced: false, peers: 0 });
-    shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    shadow = el.shadowRoot;
     const offline = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
     assert.ok(
       offline.classList.contains("offline"),
@@ -127,7 +168,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       operation: "mesh.connect",
       stage: "transport",
     });
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const stage = /** @type {HTMLElement} */ (shadow.querySelector(".seg"));
     assert.match(stage.textContent ?? "", /Connecting to the relay/);
     el.remove();
@@ -138,8 +196,25 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     feedConnected(el);
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    const panel = shadow.querySelector(".panel");
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
+    const panel = el.panelShadow.querySelector(".panel");
     assert.ok(panel, "expanded renders the panel");
     const peerItems = [...shadow.querySelectorAll(".list-item")].filter(
       (item) => item.textContent?.includes(PEER_HASH),
@@ -171,7 +246,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       true,
       "a join request is major: the corner expands",
     );
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const requestSegment = /** @type {HTMLElement} */ (
       shadow.querySelector(".seg.attention")
     );
@@ -200,7 +292,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setJoinRequests([
       { identityHash: PEER_HASH, destinationHash: null, firstSeen: 1 },
     ]);
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     /** @type {any[]} */
     const decisions = [];
     el.addEventListener("sync-decline", (e) =>
@@ -220,7 +329,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     feedConnected(el);
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     /** @type {boolean} */
     let inviteRequested = false;
     el.addEventListener("sync-invite", () => {
@@ -241,7 +367,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     );
     // The invite renders as a scannable QR tile (work document #28 update
     // #3): the SVG generation is async, so it lands after a tick
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     const qr = shadow.querySelector("#panel-invite-qr svg");
     assert.ok(qr, "the invite renders an SVG QR code");
     assert.match(
@@ -264,7 +390,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     });
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.ok(
       !shadow.querySelector("[data-action='create-invite']"),
       "no invite generation for participants",
@@ -293,7 +436,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setPeers(["link-1"], { "link-1": PEER_HASH });
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const items = [...shadow.querySelectorAll(".list-item")].map(
       (item) => item.textContent ?? "",
     );
@@ -318,7 +478,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     });
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const items = [...shadow.querySelectorAll(".list-item")];
     assert.equal(
       items.length,
@@ -336,7 +513,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setPeers(["link-1"]);
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.match(
       shadow.querySelector(".list-item")?.textContent ?? "",
       /link-1/,
@@ -350,7 +544,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     feedConnected(el);
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const input = /** @type {HTMLInputElement} */ (
       shadow.querySelector("#join-invite")
     );
@@ -377,20 +588,37 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const el = makeElement();
     feedConnected(el);
     el.setJoinProgress({ stage: "wait_response" });
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const chip = shadow.querySelector(".chip");
     assert.match(chip?.textContent ?? "", /joining/);
     el.expanded = true;
     el.render();
     assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector(".panel")).textContent ??
-        "",
+      /** @type {HTMLElement} */ (el.panelShadow.querySelector(".panel"))
+        .textContent ?? "",
       /Last join/,
     );
     el.setJoinProgress({ stage: "declined", reason: "host_lacks_authority" });
     assert.match(
-      /** @type {HTMLElement} */ (shadow.querySelector(".panel")).textContent ??
-        "",
+      /** @type {HTMLElement} */ (el.panelShadow.querySelector(".panel"))
+        .textContent ?? "",
       /cannot grant access/,
       "decline reasons render in plain language",
     );
@@ -408,7 +636,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const el = makeElement();
     feedConnected(el);
     el.setPendingIntents(3);
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const chip = shadow.querySelector(".chip");
     assert.match(chip?.textContent ?? "", /3 pending/);
     el.setPendingIntents(0);
@@ -425,7 +670,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setReadOnly(true);
     el.expanded = true;
     el.render();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.ok(
       !shadow.querySelector("[data-action='create-invite']"),
       "no invite generation for observers",
@@ -434,7 +696,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       !shadow.querySelector("[data-action='join']"),
       "no join form for observers",
     );
-    assert.ok(shadow.querySelector(".panel"), "status still renders");
+    assert.ok(el.panelShadow.querySelector(".panel"), "status still renders");
     el.setJoinRequests([
       { identityHash: PEER_HASH, destinationHash: null, firstSeen: 1 },
     ]);
@@ -448,7 +710,24 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
   it("compacts to icons on phone layouts", () => {
     const el = makeElement();
     feedConnected(el);
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     const style =
       /** @type {HTMLElement} */ (shadow.querySelector("style")).textContent ??
       "";
@@ -468,10 +747,27 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     el.setMinified(true);
     assert.equal(el.cornerState, "minified");
     assert.ok(el.hasAttribute("data-minified"));
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.ok(shadow.querySelector(".chip"), "the chip stays");
     assert.ok(
-      !shadow.querySelector(".panel"),
+      !el.panelShadow.querySelector(".panel"),
       "still collapsed: minified is a chip state, not an expanded one",
     );
     el.setMinified(false);
@@ -503,7 +799,24 @@ describe("sync panel segment accordions (work document #63)", () => {
 
   it("the yjs segment opens its own accordion, not the panel", async () => {
     const el = await feedWires();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.match(shadow.textContent ?? "", /yjs/, "the segment renders");
     assert.ok(
       !shadow.querySelector(".telemetry"),
@@ -545,7 +858,24 @@ describe("sync panel segment accordions (work document #63)", () => {
 
   it("live traffic paints while open and stops when closed", async () => {
     const el = await feedWires();
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     shadow
       .querySelector('[data-segment-toggle="yjs"]')
       ?.dispatchEvent(new Event("click", { bubbles: true }));

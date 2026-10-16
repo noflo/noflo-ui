@@ -45,6 +45,7 @@ export class FlowContextChip extends FlowCornerElement {
   constructor() {
     super();
     this.expandable = false;
+    this.panelSide = "left";
     this.chipTitle = "What you are editing";
     this._label = "";
     /** The graph one level up; empty at root graphs, where the up button
@@ -409,66 +410,67 @@ export class FlowContextChip extends FlowCornerElement {
   }
 
   wireEvents() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    for (const head of shadow.querySelectorAll("[data-section]")) {
-      head.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        const id = String(head.getAttribute("data-section") ?? "");
-        if (this._openSections.has(id)) {
-          this._openSections.delete(id);
-        } else {
-          this._openSections.add(id);
-        }
-        this.render();
-      });
-      head.addEventListener("keydown", (/** @type {any} */ event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        event.stopPropagation();
-        const id = String(head.getAttribute("data-section") ?? "");
-        if (this._openSections.has(id)) {
-          this._openSections.delete(id);
-        } else {
-          this._openSections.add(id);
-        }
-        this.render();
-      });
-    }
-    // Tree entries navigate: the panel collapses after navigation (the
-    // dismissal contract)
-    for (const row of shadow.querySelectorAll("[data-navigate]")) {
-      const navigate = (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "explorer-navigate", {
-          kind: String(row.getAttribute("data-navigate") ?? ""),
-          id: String(row.getAttribute("data-navigate-id") ?? ""),
+    for (const shadow of this._eventRoots()) {
+      for (const head of shadow.querySelectorAll("[data-section]")) {
+        head.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          const id = String(head.getAttribute("data-section") ?? "");
+          if (this._openSections.has(id)) {
+            this._openSections.delete(id);
+          } else {
+            this._openSections.add(id);
+          }
+          this.render();
         });
-        this._explorerOpen = false;
-        this.render();
-      };
-      row.addEventListener("click", navigate);
-      row.addEventListener("keydown", (/** @type {any} */ event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        navigate(event);
-      });
+        head.addEventListener("keydown", (/** @type {any} */ event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          event.stopPropagation();
+          const id = String(head.getAttribute("data-section") ?? "");
+          if (this._openSections.has(id)) {
+            this._openSections.delete(id);
+          } else {
+            this._openSections.add(id);
+          }
+          this.render();
+        });
+      }
+      // Tree entries navigate: the panel collapses after navigation (the
+      // dismissal contract)
+      for (const row of shadow.querySelectorAll("[data-navigate]")) {
+        const navigate = (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "explorer-navigate", {
+            kind: String(row.getAttribute("data-navigate") ?? ""),
+            id: String(row.getAttribute("data-navigate-id") ?? ""),
+          });
+          this._explorerOpen = false;
+          this.render();
+        };
+        row.addEventListener("click", navigate);
+        row.addEventListener("keydown", (/** @type {any} */ event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          navigate(event);
+        });
+      }
+      shadow
+        .querySelector("[data-action='settings']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "open-settings", undefined);
+        });
+      shadow
+        .querySelector("[data-action='up']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          if (this._docId) {
+            emit(this, "workdoc-close", { docId: this._docId });
+            return;
+          }
+          emit(this, "navigate-up", undefined);
+        });
     }
-    shadow
-      .querySelector("[data-action='settings']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "open-settings", undefined);
-      });
-    shadow
-      .querySelector("[data-action='up']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        if (this._docId) {
-          emit(this, "workdoc-close", { docId: this._docId });
-          return;
-        }
-        emit(this, "navigate-up", undefined);
-      });
   }
 }
 

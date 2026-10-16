@@ -10,7 +10,7 @@
  * (compact viewports), Expanded (the accordion).
  */
 
-import { cornerStyles, FlowCornerElement } from "./corner-element.js";
+import { FlowCornerElement } from "./corner-element.js";
 
 /** @param {unknown} value @returns {string} */
 function escapeHtml(value) {
@@ -41,6 +41,7 @@ export class FlowProjectCorner extends FlowCornerElement {
     /** Corners hide when there is nothing to show (work document #28). */
     this._visible = false;
     this.chipTitle = "Project work documents";
+    this.panelSide = "left";
   }
 
   /**
@@ -292,43 +293,44 @@ export class FlowProjectCorner extends FlowCornerElement {
   }
 
   wireEvents() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    shadow
-      .querySelector("[data-action='create-doc']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "workdoc-create", undefined);
-      });
-    shadow
-      .querySelector("[data-action='create-schema']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "schema-create", undefined);
-      });
-    for (const button of shadow.querySelectorAll("[data-schema-open]")) {
-      button.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "schema-open", {
-          name: String(button.getAttribute("data-schema-open") ?? ""),
+    for (const shadow of this._eventRoots()) {
+      shadow
+        .querySelector("[data-action='create-doc']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "workdoc-create", undefined);
         });
-      });
-    }
-    shadow
-      .querySelector("[data-action='save-remote']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        const input = /** @type {HTMLInputElement} */ (
-          shadow.querySelector("#rngit-remote")
-        );
-        emit(this, "workdoc-repo", { url: input.value.trim() });
-      });
-    for (const row of shadow.querySelectorAll("[data-doc]")) {
-      row.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        emit(this, "workdoc-open", {
-          docId: /** @type {string} */ (row.getAttribute("data-doc")),
+      shadow
+        .querySelector("[data-action='create-schema']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "schema-create", undefined);
         });
-      });
+      for (const button of shadow.querySelectorAll("[data-schema-open]")) {
+        button.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "schema-open", {
+            name: String(button.getAttribute("data-schema-open") ?? ""),
+          });
+        });
+      }
+      shadow
+        .querySelector("[data-action='save-remote']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          const input = /** @type {HTMLInputElement} */ (
+            shadow.querySelector("#rngit-remote")
+          );
+          emit(this, "workdoc-repo", { url: input.value.trim() });
+        });
+      for (const row of shadow.querySelectorAll("[data-doc]")) {
+        row.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "workdoc-open", {
+            docId: /** @type {string} */ (row.getAttribute("data-doc")),
+          });
+        });
+      }
     }
   }
 }

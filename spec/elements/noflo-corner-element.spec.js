@@ -6,6 +6,30 @@ import "./utils/register.js";
 import { FlowCornerElement } from "../../src/elements/corner-element.js";
 
 /**
+ * A query surface that spans the corner's own shadow (chip content) and
+ * the panel portal's shadow (panel content) — the space manager moved
+ * the panels into the side containers, and the tests need to see both.
+ *
+ * @param {any} el
+ */
+function _dualShadow(el) {
+  const chip = el.shadowRoot;
+  const panel = el._panelPortal?.shadowRoot ?? null;
+  return {
+    querySelector: (/** @type {string} */ s) =>
+      chip?.querySelector(s) ?? panel?.querySelector(s) ?? null,
+    querySelectorAll: (/** @type {string} */ s) => {
+      const a = [...(chip?.querySelectorAll(s) ?? [])];
+      const b = [...(panel?.querySelectorAll(s) ?? [])];
+      return a.length > 0 ? a : b;
+    },
+    get textContent() {
+      return (chip?.textContent ?? "") + (panel?.textContent ?? "");
+    },
+  };
+}
+
+/**
  * A minimal corner for state-machine tests: one segment, one accordion.
  */
 class TestCorner extends FlowCornerElement {
@@ -58,9 +82,26 @@ describe("FlowCornerElement states (work document #28)", () => {
   it("starts in the Normal state with the chip visible", () => {
     const el = makeElement();
     assert.equal(el.cornerState, "normal");
-    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ??
+        null,
+      querySelectorAll: (s) =>
+        (() => {
+          const fromChip = el.shadowRoot?.querySelectorAll(s);
+          if (fromChip && fromChip.length > 0) return fromChip;
+          return el.panelShadow?.querySelectorAll(s) ?? [];
+        })(),
+      get textContent() {
+        return (
+          (el.shadowRoot?.textContent ?? "") +
+          (el.panelShadow?.textContent ?? "")
+        );
+      },
+    };
     assert.ok(shadow.querySelector(".chip"), "the chip renders");
-    assert.ok(!shadow.querySelector(".panel"), "collapsed by default");
+    assert.ok(!el.panelShadow.querySelector(".panel"), "collapsed by default");
     el.remove();
   });
 
@@ -114,10 +155,7 @@ describe("FlowCornerElement states (work document #28)", () => {
     );
     chip.click();
     assert.equal(el.cornerState, "expanded");
-    assert.ok(
-      /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".panel"),
-      "the accordions render",
-    );
+    assert.ok(el.panelShadow.querySelector(".panel"), "the accordions render");
     const reopenedChip = /** @type {HTMLElement} */ (
       /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
         "[data-action='toggle']",

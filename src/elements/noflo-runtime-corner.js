@@ -14,7 +14,7 @@
 import icons from "../../vendor/fontawesome-icons.js";
 import { emit } from "../events.js";
 import { telemetryBus } from "../glass/telemetryBus.js";
-import { cornerStyles, FlowCornerElement } from "./corner-element.js";
+import { FlowCornerElement } from "./corner-element.js";
 import "./noflo-telemetry-log.js";
 
 /**
@@ -78,6 +78,7 @@ export class FlowRuntimeCorner extends FlowCornerElement {
      * Engine for a fresh discovery (work document #59). */
     this._wasExpanded = false;
     this.chipTitle = "FBP runtimes on the mesh";
+    this.panelSide = "right";
   }
 
   /**
@@ -373,76 +374,79 @@ export class FlowRuntimeCorner extends FlowCornerElement {
   }
 
   wireEvents() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    // The wires accordions' persistent logs ride the render
-    for (const [hash, wire] of this._wires) {
-      if (!wire.open || !wire.log) continue;
-      const slot = shadow.querySelector(`#wire-log-${hash}`);
-      if (slot) slot.appendChild(wire.log);
-    }
-    for (const button of shadow.querySelectorAll(
-      "[data-action='close-wire']",
-    )) {
-      button.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        this.toggleSegment(
-          `fbp:${String(button.getAttribute("data-runtime") ?? "")}`,
-        );
-      });
-    }
-    shadow
-      .querySelector("[data-action='collapse']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        this.expanded = false;
-        this.render();
-      });
-    // Expansion asks the Engine for a fresh runtime discovery (work
-    // document #59): a quiet mesh still shows its cached population, and
-    // the request rides the expansion transition, not every render
-    if (this.expanded && !this._wasExpanded) {
-      emit(this, "runtime-refresh", undefined);
-    }
-    this._wasExpanded = this.expanded;
-    for (const button of shadow.querySelectorAll("[data-runtime-connect]")) {
-      button.addEventListener("click", () => {
-        emit(this, "runtime-connect", {
-          destinationHash: String(
-            button.getAttribute("data-runtime-connect") ?? "",
-          ),
+    for (const shadow of this._eventRoots()) {
+      // The wires accordions' persistent logs ride the render
+      for (const [hash, wire] of this._wires) {
+        if (!wire.open || !wire.log) continue;
+        const slot = shadow.querySelector(`#wire-log-${hash}`);
+        if (slot) slot.appendChild(wire.log);
+      }
+      for (const button of shadow.querySelectorAll(
+        "[data-action='close-wire']",
+      )) {
+        button.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.toggleSegment(
+            `fbp:${String(button.getAttribute("data-runtime") ?? "")}`,
+          );
         });
-      });
-    }
-    for (const button of shadow.querySelectorAll("[data-runtime-disconnect]")) {
-      button.addEventListener("click", () => {
-        emit(this, "runtime-disconnect", {
-          destinationHash: String(
-            button.getAttribute("data-runtime-disconnect") ?? "",
-          ),
+      }
+      shadow
+        .querySelector("[data-action='collapse']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.expanded = false;
+          this.render();
         });
-      });
-    }
-    for (const button of shadow.querySelectorAll("[data-runtime-deploy]")) {
-      button.addEventListener("click", () => {
-        emit(this, "runtime-deploy", {
-          destinationHash: String(
-            button.getAttribute("data-runtime-deploy") ?? "",
-          ),
+      // Expansion asks the Engine for a fresh runtime discovery (work
+      // document #59): a quiet mesh still shows its cached population, and
+      // the request rides the expansion transition, not every render
+      if (this.expanded && !this._wasExpanded) {
+        emit(this, "runtime-refresh", undefined);
+      }
+      this._wasExpanded = this.expanded;
+      for (const button of shadow.querySelectorAll("[data-runtime-connect]")) {
+        button.addEventListener("click", () => {
+          emit(this, "runtime-connect", {
+            destinationHash: String(
+              button.getAttribute("data-runtime-connect") ?? "",
+            ),
+          });
         });
-      });
-    }
-    for (const button of shadow.querySelectorAll("[data-runtime-run]")) {
-      button.addEventListener("click", () => {
-        emit(this, "runtime-run", {
-          destinationHash: String(
-            button.getAttribute("data-runtime-run") ?? "",
-          ),
-          action:
-            button.getAttribute("data-run-action") === "stop"
-              ? "stop"
-              : "start",
+      }
+      for (const button of shadow.querySelectorAll(
+        "[data-runtime-disconnect]",
+      )) {
+        button.addEventListener("click", () => {
+          emit(this, "runtime-disconnect", {
+            destinationHash: String(
+              button.getAttribute("data-runtime-disconnect") ?? "",
+            ),
+          });
         });
-      });
+      }
+      for (const button of shadow.querySelectorAll("[data-runtime-deploy]")) {
+        button.addEventListener("click", () => {
+          emit(this, "runtime-deploy", {
+            destinationHash: String(
+              button.getAttribute("data-runtime-deploy") ?? "",
+            ),
+          });
+        });
+      }
+      for (const button of shadow.querySelectorAll("[data-runtime-run]")) {
+        button.addEventListener("click", () => {
+          emit(this, "runtime-run", {
+            destinationHash: String(
+              button.getAttribute("data-runtime-run") ?? "",
+            ),
+            action:
+              button.getAttribute("data-run-action") === "stop"
+                ? "stop"
+                : "start",
+          });
+        });
+      }
     }
   }
 }

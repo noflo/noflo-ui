@@ -108,6 +108,7 @@ export class FlowSyncPanel extends FlowCornerElement {
     // rules): the panel starts Hidden until app.js feeds it mesh state
     this._visible = false;
     this.chipTitle = "Mesh sync status";
+    this.panelSide = "right";
     /** @type {{ connected?: boolean, synced?: boolean, peers?: number } | null} */
     this._syncStatus = null;
     /** @type {string[]} */
@@ -294,9 +295,12 @@ export class FlowSyncPanel extends FlowCornerElement {
    * @returns {void}
    */
   renderInviteQr() {
-    const host = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
-      "#panel-invite-qr",
-    );
+    // The invite QR lives in the panel portal's shadow (work document
+    // #63's space manager): the host query covers both roots
+    const host =
+      this.shadowRoot?.querySelector("#panel-invite-qr") ??
+      this._panelPortal?.shadowRoot?.querySelector("#panel-invite-qr") ??
+      null;
     if (!host) return;
     const uri = this._inviteUri;
     if (!uri) {
@@ -316,9 +320,10 @@ export class FlowSyncPanel extends FlowCornerElement {
         // them in both themes
         if (this._inviteUri !== uri) return;
         this._qrCache.set(uri, svg);
-        const current = /** @type {ShadowRoot} */ (
-          this.shadowRoot
-        ).querySelector("#panel-invite-qr");
+        const current =
+          this.shadowRoot?.querySelector("#panel-invite-qr") ??
+          this._panelPortal?.shadowRoot?.querySelector("#panel-invite-qr") ??
+          null;
         if (current) current.innerHTML = svg;
       })
       .catch((/** @type {any} */ error) => {
@@ -803,97 +808,98 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   wireEvents() {
-    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
-    this.renderInviteQr();
-    // The telemetry accordions' persistent logs ride the render: each
-    // element is adopted into its slot, its buffer surviving the churn
-    for (const id of Object.keys(this._telemetry)) {
-      const slot = shadow.querySelector(`#panel-telemetry-${id}`);
-      if (slot && /** @type {any} */ (this._telemetry)[id].open) {
-        slot.appendChild(this.telemetryLog(id));
-      }
-    }
-    for (const button of shadow.querySelectorAll(
-      "[data-action='close-telemetry']",
-    )) {
-      button.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        this.toggleSegment(String(button.getAttribute("data-stream") ?? ""));
-      });
-    }
-    shadow
-      .querySelector("[data-action='close-history']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        this.toggleSegment("history");
-      });
-    shadow
-      .querySelector("[data-action='collapse']")
-      ?.addEventListener("click", (/** @type {any} */ event) => {
-        event.stopPropagation();
-        this.expanded = false;
-        this.render();
-      });
-    shadow
-      .querySelector("[data-action='create-invite']")
-      ?.addEventListener("click", () => {
-        emit(this, "sync-invite", undefined);
-      });
-    shadow
-      .querySelector("[data-action='undo']")
-      ?.addEventListener("click", () => {
-        emit(this, "undo-attempt", undefined);
-      });
-    shadow
-      .querySelector("[data-action='redo']")
-      ?.addEventListener("click", () => {
-        emit(this, "redo-attempt", undefined);
-      });
-    shadow
-      .querySelector("[data-action='copy-invite']")
-      ?.addEventListener("click", () => {
-        navigator.clipboard?.writeText(this._inviteUri).catch(() => {});
-      });
-    shadow
-      .querySelector("[data-action='join']")
-      ?.addEventListener("click", () => {
-        const input = shadow.querySelector("#join-invite");
-        const invite = String(/** @type {any} */ (input)?.value ?? "").trim();
-        if (!invite) return;
-        emit(this, "sync-join", { invite });
-      });
-    for (const button of shadow.querySelectorAll("[data-approve]")) {
-      button.addEventListener("click", () => {
-        emit(this, "sync-approve", {
-          identityHash: button.getAttribute("data-approve"),
-        });
-      });
-    }
-    for (const button of shadow.querySelectorAll("[data-decline]")) {
-      button.addEventListener("click", () => {
-        emit(this, "sync-decline", {
-          identityHash: button.getAttribute("data-decline"),
-        });
-      });
-    }
-    for (const button of shadow.querySelectorAll("[data-revoke]")) {
-      button.addEventListener("click", () => {
-        const el = /** @type {any} */ (button);
-        if (el.dataset.confirming !== "true") {
-          el.dataset.confirming = "true";
-          button.textContent = "Confirm revoke";
-          return;
+    for (const shadow of this._eventRoots()) {
+      this.renderInviteQr();
+      // The telemetry accordions' persistent logs ride the render: each
+      // element is adopted into its slot, its buffer surviving the churn
+      for (const id of Object.keys(this._telemetry)) {
+        const slot = shadow.querySelector(`#panel-telemetry-${id}`);
+        if (slot && /** @type {any} */ (this._telemetry)[id].open) {
+          slot.appendChild(this.telemetryLog(id));
         }
-        emit(this, "sync-revoke-grant", {
-          grantId: String(button.getAttribute("data-revoke") ?? ""),
+      }
+      for (const button of shadow.querySelectorAll(
+        "[data-action='close-telemetry']",
+      )) {
+        button.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.toggleSegment(String(button.getAttribute("data-stream") ?? ""));
         });
-      });
+      }
+      shadow
+        .querySelector("[data-action='close-history']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.toggleSegment("history");
+        });
+      shadow
+        .querySelector("[data-action='collapse']")
+        ?.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          this.expanded = false;
+          this.render();
+        });
+      shadow
+        .querySelector("[data-action='create-invite']")
+        ?.addEventListener("click", () => {
+          emit(this, "sync-invite", undefined);
+        });
+      shadow
+        .querySelector("[data-action='undo']")
+        ?.addEventListener("click", () => {
+          emit(this, "undo-attempt", undefined);
+        });
+      shadow
+        .querySelector("[data-action='redo']")
+        ?.addEventListener("click", () => {
+          emit(this, "redo-attempt", undefined);
+        });
+      shadow
+        .querySelector("[data-action='copy-invite']")
+        ?.addEventListener("click", () => {
+          navigator.clipboard?.writeText(this._inviteUri).catch(() => {});
+        });
+      shadow
+        .querySelector("[data-action='join']")
+        ?.addEventListener("click", () => {
+          const input = shadow.querySelector("#join-invite");
+          const invite = String(/** @type {any} */ (input)?.value ?? "").trim();
+          if (!invite) return;
+          emit(this, "sync-join", { invite });
+        });
+      for (const button of shadow.querySelectorAll("[data-approve]")) {
+        button.addEventListener("click", () => {
+          emit(this, "sync-approve", {
+            identityHash: button.getAttribute("data-approve"),
+          });
+        });
+      }
+      for (const button of shadow.querySelectorAll("[data-decline]")) {
+        button.addEventListener("click", () => {
+          emit(this, "sync-decline", {
+            identityHash: button.getAttribute("data-decline"),
+          });
+        });
+      }
+      for (const button of shadow.querySelectorAll("[data-revoke]")) {
+        button.addEventListener("click", () => {
+          const el = /** @type {any} */ (button);
+          if (el.dataset.confirming !== "true") {
+            el.dataset.confirming = "true";
+            button.textContent = "Confirm revoke";
+            return;
+          }
+          emit(this, "sync-revoke-grant", {
+            grantId: String(button.getAttribute("data-revoke") ?? ""),
+          });
+        });
+      }
+      shadow
+        .querySelector("[data-action='settings']")
+        ?.addEventListener("click", () => {
+          emit(this, "sync-settings", undefined);
+        });
     }
-    shadow
-      .querySelector("[data-action='settings']")
-      ?.addEventListener("click", () => {
-        emit(this, "sync-settings", undefined);
-      });
   }
 }
 

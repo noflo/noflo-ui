@@ -5,6 +5,30 @@ import "./utils/register.js";
 
 import "../../src/elements/noflo-project-corner.js";
 
+/**
+ * A query surface that spans the corner's own shadow (chip content) and
+ * the panel portal's shadow (panel content) — the space manager moved
+ * the panels into the side containers, and the tests need to see both.
+ *
+ * @param {any} el
+ */
+function dualShadow(el) {
+  const chip = el.shadowRoot;
+  const panel = el._panelPortal?.shadowRoot ?? null;
+  return {
+    querySelector: (/** @type {string} */ s) =>
+      chip?.querySelector(s) ?? panel?.querySelector(s) ?? null,
+    querySelectorAll: (/** @type {string} */ s) => {
+      const a = [...(chip?.querySelectorAll(s) ?? [])];
+      const b = [...(panel?.querySelectorAll(s) ?? [])];
+      return a.length > 0 ? a : b;
+    },
+    get textContent() {
+      return (chip?.textContent ?? "") + (panel?.textContent ?? "");
+    },
+  };
+}
+
 /** @returns {any} */
 function makeCorner() {
   const el = /** @type {any} */ (
@@ -41,13 +65,13 @@ describe("FlowProjectCorner (work document #9)", () => {
     el.setWorkDocs([]);
     assert.equal(el._visible, true, "the corner shows on an empty project");
     const chip = /** @type {HTMLElement} */ (
-      el.shadowRoot.querySelector(".chip")
+      dualShadow(el).querySelector(".chip")
     );
     assert.match(chip.textContent ?? "", /work docs 0/);
     el.expanded = true;
     el.render();
     assert.ok(
-      el.shadowRoot.querySelector("[data-action='create-doc']"),
+      el.panelShadow.querySelector("[data-action='create-doc']"),
       "the create affordance is reachable on an empty project",
     );
     el.remove();
@@ -57,13 +81,13 @@ describe("FlowProjectCorner (work document #9)", () => {
     const el = makeCorner();
     el.setWorkDocs(docs());
     assert.equal(
-      el.shadowRoot.querySelector(".panel"),
+      el.panelShadow.querySelector(".panel"),
       null,
       "no accordion by default",
     );
     el.expanded = true;
     el.render();
-    assert.ok(el.shadowRoot.querySelector(".panel"), "the chip opens it");
+    assert.ok(el.panelShadow.querySelector(".panel"), "the chip opens it");
     el.remove();
   });
 
@@ -71,7 +95,7 @@ describe("FlowProjectCorner (work document #9)", () => {
     const el = makeCorner();
     el.setWorkDocs(docs());
     const chip = /** @type {HTMLElement} */ (
-      el.shadowRoot.querySelector(".chip")
+      dualShadow(el).querySelector(".chip")
     );
     assert.match(chip.textContent ?? "", /work docs 1/);
     assert.match(chip.textContent ?? "", /\+1 proposed/);
@@ -83,16 +107,16 @@ describe("FlowProjectCorner (work document #9)", () => {
     el.setWorkDocs(docs());
     el.expanded = true;
     el.render();
-    const rows = [...el.shadowRoot.querySelectorAll("[data-doc]")].map(
+    const rows = [...el.panelShadow.querySelectorAll("[data-doc]")].map(
       (/** @type {any} */ row) => row.getAttribute("data-doc"),
     );
     assert.deepEqual(rows, ["a".repeat(32), "b".repeat(32)], "newest first");
-    const text = el.shadowRoot.querySelector(".panel")?.textContent ?? "";
+    const text = el.panelShadow.querySelector(".panel")?.textContent ?? "";
     assert.match(text, /Implement the parser/);
     assert.match(text, /Sketch the exporter/);
     // Scope badges: active and proposed are distinct
-    assert.ok(el.shadowRoot.querySelector(".badge.active"));
-    assert.ok(el.shadowRoot.querySelector(".badge.proposed"));
+    assert.ok(dualShadow(el).querySelector(".badge.active"));
+    assert.ok(dualShadow(el).querySelector(".badge.proposed"));
     el.remove();
   });
 
@@ -102,11 +126,11 @@ describe("FlowProjectCorner (work document #9)", () => {
     el.expanded = true;
     el.render();
     assert.ok(
-      el.shadowRoot.querySelector(".badge.pending"),
+      dualShadow(el).querySelector(".badge.pending"),
       "the unconfirmed scope request shows as pending",
     );
     assert.match(
-      el.shadowRoot.querySelector(".panel")?.textContent ?? "",
+      el.panelShadow.querySelector(".panel")?.textContent ?? "",
       /#42/,
       "the board number renders as materialization metadata",
     );
@@ -123,7 +147,7 @@ describe("FlowProjectCorner (work document #9)", () => {
       creates += 1;
     });
     /** @type {HTMLElement} */ (
-      el.shadowRoot.querySelector("[data-action='create-doc']")
+      el.panelShadow.querySelector("[data-action='create-doc']")
     ).click();
     assert.equal(creates, 1);
     el.remove();
@@ -140,7 +164,7 @@ describe("FlowProjectCorner (work document #9)", () => {
       opens.push(e.detail),
     );
     /** @type {HTMLElement} */ (
-      el.shadowRoot.querySelector("[data-doc='" + "b".repeat(32) + "']")
+      dualShadow(el).querySelector(`[data-doc='${"b".repeat(32)}']`)
     ).click();
     assert.deepEqual(opens, [{ docId: "b".repeat(32) }]);
     el.remove();

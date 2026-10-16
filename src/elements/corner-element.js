@@ -202,7 +202,77 @@ export function cornerStyles() {
  * @typedef {"hidden" | "normal" | "minified" | "expanded"} CornerState
  */
 
+/**
+ * The side panel containers (work document #63's space manager): one per
+ * screen side, spanning the vertical space between that side's corner
+ * chips. Open accordions mount here as portals and share the space
+ * equally through flexbox. The containers are transparent and inert when
+ * empty — the editor underneath owns the full interaction surface.
+ *
+ * @type {Map<string, HTMLElement>}
+ */
+const panelContainers = new Map();
+
+/** Whether the containers' document-level styles are injected. */
+let panelStylesInjected = false;
+
+/**
+ * The side container for a panel, created on first use.
+ *
+ * @param {"left" | "right"} side
+ * @returns {HTMLElement}
+ */
+function panelContainer(side) {
+  if (!panelStylesInjected) {
+    panelStylesInjected = true;
+    const style = document.createElement("style");
+    style.textContent = `
+      .corner-panels-left, .corner-panels-right {
+        position: fixed;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: min(360px, calc(100vw - 24px));
+        pointer-events: none;
+        z-index: 880;
+      }
+      .corner-panels-left { left: 10px; top: 64px; bottom: 64px; }
+      .corner-panels-right { right: 10px; top: 64px; bottom: 64px; }
+      .corner-panels-left > .corner-panel-portal,
+      .corner-panels-right > .corner-panel-portal {
+        flex: 1 1 0;
+        min-height: 0;
+        pointer-events: auto;
+        overflow-y: auto;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  const existing = panelContainers.get(side);
+  if (existing?.isConnected) {
+    return /** @type {HTMLElement} */ (existing);
+  }
+  const container = document.createElement("div");
+  container.className = `corner-panels-${side}`;
+  container.dataset.side = side;
+  document.body.appendChild(container);
+  panelContainers.set(side, container);
+  return /** @type {HTMLElement} */ (container);
+}
+
 export class FlowCornerElement extends HTMLElement {
+  /** The side this corner's panels mount into (work document #63's
+   * space manager). Set by subclasses to "left" or "right".
+   *
+   * @type {any}
+   */
+  panelSide = "left";
+  /** The panel portal in the side container.
+   *
+   * @type {any}
+   */
+  _panelPortal = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -220,6 +290,18 @@ export class FlowCornerElement extends HTMLElement {
     this.expandable = true;
     /** Tooltip on the collapsed chip. */
     this.chipTitle = "";
+    /** The side this corner's panels mount into (work document #63's
+     * space manager): left or right, matching the corner's position.
+     *
+     * @type {"left" | "right"}
+     */
+    this.panelSide = "left";
+    /**
+     * The panel portal in the side container.
+     *
+     * @type {HTMLElement | null}
+     */
+    this._panelPortal = null;
   }
 
   connectedCallback() {
@@ -281,6 +363,7 @@ export class FlowCornerElement extends HTMLElement {
     } else {
       this.setAttribute("hidden", "");
       this.expanded = false;
+      this._unmountPanelPortal();
     }
     this.render();
   }
@@ -357,7 +440,6 @@ export class FlowCornerElement extends HTMLElement {
    *
    * @param {string} _id The toggled segment's marker.
    */
-  // biome-ignore lint/correctness/noUnusedFunctionParameters: the hook is the base's contract; corners override it
   toggleSegment(_id) {}
 
   /**
@@ -374,10 +456,10 @@ export class FlowCornerElement extends HTMLElement {
     // Re-mirror the body state on every render: the settings toggle may
     // have flipped data-animations since the last one
     mirrorBodyState(this, ["data-animations"]);
+    // The chip: the corner's own shadow. The panels render into the side
+    // container's portal (work document #63's space manager)
     shadow.innerHTML = `
       <style>${this.styles()}${cornerStyles()}</style>
-      ${this.expandedHtml()}
-      ${this.segmentHtml()}
       <div class="chip" data-action="toggle"${
         this.expandable ? ' role="button" tabindex="0"' : ""
       } title="${this.chipTitle}">
@@ -432,6 +514,85 @@ export class FlowCornerElement extends HTMLElement {
       }
       toggle(event);
     });
+    this._updatePanelPortal();
     this.wireEvents();
+  }
+
+  /**
+   * Updates the panel portal: mounts it into the side container when the
+   * corner has open accordions, renders the panel content into it,
+   * unmounts it when the panels close. The portal carries a shadow root
+   * styled with the corner's own styles — the :host positioning rules
+   * are neutralized (the portal lives in the side container, not the
+   * corner).
+   */
+  _updatePanelPortal() {
+    const html = `${this.segmentHtml()}${this.expandedHtml()}`;
+    if (!html.trim()) {
+      this._panelPortal?.remove();
+      this._panelPortal = null;
+      return;
+    }
+    if (!this._panelPortal) {
+      this._panelPortal = document.createElement("div");
+      this._panelPortal.className = "corner-panel-portal";
+      this._panelPortal.dataset.corner = this.chipTitle || "corner";
+      this._panelPortal.attachShadow({ mode: "open" });
+      panelContainer(this.panelSide).appendChild(this._panelPortal);
+    }
+    this._panelPortal.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: flex !important;
+          flex-direction: column !important;
+          position: static !important;
+          inset: auto !important;
+          z-index: auto !important;
+          max-width: none !important;
+          max-height: none !important;
+          overflow: visible !important;
+        }
+      </style>
+      <style>${this.styles()}${cornerStyles()}</style>
+      ${html}
+    `;
+  }
+
+  /**
+   * Unmounts the panel portal (the corner hid or has no panels).
+   */
+  _unmountPanelPortal() {
+    this._panelPortal?.remove();
+    this._panelPortal = null;
+  }
+
+  /**
+   * The shadow root the panel content renders into: the portal's shadow
+   * when the panels are in the side container. Tests query this for
+   * panel content instead of the corner's own shadow.
+   *
+   * @returns {ShadowRoot | null}
+   */
+  get panelShadow() {
+    if (!this._panelPortal) {
+      this._panelPortal = document.createElement("div");
+      this._panelPortal.className = "corner-panel-portal";
+      this._panelPortal.attachShadow({ mode: "open" });
+      this._panelPortal.hidden = true;
+      panelContainer(this.panelSide).appendChild(this._panelPortal);
+    }
+    return this._panelPortal.shadowRoot;
+  }
+
+  /**
+   * The roots the event wiring runs against: the corner's own shadow and
+   * the panel portal's shadow when mounted.
+   *
+   * @returns {ShadowRoot[]}
+   */
+  _eventRoots() {
+    return /** @type {ShadowRoot[]} */ (
+      [this.shadowRoot, this._panelPortal?.shadowRoot].filter(Boolean)
+    );
   }
 }
