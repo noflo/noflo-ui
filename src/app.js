@@ -455,8 +455,8 @@ const echoHandlers = createEchoHandlers({
     });
     refreshRuntimeCorner();
   },
-  // The telemetry bus (work document #63): the wires layer's fan-out —
-  // the echo dispatch publishes, the bus buffers and fans out
+  // The telemetry bus (work document #63): the segment accordions'
+  // fan-out — the echo dispatch publishes, the bus buffers and fans out
   emitTelemetry: (stream, entry) => {
     telemetryBus().publish(stream, entry);
   },

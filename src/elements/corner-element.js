@@ -339,24 +339,26 @@ export class FlowCornerElement extends HTMLElement {
   }
 
   /**
-   * The wires layer (work document #63): read-only telemetry accordions
-   * toggled independently of the chip's expand state, rendered beside the
-   * functional accordions. Empty unless the corner opts in.
+   * The independent segment-toggled accordions (work document #63): the
+   * surfaces a corner exposes beside its primary panel, each toggled by
+   * its own chip segment — the Yjs telemetry stream, the edit history,
+   * any accordion the corner promotes. Rendered in the corner's stack;
+   * empty unless the corner opts in.
    *
    * @returns {string}
    */
-  wiresHtml() {
+  segmentHtml() {
     return "";
   }
 
   /**
-   * The segment-as-toggle hook: a chip child with a data-wires-toggle
+   * The segment-as-toggle hook: a chip child with a data-segment-toggle
    * marker toggles its own accordion. Empty until the corner opts in.
    *
    * @param {string} _id The toggled segment's marker.
    */
   // biome-ignore lint/correctness/noUnusedFunctionParameters: the hook is the base's contract; corners override it
-  toggleWires(_id) {}
+  toggleSegment(_id) {}
 
   /**
    * Hook for wiring events inside the expanded panel after each render.
@@ -375,7 +377,7 @@ export class FlowCornerElement extends HTMLElement {
     shadow.innerHTML = `
       <style>${this.styles()}${cornerStyles()}</style>
       ${this.expandedHtml()}
-      ${this.wiresHtml()}
+      ${this.segmentHtml()}
       <div class="chip" data-action="toggle"${
         this.expandable ? ' role="button" tabindex="0"' : ""
       } title="${this.chipTitle}">
@@ -385,32 +387,32 @@ export class FlowCornerElement extends HTMLElement {
     if (this.expandable) {
       const chip = shadow.querySelector("[data-action='toggle']");
       // The segment-as-toggle grammar (work document #63): a chip child
-      // carrying a data-wires-toggle marker owns its click — it toggles
+      // carrying a data-segment-toggle marker owns its click — it toggles
       // its own accordion through the corner's hook, not the chip's
       // expand state
-      const wiresTarget = (/** @type {Event} */ event) => {
+      const segmentTarget = (/** @type {Event} */ event) => {
         const path = event?.composedPath?.() ?? [];
         const inPath = path.find((/** @type {any} */ el) =>
-          el?.getAttribute?.("data-wires-toggle"),
+          el?.getAttribute?.("data-segment-toggle"),
         );
         if (inPath) return inPath;
         // Synthetic dispatches may carry an empty composed path; the
         // target's closest marker is the same answer for real input
         return (
           /** @type {any} */ (event?.target)?.closest?.(
-            "[data-wires-toggle]",
+            "[data-segment-toggle]",
           ) ?? null
         );
       };
       const toggle = (/** @type {Event} */ event) => {
-        if (wiresTarget(event)) return;
+        if (segmentTarget(event)) return;
         this.expanded = !this.expanded;
         this.render();
       };
       chip?.addEventListener("click", (/** @type {any} */ event) => {
-        const segment = wiresTarget(event);
+        const segment = segmentTarget(event);
         if (segment) {
-          this.toggleWires(segment.getAttribute("data-wires-toggle"));
+          this.toggleSegment(segment.getAttribute("data-segment-toggle"));
           return;
         }
         toggle(event);
@@ -422,9 +424,9 @@ export class FlowCornerElement extends HTMLElement {
         const key = /** @type {KeyboardEvent} */ (event).key;
         if (key !== "Enter" && key !== " ") return;
         event.preventDefault();
-        const segment = wiresTarget(event);
+        const segment = segmentTarget(event);
         if (segment) {
-          this.toggleWires(segment.getAttribute("data-wires-toggle"));
+          this.toggleSegment(segment.getAttribute("data-segment-toggle"));
           return;
         }
         toggle(event);

@@ -67,10 +67,10 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: up to date (calm), peers, Owner, wires — pending intents
-    // drop out
+    // Segments: up to date (calm), peers, Owner, yjs, history — pending
+    // intents drop out
     const segments = shadow.querySelectorAll(".chip .seg");
-    assert.equal(segments.length, 4, "empty states drop out");
+    assert.equal(segments.length, 5, "empty states drop out");
     assert.match(chip.textContent ?? "", /up to date/);
     assert.match(chip.textContent ?? "", /2 peers/);
     assert.match(chip.textContent ?? "", /Owner/);
@@ -96,8 +96,8 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
         !waiting.classList.contains("attention"),
       "working locally is the offline-first normal, not an error",
     );
-    // The status segment plus the wires toggle (work document #63)
-    assert.equal(shadow.querySelectorAll(".chip .seg").length, 2);
+    // The status segment plus the segment toggles (work document #63)
+    assert.equal(shadow.querySelectorAll(".chip .seg").length, 3);
     // A peer joined, bits moving: syncing (neutral)
     el.setPeers([PEER_HASH]);
     el.setSyncStatus({ connected: true, synced: false, peers: 1 });
@@ -480,7 +480,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
   });
 });
 
-describe("sync panel wires layer (work document #63)", () => {
+describe("sync panel segment accordions (work document #63)", () => {
   /**
    * A visible panel with wire traffic already on the bus: the bus is the
    * app-level singleton, so the fixture publishes before the panel opens.
@@ -501,26 +501,29 @@ describe("sync panel wires layer (work document #63)", () => {
     return el;
   }
 
-  it("the wires segment opens its own accordion, not the panel", async () => {
+  it("the yjs segment opens its own accordion, not the panel", async () => {
     const el = await feedWires();
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
-    assert.match(shadow.textContent ?? "", /wires/, "the segment renders");
-    assert.ok(!shadow.querySelector(".wires"), "closed: no wires accordion");
+    assert.match(shadow.textContent ?? "", /yjs/, "the segment renders");
+    assert.ok(
+      !shadow.querySelector(".telemetry"),
+      "closed: no telemetry accordion",
+    );
     shadow
-      .querySelector('[data-wires-toggle="yjs"]')
+      .querySelector('[data-segment-toggle="yjs"]')
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     assert.equal(
       el.expanded,
       false,
       "the segment toggle leaves the functional panel closed",
     );
-    const wires = shadow.querySelector(".wires");
-    assert.ok(wires, "the wires accordion opens independently");
-    assert.match(wires.textContent ?? "", /Yjs telemetry/);
+    const telemetryPanel = shadow.querySelector(".telemetry");
+    assert.ok(telemetryPanel, "the telemetry accordion opens independently");
+    assert.match(telemetryPanel.textContent ?? "", /Yjs telemetry/);
     // The ring buffer replays: history, not a blank panel — the log's
     // content lives in the log element's own shadow root
-    const log = wires.querySelector("flow-telemetry-log");
-    assert.ok(log, "the wires log renders in the accordion");
+    const log = telemetryPanel.querySelector("flow-telemetry-log");
+    assert.ok(log, "the telemetry log renders in the accordion");
     assert.match(
       /** @type {any} */ (log).shadowRoot?.textContent ?? "",
       /update · 1\.0 KB/,
@@ -531,11 +534,11 @@ describe("sync panel wires layer (work document #63)", () => {
     );
     // Closing through its own affordance
     shadow
-      .querySelector("[data-action='close-wires']")
+      .querySelector("[data-action='close-yjs']")
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     assert.ok(
-      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".wires")),
-      "the wires accordion closes",
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".telemetry")),
+      "the telemetry accordion closes",
     );
     el.remove();
   });
@@ -544,7 +547,7 @@ describe("sync panel wires layer (work document #63)", () => {
     const el = await feedWires();
     const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
     shadow
-      .querySelector('[data-wires-toggle="yjs"]')
+      .querySelector('[data-segment-toggle="yjs"]')
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
     telemetryBus().publish("yjs", {
@@ -552,14 +555,14 @@ describe("sync panel wires layer (work document #63)", () => {
       status: "DELTA",
     });
     await new Promise((resolve) => setTimeout(resolve, 40));
-    const liveLog = shadow.querySelector(".wires flow-telemetry-log");
+    const liveLog = shadow.querySelector(".telemetry flow-telemetry-log");
     assert.match(
       /** @type {any} */ (liveLog).shadowRoot?.textContent ?? "",
       /live · 3\.0 KB/,
       "open accordion receives live traffic",
     );
     shadow
-      .querySelector("[data-action='close-wires']")
+      .querySelector("[data-action='close-yjs']")
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     telemetryBus().publish("yjs", {
       message: "while closed · 4.0 KB",
@@ -567,14 +570,14 @@ describe("sync panel wires layer (work document #63)", () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 40));
     assert.ok(
-      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".wires")),
+      !(/** @type {ShadowRoot} */ (el.shadowRoot).querySelector(".telemetry")),
       "closed: no accordion",
     );
     // Reopening replays the closed-window traffic: the bus buffered it
     shadow
-      .querySelector('[data-wires-toggle="yjs"]')
+      .querySelector('[data-segment-toggle="yjs"]')
       ?.dispatchEvent(new Event("click", { bubbles: true }));
-    const reopenedLog = shadow.querySelector(".wires flow-telemetry-log");
+    const reopenedLog = shadow.querySelector(".telemetry flow-telemetry-log");
     assert.match(
       /** @type {any} */ (reopenedLog).shadowRoot?.textContent ?? "",
       /while closed · 4\.0 KB/,

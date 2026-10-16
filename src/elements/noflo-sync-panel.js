@@ -136,11 +136,14 @@ export class FlowSyncPanel extends FlowCornerElement {
     this._identityHash = "";
     /** @type {{ phrase: string, operation: string, stage: string, failed?: boolean } | null} */
     this._narration = null;
-    /** The Yjs wires accordion (work document #63): toggled from its own
-     * chip segment, independent of the functional panel's expand state. */
-    this._wiresOpen = false;
+    /** The Yjs telemetry accordion (work document #63): toggled from its
+     * own chip segment, independent of the functional panel's expand
+     * state. */
+    this._yjsOpen = false;
     /** @type {(() => void) | null} The live bus subscription while open. */
-    this._wiresUnsubscribe = null;
+    this._yjsUnsubscribe = null;
+    /** Whether the edit-history accordion (undo/redo) is open. */
+    this._historyOpen = false;
     /** @type {any} The persistent telemetry log element (lazily created). */
     this.__yjsLog = null;
     this._pendingIntents = 0;
@@ -420,11 +423,14 @@ export class FlowSyncPanel extends FlowCornerElement {
           : `<span class="seg" title="This device holds only the public anchor: grants are minted on the owner's device">${icon("id-badge")}<span class="label">Participant</span></span>`,
       );
     }
-    // The wires layer (work document #63): the segment is its own toggle —
-    // it opens the Yjs telemetry accordion without touching the functional
-    // panel's expand state. Open reads calm; closed is neutral
+    // The segment-toggled accordions (work document #63): each segment is
+    // its own toggle and names what it shows — the Yjs replication stream
+    // and the edit history. Open reads calm; closed is neutral
     segments.push(
-      `<span class="seg ${this._wiresOpen ? "calm" : ""}" data-wires-toggle="yjs" role="button" tabindex="0" title="The replication stream this device exchanges with the Engine">${icon("terminal")}<span class="label">wires</span></span>`,
+      `<span class="seg ${this._yjsOpen ? "calm" : ""}" data-segment-toggle="yjs" role="button" tabindex="0" title="The replication stream this device exchanges with the Engine">${icon("terminal")}<span class="label">yjs</span></span>`,
+    );
+    segments.push(
+      `<span class="seg ${this._historyOpen ? "calm" : ""}" data-segment-toggle="history" role="button" tabindex="0" title="Undo and redo for this device's edits">${icon("clock-rotate-left")}<span class="label">history</span></span>`,
     );
     return segments.join("");
   }
@@ -539,14 +545,6 @@ export class FlowSyncPanel extends FlowCornerElement {
             ? `<details open><summary>Peers</summary>${peers}${offlineBlock}</details>`
             : `<details open><summary>Peers</summary><div class="hint">No peers connected.</div></details>`
         }
-        <details open><summary>Edit history</summary>
-          <div class="row">
-            <button data-action="undo" ${this._undoState?.canUndo ? "" : "disabled"}>Undo${this._undoState?.undoDepth ? ` (${this._undoState.undoDepth})` : ""}</button>
-            <button data-action="redo" ${this._undoState?.canRedo ? "" : "disabled"}>Redo${this._undoState?.redoDepth ? ` (${this._undoState.redoDepth})` : ""}</button>
-          </div>
-          <div class="hint">Your edits only — each device undoes its own changes. Keyboard: Ctrl/Cmd+Z, Shift to redo.</div>
-          <div class="status-line" aria-live="polite" id="panel-undo-live">${escapeHtml(this._undoAnnouncement)}</div>
-        </details>
         ${this._joinRequests.length > 0 ? `<details open><summary>Join requests</summary>${requests}</details>` : ""}
         ${
           this._readOnly || !owner
@@ -646,12 +644,13 @@ export class FlowSyncPanel extends FlowCornerElement {
         .badge.pending { background: color-mix(in srgb, var(--ui-age-activity) 25%, transparent); color: var(--ui-age-activity); }
         .badge.revoked { background: color-mix(in srgb, var(--ui-age-attention) 25%, transparent); color: var(--ui-age-attention); }
         .badge.offline { background: color-mix(in srgb, var(--ui-age-offline) 25%, transparent); color: var(--ui-age-offline); }
-        /* The wires layer (work document #63): the terminal grammar's
-           surface — the log element carries its own typography */
-        .wires {
+        /* The segment-toggled telemetry accordion (work document #63): the
+           terminal grammar's surface — the log element carries its own
+           typography */
+        .telemetry {
           min-width: 260px;
         }
-        .wires-slot {
+        .telemetry-slot {
           margin-top: 4px;
         }
         /* The invite QR tile: machine-readable encoding, not themed chrome —
@@ -673,62 +672,89 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   /**
-   * The wires layer (work document #63): the Yjs telemetry accordion,
-   * toggled from its own chip segment — read-only engine output in the
-   * terminal grammar, never a processed summary and never a second
-   * authority.
+   * The segment-toggled accordions (work document #63): the Yjs telemetry
+   * stream — read-only engine output in the terminal grammar, never a
+   * processed summary and never a second authority — and the edit
+   * history, each named for what it shows.
    *
    * @returns {string}
    */
-  wiresHtml() {
-    if (!this._wiresOpen) return "";
-    return `
-      <div class="panel wires">
+  segmentHtml() {
+    let html = "";
+    if (this._yjsOpen) {
+      html += `
+      <div class="panel telemetry">
         <div class="panel-head">
           <span>Yjs telemetry</span>
-          <button class="secondary" data-action="close-wires" title="Close">▾</button>
+          <button class="secondary" data-action="close-yjs" title="Close">▾</button>
         </div>
-        <div class="wires-slot" id="panel-yjs-log"></div>
+        <div class="telemetry-slot" id="panel-yjs-log"></div>
         <div class="hint">The replication stream between this device's mirror and the Engine's authoritative document.</div>
       </div>
     `;
+    }
+    if (this._historyOpen) {
+      html += `
+      <div class="panel history">
+        <div class="panel-head">
+          <span>Edit history</span>
+          <button class="secondary" data-action="close-history" title="Close">▾</button>
+        </div>
+        <div class="row">
+          <button data-action="undo" ${this._undoState?.canUndo ? "" : "disabled"}>Undo${this._undoState?.undoDepth ? ` (${this._undoState.undoDepth})` : ""}</button>
+          <button data-action="redo" ${this._undoState?.canRedo ? "" : "disabled"}>Redo${this._undoState?.redoDepth ? ` (${this._undoState.redoDepth})` : ""}</button>
+        </div>
+        <div class="hint">Your edits only — each device undoes its own changes. Keyboard: Ctrl/Cmd+Z, Shift to redo.</div>
+        <div class="status-line" aria-live="polite" id="panel-undo-live">${escapeHtml(this._undoAnnouncement)}</div>
+      </div>
+    `;
+    }
+    return html;
   }
 
   /**
    * The segment-as-toggle hook (work document #63): opens and closes the
-   * Yjs telemetry accordion. Subscription-on-open: the accordion
-   * subscribes when opened — the bus replays its ring buffer as the
+   * segment-toggled accordions. The Yjs accordion's subscription-on-open:
+   * it subscribes when opened — the bus replays its ring buffer as the
    * history — and unsubscribes when closed, so closed telemetry costs
    * nothing.
    *
    * @param {string} id
    */
-  toggleWires(id) {
-    if (id !== "yjs") return;
-    this._wiresOpen = !this._wiresOpen;
-    if (this._wiresOpen) {
-      this.yjsLog.setHistory(telemetryBus().history("yjs"));
-      this._wiresUnsubscribe = telemetryBus().subscribe(
-        "yjs",
-        (/** @type {any} */ entry) => this.yjsLog.push(entry),
-        { history: false },
-      );
+  toggleSegment(id) {
+    if (id === "yjs") {
+      this._yjsOpen = !this._yjsOpen;
+      if (this._yjsOpen) {
+        this.yjsLog.setHistory(telemetryBus().history("yjs"));
+        this._yjsUnsubscribe = telemetryBus().subscribe(
+          "yjs",
+          (/** @type {any} */ entry) => this.yjsLog.push(entry),
+          { history: false },
+        );
+      } else {
+        this._yjsUnsubscribe?.();
+        this._yjsUnsubscribe = null;
+      }
+    } else if (id === "history") {
+      this._historyOpen = !this._historyOpen;
     } else {
-      this._wiresUnsubscribe?.();
-      this._wiresUnsubscribe = null;
+      return;
     }
     this.render();
   }
 
   /**
-   * Hiding the corner closes the wires accordion too: its subscription is
-   * the live traffic, and a hidden corner carries none.
+   * Hiding the corner closes the segment-toggled accordions too: the Yjs
+   * subscription is the live traffic, and a hidden corner carries none.
    *
    * @param {boolean} visible
    */
   setVisible(visible) {
-    if (!visible && this._wiresOpen) {
-      this.toggleWires("yjs");
+    if (!visible) {
+      // Hiding the corner closes the segment-toggled accordions: the Yjs
+      // subscription is the live traffic, and a hidden corner carries none
+      if (this._yjsOpen) this.toggleSegment("yjs");
+      this._historyOpen = false;
     }
     super.setVisible(visible);
   }
@@ -749,17 +775,24 @@ export class FlowSyncPanel extends FlowCornerElement {
   wireEvents() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     this.renderInviteQr();
-    // The wires accordion's persistent log rides the render: the element
-    // is adopted into the slot each time, its buffer surviving the churn
-    const wiresSlot = shadow.querySelector("#panel-yjs-log");
-    if (wiresSlot && this._wiresOpen) {
-      wiresSlot.appendChild(this.yjsLog);
+    // The telemetry accordion's persistent log rides the render: the
+    // element is adopted into the slot each time, its buffer surviving the
+    // churn
+    const telemetrySlot = shadow.querySelector("#panel-yjs-log");
+    if (telemetrySlot && this._yjsOpen) {
+      telemetrySlot.appendChild(this.yjsLog);
     }
     shadow
-      .querySelector("[data-action='close-wires']")
+      .querySelector("[data-action='close-yjs']")
       ?.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
-        this.toggleWires("yjs");
+        this.toggleSegment("yjs");
+      });
+    shadow
+      .querySelector("[data-action='close-history']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        this.toggleSegment("history");
       });
     shadow
       .querySelector("[data-action='collapse']")
