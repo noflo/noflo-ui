@@ -163,7 +163,7 @@ The UI uses standard Web Components, strictly prefixing tags with `noflo-`.
 * **The Base Class:** All components extend a custom `NofloElement` base class. This standardizes `connectedCallback` and `disconnectedCallback` lifecycle cleanup to prevent memory leaks in the durable architecture.
 * **Light DOM vs. Shadow DOM:** The application standardizes on **Light DOM** for all SVG-based elements. SVG definitions (`<defs>`, markers) and CSS custom property styling (for theme-switching) break down across Shadow boundaries. Shadow DOM is reserved strictly for encapsulated HTML forms/modals outside the graph canvas.
 * **Mechanical UI/NoFlo Bridge:** Web Components act as pure, dumb views. Parent elements pass data down via primitive DOM attributes or a standardized `state` property setter. Children communicate upwards exclusively by dispatching native `CustomEvent` bubbles (e.g., `{ action, payload }`). A top-level "View Controller" NoFlo graph (running on the main thread) attaches listeners to the DOM shell, routes those events through the UI-side NoFlo business logic, and maps the outputs back to the DOM nodes' reactive properties.
-* **View Stack & Routing:** A hand-rolled Hash Router (`window.onhashchange`) manages navigation. To prevent losing zoom/pan context, navigating away from the graph editor (e.g., into settings) does not unmount the SVG canvas; it is hidden via CSS, preserving its local state. (Pending amendment: proposed work document #62 replaces the never-unmount rule with the screen model — top-level editors as equal full-screen router screens, the graph editor unmounting while other screens are active, its state living in the CRDT and the read replica. This paragraph changes when #62 activates.)
+* **View Stack & Routing (the screen model, work document #62):** A hand-rolled Hash Router (`window.onhashchange`) manages navigation with kind-addressed screen routes (`#/p/<projectId>/<kind>/<id>` — graphs keep the legacy shape). Exactly one screen owns the viewport: the graph editor, the workdoc view, the component editor (signature + code), or the schema editor — the spec editor lands with work document #16. The graph editor hides via CSS while other screens are active (its state lives in the CRDT and the read replica), and the full-screen views mount on the body, never inside the hidden `#app`. The route's screen activates at boot with the deferred-open pattern: a reload on a route whose mirror data lags re-activates when the data lands.
 * **Graph Addressing:** The Glass routes the edited location in the URL as `#/p/<projectId>/<graphId>`, with hierarchical subgraph ids (`main/A/deep`). Navigation into or out of a subgraph pushes history entries, so browser back/forward walks the graph stack, and a reload lands on the routed graph. Unrouted URLs normalize to the project's root graph without polluting history.
 
 ---
@@ -645,8 +645,26 @@ const components = doc.getMap('components'); // Y.Map<componentId, Y.Map> (metad
 const registry   = doc.getMap('registry');   // Y.Map<componentName, Y.Map> (Signatures)
 const specs      = doc.getMap('specs');      // Y.Map<specId, Y.Map> (fbp-spec testing)
 const workdocs   = doc.getMap('workdocs');   // Y.Map<docId, Y.Map> (work documents, Appendix B.1)
+const schemas    = doc.getMap('schemas');    // Y.Map<ns/name, Y.Map> (project schemas, work document #57 update #1)
 
 ```
+
+### Project Schemas
+
+Each schema record is a top-level project entity (work document #57 update #1): referenced by port signatures, IIP forms, and the schema editor — not a corner of another editor. Records are keyed by the schema vocabulary's `ns/name` form and carry:
+
+```typescript
+// Inside doc.getMap('schemas').get(name)
+provenance: "authored" | "imported" | "remote"; // Mutability: only authored entries are editable
+body: Y.Text;    // The JSON Schema 2020-12 buffer (file-level authoring)
+edited: number;  // Last edit timestamp
+// origin: imported/remote entries carry their source; digests derive
+// from the body (RFC 8785 canonicalization, computed on demand — they
+// pin bytes at reference time, and live delta edits leave the stored
+// reference stale by design until the next whole-save)
+```
+
+Ingestion paths converge on this collection: authored in the schema editor, imported from installed packages' `schemas/` directories, fetched from linked runtimes over `0x28`/`0x29`. Writes go through the `setSchema` intent, whose Engine-side handler validates the body against the 2020-12 meta-schema (Tier B, hard enforcement — an invalid body is refused, never silently saved); `updateSchema` applies live Yjs deltas for collaborators.
 
 ### Graph Layout and Hierarchy
 
