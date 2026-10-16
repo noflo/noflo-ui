@@ -141,6 +141,21 @@ The Yjs CRDT in IndexedDB is the authoritative live editing structure. Standard 
 
 ---
 
+## Progressive Legibility: The Surface and the Wires
+
+The editor treats its own mechanics as observable data streams. System status is never silent, and background complexity (network routing, cryptography, synchronization) is never hidden behind abstract spinners — it is compressed when quiet and expandable when questioned. The UI operates on two visual planes:
+
+* **The Surface (quiet state):** A distraction-free environment maximizing screen real estate for the graph canvas. System status is compressed into dense, peripheral statistical aggregates — the corner HUD's airline-style segmented chips (work document #28) — where each segment is a glanceable aggregate and a toggle into its detail.
+* **The Wires (expanded state):** An interactive drill-down mode that strips away the abstraction and reveals the raw, terminal-like telemetry of the engine — protocol frames, CRDT vector clock syncs, mesh link setups — rendered read-only in a strict monospace aesthetic, visually distinct from the functional panels (chats, explorers, palettes, controls) that share the corners.
+
+Rules:
+
+* **Two typographic layers:** Functional UI uses the editor's primary chrome typography and the standard panel grammar; raw telemetry uses the terminal grammar (VISUAL_GUIDELINES §12's pseudo-console rules). The visual shift signals that the user is viewing the unvarnished output of the engine, not an application surface.
+* **The telemetry bus:** Subsystems (Yjs, Reticulum, rngit, the runtime client) surface their activity through the Engine's message channel; the Glass fans echoes out as standardized typed events on an app-level `EventTarget`. Closed accordions do not subscribe — the Engine keeps bounded drop-oldest ring buffers per stream so an opened wires accordion shows recent history, not a blank panel. Expanded accordions buffer events and throttle DOM paint to the display refresh rate, rendering into virtualized, read-only logs with capped DOM growth. New message kinds follow the work document #37 process rule (registry, dispatch tables, and Appendix A in the same change as the producer).
+* **Observation only:** Telemetry never mutates state and is never a second authority — the chips stay the summary, the CRDT stays the truth.
+
+---
+
 ## Web Components & Lifecycle Internals
 
 The UI uses standard Web Components, strictly prefixing tags with `noflo-`.
@@ -300,6 +315,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setWorkDocScope'; payload: IntentSetWorkDocScope }
   | { type: 'INTENT'; command: 'setWorkDocBody'; payload: { docId: string; update: Uint8Array } }
   | { type: 'INTENT'; command: 'setWorkDocTitle'; payload: { docId: string; title: string } }
+  | { type: 'INTENT'; command: 'setWorkdocsRepo'; payload: { url: string | null } }
   | { type: 'INTENT'; command: 'undo'; payload: Record<string, never> }
   | { type: 'INTENT'; command: 'redo'; payload: Record<string, never> }
   | { type: 'MESH'; command: 'configure'; payload: Record<string, any> }
@@ -342,6 +358,9 @@ interface IntentSpliceNode { graphId: string; edgeId: string; nodeId: string; x:
 interface IntentCreateWorkDoc { title: string; content?: string; links?: string[] }
 interface IntentUpdateWorkDoc { docId: string; content: string }
 interface IntentSetWorkDocScope { docId: string; scope: 'proposed' | 'active' | 'completed' }
+// The project's rngit remote: PROJECT state per work document #60's scope
+// rule — CRDT metadata, propagated to peers
+interface IntentSetWorkdocsRepo { url: string | null }
 interface IntentRemoveNode { graphId: string; nodeId: string; }
 interface IntentMoveNode { graphId: string; nodeId: string; x: number; y: number; }
 interface IntentAddEdge {
@@ -444,6 +463,7 @@ type EngineUIMessage =
   | { protocol: 'workdoc'; command: 'scoped'; payload: { id: string; pendingScope: string } }
   | { protocol: 'workdoc'; command: 'edited'; payload: { id: string } }
   | { protocol: 'workdoc'; command: 'titled'; payload: { id: string; title: string } }
+  | { protocol: 'workdoc'; command: 'repo'; payload: { url: string | null } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
 // Graph Protocol (The UI blindly executes these to update DOM/SVG shadow state)
