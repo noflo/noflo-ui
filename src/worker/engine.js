@@ -45,6 +45,7 @@ import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
 import { progress } from "./Progress.js";
 import { RngitTransport } from "./RngitTransport.js";
+import { createRuntimeBridge } from "./RuntimeBridge.js";
 import { WorkDocMaterializer } from "./WorkDocMaterializer.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -628,8 +629,14 @@ export async function startEngine(io, options = {}) {
   // enter through a gateway socket, the route fans them out to
   // per-command components, and the components call into the mesh layer
   // through their injected context
+  const runtimeBridge = createRuntimeBridge({
+    getReticulum: () => mesh?.getReticulum() ?? null,
+    getIdentity: () => mesh?.getIdentity() ?? Promise.resolve(null),
+    postMessage: (/** @type {any} */ echo) => io.postMessage(echo),
+  });
   const meshContext = {
     mesh,
+    runtime: runtimeBridge,
     postMessage: (/** @type {any} */ echo) => io.postMessage(echo),
     postMeshConfig,
     joinProject,
@@ -678,6 +685,7 @@ export async function startEngine(io, options = {}) {
     // eslint-disable-line @typescript-eslint/no-invalid-void-type -- any: the Reticulum type lives in the vendored bundle
     stop() {
       clearInterval(heartbeat);
+      runtimeBridge.stop().catch(() => {});
       mesh.stop().catch(() => {});
       network.stop().catch(() => {});
     },

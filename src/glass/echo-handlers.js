@@ -36,6 +36,11 @@ import { progressPhrase } from "./progressPhrases.js";
  *   Apply a peer-set change, with the peer-id → identity-hash mapping when
  *   the provider reports it (work document #28).
  * @property {(requests: any[]) => void} setJoinRequests
+ * @property {(runtimes: any[]) => void} setRuntimeDiscovery Take the
+ *   discovered FBP runtime population (work document #59) into the
+ *   Glass's runtime state.
+ * @property {(connection: any) => void} setRuntimeConnection Take one
+ *   runtime connection's state into the Glass's runtime state.
  * @property {() => void} reloadIntoFreshBoot Reload after a factory reset.
  * @property {(state: any) => void} setDacarState
  * @property {(data: any) => void} ingestMeshStatus Take a mesh-status
@@ -137,6 +142,14 @@ export function createEchoHandlers(deps) {
     },
     "kind:mesh-requests": (data) => {
       deps.setJoinRequests(data.requests ?? []);
+    },
+    "kind:runtime-discovered": (data) => {
+      // The FBP runtime population (work document #59): a runtime is just
+      // another mesh counterpart with a protocol version
+      deps.setRuntimeDiscovery(data.runtimes ?? []);
+    },
+    "kind:runtime-connection": (data) => {
+      deps.setRuntimeConnection(data);
     },
     "kind:factory-reset": () => {
       // The Engine wiped local state: reload into a fresh boot (which

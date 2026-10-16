@@ -310,7 +310,10 @@ type UIWorkerMessage =
   | { type: 'MESH'; command: 'createInvite' }
   | { type: 'MESH'; command: 'factoryReset' }
   | { type: 'MESH'; command: 'stop' }
-  | { type: 'MESH'; command: 'importIdentity'; payload: { identity: string } };
+  | { type: 'MESH'; command: 'importIdentity'; payload: { identity: string } }
+  | { type: 'MESH'; command: 'runtimeDiscover' }
+  | { type: 'MESH'; command: 'runtimeConnect'; payload: { destinationHash: string } }
+  | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } };
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
 // through `MESH grant` (work document #27); the intent only ever revokes.
@@ -388,9 +391,16 @@ interface IntentMakeSubgraph { graphId: string; nodeIds: string[] }
 interface IntentMoveUp { graphId: string; nodeIds: string[] }
 
 // MESH commands (work documents #25/#27) bypass the NoFlo dispatcher: they
-// concern the mesh layer, not the CRDT graph, and are routed by the Engine's
-// message router (`src/worker/mesh-commands.js`). Unknown commands are
-// refused loudly.
+// concern the mesh layer, not the CRDT graph, and are routed through the
+// mesh plane's dispatch graph (`src/graphs/mesh-dispatch.js`, work document
+// #53 extraction 1). Unknown commands are refused loudly.
+//
+// Runtime commands (work document #59) concern the FBP Protocol 2.0 client
+// hosted beside the mesh layer in the same Worker. `runtimeDiscover`
+// re-reports the population; discovery itself is push-based (announces echo
+// as `runtime-discovered` as they arrive). Connection state is keyed by the
+// hex destination hash; the advertised capability mask rides the connected
+// state and is the feature-detection surface for every runtime affordance.
 ```
 
 ### Part 2: Worker to UI (`Engine -> Main`)
@@ -419,8 +429,11 @@ type EngineUIMessage =
   | { kind: 'y-update'; update: Uint8Array }
   | { kind: 'awareness'; states: Array<Record<string, any>> }
   | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
+  | { kind: 'runtime-discovered'; runtimes: Array<{ destinationHash: string; nodeName: string; protocolVersion: number; lastSeen: number }> }
+  | { kind: 'runtime-connection'; destinationHash: string; state: 'connected' | 'disconnected' | 'error'; nodeName: string | null; capabilityMask?: number; protocolVersion?: number; error?: string }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
   | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
+  | { kind: 'mesh-peer-reachability'; states: { [identityHash: string]: 'online' | 'offline' } }
   | { kind: 'mesh-requests'; requests: Array<{ identityHash: string; destinationHash: string | null; firstSeen: number; source?: string }> }
   | { kind: 'mesh-dacar'; projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
   | { kind: 'mesh-invite'; uri: string }
@@ -472,7 +485,7 @@ interface SignatureResponse { componentName: string; signature: any }
 // from — the Engine never sends free-form user-facing text.
 interface ProgressDetail { [key: string]: any }
 
-// Mesh and mirror echoes (work documents #21/#25/#27/#34). Kind-style echoes
+// Mesh and mirror echoes (work documents #21/#25/#27/#34/#59). Kind-style echoes
 // carry their discriminator in `kind`; the Glass dispatches every Engine
 // message through `src/glass/echo-handlers.js`, whose keys must equal the
 // registry exactly (see the process rule at the top of this appendix).
@@ -480,6 +493,22 @@ interface MeshStatus { connected?: boolean; synced?: boolean; peers?: number; er
 interface MeshPeerChange { added: string[]; removed: string[]; peers?: number }
 interface MeshJoinRequest { identityHash: string; destinationHash: string | null; firstSeen: number; source?: string }
 interface MeshDacarState { projectId: string; anchor: { hash: string; owner: boolean }; grants: Array<Record<string, any>>; wallet: Array<Record<string, any>> }
+
+// Runtime echoes (work document #59): the discovered FBP runtime population
+// and per-runtime connection state. Discovery is the transport's announce
+// stream filtered to FBP-protocol app_data; a runtime is just another mesh
+// counterpart with a protocol version. The capability mask is the Glass's
+// feature-detection surface — no `component.*` means no registry sync, no
+// `graph.edit` means observe-only, sparse telemetry degrades the HUD.
+interface RuntimeDiscovered { destinationHash: string; nodeName: string; protocolVersion: number; lastSeen: number }
+interface RuntimeConnection {
+  destinationHash: string;
+  state: 'connected' | 'disconnected' | 'error';
+  nodeName: string | null;
+  capabilityMask?: number;
+  protocolVersion?: number;
+  error?: string;
+}
 
 // Network Protocol (Batched telemetry chunks)
 interface NetworkFlowtraceChunk {

@@ -439,13 +439,37 @@
 
 /**
  * Payload-less MESH commands: `status` (re-report mesh state),
- * `createInvite`, `factoryReset`, and `stop` (graceful shutdown on page
- * unload).
+ * `createInvite`, `factoryReset`, `stop` (graceful shutdown on page
+ * unload), and `runtimeDiscover` (re-report the discovered FBP runtime
+ * population — discovery itself is push-based, work document #59).
  *
  * @typedef {Object} MeshPlainMessage
  * @property {'MESH'} type
- * @property {'status' | 'createInvite' | 'factoryReset' | 'stop'} command
+ * @property {'status' | 'createInvite' | 'factoryReset' | 'stop' | 'runtimeDiscover'} command
  * @property {Record<string, any>} [payload]
+ */
+
+/**
+ * Appendix A extension (work document #59): connect to a discovered FBP
+ * runtime. The hash is the hex destination hash from `runtime-discovered`;
+ * the Engine establishes the protocol link with the device's mesh identity
+ * and reports the outcome as a `runtime-connection` echo.
+ *
+ * @typedef {Object} MeshRuntimeConnectMessage
+ * @property {'MESH'} type
+ * @property {'runtimeConnect'} command
+ * @property {{ destinationHash: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #59): tear a runtime connection
+ * down. Disconnecting an unknown runtime is idempotent — the echo carries
+ * the disconnected state either way.
+ *
+ * @typedef {Object} MeshRuntimeDisconnectMessage
+ * @property {'MESH'} type
+ * @property {'runtimeDisconnect'} command
+ * @property {{ destinationHash: string }} payload
  */
 
 /**
@@ -558,6 +582,8 @@
  *   | MeshGrantMessage
  *   | MeshResolveRequestMessage
  *   | MeshImportIdentityMessage
+ *   | MeshRuntimeConnectMessage
+ *   | MeshRuntimeDisconnectMessage
  *   | MeshPlainMessage} UIWorkerMessage
  */
 
@@ -634,6 +660,9 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "factoryReset" },
   { type: "MESH", command: "stop" },
   { type: "MESH", command: "importIdentity" },
+  { type: "MESH", command: "runtimeDiscover" },
+  { type: "MESH", command: "runtimeConnect" },
+  { type: "MESH", command: "runtimeDisconnect" },
 ];
 
 /**
@@ -651,6 +680,9 @@ export const MESH_COMMANDS = [
   "factoryReset",
   "stop",
   "importIdentity",
+  "runtimeDiscover",
+  "runtimeConnect",
+  "runtimeDisconnect",
 ];
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -830,6 +862,33 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * The discovered FBP runtime population (work document #59): every
+ * FBP-protocol announce the transport heard, plus cached destinations from
+ * before the listener attached. Sorted by name, then hash.
+ *
+ * @typedef {Object} RuntimeDiscoveredEcho
+ * @property {'runtime-discovered'} kind
+ * @property {Array<{ destinationHash: string, nodeName: string, protocolVersion: number, lastSeen: number }>} runtimes
+ */
+
+/**
+ * One runtime connection's state (work document #59). `capabilityMask` and
+ * `protocolVersion` ride the connected state — the advertised mask is the
+ * feature-detection surface the Glass gates every runtime affordance on
+ * (a heterogeneous runtime population: NoFlo, MicroFlo, fixed-program
+ * targets).
+ *
+ * @typedef {Object} RuntimeConnectionEcho
+ * @property {'runtime-connection'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {'connected' | 'disconnected' | 'error'} state
+ * @property {string | null} nodeName
+ * @property {number} [capabilityMask]
+ * @property {number} [protocolVersion]
+ * @property {string} [error]
+ */
+
+/**
  * Dacar authorization state: the project's Trust Anchor, per-grant
  * verification status, and the local wallet's cataloged grants.
  *
@@ -905,6 +964,8 @@ export const MESH_COMMANDS = [
  *   | MeshStatusEcho
  *   | MeshPeersEcho
  *   | MeshRequestsEcho
+ *   | RuntimeDiscoveredEcho
+ *   | RuntimeConnectionEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
  *   | FactoryResetEcho
@@ -946,6 +1007,8 @@ export const ECHO_MESSAGES = [
   { kind: "mesh-peers" },
   { kind: "mesh-peer-reachability" },
   { kind: "mesh-requests" },
+  { kind: "runtime-discovered" },
+  { kind: "runtime-connection" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },
   { kind: "factory-reset" },

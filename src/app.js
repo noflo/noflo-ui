@@ -166,6 +166,15 @@ function narrateWorkerError(error) {
  * of a path request that looks stuck. */
 /** @type {Record<string, "online" | "offline">} */
 let peerReachability = {};
+/** The discovered FBP runtime population (work document #59): the
+ * Engine's `runtime-discovered` report, newest announce first. */
+let runtimeRuntimes =
+  /** @type {Array<{ destinationHash: string, nodeName: string, protocolVersion: number, lastSeen: number }>} */ ([]);
+/** Per-runtime connection state (work document #59), keyed by the hex
+ * destination hash: the `runtime-connection` echoes, latest per runtime. */
+const runtimeConnections =
+  /** @type {Map<string, { state: string, nodeName: string | null, capabilityMask?: number, protocolVersion?: number, error?: string }>} */
+  (new Map());
 /** The Engine's undo-journal availability report (work document #39). */
 let undoState = /** @type {any} */ (null);
 /** The project's work documents (work document #9), newest edit first. */
@@ -398,6 +407,14 @@ const echoHandlers = createEchoHandlers({
   setJoinRequests: (requests) => {
     joinRequests = requests;
     refreshMeshSettings();
+    refreshSyncPanel();
+  },
+  setRuntimeDiscovery: (runtimes) => {
+    runtimeRuntimes = runtimes;
+    refreshSyncPanel();
+  },
+  setRuntimeConnection: (connection) => {
+    runtimeConnections.set(connection.destinationHash, connection);
     refreshSyncPanel();
   },
   reloadIntoFreshBoot: () => {
@@ -1119,6 +1136,16 @@ function refreshMeshSettings() {
     dialog._meshError = meshError;
     dialog.render();
   }
+}
+
+/**
+ * Re-queries the runtime population from the Engine (work document #59):
+ * discovery is push-based (announces echo as they arrive), but the Glass
+ * asks on panel expansion so a quiet mesh still shows its cached
+ * population.
+ */
+function refreshRuntimes() {
+  supervisor?.send({ type: "MESH", command: "runtimeDiscover" });
 }
 
 /**

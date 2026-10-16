@@ -30,6 +30,9 @@ import * as ImportIdentity from "../components/mesh/ImportIdentity.js";
 import * as Join from "../components/mesh/Join.js";
 import * as ResolveRequest from "../components/mesh/ResolveRequest.js";
 import * as Route from "../components/mesh/Route.js";
+import * as RuntimeConnect from "../components/mesh/RuntimeConnect.js";
+import * as RuntimeDisconnect from "../components/mesh/RuntimeDisconnect.js";
+import * as RuntimeDiscover from "../components/mesh/RuntimeDiscover.js";
 import * as Status from "../components/mesh/Status.js";
 import * as Stop from "../components/mesh/Stop.js";
 
@@ -61,6 +64,9 @@ export function createMeshRegistry() {
       "mesh/join": Join,
       "mesh/resolveRequest": ResolveRequest,
       "mesh/route": Route,
+      "mesh/runtimeConnect": RuntimeConnect,
+      "mesh/runtimeDisconnect": RuntimeDisconnect,
+      "mesh/runtimeDiscover": RuntimeDiscover,
       "mesh/stop": Stop,
       "mesh/status": Status,
     }),
@@ -88,6 +94,9 @@ export function createMeshGraph() {
     "importIdentity",
     "join",
     "resolveRequest",
+    "runtimeConnect",
+    "runtimeDisconnect",
+    "runtimeDiscover",
     "status",
     "stop",
   ];
@@ -116,6 +125,7 @@ export function createMeshGraph() {
  *   A started mesh network
  * @param {{
  *   mesh: any,
+ *   runtime: any,
  *   postMessage: (message: any) => void,
  *   postMeshConfig: () => void,
  *   joinProject: (payload: any) => void,
@@ -131,6 +141,9 @@ export function wireMeshContext(network, context) {
     "importidentity",
     "join",
     "resolverequest",
+    "runtimeconnect",
+    "runtimedisconnect",
+    "runtimediscover",
     "status",
     "stop",
   ];
