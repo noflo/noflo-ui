@@ -818,6 +818,10 @@ export function updateComponentMetadata(component, patch) {
  * @property {string} name
  * @property {string} [type]
  * @property {boolean} [addressable]
+ * @property {{ id: string, digest?: string }} [schema] The port's schema
+ *   artifact reference (work document #57): refines the coarse datatype,
+ *   never replaces it. Participates in the canonical signature and
+ *   therefore in `sig_hash`.
  */
 
 /**
@@ -844,6 +848,9 @@ function signatureArray(ports = []) {
     if (port.type !== undefined) entry.set("type", port.type);
     if (port.addressable !== undefined)
       entry.set("addressable", port.addressable);
+    // The port's schema reference (work document #57): refines the coarse
+    // datatype, participates in sig_hash through the canonical signature
+    if (port.schema !== undefined) entry.set("schema", port.schema);
     array.push([entry]);
   }
   return array;

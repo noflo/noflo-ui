@@ -65,7 +65,7 @@ import {
   wireExportRename,
 } from "./glass/text-prompt.js";
 import { LibraryManager } from "./library/LibraryManager.js";
-import { ComponentSignature } from "./library/schema.js";
+import { buildSignatureSchema } from "./library/schema.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
 
 // Element modules self-register their custom elements on import (the
@@ -658,7 +658,15 @@ async function openSignatureEditor(componentName) {
       name: port.name,
       type: port.type ?? "all",
       addressable: Boolean(port.addressable),
+      // The port's schema reference (work document #57): the picker's
+      // value is the ns/name; empty means none
+      schema: port.schema?.id ?? "",
     }));
+  // The per-port schema pickers enumerate the project's schemas (work
+  // document #57 update #1)
+  const schemaNames = getSchemas(mirrorDoc).map(
+    (/** @type {any} */ record) => record.name,
+  );
 
   componentModal.setActions(
     implemented
@@ -684,7 +692,7 @@ async function openSignatureEditor(componentName) {
         ],
   );
   componentModal.open(`Component: ${componentName}`);
-  componentForm.schema = ComponentSignature;
+  componentForm.schema = buildSignatureSchema(schemaNames);
   componentForm.data = {
     name: componentName,
     icon: plain.icon || "gear",
@@ -738,18 +746,37 @@ async function openSignatureEditor(componentName) {
     wantsSignatureWrite &&
     (renamed || action === "fork" || action === "save")
   ) {
-    sendIntent({
-      type: "INTENT",
-      command: "setSignature",
-      payload: {
-        component: target,
-        signature: {
-          inports: newData.inports,
-          outports: newData.outports,
-          description: newData.description,
-          icon: newData.icon,
+    // The port schema references resolve their digests at save: digests
+    // pin bytes (work document #37 §13) — the pinned form is what
+    // sig_hash covers
+    const resolveSchemas = async (/** @type {any} */ portsList) =>
+      Promise.all(
+        (portsList ?? []).map(async (/** @type {any} */ port) => {
+          if (!port.schema) return port;
+          const record = /** @type {any} */ (getSchema(mirrorDoc, port.schema));
+          if (!record) return { ...port, schema: undefined };
+          const { digestSchema } = await import("../vendor/fbp-protocol.js");
+          const digest = await digestSchema(JSON.parse(record.get("body")));
+          return { ...port, schema: { id: port.schema, digest } };
+        }),
+      );
+    Promise.all([
+      resolveSchemas(newData.inports),
+      resolveSchemas(newData.outports),
+    ]).then(([inports, outports]) => {
+      sendIntent({
+        type: "INTENT",
+        command: "setSignature",
+        payload: {
+          component: target,
+          signature: {
+            inports,
+            outports,
+            description: newData.description,
+            icon: newData.icon,
+          },
         },
-      },
+      });
     });
   }
 
@@ -1421,7 +1448,9 @@ async function openSignatureEditorCreate(prefillPorts) {
     { value: "save", label: "Create", kind: "btn-primary" },
   ]);
   componentModal.open("New component");
-  componentForm.schema = ComponentSignature;
+  componentForm.schema = buildSignatureSchema(
+    getSchemas(mirrorDoc).map((/** @type {any} */ record) => record.name),
+  );
   componentForm.data = {
     name: "New Node",
     icon: "gear",

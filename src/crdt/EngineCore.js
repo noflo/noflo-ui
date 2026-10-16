@@ -2623,7 +2623,27 @@ function intentSetSignature(doc, payload) {
         (/** @type {any} */ port) =>
           port && typeof port.name === "string" && port.name.length > 0,
       ));
+  // Port schema references (work document #57): an `id` must exist in the
+  // project's schemas section, and its digest resolves from that record —
+  // digests pin bytes, and the pinned form is what sig_hash covers
+  // Port schema references (work document #57): an `id` must exist in
+  // the project's schemas section — the digest pins bytes at reference
+  // time and travels with the ref (the Glass computes it from the CRDT
+  // record; the sync intent boundary verifies the id only)
+  const portsSchemaOk = (/** @type {any} */ ports) =>
+    ports === undefined ||
+    (Array.isArray(ports) &&
+      ports.every((/** @type {any} */ port) => {
+        if (!port?.schema) return true;
+        return (
+          typeof port.schema.id === "string" &&
+          Boolean(getSchema(doc, port.schema.id))
+        );
+      }));
   if (!portsOk(signature.inports) || !portsOk(signature.outports)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!portsSchemaOk(signature.inports) || !portsSchemaOk(signature.outports)) {
     return { accepted: false, echoes: [] };
   }
   // Port names are unique per direction (work document #5): one "in"

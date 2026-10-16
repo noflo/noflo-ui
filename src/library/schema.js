@@ -50,6 +50,33 @@ export const PortSignature = {
   },
 };
 
+/**
+ * Builds the signature form with per-port schema pickers (work document
+ * #57): each port gains a `schema` select over the project's schemas —
+ * defaulting to none — with the empty string meaning "no schema
+ * declared". The options are built at open time from the project's
+ * schemas map; the digest pins bytes at save (the Glass computes it from
+ * the CRDT record).
+ *
+ * @param {string[]} schemaNames The project's schema identifiers.
+ * @returns {any}
+ */
+export function buildSignatureSchema(schemaNames = []) {
+  const portSchema = /** @type {any} */ (structuredClone(PortSignature));
+  portSchema.properties.schema = {
+    name: "Schema",
+    type: "string",
+    description:
+      "Schema artifact refining the port's datatype (the ns/name project schema)",
+    default: "",
+    enum: ["", ...schemaNames],
+  };
+  const signature = /** @type {any} */ (structuredClone(ComponentSignature));
+  signature.properties.inports.items = portSchema;
+  signature.properties.outports.items = portSchema;
+  return signature;
+}
+
 export const ComponentSignature = {
   title: "Component signature",
   type: "object",
