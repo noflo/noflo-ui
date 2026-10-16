@@ -33,6 +33,7 @@ import {
   FlowComponentPicker,
 } from "./elements/noflo-component-picker.js";
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
+import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
 import "./elements/noflo-mesh-settings.js";
@@ -194,6 +195,8 @@ let pendingWorkDocEditId = /** @type {string | null} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
+/** @type {FlowRuntimeCorner | null} */
+let runtimeCorner = null;
 /** @type {FlowContextChip | null} */
 let contextChip = null;
 /** @type {FlowEditor | null} */
@@ -411,11 +414,11 @@ const echoHandlers = createEchoHandlers({
   },
   setRuntimeDiscovery: (runtimes) => {
     runtimeRuntimes = runtimes;
-    refreshSyncPanel();
+    refreshRuntimeCorner();
   },
   setRuntimeConnection: (connection) => {
     runtimeConnections.set(connection.destinationHash, connection);
-    refreshSyncPanel();
+    refreshRuntimeCorner();
   },
   reloadIntoFreshBoot: () => {
     location.reload();
@@ -1149,6 +1152,20 @@ function refreshRuntimes() {
 }
 
 /**
+ * Feeds the Runtime corner (work documents #59/#15/#28, top-right) from
+ * the Glass's runtime state: the FBP runtime population's home — the sync
+ * panel stays the mesh peers' surface.
+ */
+function refreshRuntimeCorner() {
+  const corner = /** @type {any} */ (document.getElementById("runtime-corner"));
+  if (!corner) return;
+  // The same disclosure gate as the sync panel: the mesh unused means no
+  // corner UI
+  corner.setVisible(Boolean(meshConfig && (meshConfig.enabled || meshError)));
+  corner.setRuntimes(runtimeRuntimes, runtimeConnections);
+}
+
+/**
  * Feeds the corner sync/presence panel (work document #28) from the Glass's
  * mesh state: a pure view over the Engine's existing messages.
  */
@@ -1162,7 +1179,6 @@ function refreshSyncPanel() {
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
   syncPanel.setPeers(meshPeers, meshPeerIdentities, peerReachability);
-  syncPanel.setRuntimes(runtimeRuntimes, runtimeConnections);
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);
@@ -1793,6 +1809,29 @@ async function init() {
       payload: { grantId: e.detail.grantId },
     });
   });
+  // Runtime corner (work documents #59/#15/#28, top-right): the FBP
+  // runtime population's home — discovery refreshes on corner expansion,
+  // connect/disconnect address the runtime by its destination hash
+  runtimeCorner = /** @type {FlowRuntimeCorner | null} */ (
+    /** @type {any} */ (document.getElementById("runtime-corner"))
+  );
+  on(runtimeCorner, "runtime-refresh", () => {
+    refreshRuntimes();
+  });
+  on(runtimeCorner, "runtime-connect", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeConnect",
+      payload: { destinationHash: e.detail.destinationHash },
+    });
+  });
+  on(runtimeCorner, "runtime-disconnect", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeDisconnect",
+      payload: { destinationHash: e.detail.destinationHash },
+    });
+  });
   on(syncPanel, "sync-decline", (e) => {
     supervisor?.send({
       type: "MESH",
@@ -1801,27 +1840,6 @@ async function init() {
         identityHash: e.detail.identityHash,
         decision: "declined",
       },
-    });
-  });
-  // Runtime surfaces (work document #59): a runtime is just another mesh
-  // counterpart with a protocol version — discovery refreshes on panel
-  // expansion, connect/disconnect address the runtime by its destination
-  // hash
-  on(syncPanel, "runtime-refresh", () => {
-    refreshRuntimes();
-  });
-  on(syncPanel, "runtime-connect", (e) => {
-    supervisor?.send({
-      type: "MESH",
-      command: "runtimeConnect",
-      payload: { destinationHash: e.detail.destinationHash },
-    });
-  });
-  on(syncPanel, "runtime-disconnect", (e) => {
-    supervisor?.send({
-      type: "MESH",
-      command: "runtimeDisconnect",
-      payload: { destinationHash: e.detail.destinationHash },
     });
   });
   on(syncPanel, "sync-invite", () => {
