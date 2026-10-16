@@ -195,8 +195,12 @@ async function bootRuntime({ port, anchorHashHex, anchorPubkeyHex, saltHex }) {
       /** @type {Record<string, { component: string, type: string, state: number }>} */
       const entries = {};
       for (const node of graph.nodes()) {
+        // Placeholder nodes have no component and no process to list —
+        // encoding an empty name would take the listing into wire silence
+        const component = node.component;
+        if (!component) continue;
         entries[node.entity_id] = {
-          component: node.component ?? "",
+          component,
           type: COMPONENT_TYPE.ELEMENTARY,
           state: runtime.host.network
             ? EXECUTION_STATE.ENABLED
