@@ -1,1556 +1,53 @@
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __esm = (fn, res, err) => function __init() {
-  if (err) throw err[0];
-  try {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
-  } catch (e) {
-    throw err = [e], e;
-  }
-};
-
-// node_modules/@noflo/fbp-protocol/src/schema-identity.js
-function isValidSchemaId(id) {
-  return typeof id === "string" && /^[a-z][a-z0-9_-]*\/[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(id);
-}
-function parseSchemaRef(ref) {
-  if (typeof ref !== "string" || ref.length === 0) {
-    throw new TypeError("schema reference must be a non-empty string");
-  }
-  let rest = ref;
-  if (rest.startsWith(SCHEMA_URN_PREFIX)) {
-    rest = rest.slice(SCHEMA_URN_PREFIX.length);
-  } else if (ref.includes("://") || ref.startsWith("urn:")) {
-    throw new TypeError(
-      `unsupported schema reference '${ref}': only ns/name authoring sugar and urn:noflo:\u2026 published form are accepted`
-    );
-  }
-  const hashIndex = rest.indexOf("#");
-  const fragment = hashIndex === -1 ? null : rest.slice(hashIndex + 1);
-  if (hashIndex !== -1) rest = rest.slice(0, hashIndex);
-  const atSign = rest.lastIndexOf("@");
-  let digest = null;
-  if (atSign !== -1) {
-    digest = rest.slice(atSign + 1);
-    rest = rest.slice(0, atSign);
-    if (!/^[0-9a-f]{64}$/.test(digest)) {
-      throw new TypeError(
-        `schema reference '${ref}' carries a malformed digest`
-      );
-    }
-  }
-  if (!isValidSchemaId(rest)) {
-    throw new TypeError(`schema reference '${ref}' is not a valid ns/name id`);
-  }
-  if (fragment !== null && !fragment.startsWith("/")) {
-    throw new TypeError(
-      `schema reference '${ref}' carries a non-JSON-Pointer fragment`
-    );
-  }
-  return { id: rest, digest, fragment };
-}
-function normalizeSchemaBody(body) {
-  if (body === null || typeof body !== "object" || Array.isArray(body)) {
-    throw new TypeError("schema body must be an object");
-  }
-  if (body.$id === void 0) {
-    return { ...body };
-  }
-  if (typeof body.$id !== "string") {
-    throw new TypeError("schema $id must be a string");
-  }
-  const parsed = parseSchemaRef(body.$id);
-  if (parsed.digest !== null || parsed.fragment !== null) {
-    throw new TypeError(
-      `schema $id '${body.$id}' must be a bare ns/name id: a document cannot name a revision of itself`
-    );
-  }
-  return { ...body, $id: parsed.id };
-}
-async function digestSchema(body) {
-  const canonical = canonicalizeJson(normalizeSchemaBody(body));
-  const bytes = new TextEncoder().encode(canonical);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-function collectSchemaRefs(body) {
-  const refs = [];
-  const seen = /* @__PURE__ */ new Set();
-  walk(body, (value) => {
-    if (value !== null && typeof value === "object" && !Array.isArray(value) && typeof value.$ref === "string" && !value.$ref.startsWith("#")) {
-      if (!seen.has(value.$ref)) {
-        seen.add(value.$ref);
-        refs.push(value.$ref);
-      }
-    }
-  });
-  return refs;
-}
-function canonicalizeJson(value) {
-  if (value === null) return "null";
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalizeJson).join(",")}]`;
-  }
-  if (typeof value === "object") {
-    const keys = Object.keys(value).sort();
-    return `{${keys.map((key) => `${canonicalString(key)}:${canonicalizeJson(value[key])}`).join(",")}}`;
-  }
-  switch (typeof value) {
-    case "boolean":
-      return value ? "true" : "false";
-    case "number":
-      return canonicalNumber(value);
-    case "string":
-      return canonicalString(value);
-    default:
-      throw new TypeError(
-        "canonicalization requires JSON data: strings, numbers, booleans, null, arrays, objects"
-      );
-  }
-}
-function canonicalNumber(value) {
-  if (!Number.isFinite(value)) {
-    throw new TypeError("non-finite numbers cannot be canonicalized");
-  }
-  return String(value);
-}
-function canonicalString(value) {
-  for (const char of value) {
-    const code = (
-      /** @type {number} */
-      char.codePointAt(0)
-    );
-    if (code >= 55296 && code <= 57343) {
-      throw new TypeError(
-        "strings carrying lone surrogates cannot be canonicalized"
-      );
-    }
-  }
-  return JSON.stringify(value);
-}
-function walk(value, visit) {
-  visit(value);
-  if (Array.isArray(value)) {
-    for (const entry of value) walk(entry, visit);
-    return;
-  }
-  if (value !== null && typeof value === "object") {
-    for (const entry of Object.values(value)) walk(entry, visit);
-  }
-}
-var SCHEMA_URN_PREFIX;
-var init_schema_identity = __esm({
-  "node_modules/@noflo/fbp-protocol/src/schema-identity.js"() {
-    SCHEMA_URN_PREFIX = "urn:noflo:";
-  }
-});
-
-// node_modules/@noflo/fbp-protocol/src/errors.js
-var ProtocolError = class extends Error {
-  /**
-   * Create a protocol error, annotating it with the offending command code
-   * when known.
-   *
-   * @param {string} message
-   * @param {number} [opcode] Command code the frame claimed, when known.
-   * @param {number} [reason] REASON code classifying the failure for `0x17`
-   *   answers (work document #4 update #43): unrecognized opcodes carry
-   *   `REASON.UNKNOWN_COMMAND`; receivers answer known-but-malformed
-   *   payloads with `REASON.MALFORMED`.
-   */
-  constructor(message, opcode, reason) {
-    super(
-      opcode === void 0 ? message : `${message} (opcode 0x${opcode.toString(16)})`
-    );
-    this.name = "ProtocolError";
-    this.opcode = opcode;
-    this.reason = reason;
-  }
-};
-
-// node_modules/@noflo/fbp-protocol/src/constants.js
-var PROTOCOL_VERSION = 2;
-var ANNOUNCE_ASPECT = "fbp.runtime";
-var CMD_AUTH_RESPONSE = 2;
-var REASON = {
-  /** Fallback — discouraged: prefer a specific code. */
-  UNSPECIFIED: 0,
-  /** The runtime's hardware cannot serve this (same meaning as the `0x02` limitation code). */
-  HARDWARE_CONSTRAINED: 1,
-  /** The peer's capability grant does not cover this (same meaning as the `0x02` limitation code). */
-  PERMISSION_DENIED: 2,
-  /** The link or runtime is saturated (same meaning as the `0x02` limitation code). */
-  LINK_SATURATED: 3,
-  /** Another operation holds the runtime busy (same meaning as the `0x02` limitation code). */
-  CONCURRENCY_LOCK: 4,
-  /** Known to the protocol generation but outside this runtime's declared surface — e.g. no ephemeral planes, no component writes, a reserved identifier. */
-  UNSUPPORTED: 5,
-  /** The opcode is not recognized by this runtime. */
-  UNKNOWN_COMMAND: 6,
-  /** The frame failed structural decode. */
-  MALFORMED: 7,
-  /** A payload value sits outside the runtime's declared value model. */
-  PAYLOAD_UNSUPPORTED: 8,
-  /** The targeted component is a declared stub without implementation. */
-  STUB: 9,
-  /** The command is valid but the runtime's state cannot execute it — e.g. packet send before the plane's network is built. */
-  INVALID_STATE: 10,
-  /** A referenced object does not exist — unknown plane, unknown exported port. */
-  UNKNOWN_TARGET: 11
-};
-var CMD_CRDT_SYNC_REQ = 16;
-var CMD_CRDT_UP_TO_DATE = 17;
-var CMD_CRDT_STALE_EPOCH = 18;
-var CMD_CRDT_UPDATE = 20;
-var CMD_PLANE_DROP = 21;
-var CMD_PLANE_LIST = 22;
-var CMD_OP_REJECTED = 23;
-var PLANE_KIND = {
-  MAIN: "main",
-  SUBGRAPH: "subgraph",
-  EPHEMERAL: "ephemeral"
-};
-var OP_TYPE = {
-  INSERT_NODE: 1,
-  INSERT_EDGE: 2,
-  INSERT_IIP: 3,
-  TOMBSTONE: 4,
-  UI_METADATA: 5,
-  INSERT_EXPORT: 6,
-  INSERT_GROUP: 7
-};
-var CMD_COMP_SYNC_REQ = 32;
-var CMD_COMP_UP_TO_DATE = 33;
-var CMD_COMP_MANIFEST = 34;
-var CMD_COMP_DETAIL_REQ = 35;
-var CMD_COMP_DETAIL_RES = 36;
-var CMD_COMP_WRITE = 37;
-var CMD_COMP_SOURCE = 38;
-var CMD_COMP_INSTALL_REQ = 39;
-var CMD_SCHEMA_REQ = 40;
-var CMD_SCHEMA_RES = 41;
-var CMD_SCHEMA_WRITE = 42;
-var COMPONENT_TYPE = {
-  ELEMENTARY: "elementary",
-  SUBGRAPH: "subgraph",
-  STUB: "stub"
-};
-var SCHEMA_INLINE_LIMIT = 4096;
-var CMD_PUBSUB_SUB = 48;
-var CMD_FLOWTRACE_CHUNK = 50;
-var CMD_RUN_CTRL = 64;
-var CMD_BREAKPOINT_SET = 65;
-var CMD_BREAKPOINT_CLEAR = 66;
-var CMD_PROCESS_CTRL = 67;
-var RUN_ACTION = {
-  PAUSE: 1,
-  RESUME: 2,
-  STEP: 3,
-  START: 4,
-  STOP: 5
-};
-var PROCESS_ACTION = {
-  DISABLE: 1,
-  ENABLE: 2
-};
-var CMD_PROCESS_LIST_REQ = 68;
-var CMD_PROCESS_LIST = 69;
-var EXECUTION_STATE = {
-  ENABLED: 1,
-  DISABLED: 2
-};
-var CMD_HWM_SET = 70;
-var CMD_PACKET_SEND = 71;
-var CMD_GET_STATUS = 72;
-var RUN_STATE = {
-  STOPPED: 0,
-  RUNNING: 1,
-  PAUSED: 2,
-  FAILED: 3
-};
-
-// node_modules/@noflo/fbp-protocol/src/debug.js
-import { MsgPack } from "./reticulum-core.js";
-function encodeRunCtrl(action, planeId = void 0) {
-  assertRunAction(action);
-  return MsgPack.encode([CMD_RUN_CTRL, action, planeId ?? null]);
-}
-function decodeRunCtrl(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_RUN_CTRL, 3);
-  assertRunAction(frame[1], CMD_RUN_CTRL);
-  return { cmd: CMD_RUN_CTRL, action: frame[1], planeId: frame[2] ?? null };
-}
-function encodeBreakpointSet({ breakpointId, nodeId, port = null }) {
-  assertId(breakpointId, CMD_BREAKPOINT_SET, "breakpoint_id");
-  assertName(nodeId, CMD_BREAKPOINT_SET, "node_id");
-  if (port !== null && (typeof port !== "string" || port.length === 0)) {
-    throw new ProtocolError(
-      "port must be a non-empty string or null (any triggering inport)",
-      CMD_BREAKPOINT_SET
-    );
-  }
-  return MsgPack.encode([CMD_BREAKPOINT_SET, breakpointId, nodeId, port]);
-}
-function decodeBreakpointSet(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_BREAKPOINT_SET, 4);
-  const [cmd, breakpointId, nodeId, port] = frame;
-  assertId(breakpointId, cmd, "breakpoint_id");
-  assertName(nodeId, cmd, "node_id");
-  if (port !== null && (typeof port !== "string" || port.length === 0)) {
-    throw new ProtocolError(
-      "port must be a non-empty string or null (any triggering inport)",
-      cmd
-    );
-  }
-  return { cmd, breakpointId, nodeId, port };
-}
-function encodeBreakpointClear(breakpointId) {
-  if (breakpointId !== null) {
-    assertId(breakpointId, CMD_BREAKPOINT_CLEAR, "breakpoint_id");
-  }
-  return MsgPack.encode([CMD_BREAKPOINT_CLEAR, breakpointId]);
-}
-function decodeBreakpointClear(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_BREAKPOINT_CLEAR, 2);
-  if (frame[1] !== null) {
-    assertId(frame[1], CMD_BREAKPOINT_CLEAR, "breakpoint_id");
-  }
-  return { cmd: CMD_BREAKPOINT_CLEAR, breakpointId: frame[1] };
-}
-function encodeProcessCtrl({ nodeId, action }) {
-  assertName(nodeId, CMD_PROCESS_CTRL, "node_id");
-  assertProcessAction(action);
-  return MsgPack.encode([CMD_PROCESS_CTRL, nodeId, action]);
-}
-function decodeProcessCtrl(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_PROCESS_CTRL, 3);
-  const [cmd, nodeId, action] = frame;
-  assertName(nodeId, cmd, "node_id");
-  assertProcessAction(action, cmd);
-  return { cmd, nodeId, action };
-}
-function encodeProcessListReq() {
-  return MsgPack.encode([CMD_PROCESS_LIST_REQ]);
-}
-function decodeProcessListReq(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_PROCESS_LIST_REQ, 1);
-  return { cmd: CMD_PROCESS_LIST_REQ };
-}
-function decodeProcessList(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_PROCESS_LIST, 3);
-  const [cmd, epochId, wireEntries] = frame;
-  assertWireEntries(wireEntries, cmd);
-  const entries = {};
-  for (const [nodeId, [component, type, state]] of Object.entries(
-    wireEntries
-  )) {
-    entries[nodeId] = { component, type, state };
-  }
-  return { cmd, epochId, entries };
-}
-function encodeHwmSet(highWaterMark) {
-  assertHighWaterMark(highWaterMark, CMD_HWM_SET);
-  return MsgPack.encode([CMD_HWM_SET, highWaterMark]);
-}
-function decodeHwmSet(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_HWM_SET, 2);
-  assertHighWaterMark(frame[1], CMD_HWM_SET);
-  return { cmd: CMD_HWM_SET, highWaterMark: frame[1] };
-}
-function expectFrame(frame, opcode, arity) {
-  if (!Array.isArray(frame) || frame[0] !== opcode) {
-    throw new ProtocolError("unexpected frame opcode", opcode);
-  }
-  if (frame.length !== arity) {
-    throw new ProtocolError(
-      `frame must carry exactly ${arity} elements`,
-      opcode
-    );
-  }
-}
-function assertRunAction(action, opcode) {
-  if (!Object.values(RUN_ACTION).includes(action)) {
-    throw new ProtocolError("unknown run action", opcode ?? CMD_RUN_CTRL);
-  }
-}
-function assertProcessAction(action, opcode) {
-  if (!Object.values(PROCESS_ACTION).includes(action)) {
-    throw new ProtocolError(
-      "unknown process action",
-      opcode ?? CMD_PROCESS_CTRL
-    );
-  }
-}
-function assertId(id, opcode, field) {
-  const valid = typeof id === "string" && id.length > 0 || typeof id === "number" && Number.isInteger(id) && id >= 0;
-  if (!valid) {
-    throw new ProtocolError(
-      `${field} must be a non-empty string or a non-negative integer`,
-      opcode
-    );
-  }
-}
-function assertHighWaterMark(highWaterMark, opcode) {
-  if (highWaterMark !== null && (typeof highWaterMark !== "number" || !Number.isInteger(highWaterMark) || highWaterMark < 0)) {
-    throw new ProtocolError(
-      "high_water_mark must be a non-negative integer or null (unbounded)",
-      opcode
-    );
-  }
-}
-function assertName(name, opcode, field) {
-  if (typeof name !== "string" || name.length === 0) {
-    throw new ProtocolError(`${field} must be a non-empty string`, opcode);
-  }
-}
-function assertWireEntries(entries, opcode) {
-  if (entries === null || typeof entries !== "object" || Array.isArray(entries)) {
-    throw new ProtocolError(
-      "process entries must be a map of node id to [component, kind, state] tuple",
-      opcode
-    );
-  }
-  for (const [nodeId, tuple] of Object.entries(entries)) {
-    assertName(nodeId, opcode, "node id");
-    if (!Array.isArray(tuple) || tuple.length !== 3 || typeof tuple[0] !== "string" || tuple[0].length === 0 || !Object.values(COMPONENT_TYPE).includes(tuple[1]) || !Object.values(EXECUTION_STATE).includes(tuple[2])) {
-      throw new ProtocolError(
-        `process entry for ${nodeId} must be a [component, kind, state] tuple carrying a declared component kind and execution state`,
-        opcode
-      );
-    }
-  }
-}
-function encodePacketSend({ planeId, port, payload }) {
-  if (typeof port !== "string" || port.length === 0) {
-    throw new ProtocolError("port must be a non-empty string", CMD_PACKET_SEND);
-  }
-  return MsgPack.encode([CMD_PACKET_SEND, planeId, port, payload]);
-}
-function decodePacketSend(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_PACKET_SEND, 4);
-  const [cmd, planeId, port, payload] = frame;
-  if (typeof port !== "string" || port.length === 0) {
-    throw new ProtocolError("port must be a non-empty string", cmd);
-  }
-  return { cmd: CMD_PACKET_SEND, planeId, port, payload };
-}
-function encodeGetStatus() {
-  return MsgPack.encode([CMD_GET_STATUS]);
-}
-function decodeGetStatus(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_GET_STATUS, 1);
-  return { cmd: CMD_GET_STATUS };
-}
-function encodeGetStatusRes({
-  epochId,
-  runState,
-  uptimeMs,
-  advertisedMask
-}) {
-  if (!Object.values(RUN_STATE).includes(runState)) {
-    throw new ProtocolError(
-      "run_state must be from the vocabulary",
-      CMD_GET_STATUS
-    );
-  }
-  if (!Number.isInteger(uptimeMs) || uptimeMs < 0) {
-    throw new ProtocolError(
-      "uptime_ms must be a non-negative integer",
-      CMD_GET_STATUS
-    );
-  }
-  return MsgPack.encode([
-    CMD_GET_STATUS,
-    epochId,
-    runState,
-    uptimeMs,
-    advertisedMask
-  ]);
-}
-function decodeGetStatusRes(bytes) {
-  const frame = MsgPack.decode(bytes);
-  expectFrame(frame, CMD_GET_STATUS, 5);
-  const [cmd, epochId, runState, uptimeMs, advertisedMask] = frame;
-  if (!Object.values(RUN_STATE).includes(runState)) {
-    throw new ProtocolError("run_state must be from the vocabulary", cmd);
-  }
-  if (!Number.isInteger(uptimeMs) || uptimeMs < 0) {
-    throw new ProtocolError("uptime_ms must be a non-negative integer", cmd);
-  }
-  return { cmd: CMD_GET_STATUS, epochId, runState, uptimeMs, advertisedMask };
-}
-
-// node_modules/@noflo/fbp-protocol/src/decode.js
-import { MsgPack as MsgPack6 } from "./reticulum-core.js";
-
-// node_modules/@noflo/fbp-protocol/src/graph.js
-import { MsgPack as MsgPack2 } from "./reticulum-core.js";
-function encodeCrdtSyncReq(planeId, epochId, clientClocks) {
-  assertClocks(clientClocks);
-  return MsgPack2.encode([CMD_CRDT_SYNC_REQ, planeId, epochId, clientClocks]);
-}
-function decodeCrdtSyncReq(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_CRDT_SYNC_REQ, 4);
-  const [cmd, planeId, epochId, clocks] = frame;
-  assertClocks(clocks, cmd);
-  return { cmd, planeId, epochId, clientClocks: { ...clocks } };
-}
-function encodeCrdtUpToDate(planeId, epochId) {
-  return MsgPack2.encode([CMD_CRDT_UP_TO_DATE, planeId, epochId]);
-}
-function decodeCrdtUpToDate(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_CRDT_UP_TO_DATE, 3);
-  const [cmd, planeId, epochId] = frame;
-  return { cmd, planeId, epochId };
-}
-function encodeCrdtStaleEpoch(planeId, newEpochId, rnsResourceHash) {
-  if (typeof rnsResourceHash !== "string" || rnsResourceHash.length === 0) {
-    throw new ProtocolError(
-      "rns_resource_hash must be a non-empty string",
-      CMD_CRDT_STALE_EPOCH
-    );
-  }
-  return MsgPack2.encode([
-    CMD_CRDT_STALE_EPOCH,
-    planeId,
-    newEpochId,
-    rnsResourceHash
-  ]);
-}
-function decodeCrdtStaleEpoch(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_CRDT_STALE_EPOCH, 4);
-  const [cmd, planeId, newEpochId, rnsResourceHash] = frame;
-  if (typeof rnsResourceHash !== "string" || rnsResourceHash.length === 0) {
-    throw new ProtocolError(
-      "rns_resource_hash must be a non-empty string",
-      cmd
-    );
-  }
-  return { cmd, planeId, newEpochId, rnsResourceHash };
-}
-function encodeCrdtUpdate({
-  planeId,
-  clientId,
-  logicalClock,
-  opType,
-  entityId,
-  payload
-}) {
-  assertOpType(opType);
-  assertClock(logicalClock);
-  return MsgPack2.encode([
-    CMD_CRDT_UPDATE,
-    planeId,
-    clientId,
-    logicalClock,
-    opType,
-    entityId,
-    payload
-  ]);
-}
-function decodeCrdtUpdate(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_CRDT_UPDATE, 7);
-  const [cmd, planeId, clientId, logicalClock, opType, entityId, payload] = frame;
-  if (typeof clientId !== "string" || clientId.length === 0) {
-    throw new ProtocolError("client_id must be a non-empty string", cmd);
-  }
-  assertClock(logicalClock, cmd);
-  assertOpType(opType, cmd);
-  return {
-    cmd,
-    planeId,
-    clientId,
-    logicalClock,
-    opType,
-    entityId,
-    payload
-  };
-}
-function decodePlaneDrop(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_PLANE_DROP, 2);
-  const [cmd, planeId] = frame;
-  if (planeId === null || planeId === void 0) {
-    throw new ProtocolError("the main plane is not droppable", cmd);
-  }
-  return { cmd, planeId };
-}
-function encodePlaneList() {
-  return MsgPack2.encode([CMD_PLANE_LIST]);
-}
-function decodePlaneList(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_PLANE_LIST, 1);
-  return { cmd: CMD_PLANE_LIST };
-}
-function encodePlaneListRes(entries) {
-  assertPlaneEntries(entries);
-  return MsgPack2.encode([
-    CMD_PLANE_LIST,
-    entries.map((entry) => [
-      entry.planeId,
-      entry.kind,
-      entry.parentPlane ?? null,
-      entry.nodeId ?? null,
-      entry.componentName ?? null,
-      entry.name
-    ])
-  ]);
-}
-function decodePlaneListRes(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_PLANE_LIST, 2);
-  const [cmd, raw] = frame;
-  if (!Array.isArray(raw)) {
-    throw new ProtocolError("the plane listing must be an array", cmd);
-  }
-  const entries = raw.map((tuple) => {
-    if (!Array.isArray(tuple) || tuple.length !== 6) {
-      throw new ProtocolError(
-        "each plane entry must be a 6-element tuple",
-        cmd
-      );
-    }
-    const [planeId, kind, parentPlane, nodeId, componentName, name] = tuple;
-    if (!Object.values(PLANE_KIND).includes(kind)) {
-      throw new ProtocolError("unknown plane kind", cmd);
-    }
-    if (typeof name !== "string" || name.length === 0) {
-      throw new ProtocolError("plane name must be a non-empty string", cmd);
-    }
-    return {
-      planeId,
-      kind,
-      parentPlane,
-      nodeId,
-      componentName,
-      name
-    };
-  });
-  return { cmd: CMD_PLANE_LIST, entries };
-}
-function decodeOpRejected(bytes) {
-  const frame = MsgPack2.decode(bytes);
-  expectFrame2(frame, CMD_OP_REJECTED, 4);
-  const [cmd, rejectedCmd, planeId, detail] = frame;
-  if (!Number.isInteger(rejectedCmd)) {
-    throw new ProtocolError("rejected_cmd must be a command code", cmd);
-  }
-  return { cmd, rejectedCmd, planeId, detail };
-}
-function assertPlaneEntries(entries) {
-  if (!Array.isArray(entries)) {
-    throw new ProtocolError("plane entries must be an array", CMD_PLANE_LIST);
-  }
-  for (const entry of entries) {
-    if (entry === null || typeof entry !== "object" || !Object.values(PLANE_KIND).includes(entry.kind) || typeof entry.name !== "string" || entry.name.length === 0) {
-      throw new ProtocolError(
-        "each plane entry needs a kind from the vocabulary and a name",
-        CMD_PLANE_LIST
-      );
-    }
-  }
-}
-function expectFrame2(frame, opcode, arity) {
-  if (!Array.isArray(frame) || frame[0] !== opcode) {
-    throw new ProtocolError("unexpected frame opcode", opcode);
-  }
-  if (frame.length !== arity) {
-    throw new ProtocolError(
-      `frame must carry exactly ${arity} elements`,
-      opcode
-    );
-  }
-}
-function assertClock(clock, opcode) {
-  if (!Number.isInteger(clock) || clock < 0) {
-    throw new ProtocolError(
-      "logical clock must be a non-negative integer",
-      opcode
-    );
-  }
-}
-function assertOpType(opType, opcode) {
-  if (!Object.values(OP_TYPE).includes(opType)) {
-    throw new ProtocolError("unknown op_type", opcode ?? CMD_CRDT_UPDATE);
-  }
-}
-function assertClocks(clocks, opcode) {
-  if (clocks === null || typeof clocks !== "object" || Array.isArray(clocks)) {
-    throw new ProtocolError(
-      "client clocks must be a map of client id to logical clock",
-      opcode
-    );
-  }
-  for (const [clientId, clock] of Object.entries(clocks)) {
-    if (typeof clientId !== "string" || clientId.length === 0) {
-      throw new ProtocolError(
-        "client clocks must be keyed by non-empty client ids",
-        opcode
-      );
-    }
-    assertClock(clock, opcode);
-  }
-}
-
-// node_modules/@noflo/fbp-protocol/src/registry.js
-import { fromHex, MsgPack as MsgPack3, toHex } from "./reticulum-core.js";
-
-// node_modules/@noflo/fbp-protocol/src/schema-guards.js
-var GUARD_ENUM_LIMIT = 64;
-var GUARD_TYPES = /* @__PURE__ */ new Set([
-  "string",
-  "number",
-  "integer",
-  "boolean",
-  "array",
-  "object"
-]);
-function validateGuard(guard) {
-  if (guard === null || typeof guard !== "object" || Array.isArray(guard)) {
-    throw new TypeError("guard must be an object");
-  }
-  for (const key of Object.keys(guard)) {
-    if (!["type", "enum", "min", "max", "required"].includes(key)) {
-      throw new TypeError(
-        `guard key '${key}' is outside the closed vocabulary`
-      );
-    }
-  }
-  if (guard.type !== void 0) {
-    if (typeof guard.type !== "string" || !GUARD_TYPES.has(guard.type)) {
-      throw new TypeError("guard type must be one of the vocabulary types");
-    }
-  }
-  if (guard.enum !== void 0) {
-    if (!Array.isArray(guard.enum)) {
-      throw new TypeError("guard enum must be an array");
-    }
-    if (guard.enum.length > GUARD_ENUM_LIMIT) {
-      throw new TypeError(
-        `guard enum exceeds the ${GUARD_ENUM_LIMIT}-entry bound`
-      );
-    }
-    for (const entry of guard.enum) {
-      if (typeof entry !== "string" && typeof entry !== "number" && typeof entry !== "boolean" || typeof entry === "number" && !Number.isFinite(entry)) {
-        throw new TypeError("guard enum entries must be scalars");
-      }
-    }
-  }
-  for (const key of ["min", "max"]) {
-    const bound = guard[key];
-    if (bound !== void 0 && (typeof bound !== "number" || !Number.isFinite(bound))) {
-      throw new TypeError(`guard ${key} must be a finite number`);
-    }
-  }
-  if (guard.required !== void 0) {
-    if (!Array.isArray(guard.required) || guard.required.some((key) => typeof key !== "string")) {
-      throw new TypeError("guard required must be an array of property names");
-    }
-  }
-}
-
-// node_modules/@noflo/fbp-protocol/src/registry.js
-init_schema_identity();
-function encodeCompSyncReq(localRegistryHash) {
-  assertHash(localRegistryHash, CMD_COMP_SYNC_REQ, "local_registry_hash");
-  return MsgPack3.encode([CMD_COMP_SYNC_REQ, localRegistryHash]);
-}
-function decodeCompSyncReq(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_SYNC_REQ, 2);
-  assertHash(frame[1], CMD_COMP_SYNC_REQ, "local_registry_hash");
-  return { cmd: CMD_COMP_SYNC_REQ, localRegistryHash: frame[1] };
-}
-function encodeCompManifest(newRegistryHash, entries) {
-  assertHash(newRegistryHash, CMD_COMP_MANIFEST, "new_registry_hash");
-  assertEntries(entries);
-  const wire = {};
-  for (const [name, entry] of Object.entries(entries)) {
-    wire[name] = [entry.sigHash, entry.type];
-  }
-  return MsgPack3.encode([CMD_COMP_MANIFEST, newRegistryHash, wire]);
-}
-function decodeCompManifest(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_MANIFEST, 3);
-  assertHash(frame[1], CMD_COMP_MANIFEST, "new_registry_hash");
-  assertWireEntries2(frame[2]);
-  const entries = {};
-  for (const [name, [sigHash2, type]] of Object.entries(frame[2])) {
-    entries[name] = { sigHash: sigHash2, type };
-  }
-  return {
-    cmd: CMD_COMP_MANIFEST,
-    newRegistryHash: frame[1],
-    entries
-  };
-}
-function decodeCompUpToDate(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_UP_TO_DATE, 1);
-  return { cmd: CMD_COMP_UP_TO_DATE };
-}
-function encodeCompDetailReq(names) {
-  assertNames(names);
-  return MsgPack3.encode([CMD_COMP_DETAIL_REQ, names]);
-}
-function decodeCompDetailReq(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_DETAIL_REQ, 2);
-  assertNames(frame[1]);
-  return { cmd: CMD_COMP_DETAIL_REQ, names: [...frame[1]] };
-}
-function decodeCompDetailRes(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_DETAIL_RES, 2);
-  assertWireDetails(frame[1]);
-  return { cmd: CMD_COMP_DETAIL_RES, components: fromWireDetails(frame[1]) };
-}
-function encodeCompWrite(componentName, source) {
-  assertName2(componentName, CMD_COMP_WRITE, "component_name");
-  if (typeof source !== "string" || source.length === 0) {
-    throw new ProtocolError(
-      "source must be a non-empty string",
-      CMD_COMP_WRITE
-    );
-  }
-  return MsgPack3.encode([CMD_COMP_WRITE, componentName, source]);
-}
-function decodeCompWrite(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_WRITE, 3);
-  assertName2(frame[1], CMD_COMP_WRITE, "component_name");
-  if (typeof frame[2] !== "string" || frame[2].length === 0) {
-    throw new ProtocolError(
-      "source must be a non-empty string",
-      CMD_COMP_WRITE
-    );
-  }
-  return { cmd: CMD_COMP_WRITE, componentName: frame[1], source: frame[2] };
-}
-function decodeCompInstallReq(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_INSTALL_REQ, 2);
-  if (typeof frame[1] !== "string" || frame[1].length === 0) {
-    throw new ProtocolError(
-      "package_uri must be a non-empty string",
-      CMD_COMP_INSTALL_REQ
-    );
-  }
-  return { cmd: CMD_COMP_INSTALL_REQ, packageUri: frame[1] };
-}
-function assertRawDigests(digests, opcode) {
-  if (!Array.isArray(digests) || digests.length === 0) {
-    throw new ProtocolError(
-      "digests must be a non-empty array of raw 32-byte digests",
-      opcode
-    );
-  }
-  for (const digest of digests) {
-    if (!(digest instanceof Uint8Array) || digest.length !== 32) {
-      throw new ProtocolError(
-        "schema digests must be raw 32-byte digests",
-        opcode
-      );
-    }
-  }
-}
-function assertSchemaEntries(entries, opcode) {
-  if (!Array.isArray(entries)) {
-    throw new ProtocolError(
-      "schema bodies must be a list of [digest, entry] tuples",
-      opcode
-    );
-  }
-  for (const [digest, value] of entries) {
-    if (!(digest instanceof Uint8Array) || digest.length !== 32) {
-      throw new ProtocolError(
-        "schema body digests must be raw 32-byte digests",
-        opcode
-      );
-    }
-    assertSchemaEntry(value, opcode);
-  }
-}
-function assertSchemaEntry(value, opcode) {
-  if (value === null) return;
-  if (typeof value === "string") {
-    if (value.length === 0) {
-      throw new ProtocolError(
-        "resource refs must be non-empty strings",
-        opcode
-      );
-    }
-    return;
-  }
-  if (typeof value !== "object" || Array.isArray(value)) {
-    throw new ProtocolError(
-      "schema bodies must be inline documents, resource refs, or nil",
-      opcode
-    );
-  }
-  if (MsgPack3.encode(value).length > SCHEMA_INLINE_LIMIT) {
-    throw new ProtocolError(
-      `inline schema bodies must stay within the ${SCHEMA_INLINE_LIMIT}-byte cap; use the resource form`,
-      opcode
-    );
-  }
-}
-function encodeCompSourceReq(componentName) {
-  assertName2(componentName, CMD_COMP_SOURCE, "component_name");
-  return MsgPack3.encode([CMD_COMP_SOURCE, componentName]);
-}
-function decodeCompSourceReq(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_SOURCE, 2);
-  assertName2(frame[1], CMD_COMP_SOURCE, "component_name");
-  return { cmd: CMD_COMP_SOURCE, componentName: frame[1] };
-}
-function encodeCompSourceRes(componentName, source) {
-  assertName2(componentName, CMD_COMP_SOURCE, "component_name");
-  if (source !== null && (typeof source !== "string" || source.length === 0)) {
-    throw new ProtocolError(
-      "source must be a non-empty string or nil",
-      CMD_COMP_SOURCE
-    );
-  }
-  return MsgPack3.encode([CMD_COMP_SOURCE, componentName, source ?? null]);
-}
-function decodeCompSourceRes(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_COMP_SOURCE, 3);
-  assertName2(frame[1], CMD_COMP_SOURCE, "component_name");
-  const source = frame[2];
-  if (source !== null && (typeof source !== "string" || source.length === 0)) {
-    throw new ProtocolError(
-      "source must be a non-empty string or nil",
-      CMD_COMP_SOURCE
-    );
-  }
-  return { cmd: CMD_COMP_SOURCE, componentName: frame[1], source };
-}
-function canonicalManifest(entries) {
-  assertEntries(entries);
-  const json = {};
-  for (const name of Object.keys(entries).sort()) {
-    json[name] = [entries[name].sigHash, entries[name].type];
-  }
-  return stableStringify(json);
-}
-async function registryHash(entries) {
-  const bytes = new TextEncoder().encode(canonicalManifest(entries));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-function stableStringify(value) {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(",")}]`;
-  }
-  if (value !== null && typeof value === "object") {
-    const keys = Object.keys(value).sort();
-    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-function expectFrame3(frame, opcode, arity) {
-  if (!Array.isArray(frame) || frame[0] !== opcode) {
-    throw new ProtocolError("unexpected frame opcode", opcode);
-  }
-  if (frame.length !== arity) {
-    throw new ProtocolError(
-      `frame must carry exactly ${arity} elements`,
-      opcode
-    );
-  }
-}
-function assertHash(hash, opcode, field) {
-  if (typeof hash !== "string" || hash.length === 0) {
-    throw new ProtocolError(`${field} must be a non-empty string`, opcode);
-  }
-}
-function assertName2(name, opcode, field) {
-  if (typeof name !== "string" || name.length === 0) {
-    throw new ProtocolError(`${field} must be a non-empty string`, opcode);
-  }
-}
-function assertNames(names) {
-  if (!Array.isArray(names)) {
-    throw new ProtocolError(
-      "component names must be an array",
-      CMD_COMP_DETAIL_REQ
-    );
-  }
-  for (const name of names) {
-    assertName2(name, CMD_COMP_DETAIL_REQ, "component name");
-  }
-}
-function assertEntries(entries) {
-  if (entries === null || typeof entries !== "object" || Array.isArray(entries)) {
-    throw new ProtocolError(
-      "manifest entries must be a map of component name to manifest entry",
-      CMD_COMP_MANIFEST
-    );
-  }
-  for (const [name, entry] of Object.entries(entries)) {
-    assertName2(name, CMD_COMP_MANIFEST, "component name");
-    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new ProtocolError(
-        `manifest entry for ${name} must be a map with sigHash and type`,
-        CMD_COMP_MANIFEST
-      );
-    }
-    assertHash(entry.sigHash, CMD_COMP_MANIFEST, "sig_hash");
-    if (!Object.values(COMPONENT_TYPE).includes(entry.type)) {
-      throw new ProtocolError(
-        `manifest entry for ${name} must declare a component kind from the shared vocabulary`,
-        CMD_COMP_MANIFEST
-      );
-    }
-  }
-}
-function assertWireEntries2(entries) {
-  if (entries === null || typeof entries !== "object" || Array.isArray(entries)) {
-    throw new ProtocolError(
-      "manifest entries must be a map of component name to [sig_hash, kind] tuple",
-      CMD_COMP_MANIFEST
-    );
-  }
-  for (const [name, tuple] of Object.entries(entries)) {
-    assertName2(name, CMD_COMP_MANIFEST, "component name");
-    if (!Array.isArray(tuple) || tuple.length !== 2 || typeof tuple[0] !== "string" || tuple[0].length === 0 || !Object.values(COMPONENT_TYPE).includes(tuple[1])) {
-      throw new ProtocolError(
-        `manifest entry for ${name} must be a [sig_hash, kind] tuple carrying a declared component kind`,
-        CMD_COMP_MANIFEST
-      );
-    }
-  }
-}
-function assertDetails(components, wireForm = false) {
-  if (components === null || typeof components !== "object" || Array.isArray(components)) {
-    throw new ProtocolError(
-      "component details must be a map of component name to definition",
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  for (const [name, detail] of Object.entries(components)) {
-    assertName2(name, CMD_COMP_DETAIL_RES, "component name");
-    assertDetail(detail, name, wireForm);
-  }
-}
-function assertWireDetails(components) {
-  assertDetails(components, true);
-}
-function assertDetail(detail, name, wireForm = false) {
-  const where = name === null ? "component detail" : `component ${name}`;
-  if (detail === null || typeof detail !== "object" || Array.isArray(detail)) {
-    throw new ProtocolError(`${where} must be a map`, CMD_COMP_DETAIL_RES);
-  }
-  if (!Object.values(COMPONENT_TYPE).includes(detail.type)) {
-    throw new ProtocolError(
-      `${where} must declare a component kind from the shared vocabulary`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  for (const side of ["in", "out"]) {
-    if (!Array.isArray(detail[side])) {
-      throw new ProtocolError(
-        `${where} must declare its ${side}ports as an array`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-    for (const port of detail[side]) {
-      assertPort(port, where, side, wireForm);
-    }
-  }
-  assertPortSchemaRef(
-    detail.metadata,
-    where,
-    "component",
-    "metadata",
-    wireForm
-  );
-}
-function assertPort(port, where, side, wireForm = false) {
-  if (port === null || typeof port !== "object" || Array.isArray(port)) {
-    throw new ProtocolError(
-      `${where} ${side}port must be a map`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  if (typeof port.id !== "string" || port.id.length === 0) {
-    throw new ProtocolError(
-      `${where} ${side}port must carry a non-empty id`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  if (typeof port.type !== "string" || port.type.length === 0) {
-    throw new ProtocolError(
-      `${where} ${side}port ${port.id} must carry a datatype`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  for (const flag of ["addressable", "required", "control"]) {
-    if (port[flag] !== void 0 && typeof port[flag] !== "boolean") {
-      throw new ProtocolError(
-        `${where} ${side}port ${port.id} ${flag} must be a boolean`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-  }
-  assertPortSchemaRef(port.schema, where, side, port.id, wireForm);
-  if (port.guard !== void 0) {
-    try {
-      validateGuard(port.guard);
-    } catch (error) {
-      throw new ProtocolError(
-        `${where} ${side}port ${port.id} guard must stay within the closed vocabulary: ${error instanceof Error ? error.message : String(error)}`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-  }
-}
-function assertPortSchemaRef(ref, where, side, portId, wireForm = false) {
-  if (ref === void 0) return;
-  if (ref === null || typeof ref !== "object" || Array.isArray(ref)) {
-    throw new ProtocolError(
-      `${where} ${side}port ${portId} schema must be a map with id and digest`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-  for (const key of Object.keys(ref)) {
-    if (key !== "id" && key !== "digest") {
-      throw new ProtocolError(
-        `${where} ${side}port ${portId} schema carries the unknown field '${key}'`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-  }
-  if (ref.id !== void 0) {
-    if (typeof ref.id !== "string" || !isValidSchemaId(ref.id)) {
-      throw new ProtocolError(
-        `${where} ${side}port ${portId} schema id must be a bare ns/name id`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-  }
-  if (ref.digest !== void 0) {
-    const digest = (
-      /** @type {any} */
-      ref.digest
-    );
-    const digestOk = wireForm ? digest instanceof Uint8Array && digest.length === 32 : typeof digest === "string" && /^[0-9a-f]{64}$/.test(digest);
-    if (!digestOk) {
-      throw new ProtocolError(
-        wireForm ? `${where} ${side}port ${portId} schema digest must be a raw 32-byte digest on the wire` : `${where} ${side}port ${portId} schema digest must be a 64-character hex string`,
-        CMD_COMP_DETAIL_RES
-      );
-    }
-  }
-  if (ref.id === void 0 && ref.digest === void 0) {
-    throw new ProtocolError(
-      `${where} ${side}port ${portId} schema must carry an id or a digest`,
-      CMD_COMP_DETAIL_RES
-    );
-  }
-}
-function fromWireDetails(wire) {
-  const components = {};
-  for (const [name, detail] of Object.entries(wire)) {
-    const meta = detail.metadata;
-    components[name] = {
-      ...detail,
-      in: detail.in.map(portFromWire),
-      out: detail.out.map(portFromWire),
-      ...meta !== void 0 && meta !== null && typeof meta === "object" && meta.digest instanceof Uint8Array ? { metadata: { ...meta, digest: toHex(meta.digest) } } : {}
-    };
-  }
-  return (
-    /** @type {ComponentDetails} */
-    components
-  );
-}
-function portFromWire(port) {
-  const ref = port.schema;
-  if (ref === void 0 || ref === null || typeof ref !== "object" || !(ref.digest instanceof Uint8Array)) {
-    return { ...port };
-  }
-  return {
-    ...port,
-    schema: { ...ref, digest: toHex(ref.digest) }
-  };
-}
-function encodeSchemaReq(digests, bundle = true) {
-  assertRawDigests(digests, CMD_SCHEMA_REQ);
-  if (typeof bundle !== "boolean") {
-    throw new ProtocolError("bundle must be a boolean", CMD_SCHEMA_REQ);
-  }
-  return MsgPack3.encode([CMD_SCHEMA_REQ, digests, bundle]);
-}
-function decodeSchemaReq(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_SCHEMA_REQ, 3);
-  assertRawDigests(frame[1], CMD_SCHEMA_REQ);
-  if (typeof frame[2] !== "boolean") {
-    throw new ProtocolError("bundle must be a boolean", CMD_SCHEMA_REQ);
-  }
-  return { cmd: CMD_SCHEMA_REQ, digests: frame[1], bundle: frame[2] };
-}
-function decodeSchemaRes(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_SCHEMA_RES, 2);
-  assertSchemaEntries(frame[1], CMD_SCHEMA_RES);
-  const bodies = {};
-  for (const [digest, value] of frame[1]) {
-    bodies[toHex(digest)] = value;
-  }
-  return { cmd: CMD_SCHEMA_RES, bodies };
-}
-function decodeSchemaWrite(bytes) {
-  const frame = MsgPack3.decode(bytes);
-  expectFrame3(frame, CMD_SCHEMA_WRITE, 3);
-  const digestBytes = frame[1];
-  if (!(digestBytes instanceof Uint8Array) || digestBytes.length !== 32) {
-    throw new ProtocolError(
-      "digest must be a raw 32-byte digest",
-      CMD_SCHEMA_WRITE
-    );
-  }
-  const value = frame[2];
-  if (typeof value === "string") {
-    if (value.length === 0) {
-      throw new ProtocolError(
-        "resource ref must be a non-empty string",
-        CMD_SCHEMA_WRITE
-      );
-    }
-    return {
-      cmd: CMD_SCHEMA_WRITE,
-      digest: toHex(digestBytes),
-      body: null,
-      ref: value
-    };
-  }
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new ProtocolError(
-      "body must be an inline document or a resource ref string",
-      CMD_SCHEMA_WRITE
-    );
-  }
-  if (MsgPack3.encode(value).length > SCHEMA_INLINE_LIMIT) {
-    throw new ProtocolError(
-      `inline schema bodies must stay within the ${SCHEMA_INLINE_LIMIT}-byte cap; use the resource form`,
-      CMD_SCHEMA_WRITE
-    );
-  }
-  return {
-    cmd: CMD_SCHEMA_WRITE,
-    digest: toHex(digestBytes),
-    body: value,
-    ref: null
-  };
-}
-
-// node_modules/@noflo/fbp-protocol/src/telemetry.js
-import { MsgPack as MsgPack4 } from "./reticulum-core.js";
-function encodePubsubSub({
-  subId,
-  targetType,
-  targetId,
-  requestedFlushIntervalMs
-}) {
-  assertFlushInterval(requestedFlushIntervalMs);
-  if (typeof targetType !== "string" || targetType.length === 0) {
-    throw new ProtocolError(
-      "target_type must be a non-empty string",
-      CMD_PUBSUB_SUB
-    );
-  }
-  if (typeof targetId !== "string" || targetId.length === 0) {
-    throw new ProtocolError(
-      "target_id must be a non-empty string",
-      CMD_PUBSUB_SUB
-    );
-  }
-  return MsgPack4.encode([
-    CMD_PUBSUB_SUB,
-    subId,
-    targetType,
-    targetId,
-    requestedFlushIntervalMs
-  ]);
-}
-function decodePubsubSub(bytes) {
-  const frame = MsgPack4.decode(bytes);
-  expectFrame4(frame, CMD_PUBSUB_SUB, 5);
-  const [, subId, targetType, targetId, requestedFlushIntervalMs] = frame;
-  if (typeof targetType !== "string" || targetType.length === 0) {
-    throw new ProtocolError(
-      "target_type must be a non-empty string",
-      CMD_PUBSUB_SUB
-    );
-  }
-  if (typeof targetId !== "string" || targetId.length === 0) {
-    throw new ProtocolError(
-      "target_id must be a non-empty string",
-      CMD_PUBSUB_SUB
-    );
-  }
-  assertFlushInterval(requestedFlushIntervalMs);
-  return {
-    cmd: CMD_PUBSUB_SUB,
-    subId,
-    targetType,
-    targetId,
-    requestedFlushIntervalMs
-  };
-}
-function decodeFlowtraceChunk(bytes) {
-  const frame = MsgPack4.decode(bytes);
-  expectFrame4(frame, CMD_FLOWTRACE_CHUNK, 5);
-  const [cmd, subId, planeId, baseTimestampMs, tuples] = frame;
-  assertTimestamp(baseTimestampMs, cmd);
-  if (!Array.isArray(tuples)) {
-    throw new ProtocolError("trace_events_array must be an array", cmd);
-  }
-  const events = tuples.map((tuple) => {
-    if (!Array.isArray(tuple) || tuple.length !== 3) {
-      throw new ProtocolError(
-        "each trace event must be a [time_delta_ms, event_type, payload] tuple",
-        cmd
-      );
-    }
-    const [timeDeltaMs, eventType, payload] = tuple;
-    if (!Number.isInteger(timeDeltaMs) || timeDeltaMs < 0 || timeDeltaMs > 4294967295) {
-      throw new ProtocolError("time_delta_ms must be a uint32", cmd);
-    }
-    return { timeDeltaMs, eventType, payload };
-  });
-  return { cmd, subId, planeId, baseTimestampMs, events };
-}
-function assertTimestamp(timestamp, opcode) {
-  if (!Number.isInteger(timestamp) || timestamp < 0) {
-    throw new ProtocolError(
-      "timestamps must be non-negative epoch milliseconds",
-      opcode
-    );
-  }
-}
-function assertFlushInterval(interval, opcode) {
-  if (!Number.isInteger(interval) || interval < 0) {
-    throw new ProtocolError(
-      "requested_flush_interval_ms must be a non-negative integer",
-      opcode
-    );
-  }
-}
-function expectFrame4(frame, opcode, arity) {
-  if (!Array.isArray(frame) || frame[0] !== opcode) {
-    throw new ProtocolError("unexpected frame opcode", opcode);
-  }
-  if (frame.length !== arity) {
-    throw new ProtocolError(
-      `frame must carry exactly ${arity} elements`,
-      opcode
-    );
-  }
-}
-
-// node_modules/@noflo/fbp-protocol/src/transport.js
-import { MsgPack as MsgPack5 } from "./reticulum-core.js";
-var DESTINATION_HASH_BYTES = 16;
-function decodeAnnounceAppData(bytes) {
-  const frame = MsgPack5.decode(bytes);
-  if (!Array.isArray(frame) || frame.length !== 3) {
-    throw new ProtocolError("announce app_data must be a 3-element array");
-  }
-  const [protocolVersion, destinationHash, nodeName] = frame;
-  if (!Number.isInteger(protocolVersion) || protocolVersion < 0) {
-    throw new ProtocolError(
-      "announce app_data protocol_version must be a uint"
-    );
-  }
-  const hash = destinationHashBytes(destinationHash);
-  return {
-    protocolVersion,
-    destinationHash: hash,
-    destinationHashHex: hashHex(hash),
-    nodeName
-  };
-}
-function decodeAuthResponse(bytes) {
-  const frame = MsgPack5.decode(bytes);
-  if (!Array.isArray(frame) || frame[0] !== CMD_AUTH_RESPONSE) {
-    throw new ProtocolError(
-      "expected an auth response frame",
-      CMD_AUTH_RESPONSE
-    );
-  }
-  if (frame.length !== 6) {
-    throw new ProtocolError(
-      "auth response must carry opcode, protocol_version, capability_mask, limitation_code, runtime_metadata, and advertised_mask",
-      CMD_AUTH_RESPONSE
-    );
-  }
-  const [
-    ,
-    protocolVersion,
-    capabilityMask,
-    limitationCode,
-    runtimeMetadata,
-    advertisedMask
-  ] = frame;
-  for (const field of [
-    protocolVersion,
-    capabilityMask,
-    limitationCode,
-    advertisedMask
-  ]) {
-    if (!Number.isInteger(field) || field < 0 || field > 255) {
-      throw new ProtocolError(
-        "auth response fields must be uint8 values",
-        CMD_AUTH_RESPONSE
-      );
-    }
-  }
-  return {
-    cmd: CMD_AUTH_RESPONSE,
-    protocolVersion,
-    capabilityMask,
-    limitationCode,
-    runtimeMetadata,
-    advertisedMask
-  };
-}
-function destinationHashBytes(value) {
-  if (typeof value === "string") {
-    const cleaned = value.startsWith("0x") ? value.slice(2) : value;
-    if (!/^[0-9a-fA-F]+$/.test(cleaned) || cleaned.length !== DESTINATION_HASH_BYTES * 2) {
-      throw new ProtocolError(
-        "destination hash hex string must carry exactly 16 bytes"
-      );
-    }
-    const bytes = new Uint8Array(DESTINATION_HASH_BYTES);
-    for (let i = 0; i < DESTINATION_HASH_BYTES; i++) {
-      bytes[i] = parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
-    }
-    return bytes;
-  }
-  if (value instanceof Uint8Array) {
-    if (value.byteLength !== DESTINATION_HASH_BYTES) {
-      throw new ProtocolError(
-        `destination hash must be exactly ${DESTINATION_HASH_BYTES} bytes, got ${value.byteLength}`
-      );
-    }
-    return value;
-  }
-  throw new ProtocolError("destination hash must be raw bytes or a hex string");
-}
-function hashHex(bytes) {
-  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-// node_modules/@noflo/fbp-protocol/src/decode.js
-function decodeFrame(bytes) {
-  const head = MsgPack6.decode(bytes);
-  const opcode = Array.isArray(head) ? head[0] : void 0;
-  switch (opcode) {
-    case CMD_AUTH_RESPONSE:
-      return decodeAuthResponse(bytes);
-    case CMD_CRDT_SYNC_REQ:
-      return decodeCrdtSyncReq(bytes);
-    case CMD_CRDT_UP_TO_DATE:
-      return decodeCrdtUpToDate(bytes);
-    case CMD_CRDT_STALE_EPOCH:
-      return decodeCrdtStaleEpoch(bytes);
-    case CMD_CRDT_UPDATE:
-      return decodeCrdtUpdate(bytes);
-    case CMD_PLANE_DROP:
-      return decodePlaneDrop(bytes);
-    case CMD_PLANE_LIST:
-      return head.length === 1 ? decodePlaneList(bytes) : decodePlaneListRes(bytes);
-    case CMD_OP_REJECTED:
-      return decodeOpRejected(bytes);
-    case CMD_COMP_SYNC_REQ:
-      return decodeCompSyncReq(bytes);
-    case CMD_COMP_UP_TO_DATE:
-      return decodeCompUpToDate(bytes);
-    case CMD_COMP_MANIFEST:
-      return decodeCompManifest(bytes);
-    case CMD_COMP_DETAIL_REQ:
-      return decodeCompDetailReq(bytes);
-    case CMD_COMP_DETAIL_RES:
-      return decodeCompDetailRes(bytes);
-    case CMD_COMP_WRITE:
-      return decodeCompWrite(bytes);
-    case CMD_COMP_SOURCE:
-      return head.length === 2 ? decodeCompSourceReq(bytes) : decodeCompSourceRes(bytes);
-    case CMD_COMP_INSTALL_REQ:
-      return decodeCompInstallReq(bytes);
-    case CMD_SCHEMA_REQ:
-      return decodeSchemaReq(bytes);
-    case CMD_SCHEMA_RES:
-      return decodeSchemaRes(bytes);
-    case CMD_SCHEMA_WRITE:
-      return decodeSchemaWrite(bytes);
-    case CMD_PUBSUB_SUB:
-      return decodePubsubSub(bytes);
-    case CMD_FLOWTRACE_CHUNK:
-      return decodeFlowtraceChunk(bytes);
-    case CMD_RUN_CTRL:
-      return decodeRunCtrl(bytes);
-    case CMD_PACKET_SEND:
-      return decodePacketSend(bytes);
-    case CMD_GET_STATUS:
-      return head.length === 1 ? decodeGetStatus(bytes) : decodeGetStatusRes(bytes);
-    case CMD_BREAKPOINT_SET:
-      return decodeBreakpointSet(bytes);
-    case CMD_BREAKPOINT_CLEAR:
-      return decodeBreakpointClear(bytes);
-    case CMD_PROCESS_CTRL:
-      return decodeProcessCtrl(bytes);
-    case CMD_PROCESS_LIST_REQ:
-      return decodeProcessListReq(bytes);
-    case CMD_PROCESS_LIST:
-      return decodeProcessList(bytes);
-    case CMD_HWM_SET:
-      return decodeHwmSet(bytes);
-    default: {
-      throw new ProtocolError(
-        opcode === void 0 ? "frame does not start with an opcode" : "unknown command code",
-        typeof opcode === "number" ? opcode : void 0,
-        opcode === void 0 ? REASON.MALFORMED : REASON.UNKNOWN_COMMAND
-      );
-    }
-  }
-}
-
-// node_modules/@noflo/fbp-protocol/src/lxmf.js
-import { MsgPack as MsgPack7 } from "./reticulum-core.js";
-
-// node_modules/@noflo/fbp-protocol/src/index.js
-init_schema_identity();
-
-// node_modules/@noflo/fbp-protocol/src/tracefile.js
-import { MsgPack as MsgPack8 } from "./reticulum-core.js";
-
 // node_modules/@noflo/runtime-client/src/index.js
+import {
+  ANNOUNCE_ASPECT,
+  CMD_BREAKPOINT_CLEAR,
+  CMD_BREAKPOINT_SET,
+  CMD_CRDT_UPDATE,
+  CMD_FLOWTRACE_CHUNK,
+  CMD_HWM_SET,
+  CMD_OP_REJECTED,
+  CMD_PACKET_SEND,
+  CMD_PROCESS_CTRL,
+  CMD_PROCESS_LIST,
+  CMD_RUN_CTRL,
+  decodeAnnounceAppData,
+  decodeAuthResponse,
+  decodeCompManifest as decodeCompManifest2,
+  decodeCompSourceRes,
+  decodeCrdtStaleEpoch,
+  decodeCrdtUpToDate,
+  decodeFrame,
+  decodeGetStatusRes,
+  decodePlaneListRes,
+  encodeCompSourceReq,
+  encodeCompSyncReq as encodeCompSyncReq2,
+  encodeCompWrite,
+  encodeCrdtSyncReq,
+  encodeCrdtUpdate,
+  encodeGetStatus,
+  encodePlaneList,
+  PROTOCOL_VERSION
+} from "./fbp-protocol.js";
 import { GraphModel } from "./graph.js";
-import { Destination, fromHex as fromHex3, Packet, PacketType } from "./reticulum-core.js";
+import { Destination, fromHex as fromHex2, Packet, PacketType } from "./reticulum-core.js";
 
 // node_modules/@noflo/runtime-client/src/execution.js
+import {
+  encodeBreakpointClear,
+  encodeBreakpointSet,
+  encodeHwmSet,
+  encodePacketSend,
+  encodeProcessCtrl,
+  encodeProcessListReq,
+  encodeRunCtrl,
+  PROCESS_ACTION,
+  RUN_ACTION
+} from "./fbp-protocol.js";
+import {
+  PROCESS_ACTION as PROCESS_ACTION2,
+  RUN_ACTION as RUN_ACTION2
+} from "./fbp-protocol.js";
 var ExecutionClient = class {
   /** @type {(payload: Uint8Array) => Promise<void>} */
   #send;
@@ -1643,6 +140,14 @@ var ExecutionClient = class {
 };
 
 // node_modules/@noflo/runtime-client/src/registry-cache.js
+import {
+  decodeCompDetailRes,
+  decodeCompManifest,
+  decodeCompUpToDate,
+  encodeCompDetailReq,
+  encodeCompSyncReq,
+  registryHash
+} from "./fbp-protocol.js";
 var RegistryCache = class {
   /** @type {(payload: Uint8Array) => Promise<Uint8Array>} */
   #requestReply;
@@ -1698,13 +203,13 @@ var RegistryCache = class {
     const needDetails = [];
     for (const [name, entry] of Object.entries(manifest.entries ?? {})) {
       const known = this.#catalog[name];
-      const sigHash2 = entry.sigHash;
+      const sigHash = entry.sigHash;
       fresh[name] = {
-        sigHash: sigHash2,
+        sigHash,
         type: entry.type,
-        ...known && known.sigHash === sigHash2 && known.signature ? { signature: known.signature } : {}
+        ...known && known.sigHash === sigHash && known.signature ? { signature: known.signature } : {}
       };
-      if (!known || known.sigHash !== sigHash2) {
+      if (!known || known.sigHash !== sigHash) {
         needDetails.push(name);
       }
     }
@@ -1752,7 +257,14 @@ var RegistryCache = class {
 };
 
 // node_modules/@noflo/runtime-client/src/schema-cache.js
-import { fromHex as fromHex2 } from "./reticulum-core.js";
+import {
+  collectSchemaRefs,
+  decodeSchemaRes,
+  digestSchema,
+  encodeSchemaReq,
+  parseSchemaRef
+} from "./fbp-protocol.js";
+import { fromHex } from "./reticulum-core.js";
 var SchemaCache = class {
   /** @type {(payload: Uint8Array) => Promise<Uint8Array>} */
   #requestReply;
@@ -1798,15 +310,15 @@ var SchemaCache = class {
    */
   missing(digests) {
     const out = /* @__PURE__ */ new Set();
-    const walk2 = (digest) => {
+    const walk = (digest) => {
       if (out.has(digest) || this.#bodies.has(digest)) return;
       out.add(digest);
     };
     for (const digest of digests) {
-      walk2(digest);
+      walk(digest);
       const held = this.#bodies.get(digest);
       if (held) {
-        for (const ref of refsOf(held)) walk2(ref);
+        for (const ref of refsOf(held)) walk(ref);
       }
     }
     return [...out];
@@ -1848,7 +360,7 @@ var SchemaCache = class {
     }
     const reply = await this.#requestReply(
       encodeSchemaReq(
-        wanted.map((digest) => fromHex2(digest)),
+        wanted.map((digest) => fromHex(digest)),
         bundle
       )
     );
@@ -1876,7 +388,38 @@ function refsOf(body) {
   return collectSchemaRefs(body).map((ref) => parseSchemaRef(ref).digest).filter((digest) => digest !== null);
 }
 
+// node_modules/@noflo/runtime-client/src/index.js
+import {
+  ANNOUNCE_ASPECT as ANNOUNCE_ASPECT2,
+  decodeAnnounceAppData as decodeAnnounceAppData2,
+  decodeAuthResponse as decodeAuthResponse2,
+  decodeCompManifest as decodeCompManifest3,
+  decodeCrdtStaleEpoch as decodeCrdtStaleEpoch2,
+  decodeCrdtUpdate,
+  decodeCrdtUpToDate as decodeCrdtUpToDate2,
+  decodeFlowtraceChunk as decodeFlowtraceChunk2,
+  decodeGetStatusRes as decodeGetStatusRes2,
+  decodeOpRejected,
+  decodePlaneListRes as decodePlaneListRes2,
+  encodeCompManifest,
+  encodeCompSourceRes,
+  encodeCompSyncReq as encodeCompSyncReq3,
+  encodeCrdtStaleEpoch,
+  encodeCrdtSyncReq as encodeCrdtSyncReq2,
+  encodeCrdtUpdate as encodeCrdtUpdate2,
+  encodeCrdtUpToDate,
+  encodeGetStatus as encodeGetStatus2,
+  encodeGetStatusRes,
+  encodePlaneList as encodePlaneList2,
+  encodePlaneListRes,
+  encodePubsubSub as encodePubsubSub2,
+  OP_TYPE,
+  PROTOCOL_VERSION as PROTOCOL_VERSION2,
+  RUN_STATE
+} from "./fbp-protocol.js";
+
 // node_modules/@noflo/runtime-client/src/telemetry.js
+import { decodeFlowtraceChunk, encodePubsubSub } from "./fbp-protocol.js";
 var TelemetryClient = class {
   /** @type {(payload: Uint8Array) => Promise<void>} */
   #send;
@@ -2126,7 +669,7 @@ function recallRuntimeFromCache(reticulum, nodeName) {
   }
   let firstMatch = null;
   for (
-    const [hashHex2, entry] of
+    const [hashHex, entry] of
     /** @type {any} */
     cache.entries()
   ) {
@@ -2141,7 +684,7 @@ function recallRuntimeFromCache(reticulum, nodeName) {
       if (nodeName && decoded.nodeName !== nodeName) {
         continue;
       }
-      const destinationHash = fromHex3(hashHex2);
+      const destinationHash = fromHex2(hashHex);
       if (reticulum.transport.hasPath(destinationHash)) {
         return { destinationHash, nodeName: decoded.nodeName };
       }
@@ -2410,8 +953,8 @@ var RuntimeClient = class extends EventTarget {
    */
   async syncRegistry(registryHash2 = "stale") {
     const reply = this.nextFrame();
-    await this.send(encodeCompSyncReq(registryHash2));
-    return decodeCompManifest(await reply);
+    await this.send(encodeCompSyncReq2(registryHash2));
+    return decodeCompManifest2(await reply);
   }
   /**
    * Run the Two-Step Cache sync: compute the local registry hash from
@@ -2621,12 +1164,12 @@ var RuntimeClient = class extends EventTarget {
   }
 };
 export {
-  ANNOUNCE_ASPECT,
+  ANNOUNCE_ASPECT2 as ANNOUNCE_ASPECT,
   ExecutionClient,
   OP_TYPE,
-  PROCESS_ACTION as PROCESS_ACTIONS,
-  PROTOCOL_VERSION,
-  RUN_ACTION as RUN_ACTIONS,
+  PROCESS_ACTION2 as PROCESS_ACTIONS,
+  PROTOCOL_VERSION2 as PROTOCOL_VERSION,
+  RUN_ACTION2 as RUN_ACTIONS,
   RUN_STATE,
   RegistryCache,
   RuntimeClient,
@@ -2634,27 +1177,27 @@ export {
   TelemetryClient,
   UiEventSurface,
   connectRuntime,
-  decodeAnnounceAppData,
-  decodeAuthResponse,
-  decodeCompManifest,
-  decodeCrdtStaleEpoch,
-  decodeCrdtUpToDate,
+  decodeAnnounceAppData2 as decodeAnnounceAppData,
+  decodeAuthResponse2 as decodeAuthResponse,
+  decodeCompManifest3 as decodeCompManifest,
+  decodeCrdtStaleEpoch2 as decodeCrdtStaleEpoch,
+  decodeCrdtUpToDate2 as decodeCrdtUpToDate,
   decodeCrdtUpdate,
-  decodeFlowtraceChunk,
-  decodeGetStatusRes,
+  decodeFlowtraceChunk2 as decodeFlowtraceChunk,
+  decodeGetStatusRes2 as decodeGetStatusRes,
   decodeOpRejected,
-  decodePlaneListRes,
+  decodePlaneListRes2 as decodePlaneListRes,
   discoverRuntime,
   encodeCompManifest,
   encodeCompSourceRes,
-  encodeCompSyncReq,
+  encodeCompSyncReq3 as encodeCompSyncReq,
   encodeCrdtStaleEpoch,
-  encodeCrdtSyncReq,
+  encodeCrdtSyncReq2 as encodeCrdtSyncReq,
   encodeCrdtUpToDate,
-  encodeCrdtUpdate,
-  encodeGetStatus,
+  encodeCrdtUpdate2 as encodeCrdtUpdate,
+  encodeGetStatus2 as encodeGetStatus,
   encodeGetStatusRes,
-  encodePlaneList,
+  encodePlaneList2 as encodePlaneList,
   encodePlaneListRes,
-  encodePubsubSub
+  encodePubsubSub2 as encodePubsubSub
 };

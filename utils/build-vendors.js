@@ -124,8 +124,11 @@ const builds = [
   {
     // @noflo/runtime-client (work document #59): the FBP Protocol 2.0
     // client that runs in the mesh Worker beside y-reticulum, against the
-    // same injected Reticulum instance. @noflo/fbp-protocol inlines (its
-    // only first-party consumer today); its @reticulum/core import stays
+    // same injected Reticulum instance. @noflo/fbp-protocol externalizes
+    // to the shared sibling — the runtime bridge reads the protocol's
+    // capability constants (and, later, the frame codecs for the wires
+    // stream tap) from the same copy the client decodes with
+    // @noflo/fbp-protocol. Its @reticulum/core import stays
     // external to the shared sibling like every other core consumer
     entryPoints: {
       "runtime-client": resolve(
@@ -138,8 +141,21 @@ const builds = [
       siblingExternals({
         "@reticulum/core": "./reticulum-core.js",
         "@noflo/graph": "./graph.js",
+        "@noflo/fbp-protocol": "./fbp-protocol.js",
       }),
     ],
+  },
+  {
+    // @noflo/fbp-protocol: the wire constants and frame codecs (work
+    // document #59). External to the shared sibling @reticulum/core bundle
+    entryPoints: {
+      "fbp-protocol": resolve(
+        here,
+        "../node_modules/@noflo/fbp-protocol/src/index.js",
+      ),
+    },
+    ...vendor,
+    plugins: [siblingExternals(coreSibling)],
   },
   {
     // @noflo/core components, vendored per component: the registry literal

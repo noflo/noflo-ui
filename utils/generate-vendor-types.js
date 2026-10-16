@@ -127,11 +127,18 @@ const shims = [
   },
   {
     // @noflo/runtime-client ships its own declarations next to the entry;
-    // the generated declarations reference @noflo/fbp-protocol (inlined
-    // into the bundle) and @noflo/graph + @reticulum/core (siblings), all
-    // resolving through node_modules
+    // the generated declarations reference @noflo/fbp-protocol,
+    // @noflo/graph + @reticulum/core (siblings), all resolving through
+    // node_modules
     name: "runtime-client",
     body: 'export * from "@noflo/runtime-client";\n',
+  },
+  {
+    // @noflo/fbp-protocol ships sibling .d.ts beside its entry; the shim
+    // re-exports the wire constants and frame codecs the bridge and the
+    // wires stream tap read (work document #59)
+    name: "fbp-protocol",
+    body: 'export * from "@noflo/fbp-protocol";\n',
   },
 ];
 

@@ -449,7 +449,7 @@ type EngineUIMessage =
   | { kind: 'awareness'; states: Array<Record<string, any>> }
   | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
   | { kind: 'runtime-discovered'; runtimes: Array<{ destinationHash: string; nodeName: string; protocolVersion: number; lastSeen: number }> }
-  | { kind: 'runtime-connection'; destinationHash: string; state: 'connected' | 'disconnected' | 'error'; nodeName: string | null; capabilityMask?: number; protocolVersion?: number; error?: string }
+  | { kind: 'runtime-connection'; destinationHash: string; state: 'connected' | 'disconnected' | 'error'; nodeName: string | null; capabilityMask?: number; capabilities?: string[]; protocolVersion?: number; error?: string }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }
   | { kind: 'mesh-peers'; added: string[]; removed: string[]; peers?: number; identities?: { [peerId: string]: string } }
   | { kind: 'mesh-peer-reachability'; states: { [identityHash: string]: 'online' | 'offline' } }

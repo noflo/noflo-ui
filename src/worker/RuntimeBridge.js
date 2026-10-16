@@ -16,6 +16,7 @@
  * `runtime-discovered` / `runtime-connection` echo (Appendix A).
  */
 
+import { CAPABILITY } from "../../vendor/fbp-protocol.js";
 import {
   connectRuntime,
   decodeAnnounceAppData,
@@ -45,6 +46,31 @@ import {
  * @property {number} capabilityMask The auth response's advertised mask.
  * @property {number} protocolVersion The auth response's protocol version.
  */
+
+/**
+ * Decodes an advertised capability mask into the relation names the wire
+ * defines (noflo board WD #4): per-bit relations, with the coarse
+ * all-relations grant short-circuiting the list. Unknown bits keep their
+ * positions — a forward protocol version may advertise relations this
+ * client does not know yet.
+ *
+ * @param {number} mask
+ * @returns {string[]}
+ */
+export function decodeCapabilityMask(mask) {
+  if ((mask & 0xff) === 0xff) return ["all"];
+  /** @type {string[]} */
+  const names = [];
+  for (const [name, bit] of Object.entries(CAPABILITY)) {
+    if ((mask & Number(bit)) === Number(bit)) {
+      names.push(name.toLowerCase().replaceAll("_", "."));
+    }
+  }
+  for (let bit = 0x100; bit !== 0 && bit <= 0x80000000; bit *= 2) {
+    if ((mask & bit) === bit) names.push(`bit${bit.toString(16)}`);
+  }
+  return names;
+}
 
 /**
  * Creates the runtime bridge.
@@ -193,15 +219,17 @@ export function createRuntimeBridge({
    * @param {{ nodeName?: string | null, capabilityMask?: number, protocolVersion?: number, error?: string }} [facts]
    */
   function postConnection(destinationHashHex, state, facts = {}) {
+    const mask = facts.capabilityMask;
     postMessage({
       kind: "runtime-connection",
       destinationHash: destinationHashHex,
       state,
       nodeName:
         facts.nodeName ?? discovered.get(destinationHashHex)?.nodeName ?? null,
-      ...(facts.capabilityMask === undefined
+      ...(mask === undefined ? {} : { capabilityMask: mask }),
+      ...(mask === undefined
         ? {}
-        : { capabilityMask: facts.capabilityMask }),
+        : { capabilities: decodeCapabilityMask(mask) }),
       ...(facts.protocolVersion === undefined
         ? {}
         : { protocolVersion: facts.protocolVersion }),

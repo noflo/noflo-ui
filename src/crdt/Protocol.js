@@ -884,6 +884,9 @@ export const MESH_COMMANDS = [
  * @property {'connected' | 'disconnected' | 'error'} state
  * @property {string | null} nodeName
  * @property {number} [capabilityMask]
+ * @property {string[]} [capabilities] The mask decoded into the wire's
+ *   relation names (noflo board WD #4) — the Glass renders these, never
+ *   the raw bits.
  * @property {number} [protocolVersion]
  * @property {string} [error]
  */

@@ -164,6 +164,7 @@ describe("runtime bridge (work document #59)", () => {
     );
     assert.ok(connection, "the connected state echoes");
     assert.equal(connection.capabilityMask, 0b11);
+    assert.deepEqual(connection.capabilities, ["graph.read", "graph.edit"]);
     assert.equal(connection.nodeName, "runtime-two");
     assert.equal(connectCalls, 1);
     // Reconnect is idempotent: the known state re-reports, no new link
