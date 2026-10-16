@@ -96,11 +96,16 @@ export class FlowTelemetryLog extends HTMLElement {
       <style>
         :host {
           display: block;
+          /* The wires accordion's space (work document #63's space
+           * manager): the log fills the height its slot gives it, so
+           * the terminal surface uses the accordion's whole share */
+          height: 100%;
+          min-height: 0;
           font-family: SourceCodePro, monospace;
           color: var(--node-text);
         }
         .log {
-          max-height: 180px;
+          height: 100%;
           overflow-y: auto;
           font-size: 10px;
           line-height: 1.5;

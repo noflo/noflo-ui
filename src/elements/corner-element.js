@@ -236,14 +236,28 @@ function panelContainer(side) {
         pointer-events: none;
         z-index: 880;
       }
-      .corner-panels-left { left: 10px; top: 64px; bottom: 64px; }
-      .corner-panels-right { right: 10px; top: 64px; bottom: 64px; }
+      /* The container spans the full vertical space between the side's
+       * corner chips: the chips stand 12px from the edge and are 44px
+       * tall (the --ui-target floor, nowrap labels), so the free span
+       * starts at 56px — plus the 6px gutter the corner grammar uses */
+      .corner-panels-left { left: 12px; top: 62px; bottom: 62px; }
+      .corner-panels-right { right: 12px; top: 62px; bottom: 62px; }
+      /* The portals share the span equally weighted by their accordion
+       * count (set inline per corner), so every open accordion on the
+       * side gets the same share of the space — the bottom one's edge
+       * sits flush above the bottom corners */
       .corner-panels-left > .corner-panel-portal,
       .corner-panels-right > .corner-panel-portal {
-        flex: 1 1 0;
         min-height: 0;
         pointer-events: auto;
-        overflow-y: auto;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      @media (max-width: ${COMPACT_VIEWPORT}px) {
+        .corner-panels-left, .corner-panels-right {
+          width: calc(100vw - 24px);
+        }
       }
     `;
     document.head.appendChild(style);
@@ -540,11 +554,13 @@ export class FlowCornerElement extends HTMLElement {
       this._panelPortal.attachShadow({ mode: "open" });
       panelContainer(this.panelSide).appendChild(this._panelPortal);
     }
+    this._panelPortal.hidden = false;
     this._panelPortal.shadowRoot.innerHTML = `
       <style>
         :host {
           display: flex !important;
           flex-direction: column !important;
+          gap: 6px !important;
           position: static !important;
           inset: auto !important;
           z-index: auto !important;
@@ -552,10 +568,37 @@ export class FlowCornerElement extends HTMLElement {
           max-height: none !important;
           overflow: visible !important;
         }
+        /* The corner's open accordions stretch to fill the portal: each
+           is a flex column that scrolls its own overflow, so the side's
+           accordion column uses the whole span between the corner chips
+           and the bottom accordion's edge is bottom-aligned */
+        :host > :not(style) {
+          flex: 1 1 0;
+          min-height: 0;
+          width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+        }
+        /* The wires slot grows with its panel, so the telemetry log
+           fills the accordion instead of floating at its top */
+        :host > .panel > .telemetry-slot {
+          flex: 1 1 auto;
+          min-height: 0;
+        }
       </style>
       <style>${this.styles()}${cornerStyles()}</style>
       ${html}
     `;
+    // Equal shares across the whole side, not per portal: the portal's
+    // flex-grow is its accordion count, so a corner with two open
+    // accordions takes twice the space of one with a single accordion
+    // and every accordion on the side ends up the same height
+    const accordions = [...this._panelPortal.shadowRoot.children].filter(
+      (/** @type {Element} */ node) => node.tagName !== "STYLE",
+    );
+    this._panelPortal.style.flex = `${accordions.length} 1 0`;
   }
 
   /**
