@@ -8,3 +8,4 @@ join-worker-repro.js
 code-editor-test.html
 project/
 utils/bridge-check.mjs
+test-results/
