@@ -1139,7 +1139,13 @@ function wrapAssembly(registry, config = {}) {
         target: name,
         mapping: library.mapping?.[componentName]
       });
-      wrapped[name] = graph;
+      const wrappedName = `${name}Assembly`;
+      if (registry.list()[wrappedName] !== void 0) {
+        throw new Error(
+          `wrapAssembly: the wrapped name '${wrappedName}' collides with an existing component`
+        );
+      }
+      wrapped[wrappedName] = graph;
     } catch (err) {
       skips.push({
         name,

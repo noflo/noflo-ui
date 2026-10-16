@@ -1,5 +1,7 @@
 /**
- * Dacar: Decentralized Access Control for Reticulum (JavaScript reference impl).
+ * @module @reticulum/dacar
+ * @description Dacar: Decentralized Access Control for Reticulum (JavaScript
+ *   reference impl).
  *
  * A tuple-based, offline-first authorization policy plane built on an
  * LWW-Element-Set CRDT, designed for delay-tolerant mesh networks.
@@ -7,8 +9,13 @@
  * Object and relation labels are stored only as salted HMAC-SHA256 hashes
  * (§3.3 Namespace Label Privacy), Threshold Groups may act as N-of-M Issuers
  * (§4.1), and the state is bounded by Time-Horizon Tombstone Pruning (§9).
+ *
+ * Exports the transport-agnostic core: HLCs, namespace hashing, tuples,
+ * threshold groups, operations, verification, the §8 Challenge protocol, the
+ * §11 DeltaReceiver, the CRDT, and the §6 authorization Engine. Reticulum
+ * transports are opt-in via `@reticulum/dacar/transport`.
  */
-export const __version__: "1.5.0";
+export const __version__: "1.6.1";
 export const __specVersion__: "1.0-RC7";
 export { DeltaReceiver } from "./delta.js";
 export { StateVector } from "./crdt.js";

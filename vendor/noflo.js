@@ -137,7 +137,79 @@ function EventTargetMixin(Base) {
 }
 var EventBase = EventTargetMixin(EventTarget);
 
+// node_modules/@noflo/noflo/src/lib/logger.js
+function getPattern() {
+  if (typeof process !== "undefined" && process.versions) {
+    if (!process.env) return null;
+    return process.env.DEBUG || null;
+  }
+  const stored = globalThis.localStorage?.getItem("debug");
+  return stored || null;
+}
+var cachedPattern;
+var cachedMatchers = null;
+function parsePatterns(patternString) {
+  if (patternString === cachedPattern) {
+    return (
+      /** @type {PatternMatcher[]} */
+      cachedMatchers
+    );
+  }
+  const matchers = (patternString || "").split(",").map((pattern) => pattern.trim()).filter(Boolean).map((pattern) => {
+    const negate = pattern.startsWith("-");
+    const clean = negate ? pattern.slice(1) : pattern;
+    const regexSource = clean.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+    return {
+      regex: new RegExp(`^${regexSource}$`),
+      negate
+    };
+  });
+  cachedPattern = patternString;
+  cachedMatchers = matchers;
+  return matchers;
+}
+function isEnabled(namespace) {
+  const pattern = getPattern();
+  if (!pattern) {
+    return false;
+  }
+  let enabled = false;
+  for (const { regex, negate } of parsePatterns(pattern)) {
+    if (regex.test(namespace)) {
+      enabled = !negate;
+    }
+  }
+  return enabled;
+}
+function namespaceHue(namespace) {
+  const hash = namespace.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0);
+  return Math.abs(hash) % 360;
+}
+function createDebug(namespace) {
+  const log = (...args) => {
+    if (!log.enabled) {
+      return;
+    }
+    if (typeof window !== "undefined") {
+      const color = `hsl(${namespaceHue(namespace)}, 80%, 40%)`;
+      console.debug(
+        `%c${namespace}`,
+        `color: ${color}; font-weight: bold;`,
+        ...args
+      );
+      return;
+    }
+    const colorCode = namespaceHue(namespace) % 6 + 31;
+    console.error(`\x1B[${colorCode};1m${namespace}\x1B[0m`, ...args);
+  };
+  Object.defineProperty(log, "enabled", {
+    get: () => isEnabled(namespace)
+  });
+  return log;
+}
+
 // node_modules/@noflo/noflo/src/lib/BasePort.js
+var debugPort = createDebug("noflo:ports");
 var validTypes = [
   "all",
   "string",
@@ -161,7 +233,15 @@ function handleOptions(options) {
       `Invalid port datatype '${datatype}' specified, valid are ${validTypes.join(", ")}`
     );
   }
-  const schema = options.schema || options.type;
+  const schema = options.schema || null;
+  if (
+    /** @type {Record<string, any>} */
+    options.type !== void 0
+  ) {
+    debugPort(
+      `port option 'type' is retired: use 'datatype' for the payload datatype or 'schema' for a schema artifact reference \u2014 the value is ignored`
+    );
+  }
   if (schema !== null && schema !== void 0) {
     const validSchema = typeof schema === "string" && /^[a-z][a-z0-9_-]*\/[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(schema) || typeof schema === "object" && !Array.isArray(schema);
     if (!validSchema) {
@@ -254,12 +334,6 @@ var BasePort = class extends EventBase {
   }
   isAddressable() {
     if (this.options.addressable) {
-      return true;
-    }
-    return false;
-  }
-  isBuffered() {
-    if (this.options.buffered) {
       return true;
     }
     return false;
@@ -528,7 +602,7 @@ var InPort = class extends BasePort {
    * @param {string|null} scope
    * @param {number|null} index
    * @param {boolean} [initial]
-   * @returns {import("./IP.js").default|void}
+   * @returns {import("./IP.js").default|undefined}
    */
   getFromBuffer(scope, index, initial = false) {
     const buf = this.getBuffer(scope, index, initial);
@@ -553,9 +627,16 @@ var InPort = class extends BasePort {
   get(scope, index = null) {
     const res = this.getFromBuffer(scope, index);
     if (res !== void 0) {
+      if (!this.options.control) {
+        res.move(this.nodeInstance);
+      }
       return res;
     }
-    return this.getFromBuffer(null, index, true);
+    const iip = this.getFromBuffer(null, index, true);
+    if (iip !== void 0 && !this.options.control) {
+      iip.move(this.nodeInstance);
+    }
+    return iip;
   }
   /**
    * Fetches a packet from the port
@@ -613,26 +694,6 @@ var InPort = class extends BasePort {
       return true;
     }
     return false;
-  }
-  /**
-   * Returns the number of data packets in an inport
-   * @param {string|null} scope
-   * @param {number|null} [index]
-   * @returns {number}
-   */
-  length(scope, index = null) {
-    const buf = this.getBuffer(scope, index);
-    if (!buf) {
-      return 0;
-    }
-    return buf.length;
-  }
-  /**
-   * Tells if buffer has packets or not
-   * @param {string|null} scope
-   */
-  ready(scope) {
-    return this.length(scope) > 0;
   }
   /**
    * Clear all inport buffers, resetting the port to an empty state.
@@ -719,7 +780,7 @@ var IP = class _IP {
     this.isIP = true;
     this.scope = null;
     this.owner = null;
-    this.clonable = false;
+    this.clonable = true;
     this.index = null;
     this.schema = null;
     this.datatype = "all";
@@ -731,8 +792,34 @@ var IP = class _IP {
     }
   }
   /**
+   * Create a fresh IP envelope carrying the same payload by reference.
+   * This is the always-safe clone used for fan-out: the new envelope has
+   * its own identity (and no owner), while `data` and the other metadata
+   * are shared with the original. The `clonable` declaration carries
+   * over, so a further fan-out of the envelope behaves like the original.
+   *
+   * @returns {IP}
+   */
+  envelope() {
+    const ip = new _IP(this.type);
+    Object.keys(this).forEach((key) => {
+      if (key === "owner") {
+        return;
+      }
+      ip[key] = this[key];
+    });
+    return ip;
+  }
+  /**
    * Create a new IP copying its contents by value, not reference. The owner
    * is not copied.
+   *
+   * The payload is deep-copied with `structuredClone`, which round-trips
+   * typed arrays, `Map`s, `Set`s, `Date`s, and cyclic references that the
+   * 1.x JSON-based copy silently corrupted. Payloads the structured clone
+   * algorithm cannot copy (functions, symbols) throw; send such payloads
+   * with `clonable: false` and let fan-out share the reference, or deliver
+   * them to a single edge.
    *
    * @returns {IP}
    */
@@ -747,7 +834,14 @@ var IP = class _IP {
         return;
       }
       if (typeof val === "object") {
-        ip[key] = JSON.parse(JSON.stringify(val));
+        try {
+          ip[key] = structuredClone(val);
+        } catch (error) {
+          throw new Error(
+            `IP property '${key}' is not clonable: ${/** @type {Error} */
+            error.message}`
+          );
+        }
       } else {
         ip[key] = val;
       }
@@ -775,82 +869,10 @@ var IP = class _IP {
   }
 };
 
-// node_modules/@noflo/noflo/src/lib/logger.js
-function getPattern() {
-  if (typeof process !== "undefined" && process.versions) {
-    if (!process.env) return null;
-    return process.env.DEBUG || null;
-  }
-  const stored = globalThis.localStorage?.getItem("debug");
-  return stored || null;
-}
-var cachedPattern;
-var cachedMatchers = null;
-function parsePatterns(patternString) {
-  if (patternString === cachedPattern) {
-    return (
-      /** @type {PatternMatcher[]} */
-      cachedMatchers
-    );
-  }
-  const matchers = (patternString || "").split(",").map((pattern) => pattern.trim()).filter(Boolean).map((pattern) => {
-    const negate = pattern.startsWith("-");
-    const clean = negate ? pattern.slice(1) : pattern;
-    const regexSource = clean.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
-    return {
-      regex: new RegExp(`^${regexSource}$`),
-      negate
-    };
-  });
-  cachedPattern = patternString;
-  cachedMatchers = matchers;
-  return matchers;
-}
-function isEnabled(namespace) {
-  const pattern = getPattern();
-  if (!pattern) {
-    return false;
-  }
-  let enabled = false;
-  for (const { regex, negate } of parsePatterns(pattern)) {
-    if (regex.test(namespace)) {
-      enabled = !negate;
-    }
-  }
-  return enabled;
-}
-function namespaceHue(namespace) {
-  const hash = namespace.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0);
-  return Math.abs(hash) % 360;
-}
-function createDebug(namespace) {
-  const log = (...args) => {
-    if (!log.enabled) {
-      return;
-    }
-    if (typeof window !== "undefined") {
-      const color = `hsl(${namespaceHue(namespace)}, 80%, 40%)`;
-      console.debug(
-        `%c${namespace}`,
-        `color: ${color}; font-weight: bold;`,
-        ...args
-      );
-      return;
-    }
-    const colorCode = namespaceHue(namespace) % 6 + 31;
-    console.error(`\x1B[${colorCode};1m${namespace}\x1B[0m`, ...args);
-  };
-  Object.defineProperty(log, "enabled", {
-    get: () => isEnabled(namespace)
-  });
-  return log;
-}
-
 // node_modules/@noflo/noflo/src/lib/OutPort.js
 var OutPort = class extends BasePort {
   /**
-   * Create an output port. Ports are scoped by default; caching (resending
-   * the latest data to newly attached sockets) is off unless requested.
+   * Create an output port. Ports are scoped by default.
    *
    * @param {PortOptions} options - Options for the outport
    */
@@ -859,28 +881,20 @@ var OutPort = class extends BasePort {
     if (opts.scoped == null) {
       opts.scoped = true;
     }
-    if (typeof opts.caching !== "boolean") {
-      opts.caching = false;
-    }
     super(opts);
     const baseOptions = this.options;
     this.options = /** @type {PortOptions} */
     baseOptions;
-    this.cache = {};
     this.lastWrite = Promise.resolve();
   }
   /**
-   * Attach a socket to the port. With caching enabled, the cached value for
-   * the slot is sent to the new socket immediately.
+   * Attach a socket to the port.
    *
    * @param {import("./InternalSocket.js").InternalSocket} socket
    * @param {number|null} [index]
    */
   attach(socket, index = null) {
     super.attach(socket, index);
-    if (this.isCaching() && this.cache[`${index}`] != null) {
-      this.send(this.cache[`${index}`], index);
-    }
   }
   /**
    * Connect the port's socket(s), checking required ports first. On
@@ -900,8 +914,7 @@ var OutPort = class extends BasePort {
     });
   }
   /**
-   * Send a data packet to the port's socket(s). With caching enabled the
-   * value is kept for resend on new connections.
+   * Send a data packet to the port's socket(s).
    *
    * @param {any} data
    * @param {number|null} [index]
@@ -909,9 +922,6 @@ var OutPort = class extends BasePort {
   send(data, index = null) {
     const sockets = this.getSockets(index);
     this.checkRequired(sockets);
-    if (this.isCaching() && data !== this.cache[`${index}`]) {
-      this.cache[`${index}`] = data;
-    }
     sockets.forEach((socket) => {
       if (!socket) {
         return;
@@ -936,10 +946,9 @@ var OutPort = class extends BasePort {
   }
   /**
    * Send an Information Packet to the port's socket(s), stamping it with the
-   * port's datatype and schema, updating the cache, and returning `this`.
-   * The admission Promise for the send is available on
-   * {@link OutPort#lastWrite}; it resolves once every receiving edge has
-   * admitted the packet per its high-water mark.
+   * port's datatype and schema, and returning `this`. The admission Promise
+   * for the send is available on {@link OutPort#lastWrite}; it resolves once
+   * every receiving edge has admitted the packet per its high-water mark.
    *
    * @param {string|IP} type
    * @param {any} [data]
@@ -967,25 +976,24 @@ var OutPort = class extends BasePort {
     if (this.getSchema() && !ip.schema) {
       ip.schema = this.getSchema();
     }
-    const cachedData = this.cache[`${idx}`] != null ? this.cache[`${idx}`].data : void 0;
-    if (this.isCaching() && data !== cachedData) {
-      this.cache[`${idx}`] = ip;
+    const targets = sockets.filter((socket) => socket);
+    const fanout = targets.length > 1;
+    if (fanout && !ip.clonable && !this.isFanoutRefs()) {
+      throw new Error(
+        `${this.getId()}: fan-out to ${targets.length} connections of an IP marked clonable: false \u2014 enable the fanoutRefs option on this outport to share the payload reference, or route the packet through a splitter component`
+      );
     }
-    let pristine = true;
+    ip.owner = null;
     const writes = [];
     sockets.forEach((socket) => {
       if (!socket) {
         return;
       }
-      if (pristine) {
-        writes.push(socket.post(ip, autoConnect));
-        pristine = false;
-      } else {
-        if (ip.clonable) {
-          ip = ip.clone();
-        }
-        writes.push(socket.post(ip, autoConnect));
+      let outgoing = ip;
+      if (fanout) {
+        outgoing = this.isFanoutRefs() ? ip.envelope() : ip.clone();
       }
+      writes.push(socket.post(outgoing, autoConnect));
     });
     const admission = Promise.all(writes).then(() => void 0);
     admission.catch(() => {
@@ -1063,13 +1071,13 @@ var OutPort = class extends BasePort {
     return this.sockets;
   }
   /**
-   * Check whether the port resends its latest value to newly attached
-   * sockets.
+   * Check whether this port opts into reference-sharing fan-out for IPs
+   * marked `clonable: false`.
    *
    * @returns {boolean}
    */
-  isCaching() {
-    if (this.options.caching) {
+  isFanoutRefs() {
+    if (this.options.fanoutRefs) {
       return true;
     }
     return false;
@@ -1285,6 +1293,44 @@ var ProcessInput = class {
     this.result = this.context.result;
     this.scope = this.context.scope;
   }
+  /**
+   * Error message for accessing a port the component does not have: names
+   * the component, the requested port, and the ports that exist (#1041).
+   *
+   * @param {string} portname
+   * @returns {string}
+   */
+  #missingPortMessage(portname) {
+    const available = Object.keys(this.ports.ports);
+    const listing = available.length ? `available ports: '${available.join("', '")}'` : "no ports are defined";
+    return `Node ${this.nodeInstance.nodeId} has no port '${portname}' \u2014 ${listing}`;
+  }
+  /**
+   * Fetch a port implementation for buffered access, throwing a descriptive
+   * error when the port does not exist (the misspelled-port crash of
+   * #1041) or when the access form does not match the port kind.
+   *
+   * @param {string} portname
+   * @param {boolean} addressable - Whether the access form expects an addressable port
+   * @returns {import("./InPort.js").default}
+   */
+  #validatedPort(portname, addressable) {
+    const portImpl = this.ports.ports[portname];
+    if (!portImpl) {
+      throw new Error(this.#missingPortMessage(portname));
+    }
+    if (addressable && !portImpl.isAddressable()) {
+      throw new Error(
+        "Non-addressable ports, access must be with string portname"
+      );
+    }
+    if (!addressable && portImpl.isAddressable()) {
+      throw new Error(
+        `For addressable ports, access must be with array [${portname}, idx]`
+      );
+    }
+    return portImpl;
+  }
   // When preconditions are met, set component state to `activated`
   activate() {
     if (this.context.activated) {
@@ -1368,7 +1414,10 @@ var ProcessInput = class {
         );
         if (!portImpl) {
           throw new Error(
-            `Node ${this.nodeInstance.nodeId} has no port '${port[0]}'`
+            this.#missingPortMessage(
+              /** @type {string} */
+              port[0]
+            )
           );
         }
         if (!portImpl.isAddressable()) {
@@ -1386,9 +1435,7 @@ var ProcessInput = class {
           this.ports.ports[port]
         );
         if (!portImpl) {
-          throw new Error(
-            `Node ${this.nodeInstance.nodeId} has no port '${port}'`
-          );
+          throw new Error(this.#missingPortMessage(port));
         }
         if (portImpl.isAddressable()) {
           throw new Error(
@@ -1500,20 +1547,21 @@ var ProcessInput = class {
       let idx;
       let ip;
       let portname;
+      let portImpl;
       if (Array.isArray(port)) {
         [portname, idx] = Array.from(port);
-        if (!this.ports.ports[portname].isAddressable()) {
-          throw new Error(
-            "Non-addressable ports, access must be with string portname"
-          );
-        }
+        portImpl = this.#validatedPort(
+          /** @type {string} */
+          portname,
+          true
+        );
       } else {
         portname = port;
-        if (this.ports.ports[portname].isAddressable()) {
-          throw new Error(
-            "For addressable ports, access must be with array [portname, idx]"
-          );
-        }
+        portImpl = this.#validatedPort(
+          /** @type {string} */
+          portname,
+          false
+        );
       }
       const name = (
         /** @type {string} */
@@ -1527,10 +1575,6 @@ var ProcessInput = class {
         ip = this.__getForForwarding(name, idxName);
         res.push(ip);
       } else {
-        const portImpl = (
-          /** @type {import("./InPort.js").default} */
-          this.ports.ports[name]
-        );
         ip = portImpl.get(this.scope, idxName);
         res.push(ip);
       }
@@ -1786,7 +1830,6 @@ var ProcessOutput = class {
     this.ports = ports;
     this.context = context;
     this.nodeInstance = this.context.nodeInstance;
-    this.ip = this.context.ip;
     this.result = this.context.result;
     this.scope = this.context.scope;
   }
@@ -1884,6 +1927,11 @@ var ProcessOutput = class {
     if (componentPorts.length > 1 && !mapIsInPorts) {
       throw new Error("Port must be specified for sending output");
     }
+    if (outputMap == null) {
+      throw new Error(
+        `${this.nodeInstance.nodeId}: send() requires a value or an output map \u2014 call done() to finish without sending`
+      );
+    }
     const writes = [];
     Object.keys(outputMap).forEach((port) => {
       const packet = outputMap[port];
@@ -1895,18 +1943,14 @@ var ProcessOutput = class {
     return admission;
   }
   // Sends the argument via `send()` and marks activation as `done()`.
-  // A null/undefined outputMap (e.g. a `return output.done()` chain
-  // resolving with nothing) marks done without sending a null packet.
+  // Every argument is sent — a null becomes a null-payload data IP; a
+  // component that wants to finish without sending calls `done()`.
   /**
-   * @param {Error|Array<Error>|Object<string, any>|null|undefined} outputMap
+   * @param {Error|Array<Error>|Object<string, any>|any} outputMap
    * @returns {Promise<void>|void} Resolves when sent packets have been
    *   admitted and the activation has been marked done
    */
   sendDone(outputMap) {
-    if (outputMap == null) {
-      this.done();
-      return;
-    }
     const sent = this.send(outputMap);
     this.done();
     return sent;
@@ -1914,24 +1958,6 @@ var ProcessOutput = class {
   // Makes a map-style component pass a result value to `out`
   // keeping all IP metadata received from `in`,
   // or modifying it if `options` is provided
-  /**
-   * @param {any} data
-   * @param {Object<string, any>} [options]
-   */
-  pass(data, options = {}) {
-    if (!("out" in this.ports)) {
-      throw new Error('output.pass() requires port "out" to be present');
-    }
-    Object.keys(options).forEach((key) => {
-      const val = options[key];
-      this.ip[key] = val;
-    });
-    this.ip.data = data;
-    const sent = this.sendIP("out", this.ip);
-    this.done();
-    return sent;
-  }
-  // Finishes process activation gracefully
   /**
    * @param {Error|Array<Error>} [error]
    */
@@ -2004,6 +2030,10 @@ var debugComponent3 = createDebug("noflo:component");
 var debugBrackets = createDebug("noflo:component:brackets");
 var debugSend = createDebug("noflo:component:send");
 var Component = class extends EventBase {
+  /** Identity of the built-in forwarding default, when in effect; null once the component declares its own rules
+   * @type {Object<string, string[]> | null}
+   */
+  #defaultForwarding = null;
   /**
    * Create a component. Ports, icon, description, ordering behavior, and the
    * process function can all be provided via options, or set up imperatively
@@ -2023,7 +2053,6 @@ var Component = class extends EventBase {
       "process",
       "ordered",
       "autoOrdering",
-      "activateOnInput",
       "forwardBrackets"
     ];
     Object.keys(opts).forEach((key) => {
@@ -2060,9 +2089,11 @@ var Component = class extends EventBase {
       in: {},
       out: {}
     };
-    this.activateOnInput = opts.activateOnInput != null ? opts.activateOnInput : true;
     if (!opts.forwardBrackets) {
       opts.forwardBrackets = { in: ["out", "error"] };
+      this.#defaultForwarding = opts.forwardBrackets;
+    } else {
+      this.#defaultForwarding = null;
     }
     this.forwardBrackets = opts.forwardBrackets;
     this.handle = typeof opts.process === "function" ? opts.process : null;
@@ -2117,27 +2148,18 @@ var Component = class extends EventBase {
   }
   /**
    * Report an error from the component. If the component has an `error`
-   * outport that is connected, errors are sent as IP objects there. If the
-   * port is not connected and not optional, errors are thrown.
+   * outport that is connected, the error is sent there as an IP object. If
+   * the port is not connected and not optional, the error is thrown.
    *
    * @param {Error} e
-   * @param {Array<string>} [groups]
-   * @param {string} [errorPort]
-   * @param {string | null} [scope]
    */
-  error(e, groups = [], errorPort = "error", scope = null) {
+  error(e) {
     const outPort = (
       /** @type {OutPort} */
-      this.outPorts.ports[errorPort]
+      this.outPorts.ports.error
     );
     if (outPort && (outPort.isAttached() || !outPort.isRequired())) {
-      groups.forEach((group) => {
-        outPort.openBracket(group, { scope });
-      });
-      outPort.data(e, { scope });
-      groups.forEach((group) => {
-        outPort.closeBracket(group, { scope });
-      });
+      outPort.data(e, {});
       return;
     }
     throw e;
@@ -2267,9 +2289,15 @@ var Component = class extends EventBase {
    * @returns {void}
    */
   prepareForwarding() {
+    const defaulted = this.#defaultForwarding != null && this.forwardBrackets === this.#defaultForwarding;
     Object.keys(this.forwardBrackets).forEach((inPort) => {
       const outPorts = this.forwardBrackets[inPort];
       if (!(inPort in this.inPorts.ports)) {
+        if (!defaulted) {
+          throw new Error(
+            `forwardBrackets references inport '${inPort}' which the component does not have \u2014 declared forwarding rules must name existing ports`
+          );
+        }
         delete this.forwardBrackets[inPort];
         return;
       }
@@ -2277,6 +2305,12 @@ var Component = class extends EventBase {
       outPorts.forEach((outPort) => {
         if (outPort in this.outPorts.ports) {
           tmp.push(outPort);
+          return;
+        }
+        if (!defaulted) {
+          throw new Error(
+            `forwardBrackets rule for inport '${inPort}' references outport '${outPort}' which the component does not have \u2014 declared forwarding rules must name existing ports`
+          );
         }
       });
       if (tmp.length === 0) {
@@ -2496,7 +2530,13 @@ var Component = class extends EventBase {
       const res = this.handle(input, output, context);
       if (res && res.then) {
         res.then(
-          (data) => output.sendDone(data),
+          (data) => {
+            if (data === void 0) {
+              output.done();
+              return;
+            }
+            output.sendDone(data);
+          },
           (err) => output.done(err)
         );
       }
@@ -2630,7 +2670,7 @@ var Component = class extends EventBase {
           return;
         }
         context.ports.forEach((port) => {
-          const ipClone = context.closeIp.clone();
+          const ipClone = context.closeIp.envelope();
           this.addToResult(res, port, ipClone, true);
           this.getBracketContext("out", port, ipClone.scope).pop();
         });
@@ -2671,7 +2711,7 @@ var Component = class extends EventBase {
                 debugBrackets(
                   `${this.nodeId} openBracket from '${inport}' to '${portIdentifier}': '${ctx.ip.data}'`
                 );
-                const ipClone = ctx.ip.clone();
+                const ipClone = ctx.ip.envelope();
                 ipClone.index = parseInt(idx, 10);
                 forwardedOpens.push(ipClone);
                 ctx.ports.push(portIdentifier);
@@ -2702,7 +2742,7 @@ var Component = class extends EventBase {
             debugBrackets(
               `${this.nodeId} openBracket from '${inport}' to '${outport}': '${ctx.ip.data}'`
             );
-            forwardedOpens.push(ctx.ip.clone());
+            forwardedOpens.push(ctx.ip.envelope());
             ctx.ports.push(outport);
             this.getBracketContext("out", outport, ctx.ip.scope).push(ctx);
           });
@@ -2722,7 +2762,7 @@ var Component = class extends EventBase {
           return;
         }
         context.ports.forEach((port) => {
-          const ipClone = context.closeIp.clone();
+          const ipClone = context.closeIp.envelope();
           this.addToResult(res, port, ipClone, false);
           this.getBracketContext("out", port, ipClone.scope).pop();
         });
@@ -3427,49 +3467,13 @@ var ComponentLoader = class {
   registerGraph(packageId, name, gPath) {
     return this.registerComponent(packageId, name, gPath);
   }
-  /**
-   * Register a custom component loader plugin. The plugin is invoked
-   * immediately with the loader, and can register components, graphs, and
-   * library icons. The plugin performs its asynchronous work before
-   * resolving the Promise it returns; a rejection (or a synchronous throw)
-   * fails the registration. Registry implementations like
-   * `@noflo/loader-node` drive this hook for `noflo.loader` plugin modules
-   * discovered in package manifests; core accepts plugins, it never
-   * discovers them.
-   *
-   * @callback CustomLoader
-   * @param {ComponentLoader} loader
-   * @returns {Promise<void>|void}
-   */
-  /**
-   * Register a custom component loader plugin.
-   *
-   * @param {CustomLoader} loader
-   * @returns {Promise<void>}
-   */
-  registerLoader(loader) {
-    return Promise.resolve().then(() => loader(this)).then(() => {
-    });
-  }
-  /**
-   * Empty the component catalog and re-read the registry catalog, if one is
-   * configured.
-   *
-   * @returns {void}
-   */
-  clear() {
-    this.components = {};
-    if (this.registry && typeof this.registry.list === "function") {
-      const list = this.registry.list();
-      Object.keys(list || {}).forEach((name) => {
-        this.components[name] = list[name];
-      });
-    }
-  }
 };
 
 // node_modules/@noflo/noflo/src/lib/Edge.js
 function validateHighWaterMark(value, source) {
+  if (value === null) {
+    return null;
+  }
   if (!Number.isInteger(value) || value < 0) {
     throw new TypeError(
       `Edge highWaterMark from ${source} must be a non-negative integer or null, got ${value}`
@@ -3477,18 +3481,19 @@ function validateHighWaterMark(value, source) {
   }
   return value;
 }
+var DEFAULT_HIGH_WATER_MARK = 16;
 function resolveHighWaterMark(metadata, componentDefault, runtimeDefault) {
   const fromMetadata = metadata ? metadata.highWaterMark : void 0;
-  if (fromMetadata !== void 0 && fromMetadata !== null) {
+  if (fromMetadata !== void 0) {
     return validateHighWaterMark(fromMetadata, "edge metadata");
   }
-  if (componentDefault !== void 0 && componentDefault !== null) {
+  if (componentDefault !== void 0) {
     return validateHighWaterMark(componentDefault, "component default");
   }
-  if (runtimeDefault !== void 0 && runtimeDefault !== null) {
+  if (runtimeDefault !== void 0) {
     return validateHighWaterMark(runtimeDefault, "runtime default");
   }
-  return null;
+  return DEFAULT_HIGH_WATER_MARK;
 }
 var Edge = class {
   /**
@@ -3501,6 +3506,8 @@ var Edge = class {
     this.closed = false;
     this.inFlight = 0;
     this.waitingWriters = [];
+    this.pendingDeliveries = 0;
+    this.drainResolvers = [];
     const self = this;
     if (this.highWaterMark !== null) {
       this.writableStream = new WritableStream({
@@ -3512,9 +3519,21 @@ var Edge = class {
         write(ip) {
           return Promise.resolve().then(() => {
             let release = null;
-            if (self.deliver) {
-              release = self.deliver(ip);
+            try {
+              if (self.deliver) {
+                release = self.deliver(ip);
+              }
+            } catch (error) {
+              self.#markDelivered();
+              self.#released();
+              if (self.onError) {
+                self.onError(error);
+                return;
+              }
+              self.lastError = error;
+              return;
             }
+            self.#markDelivered();
             const finish = () => {
               self.#released();
             };
@@ -3533,6 +3552,37 @@ var Edge = class {
       });
       this.writer = this.writableStream.getWriter();
     }
+  }
+  /**
+   * Settle one reserved delivery slot: decrement the pending count and
+   * resolve any drain waiters once the edge is fully drained. Called when
+   * an IP has been handed to the delivery handler, and on the rejection
+   * paths of a write that never delivers.
+   */
+  #markDelivered() {
+    this.pendingDeliveries -= 1;
+    if (this.pendingDeliveries > 0) {
+      return;
+    }
+    const resolvers = this.drainResolvers;
+    this.drainResolvers = [];
+    for (const resolver of resolvers) {
+      resolver();
+    }
+  }
+  /**
+   * Resolve once every IP written to the edge has been handed to the
+   * delivery handler. Resolves immediately when nothing is pending.
+   *
+   * @returns {Promise<void>}
+   */
+  whenDrained() {
+    if (this.pendingDeliveries <= 0) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.drainResolvers.push(resolve);
+    });
   }
   /**
    * Deliver one IP to the registered handler. If the handler returns a
@@ -3681,11 +3731,16 @@ var Edge = class {
         runObserver(0);
       });
     }
+    this.pendingDeliveries += 1;
+    const unreserve = () => {
+      this.#markDelivered();
+    };
     const observers = this.observers;
     const admitted = (resolve, reject) => {
-      if (this.highWaterMark !== null && this.highWaterMark > 0) {
+      if (this.highWaterMark > 0) {
         this.writer.write(ip).then(null, (error) => {
           this.lastError = error;
+          unreserve();
         });
         resolve();
         return;
@@ -3694,27 +3749,27 @@ var Edge = class {
         () => resolve(),
         (error) => {
           this.lastError = error;
+          unreserve();
           reject(error);
         }
       );
     };
-    if (!observers.length) {
-      return this.#admission().then(
-        () => new Promise(admitted),
-        (error) => Promise.reject(error)
-      );
-    }
+    const admittedThroughObservers = (resolve, reject) => {
+      const runObserver = (index) => {
+        if (index >= observers.length) {
+          admitted(resolve, reject);
+          return;
+        }
+        observers[index](ip, () => runObserver(index + 1));
+      };
+      runObserver(0);
+    };
     return this.#admission().then(
-      () => new Promise((resolve, reject) => {
-        const runObserver = (index) => {
-          if (index >= observers.length) {
-            admitted(resolve, reject);
-            return;
-          }
-          observers[index](ip, () => runObserver(index + 1));
-        };
-        runObserver(0);
-      })
+      () => new Promise(observers.length ? admittedThroughObservers : admitted),
+      (error) => {
+        unreserve();
+        return Promise.reject(error);
+      }
     );
   }
   /**
@@ -3821,7 +3876,6 @@ var InternalSocket = class extends EventBase {
     this.metadata = metadata;
     this.brackets = [];
     this.connected = false;
-    this.dataDelegate = null;
     this.debug = options.debug || false;
     this.async = options.async || false;
     this.from = null;
@@ -3899,12 +3953,30 @@ var InternalSocket = class extends EventBase {
     this.connected = true;
     this.emitEvent("connect", null);
   }
+  /**
+   * Disconnect the socket. The `disconnect` event is emitted once every
+   * IP posted before the disconnect has been delivered through the edge,
+   * so receiving ends never observe a disconnect overtaking data. On an
+   * unbounded edge (synchronous delivery) this resolves immediately and
+   * the event fires synchronously, matching 1.x timing. The connection
+   * state flips synchronously either way.
+   *
+   * @returns {Promise<void>} Resolves when the disconnect event has been
+   *   emitted
+   */
   disconnect() {
     if (!this.connected) {
-      return;
+      return Promise.resolve();
     }
     this.connected = false;
-    this.emitEvent("disconnect", null);
+    const drained = this.edge.whenDrained();
+    if (this.edge.pendingDeliveries <= 0) {
+      this.emitEvent("disconnect", null);
+      return drained;
+    }
+    return drained.then(() => {
+      this.emitEvent("disconnect", null);
+    });
   }
   isConnected() {
     return this.connected;
@@ -3921,9 +3993,6 @@ var InternalSocket = class extends EventBase {
   // can be constructed with more flexibility, as file buffers or
   // message queues can be used as additional packet relay mechanisms.
   send(data) {
-    if (data === void 0 && typeof this.dataDelegate === "function") {
-      data = this.dataDelegate();
-    }
     return this.post(new IP("data", data), false);
   }
   // ## Sending information packets without open bracket
@@ -3944,10 +4013,7 @@ var InternalSocket = class extends EventBase {
    *   channel.
    */
   post(packet, autoDisconnect = true) {
-    let ip = packet;
-    if (ip === void 0 && typeof this.dataDelegate === "function") {
-      ip = this.dataDelegate();
-    }
+    const ip = packet;
     if (!this.isConnected() && this.brackets.length === 0) {
       this.connect();
     }
@@ -4001,17 +4067,6 @@ var InternalSocket = class extends EventBase {
   // forward them onward if the data structures remain intact through
   // the component's processing — a stream that arrives grouped should
   // leave grouped.
-  // ## Socket data delegation
-  //
-  // Sockets have the option to receive data from a delegate function
-  // should the `send` method receive undefined for `data`.  This
-  // helps in the case of defaulting values.
-  setDataDelegate(delegate) {
-    if (typeof delegate !== "function") {
-      throw Error("A data delegate must be a function.");
-    }
-    this.dataDelegate = delegate;
-  }
   // ## Socket debug mode
   //
   // Sockets can catch exceptions happening in processes when data is
@@ -4043,45 +4098,6 @@ var InternalSocket = class extends EventBase {
 };
 function createSocket(metadata = {}, options = {}) {
   return new InternalSocket(metadata, options);
-}
-
-// node_modules/@noflo/noflo/src/lib/Utils.js
-function debounce(func, wait, immediate) {
-  let timeout;
-  let args;
-  let context;
-  let timestamp;
-  let result;
-  function later() {
-    const last = Date.now() - timestamp;
-    if (last < wait && last >= 0) {
-      timeout = setTimeout(later, wait - last);
-    } else {
-      timeout = null;
-      if (!immediate) {
-        result = func.apply(context, args);
-        if (!timeout) {
-          context = null;
-          args = null;
-        }
-      }
-    }
-  }
-  return function after() {
-    context = this;
-    args = arguments;
-    timestamp = Date.now();
-    const callNow = immediate && !timeout;
-    if (!timeout) {
-      timeout = setTimeout(later, wait);
-    }
-    if (callNow) {
-      result = func.apply(context, args);
-      context = null;
-      args = null;
-    }
-    return result;
-  };
 }
 
 // node_modules/@noflo/noflo/src/lib/Network.js
@@ -4147,6 +4163,7 @@ var Network = class extends EventBase {
     this.stopped = true;
     this.debug = true;
     this.asyncDelivery = options.asyncDelivery || false;
+    this.endCheckTimer = null;
     this.eventBuffer = [];
     this.startupDate = null;
     if (options.componentLoader) {
@@ -4318,7 +4335,8 @@ var Network = class extends EventBase {
         this.processes[process2.id] = process2;
         promise = Promise.resolve(process2);
       } else {
-        promise = this.load(node.component, node.metadata).then((instance) => {
+        const preloaded = this.options.instances?.[node.entity_id];
+        promise = (preloaded ? Promise.resolve(preloaded) : this.load(node.component, node.metadata)).then((instance) => {
           instance.nodeId = node.entity_id;
           process2.component = instance;
           process2.componentName = node.component;
@@ -4471,7 +4489,10 @@ var Network = class extends EventBase {
       return;
     }
     instance.network.setDebug(this.debug);
-    instance.network.setAsyncDelivery(this.asyncDelivery);
+    instance.network.asyncDelivery = this.asyncDelivery;
+    instance.network.connections.forEach((socket) => {
+      socket.async = this.asyncDelivery;
+    });
     if (this.flowtrace) {
       instance.network.setFlowtrace(this.flowtrace, node.componentName, false);
     }
@@ -4560,9 +4581,7 @@ var Network = class extends EventBase {
       node.component
     );
     instance.addEventListener("activate", () => {
-      if (this.debouncedEnd) {
-        this.abortDebounce = true;
-      }
+      this.#abortEndCheck();
     });
     instance.addEventListener(
       "deactivate",
@@ -4913,9 +4932,7 @@ var Network = class extends EventBase {
    * @returns {Promise<this>}
    */
   start() {
-    if (this.debouncedEnd) {
-      this.abortDebounce = true;
-    }
+    this.#abortEndCheck();
     if (this.started) {
       return this.stop().then(() => this.start());
     }
@@ -4933,9 +4950,7 @@ var Network = class extends EventBase {
    * @returns {Promise<this>}
    */
   stop() {
-    if (this.debouncedEnd) {
-      this.abortDebounce = true;
-    }
+    this.#abortEndCheck();
     if (!this.started) {
       this.stopped = true;
       return Promise.resolve(this);
@@ -4997,8 +5012,10 @@ var Network = class extends EventBase {
     });
   }
   /**
-   * End the network (emit `end`) once no process is active anymore, debounced
-   * so that bursts of deactivations do not produce premature ends.
+   * End the network (emit `end`) once no process is active anymore. The
+   * check is coalesced: bursts of deactivations within the quiet window
+   * produce a single check, and a new activation or a start/stop cancels
+   * the pending check explicitly.
    *
    * @protected
    * @returns {void}
@@ -5007,19 +5024,27 @@ var Network = class extends EventBase {
     if (this.isRunning()) {
       return;
     }
-    delete this.abortDebounce;
-    if (!this.debouncedEnd) {
-      this.debouncedEnd = debounce(() => {
-        if (this.abortDebounce) {
-          return;
-        }
-        if (this.isRunning()) {
-          return;
-        }
-        this.setStarted(false);
-      }, 50);
+    if (this.endCheckTimer != null) {
+      clearTimeout(this.endCheckTimer);
     }
-    this.debouncedEnd();
+    this.endCheckTimer = setTimeout(() => {
+      this.endCheckTimer = null;
+      if (this.isRunning()) {
+        return;
+      }
+      this.setStarted(false);
+    }, 50);
+  }
+  /**
+   * Cancel a pending network-end check.
+   *
+   * @returns {void}
+   */
+  #abortEndCheck() {
+    if (this.endCheckTimer != null) {
+      clearTimeout(this.endCheckTimer);
+      this.endCheckTimer = null;
+    }
   }
   /**
    * Get the current debug mode of the network.
@@ -5055,35 +5080,6 @@ var Network = class extends EventBase {
           instance
         );
         inst.network.setDebug(active);
-      }
-    });
-  }
-  /**
-   * Enable or disable asynchronous packet delivery, propagating the setting
-   * to all sockets and subgraph networks.
-   *
-   * @param {boolean} active
-   */
-  setAsyncDelivery(active) {
-    if (active === this.asyncDelivery) {
-      return;
-    }
-    this.asyncDelivery = active;
-    this.connections.forEach((socket) => {
-      socket.async = this.asyncDelivery;
-    });
-    Object.keys(this.processes).forEach((processId) => {
-      const process2 = this.processes[processId];
-      if (!process2.component) {
-        return;
-      }
-      const instance = process2.component;
-      if (instance.isSubgraph()) {
-        const inst = (
-          /** @type {import("../components/Subgraph.js").Subgraph} */
-          instance
-        );
-        inst.network.setAsyncDelivery(active);
       }
     });
   }
@@ -5342,7 +5338,7 @@ var Flowtrace = class {
   }
 };
 
-// node_modules/@noflo/noflo/src/lib/AsCallback.js
+// node_modules/@noflo/noflo/src/lib/AsPromise.js
 import { GraphModel as GraphModel3 } from "./graph.js";
 function normalizeOptions(options, component) {
   if (!options) {
@@ -5379,7 +5375,7 @@ function prepareNetwork(component, options) {
     const graph = new GraphModel3(
       options.name === void 0 ? {} : { name: options.name }
     );
-    const nodeName = options.name || "AsCallback";
+    const nodeName = options.name || "AsPromise";
     graph.addNode({ entity_id: nodeName, component });
     const inPorts = instance.inPorts.ports;
     const outPorts = instance.outPorts.ports;
@@ -5399,7 +5395,8 @@ function prepareNetwork(component, options) {
     });
     const network = new Network(graph, {
       ...options,
-      componentLoader: options.loader
+      componentLoader: options.loader,
+      instances: { [nodeName]: instance }
     });
     return network.connect();
   });
@@ -5655,14 +5652,6 @@ function asPromise(component, options) {
     );
   });
 }
-function asCallback(component, options) {
-  const promised = asPromise(component, options);
-  return (inputs, callback) => {
-    promised(inputs).then((output) => {
-      callback(null, output);
-    }, callback);
-  };
-}
 
 // node_modules/@noflo/noflo/src/lib/NoFlo.js
 function createNetwork(graphInstance, options = {}) {
@@ -5688,7 +5677,6 @@ var NoFlo_default = {
   internalSocket: InternalSocket_exports,
   IP,
   createNetwork,
-  asCallback,
   asPromise
 };
 export {
@@ -5704,7 +5692,6 @@ export {
   Network,
   OutPort,
   OutPorts,
-  asCallback,
   asPromise,
   createNetwork,
   NoFlo_default as default,

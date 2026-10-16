@@ -265,7 +265,7 @@ export class NofloSchemaForm extends HTMLElement {
   _upgradeProperty(prop) {
     if (Object.hasOwn(this, prop)) {
       const value = /** @type {any} */ (this)[prop];
-      delete /** @type {any} */ (this)[prop];
+      delete (/** @type {any} */ (this)[prop]);
       /** @type {any} */ (this)[prop] = value;
     }
   }

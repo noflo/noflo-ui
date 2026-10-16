@@ -2,12 +2,6 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import { describe, it } from "node:test";
 import * as Repeat from "@noflo/core/components/Repeat.js";
-import {
-  CMD_PROCESS_LIST_REQ,
-  COMPONENT_TYPE,
-  EXECUTION_STATE,
-  encodeProcessList,
-} from "@noflo/fbp-protocol";
 import { GraphModel } from "@noflo/graph";
 import { ComponentLoader } from "@noflo/noflo";
 import { assembleRuntime, bindReticulum } from "@noflo/runtime";
@@ -182,39 +176,6 @@ async function bootRuntime({ port, anchorHashHex, anchorPubkeyHex, saltHex }) {
     capabilities: 0xff,
     autostart: false,
   });
-  // Upstream gap (@noflo/runtime; the fix is merged on noflo master, PR noflo/noflo#1085, pending its alpha.6 release):
-  // `0x44` has no handler — the §8 process listing is not implemented yet,
-  // so a client's request draws silence. The harness derives the listing
-  // from the graph model: declared components, elementary kind, execution
-  // state from whether a network is built. The graph protocol's sync-reply
-  // plane-id bug needed the same treatment until alpha.5, where it is
-  // fixed upstream and this harness dropped its patch.
-  runtime.server.registerHandler(
-    CMD_PROCESS_LIST_REQ,
-    (/** @type {any} */ decoded, /** @type {any} */ context) => {
-      /** @type {Record<string, { component: string, type: string, state: number }>} */
-      const entries = {};
-      for (const node of graph.nodes()) {
-        // Placeholder nodes have no component and no process to list —
-        // encoding an empty name would take the listing into wire silence
-        const component = node.component;
-        if (!component) continue;
-        entries[node.entity_id] = {
-          component,
-          type: COMPONENT_TYPE.ELEMENTARY,
-          state: runtime.host.network
-            ? EXECUTION_STATE.ENABLED
-            : EXECUTION_STATE.DISABLED,
-        };
-      }
-      runtime.graph
-        .epoch()
-        .then((epoch) =>
-          runtime.server.send(encodeProcessList(epoch, entries), context),
-        )
-        .catch(() => {});
-    },
-  );
   /** @type {any} */
   let binding = null;
   return {

@@ -1540,7 +1540,7 @@ var ChallengeClient = class {
 };
 
 // node_modules/@reticulum/dacar/src/index.js
-var __version__ = "1.5.0";
+var __version__ = "1.6.1";
 var __specVersion__ = "1.0-RC7";
 
 // node_modules/@reticulum/dacar/src/transport/rnsSync.js
