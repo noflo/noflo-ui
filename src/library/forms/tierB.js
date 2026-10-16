@@ -39,10 +39,16 @@ export function tierBValidate(value, schema) {
     }
     const valid = validate(value);
     if (valid) return [];
-    return (validate.errors ?? []).map((/** @type {any} */ error) => ({
-      path: `#${error.instancePath ?? ""}`,
-      message: error.message ?? "is invalid",
-    }));
+    return (validate.errors ?? []).map((/** @type {any} */ error) => {
+      // Required errors land on the parent object with the missing
+      // property in params — the path moves to the missing child so the
+      // error renders beside the control that satisfies it
+      const missing = error.params?.missingProperty;
+      const path = missing
+        ? `#${error.instancePath ?? ""}/${missing}`
+        : `#${error.instancePath ?? ""}`;
+      return { path, message: error.message ?? "is invalid" };
+    });
   } catch {
     // A schema Ajv cannot compile (uncompilable regular expressions,
     // malformed documents): null sends the caller to the subset
