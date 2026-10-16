@@ -20,6 +20,9 @@ import "./noflo-minimap.js";
  * @property {boolean} [addressable]
  * @property {string} [type]
  * @property {number} [size]
+ * @property {{ id: string, digest?: string }} [schema] The port's schema
+ *   artifact reference (work document #57): the IIP and inspector forms
+ *   render from it.
  */
 
 /**
@@ -1955,6 +1958,9 @@ export class FlowEditor extends HTMLElement {
               emit(this, "iip-edit-attempt", {
                 iip: clickedNode,
                 dataType: wire?.port?.dataset?.portDataType || "all",
+                schemaRef: wire?.port?.dataset?.portSchemaRef
+                  ? JSON.parse(wire.port.dataset.portSchemaRef)
+                  : undefined,
               });
             },
             icon: "pen-to-square",

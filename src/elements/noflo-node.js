@@ -886,7 +886,15 @@ export class FlowNode extends HTMLElement {
         x: this.radius * Math.cos(baseAngle),
         y: this.radius * Math.sin(baseAngle),
       };
-      this.addPortElement(pos, isOutport, name, "regular", cfg.type);
+      this.addPortElement(
+        pos,
+        isOutport,
+        name,
+        "regular",
+        cfg.type,
+        undefined,
+        cfg.schema,
+      );
     } else {
       // Use an angular step that makes 12px circles almost touch
       // Chord length approx 13px -> angle approx 0.32 radians
@@ -908,6 +916,7 @@ export class FlowNode extends HTMLElement {
           "array",
           cfg.type,
           i,
+          cfg.schema,
         );
       }
     }
@@ -920,8 +929,11 @@ export class FlowNode extends HTMLElement {
    * @param {string} type
    * @param {string} [dataType] The port's declared datatype.
    * @param {number} [index]
+   * @param {{ id: string, digest?: string }} [schemaRef] The port's schema
+   *   artifact reference (work document #57): the IIP and inspector forms
+   *   resolve from it.
    */
-  addPortElement(pos, isOutport, name, type, dataType, index) {
+  addPortElement(pos, isOutport, name, type, dataType, index, schemaRef) {
     const port = document.createElement("div");
     port.className = `port ${isOutport ? "port-out" : "port-in"}`;
 
@@ -936,6 +948,9 @@ export class FlowNode extends HTMLElement {
     // typed-port guiding matches on it; `portType` stays the structural
     // kind (regular/array)
     port.dataset.portDataType = dataType || "all";
+    // The port's schema reference (work document #57): the IIP and
+    // inspector forms resolve from it
+    if (schemaRef) port.dataset.portSchemaRef = JSON.stringify(schemaRef);
     if (index !== undefined) port.dataset.portIndex = index.toString();
 
     // All ports are now 12px (radius 6px)

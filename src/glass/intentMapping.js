@@ -19,7 +19,7 @@ import { on } from "../events.js";
  * @property {() => { getComponent: (name: string) => any, listComponents: () => string[] } | null} getLibrary
  *   The Glass-side library view, for default port names and the candidate
  *   lists of the typed-port guiding.
- * @property {((options: { title: string, datatype: string, value?: string }) => Promise<any | null>)} [editIIP]
+ * @property {((options: { title: string, datatype: string, value?: string, schemaRef?: { id: string, digest?: string } }) => Promise<any | null>)} [editIIP]
  *   Edits an IIP value with the datatype-aware editor in the shell (work
  *   document #5 follow-up). Null cancels; absent, the mapper falls back
  *   to a window prompt.
@@ -430,6 +430,9 @@ export function createIntentMapper({
               title: "Value for the packet",
               datatype,
               value: undefined,
+              schemaRef: startPort.dataset.portSchemaRef
+                ? JSON.parse(startPort.dataset.portSchemaRef)
+                : undefined,
             })
           : window.prompt("Value for the initial information packet:");
         if (value === null || value === undefined) return;
@@ -453,6 +456,7 @@ export function createIntentMapper({
               title: "New value for the packet",
               datatype: event.detail.dataType || "all",
               value: iip.value,
+              schemaRef: event.detail.schemaRef,
             })
           : window.prompt("New value for the packet:", iip.value);
         if (value === null || value === undefined) return;

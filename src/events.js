@@ -83,7 +83,7 @@
  * @property {CustomEvent<{ edge: EditorEdge }>} edge-removal-attempt
  * @property {CustomEvent<{ x: number, y: number, startPort: Element | null }>} iip-creation-attempt
  * @property {CustomEvent<{ x: number, y: number, startPort: Element | null }>} node-creation-attempt
- * @property {CustomEvent<{ iip: Element, dataType: string }>} iip-edit-attempt
+ * @property {CustomEvent<{ iip: Element, dataType: string, schemaRef?: { id: string, digest?: string } }>} iip-edit-attempt
  * @property {CustomEvent<{ iip: Element }>} iip-removal-attempt
  * @property {CustomEvent<{ iip: Element }>} iip-send-attempt
  * @property {CustomEvent<{ node: Element }>} edit-component-attempt

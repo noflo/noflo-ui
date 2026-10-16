@@ -43,6 +43,7 @@ import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
 import "./elements/noflo-selection-pills.js";
+import { CATALOGS } from "../vendor/fbp-protocol.js";
 import { emit, on } from "./events.js";
 import {
   compatibleComponents,
@@ -66,6 +67,7 @@ import {
 } from "./glass/text-prompt.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { buildSignatureSchema } from "./library/schema.js";
+import { schemaCache } from "./library/schemaCache.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
 
 // Element modules self-register their custom elements on import (the
@@ -1398,37 +1400,117 @@ function onRoleChange() {
  * @param {string} theme
  */
 /**
- * Opens the IIP value editor (work document #5 follow-up): a jedison form
- * constrained by the port's datatype, replacing the window.prompt for IIP
- * values. Resolves the parsed value, or null on cancellation.
+ * The datatypes the std catalog declares opaque: no form is rendered,
+ * IIP validation is skipped — a defined outcome, not a gap (work document
+ * #37 §3.3).
+ *
+ * @param {string} dataType
+ * @returns {boolean}
+ */
+function isOpaqueDatatype(dataType) {
+  const entry = /** @type {any} */ (CATALOGS.std.types[dataType]);
+  return entry?.opaque === true;
+}
+
+/**
+ * Opens the IIP value editor (work document #5 follow-up, upgraded per
+ * #57): the schema-driven form renders from the port's schema reference
+ * when one is declared — resolved through the project's schemas and the
+ * schema cache — else from the std catalog's datatype mapping, else the
+ * raw JSON prompt takes the value (the declared opaque and unconstrained
+ * path). Tier B validation gates the save: an invalid value is never
+ * silently sent.
  *
  * @param {string} title
  * @param {string} rawValue The IIP's stored value.
  * @param {string} dataType The target port's datatype.
+ * @param {{ id: string, digest?: string }} [schemaRef] The port's schema
+ *   artifact reference.
  * @returns {Promise<any | null>}
  */
-async function _openIIPValueEditor(title, rawValue, dataType) {
-  if (!componentModal || !componentForm) return null;
-  // Unconstrained datatypes (`all`, or any datatype without a JSON Schema
-  // mapping) have no typed widgets to derive: a raw JSON textarea takes
-  // their value, evaluated on save (work document #5 update #36)
-  if (dataType === "all" || datatypeToSchema(dataType) === null) {
+async function _openIIPValueEditor(title, rawValue, dataType, schemaRef) {
+  if (!componentModal) return null;
+  /** @type {any} */
+  let schema = null;
+  /** @type {string | null} */
+  let schemaLabel = null;
+  if (schemaRef?.id) {
+    const record = /** @type {any} */ (getSchema(mirrorDoc, schemaRef.id));
+    if (record) {
+      try {
+        schema = JSON.parse(record.get("body") ?? "");
+        schemaLabel = schemaRef.id;
+      } catch {
+        // The authored body is unparseable: fall through to the catalog
+      }
+    } else if (schemaRef.digest) {
+      // A foreign pin: the schema cache resolves by digest
+      const body = await schemaCache().get(schemaRef.digest);
+      if (body) {
+        schema = body;
+        schemaLabel = schemaRef.id;
+      }
+    }
+  }
+  if (!schema) {
+    const entry = /** @type {any} */ (CATALOGS.std.types[dataType]);
+    if (entry?.schema) {
+      schema = entry.schema;
+      schemaLabel = `std/${dataType}`;
+    }
+  }
+  // The declared opaque path and the unconstrained datatype: the raw
+  // JSON prompt takes the value, evaluated on save
+  if (!schema || dataType === "all") {
     return openJsonPrompt({
       title,
       value: rawValue ?? "",
       confirmLabel: "Save",
     });
   }
+
+  let schemaFormEl = /** @type {any} */ (
+    componentModal.querySelector("noflo-schema-form")
+  );
+  if (!schemaFormEl) {
+    schemaFormEl = /** @type {any} */ (
+      document.createElement("noflo-schema-form")
+    );
+    componentModal.appendChild(schemaFormEl);
+  }
+  // The incumbent jedison form hides while the schema form shows
+  componentForm.style.display = "none";
+  schemaFormEl.style.display = "block";
+  schemaFormEl.refResolver = (/** @type {string} */ ref) =>
+    schemaCache().getRef(ref);
+  schemaFormEl.schema = schema;
+  schemaFormEl.data = parseIIPValue(rawValue);
+  /** The live change report: Tier B's validity gates the save. */
+  let lastChange = { data: parseIIPValue(rawValue), isValid: true, errors: [] };
+  schemaFormEl.addEventListener("form-change", (/** @type {any} */ e) => {
+    lastChange = e.detail;
+  });
+
   componentModal.setActions([
     { value: "cancel", label: "Cancel", kind: "btn-secondary" },
     { value: "save", label: "Save", kind: "btn-primary" },
   ]);
   componentModal.open(title);
-  componentForm.schema = datatypeToSchema(dataType);
-  componentForm.data = parseIIPValue(rawValue);
   const action = await componentModal.submit();
+  componentForm.style.display = "";
+  schemaFormEl.style.display = "none";
   if (action !== "save") return null;
-  return componentForm.data;
+  if (!lastChange.isValid) {
+    // Tier B hard enforcement: an invalid value is never silently sent —
+    // the editor re-opens with the failure beside the controls
+    setModalFeedback(
+      componentModal,
+      "The value fails the port's schema",
+      schemaFormEl,
+    );
+    return _openIIPValueEditor(title, rawValue, dataType, schemaRef);
+  }
+  return lastChange.data;
 }
 
 /**
@@ -1509,34 +1591,6 @@ function duplicatePortNames(data) {
     }
   }
   return duplicates;
-}
-
-/**
- * Maps a port datatype to the JSON Schema the IIP editor uses (work
- * document #5 follow-up): string/number/boolean constrain directly;
- * object and array get their structural type; all accepts anything. JSON
- * Schemas for ports refine this once they exist.
- *
- * @param {string} dataType
- * @returns {any}
- */
-function datatypeToSchema(dataType) {
-  switch (dataType) {
-    case "string":
-      return { type: "string" };
-    case "number":
-      return { type: "number" };
-    case "boolean":
-      return { type: "boolean" };
-    case "object":
-      return { type: "object" };
-    case "array":
-      return { type: "array" };
-    default:
-      // No schema to derive a typed form from — the caller falls back to
-      // the raw JSON textarea
-      return null;
-  }
 }
 
 /**
