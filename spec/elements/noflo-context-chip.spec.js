@@ -138,9 +138,14 @@ describe("context chip project explorer (work document #63)", () => {
       ?.dispatchEvent(new Event("click", { bubbles: true }));
     const tree = shadow.querySelector(".explorer");
     assert.ok(tree, "the tree opens");
-    const graphsHead = tree.querySelector('[data-section="graphs"]');
-    graphsHead?.dispatchEvent(new Event("click", { bubbles: true }));
+    // Sections with content render open: the runtime corner's accordion
+    // opens with its rows visible
     assert.match(tree.textContent ?? "", /helper/, "the subgraph nests");
+    assert.match(
+      tree.textContent ?? "",
+      /main-test/,
+      "the spec entry renders open",
+    );
     el.remove();
   });
 

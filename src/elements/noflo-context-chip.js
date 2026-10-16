@@ -140,6 +140,13 @@ export class FlowContextChip extends FlowCornerElement {
       })),
     });
     this._sections = sections;
+    // Sections with content render open: the runtime corner's accordion
+    // opens with its rows visible — a tree of bare headers reads as empty
+    this._openSections = new Set(
+      sections
+        .filter((section) => (section.entries ?? []).length > 0)
+        .map((section) => section.id),
+    );
     this.render();
   }
 
