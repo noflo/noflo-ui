@@ -384,54 +384,54 @@ export class FlowCornerElement extends HTMLElement {
         ${this.chipHtml()}
       </div>
     `;
-    if (this.expandable) {
-      const chip = shadow.querySelector("[data-action='toggle']");
-      // The segment-as-toggle grammar (work document #63): a chip child
-      // carrying a data-segment-toggle marker owns its click — it toggles
-      // its own accordion through the corner's hook, not the chip's
-      // expand state
-      const segmentTarget = (/** @type {Event} */ event) => {
-        const path = event?.composedPath?.() ?? [];
-        const inPath = path.find((/** @type {any} */ el) =>
-          el?.getAttribute?.("data-segment-toggle"),
-        );
-        if (inPath) return inPath;
-        // Synthetic dispatches may carry an empty composed path; the
-        // target's closest marker is the same answer for real input
-        return (
-          /** @type {any} */ (event?.target)?.closest?.(
-            "[data-segment-toggle]",
-          ) ?? null
-        );
-      };
-      const toggle = (/** @type {Event} */ event) => {
-        if (segmentTarget(event)) return;
-        this.expanded = !this.expanded;
-        this.render();
-      };
-      chip?.addEventListener("click", (/** @type {any} */ event) => {
-        const segment = segmentTarget(event);
-        if (segment) {
-          this.toggleSegment(segment.getAttribute("data-segment-toggle"));
-          return;
-        }
-        toggle(event);
-      });
-      // Keyboard equivalence for the pointer-only toggle: Enter and Space
-      // activate a role="button" element — the segment's own marker when
-      // the focus is on it, the chip's expand state otherwise
-      chip?.addEventListener("keydown", (/** @type {Event} */ event) => {
-        const key = /** @type {KeyboardEvent} */ (event).key;
-        if (key !== "Enter" && key !== " ") return;
-        event.preventDefault();
-        const segment = segmentTarget(event);
-        if (segment) {
-          this.toggleSegment(segment.getAttribute("data-segment-toggle"));
-          return;
-        }
-        toggle(event);
-      });
-    }
+    const chip = shadow.querySelector("[data-action='toggle']");
+    // The segment-as-toggle grammar (work document #63): a chip child
+    // carrying a data-segment-toggle marker owns its click — it toggles
+    // its own accordion through the corner's hook, not the chip's
+    // expand state. The handlers attach regardless of expandable:
+    // segments are independent of the expand affordance
+    const segmentTarget = (/** @type {Event} */ event) => {
+      const path = event?.composedPath?.() ?? [];
+      const inPath = path.find((/** @type {any} */ el) =>
+        el?.getAttribute?.("data-segment-toggle"),
+      );
+      if (inPath) return inPath;
+      // Synthetic dispatches may carry an empty composed path; the
+      // target's closest marker is the same answer for real input
+      return (
+        /** @type {any} */ (event?.target)?.closest?.(
+          "[data-segment-toggle]",
+        ) ?? null
+      );
+    };
+    const toggle = (/** @type {Event} */ event) => {
+      if (segmentTarget(event)) return;
+      if (!this.expandable) return;
+      this.expanded = !this.expanded;
+      this.render();
+    };
+    chip?.addEventListener("click", (/** @type {any} */ event) => {
+      const segment = segmentTarget(event);
+      if (segment) {
+        this.toggleSegment(segment.getAttribute("data-segment-toggle"));
+        return;
+      }
+      toggle(event);
+    });
+    // Keyboard equivalence for the pointer-only toggle: Enter and Space
+    // activate a role="button" element — the segment's own marker when
+    // the focus is on it, the chip's expand state otherwise
+    chip?.addEventListener("keydown", (/** @type {Event} */ event) => {
+      const key = /** @type {KeyboardEvent} */ (event).key;
+      if (key !== "Enter" && key !== " ") return;
+      event.preventDefault();
+      const segment = segmentTarget(event);
+      if (segment) {
+        this.toggleSegment(segment.getAttribute("data-segment-toggle"));
+        return;
+      }
+      toggle(event);
+    });
     this.wireEvents();
   }
 }

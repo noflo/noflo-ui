@@ -101,3 +101,80 @@ describe("FlowContextChip (work document #28)", () => {
     el.remove();
   });
 });
+
+describe("context chip project explorer (work document #63)", () => {
+  /**
+   * A chip with the tree fed.
+   *
+   * @returns {any}
+   */
+  async function makeWithTree() {
+    const el = document.createElement("noflo-context-chip");
+    document.body.appendChild(el);
+    el.setContents({
+      projectName: "My project",
+      graphs: [
+        { name: "main", parent: "" },
+        { name: "main/helper", parent: "main" },
+      ],
+      components: ["core/Repeat"],
+      schemas: ["ui/point"],
+      specs: ["main-test"],
+      workDocs: [{ id: "d1", title: "Design notes" }],
+    });
+    return el;
+  }
+
+  it("the segment opens the tree, sections toggle, subgraphs nest", async () => {
+    const el = await makeWithTree();
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    assert.ok(
+      shadow.querySelector('[data-segment-toggle="explorer"]'),
+      "the explorer segment renders in the strip",
+    );
+    assert.ok(!shadow.querySelector(".explorer"), "closed: no tree");
+    shadow
+      .querySelector('[data-segment-toggle="explorer"]')
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    const tree = shadow.querySelector(".explorer");
+    assert.ok(tree, "the tree opens");
+    const graphsHead = tree.querySelector('[data-section="graphs"]');
+    graphsHead?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.match(tree.textContent ?? "", /helper/, "the subgraph nests");
+    el.remove();
+  });
+
+  it("doc entries navigate by id, components open their editor, specs are inert", async () => {
+    const el = await makeWithTree();
+    el.setContents({
+      projectName: "My project",
+      graphs: [{ name: "main", parent: "" }],
+      components: ["core/Repeat"],
+      schemas: ["ui/point"],
+      specs: ["main-test"],
+      workDocs: [{ id: "d1", title: "Design notes" }],
+    });
+    el.toggleSegment("explorer");
+    const shadow = /** @type {ShadowRoot} */ (el.shadowRoot);
+    /** @type {any[]} */
+    const navigations = [];
+    el.addEventListener("explorer-navigate", (/** @type {any} */ e) =>
+      navigations.push({ kind: e.detail.kind, id: e.detail.id }),
+    );
+    // The doc row displays the title but navigates by id
+    const docRow = shadow.querySelector('[data-navigate="doc"]');
+    assert.match(
+      docRow?.textContent ?? "",
+      /Design notes/,
+      "the title displays",
+    );
+    docRow?.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(navigations, [{ kind: "doc", id: "d1" }]);
+    // Specs render inert: no navigation marker
+    assert.ok(
+      !shadow.querySelector('[data-navigate="spec"]'),
+      "specs stay inert until their runner lands (#16)",
+    );
+    el.remove();
+  });
+});
