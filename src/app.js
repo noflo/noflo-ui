@@ -1757,7 +1757,7 @@ async function init() {
     // document #62's dismissal: the document screen owns the viewport)
     projectCorner.expanded = false;
     projectCorner.render();
-    router?.navigate(`doc/${e.detail.docId}`);
+    router?.navigate({ kind: "doc", id: e.detail.docId });
   });
   // Creation: the title prompt, then the intent — the document appears in
   // the corner as proposed and the view opens (work document #9)
