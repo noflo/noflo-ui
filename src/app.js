@@ -36,6 +36,7 @@ import {
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import "./elements/noflo-schema-view.js";
+import { NofloComponentView } from "./elements/noflo-component-view.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
 import { telemetryBus } from "./glass/telemetryBus.js";
@@ -220,6 +221,9 @@ let syncPanel = null;
 let runtimeCorner = null;
 /** The schema editor view (work document #57 update #1). */
 let schemaView = null;
+/** @type {NofloComponentView | null} The full-screen component editor
+ * (work document #62): signature + code in one surface. */
+let componentView = null;
 
 /** The pending schema-fetch awaiters (work document #57): the echoes
  * resolve them once the bodies ingest. */
@@ -234,7 +238,6 @@ let componentModal = null;
  * mirror's collaborative code buffer through yCollab; local deltas relay
  * as setComponentCode intents (the Worker holds write authority). */
 /** @type {any} */
-let codeEditor = null;
 /** The vendored CodeMirror surface, handed to the editor element (one
  * module instance per context: the vendor bundle). */
 const codeMirrorSurface = {
@@ -696,189 +699,6 @@ function codeScaffold(componentName) {
  * @param {string} componentName
  * @returns {Promise<void>}
  */
-async function openSignatureEditor(componentName) {
-  if (!componentModal || !componentForm) return;
-  const entry = mirrorDoc.getMap("registry").get(componentName);
-  const plain = entry?.toJSON() ?? {};
-  // "Implemented" covers both kinds (work document #29): a graph
-  // implementation opens the graph editor; a code implementation opens
-  // the code editor. Before this, a code-implemented component's editor
-  // offered "Implement in code" again — re-clicking it re-scaffolded and
-  // wiped the implementation.
-  const implemented =
-    Boolean(mirrorDoc.getMap("graphs").has(componentName)) ||
-    /** @type {any} */ (mirrorDoc.getMap("components").get(componentName))
-      ?.get("metadata")
-      ?.get("implementation")?.kind === "code";
-  const ports = (/** @type {any} */ list) =>
-    (list ?? []).map((/** @type {any} */ port) => ({
-      name: port.name,
-      type: port.type ?? "all",
-      addressable: Boolean(port.addressable),
-      // The port's schema reference (work document #57): the picker's
-      // value is the ns/name; empty means none
-      schema: port.schema?.id ?? "",
-    }));
-  // The per-port schema pickers enumerate the project's schemas (work
-  // document #57 update #1)
-  const schemaNames = getSchemas(mirrorDoc).map(
-    (/** @type {any} */ record) => record.name,
-  );
-
-  componentModal.setActions(
-    implemented
-      ? [
-          { value: "cancel", label: "Cancel", kind: "btn-secondary" },
-          { value: "fork", label: "Fork", kind: "btn-action" },
-          { value: "open", label: "Open implementation", kind: "btn-primary" },
-        ]
-      : [
-          { value: "cancel", label: "Cancel", kind: "btn-secondary" },
-          { value: "fork", label: "Fork", kind: "btn-action" },
-          {
-            value: "implement-code",
-            label: "Implement in code",
-            kind: "btn-action",
-          },
-          {
-            value: "implement-graph",
-            label: "Implement as graph",
-            kind: "btn-action",
-          },
-          { value: "save", label: "Save", kind: "btn-primary" },
-        ],
-  );
-  componentModal.open(`Component: ${componentName}`);
-  componentForm.schema = buildSignatureSchema(schemaNames);
-  componentForm.data = {
-    name: componentName,
-    icon: plain.icon || "gear",
-    description: plain.description || "",
-    inports: ports(plain.inports),
-    outports: ports(plain.outports),
-  };
-
-  let action = await componentModal.submit();
-  // Port names are unique per direction (work document #5): duplicates
-  // re-open the editor with adjacent feedback instead of sending a
-  // silently-refused intent
-  while (action === "save") {
-    const duplicates = duplicatePortNames(componentForm.data);
-    if (duplicates.length === 0) break;
-    setModalFeedback(
-      componentModal,
-      `Port names must be unique per direction: ${duplicates.join(", ")}`,
-      componentForm,
-    );
-    componentModal.open(`Component: ${componentName}`);
-    action = await componentModal.submit();
-  }
-  setModalFeedback(componentModal, "", componentForm);
-  if (!action) return;
-  const newData = componentForm.data;
-  const newName = String(newData.name || componentName);
-  const renamed = newName !== componentName;
-
-  // Renaming through the editor forks: the fork takes over where the
-  // original was used, and the action applies to the fork. An explicit
-  // Fork with an unchanged name forks to a `-fork` variant. The fork
-  // copies the original's signature, so the editor's edits are applied to
-  // the fork; a plain Save on an unrenamed original edits it directly.
-  let target = componentName;
-  const wantsSignatureWrite =
-    action === "save" ||
-    action === "fork" ||
-    action === "implement-graph" ||
-    action === "implement-code";
-  if (renamed || action === "fork") {
-    const to = renamed ? newName : `${componentName}-fork`;
-    sendIntent({
-      type: "INTENT",
-      command: "forkComponent",
-      payload: { component: componentName, to },
-    });
-    target = to;
-  }
-  if (
-    wantsSignatureWrite &&
-    (renamed || action === "fork" || action === "save")
-  ) {
-    // The port schema references resolve their digests at save: digests
-    // pin bytes (work document #37 §13) — the pinned form is what
-    // sig_hash covers
-    const resolveSchemas = async (/** @type {any} */ portsList) =>
-      Promise.all(
-        (portsList ?? []).map(async (/** @type {any} */ port) => {
-          if (!port.schema) return port;
-          const record = /** @type {any} */ (getSchema(mirrorDoc, port.schema));
-          if (!record) return { ...port, schema: undefined };
-          const { digestSchema } = await import("../vendor/fbp-protocol.js");
-          const digest = await digestSchema(JSON.parse(record.get("body")));
-          return { ...port, schema: { id: port.schema, digest } };
-        }),
-      );
-    Promise.all([
-      resolveSchemas(newData.inports),
-      resolveSchemas(newData.outports),
-    ]).then(([inports, outports]) => {
-      sendIntent({
-        type: "INTENT",
-        command: "setSignature",
-        payload: {
-          component: target,
-          signature: {
-            inports,
-            outports,
-            description: newData.description,
-            icon: newData.icon,
-          },
-        },
-      });
-    });
-  }
-
-  if (action === "open") {
-    const implementation = /** @type {any} */ (
-      mirrorDoc.getMap("components").get(componentName)
-    )
-      ?.get("metadata")
-      ?.get("implementation");
-    if (implementation?.kind === "code") {
-      openCodeEditor(componentName, implementation.language ?? "javascript");
-      return;
-    }
-    router?.navigate(componentName);
-    return;
-  }
-
-  // The graph-implemented branch never reaches Save or the implement
-  // actions (they are not offered); guard anyway — the Engine refuses
-  if (mirrorDoc.getMap("graphs").has(target)) return;
-
-  if (action === "implement-graph") {
-    sendIntent({
-      type: "INTENT",
-      command: "implementAsGraph",
-      payload: { component: target, parentGraph: activeGraphId },
-    });
-    router?.navigate(target);
-  }
-  if (action === "implement-code") {
-    sendIntent({
-      type: "INTENT",
-      command: "implementInCode",
-      payload: {
-        component: target,
-        language: "javascript",
-        scaffold: codeScaffold(target),
-      },
-    });
-    // Straight into the editor (work document #29): the scaffold is on
-    // its way through the intent path; the collaborative binding picks
-    // the buffer up from the mirror once the echo lands
-    openCodeEditor(target, "javascript");
-  }
-}
 
 /**
  * Opens the component code editor (work document #29): CodeMirror bound
@@ -888,57 +708,6 @@ async function openSignatureEditor(componentName) {
  * @param {string} componentName
  * @param {string} language
  */
-async function openCodeEditor(componentName, language) {
-  if (!codeEditor) return;
-  const map = /** @type {any} */ (mirrorDoc.getMap("components"));
-  let ytext = /** @type {any} */ (map.get(componentName)?.get("code"));
-  if (!ytext) {
-    // The mirror may lag the intent echo briefly (the implement intent
-    // was just sent): wait for the component's code buffer to appear
-    // rather than silently doing nothing
-    ytext = await new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        map.unobserve(observe);
-        resolve(null);
-      }, 2000);
-      const observe = (/** @type {any} */ event) => {
-        if (event.target === map && map.get(componentName)?.get("code")) {
-          clearTimeout(timeout);
-          map.unobserve(observe);
-          resolve(map.get(componentName).get("code"));
-        }
-      };
-      map.observe(observe);
-      // Already there? (set between check and observe)
-      if (map.get(componentName)?.get("code")) {
-        clearTimeout(timeout);
-        map.unobserve(observe);
-        resolve(map.get(componentName).get("code"));
-      }
-    });
-    if (!ytext) {
-      console.warn(
-        `The component ${componentName} did not reach the mirror in time`,
-      );
-      return;
-    }
-  }
-  // Bind: yCollab renders whatever the buffer holds and follows it live
-  codeEditor.open({
-    ytext,
-    name: componentName,
-    language,
-    onSendUpdate: (/** @type {Uint8Array} */ update) => {
-      sendIntent({
-        type: "INTENT",
-        command: "setComponentCode",
-        payload: { component: componentName, update },
-      });
-    },
-    yCollab: codeMirrorSurface.yCollab,
-    extensions: codeMirrorSurface,
-  });
-}
 
 /**
  * Projects the mirror's work documents for the Project corner (work
@@ -1109,8 +878,10 @@ async function render() {
     componentForm = document.createElement("noflo-json-form");
     componentModal.appendChild(componentForm);
     app.appendChild(componentModal);
-    codeEditor = document.createElement("noflo-code-editor");
-    app.appendChild(codeEditor);
+    componentView = /** @type {NofloComponentView | null} */ (
+      /** @type {any} */ (document.createElement("noflo-component-view"))
+    );
+    app.appendChild(/** @type {Node} */ (componentView));
   }
   on(ed, "edge-menu-open", () => {
     menuOpen = true;
@@ -1153,11 +924,7 @@ async function render() {
     )
       ?.get("metadata")
       ?.get("implementation");
-    if (implementation?.kind === "code") {
-      openCodeEditor(componentName, implementation.language ?? "javascript");
-      return;
-    }
-    openSignatureEditor(componentName);
+    router?.navigate({ kind: "component", id: componentName });
   });
   // Exported-port rename (work document #5 update #36): the shell asks
   // for the new name in a modal, then rides the mapper's port-renamed path
@@ -1354,6 +1121,68 @@ function refreshProjectExplorer() {
       ? { kind: route.kind, id: String(route.id ?? "") }
       : { kind: "graph", id: String(route?.graphId ?? "") },
   );
+}
+
+/**
+ * Opens the full-screen component editor (work document #62): the
+ * signature form and, once the component carries code, the collaborative
+ * buffer — the implementation ladder in one surface.
+ *
+ * @param {string} componentName
+ */
+async function openComponentView(componentName) {
+  if (!componentView || !mirrorDoc) return;
+  const entry = /** @type {any} */ (
+    mirrorDoc.getMap("registry").get(componentName)
+  );
+  const plain = entry?.toJSON() ?? {};
+  const isSubgraph = mirrorDoc.getMap("graphs").has(componentName);
+  const implementationMeta = /** @type {any} */ (
+    mirrorDoc.getMap("components").get(componentName)
+  )
+    ?.get("metadata")
+    ?.get("implementation");
+  const implementation = isSubgraph
+    ? "graph"
+    : implementationMeta?.kind === "code"
+      ? "code"
+      : "stub";
+  const signature = {
+    name: componentName,
+    icon: plain.icon || "gear",
+    description: plain.description || "",
+    inports: (plain.inports ?? []).map((/** @type {any} */ port) => ({
+      name: port.name,
+      type: port.type ?? "all",
+      addressable: Boolean(port.addressable),
+      schema: port.schema?.id ?? "",
+    })),
+    outports: (plain.outports ?? []).map((/** @type {any} */ port) => ({
+      name: port.name,
+      type: port.type ?? "all",
+      addressable: Boolean(port.addressable),
+      schema: port.schema?.id ?? "",
+    })),
+  };
+  const schemaNames = getSchemas(mirrorDoc).map(
+    (/** @type {any} */ record) => record.name,
+  );
+  await componentView.open({
+    component: componentName,
+    implementation,
+    formSchema: buildSignatureSchema(schemaNames),
+    signature,
+    codeYtext:
+      implementation === "code"
+        ? /** @type {any} */ (
+            mirrorDoc.getMap("components").get(componentName)?.get("code") ??
+              null
+          )
+        : null,
+    cm: codeMirrorSurface,
+    codeLanguage: implementationMeta?.language ?? "javascript",
+  });
+  updateContextChip();
 }
 
 /**
@@ -1820,6 +1649,12 @@ function activateScreen(screen, options = {}) {
     }
     return;
   }
+  if (screen.kind === "component") {
+    const appElement = document.getElementById("app");
+    if (appElement) appElement.style.display = "none";
+    openComponentView(screen.id ?? "");
+    return;
+  }
   // The graph screen
   pendingWorkDocOpen = null;
   pendingWorkDocEditing = false;
@@ -1831,6 +1666,7 @@ function activateScreen(screen, options = {}) {
     document.getElementById("schema-view")
   );
   if (schemaView && !schemaView.hidden) schemaView.close();
+  if (componentView && !componentView.hidden) componentView.close();
   const appElement = document.getElementById("app");
   if (appElement) appElement.style.display = "";
   if (screen.id && screen.id !== activeGraphId) {
@@ -2085,10 +1921,6 @@ async function init() {
   // screen is the editor, work document #29); specs stay inert until
   // their runner lands (#16)
   on(contextChip, "explorer-navigate", (e) => {
-    if (e.detail.kind === "component") {
-      openSignatureEditor(e.detail.id);
-      return;
-    }
     router?.navigate({ kind: e.detail.kind, id: e.detail.id });
   });
   // Up navigation from the Context corner: one level up, same path the
@@ -2268,6 +2100,114 @@ async function init() {
   });
   on(schemaView, "schema-close", () => {
     router?.navigate({ kind: "graph", id: activeGraphId });
+  });
+  // The component view (work document #62): the actions ride the
+  // sketch → specify → implement ladder. Save applies the rename-fork
+  // rule; implement actions carry the scaffold and navigate
+  on(componentView, "component-action", async (e) => {
+    const { action, component } = e.detail;
+    const current = String(componentView?._component ?? component);
+    if (action === "close") {
+      router?.navigate({ kind: "graph", id: activeGraphId });
+      return;
+    }
+    if (action === "save") {
+      const data = /** @type {any} */ (componentView?._form?.data);
+      if (!data) return;
+      const newName = String(data.name || component);
+      const renamed = newName !== component;
+      let target = component;
+      if (renamed) {
+        sendIntent({
+          type: "INTENT",
+          command: "forkComponent",
+          payload: { component, to: newName },
+        });
+        target = newName;
+      }
+      sendIntent({
+        type: "INTENT",
+        command: "setSignature",
+        payload: {
+          component: target,
+          signature: {
+            inports: data.inports,
+            outports: data.outports,
+            description: data.description,
+            icon: data.icon,
+          },
+        },
+      });
+      if (renamed) {
+        // The fork takes over: the route follows the new name
+        router?.navigate({ kind: "component", id: newName });
+      }
+      return;
+    }
+    if (action === "fork") {
+      const to = `${component}-fork`;
+      sendIntent({
+        type: "INTENT",
+        command: "forkComponent",
+        payload: { component, to },
+      });
+      router?.navigate({ kind: "component", id: to });
+      return;
+    }
+    if (action === "implement-code") {
+      sendIntent({
+        type: "INTENT",
+        command: "implementInCode",
+        payload: {
+          component,
+          language: "javascript",
+          scaffold: codeScaffold(component),
+        },
+      });
+      // The scaffold lands through the intent path; the code area binds
+      // when the mirror picks the buffer up
+      const map = /** @type {any} */ (mirrorDoc.getMap("components"));
+      const ytext = await new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          map.unobserve(observe);
+          resolve(null);
+        }, 2000);
+        const observe = (/** @type {any} */ event) => {
+          if (event.target === map && map.get(component)?.get("code")) {
+            clearTimeout(timeout);
+            map.unobserve(observe);
+            resolve(map.get(component).get("code"));
+          }
+        };
+        map.observe(observe);
+        if (map.get(component)?.get("code")) {
+          clearTimeout(timeout);
+          map.unobserve(observe);
+          resolve(map.get(component).get("code"));
+        }
+      });
+      if (ytext) componentView?.bindCode(ytext, "javascript");
+      return;
+    }
+    if (action === "implement-graph") {
+      sendIntent({
+        type: "INTENT",
+        command: "implementAsGraph",
+        payload: { component, parentGraph: activeGraphId },
+      });
+      router?.navigate(component);
+      return;
+    }
+    if (action === "open-implementation") {
+      router?.navigate(component);
+    }
+  });
+  on(componentView, "component-code-update", (e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "setComponentCode",
+      payload: { component: e.detail.component, update: e.detail.update },
+    });
   });
   projectCorner?.addEventListener("workdoc-create", () => {
     // No naming gate: the document is created untitled and the view opens

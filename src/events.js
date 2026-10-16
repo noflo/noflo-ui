@@ -134,6 +134,11 @@
  * @property {CustomEvent<{ name: string, body: string }>} schema-save The
  *   whole-save round: the meta-schema gate lives in the view.
  * @property {CustomEvent<void>} schema-close
+ * @property {CustomEvent<{ action: string, component: string }>} component-action
+ *   The component view's action (work document #62): save, fork,
+ *   implement-code, implement-graph, open-implementation.
+ * @property {CustomEvent<{ component: string, update: Uint8Array }>} component-code-update
+ *   The component code buffer's live delta (work document #29's relay).
  * @property {CustomEvent<{ kind: string, id: string }>} explorer-navigate
  *   A tree entry navigates (work document #63): the router owns the
  *   transition.
