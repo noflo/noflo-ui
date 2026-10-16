@@ -14,7 +14,7 @@
     "prebuild-vendors": "npm run generate:fa && npm run generate:vendor-types",
     "generate:vendor-types": "node utils/generate-vendor-types.js",
     "build-vendors": "node utils/build-vendors.js",
-    "test": "node --test --test-force-exit --test-timeout 5000 spec/**/*.js",
+    "test": "node --test --test-force-exit --test-timeout 5000 \"spec/**/*.js\"",
     "test:browser": "node --test --test-force-exit --test-timeout 120000 spec-browser/*.js"
   },
   "dependencies": {
