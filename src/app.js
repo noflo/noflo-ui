@@ -825,15 +825,21 @@ function refreshProjectCorner() {
     pendingWorkDocOpen = null;
     openWorkDoc(docId);
   }
-  // An open document view confirms from the replica (work document #9):
-  // the flush's authoritative content arrived, or a peer's edit streamed
-  // in. `confirmed` only settles when the local buffer matches, so an
-  // in-progress edit is never clobbered
+  // The open document view's metadata refreshes from the replica (work
+  // document #9): the body renders live through the collaborative
+  // binding, so only the thread and governance state refresh
   const view = /** @type {any} */ (document.getElementById("workdoc-view"));
   if (!view?._doc) return;
   const record = /** @type {any} */ (workdocs.get(view._doc.id));
   if (record) {
-    view.confirmed(record.toJSON().content ?? "");
+    const plain = record.toJSON();
+    view.refresh?.({
+      title: plain.title,
+      scope: plain.scope,
+      pendingScope: plain.pendingScope,
+      boardId: plain.boardId ?? null,
+      updates: plain.updates ?? [],
+    });
   }
 }
 
