@@ -53,7 +53,7 @@ import {
   subgraphComponentFor,
 } from "./glass/projectView.js";
 import { renderGraphIntoEditor } from "./glass/renderGraph.js";
-import { createRouter } from "./glass/router.js";
+import { createRouter, routeToScreen } from "./glass/router.js";
 import {
   openJsonPrompt,
   openTextPrompt,
@@ -173,10 +173,12 @@ let workDocs = /** @type {any[]} */ ([]);
 /** Whether the next workdoc/created echo is this session's own creation. */
 let pendingWorkDocCreate = false;
 /** The document id whose first open should land in edit mode. */
-let pendingWorkDocCreateId = /** @type {string | null} */ (null);
+
 /** A document route awaiting its data: a reload lands on the route before
  * the project loads from persistence (work document #9). */
 let pendingWorkDocOpen = /** @type {string | null} */ (null);
+/** Whether the deferred open lands in edit mode (a fresh creation). */
+let pendingWorkDocEditing = false;
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -410,11 +412,9 @@ const echoHandlers = createEchoHandlers({
   workDocCreated: (payload) => {
     if (!pendingWorkDocCreate) return;
     pendingWorkDocCreate = false;
-    pendingWorkDocCreateId = payload.id;
-    // The document exists: the route opens its view in edit mode (the
-    // pending flag tells the route handler the creation is this
-    // session's own, so the fresh document lands in the editor)
-    router?.navigate(`doc/${payload.id}`);
+    // The document exists: its screen opens in edit mode (the e2e loop
+    // lands the user in the editor they just named)
+    activateScreen({ kind: "doc", id: payload.id }, { editing: true });
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -1392,6 +1392,56 @@ function applyAppearance() {
   document.body.setAttribute("data-age", "abstract");
 }
 
+/**
+ * Activates a screen (work document #62): the single transition point —
+ * exactly one screen owns the viewport, and every per-screen concern
+ * (the graph editor's yield, the workdoc view's deferred open when the
+ * mirror has not loaded the document yet, the corner's active marker)
+ * lives here rather than in scattered per-surface flags.
+ *
+ * @param {{ kind: string, id: string | null }} screen
+ * @param {{ editing?: boolean }} [options] For fresh workdocs: naming is
+ *   the whole prompt, the body editor is the point.
+ * @returns {void}
+ */
+function activateScreen(screen, options = {}) {
+  const view = /** @type {any} */ (document.getElementById("workdoc-view"));
+  if (screen.kind === "doc") {
+    const appElement = document.getElementById("app");
+    if (appElement) appElement.style.display = "none";
+    /** @type {any} */ (
+      document.getElementById("project-corner")
+    )?.setActiveDoc(screen.id);
+    const workdocs = mirrorDoc?.getMap("workdocs");
+    if (mirrorDoc && workdocs?.get(screen.id ?? "")) {
+      openWorkDoc(screen.id ?? "", options.editing ?? false);
+    } else {
+      // The mirror has not loaded the document yet: the first projection
+      // opens the view (the reload path, work document #9)
+      pendingWorkDocOpen = screen.id;
+      pendingWorkDocEditing = options.editing ?? false;
+    }
+    return;
+  }
+  // The graph screen
+  pendingWorkDocOpen = null;
+  pendingWorkDocEditing = false;
+  /** @type {any} */ (document.getElementById("project-corner"))?.setActiveDoc(
+    null,
+  );
+  if (view && !view.hidden) view.close();
+  const appElement = document.getElementById("app");
+  if (appElement) appElement.style.display = "";
+  if (screen.id && screen.id !== activeGraphId) {
+    activeGraphId = screen.id;
+    intentMapper?.flushPending((nodeId) =>
+      Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
+    );
+    updateContextChip();
+    scheduleRender();
+  }
+}
+
 async function init() {
   applyAppearance();
   trackInputState();
@@ -1428,35 +1478,7 @@ async function init() {
 
   router = createRouter({
     onRouteChange: (route) => {
-      // The document route (work document #9): `doc/<id>` in the graph
-      // segment opens the document view — a primary element per #28
-      if (route.graphId.startsWith("doc/")) {
-        // The document screen owns the viewport (work document #62):
-        // the graph editor yields, its state living in the CRDT
-        app.style.display = "none";
-        const docId = route.graphId.slice(4);
-        // A creation this session just made lands in edit mode (work
-        // document #9: naming is the whole prompt, the body is the point)
-        const editing = docId === pendingWorkDocCreateId;
-        pendingWorkDocCreateId = null;
-        /** @type {any} */ (
-          document.getElementById("project-corner")
-        )?.setActiveDoc(docId);
-        openWorkDoc(docId, editing);
-        return;
-      }
-      app.style.display = "";
-      /** @type {any} */ (
-        document.getElementById("project-corner")
-      )?.setActiveDoc(null);
-      closeWorkDoc();
-      if (route.graphId === activeGraphId) return;
-      activeGraphId = route.graphId;
-      intentMapper?.flushPending((nodeId) =>
-        Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
-      );
-      updateContextChip();
-      scheduleRender();
+      activateScreen(routeToScreen(route));
     },
   });
   activeGraphId = router.graphId();

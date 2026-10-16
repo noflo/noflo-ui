@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
-import { buildHash, createRouter, parseRoute } from "../../src/glass/router.js";
+import {
+  buildHash,
+  buildScreenHash,
+  createRouter,
+  parseRoute,
+  routeToScreen,
+} from "../../src/glass/router.js";
 
 /**
  * Installs a minimal hash-navigation surface on the global object, mirroring
@@ -53,11 +59,16 @@ describe("glass URL router (work document #23)", () => {
   it("parses project and graph segments", () => {
     assert.deepEqual(parseRoute("#/p/default/main"), {
       projectId: "default",
+      kind: "graph",
+      id: "main",
       graphId: "main",
     });
     // Hierarchical subgraph ids keep their slashes
     assert.deepEqual(parseRoute("#/p/myproject/main/A/deep"), {
       projectId: "myproject",
+      kind: "graph",
+      id: "main/A/deep",
+      graphId: "main/A/deep",
       graphId: "main/A/deep",
     });
     assert.equal(parseRoute("#/other"), null);
@@ -92,7 +103,9 @@ describe("glass URL router (work document #23)", () => {
     const router = createRouter({ onRouteChange: (r) => routes.push(r) });
     router.navigate("main/A");
     assert.equal(router.graphId(), "main/A");
-    assert.deepEqual(routes, [{ projectId: "default", graphId: "main/A" }]);
+    assert.deepEqual(routes, [
+      { projectId: "default", kind: "graph", id: "main/A", graphId: "main/A" },
+    ]);
     router.destroy();
   });
 
@@ -112,6 +125,39 @@ describe("glass URL router (work document #23)", () => {
     router.navigate("main");
     assert.equal(routes.length, 0);
     router.destroy();
+  });
+
+  it("parses and builds the screen-kind routes (work document #62)", () => {
+    const doc = parseRoute("#/p/default/doc/ab12cd34");
+    assert.deepEqual(doc, {
+      projectId: "default",
+      kind: "doc",
+      id: "ab12cd34",
+      graphId: "",
+    });
+    assert.equal(
+      buildScreenHash("default", { kind: "doc", id: "ab12cd34" }),
+      "#/p/default/doc/ab12cd34",
+    );
+    assert.equal(
+      buildScreenHash("default", { kind: "component", id: "c/Parser" }),
+      "#/p/default/component/c%2FParser",
+    );
+    // The screen descriptor resolves
+    assert.deepEqual(routeToScreen(doc), {
+      kind: "doc",
+      id: "ab12cd34",
+    });
+  });
+
+  it("a graph named like a kind keyword addresses via the graph kind", () => {
+    const graph = parseRoute("#/p/default/graph/doc");
+    assert.deepEqual(graph, {
+      projectId: "default",
+      kind: "graph",
+      id: "doc",
+      graphId: "doc",
+    });
   });
 
   it("supports back/forward via external hash changes", () => {
