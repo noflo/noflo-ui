@@ -198,18 +198,11 @@ export class FlowContextChip extends FlowCornerElement {
     }
   }
 
-  /** Clears the workdoc screen state. */
+  /** Clears the workdoc screen state: only the workdoc state — the
+   * explorer's open tree is independent of which screen the label
+   * describes. */
   clearWorkDoc() {
     this._docId = null;
-    /** The project explorer (work document #63): the navigation tree as a
-     * segment-toggled accordion. */
-    this._explorerOpen = false;
-    this._projectName = "";
-    /** @type {Set<string>} */
-    this._openSections = new Set();
-    /** @type {Array<any>} */
-    this._sections = [];
-    this._active = /** @type {{ kind: string, id: string } | null} */ (null);
   }
 
   /**

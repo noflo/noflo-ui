@@ -149,6 +149,25 @@ describe("context chip project explorer (work document #63)", () => {
     el.remove();
   });
 
+  it("the label update cycle preserves the open tree", async () => {
+    // The real app's flow: updateContextChip runs after every mirror
+    // cycle — setLabel, clearWorkDoc, setUp — and the tree must survive
+    // it (the first cut's init block landed in clearWorkDoc, wiping the
+    // tree on every label update)
+    const el = await makeWithTree();
+    el.toggleSegment("explorer");
+    el.setLabel("My project · main");
+    el.clearWorkDoc();
+    el.setUp("");
+    const tree = /** @type {ShadowRoot} */ (el.shadowRoot).querySelector(
+      ".explorer",
+    );
+    assert.ok(tree, "the tree survives the label cycle");
+    // main + nested helper + Repeat + ui/point + the inert spec + Notes
+    assert.equal(tree.querySelectorAll(".tree-row").length, 6, "the rows stay");
+    el.remove();
+  });
+
   it("doc entries navigate by id, components open their editor, specs are inert", async () => {
     const el = await makeWithTree();
     el.setContents({
