@@ -174,6 +174,9 @@ export function createEchoHandlers(deps) {
     "workdoc/titled": (data) => {
       console.debug(`[echo] workdoc/titled ${data.payload?.id ?? ""}`);
     },
+    "workdoc/repo": (data) => {
+      console.debug(`[echo] workdoc/repo ${data.payload?.url ?? "(cleared)"}`);
+    },
     "kind:undo": (data) => {
       // Undo/redo availability (work document #39): the corner chips
       // render from this report, never from guessed stack state

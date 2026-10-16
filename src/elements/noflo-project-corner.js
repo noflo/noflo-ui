@@ -128,6 +128,26 @@ export class FlowProjectCorner extends FlowCornerElement {
           opacity: 0.6;
           font-size: 11px;
         }
+        .row {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .row input {
+          flex: 1;
+          min-width: 0;
+          background: transparent;
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: var(--ui-radius, 6px);
+          color: inherit;
+          font: inherit;
+          font-size: 11px;
+          padding: 4px 6px;
+          outline: none;
+        }
+        .row input:focus {
+          outline: 1px solid var(--ui-accent, rgb(90, 200, 250));
+        }
     `;
   }
 
@@ -159,6 +179,17 @@ export class FlowProjectCorner extends FlowCornerElement {
   }
 
   /**
+   * Sets the project's rngit remote (work document #60's project scope):
+   * rendered in the materialization row.
+   *
+   * @param {string} url
+   */
+  setRngitRemote(url) {
+    this._rngitRemote = url ?? "";
+    this.render();
+  }
+
+  /**
    * The expanded accordion: the document list, newest first, each row
    * opening the document view (a primary element per #28).
    *
@@ -173,6 +204,13 @@ export class FlowProjectCorner extends FlowCornerElement {
       return `<div class="panel">
         <div class="empty">No work documents yet.</div>
         <button class="secondary" data-action="create-doc">New document</button>
+        <div class="row">
+          <input id="rngit-remote" placeholder="rns://<hash>/<group>/<repo>" value="${escapeHtml(
+            this._rngitRemote ?? "",
+          )}">
+          <button data-action="save-remote">Set rngit remote</button>
+        </div>
+        <div class="hint">The rngit repository the work documents materialize to. Project state: every peer sees it.</div>
       </div>`;
     }
     const rows = this._docs
@@ -218,6 +256,15 @@ export class FlowProjectCorner extends FlowCornerElement {
       ?.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
         emit(this, "workdoc-create", undefined);
+      });
+    shadow
+      .querySelector("[data-action='save-remote']")
+      ?.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        const input = /** @type {HTMLInputElement} */ (
+          shadow.querySelector("#rngit-remote")
+        );
+        emit(this, "workdoc-repo", { url: input.value.trim() });
       });
     for (const row of shadow.querySelectorAll("[data-doc]")) {
       row.addEventListener("click", (/** @type {any} */ event) => {

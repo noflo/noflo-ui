@@ -329,6 +329,16 @@
  */
 
 /**
+ * Sets the project's rngit remote (work document #9, #60's scope rule):
+ * PROJECT state — CRDT metadata, propagated to peers. Null clears it.
+ *
+ * @typedef {Object} IntentSetWorkdocsRepoMessage
+ * @property {'INTENT'} type
+ * @property {'setWorkdocsRepo'} command
+ * @property {{ url: string | null }} payload
+ */
+
+/**
  * Relays a binary Yjs update into a work document's body (work document
  * #9): the live editing path — the collaborative binding relays local
  * transactions as binary diffs, the engine integrating the same items
@@ -421,6 +431,10 @@
  * @property {'workdoc'} protocol
  * @property {'titled'} command
  * @property {{ id: string, title: string }} payload
+ * @typedef {Object} WorkDocRepoEcho
+ * @property {'workdoc'} protocol
+ * @property {'repo'} command
+ * @property {{ url: string | null }} payload
  */
 
 /**
@@ -536,6 +550,7 @@
  *   | IntentSetWorkDocScopeMessage
  *   | IntentSetWorkDocBodyMessage
  *   | IntentSetWorkDocTitleMessage
+ *   | IntentSetWorkdocsRepoMessage
  *   | IntentUndoMessage
  *   | IntentRedoMessage
  *   | MeshConfigureMessage
@@ -607,6 +622,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "setWorkDocScope" },
   { type: "INTENT", command: "setWorkDocBody" },
   { type: "INTENT", command: "setWorkDocTitle" },
+  { type: "INTENT", command: "setWorkdocsRepo" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },
@@ -898,6 +914,7 @@ export const MESH_COMMANDS = [
  *   | WorkDocScopedEcho
  *   | WorkDocEditedEcho
  *   | WorkDocTitledEcho
+ *   | WorkDocRepoEcho
  *   | YSyncMessage
  *   | YUpdateMessage
  *   | AwarenessEcho
@@ -938,6 +955,7 @@ export const ECHO_MESSAGES = [
   { protocol: "workdoc", command: "scoped" },
   { protocol: "workdoc", command: "edited" },
   { protocol: "workdoc", command: "titled" },
+  { protocol: "workdoc", command: "repo" },
   { protocol: "system", command: "heartbeat" },
   { protocol: "system", command: "signature" },
   { protocol: "graph", command: "addnode" },

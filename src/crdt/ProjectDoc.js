@@ -1092,12 +1092,29 @@ export function reconcileWorkDocScope(doc, docId, scope) {
 }
 
 /**
+ * Parses an rngit remote URL — `rns://<destination-hash>/<group>/<repo>` —
+ * into its parts (work document #9: the project's rngit remote, the
+ * materialization target per work document #60's project scope). Null
+ * when the URL does not parse.
+ *
+ * @param {string} url
+ * @returns {{ targetHash: string, group: string, repo: string } | null}
+ */
+export function parseRngitUrl(url) {
+  if (typeof url !== "string") return null;
+  const match = /^rns:\/\/([0-9a-f]{32})\/([^/]+)\/([^/?#]+)/.exec(url.trim());
+  if (!match) return null;
+  return { targetHash: match[1], group: match[2], repo: match[3] };
+}
+
+/**
  * Returns a component signature entry, or undefined.
  *
  * @param {Y.Doc} doc
  * @param {string} componentName
  * @returns {Y.Map<any> | undefined}
  */
+
 export function getComponentSignature(doc, componentName) {
   return /** @type {Y.Map<any> | undefined} */ (
     doc.getMap(REGISTRY_MAP).get(componentName)

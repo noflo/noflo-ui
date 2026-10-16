@@ -174,6 +174,9 @@ let workDocs = /** @type {any[]} */ ([]);
 let pendingWorkDocCreate = false;
 /** The document id whose first open should land in edit mode. */
 let pendingWorkDocCreateId = /** @type {string | null} */ (null);
+/** A document route awaiting its data: a reload lands on the route before
+ * the project loads from persistence (work document #9). */
+let pendingWorkDocOpen = /** @type {string | null} */ (null);
 let meshPeers = /** @type {string[]} */ ([]);
 /** @type {FlowSyncPanel | null} */
 let syncPanel = null;
@@ -789,6 +792,9 @@ function refreshProjectCorner() {
     document.getElementById("project-corner")
   );
   if (!projectCorner) return;
+  projectCorner.setRngitRemote(
+    String(mirrorDoc?.getMap("metadata")?.get("workdocsRepo") ?? ""),
+  );
   const workdocs = mirrorDoc?.getMap("workdocs");
   if (!workdocs) {
     projectCorner.setWorkDocs([]);
@@ -806,6 +812,14 @@ function refreshProjectCorner() {
     };
   });
   projectCorner.setWorkDocs(workDocs);
+  // A deferred document route opens once its data exists: a reload lands
+  // on the route before the project loads from persistence (work
+  // document #9)
+  if (pendingWorkDocOpen && workdocs.get(pendingWorkDocOpen)) {
+    const docId = pendingWorkDocOpen;
+    pendingWorkDocOpen = null;
+    openWorkDoc(docId);
+  }
   // An open document view confirms from the replica (work document #9):
   // the flush's authoritative content arrived, or a peer's edit streamed
   // in. `confirmed` only settles when the local buffer matches, so an
@@ -1778,6 +1792,15 @@ async function init() {
   workdocView?.addEventListener("workdoc-close", () => {
     // Back to the graph the user came from
     router?.navigate(activeGraphId || "main");
+  });
+  // The rngit remote (work document #60's project scope): the intent
+  // writes project metadata, propagating to peers
+  projectCorner?.addEventListener("workdoc-repo", (/** @type {any} */ e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "setWorkdocsRepo",
+      payload: { url: e.detail.url || null },
+    });
   });
   // Corner dismissal on the static screens (work document #62): an
   // interaction with the screen's content collapses the expanded corners

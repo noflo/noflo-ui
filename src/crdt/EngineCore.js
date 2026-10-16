@@ -36,6 +36,7 @@ import {
   moveExport,
   moveIIP,
   moveNode,
+  parseRngitUrl,
   removeComponentSignature,
   removeDoc,
   removeEdge,
@@ -426,6 +427,7 @@ export const INTENT_HANDLERS = {
   setWorkDocScope: intentSetWorkDocScope,
   setWorkDocBody: intentSetWorkDocBody,
   setWorkDocTitle: intentSetWorkDocTitle,
+  setWorkdocsRepo: intentSetWorkdocsRepo,
   undo: intentUndo,
   redo: intentRedo,
   createGroup: intentCreateGroup,
@@ -1567,6 +1569,44 @@ function intentUpdateWorkDoc(doc, payload) {
         protocol: "workdoc",
         command: "updated",
         payload: { id: docId, updateId: ordinal, author },
+      },
+    ],
+  };
+}
+
+/**
+ * Sets the project's rngit remote (work document #9, per work document
+ * #60's scope rule): the materialization target is PROJECT state — CRDT
+ * metadata, propagated to peers, edited through intents. Null clears it.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetWorkdocsRepo(doc, payload) {
+  const { url } = payload ?? {};
+  if (url !== null && url !== undefined && typeof url !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  if (trimmed && !parseRngitUrl(trimmed)) {
+    return { accepted: false, echoes: [] };
+  }
+  doc.transact(() => {
+    const metadata = doc.getMap("metadata");
+    if (trimmed) {
+      metadata.set("workdocsRepo", trimmed);
+    } else {
+      metadata.delete("workdocsRepo");
+    }
+  });
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "repo",
+        payload: { url: trimmed || null },
       },
     ],
   };

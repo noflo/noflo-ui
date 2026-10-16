@@ -18,7 +18,11 @@ import {
   createIndexeddbStorage,
   createMemoryStorage,
 } from "../crdt/MeshConfig.js";
-import { adoptProjectIdentity, createProjectDoc } from "../crdt/ProjectDoc.js";
+import {
+  adoptProjectIdentity,
+  createProjectDoc,
+  parseRngitUrl,
+} from "../crdt/ProjectDoc.js";
 import {
   bindDocumentPersistence,
   migrateLoadedProject,
@@ -40,7 +44,7 @@ import { listNofloDatabases, performFactoryReset } from "./FactoryReset.js";
 import { attachInterfaces } from "./interfaces.js";
 import { createMeshSync } from "./MeshSync.js";
 import { progress } from "./Progress.js";
-import { parseRngitUrl, RngitTransport } from "./RngitTransport.js";
+import { RngitTransport } from "./RngitTransport.js";
 import { WorkDocMaterializer } from "./WorkDocMaterializer.js";
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
@@ -283,7 +287,7 @@ export async function startEngine(io, options = {}) {
 
   // ---- Work-document materialization (work document #9, step C) ----
   // The materializer pushes CRDT work documents to the project's rngit
-  // repository when the configuration names one (the general rngit
+  // repository when the project metadata names one (the general rngit
   // remote, work document #62's shared-surface thinking); every response
   // reconciles the governed fields ("theirs"), and the board moves
   // without the app, so a reconciliation timer rides the push cadence.
@@ -301,7 +305,12 @@ export async function startEngine(io, options = {}) {
 
   async function ensureWorkDocMaterializer() {
     if (workDocMaterializer) return;
-    const target = parseRngitUrl(mesh?.config?.rngit?.url ?? "");
+    // The rngit remote is PROJECT state (work document #60's scope
+    // rule, work document #9 update #16): project metadata, propagated
+    // to peers
+    const target = parseRngitUrl(
+      String(doc.getMap("metadata").get("workdocsRepo") ?? ""),
+    );
     if (!target) return;
     if (!mesh?.getReticulum()) return;
     let identity = null;

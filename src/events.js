@@ -123,6 +123,7 @@
  * @property {CustomEvent<{ x: number, y: number }>} minimap-navigate
  * @property {CustomEvent<{ docId: string }>} workdoc-open
  * @property {CustomEvent<void>} workdoc-create
+ * @property {CustomEvent<{ url: string }>} workdoc-repo
  * @property {CustomEvent<{ docId: string, content: string }>} workdoc-save
  * @property {CustomEvent<{ docId: string }>} workdoc-close
  * @property {CustomEvent<{ docId: string, update: Uint8Array }>} workdoc-body-update
