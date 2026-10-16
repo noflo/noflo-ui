@@ -65,6 +65,7 @@ import {
   setModalFeedback,
   wireExportRename,
 } from "./glass/text-prompt.js";
+import { validateMetadata } from "./library/forms/catalogs.js";
 import { LibraryManager } from "./library/LibraryManager.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
@@ -303,11 +304,52 @@ function sendIntent(message) {
     console.info("Read-only tab: dropping intent", message.command);
     return;
   }
+  // Catalog conformance (work document #57): metadata-bearing intents
+  // validate against the shipped ui catalog at send time — Tier B, hard
+  // enforcement, an invalid payload is never silently sent
+  if (message.type === "INTENT" && !validateIntentMetadata(message)) {
+    return;
+  }
   // Optimistic pending state (work document #21): track what this intent
   // will touch until the replica confirms the CRDT merge
   pendingTracker.markIntent(message, activeGraphId);
   applyPendingState();
   supervisor.send(message);
+}
+
+/**
+ * The entity kind each metadata-bearing intent writes (work document #57).
+ *
+ * @type {Record<string, { kind: import("./library/forms/catalogs.js").EntityKind, strip: string[] }>}
+ *   `strip` names payload fields checked as top-level values (the route
+ *   keys that ride the intent body rather than a metadata map).
+ */
+const METADATA_INTENTS = {
+  addNode: { kind: "node", strip: [] },
+  moveNode: { kind: "node", strip: [] },
+  addIIP: { kind: "iip", strip: [] },
+  moveIIP: { kind: "iip", strip: [] },
+  moveExport: { kind: "export", strip: [] },
+};
+
+/**
+ * Validates a metadata-bearing intent against the ui catalog. Returns
+ * false when the payload fails — the caller refuses the send.
+ *
+ * @param {any} message
+ * @returns {boolean}
+ */
+function validateIntentMetadata(message) {
+  const mapping = METADATA_INTENTS[message.command];
+  if (!mapping) return true;
+  const metadata = message.payload?.metadata;
+  if (!metadata) return true;
+  const errors = validateMetadata("ui", metadata, mapping.kind);
+  if (errors.length === 0) return true;
+  console.warn(
+    `[catalog] ${message.command} refused: ${errors.map((e) => `${e.key} ${e.message}`).join("; ")}`,
+  );
+  return false;
 }
 
 /**
