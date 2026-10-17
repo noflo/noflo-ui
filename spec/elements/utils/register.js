@@ -9,6 +9,8 @@ Object.assign(globalThis, {
   customElements: window.customElements,
   HTMLElement: window.HTMLElement,
   Event: window.Event,
+  MouseEvent: window.MouseEvent,
+  PointerEvent: window.PointerEvent,
   CustomEvent: window.CustomEvent,
   EventTarget: window.EventTarget,
   ShadowRoot: window.ShadowRoot,

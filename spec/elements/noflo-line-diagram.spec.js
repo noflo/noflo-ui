@@ -65,22 +65,26 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
   it("draws a 45° spur for a split branch", () => {
     const element = diagramFor(
       [
-        { source: "a", target: "b", route: 3 },
-        { source: "a", target: "d", route: 3 },
-        { source: "b", target: "c", route: 3 },
+        { source: "a", target: "b", route: 3, id: "e1" },
+        { source: "a", target: "d", route: 3, id: "e2" },
+        { source: "b", target: "c", route: 3, id: "e3" },
       ],
       3,
     );
-    // The spur turnout is a diagonal: both coordinates change
-    const spurs = [...element.shadowRoot.querySelectorAll("line.spur")];
+    // The turnout's first leg is a 45° diagonal: both coordinates move
+    // the same distance
+    const spurs = [...element.shadowRoot.querySelectorAll("path.spur")];
     assert.equal(spurs.length, 1);
-    const diagonal = spurs[0];
+    const points = [
+      ...spurs[0].getAttribute("d").matchAll(/(-?[\d.]+) (-?[\d.]+)/g),
+    ].map((m) => [Number(m[1]), Number(m[2])]);
+    const dx = points[1][0] - points[0][0];
+    const dy = points[1][1] - points[0][1];
+    assert.ok(dx > 0 && dx === dy, `the turnout opens at 45° (${dx}, ${dy})`);
+    // The turnout selects the branch's incoming wire
     assert.ok(
-      Number(diagonal.getAttribute("x1")) !==
-        Number(diagonal.getAttribute("x2")) &&
-        Number(diagonal.getAttribute("y1")) !==
-          Number(diagonal.getAttribute("y2")),
-      "the turnout is a 45° diagonal",
+      spurs[0].getAttribute("data-edge-id").length > 0,
+      "the turnout carries the branch's edge",
     );
     // The spur's station label renders too
     assert.ok(
@@ -133,6 +137,67 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     );
     document.body.appendChild(element);
     assert.ok(element.shadowRoot.querySelector(".empty"));
+    element.remove();
+  });
+
+  it("long station names ellipsize with the full name in the title", () => {
+    const element = diagramFor([{ source: "a", target: "b", route: 3 }], 3);
+    element.labelFor = (id) =>
+      id === "a" ? "a-very-long-node-name-that-goes-on-and-on" : id;
+    element.lines = buildRouteLines(
+      [{ source: "a", target: "b", route: 3 }],
+      3,
+    );
+    element.render();
+    const labels = [...element.shadowRoot.querySelectorAll("text.label")];
+    const long = labels.find((t) => t.textContent.includes("…"));
+    assert.ok(long, "the long label ellipsizes");
+    assert.ok(long.textContent.length <= 25, "the label truncates");
+    // The full name rides the title (hover affordance)
+    const hit = /** @type {any} */ (
+      element.shadowRoot.querySelector('[data-station-id="a"]')
+    );
+    assert.equal(
+      hit.querySelector("title").textContent,
+      "a-very-long-node-name-that-goes-on-and-on",
+    );
+    element.remove();
+  });
+
+  it("stations and rail segments are interactive: click emits the selection events", () => {
+    const element = diagramFor(
+      [
+        { source: "a", target: "b", route: 3, id: "e1" },
+        { source: "b", target: "c", route: 3, id: "e2" },
+      ],
+      3,
+    );
+    /** @type {any[]} */
+    const stations = [];
+    /** @type {any[]} */
+    const edges = [];
+    element.addEventListener("station-click", (/** @type {any} */ e) =>
+      stations.push(e.detail.id),
+    );
+    element.addEventListener("edge-click", (/** @type {any} */ e) =>
+      edges.push(e.detail.edgeId),
+    );
+    // Click the rail segment: it carries the edge that flows in
+    const rail = element.shadowRoot.querySelector("line.rail[data-edge-id]");
+    rail.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, composed: true }),
+    );
+    // Click a station's hit group
+    const hit = element.shadowRoot.querySelector('[data-station-id="b"]');
+    hit.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, composed: true }),
+    );
+    assert.deepEqual(
+      edges,
+      ["e1"],
+      "the first rail segment carries the a→b edge",
+    );
+    assert.deepEqual(stations, ["b"]);
     element.remove();
   });
 

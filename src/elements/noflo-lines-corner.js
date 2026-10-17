@@ -329,6 +329,42 @@ export class FlowLinesCorner extends FlowCornerElement {
           this.pickLine(Number(target));
         });
       }
+      const diagram = root.querySelector("noflo-line-diagram");
+      if (diagram) {
+        // The strip is interactive: stations and rail segments select on
+        // the canvas (work document #35 update #14). Boundary
+        // pseudo-stations select their wire: an IIP by its CRDT edge
+        // id, an export by its port name
+        diagram.addEventListener("station-click", (/** @type {any} */ e) => {
+          const id = /** @type {string} */ (e.detail.id);
+          const selection = /** @type {any} */ (this.editor)?.selectionManager;
+          if (!selection) return;
+          // A plain click replaces the selection
+          selection.clear();
+          if (id.startsWith("DATA->")) {
+            selection.select("iips", id, false);
+          } else if (id.startsWith("export:")) {
+            selection.select("ports", id.slice(7), false);
+          } else {
+            selection.select("nodes", id, false);
+          }
+        });
+        diagram.addEventListener("edge-click", (/** @type {any} */ e) => {
+          const selection = /** @type {any} */ (this.editor)?.selectionManager;
+          if (!selection || !e.detail.edgeId) return;
+          const id = /** @type {string} */ (e.detail.edgeId);
+          // Boundary segments select their wire: an IIP by its CRDT edge
+          // id, an export by its port name; a plain click replaces
+          selection.clear();
+          if (id.startsWith("DATA->")) {
+            selection.select("iips", id, false);
+          } else if (id.startsWith("export:")) {
+            selection.select("ports", id.slice(7), false);
+          } else {
+            selection.select("edges", id, false);
+          }
+        });
+      }
     }
   }
 }

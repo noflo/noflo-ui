@@ -4,8 +4,14 @@
  * mounted on Underground columns read — a straight vertical rail, one
  * station per tick, the line's roundel at the top, the far terminus at
  * the bottom, interchange ticks for the other lines serving a station,
- * and 45° spurs at splits. Pure topology: the structure comes from
- * `buildRouteLines` — no node positions, no spatial math.
+ * and 45° turnouts where branches leave. Pure topology: the structure
+ * comes from `buildRouteLines` — no node positions, no spatial math.
+ *
+ * The layout is sequential: the main run's strip first, then each
+ * branch's strip indented right of its turnout, then stragglers after
+ * the break — every rail gets the full label width, so long station
+ * names ellipsize instead of colliding. The strip is interactive:
+ * stations and rail segments select on click.
  */
 
 /**
@@ -22,16 +28,30 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+/**
+ * Truncates a label with an ellipsis; the full name rides the title.
+ *
+ * @param {string} value
+ * @param {number} max
+ * @returns {string}
+ */
+function fitLabel(value, max) {
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+}
+
 /** The vertical distance between station rows. */
-const ROW = 44;
-/** The horizontal offset per spur depth (each branch steps left). */
-const SPUR_STEP = 40;
-/** The rail's inset from the strip's right edge (spurs grow leftward). */
-const RAIL_INSET = 70;
-/** The strip's drawn width (the viewBox; the SVG scales to the panel). */
-const STRIP_WIDTH = 240;
-/** The break gap between a run and its stragglers. */
-const BREAK_GAP = 34;
+const ROW = 40;
+/** The horizontal offset per strip depth (branches indent right). */
+const DEPTH_STEP = 30;
+/** The main rail's x; labels flow right of it into the full width. */
+const RAIL_X = 30;
+/** The 45° turnout's diagonal run (dx = dy keeps the grammar). */
+const TURNOUT = 18;
+/** The gap before a branch's strip, in row units — the turnout's 45°
+ * diagonal needs 30px of fall before the branch's first station. */
+const BRANCH_GAP = 0.9;
+/** The break gap between a run and its stragglers, in row units. */
+const BREAK_GAP = 1;
 
 export class FlowLineDiagram extends HTMLElement {
   constructor() {
@@ -45,13 +65,28 @@ export class FlowLineDiagram extends HTMLElement {
     /** Resolves a station id to its display label. */
     /** @type {(id: string) => string} */
     this.labelFor = (id) => id;
+    /** @type {ResizeObserver | null} */
+    this._resizeObserver = null;
   }
 
   connectedCallback() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
     }
+    // The strip fills the accordion's width: re-render when the panel
+    // resizes (the column is user-resizable)
+    if (typeof ResizeObserver !== "undefined") {
+      this._resizeObserver = new ResizeObserver(() => {
+        if (this.lines.length > 0) this.render();
+      });
+      this._resizeObserver.observe(this);
+    }
     this.render();
+  }
+
+  disconnectedCallback() {
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
   }
 
   /**
@@ -64,23 +99,24 @@ export class FlowLineDiagram extends HTMLElement {
       this.routeIndex === null
         ? "var(--ui-accent)"
         : `var(--route-${this.routeIndex})`;
+    const width = Math.max(this.clientWidth || 0, 200);
     const height = this.measure();
     /** @type {string[]} */
     const strips = [];
-    let yOffset = ROW / 2 + 20;
+    let rowOffset = 1;
     this.lines.forEach((component, index) => {
       if (index > 0) {
         // The break marker: an isolated straggler is not the same run —
         // a gap with two slashes says the line is interrupted
-        const gapY = yOffset - ROW / 2;
+        const gapY = rowOffset * ROW - ROW / 2;
         strips.push(
           `<line x1="10" y1="${gapY}" x2="26" y2="${gapY}" class="break-stroke"></line>` +
             `<line x1="20" y1="${gapY - 5}" x2="30" y2="${gapY + 5}" class="break-stroke"></line>`,
         );
-        yOffset += BREAK_GAP;
+        rowOffset += BREAK_GAP;
       }
-      strips.push(this.renderComponent(component, yOffset, index === 0));
-      yOffset += this.componentHeight(component);
+      strips.push(this.renderComponent(component, rowOffset, index === 0));
+      rowOffset += this.componentRows(component) + BRANCH_GAP;
     });
     const theme = document.body.getAttribute("data-theme") ?? "";
     /** @type {ShadowRoot} */ (this.shadowRoot).innerHTML = `
@@ -88,12 +124,6 @@ export class FlowLineDiagram extends HTMLElement {
         :host {
           display: block;
           --edge-route: ${routeVar};
-        }
-        :host([data-theme="tube"]) {
-          --diagram-font: sans-serif;
-        }
-        :host([data-theme="cyberpunk"]) {
-          --diagram-font: var(--ui-font-mono, monospace);
         }
         .scroll {
           max-height: 60vh;
@@ -108,6 +138,7 @@ export class FlowLineDiagram extends HTMLElement {
         text {
           font-family: ${theme === "tube" ? "sans-serif" : "var(--ui-font-mono, monospace)"};
           fill: var(--ui-text, white);
+          pointer-events: none;
         }
         .rail {
           stroke: var(--edge-route);
@@ -154,176 +185,258 @@ export class FlowLineDiagram extends HTMLElement {
           font-family: sans-serif;
           font-size: 12px;
         }
+        /* The strip is interactive: stations and rail segments select.
+           The hover thickens the mark, the cursor points */
+        .hit {
+          cursor: pointer;
+        }
+        .hit:hover .tick,
+        .hit:hover .terminus-ring {
+          stroke-width: 5px;
+        }
+        .hit:hover .rail {
+          stroke-width: 7px;
+        }
+        .hit circle {
+          transition: stroke-width 0.1s ease;
+        }
       </style>
       ${
         this.lines.length === 0
           ? `<div class="empty">No line selected</div>`
-          : `<div class="scroll"><svg viewBox="0 0 ${STRIP_WIDTH} ${height}" preserveAspectRatio="xMidYMin meet">${strips.join("")}</svg></div>`
+          : `<div class="scroll"><svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">${strips.join("")}</svg></div>`
       }
     `;
+    this.wireEvents();
   }
 
   /**
-   * The total strip height: the rows every component needs, plus the
-   * break gaps between stragglers.
+   * Wires the click delegation: stations and rail segments select.
+   */
+  wireEvents() {
+    const svg = /** @type {ShadowRoot} */ (this.shadowRoot).querySelector(
+      "svg",
+    );
+    if (!svg) return;
+    svg.addEventListener("click", (/** @type {any} */ event) => {
+      const stationHit = /** @type {any} */ (
+        event.target?.closest?.("[data-station-id]")
+      );
+      const edgeHit = /** @type {any} */ (
+        event.target?.closest?.("[data-edge-id]")
+      );
+      if (stationHit) {
+        this.dispatchEvent(
+          new CustomEvent("station-click", {
+            detail: { id: stationHit.getAttribute("data-station-id") },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      } else if (edgeHit) {
+        this.dispatchEvent(
+          new CustomEvent("edge-click", {
+            detail: { edgeId: edgeHit.getAttribute("data-edge-id") },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    });
+  }
+
+  /**
+   * The total strip height.
    *
    * @returns {number}
    */
   measure() {
     if (this.lines.length === 0) return 40;
-    let total = ROW / 2 + 20;
+    let rows = 1;
     this.lines.forEach((component, index) => {
-      if (index > 0) total += BREAK_GAP;
-      total += this.componentHeight(component);
+      if (index > 0) rows += BREAK_GAP;
+      rows += this.componentRows(component) + BRANCH_GAP;
     });
-    return total;
+    return rows * ROW;
   }
 
   /**
-   * One component's height: its station rows, including the interleaved
-   * spur rows, plus the rounding room.
+   * One component's rows: its spine, plus each branch's strip after its
+   * turnout gap, recursively.
    *
    * @param {import("../library/LineDiagram.js").LineComponent} component
    * @returns {number}
    */
-  componentHeight(component) {
-    return (this.countRows(component.stations) + 1) * ROW + ROW / 2;
+  componentRows(component) {
+    return this.chainRows(component.stations);
   }
 
   /**
-   * The rows a chain needs: the spine's stations plus each spur's rows
-   * interleaved after its split (a spur shares rows with the spine, but
-   * a spur longer than the remaining spine extends the strip).
-   *
    * @param {import("../library/LineDiagram.js").LineStation[]} stations
    * @returns {number}
    */
-  countRows(stations) {
+  chainRows(stations) {
     let rows = stations.length;
     for (const station of stations) {
       for (const spur of station.spurs) {
-        // A spur's rows start one below its split point
-        rows = Math.max(rows, this.countRows(spur.stations) + 1);
+        if (spur.stations.length === 0) continue;
+        rows += BRANCH_GAP + this.chainRows(spur.stations);
       }
     }
     return rows;
   }
 
   /**
-   * Renders one component: the spine rail top-to-bottom, station ticks
-   * with labels, interchange ticks, and the spurs stepping left at 45°.
+   * Renders one component: the spine rail top-to-bottom, then each
+   * branch's strip indented right of its turnout, connectors included.
    *
    * @param {import("../library/LineDiagram.js").LineComponent} component
-   * @param {number} yOffset
+   * @param {number} rowOffset
    * @param {boolean} isMain The main run carries the line's name.
    * @returns {string}
    */
-  renderComponent(component, yOffset, isMain) {
+  renderComponent(component, rowOffset, isMain) {
+    /** The rails and connectors paint first; the stations paint on top,
+     * so a click at a tick hits the station, not the rail's end. */
+    /** @type {string[]} */
+    const railParts = [];
     /** @type {string[]} */
     const parts = [];
     /** The drawn coordinates per station id, for join connectors. */
     const drawn = new Map();
-    const x0 = STRIP_WIDTH - RAIL_INSET;
+    const yOf = (/** @type {number} */ row) => rowOffset * ROW + row * ROW;
+    const maxLabel = (/** @type {number} */ width) =>
+      Math.max(Math.floor((width - 60) / 7), 8);
 
     /**
-     * Draws a chain down a rail; the spine keeps its own row steps while
-     * spurs interleave beside it.
+     * Draws a chain down its rail; returns the row after the chain.
      *
      * @param {import("../library/LineDiagram.js").LineStation[]} stations
      * @param {number} railX
-     * @param {number} row
-     * @param {number} depth
-     * @returns {number} The row after the chain's last station.
+     * @param {number} startRow
+     * @param {number} width
+     * @param {number} maxChars
+     * @returns {number}
      */
-    const drawChain = (stations, railX, row, depth) => {
-      let current = row;
+    const drawChain = (stations, railX, startRow, width, maxChars) => {
       stations.forEach((station, index) => {
-        const y = yOffset + current * ROW;
-        drawn.set(station.id, { x: railX, row: current, y });
+        const y = yOf(startRow + index);
+        drawn.set(station.id, { x: railX, y });
         if (index > 0) {
-          // The rail connects consecutive stations on the same x
-          parts.push(
-            `<line x1="${railX}" y1="${y - ROW}" x2="${railX}" y2="${y}" class="rail"></line>`,
+          // The rail segment to the previous station carries the edge
+          // that flows in: clicking it selects the wire
+          railParts.push(
+            `<line x1="${railX}" y1="${y - ROW}" x2="${railX}" y2="${y}" class="rail" data-edge-id="${escapeHtml(station.via ?? "")}"></line>`,
           );
         }
-        // The station mark: termini ring (the roundel unit), stops dot;
-        // joins draw a smaller tick — their connector carries the merge
-        if (station.kind === "terminus") {
-          parts.push(
-            `<circle cx="${railX}" cy="${y}" r="8" class="terminus-ring"></circle>`,
-          );
-        } else {
-          parts.push(
-            `<circle cx="${railX}" cy="${y}" r="5" class="tick"></circle>`,
-          );
-        }
-        // The label: spine labels sit right of the rail; spur labels sit
-        // left of their rail (right-aligned), so the two never collide
-        const label = escapeHtml(this.labelFor(station.id) || station.id);
-        if (depth === 0) {
-          parts.push(
-            `<text x="${railX + 14}" y="${y + 4}" class="label">${label}</text>`,
-          );
-        } else {
-          parts.push(
-            `<text x="${railX - 14}" y="${y + 4}" class="label" text-anchor="end">${label}</text>`,
-          );
-        }
+        // The station mark: termini ring (the roundel unit), joins tick
+        // small, stops disc — the mark and its label select together
+        const mark =
+          station.kind === "terminus"
+            ? `<circle cx="${railX}" cy="${y}" r="9" class="terminus-ring"></circle>`
+            : station.kind === "join"
+              ? `<circle cx="${railX}" cy="${y}" r="4" class="tick"></circle>`
+              : `<circle cx="${railX}" cy="${y}" r="6" class="tick"></circle>`;
+        const label = escapeHtml(
+          fitLabel(this.labelFor(station.id) || station.id, maxChars),
+        );
+        const full = escapeHtml(this.labelFor(station.id) || station.id);
+        // The hit rect makes the whole tick+label row clickable, not
+        // just the painted pixels (pointer-events: all hits the
+        // transparent fill)
+        parts.push(
+          `<g class="hit" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
+        );
         // The interchange ticks: the other lines serving this station,
         // small color bars left of the tick
         station.interchange.forEach((other, tickIndex) => {
-          parts.push(
+          railParts.push(
             `<line x1="${railX - 12}" y1="${y - 6 + tickIndex * 5}" x2="${railX - 6}" y2="${y - 6 + tickIndex * 5}" class="interchange" style="stroke: var(--route-${other})"></line>`,
           );
         });
-        // The spurs: each branch steps left at a 45° turnout and
-        // interleaves its rows beside the spine
-        station.spurs.forEach((spur) => {
-          const spurX = railX - SPUR_STEP;
-          if (spur.stations.length === 0 && spur.joinsAt) {
-            // A bare join: the connector angles from this station into
-            // the drawn target
-            const target = drawn.get(spur.joinsAt);
-            if (target) {
-              parts.push(
-                `<path d="M ${railX} ${y} L ${railX - SPUR_STEP / 2} ${y + ROW / 2} L ${target.x} ${target.y}" class="connector"></path>`,
-              );
-            }
-            return;
-          }
-          if (spur.stations.length > 0) {
-            const spurY = yOffset + (current + 1) * ROW;
-            // The 45° turnout: the branch leaves the spine at a 45
-            parts.push(
-              `<line x1="${railX}" y1="${y}" x2="${spurX}" y2="${spurY}" class="spur"></line>`,
-            );
-            drawChain(spur.stations, spurX, current + 1, depth + 1);
-          }
-        });
-        current += 1;
       });
-      return current;
+      return startRow + stations.length;
     };
 
-    const endRow = drawChain(component.stations, x0, 0, 0);
-    // The cyclic closure: a loop's last station connects back to the first
+    /**
+     * Draws the spurs hanging off a chain's stations, each as its own
+     * indented strip after the parent's rows.
+     *
+     * @param {import("../library/LineDiagram.js").LineStation[]} stations
+     * @param {number} depth
+     * @param {number} nextRow
+     * @param {number} width
+     * @returns {number}
+     */
+    const drawSpurs = (stations, depth, nextRow, width) => {
+      let row = nextRow;
+      for (const station of stations) {
+        for (const spur of station.spurs) {
+          const from = drawn.get(station.id);
+          if (spur.stations.length === 0 && spur.joinsAt) {
+            // A bare join: an elbow from the split station into the
+            // drawn target — 45°, horizontal, vertical, 45°: the
+            // grammar's turns only
+            const target = drawn.get(spur.joinsAt);
+            if (from && target) {
+              const dir = target.y > from.y ? 1 : -1;
+              railParts.push(
+                `<path d="M ${from.x} ${from.y} L ${from.x + TURNOUT} ${from.y + TURNOUT * dir} L ${target.x + TURNOUT} ${from.y + TURNOUT * dir} L ${target.x + TURNOUT} ${target.y - TURNOUT * dir} L ${target.x} ${target.y}" class="connector"></path>`,
+              );
+            }
+            continue;
+          }
+          if (spur.stations.length === 0) continue;
+          const spurRail = RAIL_X + DEPTH_STEP * (depth + 1);
+          const startRow = row + BRANCH_GAP;
+          // The 45° turnout from the split station into the branch rail,
+          // then vertical down to the branch's first station; the
+          // turnout carries the branch's incoming edge for selection
+          if (from) {
+            const firstY = yOf(startRow);
+            const drop = spurRail - from.x;
+            railParts.push(
+              `<path d="M ${from.x} ${from.y} L ${spurRail} ${from.y + drop} L ${spurRail} ${firstY}" class="spur" data-edge-id="${escapeHtml(spur.stations[0].via ?? "")}"></path>`,
+            );
+          }
+          row = drawChain(
+            spur.stations,
+            spurRail,
+            startRow,
+            width,
+            maxLabel(width) - 4,
+          );
+          row = drawSpurs(spur.stations, depth + 1, row + BRANCH_GAP, width);
+        }
+      }
+      return row;
+    };
+
+    const width = Math.max(this.clientWidth || 0, 200);
+    const chars = maxLabel(width);
+    const endRow = drawChain(component.stations, RAIL_X, 0, width, chars);
+    drawSpurs(component.stations, 0, endRow, width);
+    // The cyclic closure: a loop's last station connects back to the
+    // first, elbowing on the rail's left
     if (component.cyclic && component.stations.length > 1) {
       const first = drawn.get(component.stations[0].id);
-      const lastY = yOffset + (endRow - 1) * ROW;
-      if (first) {
-        parts.push(
-          `<path d="M ${x0} ${lastY} L ${x0 - SPUR_STEP / 2} ${lastY + ROW / 2} L ${x0 - SPUR_STEP / 2} ${first.y - ROW / 2} L ${first.x} ${first.y}" class="connector"></path>`,
+      const last = drawn.get(
+        component.stations[component.stations.length - 1].id,
+      );
+      if (first && last) {
+        railParts.push(
+          `<path d="M ${first.x} ${last.y} L ${first.x - TURNOUT} ${last.y + TURNOUT} L ${first.x - TURNOUT} ${first.y - TURNOUT} L ${first.x} ${first.y}" class="connector"></path>`,
         );
       }
     }
     // The line's roundel: the name beside the main run's top terminus
     if (isMain) {
       const name = escapeHtml(this.routeName || "Line");
-      parts.push(
-        `<text x="${x0 + 14}" y="${yOffset - 14}" class="line-name">${name}</text>`,
+      railParts.push(
+        `<text x="${RAIL_X + 16}" y="${yOf(0) - 16}" class="line-name">${name}</text>`,
       );
     }
-    return parts.join("");
+    return railParts.join("") + parts.join("");
   }
 }
 

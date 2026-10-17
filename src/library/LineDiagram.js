@@ -20,7 +20,7 @@
  * the route index when one is set. Boundary wires (IIPs, exports) use
  * pseudo-station ids for the boundary end.
  *
- * @typedef {{ source: string, target: string, route: number | null | undefined }} LineEdgeInput
+ * @typedef {{ source: string, target: string, route: number | null | undefined, id?: string }} LineEdgeInput
  */
 
 /**
@@ -38,6 +38,7 @@
  *   joinsAt: string | null,
  *   interchange: number[],
  *   label: string,
+ *   via: string | null,
  * }} LineStation
  */
 
@@ -142,6 +143,14 @@ function walkLine(componentEdges, allEdges, routeIndex) {
     inDegree.set(edge.target, (inDegree.get(edge.target) ?? 0) + 1);
   }
   const outs = (/** @type {string} */ id) => out.get(id) ?? [];
+  /** The edge flowing into a connection — the strip's rail segments
+   * select it on click. */
+  const edgeIdFor = (/** @type {string} */ src, /** @type {string} */ tgt) => {
+    for (const edge of componentEdges) {
+      if (edge.source === src && edge.target === tgt) return edge.id ?? null;
+    }
+    return null;
+  };
 
   /** How many stations a branch reaches downstream — used to rank the
    * main run at a split. */
@@ -189,8 +198,8 @@ function walkLine(componentEdges, allEdges, routeIndex) {
   };
 
   const visited = /** @type {Set<string>} */ (new Set());
-  /** @type {(id: string) => LineStation} */
-  const make = (/** @type {string} */ id) => {
+  /** @type {(id: string, via: string | null) => LineStation} */
+  const make = (/** @type {string} */ id, /** @type {string | null} */ via) => {
     // Degree speaks first: a source (nothing flows in) and a sink
     // (nothing flows out) are the strip's termini, wherever they sit
     /** @type {LineStation} */
@@ -201,6 +210,7 @@ function walkLine(componentEdges, allEdges, routeIndex) {
       joinsAt: null,
       interchange: interchangesFor(id),
       label: id,
+      via: via ?? null,
     };
     if (outs(id).length === 0 || (inDegree.get(id) ?? 0) === 0) {
       node.kind = "terminus";
@@ -230,14 +240,17 @@ function walkLine(componentEdges, allEdges, routeIndex) {
    * @param {string} id
    * @returns {LineStation[]}
    */
-  const chain = (/** @type {string} */ id) => {
+  const chain = (
+    /** @type {string} */ id,
+    /** @type {string | null} */ via = null,
+  ) => {
     if (visited.has(id)) {
       // The chain starts on a drawn station: nothing new renders — the
       // caller marks the join instead
       return [];
     }
     visited.add(id);
-    const node = make(id);
+    const node = make(id, via);
     const targets = outs(id);
     const fresh = targets.filter((t) => !visited.has(t));
     const joins = targets.filter((t) => visited.has(t));
@@ -252,7 +265,7 @@ function walkLine(componentEdges, allEdges, routeIndex) {
       return [node];
     }
     if (fresh.length === 1 && joins.length === 0) {
-      return [node, ...chain(fresh[0])];
+      return [node, ...chain(fresh[0], edgeIdFor(id, fresh[0]))];
     }
     // A split (possibly with an extra arrival): the main run — the
     // branch reaching the most stations, ties by id — continues down
@@ -262,9 +275,9 @@ function walkLine(componentEdges, allEdges, routeIndex) {
     const ranked = fresh
       .map((t) => /** @type {const} */ ([t, reach(t)]))
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    const result = [node, ...chain(ranked[0][0])];
+    const result = [node, ...chain(ranked[0][0], edgeIdFor(id, ranked[0][0]))];
     node.spurs = ranked.slice(1).map((entry) => {
-      const stations = chain(entry[0]);
+      const stations = chain(entry[0], edgeIdFor(id, entry[0]));
       return {
         stations,
         // The branch re-enters a station the spine already drew: a bare
@@ -283,7 +296,7 @@ function walkLine(componentEdges, allEdges, routeIndex) {
   // walks as a spur attached at the station it joins into
   for (const source of sources.sort()) {
     if (visited.has(source)) continue;
-    const spurChain = chain(source);
+    const spurChain = chain(source, null);
     const last = spurChain[spurChain.length - 1];
     const host =
       last.kind === "join" && last.joinsAt

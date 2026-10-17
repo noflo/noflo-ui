@@ -2508,6 +2508,27 @@ export class FlowEditor extends HTMLElement {
       (edge) => edge.hitPath === el || edge.visualPath === el,
     );
     if (!edge) {
+      // IIP and exported-port wires select like edges: the wire's id is
+      // the IIP's CRDT edge id or the export's name (work document #35
+      // update #14) — the route line follows the selection either way
+      const wire = this.iipWires?.find(
+        (candidate) => candidate.hitPath === el || candidate.visualPath === el,
+      );
+      if (!wire) return;
+      const wireId = wire.iip.id || wire.iip.getAttribute("name") || "";
+      if (isMultiple) {
+        if (this.selectMode) {
+          this.radialMenu?.close();
+        }
+        this.selectionManager.toggle("iips", wireId);
+      } else if (
+        this.selectionManager.iips.has(wireId) &&
+        this.selectionManager.iips.size === 1
+      ) {
+        this.selectionManager.toggle("iips", wireId);
+      } else {
+        this.selectionManager.select("iips", wireId, false);
+      }
       return;
     }
     const edgeId = this.getEdgeId(edge);

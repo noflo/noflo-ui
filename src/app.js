@@ -2262,20 +2262,32 @@ async function init() {
   linesCorner.setProvider(() => {
     const view = projectGraph(mirrorDoc, activeGraphId);
     if (!view) return null;
+    // The strip's rail segments select the wire they carry: the id is
+    // the canonical edge key (the editor's selection vocabulary), IIPs
+    // ride their DATA-> id, exports their pseudo-station
+    const edgeIdOf = (
+      /** @type {{ node: string, port: string, index?: number }} */ from,
+      /** @type {{ node: string, port: string, index?: number }} */ to,
+    ) =>
+      `${from.node}:${from.port}[${from.index ?? 0}]->${to.node}:${to.port}[${to.index ?? 0}]`;
     const edges = [];
     for (const edge of view.edges ?? []) {
       edges.push({
         source: edge.from.node,
         target: edge.to.node,
         route: edge.metadata?.route ?? null,
+        id: edgeIdOf(edge.from, edge.to),
       });
     }
-    let iipIndex = 0;
     for (const init of view.initializers ?? []) {
+      const iipId =
+        init.metadata?.id ??
+        `DATA->${init.to.node}:${init.to.port}[${init.to.index ?? 0}]`;
       edges.push({
-        source: `iip:${iipIndex++}`,
+        source: iipId,
         target: init.to.node,
         route: init.metadata?.route ?? null,
+        id: iipId,
       });
     }
     for (const name in view.outports ?? {}) {
@@ -2284,6 +2296,7 @@ async function init() {
         source: info.process,
         target: `export:${name}`,
         route: info.metadata?.route ?? null,
+        id: `export:${name}`,
       });
     }
     for (const name in view.inports ?? {}) {
@@ -2292,12 +2305,13 @@ async function init() {
         source: `export:${name}`,
         target: info.process,
         route: info.metadata?.route ?? null,
+        id: `export:${name}`,
       });
     }
     return {
       edges,
       labelFor: (/** @type {string} */ id) =>
-        id.startsWith("iip:")
+        id.startsWith("DATA->")
           ? "data"
           : id.startsWith("export:")
             ? id.slice(7)
