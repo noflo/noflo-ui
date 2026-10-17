@@ -120,6 +120,12 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       syncSegment.classList.contains("calm"),
       "up to date reads as calm in the Ages vocabulary",
     );
+    // The degradation ladder's count (the chip goes icon+number when
+    // minified): the peers segment carries the bare number
+    const peerCount =
+      /** @type {HTMLElement} */ (chip.querySelector(".seg .count"))
+        .textContent ?? "";
+    assert.match(peerCount, /^2$/, "the count is the bare peer number");
     el.remove();
   });
 

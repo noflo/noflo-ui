@@ -294,4 +294,91 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
       `the telemetry log fills its accordion (${geometry.log.height} of ${geometry.panelOne.height})`,
     );
   });
+
+  it("on a phone the chips go minimal and the column keeps a usable width", async () => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.waitForTimeout(300);
+    const small = /** @type {any} */ (
+      await page.evaluate(async () => {
+        const { FlowCornerElement } = await import(
+          "/src/elements/corner-element.js"
+        );
+        class PhoneCorner extends FlowCornerElement {}
+        customElements.define("journey-phone-corner", PhoneCorner);
+        PhoneCorner.prototype.styles = () => `
+          :host { position: fixed; top: 12px; left: 12px; z-index: 900; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+        `;
+        PhoneCorner.prototype.chipHtml = () =>
+          `<span class="seg"><span class="label">Phone</span><span class="count">3</span></span>`;
+        PhoneCorner.prototype.expandedHtml = () =>
+          `<div class="panel" id="pp"><div class="panel-head">Phone panel</div></div>`;
+        PhoneCorner.prototype.panelSide = "left";
+        PhoneCorner.prototype.expanded = true;
+        const corner = document.createElement("journey-phone-corner");
+        document.body.append(corner);
+        corner.render();
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        );
+        const context = document
+          .querySelector("noflo-context-chip")
+          ?.shadowRoot?.querySelector(".chip");
+        const box = (el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            top: r.top,
+            bottom: r.bottom,
+            width: r.width,
+            height: r.height,
+          };
+        };
+        const container = document.querySelector(".corner-panels-left");
+        const panel = container
+          ? [...container.querySelectorAll(".corner-panel-portal")]
+              .flatMap((portal) =>
+                [...portal.shadowRoot.children].filter(
+                  (n) => n.tagName !== "STYLE" && n.classList.contains("panel"),
+                ),
+              )
+              .map((n) => box(n))
+          : [];
+        return {
+          viewport: { w: innerWidth, h: innerHeight },
+          contextMicro: document
+            .querySelector("noflo-context-chip")
+            ?.hasAttribute("data-micro"),
+          contextMinified: document
+            .querySelector("noflo-context-chip")
+            ?.hasAttribute("data-minified"),
+          chipWidths: [box(context), box(corner.shadowRoot.querySelector(".chip"))],
+          container: box(container),
+          panels: panel,
+        };
+      })
+    );
+    assert.ok(small, "the phone journey evaluated");
+    // The ladder: the compact band minifies, 360px is the micro rung
+    assert.ok(
+      small.contextMinified,
+      "the phone viewport minifies the chips",
+    );
+    assert.ok(
+      small.contextMicro,
+      "at 360px the chips read icon only",
+    );
+    // The icon-only chips are narrow; the column keeps the panels'
+    // readability floor instead of collapsing with them
+    const chipWidth = Math.max(
+      ...small.chipWidths.map((/** @type {any} */ c) => c.width),
+    );
+    assert.equal(
+      small.container.width,
+      Math.max(260, chipWidth),
+      "the column holds the readability floor under minimal chips",
+    );
+    assert.ok(
+      small.panels.every((/** @type {any} */ p) => p.width === small.container.width),
+      "the accordions still share the column's width",
+    );
+  });
 });

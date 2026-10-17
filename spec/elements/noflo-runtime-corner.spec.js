@@ -95,6 +95,12 @@ describe("runtime corner (work documents #59/#15/#28)", () => {
     const el = feedRuntime(makeElement());
     const _shadow = el.panelShadow;
     assert.match(el.shadowRoot.textContent ?? "", /1 runtime/);
+    // The degradation ladder's count (the chip goes icon+number when
+    // minified): the bare population rides the segment as its own span
+    const count =
+      /** @type {HTMLElement} */ (el.shadowRoot.querySelector(".seg .count"))
+        .textContent ?? "";
+    assert.match(count, /^1$/, "the count is the bare runtime number");
     el.setRuntimes(
       [
         {

@@ -10,7 +10,16 @@
  * (compact viewports), Expanded (the accordion).
  */
 
+import icons from "../../vendor/fontawesome-icons.js";
 import { FlowCornerElement } from "./corner-element.js";
+
+/** The Font Awesome glyph for a named icon in the vendor map.
+ * @param {string} name
+ * @returns {string}
+ */
+function icon(name) {
+  return `<i class="fa" aria-hidden="true">${/** @type {any} */ (icons())[name] ?? ""}</i>`;
+}
 
 /** @param {unknown} value @returns {string} */
 function escapeHtml(value) {
@@ -189,7 +198,10 @@ export class FlowProjectCorner extends FlowCornerElement {
     ).length;
     const parts = [`work docs ${active}`];
     if (proposed > 0) parts.push(`+${proposed} proposed`);
-    return `<span class="context-label">${parts.join(" · ")}</span>`;
+    // The degradation ladder's count: the active documents' number is
+    // what the chip summarizes — it survives minification when the
+    // words drop
+    return `<span class="seg" title="The project's work documents">${icon("file-lines")}<span class="label">${parts.join(" · ")}</span><span class="count">${active}</span></span>`;
   }
 
   /**

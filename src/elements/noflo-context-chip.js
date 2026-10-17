@@ -162,7 +162,10 @@ export class FlowContextChip extends FlowCornerElement {
   }
 
   connectedCallback() {
-    this.render();
+    // The base attaches the viewport tracking and the minify ladder —
+    // the compact media query hides the labels on its own, but the
+    // data-minified/data-micro states need the resize listener
+    super.connectedCallback();
   }
 
   /**

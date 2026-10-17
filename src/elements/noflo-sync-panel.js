@@ -172,7 +172,10 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   connectedCallback() {
-    this.render();
+    // The base attaches the viewport tracking and the minify ladder —
+    // the compact media query hides the labels on its own, but the
+    // data-minified/data-micro states need the resize listener
+    super.connectedCallback();
   }
 
   /**
@@ -417,7 +420,7 @@ export class FlowSyncPanel extends FlowCornerElement {
       }
       if (peerCount > 0) {
         segments.push(
-          `<span class="seg">${icon("user-group")}<span class="label">${peerCount} peer${peerCount === 1 ? "" : "s"}</span></span>`,
+          `<span class="seg">${icon("user-group")}<span class="label">${peerCount} peer${peerCount === 1 ? "" : "s"}</span><span class="count">${peerCount}</span></span>`,
         );
       }
     } else {
@@ -427,13 +430,13 @@ export class FlowSyncPanel extends FlowCornerElement {
     }
     if (this._joinRequests.length > 0) {
       segments.push(
-        `<span class="seg attention throb">${icon("user-plus")}<span class="label">${this._joinRequests.length} request${this._joinRequests.length === 1 ? "" : "s"}</span></span>`,
+        `<span class="seg attention throb">${icon("user-plus")}<span class="label">${this._joinRequests.length} request${this._joinRequests.length === 1 ? "" : "s"}</span><span class="count">${this._joinRequests.length}</span></span>`,
       );
     }
     const owner = this._dacarState?.anchor?.owner === true;
     if (this._pendingIntents > 0) {
       segments.push(
-        `<span class="seg activity">${icon("pen")}<span class="label">${this._pendingIntents} pending</span></span>`,
+        `<span class="seg activity">${icon("pen")}<span class="label">${this._pendingIntents} pending</span><span class="count">${this._pendingIntents}</span></span>`,
       );
     }
     if (this._dacarState?.anchor?.hash) {

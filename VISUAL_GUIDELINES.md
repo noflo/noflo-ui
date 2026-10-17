@@ -262,6 +262,7 @@ The golden pulse and the crashed glitch are gated behind `prefers-reduced-motion
 
 ## 13. Responsiveness & ergonomics
 
+- Corner chips degrade with the viewport, a three-rung ladder: **full** (icon + label), **minified** at the compact breakpoint (icon + the bare number a segment summarizes — the words drop, the count survives), **micro** at ≤360px (icon only, the extreme rung) [implemented in the corner base's `data-minified`/`data-micro` attributes and the segments' `.count` spans]. A context label is a title, not a number — it never survives minification.
 - Touch targets: **minimum 44×44px** for all interactive controls (radial menu center, pills, buttons), consumed as `--ui-target` so Shadow DOM elements inherit it. The editor is touch-first; mouse is the fallback, not the target.
 - Layouts are fluid: `clamp()`, CSS grid (`auto-fit`/`auto-fill`), flexbox; single-column collapse on phones. Avoid rigid breakpoints where fluid sizing works.
 - The UI must remain usable with animations off and on e-ink (tube theme carries this duty). Grayscale panels get pure luminance contrast and no glow dependency; color e-ink panels render hue but muted and desaturated — identification never rests on hue alone (§6).

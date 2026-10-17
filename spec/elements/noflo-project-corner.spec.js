@@ -68,6 +68,14 @@ describe("FlowProjectCorner (work document #9)", () => {
       dualShadow(el).querySelector(".chip")
     );
     assert.match(chip.textContent ?? "", /work docs 0/);
+    // The chip reads as a segment now — icon, words, and the ladder's
+    // bare count that survives minification
+    assert.ok(chip.querySelector(".seg .fa"), "the chip carries its icon");
+    assert.match(
+      chip.querySelector(".seg .count")?.textContent ?? "",
+      /^0$/,
+      "the count is the bare active-document number",
+    );
     el.expanded = true;
     el.render();
     assert.ok(

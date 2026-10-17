@@ -31,6 +31,10 @@ import { mirrorBodyState } from "./body-state.js";
  * the JS agree by construction. */
 export const COMPACT_VIEWPORT = 480;
 
+/** Viewport width under which minified chips drop their counts too: the
+ * degradation ladder's extreme rung, icon only. */
+export const MICRO_VIEWPORT = 360;
+
 /**
  * The shared corner grammar: the segmented chip strip, the Ages state
  * colors, the attention throb, and the expanded panel with its accordions.
@@ -78,6 +82,16 @@ export function cornerStyles() {
   .seg.offline { color: var(--ui-age-offline); }
   .seg .label { white-space: nowrap; }
   :host([data-minified]) .seg .label { display: none; }
+  /* The chips' degradation ladder: full is icon + label; minified drops
+     the words and keeps icon + count (the bare number a segment
+     summarizes with); micro — the extreme rung, viewport-driven —
+     drops the counts too, icon only */
+  .seg .count { display: none; }
+  :host([data-minified]) .seg .count:not(:empty) { display: inline; }
+  :host([data-micro]) .seg .count { display: none; }
+  /* The context label is a title, not a number: it never survives
+     minification (the context chip reads as its icon row) */
+  :host([data-minified]) .context-label { display: none; }
   .throb { animation: throb 1.2s ease-in-out infinite; }
   /* Motion gates (guidelines §11): the throb stops for reduced-motion
      users and behind the data-animations="off" hook, mirrored from body
@@ -378,14 +392,6 @@ function panelContainer(side) {
         display: flex;
         flex-direction: column;
       }
-      @media (max-width: ${COMPACT_VIEWPORT}px) {
-        .corner-panels-left, .corner-panels-right {
-          /* The measured inline width loses to !important: on compact
-             viewports the column is the full width minus margins, as
-             the panels themselves always were */
-          width: calc(100vw - 24px) !important;
-        }
-      }
     `;
     document.head.appendChild(style);
   }
@@ -426,6 +432,9 @@ export class FlowCornerElement extends HTMLElement {
     /** Auto-Minified: the viewport is at or under the compact breakpoint,
      * tracked by the resize listener. */
     this._compact = false;
+    /** Auto-Micro: the viewport is at or under the micro breakpoint —
+     * the degradation ladder's icon-only rung, meaningful while minified. */
+    this._micro = false;
     this.expanded = false;
     /** Chips without accordion content never enter the Expanded state. */
     this.expandable = true;
@@ -479,6 +488,7 @@ export class FlowCornerElement extends HTMLElement {
   _trackViewport() {
     const width = typeof window.innerWidth === "number" ? window.innerWidth : 0;
     this._compact = width > 0 && width <= COMPACT_VIEWPORT;
+    this._micro = width > 0 && width <= MICRO_VIEWPORT;
   }
 
   /**
@@ -486,8 +496,9 @@ export class FlowCornerElement extends HTMLElement {
    */
   _resizeHandler = (_event) => {
     const wasCompact = this._compact;
+    const wasMicro = this._micro;
     this._trackViewport();
-    if (this._compact === wasCompact) return;
+    if (this._compact === wasCompact && this._micro === wasMicro) return;
     this._applyMinified();
   };
 
@@ -502,7 +513,12 @@ export class FlowCornerElement extends HTMLElement {
   }
 
   _applyMinified() {
-    this.toggleAttribute("data-minified", this._effectiveMinified);
+    const minified = this._effectiveMinified;
+    this.toggleAttribute("data-minified", minified);
+    // The ladder's extreme rung: icon only. Viewport-driven, and only
+    // meaningful while the chip is minified — an explicit un-minify
+    // keeps the counts
+    this.toggleAttribute("data-micro", minified && this._micro === true);
   }
 
   /**

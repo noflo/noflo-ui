@@ -140,6 +140,16 @@ describe("FlowCornerElement states (work document #28)", () => {
       /:host\(\[data-minified\]\) \.seg \.label \{ display: none; \}/,
       "minified hides the labels",
     );
+    assert.match(
+      style,
+      /:host\(\[data-minified\]\) \.seg \.count:not\(:empty\) \{ display: inline; \}/,
+      "minified keeps the counts — the ladder's icon+number rung",
+    );
+    assert.match(
+      style,
+      /:host\(\[data-micro\]\) \.seg \.count \{ display: none; \}/,
+      "micro drops the counts too — the ladder's icon-only rung",
+    );
     el.setMinified(false);
     assert.equal(el.cornerState, "normal");
     assert.ok(!el.hasAttribute("data-minified"));
@@ -230,6 +240,31 @@ describe("FlowCornerElement viewport-driven minify (work document #28)", () => {
     await setViewport(1024);
     assert.equal(el.cornerState, "normal", "growing restores Normal");
     assert.ok(!el.hasAttribute("data-minified"));
+    el.remove();
+    await setViewport(1024);
+  });
+
+  it("the degradation ladder's extreme rung: micro drops the counts too", async () => {
+    await setViewport(400);
+    const el = makeElement();
+    assert.ok(
+      el.hasAttribute("data-minified"),
+      "the compact band minifies: icon + number",
+    );
+    assert.ok(
+      !el.hasAttribute("data-micro"),
+      "above the micro breakpoint the counts survive",
+    );
+    await setViewport(340);
+    assert.ok(
+      el.hasAttribute("data-micro"),
+      "the smallest band reads icon only",
+    );
+    await setViewport(1024);
+    assert.ok(
+      !el.hasAttribute("data-minified") && !el.hasAttribute("data-micro"),
+      "growing restores the full chip",
+    );
     el.remove();
     await setViewport(1024);
   });
