@@ -431,10 +431,17 @@ export class FlowEditor extends HTMLElement {
           z-index: 2;
           overflow: visible;
         }
+        /* The groups layer rides the same −8000/16000 coordinate space
+           as the other SVG layers: its <g> carries translate(8000,8000)
+           (work document #5 update #16), so without the offset the zones
+           rendered ~8000px off-screen — the group feature was invisible
+           on the canvas for its whole life */
         #groups-layer {
           position: absolute;
-          top: 0;
-          left: 0;
+          top: -8000px;
+          left: -8000px;
+          width: 16000px;
+          height: 16000px;
           overflow: visible;
         }
         /* The tariff zone (work document #35): a labeled, bordered region
@@ -3095,8 +3102,11 @@ export class FlowEditor extends HTMLElement {
     );
     for (const zone of zones) {
       const { group, bounds } = zone;
-      const x = bounds.x + 8000;
-      const y = bounds.y + 8000;
+      // The coordinates are graph coords: the groups layer's −8000 CSS
+      // offset and the <g>'s translate(8000,8000) cancel, exactly like
+      // the edges layer's
+      const x = bounds.x;
+      const y = bounds.y;
       const region = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "rect",

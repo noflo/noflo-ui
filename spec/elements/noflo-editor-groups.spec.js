@@ -20,8 +20,10 @@ describe("FlowEditor groups (work document #5 update #16)", () => {
     assert.ok(region, "the region renders");
     assert.equal(region.getAttribute("data-group-id"), "g1");
     // Two members at 560/640: bounding box 560..720 plus 48 padding each
-    // side, offset by the 8000 graph-coordinate origin
-    assert.equal(region.getAttribute("x"), "8512");
+    // side, in graph coordinates — the groups layer's −8000 offset and
+    // the group's translate(8000,8000) cancel, so the rect carries the
+    // graph position directly
+    assert.equal(region.getAttribute("x"), "512");
     assert.equal(Number(region.getAttribute("width")), 256);
     const label = /** @type {SVGTextElement} */ (
       shadow.querySelector(".group-label")
@@ -153,5 +155,89 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
       /:host\(\[data-theme="tube"\]\) \.group-label \{[^}]*sans-serif/,
     );
     ed.remove();
+  });
+
+  describe("the group affordances (work document #35 review)", () => {
+    /** An editor with two nodes and a captured radial menu. */
+    function menuEditor() {
+      const ed = document.createElement("noflo-editor");
+      document.body.appendChild(ed);
+      ed.addNode("A", "c/X", { x: 560, y: 360 });
+      ed.addNode("B", "c/X", { x: 900, y: 360 });
+      /** @type {any[][]} */
+      const opened = [];
+      /** @type {any} */ (ed).radialMenu = {
+        open: (
+          /** @type {number} */ _x,
+          /** @type {number} */ _y,
+          /** @type {any[]} */ items,
+        ) => {
+          opened.push(items);
+        },
+        close() {},
+      };
+      return { ed, opened };
+    }
+
+    it("the Group item's label carries its scope: selection vs single node", () => {
+      const { ed, opened } = menuEditor();
+      const nodeA = ed.nodeLayer.querySelector('noflo-node[name="A"]');
+      const nodeB = ed.nodeLayer.querySelector('noflo-node[name="B"]');
+
+      // Right-clicking an unselected node groups just that node — and
+      // the label says so
+      ed.showContextMenu(0, 0, { clickedNode: nodeB });
+      let texts = opened[0].map((item) => item.text);
+      assert.ok(
+        texts.includes("Group node"),
+        "an unselected click groups only itself, and says so",
+      );
+
+      // Multi-select, then right-click a selected node: the label names
+      // the scope
+      ed.selectionManager.select("nodes", "A", true);
+      ed.selectionManager.select("nodes", "B", true);
+      ed.showContextMenu(0, 0, { clickedNode: nodeA });
+      texts = opened[1].map((item) => item.text);
+      assert.ok(
+        texts.includes("Group selection (2)"),
+        "the multi-selection groups as one, and says so",
+      );
+      ed.remove();
+    });
+
+    it("the canvas menu groups the selection without right-clicking a member", () => {
+      const { ed, opened } = menuEditor();
+      ed.selectionManager.select("nodes", "A", true);
+      ed.selectionManager.select("nodes", "B", true);
+      ed.showContextMenu(0, 0, {});
+      const texts = opened[0].map((item) => item.text);
+      assert.ok(
+        texts.includes("Group selection (2)"),
+        "the canvas menu offers grouping for an active selection",
+      );
+      ed.remove();
+    });
+
+    it("the group menu carries Rename beside Ungroup", () => {
+      const { ed, opened } = menuEditor();
+      ed.setGroups([{ id: "g1", name: "Pipelining", nodes: ["A"] }]);
+      const region = /** @type {SVGRectElement} */ (
+        ed.shadowRoot.querySelector(".group-region")
+      );
+      ed.showContextMenu(0, 0, { clickedGroup: region });
+      const texts = opened[0].map((item) => item.text);
+      assert.ok(texts.includes("Rename"), "the zone's name is editable");
+      assert.ok(texts.includes("Ungroup"));
+      // The rename attempt carries the group's id
+      /** @type {any[]} */
+      const attempts = [];
+      ed.addEventListener("group-rename-attempt", (e) => {
+        attempts.push(/** @type {any} */ (e).detail);
+      });
+      opened[0].find((item) => item.text === "Rename").onClick();
+      assert.deepEqual(attempts, [{ groupId: "g1" }]);
+      ed.remove();
+    });
   });
 });
