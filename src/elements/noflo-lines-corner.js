@@ -123,6 +123,32 @@ export class FlowLinesCorner extends FlowCornerElement {
   }
 
   /**
+   * Applies the canvas's own click semantics to a selection: a modified
+   * click toggles the item in its type; a plain click selects within
+   * the type (other types keep their selection) — and a plain click on
+   * the type's only-selected item deselects it, the canvas's
+   * pointerdown-then-commit behavior.
+   *
+   * @param {{ type: "nodes" | "edges" | "iips" | "ports", id: string }} target
+   * @param {boolean | undefined} multi The shift/ctrl/meta modifier.
+   */
+  activate(target, multi) {
+    const selection = /** @type {any} */ (this.editor)?.selectionManager;
+    if (!selection) return;
+    const { type, id } = target;
+    if (multi) {
+      selection.toggle(type, id);
+      return;
+    }
+    const isOnly = selection[type].size === 1 && selection[type].has(id);
+    if (isOnly) {
+      selection.toggle(type, id);
+    } else {
+      selection.select(type, id, false);
+    }
+  }
+
+  /**
    * The line data for a route, computed fresh from the provider.
    *
    * @param {number} route
@@ -371,31 +397,28 @@ export class FlowLinesCorner extends FlowCornerElement {
         // id, an export by its port name
         diagram.addEventListener("station-click", (/** @type {any} */ e) => {
           const id = /** @type {string} */ (e.detail.id);
-          const selection = /** @type {any} */ (this.editor)?.selectionManager;
-          if (!selection) return;
-          // A plain click replaces the selection — one notification,
-          // so the panel's own state never sees an empty interlude
-          if (id.startsWith("DATA->")) {
-            selection.replace("iips", id);
-          } else if (id.startsWith("export:")) {
-            selection.replace("ports", id.slice(7));
-          } else {
-            selection.replace("nodes", id);
-          }
+          this.activate(
+            id.startsWith("DATA->")
+              ? { type: "iips", id }
+              : id.startsWith("export:")
+                ? { type: "ports", id: id.slice(7) }
+                : { type: "nodes", id },
+            e.detail.multi,
+          );
         });
         diagram.addEventListener("edge-click", (/** @type {any} */ e) => {
-          const selection = /** @type {any} */ (this.editor)?.selectionManager;
-          if (!selection || !e.detail.edgeId) return;
           const id = /** @type {string} */ (e.detail.edgeId);
+          if (!id) return;
           // Boundary segments select their wire: an IIP by its CRDT edge
-          // id, an export by its port name; a plain click replaces
-          if (id.startsWith("DATA->")) {
-            selection.replace("iips", id);
-          } else if (id.startsWith("export:")) {
-            selection.replace("ports", id.slice(7));
-          } else {
-            selection.replace("edges", id);
-          }
+          // id, an export by its port name
+          this.activate(
+            id.startsWith("DATA->")
+              ? { type: "iips", id }
+              : id.startsWith("export:")
+                ? { type: "ports", id: id.slice(7) }
+                : { type: "edges", id },
+            e.detail.multi,
+          );
         });
       }
     }

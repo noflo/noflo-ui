@@ -118,8 +118,6 @@ describe("FlowLinesCorner: the per-line diagrams (work document #35 update #14)"
       edges: new Set(["a:out[0]->b:in[0]"]),
       iips: new Set(),
       ports: new Set(),
-      clear() {},
-      select() {},
     };
     corner.editor = editor;
     corner.setSelection({ route: 3, station: null });
@@ -142,6 +140,67 @@ describe("FlowLinesCorner: the per-line diagrams (work document #35 update #14)"
       panelOf(corner).querySelector(".diagram-host noflo-line-diagram")
     );
     assert.ok(diagram2, "the diagram is still the strip, not the list");
+    corner.remove();
+  });
+
+  it("the strip's clicks apply the canvas's click semantics", () => {
+    // A stub with the real selection vocabulary: the sets plus the
+    // mutators the canvas's own handlers use
+    const sm = {
+      nodes: new Set(),
+      edges: new Set(),
+      iips: new Set(),
+      ports: new Set(),
+      toggle(type, id) {
+        if (this[type].has(id)) this[type].delete(id);
+        else this[type].add(id);
+      },
+      select(type, id) {
+        this[type].clear();
+        this[type].add(id);
+      },
+    };
+    const corner = cornerFor();
+    corner.editor = /** @type {any} */ ({ selectionManager: sm });
+    corner.setSelection({ route: 3, station: null });
+
+    // A plain click on a station selects it within its type
+    corner.activate({ type: "nodes", id: "b" }, false);
+    assert.deepEqual([...sm.nodes], ["b"], "the plain click selects");
+    // A plain click on ANOTHER station replaces within the type
+    corner.activate({ type: "nodes", id: "c" }, false);
+    assert.deepEqual([...sm.nodes], ["c"], "the plain click replaces in-type");
+    // A plain click on the type's only-selected item deselects — the
+    // canvas's pointerdown-then-commit behavior
+    corner.activate({ type: "nodes", id: "c" }, false);
+    assert.deepEqual(
+      [...sm.nodes],
+      [],
+      "the plain click deselects the only one",
+    );
+    // A modified click toggles — multi-select within the type
+    corner.activate({ type: "nodes", id: "b" }, false);
+    corner.activate({ type: "nodes", id: "c" }, true);
+    assert.deepEqual(
+      [...sm.nodes].sort(),
+      ["b", "c"],
+      "the modified click toggles",
+    );
+    // Cross-type accumulation: an edge click keeps the nodes
+    corner.activate({ type: "edges", id: "a:out[0]->b:in[0]" }, false);
+    assert.deepEqual([...sm.edges], ["a:out[0]->b:in[0]"], "the edge selects");
+    assert.deepEqual(
+      [...sm.nodes].sort(),
+      ["b", "c"],
+      "the nodes keep their selection",
+    );
+    // Boundary stations map to their own types
+    corner.activate({ type: "iips", id: "DATA->a:in[0]" }, false);
+    assert.deepEqual(
+      [...sm.iips],
+      ["DATA->a:in[0]"],
+      "the IIP selects by its edge id",
+    );
     corner.remove();
   });
 

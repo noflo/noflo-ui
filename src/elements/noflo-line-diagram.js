@@ -315,10 +315,14 @@ export class FlowLineDiagram extends HTMLElement {
       const edgeHit = /** @type {any} */ (
         event.target?.closest?.("[data-edge-id]")
       );
+      // The multi-select modifier rides the click: the panel applies the
+      // canvas's own semantics (modified clicks toggle, plain clicks
+      // select within the type)
+      const multi = Boolean(event.shiftKey || event.ctrlKey || event.metaKey);
       if (stationHit) {
         this.dispatchEvent(
           new CustomEvent("station-click", {
-            detail: { id: stationHit.getAttribute("data-station-id") },
+            detail: { id: stationHit.getAttribute("data-station-id"), multi },
             bubbles: true,
             composed: true,
           }),
@@ -326,7 +330,7 @@ export class FlowLineDiagram extends HTMLElement {
       } else if (edgeHit) {
         this.dispatchEvent(
           new CustomEvent("edge-click", {
-            detail: { edgeId: edgeHit.getAttribute("data-edge-id") },
+            detail: { edgeId: edgeHit.getAttribute("data-edge-id"), multi },
             bubbles: true,
             composed: true,
           }),

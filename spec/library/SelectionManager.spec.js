@@ -90,24 +90,6 @@ async function testSelectionManager() {
     "Event detail should contain edge-1",
   );
 
-  // Test replace: one notification, the whole selection swapped
-  sm.select("edges", "edge-1");
-  let replaceNotifications = 0;
-  sm.addEventListener("selection-changed", () => {
-    replaceNotifications++;
-  });
-  sm.replace("nodes", "node-replace");
-  assert.deepStrictEqual(
-    sm.getSnapshot(),
-    { nodes: ["node-replace"], edges: [], iips: [], ports: [] },
-    "replace swaps the whole selection",
-  );
-  assert.strictEqual(
-    replaceNotifications,
-    1,
-    "replace notifies exactly once — no empty interlude",
-  );
-
   console.log("All SelectionManager tests passed!");
 }
 

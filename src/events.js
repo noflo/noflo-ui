@@ -112,12 +112,13 @@
  *   routed edge selects its line (route set, station null); a station
  *   selection names the station (route null); nothing in play is both
  *   null (work document #35 update #14's per-line diagrams).
- * @property {CustomEvent<{ id: string }>} station-click A line-diagram
- *   station was clicked: the panel selects it on the canvas (work
- *   document #35 update #14).
- * @property {CustomEvent<{ edgeId: string }>} edge-click A line-diagram
- *   rail segment was clicked: the panel selects that wire on the canvas
- *   (work document #35 update #14).
+ * @property {CustomEvent<{ id: string, multi: boolean }>} station-click A
+ *   line-diagram station was clicked: the panel applies the canvas's
+ *   click semantics on the canvas (work document #35 update #14).
+ * @property {CustomEvent<{ edgeId: string, multi: boolean }>} edge-click A
+ *   line-diagram rail segment was clicked: the panel applies the
+ *   canvas's click semantics to that wire (work document #35 update
+ *   #14).
  * @property {CustomEvent<{ compName: string, definition?: any }>} component-changed
  * @property {CustomEvent<void>} new-graph-requested
  * @property {CustomEvent<{ directoryHandle: any }>} directory-selected
