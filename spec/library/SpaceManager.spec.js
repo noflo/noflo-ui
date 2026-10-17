@@ -68,7 +68,7 @@ describe("SpaceManager zone shapes (work document #35's tariff zones)", () => {
     );
   });
 
-  it("zoneShape: the contour bevels at 45° where the cut is legal", () => {
+  it("zoneShape: the contour stays at 45° and 90°, corners round slightly", () => {
     const sm = makeManager();
     // Two diagonal members: the staircase collapses into 45° runs
     const shape = sm.zoneShape(
@@ -79,19 +79,26 @@ describe("SpaceManager zone shapes (work document #35's tariff zones)", () => {
       [],
       { cell: 40, dilate: 1 },
     );
-    // A 45° segment: a consecutive pair of contour points where both
-    // coordinates change
-    const points = [...shape.d.matchAll(/([ML]) (-?\d+) (-?\d+)/g)].map((m) => [
-      Number(m[2]),
-      Number(m[3]),
-    ]);
-    let diagonals = 0;
+    // Every segment stays in the grammar: horizontal, vertical, or 45° —
+    // chained bevels must not compound into shallower angles. The path
+    // reads as entry → corner control → exit per rounded vertex, so all
+    // coordinates join the polyline
+    const points = [...shape.d.matchAll(/(?:[MLQ]) (-?\d+) (-?\d+)/g)].map(
+      (m) => [Number(m[1]), Number(m[2])],
+    );
+    assert.ok(points.length > 2, "the contour has vertices");
     for (let i = 1; i < points.length; i++) {
       const [ax, ay] = points[i - 1];
       const [bx, by] = points[i];
-      if (ax !== bx && ay !== by) diagonals++;
+      const dx = Math.abs(ax - bx);
+      const dy = Math.abs(ay - by);
+      assert.ok(
+        dx === 0 || dy === 0 || dx === dy,
+        `segment ${i} stays at 45° or 90° (${ax},${ay} → ${bx},${by})`,
+      );
     }
-    assert.ok(diagonals > 0, "the contour carries 45° segments");
+    // The corners round slightly: quadratics in the path
+    assert.ok(shape.d.includes("Q "), "the corners round");
   });
 
   it("pointInZone: the center's cell decides membership", () => {

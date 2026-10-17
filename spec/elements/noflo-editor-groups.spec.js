@@ -189,7 +189,8 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
     assert.match(style, /\.group-region \{[^}]*8%, transparent/);
     assert.match(style, /\.group-region \{[^}]*drop-shadow/);
     // Tube: the fare-zone grammar — solid light-grey areas with no
-    // border, the way zones 2+ read on the Underground map
+    // border, the way zones 2+ read on the Underground map; nested zones
+    // carry the white boundary line so they read alone and inside grey
     assert.match(
       style,
       /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*var\(--group-zone-fill/,
@@ -198,6 +199,18 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
       style,
       /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*stroke: none/,
     );
+    assert.match(
+      style,
+      /:host\(\[data-theme="tube"\]\) \.group-region\.depth-1,/,
+      "nested zones carry their own rule",
+    );
+    assert.match(
+      style,
+      /stroke: var\(--ui-bg, white\)/,
+      "the nested zone's white boundary line — visible alone and inside grey",
+    );
+    // Cyberpunk: the zone's edge is the fill boundary itself — no border
+    assert.match(style, /\.group-region \{[^}]*stroke: none/);
     // Zone labels render in the theme's panel typography
     assert.match(style, /\.group-label \{[^}]*SourceCodePro/);
     assert.match(

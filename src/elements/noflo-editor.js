@@ -454,31 +454,24 @@ export class FlowEditor extends HTMLElement {
           height: 16000px;
           overflow: visible;
         }
-        /* The tariff zone (work document #35): a labeled, bordered region
-           enclosing its stations. Cyberpunk reads as a panel-tone fill at
-           the decor ceiling (--ui-decor-opacity, 8% — barely-there, §4)
-           with a soft glow; the border carries the accent at half
-           strength so it organizes without competing with the route
-           lines */
+        /* The tariff zone (work document #35): a labeled region
+           enclosing its stations. Cyberpunk reads as a panel-tone fill
+           at the decor ceiling (--ui-decor-opacity, 8% — barely-there,
+           §4) with a soft glow, no border — the zone's edge is the fill
+           boundary itself */
         .group-region {
           fill: color-mix(in srgb, var(--ui-accent) 8%, transparent);
-          stroke: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-panel-border));
-          stroke-width: 2px;
+          stroke: none;
           filter: drop-shadow(
             0 0 10px color-mix(in srgb, var(--ui-accent) 8%, transparent)
           );
           pointer-events: auto;
           cursor: context-menu;
         }
-        /* Zones nest (zones within zones): each containment level steps
-           the border and the glow down, so the hierarchy reads at a
-           glance */
-        .group-region.depth-1 {
-          stroke-width: 1.5px;
-          filter: none;
-        }
+        /* Zones nest (zones within zones): each containment level softens
+           the glow, so the hierarchy reads at a glance */
+        .group-region.depth-1,
         .group-region.depth-2 {
-          stroke-width: 1px;
           filter: none;
         }
         /* Tube: the fare-zone grammar — bold black border, sharp corners,
@@ -486,6 +479,10 @@ export class FlowEditor extends HTMLElement {
         /* Tube: the fare-zone grammar — solid light-grey areas with no
            border, the way zones 2+ read on the Underground map; a nested
            zone fills white, reading as zone 1 inside the grey */
+        /* Tube: the fare-zone grammar — solid light-grey areas with no
+           border, the way zones 2+ read on the Underground map; a nested
+           zone keeps the grey but carries the white boundary line, so it
+           reads both inside a grey zone and alone on the canvas */
         :host([data-theme="tube"]) .group-region {
           fill: var(--group-zone-fill, rgb(217, 217, 217));
           stroke: none;
@@ -493,7 +490,8 @@ export class FlowEditor extends HTMLElement {
         }
         :host([data-theme="tube"]) .group-region.depth-1,
         :host([data-theme="tube"]) .group-region.depth-2 {
-          fill: var(--ui-bg, white);
+          stroke: var(--ui-bg, white);
+          stroke-width: 2px;
         }
         .group-label {
           fill: var(--node-text);

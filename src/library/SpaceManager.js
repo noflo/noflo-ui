@@ -541,16 +541,40 @@ export class SpaceManager {
    * @param {Set<string>} blockerCells
    * @returns {string} The path `d`.
    */
+  /**
+   * Renders contour loops as an SVG path with 45° bevels and slightly
+   * rounded corners: every perpendicular corner is cut at 45° where the
+   * cut stays clear of the members' and blockers' cells — a member's
+   * corner is never exposed and a non-member is never covered by a
+   * bevel. Staircases of unit cells collapse into straight 45° runs;
+   * larger corners chamfer. Every emitted segment is verified to stay at
+   * 45° or 90° — chained bevels would otherwise compound into shallower
+   * angles — and the surviving corners round slightly (a quadratic per
+   * vertex, capped at half the edge).
+   *
+   * @param {Array<Array<number[]>>} loops
+   * @param {number} cellSize
+   * @param {Set<string>} memberCells
+   * @param {Set<string>} blockerCells
+   * @returns {string} The path `d`.
+   */
   static zoneContour(loops, cellSize, memberCells, blockerCells) {
     const safe = (/** @type {number} */ x, /** @type {number} */ y) => {
       const key = `${Math.floor(x / cellSize)},${Math.floor(y / cellSize)}`;
       return !memberCells.has(key) && !blockerCells.has(key);
+    };
+    // A segment stays in the grammar: horizontal, vertical, or 45°
+    const ok = (/** @type {number[]} */ from, /** @type {number[]} */ to) => {
+      const dx = Math.abs(to[0] - from[0]);
+      const dy = Math.abs(to[1] - from[1]);
+      return dx === 0 || dy === 0 || dx === dy;
     };
     let d = "";
     for (const loop of loops) {
       const n = loop.length;
       /** @type {Array<number[]>} */
       const out = [];
+      let prevBeveled = false;
       for (let k = 0; k < n; k++) {
         const P = loop[(k - 1 + n) % n];
         const V = loop[k];
@@ -559,11 +583,9 @@ export class SpaceManager {
         const d1y = Math.sign(V[1] - P[1]);
         const d2x = Math.sign(N[0] - V[0]);
         const d2y = Math.sign(N[1] - V[1]);
-        // Collinear: keep the vertex, no bevel
-        if (d1x === d2x && d1y === d2y) {
-          out.push(V);
-          continue;
-        }
+        const collinear = d1x === d2x && d1y === d2y;
+        const axisAligned =
+          (d1x === 0 || d1y === 0) && (d2x === 0 || d2y === 0);
         const len1 = Math.abs(V[0] - P[0]) + Math.abs(V[1] - P[1]);
         const len2 = Math.abs(N[0] - V[0]) + Math.abs(N[1] - V[1]);
         const leg = Math.min(cellSize, len1, len2);
@@ -577,19 +599,46 @@ export class SpaceManager {
           safe(ax + (V[0] - ax) / 2, ay + (V[1] - ay) / 2) &&
           safe((ax + bx) / 2, (ay + by) / 2) &&
           safe(bx + (V[0] - bx) / 2, by + (V[1] - by) / 2);
-        if (!legal) {
-          out.push(V);
+        const last = out.length > 0 ? out[out.length - 1] : P;
+        // Chained bevels compound into shallower angles: a vertex whose
+        // incoming edge is already a bevel's diagonal keeps its corner
+        const canBevel =
+          axisAligned &&
+          !collinear &&
+          !prevBeveled &&
+          legal &&
+          ok(last, ax === P[0] && ay === P[1] ? [bx, by] : [ax, ay]);
+        if (!canBevel) {
+          if (V[0] !== last[0] || V[1] !== last[1]) out.push(V);
+          prevBeveled = false;
           continue;
         }
         // A unit-staircase corner (both legs one cell) vanishes into the
         // diagonal; a longer corner keeps shortened edge stubs
-        if (ax !== P[0] || ay !== P[1]) out.push([ax, ay]);
+        if (ax !== last[0] || ay !== last[1]) out.push([ax, ay]);
         if (bx !== N[0] || by !== N[1]) out.push([bx, by]);
+        prevBeveled = true;
       }
       if (out.length < 3) continue;
-      d += `M ${out[0][0]} ${out[0][1]} `;
-      for (let k = 1; k < out.length; k++) {
-        d += `L ${out[k][0]} ${out[k][1]} `;
+      // The corners round slightly: a quadratic per vertex, capped at
+      // half the edge so short segments stay well-formed
+      const radius = 8;
+      const m = out.length;
+      for (let k = 0; k < m; k++) {
+        const P = out[(k - 1 + m) % m];
+        const V = out[k];
+        const N = out[(k + 1) % m];
+        const inLen = Math.hypot(V[0] - P[0], V[1] - P[1]) || 1;
+        const outLen = Math.hypot(N[0] - V[0], N[1] - V[1]) || 1;
+        const rIn = Math.min(radius, inLen / 2);
+        const rOut = Math.min(radius, outLen / 2);
+        const entryX = V[0] - ((V[0] - P[0]) / inLen) * rIn;
+        const entryY = V[1] - ((V[1] - P[1]) / inLen) * rIn;
+        const exitX = V[0] + ((N[0] - V[0]) / outLen) * rOut;
+        const exitY = V[1] + ((N[1] - V[1]) / outLen) * rOut;
+        d +=
+          (k === 0 ? `M ${entryX} ${entryY} ` : `L ${entryX} ${entryY} `) +
+          `Q ${V[0]} ${V[1]} ${exitX} ${exitY} `;
       }
       d += "Z ";
     }
