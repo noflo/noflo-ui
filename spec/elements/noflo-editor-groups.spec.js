@@ -85,4 +85,73 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
     );
     ed.remove();
   });
+
+  it("nested zones read as tariff zones: outer paints first, depth steps down", () => {
+    const ed = document.createElement("noflo-editor");
+    document.body.appendChild(ed);
+    ed.addNode("A", "c/X", { x: 560, y: 360 });
+    ed.addNode("B", "c/X", { x: 640, y: 360 });
+    ed.addNode("C", "c/X", { x: 900, y: 360 });
+    // Creation order is inner-first: the paint order must not follow it
+    ed.setGroups([
+      { id: "g-inner", name: "Stage", nodes: ["A", "B"] },
+      { id: "g-outer", name: "Pipeline", nodes: ["A", "B", "C"] },
+    ]);
+
+    const shadow = /** @type {ShadowRoot} */ (ed.shadowRoot);
+    const layer = shadow.querySelector("#groups-group");
+    const regions = [...layer.querySelectorAll(".group-region")];
+    assert.equal(regions.length, 2);
+    const outer = regions.find(
+      (r) => r.getAttribute("data-group-id") === "g-outer",
+    );
+    const inner = regions.find(
+      (r) => r.getAttribute("data-group-id") === "g-inner",
+    );
+    assert.ok(outer && inner);
+    assert.ok(
+      regions.indexOf(outer) < regions.indexOf(inner),
+      "the outermost zone paints first, the nested zone reads inside it",
+    );
+    assert.ok(
+      inner.classList.contains("depth-1"),
+      "the contained zone steps its border down",
+    );
+    assert.ok(
+      !outer.classList.contains("depth-1"),
+      "the containing zone keeps the full weight",
+    );
+    ed.remove();
+  });
+
+  it("the zone styling follows the theme's fare-zone grammar", () => {
+    const ed = document.createElement("noflo-editor");
+    document.body.appendChild(ed);
+    const style =
+      /** @type {HTMLElement} */ (
+        /** @type {ShadowRoot} */ (ed.shadowRoot).querySelector("style")
+      ).textContent ?? "";
+    // Cyberpunk: a panel-tone fill at the decor ceiling (8%) with a soft
+    // glow
+    assert.match(style, /\.group-region \{[^}]*8%, transparent/);
+    assert.match(style, /\.group-region \{[^}]*drop-shadow/);
+    // Tube: the fare-zone grammar — bold black border, sharp corners, no
+    // glow, the canvas's own white
+    assert.match(
+      style,
+      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*stroke: black/,
+    );
+    assert.match(
+      style,
+      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*rx: 0px/,
+      "tube zones are sharp-cornered: radius 0 is the theme's geometry",
+    );
+    // Zone labels render in the theme's panel typography
+    assert.match(style, /\.group-label \{[^}]*SourceCodePro/);
+    assert.match(
+      style,
+      /:host\(\[data-theme="tube"\]\) \.group-label \{[^}]*sans-serif/,
+    );
+    ed.remove();
+  });
 });

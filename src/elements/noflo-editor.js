@@ -437,22 +437,63 @@ export class FlowEditor extends HTMLElement {
           left: 0;
           overflow: visible;
         }
+        /* The tariff zone (work document #35): a labeled, bordered region
+           enclosing its stations. Cyberpunk reads as a panel-tone fill at
+           the decor ceiling (--ui-decor-opacity, 8% — barely-there, §4)
+           with a soft glow; the border carries the accent at half
+           strength so it organizes without competing with the route
+           lines */
         .group-region {
-          fill: var(--group-fill, transparent);
-          stroke: var(--group-border, var(--node-border));
-          stroke-width: 2;
-          stroke-dasharray: 8 4;
-          rx: 12;
-          ry: 12;
+          fill: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+          stroke: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-panel-border));
+          stroke-width: 2px;
+          rx: 12px;
+          ry: 12px;
+          filter: drop-shadow(
+            0 0 10px color-mix(in srgb, var(--ui-accent) 8%, transparent)
+          );
           pointer-events: auto;
           cursor: context-menu;
         }
+        /* Zones nest (zones within zones): each containment level steps
+           the border and the glow down, so the hierarchy reads at a
+           glance */
+        .group-region.depth-1 {
+          stroke-width: 1.5px;
+          filter: none;
+        }
+        .group-region.depth-2 {
+          stroke-width: 1px;
+          filter: none;
+        }
+        /* Tube: the fare-zone grammar — bold black border, sharp corners,
+           the canvas's own white, no glow */
+        :host([data-theme="tube"]) .group-region {
+          fill: white;
+          stroke: black;
+          stroke-width: 3px;
+          rx: 0px;
+          ry: 0px;
+          filter: none;
+        }
+        :host([data-theme="tube"]) .group-region.depth-1 {
+          stroke-width: 2px;
+        }
+        :host([data-theme="tube"]) .group-region.depth-2 {
+          stroke-width: 1.5px;
+        }
         .group-label {
-          fill: var(--node-subtext);
+          fill: var(--node-text);
           font-family: SourceCodePro, monospace;
           font-size: 14px;
+          font-weight: bold;
           pointer-events: none;
           user-select: none;
+        }
+        /* Zone labels render in the theme's panel typography */
+        :host([data-theme="tube"]) .group-label {
+          fill: black;
+          font-family: sans-serif;
         }
         #grid-layer {
           z-index: 1;
@@ -3039,16 +3080,42 @@ export class FlowEditor extends HTMLElement {
     );
     if (!layer) return;
     layer.innerHTML = "";
-    for (const group of this.groups) {
-      const bounds = this.groupBounds(group);
-      if (!bounds) continue;
+    // Tariff zones (work document #35): the outermost zone paints first
+    // so a nested zone reads inside it; the depth class steps the border
+    // weight per containment level
+    /** @type {Array<{ group: any, bounds: { x: number, y: number, width: number, height: number } }>} */
+    const zones = /** @type {any} */ (
+      this.groups
+        .map((group) => ({ group, bounds: this.groupBounds(group) }))
+        .filter((/** @type {any} */ zone) => zone.bounds !== null)
+    );
+    zones.sort(
+      (/** @type {any} */ a, /** @type {any} */ b) =>
+        b.bounds.width * b.bounds.height - a.bounds.width * a.bounds.height,
+    );
+    for (const zone of zones) {
+      const { group, bounds } = zone;
       const x = bounds.x + 8000;
       const y = bounds.y + 8000;
       const region = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "rect",
       );
-      region.setAttribute("class", "group-region");
+      // Zones nest (zones within zones): the depth is how many other
+      // zones contain this one, and the visual hierarchy must stay
+      // legible at a glance
+      const depth = zones.filter(
+        (/** @type {any} */ other) =>
+          other !== zone &&
+          other.bounds.x <= bounds.x &&
+          other.bounds.y <= bounds.y &&
+          other.bounds.x + other.bounds.width >= bounds.x + bounds.width &&
+          other.bounds.y + other.bounds.height >= bounds.y + bounds.height,
+      ).length;
+      region.setAttribute(
+        "class",
+        `group-region${depth > 0 ? ` depth-${Math.min(depth, 2)}` : ""}`,
+      );
       region.setAttribute("x", String(x));
       region.setAttribute("y", String(y));
       region.setAttribute("width", String(bounds.width));
