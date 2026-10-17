@@ -248,8 +248,11 @@ export class SpaceManager {
    * blobs — routed around the blockers (nodes not in the group) by a
    * grid BFS that first keeps a clear ring around them, falling back to
    * a tighter path and finally a straight corridor, and never covering a
-   * blocker's own cells. The same cell set answers the membership drop
-   * test, so the zone a user sees is exactly the zone that joins.
+   * blocker's own cells. The blockers keep a clearance ring, so the
+   * zone's boundary never touches a non-member's box — the dilation
+   * clips against the keep-out and the 45° bevels never cut into it.
+   * The same cell set answers the membership drop test, so the zone a
+   * user sees is exactly the zone that joins.
    *
    * @param {Array<{ x: number, y: number, size?: number }>} members The
    *   member nodes' positions (80px boxes unless size says otherwise).
@@ -267,6 +270,9 @@ export class SpaceManager {
     const dilate = options.dilate ?? 1;
     const memberCells = SpaceManager.rectCells(members, cell);
     const blockerCells = SpaceManager.rectCells(blockers, cell);
+    // The keep-out: a blocker's cells plus a clearance ring, so the
+    // zone's boundary stays a cell away from a non-member's box
+    const keepOut = SpaceManager.dilateSet(blockerCells, 1);
 
     // The raw member cells, connected: components of the undilated union
     // join through corridors before the dilation ring goes on, so the
@@ -275,13 +281,12 @@ export class SpaceManager {
     const components = SpaceManager.components(raw);
     /** @type {Set<string>} */
     const connected = new Set(components[0]);
-    const blockerRing = SpaceManager.dilateSet(blockerCells, 1);
     for (let k = 1; k < components.length; k++) {
       const target = components[k];
       // Tier 1: keep a clear ring around every blocker; tier 2: squeeze
       // between them; tier 3: a straight corridor — the zone stays one
       // region at almost any cost
-      let path = SpaceManager.corridor(connected, target, blockerRing);
+      let path = SpaceManager.corridor(connected, target, keepOut);
       if (!path) path = SpaceManager.corridor(connected, target, blockerCells);
       if (!path) path = SpaceManager.straightCorridor(connected, target);
       for (const step of path) {
@@ -290,16 +295,20 @@ export class SpaceManager {
       }
       for (const step of target) connected.add(step);
     }
-    // The dilation ring goes on the connected union last; a blocker's
-    // own cells are never covered, even when a corridor runs beside it
+    // The dilation ring goes on the connected union last, clipped by the
+    // keep-out: the zone never covers a blocker's clearance — except a
+    // cell the raw union itself earned (a member's own body beside a
+    // node, or a last-resort corridor)
     const cells = SpaceManager.dilateSet(raw, dilate);
-    for (const key of blockerCells) cells.delete(key);
+    for (const key of keepOut) {
+      if (!raw.has(key)) cells.delete(key);
+    }
 
     // The contour: rectilinear loops, corners beveled at 45° where the
-    // cut stays clear of members and blockers (Beck's world: horizontals,
-    // verticals, and 45° turns)
+    // cut stays clear of members and the keep-out (Beck's world:
+    // horizontals, verticals, and 45° turns)
     const loops = SpaceManager.zoneLoops(cells, cell);
-    const d = SpaceManager.zoneContour(loops, cell, memberCells, blockerCells);
+    const d = SpaceManager.zoneContour(loops, cell, memberCells, keepOut);
     let labelCell = null;
     for (const key of cells) {
       const [i, j] = key.split(",").map(Number);

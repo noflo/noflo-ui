@@ -68,6 +68,56 @@ describe("SpaceManager zone shapes (work document #35's tariff zones)", () => {
     );
   });
 
+  it("zoneShape: the zone keeps its distance from nodes that are not in the group", () => {
+    const sm = makeManager();
+    // A member and an outsider with a sub-cell gap: the member's
+    // dilation ring used to run right up to the outsider's box
+    const shape = sm.zoneShape([{ x: 0, y: 0 }], [{ x: 120, y: 0 }], {
+      cell: 40,
+      dilate: 1,
+    });
+    // The outsider's box starts at x=120 (cells 3,4); its clearance ring
+    // (cell 2) is keep-out — the zone's boundary retreats to x=80
+    for (const key of ["2,0", "2,1"]) {
+      assert.ok(
+        !shape.cells.has(key),
+        `the clearance cell ${key} stays out of the zone`,
+      );
+    }
+    // The member's own body stays in the zone
+    assert.ok(shape.cells.has("0,0"), "the member's core cell is covered");
+
+    // And when a corridor routes around a flanking outsider, its cells
+    // keep the clearance too: no zone cell outside the members' own
+    // bodies falls within the outsider's keep-out
+    const flanked = sm.zoneShape(
+      [
+        { x: 0, y: 0 },
+        { x: 400, y: 0 },
+      ],
+      [{ x: 200, y: 0 }],
+      { cell: 40, dilate: 1 },
+    );
+    const cores = SpaceManager.rectCells(
+      [
+        { x: 0, y: 0 },
+        { x: 400, y: 0 },
+      ],
+      40,
+    );
+    const keepOut = SpaceManager.dilateSet(
+      SpaceManager.rectCells([{ x: 200, y: 0 }], 40),
+      1,
+    );
+    for (const key of flanked.cells) {
+      if (cores.has(key)) continue;
+      assert.ok(
+        !keepOut.has(key),
+        `the zone cell ${key} keeps its distance from the outsider`,
+      );
+    }
+  });
+
   it("zoneShape: the contour stays at 45° and 90°, corners round slightly", () => {
     const sm = makeManager();
     // Two diagonal members: the staircase collapses into 45° runs
