@@ -677,6 +677,7 @@ metadata: Y.Map<{
   name: string;    // Human-readable name, defaults to the graph id
   parent: string;  // Parent graph id, empty string for root graphs
   created: number; // Creation timestamp
+  routes: Y.Map<string, { name: string, description?: string }>; // Per-graph route table (work document #35): route index -> the line's name and optional description; unnamed routes fall back to the Tube line defaults (work document #6). The route index itself lives on each wired connection's metadata (`route`)
 }>
 nodes: Y.Map<string, Y.Map<{ id: string, component: string, metadata: Y.Map }>>
 inports: Y.Map<string, Y.Map<{ process: string, port: string, metadata: Y.Map }>>
