@@ -54,11 +54,75 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     element.remove();
   });
 
-  it("renders the line's name once, at the top", () => {
+  it("the chart does not repeat the line's name — the accordion header carries it", () => {
     const element = diagramFor([{ source: "a", target: "b", route: 3 }], 3);
-    const names = [...element.shadowRoot.querySelectorAll(".line-name")];
-    assert.equal(names.length, 1);
-    assert.equal(names[0].textContent, "Central");
+    assert.equal(element.shadowRoot.querySelectorAll(".line-name").length, 0);
+    element.remove();
+  });
+
+  it("the four station kinds read distinctly", () => {
+    // a→b with an IIP into a, an export out of b, and another line at a:
+    // the IIP renders a lozenge, the export a square, the interchange
+    // an enlarged disc, and the plain node a disc
+    const element = diagramFor(
+      [
+        { source: "a", target: "b", route: 3, id: "e1" },
+        { source: "DATA->a:in[0]", target: "a", route: 3, id: "e-iip" },
+        { source: "b", target: "export:TestOut", route: 3, id: "e-exp" },
+        { source: "a", target: "z", route: 5 },
+      ],
+      3,
+    );
+    assert.equal(
+      element.shadowRoot.querySelectorAll(".mark-iip").length,
+      1,
+      "the IIP's lozenge",
+    );
+    assert.equal(
+      element.shadowRoot.querySelectorAll(".mark-export").length,
+      1,
+      "the export's square",
+    );
+    assert.equal(
+      element.shadowRoot.querySelectorAll(".mark-interchange").length,
+      1,
+      "a's interchange disc",
+    );
+    assert.ok(
+      element.shadowRoot.querySelector('[data-station-id="b"] .tick'),
+      "the plain node's disc",
+    );
+    element.remove();
+  });
+
+  it("the canvas selection highlights in the strip", () => {
+    const element = diagramFor(
+      [
+        { source: "a", target: "b", route: 3, id: "e1" },
+        { source: "b", target: "c", route: 3, id: "e2" },
+      ],
+      3,
+    );
+    element.highlightStations = new Set(["b"]);
+    element.highlightEdges = new Set(["e2"]);
+    element.render();
+    const hit = element.shadowRoot.querySelector('[data-station-id="b"]');
+    assert.ok(
+      hit.classList.contains("selected"),
+      "the selected station's mark fills",
+    );
+    const rail = element.shadowRoot.querySelector(
+      'line.rail[data-edge-id="e2"]',
+    );
+    assert.ok(
+      rail.classList.contains("selected"),
+      "the selected rail thickens",
+    );
+    const other = element.shadowRoot.querySelector('[data-station-id="a"]');
+    assert.ok(
+      !other.classList.contains("selected"),
+      "the unselected station stays plain",
+    );
     element.remove();
   });
 

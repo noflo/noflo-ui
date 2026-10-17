@@ -110,6 +110,41 @@ describe("FlowLinesCorner: the per-line diagrams (work document #35 update #14)"
     corner.remove();
   });
 
+  it("the canvas selection highlights in the diagram, and a station on the shown line keeps it", () => {
+    const corner = cornerFor();
+    const editor = document.createElement("div");
+    /** @type {any} */ (editor).selectionManager = {
+      nodes: new Set(["b"]),
+      edges: new Set(["a:out[0]->b:in[0]"]),
+      iips: new Set(),
+      ports: new Set(),
+      clear() {},
+      select() {},
+    };
+    corner.editor = editor;
+    corner.setSelection({ route: 3, station: null });
+    const diagram = /** @type {any} */ (
+      panelOf(corner).querySelector(".diagram-host noflo-line-diagram")
+    );
+    assert.ok(
+      diagram.highlightStations.has("b"),
+      "the selected station highlights",
+    );
+    assert.ok(
+      diagram.highlightEdges.has("a:out[0]->b:in[0]"),
+      "the selected wire highlights",
+    );
+    // Clicking that station inside the strip: the selection becomes the
+    // node, and the panel keeps the line instead of flipping to a list
+    corner.setSelection({ route: null, station: "b" });
+    assert.equal(corner._route, 3, "the line stays shown");
+    const diagram2 = /** @type {any} */ (
+      panelOf(corner).querySelector(".diagram-host noflo-line-diagram")
+    );
+    assert.ok(diagram2, "the diagram is still the strip, not the list");
+    corner.remove();
+  });
+
   it("an empty selection hides the corner", () => {
     const corner = cornerFor();
     corner.setSelection({ route: 3, station: null });

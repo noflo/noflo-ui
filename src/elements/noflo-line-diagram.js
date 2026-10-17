@@ -65,6 +65,14 @@ export class FlowLineDiagram extends HTMLElement {
     /** Resolves a station id to its display label. */
     /** @type {(id: string) => string} */
     this.labelFor = (id) => id;
+    /** The stations the canvas selection holds — their marks fill with
+     * the line's color. */
+    /** @type {Set<string>} */
+    this.highlightStations = new Set();
+    /** The wires the canvas selection holds — their rail segments
+     * thicken. */
+    /** @type {Set<string>} */
+    this.highlightEdges = new Set();
     /** @type {ResizeObserver | null} */
     this._resizeObserver = null;
   }
@@ -115,7 +123,7 @@ export class FlowLineDiagram extends HTMLElement {
         );
         rowOffset += BREAK_GAP;
       }
-      strips.push(this.renderComponent(component, rowOffset, index === 0));
+      strips.push(this.renderComponent(component, rowOffset));
       rowOffset += this.componentRows(component) + BRANCH_GAP;
     });
     const theme = document.body.getAttribute("data-theme") ?? "";
@@ -159,6 +167,43 @@ export class FlowLineDiagram extends HTMLElement {
           fill: var(--ui-bg, white);
           stroke: var(--edge-route);
           stroke-width: 4px;
+        }
+        /* The boundary marks: an IIP is the packet boundary (a lozenge
+           filled with the line's color), an exported port the system
+           boundary (the port-box square) */
+        .mark-iip {
+          fill: var(--edge-route);
+          stroke: var(--ui-bg, white);
+          stroke-width: 1.5px;
+        }
+        .mark-export {
+          fill: var(--ui-bg, white);
+          stroke: var(--edge-route);
+          stroke-width: 3px;
+        }
+        /* An interchange station reads bigger, its other lines ticking
+           beside it */
+        .mark-interchange {
+          stroke-width: 4px;
+        }
+        /* The canvas selection answers in the strip: the selected
+           station's disc fills with the line's color (the strongest
+           emphasis, guidelines §6), the selected rail thickens */
+        .hit.selected .tick,
+        .hit.selected .terminus-ring,
+        .hit.selected .mark-iip,
+        .hit.selected .mark-export {
+          fill: var(--edge-route);
+        }
+        .hit.selected .mark-export {
+          fill: var(--ui-bg, white);
+          stroke-width: 5px;
+        }
+        .hit.selected .label {
+          font-weight: bold;
+        }
+        .rail.selected {
+          stroke-width: 8px;
         }
         .label {
           font-size: 12px;
@@ -292,10 +337,9 @@ export class FlowLineDiagram extends HTMLElement {
    *
    * @param {import("../library/LineDiagram.js").LineComponent} component
    * @param {number} rowOffset
-   * @param {boolean} isMain The main run carries the line's name.
    * @returns {string}
    */
-  renderComponent(component, rowOffset, isMain) {
+  renderComponent(component, rowOffset) {
     /** The rails and connectors paint first; the stations paint on top,
      * so a click at a tick hits the station, not the rail's end. */
     /** @type {string[]} */
@@ -326,17 +370,30 @@ export class FlowLineDiagram extends HTMLElement {
           // The rail segment to the previous station carries the edge
           // that flows in: clicking it selects the wire
           railParts.push(
-            `<line x1="${railX}" y1="${y - ROW}" x2="${railX}" y2="${y}" class="rail" data-edge-id="${escapeHtml(station.via ?? "")}"></line>`,
+            `<line x1="${railX}" y1="${y - ROW}" x2="${railX}" y2="${y}" class="rail${this.highlightEdges.has(station.via ?? "") ? " selected" : ""}" data-edge-id="${escapeHtml(station.via ?? "")}"></line>`,
           );
         }
-        // The station mark: termini ring (the roundel unit), joins tick
-        // small, stops disc — the mark and its label select together
-        const mark =
-          station.kind === "terminus"
-            ? `<circle cx="${railX}" cy="${y}" r="9" class="terminus-ring"></circle>`
-            : station.kind === "join"
-              ? `<circle cx="${railX}" cy="${y}" r="4" class="tick"></circle>`
-              : `<circle cx="${railX}" cy="${y}" r="6" class="tick"></circle>`;
+        // The station mark reads what the station IS: an IIP is the
+        // packet boundary (a lozenge in the line's color), an exported
+        // port is the system boundary (the port-box square), an
+        // interchange station (other lines touch it) is a larger disc,
+        // a plain node a disc, a line's terminus the roundel ring, a
+        // join a small tick
+        const id = station.id;
+        let mark;
+        if (id.startsWith("DATA->")) {
+          mark = `<rect x="${railX - 7}" y="${y - 7}" width="14" height="14" transform="rotate(45 ${railX} ${y})" class="mark-iip"></rect>`;
+        } else if (id.startsWith("export:")) {
+          mark = `<rect x="${railX - 7}" y="${y - 7}" width="14" height="14" class="mark-export"></rect>`;
+        } else if (station.interchange.length > 0) {
+          mark = `<circle cx="${railX}" cy="${y}" r="8" class="tick mark-interchange"></circle>`;
+        } else if (station.kind === "terminus") {
+          mark = `<circle cx="${railX}" cy="${y}" r="9" class="terminus-ring"></circle>`;
+        } else if (station.kind === "join") {
+          mark = `<circle cx="${railX}" cy="${y}" r="4" class="tick"></circle>`;
+        } else {
+          mark = `<circle cx="${railX}" cy="${y}" r="6" class="tick"></circle>`;
+        }
         const label = escapeHtml(
           fitLabel(this.labelFor(station.id) || station.id, maxChars),
         );
@@ -344,8 +401,9 @@ export class FlowLineDiagram extends HTMLElement {
         // The hit rect makes the whole tick+label row clickable, not
         // just the painted pixels (pointer-events: all hits the
         // transparent fill)
+        const selectedStation = this.highlightStations.has(station.id);
         parts.push(
-          `<g class="hit" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
+          `<g class="hit${selectedStation ? " selected" : ""}" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect class="hit-row" x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
         );
         // The interchange ticks: the other lines serving this station,
         // small color bars left of the tick
@@ -428,13 +486,6 @@ export class FlowLineDiagram extends HTMLElement {
           `<path d="M ${first.x} ${last.y} L ${first.x - TURNOUT} ${last.y + TURNOUT} L ${first.x - TURNOUT} ${first.y - TURNOUT} L ${first.x} ${first.y}" class="connector"></path>`,
         );
       }
-    }
-    // The line's roundel: the name beside the main run's top terminus
-    if (isMain) {
-      const name = escapeHtml(this.routeName || "Line");
-      railParts.push(
-        `<text x="${RAIL_X + 16}" y="${yOf(0) - 16}" class="line-name">${name}</text>`,
-      );
     }
     return railParts.join("") + parts.join("");
   }

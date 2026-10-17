@@ -78,14 +78,34 @@ export class FlowLinesCorner extends FlowCornerElement {
   /**
    * The selection answer: a routed edge selects its line, a station
    * lists its lines. Nulls clear the panel. The corner discloses on
-   * selection and hides on clear.
+   * selection and hides on clear. A station whose lines include the
+   * line already shown keeps that diagram — clicking inside the strip
+   * must not flip the panel to the station's list.
    *
    * @param {{ route: number | null, station: string | null }} selection
    */
   setSelection(selection) {
-    this._route = typeof selection.route === "number" ? selection.route : null;
-    this._station = selection.station ?? null;
-    this._picked = null;
+    const route = typeof selection.route === "number" ? selection.route : null;
+    const station = selection.station ?? null;
+    if (route !== null) {
+      this._route = route;
+      this._station = station;
+      this._picked = null;
+    } else if (station !== null) {
+      const serving = this.stationLines(station).map((line) => line.route);
+      if (this._route !== null && serving.includes(this._route)) {
+        // The station rides the line already shown: keep the diagram
+        this._station = station;
+      } else {
+        this._station = station;
+        this._picked = null;
+        this._route = serving.length === 1 ? serving[0] : null;
+      }
+    } else {
+      this._route = null;
+      this._station = null;
+      this._picked = null;
+    }
     const visible = this._route !== null || this._station !== null;
     this.expanded = visible;
     this.setVisible(visible);
@@ -301,6 +321,20 @@ export class FlowLinesCorner extends FlowCornerElement {
           diagram.routeName = data.name;
           diagram.labelFor = data.labelFor;
           diagram.lines = data.lines;
+          // The canvas selection answers in the strip: the selected
+          // stations fill, the selected wires thicken
+          const selectionManager = /** @type {any} */ (this.editor)
+            ?.selectionManager;
+          if (selectionManager) {
+            diagram.highlightStations = new Set([
+              ...selectionManager.nodes,
+              ...selectionManager.iips,
+              ...[...selectionManager.ports].map(
+                (/** @type {string} */ p) => `export:${p}`,
+              ),
+            ]);
+            diagram.highlightEdges = new Set([...selectionManager.edges]);
+          }
           host.appendChild(diagram);
         }
       }
@@ -339,14 +373,14 @@ export class FlowLinesCorner extends FlowCornerElement {
           const id = /** @type {string} */ (e.detail.id);
           const selection = /** @type {any} */ (this.editor)?.selectionManager;
           if (!selection) return;
-          // A plain click replaces the selection
-          selection.clear();
+          // A plain click replaces the selection — one notification,
+          // so the panel's own state never sees an empty interlude
           if (id.startsWith("DATA->")) {
-            selection.select("iips", id, false);
+            selection.replace("iips", id);
           } else if (id.startsWith("export:")) {
-            selection.select("ports", id.slice(7), false);
+            selection.replace("ports", id.slice(7));
           } else {
-            selection.select("nodes", id, false);
+            selection.replace("nodes", id);
           }
         });
         diagram.addEventListener("edge-click", (/** @type {any} */ e) => {
@@ -355,13 +389,12 @@ export class FlowLinesCorner extends FlowCornerElement {
           const id = /** @type {string} */ (e.detail.edgeId);
           // Boundary segments select their wire: an IIP by its CRDT edge
           // id, an export by its port name; a plain click replaces
-          selection.clear();
           if (id.startsWith("DATA->")) {
-            selection.select("iips", id, false);
+            selection.replace("iips", id);
           } else if (id.startsWith("export:")) {
-            selection.select("ports", id.slice(7), false);
+            selection.replace("ports", id.slice(7));
           } else {
-            selection.select("edges", id, false);
+            selection.replace("edges", id);
           }
         });
       }

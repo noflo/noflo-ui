@@ -47,6 +47,20 @@ export class SelectionManager extends EventTarget {
   }
 
   /**
+   * Replaces the whole selection with one item, notifying once: the
+   * plain-click semantics (everything else deselects) without the
+   * intermediate empty-selection event a clear-then-select pair would
+   * fire — observers see only the final state.
+   * @param {'nodes'|'edges'|'iips'|'ports'} type
+   * @param {string} id
+   */
+  replace(type, id) {
+    this._clearSilently();
+    this[type].add(id);
+    this._notify();
+  }
+
+  /**
    * Toggles the selection state of an item
    * @param {'nodes'|'edges'|'iips'|'ports'} type
    * @param {string} id
