@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
+import { makeFakeIdb } from "./utils/fake-idb.js";
 import "../../src/elements/noflo-sync-panel.js";
 
 /**
@@ -108,10 +109,10 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     };
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: up to date (calm), peers, Owner, yjs, mesh, history —
-    // pending intents drop out
+    // Segments: up to date (calm), peers, Owner, the segment toggles —
+    // yjs, mesh, diagnostics, history — pending intents drop out
     const segments = shadow.querySelectorAll(".chip .seg");
-    assert.equal(segments.length, 6, "empty states drop out");
+    assert.equal(segments.length, 7, "empty states drop out");
     assert.match(chip.textContent ?? "", /up to date/);
     assert.match(chip.textContent ?? "", /2 peers/);
     assert.match(chip.textContent ?? "", /Owner/);
@@ -144,7 +145,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       "working locally is the offline-first normal, not an error",
     );
     // The status segment plus the segment toggles (work document #63)
-    assert.equal(shadow.querySelectorAll(".chip .seg").length, 4);
+    assert.equal(shadow.querySelectorAll(".chip .seg").length, 5);
     // A peer joined, bits moving: syncing (neutral)
     el.setPeers([PEER_HASH]);
     el.setSyncStatus({ connected: true, synced: false, peers: 1 });
@@ -802,6 +803,62 @@ describe("sync panel segment accordions (work document #63)", () => {
     });
     return el;
   }
+
+  it("the persisted diagnostics stream hydrates from the store (work document #63)", async () => {
+    // The panel's no-arg store open reads the global factory: seed it
+    const previous = globalThis.indexedDB;
+    globalThis.indexedDB = makeFakeIdb();
+    const { openDiagnosticsStore, resetDiagnosticsStore } = await import(
+      "../../src/glass/diagnosticsStore.js"
+    );
+    const { telemetryBus } = await import("../../src/glass/telemetryBus.js");
+    try {
+      resetDiagnosticsStore();
+      const store = await openDiagnosticsStore();
+      await store.append({
+        at: 1,
+        kind: "crash",
+        message: "a crash from the previous session",
+        status: "CRASH",
+        tone: "fail",
+      });
+      // A boot-era line rides the bus ring: its stamped time is later
+      // than the persisted record's, so the seam puts the store first
+      telemetryBus().publish("diagnostics", {
+        message: "session line",
+        status: "UP",
+        tone: "ok",
+      });
+      const el = makeElement();
+      feedConnected(el);
+      el.toggleSegment("diagnostics");
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const log = el.telemetryLog("diagnostics");
+      const text = log.shadowRoot?.textContent ?? "";
+      assert.match(
+        text,
+        /a crash from the previous session/,
+        "the persisted record renders — the log survives reloads",
+      );
+      assert.match(text, /CRASH/);
+      assert.match(
+        text,
+        /session line/,
+        "the ring's boot-era entry renders after the persisted history",
+      );
+      // Opening acknowledged the stream: closed again, the subscription
+      // drops
+      el.toggleSegment("diagnostics");
+      assert.equal(
+        /** @type {any} */ (el._telemetry).diagnostics.unsubscribe,
+        null,
+      );
+      el.remove();
+    } finally {
+      globalThis.indexedDB = previous;
+      resetDiagnosticsStore();
+    }
+  });
 
   it("the yjs segment opens its own accordion, not the panel", async () => {
     const el = await feedWires();

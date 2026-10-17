@@ -39,6 +39,12 @@ import "./elements/noflo-schema-view.js";
 import { NofloComponentView } from "./elements/noflo-component-view.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
+import {
+  connectivityWord,
+  installDiagnostics,
+  recordMeshState,
+} from "./glass/diagnostics.js";
+import { openDiagnosticsStore } from "./glass/diagnosticsStore.js";
 import { telemetryBus } from "./glass/telemetryBus.js";
 import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
@@ -111,6 +117,13 @@ let meshConfig = /** @type {any} */ (null);
 let meshIdentityHash = "";
 /** Mesh error reported by the Engine (e.g. WebCrypto without Ed25519). */
 let meshError = "";
+/** The last connectivity word the diagnostics log recorded — transitions
+ * only, so a chatty ingest does not spam the log. */
+let lastConnectivityWord = "";
+/** Whether the diagnostics log holds anything (persisted entries from
+ * earlier sessions count): the surface stays reachable even where the
+ * mesh is unused. */
+let diagnosticsPresent = false;
 /** Main-thread identity recovery attempted at most once per session. */
 let identityRecoveryAttempted = false;
 /** Peers awaiting an access decision, reported by the Engine. */
@@ -1335,15 +1348,39 @@ function refreshRuntimeCorner() {
 }
 
 /**
+ * Records a connectivity transition into the diagnostics log (work
+ * document #63's app diagnostics tenant): the connectivity word changes
+ * are the history — offline, syncing, up to date, mesh error — each with
+ * the peer count as the detail when one exists.
+ */
+function diagnoseConnectivity() {
+  const word = connectivityWord(syncStatus, meshError);
+  if (word === lastConnectivityWord) return;
+  lastConnectivityWord = word;
+  const peers = syncStatus?.peers;
+  const detail =
+    typeof peers === "number" && peers > 0
+      ? `${peers} peer${peers === 1 ? "" : "s"}`
+      : "";
+  recordMeshState(word, detail);
+  diagnosticsPresent = true;
+}
+
+/**
  * Feeds the corner sync/presence panel (work document #28) from the Glass's
  * mesh state: a pure view over the Engine's existing messages.
  */
 function refreshSyncPanel() {
   if (!syncPanel) return;
+  // The connectivity history rides the same feed: record the transition
+  // when the connectivity word changes (transitions only, never ticks)
+  diagnoseConnectivity();
   // Hidden until the mesh is in use: a device that never enabled sync
-  // shows no corner UI (work document #28's disclosure rules)
+  // shows no corner UI (work document #28's disclosure rules) — but the
+  // diagnostics log keeps the corner reachable (no silent failures)
   syncPanel.setVisible(
-    Boolean(meshConfig && (meshConfig.enabled || meshError)),
+    Boolean(meshConfig && (meshConfig.enabled || meshError)) ||
+      diagnosticsPresent,
   );
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
@@ -1814,6 +1851,28 @@ function activateScreen(screen, options = {}) {
 async function init() {
   applyAppearance();
   trackInputState();
+  // The Glass error boundary (work document #63's app diagnostics
+  // tenant): crash reports and connectivity history persist locally, and
+  // an unacknowledged crash badges the diagnostics accordion
+  installDiagnostics({
+    onCrash: () => {
+      diagnosticsPresent = true;
+      syncPanel?.crashAttention();
+      refreshSyncPanel();
+    },
+  });
+  openDiagnosticsStore()
+    .then((store) => store.any())
+    .then((any) => {
+      // A past crash or connectivity entry keeps the diagnostics surface
+      // reachable even where the mesh is unused (no silent failures)
+      if (!any) return;
+      diagnosticsPresent = true;
+      refreshSyncPanel();
+    })
+    .catch(() => {
+      // Storage refused: the boundary still records in memory
+    });
   const app = document.getElementById("app");
   if (!app) {
     console.error("App element not found");

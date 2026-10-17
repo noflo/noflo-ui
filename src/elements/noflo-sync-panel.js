@@ -21,6 +21,7 @@
 import icons from "../../vendor/fontawesome-icons.js";
 import QRCode from "../../vendor/qrcode.js";
 import { emit } from "../events.js";
+import { openDiagnosticsStore } from "../glass/diagnosticsStore.js";
 import { telemetryBus } from "../glass/telemetryBus.js";
 import { FlowCornerElement } from "./corner-element.js";
 import "./noflo-telemetry-log.js";
@@ -158,6 +159,20 @@ export class FlowSyncPanel extends FlowCornerElement {
         hint: "Announces and interface lifecycle heard on the mesh.",
         icon: "tower-broadcast",
         label: "mesh",
+      },
+      diagnostics: {
+        open: false,
+        unsubscribe: null,
+        log: null,
+        title: "App diagnostics",
+        hint: "Crash reports and connectivity history this device recorded — persisted across reloads.",
+        icon: "bug",
+        label: "diagnostics",
+        // The persisted stream: its history is the store, not the bus
+        // ring — the log survives reloads (work document #63's app
+        // diagnostics tenant)
+        persisted: true,
+        attention: false,
       },
     };
     /** Whether the edit-history accordion (undo/redo) is open. */
@@ -335,10 +350,26 @@ export class FlowSyncPanel extends FlowCornerElement {
   }
 
   /**
+   * Sets the mesh error line (plain language, not a stack trace).
+   *
    * @param {string} meshError
    */
   setMeshError(meshError) {
     this._meshError = meshError ?? "";
+    this.render();
+  }
+
+  /**
+   * Badges the diagnostics segment: an unacknowledged crash demands
+   * attention (work document #28's rule — no silent failures). Opening
+   * the accordion acknowledges it.
+   *
+   * @returns {void}
+   */
+  crashAttention() {
+    const stream = /** @type {any} */ (this._telemetry).diagnostics;
+    if (!stream || stream.open || stream.attention) return;
+    stream.attention = true;
     this.render();
   }
 
@@ -450,8 +481,13 @@ export class FlowSyncPanel extends FlowCornerElement {
     // its own toggle and names what it shows. Open reads calm; closed is
     // neutral
     for (const [id, stream] of Object.entries(this._telemetry)) {
+      const mood = /** @type {any} */ (stream).attention
+        ? "attention throb"
+        : /** @type {any} */ (stream).open
+          ? "calm"
+          : "";
       segments.push(
-        `<span class="seg ${stream.open ? "calm" : ""}" data-segment-toggle="${id}" role="button" tabindex="0" title="${stream.title}: ${stream.hint}">${icon(stream.icon)}<span class="label">${stream.label}</span></span>`,
+        `<span class="seg ${mood}" data-segment-toggle="${id}" role="button" tabindex="0" title="${/** @type {any} */ (stream).title}: ${/** @type {any} */ (stream).hint}">${icon(/** @type {any} */ (stream).icon)}<span class="label">${/** @type {any} */ (stream).label}</span></span>`,
       );
     }
     segments.push(
@@ -752,14 +788,38 @@ export class FlowSyncPanel extends FlowCornerElement {
     if (stream) {
       stream.open = !stream.open;
       if (stream.open) {
-        // Subscription-on-open: the bus replays its ring buffer as the
-        // history, then live traffic flows
-        this.telemetryLog(id).setHistory(telemetryBus().history(id));
-        stream.unsubscribe = telemetryBus().subscribe(
-          id,
-          (/** @type {any} */ entry) => this.telemetryLog(id).push(entry),
-          { history: false },
-        );
+        stream.attention = false;
+        if (stream.persisted) {
+          // The persisted stream's history is the store (the log survives
+          // reloads), bridged to the bus ring for this session's entries:
+          // the ring covers boot → now, the store covers before it, the
+          // seam is the ring's oldest timestamp
+          this.subscribeStream(id);
+          openDiagnosticsStore()
+            .then((store) => store.recent(150))
+            .then((records) => {
+              if (!stream.open) return;
+              const ring = telemetryBus().history(id);
+              const ringOldest = ring[0]?.time ?? Number.POSITIVE_INFINITY;
+              const older = records
+                .filter((/** @type {any} */ r) => r.at < ringOldest)
+                .map((/** @type {any} */ r) => ({
+                  time: r.at,
+                  message: r.message,
+                  status: r.status,
+                  tone: r.tone ?? "",
+                }));
+              this.telemetryLog(id).setHistory([...older, ...ring]);
+            })
+            .catch(() => {
+              // Storage refused: the ring's history still renders
+            });
+        } else {
+          // Subscription-on-open: the bus replays its ring buffer as the
+          // history, then live traffic flows
+          this.telemetryLog(id).setHistory(telemetryBus().history(id));
+          this.subscribeStream(id);
+        }
       } else {
         stream.unsubscribe?.();
         stream.unsubscribe = null;
@@ -770,6 +830,22 @@ export class FlowSyncPanel extends FlowCornerElement {
       return;
     }
     this.render();
+  }
+
+  /**
+   * The live-only subscription one stream: closed telemetry costs
+   * nothing, open telemetry takes the traffic as it flows.
+   *
+   * @param {string} id
+   */
+  subscribeStream(id) {
+    const stream = /** @type {any} */ (this._telemetry)[id];
+    stream.unsubscribe?.();
+    stream.unsubscribe = telemetryBus().subscribe(
+      id,
+      (/** @type {any} */ entry) => this.telemetryLog(id).push(entry),
+      { history: false },
+    );
   }
 
   /**
