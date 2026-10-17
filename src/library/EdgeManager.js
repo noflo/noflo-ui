@@ -11,6 +11,8 @@
  * @property {HTMLElement} portA
  * @property {HTMLElement} portB
  * @property {number} [routeId] The route index (0-9) coloring the edge.
+ * @property {SVGPathElement} [casingPath] The contrast casing under a
+ *   routed wire (guidelines §6).
  */
 
 /**
@@ -20,6 +22,8 @@
  * @property {HTMLElement} iip
  * @property {HTMLElement} port
  * @property {number} [routeId] The route index coloring the wire.
+ * @property {SVGPathElement} [casingPath] The contrast casing under a
+ *   routed wire (guidelines §6).
  */
 
 /**
@@ -95,17 +99,16 @@ export class EdgeManager {
     const hitPath = this._createPath("edge-hit-area");
     const visualPath = this._createPath("edge-flow");
 
-    this._updatePathBetween(hitPath, visualPath, portA, portB);
-
-    if (routeId !== undefined) {
-      visualPath.style.setProperty("--edge-color", `var(--route-${routeId})`);
-    }
+    this._updatePathBetween(hitPath, visualPath, portA, portB, undefined);
 
     this.edgesGroup.appendChild(hitPath);
     this.edgesGroup.appendChild(visualPath);
 
     /** @type {Edge} */
     const edge = { hitPath, visualPath, portA, portB, routeId };
+    if (routeId !== undefined) {
+      this.applyRoute(edge, routeId);
+    }
     this.edges.push(edge);
     return edge;
   }
@@ -209,18 +212,57 @@ export class EdgeManager {
     const hitPath = this._createPath("edge-hit-area");
     const visualPath = this._createPath("edge-flow");
 
-    this._updatePathBetween(hitPath, visualPath, iip, port);
-    if (routeId !== undefined && routeId !== null) {
-      visualPath.style.setProperty("--edge-color", `var(--route-${routeId})`);
-    }
+    this._updatePathBetween(hitPath, visualPath, iip, port, undefined);
 
     this.iipWiresGroup.appendChild(hitPath);
     this.iipWiresGroup.appendChild(visualPath);
 
     /** @type {IIPWire} */
     const wire = { hitPath, visualPath, iip, port, routeId };
+    if (routeId !== undefined && routeId !== null) {
+      this.applyRoute(wire, routeId);
+    }
     this.iipWires.push(wire);
     return wire;
+  }
+
+  /**
+   * Applies a route to a wire (work document #35): the stroke consumes
+   * `--edge-route` — the age rules mute or collapse it (guidelines §6) —
+   * and a routed wire carries the contrast casing, a 1–2px `--ui-border`
+   * under-stroke for the routes whose contrast cannot hold on their own
+   * (the light routes on tube white). Clearing the route removes the
+   * casing with it: unrouted wires never wear a route.
+   *
+   * @param {{ visualPath: SVGElement, casingPath?: SVGElement | null, routeId?: number, iip?: HTMLElement }} wire
+   *   An Edge or IIPWire record.
+   * @param {number | null | undefined} routeId
+   * @returns {void}
+   */
+  applyRoute(wire, routeId) {
+    const visualPath = wire.visualPath;
+    if (routeId === undefined || routeId === null) {
+      visualPath.style.removeProperty("--edge-route");
+      visualPath.classList.remove("routed");
+      wire.casingPath?.remove();
+      wire.casingPath = null;
+      wire.routeId = undefined;
+      return;
+    }
+    visualPath.style.setProperty("--edge-route", `var(--route-${routeId})`);
+    visualPath.classList.add("routed");
+    wire.routeId = routeId;
+    if (!wire.casingPath) {
+      const casingPath = this._createPath("edge-casing");
+      const group = wire.iip ? this.iipWiresGroup : this.edgesGroup;
+      // The casing paints under the wire: inserted before the visual path
+      group.insertBefore(casingPath, visualPath);
+      wire.casingPath = casingPath;
+    }
+    wire.casingPath.setAttribute(
+      "class",
+      `edge-casing route-casing-${routeId}`,
+    );
   }
 
   /**
@@ -305,6 +347,7 @@ export class EdgeManager {
         edge.visualPath,
         edge.portA,
         edge.portB,
+        edge.casingPath,
       );
     }
   }
@@ -317,6 +360,7 @@ export class EdgeManager {
         wire.visualPath,
         wire.iip,
         wire.port,
+        wire.casingPath,
       );
     }
   }
@@ -328,6 +372,7 @@ export class EdgeManager {
   removeEdge(edge) {
     edge.visualPath?.remove();
     edge.hitPath?.remove();
+    edge.casingPath?.remove();
     const index = this.edges.indexOf(edge);
     if (index > -1) {
       this.edges.splice(index, 1);
@@ -395,7 +440,13 @@ export class EdgeManager {
    * @param {HTMLElement} elA
    * @param {HTMLElement} elB
    */
-  _updatePathBetween(hitPath, visualPath, elA, elB) {
+  _updatePathBetween(
+    hitPath,
+    visualPath,
+    elA,
+    elB,
+    /** @type {SVGPathElement | undefined} */ casingPath,
+  ) {
     const posA = this.getPortPosition(elA);
     const posB = this.getPortPosition(elB);
 
@@ -408,6 +459,7 @@ export class EdgeManager {
     const d = `M ${posA.x} ${posA.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${posB.x} ${posB.y}`;
     hitPath.setAttribute("d", d);
     visualPath.setAttribute("d", d);
+    if (casingPath) casingPath.setAttribute("d", d);
   }
 
   /**
@@ -440,6 +492,7 @@ export class EdgeManager {
     for (const edge of this.edges.filter(predicate)) {
       edge.visualPath?.remove();
       edge.hitPath?.remove();
+      edge.casingPath?.remove();
     }
     this.edges = this.edges.filter((e) => !predicate(e));
   }
@@ -452,6 +505,7 @@ export class EdgeManager {
     for (const wire of this.iipWires.filter(predicate)) {
       wire.hitPath?.remove();
       wire.visualPath?.remove();
+      wire.casingPath?.remove();
     }
     this.iipWires = this.iipWires.filter((w) => !predicate(w));
   }

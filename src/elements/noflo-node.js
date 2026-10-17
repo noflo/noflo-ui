@@ -336,6 +336,35 @@ export class FlowNode extends HTMLElement {
     }
   }
 
+  /**
+   * The route lines terminating at this station (work document #35,
+   * guidelines §6): one roundel per route — the line's name is the
+   * redundant identity channel, rendered persistently at caption scale
+   * the way Tube maps label termini. The ring carries the route color;
+   * the name never rests on hue alone.
+   *
+   * @param {Array<{ route: number, name: string }>} termini
+   */
+  setRouteTermini(termini) {
+    this._routeTermini = termini ?? [];
+    this._renderRouteTermini();
+  }
+
+  /**
+   * Renders the roundel container in place — no full re-render, whose
+   * shadow rebuild would orphan the wires anchored at this node's ports.
+   */
+  _renderRouteTermini() {
+    const container = this.shadowRoot?.querySelector(".route-termini");
+    if (!container) return;
+    container.innerHTML = (this._routeTermini ?? [])
+      .map(
+        (/** @type {any} */ t) =>
+          `<span class="route-roundel" style="--roundel-color: var(--route-${t.route})" title="${escapeHtml(t.name)} (route ${t.route})">${escapeHtml(t.name)}</span>`,
+      )
+      .join("");
+  }
+
   render() {
     if (!this.shadowRoot) return;
     this.shadowRoot.innerHTML = `
@@ -420,6 +449,31 @@ export class FlowNode extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: var(--node-size, 80px);
+        }
+        /* The terminus roundels (work document #35, guidelines §6):
+           caption scale — the line name rides the node caption's own
+           size, so it survives down to the lowest zoom where nodes are
+           still resolvable. The ring carries the route hue; the name is
+           the identity */
+        .route-termini {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          opacity: clamp(0, (var(--zoom-scale) - 0.5) * 100, 1);
+        }
+        .route-roundel {
+          display: inline-flex;
+          align-items: center;
+          border: 2px solid var(--roundel-color, var(--ui-accent));
+          border-radius: 999px;
+          padding: 0 6px;
+          background: var(--ui-bg);
+          color: var(--node-text);
+          font-size: 10px;
+          line-height: 15px;
+          max-width: max-content;
+          white-space: nowrap;
         }
         .node-icon-fa {
           font-family: 'Font Awesome 7 Free';
@@ -758,6 +812,7 @@ export class FlowNode extends HTMLElement {
         </span>
         <span class="node-component"></span>
         <span class="node-status">${this.statusHtml()}</span>
+        <span class="route-termini"></span>
       </div>
       <div id="ports-container" style="position: absolute; top: 0; left: 0; width: var(--node-size, 80px); height: var(--node-size, 80px);"></div>
     `;

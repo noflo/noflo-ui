@@ -274,6 +274,17 @@
  */
 
 /**
+ * Appendix A extension (work document #35's route context): name a route
+ * — the per-graph route table in the graph's metadata; the name is route
+ * identity beyond hue (guidelines §6), rendered by the terminus roundels.
+ *
+ * @typedef {Object} IntentSetRouteNameMessage
+ * @property {'INTENT'} type
+ * @property {'setRouteName'} command
+ * @property {{ graphId: string, route: number, name: string, description?: string }} payload
+ */
+
+/**
  * Appendix A extension (work document #5 follow-up): IIP and exported
  * port positions sync like node positions.
  *
@@ -631,6 +642,7 @@
  *   | IntentUpdateGroupMessage
  *   | IntentSetEdgeRouteMessage
  *   | IntentSetPortRouteMessage
+ *   | IntentSetRouteNameMessage
  *   | IntentMoveIIPMessage
  *   | IntentMoveExportMessage
  *   | IntentSpliceNodeMessage
@@ -711,6 +723,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "updateGroup" },
   { type: "INTENT", command: "setEdgeRoute" },
   { type: "INTENT", command: "setPortRoute" },
+  { type: "INTENT", command: "setRouteName" },
   { type: "INTENT", command: "moveIIP" },
   { type: "INTENT", command: "moveExport" },
   { type: "INTENT", command: "spliceNode" },

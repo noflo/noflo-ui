@@ -592,7 +592,11 @@ export class FlowEditor extends HTMLElement {
         }
         .edge-flow {
           fill: none;
-          stroke: var(--edge-color);
+          /* The route channel (guidelines §6): a routed wire consumes
+             --edge-route so the age rules can mute or collapse the hue;
+             unrouted wires fall back to the cascade's --edge-color, which
+             the ages already grey */
+          stroke: var(--edge-ink, var(--edge-route, var(--edge-color)));
           stroke-width: calc(var(--edge-width, 4px) - 2px);
           stroke-dasharray: var(--edge-dash);
           pointer-events: none;
@@ -615,7 +619,41 @@ export class FlowEditor extends HTMLElement {
            route lights the whole line */
         .edge-flow.route-highlight {
           stroke-width: calc(var(--edge-width, 4px) + 2px);
-          filter: drop-shadow(0 0 6px var(--edge-color));
+          filter: drop-shadow(0 0 6px var(--edge-route, var(--edge-color)));
+        }
+        /* The route hues' age rules (guidelines §6): abstract mutes the
+           hue toward the canvas — bounded at 70% so the 3:1 floor holds
+           everywhere the casing doesn't already cover (tube routes 2, 3,
+           5, 6 carry the casing; computed against both palettes) — and
+           offline collapses a suspended line to grey ink regardless of
+           route. Golden keeps full strength: no rule */
+        .state-abstract .edge-flow.routed {
+          --edge-ink: color-mix(
+            in srgb,
+            var(--edge-route) 70%,
+            var(--ui-bg)
+          );
+        }
+        .state-offline .edge-flow {
+          --edge-ink: var(--edge-color);
+        }
+        /* The contrast casing: hidden everywhere, shown in tube for the
+           routes whose stroke cannot hold 3:1 against the white canvas —
+           pure or muted (Overground 2.79, Circle 1.44, DLR 3.06,
+           Victoria 3.26); contrast by geometry, without changing the hue.
+           Cyberpunk's palette holds 3:1 pure and muted: no casing */
+        .edge-casing {
+          fill: none;
+          stroke: var(--ui-border, rgb(58, 63, 72));
+          stroke-width: calc(var(--edge-width, 4px) + 3px);
+          pointer-events: none;
+          display: none;
+        }
+        :host([data-theme="tube"]) .edge-casing.route-casing-2,
+        :host([data-theme="tube"]) .edge-casing.route-casing-3,
+        :host([data-theme="tube"]) .edge-casing.route-casing-5,
+        :host([data-theme="tube"]) .edge-casing.route-casing-6 {
+          display: initial;
         }
         /* Pending state (work document #21): optimistic edges until the
            replica confirms the CRDT merge */
@@ -932,14 +970,7 @@ export class FlowEditor extends HTMLElement {
       );
       if (!wire) return;
       wire.routeId = route ?? undefined;
-      if (route !== null && route !== undefined) {
-        wire.visualPath.style.setProperty(
-          "--edge-color",
-          `var(--route-${route})`,
-        );
-      } else {
-        wire.visualPath.style.removeProperty("--edge-color");
-      }
+      this.edgeManager?.applyRoute(wire, route);
       // Exported ports wear their wire's route color on the ring
       // (guidelines §9); IIP chips keep their own visual
       if (/** @type {any} */ (wire.iip).tagName === "NOFLO-EXPORTED-PORT") {
@@ -958,14 +989,7 @@ export class FlowEditor extends HTMLElement {
       return;
     }
     edge.routeId = route ?? undefined;
-    if (route !== null && route !== undefined) {
-      edge.visualPath.style.setProperty(
-        "--edge-color",
-        `var(--route-${route})`,
-      );
-    } else {
-      edge.visualPath.style.removeProperty("--edge-color");
-    }
+    this.edgeManager?.applyRoute(edge, route);
     this._applySelection(this.selectionManager.getSnapshot());
   }
 
@@ -2012,6 +2036,17 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "palette",
           });
+          if (currentRoute !== null) {
+            // The route's name is identity beyond hue (guidelines §6):
+            // naming a line is right beside cycling it
+            items.push({
+              text: "Name route",
+              onClick: () => {
+                emit(this, "route-name-attempt", { route: currentRoute });
+              },
+              icon: "pen",
+            });
+          }
         } else {
           items.push({
             text: "Edit Component",

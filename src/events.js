@@ -96,6 +96,8 @@
  * @property {CustomEvent<{ edge: string, x: number, y: number }>} edge-menu-open
  * @property {CustomEvent<{ edgeId: string, route: number | null }>} set-edge-route
  * @property {CustomEvent<{ name: string, direction: string, route: number | null }>} set-port-route
+ * @property {CustomEvent<{ route: number }>} route-name-attempt
+ * @property {CustomEvent<{ route: number, name: string }>} route-named
  * @property {CustomEvent<{ edgeId: string, src: PortEndpoint, tgt: PortEndpoint, x: number, y: number }>} splice-node-attempt
  * @property {CustomEvent<{ x: number, y: number, type: "canvas" }>} canvas-menu-open
  * @property {CustomEvent<{ portA: Element, portB: Element }>} wire-connection-attempt

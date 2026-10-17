@@ -518,4 +518,71 @@ describe("edge routes (work document #35)", () => {
     });
     assert.ok(!ghost.accepted, "unknown edge refused");
   });
+
+  it("setRouteName stores the route table in the graph metadata", () => {
+    const { doc, send } = routeBoot();
+    const result = send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "main", route: 3, name: "Audio input" },
+    });
+    assert.ok(result.accepted);
+    const table = getGraph(doc, "main")?.get("metadata")?.get("routes");
+    assert.equal(table?.get("3")?.get("name"), "Audio input");
+  });
+
+  it("setRouteName updates and clears: empty falls back to the line default", () => {
+    const { doc, send } = routeBoot();
+    send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "main", route: 3, name: "Audio input" },
+    });
+    send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: {
+        graphId: "main",
+        route: 3,
+        name: "Audio",
+        description: "The microphone chain",
+      },
+    });
+    const table = getGraph(doc, "main")?.get("metadata")?.get("routes");
+    assert.equal(table?.get("3")?.get("name"), "Audio");
+    assert.equal(table?.get("3")?.get("description"), "The microphone chain");
+    const cleared = send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "main", route: 3, name: "  " },
+    });
+    assert.ok(cleared.accepted);
+    assert.equal(
+      table?.has("3"),
+      false,
+      "the empty name removes the custom entry",
+    );
+  });
+
+  it("setRouteName refuses invalid routes, names, and graphs", () => {
+    const { send } = routeBoot();
+    const badRoute = send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "main", route: 11, name: "x" },
+    });
+    assert.ok(!badRoute.accepted);
+    const badName = send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "main", route: 3, name: 42 },
+    });
+    assert.ok(!badName.accepted, "the name is a string");
+    const ghost = send({
+      type: "INTENT",
+      command: "setRouteName",
+      payload: { graphId: "nope", route: 3, name: "x" },
+    });
+    assert.ok(!ghost.accepted, "unknown graph refused");
+  });
 });

@@ -59,6 +59,7 @@ import {
   setEdgeRoute,
   setNodeComponent,
   setPortRoute,
+  setRouteName,
   setSchemaBody,
   setWorkDocTitle,
   transferNode,
@@ -156,6 +157,7 @@ const TRACKED_INTENTS = new Set([
   "updateGroup",
   "setEdgeRoute",
   "setPortRoute",
+  "setRouteName",
   "moveIIP",
   "moveExport",
   "spliceNode",
@@ -426,6 +428,7 @@ export const INTENT_HANDLERS = {
   implementAsGraph: intentImplementAsGraph,
   setEdgeRoute: intentSetEdgeRoute,
   setPortRoute: intentSetPortRoute,
+  setRouteName: intentSetRouteName,
   moveIIP: intentMoveIIP,
   moveExport: intentMoveExport,
   spliceNode: intentSpliceNode,
@@ -2591,6 +2594,37 @@ function intentSetEdgeRoute(doc, payload) {
     return { accepted: false, echoes: [] };
   }
   if (!setEdgeRoute(graph, edgeId, route)) {
+    return { accepted: false, echoes: [] };
+  }
+  return { accepted: true, echoes: [] };
+}
+
+/**
+ * Names a route (work document #35's route context): the per-graph route
+ * table in the graph's metadata carries the custom names the roundels
+ * render — route identity beyond hue (guidelines §6).
+ *
+ * @param {Y.Doc} doc
+ * @param {{ graphId?: string, route?: number, name?: string, description?: string }} payload
+ * @returns {{ accepted: boolean, echoes: never[] }}
+ */
+function intentSetRouteName(doc, payload) {
+  const { graphId, route, name, description } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof route !== "number" ||
+    !Number.isInteger(route) ||
+    route < 0 ||
+    route > 9 ||
+    typeof name !== "string"
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!setRouteName(graph, route, name, description)) {
     return { accepted: false, echoes: [] };
   }
   return { accepted: true, echoes: [] };

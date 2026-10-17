@@ -6,6 +6,11 @@
  * Source of Truth: CRDT vs. Files").
  */
 
+import {
+  routeTermini as computeRouteTermini,
+  routeName,
+} from "../library/routes.js";
+
 /**
  * Renders exported in/out ports just outside the node bounding box.
  *
@@ -60,6 +65,39 @@ function renderExportedPorts(ports, elementsMap, ed, x, y, direction) {
  */
 export function renderGraphIntoEditor(g, ed, getComponent) {
   const elementsMap = new Map();
+
+  // The route lines' termini (work document #35, guidelines §6): the
+  // roundel unit is the route terminus, not the edge — computed from the
+  // wired connections' route attachments before the nodes render
+  const routeAttachments = [];
+  for (const conn of g.edges ?? []) {
+    const route = conn.metadata?.route;
+    if (route === undefined || route === null) continue;
+    routeAttachments.push(
+      { route, nodeId: conn.from.node },
+      { route, nodeId: conn.to.node },
+    );
+  }
+  for (const iip of g.initializers ?? []) {
+    const route = iip.metadata?.route;
+    if (route === undefined || route === null || !iip.to?.node) continue;
+    // The IIP is the line's source; its node is the station end
+    routeAttachments.push({ route, nodeId: iip.to.node });
+  }
+  for (const direction of ["inports", "outports"]) {
+    for (const info of Object.values(g[direction] ?? {})) {
+      const route = info.metadata?.route;
+      if (route === undefined || route === null || !info.process) continue;
+      // The export dock is the line's other end; the process is the
+      // station end
+      routeAttachments.push({ route, nodeId: info.process });
+    }
+  }
+  const routeTermini = computeRouteTermini(routeAttachments);
+  const routeTable =
+    /** @type {Record<string, { name?: string }> | undefined} */ (
+      g.properties?.routes
+    );
 
   // Array instance fans grow with their attachments (work document #5):
   // an edge, an IIP, or an export occupying a slot counts, and at least
@@ -118,6 +156,18 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       icon: comp?.icon || "gear",
       componentName: node.component,
     });
+    // The station's line roundels (guidelines §6): the routes terminating
+    // here, named from the graph's route table or the Tube line default
+    const nodeTermini = [];
+    for (const [route, ends] of routeTermini) {
+      if (ends.has(node.id)) {
+        nodeTermini.push({ route, name: routeName(route, routeTable) });
+      }
+    }
+    if (nodeTermini.length > 0) {
+      nodeTermini.sort((a, b) => a.route - b.route);
+      n.setRouteTermini?.(nodeTermini);
+    }
     const nodeUsage = usage.get(node.id);
     if (nodeUsage) {
       n.setPortUsage(nodeUsage);

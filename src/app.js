@@ -71,9 +71,11 @@ import {
   openTextPrompt,
   setModalFeedback,
   wireExportRename,
+  wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
 import { LibraryManager } from "./library/LibraryManager.js";
+import { routeName as displayRouteName } from "./library/routes.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -1071,6 +1073,15 @@ async function render() {
     const view = projectGraph(mirrorDoc, activeGraphId);
     const ports = direction === "in" ? view?.inports : view?.outports;
     return Boolean(ports?.[name]);
+  });
+  // Route naming (work document #35's route context): the modal prefills
+  // with the route's current display name — custom when the graph's route
+  // table names it, the Tube line default otherwise
+  wireRouteNaming(ed, (route) => {
+    const table = /** @type {Record<string, { name?: string }> | undefined} */ (
+      projectGraph(mirrorDoc, activeGraphId)?.properties?.routes
+    );
+    return displayRouteName(route, table);
   });
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // The minimap tracks the same projection (work document #5)

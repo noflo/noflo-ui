@@ -194,3 +194,30 @@ export function wireExportRename(editor, isNameTaken = () => false) {
     }
   });
 }
+
+/**
+ * The route-naming flow (work document #35's route context): the editor's
+ * "Name route" menu item opens the single-line modal prefilled with the
+ * route's current name; the confirmed name emits back for the intent
+ * mapper. An unchanged or empty name renames nothing — empty means the
+ * custom name clears and the Tube line default takes over.
+ *
+ * @param {HTMLElement} editor
+ * @param {(route: number) => string} currentName Resolves the route's
+ *   current display name (custom when named, the Tube line default
+ *   otherwise).
+ * @returns {void}
+ */
+export function wireRouteNaming(editor, currentName) {
+  on(editor, "route-name-attempt", async (e) => {
+    const detail = /** @type {CustomEvent<{ route: number }>} */ (e).detail;
+    const route = detail.route;
+    const named = await openTextPrompt({
+      title: `Name route ${route}`,
+      value: currentName(route),
+      confirmLabel: "Name route",
+    });
+    if (named === null || named === currentName(route)) return;
+    emit(editor, "route-named", { route, name: named });
+  });
+}

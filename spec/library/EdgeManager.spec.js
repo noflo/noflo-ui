@@ -309,4 +309,70 @@ describe("EdgeManager", () => {
       assert.strictEqual(descriptor.toIndex, undefined);
     });
   });
+
+  describe("the route casing (work document #35, guidelines §6)", () => {
+    it("a routed edge carries the casing under its stroke", () => {
+      const { em, edgesGroup } = makeManager();
+      const portA = makePort({ direction: "out", name: "out" });
+      const portB = makePort({ direction: "in", name: "in" });
+      const edge = /** @type {any} */ (em.addEdge(portA, portB, 3));
+
+      assert.ok(edge.casingPath, "the casing path exists");
+      assert.ok(
+        edge.casingPath.classList.contains("route-casing-3"),
+        "the casing names its route for the per-theme CSS",
+      );
+      assert.match(
+        edge.visualPath.style.getPropertyValue("--edge-route") ?? "",
+        /--route-3/,
+        "the stroke consumes the route channel the age rules mute",
+      );
+      // Paint order: the casing sits before the visual path
+      const children = [...edgesGroup.childNodes];
+      assert.ok(
+        children.indexOf(edge.casingPath) < children.indexOf(edge.visualPath),
+        "the casing paints under the wire",
+      );
+    });
+
+    it("the casing tracks the wire's geometry", () => {
+      const { em, positions } = makeManager();
+      const portA = makePort({ direction: "out", name: "out" });
+      const portB = makePort({ direction: "in", name: "in" });
+      const edge = /** @type {any} */ (em.addEdge(portA, portB, 6));
+      positions.set(portA, { x: 0, y: 0 });
+      positions.set(portB, { x: 100, y: 0 });
+      em.updateEdges();
+      assert.equal(
+        edge.casingPath.getAttribute("d"),
+        edge.visualPath.getAttribute("d"),
+        "the casing follows the wire",
+      );
+    });
+
+    it("clearing the route removes the casing: unrouted wires never wear a route", () => {
+      const { em, edgesGroup } = makeManager();
+      const portA = makePort({ direction: "out", name: "out" });
+      const portB = makePort({ direction: "in", name: "in" });
+      const edge = /** @type {any} */ (em.addEdge(portA, portB, 5));
+      em.applyRoute(edge, null);
+      assert.equal(edge.casingPath, null, "the casing is gone");
+      assert.equal(
+        edge.visualPath.style.getPropertyValue("--edge-route"),
+        "",
+        "the route channel is cleared",
+      );
+      assert.ok(!edgesGroup.contains(edge.casingPath));
+    });
+
+    it("an IIP wire's casing lands in the IIP group", () => {
+      const { em, iipWiresGroup } = makeManager();
+      const iip = document.createElement("noflo-iip");
+      const port = makePort({ direction: "in", name: "in" });
+      const wire = /** @type {any} */ (em.connectIIP(iip, port, 2));
+      assert.ok(wire.casingPath);
+      assert.ok(iipWiresGroup.contains(wire.casingPath));
+      assert.ok(wire.casingPath.classList.contains("route-casing-2"));
+    });
+  });
 });

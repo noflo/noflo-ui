@@ -1762,6 +1762,69 @@ export function setEdgeRoute(graph, edgeId, route) {
 }
 
 /**
+ * Names a route (work document #35's route context): the per-graph route
+ * table in the graph's metadata — index-keyed records carrying a name and
+ * an optional description — surfaced by the roundels and the route
+ * visualizer. The name is route identity beyond hue (guidelines §6);
+ * an empty name clears the custom entry, falling back to the Tube line
+ * name default.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {number} route The route index 0-9.
+ * @param {string} name The custom name; empty removes it.
+ * @param {string} [description] Optional description (tooltips).
+ * @returns {boolean} Whether the route index is valid and the value
+ *   changed.
+ */
+export function setRouteName(graph, route, name, description) {
+  if (
+    typeof route !== "number" ||
+    !Number.isInteger(route) ||
+    route < 0 ||
+    route > 9
+  ) {
+    return false;
+  }
+  const metadata = /** @type {Y.Map<any> | undefined} */ (
+    graph.get("metadata")
+  );
+  if (!metadata) return false;
+  const trimmed = String(name ?? "").trim();
+  const table = /** @type {Y.Map<any> | undefined} */ (metadata.get("routes"));
+  if (!trimmed) {
+    // The empty name clears the custom entry: the default (the Tube line
+    // name) takes over
+    if (!table?.has(String(route))) return true;
+    transact(table, () => table.delete(String(route)));
+    return true;
+  }
+  const plain = table?.get(String(route));
+  const next = {
+    name: trimmed,
+    ...(description ? { description: String(description) } : {}),
+  };
+  if (
+    plain &&
+    typeof plain.get === "function" &&
+    plain.get("name") === next.name &&
+    (plain.get("description") ?? "") === (next.description ?? "")
+  ) {
+    return true;
+  }
+  transact(metadata, () => {
+    const routes =
+      table ??
+      (() => {
+        const created = metadataMap({});
+        metadata.set("routes", created);
+        return created;
+      })();
+    routes.set(String(route), metadataMap(next));
+  });
+  return true;
+}
+
+/**
  * Sets an exported port's route (work document #35): the route index
  * colors the export wire and drives the route highlighting; null clears
  * it.

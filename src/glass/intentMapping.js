@@ -596,6 +596,19 @@ export function createIntentMapper({
           },
         });
       });
+      on(ed, "route-named", (e) => {
+        // The route table rides the graph's metadata (work document #35's
+        // route context) — the name is route identity beyond hue
+        sendIntent({
+          type: "INTENT",
+          command: "setRouteName",
+          payload: {
+            graphId: graphId(),
+            route: e.detail.route,
+            name: e.detail.name,
+          },
+        });
+      });
       on(ed, "splice-node-attempt", async (e) => {
         const { edgeId, src, tgt, x, y } = e.detail;
         // The edge's datatypes drive the guiding and the wiring
