@@ -75,6 +75,8 @@ export class FlowLineDiagram extends HTMLElement {
     this.highlightEdges = new Set();
     /** @type {ResizeObserver | null} */
     this._resizeObserver = null;
+    /** @type {MutationObserver | null} */
+    this._ageObserver = null;
   }
 
   connectedCallback() {
@@ -89,12 +91,32 @@ export class FlowLineDiagram extends HTMLElement {
       });
       this._resizeObserver.observe(this);
     }
+    // The environment age (guidelines §5) rides the host as the state
+    // class the ink rules consume; the body observer keeps it in step
+    this._mirrorAge();
+    this._ageObserver = new MutationObserver(() => this._mirrorAge());
+    if (typeof document !== "undefined" && document.body) {
+      this._ageObserver.observe(document.body, { attributes: true });
+    }
     this.render();
+  }
+
+  /**
+   * Mirrors the body's data-age onto the host as the state-<age> class.
+   */
+  _mirrorAge() {
+    const age = document.body?.getAttribute("data-age") ?? "abstract";
+    for (const cls of [...this.classList]) {
+      if (cls.startsWith("state-")) this.classList.remove(cls);
+    }
+    this.classList.add(`state-${age}`);
   }
 
   disconnectedCallback() {
     this._resizeObserver?.disconnect();
     this._resizeObserver = null;
+    this._ageObserver?.disconnect();
+    this._ageObserver = null;
   }
 
   /**
@@ -132,6 +154,25 @@ export class FlowLineDiagram extends HTMLElement {
         :host {
           display: block;
           --edge-route: ${routeVar};
+          /* The ink the strip draws with: the age rules act here exactly
+             as they act on the wires (guidelines §6, §5) — abstract
+             mutes the hue toward the canvas bounded at 70%, offline
+             collapses a suspended line to grey ink, crashed reads in
+             the theme's error red, golden keeps full strength */
+          --edge-ink: var(--edge-route);
+        }
+        :host(.state-abstract) {
+          --edge-ink: color-mix(
+            in srgb,
+            var(--edge-route) 70%,
+            var(--ui-bg)
+          );
+        }
+        :host(.state-offline) {
+          --edge-ink: var(--ui-age-offline, var(--ui-text-muted, grey));
+        }
+        :host(.state-crashed) {
+          --edge-ink: var(--ui-age-crashed, var(--ui-accent));
         }
         .scroll {
           max-height: 60vh;
@@ -149,23 +190,23 @@ export class FlowLineDiagram extends HTMLElement {
           pointer-events: none;
         }
         .rail {
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 5px;
           fill: none;
         }
         .spur {
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 3px;
           fill: none;
         }
         .tick {
           fill: var(--ui-bg, white);
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 3px;
         }
         .terminus-ring {
           fill: var(--ui-bg, white);
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 4px;
         }
         /* The boundary marks, in the canvas's own grammar: the IIP's
@@ -173,13 +214,13 @@ export class FlowLineDiagram extends HTMLElement {
            socket ring — smaller than a station — hollow like the
            canvas's socket */
         .mark-iip {
-          fill: var(--edge-route);
+          fill: var(--edge-ink);
           stroke: var(--ui-bg, white);
           stroke-width: 1px;
         }
         .mark-export {
           fill: var(--ui-bg, white);
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 3px;
         }
         /* An interchange station reads bigger, its other lines ticking
@@ -194,11 +235,14 @@ export class FlowLineDiagram extends HTMLElement {
         .hit.selected .terminus-ring,
         .hit.selected .mark-iip,
         .hit.selected .mark-export {
-          fill: var(--edge-route);
+          fill: var(--edge-ink);
         }
         .hit.selected .mark-export {
           fill: var(--ui-bg, white);
           stroke-width: 5px;
+        }
+        .hit.selected .mark-iip {
+          fill: var(--edge-ink);
         }
         .hit.selected .label {
           font-weight: bold;
@@ -217,7 +261,7 @@ export class FlowLineDiagram extends HTMLElement {
           stroke-width: 3px;
         }
         .connector {
-          stroke: var(--edge-route);
+          stroke: var(--edge-ink);
           stroke-width: 2px;
           fill: none;
         }

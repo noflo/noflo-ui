@@ -266,6 +266,35 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     element.remove();
   });
 
+  it("the environment age rides the host and the ink rules follow the wires' rules", () => {
+    const element = diagramFor([{ source: "a", target: "b", route: 3 }], 3);
+    // The host mirrors the body's data-age as the state class
+    document.body.setAttribute("data-age", "abstract");
+    element._mirrorAge();
+    assert.ok(
+      element.classList.contains("state-abstract"),
+      "the abstract age rides the host",
+    );
+    const style = element.shadowRoot.querySelector("style").textContent;
+    // The age rules act on the ink the strip draws with, exactly as on
+    // the wires: abstract mutes bounded at 70%, offline collapses to
+    // grey, crashed reads in the error semantic, golden keeps full
+    assert.match(style, /:host\(\.state-abstract\) \{[^}]*color-mix/);
+    assert.match(style, /:host\(\.state-offline\) \{[^}]*--ui-age-offline/);
+    assert.match(style, /:host\(\.state-crashed\) \{[^}]*--ui-age-crashed/);
+    assert.match(style, /--edge-ink: var\(--edge-route\);/);
+    // The strokes consume the ink indirection, not the route variable
+    assert.match(style, /\.rail \{[^}]*var\(--edge-ink\)/);
+    // The age returns
+    document.body.setAttribute("data-age", "golden");
+    element._mirrorAge();
+    assert.ok(
+      element.classList.contains("state-golden"),
+      "the golden age rides the host",
+    );
+    element.remove();
+  });
+
   it("the rail carries the line's route color variable", () => {
     const element = diagramFor([{ source: "a", target: "b", route: 6 }], 6);
     assert.ok(
