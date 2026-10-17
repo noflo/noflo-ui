@@ -263,6 +263,9 @@ export class FlowLineDiagram extends HTMLElement {
         .rail.selected {
           stroke-width: 8px;
         }
+        .spur.selected {
+          stroke-width: 7px;
+        }
         .label {
           font-size: 12px;
         }
@@ -520,8 +523,9 @@ export class FlowLineDiagram extends HTMLElement {
           if (from) {
             const firstY = yOf(startRow);
             const drop = spurRail - from.x;
+            const turnoutEdge = spur.stations[0].via ?? "";
             railParts.push(
-              `<path d="M ${from.x} ${from.y} L ${spurRail} ${from.y + drop} L ${spurRail} ${firstY}" class="spur" data-edge-id="${escapeHtml(spur.stations[0].via ?? "")}"></path>`,
+              `<path d="M ${from.x} ${from.y} L ${spurRail} ${from.y + drop} L ${spurRail} ${firstY}" class="spur${this.highlightEdges.has(turnoutEdge) ? " selected" : ""}" data-edge-id="${escapeHtml(turnoutEdge)}"></path>`,
             );
           }
           row = drawChain(

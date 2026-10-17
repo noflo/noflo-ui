@@ -184,10 +184,16 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     const dx = points[1][0] - points[0][0];
     const dy = points[1][1] - points[0][1];
     assert.ok(dx > 0 && dx === dy, `the turnout opens at 45° (${dx}, ${dy})`);
-    // The turnout selects the branch's incoming wire
+    // The turnout selects the branch's incoming wire — and thickens
+    // with the selection like the rails do
+    const turnoutEdge = spurs[0].getAttribute("data-edge-id");
+    assert.ok(turnoutEdge.length > 0, "the turnout carries the branch's edge");
+    element.highlightEdges = new Set([turnoutEdge]);
+    element.render();
+    const selectedSpur = element.shadowRoot.querySelector("path.spur");
     assert.ok(
-      spurs[0].getAttribute("data-edge-id").length > 0,
-      "the turnout carries the branch's edge",
+      selectedSpur.classList.contains("selected"),
+      "the selected turnout thickens",
     );
     // The spur's station label renders too
     assert.ok(
