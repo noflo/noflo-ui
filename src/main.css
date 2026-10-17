@@ -270,6 +270,11 @@ body[data-input="mouse"] {
   --route-7: rgb(0, 54, 136);
   --route-8: rgb(105, 80, 161);
   --route-9: rgb(155, 0, 86);
+
+  /* The tariff zone fill (work document #35): the Underground's
+     fare-zone grey — zones render as solid areas, no borders, the way
+     zones 2+ read on the map */
+  --group-zone-fill: rgb(217, 217, 217);
 }
 
 /* Age Overrides */

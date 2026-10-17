@@ -483,17 +483,17 @@ export class FlowEditor extends HTMLElement {
         }
         /* Tube: the fare-zone grammar — bold black border, sharp corners,
            the canvas's own white, no glow */
+        /* Tube: the fare-zone grammar — solid light-grey areas with no
+           border, the way zones 2+ read on the Underground map; a nested
+           zone fills white, reading as zone 1 inside the grey */
         :host([data-theme="tube"]) .group-region {
-          fill: white;
-          stroke: black;
-          stroke-width: 3px;
+          fill: var(--group-zone-fill, rgb(217, 217, 217));
+          stroke: none;
           filter: none;
         }
-        :host([data-theme="tube"]) .group-region.depth-1 {
-          stroke-width: 2px;
-        }
+        :host([data-theme="tube"]) .group-region.depth-1,
         :host([data-theme="tube"]) .group-region.depth-2 {
-          stroke-width: 1.5px;
+          fill: var(--ui-bg, white);
         }
         .group-label {
           fill: var(--node-text);
@@ -3035,26 +3035,37 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
-   * Computes a group's zone cells: the members' occupied grid cells
-   * dilated by the padding ring (work document #35's tariff zones) — the
-   * union of the members' areas, so the zone hugs its stations and flows
-   * around nodes that are not in the group.
+   * Computes a group's zone shape (work document #35's tariff zones):
+   * the members' occupied grid cells dilated by the padding ring, with
+   * corridors connecting members that would otherwise form disconnected
+   * blobs — routed around the nodes that are not in the group.
    *
    * @param {{ id: string, name: string, nodes: string[] }} group
-   * @returns {Set<string> | null} The occupied cells, or null when no
-   *   member is placed.
+   * @returns {{ cells: Set<string>, d: string, labelCell: { i: number, j: number } | null } | null}
+   *   Null when no member is placed.
    */
-  zoneCellsFor(group) {
-    const members = group.nodes
-      .map((id) => this.nodeLayer?.querySelector(`[name="${id}"]`))
-      .filter((/** @type {any} */ node) => node?.position)
-      .map((/** @type {any} */ node) => ({
-        x: node.position.x,
-        y: node.position.y,
-        size: 80,
-      }));
+  zoneShapeFor(group) {
+    const memberIds = new Set(group.nodes);
+    /** @type {Array<{ x: number, y: number, size: number }>} */
+    const members = [];
+    /** @type {Array<{ x: number, y: number, size: number }>} */
+    const blockers = [];
+    for (const node of /** @type {any} */ (
+      this.nodeLayer?.querySelectorAll("noflo-node") ?? []
+    )) {
+      if (!node.position) continue;
+      const box = { x: node.position.x, y: node.position.y, size: 80 };
+      if (memberIds.has(node.getAttribute("name") ?? "")) {
+        members.push(box);
+      } else {
+        blockers.push(box);
+      }
+    }
     if (members.length === 0) return null;
-    return this.spaceManager.zoneCells(members, { cell: 40, dilate: 1 });
+    return this.spaceManager.zoneShape(members, blockers, {
+      cell: 40,
+      dilate: 1,
+    });
   }
 
   /**
@@ -3109,7 +3120,7 @@ export class FlowEditor extends HTMLElement {
       // The membership test reads the zone's cells, not a bounding box:
       // the zone a user sees is exactly the zone that joins (work
       // document #35's tariff zones)
-      const cells = this.zoneCellsFor(group);
+      const cells = this.zoneShapeFor(group)?.cells;
       if (!cells) continue;
       /** @type {string[]} */
       const add = [];
@@ -3166,8 +3177,8 @@ export class FlowEditor extends HTMLElement {
       // bounding box. The coordinates are graph coords — the groups
       // layer's −8000 CSS offset and the <g>'s translate(8000,8000)
       // cancel, exactly like the edges layer's
-      const cells = this.zoneCellsFor(group);
-      if (!cells) continue;
+      const shape = this.zoneShapeFor(group);
+      if (!shape) continue;
       const region = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "path",
@@ -3187,23 +3198,13 @@ export class FlowEditor extends HTMLElement {
         "class",
         `group-region${depth > 0 ? ` depth-${Math.min(depth, 2)}` : ""}`,
       );
-      region.setAttribute("d", this.spaceManager.zoneOutline(cells));
+      region.setAttribute("d", shape.d);
       region.setAttribute("fill-rule", "evenodd");
       region.setAttribute("data-group-id", group.id);
       layer.appendChild(region);
       // The label sits on the zone's topmost-leftmost occupied cell — an
       // L-shaped zone's bounding-box corner may be empty
-      let labelCell = null;
-      for (const key of cells) {
-        const [i, j] = key.split(",").map(Number);
-        if (
-          !labelCell ||
-          j < labelCell.j ||
-          (j === labelCell.j && i < labelCell.i)
-        ) {
-          labelCell = { i, j };
-        }
-      }
+      const labelCell = shape.labelCell;
       const label = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "text",

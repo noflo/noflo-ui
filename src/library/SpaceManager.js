@@ -242,43 +242,118 @@ export class SpaceManager {
   }
 
   /**
-   * The zone cells for a group (work document #35's tariff zones): the
-   * members' occupied grid cells dilated by a padding ring — the union of
-   * the members' areas, so the zone hugs its stations and flows around
-   * nodes that are not in the group instead of covering them. The same
-   * cell set answers the membership drop test, so the zone a user sees is
-   * exactly the zone that joins.
+   * The zone shape for a group (work document #35's tariff zones): the
+   * members' occupied grid cells dilated by a padding ring, with
+   * corridors connecting members that would otherwise form disconnected
+   * blobs — routed around the blockers (nodes not in the group) by a
+   * grid BFS that first keeps a clear ring around them, falling back to
+   * a tighter path and finally a straight corridor, and never covering a
+   * blocker's own cells. The same cell set answers the membership drop
+   * test, so the zone a user sees is exactly the zone that joins.
    *
    * @param {Array<{ x: number, y: number, size?: number }>} members The
    *   member nodes' positions (80px boxes unless size says otherwise).
+   * @param {Array<{ x: number, y: number, size?: number }>} blockers The
+   *   non-member nodes' positions — the corridors route around them and
+   *   their cells are never covered.
    * @param {{ cell?: number, dilate?: number }} [options] The grid cell
    *   size and the padding ring in cells (1 = 40px).
-   * @returns {Set<string>} The occupied cells as "i,j" grid indices.
+   * @returns {{ cells: Set<string>, d: string, labelCell: { i: number, j: number } | null }}
+   *   The occupied cells (membership test), the beveled 45° contour path,
+   *   and the zone's topmost-leftmost occupied cell for the label.
    */
-  zoneCells(members, options = {}) {
+  zoneShape(members, blockers = [], options = {}) {
     const cell = options.cell ?? 40;
     const dilate = options.dilate ?? 1;
+    const memberCells = SpaceManager.rectCells(members, cell);
+    const blockerCells = SpaceManager.rectCells(blockers, cell);
+
+    // The raw member cells, connected: components of the undilated union
+    // join through corridors before the dilation ring goes on, so the
+    // ring does not have to swallow the gap to connect the members
+    const raw = new Set(memberCells);
+    const components = SpaceManager.components(raw);
+    /** @type {Set<string>} */
+    const connected = new Set(components[0]);
+    const blockerRing = SpaceManager.dilateSet(blockerCells, 1);
+    for (let k = 1; k < components.length; k++) {
+      const target = components[k];
+      // Tier 1: keep a clear ring around every blocker; tier 2: squeeze
+      // between them; tier 3: a straight corridor — the zone stays one
+      // region at almost any cost
+      let path = SpaceManager.corridor(connected, target, blockerRing);
+      if (!path) path = SpaceManager.corridor(connected, target, blockerCells);
+      if (!path) path = SpaceManager.straightCorridor(connected, target);
+      for (const step of path) {
+        raw.add(step);
+        connected.add(step);
+      }
+      for (const step of target) connected.add(step);
+    }
+    // The dilation ring goes on the connected union last; a blocker's
+    // own cells are never covered, even when a corridor runs beside it
+    const cells = SpaceManager.dilateSet(raw, dilate);
+    for (const key of blockerCells) cells.delete(key);
+
+    // The contour: rectilinear loops, corners beveled at 45° where the
+    // cut stays clear of members and blockers (Beck's world: horizontals,
+    // verticals, and 45° turns)
+    const loops = SpaceManager.zoneLoops(cells, cell);
+    const d = SpaceManager.zoneContour(loops, cell, memberCells, blockerCells);
+    let labelCell = null;
+    for (const key of cells) {
+      const [i, j] = key.split(",").map(Number);
+      if (
+        !labelCell ||
+        j < labelCell.j ||
+        (j === labelCell.j && i < labelCell.i)
+      ) {
+        labelCell = { i, j };
+      }
+    }
+    return { cells, d, labelCell };
+  }
+
+  /**
+   * The grid cells a set of boxes occupies.
+   *
+   * @param {Array<{ x: number, y: number, size?: number }>} boxes
+   * @param {number} cell
+   * @returns {Set<string>}
+   */
+  static rectCells(boxes, cell) {
     /** @type {Set<string>} */
     const cells = new Set();
-    for (const member of members) {
-      const size = member.size ?? 80;
-      const i0 = Math.floor(member.x / cell);
-      const j0 = Math.floor(member.y / cell);
-      const i1 = Math.floor((member.x + size - 1) / cell);
-      const j1 = Math.floor((member.y + size - 1) / cell);
+    for (const box of boxes) {
+      const size = box.size ?? 80;
+      const i0 = Math.floor(box.x / cell);
+      const j0 = Math.floor(box.y / cell);
+      const i1 = Math.floor((box.x + size - 1) / cell);
+      const j1 = Math.floor((box.y + size - 1) / cell);
       for (let i = i0; i <= i1; i++) {
         for (let j = j0; j <= j1; j++) {
           cells.add(`${i},${j}`);
         }
       }
     }
-    if (dilate <= 0) return cells;
+    return cells;
+  }
+
+  /**
+   * Dilates a cell set by the given ring width in cells.
+   *
+   * @param {Set<string>} cells
+   * @param {number} ring
+   * @returns {Set<string>}
+   */
+  static dilateSet(cells, ring) {
+    if (ring <= 0) return new Set(cells);
     /** @type {Set<string>} */
     const dilated = new Set(cells);
     for (const key of cells) {
       const [i, j] = key.split(",").map(Number);
-      for (let di = -dilate; di <= dilate; di++) {
-        for (let dj = -dilate; dj <= dilate; dj++) {
+      for (let di = -ring; di <= ring; di++) {
+        for (let dj = -ring; dj <= ring; dj++) {
           dilated.add(`${i + di},${j + dj}`);
         }
       }
@@ -287,16 +362,126 @@ export class SpaceManager {
   }
 
   /**
-   * Traces the rectilinear outline of an occupied-cell set into an SVG
-   * path: marching-edges chaining — every cell side facing an empty cell
-   * is a boundary segment, chained greedily into loops (one subpath per
-   * contour, holes included, `fill-rule: evenodd`-ready).
+   * The 4-connected components of a cell set.
    *
-   * @param {Set<string>} cells The occupied cells as "i,j" grid indices.
-   * @param {number} [cellSize]
-   * @returns {string} The path `d`.
+   * @param {Set<string>} cells
+   * @returns {Array<Set<string>>}
    */
-  zoneOutline(cells, cellSize = 40) {
+  static components(cells) {
+    /** @type {Array<Set<string>>} */
+    const components = [];
+    /** @type {Set<string>} */
+    const seen = new Set();
+    for (const key of cells) {
+      if (seen.has(key)) continue;
+      const component = new Set([key]);
+      seen.add(key);
+      const queue = [key];
+      while (queue.length > 0) {
+        const current = /** @type {string} */ (queue.shift());
+        const [i, j] = current.split(",").map(Number);
+        for (const [di, dj] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
+          const next = `${i + di},${j + dj}`;
+          if (cells.has(next) && !seen.has(next)) {
+            seen.add(next);
+            component.add(next);
+            queue.push(next);
+          }
+        }
+      }
+      components.push(component);
+    }
+    return components;
+  }
+
+  /**
+   * A BFS corridor from the connected set to a target component through
+   * cells not in `blocked`; null when no route exists. The path carries
+   * the intermediate cells (the endpoints are the sets themselves).
+   *
+   * @param {Set<string>} from
+   * @param {Set<string>} to
+   * @param {Set<string>} blocked
+   * @returns {Set<string>}
+   */
+  static corridor(from, to, blocked) {
+    /** @type {Map<string, string | null>} */
+    const cameFrom = new Map();
+    const queue = [];
+    for (const key of from) {
+      if (blocked.has(key)) continue;
+      cameFrom.set(key, null);
+      queue.push(key);
+    }
+    let goal = null;
+    while (queue.length > 0 && goal === null) {
+      const current = /** @type {string} */ (queue.shift());
+      const [i, j] = current.split(",").map(Number);
+      for (const [di, dj] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const next = `${i + di},${j + dj}`;
+        if (cameFrom.has(next) || blocked.has(next)) continue;
+        cameFrom.set(next, current);
+        if (to.has(next)) {
+          goal = next;
+          break;
+        }
+        queue.push(next);
+      }
+    }
+    if (goal === null) return new Set();
+    /** @type {Set<string>} */
+    const path = new Set();
+    let walk = goal;
+    while (walk !== null) {
+      path.add(walk);
+      const previous = cameFrom.get(walk);
+      if (previous === null || previous === undefined) break;
+      walk = previous;
+    }
+    return path;
+  }
+
+  /**
+   * The L-shaped corridor between the nearest pair of cells — the last
+   * resort when the grid has no free route at all.
+   *
+   * @param {Set<string>} from
+   * @param {Set<string>} to
+   * @returns {Set<string>}
+   */
+  static straightCorridor(from, to) {
+    const [fi, fj] = [...from][0].split(",").map(Number);
+    const [ti, tj] = [...to][0].split(",").map(Number);
+    /** @type {Set<string>} */
+    const path = new Set();
+    const stepI = fi <= ti ? 1 : -1;
+    for (let i = fi; i !== ti + stepI; i += stepI) path.add(`${i},${fj}`);
+    const stepJ = fj <= tj ? 1 : -1;
+    for (let j = fj; j !== tj + stepJ; j += stepJ) path.add(`${ti},${j}`);
+    return path;
+  }
+
+  /**
+   * Traces the rectilinear contour loops of an occupied-cell set:
+   * marching-edges chaining — every cell side facing an empty cell is a
+   * boundary segment, chained greedily into closed loops (one per
+   * contour, holes included).
+   *
+   * @param {Set<string>} cells
+   * @param {number} cellSize
+   * @returns {Array<Array<number[]>>} The loops as vertex lists.
+   */
+  static zoneLoops(cells, cellSize) {
     /** @type {Map<string, Array<number[]>>} */
     const edgesFrom = new Map();
     /** @param {number} fx @param {number} fy @param {number} tx @param {number} ty */
@@ -319,20 +504,92 @@ export class SpaceManager {
         addEdge(x + cellSize, y + cellSize, x, y + cellSize);
       if (!occupied(i - 1, j)) addEdge(x, y + cellSize, x, y);
     }
-    let d = "";
+    /** @type {Array<Array<number[]>>} */
+    const loops = [];
     while (edgesFrom.size > 0) {
       const [startKey] = edgesFrom.keys();
       const [sx, sy] = startKey.split(",").map(Number);
-      d += `M ${sx} ${sy} `;
+      /** @type {Array<number[]>} */
+      const loop = [[sx, sy]];
       let current = startKey;
       for (;;) {
         const list = edgesFrom.get(current);
         if (!list || list.length === 0) break;
         const next = /** @type {number[]} */ (list.shift());
         if (list.length === 0) edgesFrom.delete(current);
-        d += `L ${next[0]} ${next[1]} `;
+        loop.push([next[0], next[1]]);
         current = `${next[0]},${next[1]}`;
         if (current === startKey) break;
+      }
+      // The closing vertex repeats the start: drop it
+      loop.pop();
+      if (loop.length >= 3) loops.push(loop);
+    }
+    return loops;
+  }
+
+  /**
+   * Renders contour loops as an SVG path with 45° bevels: every
+   * perpendicular corner is cut at 45° where the cut stays clear of the
+   * members' and blockers' cells — a member's corner is never exposed
+   * and a non-member is never covered by a bevel. Staircases of unit
+   * cells collapse into straight 45° runs; larger corners chamfer.
+   *
+   * @param {Array<Array<number[]>>} loops
+   * @param {number} cellSize
+   * @param {Set<string>} memberCells
+   * @param {Set<string>} blockerCells
+   * @returns {string} The path `d`.
+   */
+  static zoneContour(loops, cellSize, memberCells, blockerCells) {
+    const safe = (/** @type {number} */ x, /** @type {number} */ y) => {
+      const key = `${Math.floor(x / cellSize)},${Math.floor(y / cellSize)}`;
+      return !memberCells.has(key) && !blockerCells.has(key);
+    };
+    let d = "";
+    for (const loop of loops) {
+      const n = loop.length;
+      /** @type {Array<number[]>} */
+      const out = [];
+      for (let k = 0; k < n; k++) {
+        const P = loop[(k - 1 + n) % n];
+        const V = loop[k];
+        const N = loop[(k + 1) % n];
+        const d1x = Math.sign(V[0] - P[0]);
+        const d1y = Math.sign(V[1] - P[1]);
+        const d2x = Math.sign(N[0] - V[0]);
+        const d2y = Math.sign(N[1] - V[1]);
+        // Collinear: keep the vertex, no bevel
+        if (d1x === d2x && d1y === d2y) {
+          out.push(V);
+          continue;
+        }
+        const len1 = Math.abs(V[0] - P[0]) + Math.abs(V[1] - P[1]);
+        const len2 = Math.abs(N[0] - V[0]) + Math.abs(N[1] - V[1]);
+        const leg = Math.min(cellSize, len1, len2);
+        const ax = V[0] - d1x * leg;
+        const ay = V[1] - d1y * leg;
+        const bx = V[0] + d2x * leg;
+        const by = V[1] + d2y * leg;
+        // The cut's cells must be clear of members and blockers: sample
+        // the diagonal (the endpoints sit on boundary edges)
+        const legal =
+          safe(ax + (V[0] - ax) / 2, ay + (V[1] - ay) / 2) &&
+          safe((ax + bx) / 2, (ay + by) / 2) &&
+          safe(bx + (V[0] - bx) / 2, by + (V[1] - by) / 2);
+        if (!legal) {
+          out.push(V);
+          continue;
+        }
+        // A unit-staircase corner (both legs one cell) vanishes into the
+        // diagonal; a longer corner keeps shortened edge stubs
+        if (ax !== P[0] || ay !== P[1]) out.push([ax, ay]);
+        if (bx !== N[0] || by !== N[1]) out.push([bx, by]);
+      }
+      if (out.length < 3) continue;
+      d += `M ${out[0][0]} ${out[0][1]} `;
+      for (let k = 1; k < out.length; k++) {
+        d += `L ${out[k][0]} ${out[k][1]} `;
       }
       d += "Z ";
     }

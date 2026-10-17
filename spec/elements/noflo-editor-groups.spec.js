@@ -25,11 +25,11 @@ describe("FlowEditor groups (work document #5 update #16)", () => {
     );
     // The zone's cells cover both members plus the dilation ring: the
     // member centers land inside, the ring around them too
-    const cells = ed.zoneCellsFor({
+    const cells = ed.zoneShapeFor({
       id: "g1",
       name: "Pipelining",
       nodes: ["A", "B"],
-    });
+    })?.cells;
     assert.ok(cells, "the zone cells compute");
     assert.ok(
       ed.spaceManager.pointInZone(cells, 600, 400),
@@ -56,11 +56,11 @@ describe("FlowEditor groups (work document #5 update #16)", () => {
     ed.addNode("B", "c/X", { x: 480, y: 0 });
     ed.setGroups([{ id: "g1", name: "Pipelining", nodes: ["A", "B"] }]);
 
-    const cells = ed.zoneCellsFor({
+    const cells = ed.zoneShapeFor({
       id: "g1",
       name: "Pipelining",
       nodes: ["A", "B"],
-    });
+    })?.cells;
     assert.ok(cells, "the zone cells compute");
     // The outsider's center (240, 40): the members' dilation rings reach
     // one cell (40px) into the gap, but the outsider's own cell stays
@@ -188,11 +188,15 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
     // glow
     assert.match(style, /\.group-region \{[^}]*8%, transparent/);
     assert.match(style, /\.group-region \{[^}]*drop-shadow/);
-    // Tube: the fare-zone grammar — bold black border, sharp corners, no
-    // glow, the canvas's own white
+    // Tube: the fare-zone grammar — solid light-grey areas with no
+    // border, the way zones 2+ read on the Underground map
     assert.match(
       style,
-      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*stroke: black/,
+      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*var\(--group-zone-fill/,
+    );
+    assert.match(
+      style,
+      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*stroke: none/,
     );
     // Zone labels render in the theme's panel typography
     assert.match(style, /\.group-label \{[^}]*SourceCodePro/);
