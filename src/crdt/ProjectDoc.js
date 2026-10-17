@@ -1660,6 +1660,23 @@ export function getGroup(graph, groupId) {
 }
 
 /**
+ * Renames a group (work document #35's zone labels are the group's name).
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} groupId
+ * @param {string} name
+ * @returns {boolean} Whether the group existed.
+ */
+export function renameGroup(graph, groupId, name) {
+  const group = getGroup(graph, groupId);
+  if (!group) return false;
+  const trimmed = String(name ?? "").trim();
+  if (group.get("name") === trimmed) return true;
+  transact(group, () => group.set("name", trimmed));
+  return true;
+}
+
+/**
  * Removes a group; its members stay in the graph.
  *
  * @param {Y.Map<any>} graph

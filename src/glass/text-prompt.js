@@ -196,6 +196,31 @@ export function wireExportRename(editor, isNameTaken = () => false) {
 }
 
 /**
+ * The group-naming flow (work document #35's zone labels): the group
+ * context menu's "Rename" opens the single-line modal prefilled with the
+ * group's current name; the confirmed name emits back for the intent
+ * mapper. An unchanged name renames nothing; empty keeps the "Group"
+ * fallback label.
+ *
+ * @param {HTMLElement} editor
+ * @param {(groupId: string) => string} currentName Resolves the group's
+ *   current name from the replica.
+ * @returns {void}
+ */
+export function wireGroupRename(editor, currentName) {
+  on(editor, "group-rename-attempt", async (e) => {
+    const detail = /** @type {CustomEvent<{ groupId: string }>} */ (e).detail;
+    const named = await openTextPrompt({
+      title: "Name group",
+      value: currentName(detail.groupId),
+      confirmLabel: "Name group",
+    });
+    if (named === null || named === currentName(detail.groupId)) return;
+    emit(editor, "group-renamed", { groupId: detail.groupId, name: named });
+  });
+}
+
+/**
  * The route-naming flow (work document #35's route context): the editor's
  * "Name route" menu item opens the single-line modal prefilled with the
  * route's current name; the confirmed name emits back for the intent

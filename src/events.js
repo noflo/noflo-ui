@@ -89,6 +89,8 @@
  * @property {CustomEvent<{ node: Element }>} edit-component-attempt
  * @property {CustomEvent<{ nodes: string[] }>} create-subgraph-attempt
  * @property {CustomEvent<{ nodes: string[] }>} create-group-attempt
+ * @property {CustomEvent<{ groupId: string }>} group-rename-attempt
+ * @property {CustomEvent<{ groupId: string, name: string }>} group-renamed
  * @property {CustomEvent<{ groupId: string }>} remove-group-attempt
  * @property {CustomEvent<{ memberships: Array<{ groupId: string, add: string[], remove: string[] }> }>} update-group-attempt
  * @property {CustomEvent<{ nodes: string[] }>} move-nodes-up-attempt

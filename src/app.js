@@ -71,6 +71,7 @@ import {
   openTextPrompt,
   setModalFeedback,
   wireExportRename,
+  wireGroupRename,
   wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
@@ -1082,6 +1083,14 @@ async function render() {
       projectGraph(mirrorDoc, activeGraphId)?.properties?.routes
     );
     return displayRouteName(route, table);
+  });
+  // Group naming (work document #35's zone labels): the group menu's
+  // Rename opens the modal prefilled with the group's current name
+  wireGroupRename(ed, (groupId) => {
+    const group = projectGraph(mirrorDoc, activeGraphId)?.groups?.find(
+      (/** @type {any} */ entry) => entry.id === groupId,
+    );
+    return group?.name ?? "";
   });
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // The minimap tracks the same projection (work document #5)

@@ -249,7 +249,7 @@
  * @typedef {Object} IntentUpdateGroupMessage
  * @property {'INTENT'} type
  * @property {'updateGroup'} command
- * @property {{ graphId: string, groupId: string, add?: string[], remove?: string[] }} payload
+ * @property {{ graphId: string, groupId: string, add?: string[], remove?: string[], name?: string }} payload
  */
 
 /**

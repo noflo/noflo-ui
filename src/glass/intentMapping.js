@@ -566,6 +566,17 @@ export function createIntentMapper({
           payload: { graphId: graphId(), nodeIds: e.detail.nodes },
         });
       });
+      on(ed, "group-renamed", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "updateGroup",
+          payload: {
+            graphId: graphId(),
+            groupId: e.detail.groupId,
+            name: e.detail.name,
+          },
+        });
+      });
       on(ed, "remove-group-attempt", (e) => {
         sendIntent({
           type: "INTENT",

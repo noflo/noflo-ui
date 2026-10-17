@@ -51,6 +51,7 @@ import {
   removeNode,
   removeNodeFromGroups,
   removeSchema,
+  renameGroup,
   requestWorkDocScope,
   revokePermission,
   setComponentCode,
@@ -2450,8 +2451,11 @@ function intentRemoveGroup(doc, payload) {
  * @returns {EngineResult}
  */
 function intentUpdateGroup(doc, payload) {
-  const { graphId, groupId, add, remove } = payload ?? {};
+  const { graphId, groupId, add, remove, name } = payload ?? {};
   if (typeof graphId !== "string" || typeof groupId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  if (name !== undefined && typeof name !== "string") {
     return { accepted: false, echoes: [] };
   }
   const idsOk = (/** @type {any} */ ids) =>
@@ -2461,11 +2465,14 @@ function intentUpdateGroup(doc, payload) {
   if (!idsOk(add) || !idsOk(remove)) {
     return { accepted: false, echoes: [] };
   }
-  if (!add && !remove) {
+  if (!add && !remove && name === undefined) {
     return { accepted: false, echoes: [] };
   }
   const graph = getGraph(doc, graphId);
   if (!graph || !getGroup(graph, groupId)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (name !== undefined && !renameGroup(graph, groupId, name)) {
     return { accepted: false, echoes: [] };
   }
   if (add && !addGroupNodes(graph, groupId, add)) {

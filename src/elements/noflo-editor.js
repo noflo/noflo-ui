@@ -287,11 +287,21 @@ export class FlowEditor extends HTMLElement {
           : nodes.includes(name);
       if (selected) {
         node.setAttribute("selected", "");
+        // The multi-selection holds ~1.1 (guidelines §… the anchor
+        // expansion rule): the single-selection pop doubles the node and
+        // would cover its neighbors, intercepting the next shift-click —
+        // multi-selected nodes step down so the selection grows
+        if (nodes.length > 1 && node.tagName === "NOFLO-NODE") {
+          node.setAttribute("data-multi-selected", "");
+        } else {
+          node.removeAttribute("data-multi-selected");
+        }
         if (node.tagName !== "NOFLO-EXPORTED-PORT") {
           this.applyPortRouteColors(node);
         }
       } else {
         node.removeAttribute("selected");
+        node.removeAttribute("data-multi-selected");
       }
     });
 
@@ -1899,6 +1909,13 @@ export class FlowEditor extends HTMLElement {
       const groupId = clickedGroup.getAttribute("data-group-id") ?? "";
       const group = this.groups.find((entry) => entry.id === groupId);
       items.push({
+        text: "Rename",
+        onClick: () => {
+          emit(this, "group-rename-attempt", { groupId });
+        },
+        icon: "pen",
+      });
+      items.push({
         text: "Ungroup",
         onClick: () => {
           emit(this, "remove-group-attempt", { groupId });
@@ -2125,20 +2142,27 @@ export class FlowEditor extends HTMLElement {
               },
               icon: "folder-plus",
             });
-            items.push({
-              text: "Group",
-              onClick: () => {
-                // Grouping works on the selection; a single clicked node
-                // groups itself, drag more nodes into the group later
-                const name = this.getNodeName(
-                  /** @type {GraphEntity} */ (clickedNode),
-                );
-                const selected = [...this.selectionManager.nodes];
-                const nodeIds = selected.includes(name) ? selected : [name];
-                emit(this, "create-group-attempt", { nodes: nodeIds });
-              },
-              icon: "object-group",
-            });
+            // The scope is the label: a right-click on a selected node
+            // groups the whole selection, a right-click on an unselected
+            // node groups just that node — never silently ignore the
+            // selection (work document #35's multi-selection rule)
+            {
+              const name = this.getNodeName(
+                /** @type {GraphEntity} */ (clickedNode),
+              );
+              const selected = [...this.selectionManager.nodes];
+              const nodeIds = selected.includes(name) ? selected : [name];
+              items.push({
+                text:
+                  nodeIds.length > 1
+                    ? `Group selection (${nodeIds.length})`
+                    : "Group node",
+                onClick: () => {
+                  emit(this, "create-group-attempt", { nodes: nodeIds });
+                },
+                icon: "object-group",
+              });
+            }
           }
           // Move up needs a parent graph to move into: the root project
           // graph is the top of the hierarchy, so the item drops out there
@@ -2294,6 +2318,20 @@ export class FlowEditor extends HTMLElement {
     } else {
       const graphPos = this.viewportToGraph(x, y);
       emit(this, "canvas-menu-open", { x, y, type: "canvas" });
+      // Grouping from the canvas (work document #35's multi-selection
+      // rule): with an active node selection the menu offers the group
+      // affordance without needing to right-click a member
+      if (this.selectionManager.nodes.size > 1) {
+        items.push({
+          text: `Group selection (${this.selectionManager.nodes.size})`,
+          onClick: () => {
+            emit(this, "create-group-attempt", {
+              nodes: [...this.selectionManager.nodes],
+            });
+          },
+          icon: "object-group",
+        });
+      }
       if (this.hasSpace(graphPos.x, graphPos.y, 80)) {
         items.push({
           text: "Add Node",

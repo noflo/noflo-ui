@@ -304,7 +304,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setComponentCode'; payload: { component: string; code: string } }
   | { type: 'INTENT'; command: 'createGroup'; payload: { graphId: string; nodeIds: string[]; name?: string } }
   | { type: 'INTENT'; command: 'removeGroup'; payload: { graphId: string; groupId: string } }
-  | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[] } }
+  | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[]; name?: string } }
   | { type: 'INTENT'; command: 'setEdgeRoute'; payload: { graphId: string; edgeId: string; route: number | null } }
   | { type: 'INTENT'; command: 'setPortRoute'; payload: { graphId: string; name: string; direction: 'inports' | 'outports'; route: number | null } }
   | { type: 'INTENT'; command: 'setRouteName'; payload: { graphId: string; route: number; name: string; description?: string } }

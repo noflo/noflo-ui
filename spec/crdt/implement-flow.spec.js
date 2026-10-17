@@ -393,6 +393,35 @@ describe("graph groups (work document #5 update #16)", () => {
     assert.deepEqual(group.get("nodes").toArray(), ["n2"]);
   });
 
+  it("updateGroup renames: the name alone is a valid update", () => {
+    const { doc, send } = groupBoot();
+    send({
+      type: "INTENT",
+      command: "createGroup",
+      payload: { graphId: "main", nodeIds: ["n1"] },
+    });
+    const groupId = [...getGraph(doc, "main").get("groups").keys()][0];
+    const named = send({
+      type: "INTENT",
+      command: "updateGroup",
+      payload: { graphId: "main", groupId, name: "Audio chain" },
+    });
+    assert.ok(named.accepted, "a name-only update is accepted");
+    const group = [...getGraph(doc, "main").get("groups").values()][0];
+    assert.equal(group.get("name"), "Audio chain");
+    assert.deepEqual(
+      group.get("nodes").toArray(),
+      ["n1"],
+      "membership untouched",
+    );
+    const badName = send({
+      type: "INTENT",
+      command: "updateGroup",
+      payload: { graphId: "main", groupId, name: 42 },
+    });
+    assert.ok(!badName.accepted, "the name is a string");
+  });
+
   it("removeGroup keeps the members in the graph", () => {
     const { doc, send } = groupBoot();
     send({
