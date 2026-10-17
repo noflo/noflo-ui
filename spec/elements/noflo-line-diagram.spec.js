@@ -127,6 +127,44 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     element.remove();
   });
 
+  it("the selection scales the mark and thickens the boundary wire", () => {
+    // The provider gives the boundary edge the IIP's own id — the
+    // segment carrying it is the boundary wire
+    const element = diagramFor(
+      [
+        {
+          source: "DATA->a:in[0]",
+          target: "a",
+          route: 3,
+          id: "DATA->a:in[0]",
+        },
+      ],
+      3,
+    );
+    element.highlightStations = new Set(["DATA->a:in[0]"]);
+    element.highlightEdges = new Set(["DATA->a:in[0]"]);
+    element.render();
+    const style = element.shadowRoot.querySelector("style").textContent;
+    // The selected mark scales — bigger node shape, no dashed ring
+    assert.match(
+      style,
+      /\.hit\.selected circle,[^}]*transform: scale\(1\.35\)/,
+    );
+    assert.match(style, /transform-box: fill-box/);
+    assert.ok(!style.includes("select-ring"), "no dashed ring");
+    // The boundary wire's segment thickens: the corner feeds the IIP's
+    // id into the edge highlights, and the segment carries it
+    const rail = element.shadowRoot.querySelector(
+      'line.rail[data-edge-id="DATA->a:in[0]"]',
+    );
+    assert.ok(rail, "the boundary segment carries the IIP's id");
+    assert.ok(
+      rail.classList.contains("selected"),
+      "the selected boundary wire thickens",
+    );
+    element.remove();
+  });
+
   it("draws a 45° spur for a split branch", () => {
     const element = diagramFor(
       [

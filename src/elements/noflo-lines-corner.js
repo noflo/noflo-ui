@@ -348,7 +348,8 @@ export class FlowLinesCorner extends FlowCornerElement {
           diagram.labelFor = data.labelFor;
           diagram.lines = data.lines;
           // The canvas selection answers in the strip: the selected
-          // stations fill, the selected wires thicken
+          // stations scale up, their wires — boundary wires included —
+          // thicken
           const selectionManager = /** @type {any} */ (this.editor)
             ?.selectionManager;
           if (selectionManager) {
@@ -359,7 +360,11 @@ export class FlowLinesCorner extends FlowCornerElement {
                 (/** @type {string} */ p) => `export:${p}`,
               ),
             ]);
-            diagram.highlightEdges = new Set([...selectionManager.edges]);
+            diagram.highlightEdges = new Set([
+              ...selectionManager.edges,
+              ...selectionManager.iips,
+              ...selectionManager.ports,
+            ]);
           }
           host.appendChild(diagram);
         }

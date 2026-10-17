@@ -169,7 +169,7 @@ export class FlowLineDiagram extends HTMLElement {
           );
         }
         :host(.state-offline) {
-          --edge-ink: var(--ui-age-offline, var(--ui-text-muted, grey));
+          --edge-ink: var(--ui-age-offline, var(--node-subtext, #888));
         }
         :host(.state-crashed) {
           --edge-ink: var(--ui-age-crashed, var(--ui-accent));
@@ -186,7 +186,7 @@ export class FlowLineDiagram extends HTMLElement {
         }
         text {
           font-family: ${theme === "tube" ? "sans-serif" : "var(--ui-font-mono, monospace)"};
-          fill: var(--ui-text, white);
+          fill: var(--node-text, #333);
           pointer-events: none;
         }
         .rail {
@@ -241,18 +241,18 @@ export class FlowLineDiagram extends HTMLElement {
           fill: var(--ui-bg, white);
           stroke-width: 5px;
         }
-        /* The selection ring wraps the selected mark — the boundary
-           marks are already filled with the ink, so the ring is the
-           selection's unmistakable reading */
-        .hit .select-ring {
-          fill: none;
-          stroke: var(--ui-text, white);
-          stroke-width: 1.5px;
-          stroke-dasharray: 3 3;
-          opacity: 0;
+        /* The selection scales the mark — bigger node shape, the way
+           the canvas pops its selection — and boundary marks, already
+           filled with the ink, read the same way */
+        .hit circle,
+        .hit rect:not(.hit-row) {
+          transform-box: fill-box;
+          transform-origin: center;
+          transition: transform 0.15s ease;
         }
-        .hit.selected .select-ring {
-          opacity: 1;
+        .hit.selected circle,
+        .hit.selected rect:not(.hit-row) {
+          transform: scale(1.35);
         }
         .hit.selected .mark-iip {
           fill: var(--edge-ink);
@@ -279,12 +279,12 @@ export class FlowLineDiagram extends HTMLElement {
           fill: none;
         }
         .break-stroke {
-          stroke: var(--ui-text-muted, grey);
+          stroke: var(--node-subtext, #888);
           stroke-width: 2px;
         }
         .empty {
           padding: 8px 12px;
-          color: var(--ui-text-muted, grey);
+          color: var(--node-subtext, #888);
           font-family: sans-serif;
           font-size: 12px;
         }
@@ -470,7 +470,7 @@ export class FlowLineDiagram extends HTMLElement {
         // — the boundary marks are already filled, so a fill change
         // alone could not read as the selection
         parts.push(
-          `<g class="hit${selectedStation ? " selected" : ""}" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect class="hit-row" x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect><circle class="select-ring" cx="${railX}" cy="${y}" r="13"></circle>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
+          `<g class="hit${selectedStation ? " selected" : ""}" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect class="hit-row" x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
         );
         // The interchange ticks: the other lines serving this station,
         // small color bars left of the tick
