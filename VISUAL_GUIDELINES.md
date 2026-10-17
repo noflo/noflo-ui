@@ -83,7 +83,7 @@ The two themes are not recolorings of one design — they are two designs sharin
 - **Signage type**: clean sans-serif labels in the Johnston/Gill Sans tradition of transit signage, served by the system sans stack (§2), not terminal type.
 - **Dashed means not running**: offline wires render dashed, reusing the transit convention of marking suspended services.
 - **Printed tiles**: panels are opaque white cards with hard offset shadows — printed plates pasted on the diagram.
-- **Groups are tariff zones, routing-only nodes are interchanges**: groups render as labeled, bordered zones enclosing their stations, and routing-only components (Split, Merge — no processing of their own) render compact as interchange markers while processing nodes stay full-size (work document #35; the compact interchange rendering is [target]).
+- **Groups are tariff zones, routing-only nodes are interchanges**: groups render as labeled, bordered zones enclosing their stations [implemented: the fare-zone grammar per theme — cyberpunk's panel-tone fill and glow at the decor ceiling, tube's bold black border with sharp corners; zones nest with the border weight stepping down per containment level; labels in the theme's panel typography], and routing-only components (Split, Merge — no processing of their own) render compact as interchange markers while processing nodes stay full-size (work document #35; the compact interchange rendering is [target]).
 
 **Tube × age grammar** — tube has no glow and a white canvas, so its ages move weight, ink, and pattern instead of light:
 
