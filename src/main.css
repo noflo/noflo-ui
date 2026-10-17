@@ -157,6 +157,17 @@ body[data-input="mouse"] {
   --ui-target: 24px;
 }
 
+/* The boot-time guess in CSS: the interaction media features evaluate
+   when the stylesheet resolves, so a mouse/trackpad setup reads the 24px
+   target from the very first frame — even before the publisher's
+   attribute lands. Once the attribute exists the active pointer rules
+   instead, and a touch on a mouse-setup device flips the floor back */
+@media (hover: hover) and (pointer: fine) {
+  body:not([data-input]) {
+    --ui-target: 24px;
+  }
+}
+
 :root {
   /* Base Variables (Cyberpunk Dark) */
   --ui-bg: rgb(20, 27, 35);
@@ -205,8 +216,10 @@ body[data-input="mouse"] {
   --ui-focus: var(--route-7);
 
   /* Minimum interactive target size (§13): 44px for touch and pen; the
-     published data-input relaxes it to the WCAG 2.2 mouse minimum. A
-     custom property so Shadow DOM elements consume it by inheritance */
+     published data-input relaxes it to the WCAG 2.2 mouse minimum —
+     published at boot from the interaction media features on mouse
+     setups, and corrected to the active pointer on every pointerdown.
+     A custom property so Shadow DOM elements consume it by inheritance */
   --ui-target: 44px;
 
   /* Cyberpunk Route Palette */
