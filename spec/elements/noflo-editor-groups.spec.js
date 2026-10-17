@@ -6,7 +6,7 @@ import "./utils/register.js";
 import "../../src/elements/noflo-editor.js";
 
 describe("FlowEditor groups (work document #5 update #16)", () => {
-  it("renders a padded region around the group's members", () => {
+  it("renders the zone as the union of its members' cells", () => {
     const ed = document.createElement("noflo-editor");
     document.body.appendChild(ed);
     ed.addNode("A", "c/X", { x: 560, y: 360 });
@@ -14,21 +14,72 @@ describe("FlowEditor groups (work document #5 update #16)", () => {
     ed.setGroups([{ id: "g1", name: "Pipelining", nodes: ["A", "B"] }]);
 
     const shadow = /** @type {ShadowRoot} */ (ed.shadowRoot);
-    const region = /** @type {SVGRectElement} */ (
+    const region = /** @type {SVGPathElement} */ (
       shadow.querySelector(".group-region")
     );
     assert.ok(region, "the region renders");
     assert.equal(region.getAttribute("data-group-id"), "g1");
-    // Two members at 560/640: bounding box 560..720 plus 48 padding each
-    // side, in graph coordinates — the groups layer's −8000 offset and
-    // the group's translate(8000,8000) cancel, so the rect carries the
-    // graph position directly
-    assert.equal(region.getAttribute("x"), "512");
-    assert.equal(Number(region.getAttribute("width")), 256);
+    assert.ok(
+      region.getAttribute("d")?.startsWith("M "),
+      "the zone is a traced contour, not a bounding rectangle",
+    );
+    // The zone's cells cover both members plus the dilation ring: the
+    // member centers land inside, the ring around them too
+    const cells = ed.zoneCellsFor({
+      id: "g1",
+      name: "Pipelining",
+      nodes: ["A", "B"],
+    });
+    assert.ok(cells, "the zone cells compute");
+    assert.ok(
+      ed.spaceManager.pointInZone(cells, 600, 400),
+      "member A's center is in the zone",
+    );
+    assert.ok(
+      ed.spaceManager.pointInZone(cells, 700, 400),
+      "member B's center is in the zone",
+    );
     const label = /** @type {SVGTextElement} */ (
       shadow.querySelector(".group-label")
     );
     assert.equal(label?.textContent, "Pipelining");
+    ed.remove();
+  });
+
+  it("the zone flows around a node that is not in the group", () => {
+    const ed = document.createElement("noflo-editor");
+    document.body.appendChild(ed);
+    // Two members with a two-cell gap; an outsider sits between them —
+    // the old bounding rectangle would cover it
+    ed.addNode("A", "c/X", { x: 0, y: 0 });
+    ed.addNode("OUT", "c/X", { x: 200, y: 0 });
+    ed.addNode("B", "c/X", { x: 480, y: 0 });
+    ed.setGroups([{ id: "g1", name: "Pipelining", nodes: ["A", "B"] }]);
+
+    const cells = ed.zoneCellsFor({
+      id: "g1",
+      name: "Pipelining",
+      nodes: ["A", "B"],
+    });
+    assert.ok(cells, "the zone cells compute");
+    // The outsider's center (240, 40): the members' dilation rings reach
+    // one cell (40px) into the gap, but the outsider's own cell stays
+    // outside the zone
+    assert.ok(
+      !ed.spaceManager.pointInZone(cells, 240, 40),
+      "the non-member's center is not in the zone",
+    );
+    // And a drop at the outsider's position does not join the group —
+    // the membership test reads the same cells the zone renders
+    /** @type {any} */
+    let update = null;
+    ed.addEventListener("update-group-attempt", (e) => {
+      update = e.detail;
+    });
+    ed.emitGroupMembershipChanges([
+      { name: "OUT", position: { x: 200, y: 0 } },
+    ]);
+    assert.ok(!update, "dropping on the outsider does not join the group");
     ed.remove();
   });
 
@@ -142,11 +193,6 @@ describe("FlowEditor appearing-node animations (work document #5 update #16)", (
     assert.match(
       style,
       /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*stroke: black/,
-    );
-    assert.match(
-      style,
-      /:host\(\[data-theme="tube"\]\) \.group-region \{[^}]*rx: 0px/,
-      "tube zones are sharp-cornered: radius 0 is the theme's geometry",
     );
     // Zone labels render in the theme's panel typography
     assert.match(style, /\.group-label \{[^}]*SourceCodePro/);

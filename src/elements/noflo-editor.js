@@ -464,8 +464,6 @@ export class FlowEditor extends HTMLElement {
           fill: color-mix(in srgb, var(--ui-accent) 8%, transparent);
           stroke: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-panel-border));
           stroke-width: 2px;
-          rx: 12px;
-          ry: 12px;
           filter: drop-shadow(
             0 0 10px color-mix(in srgb, var(--ui-accent) 8%, transparent)
           );
@@ -489,8 +487,6 @@ export class FlowEditor extends HTMLElement {
           fill: white;
           stroke: black;
           stroke-width: 3px;
-          rx: 0px;
-          ry: 0px;
           filter: none;
         }
         :host([data-theme="tube"]) .group-region.depth-1 {
@@ -3039,10 +3035,33 @@ export class FlowEditor extends HTMLElement {
   }
 
   /**
+   * Computes a group's zone cells: the members' occupied grid cells
+   * dilated by the padding ring (work document #35's tariff zones) — the
+   * union of the members' areas, so the zone hugs its stations and flows
+   * around nodes that are not in the group.
+   *
+   * @param {{ id: string, name: string, nodes: string[] }} group
+   * @returns {Set<string> | null} The occupied cells, or null when no
+   *   member is placed.
+   */
+  zoneCellsFor(group) {
+    const members = group.nodes
+      .map((id) => this.nodeLayer?.querySelector(`[name="${id}"]`))
+      .filter((/** @type {any} */ node) => node?.position)
+      .map((/** @type {any} */ node) => ({
+        x: node.position.x,
+        y: node.position.y,
+        size: 80,
+      }));
+    if (members.length === 0) return null;
+    return this.spaceManager.zoneCells(members, { cell: 40, dilate: 1 });
+  }
+
+  /**
    * Computes a group's bounding region in graph coordinates: the member
-   * nodes' bounding box plus the group padding. The padding must exceed
-   * half a node plus half a grid cell (80/2 + 80/2 = 80), or dropping a
-   * node into the adjacent grid cell would fall outside the region.
+   * nodes' bounding box plus the group padding. The zone's shape comes
+   * from zoneCellsFor — this bounding box is the zone's extent, used for
+   * the nesting sort and the label fallback.
    *
    * @param {{ id: string, name: string, nodes: string[] }} group
    * @returns {{ x: number, y: number, width: number, height: number } | null}
@@ -3087,20 +3106,21 @@ export class FlowEditor extends HTMLElement {
     /** @type {Array<{ groupId: string, add: string[], remove: string[] }>} */
     const memberships = [];
     for (const group of this.groups) {
-      const bounds = this.groupBounds(group);
-      if (!bounds) continue;
+      // The membership test reads the zone's cells, not a bounding box:
+      // the zone a user sees is exactly the zone that joins (work
+      // document #35's tariff zones)
+      const cells = this.zoneCellsFor(group);
+      if (!cells) continue;
       /** @type {string[]} */
       const add = [];
       /** @type {string[]} */
       const remove = [];
       for (const moved of movedNodes) {
-        const centerX = moved.position.x + size / 2;
-        const centerY = moved.position.y + size / 2;
-        const inside =
-          centerX >= bounds.x &&
-          centerX <= bounds.x + bounds.width &&
-          centerY >= bounds.y &&
-          centerY <= bounds.y + bounds.height;
+        const inside = this.spaceManager.pointInZone(
+          cells,
+          moved.position.x + size / 2,
+          moved.position.y + size / 2,
+        );
         const isMember = group.nodes.includes(moved.name);
         if (inside && !isMember) add.push(moved.name);
         if (!inside && isMember) remove.push(moved.name);
@@ -3140,14 +3160,17 @@ export class FlowEditor extends HTMLElement {
     );
     for (const zone of zones) {
       const { group, bounds } = zone;
-      // The coordinates are graph coords: the groups layer's −8000 CSS
-      // offset and the <g>'s translate(8000,8000) cancel, exactly like
-      // the edges layer's
-      const x = bounds.x;
-      const y = bounds.y;
+      // The zone's shape is the union of its members' dilated cells (work
+      // document #35's tariff zones): it hugs its stations and flows
+      // around nodes that are not in the group, instead of covering the
+      // bounding box. The coordinates are graph coords — the groups
+      // layer's −8000 CSS offset and the <g>'s translate(8000,8000)
+      // cancel, exactly like the edges layer's
+      const cells = this.zoneCellsFor(group);
+      if (!cells) continue;
       const region = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "rect",
+        "path",
       );
       // Zones nest (zones within zones): the depth is how many other
       // zones contain this one, and the visual hierarchy must stay
@@ -3164,19 +3187,36 @@ export class FlowEditor extends HTMLElement {
         "class",
         `group-region${depth > 0 ? ` depth-${Math.min(depth, 2)}` : ""}`,
       );
-      region.setAttribute("x", String(x));
-      region.setAttribute("y", String(y));
-      region.setAttribute("width", String(bounds.width));
-      region.setAttribute("height", String(bounds.height));
+      region.setAttribute("d", this.spaceManager.zoneOutline(cells));
+      region.setAttribute("fill-rule", "evenodd");
       region.setAttribute("data-group-id", group.id);
       layer.appendChild(region);
+      // The label sits on the zone's topmost-leftmost occupied cell — an
+      // L-shaped zone's bounding-box corner may be empty
+      let labelCell = null;
+      for (const key of cells) {
+        const [i, j] = key.split(",").map(Number);
+        if (
+          !labelCell ||
+          j < labelCell.j ||
+          (j === labelCell.j && i < labelCell.i)
+        ) {
+          labelCell = { i, j };
+        }
+      }
       const label = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "text",
       );
       label.setAttribute("class", "group-label");
-      label.setAttribute("x", String(x + 10));
-      label.setAttribute("y", String(y + 20));
+      label.setAttribute(
+        "x",
+        String(/** @type {{ i: number, j: number }} */ (labelCell).i * 40 + 10),
+      );
+      label.setAttribute(
+        "y",
+        String(/** @type {{ i: number, j: number }} */ (labelCell).j * 40 + 20),
+      );
       label.textContent = group.name || "Group";
       layer.appendChild(label);
     }
