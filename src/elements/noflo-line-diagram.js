@@ -241,6 +241,19 @@ export class FlowLineDiagram extends HTMLElement {
           fill: var(--ui-bg, white);
           stroke-width: 5px;
         }
+        /* The selection ring wraps the selected mark — the boundary
+           marks are already filled with the ink, so the ring is the
+           selection's unmistakable reading */
+        .hit .select-ring {
+          fill: none;
+          stroke: var(--ui-text, white);
+          stroke-width: 1.5px;
+          stroke-dasharray: 3 3;
+          opacity: 0;
+        }
+        .hit.selected .select-ring {
+          opacity: 1;
+        }
         .hit.selected .mark-iip {
           fill: var(--edge-ink);
         }
@@ -453,8 +466,11 @@ export class FlowLineDiagram extends HTMLElement {
         // just the painted pixels (pointer-events: all hits the
         // transparent fill)
         const selectedStation = this.highlightStations.has(station.id);
+        // The selection ring: drawn for every mark, shown when selected
+        // — the boundary marks are already filled, so a fill change
+        // alone could not read as the selection
         parts.push(
-          `<g class="hit${selectedStation ? " selected" : ""}" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect class="hit-row" x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
+          `<g class="hit${selectedStation ? " selected" : ""}" data-station-id="${escapeHtml(station.id)}"><title>${full}</title><rect class="hit-row" x="${railX - 14}" y="${y - 14}" width="${Math.min(200, width - railX - 10)}" height="28" fill="transparent" stroke="none" pointer-events="all"></rect><circle class="select-ring" cx="${railX}" cy="${y}" r="13"></circle>${mark}<text x="${railX + 16}" y="${y + 4}" class="label">${label}</text></g>`,
         );
         // The interchange ticks: the other lines serving this station,
         // small color bars left of the tick

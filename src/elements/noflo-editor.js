@@ -305,13 +305,15 @@ export class FlowEditor extends HTMLElement {
       }
     });
 
-    // 2. Update iips
+    // 2. Update iips — the selection holds the IIP's CRDT edge id (the
+    // DATA-> key), which is the chip's element id; the name attribute is
+    // the chip's own generated id and never matches
     const allIips = /** @type {NodeListOf<HTMLElement>} */ (
       this.nodeLayer?.querySelectorAll("noflo-iip") || []
     );
     allIips.forEach((iip) => {
-      const name = iip.getAttribute("name") ?? "";
-      if (iips.includes(name)) {
+      const id = iip.id || iip.getAttribute("name") || "";
+      if (iips.includes(id)) {
         iip.setAttribute("selected", "");
       } else {
         iip.removeAttribute("selected");
@@ -360,6 +362,16 @@ export class FlowEditor extends HTMLElement {
     for (const wire of this.iipWires ?? []) {
       const onLine = wire.routeId !== undefined && routeLines.has(wire.routeId);
       wire.visualPath.classList.toggle("route-highlight", onLine);
+      // The individual selection emphasis: the wire's own id is selected
+      // when the IIP itself is (the iips type) or the export dock is
+      // (the ports type)
+      const wireId = wire.iip.id || wire.iip.getAttribute("name") || "";
+      const isSelected = iips.includes(wireId) || ports.includes(wireId);
+      if (isSelected) {
+        wire.visualPath.setAttribute("selected", "");
+      } else {
+        wire.visualPath.removeAttribute("selected");
+      }
       if (onLine) {
         const host = /** @type {ShadowRoot} */ (wire.port.getRootNode()).host;
         if (host) lineNodes.add(this.getNodeName(host));

@@ -54,6 +54,35 @@ function exportGraph(extra = {}) {
   return { view, editor, elements };
 }
 
+describe("IIP chips answer their selection (work document #35 review)", () => {
+  it("the chip matches its selection by the CRDT edge id, not the chip name", () => {
+    const { editor } = exportGraph({
+      initializers: [
+        {
+          from: { data: "42" },
+          to: { node: "C", port: "in" },
+          metadata: { route: 3, id: "DATA->C:in[0]" },
+        },
+      ],
+    });
+    const chip = /** @type {any} */ (
+      /** @type {HTMLElement} */ (editor.nodeLayer?.querySelector("noflo-iip"))
+    );
+    assert.ok(chip, "the IIP chip renders");
+    assert.equal(chip.id, "DATA->C:in[0]", "the chip's id is the CRDT edge id");
+    const selection = /** @type {any} */ (editor).selectionManager;
+    selection.select("iips", "DATA->C:in[0]", false);
+    assert.equal(
+      chip.hasAttribute("selected"),
+      true,
+      "the chip answers its selection",
+    );
+    selection.toggle("iips", "DATA->C:in[0]");
+    assert.equal(chip.hasAttribute("selected"), false, "it clears too");
+    editor.remove();
+  });
+});
+
 describe("exported ports select as their own kind (work document #35 review)", () => {
   it("clicking an export wire selects the export, never an IIP", () => {
     const { editor } = exportGraph();
