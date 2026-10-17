@@ -209,12 +209,135 @@ export function cornerStyles() {
  * equally through flexbox. The containers are transparent and inert when
  * empty — the editor underneath owns the full interaction surface.
  *
+ * The geometry is measured, not guessed: the chips' heights and widths
+ * vary with their content (segments, buttons, labels), so the column's
+ * edge insets and width are computed from the live chips on every render
+ * and on viewport resizes.
+ *
  * @type {Map<string, HTMLElement>}
  */
 const panelContainers = new Map();
 
 /** Whether the containers' document-level styles are injected. */
 let panelStylesInjected = false;
+
+/** The gutter the corner grammar puts between stacked boxes. */
+const PANEL_GUTTER = 6;
+
+/** The fallback edge insets before any chip has been measured: the
+ * chips' 44px target height plus the gutter, from the 12px edge inset. */
+const PANEL_INSET_FALLBACK = 62;
+
+/** The narrowest usable accordion column: the panels' own min-width
+ * (the wires surfaces declare 260px), so a narrow chip cannot clip the
+ * content it hosts. */
+const PANEL_WIDTH_FLOOR = 260;
+
+/** The corners registered per side+edge key (`"left:top"`), from which
+ * the containers' geometry is computed.
+ *
+ * @type {Map<string, Set<FlowCornerElement>>}
+ */
+const panelEdgeCorners = new Map();
+
+/** Whether the shared resize listener is attached. */
+let panelResizeWired = false;
+
+/**
+ * The chip rect for geometry computation, or null when the corner has no
+ * laid-out chip (hidden, or a no-layout environment like the unit specs).
+ *
+ * @param {FlowCornerElement} corner
+ * @returns {DOMRect | null}
+ */
+function chipRect(corner) {
+  const chip = corner.shadowRoot?.querySelector(".chip");
+  if (!chip) return null;
+  const rect = chip.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return null;
+  return rect;
+}
+
+/**
+ * Recomputes one side container's geometry from its registered corners:
+ * the edge insets place the column a gutter beyond the outermost chips'
+ * edges, and the width matches the widest chip on the side — the
+ * accordions share the corner boxes' width. Values already written are
+ * left alone, so frequent re-renders don't force layout.
+ *
+ * @param {"left" | "right"} side
+ */
+function applyPanelGeometry(side) {
+  const container = panelContainer(side);
+  for (const edge of /** @type {const} */ (["top", "bottom"])) {
+    let inset = PANEL_INSET_FALLBACK;
+    const corners = panelEdgeCorners.get(`${side}:${edge}`);
+    if (corners) {
+      for (const corner of corners) {
+        const rect = chipRect(corner);
+        if (!rect) continue;
+        inset =
+          edge === "top"
+            ? Math.max(inset, rect.bottom + PANEL_GUTTER)
+            : Math.max(inset, window.innerHeight - rect.top + PANEL_GUTTER);
+      }
+    }
+    const value = `${Math.round(inset)}px`;
+    if (container.style[edge] !== value) container.style[edge] = value;
+  }
+  let width = 0;
+  for (const edge of /** @type {const} */ (["top", "bottom"])) {
+    const corners = panelEdgeCorners.get(`${side}:${edge}`);
+    if (!corners) continue;
+    for (const corner of corners) {
+      const rect = chipRect(corner);
+      if (!rect) continue;
+      width = Math.max(width, rect.width);
+    }
+  }
+  const widthValue =
+    width > 0 ? `${Math.round(Math.max(width, PANEL_WIDTH_FLOOR))}px` : "";
+  if (container.style.width !== widthValue) container.style.width = widthValue;
+}
+
+/**
+ * Registers a corner's chip with its side container's geometry: the
+ * chip's position decides which edge it governs (the midpoint above the
+ * viewport's middle is a top edge, below a bottom edge), and the side's
+ * geometry is recomputed. Also wires the shared resize listener once.
+ *
+ * @param {FlowCornerElement} corner
+ */
+function syncPanelGeometry(corner) {
+  const rect = chipRect(corner);
+  if (!rect) return;
+  const side = /** @type {"left" | "right"} */ (corner.panelSide);
+  const edge =
+    rect.top + rect.height / 2 < window.innerHeight / 2 ? "top" : "bottom";
+  const key = `${side}:${edge}`;
+  if (corner._panelEdgeKey && corner._panelEdgeKey !== key) {
+    panelEdgeCorners.get(corner._panelEdgeKey)?.delete(corner);
+  }
+  corner._panelEdgeKey = key;
+  let corners = panelEdgeCorners.get(key);
+  if (!corners) {
+    corners = new Set();
+    panelEdgeCorners.set(key, corners);
+  }
+  corners.add(corner);
+  applyPanelGeometry(side);
+  if (!panelResizeWired) {
+    panelResizeWired = true;
+    window.addEventListener("resize", () => {
+      const sides = new Set(
+        [...panelEdgeCorners.keys()].map((k) => k.split(":")[0]),
+      );
+      for (const sideKey of sides) {
+        applyPanelGeometry(/** @type {"left" | "right"} */ (sideKey));
+      }
+    });
+  }
+}
 
 /**
  * The side container for a panel, created on first use.
@@ -232,14 +355,15 @@ function panelContainer(side) {
         display: flex;
         flex-direction: column;
         gap: 6px;
+        /* The measured width lands as an inline style; this fallback
+           holds until the first chip has been measured */
         width: min(360px, calc(100vw - 24px));
         pointer-events: none;
         z-index: 880;
       }
-      /* The container spans the full vertical space between the side's
-       * corner chips: the chips stand 12px from the edge and are 44px
-       * tall (the --ui-target floor, nowrap labels), so the free span
-       * starts at 56px — plus the 6px gutter the corner grammar uses */
+      /* The edge insets are measured from the live chips (inline
+         styles); these fallbacks hold until then: the chips' 44px
+         target height plus the gutter, from the 12px edge inset */
       .corner-panels-left { left: 12px; top: 62px; bottom: 62px; }
       .corner-panels-right { right: 12px; top: 62px; bottom: 62px; }
       /* The portals share the span equally weighted by their accordion
@@ -256,7 +380,10 @@ function panelContainer(side) {
       }
       @media (max-width: ${COMPACT_VIEWPORT}px) {
         .corner-panels-left, .corner-panels-right {
-          width: calc(100vw - 24px);
+          /* The measured inline width loses to !important: on compact
+             viewports the column is the full width minus margins, as
+             the panels themselves always were */
+          width: calc(100vw - 24px) !important;
         }
       }
     `;
@@ -316,6 +443,12 @@ export class FlowCornerElement extends HTMLElement {
      * @type {HTMLElement | null}
      */
     this._panelPortal = null;
+    /** The side+edge key this corner's chip is registered under for the
+     * containers' measured geometry.
+     *
+     * @type {string | null}
+     */
+    this._panelEdgeKey = null;
   }
 
   connectedCallback() {
@@ -331,6 +464,13 @@ export class FlowCornerElement extends HTMLElement {
 
   disconnectedCallback() {
     window.removeEventListener("resize", this._resizeHandler);
+    if (this._panelEdgeKey) {
+      const side = this._panelEdgeKey.split(":")[0];
+      panelEdgeCorners.get(this._panelEdgeKey)?.delete(this);
+      this._panelEdgeKey = null;
+      applyPanelGeometry(/** @type {"left" | "right"} */ (side));
+    }
+    this._unmountPanelPortal();
   }
 
   /**
@@ -530,6 +670,9 @@ export class FlowCornerElement extends HTMLElement {
     });
     this._updatePanelPortal();
     this.wireEvents();
+    // The measured geometry: the chip's live box decides where the side
+    // container's edges sit and how wide the column runs
+    syncPanelGeometry(this);
   }
 
   /**

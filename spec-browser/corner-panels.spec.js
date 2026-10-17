@@ -3,20 +3,24 @@
  * verification of the corner panels' shared geometry — the side
  * containers span the full vertical space between the corner chips, the
  * open accordions share that space equally (weighted across the side's
- * corners, not per portal), every accordion carries the corners' width,
- * and the bottom accordion's edge sits flush above the bottom corners.
- * The class of layout bug Node/happy-dom specs miss: fixed-position
- * geometry only resolves in a real layout pass.
+ * corners, not per portal), every accordion carries the corner boxes'
+ * width, and the bottom accordion's edge sits flush above the bottom
+ * corners. The class of layout bug Node/happy-dom specs miss:
+ * fixed-position geometry only resolves in a real layout pass.
+ *
+ * The journey mounts two mock corners beside the real app's own so the
+ * measured geometry has to reconcile corners it did not create: the
+ * container's edges and width are computed from the live chips.
  *
  * Lives OUTSIDE `spec/` per the smoke-layer convention (work document #56
  * proposal 1): real Chromium, run with `npm run test:browser`.
  */
 
 import assert from "node:assert/strict";
-import net from "node:net";
-import { createServer } from "node:http";
-import { extname, join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import net from "node:net";
+import { extname, join, resolve } from "node:path";
 import { after, afterEach, before, beforeEach, describe, it } from "node:test";
 import { chromium } from "playwright";
 
@@ -93,6 +97,7 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
       consoleErrors.push(String(error)),
     );
     await page.goto(`http://localhost:${PORT}/app.html`);
+    await page.waitForSelector("noflo-editor", { timeout: 15_000 });
   });
 
   afterEach(async () => {
@@ -109,9 +114,10 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
   });
 
   it("the side container spans the chips' span and the accordions share it equally", async () => {
-    // Two mock corners on the left side: a top corner with two open
-    // accordions and a bottom corner with one — the weighting means all
-    // three panels end up the same height, a third of the span each
+    // Two mock corners on the left side: a top corner with a taller chip
+    // (as the context chip's buttons make it) and two open accordions,
+    // and a bottom corner with one — the weighting means all three
+    // panels end up the same height, a third of the span each
     const geometry = /** @type {any} */ (
       await page.evaluate(async () => {
         const { FlowCornerElement } = await import(
@@ -124,6 +130,7 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
 
         TopCorner.prototype.styles = () => `
           :host { position: fixed; top: 12px; left: 12px; z-index: 900; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+          .chip { min-height: 58px; }
         `;
         TopCorner.prototype.chipHtml = () =>
           `<span class="seg"><span class="label">Top</span></span>`;
@@ -170,6 +177,40 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
             height: r.height,
           };
         };
+        // Every chip on the left side — the real app's own plus the
+        // mocks — contributes to the column's expected geometry
+        const chipRects = [];
+        for (const tag of [
+          "noflo-context-chip",
+          "noflo-project-corner",
+          "journey-top-corner",
+          "journey-bottom-corner",
+        ]) {
+          const chip = document
+            .querySelector(tag)
+            ?.shadowRoot?.querySelector(".chip");
+          if (!chip) continue;
+          const r = chip.getBoundingClientRect();
+          if (r.width === 0 && r.height === 0) continue;
+          chipRects.push(r);
+        }
+        const height = innerHeight;
+        const topChips = chipRects.filter(
+          (r) => r.top + r.height / 2 < height / 2,
+        );
+        const bottomChips = chipRects.filter(
+          (r) => r.top + r.height / 2 >= height / 2,
+        );
+        const expectedTopInset = Math.max(
+          62,
+          ...topChips.map((r) => r.bottom + 6),
+        );
+        const expectedBottomInset = Math.max(
+          62,
+          ...bottomChips.map((r) => height - r.top + 6),
+        );
+        const expectedWidth = Math.max(260, ...chipRects.map((r) => r.width));
+
         const container = document.querySelector(".corner-panels-left");
         const panels = [
           ...container.querySelectorAll(".corner-panel-portal"),
@@ -181,12 +222,12 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
         return {
           viewport: { w: innerWidth, h: innerHeight },
           container: box(container),
-          chipTop: box(top.shadowRoot.querySelector(".chip")),
-          chipBottom: box(bottom.shadowRoot.querySelector(".chip")),
+          expectedTopInset,
+          expectedBottomInset,
+          expectedWidth,
           panels: panels.map(box),
           log: box(top.panelShadow.querySelector("flow-telemetry-log")),
           panelOne: box(portalChild(top, 0)),
-          panelTwo: box(portalChild(top, 1)),
         };
         function portalChild(corner, index) {
           const portal = corner._panelPortal;
@@ -199,30 +240,38 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
     );
 
     assert.ok(geometry, "the journey evaluated");
+    const near = (a, b) => Math.abs(a - b) < 1;
     // The container spans the full space between the chips, with the
-    // 6px gutter the corner grammar uses on each end
-    assert.equal(
-      geometry.container.top,
-      geometry.chipTop.bottom + 6,
-      "the accordion column starts a gutter below the top chip",
+    // 6px gutter the corner grammar uses on each end — measured from
+    // the live chips, so a taller top chip pushes the column down
+    assert.ok(
+      near(geometry.container.top, geometry.expectedTopInset),
+      `the accordion column starts a gutter below the topmost chip (${geometry.container.top} vs ${geometry.expectedTopInset})`,
     );
-    assert.equal(
-      geometry.container.bottom,
-      geometry.chipBottom.top - 6,
-      "the accordion column ends a gutter above the bottom chip",
+    assert.ok(
+      near(
+        geometry.container.bottom,
+        geometry.viewport.h - geometry.expectedBottomInset,
+      ),
+      `the accordion column ends a gutter above the bottommost chip (${geometry.container.bottom} vs ${geometry.viewport.h - geometry.expectedBottomInset})`,
     );
-    // The width is the corners' width: the same 12px inset edge, the
-    // panel column's 360px max
-    assert.equal(
-      geometry.container.left,
-      geometry.chipTop.left,
+    // The width is the corner boxes' width: the same 12px inset edge,
+    // and the column matches the widest chip on the side (floored at
+    // the panels' 260px readability minimum)
+    assert.ok(
+      near(geometry.container.left, 12),
       "the accordion column shares the corners' edge inset",
     );
-    assert.equal(
-      geometry.container.width,
-      Math.min(360, geometry.viewport.w - 24),
-      "the accordion column is the corner panels' width",
+    assert.ok(
+      near(geometry.container.width, geometry.expectedWidth),
+      `the accordion column is as wide as the corner boxes (${geometry.container.width} vs ${geometry.expectedWidth})`,
     );
+    for (const panel of geometry.panels) {
+      assert.ok(
+        near(panel.width, geometry.container.width),
+        "every accordion shares the corner boxes' width",
+      );
+    }
     // Three accordions across two corners: every one the same height up
     // to the 6px gutter the grammar puts between stacked accordions —
     // a portal holding k accordions spends (k-1) gutters of its share,
@@ -236,7 +285,7 @@ describe("browser smoke: the corner panels' shared geometry (work document #63)"
     }
     const bottomPanel = geometry.panels[geometry.panels.length - 1];
     assert.ok(
-      Math.abs(bottomPanel.bottom - geometry.container.bottom) < 1,
+      near(bottomPanel.bottom, geometry.container.bottom),
       "the bottom accordion is bottom-aligned",
     );
     // The wires log fills its accordion's share, not its old 180px cap
