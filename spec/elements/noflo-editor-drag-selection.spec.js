@@ -199,3 +199,31 @@ describe("expanded node dragging (work document #5)", () => {
     editor.remove();
   });
 });
+
+describe("the multi-selection holds ~1.1 (work document #35 review)", () => {
+  it("the selection pop steps down while the selection is multi", () => {
+    const editor = document.createElement("noflo-editor");
+    document.body.appendChild(editor);
+    editor.addNode("A", "c/X", { x: 560, y: 360 });
+    editor.addNode("B", "c/X", { x: 900, y: 360 });
+    editor.selectionManager.select("nodes", "A", true);
+    editor.selectionManager.select("nodes", "B", true);
+    editor._applySelection(editor.selectionManager.getSnapshot());
+    const a = editor.nodeLayer.querySelector('noflo-node[name="A"]');
+    const b = editor.nodeLayer.querySelector('noflo-node[name="B"]');
+    assert.ok(
+      a.hasAttribute("data-multi-selected") &&
+        b.hasAttribute("data-multi-selected"),
+      "multi-selected nodes carry the hold attribute",
+    );
+    // Back to single: the pop returns, the hold clears
+    editor.selectionManager.select("nodes", "A", false);
+    editor._applySelection(editor.selectionManager.getSnapshot());
+    assert.ok(
+      !a.hasAttribute("data-multi-selected"),
+      "single selection pops again",
+    );
+    assert.ok(!b.hasAttribute("selected"), "the dropped node deselects");
+    editor.remove();
+  });
+});

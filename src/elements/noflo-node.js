@@ -505,8 +505,22 @@ export class FlowNode extends HTMLElement {
         }
 
         :host([selected]) {
-          transform: scale(2);
+          /* The selection pop (work document #5's expanded node): capped
+             at ~1.15 — the original 2x doubled the node's hit box past
+             its grid neighbors, intercepting the next shift-click and
+             emptying the selection mid-gesture; at grid spacing (40px,
+             80px nodes) a 1.15 pop stays clear of the neighbor's center
+             while the emphasis reads */
+          transform: scale(1.15);
           z-index: 10;
+        }
+        /* Multi-selection (work document #5's multi-select rule): the pop
+           makes room for itself — a doubled selected node covers its
+           neighbors and intercepts the next shift-click, so a
+           multi-selected node holds ~1.1 and stays below the pop */
+        :host([selected][data-multi-selected]) {
+          transform: scale(1.1);
+          z-index: 5;
         }
         /* The splice preview (work document #5): while a dragged node
            hovers a candidate edge, it springs back to its non-expanded
