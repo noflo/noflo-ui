@@ -369,6 +369,23 @@ export class FlowEditor extends HTMLElement {
         lineNodes.has(node.getAttribute("name")),
       );
     }
+
+    // The per-line diagrams (work document #35 update #14): the corner
+    // panel answers the selection — a routed edge selects its line, a
+    // single station selection lists its lines; nothing in play clears
+    // the panel
+    const route = routeLines.size > 0 ? Math.min(...routeLines) : null;
+    let station = null;
+    if (
+      route === null &&
+      nodes.length === 1 &&
+      iips.length === 0 &&
+      edges.length === 0 &&
+      ports.length === 0
+    ) {
+      station = nodes[0];
+    }
+    emit(this, "line-selection-changed", { route, station });
   }
 
   render() {

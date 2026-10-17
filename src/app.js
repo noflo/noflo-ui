@@ -27,6 +27,8 @@ import {
 import { NofloModal } from "./elements/noflo-modal.js";
 import "./elements/noflo-json-form.js";
 import "./elements/noflo-code-editor.js";
+import "./elements/noflo-line-diagram.js";
+import "./elements/noflo-lines-corner.js";
 import "./elements/noflo-node.js";
 import "./elements/noflo-radial-menu.js";
 import {
@@ -1092,6 +1094,19 @@ async function render() {
     );
     return group?.name ?? "";
   });
+  // The lines corner (work document #35 update #14): the per-line
+  // diagrams' editor wiring rides the per-render editor — the corner's
+  // data provider lives in init (it reads the projection fresh per
+  // panel render), but the editor element is recreated per render
+  const linesCorner = /** @type {any} */ (
+    document.getElementById("lines-corner")
+  );
+  if (linesCorner) {
+    linesCorner.editor = ed;
+    on(ed, "line-selection-changed", (/** @type {any} */ e) => {
+      linesCorner.setSelection(e.detail);
+    });
+  }
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // The minimap tracks the same projection (work document #5)
   ed.updateMinimap?.(view);
@@ -2235,6 +2250,60 @@ async function init() {
         action: e.detail.action,
       },
     });
+  });
+  // The lines corner (work document #35 update #14): the per-line
+  // diagrams. The provider re-reads the active graph's projection fresh
+  // on every render of the panel, so the diagram never shows a stale
+  // line; rename attempts re-emit onto the editor, where the existing
+  // route-naming flow handles the modal
+  const linesCorner = /** @type {any} */ (
+    document.getElementById("lines-corner")
+  );
+  linesCorner.setProvider(() => {
+    const view = projectGraph(mirrorDoc, activeGraphId);
+    if (!view) return null;
+    const edges = [];
+    for (const edge of view.edges ?? []) {
+      edges.push({
+        source: edge.from.node,
+        target: edge.to.node,
+        route: edge.metadata?.route ?? null,
+      });
+    }
+    let iipIndex = 0;
+    for (const init of view.initializers ?? []) {
+      edges.push({
+        source: `iip:${iipIndex++}`,
+        target: init.to.node,
+        route: init.metadata?.route ?? null,
+      });
+    }
+    for (const name in view.outports ?? {}) {
+      const info = view.outports[name];
+      edges.push({
+        source: info.process,
+        target: `export:${name}`,
+        route: info.metadata?.route ?? null,
+      });
+    }
+    for (const name in view.inports ?? {}) {
+      const info = view.inports[name];
+      edges.push({
+        source: `export:${name}`,
+        target: info.process,
+        route: info.metadata?.route ?? null,
+      });
+    }
+    return {
+      edges,
+      labelFor: (/** @type {string} */ id) =>
+        id.startsWith("iip:")
+          ? "data"
+          : id.startsWith("export:")
+            ? id.slice(7)
+            : id,
+      routeTable: view.properties?.routes,
+    };
   });
   on(syncPanel, "sync-decline", (e) => {
     supervisor?.send({

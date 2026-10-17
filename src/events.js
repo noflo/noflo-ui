@@ -108,6 +108,10 @@
  * @property {CustomEvent<{ name: string, direction: "in" | "out", position: { x: number, y: number }, process: string | null, port: string | null, index?: number }>} port-exported
  * @property {CustomEvent<{ name: string | null, direction: any }>} port-removed
  * @property {CustomEvent<SelectionSnapshot>} selection-changed
+ * @property {CustomEvent<{ route: number | null, station: string | null }>} line-selection-changed A
+ *   routed edge selects its line (route set, station null); a station
+ *   selection names the station (route null); nothing in play is both
+ *   null (work document #35 update #14's per-line diagrams).
  * @property {CustomEvent<{ compName: string, definition?: any }>} component-changed
  * @property {CustomEvent<void>} new-graph-requested
  * @property {CustomEvent<{ directoryHandle: any }>} directory-selected
