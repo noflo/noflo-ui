@@ -13,6 +13,11 @@ export class SelectionPills extends HTMLElement {
   }
 
   connectedCallback() {
+    // The pills own their presses: a pointerdown here must not reach the
+    // editor's canvas branch, whose empty-spot path clears the whole
+    // selection — the X button's click would then clear an already-empty
+    // set and every other pill's selection with it
+    this.addEventListener("pointerdown", (e) => e.stopPropagation());
     this.render();
   }
 

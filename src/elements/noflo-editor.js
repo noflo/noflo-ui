@@ -333,7 +333,9 @@ export class FlowEditor extends HTMLElement {
       const wireId = wire.iip.id || wire.iip.getAttribute("name") || "";
       if (
         wire.routeId !== undefined &&
-        (edges.includes(wireId) || iips.includes(wireId))
+        (edges.includes(wireId) ||
+          iips.includes(wireId) ||
+          ports.includes(wireId))
       ) {
         routeLines.add(wire.routeId);
       }
@@ -2508,26 +2510,29 @@ export class FlowEditor extends HTMLElement {
       (edge) => edge.hitPath === el || edge.visualPath === el,
     );
     if (!edge) {
-      // IIP and exported-port wires select like edges: the wire's id is
-      // the IIP's CRDT edge id or the export's name (work document #35
-      // update #14) — the route line follows the selection either way
+      // IIP and exported-port wires select like edges — each in its own
+      // vocabulary: an IIP by its CRDT edge id (the iips type), an
+      // exported port by its name (the ports type) — so the pill and
+      // the clear affordance read the right label
       const wire = this.iipWires?.find(
         (candidate) => candidate.hitPath === el || candidate.visualPath === el,
       );
       if (!wire) return;
+      const isIIPWire = wire.iip.tagName === "NOFLO-IIP";
       const wireId = wire.iip.id || wire.iip.getAttribute("name") || "";
+      const type = isIIPWire ? "iips" : "ports";
       if (isMultiple) {
         if (this.selectMode) {
           this.radialMenu?.close();
         }
-        this.selectionManager.toggle("iips", wireId);
+        this.selectionManager.toggle(type, wireId);
       } else if (
-        this.selectionManager.iips.has(wireId) &&
-        this.selectionManager.iips.size === 1
+        this.selectionManager[type].has(wireId) &&
+        this.selectionManager[type].size === 1
       ) {
-        this.selectionManager.toggle("iips", wireId);
+        this.selectionManager.toggle(type, wireId);
       } else {
-        this.selectionManager.select("iips", wireId, false);
+        this.selectionManager.select(type, wireId, false);
       }
       return;
     }

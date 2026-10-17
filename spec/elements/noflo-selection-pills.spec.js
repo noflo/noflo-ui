@@ -36,6 +36,26 @@ describe("SelectionPills (work document #41)", () => {
     el.remove();
   });
 
+  it("the pills own their presses: a pointerdown never reaches the canvas", () => {
+    // The editor's empty-spot pointerdown path clears the whole
+    // selection — the pills' presses must not reach it, or the X button
+    // would dismiss every pill's selection with it
+    const el = document.createElement("noflo-selection-pills");
+    const parent = document.createElement("div");
+    parent.appendChild(el);
+    document.body.appendChild(parent);
+    let reached = 0;
+    parent.addEventListener("pointerdown", () => {
+      reached++;
+    });
+    el.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, composed: true }),
+    );
+    assert.equal(reached, 0, "the pointerdown stops at the pills");
+    el.remove();
+    parent.remove();
+  });
+
   it("the clear affordance is a real button that emits clear-selection", () => {
     const el = document.createElement("noflo-selection-pills");
     document.body.appendChild(el);
