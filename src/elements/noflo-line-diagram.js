@@ -168,13 +168,14 @@ export class FlowLineDiagram extends HTMLElement {
           stroke: var(--edge-route);
           stroke-width: 4px;
         }
-        /* The boundary marks: an IIP is the packet boundary (a lozenge
-           filled with the line's color), an exported port the system
-           boundary (the port-box square) */
+        /* The boundary marks, in the canvas's own grammar: the IIP's
+           rounded rectangle filled with the line's color, the export's
+           socket ring — smaller than a station — hollow like the
+           canvas's socket */
         .mark-iip {
           fill: var(--edge-route);
           stroke: var(--ui-bg, white);
-          stroke-width: 1.5px;
+          stroke-width: 1px;
         }
         .mark-export {
           fill: var(--ui-bg, white);
@@ -373,18 +374,20 @@ export class FlowLineDiagram extends HTMLElement {
             `<line x1="${railX}" y1="${y - ROW}" x2="${railX}" y2="${y}" class="rail${this.highlightEdges.has(station.via ?? "") ? " selected" : ""}" data-edge-id="${escapeHtml(station.via ?? "")}"></line>`,
           );
         }
-        // The station mark reads what the station IS: an IIP is the
-        // packet boundary (a lozenge in the line's color), an exported
-        // port is the system boundary (the port-box square), an
-        // interchange station (other lines touch it) is a larger disc,
-        // a plain node a disc, a line's terminus the roundel ring, a
-        // join a small tick
+        // The station mark reads what the station IS, in the canvas's
+        // own grammar: an IIP is the packet boundary (the chip's rounded
+        // rectangle, filled with the line's color), an exported port the
+        // system boundary (its socket ring, smaller than a station — the
+        // canvas renders exports at a quarter of a node), an interchange
+        // station (other lines touch it) is a larger disc, a plain node
+        // a disc, a line's terminus the roundel ring, a join a small
+        // tick
         const id = station.id;
         let mark;
         if (id.startsWith("DATA->")) {
-          mark = `<rect x="${railX - 7}" y="${y - 7}" width="14" height="14" transform="rotate(45 ${railX} ${y})" class="mark-iip"></rect>`;
+          mark = `<rect x="${railX - 6}" y="${y - 4.5}" width="12" height="9" rx="2.5" class="mark-iip"></rect>`;
         } else if (id.startsWith("export:")) {
-          mark = `<rect x="${railX - 7}" y="${y - 7}" width="14" height="14" class="mark-export"></rect>`;
+          mark = `<circle cx="${railX}" cy="${y}" r="4" class="mark-export"></circle>`;
         } else if (station.interchange.length > 0) {
           mark = `<circle cx="${railX}" cy="${y}" r="8" class="tick mark-interchange"></circle>`;
         } else if (station.kind === "terminus") {

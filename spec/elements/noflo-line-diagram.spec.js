@@ -60,10 +60,11 @@ describe("noflo-line-diagram: the strip (work document #35 update #14)", () => {
     element.remove();
   });
 
-  it("the four station kinds read distinctly", () => {
+  it("the four station kinds read distinctly, in the canvas's grammar", () => {
     // a→b with an IIP into a, an export out of b, and another line at a:
-    // the IIP renders a lozenge, the export a square, the interchange
-    // an enlarged disc, and the plain node a disc
+    // the IIP renders the chip's rounded rectangle, the export its
+    // socket ring (smaller than a station), the interchange an enlarged
+    // disc, and the plain node a disc
     const element = diagramFor(
       [
         { source: "a", target: "b", route: 3, id: "e1" },
