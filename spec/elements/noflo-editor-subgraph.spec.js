@@ -77,7 +77,7 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
     // one entry — the inspector's first field is the display label, so
     // the standalone Rename retired
     assert.ok(
-      texts.includes("Rename & metadata"),
+      texts.includes("Metadata"),
       "the consolidated metadata entry is offered",
     );
     assert.ok(!texts.includes("Rename"), "the standalone Rename is gone");
@@ -100,7 +100,7 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
       "the node menu stays lean",
     );
     assert.ok(
-      plainTexts.includes("Rename & metadata"),
+      plainTexts.includes("Metadata"),
       "the consolidated metadata entry is offered for elementary too",
     );
   });

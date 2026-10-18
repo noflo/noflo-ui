@@ -2150,7 +2150,7 @@ export class FlowEditor extends HTMLElement {
           // label, so the rename and the schema-driven metadata ride one
           // form instead of two menu entries
           items.push({
-            text: "Rename & metadata",
+            text: "Metadata",
             onClick: () => {
               emit(this, "node-metadata-attempt", { node: clickedNode });
             },
