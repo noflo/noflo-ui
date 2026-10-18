@@ -2145,19 +2145,12 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "pen-to-square",
           });
-          // The small editors (work document #64): the node's display
-          // label renames the station (the id stays the wire-referencing
-          // identity); the metadata opens the inspector — the
-          // schema-driven form over the node's metadata
+          // The small editors (work document #64): one entry covers the
+          // node's own data — the inspector's first field is the display
+          // label, so the rename and the schema-driven metadata ride one
+          // form instead of two menu entries
           items.push({
-            text: "Rename",
-            onClick: () => {
-              emit(this, "node-rename-attempt", { node: clickedNode });
-            },
-            icon: "pen",
-          });
-          items.push({
-            text: "Edit metadata",
+            text: "Rename & metadata",
             onClick: () => {
               emit(this, "node-metadata-attempt", { node: clickedNode });
             },
@@ -2171,20 +2164,6 @@ export class FlowEditor extends HTMLElement {
             icon: "trash",
           });
           if (!this.isSubgraphNode(/** @type {Element} */ (clickedNode))) {
-            items.push({
-              text: "Make subgraph",
-              onClick: () => {
-                // When the clicked node is part of the current selection,
-                // the whole selection becomes the subgraph
-                const name = this.getNodeName(
-                  /** @type {GraphEntity} */ (clickedNode),
-                );
-                const selected = [...this.selectionManager.nodes];
-                const nodeIds = selected.includes(name) ? selected : [name];
-                emit(this, "create-subgraph-attempt", { nodes: nodeIds });
-              },
-              icon: "folder-plus",
-            });
             // The scope is the label: a right-click on a selected node
             // groups the whole selection, a right-click on an unselected
             // node groups just that node — never silently ignore the
@@ -2373,6 +2352,19 @@ export class FlowEditor extends HTMLElement {
             });
           },
           icon: "object-group",
+        });
+        // The selection's subgraph (work document #29): the whole
+        // selection becomes the subgraph — the node menu's single-node
+        // variant retired in favor of the component screen's
+        // Implement as graph
+        items.push({
+          text: "Make subgraph",
+          onClick: () => {
+            emit(this, "create-subgraph-attempt", {
+              nodes: [...this.selectionManager.nodes],
+            });
+          },
+          icon: "folder-plus",
         });
       }
       if (this.hasSpace(graphPos.x, graphPos.y, 80)) {

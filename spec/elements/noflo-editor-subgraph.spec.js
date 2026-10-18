@@ -73,6 +73,14 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
       "Open is gone — Edit Component opens the graph editor",
     );
     assert.ok(!texts.includes("Make subgraph"), "Make subgraph is not");
+    // The small editors (work document #64): the node's own data rides
+    // one entry — the inspector's first field is the display label, so
+    // the standalone Rename retired
+    assert.ok(
+      texts.includes("Rename & metadata"),
+      "the consolidated metadata entry is offered",
+    );
+    assert.ok(!texts.includes("Rename"), "the standalone Rename is gone");
 
     opened.length = 0;
     const plainNode = /** @type {FlowNode} */ (
@@ -83,7 +91,18 @@ describe("FlowEditor subgraph context menu (work document #23)", () => {
     ed.showContextMenu(0, 0, { clickedNode: plainNode });
     const plainTexts = opened[0].map((item) => item.text);
     assert.ok(plainTexts.includes("Edit Component"));
-    assert.ok(plainTexts.includes("Make subgraph"), "elementary can convert");
+    // Make subgraph retired from the node menu: the component screen's
+    // Implement as graph owns the implementation transition (work
+    // document #29's ladder); the selection's subgraph lives in the
+    // canvas menu
+    assert.ok(
+      !plainTexts.includes("Make subgraph"),
+      "the node menu stays lean",
+    );
+    assert.ok(
+      plainTexts.includes("Rename & metadata"),
+      "the consolidated metadata entry is offered for elementary too",
+    );
   });
 });
 

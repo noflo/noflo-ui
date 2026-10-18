@@ -1716,6 +1716,18 @@ async function _openNodeMetadataEditor(nodeId) {
     { value: "save", label: "Save", kind: "btn-primary" },
   ]);
   componentModal.open(`Edit metadata · ${nodeId}`);
+  // The rename's continuity: the label field takes the focus, so the
+  // menu item reads as a rename that happens to carry the metadata
+  await (async () => {
+    try {
+      await schemaFormEl.building;
+      const label =
+        schemaFormEl.shadowRoot?.querySelector(".schema-form input");
+      label?.focus();
+    } catch {
+      // The form's preparation failed; the render is still visible
+    }
+  })();
   const action = await componentModal.submit();
   if (binding) {
     binding.destroy();
