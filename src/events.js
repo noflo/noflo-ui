@@ -98,11 +98,10 @@
  *   metadata inspector.
  * @property {CustomEvent<{ groupId: string, name: string }>} group-renamed
  * @property {CustomEvent<{ nodeId: string, label: string }>} node-renamed The
- * @property {CustomEvent<void>} graph-rename-attempt The canvas menu's
- *   Rename graph (work document #64's small editors): the shell asks
- *   for the new display name.
- * @property {CustomEvent<{ graphId: string, name: string }>} graph-renamed The
- *   confirmed graph display name; the routing id stays.
+ * @property {CustomEvent<void>} graph-metadata-attempt The canvas
+ *   menu's Graph properties (work document #64): the shell opens the
+ *   schema-driven properties editor — the display name rides inside it,
+ *   so the standalone graph rename retired.
  *   confirmed node display label (work document #64's small editors).
  * @property {CustomEvent<{ groupId: string }>} remove-group-attempt
  * @property {CustomEvent<{ memberships: Array<{ groupId: string, add: string[], remove: string[] }> }>} update-group-attempt

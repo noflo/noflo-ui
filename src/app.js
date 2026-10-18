@@ -76,7 +76,6 @@ import {
   openTextPrompt,
   setModalFeedback,
   wireExportRename,
-  wireGraphRename,
   wireGroupRename,
   wireNodeRename,
   wireRouteNaming,
@@ -1114,16 +1113,8 @@ async function render() {
   // the modal prefills with the metadata label, defaulting to the id
   wireNodeRename(ed, (nodeId) => {
     const view = projectGraph(mirrorDoc, activeGraphId);
-    const label = view?.processes?.[nodeId]?.metadata?.label;
-    return typeof label === "string" && label.length > 0 ? label : nodeId;
+    return view?.processes?.[nodeId]?.label ?? nodeId;
   });
-  // The graph's display-name rename: the routing id stays
-  wireGraphRename(
-    ed,
-    (graphId) =>
-      String(projectGraph(mirrorDoc, graphId)?.properties?.name ?? graphId),
-    () => activeGraphId,
-  );
   // The lines corner (work document #35 update #14): the per-line
   // diagrams' editor wiring rides the per-render editor — the corner's
   // data provider lives in init (it reads the projection fresh per
@@ -1139,15 +1130,24 @@ async function render() {
   }
   // The small editors (work document #64): the metadata inspector opens
   // from the node menu, schema-driven per the component's declared
-  // config schema
+  // config schema; the graph properties from the canvas menu
   on(ed, "node-metadata-attempt", (/** @type {any} */ e) => {
     const nodeId =
       /** @type {any} */ (e.detail.node).getAttribute("name") ?? "";
     _openNodeMetadataEditor(nodeId);
   });
+  on(ed, "graph-metadata-attempt", () => {
+    console.log("DBG graph-metadata-attempt received");
+    _openGraphPropertiesEditor();
+  });
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // The minimap tracks the same projection (work document #5)
   ed.updateMinimap?.(view);
+  // The open panels follow the projection: a metadata rename re-renders
+  // the per-line diagram's station labels (work document #64)
+  if (linesCorner && linesCorner.expanded) {
+    linesCorner.render();
+  }
   // Groups render behind the nodes (work document #5 update #16)
   ed.setGroups(view.groups ?? []);
   // Freshly appeared nodes spring in and shimmer (work document #5
@@ -1610,6 +1610,148 @@ async function fetchRuntimeSchemas(digests) {
 }
 
 /**
+ * Opens the graph properties editor (work document #64): a schema-driven
+ * form over the graph's metadata — the display name (the rename rides
+ * inside, the standalone graph rename retired) and the description now,
+ * with the graph-kind catalog keys joining when the runtime declares
+ * them. The form binds to the graph's metadata Y.Map via y-jedison with
+ * `keys` scoping: the form manages only its declared keys, the
+ * hierarchy's `parent` and the creation stamp stay untouched, and the
+ * binding's writes relay as the setGraphMetadata intent's binary update.
+ *
+ * @returns {Promise<void>}
+ */
+async function _openGraphPropertiesEditor() {
+  console.log("DBG props editor: componentModal", !!componentModal, "view", !!projectGraph(mirrorDoc, activeGraphId));
+  if (!componentModal) return;
+  const view = projectGraph(mirrorDoc, activeGraphId);
+  if (!view) return;
+  const schema = {
+    title: "Graph properties",
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      name: {
+        type: "string",
+        title: "Name",
+        description: "The graph's display name; the routing id stays",
+      },
+      description: {
+        type: "string",
+        title: "Description",
+      },
+    },
+  };
+  const formKeys = Object.keys(schema.properties);
+
+  const graphMetadata = view.properties ?? {};
+  const current = /** @type {Record<string, any>} */ ({});
+  for (const key of formKeys) {
+    const value = graphMetadata[key];
+    if (value !== undefined && value !== null) current[key] = value;
+  }
+
+  let schemaFormEl = /** @type {any} */ (
+    componentModal.querySelector("noflo-schema-form")
+  );
+  if (!schemaFormEl) {
+    schemaFormEl = /** @type {any} */ (
+      document.createElement("noflo-schema-form")
+    );
+    componentModal.appendChild(schemaFormEl);
+  }
+  componentForm.style.display = "none";
+  schemaFormEl.style.display = "block";
+  schemaFormEl.refResolver = (/** @type {string} */ ref) =>
+    schemaCache().getRef(ref);
+  schemaFormEl.schema = schema;
+  schemaFormEl.data = current;
+  let lastChange = { data: current, isValid: true, errors: [] };
+  schemaFormEl.addEventListener("form-change", (/** @type {any} */ e) => {
+    lastChange = e.detail;
+  });
+
+  const metadataYmap = /** @type {any} */ (
+    mirrorDoc.getMap("graphs").get(activeGraphId)?.get("metadata")
+  );
+  /** @type {any} */
+  let binding = null;
+  /** @type {((update: Uint8Array, origin: any) => void) | null} */
+  let relay = null;
+  if (metadataYmap) {
+    const origin = `graph-metadata:${activeGraphId}`;
+    binding = yJedison(schemaFormBinding(schemaFormEl, "yjs"), metadataYmap, {
+      origin,
+      keys: formKeys,
+    });
+    // The name prefills with the current display name (the graph id when
+    // the metadata carries none) — form-only, no write
+    const reconciled = schemaFormEl.data;
+    if (reconciled && reconciled.name === undefined) {
+      schemaFormEl.data = {
+        ...reconciled,
+        name: String(graphMetadata.name ?? activeGraphId),
+      };
+    }
+    relay = (
+      /** @type {Uint8Array} */ update,
+      /** @type {any} */ transactionOrigin,
+    ) => {
+      if (transactionOrigin !== origin) return;
+      sendIntent({
+        type: "INTENT",
+        command: "setGraphMetadata",
+        payload: { graphId: activeGraphId, update },
+      });
+    };
+    mirrorDoc.on("update", relay);
+  }
+
+  componentModal.setActions([
+    { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+    { value: "save", label: "Save", kind: "btn-primary" },
+  ]);
+  componentModal.open("Graph properties");
+  await (async () => {
+    try {
+      await schemaFormEl.building;
+      const name = schemaFormEl.shadowRoot?.querySelector(".schema-form input");
+      name?.focus();
+    } catch {
+      // The form's preparation failed; the render is still visible
+    }
+  })();
+  const action = await componentModal.submit();
+  if (binding) {
+    binding.destroy();
+    binding = null;
+  }
+  if (relay) {
+    mirrorDoc.off("update", relay);
+    relay = null;
+  }
+  schemaFormEl.style.display = "none";
+  componentForm.style.display = "";
+  if (action !== "save") return;
+  if (!lastChange.isValid) {
+    setModalFeedback(
+      componentModal,
+      "The properties fail the graph's schema",
+      schemaFormEl,
+    );
+    return _openGraphPropertiesEditor();
+  }
+  sendIntent({
+    type: "INTENT",
+    command: "setGraphMetadata",
+    payload: {
+      graphId: activeGraphId,
+      metadata: lastChange.data,
+    },
+  });
+}
+
+/**
  * Opens the node metadata inspector (work document #64's small editors):
  * a schema-driven form over the node's metadata — the schema resolves
  * from the component's config-schema composition when the library
@@ -1718,7 +1860,8 @@ async function _openNodeMetadataEditor(nodeId) {
     // nothing writes to the shared type merely by opening the editor
     const reconciled = schemaFormEl.data;
     if (reconciled && reconciled.label === undefined) {
-      schemaFormEl.data = { ...reconciled, label: nodeId };
+      const fallback = view?.processes?.[nodeId]?.label ?? nodeId;
+      schemaFormEl.data = { ...reconciled, label: fallback };
     }
     relay = (
       /** @type {Uint8Array} */ update,
@@ -2585,12 +2728,14 @@ async function init() {
     }
     return {
       edges,
-      labelFor: (/** @type {string} */ id) =>
-        id.startsWith("DATA->")
-          ? "data"
-          : id.startsWith("export:")
-            ? id.slice(7)
-            : id,
+      // The strip's stations read the display label (work document #64's
+      // small editors): the metadata label, defaulting to the id — and
+      // the boundary pseudo-stations keep their own vocabulary
+      labelFor: (/** @type {string} */ id) => {
+        if (id.startsWith("DATA->")) return "data";
+        if (id.startsWith("export:")) return id.slice(7);
+        return view.processes?.[id]?.label ?? id;
+      },
       routeTable: view.properties?.routes,
     };
   });

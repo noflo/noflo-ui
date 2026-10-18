@@ -591,16 +591,6 @@ export function createIntentMapper({
           },
         });
       });
-      // The graph's display name (work document #64's small editors):
-      // the routing id stays, the chip's breadcrumb and the explorer
-      // follow the metadata name
-      on(ed, "graph-renamed", (e) => {
-        sendIntent({
-          type: "INTENT",
-          command: "renameGraph",
-          payload: { graphId: e.detail.graphId, name: e.detail.name },
-        });
-      });
       on(ed, "remove-group-attempt", (e) => {
         sendIntent({
           type: "INTENT",

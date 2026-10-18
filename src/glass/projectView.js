@@ -71,14 +71,27 @@ export function projectGraph(doc, graphId) {
   const nodeList = [];
   for (const [nodeId, node] of nodes.entries()) {
     const plain = toPlain(node);
+    // The station's effective label (work document #64): the node's
+    // explicit label when set, else the component's short name — the
+    // display everywhere (canvas, the per-line diagram, the inspector's
+    // prefill) reads one computation
+    const label =
+      typeof plain.metadata?.label === "string" &&
+      plain.metadata.label.length > 0
+        ? plain.metadata.label
+        : (String(plain.component ?? nodeId)
+            .split("/")
+            .pop() ?? nodeId);
     processes[nodeId] = {
       component: plain.component,
       metadata: plain.metadata ?? {},
+      label,
     };
     nodeList.push({
       id: nodeId,
       component: plain.component,
       metadata: plain.metadata ?? {},
+      label,
     });
   }
 

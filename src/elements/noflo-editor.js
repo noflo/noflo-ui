@@ -2381,11 +2381,11 @@ export class FlowEditor extends HTMLElement {
         });
       }
       items.push({
-        text: "Rename graph",
+        text: "Graph properties",
         onClick: () => {
-          emit(this, "graph-rename-attempt", undefined);
+          emit(this, "graph-metadata-attempt", undefined);
         },
-        icon: "pen",
+        icon: "sliders",
       });
       items.push({
         text: "Close",
@@ -3273,7 +3273,10 @@ export class FlowEditor extends HTMLElement {
       region.setAttribute("data-group-id", group.id);
       layer.appendChild(region);
       // The label sits on the zone's topmost-leftmost occupied cell — an
-      // L-shaped zone's bounding-box corner may be empty
+      // L-shaped zone's bounding-box corner may be empty. The anchor
+      // clears the corner's 45° bevel: the bevel cuts the triangle
+      // where the cell coordinates sum below the cell size, so the
+      // anchor sits well inside that diagonal
       const labelCell = shape.labelCell;
       const label = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -3282,11 +3285,11 @@ export class FlowEditor extends HTMLElement {
       label.setAttribute("class", "group-label");
       label.setAttribute(
         "x",
-        String(/** @type {{ i: number, j: number }} */ (labelCell).i * 40 + 10),
+        String(/** @type {{ i: number, j: number }} */ (labelCell).i * 40 + 30),
       );
       label.setAttribute(
         "y",
-        String(/** @type {{ i: number, j: number }} */ (labelCell).j * 40 + 20),
+        String(/** @type {{ i: number, j: number }} */ (labelCell).j * 40 + 34),
       );
       label.textContent = group.name || "Group";
       layer.appendChild(label);

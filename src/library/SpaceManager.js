@@ -309,15 +309,34 @@ export class SpaceManager {
     // horizontals, verticals, and 45° turns)
     const loops = SpaceManager.zoneLoops(cells, cell);
     const d = SpaceManager.zoneContour(loops, cell, memberCells, keepOut);
+    // The label's home: the zone's topmost-leftmost RING cell — zone
+    // covered but not member-occupied — so the label reads as the
+    // zone's own name, never as a caption on the topmost node. The
+    // dilation guarantees the ring exists
     let labelCell = null;
     for (const key of cells) {
       const [i, j] = key.split(",").map(Number);
+      if (memberCells.has(key)) continue;
       if (
         !labelCell ||
         j < labelCell.j ||
         (j === labelCell.j && i < labelCell.i)
       ) {
         labelCell = { i, j };
+      }
+    }
+    // Defensive: a zone with no ring (impossible — the dilation runs
+    // last) falls back to the topmost-leftmost cell
+    if (!labelCell) {
+      for (const key of cells) {
+        const [i, j] = key.split(",").map(Number);
+        if (
+          !labelCell ||
+          j < labelCell.j ||
+          (j === labelCell.j && i < labelCell.i)
+        ) {
+          labelCell = { i, j };
+        }
       }
     }
     return { cells, d, labelCell };

@@ -303,7 +303,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setSignature'; payload: { component: string; signature?: { inports?: Array<{ name: string }>; outports?: Array<{ name: string }>; description?: string; icon?: string }; update?: Uint8Array } }
   | { type: 'INTENT'; command: 'setComponentCode'; payload: { component: string; code: string; update?: Uint8Array } }
   | { type: 'INTENT'; command: 'setNodeMetadata'; payload: { graphId: string; nodeId: string; metadata?: Record<string, any>; update?: Uint8Array } }
-  | { type: 'INTENT'; command: 'renameGraph'; payload: { graphId: string; name: string } }
+  | { type: 'INTENT'; command: 'setGraphMetadata'; payload: { graphId: string; metadata?: Record<string, any>; update?: Uint8Array } }
   | { type: 'INTENT'; command: 'createGroup'; payload: { graphId: string; nodeIds: string[]; name?: string } }
   | { type: 'INTENT'; command: 'removeGroup'; payload: { graphId: string; groupId: string } }
   | { type: 'INTENT'; command: 'updateGroup'; payload: { graphId: string; groupId: string; add?: string[]; remove?: string[]; name?: string } }
@@ -459,7 +459,7 @@ type EngineUIMessage =
   | { protocol: 'graph'; command: 'addiip'; payload: GraphIIP }
   | { protocol: 'graph'; command: 'updateiip'; payload: { id: string; data: any } }
   | { protocol: 'graph'; command: 'setnodemetadata'; payload: { graphId: string; nodeId: string; metadata?: Record<string, any> } }
-  | { protocol: 'graph'; command: 'renamegraph'; payload: { graphId: string; name: string } }
+  | { protocol: 'graph'; command: 'setgraphmetadata'; payload: { graphId: string; metadata?: Record<string, any> } }
   | { protocol: 'graph'; command: 'removeiip'; payload: { id: string } }
   | { protocol: 'graph'; command: 'addinport' | 'addoutport'; payload: GraphExport }
   | { protocol: 'graph'; command: 'removeinport' | 'removeoutport'; payload: { name: string } }

@@ -245,13 +245,17 @@
  */
 
 /**
- * Appendix A extension (work document #64's small editors): a graph's
- * display name changed; the routing id and the subgraph hierarchy stay.
+ * Appendix A extension (work document #64's graph properties): a graph's
+ * metadata merged — the display name is one key among the patch's. Either
+ * the whole-merge patch (`metadata`) or the collaborative properties
+ * editor's binary Yjs update (`update`, the setComponentCode pattern).
+ * The graph's id (the routing and the subgraph hierarchy's address)
+ * stays stable.
  *
- * @typedef {Object} IntentRenameGraphMessage
+ * @typedef {Object} IntentSetGraphMetadataMessage
  * @property {'INTENT'} type
- * @property {'renameGraph'} command
- * @property {{ graphId: string, name: string }} payload
+ * @property {'setGraphMetadata'} command
+ * @property {{ graphId: string, metadata?: Record<string, any>, update?: Uint8Array }} payload
  */
 
 /**
@@ -669,7 +673,7 @@
  *   | IntentForkComponentMessage
  *   | IntentSetSignatureMessage
  *   | IntentSetNodeMetadataMessage
- *   | IntentRenameGraphMessage
+ *   | IntentSetGraphMetadataMessage
  *   | IntentCreateGroupMessage
  *   | IntentRemoveGroupMessage
  *   | IntentUpdateGroupMessage
@@ -749,7 +753,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "forkComponent" },
   { type: "INTENT", command: "setSignature" },
   { type: "INTENT", command: "setNodeMetadata" },
-  { type: "INTENT", command: "renameGraph" },
+  { type: "INTENT", command: "setGraphMetadata" },
   { type: "INTENT", command: "setComponentCode" },
   { type: "INTENT", command: "setDoc" },
   { type: "INTENT", command: "removeDoc" },
@@ -1182,7 +1186,7 @@ export const MESH_COMMANDS = [
  *   | GraphAddIIPMessage
  *   | GraphUpdateIIPMessage
  *   | GraphSetNodeMetadataMessage
- *   | GraphRenameGraphMessage
+ *   | GraphSetGraphMetadataMessage
  *   | GraphRemoveIIPMessage
  *   | GraphAddExportMessage
  *   | GraphRemoveExportMessage
@@ -1280,7 +1284,7 @@ export const ECHO_MESSAGES = [
   { protocol: "graph", command: "addiip" },
   { protocol: "graph", command: "updateiip" },
   { protocol: "graph", command: "setnodemetadata" },
-  { protocol: "graph", command: "renamegraph" },
+  { protocol: "graph", command: "setgraphmetadata" },
   { protocol: "graph", command: "removeiip" },
   { protocol: "graph", command: "addinport" },
   { protocol: "graph", command: "addoutport" },
@@ -1323,13 +1327,15 @@ export const ECHO_MESSAGES = [
  */
 
 /**
- * Appendix A extension (work document #64's small editors): a graph's
- * display name changed; the routing id stays.
+ * Appendix A extension (work document #64's graph properties): a graph's
+ * metadata merged. The echo's payload carries the patch when it was a
+ * whole-merge; a binary relay echoes the identifiers only — the Glass's
+ * mirror converges through the y-update channel.
  *
- * @typedef {Object} GraphRenameGraphMessage
+ * @typedef {Object} GraphSetGraphMetadataMessage
  * @property {'graph'} protocol
- * @property {'renamegraph'} command
- * @property {{ graphId: string, name: string }} payload
+ * @property {'setgraphmetadata'} command
+ * @property {{ graphId: string, metadata?: Record<string, any> }} payload
  */
 
 /**

@@ -52,7 +52,6 @@ import {
   removeNode,
   removeNodeFromGroups,
   removeSchema,
-  renameGraph,
   renameGroup,
   requestWorkDocScope,
   revokePermission,
@@ -60,6 +59,7 @@ import {
   setComponentSignature,
   setDocText,
   setEdgeRoute,
+  setGraphMetadata,
   setNodeComponent,
   setNodeMetadata,
   setPortRoute,
@@ -457,7 +457,7 @@ export const INTENT_HANDLERS = {
   forkComponent: intentForkComponent,
   setSignature: intentSetSignature,
   setNodeMetadata: intentSetNodeMetadata,
-  renameGraph: intentRenameGraph,
+  setGraphMetadata: intentSetGraphMetadata,
 };
 
 /**
@@ -2097,30 +2097,49 @@ function intentSetNodeMetadata(doc, payload) {
 }
 
 /**
- * Renames a graph (work document #64's small editors): the display name
- * changes, the routing id stays.
+ * Merges a patch into a graph's metadata (work document #64's graph
+ * properties): the display name is one key among the patch's. The
+ * collaborative properties editor's binding writes granularly into the
+ * mirror's graph metadata and relays the raw Yjs update — applied with
+ * item structure intact; the whole-merge patch reconciles per key, so
+ * a save never orphans the binding's item structure. The graph's id
+ * (the routing and the subgraph hierarchy's address) stays stable.
  *
  * @param {Y.Doc} doc
  * @param {any} payload
  * @returns {EngineResult}
  */
-function intentRenameGraph(doc, payload) {
-  const { graphId, name } = payload ?? {};
-  if (
-    typeof graphId !== "string" ||
-    typeof name !== "string" ||
-    name.trim().length === 0
-  ) {
+function intentSetGraphMetadata(doc, payload) {
+  const { graphId, metadata, update } = payload ?? {};
+  if (typeof graphId !== "string") {
     return { accepted: false, echoes: [] };
   }
-  if (!renameGraph(doc, graphId, name.trim())) {
+  // The collaborative properties editor's binary update (work document
+  // #64)
+  if (update !== undefined) {
+    if (!(update instanceof Uint8Array) || update.length === 0) {
+      return { accepted: false, echoes: [] };
+    }
+    Y.applyUpdate(doc, update);
+    /** @type {import("./Protocol.js").GraphSetGraphMetadataMessage} */
+    const echo = {
+      protocol: "graph",
+      command: "setgraphmetadata",
+      payload: { graphId },
+    };
+    return { accepted: true, echoes: [echo] };
+  }
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return { accepted: false, echoes: [] };
   }
-  /** @type {import("./Protocol.js").GraphRenameGraphMessage} */
+  if (!setGraphMetadata(doc, graphId, metadata)) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphSetGraphMetadataMessage} */
   const echo = {
     protocol: "graph",
-    command: "renamegraph",
-    payload: { graphId, name: name.trim() },
+    command: "setgraphmetadata",
+    payload: { graphId, metadata },
   };
   return { accepted: true, echoes: [echo] };
 }

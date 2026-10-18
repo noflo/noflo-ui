@@ -485,21 +485,30 @@ export function setNodeMetadata(graph, nodeId, patch) {
 }
 
 /**
- * Renames a graph (work document #64's small editors): the graph's
- * metadata carries its name; the id (the routing and the subgraph
- * hierarchy's address) stays stable.
+ * Merges a patch into a graph's metadata (work document #64's graph
+ * properties): per-key set and delete inside the graph's existing
+ * metadata map — the map's item structure survives, so the properties
+ * editor's binding keeps its shared subtree. The graph's id (the
+ * routing and the subgraph hierarchy's address) stays stable; the
+ * display name is one key among the patch's.
  *
  * @param {Y.Doc} doc
  * @param {string} graphId
- * @param {string} name The new display name.
+ * @param {Record<string, any>} patch The keys to merge.
  * @returns {boolean} Whether the graph existed.
  */
-export function renameGraph(doc, graphId, name) {
+export function setGraphMetadata(doc, graphId, patch) {
   const graph = getGraph(doc, graphId);
   if (!graph) return false;
   const metadata = /** @type {Y.Map<any>} */ (graph.get("metadata"));
   if (!metadata) return false;
-  metadata.set("name", name);
+  for (const key of Object.keys(patch)) {
+    if (patch[key] === undefined) {
+      metadata.delete(key);
+    } else {
+      metadata.set(key, patch[key]);
+    }
+  }
   return true;
 }
 

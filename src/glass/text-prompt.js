@@ -247,31 +247,6 @@ export function wireNodeRename(editor, currentLabel) {
 }
 
 /**
- * The graph's display-name rename (work document #64's small editors):
- * the canvas menu's Rename graph opens the shared single-line modal
- * prefilled with the graph's current name; the confirmed name emits back
- * for the intent mapper. The routing id stays.
- *
- * @param {HTMLElement} editor
- * @param {(graphId: string) => string} currentName Resolves the graph's
- *   current display name.
- * @param {() => string} graphId The active graph's id.
- * @returns {void}
- */
-export function wireGraphRename(editor, currentName, graphId) {
-  on(editor, "graph-rename-attempt", async () => {
-    const id = graphId();
-    const named = await openTextPrompt({
-      title: "Rename graph",
-      value: currentName(id),
-      confirmLabel: "Rename graph",
-    });
-    if (named === null || named === currentName(id)) return;
-    emit(editor, "graph-renamed", { graphId: id, name: named });
-  });
-}
-
-/**
  * The route-naming flow (work document #35's route context): the editor's
  * "Name route" menu item opens the single-line modal prefilled with the
  * route's current name; the confirmed name emits back for the intent
