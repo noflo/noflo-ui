@@ -52,6 +52,7 @@ export function cornerStyles() {
   .chip {
     display: inline-flex;
     gap: 10px;
+    overflow: hidden;
     align-items: center;
     padding: 6px 10px;
     background: var(--ui-bg, rgb(20, 27, 35));
@@ -75,12 +76,22 @@ export function cornerStyles() {
     gap: 4px;
     align-items: center;
     color: var(--node-text);
+    /* The segments shrink with the chip's bound width: the labels
+       ellipsize rather than overflow, so the chip's own content-driven
+       condensation reads true need */
+    min-width: 0;
+    overflow: hidden;
   }
   .seg.calm { color: var(--ui-age-calm); }
   .seg.activity { color: var(--ui-age-activity); }
   .seg.attention { color: var(--ui-age-attention); }
   .seg.offline { color: var(--ui-age-offline); }
-  .seg .label { white-space: nowrap; }
+  .seg .label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
   :host([data-minified]) .seg .label { display: none; }
   /* The content-driven rung of the ladder (work document #64): a chip
      whose content cannot fit the side's consistent width drops its
@@ -305,26 +316,49 @@ function applyPanelGeometry(side) {
     const value = `${Math.round(inset)}px`;
     if (container.style[edge] !== value) container.style[edge] = value;
   }
+  // The width is global: both sides' columns and every chip share one
+  // consistent size, so the corners read as one system regardless of
+  // which side their content sits on (work document #63 review). The
+  // width reads the chips' INTRINSIC content — the labels' scroll
+  // widths, not the chips' current rects, which the last pass's own
+  // binding stretched — so the size can also shrink back when content
+  // condenses
   let width = 0;
-  for (const edge of /** @type {const} */ (["top", "bottom"])) {
-    const corners = panelEdgeCorners.get(`${side}:${edge}`);
-    if (!corners) continue;
-    for (const corner of corners) {
-      const rect = chipRect(corner);
-      if (!rect) continue;
-      width = Math.max(width, rect.width);
+  for (const both of /** @type {const} */ (["left", "right"])) {
+    for (const edge of /** @type {const} */ (["top", "bottom"])) {
+      const corners = panelEdgeCorners.get(`${both}:${edge}`);
+      if (!corners) continue;
+      for (const corner of corners) {
+        const chip = /** @type {HTMLElement | null} */ (
+          corner.shadowRoot?.querySelector(".chip")
+        );
+        if (!chip) continue;
+        const intrinsic = [...chip.querySelectorAll(".seg")].reduce(
+          (sum, seg) => {
+            let content = 0;
+            for (const child of /** @type {HTMLElement} */ (seg).children) {
+              content += child.scrollWidth;
+            }
+            return sum + content + 8;
+          },
+          0,
+        );
+        width = Math.max(width, intrinsic + 20);
+      }
     }
   }
   const widthValue =
     width > 0 ? `${Math.round(Math.max(width, PANEL_WIDTH_FLOOR))}px` : "";
-  if (container.style.width !== widthValue) container.style.width = widthValue;
+  for (const both of /** @type {const} */ (["left", "right"])) {
+    const bothContainer = panelContainer(both);
+    if (bothContainer.style.width !== widthValue)
+      bothContainer.style.width = widthValue;
+  }
 
-  // The chips bind to the side's consistent width: every chip fills the
-  // column, so the corners align regardless of their content
+  // The chips bind to the shared width: every chip fills its column, so
+  // the corners align regardless of their content
   if (widthValue !== "") {
-    for (const edge of /** @type {const} */ (["top", "bottom"])) {
-      const corners = panelEdgeCorners.get(`${side}:${edge}`);
-      if (!corners) continue;
+    for (const corners of panelEdgeCorners.values()) {
       for (const corner of corners) {
         const chip = /** @type {HTMLElement | null} */ (
           corner.shadowRoot?.querySelector(".chip")
@@ -350,10 +384,17 @@ function applyPanelGeometry(side) {
     for (const corner of corners) {
       const chip = corner.shadowRoot?.querySelector(".chip");
       if (!chip) continue;
-      const natural = [...chip.querySelectorAll(".seg")].reduce(
-        (sum, seg) => sum + /** @type {HTMLElement} */ (seg).offsetWidth,
-        0,
-      );
+      // The intrinsic content: the children's scroll widths — the
+      // stretched segments report their flexed size, the labels'
+      // scrollWidth reports the text they actually need
+      const natural =
+        [...chip.querySelectorAll(".seg")].reduce((sum, seg) => {
+          let content = 0;
+          for (const child of /** @type {HTMLElement} */ (seg).children) {
+            content += child.scrollWidth;
+          }
+          return sum + content + 8;
+        }, 0) + 20;
       const fits = natural === 0 || natural + 20 <= target;
       if (corner._condensed !== !fits) {
         corner._condensed = !fits;
