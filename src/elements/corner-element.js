@@ -82,6 +82,12 @@ export function cornerStyles() {
   .seg.offline { color: var(--ui-age-offline); }
   .seg .label { white-space: nowrap; }
   :host([data-minified]) .seg .label { display: none; }
+  /* The content-driven rung of the ladder (work document #64): a chip
+     whose content cannot fit the side's consistent width drops its
+     labels — the counts remain — without touching the viewport-driven
+     minified state */
+  :host([data-condensed]) .seg .label { display: none; }
+  :host([data-condensed][data-minified]) .seg .label { display: none; }
   /* The chips' degradation ladder: full is icon + label; minified drops
      the words and keeps icon + count (the bare number a segment
      summarizes with); micro — the extreme rung, viewport-driven —
@@ -312,6 +318,50 @@ function applyPanelGeometry(side) {
   const widthValue =
     width > 0 ? `${Math.round(Math.max(width, PANEL_WIDTH_FLOOR))}px` : "";
   if (container.style.width !== widthValue) container.style.width = widthValue;
+
+  // The chips bind to the side's consistent width: every chip fills the
+  // column, so the corners align regardless of their content
+  if (widthValue !== "") {
+    for (const edge of /** @type {const} */ (["top", "bottom"])) {
+      const corners = panelEdgeCorners.get(`${side}:${edge}`);
+      if (!corners) continue;
+      for (const corner of corners) {
+        const chip = /** @type {HTMLElement | null} */ (
+          corner.shadowRoot?.querySelector(".chip")
+        );
+        if (chip && chip.style.width !== widthValue) {
+          chip.style.width = widthValue;
+        }
+      }
+    }
+  }
+
+  // The chips bind to the side's consistent width: every chip fills the
+  // column, and a chip whose content cannot fit condenses — its labels
+  // drop, its counts remain — the degradation ladder's content-driven
+  // rung (work document #64's review). The natural measurement reads
+  // the segments before any condensation toggles, so the column's
+  // width never shrinks because a chip already condensed
+  if (widthValue === "") return;
+  const target = Math.round(Math.max(width, PANEL_WIDTH_FLOOR));
+  for (const edge of /** @type {const} */ (["top", "bottom"])) {
+    const corners = panelEdgeCorners.get(`${side}:${edge}`);
+    if (!corners) continue;
+    for (const corner of corners) {
+      const chip = corner.shadowRoot?.querySelector(".chip");
+      if (!chip) continue;
+      const natural = [...chip.querySelectorAll(".seg")].reduce(
+        (sum, seg) => sum + /** @type {HTMLElement} */ (seg).offsetWidth,
+        0,
+      );
+      const fits = natural === 0 || natural + 20 <= target;
+      if (corner._condensed !== !fits) {
+        corner._condensed = !fits;
+        // The attribute drives the chip's CSS: no re-render needed
+        corner.toggleAttribute("data-condensed", !fits);
+      }
+    }
+  }
 }
 
 /**
@@ -458,6 +508,9 @@ export class FlowCornerElement extends HTMLElement {
      * @type {string | null}
      */
     this._panelEdgeKey = null;
+    /** Whether the chip is in the content-driven condensed state (the
+     * labels dropped to fit the side's consistent width). */
+    this._condensed = false;
   }
 
   connectedCallback() {

@@ -1622,7 +1622,12 @@ async function fetchRuntimeSchemas(digests) {
  * @returns {Promise<void>}
  */
 async function _openGraphPropertiesEditor() {
-  console.log("DBG props editor: componentModal", !!componentModal, "view", !!projectGraph(mirrorDoc, activeGraphId));
+  console.log(
+    "DBG props editor: componentModal",
+    !!componentModal,
+    "view",
+    !!projectGraph(mirrorDoc, activeGraphId),
+  );
   if (!componentModal) return;
   const view = projectGraph(mirrorDoc, activeGraphId);
   if (!view) return;
