@@ -3,11 +3,13 @@ import { describe, it } from "node:test";
 
 import "./utils/register.js";
 
+import { yJedison } from "y-jedison";
 import {
   REGISTRY_MAP,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import { buildSignatureSchema } from "../../src/library/schema.js";
+import "../../src/elements/noflo-schema-form.js";
 import "../../src/elements/noflo-json-form.js";
 import "../../src/elements/noflo-component-view.js";
 import * as Y from "../../vendor/yjs.js";
@@ -37,6 +39,86 @@ async function openedView(mirror, component) {
   });
   return view;
 }
+
+describe("the shared-form adapter (work document #64)", () => {
+  it("binds the in-house schema form to a shared type: edits write granularly, remotes stream in", async () => {
+    const { schemaFormBinding } = await import(
+      "../../src/library/formBinding.js"
+    );
+    const { addIIP, addNode, createGraph, createProjectDoc } = await import(
+      "../../src/crdt/ProjectDoc.js"
+    );
+    const mirror = createProjectDoc("scratch");
+    const graph = createGraph(mirror, "main");
+    addNode(graph, "N", "c/N");
+    addIIP(graph, { greeting: "hello", count: 1 }, { node: "N", port: "in" });
+    const data = graph.get("edges").get("DATA->N:in[0]").get("data");
+    assert.equal(typeof data.set, "function", "the packet data is shared");
+
+    // The declared form (#57's architecture) renders the packet
+    const element = /** @type {any} */ (
+      document.createElement("noflo-schema-form")
+    );
+    document.body.appendChild(element);
+    element.schema = {
+      type: "object",
+      properties: {
+        greeting: { type: "string" },
+        count: { type: "number" },
+      },
+    };
+    element.data = { greeting: "hello", count: 1 };
+
+    const binding = yJedison(schemaFormBinding(element), data, {
+      origin: "iip:DATA->N:in[0]",
+    });
+
+    // A user edit: the form's own widget path emits form-change without
+    // an initiator — the binding applies it granularly
+    /** @type {number} */
+    let adapterFires = 0;
+    binding.jedison.on("change", () => adapterFires++);
+    element.data = { greeting: "hello", count: 2 };
+    console.log(
+      "DBG edit:",
+      "adapterFires:",
+      adapterFires,
+      "value:",
+      JSON.stringify(binding.jedison.getValue()),
+      "entry before:",
+      JSON.stringify(data.toJSON()),
+    );
+    binding._onChange(undefined);
+    console.log("DBG manual apply:", JSON.stringify(data.toJSON()));
+    assert.equal(data.get("count"), 2, "the user edit landed granularly");
+    assert.equal(
+      typeof data.get.bind,
+      "function",
+      "the shared map was never replaced",
+    );
+
+    // A peer's change arrives: the form re-renders, and the echo — the
+    // form-change fired by the remote-driven setter — writes nothing
+    mirror.transact(() => {
+      data.set("greeting", "from-peer");
+    }, "peer");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(
+      element.data,
+      {
+        greeting: "from-peer",
+        count: 2,
+      },
+      "the remote change streamed into the form",
+    );
+    // Stable: no oscillation
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(data.toJSON(), { greeting: "from-peer", count: 2 });
+
+    binding.destroy();
+    element.remove();
+  });
+});
 
 describe("the signature form's y-jedison binding (work document #64)", () => {
   it("form edits write granularly into the registry entry and relay as binary updates", async () => {

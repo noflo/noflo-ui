@@ -10,6 +10,7 @@ import {
   adoptProjectIdentity,
   createGraph,
   createProjectDoc,
+  dataToShared,
   deleteComponent,
   deleteGraph,
   deleteSpecSuite,
@@ -196,6 +197,53 @@ describe("edges", () => {
     assert.equal(graph.get("edges").get(id).get("data"), "hello");
     assert.equal(graph.get("edges").get(id).get("src"), undefined);
     assert.equal(addIIP(graph, "hello", { node: "B", port: "in" }), null);
+  });
+
+  it("stores object and array IIP data as granular shared types (work document #64)", () => {
+    const doc = createProjectDoc("p");
+    const graph = createGraph(doc, "main");
+    addNode(graph, "B", "c/B");
+
+    // An object becomes a Y.Map whose children keep their identities
+    const objectId = addIIP(
+      graph,
+      { greeting: "hello", count: 3, nested: { deep: true } },
+      { node: "B", port: "in" },
+    );
+    const data = graph.get("edges").get(objectId).get("data");
+    assert.equal(typeof data.get, "function", "an object is a shared map");
+    assert.equal(data.get("greeting"), "hello", "the children read plainly");
+    assert.equal(typeof data.get("nested").get, "function", "nesting recurses");
+    // A scalar inside the tree stays a scalar
+    assert.equal(data.get("count"), 3);
+
+    // An array becomes a shared array
+    const arrayId = addIIP(graph, [1, { name: "item" }], {
+      node: "B",
+      port: "cfg",
+    });
+    const arrayData = graph.get("edges").get(arrayId).get("data");
+    assert.equal(
+      typeof arrayData.insert,
+      "function",
+      "an array is a shared array",
+    );
+    assert.deepEqual(arrayData.toJSON(), [1, { name: "item" }]);
+
+    // Scalars stay plain
+    const scalarId = addIIP(graph, "plain", { node: "B", port: "in2" });
+    assert.equal(
+      graph.get("edges").get(scalarId).get("data"),
+      "plain",
+      "a scalar stays a scalar",
+    );
+    // The granular values serialize as plain JSON (the projections and
+    // the file format are unaffected)
+    assert.deepEqual(data.toJSON(), {
+      greeting: "hello",
+      count: 3,
+      nested: { deep: true },
+    });
   });
 
   it("removes edges by id", () => {

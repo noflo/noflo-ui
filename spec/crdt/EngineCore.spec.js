@@ -152,6 +152,150 @@ describe("intents", () => {
     }
   });
 
+  it("updateIIP applies a binary update and writes granularly (work document #64)", () => {
+    const engineDoc = createProjectDoc("p");
+    handle(engineDoc, {
+      type: "INTENT",
+      command: "createGraph",
+      payload: { graphId: "main" },
+    });
+    handle(engineDoc, {
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "c/X",
+        signature: { inports: [{ name: "in" }], outports: [] },
+      },
+    });
+    handle(engineDoc, {
+      type: "INTENT",
+      command: "addNode",
+      payload: {
+        graphId: "main",
+        nodeId: "N0",
+        componentName: "c/X",
+        metadata: { x: 100, y: 100 },
+      },
+    });
+    handle(engineDoc, {
+      type: "INTENT",
+      command: "addIIP",
+      payload: {
+        graphId: "main",
+        data: { greeting: "hello", count: 3 },
+        tgt: { node: "N0", port: "in", index: 0 },
+      },
+    });
+    const iipId = "DATA->N0:in[0]";
+
+    // Two peers mirroring the engine, editing the packet's data
+    // concurrently through their collaborative value editors
+    const mirrorA = new Y.Doc();
+    Y.applyUpdate(mirrorA, Y.encodeStateAsUpdate(engineDoc));
+    const mirrorB = new Y.Doc();
+    Y.applyUpdate(mirrorB, Y.encodeStateAsUpdate(engineDoc));
+
+    const dataA = mirrorA
+      .getMap("graphs")
+      .get("main")
+      .get("edges")
+      .get(iipId)
+      .get("data");
+    assert.equal(
+      typeof dataA.set,
+      "function",
+      "the packet data is a shared map",
+    );
+    /** @type {Uint8Array | null} */
+    let capturedA = null;
+    mirrorA.on("update", (/** @type {Uint8Array} */ u) => {
+      capturedA = u;
+    });
+    mirrorA.transact(() => {
+      dataA.set("greeting", "modified");
+    });
+    assert.ok(capturedA, "peer A's edit produced a diff");
+    const resultA = handle(engineDoc, {
+      type: "INTENT",
+      command: "updateIIP",
+      payload: { graphId: "main", id: iipId, update: capturedA },
+    });
+    assert.equal(resultA.accepted, true);
+
+    const dataB = mirrorB
+      .getMap("graphs")
+      .get("main")
+      .get("edges")
+      .get(iipId)
+      .get("data");
+    /** @type {Uint8Array | null} */
+    let capturedB = null;
+    mirrorB.on("update", (/** @type {Uint8Array} */ u) => {
+      capturedB = u;
+    });
+    mirrorB.transact(() => {
+      dataB.set("count", 42);
+    });
+    const resultB = handle(engineDoc, {
+      type: "INTENT",
+      command: "updateIIP",
+      payload: { graphId: "main", id: iipId, update: capturedB },
+    });
+    assert.equal(resultB.accepted, true);
+
+    // The authoritative packet holds BOTH edits merged
+    const engineData = engineDoc
+      .getMap("graphs")
+      .get("main")
+      .get("edges")
+      .get(iipId)
+      .get("data");
+    assert.equal(engineData.get("greeting"), "modified", "peer A's key");
+    assert.equal(engineData.get("count"), 42, "peer B's key");
+
+    // Converge: both peers see the merge without clobbering
+    Y.applyUpdate(mirrorA, Y.encodeStateAsUpdate(engineDoc));
+    Y.applyUpdate(mirrorB, Y.encodeStateAsUpdate(engineDoc));
+    assert.equal(dataA.get("count"), 42, "peer A sees B's edit");
+    assert.equal(dataB.get("greeting"), "modified", "peer B sees A's edit");
+
+    // The whole-write reconciles granularly: an existing shared map
+    // updates per key instead of being replaced
+    const before = engineDoc
+      .getMap("graphs")
+      .get("main")
+      .get("edges")
+      .get(iipId)
+      .get("data");
+    handle(engineDoc, {
+      type: "INTENT",
+      command: "updateIIP",
+      payload: {
+        graphId: "main",
+        id: iipId,
+        data: { greeting: "modified", count: 42, extra: "added" },
+      },
+    });
+    const after = engineDoc
+      .getMap("graphs")
+      .get("main")
+      .get("edges")
+      .get(iipId)
+      .get("data");
+    assert.equal(after, before, "the shared type survived the whole-write");
+    assert.equal(after.get("extra"), "added", "the new key landed");
+
+    // Malformed updates are refused
+    assert.equal(
+      handle(engineDoc, {
+        type: "INTENT",
+        command: "updateIIP",
+        payload: { graphId: "main", id: iipId, update: "not-binary" },
+      }).accepted,
+      false,
+    );
+  });
+
   it("setSignature applies a binary update from the collaborative form (work document #64)", () => {
     const engineDoc = createProjectDoc("p");
     const setup = handle(engineDoc, {

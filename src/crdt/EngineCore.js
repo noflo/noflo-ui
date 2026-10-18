@@ -24,6 +24,7 @@ import {
   createGroup,
   createSchema,
   createWorkDoc,
+  dataToShared,
   deleteGraph,
   edgeIdFor,
   ensureComponent,
@@ -2039,8 +2040,99 @@ function intentAddIIP(doc, payload) {
  * @param {any} payload
  * @returns {EngineResult}
  */
+/**
+ * Reconciles a shared Y.Map in place with a plain object (work document
+ * #64): per-key writes, missing keys deleted, nested shared types
+ * recursing — a save never orphans the collaborative editor's item
+ * structure.
+ *
+ * @param {any} yMap The shared map.
+ * @param {Record<string, any>} value The target plain object.
+ * @returns {void}
+ */
+function applyMapGranular(yMap, value) {
+  for (const key of Object.keys(yMap.toJSON())) {
+    if (!Object.hasOwn(value, key)) yMap.delete(key);
+  }
+  for (const key of Object.keys(value)) {
+    const child = yMap.get(key);
+    const after = value[key];
+    const childIsMap =
+      child &&
+      typeof child === "object" &&
+      typeof child.set === "function" &&
+      typeof child.size === "number";
+    const childIsArray =
+      child &&
+      typeof child === "object" &&
+      typeof child.insert === "function" &&
+      typeof child.length === "number";
+    if (
+      childIsMap &&
+      after &&
+      typeof after === "object" &&
+      !Array.isArray(after)
+    ) {
+      applyMapGranular(child, after);
+    } else if (childIsArray && Array.isArray(after)) {
+      applyArrayGranular(child, after);
+    } else {
+      const current = yMap.get(key);
+      if (current !== after) yMap.set(key, dataToShared(after));
+    }
+  }
+}
+
+/**
+ * Reconciles a shared Y.Array in place with a plain array (work document
+ * #64): matching positions recurse into shared children, scalars splice.
+ *
+ * @param {any} yArray The shared array.
+ * @param {any[]} value The target plain array.
+ * @returns {void}
+ */
+function applyArrayGranular(yArray, value) {
+  const shared = Math.min(yArray.length, value.length);
+  for (let index = 0; index < shared; index++) {
+    const child = yArray.get(index);
+    const after = value[index];
+    const childIsMap =
+      child &&
+      typeof child === "object" &&
+      typeof child.set === "function" &&
+      typeof child.size === "number";
+    if (
+      childIsMap &&
+      after &&
+      typeof after === "object" &&
+      !Array.isArray(after)
+    ) {
+      applyMapGranular(child, after);
+    } else {
+      const current = yArray.get(index);
+      if (current !== after) {
+        yArray.delete(index, 1);
+        yArray.insert(index, [dataToShared(after)]);
+      }
+    }
+  }
+  if (value.length > yArray.length) {
+    const additions = value
+      .slice(yArray.length)
+      .map((item) => dataToShared(item));
+    yArray.insert(yArray.length, additions);
+  } else if (value.length < yArray.length) {
+    yArray.delete(value.length, yArray.length - value.length);
+  }
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
 function intentUpdateIIP(doc, payload) {
-  const { graphId, id, data } = payload ?? {};
+  const { graphId, id, data, update } = payload ?? {};
   if (typeof graphId !== "string" || typeof id !== "string") {
     return { accepted: false, echoes: [] };
   }
@@ -2057,8 +2149,47 @@ function intentUpdateIIP(doc, payload) {
   if (!edge) {
     return { accepted: false, echoes: [] };
   }
+  // The collaborative value editor's binary update (work document #64):
+  // the binding writes granularly into the mirror's data type and
+  // relays the raw Yjs update — applied here with item structure
+  // intact, the setComponentCode pattern
+  if (update !== undefined) {
+    if (!(update instanceof Uint8Array) || update.length === 0) {
+      return { accepted: false, echoes: [] };
+    }
+    Y.applyUpdate(doc, update);
+    return { accepted: true, echoes: [] };
+  }
   doc.transact(() => {
-    edge.set("data", data);
+    // The granular write (work document #64): an existing shared data
+    // type reconciles in place — per-key for objects, so a save never
+    // orphans the collaborative editor's item structure — while kind
+    // changes and scalars replace wholesale
+    const current = edge.get("data");
+    const currentIsMap =
+      current &&
+      typeof current === "object" &&
+      typeof current.set === "function" &&
+      typeof current.delete === "function" &&
+      typeof current.size === "number" &&
+      !Array.isArray(current);
+    const currentIsArray =
+      current &&
+      typeof current === "object" &&
+      typeof current.insert === "function" &&
+      typeof current.length === "number";
+    if (
+      currentIsMap &&
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+    ) {
+      applyMapGranular(current, data);
+    } else if (currentIsArray && Array.isArray(data)) {
+      applyArrayGranular(current, data);
+    } else {
+      edge.set("data", dataToShared(data));
+    }
   });
   /** @type {import("./Protocol.js").GraphUpdateIIPMessage} */
   const echo = {

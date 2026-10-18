@@ -1,5 +1,7 @@
 .DS_Store
-dist/
+!vendor/yjs-package/dist/
+!vendor/yjs-package/dist/**
+
 node_modules/
 utils/icon-map.js
 bridge.json

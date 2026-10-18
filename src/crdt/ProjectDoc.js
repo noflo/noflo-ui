@@ -498,11 +498,39 @@ export function addIIP(graph, data, tgt, metadata = {}) {
 
   const edge = new Y.Map();
   edge.set("id", edgeId);
-  edge.set("data", data);
+  edge.set("data", dataToShared(data));
   edge.set("tgt", endpointMap(tgt));
   edge.set("metadata", metadataMap(metadata));
   edges.set(edgeId, edge);
   return edgeId;
+}
+
+/**
+ * Wraps IIP packet data for shared storage (work document #64): objects
+ * and arrays become granular shared types — per-key and per-element
+ * merging for the collaborative value editor — while scalars stay plain
+ * (Yjs stores them directly). Readers convert through `toJSON`, so the
+ * plain-JSON projections and the file serialization are unaffected.
+ *
+ * @param {any} data The packet's plain JSON value.
+ * @returns {any} The value to store under the edge's `data` key.
+ */
+export function dataToShared(data) {
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const child = new Y.Map();
+    for (const key of Object.keys(data)) {
+      child.set(key, dataToShared(data[key]));
+    }
+    return child;
+  }
+  if (Array.isArray(data)) {
+    const child = new Y.Array();
+    for (const item of data) {
+      child.push([dataToShared(item)]);
+    }
+    return child;
+  }
+  return data;
 }
 
 /**

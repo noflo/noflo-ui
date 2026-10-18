@@ -579,7 +579,10 @@
  * @typedef {Object} IntentUpdateIIPMessage
  * @property {'INTENT'} type
  * @property {'updateIIP'} command
- * @property {{ graphId: string, id: string, data: any }} payload
+ * @property {{ graphId: string, id: string, data?: any, update?: Uint8Array }} payload
+ *   Either the whole-write (`data`) or the collaborative value editor's
+ *   binary Yjs update (`update`, work document #64) — applied with item
+ *   structure intact, the setComponentCode pattern.
  */
 
 /**

@@ -5,12 +5,14 @@
  * `graph` protocol echoes (mirrored here as CRDT updates) drive rendering.
  */
 
+import { yJedison } from "y-jedison";
 import * as Y from "yjs";
 import { getSchema, getSchemas, REGISTRY_MAP } from "./crdt/ProjectDoc.js";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
 import { FlowEditor } from "./elements/noflo-editor.js";
+import { schemaFormBinding } from "./library/formBinding.js";
 import "./elements/noflo-exported-port.js";
 import "./elements/noflo-iip.js";
 import {
@@ -1598,7 +1600,13 @@ async function fetchRuntimeSchemas(digests) {
  *   artifact reference.
  * @returns {Promise<any | null>}
  */
-async function _openIIPValueEditor(title, rawValue, dataType, schemaRef) {
+async function _openIIPValueEditor(
+  title,
+  rawValue,
+  dataType,
+  schemaRef,
+  iipId = /** @type {string | undefined} */ (undefined),
+) {
   if (!componentModal) return null;
   /** @type {any} */
   let schema = null;
@@ -1667,12 +1675,66 @@ async function _openIIPValueEditor(title, rawValue, dataType, schemaRef) {
     lastChange = e.detail;
   });
 
+  // The collaborative value (work document #64): when the IIP's data is
+  // a granular shared type (objects and arrays — scalars stay plain),
+  // the declared form binds to it via y-jedison through an adapter that
+  // satisfies the binding's editor contract on top of the schema form's
+  // own. The binding's writes relay as the updateIIP intent's binary
+  // update, origin-scoped so nothing else on the mirror document is
+  // mistaken for this editor's work. #57's architecture stands: the
+  // schema-driven rendering, the Tier B gating, and the raw-JSON
+  // fallback for the unconstrained datatype are untouched
+  let binding = null;
+  let relay = null;
+  if (iipId) {
+    const dataYtype = /** @type {any} */ (
+      mirrorDoc
+        .getMap("graphs")
+        .get(activeGraphId)
+        ?.get("edges")
+        ?.get(iipId)
+        ?.get("data")
+    );
+    const isGranularMap =
+      dataYtype &&
+      typeof dataYtype.set === "function" &&
+      typeof dataYtype.size === "number";
+    const isGranularArray = dataYtype && typeof dataYtype.insert === "function";
+    if (isGranularMap || isGranularArray) {
+      const origin = `iip:${iipId}`;
+      binding = yJedison(schemaFormBinding(schemaFormEl), dataYtype, {
+        origin,
+      });
+
+      relay = (
+        /** @type {Uint8Array} */ update,
+        /** @type {any} */ transactionOrigin,
+      ) => {
+        if (transactionOrigin !== origin) return;
+        sendIntent({
+          type: "INTENT",
+          command: "updateIIP",
+          payload: { graphId: activeGraphId, id: iipId, update },
+        });
+      };
+      mirrorDoc.on("update", relay);
+    }
+  }
+
   componentModal.setActions([
     { value: "cancel", label: "Cancel", kind: "btn-secondary" },
     { value: "save", label: "Save", kind: "btn-primary" },
   ]);
   componentModal.open(title);
   const action = await componentModal.submit();
+  if (binding) {
+    binding.destroy();
+    binding = null;
+  }
+  if (relay) {
+    mirrorDoc.off("update", relay);
+    relay = null;
+  }
   componentForm.style.display = "";
   schemaFormEl.style.display = "none";
   if (action !== "save") return null;
@@ -1975,8 +2037,8 @@ async function init() {
     onDragEnd: () => sendDraggingAwareness([]),
     // IIP values edit in the datatype-aware shell editor (work document #5
     // update #36): no window.prompt fallback in the Glass
-    editIIP: ({ title, datatype, value }) =>
-      _openIIPValueEditor(title, value ?? "", datatype),
+    editIIP: ({ title, datatype, value, schemaRef, id }) =>
+      _openIIPValueEditor(title, value ?? "", datatype, schemaRef, id),
     // Typed-port guiding (work document #29 update #1): the candidate list
     // narrows to compatible components, ending with the create option
     pickComponent: async ({ x, y, startPort, edge }) => {

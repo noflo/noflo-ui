@@ -399,7 +399,7 @@ interface IntentAddIIP {
   tgt: { node: string; port: string; index?: number };
   metadata?: { x: number; y: number };
 }
-interface IntentUpdateIIP { graphId: string; id: string; data: any }
+interface IntentUpdateIIP { graphId: string; id: string; data?: any; update?: Uint8Array }
 interface IntentRemoveIIP { graphId: string; id: string }
 
 // Exported ports. Metadata carries the Glass position of the exported port
