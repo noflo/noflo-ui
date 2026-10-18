@@ -207,6 +207,13 @@ export class NofloComponentView extends HTMLElement {
     if (!form.editor) {
       form.connectedCallback();
     }
+    // Belt: the editor's build may have raced the data setter in
+    // environments where the element's upgrade order differs — the
+    // re-set routes through the editor's own setValue, which is
+    // idempotent with the binding's reconcile
+    if (form.editor && form._data) {
+      form.data = form._data;
+    }
     this._form = form;
     // The live stream: the constraint checks run as the user types
     form.addEventListener("form-change", (/** @type {any} */ e) => {

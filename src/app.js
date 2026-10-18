@@ -1346,6 +1346,14 @@ async function openComponentView(componentName) {
     mirrorDoc.getMap("registry").get(componentName)
   );
   const plain = entry?.toJSON() ?? {};
+  console.log(
+    "DBG openComponentView:",
+    componentName,
+    "entry:",
+    entry ? "yes" : "no",
+    "plain inports:",
+    JSON.stringify(plain.inports ?? []),
+  );
   const isSubgraph = mirrorDoc.getMap("graphs").has(componentName);
   const implementationMeta = /** @type {any} */ (
     mirrorDoc.getMap("components").get(componentName)
@@ -1392,7 +1400,7 @@ async function openComponentView(componentName) {
     // The signature form binds to the mirror's registry entry (work
     // document #64): granular writes relay as binary updates; the
     // whole-write Save flow stays for creation and fork
-    signatureYtype: mirrorDoc.getMap("components").get(componentName) ?? null,
+    signatureYtype: mirrorDoc.getMap(REGISTRY_MAP).get(componentName) ?? null,
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
   });
