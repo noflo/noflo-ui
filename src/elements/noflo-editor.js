@@ -2145,6 +2145,24 @@ export class FlowEditor extends HTMLElement {
             },
             icon: "pen-to-square",
           });
+          // The small editors (work document #64): the node's display
+          // label renames the station (the id stays the wire-referencing
+          // identity); the metadata opens the inspector — the
+          // schema-driven form over the node's metadata
+          items.push({
+            text: "Rename",
+            onClick: () => {
+              emit(this, "node-rename-attempt", { node: clickedNode });
+            },
+            icon: "pen",
+          });
+          items.push({
+            text: "Edit metadata",
+            onClick: () => {
+              emit(this, "node-metadata-attempt", { node: clickedNode });
+            },
+            icon: "sliders",
+          });
           items.push({
             text: "Remove",
             onClick: () => {
@@ -2370,6 +2388,13 @@ export class FlowEditor extends HTMLElement {
           icon: "plus",
         });
       }
+      items.push({
+        text: "Rename graph",
+        onClick: () => {
+          emit(this, "graph-rename-attempt", undefined);
+        },
+        icon: "pen",
+      });
       items.push({
         text: "Close",
         onClick: () => {
@@ -3359,7 +3384,12 @@ export class FlowEditor extends HTMLElement {
       node.depictionSource = this._depictionSource;
     }
 
-    if (metadata.name || metadata.componentName || metadata.icon) {
+    if (
+      metadata.name ||
+      metadata.label ||
+      metadata.componentName ||
+      metadata.icon
+    ) {
       node.setMetadata(metadata);
     }
 

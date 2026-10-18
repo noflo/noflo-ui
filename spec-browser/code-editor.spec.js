@@ -226,18 +226,40 @@ describe("browser smoke: the code editor journey (work document #56)", {
 
     // Implement: select the node, open its radial menu, implement in code.
     // The intent must reach the engine: the Glass's mirror doc (read
-    // through the debug handle) is the authoritative echo channel.
-    await page.waitForTimeout(1500);
+    // through the debug handle) is the authoritative echo channel. The
+    // pipeline is asynchronous end to end (the intent, the engine's
+    // apply, the mirror sync, the render), so the harness polls the
+    // mirror state instead of racing it with fixed waits
+    const settled = await page
+      .waitForFunction(
+        () => {
+          const mirror = window.__nofloDebug?.mirrorDoc;
+          const registry = mirror?.getMap("registry");
+          const nodes = mirror?.getMap("graphs")?.get("main")?.get("nodes");
+          return Boolean(
+            registry?.has("SmokeComponent") && nodes && nodes.size > 0,
+          );
+        },
+        { timeout: 15_000, polling: 250 },
+      )
+      .then(() => true)
+      .catch(() => false);
     const applied = await page.evaluate(() => {
       const mirror = window.__nofloDebug?.mirrorDoc;
       const main = mirror?.getMap("graphs")?.get("main");
       return {
         graphs: mirror ? Array.from(mirror.getMap("graphs").keys()) : null,
         mainKeys: main ? Array.from(main.keys()) : null,
+        nodes: main ? Array.from(main.get("nodes").keys()) : null,
       };
     });
-    console.log("after create, mirror state:", JSON.stringify(applied));
-    if (!applied.mainKeys?.includes("SmokeComponent")) {
+    console.log(
+      "after create, mirror state:",
+      JSON.stringify(applied),
+      "settled:",
+      settled,
+    );
+    if (!settled) {
       // Probe the worker directly: spawn a fresh engine worker inside the
       // page and capture its load/boot error — the supervisor does not
       // wire onerror, so a worker that fails to boot dies silently
