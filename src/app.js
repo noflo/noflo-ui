@@ -1629,26 +1629,34 @@ async function _openNodeMetadataEditor(nodeId) {
   const process = view?.processes?.[nodeId];
   if (!process) return;
   const component = libraryManager?.getComponent(process.component);
-  const schema =
+  // The display keys ride every schema (work document #64): the
+  // component's config-schema composition (work document #44's
+  // catalogs) carries its own keys, but the label — the display
+  // rename — and the description are the Glass's UI concerns and are
+  // always editable. The label leads so it renders first and takes the
+  // focus
+  const configProps =
     component?.configSchema && typeof component.configSchema === "object"
-      ? component.configSchema
-      : {
-          title: "Node metadata",
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            label: {
-              type: "string",
-              title: "Label",
-              description:
-                "The station's display name; the id stays the wire identity",
-            },
-            description: {
-              type: "string",
-              title: "Description",
-            },
-          },
-        };
+      ? /** @type {any} */ ((component.configSchema).properties ?? {})
+      : {};
+  const schema = {
+    title: "Node metadata",
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      label: {
+        type: "string",
+        title: "Label",
+        description:
+          "The station's display name; the id stays the wire identity",
+      },
+      description: {
+        type: "string",
+        title: "Description",
+      },
+      ...configProps,
+    },
+  };
   // The form's keys scope the binding: the intent-managed position
   // (`x`/`y`) and anything else outside the schema stays untouched
   const formKeys = Object.keys(/** @type {any} */ (schema).properties ?? {});
