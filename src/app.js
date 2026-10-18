@@ -6,7 +6,7 @@
  */
 
 import * as Y from "yjs";
-import { getSchema, getSchemas } from "./crdt/ProjectDoc.js";
+import { getSchema, getSchemas, REGISTRY_MAP } from "./crdt/ProjectDoc.js";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
@@ -1024,6 +1024,17 @@ async function render() {
         payload: { component: e.detail.component, update: e.detail.update },
       });
     });
+    // The signature form's collaborative writes (work document #64):
+    // the binding's binary updates relay as the signature intent, the
+    // Engine applying them with item structure intact — the same
+    // pattern as the code buffer
+    on(componentView, "signature-update", (e) => {
+      sendIntent({
+        type: "INTENT",
+        command: "setSignature",
+        payload: { component: e.detail.component, update: e.detail.update },
+      });
+    });
   }
   on(ed, "edge-menu-open", () => {
     menuOpen = true;
@@ -1351,6 +1362,10 @@ async function openComponentView(componentName) {
               null
           )
         : null,
+    // The signature form binds to the mirror's registry entry (work
+    // document #64): granular writes relay as binary updates; the
+    // whole-write Save flow stays for creation and fork
+    signatureYtype: mirrorDoc.getMap("components").get(componentName) ?? null,
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
   });

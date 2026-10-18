@@ -153,6 +153,9 @@
  *   The component view's action (work document #62): save, fork,
  *   implement-code, implement-graph, open-implementation.
  * @property {CustomEvent<{ component: string, update: Uint8Array }>} component-code-update
+ * @property {CustomEvent<{ component: string, update: Uint8Array }>} signature-update The
+ *   signature form's y-jedison binding relayed its binary update (work
+ *   document #64); the shell sends it as the setSignature intent.
  *   The component code buffer's live delta (work document #29's relay).
  * @property {CustomEvent<{ kind: string, id: string }>} explorer-navigate
  *   A tree entry navigates (work document #63): the router owns the

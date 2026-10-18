@@ -2648,13 +2648,32 @@ function intentSetRouteName(doc, payload) {
  * @returns {EngineResult}
  */
 function intentSetSignature(doc, payload) {
-  const { component, signature } = payload ?? {};
-  if (
-    typeof component !== "string" ||
-    component.length === 0 ||
-    !signature ||
-    typeof signature !== "object"
-  ) {
+  const { component, signature, update } = payload ?? {};
+  if (typeof component !== "string" || component.length === 0) {
+    return { accepted: false, echoes: [] };
+  }
+  // The collaborative form's binary update (work document #64): the
+  // Glass's y-jedison binding writes granularly into the mirror's
+  // registry entry and relays the raw Yjs update — applied here with
+  // item structure intact, so the mirror and this authoritative
+  // registry share the same items and the echo is idempotent (the
+  // setComponentCode pattern). The whole-write below stays the
+  // validated path: creation, fork, and explicit saves
+  if (update !== undefined) {
+    if (!(update instanceof Uint8Array) || update.length === 0) {
+      return { accepted: false, echoes: [] };
+    }
+    if (getGraph(doc, component)) {
+      // A graph's signature is derived from its exports, not declared
+      return { accepted: false, echoes: [] };
+    }
+    if (!getComponentSignature(doc, component)) {
+      return { accepted: false, echoes: [] };
+    }
+    Y.applyUpdate(doc, update);
+    return { accepted: true, echoes: [] };
+  }
+  if (!signature || typeof signature !== "object") {
     return { accepted: false, echoes: [] };
   }
   const portsOk = (/** @type {any} */ ports) =>

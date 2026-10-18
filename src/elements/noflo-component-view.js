@@ -14,6 +14,8 @@
  * mirror.
  */
 
+import { yJedison } from "y-jedison";
+import { REGISTRY_MAP } from "../crdt/ProjectDoc.js";
 import { emit } from "../events.js";
 import { codeEditorTheme } from "./noflo-code-editor.js";
 
@@ -50,6 +52,17 @@ export class NofloComponentView extends HTMLElement {
     this._implementation = "stub";
     /** @type {any} The signature form element (mounted into the shadow). */
     this._form = null;
+    /** @type {any} The signature form's y-jedison binding, when the
+     *  registry entry binds (work document #64). */
+    this._signatureBinding = null;
+    /** @type {any} The registry entry the binding writes to. */
+    this._signatureYtype = null;
+    /** @type {((update: Uint8Array, origin: any) => void) | null} The
+     *  mirror update relay for the signature binding. */
+    this._signatureRelay = null;
+    /** @type {((event: any) => void) | null} The registry observer that
+     *  rebinds after a whole-write swaps the entry. */
+    this._registryObserve = null;
     /** @type {any} The code buffer's Y.Text, when the component has code. */
     this._ytext = null;
     /** @type {any} */
@@ -84,6 +97,11 @@ export class NofloComponentView extends HTMLElement {
    * @param {any} options.signature The plain signature record.
    * @param {any} [options.codeYtext] The component's code buffer, when
    *   the implementation is code.
+   * @param {any} [options.signatureYtype] The component's registry entry
+   *   in the mirror (a Y.Map with inports/outports Y.Arrays): when given,
+   *   the signature form binds to it via y-jedison — edits write
+   *   granularly into the shared types and remote changes stream in,
+   *   the code editor's yCollab pattern (work document #64).
    * @param {any} options.cm The CodeMirror surface.
    * @param {string} [options.codeLanguage]
    */
@@ -93,6 +111,7 @@ export class NofloComponentView extends HTMLElement {
     formSchema,
     signature,
     codeYtext = null,
+    signatureYtype = null,
     cm,
     codeLanguage = "javascript",
   }) {
@@ -100,10 +119,11 @@ export class NofloComponentView extends HTMLElement {
     this._implementation = implementation;
     this._cm = cm;
     this._language = codeLanguage;
+    this._signatureYtype = signatureYtype;
     this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
-    this._mountSignatureForm(formSchema, signature);
+    await this._mountSignatureForm(formSchema, signature);
     if (codeYtext) {
       this._ytext = codeYtext;
       this._bindCode();
@@ -114,7 +134,9 @@ export class NofloComponentView extends HTMLElement {
   close() {
     this.setAttribute("hidden", "");
     this._teardownCode();
+    this._teardownSignatureBinding();
     this._ytext = null;
+    this._signatureYtype = null;
     if (this._form) {
       this._form.remove();
       this._form = null;
@@ -156,7 +178,11 @@ export class NofloComponentView extends HTMLElement {
   /**
    * Mounts the signature form: the shared jedison theme injected, the
    * form element wired with the uniquePortNames constraint (work
-   * document #5) — duplicates surface as the user types.
+   * document #5) — duplicates surface as the user types. When the
+   * registry entry binds (work document #64), the form writes
+   * granularly into the shared types and remote changes stream in —
+   * the local writes relay as binary updates through the origin-scoped
+   * mirror listener, the code editor's yCollab pattern.
    *
    * @param {any} formSchema
    * @param {any} signature
@@ -174,6 +200,13 @@ export class NofloComponentView extends HTMLElement {
     form.schema = formSchema;
     form.data = signature;
     host.appendChild(form);
+    // Belt for environments that do not fire connectedCallback for
+    // shadow-root children (some test DOMs): the setters' rebuild only
+    // runs when connected, so force the initialization when the editor
+    // is still absent. Idempotent: real browsers initialize on append
+    if (!form.editor) {
+      form.connectedCallback();
+    }
     this._form = form;
     // The live stream: the constraint checks run as the user types
     form.addEventListener("form-change", (/** @type {any} */ e) => {
@@ -186,6 +219,67 @@ export class NofloComponentView extends HTMLElement {
       }
       this.feedback("");
     });
+    this._bindSignature();
+  }
+
+  /**
+   * Binds the signature form to the mirror's registry entry via
+   * y-jedison (work document #64): the collaborative-write pattern —
+   * local form changes write granularly into the shared types, and the
+   * binding's transactions relay as binary updates through the mirror
+   * listener, filtered by the binding's origin so everything else on
+   * the shared document (code edits, cross-tab sync) is somebody
+   * else's write.
+   */
+  _bindSignature() {
+    const yType = this._signatureYtype;
+    const editor = this._form?.editor;
+    if (!yType || !editor) return;
+    const origin = `signature:${this._component}`;
+    this._signatureBinding = yJedison(editor, yType, { origin });
+    this._signatureRelay = (
+      /** @type {Uint8Array} */ update,
+      /** @type {any} */ transactionOrigin,
+    ) => {
+      if (transactionOrigin !== origin) return;
+      emit(this, "signature-update", { component: this._component, update });
+    };
+    /** @type {any} */ (yType.doc).on("update", this._signatureRelay);
+    // A whole-write (the Save flow, or a peer's save) replaces the
+    // registry entry with a fresh structure — the binding rebinds so
+    // its writes keep landing on the shared subtree, and the saved
+    // state reconciles into the editor
+    const registry = /** @type {any} */ (yType.doc).getMap(REGISTRY_MAP);
+    this._registryObserve = (/** @type {any} */ event) => {
+      if (!event.keysChanged.has(this._component)) return;
+      const fresh = registry.get(this._component);
+      if (!fresh || fresh === this._signatureYtype) return;
+      this._signatureYtype = fresh;
+      this._teardownSignatureBinding();
+      this._bindSignature();
+    };
+    registry.observe(this._registryObserve);
+  }
+
+  /** Unbinds the signature form's y-jedison binding and relay. */
+  _teardownSignatureBinding() {
+    if (this._signatureBinding) {
+      this._signatureBinding.destroy();
+      this._signatureBinding = null;
+    }
+    if (this._signatureYtype?.doc && this._signatureRelay) {
+      /** @type {any} */ (this._signatureYtype.doc).off(
+        "update",
+        this._signatureRelay,
+      );
+    }
+    if (this._registryObserve) {
+      /** @type {any} */ (this._signatureYtype?.doc)
+        ?.getMap(REGISTRY_MAP)
+        .unobserve(this._registryObserve);
+      this._registryObserve = null;
+    }
+    this._signatureRelay = null;
   }
 
   /**

@@ -19,6 +19,7 @@ import {
   getProjectMetadata,
   grantAssertion,
   PROJECT_SCHEMA_VERSION,
+  REGISTRY_MAP,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import * as Y from "../../vendor/yjs.js";
@@ -149,6 +150,98 @@ describe("intents", () => {
         `${name} is not a path-safe doc name`,
       );
     }
+  });
+
+  it("setSignature applies a binary update from the collaborative form (work document #64)", () => {
+    const engineDoc = createProjectDoc("p");
+    const setup = handle(engineDoc, {
+      type: "INTENT",
+      command: "setSignature",
+      payload: {
+        component: "fs/Count",
+        signature: { inports: [{ name: "in" }], outports: [{ name: "out" }] },
+      },
+    });
+
+    // Two peers mirroring the engine: the collaborative signature form
+    // binds to each peer's registry entry and relays binary updates
+    const mirrorA = new Y.Doc();
+    Y.applyUpdate(mirrorA, Y.encodeStateAsUpdate(engineDoc));
+    const mirrorB = new Y.Doc();
+    Y.applyUpdate(mirrorB, Y.encodeStateAsUpdate(engineDoc));
+
+    // Peer A adds an inport concurrently with peer B adding an outport
+    const entryA = mirrorA.getMap(REGISTRY_MAP).get("fs/Count");
+    console.log(
+      "DBG entryA keys:",
+      entryA ? [...entryA.keys()] : null,
+      "registry keys:",
+      [...mirrorA.getMap(REGISTRY_MAP).keys()],
+    );
+    /** @type {Uint8Array | null} */
+    let capturedA = null;
+    mirrorA.on("update", (/** @type {Uint8Array} */ u) => {
+      capturedA = u;
+    });
+    mirrorA.transact(() => {
+      entryA.get("inports").push([{ name: "extra", type: "all" }]);
+    });
+    assert.ok(capturedA, "peer A's edit produced a diff");
+    const resultA = handle(engineDoc, {
+      type: "INTENT",
+      command: "setSignature",
+      payload: { component: "fs/Count", update: capturedA },
+    });
+    assert.equal(resultA.accepted, true);
+
+    const entryB = mirrorB.getMap(REGISTRY_MAP).get("fs/Count");
+    /** @type {Uint8Array | null} */
+    let capturedB = null;
+    mirrorB.on("update", (/** @type {Uint8Array} */ u) => {
+      capturedB = u;
+    });
+    mirrorB.transact(() => {
+      entryB.get("outports").push([{ name: "out2", type: "all" }]);
+    });
+    const resultB = handle(engineDoc, {
+      type: "INTENT",
+      command: "setSignature",
+      payload: { component: "fs/Count", update: capturedB },
+    });
+    assert.equal(resultB.accepted, true);
+
+    // The authoritative registry holds BOTH edits merged
+    const engineEntry = engineDoc.getMap(REGISTRY_MAP).get("fs/Count");
+    assert.equal(engineEntry.get("inports").length, 2, "peer A's inport");
+    assert.equal(engineEntry.get("outports").length, 2, "peer B's outport");
+
+    // Converge the peers: both see the merge without clobbering
+    Y.applyUpdate(mirrorA, Y.encodeStateAsUpdate(engineDoc));
+    Y.applyUpdate(mirrorB, Y.encodeStateAsUpdate(engineDoc));
+    assert.equal(entryA.get("outports").length, 2, "peer A sees B's outport");
+    assert.equal(entryB.get("inports").length, 2, "peer B sees A's inport");
+
+    // Malformed updates are refused
+    assert.equal(
+      handle(engineDoc, {
+        type: "INTENT",
+        command: "setSignature",
+        payload: { component: "fs/Count", update: "not-binary" },
+      }).accepted,
+      false,
+    );
+    // An unknown component is refused
+    assert.equal(
+      handle(engineDoc, {
+        type: "INTENT",
+        command: "setSignature",
+        payload: {
+          component: "fs/Missing",
+          update: new Uint8Array([1, 2, 3]),
+        },
+      }).accepted,
+      false,
+    );
   });
 
   it("setComponentCode applies a binary update from the mirror (work document #29)", () => {

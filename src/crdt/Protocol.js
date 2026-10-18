@@ -223,7 +223,11 @@
  * @typedef {Object} IntentSetSignatureMessage
  * @property {'INTENT'} type
  * @property {'setSignature'} command
- * @property {{ component: string, signature: { inports?: Array<{ name: string, type?: string, addressable?: boolean }>, outports?: Array<{ name: string, type?: string, addressable?: boolean }>, description?: string, icon?: string } }} payload
+ * @property {{ component: string, signature?: { inports?: Array<{ name: string, type?: string, addressable?: boolean }>, outports?: Array<{ name: string, type?: string, addressable?: boolean }>, description?: string, icon?: string }, update?: Uint8Array }} payload
+ *   Either the validated whole-write (`signature`) or the collaborative
+ *   form's binary Yjs update (`update`, work document #64) — applied to
+ *   the authoritative registry with item structure intact, the
+ *   setComponentCode pattern.
  */
 
 /**
