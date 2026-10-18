@@ -92,13 +92,39 @@ export function cornerStyles() {
     text-overflow: ellipsis;
     min-width: 0;
   }
+  /* The label's two forms (work document #64): the long text and the
+     significant short term — "working locally" shortens to "local",
+     never "worki…". Both stay laid out (the hidden one parks
+     absolutely), so the ladder's measurement reads either at any rung
+     and the chip never flip-flops */
+  .seg .label .short {
+    position: absolute;
+    visibility: hidden;
+    white-space: nowrap;
+  }
+  :host([data-condensed="short"]) .seg .label .long {
+    display: none;
+  }
+  :host([data-condensed="short"]) .seg .label .short {
+    position: static;
+    visibility: visible;
+  }
+  :host([data-condensed="number"]) .seg .label,
+  :host([data-condensed="none"]) .seg .label {
+    max-width: 0;
+  }
   :host([data-minified]) .seg .label { display: none; }
-  /* The content-driven rung of the ladder (work document #64): a chip
-     whose content cannot fit the side's consistent width drops its
-     labels — the counts remain — without touching the viewport-driven
-     minified state */
-  :host([data-condensed]) .seg .label { display: none; }
-  :host([data-condensed][data-minified]) .seg .label { display: none; }
+  /* The content-driven ladder (work document #64's review): the rungs
+     clamp the labels with max-width instead of hiding them, so the
+     natural content stays measurable at every rung and the chip never
+     flip-flops between rungs. full: icon + longer text; short: icon +
+     short text (the labels ellipsize); number: icon + number; none:
+     icon only */
+  :host([data-condensed="short"]) .seg .label { max-width: 56px; }
+  :host([data-condensed="number"]) .seg .label { max-width: 0; }
+  :host([data-condensed="number"]) .seg .count:not(:empty) { display: inline; }
+  :host([data-condensed="none"]) .seg .label { max-width: 0; }
+  :host([data-condensed][data-minified]) .seg .label { max-width: 0; }
   /* The chips' degradation ladder: full is icon + label; minified drops
      the words and keeps icon + count (the bare number a segment
      summarizes with); micro — the extreme rung, viewport-driven —
@@ -339,28 +365,58 @@ function applyPanelGeometry(side) {
     }
   }
 
-  // The condensation ladder's content-driven rungs: the chip's natural
-  // content (the labels' scroll widths — the text they need, not the
-  // flexed space they got) against the fixed width. Rung one: the
-  // labels drop, the counts remain. The attribute drives the chip's
-  // CSS: no re-render needed
+  // The condensation ladder's content-driven rungs, applied to every
+  // corner (the shared grammar): the chip's natural content — the
+  // labels' scroll widths, the text they need, not the flexed space
+  // they got — evaluated against the fixed width through the four-rung
+  // ladder. The clamps keep the content measurable at every rung, so
+  // the decision is stable and never flip-flops
   for (const corners of panelEdgeCorners.values()) {
     for (const corner of corners) {
       const chip = /** @type {HTMLElement | null} */ (
         corner.shadowRoot?.querySelector(".chip")
       );
       if (!chip) continue;
-      let content = 0;
-      for (const seg of chip.querySelectorAll(".seg")) {
-        for (const child of /** @type {HTMLElement} */ (seg).children) {
-          content += child.scrollWidth;
+      // The measurement reads the label's two forms directly: the long
+      // span's scroll width is the full text's need; the short span's
+      // scroll width is the significant term's — both stay laid out at
+      // every rung, so the widths are stable and the chip never
+      // flip-flops. Segments without a declared short fall back to the
+      // count's display (icon+number) in the short rung
+      const longs = [...chip.querySelectorAll(".seg .label .long")];
+      const shorts = [...chip.querySelectorAll(".seg .label .short")];
+      const counts = [...chip.querySelectorAll(".seg .count")];
+      const icons = [...chip.querySelectorAll(".seg i, .seg .fa")];
+      const widthOf = (/** @type {any[]} */ spans) =>
+        spans.reduce(
+          (sum, span) => sum + /** @type {HTMLElement} */ (span).scrollWidth,
+          0,
+        );
+      const iconWidth = widthOf(icons);
+      const longWidth = widthOf(longs);
+      const shortWidth = widthOf(shorts);
+      const countWidth = widthOf(counts);
+      const segCount = Math.max(longs.length, 1);
+      const gaps = segCount * 14 + 20; // The segments' and chip's chrome
+      const full = iconWidth + longWidth + gaps;
+      const hasShorts = shorts.some(
+        (span) => /** @type {HTMLElement} */ (span).scrollWidth > 0,
+      );
+      const short = hasShorts
+        ? iconWidth + shortWidth + gaps
+        : iconWidth + Math.min(longWidth, 56) + countWidth + gaps;
+      const number = iconWidth + countWidth + gaps;
+      let rung = "full";
+      if (number > PANEL_WIDTH_FLOOR) rung = "none";
+      else if (short > PANEL_WIDTH_FLOOR) rung = "number";
+      else if (full > PANEL_WIDTH_FLOOR) rung = "short";
+      if (corner._condensed !== rung) {
+        corner._condensed = rung;
+        if (rung === "full") {
+          corner.removeAttribute("data-condensed");
+        } else {
+          corner.setAttribute("data-condensed", rung);
         }
-        content += 8;
-      }
-      const overflows = content + 20 > PANEL_WIDTH_FLOOR;
-      if (corner._condensed !== overflows) {
-        corner._condensed = overflows;
-        corner.toggleAttribute("data-condensed", overflows);
       }
     }
   }
@@ -510,9 +566,9 @@ export class FlowCornerElement extends HTMLElement {
      * @type {string | null}
      */
     this._panelEdgeKey = null;
-    /** Whether the chip is in the content-driven condensed state (the
-     * labels dropped to fit the side's consistent width). */
-    this._condensed = false;
+    /** The chip's content-driven ladder rung (full, short, number,
+     * none — work document #64's review). */
+    this._condensed = "full";
   }
 
   connectedCallback() {

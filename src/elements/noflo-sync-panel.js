@@ -428,8 +428,8 @@ export class FlowSyncPanel extends FlowCornerElement {
       // rather than a generic wait; a failure reads as attention
       segments.push(
         this._narration.failed
-          ? `<span class="seg attention" title="${escapeHtml(this._narration.phrase)}">${icon("triangle-exclamation")}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`
-          : `<span class="seg">${icon(narrationIcon(this._narration.operation, this._narration.stage))}<span class="label">${escapeHtml(this._narration.phrase)}</span></span>`,
+          ? `<span class="seg attention" title="${escapeHtml(this._narration.phrase)}">${icon("triangle-exclamation")}<span class="label"><span class="long">${escapeHtml(this._narration.phrase)}</span><span class="short">${escapeHtml(this._narration.operation ?? "")}</span></span></span>`
+          : `<span class="seg">${icon(narrationIcon(this._narration.operation, this._narration.stage))}<span class="label"><span class="long">${escapeHtml(this._narration.phrase)}</span><span class="short">${escapeHtml(this._narration.operation ?? "")}</span></span></span>`,
       );
     } else if (status.connected === true) {
       // Offline-first (work document #28): having no peers online is the
@@ -438,11 +438,11 @@ export class FlowSyncPanel extends FlowCornerElement {
       const peerCount = this._peers.length || status.peers || 0;
       if (peerCount === 0) {
         segments.push(
-          `<span class="seg">${icon("laptop")}<span class="label">working locally</span></span>`,
+          `<span class="seg">${icon("laptop")}<span class="label"><span class="long">working locally</span><span class="short">local</span></span></span>`,
         );
       } else if (status.synced === true) {
         segments.push(
-          `<span class="seg calm">${icon("circle-check")}<span class="label">up to date</span></span>`,
+          `<span class="seg calm">${icon("circle-check")}<span class="label"><span class="long">up to date</span><span class="short">synced</span></span></span>`,
         );
       } else {
         segments.push(
