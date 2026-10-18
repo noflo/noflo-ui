@@ -118,6 +118,54 @@ describe("the shared-form adapter (work document #64)", () => {
     binding.destroy();
     element.remove();
   });
+
+  it("suppressed writes echo with the initiator: a form-only prefill never writes", async () => {
+    const { schemaFormBinding } = await import(
+      "../../src/library/formBinding.js"
+    );
+    const { addIIP, addNode, createGraph, createProjectDoc } = await import(
+      "../../src/crdt/ProjectDoc.js"
+    );
+    const mirror = createProjectDoc("scratch");
+    const graph = createGraph(mirror, "main");
+    addNode(graph, "N", "c/N");
+    addIIP(graph, { greeting: "hello" }, { node: "N", port: "in" });
+    const data = graph.get("edges").get("DATA->N:in[0]").get("data");
+
+    const element = /** @type {any} */ (
+      document.createElement("noflo-schema-form")
+    );
+    document.body.appendChild(element);
+    element.schema = {
+      type: "object",
+      properties: { greeting: { type: "string" }, label: { type: "string" } },
+    };
+    element.data = { greeting: "hello" };
+
+    const binding = yJedison(schemaFormBinding(element, "yjs"), data, {
+      origin: "iip:DATA->N:in[0]",
+    });
+    // The binding's reconcile: the shared type wins
+    assert.deepEqual(element.data, { greeting: "hello" });
+
+    // The form-only prefill: the suppressed setter echoes with the
+    // initiator, so the shared type never sees it — the prefill flows
+    // through the adapter's setValue, exactly what the inspector does
+    binding.jedison.setValue({ greeting: "hello", label: "N" });
+    assert.deepEqual(
+      data.toJSON(),
+      { greeting: "hello" },
+      "the prefill wrote nothing",
+    );
+    assert.deepEqual(element.data, { greeting: "hello", label: "N" });
+
+    // A real edit (no suppression) still writes granularly
+    element.data = { greeting: "hello", label: "N", extra: true };
+    assert.equal(data.get("extra"), true, "the real edit landed");
+
+    binding.destroy();
+    element.remove();
+  });
 });
 
 describe("the signature form's y-jedison binding (work document #64)", () => {

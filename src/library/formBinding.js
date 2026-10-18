@@ -34,17 +34,29 @@
  *   `data` accessors and the `form-change` event.
  * @returns {SharedFormEditor} The adapter.
  */
-export function schemaFormBinding(element) {
+export function schemaFormBinding(element, initiator = "yjs") {
   /** @type {Array<[any, any]>} */
   const listeners = [];
+  /** The remote-write suppression: the in-house form cannot tag its own
+   * events, but the data setter re-renders synchronously — so a write
+   * made under the suppression flag echoes back with the initiator, and
+   * the binding ignores it, exactly as Jedison's own echo contract
+   * works. This is what makes form-only prefills (the label defaulting
+   * to the node id) possible without writing to the shared type. */
+  let suppressed = false;
   return {
     getValue: () => /** @type {any} */ (element).data,
     setValue: (/** @type {any} */ value) => {
-      /** @type {any} */ (element).data = value;
+      suppressed = true;
+      try {
+        /** @type {any} */ (element).data = value;
+      } finally {
+        suppressed = false;
+      }
     },
     on: (/** @type {string} */ event, /** @type {any} */ handler) => {
       if (event !== "change") return;
-      const wrapped = () => handler(undefined);
+      const wrapped = () => handler(suppressed ? initiator : undefined);
       listeners.push([handler, wrapped]);
       element.addEventListener("form-change", wrapped);
     },

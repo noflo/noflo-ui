@@ -1637,7 +1637,7 @@ async function _openNodeMetadataEditor(nodeId) {
   // focus
   const configProps =
     component?.configSchema && typeof component.configSchema === "object"
-      ? /** @type {any} */ ((component.configSchema).properties ?? {})
+      ? /** @type {any} */ (component.configSchema.properties ?? {})
       : {};
   const schema = {
     title: "Node metadata",
@@ -1661,10 +1661,17 @@ async function _openNodeMetadataEditor(nodeId) {
   // (`x`/`y`) and anything else outside the schema stays untouched
   const formKeys = Object.keys(/** @type {any} */ (schema).properties ?? {});
 
-  const current = { ...(process.metadata ?? {}) };
-  for (const key of Object.keys(current)) {
-    if (current[key] === undefined || current[key] === null)
-      delete current[key];
+  // The form's data is the metadata's FORM KEYS ONLY: the intent-managed
+  // position (`x`/`y`) and any other foreign keys never enter the form,
+  // so the declared schema's `additionalProperties: false` can never
+  // reject the editor's own bookkeeping
+  const allMetadata = /** @type {Record<string, any>} */ ({
+    ...(process.metadata ?? {}),
+  });
+  const current = /** @type {Record<string, any>} */ ({});
+  for (const key of formKeys) {
+    const value = allMetadata[key];
+    if (value !== undefined && value !== null) current[key] = value;
   }
 
   let schemaFormEl = /** @type {any} */ (
@@ -1701,10 +1708,18 @@ async function _openNodeMetadataEditor(nodeId) {
   let relay = null;
   if (metadataYmap && formKeys.length > 0) {
     const origin = `node-metadata:${nodeId}`;
-    binding = yJedison(schemaFormBinding(schemaFormEl), metadataYmap, {
+    binding = yJedison(schemaFormBinding(schemaFormEl, "yjs"), metadataYmap, {
       origin,
       keys: formKeys,
     });
+    // The label prefills with the current effective name — the id when
+    // the metadata carries no label yet. The prefill is form-only: the
+    // suppression echoes it back with the binding's initiator, so
+    // nothing writes to the shared type merely by opening the editor
+    const reconciled = schemaFormEl.data;
+    if (reconciled && reconciled.label === undefined) {
+      schemaFormEl.data = { ...reconciled, label: nodeId };
+    }
     relay = (
       /** @type {Uint8Array} */ update,
       /** @type {any} */ transactionOrigin,
