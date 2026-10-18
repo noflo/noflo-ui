@@ -2232,6 +2232,30 @@ function applyAppearance() {
 }
 
 /**
+ * The screen registry (work document #62's screen model, work document
+ * #64's review): the full-screen views register once — the activation
+ * closes every registered screen the target does not own, so the views
+ * never need to know about each other and a new view joins by
+ * registering.
+ *
+ * @type {Map<string, { close: () => void, isOpen: () => boolean }>}
+ */
+const screenRegistry = new Map();
+
+/**
+ * Closes every registered screen except the target kind's.
+ *
+ * @param {string} kind The activating screen's kind.
+ * @returns {void}
+ */
+function showOnlyScreen(kind) {
+  for (const [registered, screen] of screenRegistry) {
+    if (registered === kind) continue;
+    if (screen.isOpen()) screen.close();
+  }
+}
+
+/**
  * Activates a screen (work document #62): the single transition point —
  * exactly one screen owns the viewport, and every per-screen concern
  * (the graph editor's yield, the workdoc view's deferred open when the
@@ -2243,8 +2267,14 @@ function applyAppearance() {
  *   the whole prompt, the body editor is the point.
  * @returns {void}
  */
-function activateScreen(screen, options = {}) {
-  const view = /** @type {any} */ (document.getElementById("workdoc-view"));
+function activateScreen(
+  screen,
+  options = /** @type {{ editing?: boolean }} */ ({}),
+) {
+  // Exactly one screen owns the viewport (work document #62): the
+  // activation closes every other registered screen — the app-level
+  // mechanism, so the views never need to know about each other
+  showOnlyScreen(screen.kind);
   if (screen.kind === "doc") {
     const appElement = document.getElementById("app");
     if (appElement) appElement.style.display = "none";
@@ -2295,12 +2325,6 @@ function activateScreen(screen, options = {}) {
   /** @type {any} */ (document.getElementById("project-corner"))?.setActiveDoc(
     null,
   );
-  if (view && !view.hidden) view.close();
-  const schemaView = /** @type {any} */ (
-    document.getElementById("schema-view")
-  );
-  if (schemaView && !schemaView.hidden) schemaView.close();
-  if (componentView && !componentView.hidden) componentView.close();
   pendingComponentOpen = null;
   const appElement = document.getElementById("app");
   if (appElement) appElement.style.display = "";
@@ -2317,6 +2341,34 @@ function activateScreen(screen, options = {}) {
 async function init() {
   applyAppearance();
   trackInputState();
+  // The screen registry (work document #64): the full-screen views
+  // register once — the activation closes every other registered
+  // screen, so the views never need to know about each other and a new
+  // view joins by registering
+  screenRegistry.set(
+    "doc",
+    (() => {
+      const view = /** @type {any} */ (document.getElementById("workdoc-view"));
+      return {
+        close: () => view?.close(),
+        isOpen: () => Boolean(view && !view.hidden),
+      };
+    })(),
+  );
+  screenRegistry.set(
+    "schema",
+    (() => {
+      const view = /** @type {any} */ (document.getElementById("schema-view"));
+      return {
+        close: () => view?.close(),
+        isOpen: () => Boolean(view && !view.hidden),
+      };
+    })(),
+  );
+  screenRegistry.set("component", {
+    close: () => componentView?.close(),
+    isOpen: () => Boolean(componentView && !componentView.hidden),
+  });
   // The Glass error boundary (work document #63's app diagnostics
   // tenant): crash reports and connectivity history persist locally, and
   // an unacknowledged crash badges the diagnostics accordion
