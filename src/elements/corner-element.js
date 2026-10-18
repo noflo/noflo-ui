@@ -316,90 +316,51 @@ function applyPanelGeometry(side) {
     const value = `${Math.round(inset)}px`;
     if (container.style[edge] !== value) container.style[edge] = value;
   }
-  // The width is global: both sides' columns and every chip share one
-  // consistent size, so the corners read as one system regardless of
-  // which side their content sits on (work document #63 review). The
-  // width reads the chips' INTRINSIC content — the labels' scroll
-  // widths, not the chips' current rects, which the last pass's own
-  // binding stretched — so the size can also shrink back when content
-  // condenses
-  let width = 0;
-  for (const both of /** @type {const} */ (["left", "right"])) {
-    for (const edge of /** @type {const} */ (["top", "bottom"])) {
-      const corners = panelEdgeCorners.get(`${both}:${edge}`);
-      if (!corners) continue;
-      for (const corner of corners) {
-        const chip = /** @type {HTMLElement | null} */ (
-          corner.shadowRoot?.querySelector(".chip")
-        );
-        if (!chip) continue;
-        const intrinsic = [...chip.querySelectorAll(".seg")].reduce(
-          (sum, seg) => {
-            let content = 0;
-            for (const child of /** @type {HTMLElement} */ (seg).children) {
-              content += child.scrollWidth;
-            }
-            return sum + content + 8;
-          },
-          0,
-        );
-        width = Math.max(width, intrinsic + 20);
-      }
-    }
-  }
-  const widthValue =
-    width > 0 ? `${Math.round(Math.max(width, PANEL_WIDTH_FLOOR))}px` : "";
+
+  // The width is FIXED (work document #63 review): one consistent size
+  // for both sides' columns and every chip — no measurement, no
+  // feedback, no resize jumps on load and no per-click resizing when
+  // accordion content changes. The chips condense to fit: the ladder's
+  // content-driven rungs below
+  const widthValue = `${PANEL_WIDTH_FLOOR}px`;
   for (const both of /** @type {const} */ (["left", "right"])) {
     const bothContainer = panelContainer(both);
     if (bothContainer.style.width !== widthValue)
       bothContainer.style.width = widthValue;
   }
-
-  // The chips bind to the shared width: every chip fills its column, so
-  // the corners align regardless of their content
-  if (widthValue !== "") {
-    for (const corners of panelEdgeCorners.values()) {
-      for (const corner of corners) {
-        const chip = /** @type {HTMLElement | null} */ (
-          corner.shadowRoot?.querySelector(".chip")
-        );
-        if (chip && chip.style.width !== widthValue) {
-          chip.style.width = widthValue;
-        }
+  for (const corners of panelEdgeCorners.values()) {
+    for (const corner of corners) {
+      const chip = /** @type {HTMLElement | null} */ (
+        corner.shadowRoot?.querySelector(".chip")
+      );
+      if (chip && chip.style.width !== widthValue) {
+        chip.style.width = widthValue;
       }
     }
   }
 
-  // The chips bind to the side's consistent width: every chip fills the
-  // column, and a chip whose content cannot fit condenses — its labels
-  // drop, its counts remain — the degradation ladder's content-driven
-  // rung (work document #64's review). The natural measurement reads
-  // the segments before any condensation toggles, so the column's
-  // width never shrinks because a chip already condensed
-  if (widthValue === "") return;
-  const target = Math.round(Math.max(width, PANEL_WIDTH_FLOOR));
-  for (const edge of /** @type {const} */ (["top", "bottom"])) {
-    const corners = panelEdgeCorners.get(`${side}:${edge}`);
-    if (!corners) continue;
+  // The condensation ladder's content-driven rungs: the chip's natural
+  // content (the labels' scroll widths — the text they need, not the
+  // flexed space they got) against the fixed width. Rung one: the
+  // labels drop, the counts remain. The attribute drives the chip's
+  // CSS: no re-render needed
+  for (const corners of panelEdgeCorners.values()) {
     for (const corner of corners) {
-      const chip = corner.shadowRoot?.querySelector(".chip");
+      const chip = /** @type {HTMLElement | null} */ (
+        corner.shadowRoot?.querySelector(".chip")
+      );
       if (!chip) continue;
-      // The intrinsic content: the children's scroll widths — the
-      // stretched segments report their flexed size, the labels'
-      // scrollWidth reports the text they actually need
-      const natural =
-        [...chip.querySelectorAll(".seg")].reduce((sum, seg) => {
-          let content = 0;
-          for (const child of /** @type {HTMLElement} */ (seg).children) {
-            content += child.scrollWidth;
-          }
-          return sum + content + 8;
-        }, 0) + 20;
-      const fits = natural === 0 || natural + 20 <= target;
-      if (corner._condensed !== !fits) {
-        corner._condensed = !fits;
-        // The attribute drives the chip's CSS: no re-render needed
-        corner.toggleAttribute("data-condensed", !fits);
+      let content = 0;
+      for (const seg of chip.querySelectorAll(".seg")) {
+        for (const child of /** @type {HTMLElement} */ (seg).children) {
+          content += child.scrollWidth;
+        }
+        content += 8;
+      }
+      const overflows = content + 20 > PANEL_WIDTH_FLOOR;
+      if (corner._condensed !== overflows) {
+        corner._condensed = overflows;
+        corner.toggleAttribute("data-condensed", overflows);
       }
     }
   }
