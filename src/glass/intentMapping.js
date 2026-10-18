@@ -578,6 +578,29 @@ export function createIntentMapper({
           },
         });
       });
+      // The node's display label (work document #64's small editors):
+      // the metadata merges per key, the id stays the wire identity
+      on(ed, "node-renamed", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "setNodeMetadata",
+          payload: {
+            graphId: graphId(),
+            nodeId: e.detail.nodeId,
+            metadata: { label: e.detail.label },
+          },
+        });
+      });
+      // The graph's display name (work document #64's small editors):
+      // the routing id stays, the chip's breadcrumb and the explorer
+      // follow the metadata name
+      on(ed, "graph-renamed", (e) => {
+        sendIntent({
+          type: "INTENT",
+          command: "renameGraph",
+          payload: { graphId: e.detail.graphId, name: e.detail.name },
+        });
+      });
       on(ed, "remove-group-attempt", (e) => {
         sendIntent({
           type: "INTENT",

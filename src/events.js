@@ -90,20 +90,20 @@
  * @property {CustomEvent<{ nodes: string[] }>} create-subgraph-attempt
  * @property {CustomEvent<{ nodes: string[] }>} create-group-attempt
  * @property {CustomEvent<{ groupId: string }>} group-rename-attempt
- * @property {CustomEvent<{ groupId: string, name: string }>} group-renamed
  * @property {CustomEvent<{ node: Element }>} node-rename-attempt The node
  *   menu's Rename (work document #64's small editors): the shell asks
  *   for the new display label.
  * @property {CustomEvent<{ node: Element }>} node-metadata-attempt The
  *   node menu's Edit metadata: the shell opens the schema-driven
  *   metadata inspector.
+ * @property {CustomEvent<{ groupId: string, name: string }>} group-renamed
  * @property {CustomEvent<{ nodeId: string, label: string }>} node-renamed The
- *   confirmed node display label (work document #64's small editors).
  * @property {CustomEvent<void>} graph-rename-attempt The canvas menu's
  *   Rename graph (work document #64's small editors): the shell asks
  *   for the new display name.
  * @property {CustomEvent<{ graphId: string, name: string }>} graph-renamed The
  *   confirmed graph display name; the routing id stays.
+ *   confirmed node display label (work document #64's small editors).
  * @property {CustomEvent<{ groupId: string }>} remove-group-attempt
  * @property {CustomEvent<{ memberships: Array<{ groupId: string, add: string[], remove: string[] }> }>} update-group-attempt
  * @property {CustomEvent<{ nodes: string[] }>} move-nodes-up-attempt

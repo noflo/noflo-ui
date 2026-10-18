@@ -40,6 +40,7 @@ import {
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import "./elements/noflo-schema-view.js";
+import "./elements/noflo-schema-form.js";
 import { NofloComponentView } from "./elements/noflo-component-view.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
 import { FlowWorkDocView } from "./elements/noflo-workdoc-view.js";
@@ -75,7 +76,9 @@ import {
   openTextPrompt,
   setModalFeedback,
   wireExportRename,
+  wireGraphRename,
   wireGroupRename,
+  wireNodeRename,
   wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
@@ -1107,6 +1110,20 @@ async function render() {
     );
     return group?.name ?? "";
   });
+  // The node's display-label rename (work document #64's small editors):
+  // the modal prefills with the metadata label, defaulting to the id
+  wireNodeRename(ed, (nodeId) => {
+    const view = projectGraph(mirrorDoc, activeGraphId);
+    const label = view?.processes?.[nodeId]?.metadata?.label;
+    return typeof label === "string" && label.length > 0 ? label : nodeId;
+  });
+  // The graph's display-name rename: the routing id stays
+  wireGraphRename(
+    ed,
+    (graphId) =>
+      String(projectGraph(mirrorDoc, graphId)?.properties?.name ?? graphId),
+    () => activeGraphId,
+  );
   // The lines corner (work document #35 update #14): the per-line
   // diagrams' editor wiring rides the per-render editor — the corner's
   // data provider lives in init (it reads the projection fresh per
@@ -1120,6 +1137,14 @@ async function render() {
       linesCorner.setSelection(e.detail);
     });
   }
+  // The small editors (work document #64): the metadata inspector opens
+  // from the node menu, schema-driven per the component's declared
+  // config schema
+  on(ed, "node-metadata-attempt", (/** @type {any} */ e) => {
+    const nodeId =
+      /** @type {any} */ (e.detail.node).getAttribute("name") ?? "";
+    _openNodeMetadataEditor(nodeId);
+  });
   renderGraphIntoEditor(view, ed, (name) => libraryManager?.getComponent(name));
   // The minimap tracks the same projection (work document #5)
   ed.updateMinimap?.(view);
@@ -1582,6 +1607,144 @@ async function fetchRuntimeSchemas(digests) {
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
   schemaCachePendingResolvers.length = 0;
+}
+
+/**
+ * Opens the node metadata inspector (work document #64's small editors):
+ * a schema-driven form over the node's metadata — the schema resolves
+ * from the component's config-schema composition when the library
+ * carries one (work document #44's catalogs, advertised via the
+ * component details), falling back to the built-in display keys until
+ * the runtime feeds it. The form binds to the node's metadata Y.Map via
+ * y-jedison with `keys` scoping: the form manages only its declared
+ * keys, the intent-managed position stays untouched, and the binding's
+ * writes relay as the setNodeMetadata intent's binary update.
+ *
+ * @param {string} nodeId The node's id.
+ * @returns {Promise<void>}
+ */
+async function _openNodeMetadataEditor(nodeId) {
+  if (!componentModal) return;
+  const view = projectGraph(mirrorDoc, activeGraphId);
+  const process = view?.processes?.[nodeId];
+  if (!process) return;
+  const component = libraryManager?.getComponent(process.component);
+  const schema =
+    component?.configSchema && typeof component.configSchema === "object"
+      ? component.configSchema
+      : {
+          title: "Node metadata",
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            label: {
+              type: "string",
+              title: "Label",
+              description:
+                "The station's display name; the id stays the wire identity",
+            },
+            description: {
+              type: "string",
+              title: "Description",
+            },
+          },
+        };
+  // The form's keys scope the binding: the intent-managed position
+  // (`x`/`y`) and anything else outside the schema stays untouched
+  const formKeys = Object.keys(/** @type {any} */ (schema).properties ?? {});
+
+  const current = { ...(process.metadata ?? {}) };
+  for (const key of Object.keys(current)) {
+    if (current[key] === undefined || current[key] === null)
+      delete current[key];
+  }
+
+  let schemaFormEl = /** @type {any} */ (
+    componentModal.querySelector("noflo-schema-form")
+  );
+  if (!schemaFormEl) {
+    schemaFormEl = /** @type {any} */ (
+      document.createElement("noflo-schema-form")
+    );
+    componentModal.appendChild(schemaFormEl);
+  }
+  componentForm.style.display = "none";
+  schemaFormEl.style.display = "block";
+  schemaFormEl.refResolver = (/** @type {string} */ ref) =>
+    schemaCache().getRef(ref);
+  schemaFormEl.schema = schema;
+  schemaFormEl.data = current;
+  let lastChange = { data: current, isValid: true, errors: [] };
+  schemaFormEl.addEventListener("form-change", (/** @type {any} */ e) => {
+    lastChange = e.detail;
+  });
+
+  const metadataYmap = /** @type {any} */ (
+    mirrorDoc
+      .getMap("graphs")
+      .get(activeGraphId)
+      ?.get("nodes")
+      ?.get(nodeId)
+      ?.get("metadata")
+  );
+  /** @type {any} */
+  let binding = null;
+  /** @type {((update: Uint8Array, origin: any) => void) | null} */
+  let relay = null;
+  if (metadataYmap && formKeys.length > 0) {
+    const origin = `node-metadata:${nodeId}`;
+    binding = yJedison(schemaFormBinding(schemaFormEl), metadataYmap, {
+      origin,
+      keys: formKeys,
+    });
+    relay = (
+      /** @type {Uint8Array} */ update,
+      /** @type {any} */ transactionOrigin,
+    ) => {
+      if (transactionOrigin !== origin) return;
+      sendIntent({
+        type: "INTENT",
+        command: "setNodeMetadata",
+        payload: { graphId: activeGraphId, nodeId, update },
+      });
+    };
+    mirrorDoc.on("update", relay);
+  }
+
+  componentModal.setActions([
+    { value: "cancel", label: "Cancel", kind: "btn-secondary" },
+    { value: "save", label: "Save", kind: "btn-primary" },
+  ]);
+  componentModal.open(`Edit metadata · ${nodeId}`);
+  const action = await componentModal.submit();
+  if (binding) {
+    binding.destroy();
+    binding = null;
+  }
+  if (relay) {
+    mirrorDoc.off("update", relay);
+    relay = null;
+  }
+  schemaFormEl.style.display = "none";
+  componentForm.style.display = "";
+  if (action !== "save") return;
+  if (!lastChange.isValid) {
+    setModalFeedback(
+      componentModal,
+      "The metadata fails the component's schema",
+      schemaFormEl,
+    );
+    return _openNodeMetadataEditor(nodeId);
+  }
+  sendIntent({
+    type: "INTENT",
+    command: "setNodeMetadata",
+    payload: {
+      graphId: activeGraphId,
+      nodeId,
+      metadata: lastChange.data,
+    },
+  });
 }
 
 /**

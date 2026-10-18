@@ -52,6 +52,7 @@ import {
   removeNode,
   removeNodeFromGroups,
   removeSchema,
+  renameGraph,
   renameGroup,
   requestWorkDocScope,
   revokePermission,
@@ -60,6 +61,7 @@ import {
   setDocText,
   setEdgeRoute,
   setNodeComponent,
+  setNodeMetadata,
   setPortRoute,
   setRouteName,
   setSchemaBody,
@@ -454,6 +456,8 @@ export const INTENT_HANDLERS = {
   removeDoc: intentRemoveDoc,
   forkComponent: intentForkComponent,
   setSignature: intentSetSignature,
+  setNodeMetadata: intentSetNodeMetadata,
+  renameGraph: intentRenameGraph,
 };
 
 /**
@@ -2040,6 +2044,87 @@ function intentAddIIP(doc, payload) {
  * @param {any} payload
  * @returns {EngineResult}
  */
+/**
+ * Merges a patch into a node's metadata (work document #64's small
+ * editors): the collaborative metadata editor's binding writes
+ * granularly into the mirror's metadata map and relays the raw Yjs
+ * update — applied with item structure intact; the whole-merge patch
+ * reconciles per key, so a save never orphans the binding's item
+ * structure. The position keys (`x`/`y`) stay the move intent's — a
+ * patch that carries them moves the node through the same write path
+ * the editor already uses.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetNodeMetadata(doc, payload) {
+  const { graphId, nodeId, metadata, update } = payload ?? {};
+  if (typeof graphId !== "string" || typeof nodeId !== "string") {
+    return { accepted: false, echoes: [] };
+  }
+  const graph = getGraph(doc, graphId);
+  if (!graph) {
+    return { accepted: false, echoes: [] };
+  }
+  // The collaborative editor's binary update (work document #64)
+  if (update !== undefined) {
+    if (!(update instanceof Uint8Array) || update.length === 0) {
+      return { accepted: false, echoes: [] };
+    }
+    Y.applyUpdate(doc, update);
+    /** @type {import("./Protocol.js").GraphSetNodeMetadataMessage} */
+    const echo = {
+      protocol: "graph",
+      command: "setnodemetadata",
+      payload: { graphId, nodeId },
+    };
+    return { accepted: true, echoes: [echo] };
+  }
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!setNodeMetadata(graph, nodeId, metadata)) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphSetNodeMetadataMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "setnodemetadata",
+    payload: { graphId, nodeId, metadata },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
+/**
+ * Renames a graph (work document #64's small editors): the display name
+ * changes, the routing id stays.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentRenameGraph(doc, payload) {
+  const { graphId, name } = payload ?? {};
+  if (
+    typeof graphId !== "string" ||
+    typeof name !== "string" ||
+    name.trim().length === 0
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  if (!renameGraph(doc, graphId, name.trim())) {
+    return { accepted: false, echoes: [] };
+  }
+  /** @type {import("./Protocol.js").GraphRenameGraphMessage} */
+  const echo = {
+    protocol: "graph",
+    command: "renamegraph",
+    payload: { graphId, name: name.trim() },
+  };
+  return { accepted: true, echoes: [echo] };
+}
+
 /**
  * Reconciles a shared Y.Map in place with a plain object (work document
  * #64): per-key writes, missing keys deleted, nested shared types

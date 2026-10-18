@@ -29,6 +29,9 @@ function escapeHtml(value) {
 /**
  * @typedef {Object} Metadata
  * @property {string} [name]
+ * @property {string} [label] The display label (work document #64's
+ *   small editors): renders as the station's name; the id stays the
+ *   wire-referencing identity.
  * @property {string} [componentName]
  * @property {string} [icon]
  */
@@ -214,8 +217,15 @@ export class FlowNode extends HTMLElement {
   /**
    * @param {Metadata} metadata
    */
-  setMetadata({ name }) {
-    if (name) this.textContent = name;
+  setMetadata({ name, label }) {
+    // The display label (work document #5 update #53's option B): the
+    // id stays the wire-referencing identity; the label, when set,
+    // renders as the station's name
+    if (label) {
+      this.textContent = label;
+    } else if (name) {
+      this.textContent = name;
+    }
   }
 
   /**

@@ -221,6 +221,57 @@ export function wireGroupRename(editor, currentName) {
 }
 
 /**
+ * The node's display-label rename (work document #64's small editors):
+ * the node menu's Rename opens the shared single-line modal prefilled
+ * with the node's current label; the confirmed label emits back for the
+ * intent mapper. The label renders as the station's name; the id stays
+ * the wire-referencing identity.
+ *
+ * @param {HTMLElement} editor
+ * @param {(nodeId: string) => string} currentLabel Resolves the node's
+ *   current display label (the metadata label, defaulting to the id).
+ * @returns {void}
+ */
+export function wireNodeRename(editor, currentLabel) {
+  on(editor, "node-rename-attempt", async (e) => {
+    const detail = /** @type {CustomEvent<{ node: Element }>} */ (e).detail;
+    const nodeId = /** @type {any} */ (detail.node).getAttribute("name") ?? "";
+    const named = await openTextPrompt({
+      title: "Rename node",
+      value: currentLabel(nodeId),
+      confirmLabel: "Rename node",
+    });
+    if (named === null || named === currentLabel(nodeId)) return;
+    emit(editor, "node-renamed", { nodeId, label: named });
+  });
+}
+
+/**
+ * The graph's display-name rename (work document #64's small editors):
+ * the canvas menu's Rename graph opens the shared single-line modal
+ * prefilled with the graph's current name; the confirmed name emits back
+ * for the intent mapper. The routing id stays.
+ *
+ * @param {HTMLElement} editor
+ * @param {(graphId: string) => string} currentName Resolves the graph's
+ *   current display name.
+ * @param {() => string} graphId The active graph's id.
+ * @returns {void}
+ */
+export function wireGraphRename(editor, currentName, graphId) {
+  on(editor, "graph-rename-attempt", async () => {
+    const id = graphId();
+    const named = await openTextPrompt({
+      title: "Rename graph",
+      value: currentName(id),
+      confirmLabel: "Rename graph",
+    });
+    if (named === null || named === currentName(id)) return;
+    emit(editor, "graph-renamed", { graphId: id, name: named });
+  });
+}
+
+/**
  * The route-naming flow (work document #35's route context): the editor's
  * "Name route" menu item opens the single-line modal prefilled with the
  * route's current name; the confirmed name emits back for the intent

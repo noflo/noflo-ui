@@ -122,6 +122,7 @@ export function renderGraphIntoEditor(g, ed, getComponent) {
       x,
       y,
       name: node.id,
+      label: node.metadata?.label,
       icon: comp?.icon || "gear",
       componentName: node.component,
     });

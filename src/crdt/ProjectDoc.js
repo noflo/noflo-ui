@@ -458,6 +458,52 @@ export function getNode(graph, nodeId) {
 }
 
 /**
+ * Merges a patch into a node's metadata (work document #64's small
+ * editors): per-key set and delete inside the node's existing metadata
+ * map — the map's item structure survives, so the collaborative
+ * metadata editor's binding keeps its shared subtree. Absent keys are
+ * left alone; an explicit `undefined` deletes.
+ *
+ * @param {Y.Map<any>} graph
+ * @param {string} nodeId
+ * @param {Record<string, any>} patch The keys to merge.
+ * @returns {boolean} Whether the node existed.
+ */
+export function setNodeMetadata(graph, nodeId, patch) {
+  const node = getNode(graph, nodeId);
+  if (!node) return false;
+  const metadata = /** @type {Y.Map<any>} */ (node.get("metadata"));
+  if (!metadata) return false;
+  for (const key of Object.keys(patch)) {
+    if (patch[key] === undefined) {
+      metadata.delete(key);
+    } else {
+      metadata.set(key, patch[key]);
+    }
+  }
+  return true;
+}
+
+/**
+ * Renames a graph (work document #64's small editors): the graph's
+ * metadata carries its name; the id (the routing and the subgraph
+ * hierarchy's address) stays stable.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} graphId
+ * @param {string} name The new display name.
+ * @returns {boolean} Whether the graph existed.
+ */
+export function renameGraph(doc, graphId, name) {
+  const graph = getGraph(doc, graphId);
+  if (!graph) return false;
+  const metadata = /** @type {Y.Map<any>} */ (graph.get("metadata"));
+  if (!metadata) return false;
+  metadata.set("name", name);
+  return true;
+}
+
+/**
  * Adds a node-to-node edge under its deterministic key.
  *
  * @param {Y.Map<any>} graph

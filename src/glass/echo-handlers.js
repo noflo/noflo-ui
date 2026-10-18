@@ -316,6 +316,8 @@ export function createEchoHandlers(deps) {
     "graph/removeedge": (data) => traceGraphEcho(data),
     "graph/addiip": (data) => traceGraphEcho(data),
     "graph/updateiip": (data) => traceGraphEcho(data),
+    "graph/setnodemetadata": (data) => traceGraphEcho(data),
+    "graph/renamegraph": (data) => traceGraphEcho(data),
     "graph/removeiip": (data) => traceGraphEcho(data),
     "graph/addinport": (data) => traceGraphEcho(data),
     "graph/addoutport": (data) => traceGraphEcho(data),

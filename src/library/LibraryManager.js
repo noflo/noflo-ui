@@ -15,6 +15,10 @@ import { emit } from "../events.js";
  * @property {PortSignature[]} inports
  * @property {PortSignature[]} outports
  * @property {ComponentType} type
+ * @property {any} [configSchema] The component's config-schema
+ *   composition (work document #44's catalogs): the node inspector
+ *   renders editors from it with the declared defaults prefilled.
+ *   Populated when the runtime's component details advertise it.
  */
 
 /**

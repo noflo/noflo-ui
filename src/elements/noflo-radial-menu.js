@@ -266,42 +266,59 @@ export class FlowRadialMenu extends HTMLElement {
       Close: 4,
       Open: 5,
       Edit: 5,
+      "Edit Component": 6,
+      "Edit metadata": 4,
       "Make subgraph": 6,
       Export: 6,
       "Disconnect all": 7,
       "Send now": 7,
       "Move up": 7,
+      Unpack: 6,
+      "Group node": 5,
+      "Group selection": 5,
     };
 
-    const itemAngles = new Array(count);
-    const usedSections = new Set();
+    // The per-item geometry: the section anchors the angle; items that
+    // share a section stagger outward so their 60px hit areas never
+    // overlap — the collision layout used to be random, which let menu
+    // items stack on top of each other and swallow each other's clicks
+    // (the interception the smoke layer caught)
+    /** @type {Array<{ angle: number, radius: number }>} */
+    const geometry = new Array(count);
+    const perSection = new Map();
+
+    const assign = (
+      /** @type {number} */ index,
+      /** @type {number} */ section,
+    ) => {
+      const used = perSection.get(section) ?? 0;
+      perSection.set(section, used + 1);
+      geometry[index] = {
+        angle: (section + 0.5) * (Math.PI / 4),
+        radius: used === 0 ? 60 : 60 + 55 * used,
+      };
+    };
 
     // First pass: assigned sections
     this._items.forEach((item, index) => {
       const section = ITEM_SECTION_MAP[item.text];
-      if (section !== undefined) {
-        itemAngles[index] = (section + 0.5) * (Math.PI / 4);
-        usedSections.add(section);
-      }
+      if (section !== undefined) assign(index, section);
     });
 
-    // Second pass: fill remaining available sections (3-7)
-    // We _must_ leave the bottom-right sections empty because finger covers those on touch
-    const availableSections = [3, 4, 5, 6, 7].filter(
-      (s) => !usedSections.has(s),
-    );
+    // Second pass: fill remaining items into the free sections,
+    // deterministically — we leave the bottom-right sections empty
+    // because fingers cover those on touch
+    const availableSections = [3, 4, 5, 6, 7];
     let availIdx = 0;
-
-    this._items.forEach((_item, index) => {
-      if (itemAngles[index] === undefined) {
-        if (availIdx < availableSections.length) {
-          const section = availableSections[availIdx++];
-          itemAngles[index] = (section + 0.5) * (Math.PI / 4);
-        } else {
-          itemAngles[index] = (3 + Math.random() * 4 + 0.5) * (Math.PI / 4);
-        }
-      }
+    this._items.forEach((item, index) => {
+      if (geometry[index]) return;
+      const section = availableSections[availIdx % availableSections.length];
+      availIdx++;
+      assign(index, section);
     });
+
+    const itemAngles = geometry.map((g) => g.angle);
+    const itemRadii = geometry.map((g) => g.radius);
 
     if (this.svgElement) {
       this.svgElement.innerHTML = "";
@@ -364,8 +381,9 @@ export class FlowRadialMenu extends HTMLElement {
         this.menuElement.appendChild(el);
       }
 
-      const x = centerX + radius * Math.cos(angle) - 30;
-      const y = centerY + radius * Math.sin(angle) - 30;
+      const itemRadius = itemRadii[index];
+      const x = centerX + itemRadius * Math.cos(angle) - 30;
+      const y = centerY + itemRadius * Math.sin(angle) - 30;
 
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
