@@ -196,10 +196,13 @@ const builds = [
     },
     ...vendor,
   },
-  {
-    entryPoints: { yjs: resolve(here, "../node_modules/yjs/dist/yjs.mjs") },
-    ...vendor,
-  },
+  // yjs is deliberately NOT bundled here (work document #64's one-copy
+  // rule): vendor/yjs.js is an 8-line re-export shim over the npm
+  // package's ESM entry, so every consumer — y-jedison, the bindings, the
+  // docs — resolves ONE Yjs copy per execution context. Bundling it
+  // inlines a second copy, and foreign Yjs copies cannot insert types
+  // into each other's items (every y-jedison write fails with
+  // "Unexpected content type in insert operation").
   {
     entryPoints: {
       "y-indexeddb": resolve(
