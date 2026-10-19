@@ -109,8 +109,17 @@ export function createMaterializer(options) {
       if (snapshot === null) return;
       const base = snapshot[path] ?? null;
 
-      if (path === "project.json") {
-        // The manifest is derived state in this increment
+      if (path === "project.json" || path === "package.json") {
+        // Derived state: the generator owns these files. A file event on
+        // them never advances the snapshot, so the event's content
+        // differing from the snapshot IS the signal — re-project the
+        // generated form; ownership runs through the intents
+        // (setProjectDependency), never the files
+        const generated = docToFileTree(doc, options)[path];
+        if (generated !== undefined && content !== base) {
+          await fs.writeFile(path, generated);
+          snapshot[path] = generated;
+        }
         return;
       }
 
@@ -147,7 +156,16 @@ export function createMaterializer(options) {
 
       if (path.startsWith("components/") && path.endsWith(".js")) {
         const componentName = path.slice("components/".length, -".js".length);
-        if (content === null) return;
+        if (content === null) {
+          // Component removal is an editor act (the signature, the code,
+          // and the request pointer leave together) — a deleted file is
+          // diagnosed, never silently ignored (work document #43)
+          onDiagnostic(
+            path,
+            "component file deletion is not propagated — remove the component in the editor",
+          );
+          return;
+        }
         const intent = diffCode(base, content);
         if (intent === null) return;
         emitIntent({
@@ -183,7 +201,15 @@ export function createMaterializer(options) {
 
       if (path.startsWith("components/") && path.endsWith(".json")) {
         const componentName = path.slice("components/".length, -".json".length);
-        if (content === null) return;
+        if (content === null) {
+          // Same as the code file: deletion is an editor act, diagnosed
+          // rather than silently ignored (work document #43)
+          onDiagnostic(
+            path,
+            "component signature deletion is not propagated — remove the component in the editor",
+          );
+          return;
+        }
         const signature = diffSignature(base, content);
         if (signature === null) return;
         emitIntent({
