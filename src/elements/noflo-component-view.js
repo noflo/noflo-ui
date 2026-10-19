@@ -50,6 +50,9 @@ export class NofloComponentView extends HTMLElement {
     this._component = "";
     /** @type {"stub" | "code" | "graph"} The implementation kind. */
     this._implementation = "stub";
+    /** @type {any | null} The implementation-request snapshot (work
+     * document #9 step D). */
+    this._request = null;
     /** @type {any} The signature form element (mounted into the shadow). */
     this._form = null;
     /** @type {any} The signature form's y-jedison binding, when the
@@ -104,6 +107,11 @@ export class NofloComponentView extends HTMLElement {
    *   the code editor's yCollab pattern (work document #64).
    * @param {any} options.cm The CodeMirror surface.
    * @param {string} [options.codeLanguage]
+   * @param {any} [options.request] The implementation-request snapshot
+   *   (work document #9 step D): null when nothing is linked, otherwise
+   *   `{ state: "ok" | "deleted" | "broken", title, scope?, pendingScope?,
+   *   boardId? }` — a plain snapshot of the pointer's resolution; the echo
+   *   path refreshes it via setRequest.
    */
   async open({
     component,
@@ -114,12 +122,14 @@ export class NofloComponentView extends HTMLElement {
     signatureYtype = null,
     cm,
     codeLanguage = "javascript",
+    request = null,
   }) {
     this._component = component;
     this._implementation = implementation;
     this._cm = cm;
     this._language = codeLanguage;
     this._signatureYtype = signatureYtype;
+    this._request = request;
     this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
@@ -392,10 +402,64 @@ export class NofloComponentView extends HTMLElement {
         `<button data-action="open-implementation" title="Open the implementing subgraph">Open implementation</button>`,
       );
     }
+    // The request flow (work document #9 step D): an implementation
+    // request IS a work document — the creation and the pointer ride the
+    // intent path; the linked document's state renders in the request line
+    if (this._implementation !== "graph") {
+      actions.push(
+        `<button class="secondary" data-action="request-implementation" title="Open a work document requesting this component's implementation">Request implementation</button>`,
+      );
+    }
     actions.push(
       `<button data-action="save" kind="btn-primary">Save signature</button>`,
     );
     return actions.join("");
+  }
+
+  /**
+   * The implementation-request line's text (work document #9 step D):
+   * the linked document's governed state, or the link's failure — a
+   * deleted request (rngit-initiated deletion propagated as absence) and
+   * a broken link (the id resolved onto a different document) are named,
+   * never silently re-resolved.
+   *
+   * @returns {string}
+   */
+  requestText() {
+    const request = this._request;
+    if (!request) return "";
+    if (request.state === "ok") {
+      const scope = request.pendingScope
+        ? `${request.scope} → ${request.pendingScope} (requested)`
+        : request.scope;
+      const board = request.boardId ? ` · #${request.boardId}` : "";
+      return `Implementation request: ${request.title} · ${scope}${board}`;
+    }
+    if (request.state === "deleted") {
+      return `Implementation request deleted (the linked document is gone): ${request.title}`;
+    }
+    return `Implementation request link broken (the document under the link is not the requested one)`;
+  }
+
+  /**
+   * Refreshes the request line from a new snapshot (work document #9 step
+   * D): the echo path — a full render would tear the code editor's
+   * binding down, so the line patches in place.
+   *
+   * @param {any | null} request The new snapshot.
+   */
+  setRequest(request) {
+    this._request = request;
+    const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    const line = shadow.getElementById("request-line");
+    if (!line) return;
+    const text = this.requestText();
+    line.textContent = text;
+    if (text) {
+      line.removeAttribute("hidden");
+    } else {
+      line.setAttribute("hidden", "");
+    }
   }
 
   async render() {
@@ -457,6 +521,13 @@ export class NofloComponentView extends HTMLElement {
           min-height: 14px;
           color: var(--ui-age-attention, #e2b344);
         }
+        .request-line {
+          font-size: 11px;
+          color: color-mix(in srgb, currentColor 70%, transparent);
+          border-left: 2px solid var(--ui-accent, #4aa3df);
+          padding-left: 8px;
+        }
+        .request-line[hidden] { display: none; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
         button {
           background: transparent;
@@ -479,6 +550,7 @@ export class NofloComponentView extends HTMLElement {
           <span class="name">${this._component}</span>
           <span class="kind">${kindBadge}</span>
         </div>
+        <div class="request-line" id="request-line" ${this._request ? "" : "hidden"}>${this.requestText()}</div>
         <div class="signature-form-host" id="signature-form-host"></div>
         <div class="code-area" id="component-code" hidden>
           <div class="code-title">Implementation · ${this._language}</div>

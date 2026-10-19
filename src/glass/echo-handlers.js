@@ -74,6 +74,9 @@ function formatBytes(bytes) {
  * @property {(payload: any) => void} [workDocCreated] A work document was
  *   created (work document #9): the creation flow navigates to the new
  *   document's view when the echo is its own.
+ * @property {(payload: any) => void} [implementationRequested] A component's
+ *   implementation-request pointer moved (work document #9 step D): the open
+ *   component editor refreshes its request line from the mirror.
  * @property {(name: string | undefined, action: string) => void} [schemaChanged]
  *   A project schema changed (work document #57): the schema view and
  *   the project corner refresh from the mirror.
@@ -267,6 +270,14 @@ export function createEchoHandlers(deps) {
     "workdoc/scoped": (data) => {
       console.debug(
         `[echo] workdoc/scoped ${data.payload?.id ?? ""} → ${data.payload?.pendingScope ?? ""}`,
+      );
+    },
+    "workdoc/requested": (data) => {
+      // The implementation-request pointer moved (work document #9 step D):
+      // the open component editor refreshes its request line from the mirror
+      deps.implementationRequested?.(data.payload);
+      console.debug(
+        `[echo] workdoc/requested ${data.payload?.component ?? ""} → ${data.payload?.docId ?? "cleared"}`,
       );
     },
     "workdoc/edited": (data) => {

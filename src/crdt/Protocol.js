@@ -435,6 +435,18 @@
  */
 
 /**
+ * Links (or clears) a component's implementation-request pointer (work
+ * document #9, step D): the registry anchor work document #29's request
+ * flow reads. A `request` payload links the component to the work document
+ * carrying its implementation request; `request: null` clears the link.
+ *
+ * @typedef {Object} IntentSetImplementationRequestMessage
+ * @property {'INTENT'} type
+ * @property {'setImplementationRequest'} command
+ * @property {{ component: string, request: { docId: string, created: number, title: string } | null }} payload
+ */
+
+/**
  * Undo (work document #39): pops the Engine-owned journal's latest step —
  * this device's own intent transactions only — and applies its inverse at
  * the CRDT operation level. The Engine reports the stack state on the
@@ -477,7 +489,7 @@
  * @typedef {Object} WorkDocCreatedEcho
  * @property {'workdoc'} protocol
  * @property {'created'} command
- * @property {{ id: string, title: string, scope: string, author: string }} payload
+ * @property {{ id: string, title: string, scope: string, author: string, created: number }} payload
  * @typedef {Object} WorkDocUpdatedEcho
  * @property {'workdoc'} protocol
  * @property {'updated'} command
@@ -498,6 +510,10 @@
  * @property {'workdoc'} protocol
  * @property {'repo'} command
  * @property {{ url: string | null }} payload
+ * @typedef {Object} WorkDocRequestedEcho
+ * @property {'workdoc'} protocol
+ * @property {'requested'} command
+ * @property {{ component: string, docId: string | null }} payload
  */
 
 /**
@@ -686,6 +702,7 @@
  *   | IntentCreateWorkDocMessage
  *   | IntentUpdateWorkDocMessage
  *   | IntentSetWorkDocScopeMessage
+ *   | IntentSetImplementationRequestMessage
  *   | IntentSetWorkDocBodyMessage
  *   | IntentSetWorkDocTitleMessage
  *   | IntentSetWorkdocsRepoMessage
@@ -769,6 +786,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "createWorkDoc" },
   { type: "INTENT", command: "updateWorkDoc" },
   { type: "INTENT", command: "setWorkDocScope" },
+  { type: "INTENT", command: "setImplementationRequest" },
   { type: "INTENT", command: "setWorkDocBody" },
   { type: "INTENT", command: "setWorkDocTitle" },
   { type: "INTENT", command: "setSchema" },
@@ -1219,6 +1237,7 @@ export const MESH_COMMANDS = [
  *   | WorkDocEditedEcho
  *   | WorkDocTitledEcho
  *   | WorkDocRepoEcho
+ *   | WorkDocRequestedEcho
  *   | SchemaEcho
  *   | YSyncMessage
  *   | YUpdateMessage
@@ -1270,6 +1289,7 @@ export const ECHO_MESSAGES = [
   { protocol: "workdoc", command: "edited" },
   { protocol: "workdoc", command: "titled" },
   { protocol: "workdoc", command: "repo" },
+  { protocol: "workdoc", command: "requested" },
   { protocol: "schema", command: "created" },
   { protocol: "schema", command: "edited" },
   { protocol: "schema", command: "removed" },

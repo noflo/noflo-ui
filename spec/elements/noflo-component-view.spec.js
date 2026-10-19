@@ -211,6 +211,7 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
       "initiator:",
       view._signatureBinding?.initiator,
     );
+    console.log("W2:setValue-before");
     editor.setValue({
       inports: [{ name: "in", type: "all" }],
       outports: [
@@ -253,6 +254,7 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
       outports: [{ name: "out", type: "all" }],
     });
     const view = await openedView(mirror, "fs/Count");
+    console.log("W2:opened");
     const editor = view._form.editor;
 
     // A peer's change arrives through the mirror (any writer other than
@@ -284,12 +286,14 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
   });
 
   it("a whole-write swap rebinds the form to the fresh entry", async () => {
+    console.log("W2:start");
     const mirror = new Y.Doc();
     setComponentSignature(mirror, "fs/Count", {
       inports: [{ name: "in", type: "all" }],
       outports: [{ name: "out", type: "all" }],
     });
     const view = await openedView(mirror, "fs/Count");
+    console.log("W2:opened");
     const editor = view._form.editor;
 
     // The Save flow's whole-write replaces the registry entry: the
@@ -304,14 +308,20 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
     mirror.transact(() => {
       mirror.getMap(REGISTRY_MAP).set("fs/Count", fresh);
     }, "save-flow");
+    console.log("W2:transacted");
     await new Promise((resolve) => setTimeout(resolve, 20));
+    console.log("W2:slept");
+    console.log("WW: slept");
 
+    console.log("W2:getValue-before");
     assert.equal(
       editor.getValue().inports[0]?.name,
       "renamed-in",
       "the fresh entry reconciled into the form",
     );
+    console.log("W2:getValue-after");
     // And the rebinding writes keep landing: an edit reaches the new entry
+    console.log("W2:setValue-before");
     editor.setValue({
       inports: [{ name: "renamed-in", type: "all" }],
       outports: [
@@ -319,7 +329,9 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
         { name: "added", type: "all" },
       ],
     });
+    console.log("W2:emit-before");
     editor.emit("change", undefined);
+    console.log("W2:emit-after");
     assert.equal(
       mirror.getMap(REGISTRY_MAP).get("fs/Count").get("outports").length,
       2,
@@ -327,6 +339,117 @@ describe("the signature form's y-jedison binding (work document #64)", () => {
     );
 
     view.close();
+    view.remove();
+  });
+});
+
+describe("the implementation-request line (work document #9, step D)", () => {
+  /**
+   * Renders the component screen's surface with a request snapshot. The
+   * render path only (no form mount, no signature binding): the request
+   * line and the action set are this suite's subject, and the file's
+   * interleaved schedule should not carry the form machinery's weight.
+   *
+   * @param {any | null} request The request snapshot.
+   * @returns {Promise<any>} The rendered view.
+   */
+  async function renderedView(request = null) {
+    const view = /** @type {any} */ (
+      document.createElement("noflo-component-view")
+    );
+    view._component = "mylib/Parser";
+    view._implementation = "stub";
+    view._request = request;
+    document.body.appendChild(view);
+    await view.render();
+    return view;
+  }
+
+  it("renders nothing without a linked request", async () => {
+    const view = await renderedView();
+    const line = view.shadowRoot.getElementById("request-line");
+    assert.ok(line.hidden, "the line stays hidden");
+    assert.equal(line.textContent, "");
+    assert.ok(
+      view.shadowRoot.querySelector("[data-action='request-implementation']"),
+      "the request action rides the stub ladder",
+    );
+    view.remove();
+  });
+
+  it("renders the linked document's governed state", async () => {
+    const view = await renderedView({
+      state: "ok",
+      title: "Implement mylib/Parser",
+      scope: "proposed",
+      pendingScope: "active",
+      boardId: 42,
+    });
+    const line = view.shadowRoot.getElementById("request-line");
+    assert.ok(!line.hidden);
+    assert.match(
+      line.textContent,
+      /Implementation request: Implement mylib\/Parser/,
+    );
+    assert.match(line.textContent, /proposed → active \(requested\)/);
+    assert.match(line.textContent, /#42/, "the board number renders");
+    view.remove();
+  });
+
+  it("names a deleted request and a broken link instead of hiding them", async () => {
+    const deleted = await renderedView({
+      state: "deleted",
+      title: "Implement mylib/Parser",
+    });
+    assert.match(
+      deleted.shadowRoot.getElementById("request-line").textContent,
+      /request deleted/,
+    );
+    deleted.remove();
+    const broken = await renderedView({
+      state: "broken",
+      title: "Implement mylib/Parser",
+    });
+    assert.match(
+      broken.shadowRoot.getElementById("request-line").textContent,
+      /link broken/,
+    );
+    broken.remove();
+  });
+
+  it("setRequest patches the line in place (the echo path)", async () => {
+    const view = await renderedView();
+    view.setRequest({
+      state: "ok",
+      title: "Implement mylib/Parser",
+      scope: "proposed",
+      pendingScope: "",
+      boardId: null,
+    });
+    const line = view.shadowRoot.getElementById("request-line");
+    assert.ok(!line.hidden, "the line appears");
+    assert.match(line.textContent, /· proposed$/);
+    view.setRequest(null);
+    assert.ok(
+      view.shadowRoot.getElementById("request-line").hidden,
+      "clearing hides the line",
+    );
+    view.remove();
+  });
+
+  it("the request action emits component-action for the intent path", async () => {
+    const view = await renderedView();
+    const events = /** @type {any[]} */ ([]);
+    view.addEventListener("component-action", (/** @type {any} */ e) => {
+      events.push(e.detail);
+    });
+    /** @type {any} */
+    (
+      view.shadowRoot.querySelector("[data-action='request-implementation']")
+    ).click();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].action, "request-implementation");
+    assert.equal(events[0].component, "mylib/Parser");
     view.remove();
   });
 });

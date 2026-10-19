@@ -20,6 +20,7 @@ import {
   appendWorkDocUpdate,
   applySchemaBodyUpdate,
   applyWorkDocBodyUpdate,
+  clearImplementationRequest,
   createGraph,
   createGroup,
   createSchema,
@@ -60,6 +61,7 @@ import {
   setDocText,
   setEdgeRoute,
   setGraphMetadata,
+  setImplementationRequest,
   setNodeComponent,
   setNodeMetadata,
   setPortRoute,
@@ -442,6 +444,7 @@ export const INTENT_HANDLERS = {
   setWorkDocBody: intentSetWorkDocBody,
   setWorkDocTitle: intentSetWorkDocTitle,
   setWorkdocsRepo: intentSetWorkdocsRepo,
+  setImplementationRequest: intentSetImplementationRequest,
   undo: intentUndo,
   redo: intentRedo,
   createGroup: intentCreateGroup,
@@ -1556,6 +1559,7 @@ function intentCreateWorkDoc(doc, payload) {
           title: record.get("title"),
           scope: record.get("scope"),
           author,
+          created: record.get("created"),
         },
       },
     ],
@@ -1723,6 +1727,50 @@ function intentSetWorkDocScope(doc, payload) {
         protocol: "workdoc",
         command: "scoped",
         payload: { id: docId, pendingScope: scope },
+      },
+    ],
+  };
+}
+
+/**
+ * Links (or clears) a component's implementation-request pointer (work
+ * document #9, step D): the registry anchor #29's request flow reads. The
+ * pointer rides the registry record; the document itself was created (or
+ * will be) through the ordinary workdoc intents.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetImplementationRequest(doc, payload) {
+  const { component, request } = payload ?? {};
+  if (typeof component !== "string" || !component) {
+    return { accepted: false, echoes: [] };
+  }
+  if (request === null || request === undefined) {
+    clearImplementationRequest(doc, component);
+    return {
+      accepted: true,
+      echoes: [
+        {
+          protocol: "workdoc",
+          command: "requested",
+          payload: { component, docId: null },
+        },
+      ],
+    };
+  }
+  const applied = setImplementationRequest(doc, component, request);
+  if (!applied) {
+    return { accepted: false, echoes: [] };
+  }
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "workdoc",
+        command: "requested",
+        payload: { component, docId: request.docId },
       },
     ],
   };

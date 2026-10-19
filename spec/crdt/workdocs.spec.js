@@ -379,3 +379,101 @@ describe("implementation-request pointers (work document #9, step D)", () => {
     assert.equal(broken.state, "broken", "the id must not re-resolve");
   });
 });
+
+describe("the implementation-request intent (work document #9, step D)", () => {
+  const COMPONENT = "mylib/Parser";
+
+  it("links a pointer through the intent and echoes it", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    const created = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "createWorkDoc",
+      payload: { title: "Implement the parser" },
+    });
+    const createdEcho = created.echoes.find(
+      (/** @type {any} */ e) => e.protocol === "workdoc",
+    );
+    // The echo carries the created stamp: the pointer's identity leg
+    // (work document #9 update #5's guard reads it back on resolution)
+    assert.equal(typeof createdEcho.payload.created, "number");
+    const linked = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setImplementationRequest",
+      payload: {
+        component: COMPONENT,
+        request: {
+          docId: createdEcho.payload.id,
+          created: createdEcho.payload.created,
+          title: createdEcho.payload.title,
+        },
+      },
+    });
+    assert.ok(linked.accepted);
+    const requestedEcho = linked.echoes.find(
+      (/** @type {any} */ e) => e.protocol === "workdoc",
+    );
+    assert.equal(requestedEcho.command, "requested");
+    assert.equal(requestedEcho.payload.component, COMPONENT);
+    assert.equal(requestedEcho.payload.docId, createdEcho.payload.id);
+    const resolution = resolveImplementationRequest(doc, COMPONENT);
+    assert.equal(resolution.state, "ok");
+  });
+
+  it("clears the pointer with a null request", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    const record = createWorkDoc(doc, {
+      title: "t",
+      author: "a".repeat(32),
+    });
+    handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setImplementationRequest",
+      payload: {
+        component: COMPONENT,
+        request: {
+          docId: record.get("id"),
+          created: record.get("created"),
+          title: record.get("title"),
+        },
+      },
+    });
+    const cleared = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setImplementationRequest",
+      payload: { component: COMPONENT, request: null },
+    });
+    assert.ok(cleared.accepted);
+    assert.equal(
+      cleared.echoes[0].payload.docId,
+      null,
+      "the echo names the clearing",
+    );
+    assert.equal(resolveImplementationRequest(doc, COMPONENT).state, "none");
+  });
+
+  it("refuses malformed payloads without echoing", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    const noComponent = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setImplementationRequest",
+      payload: { request: null },
+    });
+    assert.equal(noComponent.accepted, false);
+    const malformed = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setImplementationRequest",
+      payload: {
+        component: COMPONENT,
+        request: { docId: "nope", created: 1, title: "t" },
+      },
+    });
+    assert.equal(malformed.accepted, false, "ids match the 32-hex shape");
+    assert.equal(resolveImplementationRequest(doc, COMPONENT).state, "none");
+  });
+});

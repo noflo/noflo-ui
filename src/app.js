@@ -7,7 +7,12 @@
 
 import { yJedison } from "y-jedison";
 import * as Y from "yjs";
-import { getSchema, getSchemas, REGISTRY_MAP } from "./crdt/ProjectDoc.js";
+import {
+  getSchema,
+  getSchemas,
+  REGISTRY_MAP,
+  resolveImplementationRequest,
+} from "./crdt/ProjectDoc.js";
 import { checkEviction } from "./crdt/StorageGuard.js";
 import { createTabCoordinator, newTabId } from "./crdt/TabCoordinator.js";
 import { FlowContextChip } from "./elements/noflo-context-chip.js";
@@ -249,6 +254,10 @@ let componentView = null;
 /** The component route pending its mirror data (the workdoc flow's
  * deferred-open pattern, work document #57's boot lag). */
 let pendingComponentOpen = /** @type {string | null} */ (null);
+/** The component awaiting its implementation-request document's creation
+ * echo (work document #9 step D): the createWorkDoc intent is in flight,
+ * the pointer lands when the echo carries the assigned id. */
+let pendingImplementationRequest = /** @type {string | null} */ (null);
 
 /** The pending schema-fetch awaiters (work document #57): the echoes
  * resolve them once the bodies ingest. */
@@ -566,6 +575,25 @@ const echoHandlers = createEchoHandlers({
     refreshSchemaView(name, action);
   },
   workDocCreated: (payload) => {
+    if (pendingImplementationRequest) {
+      // The request document exists: link it to the component (work
+      // document #9 step D) — the pointer rides the registry record, the
+      // materialization carries both to the board
+      const component = pendingImplementationRequest;
+      pendingImplementationRequest = null;
+      sendIntent({
+        type: "INTENT",
+        command: "setImplementationRequest",
+        payload: {
+          component,
+          request: {
+            docId: payload.id,
+            created: payload.created,
+            title: payload.title,
+          },
+        },
+      });
+    }
     if (!pendingWorkDocCreate) return;
     pendingWorkDocCreate = false;
     // The document exists: navigate to its screen (the route change
@@ -573,6 +601,17 @@ const echoHandlers = createEchoHandlers({
     // open, since the replica may confirm after the echo)
     pendingWorkDocEditId = payload.id;
     router?.navigate({ kind: "doc", id: payload.id });
+  },
+  implementationRequested: (payload) => {
+    // The pointer's echo: the open component editor refreshes its request
+    // line from the mirror's now-current state (work document #9 step D)
+    if (!componentView || componentView.hidden) return;
+    if (String(componentView._component ?? "") !== payload.component) return;
+    const resolution = resolveImplementationRequest(
+      /** @type {any} */ (mirrorDoc),
+      payload.component,
+    );
+    componentView.setRequest(requestSnapshot(resolution));
   },
   ingestMeshStatus: (data) => {
     if (data.connected !== undefined) {
@@ -1008,6 +1047,22 @@ async function render() {
         if (ytext) componentView?.bindCode(ytext, "javascript");
         return;
       }
+      if (action === "request-implementation") {
+        // The implementation request IS a work document (work document #9
+        // update #3): the creation rides the ordinary workdoc machinery,
+        // the pointer lands when the creation echo carries the id
+        pendingImplementationRequest = current;
+        sendIntent({
+          type: "INTENT",
+          command: "createWorkDoc",
+          payload: {
+            title: `Implement ${current}`,
+            content: `Implementation request for \`${current}\` (work document #29's ladder: sketch → specify → implement).`,
+            links: [`component:${current}`],
+          },
+        });
+        return;
+      }
       if (action === "implement-graph") {
         sendIntent({
           type: "INTENT",
@@ -1334,6 +1389,34 @@ function refreshProjectExplorer() {
 }
 
 /**
+ * The plain snapshot of an implementation-request resolution the component
+ * screen renders (work document #9 step D): the Glass reads the mirror, the
+ * view never touches CRDT types.
+ *
+ * @param {any} resolution A resolveImplementationRequest result.
+ * @returns {any | null} Null when no request is linked.
+ */
+function requestSnapshot(resolution) {
+  if (!resolution || resolution.state === "none") return null;
+  if (resolution.state === "ok") {
+    const doc = resolution.doc;
+    return {
+      state: "ok",
+      title: String(doc.get("title") ?? ""),
+      scope: String(doc.get("scope") ?? "proposed"),
+      pendingScope: doc.get("pendingScope")
+        ? String(doc.get("pendingScope"))
+        : "",
+      boardId: doc.get("boardId") ?? null,
+    };
+  }
+  return {
+    state: resolution.state,
+    title: String(resolution.pointer?.title ?? ""),
+  };
+}
+
+/**
  * Opens the full-screen component editor (work document #62): the
  * signature form and, once the component carries code, the collaborative
  * buffer — the implementation ladder in one surface.
@@ -1403,6 +1486,11 @@ async function openComponentView(componentName) {
     signatureYtype: mirrorDoc.getMap(REGISTRY_MAP).get(componentName) ?? null,
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
+    // The implementation-request line (work document #9 step D): a plain
+    // snapshot of the pointer's resolution — the echo path refreshes it
+    request: requestSnapshot(
+      resolveImplementationRequest(mirrorDoc, componentName),
+    ),
   });
   updateContextChip();
 }

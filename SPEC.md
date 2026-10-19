@@ -316,6 +316,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'createWorkDoc'; payload: IntentCreateWorkDoc }
   | { type: 'INTENT'; command: 'updateWorkDoc'; payload: IntentUpdateWorkDoc }
   | { type: 'INTENT'; command: 'setWorkDocScope'; payload: IntentSetWorkDocScope }
+  | { type: 'INTENT'; command: 'setImplementationRequest'; payload: { component: string; request: { docId: string; created: number; title: string } | null } }
   | { type: 'INTENT'; command: 'setWorkDocBody'; payload: { docId: string; update: Uint8Array } }
   | { type: 'INTENT'; command: 'setWorkDocTitle'; payload: { docId: string; title: string } }
   | { type: 'INTENT'; command: 'setWorkdocsRepo'; payload: { url: string | null } }
@@ -489,12 +490,13 @@ type EngineUIMessage =
   | { kind: 'mesh-invite'; uri: string }
   | { kind: 'factory-reset' }
   | { kind: 'undo'; canUndo: boolean; canRedo: boolean; undoDepth: number; redoDepth: number }
-  | { protocol: 'workdoc'; command: 'created'; payload: { id: string; title: string; scope: string; author: string } }
+  | { protocol: 'workdoc'; command: 'created'; payload: { id: string; title: string; scope: string; author: string; created: number } }
   | { protocol: 'workdoc'; command: 'updated'; payload: { id: string; updateId: number; author: string } }
   | { protocol: 'workdoc'; command: 'scoped'; payload: { id: string; pendingScope: string } }
   | { protocol: 'workdoc'; command: 'edited'; payload: { id: string } }
   | { protocol: 'workdoc'; command: 'titled'; payload: { id: string; title: string } }
   | { protocol: 'workdoc'; command: 'repo'; payload: { url: string | null } }
+  | { protocol: 'workdoc'; command: 'requested'; payload: { component: string; docId: string | null } }
   | { protocol: 'schema'; command: 'created' | 'edited' | 'removed'; payload: { name: string } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
