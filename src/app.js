@@ -1275,10 +1275,15 @@ async function render() {
 }
 
 /**
- * Rebuilds the Glass-side library view from the CRDT registry.
+ * Rebuilds the Glass-side library view from the CRDT registry. The
+ * manager instance persists — FlowNodes hold it (the side view's preview,
+ * the canvas nodes), so reassignment would orphan them; the sync keeps
+ * the single instance current.
  */
 function bootstrapLibrary() {
-  libraryManager = new LibraryManager();
+  if (!libraryManager) {
+    libraryManager = new LibraryManager();
+  }
   syncLibraryFromRegistry(
     libraryManager,
     mirrorDoc.getMap("registry"),
@@ -1414,6 +1419,17 @@ function requestSnapshot(resolution) {
  */
 async function openComponentView(componentName) {
   if (!componentView || !mirrorDoc) return;
+  // The reload path's deferred open can precede the first render cycle:
+  // the library must hold the component before the view mounts, or the
+  // pane's FlowNode renders the default signature (work document #29)
+  if (!libraryManager) {
+    libraryManager = new LibraryManager();
+  }
+  syncLibraryFromRegistry(
+    libraryManager,
+    mirrorDoc.getMap("registry"),
+    mirrorDoc,
+  );
   const entry = /** @type {any} */ (
     mirrorDoc.getMap("registry").get(componentName)
   );
