@@ -51,3 +51,30 @@ describe("X25519 polyfill (@noble/curves-backed subtle shim)", () => {
     assert.ok(pair.privateKey instanceof CryptoKey, "native keys pass through");
   });
 });
+
+describe("the polyfill's identity round-trip (work document #47's runtime child)", () => {
+  it("the generated identity reloads through the persisted private key", async () => {
+    // The reload path broke twice in the field: exportKey("jwk") returned
+    // raw bytes where the caller reads jwk.x (undefined.length), and the
+    // polyfilled keys carried no algorithm for the caller's re-import
+    const { mkdtempSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const path = await import("node:path");
+    const { FileStorageAdapter } = await import("@reticulum/node");
+    const { Identity } = await import("../../vendor/reticulum-core.js");
+
+    const dir = mkdtempSync(path.join(tmpdir(), "x25519-reload-"));
+    try {
+      const first = await Identity.loadOrGenerate(new FileStorageAdapter(dir));
+      const second = await Identity.loadOrGenerate(new FileStorageAdapter(dir));
+      assert.ok(second, "the reload succeeds");
+      assert.deepEqual(
+        Array.from(second.identityHash ?? []),
+        Array.from(first.identityHash ?? []),
+        "the reloaded identity is the same one",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

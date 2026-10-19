@@ -20,7 +20,8 @@ import process from "node:process";
 import { mkdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { FileStorageAdapter } from "@reticulum/node";
+import { FileStorageAdapter, LocalClientInterface } from "@reticulum/node";
+import { getSharedInstanceEndpoint } from "@reticulum/node/src/interfaces/local_client.js";
 import { Identity } from "../../vendor/reticulum-core.js";
 
 /** The child entrypoint, resolved from this module's own location. */
@@ -161,6 +162,37 @@ export function createRuntimeManager({
       const reticulumDir = process.env.HOME
         ? path.join(process.env.HOME, ".reticulum")
         : null;
+      // The mesh attachment resolves PARENT-SIDE: the child's sandbox
+      // denies the shared-instance discovery's existence probes (the
+      // permission model throws on ungranted and missing paths alike), so
+      // the unconfined parent does the discovery and hands the child an
+      // explicit interface list. The shared rnsd is the transport-node
+      // relay this JS core lacks itself — used when it runs, never
+      // required: the fallback is AutoInterface LAN discovery.
+      let interfaceList = interfaces;
+      if (!interfaceList?.length) {
+        const endpoint = getSharedInstanceEndpoint({});
+        interfaceList =
+          endpoint.shareInstance && (endpoint.host || endpoint.socketPath)
+            ? [
+                {
+                  type: "shared",
+                  options: {
+                    host: endpoint.host,
+                    port: endpoint.port,
+                    socketPath: endpoint.socketPath,
+                  },
+                  enabled: true,
+                },
+              ]
+            : [
+                {
+                  type: "autointerface",
+                  options: { name: "auto" },
+                  enabled: true,
+                },
+              ];
+      }
       const readyPromise = new Promise((resolve, reject) => {
         readyResolve = resolve;
         setTimeout(() => {
@@ -188,7 +220,7 @@ export function createRuntimeManager({
           "--name",
           name,
           "--interfaces",
-          JSON.stringify(interfaces),
+          JSON.stringify(interfaceList),
         ],
         {
           env: childEnv,
