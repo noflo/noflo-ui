@@ -941,7 +941,9 @@ function signatureArray(ports = []) {
 
 /**
  * Sets (replaces) a component's signature in the registry. The registry holds
- * the ports a component exposes, used by the UI to render nodes.
+ * the ports a component exposes, used by the UI to render nodes. An existing
+ * implementation-request pointer (work document #9 step D) is preserved —
+ * signature derivation and boot repair replace ports, never the request link.
  *
  * @param {Y.Doc} doc
  * @param {string} componentName
@@ -959,8 +961,149 @@ export function setComponentSignature(doc, componentName, signature) {
     if (signature.icon !== undefined) {
       entry.set("icon", signature.icon);
     }
+    const previous = /** @type {Y.Map<any> | undefined} */ (
+      registry.get(componentName)
+    );
+    const request = previous?.get("implementationRequest");
+    if (request !== undefined) entry.set("implementationRequest", request);
     registry.set(componentName, entry);
   });
+}
+
+// ---- Implementation requests (work document #9, step D) -------------------
+
+/**
+ * A component's implementation-request pointer: links a registry record to
+ * the work document carrying its implementation request (work document #9
+ * update #3 — the anchor #29's request flow builds on). A plain object,
+ * replaced wholesale, never field-mutated — the same mutability contract as
+ * the workdoc update thread.
+ *
+ * The `title` snapshot is display metadata for the component editor; the
+ * link's identity legs are `docId` (CRDT-native, never recycles) and
+ * `created` (immutable). A document that legitimately renames stays linked —
+ * a refinement of update #5's created/title read guard, whose title leg
+ * assumed board-number pointing.
+ *
+ * @typedef {Object} ImplementationRequestPointer
+ * @property {string} docId The CRDT-native work-document id (32-hex).
+ * @property {number} created The document's created stamp at request time.
+ * @property {string} title The document's title at request time.
+ */
+
+/**
+ * The result of resolving a component's implementation-request pointer
+ * against the workdocs collection, per update #5's read guard: absence
+ * means the request was deleted (rngit-initiated deletions propagate as
+ * absence), a `created` mismatch means the id resolved onto a different
+ * document — shown as broken, never silently re-resolved.
+ *
+ * @typedef {Object} ImplementationRequestResolution
+ * @property {"none" | "ok" | "deleted" | "broken"} state
+ * @property {ImplementationRequestPointer} [pointer]
+ * @property {Y.Map<any>} [doc] The resolved work-document record
+ *   (state "ok") — the component editor reads its title, scope, and thread
+ *   state from here.
+ */
+
+/** The registry key an implementation-request pointer rides. */
+export const IMPLEMENTATION_REQUEST_KEY = "implementationRequest";
+
+/** The id shape createWorkDoc generates; pointers accept nothing else. */
+const WORKDOC_ID_PATTERN = /^[0-9a-f]{32}$/;
+
+/**
+ * Reads a component's implementation-request pointer, or undefined.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @returns {ImplementationRequestPointer | undefined}
+ */
+export function getImplementationRequest(doc, componentName) {
+  const entry = doc.getMap(REGISTRY_MAP).get(componentName);
+  return /** @type {ImplementationRequestPointer | undefined} */ (
+    /** @type {Y.Map<any> | undefined} */ (entry)?.get(
+      IMPLEMENTATION_REQUEST_KEY,
+    )
+  );
+}
+
+/**
+ * Points a component's registry record at its implementation-request work
+ * document. Creates the registry entry when the component has no signature
+ * yet (the pointer is the entry's first inhabitant). Returns false without
+ * mutating on a malformed pointer or component name.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @param {ImplementationRequestPointer} pointer
+ * @returns {boolean}
+ */
+export function setImplementationRequest(doc, componentName, pointer) {
+  if (typeof componentName !== "string" || !componentName) return false;
+  if (!pointer || typeof pointer !== "object") return false;
+  if (
+    typeof pointer.docId !== "string" ||
+    !WORKDOC_ID_PATTERN.test(pointer.docId)
+  )
+    return false;
+  if (typeof pointer.created !== "number" || !Number.isFinite(pointer.created))
+    return false;
+  if (typeof pointer.title !== "string" || !pointer.title) return false;
+  const registry = doc.getMap(REGISTRY_MAP);
+  doc.transact(() => {
+    let entry = /** @type {Y.Map<any> | undefined} */ (
+      registry.get(componentName)
+    );
+    if (!entry) {
+      entry = new Y.Map();
+      registry.set(componentName, entry);
+    }
+    entry.set(IMPLEMENTATION_REQUEST_KEY, {
+      docId: pointer.docId,
+      created: pointer.created,
+      title: pointer.title,
+    });
+  });
+  return true;
+}
+
+/**
+ * Clears a component's implementation-request pointer. No-op when the
+ * component has no registry entry.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ */
+export function clearImplementationRequest(doc, componentName) {
+  const entry = /** @type {Y.Map<any> | undefined} */ (
+    doc.getMap(REGISTRY_MAP).get(componentName)
+  );
+  if (entry) entry.delete(IMPLEMENTATION_REQUEST_KEY);
+}
+
+/**
+ * Resolves a component's implementation-request pointer against the
+ * workdocs collection (work document #9 update #5's read guard): a pointer
+ * whose document is absent resolves "deleted" — the request was deleted
+ * rngit-side and the absence propagated; a pointer whose `created` stamp
+ * disagrees with the resolved record resolves "broken" — the id must never
+ * re-resolve onto a different document. A renamed document stays "ok": the
+ * pointer's title is the request-time snapshot, display only.
+ *
+ * @param {Y.Doc} doc
+ * @param {string} componentName
+ * @returns {ImplementationRequestResolution}
+ */
+export function resolveImplementationRequest(doc, componentName) {
+  const pointer = getImplementationRequest(doc, componentName);
+  if (!pointer) return { state: "none" };
+  const record = getWorkDoc(doc, pointer.docId);
+  if (!record) return { state: "deleted", pointer };
+  if (record.get("created") !== pointer.created) {
+    return { state: "broken", pointer };
+  }
+  return { state: "ok", pointer, doc: record };
 }
 
 // ---- Work documents (work document #9) -------------------------------------

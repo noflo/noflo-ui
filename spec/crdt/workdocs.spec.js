@@ -3,12 +3,17 @@ import { describe, it } from "node:test";
 import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
 import {
   appendWorkDocUpdate,
+  clearImplementationRequest,
   createProjectDoc,
   createWorkDoc,
+  getImplementationRequest,
   getWorkDoc,
   PROJECT_SCHEMA_VERSION,
   reconcileWorkDocScope,
   requestWorkDocScope,
+  resolveImplementationRequest,
+  setComponentSignature,
+  setImplementationRequest,
 } from "../../src/crdt/ProjectDoc.js";
 import * as Y from "../../vendor/yjs.js";
 
@@ -212,5 +217,165 @@ describe("work document intents (work document #9)", () => {
       payload: { docId: id, scope: "published" },
     });
     assert.equal(bad.accepted, false, "invalid scopes refused");
+  });
+});
+
+describe("implementation-request pointers (work document #9, step D)", () => {
+  const COMPONENT = "mylib/Parser";
+
+  /** Creates a document and returns its record. */
+  function requestedDoc(doc, title = "Implement the parser") {
+    return createWorkDoc(doc, {
+      title,
+      content: "The parser needs a sketch.",
+      author: "a".repeat(32),
+    });
+  }
+
+  it("stores, reads, and clears the pointer as a plain object", () => {
+    const doc = createProjectDoc("p");
+    const record = requestedDoc(doc);
+    const pointer = {
+      docId: record.get("id"),
+      created: record.get("created"),
+      title: record.get("title"),
+    };
+    assert.equal(getImplementationRequest(doc, COMPONENT), undefined);
+    assert.ok(setImplementationRequest(doc, COMPONENT, pointer));
+    const stored = getImplementationRequest(doc, COMPONENT);
+    assert.deepEqual(stored, pointer, "plain object, field-for-field");
+    // The pointer rides the registry entry beside an existing signature
+    assert.ok(
+      doc.getMap("registry").get(COMPONENT).has("implementationRequest"),
+    );
+    clearImplementationRequest(doc, COMPONENT);
+    assert.equal(getImplementationRequest(doc, COMPONENT), undefined);
+    // Clearing without an entry is a no-op, not a throw
+    clearImplementationRequest(doc, "other/Component");
+  });
+
+  it("creates the registry entry when the component has no signature yet", () => {
+    const doc = createProjectDoc("p");
+    const record = requestedDoc(doc);
+    assert.ok(
+      setImplementationRequest(doc, COMPONENT, {
+        docId: record.get("id"),
+        created: record.get("created"),
+        title: record.get("title"),
+      }),
+    );
+    assert.ok(
+      doc.getMap("registry").has(COMPONENT),
+      "the entry exists as the pointer's host",
+    );
+  });
+
+  it("refuses malformed pointers and names without mutating", () => {
+    const doc = createProjectDoc("p");
+    const before = doc.getMap("registry").toJSON();
+    const record = requestedDoc(doc);
+    const good = {
+      docId: record.get("id"),
+      created: record.get("created"),
+      title: record.get("title"),
+    };
+    assert.equal(setImplementationRequest(doc, "", good), false, "no name");
+    assert.equal(
+      setImplementationRequest(doc, COMPONENT, null),
+      false,
+      "no pointer",
+    );
+    assert.equal(
+      setImplementationRequest(doc, COMPONENT, { ...good, docId: "wd_nope" }),
+      false,
+      "ids match the 32-hex shape",
+    );
+    assert.equal(
+      setImplementationRequest(doc, COMPONENT, { ...good, created: "x" }),
+      false,
+      "created is a number",
+    );
+    assert.equal(
+      setImplementationRequest(doc, COMPONENT, { ...good, title: "" }),
+      false,
+      "title required",
+    );
+    assert.deepEqual(doc.getMap("registry").toJSON(), before, "untouched");
+  });
+
+  it("preserves the pointer when the signature is replaced", () => {
+    const doc = createProjectDoc("p");
+    const record = requestedDoc(doc);
+    const pointer = {
+      docId: record.get("id"),
+      created: record.get("created"),
+      title: record.get("title"),
+    };
+    setComponentSignature(doc, COMPONENT, {
+      inports: [{ name: "in" }],
+      outports: [{ name: "out" }],
+    });
+    assert.ok(setImplementationRequest(doc, COMPONENT, pointer));
+    // Signature derivation and boot repair replace the entry — the link survives
+    setComponentSignature(doc, COMPONENT, {
+      inports: [{ name: "in" }, { name: "config" }],
+      outports: [{ name: "out" }],
+      description: "Parses things",
+    });
+    assert.deepEqual(getImplementationRequest(doc, COMPONENT), pointer);
+    const entry = doc.getMap("registry").get(COMPONENT);
+    assert.equal(
+      entry.get("description"),
+      "Parses things",
+      "ports still update",
+    );
+    assert.equal(entry.get("inports").length, 2);
+  });
+
+  it("resolves none, ok, deleted, and broken states", () => {
+    const doc = createProjectDoc("p");
+    assert.equal(resolveImplementationRequest(doc, COMPONENT).state, "none");
+
+    const record = requestedDoc(doc);
+    const pointer = {
+      docId: record.get("id"),
+      created: record.get("created"),
+      title: record.get("title"),
+    };
+    setImplementationRequest(doc, COMPONENT, pointer);
+    const ok = resolveImplementationRequest(doc, COMPONENT);
+    assert.equal(ok.state, "ok");
+    assert.equal(
+      ok.doc.get("id"),
+      pointer.docId,
+      "the record rides the resolution",
+    );
+
+    // A renamed document stays linked — the title is the request-time snapshot
+    record.set("title", "Implement the parser, properly");
+    assert.equal(resolveImplementationRequest(doc, COMPONENT).state, "ok");
+
+    // rngit-initiated deletion propagates as absence
+    const originalCreated = record.get("created");
+    doc.getMap("workdocs").delete(pointer.docId);
+    const deleted = resolveImplementationRequest(doc, COMPONENT);
+    assert.equal(deleted.state, "deleted");
+    assert.deepEqual(deleted.pointer, pointer);
+
+    // A created-stamp mismatch never re-resolves onto a different document.
+    // The guard is defense-in-depth — CRDT ids never recycle, so a mismatch
+    // means divergent data landed under the id; the test simulates that
+    // directly (same-millisecond creations would otherwise share stamps)
+    const replacement = requestedDoc(doc, "Something else entirely");
+    replacement.set("created", originalCreated - 1000);
+    assert.ok(
+      setImplementationRequest(doc, COMPONENT, {
+        docId: replacement.get("id"),
+        created: originalCreated,
+        title: pointer.title,
+      }),
+    );
+    const broken = resolveImplementationRequest(doc, COMPONENT);
+    assert.equal(broken.state, "broken", "the id must not re-resolve");
   });
 });
