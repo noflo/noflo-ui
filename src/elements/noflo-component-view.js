@@ -522,7 +522,7 @@ export class NofloComponentView extends HTMLElement {
           align-items: start;
         }
         @media (min-width: 760px) {
-          .pane-grid { grid-template-columns: minmax(0, 1fr) 232px; }
+          .pane-grid { grid-template-columns: minmax(0, 1fr) 264px; }
         }
         .preview-pane {
           display: none;
@@ -543,13 +543,18 @@ export class NofloComponentView extends HTMLElement {
         /* The node renders at its native canvas size (80px — the editor's
            default) and the wrapper scales it, so every proportion — ring
            width, bands, pill text — is pixel-identical to the graph
-           editor at zoom, not re-laid-out. The wrapper centers the
-           node's box; the translate's percentages resolve against the
-           layout size, so the disc lands at the stage's center. */
+           editor at zoom, not re-laid-out. The wrapper carries FlowNode's
+           host box explicitly: the node inside is position:absolute, so a
+           content-sized wrapper would collapse to 0×0 and the translate
+           would center nothing — the box's dimensions are what make the
+           translate land the disc at the stage's center and the scale
+           magnify about it. */
         .preview-scale {
           position: absolute;
           left: 50%;
           top: 50%;
+          width: 80px;
+          height: 110px; /* var(--node-size) and the +30px info block */
           transform: translate(-50%, -50%) scale(1.8);
         }
         .head {
