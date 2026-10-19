@@ -1,4 +1,5 @@
 import { emit } from "../events.js";
+import * as Y from "../../vendor/yjs.js";
 
 /**
  * @typedef {"subgraph" | "elementary" | "stub" | "inferred"} ComponentType
@@ -262,5 +263,48 @@ export class LibraryManager extends EventTarget {
         this.addPort(toType, iip.to.port, "in");
       }
     }
+  }
+}
+
+/**
+ * Reconciles the manager's project module from the CRDT registry (work
+ * document #29's side view, and the canvas ladder generally): the
+ * Glass-side library is the registry's mirror, so signature edits —
+ * granular, streaming from the collaborative form — propagate to every
+ * FlowNode rendering the component. Idempotent; stale project entries
+ * are removed, library modules are untouched.
+ *
+ * @param {LibraryManager} manager The Glass-side library.
+ * @param {Y.Map<any>} registry The CRDT registry map.
+ * @param {Y.Doc} doc The project document (subgraph detection reads the
+ *   graphs map).
+ */
+export function syncLibraryFromRegistry(manager, registry, doc) {
+  const project = manager.modules.get(LibraryManager.PROJECT_MODULE);
+  if (!project) return;
+  const seen = new Set();
+  for (const [name, entry] of registry.entries()) {
+    seen.add(name);
+    const plain = entry.toJSON();
+    const isSubgraph = doc.getMap("graphs").has(name);
+    manager.setComponent(name, {
+      name,
+      type: isSubgraph ? "subgraph" : "stub",
+      icon: plain.icon || "gear",
+      description: plain.description,
+      inports: (plain.inports ?? []).map((/** @type {any} */ p) => ({
+        name: p.name,
+        type: p.type ?? "all",
+        addressable: Boolean(p.addressable),
+      })),
+      outports: (plain.outports ?? []).map((/** @type {any} */ p) => ({
+        name: p.name,
+        type: p.type ?? "all",
+        addressable: Boolean(p.addressable),
+      })),
+    });
+  }
+  for (const name of [...project.keys()]) {
+    if (!seen.has(name)) manager.removeComponent(name);
   }
 }

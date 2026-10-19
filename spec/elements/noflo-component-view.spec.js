@@ -5,10 +5,16 @@ import "./utils/register.js";
 
 import { yJedison } from "y-jedison";
 import {
+  createProjectDoc,
   REGISTRY_MAP,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
+import {
+  LibraryManager,
+  syncLibraryFromRegistry,
+} from "../../src/library/LibraryManager.js";
 import { buildSignatureSchema } from "../../src/library/schema.js";
+import "../../src/elements/noflo-node.js";
 import "../../src/elements/noflo-schema-form.js";
 import "../../src/elements/noflo-json-form.js";
 import "../../src/elements/noflo-component-view.js";
@@ -450,6 +456,67 @@ describe("the implementation-request line (work document #9, step D)", () => {
     assert.equal(events.length, 1);
     assert.equal(events[0].action, "request-implementation");
     assert.equal(events[0].component, "mylib/Parser");
+    view.remove();
+  });
+});
+
+describe("the side view's library sync (work document #29)", () => {
+  it("syncLibraryFromRegistry reconciles the manager's project module", () => {
+    const doc = createProjectDoc("p");
+    setComponentSignature(doc, "Parser", {
+      inports: [{ name: "in", type: "string" }],
+      outports: [{ name: "out" }],
+      icon: "filter",
+    });
+    setComponentSignature(doc, "Gone", { inports: [], outports: [] });
+    const manager = new LibraryManager();
+    syncLibraryFromRegistry(manager, doc.getMap(REGISTRY_MAP), doc);
+    const parser = manager.getComponent("Parser");
+    assert.equal(parser?.icon, "filter");
+    assert.equal(parser?.inports?.[0]?.type, "string");
+    assert.ok(manager.getComponent("Gone"), "both entries land");
+    // A signature edit propagates: the ports update in the manager
+    setComponentSignature(doc, "Parser", {
+      inports: [{ name: "in" }, { name: "config" }],
+      outports: [{ name: "out" }],
+    });
+    // A removal propagates: the stale entry disappears
+    doc.getMap(REGISTRY_MAP).delete("Gone");
+    syncLibraryFromRegistry(manager, doc.getMap(REGISTRY_MAP), doc);
+    assert.equal(manager.getComponent("Parser")?.inports?.length, 2);
+    assert.equal(manager.getComponent("Gone"), undefined);
+  });
+
+  it("the component screen's side pane mounts the canvas's FlowNode", async () => {
+    const mirror = createProjectDoc("scratch");
+    setComponentSignature(mirror, "mylib/Parser", {
+      inports: [{ name: "in", type: "string" }],
+      outports: [{ name: "out" }],
+    });
+    const manager = new LibraryManager();
+    syncLibraryFromRegistry(manager, mirror.getMap(REGISTRY_MAP), mirror);
+    const view = /** @type {any} */ (
+      document.createElement("noflo-component-view")
+    );
+    document.body.appendChild(view);
+    const entry = mirror.getMap(REGISTRY_MAP).get("mylib/Parser");
+    await view.open({
+      component: "mylib/Parser",
+      implementation: "stub",
+      formSchema: buildSignatureSchema([]),
+      signature: {
+        inports: entry.get("inports").toJSON(),
+        outports: entry.get("outports").toJSON(),
+      },
+      libraryManager: manager,
+      depictionSource: null,
+    });
+    const node = /** @type {any} */ (
+      view.shadowRoot.querySelector(".preview-pane noflo-node")
+    );
+    assert.ok(node, "the canvas's own node element renders in the pane");
+    assert.equal(node.getAttribute("component"), "mylib/Parser");
+    assert.equal(node.libraryManager, manager, "the shared manager instance");
     view.remove();
   });
 });

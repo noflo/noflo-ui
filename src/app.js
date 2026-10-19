@@ -86,7 +86,10 @@ import {
   wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
-import { LibraryManager } from "./library/LibraryManager.js";
+import {
+  LibraryManager,
+  syncLibraryFromRegistry,
+} from "./library/LibraryManager.js";
 import { routeName as displayRouteName } from "./library/routes.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
@@ -1276,27 +1279,11 @@ async function render() {
  */
 function bootstrapLibrary() {
   libraryManager = new LibraryManager();
-  const registry = mirrorDoc.getMap("registry");
-  for (const [name, entry] of registry.entries()) {
-    const plain = entry.toJSON();
-    const isSubgraph = mirrorDoc.getMap("graphs").has(name);
-    libraryManager.setComponent(name, {
-      name,
-      type: isSubgraph ? "subgraph" : "stub",
-      icon: plain.icon || "gear",
-      description: plain.description,
-      inports: (plain.inports ?? []).map((/** @type {any} */ p) => ({
-        name: p.name,
-        type: p.type ?? "all",
-        addressable: Boolean(p.addressable),
-      })),
-      outports: (plain.outports ?? []).map((/** @type {any} */ p) => ({
-        name: p.name,
-        type: p.type ?? "all",
-        addressable: Boolean(p.addressable),
-      })),
-    });
-  }
+  syncLibraryFromRegistry(
+    libraryManager,
+    mirrorDoc.getMap("registry"),
+    mirrorDoc,
+  );
 }
 
 /**
@@ -1488,6 +1475,10 @@ async function openComponentView(componentName) {
     signatureYtype: mirrorDoc.getMap(REGISTRY_MAP).get(componentName) ?? null,
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
+    // The side view (work document #29): the same FlowNode the canvas
+    // renders, fed by the same library manager and subgraph projection
+    libraryManager,
+    depictionSource: (name) => projectGraph(mirrorDoc, name),
     // The implementation-request line (work document #9 step D): a plain
     // snapshot of the pointer's resolution — the echo path refreshes it
     request: requestSnapshot(

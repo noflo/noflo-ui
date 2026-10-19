@@ -18,6 +18,7 @@ import { yJedison } from "y-jedison";
 import { REGISTRY_MAP } from "../crdt/ProjectDoc.js";
 import { emit } from "../events.js";
 import { codeEditorTheme } from "./noflo-code-editor.js";
+import { FlowNode } from "./noflo-node.js";
 
 /** The styles for the signature form, fetched once (the mesh settings'
  * pattern — the jedison-generated markup needs the shared theme). */
@@ -53,6 +54,11 @@ export class NofloComponentView extends HTMLElement {
     /** @type {any | null} The implementation-request snapshot (work
      * document #9 step D). */
     this._request = null;
+    /** @type {any | null} The Glass-side library for the side view. */
+    this._libraryManager = null;
+    /** @type {((componentName: string) => any | null) | null} The
+     * subgraph projection source. */
+    this._depictionSource = null;
     /** @type {any} The signature form element (mounted into the shadow). */
     this._form = null;
     /** @type {any} The signature form's y-jedison binding, when the
@@ -107,6 +113,13 @@ export class NofloComponentView extends HTMLElement {
    *   the code editor's yCollab pattern (work document #64).
    * @param {any} options.cm The CodeMirror surface.
    * @param {string} [options.codeLanguage]
+   * @param {any} [options.libraryManager] The Glass-side library (work
+   *   document #29's side view): the preview's FlowNode renders ports and
+   *   the icon from it, updating live through its component-changed
+   *   events as the signature edits stream into the registry.
+   * @param {((componentName: string) => any | null) | null} [options.depictionSource]
+   *   The subgraph projection source (work document #5): graph-implemented
+   *   components depict their actual layout.
    * @param {any} [options.request] The implementation-request snapshot
    *   (work document #9 step D): null when nothing is linked, otherwise
    *   `{ state: "ok" | "deleted" | "broken", title, scope?, pendingScope?,
@@ -123,6 +136,8 @@ export class NofloComponentView extends HTMLElement {
     cm,
     codeLanguage = "javascript",
     request = null,
+    libraryManager = null,
+    depictionSource = null,
   }) {
     this._component = component;
     this._implementation = implementation;
@@ -130,6 +145,8 @@ export class NofloComponentView extends HTMLElement {
     this._language = codeLanguage;
     this._signatureYtype = signatureYtype;
     this._request = request;
+    this._libraryManager = libraryManager;
+    this._depictionSource = depictionSource;
     this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
@@ -489,10 +506,42 @@ export class NofloComponentView extends HTMLElement {
           display: flex;
           flex-direction: column;
           padding: 56px 24px 64px;
-          max-width: min(860px, calc(100vw - 48px));
+          max-width: min(1080px, calc(100vw - 48px));
           margin: 0 auto;
           width: 100%;
           gap: 10px;
+        }
+        /* The side view (work document #29): the node's live preview
+           beside the form — the same FlowNode the canvas renders, fed by
+           the same library manager, so the ladder's result is visible
+           while editing. Collapses on narrow viewports (§13). */
+        .pane-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+          align-items: start;
+        }
+        @media (min-width: 760px) {
+          .pane-grid { grid-template-columns: minmax(0, 1fr) 232px; }
+        }
+        .preview-pane {
+          display: none;
+          position: sticky;
+          top: 56px;
+          padding: 12px;
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 6px;
+        }
+        @media (min-width: 760px) {
+          .preview-pane { display: block; }
+        }
+        .preview-stage {
+          position: relative;
+          width: 100%;
+          height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .head {
           display: flex;
@@ -546,10 +595,12 @@ export class NofloComponentView extends HTMLElement {
         }
       </style>
       <div class="column">
-        <div class="head">
-          <span class="name">${this._component}</span>
-          <span class="kind">${kindBadge}</span>
-        </div>
+      <div class="head">
+        <span class="name">${this._component}</span>
+        <span class="kind">${kindBadge}</span>
+      </div>
+      <div class="pane-grid">
+        <div class="form-column">
         <div class="request-line" id="request-line" ${this._request ? "" : "hidden"}>${this.requestText()}</div>
         <div class="signature-form-host" id="signature-form-host"></div>
         <div class="code-area" id="component-code" hidden>
@@ -558,9 +609,39 @@ export class NofloComponentView extends HTMLElement {
         </div>
         <div class="status-line" id="component-status"></div>
         <div class="actions">${this.actionsHtml()}</div>
+        </div>
+        <div class="preview-pane" id="preview-pane">
+          <div class="preview-stage" id="preview-stage"></div>
+        </div>
+      </div>
       </div>
     `;
     this._wireActions();
+    this._mountPreview();
+  }
+
+  /**
+   * Mounts the side view's node (work document #29): the same FlowNode
+   * the canvas renders, fed by the same library manager — signature
+   * edits reach it through the manager's component-changed events, so
+   * the preview and the canvas always agree. Re-mounted per render (the
+   * innerHTML rebuild wipes the host); a rebinding is cheap.
+   */
+  _mountPreview() {
+    const stage = /** @type {HTMLElement | null} */ (
+      this.shadowRoot?.getElementById("preview-stage")
+    );
+    if (!stage || !this._libraryManager) return;
+    stage.innerHTML = "";
+    const node = /** @type {any} */ (
+      document.createElement("noflo-node")
+    );
+    node.libraryManager = this._libraryManager;
+    node.component = this._component;
+    node.size = 150;
+    node.position = { x: 0, y: 0 };
+    if (this._depictionSource) node.depictionSource = this._depictionSource;
+    stage.appendChild(node);
   }
 
   /** Wires the action buttons (re-run per render). */
