@@ -33,7 +33,6 @@ import { docToFileTree } from "./fileTree.js";
  *   answer with a reason, never silently (work document #43).
  * @property {string} [graphId] Restrict to one graph (single-graph
  *   consumers); the default materializes every graph in the doc.
- */
 
 /**
  * @param {MaterializerOptions} options
@@ -50,6 +49,22 @@ export function createMaterializer(options) {
    * pivot. Null until the first materialization. */
   /** @type {Record<string, string> | null} */
   let snapshot = null;
+
+  // Every write-side operation chains through one queue: the absorption
+  // rides every CRDT update and file events arrive while it runs, so
+  // interleaved writeChanged calls would race the snapshot's advances —
+  // serialized, each operation diffs against the settled base, and rapid
+  // updates never drop an absorption
+  let queue = Promise.resolve();
+  /**
+   * @param {() => Promise<void>} job
+   * @returns {Promise<void>}
+   */
+  const enqueue = (job) => {
+    const run = queue.then(job);
+    queue = run.catch(() => {});
+    return run;
+  };
 
   /**
    * Writes the tree's changed paths and advances the snapshot.
@@ -75,6 +90,145 @@ export function createMaterializer(options) {
     snapshot = { ...tree };
   }
 
+  /**
+   * Handles one file event: `content` is the new file content, or `null`
+   * when the file was deleted. Routes by path into the delta differs and
+   * submits the resulting intents. Runs inside the write queue — the
+   * snapshot it reads and advances is stable for the operation's
+   * duration.
+   *
+   * @param {string} path
+   * @param {string | null} content
+   * @returns {Promise<void>}
+   */
+  async function handleFileEventInner(path, content) {
+    if (snapshot === null) return;
+    const base = snapshot[path] ?? null;
+
+    if (path === "project.json" || path === "package.json") {
+      // Derived state: the generator owns these files. A file event on
+      // them never advances the snapshot, so the event's content
+      // differing from the snapshot IS the signal — re-project the
+      // generated form; ownership runs through the intents
+      // (setProjectDependency), never the files
+      const generated = docToFileTree(doc, options)[path];
+      if (generated !== undefined && content !== base) {
+        await fs.writeFile(path, generated);
+        snapshot[path] = generated;
+      }
+      return;
+    }
+
+    if (path.startsWith("graphs/") && path.endsWith(".graph.json")) {
+      const graphId = path
+        .slice("graphs/".length, -".graph.json".length)
+        .replace(/\.graph\.json$/, "");
+      if (content === null) {
+        emitIntent({
+          type: "INTENT",
+          command: "removeGraph",
+          payload: { graphId },
+        });
+        delete snapshot[path];
+        return;
+      }
+      const parsed = parseGraphFile(content);
+      if (!parsed.ok) {
+        // Pre-validation: an invalid file is a diagnostic, never a
+        // rejected-intent storm into the CRDT
+        onDiagnostic(path, parsed.diagnostic);
+        return;
+      }
+      const baseGraph = base === null ? null : parseGraphFile(base);
+      const baseGraphView =
+        baseGraph && baseGraph.ok
+          ? baseGraph.graph
+          : { processes: {}, connections: [] };
+      const intents = diffGraphFile(graphId, baseGraphView, parsed.graph);
+      for (const intent of intents) emitIntent(intent);
+      snapshot[path] = content;
+      return;
+    }
+
+    if (path.startsWith("specs/") && path.endsWith(".yaml")) {
+      // The suite's YAML is the interchange form of a CRDT-owned suite
+      // (work document #16): file edits do not yet ingest — the reverse
+      // direction rides the spec editor's work, and the reason is stated
+      onDiagnostic(
+        path,
+        "spec file edits are not ingested yet — edit tests in the editor",
+      );
+      return;
+    }
+
+    if (path.startsWith("components/") && path.endsWith(".js")) {
+      const componentName = path.slice("components/".length, -".js".length);
+      if (content === null) {
+        // Component removal is an editor act (the signature, the code,
+        // and the request pointer leave together) — a deleted file is
+        // diagnosed, never silently ignored (work document #43)
+        onDiagnostic(
+          path,
+          "component file deletion is not propagated — remove the component in the editor",
+        );
+        return;
+      }
+      const intent = diffCode(base, content);
+      if (intent === null) return;
+      emitIntent({
+        type: "INTENT",
+        command: "setComponentCode",
+        payload: { component: componentName, code: intent },
+      });
+      snapshot[path] = content;
+      return;
+    }
+
+    if (path.startsWith("docs/") && path.endsWith(".md")) {
+      const name = path.slice("docs/".length, -".md".length);
+      if (content === null) {
+        emitIntent({
+          type: "INTENT",
+          command: "removeDoc",
+          payload: { name },
+        });
+        delete snapshot[path];
+        return;
+      }
+      const intent = diffCode(base, content);
+      if (intent === null) return;
+      emitIntent({
+        type: "INTENT",
+        command: "setDoc",
+        payload: { name, content: intent },
+      });
+      snapshot[path] = content;
+      return;
+    }
+
+    if (path.startsWith("components/") && path.endsWith(".json")) {
+      const componentName = path.slice("components/".length, -".json".length);
+      if (content === null) {
+        // Same as the code file: deletion is an editor act, diagnosed
+        // rather than silently ignored (work document #43)
+        onDiagnostic(
+          path,
+          "component signature deletion is not propagated — remove the component in the editor",
+        );
+        return;
+      }
+      const signature = diffSignature(base, content);
+      if (signature === null) return;
+      emitIntent({
+        type: "INTENT",
+        command: "setSignature",
+        payload: { component: componentName, signature },
+      });
+      snapshot[path] = content;
+      return;
+    }
+  }
+
   return {
     /**
      * Full materialization: project → write every file → snapshot.
@@ -82,155 +236,31 @@ export function createMaterializer(options) {
      * @returns {Promise<void>}
      */
     async materialize() {
-      await writeChanged(docToFileTree(doc, options));
+      await enqueue(() => writeChanged(docToFileTree(doc, options)));
     },
 
     /**
      * Echo suppression: remote CRDT changes re-project and rewrite; the
      * snapshot advances so the watcher's events for these writes diff to
-     * nothing.
+     * nothing. Queued behind whatever write-side operation is running.
      *
      * @returns {Promise<void>}
      */
     async absorbRemote() {
-      await writeChanged(docToFileTree(doc, options));
+      await enqueue(() => writeChanged(docToFileTree(doc, options)));
     },
 
     /**
      * Handles one file event: `content` is the new file content, or `null`
-     * when the file was deleted. Routes by path into the delta differs and
-     * submits the resulting intents.
+     * when the file was deleted. Queued behind whatever write-side
+     * operation is running.
      *
      * @param {string} path
      * @param {string | null} content
      * @returns {Promise<void>}
      */
     async handleFileEvent(path, content) {
-      if (snapshot === null) return;
-      const base = snapshot[path] ?? null;
-
-      if (path === "project.json" || path === "package.json") {
-        // Derived state: the generator owns these files. A file event on
-        // them never advances the snapshot, so the event's content
-        // differing from the snapshot IS the signal — re-project the
-        // generated form; ownership runs through the intents
-        // (setProjectDependency), never the files
-        const generated = docToFileTree(doc, options)[path];
-        if (generated !== undefined && content !== base) {
-          await fs.writeFile(path, generated);
-          snapshot[path] = generated;
-        }
-        return;
-      }
-
-      if (path.startsWith("graphs/") && path.endsWith(".graph.json")) {
-        const graphId = path
-          .slice("graphs/".length, -".graph.json".length)
-          .replace(/\.graph\.json$/, "");
-        if (content === null) {
-          emitIntent({
-            type: "INTENT",
-            command: "removeGraph",
-            payload: { graphId },
-          });
-          delete snapshot[path];
-          return;
-        }
-        const parsed = parseGraphFile(content);
-        if (!parsed.ok) {
-          // Pre-validation: an invalid file is a diagnostic, never a
-          // rejected-intent storm into the CRDT
-          onDiagnostic(path, parsed.diagnostic);
-          return;
-        }
-        const baseGraph = base === null ? null : parseGraphFile(base);
-        const baseGraphView =
-          baseGraph && baseGraph.ok
-            ? baseGraph.graph
-            : { processes: {}, connections: [] };
-        const intents = diffGraphFile(graphId, baseGraphView, parsed.graph);
-        for (const intent of intents) emitIntent(intent);
-        snapshot[path] = content;
-        return;
-      }
-
-      if (path.startsWith("specs/") && path.endsWith(".yaml")) {
-        // The suite's YAML is the interchange form of a CRDT-owned suite
-        // (work document #16): file edits do not yet ingest — the reverse
-        // direction rides the spec editor's work, and the reason is stated
-        onDiagnostic(
-          path,
-          "spec file edits are not ingested yet — edit tests in the editor",
-        );
-        return;
-      }
-
-      if (path.startsWith("components/") && path.endsWith(".js")) {
-        const componentName = path.slice("components/".length, -".js".length);
-        if (content === null) {
-          // Component removal is an editor act (the signature, the code,
-          // and the request pointer leave together) — a deleted file is
-          // diagnosed, never silently ignored (work document #43)
-          onDiagnostic(
-            path,
-            "component file deletion is not propagated — remove the component in the editor",
-          );
-          return;
-        }
-        const intent = diffCode(base, content);
-        if (intent === null) return;
-        emitIntent({
-          type: "INTENT",
-          command: "setComponentCode",
-          payload: { component: componentName, code: intent },
-        });
-        snapshot[path] = content;
-        return;
-      }
-
-      if (path.startsWith("docs/") && path.endsWith(".md")) {
-        const name = path.slice("docs/".length, -".md".length);
-        if (content === null) {
-          emitIntent({
-            type: "INTENT",
-            command: "removeDoc",
-            payload: { name },
-          });
-          delete snapshot[path];
-          return;
-        }
-        const intent = diffCode(base, content);
-        if (intent === null) return;
-        emitIntent({
-          type: "INTENT",
-          command: "setDoc",
-          payload: { name, content: intent },
-        });
-        snapshot[path] = content;
-        return;
-      }
-
-      if (path.startsWith("components/") && path.endsWith(".json")) {
-        const componentName = path.slice("components/".length, -".json".length);
-        if (content === null) {
-          // Same as the code file: deletion is an editor act, diagnosed
-          // rather than silently ignored (work document #43)
-          onDiagnostic(
-            path,
-            "component signature deletion is not propagated — remove the component in the editor",
-          );
-          return;
-        }
-        const signature = diffSignature(base, content);
-        if (signature === null) return;
-        emitIntent({
-          type: "INTENT",
-          command: "setSignature",
-          payload: { component: componentName, signature },
-        });
-        snapshot[path] = content;
-        return;
-      }
+      await enqueue(() => handleFileEventInner(path, content));
     },
 
     /**

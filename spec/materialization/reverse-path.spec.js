@@ -14,7 +14,7 @@ import {
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import { projectGraph } from "../../src/glass/projectView.js";
-import { createMaterializer } from "../../src/materialization/watcher.js";
+import { wireProjectFolder } from "../../src/node/projectFolder.js";
 
 /**
  * The reverse-path integration (work document #43): the loop the Companion
@@ -51,29 +51,23 @@ async function loop() {
   /** @type {Array<[string, string]>} */
   const diagnostics = [];
   const folder = await mkdtemp(path.join(tmpdir(), "noflo-reverse-"));
-  const materializer = createMaterializer({
+  // The bridge's production wiring — the same module the Companion runs:
+  // intents through the engine's real dispatch (a refusal is invisible
+  // here, which is exactly why the absorption's write-back is the loop's
+  // honesty mechanism), and the absorption riding every CRDT update
+  const projectFolder = wireProjectFolder({
     doc,
-    fs: {
-      writeFile: async (file, content) => {
-        const target = path.join(folder, file);
-        await mkdir(path.dirname(target), { recursive: true });
-        await writeFile(target, content);
-      },
-      remove: async (file) => {
-        await rm(path.join(folder, file), { force: true });
-      },
-    },
-    // The bridge's wiring: intents through the engine's real dispatch —
-    // a refusal is invisible here, which is exactly why the absorption's
-    // write-back is the loop's honesty mechanism
-    emitIntent: (intent) => void handleMessage(doc, state, intent),
+    folder,
+    engine: { handle: (intent) => void handleMessage(doc, state, intent) },
     onDiagnostic: (file, diagnostic) => diagnostics.push([file, diagnostic]),
   });
-  await materializer.materialize();
+  const materializer = projectFolder.materializer;
+  await projectFolder.materialize();
   return {
     doc,
     state,
     materializer,
+    projectFolder,
     diagnostics,
     folder,
   };
@@ -128,7 +122,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     };
     const edited = `${JSON.stringify(graphFile, null, 2)}\n`;
     await writeFile(path.join(folder, target), edited);
-    materializer.handleFileEvent(target, edited);
+    await materializer.handleFileEvent(target, edited);
 
     const view = projectGraph(doc, "main");
     assert.ok(view?.processes["Lower"], "the engine gained the node");
@@ -143,7 +137,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     const target = path.join("components", "mylib", "Format.js");
     const content = "export const format = (s) => `[${s}]`;\n";
     await writeFile(path.join(folder, target), content);
-    materializer.handleFileEvent(target, content);
+    await materializer.handleFileEvent(target, content);
     const component = doc.getMap("components").get("mylib/Format");
     assert.ok(component, "the component exists");
     assert.equal(getComponentCode(component)?.toString(), content);
@@ -156,8 +150,8 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     const docs = "# Notes\n\nPi wrote this.\n";
     await mkdir(path.join(folder, "docs"), { recursive: true });
     await writeFile(path.join(folder, "docs/notes.md"), docs);
-    materializer.handleFileEvent("components/mylib/Parse.js", code);
-    materializer.handleFileEvent("docs/notes.md", docs);
+    await materializer.handleFileEvent("components/mylib/Parse.js", code);
+    await materializer.handleFileEvent("docs/notes.md", docs);
 
     const component = doc.getMap("components").get("mylib/Parse");
     assert.equal(getComponentCode(component)?.toString(), code);
@@ -172,7 +166,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     const { materializer, diagnostics, folder } = await loop();
     const target = path.join("components", "mylib", "Parse.js");
     await rm(path.join(folder, target));
-    materializer.handleFileEvent(target, null);
+    await materializer.handleFileEvent(target, null);
     assert.ok(
       diagnostics.some(([file, message]) => file === target && /deletion/.test(message)),
       "the deletion answers with a reason",

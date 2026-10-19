@@ -53,7 +53,7 @@ import { claimInstructions, createClaimCode } from "./claim.js";
  * extension_ui_request methods (e.g. setStatus) are ignored. */
 const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 
-import { createMaterializer } from "../materialization/watcher.js";
+import { wireProjectFolder } from "./projectFolder.js";
 import { startEngine } from "../worker/engine.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
@@ -152,39 +152,6 @@ function serveUi(port, tls, host = "localhost") {
       );
       resolve();
     });
-  });
-}
-
-/**
- * The project folder watcher: file events read the content and feed the
- * materializer. `fs.watch` recursive covers macOS, Windows, and current
- * Linux Node; chokidar is the robustness upgrade if platforms complain.
- * Debounced: editors write in bursts. Returns the watcher so a project
- * switch can close it.
- *
- * @param {string} folder
- * @param {(path: string, content: string | null) => Promise<void>} handle
- * @returns {import("node:fs").FSWatcher}
- */
-function watchFolder(folder, handle) {
-  /** @type {NodeJS.Timeout | null} */
-  let timer = null;
-  /** @type {Map<string, string | null>} */
-  const queued = new Map();
-  return fsSync.watch(folder, { recursive: true }, (_event, file) => {
-    if (!file) return;
-    const relative = file.replaceAll("\\", "/");
-    queued.set(relative, null);
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      for (const [relativePath] of queued) {
-        queued.delete(relativePath);
-        fs.readFile(path.join(folder, relativePath), "utf8")
-          .then((content) => handle(relativePath, content))
-          .catch(() => handle(relativePath, null));
-      }
-    }, 200);
   });
 }
 
@@ -374,39 +341,16 @@ async function main() {
     backup.start();
 
     // The materializer: CRDT → folder, folder → intents through the seam
-    const materializer = createMaterializer({
+    // — one wiring module shared with the loop's integration tests (work
+    // document #43)
+    const projectFolder = wireProjectFolder({
       doc: engine.doc,
-      fs: {
-        writeFile: async (file, content) => {
-          await fs.mkdir(path.dirname(path.join(folder, file)), {
-            recursive: true,
-          });
-          await fs.writeFile(path.join(folder, file), content);
-        },
-        remove: async (file) => {
-          await fs.rm(path.join(folder, file)).catch(() => {});
-        },
-      },
-      emitIntent: (intent) => engine.handle(intent),
-      onDiagnostic: (file, diagnostic) => {
-        console.error(`materializer  ${file}: ${diagnostic}`);
-      },
+      folder,
+      engine,
+      log: (message) => console.error(message),
     });
 
-    // Remote CRDT changes → absorb: rewrite the folder, advance the snapshot
-    let absorbing = false;
-    engine.doc.on("update", () => {
-      if (absorbing) return;
-      absorbing = true;
-      materializer
-        .absorbRemote()
-        .catch((error) => console.error("Absorption failed:", error))
-        .finally(() => {
-          absorbing = false;
-        });
-    });
-
-    await materializer.materialize();
+    await projectFolder.materialize();
 
     // The agent primer: context provisioning for file-based tools (work
     // document #44 M2). A pre-existing AGENTS.md is never overwritten
@@ -421,14 +365,7 @@ async function main() {
 
     // The folder watcher: edits stream back as intents (the snapshot
     // advanced at absorption, so the bridge's own writes diff to nothing)
-    const watcher = watchFolder(folder, async (relative, content) => {
-      absorbing = true;
-      try {
-        await materializer.handleFileEvent(relative, content);
-      } finally {
-        absorbing = false;
-      }
-    });
+    const watcher = projectFolder.watch();
 
     // pi: one supervised client per project (the workdir is the scope)
     /** @type {import("./piManager.js").PiManagerHandle | null} */
@@ -519,7 +456,7 @@ async function main() {
       engine,
       persistence,
       backup,
-      materializer,
+      materializer: projectFolder.materializer,
       watcher,
       manager,
       folder,
