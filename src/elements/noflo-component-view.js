@@ -522,7 +522,7 @@ export class NofloComponentView extends HTMLElement {
           align-items: start;
         }
         @media (min-width: 760px) {
-          .pane-grid { grid-template-columns: minmax(0, 1fr) 264px; }
+          .pane-grid { grid-template-columns: minmax(0, 1fr) 300px; }
         }
         .preview-pane {
           display: none;
@@ -555,7 +555,10 @@ export class NofloComponentView extends HTMLElement {
           top: 50%;
           width: 80px;
           height: 110px; /* var(--node-size) and the +30px info block */
-          transform: translate(-50%, -50%) scale(1.8);
+          /* 1.5× keeps the port labels — ~45px of overhang per side in
+             layout px — inside the pane's 276px inner width at any
+             reasonable name length */
+          transform: translate(-50%, -50%) scale(1.5);
         }
         .head {
           display: flex;
