@@ -19,9 +19,11 @@ import {
   getComponentCode,
   getComponentSignature,
   REGISTRY_MAP,
+  SPECS_MAP,
 } from "../crdt/ProjectDoc.js";
 import { projectGraph } from "../glass/projectView.js";
 import { canonicalGraph, serializeGraph } from "./canonical.js";
+import { specSuiteToYaml } from "./specYaml.js";
 
 /**
  * The fs adapter contract: write one file. Implemented over Node
@@ -188,6 +190,18 @@ export function docToFileTree(doc, options = {}) {
   const docs = sorted(doc.getMap("docs").toJSON());
   for (const [name, entry] of Object.entries(docs)) {
     tree[`docs/${name}.md`] = `${entry.content ?? ""}`;
+  }
+
+  // Test suites: each materializes as its fbp-spec YAML file under specs/
+  // (work document #43) — the `test` script's runner consumes them. A
+  // suite whose topic is a project graph targets `graph:`, everything else
+  // targets `component:`.
+  const specs = doc.getMap(SPECS_MAP);
+  for (const [specId, suiteRecord] of specs.entries()) {
+    const suite = suiteRecord.toJSON?.() ?? suiteRecord;
+    tree[`specs/${specId}.yaml`] = specSuiteToYaml(suite, {
+      isGraph: doc.getMap("graphs").has(String(suite.topic ?? "")),
+    });
   }
 
   // COMPONENTS.md: the component reference for file-based agents —

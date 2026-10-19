@@ -229,3 +229,20 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
 function readBackSnapshot(materializer, target) {
   return materializer.snapshot()[target] ?? "";
 }
+
+describe("spec files on the reverse path (work document #43)", () => {
+  it("a spec file edit is diagnosed, never silently ignored", async () => {
+    const { materializer, diagnostics, folder } = await loop();
+    const target = path.join("specs", "spec_parse.yaml");
+    await mkdir(path.join(folder, "specs"), { recursive: true });
+    await writeFile(path.join(folder, target), "name: forged\n");
+    await materializer.handleFileEvent(target, "name: forged\n");
+    assert.ok(
+      diagnostics.some(
+        ([file, message]) =>
+          file === target && /spec file edits/.test(message),
+      ),
+      "the edit answers with a reason",
+    );
+  });
+});

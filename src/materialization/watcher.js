@@ -154,6 +154,17 @@ export function createMaterializer(options) {
         return;
       }
 
+      if (path.startsWith("specs/") && path.endsWith(".yaml")) {
+        // The suite's YAML is the interchange form of a CRDT-owned suite
+        // (work document #16): file edits do not yet ingest — the reverse
+        // direction rides the spec editor's work, and the reason is stated
+        onDiagnostic(
+          path,
+          "spec file edits are not ingested yet — edit tests in the editor",
+        );
+        return;
+      }
+
       if (path.startsWith("components/") && path.endsWith(".js")) {
         const componentName = path.slice("components/".length, -".js".length);
         if (content === null) {
