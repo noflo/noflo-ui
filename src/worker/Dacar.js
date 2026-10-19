@@ -206,8 +206,8 @@ function bytesToBase64(/** @type {Uint8Array} */ bytes) {
   return btoa(binary);
 }
 
-/** @returns {Uint8Array} Decoded bytes. */
-function base64ToBytes(/** @type {string} */ base64) {
+/** @returns {Uint8Array | null} Decoded bytes, or null when absent. */
+export function base64ToBytes(/** @type {string} */ base64) {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -337,7 +337,8 @@ export function createDacarNode() {
       ) {
         return { applied: 0, reason: "forged-pubkey" };
       }
-      const applied = await ingestRaw(base64ToBytes(authorization.deltas));
+      const deltas = base64ToBytes(authorization.deltas);
+      const applied = await ingestRaw(deltas ?? new Uint8Array(0));
       return applied > 0
         ? { applied, reason: null }
         : { applied: 0, reason: "tampered" };
