@@ -538,10 +538,19 @@ export class NofloComponentView extends HTMLElement {
         .preview-stage {
           position: relative;
           width: 100%;
-          height: 200px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          height: 250px;
+        }
+        /* The node renders at its native canvas size (80px — the editor's
+           default) and the wrapper scales it, so every proportion — ring
+           width, bands, pill text — is pixel-identical to the graph
+           editor at zoom, not re-laid-out. The wrapper centers the
+           node's box; the translate's percentages resolve against the
+           layout size, so the disc lands at the stage's center. */
+        .preview-scale {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%) scale(1.8);
         }
         .head {
           display: flex;
@@ -633,15 +642,24 @@ export class NofloComponentView extends HTMLElement {
     );
     if (!stage || !this._libraryManager) return;
     stage.innerHTML = "";
+    const scaleWrap = document.createElement("div");
+    scaleWrap.className = "preview-scale";
     const node = /** @type {any} */ (
       document.createElement("noflo-node")
     );
     node.libraryManager = this._libraryManager;
     node.component = this._component;
-    node.size = 150;
+    // The canvas's native size (the editor's `metadata.size || 80`):
+    // native size + wrapper scale keeps the node's internals untouched
+    node.size = 80;
     node.position = { x: 0, y: 0 };
+    // The canvas nodes carry a display name (work document #64's small
+    // editors): the component's short name stands in — there is no node
+    // id here, the preview depicts the component itself
+    node.setMetadata({ name: this._component.split("/").pop() });
     if (this._depictionSource) node.depictionSource = this._depictionSource;
-    stage.appendChild(node);
+    scaleWrap.appendChild(node);
+    stage.appendChild(scaleWrap);
   }
 
   /** Wires the action buttons (re-run per render). */
