@@ -240,3 +240,25 @@ describe("spec files on the reverse path (work document #43)", () => {
     );
   });
 });
+
+describe("run artifacts on the reverse path (work document #43's trace convention)", () => {
+  it(".flowtrace/ paths skip the reverse path by design", async () => {
+    const { doc, materializer, diagnostics, folder } = await loop();
+    const target = path.join(".flowtrace", "spec_parse.trace");
+    await mkdir(path.join(folder, ".flowtrace"), { recursive: true });
+    const content = "binary-ish trace bytes";
+    await writeFile(path.join(folder, target), content);
+    await materializer.handleFileEvent(target, content);
+    // No intents, no diagnostics, no snapshot knowledge: the artifact is
+    // an output, the CRDT never carries it
+    assert.equal(
+      doc.getMap("components").get("spec_parse"),
+      undefined,
+    );
+    assert.equal(diagnostics.length, 0);
+    assert.equal(materializer.snapshot()[target], undefined);
+    // The file Pi wrote stays on disk — the absorption does not delete it
+    await materializer.absorbRemote();
+    assert.equal(await readFile(path.join(folder, target), "utf8"), content);
+  });
+});

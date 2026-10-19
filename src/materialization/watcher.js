@@ -103,6 +103,17 @@ export function createMaterializer(options) {
    */
   async function handleFileEventInner(path, content) {
     if (snapshot === null) return;
+
+    // Run artifacts (work document #43's trace convention, the
+    // noflo-jekyll CI precedent): the recorder's JSON state and the
+    // binary 0xF0 stream under .flowtrace/ are outputs of test runs and
+    // builds, not project content — the reverse path skips them by
+    // design, the snapshot never learns them, and the CRDT never carries
+    // their megabytes
+    if (path === ".flowtrace" || path.startsWith(".flowtrace/")) {
+      return;
+    }
+
     const base = snapshot[path] ?? null;
 
     if (path === "project.json" || path === "package.json") {
