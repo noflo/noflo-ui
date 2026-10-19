@@ -557,7 +557,30 @@ var EVENT_TYPE = {
    * A connection closed: the edge no longer carries packets. Payload as in
    * `0x0b CONNECTION_OPEN`.
    */
-  CONNECTION_CLOSE: 12
+  CONNECTION_CLOSE: 12,
+  /**
+   * A process context activated: the component started executing a
+   * delivery. The payload is the positional tuple `[node_id, load]` —
+   * the node's load *after* the increment, so concurrent activations on
+   * one node are visible in the stream (work document #43).
+   */
+  ACTIVATION_BEGIN: 13,
+  /**
+   * A process context deactivated: the component finished executing a
+   * delivery. The payload is the positional tuple `[node_id, load]` —
+   * the load *after* the decrement; `0` marks the node going idle, its
+   * last open activation closed (work document #43).
+   */
+  ACTIVATION_END: 14,
+  /**
+   * Bracket framing stranded at a port's end of transmission: bracket IPs
+   * buffered on an input port whose senders have all terminally
+   * disconnected — the framing can never pair with arriving data. The
+   * residue is reported, not consumed. Payload: the flat tuple
+   * `[tgt_node, tgt_port, scope|null, open_count, close_count]` (work
+   * document #40 update #13).
+   */
+  STRANDED: 15
 };
 var LIFECYCLE_CODE = {
   START: 1,
@@ -596,6 +619,8 @@ var EXECUTION_STATE = {
 var CMD_HWM_SET = 70;
 var CMD_PACKET_SEND = 71;
 var CMD_GET_STATUS = 72;
+var CMD_STREAM_OPEN = 73;
+var CMD_STREAM_EOT = 74;
 var RUN_STATE = {
   STOPPED: 0,
   RUNNING: 1,
@@ -817,6 +842,36 @@ function decodePacketSend(bytes) {
     throw new ProtocolError("port must be a non-empty string", cmd);
   }
   return { cmd: CMD_PACKET_SEND, planeId, port, payload };
+}
+function encodeStreamOpen({ planeId, port }) {
+  if (typeof port !== "string" || port.length === 0) {
+    throw new ProtocolError("port must be a non-empty string", CMD_STREAM_OPEN);
+  }
+  return MsgPack.encode([CMD_STREAM_OPEN, planeId, port]);
+}
+function decodeStreamOpen(bytes) {
+  const frame = MsgPack.decode(bytes);
+  expectFrame(frame, CMD_STREAM_OPEN, 3);
+  const [cmd, planeId, port] = frame;
+  if (typeof port !== "string" || port.length === 0) {
+    throw new ProtocolError("port must be a non-empty string", cmd);
+  }
+  return { cmd: CMD_STREAM_OPEN, planeId, port };
+}
+function encodeStreamEot({ planeId, port }) {
+  if (typeof port !== "string" || port.length === 0) {
+    throw new ProtocolError("port must be a non-empty string", CMD_STREAM_EOT);
+  }
+  return MsgPack.encode([CMD_STREAM_EOT, planeId, port]);
+}
+function decodeStreamEot(bytes) {
+  const frame = MsgPack.decode(bytes);
+  expectFrame(frame, CMD_STREAM_EOT, 3);
+  const [cmd, planeId, port] = frame;
+  if (typeof port !== "string" || port.length === 0) {
+    throw new ProtocolError("port must be a non-empty string", cmd);
+  }
+  return { cmd: CMD_STREAM_EOT, planeId, port };
 }
 function encodeGetStatus() {
   return MsgPack.encode([CMD_GET_STATUS]);
@@ -2225,6 +2280,10 @@ function decodeFrame(bytes) {
       return decodeProcessList(bytes);
     case CMD_HWM_SET:
       return decodeHwmSet(bytes);
+    case CMD_STREAM_OPEN:
+      return decodeStreamOpen(bytes);
+    case CMD_STREAM_EOT:
+      return decodeStreamEot(bytes);
     default: {
       throw new ProtocolError(
         opcode === void 0 ? "frame does not start with an opcode" : "unknown command code",
@@ -2770,15 +2829,15 @@ function assembleTraceFileFromRecorder(state) {
               payload: [ref(meta.src), ref(meta.tgt), tuple[2]]
             };
           }
-          if ((tuple[1] === EVENT_TYPE.CONNECTION_OPEN || tuple[1] === EVENT_TYPE.CONNECTION_CLOSE) && meta?.src && meta?.tgt) {
+          if ((tuple[1] === EVENT_TYPE.CONNECTION_OPEN || tuple[1] === EVENT_TYPE.CONNECTION_CLOSE) && (meta?.src || meta?.tgt)) {
             return {
               timeDeltaMs: tuple[0],
               eventType: tuple[1],
               payload: [
-                meta.src.node,
-                meta.src.port,
-                meta.tgt.node,
-                meta.tgt.port
+                meta.src?.node ?? null,
+                meta.src?.port ?? null,
+                meta.tgt?.node ?? null,
+                meta.tgt?.port ?? null
               ]
             };
           }
@@ -2843,6 +2902,8 @@ export {
   CMD_SCHEMA_REQ,
   CMD_SCHEMA_RES,
   CMD_SCHEMA_WRITE,
+  CMD_STREAM_EOT,
+  CMD_STREAM_OPEN,
   COMPONENT_TYPE,
   EVENT_TYPE,
   EXECUTION_STATE,
@@ -2912,6 +2973,8 @@ export {
   decodeSchemaReq,
   decodeSchemaRes,
   decodeSchemaWrite,
+  decodeStreamEot,
+  decodeStreamOpen,
   detectRefCycles,
   digestSchema,
   encodeAnnounceAppData,
@@ -2950,6 +3013,8 @@ export {
   encodeSchemaReq,
   encodeSchemaRes,
   encodeSchemaWrite,
+  encodeStreamEot,
+  encodeStreamOpen,
   encodeTraceSnapshot,
   isValidSchemaId,
   metaSchemaBody,

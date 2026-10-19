@@ -276,7 +276,7 @@ var BasePort = class extends EventBase {
     if (!this.node || !this.name) {
       return "Port";
     }
-    return `${this.node} ${this.name.toUpperCase()}`;
+    return `${this.node} ${this.name}`;
   }
   /**
    * @returns {string}
@@ -408,9 +408,9 @@ var BasePort = class extends EventBase {
 // node_modules/@noflo/noflo/src/lib/InPort.js
 var InPort = class extends BasePort {
   /**
-   * Create an input port. Control, scoping, and triggering behavior default
-   * to non-control, scoped, and triggering respectively; the buffer
-   * structures are prepared for regular and addressable use.
+   * Create an input port. Control and scoping behavior default to
+   * non-control and scoped respectively; the buffer structures are
+   * prepared for regular and addressable use.
    *
    * @param {PortOptions} [options]
    */
@@ -422,14 +422,12 @@ var InPort = class extends BasePort {
     if (opts.scoped == null) {
       opts.scoped = true;
     }
-    if (opts.triggering == null) {
-      opts.triggering = true;
-    }
     super(opts);
     const baseOptions = this.options;
     this.options = /** @type {PortOptions} */
     baseOptions;
     this.nodeInstance = null;
+    this.eot = true;
     this.prepareBuffer();
   }
   /**
@@ -441,6 +439,7 @@ var InPort = class extends BasePort {
    */
   attachSocket(socket, localId = null) {
     socket.addEventListener("connect", () => {
+      this.#setEot(false);
       if (this.isAddressable()) {
         this.dispatchLifecycleEvent("connect", [socket, localId]);
         return;
@@ -448,16 +447,63 @@ var InPort = class extends BasePort {
       this.dispatchLifecycleEvent("connect", socket);
     });
     socket.addEventListener("disconnect", () => {
+      this.#refreshEot();
       if (this.isAddressable()) {
         this.dispatchLifecycleEvent("disconnect", [socket, localId]);
-        return;
+      } else {
+        this.dispatchLifecycleEvent("disconnect", socket);
       }
-      this.dispatchLifecycleEvent("disconnect", socket);
     });
     socket.addEventListener(
       "ip",
       (event) => this.handleIP(event.detail, localId)
     );
+    this.#refreshEot();
+  }
+  /**
+   * Whether the input is at end of transmission: every attached socket has been
+   * terminally closed by its sender, or none are attached (nothing can
+   * arrive). A later `connect` or `attach` re-opens the input.
+   *
+   * @returns {boolean}
+   */
+  isEot() {
+    return this.eot;
+  }
+  /**
+   * @param {boolean} value
+   * @returns {void}
+   */
+  #setEot(value) {
+    this.eot = value;
+  }
+  /**
+   * @returns {void}
+   */
+  #refreshEot() {
+    let live = false;
+    for (const socket of this.sockets) {
+      if (!socket) {
+        continue;
+      }
+      if (!socket.isTerminal()) {
+        this.#setEot(false);
+        return;
+      }
+      live = true;
+    }
+    this.#setEot(true);
+  }
+  /**
+   * Remove a socket from the port. The remaining attached sockets
+   * re-determine the port's EOT state.
+   *
+   * @param {import("./InternalSocket.js").InternalSocket} socket
+   * @returns {void}
+   */
+  detach(socket) {
+    super.detach(socket);
+    this.#refreshEot();
   }
   /**
    * Receive an Information Packet from a socket: stamp it with ownership,
@@ -620,6 +666,28 @@ var InPort = class extends BasePort {
     return buf.shift();
   }
   /**
+   * The stream-completeness check: the validator is bracket-aware, so on
+   * control ports the buffered stream's framing — not just data presence
+   * — decides completeness. A closeBracket completing a stream with data
+   * inside is the completion moment (work document #47).
+   *
+   * @param {string|null} scope
+   * @param {() => HasValidationCallback} makeValidate - Factory for the
+   *   per-walk validator; each buffer walk gets fresh framing state
+   * @returns {boolean}
+   */
+  hasStream(scope, makeValidate) {
+    if (typeof makeValidate !== "function") {
+      throw new TypeError(
+        "InPort.hasStream takes a validator factory: hasStream(scope, () => validator)"
+      );
+    }
+    if (this.hasIPinBuffer(scope, null, makeValidate())) {
+      return true;
+    }
+    return this.hasIIP(null, makeValidate());
+  }
+  /**
    * Fetches a packet from the port
    * @param {string|null} scope
    * @param {number|null} [index]
@@ -671,26 +739,35 @@ var InPort = class extends BasePort {
    * Returns true if port contains packet(s) matching the validator
    * @param {string|null} scope
    * @param {number|null|HasValidationCallback} index
-   * @param {HasValidationCallback} [validate]
+   * @param {() => HasValidationCallback} makeValidate - Factory for the
+   *   per-walk validator; the regular-buffer and IIP-buffer walks each
+   *   get fresh framing state
    */
-  has(scope, index, validate) {
-    let valid = validate;
-    let idx;
-    if (typeof index === "function") {
-      valid = /** @type {HasValidationCallback} */
-      index;
-      idx = null;
-    } else {
-      idx = index;
+  has(scope, index, makeValidate) {
+    if (typeof makeValidate !== "function") {
+      throw new TypeError(
+        "InPort.has takes a validator factory: has(scope, index|null, () => validator)"
+      );
     }
-    if (this.options.control) {
-      const original = valid;
-      valid = (ip) => ip.type === "data" && original(ip);
-    }
-    if (this.hasIPinBuffer(scope, idx, valid)) {
+    const idx = (
+      /** @type {number|null} */
+      index
+    );
+    const walk = () => {
+      let valid = makeValidate();
+      if (this.options.control) {
+        const original = valid;
+        valid = (ip) => {
+          const verdict = original(ip);
+          return verdict && ip.type === "data";
+        };
+      }
+      return valid;
+    };
+    if (this.hasIPinBuffer(scope, idx, walk())) {
       return true;
     }
-    if (this.hasIIP(idx, valid)) {
+    if (this.hasIIP(idx, walk())) {
       return true;
     }
     return false;
@@ -752,6 +829,59 @@ var InPort = class extends BasePort {
     count += (this.iipBuffer ?? []).length;
     count += (this.buffer ?? []).length;
     return count;
+  }
+  /**
+   * Bracket framing residue in this port's buffers: bracket IPs that can
+   * never pair with arriving data once the port's senders have terminally
+   * disconnected. One entry per (scope, index) buffer holding brackets.
+   * Control ports are scanned like regular ones — a standing data value
+   * is legitimate, but bracket framing around it is the stranded class
+   * (work document #40 update #13).
+   *
+   * @returns {Array<{scope: string|null, index: number|null, open: number, close: number}>}
+   */
+  strandedFraming() {
+    const residue = [];
+    const scan = (buf, scope, index) => {
+      let open = 0;
+      let close = 0;
+      for (const ip of buf ?? []) {
+        if (ip.type === "openBracket") {
+          open += 1;
+        } else if (ip.type === "closeBracket") {
+          close += 1;
+        }
+      }
+      if (open > 0 || close > 0) {
+        residue.push({ scope, index, open, close });
+      }
+    };
+    if (this.isAddressable()) {
+      if (this.options.scoped) {
+        Object.keys(this.indexedScopedBuffer ?? {}).forEach((scope) => {
+          Object.keys(this.indexedScopedBuffer[scope] ?? {}).forEach(
+            (index) => {
+              scan(
+                this.indexedScopedBuffer[scope][index],
+                scope,
+                Number(index)
+              );
+            }
+          );
+        });
+      }
+      Object.keys(this.indexedBuffer ?? {}).forEach((index) => {
+        scan(this.indexedBuffer[index], null, Number(index));
+      });
+      return residue;
+    }
+    if (this.options.scoped) {
+      Object.keys(this.scopedBuffer ?? {}).forEach((scope) => {
+        scan(this.scopedBuffer[scope], scope, null);
+      });
+    }
+    scan(this.buffer, null, null);
+    return residue;
   }
 };
 
@@ -945,6 +1075,22 @@ var OutPort = class extends BasePort {
     });
   }
   /**
+   * Terminally disconnect every attached socket, without the required-port
+   * check: closing down a component must not fail on an unconnected
+   * outport. Each disconnect drains first, so downstream sees
+   * EOT after the in-flight packets (work document #45).
+   *
+   * @returns {void}
+   */
+  disconnectAll() {
+    this.sockets.forEach((socket) => {
+      if (!socket) {
+        return;
+      }
+      socket.disconnect();
+    });
+  }
+  /**
    * Send an Information Packet to the port's socket(s), stamping it with the
    * port's datatype and schema, and returning `this`. The admission Promise
    * for the send is available on {@link OutPort#lastWrite}; it resolves once
@@ -954,9 +1100,8 @@ var OutPort = class extends BasePort {
    * @param {any} [data]
    * @param {import("./IP.js").IPOptions} [options]
    * @param {number|null} [index]
-   * @param {boolean} [autoConnect]
    */
-  sendIP(type, data, options, index = null, autoConnect = true) {
+  sendIP(type, data, options, index = null) {
     let ip;
     let idx = index;
     if (IP.isIP(type)) {
@@ -993,7 +1138,7 @@ var OutPort = class extends BasePort {
       if (fanout) {
         outgoing = this.isFanoutRefs() ? ip.envelope() : ip.clone();
       }
-      writes.push(socket.post(outgoing, autoConnect));
+      writes.push(socket.post(outgoing));
     });
     const admission = Promise.all(writes).then(() => void 0);
     admission.catch(() => {
@@ -1084,6 +1229,21 @@ var OutPort = class extends BasePort {
   }
 };
 
+// node_modules/@noflo/noflo/src/lib/Platform.js
+function makeAsync(func, sameLoop = false) {
+  if (typeof process !== "undefined" && typeof process.nextTick === "function") {
+    if (sameLoop && typeof setImmediate === "function") {
+      setImmediate(() => {
+        func();
+      });
+      return;
+    }
+    process.nextTick(func);
+    return;
+  }
+  setTimeout(func, 0);
+}
+
 // node_modules/@noflo/noflo/src/lib/Ports.js
 var Ports = class extends EventBase {
   /**
@@ -1108,8 +1268,10 @@ var Ports = class extends EventBase {
   /**
    * Add a port to the collection, replacing any previous port with the same
    * name. The port is also exposed as a property of the collection under its
-   * name. Port names must be lowercase alphanumeric characters, underscores,
-   * dots, or slashes; `add` and `remove` are reserved.
+   * name. Port names are case-significant and may contain alphanumeric
+   * characters, underscores, dots, or slashes; `add` and `remove` are
+   * reserved (work document #15: the 2.x naming policy preserves author
+   * casing — `out` and `OUT` are distinct ports).
    *
    * @param {string} name
    * @param {Object|import("./BasePort.js").default|PortOptions} [options]
@@ -1118,9 +1280,9 @@ var Ports = class extends EventBase {
     if (name === "add" || name === "remove") {
       throw new Error("Add and remove are restricted port names");
     }
-    if (!name.match(/^[a-z0-9_./]+$/)) {
+    if (!name.match(/^[a-zA-Z0-9_./]+$/)) {
       throw new Error(
-        `Port names can only contain lowercase alphanumeric characters and underscores. '${name}' not allowed`
+        `Port names can only contain alphanumeric characters, underscores, dots, or slashes. '${name}' not allowed`
       );
     }
     if (this.ports[name]) {
@@ -1262,6 +1424,8 @@ var ProcessContext = class {
     this.scope = this.ip.scope;
     this.activated = false;
     this.deactivated = false;
+    this.consumed = 0;
+    this.sentOutput = false;
   }
   activate() {
     if (this.result.__resolved || this.nodeInstance.outputQ.indexOf(this.result) === -1) {
@@ -1279,6 +1443,7 @@ var ProcessContext = class {
 
 // node_modules/@noflo/noflo/src/lib/ProcessInput.js
 var debugComponent = createDebug("noflo:component");
+var debugStream = createDebug("noflo:component:stream");
 var ProcessInput = class {
   /**
    * @param {import("./Ports.js").InPorts} ports - Component inports
@@ -1426,7 +1591,7 @@ var ProcessInput = class {
           );
         }
         const portIdx = typeof port[1] === "string" ? parseInt(port[1], 10) : port[1];
-        if (!portImpl.has(this.scope, portIdx, validate)) {
+        if (!portImpl.has(this.scope, portIdx, () => validate)) {
           return false;
         }
       } else if (typeof port === "string") {
@@ -1442,7 +1607,7 @@ var ProcessInput = class {
             `For addressable ports, access must be with array [${port}, idx]`
           );
         }
-        if (!portImpl.has(this.scope, validate)) {
+        if (!portImpl.has(this.scope, null, () => validate)) {
           return false;
         }
       } else {
@@ -1493,33 +1658,76 @@ var ProcessInput = class {
     }
     for (let i = 0; i < args.length; i += 1) {
       const port = args[i];
-      const portBrackets = [];
-      let hasData = false;
-      const validate = (ip) => {
-        if (ip.type === "openBracket") {
-          portBrackets.push(ip.data);
-          return false;
-        }
-        if (ip.type === "data") {
-          hasData = validateStream(ip, portBrackets);
-          if (!portBrackets.length) {
-            return hasData;
-          }
-          return false;
-        }
-        if (ip.type === "closeBracket") {
-          portBrackets.pop();
-          if (portBrackets.length) {
+      const makeValidate = () => {
+        const portBrackets = [];
+        let hasData = false;
+        return (ip) => {
+          if (ip.type === "openBracket") {
+            portBrackets.push(ip.data);
             return false;
           }
-          if (!hasData) {
+          if (ip.type === "data") {
+            hasData = validateStream(ip, portBrackets);
+            if (!portBrackets.length) {
+              return hasData;
+            }
             return false;
           }
-          return true;
-        }
-        return false;
+          if (ip.type === "closeBracket") {
+            portBrackets.pop();
+            if (portBrackets.length) {
+              return false;
+            }
+            if (!hasData) {
+              return false;
+            }
+            return true;
+          }
+          return false;
+        };
       };
-      if (!this.has(port, validate)) {
+      if (typeof port === "string") {
+        const portImpl2 = (
+          /** @type {import("./InPort.js").default} */
+          this.ports.ports[port]
+        );
+        if (!portImpl2) {
+          throw new Error(this.#missingPortMessage(port));
+        }
+        if (portImpl2.options.control && !portImpl2.isAddressable()) {
+          if (!portImpl2.hasStream(this.scope, makeValidate)) {
+            return false;
+          }
+          continue;
+        }
+        if (portImpl2.options.control && portImpl2.isAddressable()) {
+          debugStream(
+            `${this.nodeInstance?.nodeId ?? ""} stream-completeness gating on addressable control port '${port}' is not supported: the data-presence check cannot see the stream's framing`
+          );
+        }
+        if (!portImpl2.has(this.scope, null, makeValidate)) {
+          return false;
+        }
+        continue;
+      }
+      const portRef = (
+        /** @type {Array<string|number>} */
+        port
+      );
+      const portImpl = (
+        /** @type {import("./InPort.js").default} */
+        this.ports.ports[portRef[0]]
+      );
+      if (!portImpl) {
+        throw new Error(
+          this.#missingPortMessage(
+            /** @type {string} */
+            portRef[0]
+          )
+        );
+      }
+      const portIdx = typeof portRef[1] === "string" ? parseInt(portRef[1], 10) : portRef[1];
+      if (!portImpl.has(this.scope, portIdx, makeValidate)) {
         return false;
       }
     }
@@ -1577,6 +1785,9 @@ var ProcessInput = class {
       } else {
         ip = portImpl.get(this.scope, idxName);
         res.push(ip);
+        if (ip && !portImpl.options.control) {
+          this.context.consumed += 1;
+        }
       }
     }
     if (args.length === 1) {
@@ -1603,6 +1814,7 @@ var ProcessInput = class {
       if (!ip) {
         break;
       }
+      this.context.consumed += 1;
       if (ip.type === "data") {
         dataIp = ip;
         ok = false;
@@ -1785,6 +1997,7 @@ var ProcessInput = class {
         portImpl.get(this.scope, idx)
       );
       stream.push(ip);
+      this.context.consumed += 1;
       if (ip.type === "openBracket") {
         portBrackets.push(ip.data);
         this.nodeInstance.getBracketContext("in", port, this.scope, idx).push({ ip, ports: [], source: port });
@@ -1865,6 +2078,7 @@ var ProcessOutput = class {
    *   forget compatible: callers may ignore the Promise.
    */
   sendIP(port, packet) {
+    this.context.sentOutput = true;
     const ip = IP.isIP(packet) ? packet : new IP("data", packet);
     if (this.scope !== null && ip.scope === null) {
       ip.scope = this.scope;
@@ -1903,6 +2117,23 @@ var ProcessOutput = class {
    *   errors escalate through the socket error path).
    */
   send(outputMap) {
+    if (!isError(outputMap) && this.context.deactivated) {
+      const componentName = this.nodeInstance?.nodeId ?? "unknown";
+      const contractError = new Error(
+        `${componentName}: send outside the activation contract \u2014 the process resolved without sending; return the promise so the activation holds until the send completes`
+      );
+      const errorPort = this.nodeInstance.outPorts.ports.error;
+      if (errorPort?.isAttached()) {
+        for (const socket of errorPort.sockets) {
+          if (!socket) {
+            continue;
+          }
+          socket.post(new IP("error", contractError));
+        }
+      } else {
+        throw contractError;
+      }
+    }
     if (isError(outputMap)) {
       const errors = (
         /** @type {Error|Array<Error>} */
@@ -2082,6 +2313,7 @@ var Component = class extends EventBase {
     this.baseDir = null;
     this.started = false;
     this.load = 0;
+    this.closedDown = false;
     this.ordered = opts.ordered != null ? opts.ordered : false;
     this.autoOrdering = opts.autoOrdering != null ? opts.autoOrdering : null;
     this.outputQ = [];
@@ -2127,6 +2359,19 @@ var Component = class extends EventBase {
    * @returns {boolean}
    */
   isSubgraph() {
+    return false;
+  }
+  /**
+   * Check whether the component is a signature-only stub placeholder:
+   * a declared interface with no implementation behind it (work document
+   * #19). Always false for regular components; the stub component class
+   * overrides this. UIs, runtimes, and flowtraces label "not yet
+   * implemented" from this authoritative runtime information instead of
+   * inferring from registry lookups that can drift.
+   *
+   * @returns {boolean}
+   */
+  isStub() {
     return false;
   }
   /**
@@ -2197,6 +2442,7 @@ var Component = class extends EventBase {
     }
     return Promise.resolve().then(() => this.setUp()).then(() => {
       this.started = true;
+      this.closedDown = false;
       this.dispatchLifecycleEvent("start");
     });
   }
@@ -2314,7 +2560,11 @@ var Component = class extends EventBase {
         }
       });
       if (tmp.length === 0) {
-        delete this.forwardBrackets[inPort];
+        if (defaulted) {
+          delete this.forwardBrackets[inPort];
+        } else {
+          this.forwardBrackets[inPort] = [];
+        }
       } else {
         this.forwardBrackets[inPort] = tmp;
       }
@@ -2346,6 +2596,22 @@ var Component = class extends EventBase {
         port.name = name;
       }
       port.addEventListener("ip", (event) => this.handleIP(event.detail, port));
+      port.addEventListener("disconnect", () => this.#handleInputStateChange());
+      port.addEventListener("connect", () => this.#handleInputStateChange());
+    });
+    Object.keys(this.outPorts.ports).forEach((name) => {
+      const port = (
+        /** @type {import("./OutPort.js").default} */
+        this.outPorts.ports[name]
+      );
+      if (!port.name) {
+        port.name = name;
+      }
+      port.addEventListener("attach", () => {
+        if (this.closedDown) {
+          port.disconnectAll();
+        }
+      });
     });
     return this;
   }
@@ -2423,49 +2689,128 @@ var Component = class extends EventBase {
    * @returns {void}
    */
   handleIP(ip, port) {
-    if (!port.options.triggering) {
-      if (ip.type !== "data") {
-        return;
-      }
-      if (port.options.scoped && ip.scope == null) {
-        debugComponent3(
-          `${this.nodeId} unscoped control IP on scoped control port '${port.name}': the control value cannot be read; declare the port scoped: false`
-        );
-      }
-      const hasPendingData = (buffer) => Boolean(buffer?.some((buffered) => buffered.type === "data"));
-      const isNonControl = (other) => other !== port && other.options.triggering !== false;
-      const scopesToFire = [];
-      let anyPending = false;
-      Object.keys(this.inPorts.ports).forEach((name) => {
-        const other = this.inPorts.ports[name];
-        if (!isNonControl(other)) {
-          return;
-        }
-        if (hasPendingData(other.getBuffer(null, null))) {
-          if (!scopesToFire.includes(null)) {
-            scopesToFire.push(null);
-            anyPending = true;
-          }
-        }
-        if (other.scopedBuffer) {
-          Object.keys(other.scopedBuffer).forEach((scope) => {
-            if (hasPendingData(other.scopedBuffer[scope]) && !scopesToFire.includes(scope)) {
-              scopesToFire.push(scope);
-              anyPending = true;
-            }
-          });
-        }
-      });
-      if (!anyPending) {
-        return;
-      }
-      scopesToFire.forEach((scope) => {
-        const contextIp = scope === null ? ip : new IP(ip.type, ip.data, { scope });
-        this.fireProcess(contextIp, port);
-      });
+    if (this.isForwardingInport(port)) {
+      this.fireProcess(ip, port);
       return;
     }
-    this.fireProcess(ip, port);
+    if (port.options.control && port.options.scoped && ip.scope == null) {
+      debugComponent3(
+        `${this.nodeId} unscoped control IP on scoped control port '${port.name}': the control value cannot be read; declare the port scoped: false`
+      );
+    }
+    const ready = this.#readyScopes();
+    if (!ready.length) {
+      return;
+    }
+    ready.forEach((readyScope) => {
+      const contextIp = readyScope.scope === null ? ip : new IP(ip.type, ip.data, { scope: readyScope.scope });
+      this.fireProcess(contextIp, readyScope.port);
+    });
+  }
+  /**
+   * Scan the inport buffers for scopes holding deliverable input: the
+   * unscoped default buffers, each scoped buffer, each addressable index,
+   * and the IIP buffers. Control buffers are standing state, not pending
+   * work, and are never scanned. Each entry carries the scope's head IP
+   * as captured during the scan, so the drain pump's offer never
+   * re-fetches across buffer shapes. Shared by the arrival walk
+   * (handleIP) and the drain pump (the post-completion re-offer, work
+   * document #47).
+   *
+   * @returns {Array<{scope: string|null, port: import("./InPort.js").default, head: import("./IP.js").default}>}
+   */
+  #readyScopes() {
+    const ready = [];
+    Object.keys(this.inPorts.ports).forEach((name) => {
+      const port = this.inPorts.ports[name];
+      if (port.options.control) {
+        return;
+      }
+      const mark = (scope, head) => {
+        if (ready.some((entry) => entry.scope === scope)) {
+          return;
+        }
+        ready.push({ scope, port, head });
+      };
+      if (port.isAddressable()) {
+        Object.keys(port.indexedBuffer ?? {}).forEach((index) => {
+          const buf = port.indexedBuffer[index] ?? [];
+          if (buf.length > 0) {
+            mark(null, buf[0]);
+          }
+        });
+        Object.keys(port.indexedIipBuffer ?? {}).forEach((index) => {
+          const buf = port.indexedIipBuffer[index] ?? [];
+          if (buf.length > 0) {
+            mark(null, buf[0]);
+          }
+        });
+        Object.keys(port.indexedScopedBuffer ?? {}).forEach((scope) => {
+          Object.keys(port.indexedScopedBuffer[scope] ?? {}).forEach(
+            (index) => {
+              const buf = port.indexedScopedBuffer[scope][index] ?? [];
+              if (buf.length > 0) {
+                mark(scope, buf[0]);
+              }
+            }
+          );
+        });
+        return;
+      }
+      const regular = port.getBuffer(null, null) ?? [];
+      if (regular.length > 0) {
+        mark(null, regular[0]);
+      }
+      if ((port.iipBuffer ?? []).length > 0) {
+        mark(null, port.iipBuffer[0]);
+      }
+      Object.keys(port.scopedBuffer ?? {}).forEach((scope) => {
+        const buf = port.scopedBuffer[scope] ?? [];
+        if (buf.length > 0) {
+          mark(scope, buf[0]);
+        }
+      });
+    });
+    return ready;
+  }
+  /**
+   * The drain pump: after a consuming activation completes, re-offer the
+   * process for every scope still holding deliverable input. Scheduled,
+   * so a multi-pair drain does not recurse; each scheduled offer either
+   * consumes (progress) or declines (the buffers unchanged, no further
+   * offer) — the pump terminates with the buffers (work document #47).
+   *
+   * The closedown interaction (work document #48): the closedown
+   * predicate runs synchronously inside `deactivate`, and the pump offer
+   * scheduled by that same deactivation fires later — the closedown
+   * would set `closedDown` first and the pump's guard would cancel the
+   * one offer that could drain buffers which became deliverable before
+   * end of transmission (the silent-drop race the noflo-jekyll testbed
+   * reproduced). The pending flag makes the closedown evaluation defer
+   * until the offer has settled, and the offer re-evaluates closedown
+   * after its pass: an offer that consumed leaves open activations whose
+   * deactivations re-evaluate; an offer that declined declares the
+   * residue stranded with the loud diagnostics the #45 contract
+   * promises.
+   *
+   * @returns {void}
+   */
+  #offerResumption() {
+    makeAsync(() => {
+      this.#pendingOffer = false;
+      if (this.closedDown || this.load > 0) {
+        this.#evaluateClosedown();
+        return;
+      }
+      const ready = this.#readyScopes();
+      for (const readyScope of ready) {
+        const contextIp = readyScope.scope === null ? readyScope.head : new IP(readyScope.head.type, readyScope.head.data, {
+          scope: readyScope.scope
+        });
+        this.fireProcess(contextIp, readyScope.port);
+      }
+      this.#evaluateClosedown();
+    });
   }
   /**
    * Run the processing function for an Information Packet in a prepared
@@ -2484,6 +2829,17 @@ var Component = class extends EventBase {
     }
     let result = {};
     if (this.isForwardingInport(port)) {
+      const forwardingTargets = this.forwardBrackets[port.name] ?? [];
+      if (forwardingTargets.length === 0 && (ip.type === "openBracket" || ip.type === "closeBracket")) {
+        const terminating = port.getBuffer(ip.scope, ip.index);
+        if (terminating) {
+          const at = terminating.indexOf(ip);
+          if (at !== -1) {
+            terminating.splice(at, 1);
+          }
+        }
+        return;
+      }
       if (ip.type === "openBracket") {
         return;
       }
@@ -2545,6 +2901,11 @@ var Component = class extends EventBase {
       output.sendDone(e);
     }
     if (context.activated) {
+      if (!context.consumed && !context.sentOutput) {
+        debugComponent3(
+          `${this.nodeId} process function returned without completing the activation it opened (nothing consumed, nothing sent) \u2014 the activation will remain open until done() is called`
+        );
+      }
       return;
     }
     if (port.isAddressable()) {
@@ -2852,10 +3213,9 @@ var Component = class extends EventBase {
    * Signal that a processing context has activated. There may be multiple
    * activated contexts at the same time.
    *
-   * @param {Object} context
-   * @param {boolean} context.activated
-   * @param {boolean} context.deactivated
-   * @param {Object} context.result
+   * @param {ActivationContext} context - The lifecycle context: whether
+   *   it is active, completed, and (for ProcessContext instances) the
+   *   ordered-output result.
    */
   activate(context) {
     if (context.activated) {
@@ -2873,9 +3233,8 @@ var Component = class extends EventBase {
    * Signal that a processing context has deactivated. There may be multiple
    * activated contexts at the same time.
    *
-   * @param {Object} context
-   * @param {boolean} context.activated
-   * @param {boolean} context.deactivated
+   * @param {ActivationContext} context - The lifecycle context: whether
+   *   it is active and completed.
    */
   deactivate(context) {
     if (context.deactivated) {
@@ -2888,25 +3247,178 @@ var Component = class extends EventBase {
     }
     this.load -= 1;
     this.dispatchLifecycleEvent("deactivate", this.load);
+    if (context.consumed > 0 && !this.closedDown) {
+      this.#pendingOffer = true;
+      makeAsync(() => {
+        this.#offerResumption();
+      });
+    }
+    this.#evaluateClosedown();
+  }
+  /**
+   * Whether the component has closed down: every input at EOT, no open
+   * activation, nothing buffered left to deliver. Its outports have been
+   * terminally disconnected — downstream sees EOT.
+   *
+   * @returns {boolean}
+   */
+  isClosedDown() {
+    return this.closedDown;
+  }
+  /**
+   * React to an input state change (a socket connecting or terminally
+   * disconnecting): a reconnect revives a closed-down component, and
+   * every transition re-evaluates the closedown predicate.
+   *
+   * @returns {void}
+   */
+  /**
+   * Whether a drain-pump offer is scheduled but has not run yet. The
+   * closedown evaluation defers while one is pending: the offer may
+   * drain buffers that would otherwise be declared stranded at end of
+   * transmission (work document #48). The flag is set when the offer is
+   * scheduled and cleared when the offer's body runs, which then
+   * re-evaluates the closedown itself — no evaluation is lost.
+   *
+   * @type {boolean}
+   */
+  #pendingOffer = false;
+  /**
+   * Whether any inport holds buffered packets the pump's own reach
+   * covers: the data a pending pump offer might drain. The shapes mirror
+   * `#readyScopes()` exactly — the regular, scoped, and addressable
+   * buffers plus the IIP buffers, whose non-control contents are
+   * consumable work like any other. Control ports are excluded — their
+   * standing values are legitimate at quiescence and never block closing
+   * (work document #45). A deferral keyed to a narrower set than the
+   * pump's reach would let the closedown strand packets the pump could
+   * have drained (work document #48).
+   *
+   * @returns {boolean}
+   */
+  #inputBuffersHold() {
+    const portNames = Object.keys(this.inPorts.ports);
+    for (const name of portNames) {
+      const port = (
+        /** @type {import("./InPort.js").default} */
+        this.inPorts.ports[name]
+      );
+      if (port.options.control) {
+        continue;
+      }
+      if ((port.buffer ?? []).length > 0) {
+        return true;
+      }
+      if ((port.iipBuffer ?? []).length > 0) {
+        return true;
+      }
+      for (const buf of Object.values(port.scopedBuffer ?? {})) {
+        if ((buf ?? []).length > 0) {
+          return true;
+        }
+      }
+      for (const buf of Object.values(port.indexedBuffer ?? {})) {
+        if ((buf ?? []).length > 0) {
+          return true;
+        }
+      }
+      for (const buf of Object.values(port.indexedIipBuffer ?? {})) {
+        if ((buf ?? []).length > 0) {
+          return true;
+        }
+      }
+      for (const scoped of Object.values(port.indexedScopedBuffer ?? {})) {
+        for (const buf of Object.values(scoped ?? {})) {
+          if ((buf ?? []).length > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  #handleInputStateChange() {
+    if (typeof this.isSubgraph === "function" && this.isSubgraph()) {
+      return;
+    }
+    if (this.closedDown) {
+      const reopened = Object.keys(this.inPorts.ports).some(
+        (name) => !this.inPorts.ports[name].isEot()
+      );
+      if (reopened) {
+        this.closedDown = false;
+      }
+    }
+    this.#evaluateClosedown();
+  }
+  /**
+   * Evaluate the classical cascading-closedown rule (work document #45):
+   * a component closes down when every input is at EOT, no activation is
+   * open, and no buffered deliverable data remains (control ports are
+   * excluded — their standing values are legitimate at quiescence). On
+   * closedown the outports are terminally disconnected, so downstream
+   * ports reach EOT and the rule recurses. Runs on every state
+   * transition that can complete the condition: port EOT and activation
+   * close.
+   *
+   * The evaluation defers while a drain-pump offer is pending (#48): the
+   * offer may drain buffered data that this rule would otherwise declare
+   * stranded at end of transmission; the offer's own tail re-invokes
+   * this evaluation.
+   *
+   * @returns {void}
+   */
+  #evaluateClosedown() {
+    if (this.closedDown) {
+      return;
+    }
+    if (this.#pendingOffer && this.#inputBuffersHold()) {
+      return;
+    }
+    if (typeof this.isSubgraph === "function" && this.isSubgraph()) {
+      return;
+    }
+    const portNames = Object.keys(this.inPorts.ports);
+    for (const name of portNames) {
+      const port = (
+        /** @type {InPort} */
+        this.inPorts.ports[name]
+      );
+      if (!port.isEot()) {
+        return;
+      }
+    }
+    if (this.load !== 0) {
+      return;
+    }
+    if (this.isOrdered() && this.outputQ.length > 0) {
+      return;
+    }
+    this.closedDown = true;
+    const disconnects = [];
+    Object.keys(this.outPorts.ports).forEach((name) => {
+      const port = (
+        /** @type {import("./OutPort.js").default} */
+        this.outPorts.ports[name]
+      );
+      port.sockets.forEach((socket) => {
+        if (!socket) {
+          return;
+        }
+        disconnects.push(socket.disconnect());
+      });
+    });
+    Promise.all(disconnects).then(() => {
+      this.dispatchLifecycleEvent("closedown", this);
+    }).catch((err) => {
+      debugComponent3(
+        `${this.nodeId} terminal disconnect failed during closedown: ${err?.message ?? err}`
+      );
+    });
   }
 };
 Component.description = "";
 Component.icon = null;
-
-// node_modules/@noflo/noflo/src/lib/Platform.js
-function makeAsync(func, sameLoop = false) {
-  if (typeof process !== "undefined" && typeof process.nextTick === "function") {
-    if (sameLoop && typeof setImmediate === "function") {
-      setImmediate(() => {
-        func();
-      });
-      return;
-    }
-    process.nextTick(func);
-    return;
-  }
-  setTimeout(func, 0);
-}
 
 // node_modules/@noflo/noflo/src/components/Subgraph.js
 var Subgraph = class extends Component {
@@ -2996,6 +3508,8 @@ var Subgraph = class extends Component {
         return;
       }
       this.deactivate(ctx);
+      this.closedDown = true;
+      this.dispatchLifecycleEvent("closedown", this);
     });
   }
   /**
@@ -3317,7 +3831,9 @@ var ComponentLoader = class {
       }
     } else if (typeof implementation === "function") {
       try {
-        instance = implementation(metadata);
+        const isClass = implementation.prototype?.constructor === implementation && /^\s*class\s/.test(String(implementation));
+        instance = isClass ? new /** @type {any} */
+        implementation(metadata) : implementation(metadata);
       } catch (error) {
         return Promise.reject(error);
       }
@@ -3876,6 +4392,7 @@ var InternalSocket = class extends EventBase {
     this.metadata = metadata;
     this.brackets = [];
     this.connected = false;
+    this.terminal = false;
     this.debug = options.debug || false;
     this.async = options.async || false;
     this.from = null;
@@ -3951,21 +4468,30 @@ var InternalSocket = class extends EventBase {
       return;
     }
     this.connected = true;
+    this.terminal = false;
     this.emitEvent("connect", null);
   }
   /**
-   * Disconnect the socket. The `disconnect` event is emitted once every
-   * IP posted before the disconnect has been delivered through the edge,
-   * so receiving ends never observe a disconnect overtaking data. On an
-   * unbounded edge (synchronous delivery) this resolves immediately and
-   * the event fires synchronously, matching 1.x timing. The connection
-   * state flips synchronously either way.
+   * Disconnect the socket. With per-burst auto-disconnect removed, every
+   * disconnect is terminal: the sender is done — nothing more will come
+   * from it (work document #40 update #5). The `disconnect` event is
+   * emitted once every IP posted before the disconnect has been delivered
+   * through the edge, so receiving ends never observe a disconnect
+   * overtaking data; on an unbounded edge (synchronous delivery) it
+   * resolves immediately. A socket that never connected also closes: a
+   * sender that finishes without ever transmitting still signals EOT
+   * downstream.
    *
    * @returns {Promise<void>} Resolves when the disconnect event has been
    *   emitted
    */
   disconnect() {
+    if (this.terminal) {
+      return Promise.resolve();
+    }
+    this.terminal = true;
     if (!this.connected) {
+      this.emitEvent("disconnect", null);
       return Promise.resolve();
     }
     this.connected = false;
@@ -3977,6 +4503,15 @@ var InternalSocket = class extends EventBase {
     return drained.then(() => {
       this.emitEvent("disconnect", null);
     });
+  }
+  /**
+   * Whether the socket has been terminally closed by its sender: nothing
+   * more will arrive through it until a new transmission re-opens it.
+   *
+   * @returns {boolean}
+   */
+  isTerminal() {
+    return this.terminal;
   }
   isConnected() {
     return this.connected;
@@ -3993,16 +4528,17 @@ var InternalSocket = class extends EventBase {
   // can be constructed with more flexibility, as file buffers or
   // message queues can be used as additional packet relay mechanisms.
   send(data) {
-    return this.post(new IP("data", data), false);
+    return this.post(new IP("data", data));
   }
   // ## Sending information packets without open bracket
   //
-  // As _connect_ event is considered as open bracket, it needs to be followed
-  // by a _disconnect_ event or a closing bracket. In the new simplified
-  // sending semantics single IP objects can be sent without open/close brackets.
+  // Single IP objects can be sent without open/close brackets; the
+  // connection stays open after the send. Ending a transmission is a
+  // sender decision — `disconnect()` — not an automatic side effect of
+  // sending (work document #40 update #5: disconnect is sender-terminal
+  // EOT, not per-burst framing).
   /**
    * @param {IP} packet
-   * @param {boolean} [autoDisconnect]
    * @returns {Promise<void>|void} Resolves when the packet has been
    *   admitted by the edge per its high-water mark, and rejects on send
    *   errors — which also escalate through the socket error path
@@ -4012,7 +4548,7 @@ var InternalSocket = class extends EventBase {
    *   internal handling keeps ignored rejections off the unhandled
    *   channel.
    */
-  post(packet, autoDisconnect = true) {
+  post(packet) {
     const ip = packet;
     if (!this.isConnected() && this.brackets.length === 0) {
       this.connect();
@@ -4043,9 +4579,6 @@ var InternalSocket = class extends EventBase {
           metadata: this.metadata
         });
       });
-    }
-    if (autoDisconnect && this.isConnected() && this.brackets.length === 0) {
-      this.disconnect();
     }
     return write;
   }
@@ -4100,7 +4633,152 @@ function createSocket(metadata = {}, options = {}) {
   return new InternalSocket(metadata, options);
 }
 
+// node_modules/@noflo/noflo/src/lib/PortMetadata.js
+var PORT_BEHAVIOR_KEYS = [
+  "noflo.control",
+  "noflo.scoped",
+  "noflo.forwardBrackets"
+];
+function applyPortMetadata(component, metadata = {}) {
+  const overrides = Object.keys(metadata ?? {}).filter((key) => key.startsWith("noflo.")).map((key) => {
+    if (!PORT_BEHAVIOR_KEYS.includes(key)) {
+      throw new Error(
+        `Unknown 'noflo.' metadata key '${key}' \u2014 the noflo/port-behavior schema declares: ${PORT_BEHAVIOR_KEYS.join(", ")}`
+      );
+    }
+    return [key.slice("noflo.".length), metadata[key]];
+  });
+  if (!overrides.length) {
+    return;
+  }
+  if (component.isSubgraph?.()) {
+    throw new Error(
+      "noflo.* overrides do not apply to subgraph nodes: the relay semantics for exported ports are not defined \u2014 place the override on the inner graph's node"
+    );
+  }
+  for (const [key, value] of overrides) {
+    if (key === "control") {
+      applyControl(component, value);
+      continue;
+    }
+    if (key === "scoped") {
+      applyScoped(component, value);
+      continue;
+    }
+    if (key === "forwardBrackets") {
+      applyForwardBrackets(component, value);
+      continue;
+    }
+    throw new Error(`Unknown 'noflo.' metadata key '${key}'`);
+  }
+}
+function applyControl(component, value) {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `noflo.control must be an array of inport names \u2014 got ${typeof value}`
+    );
+  }
+  for (const name of value) {
+    if (typeof name !== "string") {
+      throw new Error(
+        `noflo.control entries must be port names \u2014 got ${typeof name}`
+      );
+    }
+    const port = component.inPorts.ports[name];
+    if (!port) {
+      throw new Error(
+        `noflo.control names inport '${name}', which the component does not have`
+      );
+    }
+    if (port.isAddressable()) {
+      throw new Error(
+        `noflo.control names addressable inport '${name}' \u2014 the gate model does not support addressable ports`
+      );
+    }
+  }
+  for (const name of value) {
+    component.inPorts.ports[name].options.control = true;
+  }
+  for (const [name, port] of Object.entries(component.inPorts.ports)) {
+    if (!value.includes(name)) {
+      port.options.control = false;
+    }
+  }
+}
+function applyScoped(component, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(
+      `noflo.scoped must be an object of port-name to boolean \u2014 got ${typeof value}`
+    );
+  }
+  for (const [name, scoped] of Object.entries(value)) {
+    if (typeof scoped !== "boolean") {
+      throw new Error(
+        `noflo.scoped values must be booleans \u2014 '${name}' got ${typeof scoped}`
+      );
+    }
+    if (!component.inPorts.ports[name]) {
+      throw new Error(
+        component.outPorts.ports[name] ? `noflo.scoped names outport '${name}' \u2014 the outport-side scoped flip interacts with the ordered-output and forwarding machinery and is not supported yet (work document #44)` : `noflo.scoped names port '${name}', which the component does not have`
+      );
+    }
+  }
+  for (const [name, scoped] of Object.entries(value)) {
+    const inPort = component.inPorts.ports[name];
+    if (inPort) {
+      if (inPort.options.scoped !== scoped) {
+        inPort.options.scoped = scoped;
+        inPort.prepareBuffer();
+      }
+      continue;
+    }
+    component.outPorts.ports[name].options.scoped = scoped;
+  }
+}
+function applyForwardBrackets(component, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(
+      `noflo.forwardBrackets must be an object of inport-name to outport-name array \u2014 got ${typeof value}`
+    );
+  }
+  for (const [inPortName, outPorts] of Object.entries(value)) {
+    if (typeof inPortName !== "string") {
+      throw new Error(
+        `noflo.forwardBrackets keys must be inport names \u2014 got ${typeof inPortName}`
+      );
+    }
+    const port = component.inPorts.ports[inPortName];
+    if (!port) {
+      throw new Error(
+        `noflo.forwardBrackets names inport '${inPortName}', which the component does not have`
+      );
+    }
+    if (!Array.isArray(outPorts)) {
+      throw new Error(
+        `noflo.forwardBrackets values must be arrays of outport names \u2014 '${inPortName}' got ${typeof outPorts}`
+      );
+    }
+    for (const outPortName of outPorts) {
+      if (typeof outPortName !== "string") {
+        throw new Error(
+          `noflo.forwardBrackets entries must be outport names \u2014 '${inPortName}' got ${typeof outPortName}`
+        );
+      }
+      if (!component.outPorts.ports[outPortName]) {
+        throw new Error(
+          `noflo.forwardBrackets for inport '${inPortName}' references outport '${outPortName}', which the component does not have`
+        );
+      }
+    }
+  }
+  component.forwardBrackets = {
+    ...component.forwardBrackets,
+    ...value
+  };
+}
+
 // node_modules/@noflo/noflo/src/lib/Network.js
+var debugNetwork = createDebug("noflo:network");
 function connectPort(socket, process2, port, index, inbound) {
   if (inbound) {
     socket.to = {
@@ -4155,6 +4833,8 @@ var Network = class extends EventBase {
     this.options = options;
     this.processes = {};
     this.connections = [];
+    this.closingDebounceMs = options.closingDebounceMs ?? 10;
+    this.closingCheckScheduled = false;
     this.edgeObservers = [];
     this.initials = [];
     this.nextInitials = [];
@@ -4163,7 +4843,6 @@ var Network = class extends EventBase {
     this.stopped = true;
     this.debug = true;
     this.asyncDelivery = options.asyncDelivery || false;
-    this.endCheckTimer = null;
     this.eventBuffer = [];
     this.startupDate = null;
     if (options.componentLoader) {
@@ -4222,7 +4901,9 @@ var Network = class extends EventBase {
       return;
     }
     if (this.flowtraceName && this.flowtraceName !== this.flowtrace.mainGraph) {
-      return;
+      if (event !== "start" && event !== "end") {
+        return;
+      }
     }
     switch (event) {
       case "ip": {
@@ -4263,10 +4944,51 @@ var Network = class extends EventBase {
         this.flowtrace.addNetworkStopped(this.flowtraceName);
         break;
       }
+      case "stranded": {
+        this.flowtrace.addNetworkStranded(
+          this.flowtraceName,
+          payload.id,
+          payload.port,
+          payload.scope,
+          payload.open,
+          payload.close
+        );
+        break;
+      }
+      case "connection": {
+        const to = payload.socket.to ? {
+          node: payload.socket.to.process.id,
+          port: payload.socket.to.port
+        } : null;
+        this.flowtrace.addNetworkConnection(
+          this.flowtraceName,
+          to,
+          payload.open
+        );
+        break;
+      }
       case "process-error": {
         this.flowtrace.addNetworkError(
           this.flowtraceName,
           payload?.error ?? payload
+        );
+        break;
+      }
+      case "activation": {
+        if (payload.ended) {
+          this.flowtrace.addNetworkDeactivation(
+            this.flowtraceName,
+            payload.id,
+            payload.load,
+            payload.subgraph ?? null
+          );
+          break;
+        }
+        this.flowtrace.addNetworkActivation(
+          this.flowtraceName,
+          payload.id,
+          payload.load,
+          payload.subgraph ?? null
         );
         break;
       }
@@ -4285,7 +5007,7 @@ var Network = class extends EventBase {
    */
   bufferedEmit(event, payload) {
     this.traceEvent(event, payload);
-    if (["icon", "process-error", "end"].includes(event)) {
+    if (["icon", "process-error", "end", "stranded"].includes(event)) {
       this.dispatchLifecycleEvent(event, payload);
       return;
     }
@@ -4354,6 +5076,20 @@ var Network = class extends EventBase {
             port.nodeInstance = instance;
             port.name = name;
           });
+          if (instance.isSubgraph?.() && Object.keys(node.metadata ?? {}).some(
+            (key) => key.startsWith("noflo.")
+          )) {
+            throw new Error(
+              `Node ${node.entity_id}: noflo.* overrides do not apply to subgraph nodes \u2014 place the override on the inner graph's node`
+            );
+          }
+          try {
+            applyPortMetadata(instance, node.metadata);
+          } catch (error) {
+            throw new Error(
+              `Node ${node.entity_id}: ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
           if (instance.isSubgraph()) {
             this.subscribeSubgraph(process2);
           }
@@ -4522,6 +5258,9 @@ var Network = class extends EventBase {
     instance.network.addEventListener("process-error", (event) => {
       emitSub("process-error", event.detail);
     });
+    instance.network.addEventListener("activation", (event) => {
+      emitSub("activation", event.detail);
+    });
   }
   /**
    * Subscribe to events from a socket: forward packet traffic to the edge
@@ -4554,6 +5293,7 @@ var Network = class extends EventBase {
         data: ip.data,
         metadata: socket.metadata
       });
+      this.scheduleClosingCheck();
     });
     socket.addEventListener("error", (event) => {
       const errEvent = event.detail;
@@ -4565,13 +5305,70 @@ var Network = class extends EventBase {
       }
       this.bufferedEmit("process-error", errEvent);
     });
+    socket.addEventListener("connect", () => {
+      if (socket.from) {
+        return;
+      }
+      this.bufferedEmit("connection", { socket, open: true });
+    });
+    socket.addEventListener("disconnect", () => {
+      if (socket.from) {
+        return;
+      }
+      this.bufferedEmit("connection", { socket, open: false });
+    });
   }
   /**
    * Subscribe to a component's lifecycle events: activation counts for
-   * end-detection, and icon changes.
+   * end-detection, activation state for trace recording, and icon changes.
    *
    * @param {NetworkProcess} node
    */
+  /**
+   * When a port's last attached socket terminally disconnects, any bracket
+   * framing still buffered on the port can never pair with arriving data:
+   * the future is known. Surface the residue as a per-port, per-scope
+   * diagnostic — logged at debug level and recorded to Flowtrace as a
+   * `0x0f STRANDED` event — instead of it surfacing only in the shutdown
+   * buffer dump (work document #40 update #13). Reporting, not
+   * consumption: a component may legitimately decline a closeBracket now
+   * and consume it after its other input arrives.
+   *
+   * @param {NetworkProcess} node
+   * @param {string} portName
+   * @returns {void}
+   */
+  #reportStrandedFraming(node, portName) {
+    const instance = this.processes[node.id]?.component;
+    if (!instance) {
+      return;
+    }
+    const port = instance.inPorts.ports[portName];
+    if (!port) {
+      return;
+    }
+    const sockets = (
+      /** @type {import("./InternalSocket.js").InternalSocket[]} */
+      port.sockets ?? []
+    );
+    if (!sockets.length || !sockets.every((socket) => socket?.isTerminal())) {
+      return;
+    }
+    const residue = port.strandedFraming();
+    for (const entry of residue) {
+      debugNetwork(
+        `${node.id} port '${portName}' holds stranded bracket framing at end of transmission (scope ${entry.scope ?? "unscoped"}${entry.index != null ? `[${entry.index}]` : ""}: ${entry.open} open, ${entry.close} close) \u2014 the framing can never pair with arriving data`
+      );
+      this.bufferedEmit("stranded", {
+        id: node.id,
+        port: portName,
+        scope: entry.scope,
+        index: entry.index,
+        open: entry.open,
+        close: entry.close
+      });
+    }
+  }
   subscribeNode(node) {
     if (!node.component) {
       return;
@@ -4581,18 +5378,33 @@ var Network = class extends EventBase {
       node.component
     );
     instance.addEventListener("activate", () => {
-      this.#abortEndCheck();
+      this.bufferedEmit("activation", {
+        id: node.id,
+        load: instance.load,
+        ended: false
+      });
+    });
+    instance.addEventListener("closedown", () => {
+      this.scheduleClosingCheck();
     });
     instance.addEventListener(
       "deactivate",
       /** @param {Event & { detail: number }} event */
       (event) => {
-        if (event.detail > 0) {
-          return;
-        }
-        this.checkIfFinished();
+        this.bufferedEmit("activation", {
+          id: node.id,
+          load: instance.load,
+          ended: true
+        });
+        this.scheduleClosingCheck();
       }
     );
+    Object.keys(instance.inPorts.ports).forEach((portName) => {
+      instance.inPorts.ports[portName].addEventListener("disconnect", () => {
+        this.#reportStrandedFraming(node, portName);
+        this.scheduleClosingCheck();
+      });
+    });
     if (!instance.getIcon) {
       return;
     }
@@ -4779,6 +5591,48 @@ var Network = class extends EventBase {
     });
   }
   /**
+   * Attach a persistent external driver socket to a process inport,
+   * without sending anything. Unlike the IIP path — where each injection
+   * is a self-contained single-packet stream that disconnects after its
+   * packet — the driver socket stays connected: each `send()`/`post()` on
+   * the returned socket delivers through the normal edge path with back
+   * pressure respected, the receiving port stays connected (not at EOT),
+   * and `disconnect()` marks the port at end of transmission, driving the
+   * drain-based network closing cascade. This is the embedder and runtime
+   * lever for boundary end-of-transmission: the boundary owns EOT, and a
+   * driver is how an outside sender exercises it across multiple packets
+   * (work documents #40, #45).
+   *
+   * The caller keeps the returned socket and is responsible for
+   * disconnecting it; a driver left open keeps the network from ending.
+   * Attaching does not change the network's run state.
+   *
+   * @param {{ node: string, port: string, index?: number }} initializer
+   * @param {Object} [options]
+   * @param {Object} [options.metadata]
+   * @returns {Promise<internalSocket.InternalSocket>} The attached driver
+   *   socket
+   */
+  addDriver(initializer, options = {}) {
+    return this.ensureNode(initializer.node, "inbound").then((to) => {
+      const socket = createSocket(options.metadata, {
+        debug: this.debug,
+        async: this.asyncDelivery
+      });
+      this.subscribeSocket(socket);
+      return connectPort(
+        socket,
+        to,
+        initializer.port,
+        initializer.index,
+        true
+      ).then((attached) => {
+        this.connections.push(attached);
+        return attached;
+      });
+    });
+  }
+  /**
    * Remove an initial Information Packet from the network and the current
    * graph.
    *
@@ -4870,7 +5724,7 @@ var Network = class extends EventBase {
               initial: true
             })
           );
-          return Promise.resolve();
+          return initial.socket.disconnect();
         }),
         Promise.resolve()
       )
@@ -4932,7 +5786,6 @@ var Network = class extends EventBase {
    * @returns {Promise<this>}
    */
   start() {
-    this.#abortEndCheck();
     if (this.started) {
       return this.stop().then(() => this.start());
     }
@@ -4950,7 +5803,6 @@ var Network = class extends EventBase {
    * @returns {Promise<this>}
    */
   stop() {
-    this.#abortEndCheck();
     if (!this.started) {
       this.stopped = true;
       return Promise.resolve(this);
@@ -5012,39 +5864,80 @@ var Network = class extends EventBase {
     });
   }
   /**
-   * End the network (emit `end`) once no process is active anymore. The
-   * check is coalesced: bursts of deactivations within the quiet window
-   * produce a single check, and a new activation or a start/stop cancels
-   * the pending check explicitly.
+   * End the network when its boundary inputs are all at end of transmission and
+   * the network is quiescent (work document #45): no open activation, no
+   * buffered deliverable data, no packet in flight on any edge. The
+   * boundary owns end-of-transmission — a network's own inports (exported
+   * ports and IIP feeds) are what can reach EOT; internal edges and cycles
+   * need no closedown, because a quiescent network with all sources
+   * finished is absorbing: no future event can occur inside it. A network
+   * whose boundary inputs never terminate (long-running graphs, remote
+   * subgraphs, generators) never ends.
+   *
+   * The evaluation is a pure predicate over state transitions — boundary
+   * EOT arrivals, activation closes, buffer consumption, edge delivery —
+   * with no quiet-window timer.
    *
    * @protected
    * @returns {void}
    */
-  checkIfFinished() {
-    if (this.isRunning()) {
+  scheduleClosingCheck() {
+    if (this.closingCheckScheduled) {
       return;
     }
-    if (this.endCheckTimer != null) {
-      clearTimeout(this.endCheckTimer);
-    }
-    this.endCheckTimer = setTimeout(() => {
-      this.endCheckTimer = null;
-      if (this.isRunning()) {
-        return;
-      }
-      this.setStarted(false);
-    }, 50);
+    this.closingCheckScheduled = true;
+    setTimeout(() => {
+      this.closingCheckScheduled = false;
+      this.#evaluateClosing();
+    }, this.closingDebounceMs);
   }
   /**
-   * Cancel a pending network-end check.
+   * Evaluate the drain-based closing predicate.
    *
    * @returns {void}
    */
-  #abortEndCheck() {
-    if (this.endCheckTimer != null) {
-      clearTimeout(this.endCheckTimer);
-      this.endCheckTimer = null;
+  #evaluateClosing() {
+    if (this.isRunning()) {
+      return;
     }
+    const exports = this.graph.exports().filter((exp) => exp.direction === "inport");
+    for (const exp of exports) {
+      const port = this.processes[exp.internal.node]?.component?.inPorts.ports[exp.internal.port];
+      if (!port) {
+        return;
+      }
+      let external = 0;
+      let terminal = 0;
+      for (const socket of port.sockets) {
+        if (!socket) {
+          continue;
+        }
+        const fromInternal = socket.from?.process && this.processes[socket.from.process.id];
+        const toInternal = socket.to?.process && this.processes[socket.to.process.id];
+        if (fromInternal && toInternal) {
+          continue;
+        }
+        external += 1;
+        if (socket.isTerminal()) {
+          terminal += 1;
+        }
+      }
+      if (external === 0 || terminal !== external) {
+        return;
+      }
+    }
+    for (const name of Object.keys(this.processes)) {
+      const component = this.processes[name]?.component;
+      if (!component || component.load !== 0) {
+        return;
+      }
+    }
+    for (const connection of this.connections) {
+      if ((connection.edge?.pendingDeliveries ?? 0) > 0) {
+        return;
+      }
+    }
+    this.setStarted(false);
   }
   /**
    * Get the current debug mode of the network.
@@ -5132,7 +6025,12 @@ var EVENT_TYPE = {
   END_BRACKET: 3,
   ERROR: 4,
   CONSOLE: 5,
-  LIFECYCLE: 6
+  LIFECYCLE: 6,
+  CONNECTION_OPEN: 11,
+  CONNECTION_CLOSE: 12,
+  ACTIVATION_BEGIN: 13,
+  ACTIVATION_END: 14,
+  STRANDED: 15
 };
 var LIFECYCLE_CODE = {
   START: 1,
@@ -5260,6 +6158,48 @@ var Flowtrace = class {
     this.#record(EVENT_TYPE.LIFECYCLE, LIFECYCLE_CODE.STOP, { graph });
   }
   /**
+   * Record a boundary stream lifecycle event: an external sender opened or
+   * closed a stream into one of the graph's inports (`0x0b
+   * CONNECTION_OPEN` / `0x0c CONNECTION_CLOSE`). The sender is outside the
+   * graph, so only the receiving side is identified. Driver-attached
+   * streams and IIP single-packet streams both surface here, making the
+   * boundary end-of-transmission observable in the artifact (work
+   * documents #40, #45).
+   *
+   * @param {string} graph
+   * @param {{ node: string, port: string }|null} target
+   * @param {boolean} open
+   * @returns {void}
+   */
+  addNetworkConnection(graph, target, open) {
+    this.#record(
+      open ? EVENT_TYPE.CONNECTION_OPEN : EVENT_TYPE.CONNECTION_CLOSE,
+      null,
+      { graph, tgt: target ?? null }
+    );
+  }
+  /**
+   * Record a stranded-framing diagnostic as a `0x0f STRANDED` event:
+   * bracket framing buffered on an input port whose senders have all
+   * terminally disconnected — the framing can never pair with arriving
+   * data. The residue is reported, not consumed; the payload is the flat
+   * tuple `[node, port, scope|null, open_count, close_count]` (work
+   * document #40 update #13).
+   *
+   * @param {string} graph
+   * @param {string} node
+   * @param {string} port
+   * @param {string|null} scope
+   * @param {number} open
+   * @param {number} close
+   * @returns {void}
+   */
+  addNetworkStranded(graph, node, port, scope, open, close) {
+    this.#record(EVENT_TYPE.STRANDED, [node, port, scope, open, close], {
+      graph
+    });
+  }
+  /**
    * Record a process error as a `0x04 ERROR` event. The payload is the
    * exception string, exactly as the wire carries it; the detail an
    * exception object would add is intentionally not preserved.
@@ -5287,6 +6227,40 @@ var Flowtrace = class {
     const message = typeof payload?.message === "string" ? payload.message : String(payload?.message ?? "");
     this.#record(EVENT_TYPE.CONSOLE, [payload?.stream ?? "output", message], {
       graph
+    });
+  }
+  /**
+   * Record a process activation as an `0x0d ACTIVATION_BEGIN` event. The
+   * payload is the positional tuple `[node_id, load]` — the load after the
+   * increment (work document #43).
+   *
+   * @param {string} graph
+   * @param {string} nodeId
+   * @param {number} load
+   * @param {string[]|null} [subgraph] Subgraph path of the event.
+   * @returns {void}
+   */
+  addNetworkActivation(graph, nodeId, load, subgraph = null) {
+    this.#record(EVENT_TYPE.ACTIVATION_BEGIN, [nodeId, load], {
+      graph,
+      subgraph: subgraph ?? null
+    });
+  }
+  /**
+   * Record a process deactivation as an `0x0e ACTIVATION_END` event. The
+   * payload is the positional tuple `[node_id, load]` — the load after the
+   * decrement; `0` marks the node going idle (work document #43).
+   *
+   * @param {string} graph
+   * @param {string} nodeId
+   * @param {number} load
+   * @param {string[]|null} [subgraph] Subgraph path of the event.
+   * @returns {void}
+   */
+  addNetworkDeactivation(graph, nodeId, load, subgraph = null) {
+    this.#record(EVENT_TYPE.ACTIVATION_END, [nodeId, load], {
+      graph,
+      subgraph: subgraph ?? null
     });
   }
   /**
@@ -5337,6 +6311,273 @@ var Flowtrace = class {
     };
   }
 };
+
+// node_modules/@noflo/noflo/src/components/StubComponent.js
+var StubNotImplementedError = class extends Error {
+  /**
+   * @param {string} componentName - Full name of the unimplemented component
+   * @param {string|null} [portName] - The triggering inport the data
+   *   packet arrived on, when known
+   */
+  constructor(componentName, portName = null) {
+    const at = portName ? ` on inport '${portName}'` : "";
+    super(
+      `Component ${componentName} is not implemented: a stub component received data${at}`
+    );
+    this.name = "StubNotImplementedError";
+    this.componentName = componentName;
+  }
+};
+var StubComponent = class _StubComponent extends Component {
+  /**
+   * Create a stub component for the given declared signature.
+   *
+   * @param {StubComponentOptions} [options]
+   */
+  constructor(options = {}) {
+    const policy = options.onPacket ?? "throw";
+    if (policy !== "throw" && policy !== "drop") {
+      throw new Error(
+        `Unknown StubComponent packet policy '${policy}' \u2014 use "throw" (default) or "drop"`
+      );
+    }
+    if (typeof options.process === "function") {
+      throw new Error(
+        "StubComponent cannot take a process function: the placeholder behavior is fixed by the stub contract"
+      );
+    }
+    super({
+      ...options,
+      // A silent placeholder never forwards brackets: output ports are
+      // declared but never sourced (work document #19). Enforced after the
+      // spread so a caller cannot unsilence the placeholder
+      forwardBrackets: {}
+    });
+    this.stubName = options.name ?? null;
+    this.packetPolicy = policy;
+    const triggering = Object.keys(this.inPorts.ports).filter(
+      (name) => !/** @type {import("../lib/InPort.js").default} */
+      this.inPorts.ports[name].options.control
+    );
+    if (policy === "throw" && triggering.length === 0) {
+      throw new Error(
+        `StubComponent ${this.stubName ?? "(unnamed)"} declares no triggering inports: the "throw" packet policy could never fire \u2014 declare the config ports control: true, add a triggering inport, or use the "drop" policy`
+      );
+    }
+    this.process((input, output) => {
+      this.#absorb(input, output);
+    });
+  }
+  /**
+   * Absorb the activation's buffered input: every non-control inport's
+   * buffer for the activation's scope is drained — data and brackets alike
+   * — and nothing is emitted. Control ports are skipped: their buffers are
+   * standing state read non-consumingly, and they never fire the process.
+   *
+   * Under the `throw` policy, data in the drained input raises
+   * {@link StubNotImplementedError}; brackets alone stay silent.
+   *
+   * @param {import("../lib/ProcessInput.js").default} input
+   * @param {import("../lib/ProcessOutput.js").default} output
+   * @returns {void}
+   */
+  #absorb(input, output) {
+    let dataArrival = null;
+    Object.keys(this.inPorts.ports).forEach((portName) => {
+      const port = (
+        /** @type {import("../lib/InPort.js").default} */
+        this.inPorts.ports[portName]
+      );
+      if (port.options.control) {
+        return;
+      }
+      if (port.isAddressable()) {
+        const attached = (
+          /** @type {number[]} */
+          input.attached(portName)
+        );
+        for (const index of attached) {
+          for (; ; ) {
+            const ip = (
+              /** @type {IP|void} */
+              input.get([
+                portName,
+                /** @type {number} */
+                index
+              ])
+            );
+            if (!ip) {
+              break;
+            }
+            if (ip.type === "data" && !dataArrival) {
+              dataArrival = { port: portName, index };
+            }
+          }
+        }
+        return;
+      }
+      for (; ; ) {
+        const ip = (
+          /** @type {IP|void} */
+          input.get(portName)
+        );
+        if (!ip) {
+          break;
+        }
+        if (ip.type === "data" && !dataArrival) {
+          dataArrival = { port: portName, index: null };
+        }
+      }
+    });
+    if (this.packetPolicy === "throw" && dataArrival) {
+      const componentName = this.componentName ?? this.stubName ?? "unknown component";
+      output.done(new StubNotImplementedError(componentName, dataArrival.port));
+      return;
+    }
+    output.done();
+  }
+  /**
+   * Stub components self-describe as unimplemented: UIs, runtimes, and
+   * flowtraces label "not yet implemented" from this authoritative runtime
+   * information instead of inferring from registry lookups that can drift.
+   *
+   * @returns {boolean}
+   */
+  isStub() {
+    return true;
+  }
+  /**
+   * Build a stub component from a component signature: the declared ports
+   * as data, with no implementation behind them.
+   *
+   * Both signature entry paths the contract defines are accepted:
+   *
+   * - The full signature shape (publish-time manifest entries, registry
+   *   protocol detail answers): ports carry `name`, `datatype`,
+   *   `addressable`, `description`, `required`, and — inports only —
+   *   `control`.
+   * - The narrower on-disk sidecar shape noflo-ui materializes
+   *   (`components/<name>.json`): ports carry `name`, `type` (the
+   *   datatype), and `addressable`. Missing datatypes default to `all`
+   *   and missing flags to absent/false, matching the materializer's
+   *   emission.
+   *
+   * The mapping is field-for-field lossless: `type` and `datatype` name
+   * the same port option, `control: true` maps onto the core gate-port
+   * option of the same name. The signature stays data — the stub
+   * validates shape, not semantics.
+   *
+   * @param {string} name - Full component name (e.g. `fs/ReadFile`),
+   *   recorded as the stub's declared name
+   * @param {Object<string, any>} signature - The component signature:
+   *   `description`, `icon`, `inports`, `outports`
+   * @param {{ onPacket?: StubPacketPolicy }} [options] - Stub-specific
+   *   options; see {@link StubComponentOptions}
+   * @returns {StubComponent}
+   */
+  static fromSignature(name, signature, options = {}) {
+    if (typeof name !== "string" || !name) {
+      throw new Error("StubComponent.fromSignature requires a component name");
+    }
+    if (!signature || typeof signature !== "object") {
+      throw new Error(
+        `StubComponent ${name}: the signature must be an object with inports/outports arrays`
+      );
+    }
+    return new _StubComponent({
+      name,
+      description: typeof signature.description === "string" ? signature.description : "",
+      icon: typeof signature.icon === "string" ? signature.icon : "",
+      inPorts: signaturePorts(name, "inports", signature.inports),
+      outPorts: signaturePorts(name, "outports", signature.outports),
+      ...options
+    });
+  }
+};
+function signaturePorts(componentName, direction, ports) {
+  const mapped = {};
+  if (ports == null) {
+    return mapped;
+  }
+  if (!Array.isArray(ports)) {
+    throw new Error(
+      `StubComponent ${componentName}: signature ${direction} must be an array of port entries`
+    );
+  }
+  ports.forEach((port, position) => {
+    const at = `${direction}[${position}]`;
+    if (!port || typeof port !== "object") {
+      throw new Error(
+        `StubComponent ${componentName}: signature ${at} is not a port entry object`
+      );
+    }
+    if (typeof port.name !== "string" || !port.name) {
+      throw new Error(
+        `StubComponent ${componentName}: signature ${at} is missing a port name`
+      );
+    }
+    if (direction === "outports" && port.control !== void 0) {
+      throw new Error(
+        `StubComponent ${componentName}: signature ${at} declares control on an outport \u2014 control is an inport flag (work document #40)`
+      );
+    }
+    if (mapped[port.name]) {
+      throw new Error(
+        `StubComponent ${componentName}: signature ${direction} declares port '${port.name}' twice`
+      );
+    }
+    const datatype = port.datatype ?? port.type;
+    if (datatype !== void 0 && typeof datatype !== "string") {
+      throw new Error(
+        `StubComponent ${componentName}: signature ${at} port '${port.name}' has a non-string datatype`
+      );
+    }
+    const portOptions = {
+      // The sidecar shape names the datatype `type`; the manifest shape
+      // `datatype`. Both map onto the port option of the latter name
+      datatype: datatype ?? "all",
+      addressable: flag(
+        componentName,
+        at,
+        port.name,
+        "addressable",
+        port.addressable
+      ),
+      description: typeof port.description === "string" ? port.description : ""
+    };
+    if (port.required !== void 0) {
+      portOptions.required = flag(
+        componentName,
+        at,
+        port.name,
+        "required",
+        port.required
+      );
+    }
+    if (port.control !== void 0) {
+      portOptions.control = flag(
+        componentName,
+        at,
+        port.name,
+        "control",
+        port.control
+      );
+    }
+    mapped[port.name] = portOptions;
+  });
+  return mapped;
+}
+function flag(componentName, at, portName, flagName, value) {
+  if (value === void 0) {
+    return void 0;
+  }
+  if (typeof value !== "boolean") {
+    throw new Error(
+      `StubComponent ${componentName}: signature ${at} port '${portName}' has a non-boolean ${flagName} flag`
+    );
+  }
+  return value;
+}
 
 // node_modules/@noflo/noflo/src/lib/AsPromise.js
 import { GraphModel as GraphModel3 } from "./graph.js";
@@ -5514,6 +6755,10 @@ function runNetwork(network, inputs) {
             return;
           }
         }
+        Promise.all(keys.map((port) => inSockets[port].disconnect())).catch(
+          () => {
+          }
+        );
       }
     }, reject);
   });
@@ -5670,6 +6915,8 @@ var NoFlo_default = {
   exportFbpJson: exportFbpJson2,
   ComponentLoader,
   Component,
+  StubComponent,
+  StubNotImplementedError,
   InPorts,
   OutPorts,
   InPort,
@@ -5692,6 +6939,10 @@ export {
   Network,
   OutPort,
   OutPorts,
+  PORT_BEHAVIOR_KEYS,
+  StubComponent,
+  StubNotImplementedError,
+  applyPortMetadata,
   asPromise,
   createNetwork,
   NoFlo_default as default,

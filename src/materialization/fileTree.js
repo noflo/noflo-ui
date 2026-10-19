@@ -105,7 +105,7 @@ export function docToFileTree(doc, options = {}) {
   // a declared `noflo` entry overrides it. Keys sort for the canonical
   // round-trip stability.
   const dependencies = sorted({
-    noflo: "^2.0.0-alpha.11",
+    "@noflo/noflo": "^2.0.0-alpha.12",
     ...(metadata.dependencies ?? {}),
   });
   /** @type {Record<string, string>} */

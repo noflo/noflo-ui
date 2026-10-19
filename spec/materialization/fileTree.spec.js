@@ -142,7 +142,7 @@ describe("the materialized package.json (work document #43)", () => {
     assert.equal(manifest.name, "my-site");
     assert.equal(manifest.type, "module", "the ecosystem is ESM-only");
     assert.equal(manifest.scripts.test, "fbp-spec specs/");
-    assert.equal(manifest.dependencies.noflo, "^2.0.0-alpha.11");
+    assert.equal(manifest.dependencies["@noflo/noflo"], "^2.0.0-alpha.12");
   });
 
   it("declared dependencies merge over the default and override noflo", () => {
@@ -151,11 +151,11 @@ describe("the materialized package.json (work document #43)", () => {
     const dependencies = new Y.Map();
     metadata.set("dependencies", dependencies);
     dependencies.set("noflo-markdown", "^2.0.0-alpha.1");
-    dependencies.set("noflo", "github:noflo/noflo#2.x");
+    dependencies.set("@noflo/noflo", "github:noflo/noflo#2.x");
     const tree = docToFileTree(doc);
     const manifest = JSON.parse(tree["package.json"]);
     assert.equal(
-      manifest.dependencies.noflo,
+      manifest.dependencies["@noflo/noflo"],
       "github:noflo/noflo#2.x",
       "a declared noflo overrides the default",
     );

@@ -216,7 +216,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     await materializer.absorbRemote();
     const manifest = JSON.parse(await readFile(path.join(folder, "package.json"), "utf8"));
     assert.equal(manifest.type, "module");
-    assert.ok(manifest.dependencies.noflo);
+    assert.ok(manifest.dependencies["@noflo/noflo"]);
   });
 });
 

@@ -949,11 +949,63 @@ var GraphModel = class _GraphModel extends EventTarget {
 };
 
 // node_modules/@noflo/graph/src/graph/fbpJson.js
+function foldCase(document) {
+  const foldPort = (name, field) => {
+    if (name === void 0) {
+      return name;
+    }
+    if (typeof name !== "string") {
+      throw new GraphModelError(
+        `${field} must be a string; the caseSensitive: false normalization does not coerce`
+      );
+    }
+    return name.toLowerCase();
+  };
+  const folded = { ...document };
+  folded.edges = (document.edges ?? []).map((edge) => ({
+    ...edge,
+    source: edge.source?.port !== void 0 ? {
+      ...edge.source,
+      port: foldPort(edge.source.port, "edge.source.port")
+    } : edge.source,
+    target: edge.target?.port !== void 0 ? {
+      ...edge.target,
+      port: foldPort(edge.target.port, "edge.target.port")
+    } : edge.target
+  }));
+  folded.inits = (document.inits ?? document.case ?? []).map((iip) => ({
+    ...iip,
+    target: iip.target?.port !== void 0 ? { ...iip.target, port: foldPort(iip.target.port, "iip.target.port") } : iip.target
+  }));
+  delete folded.case;
+  const foldExports = (direction, defs) => {
+    const foldedDefs = {};
+    const seen = /* @__PURE__ */ new Map();
+    for (const [name, def] of Object.entries(defs ?? {})) {
+      const normalized = foldPort(name, `${direction} export name`);
+      if (seen.has(normalized)) {
+        throw new GraphModelError(
+          `caseSensitive: false normalization collides on ${direction} '${normalized}': the document declares both '${seen.get(normalized)}' and '${name}'`
+        );
+      }
+      seen.set(normalized, name);
+      foldedDefs[normalized] = {
+        ...def,
+        port: foldPort(def?.port, `${direction} port`)
+      };
+    }
+    return foldedDefs;
+  };
+  folded.inports = foldExports("inport", document.inports);
+  folded.outports = foldExports("outport", document.outports);
+  return folded;
+}
 function importFbpJson(json) {
   if (typeof json !== "object" || json === null || Array.isArray(json)) {
     throw new GraphModelError("FBP JSON document must be an object");
   }
   const document = normalizeLegacyFbpJson(json);
+  const source = json.caseSensitive === false ? foldCase(document) : document;
   const options = (
     /** @type {GraphModelOptions} */
     {}
@@ -962,24 +1014,24 @@ function importFbpJson(json) {
     options.name = requireString(json.name, "name");
   }
   const model = new GraphModel(options);
-  for (const [key, value] of Object.entries(document.properties ?? {})) {
+  for (const [key, value] of Object.entries(source.properties ?? {})) {
     model.setGraphMetadata(key, value);
   }
-  for (const node of document.nodes ?? []) {
+  for (const node of source.nodes ?? []) {
     model.addNode({
       entity_id: requireString(node?.id, "node.id"),
       ...node?.component === void 0 ? {} : { component: requireString(node.component, "node.component") },
       ...node?.metadata === void 0 ? {} : { metadata: node.metadata }
     });
   }
-  for (const edge of document.edges ?? []) {
+  for (const edge of source.edges ?? []) {
     model.addEdge({
       from: jsonPortRef(edge?.source, "edge.source"),
       to: jsonPortRef(edge?.target, "edge.target"),
       ...edge?.metadata === void 0 ? {} : { metadata: edge.metadata }
     });
   }
-  const iips = document.inits ?? document.case ?? [];
+  const iips = source.inits ?? source.case ?? [];
   for (const iip of iips) {
     model.addIIP({
       data: iip?.data,
@@ -987,7 +1039,7 @@ function importFbpJson(json) {
       ...iip?.metadata === void 0 ? {} : { metadata: iip.metadata }
     });
   }
-  for (const [publicName, def] of Object.entries(document.inports ?? {})) {
+  for (const [publicName, def] of Object.entries(source.inports ?? {})) {
     model.addExport({
       direction: "inport",
       public: publicName,
@@ -1002,7 +1054,7 @@ function importFbpJson(json) {
       ...withDefinedMetadata(exportMetadata(def))
     });
   }
-  for (const [publicName, def] of Object.entries(document.outports ?? {})) {
+  for (const [publicName, def] of Object.entries(source.outports ?? {})) {
     model.addExport({
       direction: "outport",
       public: publicName,
@@ -1017,7 +1069,7 @@ function importFbpJson(json) {
       ...withDefinedMetadata(exportMetadata(def))
     });
   }
-  for (const group of document.groups ?? []) {
+  for (const group of source.groups ?? []) {
     model.addGroup({
       name: requireString(group?.name, "group.name"),
       nodes: requireGroupNodes(group?.nodes),
@@ -1076,6 +1128,11 @@ function normalizeLegacyFbpJson(json) {
     if (inits.length > 0) {
       document.inits = inits;
     }
+  }
+  if (json.inits !== void 0) {
+    document.inits = json.inits;
+  } else if (json.case !== void 0) {
+    document.case = json.case;
   }
   if (json.inports !== void 0) {
     document.inports = json.inports;

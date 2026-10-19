@@ -993,14 +993,28 @@ function resolveInMapping(inports, mapping = {}) {
 }
 function resolveOutMapping(outports, mapping = {}) {
   const resolved = {};
+  const replaces = [];
   for (const port of outports) {
     const override = mapping.out?.[port.name];
-    if (override !== void 0 && typeof override !== "string") {
+    if (override !== void 0 && override !== null && typeof override !== "string") {
       throw new TypeError(
-        `asAssembly: mapping.out for port '${port.name}' must be a field name string (got ${JSON.stringify(override)})`
+        `asAssembly: mapping.out for port '${port.name}' must be a field name string or null (got ${JSON.stringify(override)})`
       );
     }
     resolved[port.name] = override === void 0 ? port.name : override;
+    if (resolved[port.name] === "errors") {
+      throw new Error(
+        `asAssembly: mapping.out for port '${port.name}' must not map to 'errors' \u2014 the error accumulation owns that field`
+      );
+    }
+    if (resolved[port.name] === null) {
+      replaces.push(port.name);
+    }
+  }
+  if (replaces.length > 1) {
+    throw new Error(
+      `asAssembly: only one outport may map to null (whole-message replace); got ${replaces.join(", ")}`
+    );
   }
   return resolved;
 }
@@ -1043,6 +1057,15 @@ function asAssembly(inner, options) {
       });
     }
   }
+  const fieldNames = Object.values(outMapping);
+  graph.addNode({
+    entity_id: "collector",
+    component: "assembly-utils/CollectFields"
+  });
+  graph.addIIP({
+    data: JSON.stringify(fieldNames),
+    to: { node: "collector", port: "fields" }
+  });
   for (const [innerPort, field] of Object.entries(inMapping)) {
     if (field === null) {
       graph.addEdge({
@@ -1066,17 +1089,12 @@ function asAssembly(inner, options) {
       from: { node: extractNode, port: "out" },
       to: { node: "inner", port: innerPort }
     });
+    graph.addEdge({
+      from: { node: extractNode, port: "error" },
+      to: { node: "collector", port: "error" }
+    });
     mergeIndex += 1;
   }
-  const fieldNames = Object.values(outMapping);
-  graph.addNode({
-    entity_id: "collector",
-    component: "assembly-utils/CollectFields"
-  });
-  graph.addIIP({
-    data: JSON.stringify(fieldNames),
-    to: { node: "collector", port: "fields" }
-  });
   graph.addEdge({
     from: { node: "fanout", port: "out", index: mergeIndex },
     to: { node: "collector", port: "msg" }
