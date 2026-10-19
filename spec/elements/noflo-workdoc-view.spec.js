@@ -246,3 +246,121 @@ describe("FlowWorkDocView (work document #9)", () => {
     view.remove();
   });
 });
+
+describe("the workdoc view's governance surfaces (work document #9 updates #10, #13, §5)", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("the scope-request affordance tracks the document's state", () => {
+    const view = makeView();
+    const { content } = makeDoc();
+    // Proposed, no pending request: the affordance shows
+    view.open({
+      doc: { ...docState(), pendingScope: undefined },
+      ytext: content,
+      cm: stubSurface(),
+    });
+    const request = view.shadowRoot.querySelector(
+      "[data-action='request-scope']",
+    );
+    assert.ok(request, "the affordance renders");
+    assert.ok(!request.hidden, "visible for proposed without a request");
+
+    // A pending request: hidden — the intent recorded it, the board decides
+    view.refresh({ ...docState(), signature: undefined });
+    assert.ok(
+      view.shadowRoot.querySelector("[data-action='request-scope']").hidden,
+      "hidden while a request is pending",
+    );
+    view.remove();
+  });
+
+  it("requesting activation emits workdoc-scope for the intent path", () => {
+    const view = makeView();
+    const { content } = makeDoc();
+    view.open({
+      doc: { ...docState(), pendingScope: undefined },
+      ytext: content,
+      cm: stubSurface(),
+    });
+    const events = /** @type {any[]} */ ([]);
+    view.addEventListener("workdoc-scope", (/** @type {any} */ e) => {
+      events.push(e.detail);
+    });
+    /** @type {any} */
+    (view.shadowRoot.querySelector("[data-action='request-scope']")).click();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].docId, docState().id);
+    assert.equal(events[0].scope, "active");
+    view.remove();
+  });
+
+  it("the provenance badge names board-signed and local-only states", () => {
+    const view = makeView();
+    const { content } = makeDoc();
+    view.open({
+      doc: { ...docState(), signature: "present" },
+      ytext: content,
+      cm: stubSurface(),
+    });
+    assert.match(
+      view.shadowRoot.querySelector(".doc-sig").textContent,
+      /board-signed/,
+    );
+    view.refresh({ ...docState(), signature: undefined });
+    assert.match(
+      view.shadowRoot.querySelector(".doc-sig").textContent,
+      /local only/,
+    );
+    view.remove();
+  });
+
+  it("traceability links render in the thread and the read body, and clicks emit workdoc-link", () => {
+    const view = makeView();
+    const { content } = makeDoc();
+    content.delete(0, content.length);
+    content.insert(0, "See [[node:parser1]] and [[component:mylib/Parse]] <script>");
+    view.open({
+      doc: {
+        ...docState(),
+        pendingScope: undefined,
+        updates: [
+          {
+            id: 1,
+            created: Date.now(),
+            author: "c".repeat(32),
+            content: "Moved the wire per [[component:mylib/Parse]].",
+          },
+        ],
+      },
+      ytext: content,
+      cm: stubSurface(),
+    });
+    const shadow = view.shadowRoot;
+    const links = [...shadow.querySelectorAll(".doc-link")];
+    assert.ok(links.length >= 3, "body and thread both linkify");
+    const escaped = [...shadow.querySelectorAll(".body .doc-link")];
+    assert.equal(
+      escaped.filter((/** @type {any} */ l) => l.dataset.kind === "node").length,
+      1,
+      "the node link renders",
+    );
+    assert.equal(
+      shadow.querySelector(".body script"),
+      null,
+      "markup stays escaped — no script element",
+    );
+
+    const events = /** @type {any[]} */ ([]);
+    view.addEventListener("workdoc-link", (/** @type {any} */ e) => {
+      events.push(e.detail);
+    });
+    /** @type {any} */
+    (shadow.querySelector('.thread .doc-link[data-kind="component"]')).click();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].kind, "component");
+    assert.equal(events[0].id, "mylib/Parse");
+    view.remove();
+  });
+});

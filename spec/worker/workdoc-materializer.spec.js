@@ -91,6 +91,9 @@ describe("work document materializer (work document #9, step C)", () => {
     // Reconciliation: the board's number and scope adopt
     assert.equal(record.get("boardId"), 7);
     assert.equal(record.get("scope"), "proposed");
+    // Provenance mirrors: the board accepted a signed propose (work
+    // document #9 update #13)
+    assert.equal(record.get("signature"), "present");
     assert.deepEqual(reports, [
       { docId: record.get("id"), action: "proposed" },
     ]);
@@ -212,5 +215,48 @@ describe("work document materializer (work document #9, step C)", () => {
       materializedBody("a".repeat(32), "Hello."),
       `noflo-ui-work-doc: ${"a".repeat(32)}\n\nHello.`,
     );
+  });
+});
+
+describe("work document materializer provenance (work document #9, update #13)", () => {
+  it("reconciliation stamps the record board-signed", async () => {
+    const doc = createProjectDoc("p");
+    const record = createWorkDoc(doc, {
+      title: "The plan",
+      author: AUTHOR,
+      content: "First draft.",
+    });
+    const requests = /** @type {any[]} */ ([]);
+    /** The board's listing: the materialized document, marker line and all. */
+    const boardListing = {
+      active: [],
+      proposed: [
+        {
+          number: 7,
+          scope: "proposed",
+          title: "The plan",
+          content: materializedBody(record.get("id"), "First draft."),
+        },
+      ],
+      completed: [],
+    };
+    const materializer = new WorkDocMaterializer({
+      doc,
+      transport: {
+        sign: async () => new Uint8Array([1]),
+        send: async (fields) => {
+          requests.push(fields);
+          if (fields.operation === "list") return boardListing;
+          return null;
+        },
+      },
+      authorIdentityHash: AUTHOR,
+    });
+    await materializer.reconcileFromBoard();
+    // Provenance mirrors: the board's listing carries the signed record.
+    // (boardId is propose's assignment — reconciliation associates by the
+    // marker line and adopts scope, comments, and provenance)
+    assert.equal(record.get("signature"), "present", "provenance mirrors");
+    assert.equal(record.get("scope"), "proposed");
   });
 });

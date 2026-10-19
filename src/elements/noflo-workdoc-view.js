@@ -139,7 +139,7 @@ export class FlowWorkDocView extends HTMLElement {
    * #9): the thread, title, scope state, and board number — targeted
    * updates, never touching the collaborative editor mid-typing.
    *
-   * @param {{ title?: string, scope?: string, pendingScope?: string, boardId?: number | string | null, updates?: any[] }} next
+   * @param {{ title?: string, scope?: string, pendingScope?: string, boardId?: number | string | null, signature?: string, updates?: any[] }} next
    */
   refresh(next) {
     if (!this._doc) return;
@@ -147,6 +147,7 @@ export class FlowWorkDocView extends HTMLElement {
     this._doc.scope = next?.scope ?? this._doc.scope;
     this._doc.pendingScope = next?.pendingScope;
     this._doc.boardId = next?.boardId ?? null;
+    this._doc.signature = next?.signature;
     this._doc.updates = next?.updates ?? this._doc.updates;
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     if (!shadow.innerHTML) return;
@@ -160,7 +161,7 @@ export class FlowWorkDocView extends HTMLElement {
               <span class="update-meta">#${update.id} · ${escapeHtml(
                 String(update.author ?? "").slice(0, 8),
               )} · ${new Date(update.created ?? 0).toLocaleString()}</span>
-              <div class="update-content">${escapeHtml(update.content ?? "")}</div>
+              <div class="update-content">${this._linkify(update.content ?? "")}</div>
             </div>`,
         )
         .join("");
@@ -184,7 +185,65 @@ export class FlowWorkDocView extends HTMLElement {
           `<span class="doc-board" title="Materialized on the board">#${escapeHtml(String(this._doc.boardId))}</span>`,
         );
       }
+      // The scope-request affordance and the provenance badge track the
+      // replica's governance state (work document #9 updates #10, #13)
+      const request = /** @type {HTMLElement | null} */ (
+        head.querySelector("[data-action='request-scope']")
+      );
+      if (request) {
+        request.hidden = !this._canRequestScope(this._doc);
+      }
+      const sig = head.querySelector(".doc-sig");
+      if (sig) {
+        sig.textContent = this._signatureLabel(this._doc);
+        sig.className = `doc-sig ${this._doc.signature === "present" ? "signed" : ""}`;
+      }
     }
+  }
+
+  /**
+   * Renders content text with the traceability links (work document #9
+   * §5): `[[node:<id>]]` and `[[component:<name>]]` references become
+   * links — the click emits `workdoc-link` and the Glass routes (the
+   * component screen; the graph screen centered on the node). The text is
+   * escaped first; the pattern match runs on escaped text, so entity
+   * references can never smuggle markup into the anchor.
+   *
+   * @param {string} text Raw content text.
+   * @returns {string} HTML.
+   */
+  _linkify(text) {
+    const escaped = escapeHtml(text ?? "");
+    return escaped.replace(
+      /\[\[(node|component):([^\]]+)\]\]/g,
+      (_match, kind, id) =>
+        `<a class="doc-link" data-kind="${kind}" data-id="${id}">${kind}:${id}</a>`,
+    );
+  }
+
+  /**
+   * The scope-request affordance's visibility (work document #9 update
+   * #10): a proposed document with no pending request can request
+   * activation — the intent records the request, the board decides it.
+   *
+   * @param {{ scope?: string, pendingScope?: string }} doc
+   * @returns {boolean}
+   */
+  _canRequestScope(doc) {
+    return doc.scope === "proposed" && !doc.pendingScope;
+  }
+
+  /**
+   * The provenance badge's text (work document #9 update #13): the
+   * board holds a signed copy ("board-signed") or the document is local
+   * state only ("local only") — the app never signs; signing happens
+   * where the author's identity lives, at materialization.
+   *
+   * @param {{ signature?: string }} doc
+   * @returns {string}
+   */
+  _signatureLabel(doc) {
+    return doc.signature === "present" ? "board-signed" : "local only";
   }
 
   /** Tears everything down (close). */
@@ -212,7 +271,7 @@ export class FlowWorkDocView extends HTMLElement {
             <span class="update-meta">#${update.id} · ${escapeHtml(
               String(update.author ?? "").slice(0, 8),
             )} · ${new Date(update.created ?? 0).toLocaleString()}</span>
-            <div class="update-content">${escapeHtml(update.content ?? "")}</div>
+            <div class="update-content">${this._linkify(update.content ?? "")}</div>
           </div>`,
       )
       .join("");
@@ -278,6 +337,23 @@ export class FlowWorkDocView extends HTMLElement {
         .badge.completed { background: color-mix(in srgb, var(--ui-muted, #889) 25%, transparent); color: var(--ui-muted, #889); }
         .badge.pending { outline: 1px dashed var(--ui-age-attention, #e3a17e); }
         .doc-id { font-size: 10px; opacity: 0.6; }
+        .doc-sig {
+          font-size: 10px;
+          flex-shrink: 0;
+          padding: 1px 6px;
+          border-radius: 3px;
+          background: color-mix(in srgb, var(--ui-muted, #889) 20%, transparent);
+          color: var(--ui-muted, #889);
+        }
+        .doc-sig.signed {
+          background: color-mix(in srgb, var(--ui-age-calm, #7ee3a0) 20%, transparent);
+          color: var(--ui-age-calm, #7ee3a0);
+        }
+        .doc-link {
+          color: var(--ui-accent, rgb(90, 200, 250));
+          text-decoration: underline;
+          cursor: pointer;
+        }
         .body {
           flex: 1;
           overflow: auto;
@@ -333,6 +409,8 @@ export class FlowWorkDocView extends HTMLElement {
         <span class="doc-id" title="Stable work document id">${escapeHtml(doc.id.slice(0, 8))}</span>
         ${doc.boardId ? `<span class="doc-board" title="Materialized on the board">#${escapeHtml(String(doc.boardId))}</span>` : ""}
         <span class="badge ${escapeHtml(doc.scope)}">${escapeHtml(scopeLabel)}</span>
+        <span class="doc-sig ${doc.signature === "present" ? "signed" : ""}" title="${doc.signature === "present" ? "The board holds an Ed25519-signed copy" : "Not yet materialized — unsigned local state"}">${this._signatureLabel(doc)}</span>
+        <button class="secondary" data-action="request-scope" title="Request the board activate this document" ${this._canRequestScope(doc) ? "" : "hidden"}>Request activation</button>
         <button class="secondary" data-action="toggle-edit" title="${this._editing ? "Stop editing" : "Edit body"}">${this._editing ? "Read" : "Edit"}</button>
       </div>
       <div class="body"></div>
@@ -346,13 +424,16 @@ export class FlowWorkDocView extends HTMLElement {
       </div>
       </div>
     `;
-    // The body: read state renders the mirror's text; edit state binds
-    // the collaborative editor (the binding targets the .body host)
+    // The body: read state renders the mirror's text with the
+    // traceability links (work document #9 §5); edit state binds the
+    // collaborative editor (the binding targets the .body host)
     if (this._editing && !this._view) {
       this._bindEditor();
     } else if (!this._editing) {
       const body = /** @type {HTMLElement} */ (shadow.querySelector(".body"));
-      if (body && this._ytext) body.textContent = this._ytext.toString();
+      if (body && this._ytext) {
+        body.innerHTML = this._linkify(this._ytext.toString());
+      }
     }
     const titleInput = /** @type {HTMLInputElement} */ (
       shadow.querySelector("input.title")
@@ -379,6 +460,21 @@ export class FlowWorkDocView extends HTMLElement {
     shadow
       .querySelector("[data-action='toggle-edit']")
       ?.addEventListener("click", () => this.toggleEdit());
+    shadow
+      .querySelector("[data-action='request-scope']")
+      ?.addEventListener("click", () => {
+        emit(this, "workdoc-scope", { docId: doc.id, scope: "active" });
+      });
+    // The traceability links (work document #9 §5): one delegated
+    // listener — thread entries and the read-state body re-render freely
+    shadow.addEventListener("click", (/** @type {any} */ event) => {
+      const link = event.target?.closest?.(".doc-link");
+      if (!link) return;
+      emit(this, "workdoc-link", {
+        kind: link.getAttribute("data-kind"),
+        id: link.getAttribute("data-id"),
+      });
+    });
 
     const composerInput = /** @type {HTMLTextAreaElement} */ (
       shadow.querySelector(".composer-input")

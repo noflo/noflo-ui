@@ -838,6 +838,7 @@ function refreshProjectCorner() {
       scope: plain.scope,
       pendingScope: plain.pendingScope,
       boardId: plain.boardId ?? null,
+      signature: plain.signature,
       updates: plain.updates ?? [],
     });
   }
@@ -865,6 +866,7 @@ function openWorkDoc(docId, editing = false) {
       scope: plain.scope,
       pendingScope: plain.pendingScope,
       boardId: plain.boardId ?? null,
+      signature: plain.signature,
       edited: plain.edited,
       updates: plain.updates ?? [],
     },
@@ -3013,6 +3015,39 @@ async function init() {
       command: "setWorkDocTitle",
       payload: { docId: e.detail.docId, title: e.detail.title },
     });
+  });
+  // The scope request (work document #9 update #10): the intent records
+  // the request; the board's reconciliation confirms or reverts it
+  workdocView?.addEventListener("workdoc-scope", (/** @type {any} */ e) => {
+    sendIntent({
+      type: "INTENT",
+      command: "setWorkDocScope",
+      payload: { docId: e.detail.docId, scope: e.detail.scope },
+    });
+  });
+  // The traceability links (work document #9 §5): components route to
+  // the component screen; nodes route to the graph screen centered on
+  // the node's position
+  workdocView?.addEventListener("workdoc-link", (/** @type {any} */ e) => {
+    const { kind, id } = e.detail;
+    if (kind === "component") {
+      if (mirrorDoc?.getMap("registry").has(id)) {
+        router?.navigate({ kind: "component", id });
+      }
+      return;
+    }
+    if (kind === "node") {
+      const process = projectGraph(mirrorDoc, activeGraphId)?.processes[id];
+      if (!process) return;
+      router?.navigate({ kind: "graph", id: activeGraphId });
+      const editorElement = /** @type {any} */ (
+        document.getElementById("editor")
+      );
+      editorElement?.camera?.centerOn(
+        Number(process.metadata?.x ?? 0),
+        Number(process.metadata?.y ?? 0),
+      );
+    }
   });
   contextChip?.addEventListener("workdoc-close", (/** @type {any} */ e) => {
     router?.navigate(activeGraphId || "main");

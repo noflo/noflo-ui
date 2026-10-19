@@ -123,6 +123,9 @@ export class WorkDocMaterializer {
       // entries it included are materialized with it (the watermark
       // starts at the propose's thread length, not zero)
       record.set("boardComments", (plain.updates ?? []).length);
+      // The board accepted an Ed25519-signed propose: the record mirrors
+      // the provenance state (work document #9 update #13)
+      record.set("signature", "present");
       reports.push({ docId, action: "proposed" });
     }
 
@@ -175,6 +178,7 @@ export class WorkDocMaterializer {
         });
         record.set("boardTitle", plain.title);
         record.set("boardContent", plain.content ?? "");
+        record.set("signature", "present");
         reports.push({ docId, action: "edited" });
       }
     }
@@ -270,6 +274,9 @@ export class WorkDocMaterializer {
       );
       if (!record) continue;
       const plain = record.toJSON();
+      // The board's listing carries the signed record: provenance mirrors
+      // on reconciliation (work document #9 update #13)
+      record.set("signature", "present");
 
       // The board's scope is the state ("theirs")
       if (boardDoc.scope && boardDoc.scope !== plain.scope) {

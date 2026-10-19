@@ -724,6 +724,7 @@ created: number;
 edited: number;
 updates: Y.Array<Y.Map<{ id: number, created: number, author: string, content: string }>>;
 links: Y.Array<string>;  // Entity ids the document references
+signature?: 'present';   // Provenance mirror: the board holds an Ed25519-signed copy (work document #9 update #13)
 ```
 
 Governance is asymmetric by design: the CRDT is the loose, live editing surface for content; **rngit's stricter rules are authoritative for scope, authorship, and ids — materialization merges "theirs", always**. Local scope transitions ride `pendingScope` until the board confirms; reconciliation overwrites the governed fields and reverts unconfirmed local flips. Updates are append-only, one-to-one with rngit's comments; a deleted rngit document disappears (ids recycle, so references validate `created`/`title` before resolving). The materializer pushes as the document's author, or — failing that — as whoever runs the rngit server connection.

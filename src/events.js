@@ -183,6 +183,10 @@
  * @property {CustomEvent<{ docId: string, update: Uint8Array }>} workdoc-body-update
  * @property {CustomEvent<{ docId: string, title: string }>} workdoc-title
  * @property {CustomEvent<{ docId: string, content: string }>} workdoc-post
+ * @property {CustomEvent<{ docId: string, scope: 'proposed' | 'active' | 'completed' }>} workdoc-scope
+ *   A scope transition was requested from the document view (work document #9 update #10)
+ * @property {CustomEvent<{ kind: 'node' | 'component', id: string }>} workdoc-link
+ *   A traceability link was clicked in the document view (work document #9 §5)
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
