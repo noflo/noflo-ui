@@ -520,3 +520,45 @@ describe("the side view's library sync (work document #29)", () => {
     view.remove();
   });
 });
+
+describe("the ladder's honesty in the headline (work document #29)", () => {
+  async function viewWith(implementation, codeAuthored) {
+    const view = /** @type {any} */ (
+      document.createElement("noflo-component-view")
+    );
+    document.body.appendChild(view);
+    await view.open({
+      component: "Foo",
+      implementation,
+      formSchema: buildSignatureSchema([]),
+      signature: { inports: [], outports: [] },
+      codeAuthored,
+    });
+    return view;
+  }
+
+  it("a code buffer still equal to the scaffold reads as scaffold, not code", async () => {
+    const view = await viewWith("code", false);
+    assert.match(
+      view.shadowRoot.querySelector(".kind").textContent,
+      /elementary · scaffold/,
+      "the scaffold is preparation, not an implementation",
+    );
+    view.remove();
+  });
+
+  it("authored code reads as code", async () => {
+    const view = await viewWith("code", true);
+    assert.match(
+      view.shadowRoot.querySelector(".kind").textContent,
+      /elementary · code/,
+    );
+    view.remove();
+  });
+
+  it("a stub reads as a stub", async () => {
+    const view = await viewWith("stub", false);
+    assert.match(view.shadowRoot.querySelector(".kind").textContent, /stub · sketch/);
+    view.remove();
+  });
+});

@@ -86,6 +86,7 @@ import {
   wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
+import { codeScaffold } from "./library/scaffold.js";
 import {
   LibraryManager,
   syncLibraryFromRegistry,
@@ -751,10 +752,6 @@ function resolveActiveGraph() {
  * @param {string} componentName
  * @returns {string}
  */
-function codeScaffold(componentName) {
-  return `// ${componentName} — implemented in code (work document #29)\n// Replace this scaffold with the component's implementation. The ports\n// follow the declared signature.\nexport default function setup(runtime) {\n  // Register port handlers here.\n}\n`;
-}
-
 /**
  * The component signature editor (work document #29): the adopted
  * modal + JSON-form flow from the editor surface, now with the primary
@@ -1453,6 +1450,15 @@ async function openComponentView(componentName) {
     : implementationMeta?.kind === "code"
       ? "code"
       : "stub";
+  // The ladder's honesty (work document #29): a code buffer still equal
+  // to the canonical scaffold is not an implementation — the badge reads
+  // stub while the editor stays bound for authoring
+  const codeText =
+    implementation === "code"
+      ? (mirrorDoc.getMap("components").get(componentName)?.get("code")?.toString() ?? "")
+      : null;
+  const codeAuthored =
+    codeText !== null && codeText !== codeScaffold(componentName);
   const signature = {
     name: componentName,
     icon: plain.icon || "gear",
@@ -1491,6 +1497,7 @@ async function openComponentView(componentName) {
     signatureYtype: mirrorDoc.getMap(REGISTRY_MAP).get(componentName) ?? null,
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
+    codeAuthored,
     // The side view (work document #29): the same FlowNode the canvas
     // renders, fed by the same library manager and subgraph projection
     libraryManager,

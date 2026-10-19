@@ -56,6 +56,9 @@ export class NofloComponentView extends HTMLElement {
     this._request = null;
     /** @type {any | null} The Glass-side library for the side view. */
     this._libraryManager = null;
+    /** @type {boolean} Whether the code buffer is authored — differs from
+     * the canonical scaffold (work document #29's ladder honesty). */
+    this._codeAuthored = false;
     /** @type {((componentName: string) => any | null) | null} The
      * subgraph projection source. */
     this._depictionSource = null;
@@ -125,6 +128,10 @@ export class NofloComponentView extends HTMLElement {
    *   `{ state: "ok" | "deleted" | "broken", title, scope?, pendingScope?,
    *   boardId? }` — a plain snapshot of the pointer's resolution; the echo
    *   path refreshes it via setRequest.
+    * @param {boolean} [options.codeAuthored] Whether the code buffer
+   *   differs from the canonical scaffold (work document #29): a
+   *   scaffold-only buffer renders the stub badge while the editor stays
+   *   bound — authoring the scaffold is how the component becomes code.
    */
   async open({
     component,
@@ -138,6 +145,7 @@ export class NofloComponentView extends HTMLElement {
     request = null,
     libraryManager = null,
     depictionSource = null,
+    codeAuthored = false,
   }) {
     this._component = component;
     this._implementation = implementation;
@@ -147,6 +155,7 @@ export class NofloComponentView extends HTMLElement {
     this._request = request;
     this._libraryManager = libraryManager;
     this._depictionSource = depictionSource;
+    this._codeAuthored = codeAuthored;
     this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
@@ -481,11 +490,20 @@ export class NofloComponentView extends HTMLElement {
 
   async render() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    // The badge derives from the implementation kind AND whether the code
+    // is authored (work document #29's ladder): a buffer still equal to
+    // the canonical scaffold is a stub — "Implement in code" prepared it,
+    // nobody wrote it yet. The editor stays bound either way: authoring
+    // the scaffold is exactly how the component becomes code.
+    const codeImplemented =
+      this._implementation === "code" && this._codeAuthored === true;
     const kindBadge =
       this._implementation === "graph"
         ? "subgraph"
         : this._implementation === "code"
-          ? "elementary · code"
+          ? codeImplemented
+            ? "elementary · code"
+            : "elementary · scaffold"
           : "stub · sketch";
     shadow.innerHTML = `
       <style>
