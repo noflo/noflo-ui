@@ -108,9 +108,13 @@ export function buildRuntimeDacar(nodeConfig) {
  * @returns {DacarCapabilityPolicy}
  */
 export function runtimeCapabilityPolicy({ engine, projectResource }) {
-  return new DacarCapabilityPolicy({
+  const policy = new DacarCapabilityPolicy({
     engine,
     objectId: projectResource,
     relations: RUNTIME_RELATIONS,
   });
+  // The runtime-server's capabilityPolicy is a FUNCTION
+  // (identityHash, context) → mask — the policy object's resolve is the
+  // implementation
+  return (identityHash, context) => policy.resolve(identityHash, context);
 }

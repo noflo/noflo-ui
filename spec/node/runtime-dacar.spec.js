@@ -55,7 +55,7 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       engine: replica.engine,
       projectResource: RESOURCE,
     });
-    const mask = await policy.resolve(peerHash, {});
+    const mask = await policy(peerHash, {});
     assert.equal(
       mask & CAPABILITY.GRAPH_READ,
       CAPABILITY.GRAPH_READ,
@@ -95,7 +95,7 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       engine: replica.engine,
       projectResource: RESOURCE,
     });
-    const mask = await policy.resolve(toHex(peer.getSalt()), {});
+    const mask = await policy(toHex(peer.getSalt()), {});
     assert.equal(
       mask & CAPABILITY.GRAPH_EDIT,
       CAPABILITY.GRAPH_EDIT,
@@ -126,7 +126,7 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       engine: replica.engine,
       projectResource: RESOURCE,
     });
-    const mask = await policy.resolve(toHex(stranger.getSalt()), {});
+    const mask = await policy(toHex(stranger.getSalt()), {});
     assert.equal(mask, 0, "no grant, no capabilities");
   });
 
@@ -156,7 +156,7 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       engine: replica.engine,
       projectResource: RESOURCE,
     });
-    const mask = await policy.resolve(peerHash, {});
+    const mask = await policy(peerHash, {});
     assert.equal(mask, 0, "the forged grant granted nothing");
   });
 
@@ -175,7 +175,7 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       engine: replica.engine,
       projectResource: RESOURCE,
     });
-    const mask = await policy.resolve(toHex(anchor.getSalt()), {});
+    const mask = await policy(toHex(anchor.getSalt()), {});
     // Whatever Dacar's root-anchor semantics give, the anchor at least
     // reads — and this test pins the behavior instead of assuming it
     assert.ok(

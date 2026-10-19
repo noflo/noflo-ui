@@ -63,6 +63,11 @@ function realPathFor(target) {
  * @param {string} [options.name] The runtime's node name in announces.
  * @param {Array<{ type: string, options?: any, enabled?: boolean }>} [options.interfaces]
  *   The mesh interface list; the same shape the mesh config carries.
+ * @param {{ anchorHashHex: string, anchorPubkeyHex: string, salt: string, projectId: string } | null} [options.dacar]
+ *   The project's Dacar binding: when provided, the manager provisions
+ *   the child's state directory with it (the parent-provisions shape —
+ *   the sandbox denies first-touch writes) and the runtime boots as a
+ *   Dacar replica; when absent, the runtime boots deny-closed.
  * @param {string} [options.nodeBin] The Node executable; defaults to this
  *   process's own.
  * @param {(message: string) => void} [options.log] The narration channel.
@@ -78,6 +83,7 @@ export function createRuntimeManager({
   stateDir,
   name = "noflo-runtime",
   interfaces = [],
+  dacar = null,
   nodeBin = process.execPath,
   log = () => {},
 }) {
@@ -153,6 +159,15 @@ export function createRuntimeManager({
       // parent-provisions/child-consumes shape is the sandbox reality the
       // later exploration (the maintainer's note) may relax.
       await Identity.loadOrGenerate(new FileStorageAdapter(realState));
+      // The Dacar binding provisioned alongside the identity: the child's
+      // boot reads it and joins as a Dacar replica
+      if (dacar) {
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(
+          path.join(realState, "dacar.json"),
+          JSON.stringify(dacar, null, 2) + "\n",
+        );
+      }
       const realFolder = realPathFor(path.resolve(folder));
       const appRoot = realpathSync(APP_ROOT);
       // The shared rnsd instance's discovery reads the user's Reticulum
