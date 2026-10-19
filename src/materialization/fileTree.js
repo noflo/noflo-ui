@@ -100,6 +100,14 @@ function sorted(value) {
  */
 export function docToFileTree(doc, options = {}) {
   const metadata = sorted(doc.getMap("metadata").toJSON());
+  // The dependency list (work document #43): the metadata declarations
+  // merge over the generator's noflo default — the platform's 2.x line;
+  // a declared `noflo` entry overrides it. Keys sort for the canonical
+  // round-trip stability.
+  const dependencies = sorted({
+    noflo: "^2.0.0-alpha.11",
+    ...(metadata.dependencies ?? {}),
+  });
   /** @type {Record<string, string>} */
   const tree = {
     "project.json":
@@ -114,9 +122,11 @@ export function docToFileTree(doc, options = {}) {
           version: "1.0.0",
           description: String(metadata.description ?? ""),
           private: true,
-          dependencies: {
-            noflo: "^1.5.2",
+          type: "module",
+          scripts: {
+            test: "fbp-spec specs/",
           },
+          dependencies,
         },
         null,
         2,

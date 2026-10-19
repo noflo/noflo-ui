@@ -15,6 +15,7 @@ import {
   docToFileTree,
   writeFileTree,
 } from "../../src/materialization/fileTree.js";
+import * as Y from "../../vendor/yjs.js";
 
 /**
  * Seeds a project with a graph, a subgraph, and a component with code.
@@ -129,5 +130,51 @@ describe("Y.Doc → file tree (work document #43)", () => {
     assert.ok(written.length > 0, "every path is written");
     assert.equal(files.size, written.length);
     assert.ok(files.has("project.json"));
+  });
+});
+
+describe("the materialized package.json (work document #43)", () => {
+  it("emits the 2.x default, module type, and the test script", () => {
+    const doc = createProjectDoc("p");
+    doc.getMap("metadata").set("name", "My Site");
+    const tree = docToFileTree(doc);
+    const manifest = JSON.parse(tree["package.json"]);
+    assert.equal(manifest.name, "my-site");
+    assert.equal(manifest.type, "module", "the ecosystem is ESM-only");
+    assert.equal(manifest.scripts.test, "fbp-spec specs/");
+    assert.equal(manifest.dependencies.noflo, "^2.0.0-alpha.11");
+  });
+
+  it("declared dependencies merge over the default and override noflo", () => {
+    const doc = createProjectDoc("p");
+    const metadata = doc.getMap("metadata");
+    const dependencies = new Y.Map();
+    metadata.set("dependencies", dependencies);
+    dependencies.set("noflo-markdown", "^2.0.0-alpha.1");
+    dependencies.set("noflo", "github:noflo/noflo#2.x");
+    const tree = docToFileTree(doc);
+    const manifest = JSON.parse(tree["package.json"]);
+    assert.equal(
+      manifest.dependencies.noflo,
+      "github:noflo/noflo#2.x",
+      "a declared noflo overrides the default",
+    );
+    assert.equal(manifest.dependencies["noflo-markdown"], "^2.0.0-alpha.1");
+  });
+
+  it("the package.json is deterministic across materializations", () => {
+    const doc = createProjectDoc("p");
+    const metadata = doc.getMap("metadata");
+    const dependencies = new Y.Map();
+    metadata.set("dependencies", dependencies);
+    dependencies.set("zeta", "^1.0.0");
+    dependencies.set("alpha", "^2.0.0");
+    const first = docToFileTree(doc)["package.json"];
+    const second = docToFileTree(doc)["package.json"];
+    assert.equal(first, second);
+    assert.ok(
+      first.indexOf('"alpha"') < first.indexOf('"zeta"'),
+      "keys sort for the canonical round-trip",
+    );
   });
 });

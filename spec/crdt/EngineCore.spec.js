@@ -1879,3 +1879,72 @@ describe("grant intents (work document #27)", () => {
     assert.ok(!ghost.accepted);
   });
 });
+
+describe("project dependencies (work document #43)", () => {
+  it("declares a dependency through the intent and echoes it", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    const linked = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { module: "noflo-markdown", spec: "^2.0.0-alpha.1" },
+    });
+    assert.ok(linked.accepted);
+    const echo = linked.echoes.find(
+      (/** @type {any} */ e) => e.protocol === "project",
+    );
+    assert.equal(echo.command, "dependency");
+    assert.equal(echo.payload.module, "noflo-markdown");
+    assert.equal(echo.payload.spec, "^2.0.0-alpha.1");
+    const dependencies = doc.getMap("metadata").get("dependencies");
+    assert.equal(dependencies.get("noflo-markdown"), "^2.0.0-alpha.1");
+  });
+
+  it("clears with a null spec", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { module: "noflo-markdown", spec: "^2.0.0-alpha.1" },
+    });
+    const cleared = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { module: "noflo-markdown", spec: null },
+    });
+    assert.ok(cleared.accepted);
+    assert.equal(cleared.echoes[0].payload.spec, null);
+    assert.equal(
+      doc.getMap("metadata").get("dependencies").get("noflo-markdown"),
+      undefined,
+    );
+  });
+
+  it("refuses malformed modules and specs", () => {
+    const doc = createProjectDoc("p");
+    const state = createEngineState();
+    state.intentOrigin = "c".repeat(32);
+    const noModule = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { spec: "^1.0.0" },
+    });
+    assert.equal(noModule.accepted, false);
+    const badModule = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { module: "Not A Module", spec: "^1.0.0" },
+    });
+    assert.equal(badModule.accepted, false, "module prefixes are name-shaped");
+    const emptySpec = handleMessage(doc, state, {
+      type: "INTENT",
+      command: "setProjectDependency",
+      payload: { module: "ok", spec: "  " },
+    });
+    assert.equal(emptySpec.accepted, false, "a blank spec is not a removal");
+    assert.equal(doc.getMap("metadata").get("dependencies"), undefined);
+  });
+});

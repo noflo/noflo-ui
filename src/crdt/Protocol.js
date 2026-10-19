@@ -382,6 +382,18 @@
  */
 
 /**
+ * Declares (or clears) a component-library dependency (work document #43):
+ * the module prefix component names use, mapped to the npm spec the
+ * materialized package.json installs. PROJECT state — CRDT metadata,
+ * propagated to peers. A null spec clears the module's entry.
+ *
+ * @typedef {Object} IntentSetProjectDependencyMessage
+ * @property {'INTENT'} type
+ * @property {'setProjectDependency'} command
+ * @property {{ module: string, spec: string | null }} payload
+ */
+
+/**
  * Project schema lifecycle (work document #57 update #1). `setSchema` is
  * the create-or-whole-save write: the body is a JSON buffer validated
  * against the 2020-12 meta-schema — an invalid body is refused, never
@@ -514,6 +526,10 @@
  * @property {'workdoc'} protocol
  * @property {'requested'} command
  * @property {{ component: string, docId: string | null }} payload
+ * @typedef {Object} ProjectDependencyEcho
+ * @property {'project'} protocol
+ * @property {'dependency'} command
+ * @property {{ module: string, spec: string | null }} payload
  */
 
 /**
@@ -706,6 +722,7 @@
  *   | IntentSetWorkDocBodyMessage
  *   | IntentSetWorkDocTitleMessage
  *   | IntentSetWorkdocsRepoMessage
+ *   | IntentSetProjectDependencyMessage
  *   | IntentSetSchemaMessage
  *   | IntentUpdateSchemaMessage
  *   | IntentRemoveSchemaMessage
@@ -793,6 +810,7 @@ export const UI_MESSAGES = [
   { type: "INTENT", command: "updateSchema" },
   { type: "INTENT", command: "removeSchema" },
   { type: "INTENT", command: "setWorkdocsRepo" },
+  { type: "INTENT", command: "setProjectDependency" },
   { type: "INTENT", command: "undo" },
   { type: "INTENT", command: "redo" },
   { type: "MESH", command: "configure" },
@@ -1238,6 +1256,7 @@ export const MESH_COMMANDS = [
  *   | WorkDocTitledEcho
  *   | WorkDocRepoEcho
  *   | WorkDocRequestedEcho
+ *   | ProjectDependencyEcho
  *   | SchemaEcho
  *   | YSyncMessage
  *   | YUpdateMessage
@@ -1290,6 +1309,7 @@ export const ECHO_MESSAGES = [
   { protocol: "workdoc", command: "titled" },
   { protocol: "workdoc", command: "repo" },
   { protocol: "workdoc", command: "requested" },
+  { protocol: "project", command: "dependency" },
   { protocol: "schema", command: "created" },
   { protocol: "schema", command: "edited" },
   { protocol: "schema", command: "removed" },

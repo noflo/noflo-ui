@@ -320,7 +320,10 @@ describe("the workdoc view's governance surfaces (work document #9 updates #10, 
     const view = makeView();
     const { content } = makeDoc();
     content.delete(0, content.length);
-    content.insert(0, "See [[node:parser1]] and [[component:mylib/Parse]] <script>");
+    content.insert(
+      0,
+      "See [[node:parser1]] and [[component:mylib/Parse]] <script>",
+    );
     view.open({
       doc: {
         ...docState(),
@@ -342,7 +345,8 @@ describe("the workdoc view's governance surfaces (work document #9 updates #10, 
     assert.ok(links.length >= 3, "body and thread both linkify");
     const escaped = [...shadow.querySelectorAll(".body .doc-link")];
     assert.equal(
-      escaped.filter((/** @type {any} */ l) => l.dataset.kind === "node").length,
+      escaped.filter((/** @type {any} */ l) => l.dataset.kind === "node")
+        .length,
       1,
       "the node link renders",
     );

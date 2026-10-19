@@ -1,5 +1,5 @@
-import { emit } from "../events.js";
 import * as Y from "../../vendor/yjs.js";
+import { emit } from "../events.js";
 
 /**
  * @typedef {"subgraph" | "elementary" | "stub" | "inferred"} ComponentType

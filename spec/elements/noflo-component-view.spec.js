@@ -558,7 +558,10 @@ describe("the ladder's honesty in the headline (work document #29)", () => {
 
   it("a stub reads as a stub", async () => {
     const view = await viewWith("stub", false);
-    assert.match(view.shadowRoot.querySelector(".kind").textContent, /stub · sketch/);
+    assert.match(
+      view.shadowRoot.querySelector(".kind").textContent,
+      /stub · sketch/,
+    );
     view.remove();
   });
 });

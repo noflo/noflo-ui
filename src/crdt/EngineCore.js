@@ -444,6 +444,7 @@ export const INTENT_HANDLERS = {
   setWorkDocBody: intentSetWorkDocBody,
   setWorkDocTitle: intentSetWorkDocTitle,
   setWorkdocsRepo: intentSetWorkdocsRepo,
+  setProjectDependency: intentSetProjectDependency,
   setImplementationRequest: intentSetImplementationRequest,
   undo: intentUndo,
   redo: intentRedo,
@@ -1630,6 +1631,58 @@ function intentSetWorkdocsRepo(doc, payload) {
         protocol: "workdoc",
         command: "repo",
         payload: { url: trimmed || null },
+      },
+    ],
+  };
+}
+
+/**
+ * Declares (or clears) a component-library dependency of the project
+ * (work document #43): the module prefix component names use ("mylib" in
+ * "mylib/Parser") mapped to the npm spec the materialized package.json
+ * installs. The registry's signatures stay distinct — this is the
+ * install-time list, not the component catalog.
+ *
+ * @param {Y.Doc} doc
+ * @param {any} payload
+ * @returns {EngineResult}
+ */
+function intentSetProjectDependency(doc, payload) {
+  const { module: moduleName, spec } = payload ?? {};
+  if (
+    typeof moduleName !== "string" ||
+    !/^[a-z0-9][a-z0-9._-]*$/.test(moduleName)
+  ) {
+    return { accepted: false, echoes: [] };
+  }
+  const normalizedSpec =
+    spec === null || spec === undefined ? null : String(spec).trim();
+  if (normalizedSpec !== null && normalizedSpec.length === 0) {
+    return { accepted: false, echoes: [] };
+  }
+  if (normalizedSpec !== null && normalizedSpec.length > 200) {
+    return { accepted: false, echoes: [] };
+  }
+  doc.transact(() => {
+    const metadata = doc.getMap("metadata");
+    let dependencies = metadata.get("dependencies");
+    if (!dependencies) {
+      dependencies = new Y.Map();
+      metadata.set("dependencies", dependencies);
+    }
+    if (normalizedSpec === null) {
+      dependencies.delete(moduleName);
+    } else {
+      dependencies.set(moduleName, normalizedSpec);
+    }
+  });
+  return {
+    accepted: true,
+    echoes: [
+      {
+        protocol: "project",
+        command: "dependency",
+        payload: { module: moduleName, spec: normalizedSpec },
       },
     ],
   };

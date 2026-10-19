@@ -128,7 +128,7 @@ export class NofloComponentView extends HTMLElement {
    *   `{ state: "ok" | "deleted" | "broken", title, scope?, pendingScope?,
    *   boardId? }` — a plain snapshot of the pointer's resolution; the echo
    *   path refreshes it via setRequest.
-    * @param {boolean} [options.codeAuthored] Whether the code buffer
+   * @param {boolean} [options.codeAuthored] Whether the code buffer
    *   differs from the canonical scaffold (work document #29): a
    *   scaffold-only buffer renders the stub badge while the editor stays
    *   bound — authoring the scaffold is how the component becomes code.
@@ -668,9 +668,7 @@ export class NofloComponentView extends HTMLElement {
     stage.innerHTML = "";
     const scaleWrap = document.createElement("div");
     scaleWrap.className = "preview-scale";
-    const node = /** @type {any} */ (
-      document.createElement("noflo-node")
-    );
+    const node = /** @type {any} */ (document.createElement("noflo-node"));
     node.libraryManager = this._libraryManager;
     node.component = this._component;
     // The canvas's native size (the editor's `metadata.size || 80`):

@@ -86,12 +86,12 @@ import {
   wireRouteNaming,
 } from "./glass/text-prompt.js";
 import { validateMetadata } from "./library/forms/catalogs.js";
-import { codeScaffold } from "./library/scaffold.js";
 import {
   LibraryManager,
   syncLibraryFromRegistry,
 } from "./library/LibraryManager.js";
 import { routeName as displayRouteName } from "./library/routes.js";
+import { codeScaffold } from "./library/scaffold.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -1455,7 +1455,11 @@ async function openComponentView(componentName) {
   // stub while the editor stays bound for authoring
   const codeText =
     implementation === "code"
-      ? (mirrorDoc.getMap("components").get(componentName)?.get("code")?.toString() ?? "")
+      ? (mirrorDoc
+          .getMap("components")
+          .get(componentName)
+          ?.get("code")
+          ?.toString() ?? "")
       : null;
   const codeAuthored =
     codeText !== null && codeText !== codeScaffold(componentName);

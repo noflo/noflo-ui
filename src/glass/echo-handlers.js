@@ -280,6 +280,14 @@ export function createEchoHandlers(deps) {
         `[echo] workdoc/requested ${data.payload?.component ?? ""} → ${data.payload?.docId ?? "cleared"}`,
       );
     },
+    "project/dependency": (data) => {
+      // The project's component-library dependency list moved (work
+      // document #43): the Glass has no dependency editor yet — the
+      // materialized package.json renders from the mirror's metadata
+      console.debug(
+        `[echo] project/dependency ${data.payload?.module ?? ""} → ${data.payload?.spec ?? "cleared"}`,
+      );
+    },
     "workdoc/edited": (data) => {
       console.debug(`[echo] workdoc/edited ${data.payload?.id ?? ""}`);
     },

@@ -320,6 +320,7 @@ type UIWorkerMessage =
   | { type: 'INTENT'; command: 'setWorkDocBody'; payload: { docId: string; update: Uint8Array } }
   | { type: 'INTENT'; command: 'setWorkDocTitle'; payload: { docId: string; title: string } }
   | { type: 'INTENT'; command: 'setWorkdocsRepo'; payload: { url: string | null } }
+  | { type: 'INTENT'; command: 'setProjectDependency'; payload: { module: string; spec: string | null } }
   | { type: 'INTENT'; command: 'setSchema'; payload: { name: string; body: string } }
   | { type: 'INTENT'; command: 'updateSchema'; payload: { name: string; update: Uint8Array } }
   | { type: 'INTENT'; command: 'removeSchema'; payload: { name: string } }
@@ -497,6 +498,7 @@ type EngineUIMessage =
   | { protocol: 'workdoc'; command: 'titled'; payload: { id: string; title: string } }
   | { protocol: 'workdoc'; command: 'repo'; payload: { url: string | null } }
   | { protocol: 'workdoc'; command: 'requested'; payload: { component: string; docId: string | null } }
+  | { protocol: 'project'; command: 'dependency'; payload: { module: string; spec: string | null } }
   | { protocol: 'schema'; command: 'created' | 'edited' | 'removed'; payload: { name: string } }
   | { protocol: 'network'; command: 'flowtrace'; payload: NetworkFlowtraceChunk };
 
@@ -725,6 +727,9 @@ edited: number;
 updates: Y.Array<Y.Map<{ id: number, created: number, author: string, content: string }>>;
 links: Y.Array<string>;  // Entity ids the document references
 signature?: 'present';   // Provenance mirror: the board holds an Ed25519-signed copy (work document #9 update #13)
+```
+
+The metadata map carries the project's dependency declarations (work document #43): `metadata.get('dependencies')` is a `Y.Map<module, spec>` — the module prefix component names use (`mylib` in `mylib/Parser`) mapped to the npm spec the materialized `package.json` installs. Declared through the `setProjectDependency` intent; the materializer merges them over its noflo default.
 ```
 
 Governance is asymmetric by design: the CRDT is the loose, live editing surface for content; **rngit's stricter rules are authoritative for scope, authorship, and ids — materialization merges "theirs", always**. Local scope transitions ride `pendingScope` until the board confirms; reconciliation overwrites the governed fields and reverts unconfirmed local flips. Updates are append-only, one-to-one with rngit's comments; a deleted rngit document disappears (ids recycle, so references validate `created`/`title` before resolving). The materializer pushes as the document's author, or — failing that — as whoever runs the rngit server connection.
