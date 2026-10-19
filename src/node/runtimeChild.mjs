@@ -8,7 +8,7 @@
  */
 
 import process from "node:process";
-import { bootRuntime, shutdownRuntime } from "./runtimeBoot.js";
+import { bootRuntime, exportTrace, shutdownRuntime } from "./runtimeBoot.js";
 
 /** Parses `--key value` pairs; unknown keys are ignored loudly. */
 function parseArgs(argv) {
@@ -45,6 +45,9 @@ async function main() {
 
   const shutdown = () => {
     log("shutting down");
+    // The trace export goes through the parent: the sandbox denies the
+    // child's file writes, so the child serializes and the manager writes
+    exportTrace(booted, `${name}-${Date.now()}`, log);
     shutdownRuntime(booted);
     process.exit(0);
   };

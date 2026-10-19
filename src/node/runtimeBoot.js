@@ -20,6 +20,8 @@ import path from "node:path";
 import { FileStorageAdapter } from "@reticulum/node";
 import { RnsSyncServer } from "@reticulum/dacar/transport";
 import { GraphModel } from "@noflo/graph";
+import { Flowtrace } from "@noflo/noflo";
+import { assembleTraceFileFromRecorder } from "@noflo/fbp-protocol";
 import {
   assembleRuntime,
   bindReticulum,
@@ -163,13 +165,7 @@ async function loadDacarBinding(stateDir) {
  *   The mesh interface list; empty selects the shared-instance +
  *   AutoInterface defaults.
  * @param {(message: string) => void} [options.log] The boot's log channel.
- * @returns {Promise<{
- *   rns: any,
- *   identity: any,
- *   runtime: import("@noflo/runtime").AssembledRuntime,
- *   binding: import("@noflo/runtime").ReticulumBinding,
- *   dacar: ReturnType<typeof buildRuntimeDacar> | null,
- * }>}
+ * @returns {Promise<any>} The booted runtime stack.
  */
 export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", interfaces = [], log = () => {} }) {
   // The runtime's own long-term identity — persisted under the runtime
@@ -221,10 +217,18 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
     models.values().next().value ?? /** @type {any} */ (new GraphModel());
   const catalog = await loadCatalog(folder);
 
+  // The trace recorder (work document #43's .flowtrace/ convention): every
+  // network the host builds records into it — the export goes through the
+  // parent (the sandbox denies the child's file writes)
+  const flowtrace = new Flowtrace({
+    runtimeMetadata: { name, type: "noflo-runtime" },
+  });
+
   const runtime = await assembleRuntime({
     graph,
     catalog,
     capabilityPolicy,
+    flowtrace,
   });
   const binding = await bindReticulum({
     runtime,
@@ -243,7 +247,47 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
   // The machine-ready line the manager awaits
   log(`ready destinationHash=${destinationHash}`);
 
-  return { rns, identity, runtime, binding, dacar, syncServer, destinationHash };
+  return { rns, identity, runtime, binding, dacar, syncServer, destinationHash, flowtrace, name };
+}
+
+/**
+ * Exports the recorded trace to the parent: one structured stdout line
+ * carrying the JSON state (always serializes) and the binary stream
+ * base64-encoded (best-effort, per work document #43 update #19's
+ * dual-dump convention modeled on the noflo-jekyll CI). The parent's
+ * manager parses the line and writes the files — the sandbox denies the
+ * child's own file writes.
+ *
+ * @param {{ flowtrace: any, name: string }} booted
+ * @param {string} runName The run identifier (e.g. the network's name or
+ *   a timestamp).
+ */
+export function exportTrace(
+  booted,
+  runName,
+  /** @type {(message: string) => void} */ log = (/** @type {string} */ _m) => {},
+) {
+  const state = booted?.flowtrace?.toJSON?.();
+  if (!state) return;
+  /** @type {{ kind: string, run: string, json: any, binary?: string }} */
+  const payload = {
+    kind: "flowtrace-export",
+    run: runName || booted.name || "runtime",
+    json: state,
+  };
+  // The binary is best-effort: a payload the msgpack encoder cannot
+  // carry must not take the artifact down with it (the noflo-jekyll
+  // dual-dump convention)
+  try {
+    const binary = assembleTraceFileFromRecorder(state);
+    payload.binary = Buffer.from(binary).toString("base64");
+  } catch (error) {
+    const message =
+      /** @type {any} */ (error)?.message ?? String(error ?? "unknown");
+    log(`trace binary export failed: ${message}`);
+  }
+  // The single-line export: the manager's pipe reader collects it
+  console.log(`runtime  flowtrace-export ${JSON.stringify(payload)}`);
 }
 
 /**

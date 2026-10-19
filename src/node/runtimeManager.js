@@ -16,8 +16,8 @@
  */
 
 import { spawn } from "node:child_process";
+import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import process from "node:process";
-import { mkdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { FileStorageAdapter, LocalClientInterface } from "@reticulum/node";
@@ -125,6 +125,34 @@ export function createRuntimeManager({
         buffer = buffer.slice(index + 1);
         if (line.length > 0) {
           log(line);
+          // The flowtrace export (work document #43's .flowtrace/
+          // convention): the child serializes its recorder state; the
+          // manager writes the files — the parent-provisions shape
+          if (line.includes("flowtrace-export ")) {
+            try {
+              const payload = JSON.parse(
+                line.slice(line.indexOf("flowtrace-export ") + "flowtrace-export ".length),
+              );
+              const traceDir = path.join(folder, ".flowtrace");
+              mkdirSync(traceDir, { recursive: true });
+              if (payload.run && payload.json) {
+                writeFileSync(
+                  path.join(traceDir, `${payload.run}.json`),
+                  JSON.stringify(payload.json),
+                );
+                if (payload.binary) {
+                  writeFileSync(
+                    path.join(traceDir, `${payload.run}.trace`),
+                    Buffer.from(payload.binary, "base64"),
+                  );
+                }
+              }
+            } catch (error) {
+              const message =
+                /** @type {any} */ (error)?.message ?? String(error ?? "unknown");
+              log(`trace export write failed: ${message}`);
+            }
+          }
           if (/ready destinationHash=/.test(line) && readyResolve) {
             readyResolve();
             readyResolve = null;

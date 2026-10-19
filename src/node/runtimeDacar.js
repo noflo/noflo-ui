@@ -105,7 +105,9 @@ export function buildRuntimeDacar(nodeConfig) {
  * @param {import("@reticulum/dacar").Engine} options.engine
  * @param {string} options.projectResource The resource string the grants
  *   carry (`noflo-ui:project:<uuid>`, the app's projectResource).
- * @returns {DacarCapabilityPolicy}
+ * @returns {(identityHash: string, context?: any) => Promise<number>} The
+ *   capability policy as the runtime-server consumes it — a function
+ *   resolving one peer's mask.
  */
 export function runtimeCapabilityPolicy({ engine, projectResource }) {
   const policy = new DacarCapabilityPolicy({
@@ -116,5 +118,6 @@ export function runtimeCapabilityPolicy({ engine, projectResource }) {
   // The runtime-server's capabilityPolicy is a FUNCTION
   // (identityHash, context) → mask — the policy object's resolve is the
   // implementation
-  return (identityHash, context) => policy.resolve(identityHash, context);
+  return (/** @type {string} */ identityHash, /** @type {any} */ context) =>
+    policy.resolve(identityHash, context);
 }
