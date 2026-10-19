@@ -17,7 +17,7 @@
 
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { FileStorageAdapter } from "@reticulum/node";
 import { RnsSyncServer } from "@reticulum/dacar/transport";
 import { GraphModel } from "@noflo/graph";
@@ -35,6 +35,13 @@ import {
   runtimeCapabilityPolicy,
 } from "./runtimeDacar.js";
 import { attachInterfaces } from "./interfaces.js";
+
+/** The app root: the ecosystem's @noflo/* library packages live under it. */
+const APP_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+);
 
 /**
  * Loads the project's graphs from the materialized folder and builds their
@@ -258,15 +265,43 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
     registry: {
       list: () => componentCatalog,
       get: async (/** @type {string} */ componentName) => {
-        const [mod, short] = componentName.split("/");
-        if (!mod || !short) return undefined;
+        // Project components first, then library components
+        if (componentCatalog[componentName]) return componentCatalog[componentName];
+        const [lib, short] = componentName.split("/");
+        if (!lib || !short) return undefined;
+        // The library's component: the app root's node_modules
         const modulePath = pathToFileURL(
-          path.join(folder, "components", mod, `${short}.js`),
+          path.join(APP_ROOT, "node_modules", `@noflo-${lib}`.replace("@noflo-@noflo", "@noflo"), "components", `${short}.js`),
         ).href;
         return import(modulePath).catch(() => undefined);
       },
     },
   });
+
+  // Library component loading: the app root's node_modules carries the
+  // ecosystem's @noflo/* packages — the graphs reference them and the
+  // network build needs them resolved. Packages without a components/
+  // directory (infrastructure: graph, runtime, …) are skipped naturally
+  const libraryPackages = await readdir(
+    path.join(APP_ROOT, "node_modules", "@noflo"),
+  ).catch(() => []);
+  for (const pkg of libraryPackages) {
+    const componentsDir = path.join(
+      APP_ROOT, "node_modules", "@noflo", pkg, "components",
+    );
+    const files = await readdir(componentsDir).catch(() => []);
+    for (const file of files.filter((f) => f.endsWith(".js"))) {
+      const fullName = `${pkg}/${file.slice(0, -3)}`;
+      const modulePath = pathToFileURL(path.join(componentsDir, file)).href;
+      try {
+        const module = await import(modulePath);
+        componentCatalog[fullName] = module;
+      } catch {
+        // A library component that doesn't import cleanly is skipped —
+        // the network build surfaces the gap
+      }
+    }
+  }
 
   // The trace recorder (work document #43's .flowtrace/ convention): every
   // network the host builds records into it — the export goes through the
@@ -281,6 +316,10 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
     componentLoader: loader,
     capabilityPolicy,
     flowtrace,
+    // The network builds when the client sends 0x40 RUN_CTRL START —
+    // the runtime is a deployment target, not a pre-baked program. The
+    // graph loads and the registry serves; the network comes alive when
+    // the user (or an agent) starts it
   });
   const binding = await bindReticulum({
     runtime,
