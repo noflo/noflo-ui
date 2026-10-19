@@ -529,8 +529,6 @@ export class NofloComponentView extends HTMLElement {
           position: sticky;
           top: 56px;
           padding: 12px;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: 6px;
         }
         @media (min-width: 760px) {
           .preview-pane { display: block; }
