@@ -8,6 +8,7 @@
 import { yJedison } from "y-jedison";
 import * as Y from "yjs";
 import {
+  getComponentSignature,
   getSchema,
   getSchemas,
   REGISTRY_MAP,
@@ -745,13 +746,6 @@ function resolveActiveGraph() {
 }
 
 /**
- * A default code scaffold for the "Implement in code" action (work document
- * #29). The runtime language matrix is owned by the runtime work; stub mode
- * scaffolds JavaScript.
- *
- * @param {string} componentName
- * @returns {string}
- */
 /**
  * The component signature editor (work document #29): the adopted
  * modal + JSON-form flow from the editor surface, now with the primary
@@ -1021,7 +1015,7 @@ async function render() {
           payload: {
             component,
             language: "javascript",
-            scaffold: codeScaffold(component),
+            scaffold: scaffoldFor(component)?.code ?? "",
           },
         });
         // The scaffold lands through the intent path; the code area binds
@@ -1380,6 +1374,23 @@ function refreshProjectExplorer() {
 }
 
 /**
+ * The scaffold through the project runtime's flavor (work document #66):
+ * rendered over the component's declared SIGNATURE AS-IS — the registry's
+ * own shape passes to the template untouched — so the ladder-honesty
+ * derivation and the "Implement in code" action agree on what the
+ * unedited scaffold is.
+ *
+ * @param {string} componentName
+ * @returns {{ code: string, language: string } | null}
+ */
+function scaffoldFor(componentName) {
+  const signature = /** @type {any} */ (
+    getComponentSignature(mirrorDoc, componentName)?.toJSON?.() ?? {}
+  );
+  return codeScaffold(componentName, { signature });
+}
+
+/**
  * The plain snapshot of an implementation-request resolution the component
  * screen renders (work document #9 step D): the Glass reads the mirror, the
  * view never touches CRDT types.
@@ -1462,7 +1473,7 @@ async function openComponentView(componentName) {
           ?.toString() ?? "")
       : null;
   const codeAuthored =
-    codeText !== null && codeText !== codeScaffold(componentName);
+    codeText !== null && codeText !== scaffoldFor(componentName)?.code;
   const signature = {
     name: componentName,
     icon: plain.icon || "gear",
