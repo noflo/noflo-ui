@@ -54,6 +54,7 @@ import { claimInstructions, createClaimCode } from "./claim.js";
 const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 
 import { wireProjectFolder } from "./projectFolder.js";
+import { createRuntimeManager } from "./runtimeManager.js";
 import { startEngine } from "../worker/engine.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
@@ -452,6 +453,31 @@ async function main() {
       folder,
     });
 
+    // The on-demand runtime manager (work document #47 item 3): reads the
+    // project's Dacar binding from the mesh storage — the same state the
+    // engine's MeshSync wrote — and passes it to the sandboxed child
+    // through the parent-provisions shape
+    const runtimeManager = createRuntimeManager({
+      folder,
+      stateDir: path.join(stateDir, "runtime", projectId),
+      name: `noflo-runtime ${projectId.slice(0, 8)}`,
+      dacar: await meshStorage
+        .get(`dacar-node:${projectId}`)
+        .then((stored) =>
+          stored && typeof stored.anchorHash === "string" &&
+          typeof stored.anchorPubkey === "string" && typeof stored.salt === "string"
+            ? {
+                anchorHashHex: stored.anchorHash,
+                anchorPubkeyHex: stored.anchorPubkey,
+                salt: stored.salt,
+                projectId,
+              }
+            : null,
+        )
+        .catch(() => null),
+      log: (message) => console.log(`runtime  ${message}`),
+    });
+
     return {
       engine,
       persistence,
@@ -459,6 +485,7 @@ async function main() {
       materializer: projectFolder.materializer,
       watcher,
       manager,
+      runtimeManager,
       folder,
       projectId,
     };
