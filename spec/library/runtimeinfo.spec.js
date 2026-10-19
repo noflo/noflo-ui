@@ -76,3 +76,42 @@ describe("the runtime flavor registry (work document #66)", () => {
     );
   });
 });
+
+describe("the language registry (work document #66)", () => {
+  it("maps the language ids to their CodeMirror dialects", async () => {
+    const { codeMirrorExtension } = await import(
+      "../../src/library/languages.js"
+    );
+    const cm = {
+      javascript: (options) => ({ javascript: options ?? true }),
+      markdown: () => ({ markdown: true }),
+    };
+    assert.deepEqual(codeMirrorExtension(cm, "javascript"), {
+      javascript: true,
+    });
+    assert.deepEqual(codeMirrorExtension(cm, "typescript"), {
+      javascript: { typescript: true },
+    }, "the TypeScript dialect rides the vendored lang-javascript");
+    assert.deepEqual(codeMirrorExtension(cm, "markdown"), { markdown: true });
+    assert.equal(codeMirrorExtension(cm, "cpp"), null, "unvendored languages stay plain");
+  });
+
+  it("the flavor's language entries carry the materialization extensions", async () => {
+    const { fileExtensionFor } = await import(
+      "../../src/library/languages.js"
+    );
+    const noflo = getFlavor("noflo");
+    assert.equal(fileExtensionFor(noflo, "javascript"), "js");
+    assert.equal(fileExtensionFor(noflo, "typescript"), "ts");
+    assert.equal(fileExtensionFor(noflo, "unknown"), "js", "the preferred language's extension is the fallback");
+  });
+
+  it("the scaffold renders the flavor's TypeScript template", () => {
+    const scaffold = codeScaffold("mylib/Parse", {
+      signature: SIGNATURE,
+      language: "typescript",
+    });
+    assert.ok(scaffold, "the noflo flavor carries a typescript template");
+    assert.equal(scaffold.language, "typescript");
+  });
+});

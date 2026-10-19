@@ -178,3 +178,28 @@ describe("the materialized package.json (work document #43)", () => {
     );
   });
 });
+
+describe("language-aware materialization (work document #66)", () => {
+  it("a TypeScript component materializes as .ts", () => {
+    const doc = createProjectDoc("p");
+    ensureComponent(doc, "mylib/TypedThing", { name: "mylib/TypedThing" });
+    const component = doc.getMap("components").get("mylib/TypedThing");
+    component.get("metadata").set("implementation", {
+      kind: "code",
+      language: "typescript",
+    });
+    setComponentCode(component, "export const f = (x: number) => x;\n");
+    setComponentSignature(doc, "mylib/TypedThing", { inports: [], outports: [] });
+    const tree = docToFileTree(doc);
+    assert.ok(tree["components/mylib/TypedThing.ts"], "the TypeScript extension");
+    assert.equal(tree["components/mylib/TypedThing.js"], undefined);
+  });
+
+  it("a JavaScript component still materializes as .js", () => {
+    const doc = createProjectDoc("p");
+    ensureComponent(doc, "mylib/PlainThing", { name: "mylib/PlainThing" });
+    setComponentCode(doc.getMap("components").get("mylib/PlainThing"), "export const f = (x) => x;\n");
+    const tree = docToFileTree(doc);
+    assert.ok(tree["components/mylib/PlainThing.js"], "the unchanged output");
+  });
+});

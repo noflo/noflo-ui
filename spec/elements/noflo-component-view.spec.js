@@ -565,3 +565,58 @@ describe("the ladder's honesty in the headline (work document #29)", () => {
     view.remove();
   });
 });
+
+describe("the per-language implementation buttons (work document #66)", () => {
+  it("the action set renders one button per supported language", async () => {
+    const view = /** @type {any} */ (
+      document.createElement("noflo-component-view")
+    );
+    document.body.appendChild(view);
+    await view.open({
+      component: "mylib/Parser",
+      implementation: "stub",
+      formSchema: buildSignatureSchema([]),
+      signature: { inports: [], outports: [] },
+      languages: [
+        { id: "javascript", label: "JavaScript", ext: "js" },
+        { id: "typescript", label: "TypeScript", ext: "ts" },
+      ],
+    });
+    const buttons = [
+      ...view.shadowRoot.querySelectorAll("[data-action='implement-code']"),
+    ];
+    assert.equal(buttons.length, 2, "one button per language");
+    assert.deepEqual(
+      buttons.map((/** @type {any} */ b) => b.getAttribute("data-language")),
+      ["javascript", "typescript"],
+    );
+    assert.match(
+      buttons[1].textContent,
+      /Implement in TypeScript/,
+    );
+    view.remove();
+  });
+
+  it("the button's click carries the chosen language in the event detail", async () => {
+    const view = /** @type {any} */ (
+      document.createElement("noflo-component-view")
+    );
+    document.body.appendChild(view);
+    await view.open({
+      component: "mylib/Parser",
+      implementation: "stub",
+      formSchema: buildSignatureSchema([]),
+      signature: { inports: [], outports: [] },
+      languages: [{ id: "typescript", label: "TypeScript", ext: "ts" }],
+    });
+    const events = /** @type {any[]} */ ([]);
+    view.addEventListener("component-action", (/** @type {any} */ e) => {
+      events.push(e.detail);
+    });
+    /** @type {any} */
+    (view.shadowRoot.querySelector("[data-action='implement-code']")).click();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].language, "typescript");
+    view.remove();
+  });
+});

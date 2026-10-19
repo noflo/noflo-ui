@@ -88,7 +88,13 @@ export const nofloFlavor = {
     { id: "typescript", label: "TypeScript", ext: "ts" },
   ],
   preferredLanguage: "javascript",
-  templates: { javascript: javascriptTemplate },
+  templates: {
+    javascript: javascriptTemplate,
+    // The TypeScript scaffold shares the Process API idiom — JS is valid
+    // TS — and the language drives the editor's dialect and the
+    // materialized extension
+    typescript: javascriptTemplate,
+  },
   materialization: {
     manifest: "package.json",
     dependencies: { "@noflo/noflo": "^2.0.0-alpha.12" },

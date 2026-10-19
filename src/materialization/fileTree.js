@@ -24,6 +24,8 @@ import {
 import { projectGraph } from "../glass/projectView.js";
 import { canonicalGraph, serializeGraph } from "./canonical.js";
 import { specSuiteToYaml } from "./specYaml.js";
+import { fileExtensionFor } from "../library/languages.js";
+import { getFlavor } from "../library/runtimeinfo/index.js";
 
 /**
  * The fs adapter contract: write one file. Implemented over Node
@@ -57,8 +59,8 @@ function graphPath(graphId) {
  * @param {string} componentName
  * @returns {string}
  */
-function componentCodePath(componentName) {
-  return `components/${componentName}.js`;
+function componentCodePath(componentName, /** @type {any} */ ext) {
+  return `components/${componentName}.${ext}`;
 }
 
 /**
@@ -154,11 +156,21 @@ export function docToFileTree(doc, options = {}) {
   const names = [
     ...new Set([...components.keys(), ...registry.keys()].sort()),
   ].filter((name) => !materializedGraphIds.has(name));
+  // The project's flavor (work document #66): the materialization shape —
+  // extensions, manifest — reads from the descriptor; the NoFlo output is
+  // unchanged
+  const flavor = getFlavor(String(metadata.runtime ?? "noflo"));
+  const codeExt = (/** @type {any} */ component) => {
+    const language = /** @type {any} */ (
+      component?.get("metadata")?.get("implementation")
+    )?.language;
+    return fileExtensionFor(flavor, language, "js");
+  };
   for (const name of names) {
     const component = components.get(name);
     const code = component ? getComponentCode(component) : null;
     if (code) {
-      tree[componentCodePath(name)] = code.toString();
+      tree[componentCodePath(name, codeExt(component))] = code.toString();
     }
     const signature = getComponentSignature(doc, name)?.toJSON?.() ?? {};
     tree[componentSignaturePath(name)] =

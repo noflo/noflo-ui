@@ -18,6 +18,7 @@ import { yJedison } from "y-jedison";
 import { REGISTRY_MAP } from "../crdt/ProjectDoc.js";
 import { emit } from "../events.js";
 import { codeEditorTheme } from "./noflo-code-editor.js";
+import { codeMirrorExtension } from "../library/languages.js";
 import { FlowNode } from "./noflo-node.js";
 
 /** The styles for the signature form, fetched once (the mesh settings'
@@ -132,6 +133,9 @@ export class NofloComponentView extends HTMLElement {
    *   differs from the canonical scaffold (work document #29): a
    *   scaffold-only buffer renders the stub badge while the editor stays
    *   bound — authoring the scaffold is how the component becomes code.
+   * @param {Array<{ id: string, label: string, ext: string }> | null} [options.languages]
+   *   The flavor's supported languages (work document #66): the action
+   *   set renders one implementation button per language.
    */
   async open({
     component,
@@ -146,6 +150,7 @@ export class NofloComponentView extends HTMLElement {
     libraryManager = null,
     depictionSource = null,
     codeAuthored = false,
+    languages = null,
   }) {
     this._component = component;
     this._implementation = implementation;
@@ -156,6 +161,10 @@ export class NofloComponentView extends HTMLElement {
     this._libraryManager = libraryManager;
     this._depictionSource = depictionSource;
     this._codeAuthored = codeAuthored;
+    /** @type {Array<{ id: string, label: string, ext: string }> | null} The
+     * flavor's supported languages (work document #66): the action set
+     * renders one implementation button per language. */
+    this._languages = languages;
     this._opened = true;
     this.removeAttribute("hidden");
     await this.render();
@@ -371,7 +380,8 @@ export class NofloComponentView extends HTMLElement {
         // pitfall)
         ...codeEditorTheme(this._cm),
         this._cm.basicSetup,
-        this._cm.javascript(),
+        codeMirrorExtension(this._cm, this._language) ??
+          this._cm.javascript(),
         ...plugins,
       ],
       parent: host,
@@ -418,8 +428,12 @@ export class NofloComponentView extends HTMLElement {
       );
     }
     if (this._implementation === "stub") {
+      for (const language of this._languages ?? []) {
+        actions.push(
+          `<button class="secondary" data-action="implement-code" data-language="${language.id}" title="Scaffold the implementation in ${language.label}">Implement in ${language.label}</button>`,
+        );
+      }
       actions.push(
-        `<button class="secondary" data-action="implement-code" title="Scaffold the code implementation">Implement in code</button>`,
         `<button class="secondary" data-action="implement-graph" title="Implement as a subgraph of the current graph">Implement as graph</button>`,
       );
     }
@@ -704,7 +718,12 @@ export class NofloComponentView extends HTMLElement {
             return;
           }
         }
-        emitAction(action ?? "");
+        const language = button.getAttribute("data-language");
+        emit(this, "component-action", {
+          action: action ?? "",
+          component: this._component,
+          ...(language ? { language } : {}),
+        });
       });
     }
   }

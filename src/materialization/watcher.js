@@ -172,7 +172,10 @@ export function createMaterializer(options) {
       return;
     }
 
-    if (path.startsWith("components/") && path.endsWith(".js")) {
+    if (
+      path.startsWith("components/") &&
+      (path.endsWith(".js") || path.endsWith(".ts"))
+    ) {
       const componentName = path.slice("components/".length, -".js".length);
       if (content === null) {
         // Component removal is an editor act (the signature, the code,

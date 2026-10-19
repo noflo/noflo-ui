@@ -1,5 +1,6 @@
 // @ts-nocheck
 import * as Y from "../../vendor/yjs.js";
+import { codeMirrorExtension } from "../library/languages.js";
 /**
  * NofloCodeEditor Web Component (work document #29): a modal-hosted
  * CodeMirror editor bound to a component's collaborative code buffer.
@@ -317,9 +318,8 @@ export class NofloCodeEditor extends HTMLElement {
         // default highlighter that would otherwise mask ours
         ...codeEditorTheme(extensions),
         extensions.basicSetup,
-        language === "markdown"
-          ? extensions.markdown()
-          : extensions.javascript(),
+        codeMirrorExtension(extensions, language) ??
+        extensions.javascript(),
         ...plugins,
       ],
       parent: this.shadowRoot.querySelector(".editor"),

@@ -312,7 +312,7 @@ describe("browser smoke: the code editor journey (work document #56)", {
     await editItem.click();
     const implement = page
       .locator("noflo-component-view")
-      .locator("text=Implement in code")
+      .locator("text=Implement in JavaScript")
       .first();
     await implement.waitFor({ timeout: 10_000 });
     await implement.click();

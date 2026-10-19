@@ -93,6 +93,7 @@ import {
 } from "./library/LibraryManager.js";
 import { routeName as displayRouteName } from "./library/routes.js";
 import { codeScaffold } from "./library/scaffold.js";
+import { getFlavor } from "./library/runtimeinfo/index.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -1009,13 +1010,14 @@ async function render() {
         return;
       }
       if (action === "implement-code") {
+        const language = /** @type {any} */ (e.detail).language ?? "javascript";
         sendIntent({
           type: "INTENT",
           command: "implementInCode",
           payload: {
             component,
-            language: "javascript",
-            scaffold: scaffoldFor(component)?.code ?? "",
+            language,
+            scaffold: scaffoldFor(component, language)?.code ?? "",
           },
         });
         // The scaffold lands through the intent path; the code area binds
@@ -1040,7 +1042,7 @@ async function render() {
             resolve(map.get(component).get("code"));
           }
         });
-        if (ytext) componentView?.bindCode(ytext, "javascript");
+        if (ytext) componentView?.bindCode(ytext, language);
         return;
       }
       if (action === "request-implementation") {
@@ -1383,11 +1385,21 @@ function refreshProjectExplorer() {
  * @param {string} componentName
  * @returns {{ code: string, language: string } | null}
  */
-function scaffoldFor(componentName) {
+function scaffoldFor(
+  componentName,
+  /** @type {string | undefined} */ language = undefined,
+) {
   const signature = /** @type {any} */ (
     getComponentSignature(mirrorDoc, componentName)?.toJSON?.() ?? {}
   );
-  return codeScaffold(componentName, { signature });
+  const runtime = String(
+    mirrorDoc?.getMap("metadata").get("runtime") ?? "noflo",
+  );
+  return codeScaffold(componentName, {
+    signature,
+    runtime,
+    language,
+  });
 }
 
 /**
@@ -1513,6 +1525,11 @@ async function openComponentView(componentName) {
     cm: codeMirrorSurface,
     codeLanguage: implementationMeta?.language ?? "javascript",
     codeAuthored,
+    // The flavor's supported languages (work document #66): the action
+    // set renders one implementation button per language
+    languages: getFlavor(
+      String(mirrorDoc.getMap("metadata").get("runtime") ?? "noflo"),
+    ).languages,
     // The side view (work document #29): the same FlowNode the canvas
     // renders, fed by the same library manager and subgraph projection
     libraryManager,
