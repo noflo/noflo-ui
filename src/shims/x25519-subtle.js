@@ -133,10 +133,12 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         const extractable = args[1] === true;
         const usages = /** @type {string[]} */ (args[2] ?? []);
         // CryptoKeyPair shape: callers destructure privateKey/publicKey
+        const algorithm = { name: "X25519" };
         return Promise.resolve({
           privateKey: {
             [X25519_KEY]: true,
             type: "private",
+            algorithm,
             publicBytes: publicKey,
             privateBytes: privateScalar,
             extractable,
@@ -145,6 +147,7 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
           publicKey: {
             [X25519_KEY]: true,
             type: "public",
+            algorithm,
             publicBytes: publicKey,
             privateBytes: null,
             extractable,
@@ -177,6 +180,7 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         return Promise.resolve({
           [X25519_KEY]: true,
           type,
+          algorithm: { name: "X25519" },
           publicBytes,
           privateBytes,
           extractable,
@@ -191,6 +195,18 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
             "key is not extractable",
             "InvalidAccessError",
           );
+        }
+        // "jwk" returns a proper JWK object: the identity's persistence
+        // path (work document #21's reload round-trip) reads `jwk.x` —
+        // raw bytes here made the reload read undefined.length
+        if (args[0] === "jwk") {
+          return Promise.resolve({
+            kty: "OKP",
+            crv: "X25519",
+            x: bytesToBase64Url(key.publicBytes),
+            key_ops: [...key.usages],
+            ext: key.extractable,
+          });
         }
         const bytes = args[0] === "pkcs8" ? key.privateBytes : key.publicBytes;
         if (!bytes) {
@@ -277,5 +293,21 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         return typeof value === "function" ? value.bind(target) : value;
       },
     })
+  );
+}
+
+/**
+ * Encodes bytes as base64url (RFC 4648 §5, no padding) — the JWK form of
+ * the polyfill's exported keys.
+ *
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll(
+    "=",
+    "",
   );
 }
