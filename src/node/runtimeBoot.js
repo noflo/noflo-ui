@@ -17,9 +17,11 @@
 
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { FileStorageAdapter } from "@reticulum/node";
 import { RnsSyncServer } from "@reticulum/dacar/transport";
 import { GraphModel } from "@noflo/graph";
+import { ComponentLoader } from "@noflo/noflo";
 import { Flowtrace } from "@noflo/noflo";
 import { assembleTraceFileFromRecorder } from "@noflo/fbp-protocol";
 import {
@@ -217,6 +219,55 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
     models.values().next().value ?? /** @type {any} */ (new GraphModel());
   const catalog = await loadCatalog(folder);
 
+  // The component loader: the project's components dynamically imported
+  // from the materialized directory and registered through the
+  // application-supplied registry — the 2.x loader is application-driven,
+  // no directory scanning (work document #6). The catalog populates
+  // before the loader reads it at construction
+  const componentCatalog = /** @type {Record<string, any>} */ ({});
+  const componentModules = await readdir(path.join(folder, "components"))
+    .then((dirs) =>
+      Promise.all(
+        dirs.map(async (mod) => {
+          const modDir = path.join(folder, "components", mod);
+          const files = await readdir(modDir).catch(() => []);
+          return files
+            .filter((f) => f.endsWith(".js"))
+            .map((f) => `${mod}/${f.slice(0, -3)}`);
+        }),
+      ),
+    )
+    .then((lists) => lists.flat())
+    .catch(() => []);
+  for (const fullName of componentModules) {
+    const [mod, short] = fullName.split("/");
+    const modulePath = pathToFileURL(
+      path.join(folder, "components", mod, `${short}.js`),
+    ).href;
+    try {
+      const module = await import(modulePath);
+      componentCatalog[fullName] = module;
+    } catch (error) {
+      const message =
+        /** @type {any} */ (error)?.message ?? String(error ?? "unknown");
+      log(`component ${fullName} import failed: ${message}`);
+    }
+  }
+
+  const loader = new ComponentLoader({
+    registry: {
+      list: () => componentCatalog,
+      get: async (/** @type {string} */ componentName) => {
+        const [mod, short] = componentName.split("/");
+        if (!mod || !short) return undefined;
+        const modulePath = pathToFileURL(
+          path.join(folder, "components", mod, `${short}.js`),
+        ).href;
+        return import(modulePath).catch(() => undefined);
+      },
+    },
+  });
+
   // The trace recorder (work document #43's .flowtrace/ convention): every
   // network the host builds records into it — the export goes through the
   // parent (the sandbox denies the child's file writes)
@@ -227,6 +278,7 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
   const runtime = await assembleRuntime({
     graph,
     catalog,
+    componentLoader: loader,
     capabilityPolicy,
     flowtrace,
   });
