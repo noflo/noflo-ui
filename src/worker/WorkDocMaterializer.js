@@ -295,7 +295,6 @@ export class WorkDocMaterializer {
       // the thread, attributed to their board authors
       const boardComments = boardDoc.comments ?? [];
       const localUpdates = plain.updates ?? [];
-      const watermark = plain.boardComments ?? 0;
       const localMaterialized = plain.boardComments ?? 0;
       if (boardComments.length > localMaterialized) {
         const updates = record.get("updates");
@@ -328,9 +327,6 @@ export class WorkDocMaterializer {
 
     // Deletions: a local record whose board document vanished disappears
     // (work document #9 update #5 — the number recycles, absence is final)
-    const boardIds = new Set(
-      boardDocs.map((/** @type {any} */ d) => d.meta?.author && d.id),
-    );
     for (const [docId, record] of workdocs.entries()) {
       const boardId = record.toJSON().boardId;
       if (!boardId) continue;
