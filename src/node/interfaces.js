@@ -43,6 +43,30 @@ export async function attachInterfaces(rns, interfaces = []) {
   }
 
   for (const iface of list) {
+    // One unavailable interface never kills the boot: the shared instance
+    // may not run, the LAN may already hold the AutoInterface port — the
+    // failure logs and the loop continues with what works. The mesh's
+    // usable-ness is the union of what attached.
+    try {
+      await attachInterface(rns, iface);
+    } catch (error) {
+      const message =
+        /** @type {any} */ (error)?.message ?? String(error ?? "unknown");
+      console.warn(
+        `Mesh interface type ${iface.type} failed to attach: ${message}; skipped`,
+      );
+    }
+  }
+}
+
+/**
+ * Attaches ONE interface entry to the instance.
+ *
+ * @param {any} rns The shared Reticulum instance.
+ * @param {{ type: string, options?: any, enabled?: boolean }} iface
+ * @returns {Promise<void>}
+ */
+async function attachInterface(rns, iface) {
     const options = iface.options ?? {};
     if (iface.type === "websocket") {
       const client = new WebSocketClientInterface(options);
@@ -91,10 +115,9 @@ export async function attachInterfaces(rns, interfaces = []) {
       server.addEventListener("connection", (/** @type {any} */ event) => {
         rns.addInterface(event.detail, true);
       });
-    } else {
-      console.warn(
-        `Mesh interface type ${iface.type} is not available on Node; skipped`,
-      );
-    }
+  } else {
+    console.warn(
+      `Mesh interface type ${iface.type} is not available on Node; skipped`,
+    );
   }
 }

@@ -154,6 +154,13 @@ export function createRuntimeManager({
       await Identity.loadOrGenerate(new FileStorageAdapter(realState));
       const realFolder = realPathFor(path.resolve(folder));
       const appRoot = realpathSync(APP_ROOT);
+      // The shared rnsd instance's discovery reads the user's Reticulum
+      // config (share_instance + endpoint) and connects to its socket or
+      // port — the child joins the mesh through that relay when it runs
+      // (work document #47 scope item 8's zero-config default)
+      const reticulumDir = process.env.HOME
+        ? path.join(process.env.HOME, ".reticulum")
+        : null;
       const readyPromise = new Promise((resolve, reject) => {
         readyResolve = resolve;
         setTimeout(() => {
@@ -171,6 +178,7 @@ export function createRuntimeManager({
           `--allow-fs-read=${appRoot}`,
           `--allow-fs-read=${realState}`,
           `--allow-fs-write=${realState}`,
+          ...(reticulumDir ? [`--allow-fs-read=${reticulumDir}`] : []),
           "--allow-net",
           CHILD_PATH,
           "--folder",

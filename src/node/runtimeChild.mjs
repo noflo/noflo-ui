@@ -24,6 +24,8 @@
  */
 
 import process from "node:process";
+import { readFile, readdir } from "node:fs/promises";
+import path from "node:path";
 import { FileStorageAdapter } from "@reticulum/node";
 import { GraphModel } from "@noflo/graph";
 import {
@@ -31,7 +33,102 @@ import {
   bindReticulum,
 } from "@noflo/runtime";
 import { Identity, Reticulum } from "../../vendor/reticulum-core.js";
+import { toEntityCanonical } from "../materialization/entityCanonical.js";
 import { attachInterfaces } from "./interfaces.js";
+
+/**
+ * Loads the project's graphs from the materialized folder and builds their
+ * live models: each `graphs/<id>.graph.json` converts from the interchange
+ * canonical into the entity-model form `GraphModel.fromCanonical` consumes
+ * (the canonical-forms bridge, work document #59's found gap).
+ *
+ * @param {string} folder The project's working directory.
+ * @returns {Promise<Map<string, import("@noflo/graph").GraphModel>>} The
+ *   graph id to its live model.
+ */
+async function loadGraphs(folder) {
+  const graphsDir = path.join(folder, "graphs");
+  const models = new Map();
+  const entries = await readdir(graphsDir).catch(() => []);
+  for (const file of entries.filter((f) => f.endsWith(".graph.json"))) {
+    const graphId = file.slice(0, -".graph.json".length);
+    const text = await readFile(path.join(graphsDir, file), "utf8");
+    const interchange = JSON.parse(text);
+    models.set(
+      graphId,
+      GraphModel.fromCanonical(toEntityCanonical(interchange)),
+    );
+  }
+  return models;
+}
+
+/**
+ * The component catalog over the materialized signatures: the
+ * `components/<module>/<name>.json` stubs are the declared surface the
+ * runtime serves from the Two-Step Cache. The component SOURCE loading
+ * (the actual implementations) arrives with the loader wiring — the
+ * catalog alone makes the registry protocol truthful about what exists.
+ *
+ * @param {string} folder
+ * @returns {Promise<{ signatures: () => Record<string, any> }>}
+ */
+async function loadCatalog(folder) {
+  const componentsDir = path.join(folder, "components");
+  const graphsDir = path.join(folder, "graphs");
+  /** @type {Record<string, any>} */
+  const signatures = {};
+  // The project's graphs are subgraph components on the wire
+  /** @type {Set<string>} */
+  const graphNames = new Set(
+    (await readdir(graphsDir).catch(() => []))
+      .filter((f) => f.endsWith(".graph.json"))
+      .map((f) => f.slice(0, -".graph.json".length)),
+  );
+  const modules = await readdir(componentsDir).catch(() => []);
+  for (const moduleName of modules) {
+    const moduleDir = path.join(componentsDir, moduleName);
+    const files = await readdir(moduleDir).catch(() => []);
+    for (const file of files.filter((f) => f.endsWith(".json"))) {
+      const name = `${moduleName}/${file.slice(0, -".json".length)}`;
+      try {
+        const stub = JSON.parse(
+          await readFile(path.join(moduleDir, file), "utf8"),
+        );
+        // The declared kind (work document #25's shared vocabulary):
+        // subgraph when a project graph carries the name, elementary when
+        // a code buffer materialized, stub otherwise
+        let code = null;
+        try {
+          code = await readFile(
+            path.join(componentsDir, `${file.slice(0, -".json".length)}.js`),
+            "utf8",
+          );
+        } catch {
+          // No code buffer: the stub state
+        }
+        const kind = graphNames.has(name)
+          ? "subgraph"
+          : code !== null
+            ? "elementary"
+            : "stub";
+        signatures[name] = {
+          type: kind,
+          in: (stub.inports ?? []).map((/** @type {any} */ p) => ({
+            id: p.name,
+            type: p.type ?? "all",
+          })),
+          out: (stub.outports ?? []).map((/** @type {any} */ p) => ({
+            id: p.name,
+            type: p.type ?? "all",
+          })),
+        };
+      } catch {
+        // A malformed stub is skipped — the editor owns component authoring
+      }
+    }
+  }
+  return { signatures: () => signatures };
+}
 
 /** Parses `--key value` pairs; unknown keys are ignored loudly. */
 function parseArgs(argv) {
@@ -87,14 +184,17 @@ async function main() {
   // the runtime then serves exactly what its grants say, nothing more.
   const denyClosedPolicy = async () => 0;
 
-  // The graph load is slice 2 (the canonical-forms conversion, work
-  // document #59's found gap): the runtime boots over an empty model —
-  // the protocol surface and the mesh presence are the slice's subject.
-  const graph = new GraphModel();
+  // The graphs load from the materialized folder; the FIRST graph (the
+  // sorted main) is the runtime's served graph — the multi-graph serving
+  // and the 0x10 CRDT sync arrive with the Dacar slice
+  const models = await loadGraphs(folder);
+  const graph =
+    models.values().next().value ?? /** @type {any} */ (new GraphModel());
+  const catalog = await loadCatalog(folder);
 
   const runtime = await assembleRuntime({
     graph,
-    catalog: { signatures: () => ({}) },
+    catalog,
     capabilityPolicy: denyClosedPolicy,
   });
   const binding = await bindReticulum({
