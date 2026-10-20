@@ -101,7 +101,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     /** @type {Collaborator[]} The roster: self first, then members, then pending. */
     this._collaborators = [];
-    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number }>, unread: number }>} The per-identity chat threads. */
+    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number, status?: 'sending' | 'delivered' | 'failed' }>, unread: number }>} The per-identity chat threads. */
     this._threads = new Map();
     /** @type {string | null} The identity hash whose thread is open. */
     this._openThread = null;
@@ -134,7 +134,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
    */
   /**
    * @param {string} identityHash
-   * @param {{ text: string, role: string }} message
+   * @param {{ text: string, role: string, status?: 'sending' | 'delivered' | 'failed' }} message
    */
   addThreadMessage(identityHash, message) {
     let thread = this._threads.get(identityHash);
@@ -142,10 +142,51 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       thread = { messages: [], unread: 0 };
       this._threads.set(identityHash, thread);
     }
-    thread.messages.push({ ...message, time: Date.now() });
+    thread.messages.push({ ...message, time: Date.now(), status: message.status });
     if (this._openThread !== identityHash) thread.unread += 1;
     this.render();
     this._scrollToBottom(identityHash);
+  }
+
+  /**
+   * Delivers a response to the thread with a pending "sending" message:
+   * the user's message becomes "delivered" and the agent's response
+   * appends. The response goes to the most recent pending thread.
+   *
+   * @param {{ text: string, role: string }} response
+   * @returns {boolean} Whether a pending thread was found.
+   */
+  deliverResponse(response) {
+    for (const [identityHash, thread] of this._threads) {
+      const pending = thread.messages.find(
+        (/** @type {any} */ m) => m.status === "sending",
+      );
+      if (!pending) continue;
+      pending.status = "delivered";
+      thread.messages.push({
+        text: response.text,
+        role: response.role,
+        time: Date.now(),
+      });
+      if (this._openThread !== identityHash) thread.unread += 1;
+      this.render();
+      this._scrollToBottom(identityHash);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Marks all "sending" messages as "failed" — the transport didn't
+   * deliver within the timeout.
+   */
+  failPending() {
+    for (const [, thread] of this._threads) {
+      for (const message of thread.messages) {
+        if (message.status === "sending") message.status = "failed";
+      }
+    }
+    this.render();
   }
 
   /**
@@ -310,6 +351,16 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .thread-msg.pi { background: color-mix(in srgb, var(--ui-accent, rgb(90, 200, 250)) 10%, transparent); align-self: flex-start; }
         .thread-msg.human { background: color-mix(in srgb, var(--ui-age-calm, #7ee3a0) 10%, transparent); align-self: flex-end; }
         .thread-msg.system { color: var(--ui-muted, #889); font-size: 10px; align-self: center; }
+        .msg-status {
+          display: block;
+          font-size: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-top: 2px;
+          color: var(--ui-muted, #889);
+        }
+        .msg-status.failed { color: var(--ui-age-attention, #e3a17e); }
+        .msg-status.delivered { color: var(--ui-age-calm, #7ee3a0); }
         .thread-input {
           display: flex;
           gap: 6px;
@@ -368,7 +419,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     const messages = (thread?.messages ?? [])
       .map(
         (/** @type {any} */ m) =>
-          `<div class="thread-msg ${escapeHtml(m.role)}">${escapeHtml(m.text)}</div>`,
+          `<div class="thread-msg ${escapeHtml(m.role)}">${escapeHtml(m.text)}${m.status && m.status !== "delivered" ? `<span class="msg-status ${m.status}">${m.status}</span>` : ""}</div>`,
       )
       .join("");
     return `<div class="thread" data-thread="${escapeHtml(identityHash)}">

@@ -128,6 +128,9 @@ export function chunkText(text, size = CHUNK_CHARS) {
  *   destination hash (hex). When set, a hello-world is sent at startup and
  *   inbound messages from other identities are dropped by the caller's
  *   gate (the layer itself is transport-agnostic).
+ * @param {string | null} [options.propagationNodeHex] The configured
+ *   propagation node's `lxmf.propagation` hash — enables the
+ *   store-and-forward fallback when the direct path fails.
  * @param {number} [options.peerWaitMs] - Per-send announce wait (tests).
  * @param {(msg: string) => void} [options.log]
  * @returns {Promise<{
@@ -147,6 +150,7 @@ export async function startLxmfLayer({
   stateDir,
   name,
   ownerContact = null,
+  propagationNodeHex = null,
   peerWaitMs = PEER_DISCOVERY_WAIT_MS,
   log = () => {},
 }) {
@@ -168,6 +172,9 @@ export async function startLxmfLayer({
 
   const lxmf = new LXMRouter(identity, rns);
   await lxmf.init();
+  const propagationNodeHash = propagationNodeHex
+    ? fromHex(propagationNodeHex)
+    : null;
   const deliveryDest = /** @type {any} */ (lxmf.deliveryDest);
   if (!deliveryDest) {
     throw new Error("LXMRouter.init() did not register lxmf.delivery");
@@ -206,15 +213,47 @@ export async function startLxmfLayer({
       });
       try {
         await lxmf.send(message, identity, {
-          fallback: "opportunistic",
+          fallback: propagationNodeHash ? "propagation" : "opportunistic",
           timeoutMs: peerWaitMs,
         });
       } catch (e) {
-        if (!isUnknownIdentityError(e)) throw e;
-        throw new Error(
-          `peer ${destinationHex} announce not reachable within ${Math.round(peerWaitMs / 1000)}s`,
-          { cause: e },
-        );
+        // The router's propagation handoff declines when the node's
+        // announce hasn't landed yet (fresh start) — solicit the node
+        // and resend (the pi-lxmf retry pattern)
+        if (
+          propagationNodeHash &&
+          e instanceof Error &&
+          /Propagation node identity unknown/.test(e.message)
+        ) {
+          log(
+            `lxmf: propagation node unknown — requesting path, waiting ${Math.round(peerWaitMs / 1000)}s`,
+          );
+          try {
+            await rns.transport.recallOrSolicitIdentity(
+              propagationNodeHash,
+              peerWaitMs,
+            );
+          } catch (solicitError) {
+            if (isUnknownIdentityError(solicitError)) {
+              throw new Error(
+                `propagation node ${propagationNodeHex} not reachable within ${Math.round(peerWaitMs / 1000)}s`,
+                { cause: e },
+              );
+            }
+            throw solicitError;
+          }
+          await lxmf.send(message, identity, {
+            fallback: "propagation",
+            timeoutMs: peerWaitMs,
+          });
+        } else if (isUnknownIdentityError(e)) {
+          throw new Error(
+            `peer ${destinationHex} announce not reachable within ${Math.round(peerWaitMs / 1000)}s`,
+            { cause: e },
+          );
+        } else {
+          throw e;
+        }
       }
     }
   }

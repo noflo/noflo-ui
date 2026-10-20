@@ -2935,6 +2935,11 @@ async function init() {
       command: "chat",
       payload: { text: e.detail.text },
     });
+    // The delivery timeout: if no response arrives within 30s, the
+    // message marks failed (the transport didn't deliver)
+    setTimeout(() => {
+      /** @type {any} */ (collaboratorsPanel).failPending?.();
+    }, 30_000);
   });
   on(runtimeCorner, "runtime-run", (e) => {
     supervisor?.send({

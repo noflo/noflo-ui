@@ -595,6 +595,7 @@ async function main() {
     rns,
     stateDir,
     name: config.name ?? "noflo-ui Companion",
+    propagationNodeHex: config.propagationNodeHex ?? null,
     log: (msg) => console.log(msg),
   });
   console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);

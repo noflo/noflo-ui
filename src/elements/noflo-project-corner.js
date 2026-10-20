@@ -253,11 +253,9 @@ export class FlowProjectCorner extends FlowCornerElement {
    * @param {{ identityHash?: string, text: string, role: string }} payload
    */
   addChatResponse(payload) {
-    const identityHash = payload.identityHash ?? "";
-    if (!identityHash) return;
     const panel = this._collaboratorsPanel;
     if (panel) {
-      panel.addThreadMessage(identityHash, {
+      panel.deliverResponse({
         text: payload.text,
         role: payload.role,
       });
