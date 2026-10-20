@@ -496,6 +496,11 @@ async function main() {
                 anchorPubkeyHex: stored.anchorPubkey,
                 salt: stored.salt,
                 projectId,
+                // TODO: the mintGrant callback needs the trust anchor's
+                // Identity object (the project creator's Reticulum
+                // identity with the private key) — the identity
+                // resolution rides the live session's identity wiring
+                // mintGrant: async (subjectHash) => { ... mintAuthorization ... },
               }
             : null,
         )
