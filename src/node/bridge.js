@@ -386,23 +386,22 @@ async function main() {
     const chatBus = engine.doc.getMap("chatBus");
     const processedChats = new Set();
     let chatObserver = chatBus.observe((/** @type {any} */ event) => {
-      event.changes.forEach((/** @type {any} */ change, /** @type {string} */ key) => {
-        if (change.action !== "add") return;
-        if (processedChats.has(key)) return;
+      const keys = event.keysChanged ?? new Set();
+      for (const key of keys) {
+        if (processedChats.has(key)) continue;
         processedChats.add(key);
         const value = /** @type {any} */ (chatBus.get(key));
-        if (!value || !value.text) return;
+        if (!value || !value.text || value.role) continue;
         const sourceHash = String(value.source ?? "");
         const text = String(value.text);
         console.log(`bridge  chat from ${sourceHash.slice(0, 8)}: ${text.slice(0, 60)}`);
-        // The same dispatch the LXMF chat surface uses
         const chatEvent = {
           message: { sourceHash, content: text },
         };
         chat?.handleInbound(chatEvent).catch((error) => {
           console.error(`bridge  chat dispatch failed: ${error?.message ?? error}`);
         });
-      });
+      }
     });
 
     // The agent primer: context provisioning for file-based tools (work

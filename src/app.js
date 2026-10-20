@@ -2602,16 +2602,16 @@ async function init() {
   // bridge's responses land here through the sync — the Collaborators
   // panel renders them
   mirrorDoc.getMap("chatBus").observe((/** @type {any} */ event) => {
-    event.changes.forEach((/** @type {any} */ change, /** @type {string} */ key) => {
-      if (change.action !== "add") return;
+    const keys = event.keysChanged ?? new Set();
+    for (const key of keys) {
       const value = /** @type {any} */ (event.target.get(key));
-      if (!value || value.role !== "assistant") return;
+      if (!value || value.role !== "assistant") continue;
       const panel = document.getElementById("collaborators-panel");
       /** @type {any} */ (panel)?.deliverResponse?.({
         text: value.text,
         role: "assistant",
       });
-    });
+    }
   });
   mirrorDoc.on("update", () => {
     intentMapper?.flushPending((nodeId) =>
