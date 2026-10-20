@@ -1637,6 +1637,14 @@ function refreshSyncPanel() {
       });
       seenIdentities.add(meshIdentityHash);
     }
+    // The agent (pi): a participant inside the Companion — no mesh peer,
+    // but a chat participant with the agent-kind rendering (#61). Always
+    // present: if pi isn't running, the dispatch returns an error message
+    roster.push({
+      identityHash: "__agent__",
+      name: "pi",
+      presence: "agent-idle",
+    });
     for (const peerId of meshPeers) {
       const identityHash = meshPeerIdentities[peerId] ?? peerId;
       if (seenIdentities.has(identityHash)) continue;
