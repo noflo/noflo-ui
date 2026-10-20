@@ -203,6 +203,9 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           display: block;
           max-width: min(320px, calc(100vw - 32px));
         }
+        @media (min-width: 760px) {
+          :host { left: auto; right: 76px; bottom: 12px; }
+        }
         .avatar-row {
           display: flex;
           gap: 8px;
@@ -221,7 +224,6 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .avatar-ring {
           width: 40px;
           height: 40px;
-          border-radius: 50%;
           padding: 2px;
           box-sizing: border-box;
         }
@@ -280,6 +282,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .thread {
           border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
           padding: 8px 0;
+          background: var(--ui-bg, rgb(20, 27, 35));
         }
         .thread-scroll {
           max-height: 200px;
@@ -377,6 +380,14 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     for (const avatar of shadow.querySelectorAll(".avatar[data-identity]")) {
       avatar.addEventListener("click", () => {
         const identityHash = avatar.getAttribute("data-identity") ?? "";
+        const isSelf = this._collaborators.find(
+          (c) => c.identityHash === identityHash,
+        )?.self;
+        if (isSelf) {
+          // The self avatar opens customization, not a chat thread
+          emit(this, "edit-avatar", { identityHash });
+          return;
+        }
         if (this._openThread === identityHash) {
           this._openThread = null;
         } else {

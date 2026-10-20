@@ -209,6 +209,10 @@ function narrateWorkerError(error) {
  * of a path request that looks stuck. */
 /** @type {Record<string, "online" | "offline">} */
 let peerReachability = {};
+/** The peer aliases (work document #61): device-local human-readable names
+ * for peers, replacing the identity hash display. Stored in the mesh
+ * storage; the Collaborators panel renders them. */
+let peerAliases = /** @type {Record<string, string>} */ ({});
 /** The discovered FBP runtime population (work document #59): the
  * Engine's `runtime-discovered` report, newest announce first. */
 let runtimeRuntimes =
@@ -1618,31 +1622,38 @@ function refreshSyncPanel() {
   syncPanel.setNarration(narration);
   syncPanel.setPeers(meshPeers, meshPeerIdentities, peerReachability);
   // The Collaborators panel's roster (work document #61): the mesh peers
-  // mapped into the avatar shape — self first, then members
+  // mapped into the avatar shape — self first, then members, deduplicated
+  // by identity hash (transport peer IDs can repeat the same identity)
   const collaboratorsPanel = document.getElementById("collaborators-panel");
   if (collaboratorsPanel) {
     const roster = [];
+    const seenIdentities = new Set();
     if (meshIdentityHash) {
       roster.push({
         identityHash: meshIdentityHash,
-        name: "You",
+        name: peerAliases[meshIdentityHash] ?? "You",
         presence: "online",
         self: true,
       });
+      seenIdentities.add(meshIdentityHash);
     }
-    for (const peerHash of meshPeers) {
-      const info = meshPeerIdentities[peerHash] ?? {};
-      const reach = peerReachability?.[peerHash];
+    for (const peerId of meshPeers) {
+      const identityHash = meshPeerIdentities[peerId] ?? peerId;
+      if (seenIdentities.has(identityHash)) continue;
+      seenIdentities.add(identityHash);
+      const reach = peerReachability?.[identityHash];
       roster.push({
-        identityHash: peerHash,
-        name: info || peerHash.slice(0, 8),
+        identityHash,
+        name: peerAliases[identityHash] ?? identityHash.slice(0, 8),
         presence: reach === "online" ? "online" : "offline",
       });
     }
     for (const request of joinRequests) {
+      if (seenIdentities.has(request.identityHash)) continue;
+      seenIdentities.add(request.identityHash);
       roster.push({
         identityHash: request.identityHash,
-        name: request.identityHash.slice(0, 8),
+        name: peerAliases[request.identityHash] ?? request.identityHash.slice(0, 8),
         presence: "requested",
       });
     }

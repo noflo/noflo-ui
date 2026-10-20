@@ -190,6 +190,8 @@
  * @property {CustomEvent<{ identityHash: string, text: string }>} chat-send
  *   The chat panel sent a message to the agent (work document #47 item 3)
  * @property {CustomEvent<void>} open-chat
+ * @property {CustomEvent<{ identityHash: string }>} edit-avatar
+ *   The self avatar's customization affordance (work document #61)
  * @property {CustomEvent<void>} add-collaborator
  *   The Collaborators panel's Add user tile (work document #61)
  *   The Runtime corner's Agent chip opened the chat panel
