@@ -204,7 +204,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           max-width: min(320px, calc(100vw - 32px));
         }
         @media (min-width: 760px) {
-          :host { left: auto; right: 76px; bottom: 12px; }
+          :host { left: 220px; }
         }
         .avatar-row {
           display: flex;
@@ -224,6 +224,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .avatar-ring {
           width: 40px;
           height: 40px;
+          border-radius: 50%;
           padding: 2px;
           box-sizing: border-box;
         }
