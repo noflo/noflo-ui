@@ -227,6 +227,13 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           border-radius: 50%;
           padding: 2px;
           box-sizing: border-box;
+          overflow: hidden;
+        }
+        .avatar-ring svg {
+          display: block;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
         }
         .avatar.active .avatar-ring { border: 2px solid var(--ui-age-activity, #4aa3df); }
         .avatar.online .avatar-ring { border: 2px solid var(--ui-age-calm, #7ee3a0); }
