@@ -337,7 +337,11 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           font-size: 18px;
         }
         .thread {
-          padding: 8px 0;
+          padding: 8px 10px;
+          background: var(--ui-bg, rgb(20, 27, 35));
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 6px;
+          margin-top: 6px;
         }
         .thread-scroll {
           max-height: 200px;
