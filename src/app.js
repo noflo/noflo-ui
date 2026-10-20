@@ -2598,6 +2598,21 @@ async function init() {
   }
 
   mirrorDoc = new Y.Doc();
+  // The chat bus's response observer (work document #47 item 3): the
+  // bridge's responses land here through the sync — the Collaborators
+  // panel renders them
+  mirrorDoc.getMap("chatBus").observe((/** @type {any} */ event) => {
+    event.changes.forEach((/** @type {any} */ change, /** @type {string} */ key) => {
+      if (change.action !== "add") return;
+      const value = /** @type {any} */ (event.target.get(key));
+      if (!value || value.role !== "assistant") return;
+      const panel = document.getElementById("collaborators-panel");
+      /** @type {any} */ (panel)?.deliverResponse?.({
+        text: value.text,
+        role: "assistant",
+      });
+    });
+  });
   mirrorDoc.on("update", () => {
     intentMapper?.flushPending((nodeId) =>
       Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
@@ -2930,10 +2945,17 @@ async function init() {
     document.getElementById("collaborators-panel")
   );
   on(collaboratorsPanel, "chat-send", (e) => {
-    supervisor?.send({
-      type: "MESH",
-      command: "chat",
-      payload: { text: e.detail.text },
+    // The chat rides the CRDT sync as a transport bus (work document #47
+    // item 3): the message syncs to the bridge, the bridge's chat dispatch
+    // processes it, and the response syncs back. The bus is transient —
+    // not project content, not persisted
+    const chatBus = mirrorDoc?.getMap("chatBus");
+    if (!chatBus) return;
+    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    chatBus.set(id, {
+      text: e.detail.text,
+      source: meshIdentityHash ?? "unknown",
+      time: Date.now(),
     });
     // The delivery timeout: if no response arrives within 30s, the
     // message marks failed (the transport didn't deliver)
@@ -2941,6 +2963,8 @@ async function init() {
       /** @type {any} */ (collaboratorsPanel).failPending?.();
     }, 30_000);
   });
+
+
   on(runtimeCorner, "runtime-run", (e) => {
     supervisor?.send({
       type: "MESH",

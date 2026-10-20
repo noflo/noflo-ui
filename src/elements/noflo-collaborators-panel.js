@@ -240,9 +240,13 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           position: fixed;
           bottom: 56px;
           left: 16px;
-          z-index: 50;
+          z-index: 60;
           display: block;
           max-width: min(320px, calc(100vw - 32px));
+          background: var(--ui-bg, rgb(20, 27, 35));
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 8px;
+          padding: 8px;
         }
         @media (min-width: 760px) {
           :host { left: 220px; }

@@ -378,6 +378,33 @@ async function main() {
 
     await projectFolder.materialize();
 
+    // The chat bus (work document #47 item 3): the Glass's chat messages
+    // ride the CRDT sync as a transport bus — the bridge observes the
+    // chatBus map and processes incoming messages through the chat
+    // dispatch. The responses go back through the same bus. The messages
+    // are transient: the bus is the transport, not the store
+    const chatBus = engine.doc.getMap("chatBus");
+    const processedChats = new Set();
+    let chatObserver = chatBus.observe((/** @type {any} */ event) => {
+      event.changes.forEach((/** @type {any} */ change, /** @type {string} */ key) => {
+        if (change.action !== "add") return;
+        if (processedChats.has(key)) return;
+        processedChats.add(key);
+        const value = /** @type {any} */ (chatBus.get(key));
+        if (!value || !value.text) return;
+        const sourceHash = String(value.source ?? "");
+        const text = String(value.text);
+        console.log(`bridge  chat from ${sourceHash.slice(0, 8)}: ${text.slice(0, 60)}`);
+        // The same dispatch the LXMF chat surface uses
+        const chatEvent = {
+          message: { sourceHash, content: text },
+        };
+        chat?.handleInbound(chatEvent).catch((error) => {
+          console.error(`bridge  chat dispatch failed: ${error?.message ?? error}`);
+        });
+      });
+    });
+
     // The agent primer: context provisioning for file-based tools (work
     // document #44 M2). A pre-existing AGENTS.md is never overwritten
     // (work document #43 update #4 overlay rule)
@@ -623,7 +650,21 @@ async function main() {
   }
   chat = createChatSurface({
     ownerContact,
-    sendText: lxmf.sendText,
+    // The sendText dual-channel: LXMF for the external clients AND the
+    // chatBus for the webapp's chat panel (work document #47 item 3)
+    sendText: async (destinationHex, text, sendOptions = {}) => {
+      await lxmf.sendText(destinationHex, text, sendOptions);
+      // The dual-channel: the response also lands in the chatBus for the
+      // webapp's chat panel (the active project's doc)
+      const bus = active?.engine?.doc?.getMap("chatBus");
+      if (bus) {
+        bus.set(`response-${Date.now()}`, {
+          text,
+          role: "assistant",
+          time: Date.now(),
+        });
+      }
+    },
     sendReaction: lxmf.sendReaction,
     verifySender: lxmf.verifySender,
     pi: active?.manager ?? null,
