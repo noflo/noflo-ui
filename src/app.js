@@ -1641,11 +1641,13 @@ function refreshSyncPanel() {
       const identityHash = meshPeerIdentities[peerId] ?? peerId;
       if (seenIdentities.has(identityHash)) continue;
       seenIdentities.add(identityHash);
-      const reach = peerReachability?.[identityHash];
+      // The transport link IS the online state: the peer is connected
+      // and syncing. The grants-map reachability is the sync panel's
+      // detail, not the avatar's presence
       roster.push({
         identityHash,
         name: peerAliases[identityHash] ?? identityHash.slice(0, 8),
-        presence: reach === "online" ? "online" : "offline",
+        presence: "online",
       });
     }
     for (const request of joinRequests) {
