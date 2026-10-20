@@ -449,11 +449,8 @@ export class FlowSyncPanel extends FlowCornerElement {
           `<span class="seg">${icon("arrows-rotate")}<span class="label">syncing</span></span>`,
         );
       }
-      if (peerCount > 0) {
-        segments.push(
-          `<span class="seg">${icon("user-group")}<span class="label">${peerCount} peer${peerCount === 1 ? "" : "s"}</span><span class="count">${peerCount}</span></span>`,
-        );
-      }
+      // The peers list moved to the Collaborators panel (work document
+      // #61): the sync panel keeps transport state only
     } else {
       segments.push(
         `<span class="seg offline">${icon("plug")}<span class="label">offline</span></span>`,

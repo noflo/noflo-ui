@@ -109,12 +109,12 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
     };
     const chip = shadow.querySelector(".chip");
     assert.ok(chip, "the chip renders");
-    // Segments: up to date (calm), peers, Owner, the segment toggles —
+    // Segments: up to date (calm), Owner, the segment toggles —
     // yjs, mesh, diagnostics, history — pending intents drop out
     const segments = shadow.querySelectorAll(".chip .seg");
-    assert.equal(segments.length, 7, "empty states drop out");
+    assert.equal(segments.length, 6, "empty states drop out");
     assert.match(chip.textContent ?? "", /up to date/);
-    assert.match(chip.textContent ?? "", /2 peers/);
+
     assert.match(chip.textContent ?? "", /Owner/);
     const syncSegment = /** @type {HTMLElement} */ (segments[0]);
     assert.ok(
@@ -122,11 +122,7 @@ describe("FlowSyncPanel corner states (work document #28)", () => {
       "up to date reads as calm in the Ages vocabulary",
     );
     // The degradation ladder's count (the chip goes icon+number when
-    // minified): the peers segment carries the bare number
-    const peerCount =
-      /** @type {HTMLElement} */ (chip.querySelector(".seg .count"))
-        .textContent ?? "";
-    assert.match(peerCount, /^2$/, "the count is the bare peer number");
+    // minified): the peers segment moved to the Collaborators panel
     el.remove();
   });
 

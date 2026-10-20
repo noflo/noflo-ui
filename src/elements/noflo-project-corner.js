@@ -207,7 +207,14 @@ export class FlowProjectCorner extends FlowCornerElement {
     // The degradation ladder's count: the active documents' number is
     // what the chip summarizes — it survives minification when the
     // words drop
-    return `<span class="seg" title="The project's work documents">${icon("file-lines")}<span class="label">${parts.join(" · ")}</span><span class="count">${active}</span></span>`;
+    const peopleCount = this._collaborators.filter(
+      (c) => !c.self,
+    ).length;
+    const peopleSeg =
+      peopleCount > 0
+        ? `<span class="seg" title="Project collaborators">${icon("user-group")}<span class="label">${peopleCount} collaborator${peopleCount === 1 ? "" : "s"}</span><span class="count">${peopleCount}</span></span>`
+        : "";
+    return `<span class="seg" title="The project's work documents">${icon("file-lines")}<span class="label">${parts.join(" · ")}</span><span class="count">${active}</span></span>${peopleSeg}`;
   }
 
   /**

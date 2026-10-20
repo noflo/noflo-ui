@@ -195,7 +195,14 @@ export class NofloCollaboratorsPanel extends HTMLElement {
 
     shadow.innerHTML = `
       <style>
-        :host { display: block; }
+        :host {
+          position: fixed;
+          bottom: 56px;
+          left: 16px;
+          z-index: 50;
+          display: block;
+          max-width: min(320px, calc(100vw - 32px));
+        }
         .avatar-row {
           display: flex;
           gap: 8px;
