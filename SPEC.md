@@ -340,6 +340,7 @@ type UIWorkerMessage =
   | { type: 'MESH'; command: 'runtimeDeploy'; payload: { destinationHash: string; graphId: string } }
   | { type: 'MESH'; command: 'runtimeRun'; payload: { destinationHash: string; action: 'start' | 'stop' } }
   | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } }
+  | { type: 'MESH'; command: 'chat'; payload: { text: string } }
   | { type: 'MESH'; command: 'runtimeSchemas'; payload: { destinationHash: string; digests: string[] } };
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
@@ -479,6 +480,7 @@ type EngineUIMessage =
   | { kind: 'runtime-deploy'; destinationHash: string; graphId: string; state: 'deploying' | 'deployed' | 'error'; ops?: number; skipped?: number; error?: string }
   | { kind: 'runtime-processes'; destinationHash: string; epochId: string | null; entries: Record<string, { component: string; type: string; state: number | string }> }
   | { kind: 'runtime-run'; destinationHash: string; state: 'running' | 'stopped' | 'paused' | 'error' | 'unknown'; action?: number; requested?: boolean; error?: string }
+  | { kind: 'chat-response'; text: string; role: 'assistant' | 'system' }
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
   | { kind: 'runtime-schemas'; destinationHash: string; schemas: Array<{ digest: string; body: any }> }
   | { kind: 'runtime-telemetry'; destinationHash: string; direction: 'in' | 'out'; message: string; status: 'TX' | 'RX'; time: number; tone?: 'ok' | 'fail' | '' }

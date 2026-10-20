@@ -661,6 +661,13 @@ export async function startEngine(io, options = {}) {
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
     if (message?.type === "MESH") {
+      // The chat command routes to the bridge: the pi manager lives
+      // there, and the chat dispatch's response goes back through the
+      // bridge's inbound channel (work document #47 item 3)
+      if (message.command === "chat") {
+        io.postMessage({ kind: "chat", payload: message.payload });
+        return;
+      }
       meshSocket.send(message);
       return;
     }

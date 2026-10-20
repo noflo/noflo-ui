@@ -301,6 +301,31 @@ async function main() {
           ) {
             return;
           }
+          // The webapp's chat (work document #47 item 3): the Glass's
+          // chat panel sends messages through the mesh; the bridge routes
+          // them through the same dispatch the LXMF chat surface uses
+          if (message.kind === "chat") {
+            const text = String(message.payload?.text ?? "");
+            if (!text.trim() || !active?.manager) return;
+            active.manager
+              .prompt(text)
+              .then((/** @type {any} */ response) => {
+                const reply = assistantText(response);
+                inbound({
+                  kind: "chat-response",
+                  text: reply,
+                  role: "assistant",
+                });
+              })
+              .catch((/** @type {any} */ error) => {
+                inbound({
+                  kind: "chat-response",
+                  text: `pi error: ${error?.message ?? error}`,
+                  role: "system",
+                });
+              });
+            return;
+          }
           console.log(
             `${kind.padEnd(14)} ${JSON.stringify(message.payload ?? message)}`,
           );

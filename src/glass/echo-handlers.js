@@ -74,6 +74,9 @@ function formatBytes(bytes) {
  * @property {(payload: any) => void} [workDocCreated] A work document was
  *   created (work document #9): the creation flow navigates to the new
  *   document's view when the echo is its own.
+ * @property {(payload: any) => void} [chatResponse] The agent responded to
+ *   a chat message (work document #47 item 3): the chat panel appends the
+ *   response.
  * @property {(payload: any) => void} [implementationRequested] A component's
  *   implementation-request pointer moved (work document #9 step D): the open
  *   component editor refreshes its request line from the mirror.
@@ -194,6 +197,11 @@ export function createEchoHandlers(deps) {
     },
     "kind:runtime-processes": (data) => {
       deps.setRuntimeProcesses(data);
+    },
+    "kind:chat-response": (data) => {
+      // The agent's response (work document #47 item 3): the chat panel
+      // renders the conversation
+      deps.chatResponse?.(data.payload);
     },
     "kind:runtime-run": (data) => {
       deps.setRuntimeRun(data);

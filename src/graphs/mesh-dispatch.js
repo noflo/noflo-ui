@@ -23,6 +23,7 @@
 import { GraphModel, internalSocket } from "../../vendor/noflo.js";
 
 import * as Configure from "../components/mesh/Configure.js";
+import * as Chat from "../components/mesh/Chat.js";
 import * as CreateInvite from "../components/mesh/CreateInvite.js";
 import * as FactoryReset from "../components/mesh/FactoryReset.js";
 import * as Grant from "../components/mesh/Grant.js";
@@ -73,6 +74,7 @@ export function createMeshRegistry() {
       "mesh/runtimeDiscover": RuntimeDiscover,
       "mesh/runtimeSchemas": RuntimeSchemas,
       "mesh/runtimeRun": RuntimeRun,
+      "mesh/chat": Chat,
       "mesh/stop": Stop,
       "mesh/status": Status,
     }),

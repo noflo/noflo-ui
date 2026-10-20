@@ -591,6 +591,16 @@
  */
 
 /**
+ * Appendix A extension (work document #47 item 3): the agent's response to
+ * a chat message. The Glass's chat panel renders the conversation.
+ *
+ * @typedef {Object} ChatResponseEcho
+ * @property {'chat-response'} kind
+ * @property {string} text The response text.
+ * @property {'assistant' | 'system'} role
+ */
+
+/**
  * Appendix A extension (work document #59): tear a runtime connection
  * down. Disconnecting an unknown runtime is idempotent — the echo carries
  * the disconnected state either way.
@@ -599,6 +609,18 @@
  * @property {'MESH'} type
  * @property {'runtimeDisconnect'} command
  * @property {{ destinationHash: string }} payload
+ */
+
+/**
+ * Appendix A extension (work document #47 item 3): send a chat message to
+ * the Companion's agent. The message routes through the chat dispatch
+ * (commands and pi prompts) and the response arrives as a `chat-response`
+ * echo. The Glass's chat panel renders the conversation.
+ *
+ * @typedef {Object} MeshChatMessage
+ * @property {'MESH'} type
+ * @property {'chat'} command
+ * @property {{ text: string }} payload
  */
 
 /**
@@ -737,6 +759,7 @@
  *   | MeshRuntimeDeployMessage
  *   | MeshRuntimeRunMessage
  *   | MeshRuntimeDisconnectMessage
+  | MeshChatMessage
  *   | MeshRuntimeSchemasMessage
  *   | MeshPlainMessage} UIWorkerMessage
  */
@@ -828,6 +851,7 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "runtimeRun" },
   { type: "MESH", command: "runtimeDisconnect" },
   { type: "MESH", command: "runtimeSchemas" },
+  { type: "MESH", command: "chat" },
 ];
 
 /**
@@ -851,6 +875,7 @@ export const MESH_COMMANDS = [
   "runtimeRun",
   "runtimeDisconnect",
   "runtimeSchemas",
+  "chat",
 ];
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -1241,6 +1266,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeDeployEcho
  *   | RuntimeProcessesEcho
  *   | RuntimeRunEcho
+  | ChatResponseEcho
  *   | RuntimeOpRejectedEcho
  *   | RuntimeTelemetryEcho
  *   | RuntimeSchemasEcho
@@ -1294,6 +1320,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-deploy" },
   { kind: "runtime-processes" },
   { kind: "runtime-run" },
+  { kind: "chat-response" },
   { kind: "runtime-op-rejected" },
   { kind: "runtime-telemetry" },
   { kind: "runtime-schemas" },

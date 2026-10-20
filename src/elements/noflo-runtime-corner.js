@@ -138,6 +138,7 @@ export class FlowRuntimeCorner extends FlowCornerElement {
         : "";
     const segments = [
       `<span class="seg ${cls}" title="FBP runtimes discovered on the mesh">${icon("satellite-dish")}<span class="label">${this._runtimes.length} runtime${this._runtimes.length === 1 ? "" : "s"}${connected > 0 ? ` · ${connected} connected` : ""}</span><span class="count">${this._runtimes.length}</span></span>`,
+      `<span class="seg" data-action="open-chat" role="button" tabindex="0" title="Talk to your project's agent">${icon("comment-dots")}<span class="label">Agent</span></span>`,
     ];
     // The FBP protocol stream's segments (work document #63 M3): one per
     // connected runtime, named for the runtime it shows

@@ -187,6 +187,11 @@
  *   A scope transition was requested from the document view (work document #9 update #10)
  * @property {CustomEvent<{ kind: 'node' | 'component', id: string }>} workdoc-link
  *   A traceability link was clicked in the document view (work document #9 §5)
+ * @property {CustomEvent<{ text: string }>} chat-send
+ *   The chat panel sent a message to the agent (work document #47 item 3)
+ * @property {CustomEvent<void>} open-chat
+ *   The Runtime corner's Agent chip opened the chat panel
+ *   The chat panel sent a message to the agent (work document #47 item 3)
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close
