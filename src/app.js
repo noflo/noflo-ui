@@ -46,6 +46,7 @@ import {
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import "./elements/noflo-schema-view.js";
+import "./elements/noflo-collaborators-panel.js";
 
 import "./elements/noflo-schema-form.js";
 import { NofloComponentView } from "./elements/noflo-component-view.js";
@@ -1616,6 +1617,37 @@ function refreshSyncPanel() {
   syncPanel.setSyncStatus(syncStatus);
   syncPanel.setNarration(narration);
   syncPanel.setPeers(meshPeers, meshPeerIdentities, peerReachability);
+  // The Collaborators panel's roster (work document #61): the mesh peers
+  // mapped into the avatar shape — self first, then members
+  const collaboratorsPanel = document.getElementById("collaborators-panel");
+  if (collaboratorsPanel) {
+    const roster = [];
+    if (meshIdentityHash) {
+      roster.push({
+        identityHash: meshIdentityHash,
+        name: "You",
+        presence: "online",
+        self: true,
+      });
+    }
+    for (const peerHash of meshPeers) {
+      const info = meshPeerIdentities[peerHash] ?? {};
+      const reach = peerReachability?.[peerHash];
+      roster.push({
+        identityHash: peerHash,
+        name: info || peerHash.slice(0, 8),
+        presence: reach === "online" ? "online" : "offline",
+      });
+    }
+    for (const request of joinRequests) {
+      roster.push({
+        identityHash: request.identityHash,
+        name: request.identityHash.slice(0, 8),
+        presence: "requested",
+      });
+    }
+    /** @type {any} */ (collaboratorsPanel).setCollaborators(roster);
+  }
   syncPanel.setJoinRequests(joinRequests);
   syncPanel.setJoinProgress(joinProgress);
   syncPanel.setDacarState(dacarState);
@@ -2868,6 +2900,18 @@ async function init() {
         destinationHash: e.detail.destinationHash,
         graphId: activeGraphId,
       },
+    });
+  });
+  // The Collaborators panel (work document #61): the avatars, presence,
+  // and the per-identity chat threads
+  const collaboratorsPanel = /** @type {any} */ (
+    document.getElementById("collaborators-panel")
+  );
+  on(collaboratorsPanel, "chat-send", (e) => {
+    supervisor?.send({
+      type: "MESH",
+      command: "chat",
+      payload: { text: e.detail.text },
     });
   });
   on(runtimeCorner, "runtime-run", (e) => {
