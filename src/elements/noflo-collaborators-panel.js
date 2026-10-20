@@ -503,7 +503,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         const text = /** @type {HTMLInputElement} */ (input).value.trim();
         if (!text) return;
         /** @type {HTMLInputElement} */ (input).value = "";
-        this.addThreadMessage(identityHash, { text, role: "human" });
+        this.addThreadMessage(identityHash, { text, role: "human", status: "sending" });
         emit(this, "chat-send", {
           identityHash,
           text,
@@ -519,7 +519,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         const text = input?.value?.trim();
         if (!text || !input) return;
         input.value = "";
-        this.addThreadMessage(identityHash, { text, role: "human" });
+        this.addThreadMessage(identityHash, { text, role: "human", status: "sending" });
         emit(this, "chat-send", { identityHash, text });
       });
     }

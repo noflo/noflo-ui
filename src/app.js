@@ -2967,17 +2967,14 @@ async function init() {
     }
   });
   on(collaboratorsPanel, "chat-send", (e) => {
-    // The chat rides the CRDT sync as a transport bus (work document #47
-    // item 3): the message syncs to the bridge, the bridge's chat dispatch
-    // processes it, and the response syncs back. The bus is transient —
-    // not project content, not persisted
-    const chatBus = mirrorDoc?.getMap("chatBus");
-    if (!chatBus) return;
-    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    chatBus.set(id, {
-      text: e.detail.text,
-      source: meshIdentityHash ?? "unknown",
-      time: Date.now(),
+    // The chat rides the worker's authoritative doc: the Glass sends a
+    // MESH command, the worker writes to the chatBus in the
+    // authoritative doc, the bridge's observer fires and processes the
+    // message through the chat dispatch (work document #47 item 3)
+    supervisor?.send({
+      type: "MESH",
+      command: "chat",
+      payload: { text: e.detail.text },
     });
     // The delivery timeout: if no response arrives within 30s, the
     // message marks failed (the transport didn't deliver)
