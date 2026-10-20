@@ -17,11 +17,13 @@
 
 import { spawn } from "node:child_process";
 import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
+
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { FileStorageAdapter, LocalClientInterface } from "@reticulum/node";
 import { getSharedInstanceEndpoint } from "@reticulum/node/src/interfaces/local_client.js";
+import { toHex } from "../../vendor/reticulum-core.js";
 import { Identity } from "../../vendor/reticulum-core.js";
 
 /** The child entrypoint, resolved from this module's own location. */
@@ -63,7 +65,7 @@ function realPathFor(target) {
  * @param {string} [options.name] The runtime's node name in announces.
  * @param {Array<{ type: string, options?: any, enabled?: boolean }>} [options.interfaces]
  *   The mesh interface list; the same shape the mesh config carries.
- * @param {{ anchorHashHex: string, anchorPubkeyHex: string, salt: string, projectId: string } | null} [options.dacar]
+ * @param {{ anchorHashHex: string, anchorPubkeyHex: string, salt: string, projectId: string, mintGrant?: (subjectHash: string) => Promise<{ deltas: string }> } | null} [options.dacar]
  *   The project's Dacar binding: when provided, the manager provisions
  *   the child's state directory with it (the parent-provisions shape —
  *   the sandbox denies first-touch writes) and the runtime boots as a
@@ -188,12 +190,36 @@ export function createRuntimeManager({
       // later exploration (the maintainer's note) may relax.
       await Identity.loadOrGenerate(new FileStorageAdapter(realState));
       // The Dacar binding provisioned alongside the identity: the child's
-      // boot reads it and joins as a Dacar replica
+      // boot reads it and joins as a Dacar replica. The runtime's own
+      // identity is pre-generated here (the parent-provisions shape: the
+      // sandbox denies the child's first-touch writes) and the anchor
+      // mints a grant for it — the child's link policy then allows
       if (dacar) {
         const { writeFile } = await import("node:fs/promises");
+        const provisioning = /** @type {any} */ ({ ...dacar });
+        // Pre-generate the runtime's identity: the parent generates and
+        // saves it, the child reads the existing file
+        const runtimeIdentity = await Identity.loadOrGenerate(
+          new FileStorageAdapter(realState),
+        );
+        const runtimeHash = toHex(runtimeIdentity.identityHash ?? new Uint8Array());
+        provisioning.runtimeIdentityHash = runtimeHash;
+        // The anchor mints a grant for the runtime's identity: the
+        // runtime is a project participant (the developer role — it
+        // serves the graph and executes)
+        if (dacar.mintGrant) {
+          try {
+            const grant = await dacar.mintGrant(runtimeHash);
+            provisioning.initialGrant = grant.deltas;
+            log(`runtime identity ${runtimeHash.slice(0, 8)} granted`);
+          } catch (error) {
+            const message = /** @type {any} */ (error)?.message ?? String(error);
+            log(`runtime grant minting failed: ${message}`);
+          }
+        }
         await writeFile(
           path.join(realState, "dacar.json"),
-          JSON.stringify(dacar, null, 2) + "\n",
+          JSON.stringify(provisioning, null, 2) + "\n",
         );
       }
       const realFolder = realPathFor(path.resolve(folder));

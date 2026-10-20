@@ -139,7 +139,7 @@ async function loadCatalog(folder) {
  * the Privacy Salt (the local-and-automatic bootstrap, work document #59).
  *
  * @param {string} stateDir
- * @returns {Promise<{ anchorHashHex: string, anchorPubkeyHex: string, salt: string, projectId: string } | null>}
+ * @returns {Promise<{ anchorHashHex: string, anchorPubkeyHex: string, salt: string, projectId: string, initialGrant?: string, runtimeIdentityHash?: string } | null>}
  */
 async function loadDacarBinding(stateDir) {
   try {
@@ -205,6 +205,18 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
   let syncServer = null;
   if (dacarBinding) {
     dacar = buildRuntimeDacar(dacarBinding);
+    // The initial grant from the provisioning: the parent minted a grant
+    // for the runtime's identity — ingest it so the link policy allows
+    if (dacarBinding.initialGrant) {
+      const applied = await dacar.apply(
+        new Uint8Array(
+          atob(dacarBinding.initialGrant)
+            .split("")
+            .map((c) => c.charCodeAt(0)),
+        ),
+      );
+      log(`initial grant ingested (${applied} deltas)`);
+    }
     syncServer = await RnsSyncServer.create({
       identity,
       receiver: dacar.receiver,
