@@ -1637,17 +1637,15 @@ function refreshSyncPanel() {
       });
       seenIdentities.add(meshIdentityHash);
     }
-    // The agent (pi): a participant inside the Companion — no mesh peer,
-    // but a chat participant with the agent-kind rendering (#61). The
-    // agent's presence rides the mesh connection: when the bridge is
-    // unreachable, the agent is offline too
-    if (syncStatus?.connected) {
-      roster.push({
-        identityHash: "__agent__",
-        name: "pi",
-        presence: "agent-idle",
-      });
-    }
+    // The agent (pi): a participant like any other — online when the
+    // Companion is reachable, offline when it's not (work document #61:
+    // agents are participants distinguished by kind, not a separate
+    // surface)
+    roster.push({
+      identityHash: "__agent__",
+      name: "pi",
+      presence: syncStatus?.connected ? "online" : "offline",
+    });
     for (const peerId of meshPeers) {
       const identityHash = meshPeerIdentities[peerId] ?? peerId;
       if (seenIdentities.has(identityHash)) continue;
