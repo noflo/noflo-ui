@@ -436,11 +436,18 @@ async function main() {
       // Narration: pi lifecycle moments reach the owner as chat
       if (ownerContact) {
         manager.addEventListener("narration", (/** @type {any} */ e) => {
+          // The dual-channel: LXMF for the external clients, the mesh
+          // echo for the webapp's chat panel (work document #47 item 3)
           lxmf
             ?.sendText(ownerContact, e.detail.text, {
               title: "Companion narration",
             })
             .catch(() => {});
+          inbound({
+            kind: "chat-response",
+            text: e.detail.text,
+            role: "system",
+          });
         });
         // pi output is Markdown; the LXMF renderer field is already set,
         // so assistant replies render readably in the chat client

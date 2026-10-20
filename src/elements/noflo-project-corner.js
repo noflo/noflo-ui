@@ -254,7 +254,14 @@ export class FlowProjectCorner extends FlowCornerElement {
    */
   addChatResponse(payload) {
     const panel = this._collaboratorsPanel;
-    if (panel) {
+    if (!panel) return;
+    if (payload.role === "system") {
+      // Narrations and system messages land in the agent's thread
+      panel.addThreadMessage("__agent__", {
+        text: payload.text,
+        role: "system",
+      });
+    } else {
       panel.deliverResponse({
         text: payload.text,
         role: payload.role,
