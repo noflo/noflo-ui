@@ -32,6 +32,7 @@ function escapeHtml(value) {
 }
 
 import { emit } from "../events.js";
+import { NofloCollaboratorsPanel } from "./noflo-collaborators-panel.js";
 
 const SCOPES = {
   proposed: { label: "proposed", cls: "proposed" },
@@ -47,6 +48,11 @@ export class FlowProjectCorner extends FlowCornerElement {
     /** The project's schemas (work document #57 update #1). */
     /** @type {Array<{ name: string, provenance: string }>} */
     this._schemas = [];
+    /** @type {Array<{ identityHash: string, name?: string, presence?: string, role?: string, self?: boolean }>} The Collaborators roster (work document #61). */
+    this._collaborators = [];
+    /** @type {NofloCollaboratorsPanel | null} The Collaborators panel
+     * (work document #61). */
+    this._collaboratorsPanel = null;
     /** Corners hide when there is nothing to show (work document #28). */
     this._visible = false;
     this.chipTitle = "Project work documents";
@@ -221,7 +227,37 @@ export class FlowProjectCorner extends FlowCornerElement {
    *
    * @param {string} url
    */
-  setRngitRemote(url) {
+  /**
+   * Sets the Collaborators panel's roster (work document #61): the
+   * avatars, presence, and the pending contacts.
+   *
+   * @param {Array<{ identityHash: string, name?: string, presence?: string, role?: string, self?: boolean }>} collaborators
+   */
+  setCollaborators(collaborators) {
+    this._collaborators = collaborators;
+    const panel = this._collaboratorsPanel;
+    if (panel) panel.setCollaborators(collaborators);
+    this.render();
+  }
+
+  /**
+   * Appends a chat response to a collaborator's thread (work document #61).
+   *
+   * @param {{ identityHash?: string, text: string, role: string }} payload
+   */
+  addChatResponse(payload) {
+    const identityHash = payload.identityHash ?? "";
+    if (!identityHash) return;
+    const panel = this._collaboratorsPanel;
+    if (panel) {
+      panel.addThreadMessage(identityHash, {
+        text: payload.text,
+        role: payload.role,
+      });
+    }
+  }
+
+  setRngitRemote(/** @type {string} */ url) {
     this._rngitRemote = url ?? "";
     this.render();
   }

@@ -46,7 +46,7 @@ import {
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import "./elements/noflo-schema-view.js";
-import "./elements/noflo-chat-panel.js";
+
 import "./elements/noflo-schema-form.js";
 import { NofloComponentView } from "./elements/noflo-component-view.js";
 import { FlowSyncPanel } from "./elements/noflo-sync-panel.js";
@@ -255,7 +255,7 @@ let syncPanel = null;
 let runtimeCorner = null;
 /** The chat panel (work document #47 item 3): the Glass's agent surface. */
 /** @type {any} */
-let chatPanel = null;
+let chatPanel = null; // retired: the Collaborators panel replaces it
 /** The schema editor view (work document #57 update #1). */
 let schemaView = null;
 /** @type {NofloComponentView | null} The full-screen component editor
@@ -613,7 +613,10 @@ const echoHandlers = createEchoHandlers({
     router?.navigate({ kind: "doc", id: payload.id });
   },
   chatResponse: (payload) => {
-    chatPanel?.addMessage({ text: payload.text, role: payload.role });
+    const corner = /** @type {any} */ (
+      document.getElementById("project-corner")
+    );
+    corner?.addChatResponse(payload);
   },
   implementationRequested: (payload) => {
     // The pointer's echo: the open component editor refreshes its request
@@ -2865,22 +2868,6 @@ async function init() {
         destinationHash: e.detail.destinationHash,
         graphId: activeGraphId,
       },
-    });
-  });
-  // The chat panel (work document #47 item 3): the Glass's agent surface
-  chatPanel = /** @type {any} */ (
-    document.createElement("noflo-chat-panel")
-  );
-  on(runtimeCorner, "open-chat", () => {
-    chatPanel?.show();
-  });
-  chatPanel.hidden = true;
-  document.body.appendChild(chatPanel);
-  on(chatPanel, "chat-send", (e) => {
-    supervisor?.send({
-      type: "MESH",
-      command: "chat",
-      payload: { text: e.detail.text },
     });
   });
   on(runtimeCorner, "runtime-run", (e) => {
