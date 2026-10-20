@@ -194,6 +194,9 @@
  *   The self avatar's customization affordance (work document #61)
  * @property {CustomEvent<void>} add-collaborator
  *   The Collaborators panel's Add user tile (work document #61)
+ * @property {CustomEvent<{ identityHash: string, alias: string | null }>} set-alias
+ *   The Collaborators panel's alias edit saved (work document #61)
+ *   The Collaborators panel's Add user tile (work document #61)
  *   The Runtime corner's Agent chip opened the chat panel
  *   The chat panel sent a message to the agent (work document #47 item 3)
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt

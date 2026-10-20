@@ -212,7 +212,15 @@ let peerReachability = {};
 /** The peer aliases (work document #61): device-local human-readable names
  * for peers, replacing the identity hash display. Stored in the mesh
  * storage; the Collaborators panel renders them. */
-let peerAliases = /** @type {Record<string, string>} */ ({});
+let peerAliases = /** @type {Record<string, string>} */ (
+  (() => {
+    try {
+      return JSON.parse(localStorage.getItem("noflo-peer-aliases") ?? "{}");
+    } catch {
+      return {};
+    }
+  })()
+);
 /** The discovered FBP runtime population (work document #59): the
  * Engine's `runtime-discovered` report, newest announce first. */
 let runtimeRuntimes =
@@ -2944,6 +2952,20 @@ async function init() {
   const collaboratorsPanel = /** @type {any} */ (
     document.getElementById("collaborators-panel")
   );
+  on(collaboratorsPanel, "set-alias", (e) => {
+    const { identityHash, alias } = e.detail;
+    if (!identityHash) return;
+    if (alias) {
+      peerAliases[identityHash] = alias;
+    } else {
+      delete peerAliases[identityHash];
+    }
+    try {
+      localStorage.setItem("noflo-peer-aliases", JSON.stringify(peerAliases));
+    } catch {
+      // localStorage failures are non-fatal (quota, private browsing)
+    }
+  });
   on(collaboratorsPanel, "chat-send", (e) => {
     // The chat rides the CRDT sync as a transport bus (work document #47
     // item 3): the message syncs to the bridge, the bridge's chat dispatch

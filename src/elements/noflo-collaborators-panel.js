@@ -220,7 +220,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       return `<div class="avatar ${presence}" data-identity="${escapeHtml(c.identityHash)}" title="${escapeHtml(c.name ?? c.identityHash)}">
         <div class="avatar-ring">${identiconSvg(c.identityHash, 36)}</div>
         ${unread > 0 ? `<span class="unread">${unread}</span>` : ""}
-        <span class="avatar-name">${escapeHtml(c.name ?? c.identityHash.slice(0, 8))}</span>
+        <span class="avatar-name ${c.self ? "" : "editable"}" data-alias-for="${escapeHtml(c.identityHash)}" title="${c.self ? "" : "Click to rename"}">${escapeHtml(c.name ?? c.identityHash.slice(0, 8))}</span>
         <span class="avatar-status ${presence}">${presence}</span>
       </div>`;
     };
@@ -305,6 +305,14 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+        .avatar-name.editable {
+          cursor: pointer;
+          text-decoration: underline dotted;
+          text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+        }
+        .avatar-name.editable:hover {
+          color: var(--ui-accent, rgb(90, 200, 250));
         }
         .avatar-status {
           font-size: 8px;
@@ -434,6 +442,35 @@ export class NofloCollaboratorsPanel extends HTMLElement {
   /** Wires the thread inputs and the avatar clicks. */
   _wireThreadInput() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    for (const nameEl of shadow.querySelectorAll(".avatar-name.editable")) {
+      nameEl.addEventListener("click", (/** @type {any} */ event) => {
+        event.stopPropagation();
+        const identityHash = nameEl.closest(".avatar")?.getAttribute("data-identity") ?? "";
+        const current = this._collaborators.find(
+          (/** @type {any} */ c) => c.identityHash === identityHash,
+        )?.name ?? "";
+        // The inline edit: the name swaps to an input, Enter or blur saves
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = current === identityHash.slice(0, 8) ? "" : current;
+        input.placeholder = identityHash.slice(0, 8);
+        input.style.cssText =
+          "width:48px;font-size:9px;font-family:inherit;background:transparent;border:1px solid var(--ui-accent, rgb(90, 200, 250));color:inherit;border-radius:3px;padding:1px 2px;outline:none;text-align:center";
+        nameEl.replaceWith(input);
+        input.focus();
+        input.select();
+        const save = () => {
+          const alias = input.value.trim();
+          emit(this, "set-alias", { identityHash, alias: alias || null });
+          this.render();
+        };
+        input.addEventListener("keydown", (/** @type {any} */ e) => {
+          if (e.key === "Enter") { e.preventDefault(); save(); }
+          if (e.key === "Escape") { this.render(); }
+        });
+        input.addEventListener("blur", save);
+      });
+    }
     for (const avatar of shadow.querySelectorAll(".avatar[data-identity]")) {
       avatar.addEventListener("click", () => {
         const identityHash = avatar.getAttribute("data-identity") ?? "";
