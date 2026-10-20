@@ -240,13 +240,9 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           position: fixed;
           bottom: 56px;
           left: 16px;
-          z-index: 60;
+          z-index: 101;
           display: block;
           max-width: min(320px, calc(100vw - 32px));
-          background: var(--ui-bg, rgb(20, 27, 35));
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          border-radius: 8px;
-          padding: 8px;
         }
         @media (min-width: 760px) {
           :host { left: 220px; }
@@ -333,9 +329,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           font-size: 18px;
         }
         .thread {
-          border-top: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
           padding: 8px 0;
-          background: var(--ui-bg, rgb(20, 27, 35));
         }
         .thread-scroll {
           max-height: 200px;

@@ -665,7 +665,16 @@ export async function startEngine(io, options = {}) {
       // there, and the chat dispatch's response goes back through the
       // bridge's inbound channel (work document #47 item 3)
       if (message.command === "chat") {
-        io.postMessage({ kind: "chat", payload: message.payload });
+        // The worker writes to the AUTHORITATIVE doc's chatBus: the Glass
+        // writes to the mirror (a read replica — local writes don't sync),
+        // so the worker is the write path. The bridge's observer on the
+        // same doc fires and processes the message through the chat
+        // dispatch (work document #47 item 3)
+        doc.getMap("chatBus").set(`msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, {
+          text: message.payload?.text ?? "",
+          source: "glass",
+          time: Date.now(),
+        });
         return;
       }
       meshSocket.send(message);
