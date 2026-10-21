@@ -416,9 +416,14 @@ async function main() {
 
     // The agent primer: context provisioning for file-based tools (work
     // document #44 M2). A pre-existing AGENTS.md is never overwritten
-    // (work document #43 update #4 overlay rule)
+    // (work document #43 update #4 overlay rule). The project's name
+    // from the CRDT metadata pins the agent's scope (work document #67:
+    // pi walks up the tree reading AGENTS files and must not adopt the
+    // surrounding checkout's context)
     const primer = primerFor({
       exists: (file) => fsSync.existsSync(path.join(folder, file)),
+      projectName:
+        /** @type {string} */ (engine.doc.getMap("metadata").get("name")) ?? "",
     });
     if (primer !== null) {
       await fs.writeFile(path.join(folder, PRIMER_FILENAME), primer);
