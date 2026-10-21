@@ -634,15 +634,32 @@ export async function joinViaBootstrapInvite({
     fail(STATE.REQUESTING_PATH, err);
   }
   // The path response arrives as an announce that populates the transport's
-  // known-destination store; poll the recall until the host identity is
-  // available or the deadline passes
+  // known-destination store; poll until the host identity is available AND
+  // a live path exists. Recall alone is not enough: the persisted
+  // destination cache restores identities across restarts, so a stale
+  // announce satisfies recall while the path table is empty — and the
+  // link request would die with "no route to host" (the live finding
+  // behind the bridge's persistent transport storage)
   let hostIdentity = null;
   while (Date.now() < deadline) {
     hostIdentity = await reticulum.transport.recallIdentity(hostHashBytes);
-    if (hostIdentity) break;
+    const hasPath =
+      typeof reticulum.transport.hasPath === "function" &&
+      reticulum.transport.hasPath(hostHashBytes);
+    if (hostIdentity && hasPath) break;
+    if (hostIdentity && !hasPath) {
+      // The identity came from the persistent cache: re-request the path
+      await reticulum.transport.requestPath(hostHashBytes).catch(() => {});
+    }
     await new Promise((resolve) => setTimeout(resolve, RECALL_POLL_MS));
   }
   if (!hostIdentity) fail(STATE.REQUESTING_PATH, "host path not resolved");
+  if (
+    typeof reticulum.transport.hasPath === "function" &&
+    !reticulum.transport.hasPath(hostHashBytes)
+  ) {
+    fail(STATE.REQUESTING_PATH, "host path not resolved");
+  }
 
   // [ LINKING ]: ephemeral, reliable link to the host's bootstrap destination
   onState(STATE.LINKING);
