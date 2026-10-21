@@ -94,8 +94,8 @@ import {
   syncLibraryFromRegistry,
 } from "./library/LibraryManager.js";
 import { routeName as displayRouteName } from "./library/routes.js";
-import { codeScaffold } from "./library/scaffold.js";
 import { getFlavor } from "./library/runtimeinfo/index.js";
+import { codeScaffold } from "./library/scaffold.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
 import { createSupervisor } from "./worker/EngineSupervisor.js";
@@ -209,10 +209,15 @@ function narrateWorkerError(error) {
  * of a path request that looks stuck. */
 /** @type {Record<string, "online" | "offline">} */
 let peerReachability = {};
+/** The agent's LXMF contact (work document #42): the Companion's mesh
+ * identity hash once its LXMF announce was heard. The roster's agent
+ * entry keys the agent thread with it; "__agent__" stands in before
+ * discovery (a thread the worker cannot address yet). */
+let agentHash = "";
 /** The peer aliases (work document #61): device-local human-readable names
  * for peers, replacing the identity hash display. Stored in the mesh
  * storage; the Collaborators panel renders them. */
-let peerAliases = /** @type {Record<string, string>} */ (
+const peerAliases = /** @type {Record<string, string>} */ (
   (() => {
     try {
       return JSON.parse(localStorage.getItem("noflo-peer-aliases") ?? "{}");
@@ -268,7 +273,7 @@ let syncPanel = null;
 let runtimeCorner = null;
 /** The chat panel (work document #47 item 3): the Glass's agent surface. */
 /** @type {any} */
-let chatPanel = null; // retired: the Collaborators panel replaces it
+const chatPanel = null; // retired: the Collaborators panel replaces it
 /** The schema editor view (work document #57 update #1). */
 let schemaView = null;
 /** @type {NofloComponentView | null} The full-screen component editor
@@ -625,11 +630,84 @@ const echoHandlers = createEchoHandlers({
     pendingWorkDocEditId = payload.id;
     router?.navigate({ kind: "doc", id: payload.id });
   },
-  chatResponse: (payload) => {
-    const corner = /** @type {any} */ (
-      document.getElementById("project-corner")
+  chatMessage: (data) => {
+    // An inbound LXMF message (work document #42 Phase A'): the chat
+    // panel renders it in the sender's thread. The role follows the
+    // sender: the agent's thread gets assistant/system bubbles, other
+    // collaborators get peer messages
+    const identityHash = String(data?.identityHash ?? "");
+    if (!identityHash) return;
+    const title = String(data?.title ?? "");
+    const role =
+      identityHash === agentHash
+        ? title === "Companion narration"
+          ? "system"
+          : "assistant"
+        : "peer";
+    panelChat(identityHash, { text: String(data?.text ?? ""), role });
+    if (role === "assistant" || role === "system") {
+      // The reply landed: the processing signal is answered
+      const panel = /** @type {any} */ (
+        document.getElementById("collaborators-panel")
+      );
+      panel?.setThinking?.(identityHash, false);
+    }
+  },
+  chatAck: (data) => {
+    // The send's outcome (work document #42 Phase A'): the thread's
+    // pending message transitions — no timeout guessing
+    const panel = /** @type {any} */ (
+      document.getElementById("collaborators-panel")
     );
-    corner?.addChatResponse(payload);
+    const identityHash = String(data?.identityHash ?? "");
+    if (data?.ok) {
+      panel?.markSent?.(identityHash);
+    } else {
+      panel?.failThread?.(identityHash, String(data?.error ?? "send failed"));
+    }
+  },
+  chatAgent: (data) => {
+    // The agent's LXMF contact (work document #42): the roster's agent
+    // entry maps to the discovered identity from now on
+    const identityHash = String(data?.identityHash ?? "");
+    if (!identityHash || identityHash === agentHash) return;
+    agentHash = identityHash;
+    refreshSyncPanel();
+  },
+  chatReaction: (data) => {
+    // The sender's processing signal (work document #42): the thinking
+    // indicator shows in the thread until the reply lands
+    const identityHash = String(data?.identityHash ?? "");
+    if (!identityHash) return;
+    const panel = /** @type {any} */ (
+      document.getElementById("collaborators-panel")
+    );
+    panel?.setThinking?.(identityHash, true);
+  },
+  chatHistory: (data) => {
+    // The persisted threads (work document #61): history restores with
+    // the roles mapped the same way live messages are
+    const threads = Array.isArray(data?.threads) ? data.threads : [];
+    const panel = /** @type {any} */ (
+      document.getElementById("collaborators-panel")
+    );
+    panel?.loadThreads?.(
+      threads.map((/** @type {any} */ thread) => ({
+        identityHash: String(thread.identityHash ?? ""),
+        messages: (thread.messages ?? []).map((/** @type {any} */ m) => ({
+          text: String(m.text ?? ""),
+          role:
+            m.direction === "out"
+              ? "human"
+              : thread.identityHash === agentHash
+                ? String(m.title ?? "") === "Companion narration"
+                  ? "system"
+                  : "assistant"
+                : "peer",
+          time: Number(m.time ?? 0),
+        })),
+      })),
+    );
   },
   implementationRequested: (payload) => {
     // The pointer's echo: the open component editor refreshes its request
@@ -714,6 +792,21 @@ async function recoverIdentityOnMainThread() {
     refreshMeshSettings();
     console.warn("Main-thread identity recovery failed:", err);
   }
+}
+
+/**
+ * Appends an inbound chat message to a collaborator's thread (work
+ * document #61): one LXMF thread per identity, keyed by the sender's
+ * identity hash.
+ *
+ * @param {string} identityHash
+ * @param {{ text: string, role: string }} message
+ */
+function panelChat(identityHash, message) {
+  const panel = /** @type {any} */ (
+    document.getElementById("collaborators-panel")
+  );
+  panel?.addThreadMessage?.(identityHash, message);
 }
 
 /**
@@ -1645,15 +1738,18 @@ function refreshSyncPanel() {
       });
       seenIdentities.add(meshIdentityHash);
     }
-    // The agent (pi): a participant like any other — online when the
-    // Companion is reachable, offline when it's not (work document #61:
-    // agents are participants distinguished by kind, not a separate
-    // surface)
-    roster.push({
-      identityHash: "__agent__",
-      name: "pi",
-      presence: syncStatus?.connected ? "online" : "offline",
-    });
+    // The agent (pi): a participant like any other (work document #61) —
+    // rendered only once the Companion has introduced itself (the verified
+    // hello sender): a synthetic placeholder for an agent nobody can
+    // address is a ghost, not a participant
+    if (agentHash) {
+      roster.push({
+        identityHash: agentHash,
+        name: "pi",
+        presence:
+          peerReachability[agentHash] === "online" ? "online" : "offline",
+      });
+    }
     for (const peerId of meshPeers) {
       const identityHash = meshPeerIdentities[peerId] ?? peerId;
       if (seenIdentities.has(identityHash)) continue;
@@ -1672,7 +1768,8 @@ function refreshSyncPanel() {
       seenIdentities.add(request.identityHash);
       roster.push({
         identityHash: request.identityHash,
-        name: peerAliases[request.identityHash] ?? request.identityHash.slice(0, 8),
+        name:
+          peerAliases[request.identityHash] ?? request.identityHash.slice(0, 8),
         presence: "requested",
       });
     }
@@ -2606,21 +2703,6 @@ async function init() {
   }
 
   mirrorDoc = new Y.Doc();
-  // The chat bus's response observer (work document #47 item 3): the
-  // bridge's responses land here through the sync — the Collaborators
-  // panel renders them
-  mirrorDoc.getMap("chatBus").observe((/** @type {any} */ event) => {
-    const keys = event.keysChanged ?? new Set();
-    for (const key of keys) {
-      const value = /** @type {any} */ (event.target.get(key));
-      if (!value || value.role !== "assistant") continue;
-      const panel = document.getElementById("collaborators-panel");
-      /** @type {any} */ (panel)?.deliverResponse?.({
-        text: value.text,
-        role: "assistant",
-      });
-    }
-  });
   mirrorDoc.on("update", () => {
     intentMapper?.flushPending((nodeId) =>
       Boolean(projectGraph(mirrorDoc, activeGraphId)?.processes[nodeId]),
@@ -2967,22 +3049,16 @@ async function init() {
     }
   });
   on(collaboratorsPanel, "chat-send", (e) => {
-    // The chat rides the worker's authoritative doc: the Glass sends a
-    // MESH command, the worker writes to the chatBus in the
-    // authoritative doc, the bridge's observer fires and processes the
-    // message through the chat dispatch (work document #47 item 3)
+    // Chat rides LXMF (work document #42 Phase A'): the worker sends a
+    // real LXMF message to the target's derived lxmf.delivery destination;
+    // the ack transitions the pending message, inbound replies land as
+    // chat-message echoes
     supervisor?.send({
       type: "MESH",
       command: "chat",
-      payload: { text: e.detail.text },
+      payload: { text: e.detail.text, identityHash: e.detail.identityHash },
     });
-    // The delivery timeout: if no response arrives within 30s, the
-    // message marks failed (the transport didn't deliver)
-    setTimeout(() => {
-      /** @type {any} */ (collaboratorsPanel).failPending?.();
-    }, 30_000);
   });
-
 
   on(runtimeCorner, "runtime-run", (e) => {
     supervisor?.send({

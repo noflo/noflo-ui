@@ -1,9 +1,9 @@
 /**
  * @file Mesh plane: the Chat command as an assembly component (work
- * document #47 item 3). A thin adapter — the actual routing happens in
- * the engine's message router, which intercepts the chat command before
- * the mesh graph dispatches it (the chat goes to the bridge, where the pi
- * manager lives). This component carries the contract's formality.
+ * documents #42 Phase A', #61). A thin adapter over the mesh layer's LXMF
+ * send — the browser is an LXMF participant, so the message goes out as a
+ * real LXMF message to the target's derived `lxmf.delivery` destination.
+ * The outcome surfaces to the Glass through the layer's `chat-ack`.
  */
 
 import { Component } from "../../../vendor/assembly.js";
@@ -14,14 +14,14 @@ import { Component } from "../../../vendor/assembly.js";
 export class Chat extends Component {
   constructor() {
     super({
-      description: "Sends a chat message to the Companion's agent",
+      description: "Sends a chat message over LXMF",
       icon: "comment-dots",
       inPorts: {
         message: { datatype: "object" },
         context: { datatype: "object", control: true },
       },
       outPorts: {
-        forwarded: { datatype: "object" },
+        error: { datatype: "object" },
       },
     });
   }
@@ -30,9 +30,23 @@ export class Chat extends Component {
    * @param {any} input
    * @param {any} output
    */
-  processMessage(input, output) {
+  async processMessage(input, output) {
+    if (!input.hasData("context")) return;
     if (!input.hasData("message")) return;
-    output.sendDone({ forwarded: input.getData("message") });
+    const message = input.getData("message");
+    const context = input.getData("context");
+    if (typeof context.chat !== "function") {
+      output.error(new Error("Mesh dispatch lost its chat capability"));
+      output.done();
+      return;
+    }
+    try {
+      await context.chat(message.payload);
+    } catch (err) {
+      console.error("Mesh Chat failed:", err);
+      output.error(err instanceof Error ? err : new Error(String(err)));
+    }
+    output.done();
   }
 }
 

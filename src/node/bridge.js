@@ -30,7 +30,7 @@
  *     "tls": { "cert": "...", "key": "..." },  // optional HTTPS
  *     "hub": { "port": 3569 },      // the WebSocket on-ramp; false = off
  *     "mesh": { ...mesh config, same shape the settings dialog manages },
- *     "invite": "noflo://join/...",  // optional seed invite
+ *     "seedInvite": "noflo://join/...",  // optional seed invite
  *     "ownerIdentity": "<identity hash hex>",  // trust anchor; the LXMF
  *                                  // chat address derives from it
  *     "stateDir": "...",            // Companion state (registry, backups,
@@ -53,22 +53,25 @@ import { claimInstructions, createClaimCode } from "./claim.js";
  * extension_ui_request methods (e.g. setStatus) are ignored. */
 const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 
-import { wireProjectFolder } from "./projectFolder.js";
-import { createRuntimeManager } from "./runtimeManager.js";
+import { LocalClientInterface } from "@reticulum/node";
+import { toHex } from "../../vendor/reticulum-core.js";
+import { deriveDeliveryHash } from "../lxmf/protocol.js";
 import { startEngine } from "../worker/engine.js";
 import { resolveCompanionPaths } from "./companionPaths.js";
 import { attachInterfaces } from "./interfaces.js";
-import { deriveDeliveryHash, startLxmfLayer } from "./lxmf.js";
+import { startLxmfPlane } from "./lxmf.js";
 import { bindFilePersistence, createFileStorage } from "./persistence.js";
 import { createPiManager, discoverPi } from "./piManager.js";
 import { assistantText } from "./piRpc.js";
 import { PRIMER_FILENAME, primerFor } from "./primer.js";
+import { wireProjectFolder } from "./projectFolder.js";
 import {
   loadProjectsRegistry,
   registerProject,
   removeProject,
   setActiveProject,
 } from "./projects.js";
+import { createRuntimeManager } from "./runtimeManager.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 
@@ -158,10 +161,6 @@ function serveUi(port, tls, host = "localhost") {
 
 /** The daemon entry. */
 async function main() {
-  /** The engine's inbound dispatch lands here; the daemon drives the
-   * engine through `engine.handle` instead (work document #44). */
-  /** @type {(message: any) => void} */
-  let inbound = () => {};
   const argv = process.argv.slice(2);
   const configIndex = argv.indexOf("--config");
   // Zero-configuration defaults (work document #47 scope item 8): the
@@ -187,24 +186,66 @@ async function main() {
   );
 
   // The process-owned Reticulum instance: built once, handed to every
-  // project engine (work document #47, multi-project) and shared with the
-  // LXMF layer — one mesh node. Interfaces attach here, not per engine
-  const { Reticulum } = await import("../../vendor/reticulum-core.js");
-  const rns = new Reticulum();
+  // project engine (work document #47, multi-project) and carrying the
+  // LXMF plane — one mesh node, one identity (work document #67). The
+  // boot discipline is pi-lxmf's: persistent transport state in the
+  // companion state dir, a bz2 compression provider for Resources, and
+  // `ready()` settled before the identity loads and anything announces
+  const { Reticulum, Identity } = await import(
+    "../../vendor/reticulum-core.js"
+  );
+  const { FileStorageAdapter } = await import("@reticulum/node");
+  const { createBz2 } = await import("../worker/bz2.js");
+  const rns = new Reticulum({
+    storageAdapter: new FileStorageAdapter(path.join(stateDir, "storage")),
+    compressionProvider: await createBz2(),
+  });
+  await rns.ready();
+  // The Companion's single identity: loaded or generated in the RNS
+  // storage — the ONE source of truth, shared by the LXMRouter and every
+  // project engine. The mesh config payload below carries the same key
+  // material so MeshSync restores exactly this identity
+  const identity = await Identity.loadOrGenerate(
+    /** @type {any} */ (rns.storage),
+  );
+  const identityBase64 = Buffer.from(await identity.getPrivateKey()).toString(
+    "base64",
+  );
+  console.log(`bridge  companion identity ${toHex(identity.identityHash)}`);
 
   // Interfaces: the stored mesh config (or the defaults), plus the hub
   // on-ramps. Attach directly to the process-owned instance
   const meshConfig = config.mesh ?? {};
+  /** Whether the zero-config default's shared client is already on the
+   * instance (the attach pass must not dial a second socket for it). */
+  let sharedPreattached = false;
   if (!meshConfig.interfaces || meshConfig.interfaces.length === 0) {
-    meshConfig.interfaces = [
-      { id: "bridge-shared", type: "shared", options: {}, enabled: true },
-      {
-        id: "bridge-auto",
-        type: "autointerface",
-        options: { name: "auto" },
-        enabled: true,
-      },
-    ];
+    // Zero-config defaults (SPEC): the shared rnsd instance when one runs —
+    // AutoInterface only when it does not. With a daemon, the multicast
+    // discovery is redundant (the shared instance already reaches the
+    // daemon's whole mesh) and noisy on machines full of VPN tunnels. The
+    // probe's connection is kept and attached directly; the stored config
+    // records the resolved choice so restarts stay faithful
+    const shared = await LocalClientInterface.connectToSharedInstance({}).catch(
+      () => null,
+    );
+    if (shared) {
+      rns.addInterface(shared, true);
+      sharedPreattached = true;
+      meshConfig.interfaces = [
+        { id: "bridge-shared", type: "shared", options: {}, enabled: true },
+      ];
+    } else {
+      console.warn("Mesh interface type shared: no shared instance running");
+      meshConfig.interfaces = [
+        {
+          id: "bridge-auto",
+          type: "autointerface",
+          options: { name: "auto" },
+          enabled: true,
+        },
+      ];
+    }
   }
   // Hub mode (work document #44 M3, SPEC auto-detect defaults): a
   // WebSocketServer on ws://localhost:3569 ("flow" in T9, like
@@ -247,7 +288,16 @@ async function main() {
       });
     }
   }
-  await attachInterfaces(rns, meshConfig.interfaces);
+  // The preattached shared client is already on the instance; attaching
+  // the stored entry again would dial a second socket for the same daemon
+  const toAttach = sharedPreattached
+    ? meshConfig.interfaces.filter(
+        (/** @type {any} */ iface) => iface.type !== "shared",
+      )
+    : meshConfig.interfaces;
+  if (toAttach.length > 0) {
+    await attachInterfaces(rns, toAttach);
+  }
 
   const piAvailable = await discoverPi({ piBin: config.piBin ?? "pi" });
   if (!piAvailable.available) {
@@ -260,10 +310,21 @@ async function main() {
   const ownerContact = config.ownerIdentity
     ? await deriveDeliveryHash(config.ownerIdentity)
     : null;
-  /** The process-level LXMF layer (the agent-layer section binds it once
-   * the process-owned Reticulum instance is up). */
-  /** @type {Awaited<ReturnType<typeof startLxmfLayer>> | null} */
+  // The LXMF plane (work document #67): a pi-lxmf port on the process
+  // RNS — started once here, before any project, and never touched by
+  // project lifecycle events. The one-shot hello world greets the
+  // configured owner (now effective via propagation store-and-forward);
+  // propagation nodes are discovered from the mesh, never run here
+  /** @type {Awaited<ReturnType<typeof startLxmfPlane>> | null} */
   let lxmf = null;
+  lxmf = await startLxmfPlane({
+    rns,
+    identity,
+    name: config.name ?? "noflo-ui Companion",
+    ownerContact,
+    log: (/** @type {string} */ msg) => console.log(msg),
+  });
+  console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
 
   // ---- Per-project lifecycle ----
   /** @type {any} */
@@ -301,38 +362,13 @@ async function main() {
           ) {
             return;
           }
-          // The webapp's chat (work document #47 item 3): the Glass's
-          // chat panel sends messages through the mesh; the bridge routes
-          // them through the same dispatch the LXMF chat surface uses
-          if (message.kind === "chat") {
-            const text = String(message.payload?.text ?? "");
-            if (!text.trim() || !active?.manager) return;
-            active.manager
-              .prompt(text)
-              .then((/** @type {any} */ response) => {
-                const reply = assistantText(response);
-                inbound({
-                  kind: "chat-response",
-                  text: reply,
-                  role: "assistant",
-                });
-              })
-              .catch((/** @type {any} */ error) => {
-                inbound({
-                  kind: "chat-response",
-                  text: `pi error: ${error?.message ?? error}`,
-                  role: "system",
-                });
-              });
-            return;
-          }
           console.log(
             `${kind.padEnd(14)} ${JSON.stringify(message.payload ?? message)}`,
           );
         },
-        registerMessageHandler: (handler) => {
-          inbound = handler;
-        },
+        // The daemon drives the engine through `engine.handle` instead
+        // (work document #44): the Glass→engine route stays inert here
+        registerMessageHandler: () => {},
       },
       {
         name: config.name ?? "noflo-ui Companion",
@@ -378,32 +414,6 @@ async function main() {
 
     await projectFolder.materialize();
 
-    // The chat bus (work document #47 item 3): the Glass's chat messages
-    // ride the CRDT sync as a transport bus — the bridge observes the
-    // chatBus map and processes incoming messages through the chat
-    // dispatch. The responses go back through the same bus. The messages
-    // are transient: the bus is the transport, not the store
-    const chatBus = engine.doc.getMap("chatBus");
-    const processedChats = new Set();
-    let chatObserver = chatBus.observe((/** @type {any} */ event) => {
-      const keys = event.keysChanged ?? new Set();
-      for (const key of keys) {
-        if (processedChats.has(key)) continue;
-        processedChats.add(key);
-        const value = /** @type {any} */ (chatBus.get(key));
-        if (!value || !value.text || value.role) continue;
-        const sourceHash = String(value.source ?? "");
-        const text = String(value.text);
-        console.log(`bridge  chat from ${sourceHash.slice(0, 8)}: ${text.slice(0, 60)}`);
-        const chatEvent = {
-          message: { sourceHash, content: text },
-        };
-        chat?.handleInbound(chatEvent).catch((error) => {
-          console.error(`bridge  chat dispatch failed: ${error?.message ?? error}`);
-        });
-      }
-    });
-
     // The agent primer: context provisioning for file-based tools (work
     // document #44 M2). A pre-existing AGENTS.md is never overwritten
     // (work document #43 update #4 overlay rule)
@@ -433,73 +443,112 @@ async function main() {
         log: (msg) => console.log(msg),
       });
       chat?.setPi(manager);
-      // Narration: pi lifecycle moments reach the owner as chat
-      if (ownerContact) {
-        manager.addEventListener("narration", (/** @type {any} */ e) => {
-          // The dual-channel: LXMF for the external clients, the mesh
-          // echo for the webapp's chat panel (work document #47 item 3)
-          lxmf
-            ?.sendText(ownerContact, e.detail.text, {
-              title: "Companion narration",
-            })
-            .catch(() => {});
-          inbound({
-            kind: "chat-response",
-            text: e.detail.text,
-            role: "system",
-          });
-        });
-        // pi output is Markdown; the LXMF renderer field is already set,
-        // so assistant replies render readably in the chat client
-        manager.addEventListener("event", (/** @type {any} */ e) => {
-          const event = e.detail;
-          if (
-            event?.type === "message_end" &&
-            event.message?.role === "assistant"
-          ) {
-            const text = assistantText(event.message);
-            if (text) {
-              chat?.clearReaction();
-              chat?.reply(text, "pi").catch(() => {});
-            }
-          }
-          // Blocking dialogs hang the run with nobody at a terminal:
-          // decline and note. pi also fires non-blocking requests (e.g.
-          // setStatus on every startup) — those are ignored silently
-          if (event?.type === "extension_ui_request") {
-            const method = /** @type {string} */ (event.method);
-            if (!DIALOG_METHODS.has(method)) return;
-            manager?.client?.respondUi(event.id, { cancelled: true });
+      // Narration: pi lifecycle moments reach the owner and every
+      // admitted project participant over LXMF (work document #42: all
+      // chat is LXMF)
+      manager.addEventListener("narration", (/** @type {any} */ e) => {
+        chat
+          ?.narrate(e.detail.text)
+          .catch((error) =>
+            console.error(
+              `bridge  narration failed: ${error?.message ?? error}`,
+            ),
+          );
+      });
+      // pi output is Markdown; the LXMF renderer field is already set,
+      // so assistant replies render readably in the chat client
+      manager.addEventListener("event", (/** @type {any} */ e) => {
+        const event = e.detail;
+        if (
+          event?.type === "message_end" &&
+          event.message?.role === "assistant"
+        ) {
+          const text = assistantText(event.message);
+          if (text) {
+            chat?.clearReaction();
             chat
-              ?.reply(
-                `⛔ dismissed a dialog (${event.title ?? method}) — nobody is at a terminal.`,
-                "pi",
-              )
-              .catch(() => {});
+              ?.reply(text, "pi")
+              .then(() => console.log("bridge  reply delivered"))
+              .catch((error) =>
+                console.error(
+                  `bridge  reply delivery failed: ${error?.message ?? error}`,
+                ),
+              );
           }
-        });
-      }
+        }
+        // Blocking dialogs hang the run with nobody at a terminal:
+        // decline and note. pi also fires non-blocking requests (e.g.
+        // setStatus on every startup) — those are ignored silently
+        if (event?.type === "extension_ui_request") {
+          const method = /** @type {string} */ (event.method);
+          if (!DIALOG_METHODS.has(method)) return;
+          manager?.client?.respondUi(event.id, { cancelled: true });
+          chat
+            ?.reply(
+              `⛔ dismissed a dialog (${event.title ?? method}) — nobody is at a terminal.`,
+              "pi",
+            )
+            .catch(() => {});
+        }
+      });
     }
 
     // Mesh: the engine rebinds its provider onto the process-owned node.
     // The join boots the mesh with the stored config, so the transport
     // interfaces must be configured first — without them the knock times
-    // out with "host path not resolved"
+    // out with "host path not resolved". The Companion is ALWAYS an
+    // invited participant, never a project creator (SPEC): declaring
+    // joinedViaInvite here forbids the boot's anchor self-assignment —
+    // the live incident where a re-keyed bridge with a not-yet-restored
+    // document hijacked the project's trust root and refused its own
+    // peers. The real binding arrives with the welcome handoff
+    // The mesh start is async: let the transport come up before the knock.
+    // The payload carries the process identity's key material: the mesh
+    // plane restores exactly the identity the LXMF plane announces with —
+    // one identity, one source of truth (the RNS storage)
     engine.handle({
       type: "MESH",
       command: "configure",
-      payload: { ...meshConfig, enabled: true },
+      payload: {
+        ...meshConfig,
+        enabled: true,
+        joinedViaInvite: true,
+        identity: identityBase64,
+      },
     });
     // The mesh start is async: let the transport come up before the knock
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    if (config.invite) {
+    if (config.seedInvite) {
       // Seed invites join the active project (the knock is idempotent:
       // an already-granted project re-answers the handoff)
       engine.handle({
         type: "MESH",
         command: "join",
-        payload: { invite: config.invite },
+        payload: { invite: config.seedInvite },
       });
+      // The seed join retries until the welcome handoff lands: an
+      // always-on daemon must recover from "the host was offline at boot"
+      // without an operator, and a missed host announce starves the first
+      // knock's path request. Re-knocking is safe — the host remembers
+      // its decision — and the binding's arrival is the success signal
+      const joinRetry = setInterval(() => {
+        meshStorage
+          .get(`dacar-node:${projectId}`)
+          .then((binding) => {
+            if (binding) {
+              clearInterval(joinRetry);
+              return;
+            }
+            console.log("bridge  seed join: no binding yet — re-knocking");
+            engine.handle({
+              type: "MESH",
+              command: "join",
+              payload: { invite: config.seedInvite },
+            });
+          })
+          .catch(() => {});
+      }, 120_000);
+      if (joinRetry.unref) joinRetry.unref();
     }
 
     // Registry: the project is now known by its CRDT identity
@@ -522,8 +571,10 @@ async function main() {
       dacar: await meshStorage
         .get(`dacar-node:${projectId}`)
         .then((stored) =>
-          stored && typeof stored.anchorHash === "string" &&
-          typeof stored.anchorPubkey === "string" && typeof stored.salt === "string"
+          stored &&
+          typeof stored.anchorHash === "string" &&
+          typeof stored.anchorPubkey === "string" &&
+          typeof stored.salt === "string"
             ? {
                 anchorHashHex: stored.anchorHash,
                 anchorPubkeyHex: stored.anchorPubkey,
@@ -625,18 +676,9 @@ async function main() {
     );
   }
 
-  // ---- The agent layer (work document #44 M2) ----
-  // LXMF: the always-on, addressable endpoint. Rides the process-owned
-  // Reticulum stack (one mesh node, work document #47); the identity
-  // lives in the Companion state dir, outside any project folder
-  lxmf = await startLxmfLayer({
-    rns,
-    stateDir,
-    name: config.name ?? "noflo-ui Companion",
-    propagationNodeHex: config.propagationNodeHex ?? null,
-    log: (msg) => console.log(msg),
-  });
-  console.log(`bridge  LXMF delivery destination ${lxmf.deliveryHash}`);
+  // ---- The agent layer (work documents #44 M2, #67) ----
+  // The LXMF plane started at boot; the chat surface binds to it now that
+  // the first project is up
 
   // Unclaimed mode (work document #47 scope item 1): without a
   // configured owner the claim code is the only way in; the first
@@ -656,24 +698,15 @@ async function main() {
   }
   chat = createChatSurface({
     ownerContact,
-    // The sendText dual-channel: LXMF for the external clients AND the
-    // chatBus for the webapp's chat panel (work document #47 item 3)
-    sendText: async (destinationHex, text, sendOptions = {}) => {
-      await lxmf.sendText(destinationHex, text, sendOptions);
-      // The dual-channel: the response also lands in the chatBus for the
-      // webapp's chat panel (the active project's doc)
-      const bus = active?.engine?.doc?.getMap("chatBus");
-      if (bus) {
-        bus.set(`response-${Date.now()}`, {
-          text,
-          role: "assistant",
-          time: Date.now(),
-        });
-      }
-    },
+    sendText: lxmf.sendText,
     sendReaction: lxmf.sendReaction,
     verifySender: lxmf.verifySender,
     pi: active?.manager ?? null,
+    // The participant admission path (work document #42's inbound
+    // policy): a verified sender the mesh layer grants is admitted — the
+    // webapp's user chats with pi exactly like any other LXMF participant
+    isParticipant: (/** @type {string} */ identityHash) =>
+      Boolean(active?.engine?.isGranted?.(identityHash)),
     state: {
       get: (key) => meshStorage.get(`pi:${active?.projectId}:${key}`),
       set: (key, value) =>
@@ -746,8 +779,18 @@ async function main() {
     senderIdentityHash: lxmf.senderIdentityHash,
     log: (msg) => console.log(msg),
   });
-  lxmf.onMessage((event) => {
-    chat.handleInbound(event).catch(() => {});
+  lxmf.onMessage((/** @type {any} */ event) => {
+    const source = event?.message?.sourceHash
+      ? toHex(event.message.sourceHash)
+      : "unknown";
+    console.log(
+      `bridge  lxmf inbound from ${source.slice(0, 16)} (${
+        event.message?.content?.length ?? 0
+      } bytes)`,
+    );
+    chat.handleInbound(event).catch((error) => {
+      console.error(`bridge  chat dispatch failed: ${error?.message ?? error}`);
+    });
   });
 
   // Hello world: the boot announce to the owner contact (work document
@@ -778,16 +821,19 @@ async function main() {
     } catch {
       /* keep the declared range */
     }
-    lxmf
-      .sendText(
-        ownerContact,
-        `Companion "${config.name ?? "noflo-ui Companion"}" is running.\nnoflo-ui ${pkg.version}, noflo ${nofloVersion}\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${piAvailable.version ?? "not found"}`,
-        { title: "Companion hello" },
-      )
-      .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
-      .catch((error) =>
-        console.log(`bridge  hello world failed: ${error.message}`),
-      );
+    const helloText = `Companion "${
+      config.name ?? "noflo-ui Companion"
+    }" is running.\nnoflo-ui ${pkg.version}, noflo ${nofloVersion}\nLXMF delivery: ${lxmf.deliveryHash}\npi: ${
+      piAvailable.version ?? "not found"
+    }`;
+    const sendHello = () =>
+      lxmf
+        .sendText(ownerContact, helloText, { title: "Companion hello" })
+        .then(() => console.log(`bridge  hello world sent to ${ownerContact}`))
+        .catch((error) =>
+          console.log(`bridge  hello world failed: ${error.message}`),
+        );
+    await sendHello();
   } else {
     console.log(
       "bridge  no ownerIdentity configured — the Companion is unclaimed; send the claim code below to become the owner",

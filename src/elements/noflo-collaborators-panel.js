@@ -2,8 +2,8 @@
  * @file The Collaborators panel (work document #61): avatars, presence
  * borders, and per-peer chat threads — one LXMF thread per identity. The
  * panel docks in the bottom-left Project corner beside the work-documents
- * accordion. The transport rides the project's chat relay (the interim
- * mesh path; #42's webapp LXMF router is the eventual replacement).
+ * accordion. The transport is LXMF (work document #42 Phase A'): sends go
+ * out as real LXMF messages, inbound messages land in the sender's thread.
  *
  * The avatar's visual identity: a deterministic identicon from the
  * identity hash (#38's algorithm — one hash, one avatar, one identity
@@ -38,7 +38,7 @@ export function identiconColors(hashHex) {
   for (let i = 0; i < 6 && i * 2 < hashHex.length; i += 2) {
     bytes.push(parseInt(hashHex.slice(i * 2, i * 2 + 2), 16) || 0);
   }
-  const hue = (bytes[0] ?? 0) * 360 / 256;
+  const hue = ((bytes[0] ?? 0) * 360) / 256;
   const sat = 45 + ((bytes[1] ?? 0) % 30);
   const light = 30 + ((bytes[2] ?? 0) % 25);
   return {
@@ -101,12 +101,16 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     /** @type {Collaborator[]} The roster: self first, then members, then pending. */
     this._collaborators = [];
-    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number, status?: 'sending' | 'delivered' | 'failed' }>, unread: number }>} The per-identity chat threads. */
+    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number, status?: 'sending' | 'delivered' | 'failed', error?: string }>, unread: number, thinking?: boolean }>} The per-identity chat threads. */
     this._threads = new Map();
     /** @type {string | null} The identity hash whose thread is open. */
     this._openThread = null;
     /** @type {string} The pending draft's text. */
     this._draft = "";
+    /** @type {Map<string, string>} The per-thread unsent drafts: re-renders
+     * (presence churn, roster updates) rebuild the input, and a lost draft
+     * is a lost message the user has to retype. */
+    this._drafts = new Map();
   }
 
   connectedCallback() {
@@ -134,7 +138,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
    */
   /**
    * @param {string} identityHash
-   * @param {{ text: string, role: string, status?: 'sending' | 'delivered' | 'failed' }} message
+   * @param {{ text: string, role: string, status?: 'sending' | 'delivered' | 'failed', error?: string, time?: number }} message
    */
   addThreadMessage(identityHash, message) {
     let thread = this._threads.get(identityHash);
@@ -142,51 +146,96 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       thread = { messages: [], unread: 0 };
       this._threads.set(identityHash, thread);
     }
-    thread.messages.push({ ...message, time: Date.now(), status: message.status });
+    thread.messages.push({
+      ...message,
+      time: message.time ?? Date.now(),
+      status: message.status,
+    });
     if (this._openThread !== identityHash) thread.unread += 1;
     this.render();
     this._scrollToBottom(identityHash);
   }
 
   /**
-   * Delivers a response to the thread with a pending "sending" message:
-   * the user's message becomes "delivered" and the agent's response
-   * appends. The response goes to the most recent pending thread.
+   * Restores the persisted threads (work document #61): replaces the
+   * in-memory threads with the decrypted history. Runs at LXMF-layer
+   * start, before live traffic — live messages append after.
    *
-   * @param {{ text: string, role: string }} response
-   * @returns {boolean} Whether a pending thread was found.
+   * @param {Array<{ identityHash: string, messages: Array<{ text: string, role: string, time: number }> }>} threads
    */
-  deliverResponse(response) {
-    for (const [identityHash, thread] of this._threads) {
-      const pending = thread.messages.find(
-        (/** @type {any} */ m) => m.status === "sending",
-      );
-      if (!pending) continue;
-      pending.status = "delivered";
-      thread.messages.push({
-        text: response.text,
-        role: response.role,
-        time: Date.now(),
+  loadThreads(threads) {
+    for (const thread of threads) {
+      const identityHash = String(thread.identityHash ?? "");
+      if (!identityHash) continue;
+      this._threads.set(identityHash, {
+        messages: (thread.messages ?? []).map((/** @type {any} */ m) => ({
+          ...m,
+        })),
+        unread: 0,
       });
-      if (this._openThread !== identityHash) thread.unread += 1;
-      this.render();
-      this._scrollToBottom(identityHash);
-      return true;
     }
-    return false;
+    this.render();
   }
 
   /**
-   * Marks all "sending" messages as "failed" — the transport didn't
-   * deliver within the timeout.
+   * Marks the thread's pending "sending" message delivered — the worker's
+   * `chat-ack` confirmed the LXMF send (work document #42 Phase A').
+   *
+   * @param {string} identityHash
+   * @returns {boolean} Whether a pending message was found.
    */
-  failPending() {
-    for (const [, thread] of this._threads) {
-      for (const message of thread.messages) {
-        if (message.status === "sending") message.status = "failed";
-      }
-    }
+  markSent(identityHash) {
+    const thread = this._threads.get(identityHash);
+    if (!thread) return false;
+    const pending = thread.messages.find(
+      (/** @type {any} */ m) => m.status === "sending",
+    );
+    if (!pending) return false;
+    pending.status = "delivered";
     this.render();
+    return true;
+  }
+
+  /**
+   * Marks the thread's pending "sending" message failed — the send was
+   * refused (no path, transport down).
+   *
+   * @param {string} identityHash
+   * @param {string} [reason]
+   */
+  failThread(identityHash, reason = "send failed") {
+    const thread = this._threads.get(identityHash);
+    if (!thread) return;
+    let changed = false;
+    for (const message of thread.messages) {
+      if (message.status !== "sending") continue;
+      message.status = "failed";
+      message.error = reason;
+      changed = true;
+    }
+    if (changed) this.render();
+  }
+
+  /**
+   * Shows or clears the thread's processing indicator — the peer's LXMF
+   * reaction (🤔) is the packet proof that the message was received and
+   * is being worked on; the reply clears it.
+   *
+   * @param {string} identityHash
+   * @param {boolean} thinking
+   */
+  setThinking(identityHash, thinking) {
+    let thread = this._threads.get(identityHash);
+    if (!thread) {
+      thread = { messages: [], unread: 0 };
+      this._threads.set(identityHash, thread);
+    }
+    if (thread.thinking === thinking) return;
+    thread.thinking = thinking;
+    this.render();
+    if (this._openThread === identityHash) {
+      this._scrollToBottom(identityHash);
+    }
   }
 
   /**
@@ -195,15 +244,22 @@ export class NofloCollaboratorsPanel extends HTMLElement {
   _scrollToBottom(identityHash) {
     if (this._openThread !== identityHash) return;
     const scroll = /** @type {HTMLElement | null} */ (
-      this.shadowRoot?.querySelector(
-        `[data-thread-scroll="${identityHash}"]`,
-      )
+      this.shadowRoot?.querySelector(`[data-thread-scroll="${identityHash}"]`)
     );
     if (scroll) scroll.scrollTop = scroll.scrollHeight;
   }
 
   render() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
+    // Typing must survive re-renders: remember whether the open thread's
+    // input held focus (and the caret position) so render can restore it
+    const focusedInput = /** @type {HTMLInputElement | null} */ (
+      shadow.activeElement?.matches?.("[data-thread-input]")
+        ? shadow.activeElement
+        : null
+    );
+    const focusThread = focusedInput?.getAttribute("data-thread-input") ?? null;
+    const caretAt = focusedInput?.selectionStart ?? null;
     const self = this._collaborators.find((c) => c.self);
     const members = this._collaborators.filter(
       (c) => !c.self && c.presence !== "requested" && c.presence !== "invited",
@@ -408,6 +464,19 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       ${openThread}
     `;
     this._wireThreadInput();
+    if (focusThread) {
+      const input = /** @type {HTMLInputElement | null} */ (
+        shadow.querySelector(`[data-thread-input="${focusThread}"]`)
+      );
+      if (input) {
+        input.focus();
+        const caret = Math.min(
+          caretAt ?? input.value.length,
+          input.value.length,
+        );
+        input.setSelectionRange(caret, caret);
+      }
+    }
   }
 
   /**
@@ -435,9 +504,10 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     return `<div class="thread" data-thread="${escapeHtml(identityHash)}">
       <div class="thread-scroll" data-thread-scroll="${escapeHtml(identityHash)}">
         ${messages || '<div class="thread-msg system">Start the conversation.</div>'}
+        ${thread?.thinking ? '<div class="thread-msg system">🤔 processing…</div>' : ""}
       </div>
       <div class="thread-input">
-        <input data-thread-input="${escapeHtml(identityHash)}" placeholder="Message ${escapeHtml(displayName)}…" aria-label="Message">
+        <input data-thread-input="${escapeHtml(identityHash)}" value="${escapeHtml(this._drafts.get(identityHash) ?? "")}" placeholder="Message ${escapeHtml(displayName)}…" aria-label="Message">
         <button data-thread-send="${escapeHtml(identityHash)}">Send</button>
       </div>
     </div>`;
@@ -449,10 +519,12 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     for (const nameEl of shadow.querySelectorAll(".avatar-name.editable")) {
       nameEl.addEventListener("click", (/** @type {any} */ event) => {
         event.stopPropagation();
-        const identityHash = nameEl.closest(".avatar")?.getAttribute("data-identity") ?? "";
-        const current = this._collaborators.find(
-          (/** @type {any} */ c) => c.identityHash === identityHash,
-        )?.name ?? "";
+        const identityHash =
+          nameEl.closest(".avatar")?.getAttribute("data-identity") ?? "";
+        const current =
+          this._collaborators.find(
+            (/** @type {any} */ c) => c.identityHash === identityHash,
+          )?.name ?? "";
         // The inline edit: the name swaps to an input, Enter or blur saves
         const input = document.createElement("input");
         input.type = "text";
@@ -469,8 +541,13 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           this.render();
         };
         input.addEventListener("keydown", (/** @type {any} */ e) => {
-          if (e.key === "Enter") { e.preventDefault(); save(); }
-          if (e.key === "Escape") { this.render(); }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            save();
+          }
+          if (e.key === "Escape") {
+            this.render();
+          }
         });
         input.addEventListener("blur", save);
       });
@@ -498,12 +575,25 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     }
     for (const input of shadow.querySelectorAll("[data-thread-input]")) {
       const identityHash = input.getAttribute("data-thread-input") ?? "";
+      input.addEventListener("input", () => {
+        // The draft survives re-renders: presence and roster updates
+        // rebuild this input while the user is typing
+        this._drafts.set(
+          identityHash,
+          /** @type {HTMLInputElement} */ (input).value,
+        );
+      });
       input.addEventListener("keydown", (/** @type {any} */ e) => {
         if (e.key !== "Enter") return;
         const text = /** @type {HTMLInputElement} */ (input).value.trim();
         if (!text) return;
         /** @type {HTMLInputElement} */ (input).value = "";
-        this.addThreadMessage(identityHash, { text, role: "human", status: "sending" });
+        this._drafts.delete(identityHash);
+        this.addThreadMessage(identityHash, {
+          text,
+          role: "human",
+          status: "sending",
+        });
         emit(this, "chat-send", {
           identityHash,
           text,
@@ -519,7 +609,12 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         const text = input?.value?.trim();
         if (!text || !input) return;
         input.value = "";
-        this.addThreadMessage(identityHash, { text, role: "human", status: "sending" });
+        this._drafts.delete(identityHash);
+        this.addThreadMessage(identityHash, {
+          text,
+          role: "human",
+          status: "sending",
+        });
         emit(this, "chat-send", { identityHash, text });
       });
     }

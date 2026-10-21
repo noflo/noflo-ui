@@ -591,13 +591,61 @@
  */
 
 /**
- * Appendix A extension (work document #47 item 3): the agent's response to
- * a chat message. The Glass's chat panel renders the conversation.
+ * Appendix A extension (work documents #42 Phase A', #61): an inbound chat
+ * message delivered over LXMF. The sender's identity hash keys the thread
+ * (the roster's key); the title carries the LXMF message's subject when
+ * set (narrations use "Companion narration").
  *
- * @typedef {Object} ChatResponseEcho
- * @property {'chat-response'} kind
- * @property {string} text The response text.
- * @property {'assistant' | 'system'} role
+ * @typedef {Object} ChatMessageEcho
+ * @property {'chat-message'} kind
+ * @property {string} identityHash The sender's Reticulum identity hash.
+ * @property {string} text The message text.
+ * @property {string} [title] The LXMF message's subject, when set.
+ */
+
+/**
+ * Appendix A extension (work documents #42 Phase A', #61): the outcome of
+ * one outbound chat send. The thread's pending message transitions to
+ * delivered or failed on this — no timeout guessing.
+ *
+ * @typedef {Object} ChatAckEcho
+ * @property {'chat-ack'} kind
+ * @property {string} identityHash The target's identity hash as sent.
+ * @property {boolean} ok Whether the message went out.
+ * @property {string} [error] The failure reason when ok is false.
+ */
+
+/**
+ * Appendix A extension (work documents #42 Phase A', #61): an LXMF
+ * reaction received — the sender's processing signal (the bridge reacts
+ * 🤔 to a prompt while working on it). The thread shows it as a thinking
+ * indicator until the real reply lands.
+ *
+ * @typedef {Object} ChatReactionEcho
+ * @property {'chat-reaction'} kind
+ * @property {string} identityHash The reactor's Reticulum identity hash.
+ * @property {string} emoji The reaction emoji.
+ */
+
+/**
+ * Appendix A extension (work documents #42 Phase A', #61): the persisted
+ * thread history, restored at LXMF-layer start. Each message decrypted
+ * from its sealed wire form; direction marks who wrote.
+ *
+ * @typedef {Object} ChatHistoryEcho
+ * @property {'chat-history'} kind
+ * @property {Array<{ identityHash: string, messages: Array<{ id: string, direction: 'in' | 'out', text: string, title: string, time: number }> }>} threads
+ */
+
+/**
+ * Appendix A extension (work document #42): the agent's LXMF contact once
+ * discovered — the granted peer heard announcing an `lxmf.delivery`
+ * destination. The Glass maps the agent thread to this identity.
+ *
+ * @typedef {Object} ChatAgentEcho
+ * @property {'chat-agent'} kind
+ * @property {string} identityHash The agent's (Companion's) mesh identity
+ *   hash.
  */
 
 /**
@@ -612,15 +660,15 @@
  */
 
 /**
- * Appendix A extension (work document #47 item 3): send a chat message to
- * the Companion's agent. The message routes through the chat dispatch
- * (commands and pi prompts) and the response arrives as a `chat-response`
- * echo. The Glass's chat panel renders the conversation.
+ * Appendix A extension (work documents #42 Phase A', #61): send a chat
+ * message over LXMF. The destination derives from the target's identity
+ * hash; the send's outcome arrives as a `chat-ack` echo and inbound
+ * messages as `chat-message` echoes.
  *
  * @typedef {Object} MeshChatMessage
  * @property {'MESH'} type
  * @property {'chat'} command
- * @property {{ text: string }} payload
+ * @property {{ text: string, identityHash?: string }} payload
  */
 
 /**
@@ -1266,7 +1314,11 @@ export const MESH_COMMANDS = [
  *   | RuntimeDeployEcho
  *   | RuntimeProcessesEcho
  *   | RuntimeRunEcho
-  | ChatResponseEcho
+  | ChatMessageEcho
+  | ChatAckEcho
+  | ChatReactionEcho
+  | ChatAgentEcho
+  | ChatHistoryEcho
  *   | RuntimeOpRejectedEcho
  *   | RuntimeTelemetryEcho
  *   | RuntimeSchemasEcho
@@ -1320,7 +1372,11 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-deploy" },
   { kind: "runtime-processes" },
   { kind: "runtime-run" },
-  { kind: "chat-response" },
+  { kind: "chat-message" },
+  { kind: "chat-ack" },
+  { kind: "chat-reaction" },
+  { kind: "chat-agent" },
+  { kind: "chat-history" },
   { kind: "runtime-op-rejected" },
   { kind: "runtime-telemetry" },
   { kind: "runtime-schemas" },

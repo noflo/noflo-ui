@@ -76,7 +76,7 @@ function syncFullState(doc, io) {
  *   used by tests to share device state across simulated reloads.
  *   `attachInterfaces` overrides the browser interface wiring — the Node
  *   bridge injects its own (work document #44).
- * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void, getReticulum: () => any }>}}
+ * @returns {Promise<{ doc: import("yjs").Doc, stop: () => void, handle: (message: any) => void, getReticulum: () => any, getIdentity: () => Promise<any>, isGranted: (peerHash: string | undefined) => boolean }>}}
  *   `handle` is the headless seam (work document #44): the same
  *   Dacar-checked dispatch the browser reaches over postMessage, callable
  *   directly by Node entries.
@@ -645,6 +645,10 @@ export async function startEngine(io, options = {}) {
     postMeshConfig,
     joinProject,
     factoryReset,
+    // The chat capability (work document #42 Phase A'): the MESH chat
+    // command sends over LXMF — the browser is an LXMF participant, and
+    // the destination derives from the target's identity hash
+    chat: (/** @type {any} */ payload) => mesh?.sendChat?.(payload),
   };
   const meshGraph = createMeshGraph();
   const meshNetwork = await createNetwork(meshGraph, {
@@ -661,22 +665,6 @@ export async function startEngine(io, options = {}) {
   // Swap the plain socket forwarder for the mesh-aware router
   routeMessage = (message) => {
     if (message?.type === "MESH") {
-      // The chat command routes to the bridge: the pi manager lives
-      // there, and the chat dispatch's response goes back through the
-      // bridge's inbound channel (work document #47 item 3)
-      if (message.command === "chat") {
-        // The worker writes to the AUTHORITATIVE doc's chatBus: the Glass
-        // writes to the mirror (a read replica — local writes don't sync),
-        // so the worker is the write path. The bridge's observer on the
-        // same doc fires and processes the message through the chat
-        // dispatch (work document #47 item 3)
-        doc.getMap("chatBus").set(`msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, {
-          text: message.payload?.text ?? "",
-          source: "glass",
-          time: Date.now(),
-        });
-        return;
-      }
       meshSocket.send(message);
       return;
     }
@@ -703,6 +691,24 @@ export async function startEngine(io, options = {}) {
      */
     getReticulum: () => mesh?.getReticulum() ?? null,
     // eslint-disable-line @typescript-eslint/no-invalid-void-type -- any: the Reticulum type lives in the vendored bundle
+    /**
+     * This device's mesh identity once restored or generated (null
+     * before). The Companion's LXMF layer reuses it for the LXMF
+     * destination (work document #42 update #1's preference).
+     *
+     * @returns {Promise<any>}
+     */
+    getIdentity: () => mesh?.getIdentity() ?? Promise.resolve(null),
+    /**
+     * The mesh layer's grant verdict for a peer (the Dacar engine's
+     * evaluated verdict, including the trust-anchor rule). The
+     * Companion's chat gate admits verified project participants
+     * (work document #42's inbound policy).
+     *
+     * @param {string | undefined} peerHash
+     * @returns {boolean}
+     */
+    isGranted: (peerHash) => mesh?.isGranted?.(peerHash) ?? false,
     stop() {
       clearInterval(heartbeat);
       runtimeBridge.stop().catch(() => {});

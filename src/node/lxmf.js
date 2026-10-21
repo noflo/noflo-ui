@@ -1,23 +1,28 @@
 /**
- * @file lxmf.js — the Companion's LXMF layer (work document #44 M2, SPEC
- * "The NoFlo UI Companion"): the always-on, addressable, cross-project
- * LXMF endpoint. Announces, receives commands/prompts/invites, sends
- * replies and narration.
+ * @file lxmf.js — the Companion's LXMF plane (work document #67, "Bridge
+ * v2: the single-RNS agent layer"): a port of pi-lxmf's `src/lxmf.js`
+ * discipline onto the bridge's single process-owned Reticulum instance.
  *
- * Wiring lifted from pi-lxmf `src/lxmf.js` (work document #44: "copy,
- * don't extract"), with one architectural difference: the Companion does
- * NOT build its own Reticulum instance — it rides the engine's shared
- * stack (one mesh node, work document #47), handed in by the entry
- * through the engine's `getReticulum` seam.
+ * What makes this plane reliable is what makes pi-lxmf reliable:
  *
- * Companion state (the LXMF identity) lives outside the project folder
- * (SPEC: multiple Companions on one machine each use a different identity
- * and work dir; Companion state never inside project directories).
+ * - It is started ONCE at bridge boot and never stopped or restarted by
+ *   project events — MeshSync's rebinds cannot touch it, because it does
+ *   not live inside MeshSync at all.
+ * - One send call per message: the router escalates direct link →
+ *   opportunistic packet (soliciting the recipient's identity internally)
+ *   → propagation store-and-forward. The only retry is for the
+ *   propagation node's announce not having landed yet. One message id
+ *   across every wire copy, so deduplicating clients render once.
+ * - Propagation nodes are DISCOVERED, never run here: announce listeners
+ *   match the `lxmf.propagation` destination derivation per peer identity,
+ *   the reachable node with the shortest path wins, and a periodic sync
+ *   pulls what arrived while we were away.
+ * - Inbound diagnostics ride the choke points the chat layer cannot see:
+ *   packets that decrypt but park (sender identity unknown) are logged,
+ *   because the dispatched-message listener only ever fires for messages
+ *   that made it through.
  */
 
-import { existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
-import { FileStorageAdapter } from "@reticulum/node";
 import { LXMessage, LXMFConstants, LXMRouter } from "../../vendor/lxmf.js";
 // One copy of the core protocol classes per process: the vendor bundles
 // (vendor/lxmf.js re-points @reticulum/core to the sibling
@@ -25,113 +30,35 @@ import { LXMessage, LXMFConstants, LXMRouter } from "../../vendor/lxmf.js";
 // two physical copies of @reticulum/core in the process — the library
 // itself warns and cross-copy instanceof checks fail (work document #44
 // M2 live-test finding)
+import { fromHex, toHex } from "../../vendor/reticulum-core.js";
 import {
-  fromHex,
-  Identity,
-  toHex,
-  UnknownIdentityError,
-} from "../../vendor/reticulum-core.js";
+  chunkText,
+  contentFields,
+  deriveAspectHash,
+  isUnknownIdentityError,
+  PEER_DISCOVERY_WAIT_MS,
+} from "../lxmf/protocol.js";
 
 /** How long a send may wait for a peer's announce before giving up. */
-const PEER_DISCOVERY_WAIT_MS = 30_000;
+const SEND_TIMEOUT_MS = 30_000;
 
-/** How long an inbound verification may wait for the sender's announce. */
-const SENDER_SOLICIT_WAIT_MS = 15_000;
-
-/** Default chunking for outbound text (LXMF bodies are sized for mesh links). */
-const CHUNK_CHARS = 2500;
+/** How long the propagation sync cadence runs (the pi-lxmf default). */
+const PROPAGATION_SYNC_INTERVAL_MS = 300_000;
 
 /**
- * Derives an `lxmf.delivery` destination hash from a Reticulum identity
- * hash (hex). SINGLE-destination hashes are `SHA256(nameHash ||
- * identityHash)[:16]` — a pure function of the identity hash, so the
- * owner's chat address needs no second config value and no announce
- * (SPEC: the owner Reticulum identity IS the default global trust anchor;
- * the contact is derived, not configured).
- *
- * @param {string} identityHashHex - 32-hex-char identity hash.
- * @returns {Promise<string>} The 32-hex-char `lxmf.delivery` hash.
- */
-export async function deriveDeliveryHash(identityHashHex) {
-  const encoder = new TextEncoder();
-  const nameHashBuffer = await crypto.subtle.digest(
-    "SHA-256",
-    encoder.encode("lxmf.delivery"),
-  );
-  const nameHash = new Uint8Array(nameHashBuffer.slice(0, 10));
-  const identityHash = fromHex(identityHashHex);
-  const combined = new Uint8Array(nameHash.length + identityHash.length);
-  combined.set(nameHash, 0);
-  combined.set(identityHash, nameHash.length);
-  const destHashBuffer = await crypto.subtle.digest("SHA-256", combined);
-  return toHex(new Uint8Array(destHashBuffer.slice(0, 16)));
-}
-
-/**
- * Whether `e` is the typed unknown-identity failure the router throws when
- * a destination's identity is neither recallable nor solicitable.
- *
- * @param {unknown} e
- * @returns {boolean}
- */
-export function isUnknownIdentityError(e) {
-  return e instanceof UnknownIdentityError;
-}
-
-/**
- * Builds the fields map signaling the outbound content format
- * (FIELD_RENDERER): replies are Markdown, and clients such as Sideband
- * only render them as such when the field says so.
- *
- * @returns {Map<number, number>}
- */
-export function contentFields() {
-  const fields = new Map();
-  fields.set(LXMFConstants.FIELD_RENDERER, LXMFConstants.RENDERER_MARKDOWN);
-  return fields;
-}
-
-/**
- * Splits `text` into chunks of at most `size` characters, breaking on
- * paragraph boundaries when possible.
- *
- * @param {string} text
- * @param {number} size
- * @returns {string[]}
- */
-export function chunkText(text, size = CHUNK_CHARS) {
-  if (text.length <= size) return [text];
-  /** @type {string[]} */
-  const chunks = [];
-  let rest = text;
-  while (rest.length > size) {
-    let cut = rest.lastIndexOf("\n\n", size);
-    if (cut < size * 0.5) cut = rest.lastIndexOf("\n", size);
-    if (cut < size * 0.5) cut = size;
-    chunks.push(rest.slice(0, cut));
-    rest = rest.slice(cut).replace(/^\n+/, "");
-  }
-  if (rest.length > 0) chunks.push(rest);
-  return chunks;
-}
-
-/**
- * Starts the LXMF layer on the shared Reticulum instance. Resolves once
- * the delivery destination is registered and announcing has begun.
+ * Starts the LXMF plane on the process-owned Reticulum instance. Resolves
+ * once the delivery destination is registered, announcing has begun, and
+ * the propagation discovery is listening.
  *
  * @param {object} options
- * @param {any} options.rns - The engine's shared Reticulum instance.
- * @param {string} options.stateDir - Companion state directory (holds the
- *   LXMF identity storage; must be outside any project folder).
+ * @param {any} options.rns - The bridge's process-owned Reticulum instance.
+ * @param {any} options.identity - The Companion's single identity (loaded
+ *   once at boot from the RNS storage; the LXMRouter and the mesh plane
+ *   share it).
  * @param {string} options.name - Announce display name.
- * @param {string|null} [options.ownerContact] - The owner's `lxmf.delivery`
- *   destination hash (hex). When set, a hello-world is sent at startup and
- *   inbound messages from other identities are dropped by the caller's
- *   gate (the layer itself is transport-agnostic).
- * @param {string | null} [options.propagationNodeHex] The configured
- *   propagation node's `lxmf.propagation` hash — enables the
- *   store-and-forward fallback when the direct path fails.
- * @param {number} [options.peerWaitMs] - Per-send announce wait (tests).
+ * @param {string | null} [options.ownerContact] - The owner's
+ *   `lxmf.delivery` destination hash (hex); the one-shot hello world goes
+ *   here at boot. NULL for unclaimed mode.
  * @param {(msg: string) => void} [options.log]
  * @returns {Promise<{
  *   identityHash: string,
@@ -145,36 +72,18 @@ export function chunkText(text, size = CHUNK_CHARS) {
  *   stop: () => void
  * }>}
  */
-export async function startLxmfLayer({
+export async function startLxmfPlane({
   rns,
-  stateDir,
+  identity,
   name,
   ownerContact = null,
-  propagationNodeHex = null,
-  peerWaitMs = PEER_DISCOVERY_WAIT_MS,
   log = () => {},
 }) {
-  if (!rns) throw new Error("LXMF layer requires a started Reticulum instance");
-  mkdirSync(stateDir, { recursive: true });
-  const storageDir = join(stateDir, "storage");
-  if (!existsSync(storageDir)) {
-    // The shared instance already persists its own transport state; the
-    // LXMF identity gets its own storage subtree
-    mkdirSync(storageDir, { recursive: true });
-  }
-
-  // The node's stable LXMF identity: loaded from (or created in) the
-  // persistent state directory. This hash IS the node's address.
-  const adapter = new FileStorageAdapter(storageDir);
-  const identity = await Identity.loadOrGenerate(adapter);
-  const identityHash = toHex(identity.identityHash);
-  log(`companion: LXMF identity ${identityHash}`);
+  if (!rns) throw new Error("LXMF plane requires a started Reticulum instance");
+  if (!identity) throw new Error("LXMF plane requires the Companion identity");
 
   const lxmf = new LXMRouter(identity, rns);
   await lxmf.init();
-  const propagationNodeHash = propagationNodeHex
-    ? fromHex(propagationNodeHex)
-    : null;
   const deliveryDest = /** @type {any} */ (lxmf.deliveryDest);
   if (!deliveryDest) {
     throw new Error("LXMRouter.init() did not register lxmf.delivery");
@@ -184,13 +93,175 @@ export async function startLxmfLayer({
   );
   log(`companion: lxmf.delivery destination ${deliveryHash}`);
 
+  // ---- Inbound diagnostics (pi-lxmf's attachInboundDiagnostics) --------
+  // The delivery destination emits "data" the instant a single-packet
+  // message decrypts — BEFORE the router resolved the sender. An unknown
+  // sender parks the message until its announce arrives: the most common
+  // reason a sender sees a delivery proof while the bridge logs nothing.
+  const onData = async (/** @type {any} */ event) => {
+    const plaintext = event?.detail?.plaintext;
+    if (!plaintext) return;
+    try {
+      const parsed = await LXMessage.deserialize(
+        plaintext,
+        /** @type {Uint8Array | undefined} */ (deliveryDest.destinationHash),
+      );
+      const known = await rns.transport.recallIdentity(parsed.sourceHash);
+      if (!known) {
+        log(
+          `companion: inbound packet from ${toHex(parsed.sourceHash)} (${
+            plaintext.length
+          } bytes) parked — sender identity unknown, waiting for announce`,
+        );
+      }
+    } catch (e) {
+      log(
+        `companion: inbound packet (${plaintext.length} bytes) could not be parsed: ${
+          e instanceof Error ? e.message : e
+        }`,
+      );
+    }
+  };
+  /** @type {any} */ (deliveryDest).addEventListener("data", onData);
+
   await lxmf.startAnnouncing(name);
   log(`companion: announcing as "${name}"`);
 
+  // ---- The dispatched-message listener ---------------------------------
+  // The router's `message` event is the verified, deduplicated dispatch —
+  // every delivery path (direct link, opportunistic packet, propagation
+  // sync) funnels through it.
+  /** @type {Array<(event: { message: any, link?: any }) => void>} */
+  const handlers = [];
+  const onMessageEvent = (/** @type {any} */ event) => {
+    const message = event?.detail?.message;
+    if (!message) return;
+    for (const handler of handlers) {
+      handler({ message, link: event.detail.link });
+    }
+  };
+  /** @type {any} */ (lxmf).addEventListener("message", onMessageEvent);
+
+  // ---- Propagation node discovery (work document #67) ------------------
+  // No node runs here. Every announce whose destination hash derives from
+  // `lxmf.propagation` on the announcing identity marks a propagation
+  // node; the reachable one with the shortest path is selected and
+  // re-selected when a better one appears. The periodic sync pulls what
+  // arrived while this endpoint was away — the mechanism that makes
+  // asynchronous delivery work without any resend machinery.
+  /** @type {string | null} */
+  let propagationNodeHex = null;
+  const pickPropagationNode = async (/** @type {string} */ candidateHex) => {
+    if (propagationNodeHex === candidateHex) return;
+    if (propagationNodeHex) {
+      // Re-select only on strictly fewer KNOWN hops: unknown hop counts on
+      // either side keep the incumbent — first-selected wins over a guess
+      const currentHops = rns.transport.hopsTo?.(fromHex(propagationNodeHex));
+      const candidateHops = rns.transport.hopsTo?.(fromHex(candidateHex));
+      if (typeof currentHops === "number") {
+        if (typeof candidateHops !== "number" || candidateHops >= currentHops) {
+          return;
+        }
+      } else if (typeof candidateHops !== "number") {
+        return;
+      }
+    }
+    propagationNodeHex = candidateHex;
+    /** @type {any} */ (lxmf).setOutboundPropagationNode(fromHex(candidateHex));
+    log(`companion: propagation node ${candidateHex} selected`);
+  };
+  const onAnnounce = (/** @type {any} */ event) => {
+    const detail = event?.detail ?? {};
+    if (!(detail.destinationHash instanceof Uint8Array)) return;
+    if (!detail.identity?.identityHash) return;
+    const identityHash = toHex(detail.identity.identityHash);
+    deriveAspectHash(identityHash, "lxmf.propagation")
+      .then((expected) => {
+        if (toHex(detail.destinationHash) !== expected) return;
+        return pickPropagationNode(expected);
+      })
+      .catch(() => {});
+  };
+  rns.transport.addEventListener("announce", onAnnounce);
+
+  // The periodic sync: pull what arrived at the selected node while this
+  // endpoint was away (the pi-lxmf pattern)
+  const syncTimer = setInterval(() => {
+    if (!propagationNodeHex) return;
+    /** @type {any} */ (lxmf)
+      .syncFromPropagationNode(identity)
+      .then((/** @type {any} */ res) => {
+        if ((res?.received ?? 0) > 0) {
+          log(
+            `companion: propagation sync delivered ${res.received} message(s)`,
+          );
+        }
+      })
+      .catch((/** @type {any} */ e) => {
+        log(
+          `companion: propagation sync failed: ${e?.message ?? e}\n${
+            e?.stack ?? ""
+          }`,
+        );
+      });
+  }, PROPAGATION_SYNC_INTERVAL_MS);
+  if (syncTimer.unref) syncTimer.unref();
+
+  // ---- The send escalation ---------------------------------------------
+  /**
+   * Sends one message through the router's escalation: direct link →
+   * opportunistic → propagation (when a node is selected). The only retry
+   * covers the fresh-start case where the node's announce has not landed
+   * and the handoff declines — solicit the node and resend; the message
+   * keeps its messageId across serialize() calls, so wire-level dedup
+   * still holds.
+   *
+   * @param {any} message
+   */
+  async function sendWithRetry(message) {
+    const options =
+      /** @type {{ fallback: "propagation" | "opportunistic", timeoutMs: number }} */ ({
+        fallback: propagationNodeHex ? "propagation" : "opportunistic",
+        timeoutMs: SEND_TIMEOUT_MS,
+      });
+    try {
+      await lxmf.send(message, identity, options);
+      return;
+    } catch (e) {
+      if (
+        propagationNodeHex &&
+        e instanceof Error &&
+        /Propagation node identity unknown/.test(e.message)
+      ) {
+        log(
+          `companion: propagation node unknown — requesting path, waiting ${Math.round(SEND_TIMEOUT_MS / 1000)}s`,
+        );
+        try {
+          await rns.transport.recallOrSolicitIdentity(
+            fromHex(propagationNodeHex),
+            SEND_TIMEOUT_MS,
+          );
+        } catch (solicitError) {
+          if (isUnknownIdentityError(solicitError)) {
+            log(
+              "companion: propagation node unreachable — giving up on this send",
+            );
+            throw e;
+          }
+          throw solicitError;
+        }
+        await lxmf.send(message, identity, options);
+        log(
+          "companion: recipient unreachable directly — submitted via the propagation node",
+        );
+        return;
+      }
+      throw e;
+    }
+  }
+
   /**
    * Sends `text` to `destinationHex`, chunked, titled on the first chunk.
-   * Delivery escalates inside the router's `send`: DIRECT link →
-   * opportunistic packet → propagation store-and-forward.
    *
    * @param {string} destinationHex
    * @param {string} text
@@ -211,58 +282,13 @@ export async function startLxmfLayer({
         fields: contentFields(),
         ...(i === 0 && sendOptions.title ? { title: sendOptions.title } : {}),
       });
-      try {
-        await lxmf.send(message, identity, {
-          fallback: propagationNodeHash ? "propagation" : "opportunistic",
-          timeoutMs: peerWaitMs,
-        });
-      } catch (e) {
-        // The router's propagation handoff declines when the node's
-        // announce hasn't landed yet (fresh start) — solicit the node
-        // and resend (the pi-lxmf retry pattern)
-        if (
-          propagationNodeHash &&
-          e instanceof Error &&
-          /Propagation node identity unknown/.test(e.message)
-        ) {
-          log(
-            `lxmf: propagation node unknown — requesting path, waiting ${Math.round(peerWaitMs / 1000)}s`,
-          );
-          try {
-            await rns.transport.recallOrSolicitIdentity(
-              propagationNodeHash,
-              peerWaitMs,
-            );
-          } catch (solicitError) {
-            if (isUnknownIdentityError(solicitError)) {
-              throw new Error(
-                `propagation node ${propagationNodeHex} not reachable within ${Math.round(peerWaitMs / 1000)}s`,
-                { cause: e },
-              );
-            }
-            throw solicitError;
-          }
-          await lxmf.send(message, identity, {
-            fallback: "propagation",
-            timeoutMs: peerWaitMs,
-          });
-        } else if (isUnknownIdentityError(e)) {
-          throw new Error(
-            `peer ${destinationHex} announce not reachable within ${Math.round(peerWaitMs / 1000)}s`,
-            { cause: e },
-          );
-        } else {
-          throw e;
-        }
-      }
+      await sendWithRetry(message);
     }
   }
 
   /**
-   * Sends an LXMF reaction (FIELD_REACTION) to `destinationHex`, targeting
-   * the message whose `messageId` is `targetMessageId`. Rendered natively
-   * by Sideband/Columba; no `content` is set so no separate chat bubble
-   * appears. Same router-escalated delivery as `sendText`.
+   * Sends an LXMF reaction (FIELD_REACTION) — the "processing" signal, no
+   * separate chat bubble. Same router-escalated delivery as `sendText`.
    *
    * @param {string} destinationHex
    * @param {Uint8Array} targetMessageId
@@ -283,92 +309,39 @@ export async function startLxmfLayer({
       destinationHash: fromHex(destinationHex),
       fields,
     });
-    await lxmf.send(message, identity, {
-      fallback: "opportunistic",
-      timeoutMs: peerWaitMs,
-    });
+    await sendWithRetry(message);
   }
 
   /**
    * Verifies an inbound message's signature against the sender's recalled
-   * identity. The router verifies on the direct path; propagation-synced
-   * messages whose sender is not yet recalled arrive unverified — the
-   * caller must drop those ("unknown").
+   * identity. The router verifies on the direct path; a message pulled via
+   * `syncFromPropagationNode` whose sender is not yet recalled arrives
+   * unverified (the Python reference's SOURCE_UNKNOWN) — the caller drops
+   * those.
    *
    * @param {any} message
    * @returns {Promise<"verified"|"unknown"|"invalid">}
    */
   async function verifySender(message) {
-    const sender = await recallOrSolicit(message.sourceHash);
+    const sender = await rns.transport.recallIdentity(message.sourceHash);
     if (!sender) return "unknown";
     return (await message.verifySignature(sender)) ? "verified" : "invalid";
   }
 
   /**
-   * Recalls an identity for a destination hash, soliciting it (path
-   * request → awaited announce) when not yet known. Inbound messages on
-   * first contact arrive without the sender's announce — opportunistic
-   * delivery needs only the recipient's path — so without solicitation
-   * the sender's signature is unverifiable and the message lost. The
-   * claimant's client is online at claim time, so a short wait suffices.
-   *
-   * @param {Uint8Array} destinationHash
-   * @returns {Promise<any | null>}
-   */
-  async function recallOrSolicit(destinationHash) {
-    const recall = await rns.transport.recallIdentity(destinationHash);
-    if (recall) return recall;
-    if (typeof rns.transport.recallOrSolicitIdentity !== "function") {
-      return null;
-    }
-    try {
-      return await rns.transport.recallOrSolicitIdentity(
-        destinationHash,
-        SENDER_SOLICIT_WAIT_MS,
-      );
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Recalls the sender's Reticulum identity hash (hex), or null when the
-   * identity is not yet known. The claim bootstrap persists this hash as
-   * the owner identity (work document #47 scope item 1).
+   * identity is not yet known.
    *
    * @param {any} message
    * @returns {Promise<string | null>}
    */
   async function senderIdentityHash(message) {
-    const sender = await recallOrSolicit(message.sourceHash);
+    const sender = await rns.transport.recallIdentity(message.sourceHash);
     return sender ? toHex(sender.identityHash) : null;
   }
 
-  /** @type {Array<(event: { message: any, link?: any }) => void>} */
-  const handlers = [];
-  const onData = async (/** @type {any} */ event) => {
-    const plaintext = event?.detail?.plaintext;
-    if (!plaintext) return;
-    try {
-      const message = await LXMessage.deserialize(
-        plaintext,
-        /** @type {Uint8Array | undefined} */ (deliveryDest.destinationHash),
-      );
-      for (const handler of handlers) {
-        handler({ message });
-      }
-    } catch (e) {
-      log(
-        `companion: inbound packet (${plaintext.length} bytes) could not be parsed: ${
-          e instanceof Error ? e.message : e
-        }`,
-      );
-    }
-  };
-  /** @type {any} */ (deliveryDest).addEventListener("data", onData);
-
   return {
-    identityHash,
+    identityHash: toHex(identity.identityHash),
     identity,
     deliveryHash,
     sendText,
@@ -376,8 +349,7 @@ export async function startLxmfLayer({
     verifySender,
     senderIdentityHash,
     /**
-     * Subscribes to inbound messages. Multiple handlers allowed; the
-     * caller owns gating (owner check, signature verification, ordering).
+     * Subscribes to dispatched inbound messages.
      *
      * @param {(event: { message: any, link?: any }) => void} handler
      */
@@ -385,8 +357,22 @@ export async function startLxmfLayer({
       handlers.push(handler);
     },
     stop() {
+      clearInterval(syncTimer);
       try {
         /** @type {any} */ (deliveryDest).removeEventListener("data", onData);
+      } catch {
+        /* best effort */
+      }
+      try {
+        rns.transport.removeEventListener("announce", onAnnounce);
+      } catch {
+        /* best effort */
+      }
+      try {
+        /** @type {any} */ (lxmf).removeEventListener(
+          "message",
+          onMessageEvent,
+        );
       } catch {
         /* best effort */
       }

@@ -33,6 +33,7 @@ import {
   saveMeshConfig,
 } from "../crdt/MeshConfig.js";
 import { grantAssertion } from "../crdt/ProjectDoc.js";
+import { deriveDeliveryHash } from "../lxmf/protocol.js";
 import {
   buildInviteUri,
   createBootstrapHost,
@@ -225,6 +226,15 @@ async function defaultCreateProvider(
  * @property {() => any} getReticulum The shared Reticulum instance once the
  *   mesh started (null before). The Companion's LXMF layer rides the same
  *   stack (work document #47).
+ * @property {(payload: { text: string, identityHash?: string }) => Promise<boolean>} sendChat
+ *   Sends a chat message over LXMF (work document #42 Phase A'); the ack
+ *   rides `chat-ack`, inbound replies ride `chat-message`.
+ * @property {{ identityHash: string, destinationHash: string } | null} agentContact
+ *   The agent's LXMF contact once discovered — the granted peer heard
+ *   announcing an `lxmf.delivery` destination (work document #42).
+ * @property {(peerHash: string | undefined) => boolean} isGranted The mesh
+ *   layer's grant verdict for a peer (the Dacar engine's evaluated
+ *   verdict, including the trust-anchor rule).
  * @property {() => Array<{ type: string, options: Record<string, any>, reason: string }> | null} getRuntimeInterfaces
  *   Interfaces the mesh layer attached by default rather than from the
  *   stored config (the settings dialog renders them read-only).
@@ -583,6 +593,20 @@ export async function createMeshSync({
   const REDIAL_TICK_MS = 10 * 60_000;
   /** @type {ReturnType<typeof setInterval> | null} */
   let redialTimer = null;
+  /** The webapp's LXMF layer (work document #42 Phase A'): the browser is
+   * an LXMF participant on the same transport — chat rides LXMF, not the
+   * CRDT (work document #61: the project CRDT carries no chat). */
+  /** @type {Awaited<ReturnType<typeof import("./Lxmf.js").createLxmfLayer>> | null} */
+  let lxmfLayer = null;
+  /** The LXMF history store (work document #61): the wire forms, sealed
+   * at rest with the device identity. Lives with the layer. */
+  /** @type {Awaited<ReturnType<typeof import("../lxmf/store.js").createLxmfStore>> | null} */
+  let lxmfStore = null;
+  /** The agent's LXMF contact (work document #42's announce-based agent
+   * discovery): the first granted peer heard announcing an `lxmf.delivery`
+   * destination. The pi thread addresses it. */
+  /** @type {{ identityHash: string, destinationHash: string } | null} */
+  let agentContact = null;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -1609,6 +1633,264 @@ export async function createMeshSync({
     await rns.stop().catch(() => {});
   }
 
+  // ---- The webapp's LXMF layer (work document #42 Phase A') ------------
+  // The browser is an LXMF participant exactly like any other: a router
+  // on the shared transport, announcing its own lxmf.delivery destination
+  // (derived from the mesh identity), sending to and receiving from peers
+  // directly. Chat never rides the CRDT (work document #61: the project
+  // CRDT carries no chat at all).
+  /**
+   * Starts the LXMF layer once the transport and identity exist. Idempotent.
+   *
+   * @param {any} identity The device's mesh identity.
+   * @param {any} rns The shared Reticulum instance.
+   */
+  async function ensureLxmf(identity, rns) {
+    if (lxmfLayer) return;
+    // A process-owned Reticulum instance means a daemon owns this
+    // process's mesh — and with it the process's single LXMF endpoint:
+    // the Companion's agent layer starts its own router (its announce
+    // name, propagation node, and chat gate — work document #44 M2). A
+    // second router on the same instance collides on the `lxmf.delivery`
+    // destination registration
+    if (injectedRns) return;
+    const { createLxmfLayer } = await import("./Lxmf.js");
+    // The history store (work document #61: local per-device thread
+    // history): the actual LXMF wire forms, sealed at rest with a key
+    // derived from the device identity
+    const { createLxmfStore } = await import("../lxmf/store.js");
+    const historyStorage =
+      typeof globalThis.indexedDB !== "undefined"
+        ? createIndexeddbStorage("noflo-lxmf", "lxmf_history")
+        : storage;
+    const store = await createLxmfStore({
+      storage: historyStorage,
+      identity,
+      log: (message) => console.info(message),
+    });
+    lxmfStore = store;
+    // History precedes live traffic: the threads restore before any new
+    // message can arrive
+    try {
+      /** @type {Array<{ identityHash: string, messages: any[] }>} */
+      const threads = [];
+      for (const peer of await store.peers()) {
+        const messages = await store.thread(peer);
+        if (messages.length > 0) {
+          threads.push({ identityHash: peer, messages });
+        }
+      }
+      if (threads.length > 0) {
+        postMessage({ kind: "chat-history", threads });
+      }
+    } catch (err) {
+      console.warn(
+        "LXMF history restore failed:",
+        /** @type {any} */ (err)?.message ?? err,
+      );
+    }
+    const layer = await createLxmfLayer({
+      rns,
+      identity,
+      log: (message) => console.info(message),
+    });
+    layer.onMessage(async ({ message }) => {
+      try {
+        // Sender verification is admission (work document #42's inbound
+        // policy): an unverifiable signature is a forged or replayed
+        // packet — dropped, never rendered
+        if (!(await layer.verifySender(message))) {
+          console.warn("LXMF inbound dropped: sender signature not verifiable");
+          return;
+        }
+        // The thread key is the sender's identity hash — the same hash the
+        // roster and grants use; the delivery hash recalls it
+        const senderHash = await layer.recallSenderIdentityHash(message);
+        const identityKey = senderHash ?? toHex(message.sourceHash);
+        // The agent introduction (work document #44's bootstrap): the
+        // Companion greets its configured owner with the "Companion
+        // hello" title — that verified, granted sender IS the agent.
+        // Announce-derived contact mapping cannot make this distinction
+        if (
+          message.title === "Companion hello" &&
+          identityKey !== agentContact?.identityHash &&
+          isGranted(identityKey)
+        ) {
+          agentContact = {
+            identityHash: identityKey,
+            destinationHash: await deriveDeliveryHash(identityKey),
+          };
+          console.info(`LXMF: agent introduced ${identityKey}`);
+          postMessage({ kind: "chat-agent", identityHash: identityKey });
+        }
+        // The reaction rides first: the peer's processing signal (the
+        // bridge's 🤔 on a prompt) is packet proof for the user — the
+        // message was received and is being worked on
+        const reaction = layer.decodeReaction(message);
+        if (reaction) {
+          postMessage({
+            kind: "chat-reaction",
+            identityHash: identityKey,
+            emoji: reaction.emoji,
+          });
+          return;
+        }
+        const text =
+          typeof message.content === "string"
+            ? message.content
+            : new TextDecoder().decode(message.content ?? new Uint8Array());
+        if (!text.trim()) return;
+        // The message persists in its wire form before it renders: the
+        // history survives restarts, sealed at rest (work document #61)
+        await store.append(identityKey, "in", message).catch(() => {});
+        postMessage({
+          kind: "chat-message",
+          identityHash: identityKey,
+          text,
+          ...(message.title ? { title: message.title } : {}),
+        });
+      } catch (err) {
+        console.warn(
+          "LXMF inbound delivery failed:",
+          /** @type {any} */ (err)?.message ?? err,
+        );
+      }
+    });
+    layer.onContact(() => {
+      // Contact discovery feeds #61's roster surface later; the AGENT
+      // mapping deliberately does NOT come from here — announce-derived
+      // contacts cannot tell which granted LXMF peer is the Companion
+      // (the live finding: the first-contact rule mapped the wrong peer
+      // and prompts went to a bystander)
+    });
+    lxmfLayer = layer;
+  }
+
+  /**
+   * Solicits the granted peers' LXMF destinations (work document #42's
+   * announce-based agent discovery, made active). The LXMF re-announce
+   * cadence is 30 minutes, so a device that boots after the agent's last
+   * announce would otherwise wait half an hour for contact discovery
+   * despite the peer sitting on the transport. The delivery destination
+   * is derivable from a granted peer's identity hash; a path request makes
+   * the destination answer immediately — the announce arrives as the path
+   * response, and the layer's contact mapping catches it. Runs only while
+   * the agent contact is undiscovered: discovery stops the solicitation.
+   */
+  async function solicitAgentContact() {
+    if (!lxmfLayer || agentContact || !sharedRns) return;
+    // Free pass first: every `lxmf.delivery` destination the transport has
+    // ever heard an announce for is in its known-destinations cache — the
+    // announce events are transient, the cache is not
+    await lxmfLayer.discoverContacts().catch(() => {});
+    if (agentContact) return;
+    const grants = doc.getMap?.("grants");
+    if (!grants) return;
+    /** @type {Set<string>} */
+    const peerHashes = new Set();
+    for (const entry of grants.values()) {
+      const plain = entry.toJSON();
+      if (plain.revoked !== null || !plain.authorization) continue;
+      const peerHash = String(plain.peerHash ?? "");
+      if (peerHash === identityHash) continue;
+      if (/^[0-9a-f]{32}$/.test(peerHash)) peerHashes.add(peerHash);
+    }
+    for (const peerHash of peerHashes) {
+      const destination = await deriveDeliveryHash(peerHash);
+      // Fire and forget per peer: a peer that runs no LXMF destination
+      // simply never answers the path request. The layer maps the contact
+      // when the answer's identity derives exactly this destination
+      lxmfLayer.recallOrSolicit(destination).catch(() => {});
+    }
+  }
+
+  /** The agent-discovery retry (work document #42): the boot solicitation
+   * can race the interface connect (the path request dies silently), and
+   * a peer can be granted late. While the agent contact is unknown, retry
+   * on a short cadence; discovery stops the timer, as does mesh stop. */
+  /** @type {ReturnType<typeof setInterval> | null} */
+  let agentSolicitTimer = null;
+
+  function startAgentSolicitTimer() {
+    if (agentSolicitTimer) return;
+    agentSolicitTimer = setInterval(() => {
+      if (!provider || !lxmfLayer) return;
+      if (agentContact) {
+        if (agentSolicitTimer) {
+          clearInterval(agentSolicitTimer);
+          agentSolicitTimer = null;
+        }
+        return;
+      }
+      solicitAgentContact().catch(() => {});
+    }, 20_000);
+    if (agentSolicitTimer.unref) agentSolicitTimer.unref();
+  }
+
+  /**
+   * Sends a chat message over LXMF (the `MESH chat` command's execution).
+   * The destination derives from the target's identity hash — the roster's
+   * agent entry carries the Companion's mesh identity hash once its LXMF
+   * announce was heard; the synthetic pre-discovery key falls back to the
+   * discovered contact.
+   *
+   * @param {any} payload `{ text: string, identityHash?: string }`.
+   * @returns {Promise<boolean>} Whether the message went out.
+   */
+  async function sendChat(payload) {
+    const text = String(payload?.text ?? "");
+    const requested = String(payload?.identityHash ?? "");
+    /**
+     * Reports the send's outcome to the Glass (the delivery status).
+     *
+     * @param {boolean} ok
+     * @param {string} [error]
+     */
+    const ack = (ok, error) =>
+      postMessage({
+        kind: "chat-ack",
+        identityHash: requested,
+        ok,
+        ...(error ? { error } : {}),
+      });
+    if (!text.trim()) {
+      ack(false, "empty message");
+      return false;
+    }
+    if (!lxmfLayer) {
+      ack(false, "mesh is not running — chat needs the transport");
+      return false;
+    }
+    try {
+      const destinationHash =
+        requested && requested !== "__agent__"
+          ? await deriveDeliveryHash(requested)
+          : (agentContact?.destinationHash ?? null);
+      if (!destinationHash) {
+        throw new Error("the agent's LXMF address has not been announced yet");
+      }
+      const sent = await lxmfLayer.sendText(destinationHash, text);
+      // The outbound side persists too — the thread history includes what
+      // the user said, sealed like the inbound
+      const peerHash =
+        requested && requested !== "__agent__"
+          ? requested
+          : (agentContact?.identityHash ?? "");
+      if (lxmfStore && peerHash) {
+        for (const message of sent) {
+          await lxmfStore.append(peerHash, "out", message).catch(() => {});
+        }
+      }
+      ack(true);
+      return true;
+    } catch (err) {
+      const reason = /** @type {any} */ (err)?.message ?? String(err);
+      console.warn("LXMF send failed:", reason);
+      ack(false, reason);
+      return false;
+    }
+  }
+
   // ---- Bootstrap pre-flow (work document #25, "Knock and Approve") ------
   // The host side announces a stable per-owner `noflo.join` destination on
   // the shared Reticulum instance; the joiner side runs the state machine
@@ -2099,6 +2381,20 @@ export async function createMeshSync({
       room = roomFor();
       // The shared transport serves the provider AND the bootstrap pre-flow
       const reticulum = await ensureReticulum();
+      // The webapp's LXMF layer (work document #42 Phase A'): starts with
+      // the transport, announces the delivery destination, discovers LXMF
+      // contacts from announces. A failed start never blocks mesh sync —
+      // chat degrades to the "agent unreachable" surface
+      await ensureLxmf(identity, reticulum).catch((/** @type {any} */ err) =>
+        console.warn(
+          "LXMF layer failed to start (chat unavailable):",
+          err?.message ?? err,
+        ),
+      );
+      // Discovery is active, not passive: the LXMF re-announce cadence is
+      // 30 minutes, so waiting for the agent's next announce would leave
+      // an online Companion unaddressable for half an hour
+      solicitAgentContact().catch(() => {});
       postMessage(progress("mesh.connect", "transport", "running"));
       postIdleStatus();
       // A connect that never completes (a Safari stall, a half-open
@@ -2293,6 +2589,11 @@ export async function createMeshSync({
     // destination directly, derived from the grants map — announce-driven
     // discovery is the fallback
     dialKnownPeers().catch(() => {});
+    // The transport is live now: the boot solicitation here actually
+    // reaches the mesh (the one right after ensureReticulum can race the
+    // interface connect and die silently)
+    solicitAgentContact().catch(() => {});
+    startAgentSolicitTimer();
     // The patient redial (work document #47): offline peers are the mesh's
     // default state, so granted peers re-dial with per-peer backoff until
     // they appear. Announces shortcut the backoff (a peer's announce means
@@ -2446,6 +2747,19 @@ export async function createMeshSync({
       clearInterval(redialTimer);
       redialTimer = null;
     }
+    if (agentSolicitTimer) {
+      clearInterval(agentSolicitTimer);
+      agentSolicitTimer = null;
+    }
+    // The LXMF layer ends with the transport: its router and announce
+    // listeners live on the shared instance. The history store persists
+    // on its own storage — records outlive the layer
+    if (lxmfLayer) {
+      lxmfLayer.stop();
+      lxmfLayer = null;
+      lxmfStore = null;
+      agentContact = null;
+    }
     if (!provider) return;
     if (unobserveAwareness) {
       unobserveAwareness();
@@ -2557,6 +2871,38 @@ export async function createMeshSync({
      *
      * @returns {Array<{ type: string, options: Record<string, any>, reason: string }> | null}
      */
+    /**
+     * Sends a chat message over LXMF (work document #42 Phase A'): the
+     * destination derives from the target's identity hash — the agent's
+     * once its LXMF announce was heard, or any collaborator's. The ack
+     * rides `chat-ack`; inbound replies ride `chat-message`.
+     *
+     * @param {any} payload `{ text: string, identityHash?: string }`.
+     * @returns {Promise<boolean>} Whether the message went out.
+     */
+    sendChat(payload) {
+      return sendChat(payload);
+    },
+    /**
+     * The agent's LXMF contact once discovered (null before): the granted
+     * peer heard announcing an `lxmf.delivery` destination.
+     *
+     * @returns {{ identityHash: string, destinationHash: string } | null}
+     */
+    get agentContact() {
+      return agentContact;
+    },
+    /**
+     * The mesh layer's grant verdict for a peer (work document #42's
+     * inbound policy consumer): the Dacar engine's evaluated verdict,
+     * including the trust-anchor rule.
+     *
+     * @param {string | undefined} peerHash
+     * @returns {boolean}
+     */
+    isGranted(peerHash) {
+      return isGranted(peerHash);
+    },
     getRuntimeInterfaces() {
       return runtimeInterfaces;
     },

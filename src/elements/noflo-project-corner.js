@@ -207,9 +207,7 @@ export class FlowProjectCorner extends FlowCornerElement {
     // The degradation ladder's count: the active documents' number is
     // what the chip summarizes — it survives minification when the
     // words drop
-    const peopleCount = this._collaborators.filter(
-      (c) => !c.self,
-    ).length;
+    const peopleCount = this._collaborators.filter((c) => !c.self).length;
     const peopleSeg =
       peopleCount > 0
         ? `<span class="seg" title="Project collaborators">${icon("user-group")}<span class="label">${peopleCount} collaborator${peopleCount === 1 ? "" : "s"}</span><span class="count">${peopleCount}</span></span>`
@@ -245,28 +243,6 @@ export class FlowProjectCorner extends FlowCornerElement {
     const panel = this._collaboratorsPanel;
     if (panel) panel.setCollaborators(collaborators);
     this.render();
-  }
-
-  /**
-   * Appends a chat response to a collaborator's thread (work document #61).
-   *
-   * @param {{ identityHash?: string, text: string, role: string }} payload
-   */
-  addChatResponse(payload) {
-    const panel = this._collaboratorsPanel;
-    if (!panel) return;
-    if (payload.role === "system") {
-      // Narrations and system messages land in the agent's thread
-      panel.addThreadMessage("__agent__", {
-        text: payload.text,
-        role: "system",
-      });
-    } else {
-      panel.deliverResponse({
-        text: payload.text,
-        role: payload.role,
-      });
-    }
   }
 
   setRngitRemote(/** @type {string} */ url) {

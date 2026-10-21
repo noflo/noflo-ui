@@ -21,9 +21,8 @@
  */
 
 import { GraphModel, internalSocket } from "../../vendor/noflo.js";
-
-import * as Configure from "../components/mesh/Configure.js";
 import * as Chat from "../components/mesh/Chat.js";
+import * as Configure from "../components/mesh/Configure.js";
 import * as CreateInvite from "../components/mesh/CreateInvite.js";
 import * as FactoryReset from "../components/mesh/FactoryReset.js";
 import * as Grant from "../components/mesh/Grant.js";
@@ -96,6 +95,7 @@ export function createMeshGraph() {
   graph.addNode({ entity_id: "route", component: "mesh/route" });
   const commands = [
     "configure",
+    "chat",
     "createInvite",
     "factoryReset",
     "grant",
@@ -141,11 +141,13 @@ export function createMeshGraph() {
  *   postMeshConfig: () => void,
  *   joinProject: (payload: any) => void,
  *   factoryReset: () => Promise<void>,
+ *   chat: (payload: any) => Promise<boolean>,
  * }} context
  */
 export function wireMeshContext(network, context) {
   const commands = [
     "configure",
+    "chat",
     "createinvite",
     "factoryreset",
     "grant",
