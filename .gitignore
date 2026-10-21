@@ -9,5 +9,6 @@ join-flow-worker-test.html
 join-worker-repro.js
 code-editor-test.html
 project/
+companion-state/
 utils/bridge-check.mjs
 test-results/
