@@ -209,6 +209,10 @@ function narrateWorkerError(error) {
  * of a path request that looks stuck. */
 /** @type {Record<string, "online" | "offline">} */
 let peerReachability = {};
+/** Last-heard timestamps per peer identity (work document #61): the
+ * peer's most recent transport announce or link activity, rendered as
+ * "last seen" for offline contacts. */
+let peerLastSeen = /** @type {Record<string, number>} */ ({});
 /** The agent's LXMF contact (work document #42): the Companion's mesh
  * identity hash once its LXMF announce was heard. The roster's agent
  * entry keys the agent thread with it; "__agent__" stands in before
@@ -568,8 +572,11 @@ const echoHandlers = createEchoHandlers({
     }
     refreshSyncPanel();
   },
-  updatePeerReachability: (states) => {
+  updatePeerReachability: (states, lastSeen) => {
     peerReachability = states ?? {};
+    // Last-heard timestamps per peer (work document #61): the "last seen"
+    // an IM client shows for offline contacts
+    peerLastSeen = lastSeen ?? {};
     refreshSyncPanel();
   },
   setJoinRequests: (requests) => {
@@ -1820,6 +1827,7 @@ function refreshSyncPanel() {
         kind: "agent",
         presence:
           peerReachability[agentHash] === "online" ? "online" : "offline",
+        lastSeenAt: peerLastSeen[agentHash] ?? undefined,
       });
     }
     for (const peerId of meshPeers) {
@@ -1834,6 +1842,7 @@ function refreshSyncPanel() {
         name: peerAliases[identityHash] ?? identityHash.slice(0, 8),
         presence: "online",
         appearance: peerAppearances[identityHash] ?? undefined,
+        lastSeenAt: peerLastSeen[identityHash] ?? undefined,
       });
     }
     for (const request of joinRequests) {

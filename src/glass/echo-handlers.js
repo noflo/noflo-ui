@@ -40,7 +40,7 @@ function formatBytes(bytes) {
  * @property {(data: any) => void} ingestMeshConfig Take a full mesh-state
  *   report into the Glass's mesh state.
  * @property {(uri: string) => void} setMeshInvite Store a minted invite URI.
- * @property {((states: Record<string, "online" | "offline">) => void) | undefined} [updatePeerReachability]
+ * @property {((states: Record<string, "online" | "offline">, lastSeen: Record<string, number>) => void) | undefined} [updatePeerReachability]
  *   Peer reachability states (work document #47): granted peers are
  *   online or offline — offline is the mesh's normal state.
  * @property {(added: string[], removed: string[], peers: number, identities?: Record<string, string>) => void} updateMeshPeers
@@ -192,7 +192,7 @@ export function createEchoHandlers(deps) {
       );
     },
     "kind:mesh-peer-reachability": (data) => {
-      deps.updatePeerReachability?.(data.states ?? {});
+      deps.updatePeerReachability?.(data.states ?? {}, data.lastSeen ?? {});
     },
     "kind:mesh-requests": (data) => {
       deps.setJoinRequests(data.requests ?? []);

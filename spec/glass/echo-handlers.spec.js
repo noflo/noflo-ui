@@ -162,7 +162,16 @@ describe("echo handlers (work document #37 contract, #56 harness)", () => {
       states: { [offlinePeer]: "offline" },
     });
     assert.deepEqual(deps.calls.updatePeerReachability, [
-      [{ [offlinePeer]: "offline" }],
+      [{ [offlinePeer]: "offline" }, {}],
+    ]);
+    handlers["kind:mesh-peer-reachability"]({
+      kind: "mesh-peer-reachability",
+      states: { [offlinePeer]: "online" },
+      lastSeen: { [offlinePeer]: 1234 },
+    });
+    assert.deepEqual(deps.calls.updatePeerReachability, [
+      [{ [offlinePeer]: "offline" }, {}],
+      [{ [offlinePeer]: "online" }, { [offlinePeer]: 1234 }],
     ]);
     handlers["kind:mesh-requests"]({
       kind: "mesh-requests",

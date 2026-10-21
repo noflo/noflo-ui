@@ -95,6 +95,8 @@ export function identiconSvg(hashHex, size = 36) {
  *   agent's status line reads AGENT instead of the presence word.
  * @property {string} [role] The Dacar role, when known.
  * @property {boolean} [self] True for the user's own avatar.
+ * @property {number} [lastSeenAt] The peer's last-heard timestamp (work
+ *   document #61): the "last seen" offline contacts show.
  * @property {{ icon: string, fg: number[], bg: number[] }} [appearance]
  *   The participant's avatar appearance (work document #61): emoji +
  *   colors, announced with their messages. Renders in place of the
@@ -530,6 +532,11 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           gap: 4px;
           padding: 4px 0;
         }
+        .thread-lastseen {
+          font-size: 9px;
+          color: var(--ui-muted, #889);
+          padding: 2px 8px 0;
+        }
         .thread-day {
           font-size: 9px;
           text-transform: uppercase;
@@ -661,6 +668,17 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       (c) => c.identityHash === identityHash,
     );
     const displayName = collaborator?.name ?? identityHash.slice(0, 8);
+    // The "last seen" an IM client shows: offline peers carry their most
+    // recent heard time (work document #61)
+    const lastSeen =
+      collaborator?.presence === "offline" && collaborator?.lastSeenAt
+        ? new Date(collaborator.lastSeenAt)
+        : null;
+    const lastSeenLabel = lastSeen
+      ? lastSeen.toDateString() === new Date().toDateString()
+        ? `last seen ${String(lastSeen.getHours()).padStart(2, "0")}:${String(lastSeen.getMinutes()).padStart(2, "0")}`
+        : `last seen ${lastSeen.toLocaleDateString()}`
+      : "";
     const reactions = this._reactions.get(identityHash) ?? new Map();
     /** The last message's local day: date separators render when it flips. */
     let lastDay = "";
@@ -696,6 +714,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         ${messages || '<div class="thread-msg system">Start the conversation.</div>'}
         ${thread?.thinking ? '<div class="thread-msg system">🤔 processing…</div>' : ""}
       </div>
+      ${lastSeenLabel ? `<div class="thread-lastseen">${lastSeenLabel}</div>` : ""}
       <div class="thread-input">
         <input data-thread-input="${escapeHtml(identityHash)}" value="${escapeHtml(this._drafts.get(identityHash) ?? "")}" placeholder="Message ${escapeHtml(displayName)}…" aria-label="Message">
         <button data-thread-send="${escapeHtml(identityHash)}">Send</button>
