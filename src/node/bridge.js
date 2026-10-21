@@ -213,6 +213,41 @@ async function main() {
   );
   console.log(`bridge  companion identity ${toHex(identity.identityHash)}`);
 
+  // The mesh plane must run THIS identity before the seed join knocks: the
+  // configure command applies asynchronously through the dispatch graph,
+  // and a join that races it knocks with the previously-stored identity —
+  // a second identity the host correctly treats as a stranger (the live
+  // finding behind the duplicate join request on restart). The mesh
+  // plane's configure echo carries the restored identityHash; the join
+  // waits for it
+  const expectedMeshIdentity = toHex(identity.identityHash);
+  /** @type {Array<(identityHash: string) => void>} */
+  const meshIdentityListeners = [];
+  const onMeshIdentityConfirmed = (/** @type {string} */ identityHash) => {
+    if (identityHash !== expectedMeshIdentity) return;
+    for (const resolve of meshIdentityListeners.splice(0))
+      resolve(identityHash);
+  };
+  /**
+   * Resolves once the mesh plane confirms it runs the process identity,
+   * or after the timeout — the caller decides whether a timeout may
+   * still proceed.
+   *
+   * @param {number} [timeoutMs]
+   * @returns {Promise<string | null>} The confirmed identity hash, or
+   *   null on timeout.
+   */
+  const whenMeshIdentityConfirmed = (timeoutMs = 30_000) =>
+    new Promise((resolve) => {
+      meshIdentityListeners.push(resolve);
+      const timer = setTimeout(() => {
+        const index = meshIdentityListeners.indexOf(resolve);
+        if (index > -1) meshIdentityListeners.splice(index, 1);
+        resolve(null);
+      }, timeoutMs);
+      if (timer.unref) timer.unref();
+    });
+
   // Interfaces: the stored mesh config (or the defaults), plus the hub
   // on-ramps. Attach directly to the process-owned instance
   const meshConfig = config.mesh ?? {};
@@ -354,6 +389,12 @@ async function main() {
     const engine = await startEngine(
       {
         postMessage: (message) => {
+          if (message.kind === "mesh-config") {
+            // The configure echo names the mesh plane's restored identity:
+            // the seed join's serialization signal (work document #67)
+            const hash = String(message.identityHash ?? "");
+            if (hash) onMeshIdentityConfirmed(hash);
+          }
           const kind = `${message.protocol ?? "system"}/${message.command ?? message.kind ?? "?"}`;
           if (
             message.kind === "y-update" ||
@@ -541,6 +582,15 @@ async function main() {
           }
         } catch {
           // A storage read failure must not skip the join: knock
+        }
+        // The join must not race the identity switch: wait until the mesh
+        // plane confirms it runs the process identity, then knock
+        const confirmed = await whenMeshIdentityConfirmed(30_000);
+        if (confirmed === null) {
+          console.warn(
+            "bridge  seed join: the mesh plane never confirmed the identity — retrying later",
+          );
+          return;
         }
         console.log("bridge  seed join: no binding yet — knocking");
         engine.handle({
