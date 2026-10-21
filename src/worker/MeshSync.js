@@ -499,6 +499,14 @@ export async function createMeshSync({
    * @type {any}
    */
   let identityInstance = null;
+  /** The `config.identity` material the cached instance was built from.
+   * The cache is valid only while the configured material is unchanged —
+   * a configure payload may inject a different identity (the bridge's
+   * process identity), and a cached instance from the boot-time
+   * generation would otherwise shadow it: the mesh plane would run a
+   * different identity than the one the process announced and the peers
+   * granted (work document #67's two-identity finding). */
+  let identityInstanceSource = "";
   /**
    * Set when identity generation is impossible (e.g. WebKit's WebCrypto
    * lacks Ed25519): mesh sync cannot run, but the Engine keeps working.
@@ -750,7 +758,9 @@ export async function createMeshSync({
    * use so the peer's Reticulum address stays stable across restarts.
    */
   async function ensureIdentity() {
-    if (identityInstance) return identityInstance;
+    if (identityInstance && identityInstanceSource === config.identity) {
+      return identityInstance;
+    }
     if (config.identity) {
       try {
         const restored = await Identity.fromBytes(
@@ -760,6 +770,7 @@ export async function createMeshSync({
           throw new Error("stored identity could not be restored");
         }
         identityInstance = restored;
+        identityInstanceSource = config.identity;
         identityHash = toHex(restored.getSalt());
         // Narrate the first restore so the boot checklist shows the
         // identity came from device state, not fresh generation; later
@@ -789,6 +800,7 @@ export async function createMeshSync({
     identityHash = toHex(identity.getSalt());
     await saveMeshConfig(storage, config);
     identityInstance = identity;
+    identityInstanceSource = config.identity;
     postMessage(progress("identity.generate", "generate", "done"));
     return identity;
   }

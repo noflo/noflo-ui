@@ -599,7 +599,10 @@ async function main() {
           payload: { invite: config.seedInvite },
         });
       };
-      await attemptJoin();
+      // Fire-and-forget: the join must not delay the project boot or the
+      // UI serving — it waits for the identity confirmation in the
+      // background and knocks when the mesh plane is ready
+      attemptJoin().catch(() => {});
       // The seed join retries until the welcome handoff lands: an
       // always-on daemon must recover from "the host was offline at boot"
       // without an operator, and a missed host announce starves the first
