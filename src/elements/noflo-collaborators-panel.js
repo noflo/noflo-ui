@@ -660,8 +660,8 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         this._editingAppearance
           ? `<div class="appearance-editor">
         <noflo-icon-picker data-appearance-picker value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}"></noflo-icon-picker>
-        <label>Text <input data-appearance-fg type="color" value="${escapeHtml(this._selfAppearanceDraft?.fgHex ?? "#ffffff")}"></label>
-        <label>Ring <input data-appearance-bg type="color" value="${escapeHtml(this._selfAppearanceDraft?.bgHex ?? "#1a237e")}"></label>
+        <label>Icon <input data-appearance-fg type="color" value="${escapeHtml(this._selfAppearanceDraft?.fgHex ?? "#ffffff")}"></label>
+        <label>Background <input data-appearance-bg type="color" value="${escapeHtml(this._selfAppearanceDraft?.bgHex ?? "#1a237e")}"></label>
         <button data-appearance-apply>Apply</button>
         <button data-appearance-cancel>Cancel</button>
       </div>`
