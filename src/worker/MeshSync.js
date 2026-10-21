@@ -1764,14 +1764,29 @@ export async function createMeshSync({
     });
     lxmfStore = store;
     // History precedes live traffic: the threads restore before any new
-    // message can arrive
+    // message can arrive. Each peer's LATEST announced appearance comes
+    // from their last inbound message in the history — the avatars render
+    // correctly at restore time, before any new traffic (work document
+    // #61)
     try {
       /** @type {Array<{ identityHash: string, messages: any[] }>} */
       const threads = [];
       for (const peer of await store.peers()) {
         const messages = await store.thread(peer);
-        if (messages.length > 0) {
-          threads.push({ identityHash: peer, messages });
+        if (messages.length === 0) continue;
+        threads.push({ identityHash: peer, messages });
+        const lastAppearance = [...messages]
+          .reverse()
+          .find(
+            (/** @type {any} */ m) =>
+              m.direction === "in" && m.appearance?.icon,
+          );
+        if (lastAppearance?.appearance) {
+          postMessage({
+            kind: "chat-appearance",
+            identityHash: peer,
+            ...lastAppearance.appearance,
+          });
         }
       }
       if (threads.length > 0) {

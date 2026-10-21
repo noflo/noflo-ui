@@ -20,7 +20,7 @@
  */
 
 import { LXMessage } from "../../vendor/lxmf.js";
-import { wireForm } from "./protocol.js";
+import { decodeAppearance, wireForm } from "./protocol.js";
 
 const NAME_INFO = "noflo-ui lxmf history v1";
 
@@ -32,6 +32,9 @@ const NAME_INFO = "noflo-ui lxmf history v1";
  * @property {string} text
  * @property {string} title
  * @property {number} time Device-local receive/send time (ms epoch).
+ * @property {{ icon: string, fg: number[], bg: number[] }} [appearance]
+ *   The sender's avatar appearance, decoded from the wire form — inbound
+ *   messages carry the peer's announcement (work document #61).
  */
 
 /**
@@ -212,6 +215,9 @@ export async function createLxmfStore({ storage, identity, log = () => {} }) {
           text,
           title: typeof parsed.title === "string" ? parsed.title : "",
           time: record.time,
+          ...(record.direction === "in"
+            ? { appearance: decodeAppearance(parsed) ?? undefined }
+            : {}),
         });
       } catch (err) {
         log(
