@@ -103,9 +103,8 @@ export function toEntityCanonical(interchange) {
       public: publicName,
       metadata: info?.metadata ?? {},
     })),
-  ].sort(
-    (/** @type {any} */ a, /** @type {any} */ b) =>
-      compare(a.entity_id, b.entity_id),
+  ].sort((/** @type {any} */ a, /** @type {any} */ b) =>
+    compare(a.entity_id, b.entity_id),
   );
 
   const groups = (source.groups ?? [])
@@ -115,9 +114,8 @@ export function toEntityCanonical(interchange) {
       nodes: [...(group.nodes ?? [])].sort(compare),
       metadata: group.metadata ?? {},
     }))
-    .sort(
-      (/** @type {any} */ a, /** @type {any} */ b) =>
-        compare(a.entity_id, b.entity_id),
+    .sort((/** @type {any} */ a, /** @type {any} */ b) =>
+      compare(a.entity_id, b.entity_id),
     );
 
   const metadata = { ...(source.properties ?? {}) };

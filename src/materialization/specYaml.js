@@ -27,7 +27,7 @@ export function yamlValue(value) {
     // punctuation, no query/anchor characters, never a bare bool/null word
     if (
       value.length > 0 &&
-      !/^[!&*\[\]{}|>%@`"'\s#,]/.test(value) &&
+      !/^[!&*[\]{}|>%@`"'\s#,]/.test(value) &&
       !/[\s#,]$/.test(value) &&
       !/[:\s]/.test(value) &&
       !/^(true|false|null|yes|no|on|off|~)$/i.test(value) &&

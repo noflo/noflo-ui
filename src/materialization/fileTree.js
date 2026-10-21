@@ -22,10 +22,10 @@ import {
   SPECS_MAP,
 } from "../crdt/ProjectDoc.js";
 import { projectGraph } from "../glass/projectView.js";
-import { canonicalGraph, serializeGraph } from "./canonical.js";
-import { specSuiteToYaml } from "./specYaml.js";
 import { fileExtensionFor } from "../library/languages.js";
 import { getFlavor } from "../library/runtimeinfo/index.js";
+import { canonicalGraph, serializeGraph } from "./canonical.js";
+import { specSuiteToYaml } from "./specYaml.js";
 
 /**
  * The fs adapter contract: write one file. Implemented over Node

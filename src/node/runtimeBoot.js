@@ -15,26 +15,19 @@
  * the process restarts.
  */
 
-import { readFile, readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { FileStorageAdapter } from "@reticulum/node";
-import { RnsSyncServer } from "@reticulum/dacar/transport";
-import { GraphModel } from "@noflo/graph";
-import { ComponentLoader } from "@noflo/noflo";
-import { Flowtrace } from "@noflo/noflo";
 import { assembleTraceFileFromRecorder } from "@noflo/fbp-protocol";
-import {
-  assembleRuntime,
-  bindReticulum,
-} from "@noflo/runtime";
+import { GraphModel } from "@noflo/graph";
+import { ComponentLoader, Flowtrace } from "@noflo/noflo";
+import { assembleRuntime, bindReticulum } from "@noflo/runtime";
+import { RnsSyncServer } from "@reticulum/dacar/transport";
+import { FileStorageAdapter } from "@reticulum/node";
 import { Identity, Reticulum } from "../../vendor/reticulum-core.js";
 import { toEntityCanonical } from "../materialization/entityCanonical.js";
-import {
-  buildRuntimeDacar,
-  runtimeCapabilityPolicy,
-} from "./runtimeDacar.js";
 import { attachInterfaces } from "./interfaces.js";
+import { buildRuntimeDacar, runtimeCapabilityPolicy } from "./runtimeDacar.js";
 
 /** The app root: the ecosystem's @noflo/* library packages live under it. */
 const APP_ROOT = path.resolve(
@@ -176,7 +169,13 @@ async function loadDacarBinding(stateDir) {
  * @param {(message: string) => void} [options.log] The boot's log channel.
  * @returns {Promise<any>} The booted runtime stack.
  */
-export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", interfaces = [], log = () => {} }) {
+export async function bootRuntime({
+  folder,
+  stateDir,
+  name = "noflo-runtime",
+  interfaces = [],
+  log = () => {},
+}) {
   // The runtime's own long-term identity — persisted under the runtime
   // state directory, never inside the project (the Companion-state rule)
   const identity = await Identity.loadOrGenerate(
@@ -230,7 +229,9 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
       `dacar replica bound (project ${dacarBinding.projectId}, sync endpoint announcing)`,
     );
   } else {
-    log("no Dacar binding provisioned — deny-closed until provisioned and restarted");
+    log(
+      "no Dacar binding provisioned — deny-closed until provisioned and restarted",
+    );
   }
 
   const models = await loadGraphs(folder);
@@ -278,12 +279,19 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
       list: () => componentCatalog,
       get: async (/** @type {string} */ componentName) => {
         // Project components first, then library components
-        if (componentCatalog[componentName]) return componentCatalog[componentName];
+        if (componentCatalog[componentName])
+          return componentCatalog[componentName];
         const [lib, short] = componentName.split("/");
         if (!lib || !short) return undefined;
         // The library's component: the app root's node_modules
         const modulePath = pathToFileURL(
-          path.join(APP_ROOT, "node_modules", `@noflo-${lib}`.replace("@noflo-@noflo", "@noflo"), "components", `${short}.js`),
+          path.join(
+            APP_ROOT,
+            "node_modules",
+            `@noflo-${lib}`.replace("@noflo-@noflo", "@noflo"),
+            "components",
+            `${short}.js`,
+          ),
         ).href;
         return import(modulePath).catch(() => undefined);
       },
@@ -299,7 +307,11 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
   ).catch(() => []);
   for (const pkg of libraryPackages) {
     const componentsDir = path.join(
-      APP_ROOT, "node_modules", "@noflo", pkg, "components",
+      APP_ROOT,
+      "node_modules",
+      "@noflo",
+      pkg,
+      "components",
     );
     const files = await readdir(componentsDir).catch(() => []);
     for (const file of files.filter((f) => f.endsWith(".js"))) {
@@ -350,7 +362,17 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
   // The machine-ready line the manager awaits
   log(`ready destinationHash=${destinationHash}`);
 
-  return { rns, identity, runtime, binding, dacar, syncServer, destinationHash, flowtrace, name };
+  return {
+    rns,
+    identity,
+    runtime,
+    binding,
+    dacar,
+    syncServer,
+    destinationHash,
+    flowtrace,
+    name,
+  };
 }
 
 /**
@@ -368,7 +390,9 @@ export async function bootRuntime({ folder, stateDir, name = "noflo-runtime", in
 export function exportTrace(
   booted,
   runName,
-  /** @type {(message: string) => void} */ log = (/** @type {string} */ _m) => {},
+  /** @type {(message: string) => void} */ log = (
+    /** @type {string} */ _m,
+  ) => {},
 ) {
   const state = booted?.flowtrace?.toJSON?.();
   if (!state) return;

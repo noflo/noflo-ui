@@ -17,8 +17,8 @@
 import { yJedison } from "y-jedison";
 import { REGISTRY_MAP } from "../crdt/ProjectDoc.js";
 import { emit } from "../events.js";
-import { codeEditorTheme } from "./noflo-code-editor.js";
 import { codeMirrorExtension } from "../library/languages.js";
+import { codeEditorTheme } from "./noflo-code-editor.js";
 import { FlowNode } from "./noflo-node.js";
 
 /** The styles for the signature form, fetched once (the mesh settings'
@@ -380,8 +380,7 @@ export class NofloComponentView extends HTMLElement {
         // pitfall)
         ...codeEditorTheme(this._cm),
         this._cm.basicSetup,
-        codeMirrorExtension(this._cm, this._language) ??
-          this._cm.javascript(),
+        codeMirrorExtension(this._cm, this._language) ?? this._cm.javascript(),
         ...plugins,
       ],
       parent: host,

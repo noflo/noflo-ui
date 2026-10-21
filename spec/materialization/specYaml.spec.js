@@ -27,9 +27,13 @@ describe("the spec suite's YAML serialization (work document #43)", () => {
     assert.match(yaml, /component: mylib\/Parse\n/);
     assert.match(yaml, /cases:\n/);
     assert.match(yaml, /- name: "trims input"\n/, "names with spaces quote");
-    assert.match(yaml, /    inputs:\n      in: "hello  "\n/, "trailing spaces quote");
-    assert.match(yaml, /    expect:\n      out: hello\n/);
-    assert.match(yaml, /    assertion:\n      type: greater\n/);
+    assert.match(
+      yaml,
+      / {4}inputs:\n {6}in: "hello {2}"\n/,
+      "trailing spaces quote",
+    );
+    assert.match(yaml, / {4}expect:\n {6}out: hello\n/);
+    assert.match(yaml, / {4}assertion:\n {6}type: greater\n/);
   });
 
   it("targets graphs with graph:, components with component:", () => {
@@ -69,7 +73,10 @@ describe("the spec suite's YAML serialization (work document #43)", () => {
     const tree = docToFileTree(doc);
     assert.ok(tree["specs/spec_parse.yaml"], "the file lands");
     assert.equal(tree["specs/spec_parse.yaml"], specSuiteToYaml(suite));
-    assert.equal(tree["specs/spec_parse.yaml"], docToFileTree(doc)["specs/spec_parse.yaml"]);
+    assert.equal(
+      tree["specs/spec_parse.yaml"],
+      docToFileTree(doc)["specs/spec_parse.yaml"],
+    );
   });
 
   it("an empty suite materializes with an empty cases list", () => {

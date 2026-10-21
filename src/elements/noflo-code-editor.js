@@ -318,8 +318,7 @@ export class NofloCodeEditor extends HTMLElement {
         // default highlighter that would otherwise mask ours
         ...codeEditorTheme(extensions),
         extensions.basicSetup,
-        codeMirrorExtension(extensions, language) ??
-        extensions.javascript(),
+        codeMirrorExtension(extensions, language) ?? extensions.javascript(),
         ...plugins,
       ],
       parent: this.shadowRoot.querySelector(".editor"),

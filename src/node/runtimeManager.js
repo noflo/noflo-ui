@@ -17,14 +17,12 @@
 
 import { spawn } from "node:child_process";
 import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
-
+import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { FileStorageAdapter, LocalClientInterface } from "@reticulum/node";
 import { getSharedInstanceEndpoint } from "@reticulum/node/src/interfaces/local_client.js";
-import { toHex } from "../../vendor/reticulum-core.js";
-import { Identity } from "../../vendor/reticulum-core.js";
+import { Identity, toHex } from "../../vendor/reticulum-core.js";
 
 /** The child entrypoint, resolved from this module's own location. */
 const CHILD_PATH = fileURLToPath(
@@ -115,13 +113,15 @@ export function createRuntimeManager({
     NODE_ENV: process.env.NODE_ENV,
   };
 
-  function wireOutput(/** @type {import("node:stream").Readable | null} */ stream) {
+  function wireOutput(
+    /** @type {import("node:stream").Readable | null} */ stream,
+  ) {
     if (!stream) return;
     stream.setEncoding("utf8");
     let buffer = "";
     stream.on("data", (/** @type {string} */ chunk) => {
       buffer += chunk;
-      let index = buffer.indexOf("\n");
+      const index = buffer.indexOf("\n");
       while (index !== -1) {
         const line = buffer.slice(0, index);
         buffer = buffer.slice(index + 1);
@@ -133,7 +133,10 @@ export function createRuntimeManager({
           if (line.includes("flowtrace-export ")) {
             try {
               const payload = JSON.parse(
-                line.slice(line.indexOf("flowtrace-export ") + "flowtrace-export ".length),
+                line.slice(
+                  line.indexOf("flowtrace-export ") +
+                    "flowtrace-export ".length,
+                ),
               );
               const traceDir = path.join(folder, ".flowtrace");
               mkdirSync(traceDir, { recursive: true });
@@ -151,7 +154,8 @@ export function createRuntimeManager({
               }
             } catch (error) {
               const message =
-                /** @type {any} */ (error)?.message ?? String(error ?? "unknown");
+                /** @type {any} */ (error)?.message ??
+                String(error ?? "unknown");
               log(`trace export write failed: ${message}`);
             }
           }
@@ -202,7 +206,9 @@ export function createRuntimeManager({
         const runtimeIdentity = await Identity.loadOrGenerate(
           new FileStorageAdapter(realState),
         );
-        const runtimeHash = toHex(runtimeIdentity.identityHash ?? new Uint8Array());
+        const runtimeHash = toHex(
+          runtimeIdentity.identityHash ?? new Uint8Array(),
+        );
         provisioning.runtimeIdentityHash = runtimeHash;
         // The anchor mints a grant for the runtime's identity: the
         // runtime is a project participant (the developer role — it
@@ -213,7 +219,8 @@ export function createRuntimeManager({
             provisioning.initialGrant = grant.deltas;
             log(`runtime identity ${runtimeHash.slice(0, 8)} granted`);
           } catch (error) {
-            const message = /** @type {any} */ (error)?.message ?? String(error);
+            const message =
+              /** @type {any} */ (error)?.message ?? String(error);
             log(`runtime grant minting failed: ${message}`);
           }
         }

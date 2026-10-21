@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CAPABILITY } from "@noflo/fbp-protocol";
 import {
   buildRuntimeDacar,
-  runtimeCapabilityPolicy,
   RUNTIME_RELATIONS,
+  runtimeCapabilityPolicy,
 } from "../../src/node/runtimeDacar.js";
 import {
+  base64ToBytes,
   generateSalt,
   mintAuthorization,
   projectResource,
 } from "../../src/worker/Dacar.js";
-import { Identity, fromHex, toHex } from "../../vendor/reticulum-core.js";
-import { base64ToBytes } from "../../src/worker/Dacar.js";
-import { CAPABILITY } from "@noflo/fbp-protocol";
+import { fromHex, Identity, toHex } from "../../vendor/reticulum-core.js";
 
 /**
  * The runtime's Dacar replica (work document #47 slice 3): the grant chain
@@ -66,12 +66,12 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       CAPABILITY.TELEMETRY_READ,
       "the observer reads telemetry",
     );
+    assert.equal(mask & CAPABILITY.GRAPH_EDIT, 0, "the observer cannot edit");
     assert.equal(
-      mask & CAPABILITY.GRAPH_EDIT,
+      mask & CAPABILITY.ADMIN,
       0,
-      "the observer cannot edit",
+      "admin stays out of the role bridge",
     );
-    assert.equal(mask & CAPABILITY.ADMIN, 0, "admin stays out of the role bridge");
   });
 
   it("the developer's write grant covers the edit-class capabilities", async () => {
@@ -151,7 +151,11 @@ describe("the runtime's Dacar replica (work document #47 slice 3)", () => {
       salt,
     });
     const applied = await replica.apply(base64ToBytes(forged.deltas));
-    assert.equal(applied, 0, "verify-on-ingest rejects the forger's signatures");
+    assert.equal(
+      applied,
+      0,
+      "verify-on-ingest rejects the forger's signatures",
+    );
     const policy = runtimeCapabilityPolicy({
       engine: replica.engine,
       projectResource: RESOURCE,

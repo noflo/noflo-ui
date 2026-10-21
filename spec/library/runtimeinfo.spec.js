@@ -37,7 +37,11 @@ describe("the runtime flavor registry (work document #66)", () => {
   });
 
   it("the template context carries the name in its forms and the signature as-is", () => {
-    const context = templateContext(getFlavor("noflo"), SIGNATURE, "mylib/Parse");
+    const context = templateContext(
+      getFlavor("noflo"),
+      SIGNATURE,
+      "mylib/Parse",
+    );
     assert.equal(context.name, "mylib/Parse");
     assert.equal(context.namespace, "mylib");
     assert.equal(context.shortName, "Parse");
@@ -89,21 +93,31 @@ describe("the language registry (work document #66)", () => {
     assert.deepEqual(codeMirrorExtension(cm, "javascript"), {
       javascript: true,
     });
-    assert.deepEqual(codeMirrorExtension(cm, "typescript"), {
-      javascript: { typescript: true },
-    }, "the TypeScript dialect rides the vendored lang-javascript");
+    assert.deepEqual(
+      codeMirrorExtension(cm, "typescript"),
+      {
+        javascript: { typescript: true },
+      },
+      "the TypeScript dialect rides the vendored lang-javascript",
+    );
     assert.deepEqual(codeMirrorExtension(cm, "markdown"), { markdown: true });
-    assert.equal(codeMirrorExtension(cm, "cpp"), null, "unvendored languages stay plain");
+    assert.equal(
+      codeMirrorExtension(cm, "cpp"),
+      null,
+      "unvendored languages stay plain",
+    );
   });
 
   it("the flavor's language entries carry the materialization extensions", async () => {
-    const { fileExtensionFor } = await import(
-      "../../src/library/languages.js"
-    );
+    const { fileExtensionFor } = await import("../../src/library/languages.js");
     const noflo = getFlavor("noflo");
     assert.equal(fileExtensionFor(noflo, "javascript"), "js");
     assert.equal(fileExtensionFor(noflo, "typescript"), "ts");
-    assert.equal(fileExtensionFor(noflo, "unknown"), "js", "the preferred language's extension is the fallback");
+    assert.equal(
+      fileExtensionFor(noflo, "unknown"),
+      "js",
+      "the preferred language's extension is the fallback",
+    );
   });
 
   it("the scaffold renders the flavor's TypeScript template", () => {

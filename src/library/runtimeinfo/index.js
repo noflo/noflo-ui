@@ -76,9 +76,7 @@ export function identifierFrom(shortName) {
     .split(/[^A-Za-z0-9]+/)
     .filter(Boolean);
   if (parts.length === 0) return "Component";
-  return parts
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join("");
+  return parts.map((part) => part[0].toUpperCase() + part.slice(1)).join("");
 }
 
 /**

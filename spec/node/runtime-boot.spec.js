@@ -1,14 +1,9 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { bootRuntime, shutdownRuntime } from "../../src/node/runtimeBoot.js";
-import {
-  generateSalt,
-  mintAuthorization,
-  projectResource,
-} from "../../src/worker/Dacar.js";
+import { describe, it } from "node:test";
+import { CAPABILITY } from "@noflo/fbp-protocol";
 import {
   addEdge,
   addNode,
@@ -16,9 +11,14 @@ import {
   createProjectDoc,
 } from "../../src/crdt/ProjectDoc.js";
 import { docToFileTree } from "../../src/materialization/fileTree.js";
-import { Identity, toHex, fromHex } from "../../vendor/reticulum-core.js";
-import { base64ToBytes } from "../../src/worker/Dacar.js";
-import { CAPABILITY } from "@noflo/fbp-protocol";
+import { bootRuntime, shutdownRuntime } from "../../src/node/runtimeBoot.js";
+import {
+  base64ToBytes,
+  generateSalt,
+  mintAuthorization,
+  projectResource,
+} from "../../src/worker/Dacar.js";
+import { fromHex, Identity, toHex } from "../../vendor/reticulum-core.js";
 
 /**
  * The runtime boot's integration (work document #47 slice 3): the same
@@ -44,7 +44,9 @@ function seedProject(dir) {
 }
 
 describe("the runtime boot's Dacar wiring (work document #47 slice 3)", () => {
-  it("the assembled runtime's policy resolves the pushed grants", { timeout: 60_000 }, async () => {
+  it("the assembled runtime's policy resolves the pushed grants", {
+    timeout: 60_000,
+  }, async () => {
     const workDir = mkdtempSync(path.join(tmpdir(), "rt-boot-"));
     const projectDir = path.join(workDir, "project");
     const stateDir = path.join(workDir, "runtime-state");
@@ -91,10 +93,7 @@ describe("the runtime boot's Dacar wiring (work document #47 slice 3)", () => {
 
     // The ASSEMBLED runtime's policy — the one the server evaluates per
     // link — resolves the pushed grant
-    const mask = await booted.runtime.server.capabilityPolicy(
-      peerHash,
-      {},
-    );
+    const mask = await booted.runtime.server.capabilityPolicy(peerHash, {});
     assert.equal(
       mask & CAPABILITY.GRAPH_READ,
       CAPABILITY.GRAPH_READ,
@@ -123,7 +122,9 @@ describe("the runtime boot's Dacar wiring (work document #47 slice 3)", () => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  it("boots deny-closed without a provisioned binding", { timeout: 60_000 }, async () => {
+  it("boots deny-closed without a provisioned binding", {
+    timeout: 60_000,
+  }, async () => {
     const workDir = mkdtempSync(path.join(tmpdir(), "rt-boot-"));
     const projectDir = path.join(workDir, "project");
     mkdirSync(projectDir, { recursive: true });

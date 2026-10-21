@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { mkdir, mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { describe, it } from "node:test";
 import { createEngineState, handleMessage } from "../../src/crdt/EngineCore.js";
 import {
   addEdge,
@@ -82,8 +82,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
   it("Pi's component edit lands in the engine and survives the absorption", async () => {
     const { doc, materializer, folder } = await loop();
     const target = path.join("components", "mylib", "Parse.js");
-    const authored =
-      "export const parse = (s) => s.trim().toLowerCase();\n";
+    const authored = "export const parse = (s) => s.trim().toLowerCase();\n";
     await writeFile(path.join(folder, target), authored);
     await materializer.handleFileEvent(target, authored);
 
@@ -114,7 +113,9 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
   it("a graph edit from disk applies through the engine and converges", async () => {
     const { doc, materializer, folder } = await loop();
     const target = path.join("graphs", "main.graph.json");
-    const graphFile = JSON.parse(await readFile(path.join(folder, target), "utf8"));
+    const graphFile = JSON.parse(
+      await readFile(path.join(folder, target), "utf8"),
+    );
     // Pi adds a node in the file: the canonical processes map gains an entry
     graphFile.processes["Lower"] = {
       component: "mylib/Parse",
@@ -127,8 +128,14 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     const view = projectGraph(doc, "main");
     assert.ok(view?.processes["Lower"], "the engine gained the node");
     await materializer.absorbRemote();
-    const converged = JSON.parse(await readFile(path.join(folder, target), "utf8"));
-    assert.deepEqual(converged, JSON.parse(await readBackSnapshot(materializer, target)), "the file is the snapshot");
+    const converged = JSON.parse(
+      await readFile(path.join(folder, target), "utf8"),
+    );
+    assert.deepEqual(
+      converged,
+      JSON.parse(await readBackSnapshot(materializer, target)),
+      "the file is the snapshot",
+    );
     assert.ok(view.processes["Lower"], "the node stays");
   });
 
@@ -168,7 +175,9 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     await rm(path.join(folder, target));
     await materializer.handleFileEvent(target, null);
     assert.ok(
-      diagnostics.some(([file, message]) => file === target && /deletion/.test(message)),
+      diagnostics.some(
+        ([file, message]) => file === target && /deletion/.test(message),
+      ),
       "the deletion answers with a reason",
     );
   });
@@ -187,9 +196,7 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     materializer.handleFileEvent(forged, forgedContent);
     // The intent went through the dispatch and was refused: the CRDT has
     // no signature for the graph component
-    const signature = doc
-      .getMap("registry")
-      .get("MyGraph");
+    const signature = doc.getMap("registry").get("MyGraph");
     const plain = signature?.toJSON?.() ?? {};
     assert.equal(plain.inports?.length ?? 0, 0, "the refusal held");
     // The absorption's write-back removes the file the CRDT never had
@@ -206,9 +213,14 @@ describe("the reverse path over a real filesystem (work document #43)", () => {
     // The absorption rewrites the generator's truth — after the event's
     // own derived rewrite settles (handleFileEvent is async; the bridge
     // awaits it)
-    await materializer.handleFileEvent("package.json", '{"name": "pi-was-here"}');
+    await materializer.handleFileEvent(
+      "package.json",
+      '{"name": "pi-was-here"}',
+    );
     await materializer.absorbRemote();
-    const manifest = JSON.parse(await readFile(path.join(folder, "package.json"), "utf8"));
+    const manifest = JSON.parse(
+      await readFile(path.join(folder, "package.json"), "utf8"),
+    );
     assert.equal(manifest.type, "module");
     assert.ok(manifest.dependencies["@noflo/noflo"]);
   });
@@ -233,8 +245,7 @@ describe("spec files on the reverse path (work document #43)", () => {
     await materializer.handleFileEvent(target, "name: forged\n");
     assert.ok(
       diagnostics.some(
-        ([file, message]) =>
-          file === target && /spec file edits/.test(message),
+        ([file, message]) => file === target && /spec file edits/.test(message),
       ),
       "the edit answers with a reason",
     );
@@ -251,10 +262,7 @@ describe("run artifacts on the reverse path (work document #43's trace conventio
     await materializer.handleFileEvent(target, content);
     // No intents, no diagnostics, no snapshot knowledge: the artifact is
     // an output, the CRDT never carries it
-    assert.equal(
-      doc.getMap("components").get("spec_parse"),
-      undefined,
-    );
+    assert.equal(doc.getMap("components").get("spec_parse"), undefined);
     assert.equal(diagnostics.length, 0);
     assert.equal(materializer.snapshot()[target], undefined);
     // The file Pi wrote stays on disk — the absorption does not delete it

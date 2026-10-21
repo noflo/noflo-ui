@@ -7,8 +7,8 @@
  * production wiring, not parallel re-implementations.
  */
 
-import * as fs from "node:fs/promises";
 import * as fsSync from "node:fs";
+import * as fs from "node:fs/promises";
 import path from "node:path";
 import { createMaterializer } from "../materialization/watcher.js";
 
@@ -88,7 +88,13 @@ function watchFolder(folder, handle) {
  *   watch: () => import("node:fs").FSWatcher,
  * }}
  */
-export function wireProjectFolder({ doc, folder, engine, log = () => {}, onDiagnostic }) {
+export function wireProjectFolder({
+  doc,
+  folder,
+  engine,
+  log = () => {},
+  onDiagnostic,
+}) {
   const materializer = createMaterializer({
     doc,
     fs: materializerFs(folder),

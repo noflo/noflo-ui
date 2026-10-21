@@ -590,10 +590,7 @@ describe("the per-language implementation buttons (work document #66)", () => {
       buttons.map((/** @type {any} */ b) => b.getAttribute("data-language")),
       ["javascript", "typescript"],
     );
-    assert.match(
-      buttons[1].textContent,
-      /Implement in TypeScript/,
-    );
+    assert.match(buttons[1].textContent, /Implement in TypeScript/);
     view.remove();
   });
 

@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { GraphModel } from "../../vendor/graph.js";
 import {
   addEdge,
   addIIP,
+  addInport,
   addNode,
+  addOutport,
   createGraph,
   createProjectDoc,
-  addInport,
-  addOutport,
 } from "../../src/crdt/ProjectDoc.js";
 import { projectGraph } from "../../src/glass/projectView.js";
 import { canonicalGraph } from "../../src/materialization/canonical.js";
 import { toEntityCanonical } from "../../src/materialization/entityCanonical.js";
+import { GraphModel } from "../../vendor/graph.js";
 
 /** Seeds a project graph with nodes, an edge, an IIP, and exports. */
 function seededView(doc) {
@@ -77,7 +77,9 @@ describe("the canonical-forms converter (work document #59's found gap)", () => 
   it("handles an empty graph", () => {
     const doc = createProjectDoc("p");
     createGraph(doc, "empty");
-    const entity = toEntityCanonical(canonicalGraph(projectGraph(doc, "empty")));
+    const entity = toEntityCanonical(
+      canonicalGraph(projectGraph(doc, "empty")),
+    );
     assert.deepEqual(entity.nodes, []);
     assert.deepEqual(entity.edges, []);
     assert.deepEqual(entity.iips, []);

@@ -20,6 +20,7 @@
  * is the owner by construction.
  */
 
+import { DacarCapabilityPolicy } from "@noflo/runtime";
 // The child runs in Node with node_modules available: the Dacar stack
 // imports from the npm package the runtime itself depends on — one type
 // tree, no vendor/npm structural conflict in the policy's engine type
@@ -31,7 +32,6 @@ import {
   StateVector,
 } from "@reticulum/dacar";
 import { fromHex } from "../../vendor/reticulum-core.js";
-import { DacarCapabilityPolicy } from "@noflo/runtime";
 
 /**
  * The runtime's capability-to-relation bridge: every read-class capability

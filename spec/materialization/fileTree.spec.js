@@ -189,16 +189,25 @@ describe("language-aware materialization (work document #66)", () => {
       language: "typescript",
     });
     setComponentCode(component, "export const f = (x: number) => x;\n");
-    setComponentSignature(doc, "mylib/TypedThing", { inports: [], outports: [] });
+    setComponentSignature(doc, "mylib/TypedThing", {
+      inports: [],
+      outports: [],
+    });
     const tree = docToFileTree(doc);
-    assert.ok(tree["components/mylib/TypedThing.ts"], "the TypeScript extension");
+    assert.ok(
+      tree["components/mylib/TypedThing.ts"],
+      "the TypeScript extension",
+    );
     assert.equal(tree["components/mylib/TypedThing.js"], undefined);
   });
 
   it("a JavaScript component still materializes as .js", () => {
     const doc = createProjectDoc("p");
     ensureComponent(doc, "mylib/PlainThing", { name: "mylib/PlainThing" });
-    setComponentCode(doc.getMap("components").get("mylib/PlainThing"), "export const f = (x) => x;\n");
+    setComponentCode(
+      doc.getMap("components").get("mylib/PlainThing"),
+      "export const f = (x) => x;\n",
+    );
     const tree = docToFileTree(doc);
     assert.ok(tree["components/mylib/PlainThing.js"], "the unchanged output");
   });

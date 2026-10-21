@@ -34,7 +34,8 @@ function javascriptTemplate(component) {
   const outports = component.outports ?? [];
   const portDecl = (/** @type {any} */ port, /** @type {string} */ dir) => {
     const datatype = port.type && port.type !== "all" ? port.type : "all";
-    const required = dir === "in" && port.required ? ",\n        required: true" : "";
+    const required =
+      dir === "in" && port.required ? ",\n        required: true" : "";
     return `      ${port.name}: {\n        datatype: ${JSON.stringify(datatype)}${required},\n      },`;
   };
   const inBlock = inports.length

@@ -9,25 +9,24 @@
  * hand (`node spec/node/seed-and-verify.mjs`).
  */
 
-import { mkdirSync, rmSync } from "node:fs";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { FileStorageAdapter } from "@reticulum/node";
 import {
-  createProjectDoc,
-  createGraph,
-  addNode,
   addEdge,
   addIIP,
-  setComponentSignature,
+  addNode,
+  createGraph,
+  createProjectDoc,
   ensureComponent,
+  setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import { docToFileTree } from "../../src/materialization/fileTree.js";
-import { FileStorageAdapter } from "@reticulum/node";
+import { attachInterfaces } from "../../src/node/interfaces.js";
 import { Identity, Reticulum } from "../../vendor/reticulum-core.js";
 import { discoverRuntime } from "../../vendor/runtime-client.js";
-import { attachInterfaces } from "../../src/node/interfaces.js";
 
 const workDir = mkdtempSync(path.join(tmpdir(), "rt-e2e-"));
 const projectDir = path.join(workDir, "project");
