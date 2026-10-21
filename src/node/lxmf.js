@@ -178,52 +178,79 @@ export async function startLxmfPlane({
   // ---- Propagation node discovery (work document #67) ------------------
   // No node runs here. Every announce whose destination hash derives from
   // `lxmf.propagation` on the announcing identity marks a propagation
-  // node; the reachable one with the shortest path is selected and
-  // re-selected when a better one appears. The periodic sync pulls what
-  // arrived while this endpoint was away — the mechanism that makes
-  // asynchronous delivery work without any resend machinery.
+  // node. The reachable one with the shortest known path is selected;
+  // failed syncs put a node on cooldown and the next-best takes over —
+  // a stale path to an offline node must not strand store-and-forward
+  // forever. The periodic sync pulls what arrived while this endpoint
+  // was away — the mechanism that makes asynchronous delivery work
+  // without any resend machinery.
+  /** @type {Map<string, { hops: number | null, heardAt: number, failedAt: number }>} */
+  const propagationNodes = new Map();
   /** @type {string | null} */
   let propagationNodeHex = null;
-  const pickPropagationNode = async (/** @type {string} */ candidateHex) => {
-    if (propagationNodeHex === candidateHex) return;
-    if (propagationNodeHex) {
-      // Re-select only on strictly fewer KNOWN hops: unknown hop counts on
-      // either side keep the incumbent — first-selected wins over a guess
-      const currentHops = rns.transport.hopsTo?.(fromHex(propagationNodeHex));
-      const candidateHops = rns.transport.hopsTo?.(fromHex(candidateHex));
-      if (typeof currentHops === "number") {
-        if (typeof candidateHops !== "number" || candidateHops >= currentHops) {
-          return;
-        }
-      } else if (typeof candidateHops !== "number") {
-        return;
-      }
+  const FAIL_COOLDOWN_MS = 5 * 60_000;
+
+  /**
+   * Selects the usable discovered node: fewest known hops wins, unknown
+   * hops sort last, recently-failed nodes sit out their cooldown.
+   *
+   * @returns {Promise<boolean>} Whether a node is selected.
+   */
+  const pickPropagationNode = async () => {
+    const now = Date.now();
+    const candidates = [...propagationNodes.entries()]
+      .filter(([, info]) => now - info.failedAt > FAIL_COOLDOWN_MS)
+      .sort(
+        (/** @type {any} */ a, /** @type {any} */ b) =>
+          (a[1].hops ?? 99) - (b[1].hops ?? 99) || b[1].heardAt - a[1].heardAt,
+      );
+    const selected = candidates[0]?.[0] ?? null;
+    if (!selected || selected === propagationNodeHex) {
+      return Boolean(propagationNodeHex);
     }
-    propagationNodeHex = candidateHex;
-    /** @type {any} */ (lxmf).setOutboundPropagationNode(fromHex(candidateHex));
-    log(`companion: propagation node ${candidateHex} selected`);
+    propagationNodeHex = selected;
+    /** @type {any} */ (lxmf).setOutboundPropagationNode(fromHex(selected));
+    log(`companion: propagation node ${selected} selected`);
     // A selected node makes the pending hello deliverable (store-and-
     // forward): the deferred first attempt fires
     attemptHello();
+    return true;
   };
   const onAnnounce = (/** @type {any} */ event) => {
     const detail = event?.detail ?? {};
     if (!(detail.destinationHash instanceof Uint8Array)) return;
     if (!detail.identity?.identityHash) return;
     const identityHash = toHex(detail.identity.identityHash);
+    const destinationHex = toHex(detail.destinationHash);
     deriveAspectHash(identityHash, "lxmf.propagation")
-      .then((expected) => {
-        if (toHex(detail.destinationHash) !== expected) return;
-        return pickPropagationNode(expected);
+      .then(async (expected) => {
+        if (destinationHex !== expected) return;
+        const previous = propagationNodes.get(expected);
+        propagationNodes.set(expected, {
+          hops: rns.transport.hopsTo?.(detail.destinationHash) ?? null,
+          heardAt: Date.now(),
+          failedAt: previous?.failedAt ?? 0,
+        });
+        if (!propagationNodeHex) {
+          await pickPropagationNode();
+        } else if (propagationNodeHex === expected) {
+          // The incumbent's announce: refresh its reachability and clear
+          // any failure cooldown — it is demonstrably alive again
+          const info = propagationNodes.get(expected);
+          if (info) info.failedAt = 0;
+        }
       })
       .catch(() => {});
   };
   rns.transport.addEventListener("announce", onAnnounce);
 
   // The periodic sync: pull what arrived at the selected node while this
-  // endpoint was away (the pi-lxmf pattern)
+  // endpoint was away (the pi-lxmf pattern). A failed sync (a link that
+  // died before activating — a stale path to an offline node) puts the
+  // node on cooldown and fails over to the next-best discovered node
   const syncTimer = setInterval(() => {
     if (!propagationNodeHex) return;
+    const nodeHex = propagationNodeHex;
     /** @type {any} */ (lxmf)
       .syncFromPropagationNode(identity)
       .then((/** @type {any} */ res) => {
@@ -239,6 +266,10 @@ export async function startLxmfPlane({
             e?.stack ?? ""
           }`,
         );
+        const info = propagationNodes.get(nodeHex);
+        if (info) info.failedAt = Date.now();
+        propagationNodeHex = null;
+        pickPropagationNode().catch(() => {});
       });
   }, PROPAGATION_SYNC_INTERVAL_MS);
   if (syncTimer.unref) syncTimer.unref();
