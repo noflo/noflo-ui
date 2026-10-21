@@ -140,6 +140,101 @@ export function wireForm(message) {
 }
 
 /**
+ * Builds the fields Map carrying the avatar appearance (work document
+ * #61, the signalk-reticulum pattern): `FIELD_ICON_APPEARANCE` with
+ * `[icon(str), fg(bin 3), bg(bin 3)]` — the colors are msgpack `bin`, not
+ * int arrays (Sideband reads them by index). The field travels inside
+ * messages; the announce app_data cannot carry it.
+ *
+ * @param {{ icon: string, fg: number[], bg: number[] } | null} [appearance]
+ * @returns {Map<number, any>} The fields map (empty when no appearance is
+ *   configured — callers merge it into their own fields).
+ */
+/**
+ * Reads one LXMF field from a message's fields — which the msgpack
+ * decoder yields as a plain object with stringified integer keys on the
+ * receive path, but which senders build as a `Map` with integer keys. A
+ * numeric index reads both (JS coerces the number to the string key).
+ *
+ * @param {any} fields The message's fields (Map or decoded object).
+ * @param {number} id The field id.
+ * @returns {any} The field value, or undefined.
+ */
+export function readField(fields, id) {
+  if (fields instanceof Map) return fields.get(id);
+  return fields?.[id];
+}
+
+/**
+ * Decodes an LXMF reaction (FIELD_REACTION): `target` is the message id
+ * the reaction replies to, `emoji` the reaction body. Null when the
+ * message carries no reaction.
+ *
+ * @param {any} message
+ * @returns {{ target: string, emoji: string } | null}
+ */
+export function decodeReaction(message) {
+  const field = readField(message?.fields, LXMFConstants.FIELD_REACTION);
+  if (!field) return null;
+  const target = field.get
+    ? field.get(LXMFConstants.REACTION_TO)
+    : field[LXMFConstants.REACTION_TO];
+  const emoji = field.get
+    ? field.get(LXMFConstants.REACTION_CONTENT)
+    : field[LXMFConstants.REACTION_CONTENT];
+  if (!(target instanceof Uint8Array) || !(emoji instanceof Uint8Array)) {
+    return null;
+  }
+  return {
+    target: toHex(target),
+    emoji: new TextDecoder().decode(emoji),
+  };
+}
+
+/**
+ * Builds the fields Map carrying the avatar appearance (work document
+ * #61, the signalk-reticulum pattern): `FIELD_ICON_APPEARANCE` with
+ * `[icon(str), fg(bin 3), bg(bin 3)]` — the colors are msgpack `bin`, not
+ * int arrays (Sideband reads them by index). The field travels inside
+ * messages; the announce app_data cannot carry it.
+ *
+ * @param {{ icon: string, fg: number[], bg: number[] } | null} [appearance]
+ * @returns {Map<number, any>} The fields map (empty when no appearance is
+ *   configured — callers merge it into their own fields).
+ */
+export function appearanceFields(appearance) {
+  const fields = new Map();
+  if (!appearance?.icon) return fields;
+  fields.set(LXMFConstants.FIELD_ICON_APPEARANCE, [
+    appearance.icon,
+    Uint8Array.from(appearance.fg),
+    Uint8Array.from(appearance.bg),
+  ]);
+  return fields;
+}
+
+/**
+ * Decodes the sender's avatar appearance from an inbound message's
+ * `FIELD_ICON_APPEARANCE` field. See {@link appearanceFields}.
+ *
+ * @param {any} message
+ * @returns {{ icon: string, fg: number[], bg: number[] } | null}
+ */
+export function decodeAppearance(message) {
+  const field = readField(message?.fields, LXMFConstants.FIELD_ICON_APPEARANCE);
+  if (!field || !Array.isArray(field) || field.length < 3) return null;
+  const [icon, fg, bg] = field;
+  if (
+    typeof icon !== "string" ||
+    !(fg instanceof Uint8Array) ||
+    !(bg instanceof Uint8Array)
+  ) {
+    return null;
+  }
+  return { icon, fg: [...fg], bg: [...bg] };
+}
+
+/**
  * Splits `text` into chunks of at most `size` characters, breaking on
  * paragraph boundaries when possible.
  *

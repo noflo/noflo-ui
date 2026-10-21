@@ -18,8 +18,11 @@
 import { LXMessage, LXMFConstants, LXMRouter } from "../../vendor/lxmf.js";
 import { fromHex, Identity, toHex } from "../../vendor/reticulum-core.js";
 import {
+  appearanceFields,
   chunkText,
   contentFields,
+  decodeAppearance,
+  decodeReaction,
   deriveAspectHash,
   deriveDeliveryHash,
   isUnknownIdentityError,
@@ -234,68 +237,14 @@ export async function createLxmfLayer({
    * @param {any} message
    * @returns {{ target: string, emoji: string } | null}
    */
-  function decodeReaction(message) {
-    const field = message?.fields?.get?.(LXMFConstants.FIELD_REACTION);
-    if (!field) return null;
-    const target = field.get(LXMFConstants.REACTION_TO);
-    const emoji = field.get(LXMFConstants.REACTION_CONTENT);
-    if (!(target instanceof Uint8Array) || !(emoji instanceof Uint8Array)) {
-      return null;
-    }
-    return {
-      target: toHex(target),
-      emoji: new TextDecoder().decode(emoji),
-    };
-  }
 
   /**
-   * Decodes the sender's avatar appearance (FIELD_ICON_APPEARANCE, work
-   * document #61): the emoji + colors peers render for this sender. The
-   * wire value is `[icon(str), fg(bin 3), bg(bin 3)]` — the colors are
-   * msgpack bin, not int arrays (Sideband reads them by index).
+   * Pulls what arrived at the selected propagation node while this
+   * endpoint was away. The periodic timer runs the same call; exposed for
+   * tests and for an explicit sync-on-demand.
    *
-   * @param {any} message
-   * @returns {{ icon: string, fg: number[], bg: number[] } | null}
+   * @returns {Promise<{ received?: number }>}
    */
-  function decodeAppearance(message) {
-    const field = message?.fields?.get?.(LXMFConstants.FIELD_ICON_APPEARANCE);
-    if (!field || !Array.isArray(field) || field.length < 3) return null;
-    const [icon, fg, bg] = field;
-    if (
-      typeof icon !== "string" ||
-      !(fg instanceof Uint8Array) ||
-      !(bg instanceof Uint8Array)
-    ) {
-      return null;
-    }
-    return { icon, fg: [...fg], bg: [...bg] };
-  }
-
-  /**
-   * Builds the fields Map carrying the device's avatar appearance, when
-   * one is configured — merged into every outbound message so peers
-   * render the custom avatar (the signalk-reticulum pattern: the field
-   * travels inside messages; the announce app_data cannot carry it).
-   *
-   * @param {{ icon: string, fg: number[], bg: number[] } | null} appearance
-   * @returns {Map<number, any>} The merged fields map (empty when no
-   *   appearance is configured).
-   */
-  function appearanceFields(appearance) {
-    const fields = new Map();
-    if (!appearance?.icon) return fields;
-    fields.set(LXMFConstants.FIELD_ICON_APPEARANCE, [
-      appearance.icon,
-      Uint8Array.from(appearance.fg),
-      Uint8Array.from(appearance.bg),
-    ]);
-    return fields;
-  }
-
-  /** The device's avatar appearance, riding every outbound message when
-   * configured (set by the Glass's avatar editor via the mesh layer). */
-  let appearance = null;
-
   /**
    * Sets the device's avatar appearance (emoji + colors) — attached to
    * every outbound message so peers render the custom avatar. Null clears
@@ -307,16 +256,15 @@ export async function createLxmfLayer({
     appearance = value;
   }
 
-  /**
-   * Pulls what arrived at the selected propagation node while this
-   * endpoint was away. The periodic timer runs the same call; exposed for
-   * tests and for an explicit sync-on-demand.
-   *
-   * @returns {Promise<{ received?: number }>}
-   */
   function syncFromPropagationNode() {
     return /** @type {any} */ (router).syncFromPropagationNode(identity);
   }
+
+  /** The device's avatar appearance (emoji + colors) — attached to every
+   * outbound message when configured (set by the Glass's avatar editor
+   * via the mesh layer). */
+  /** @type {{ icon: string, fg: number[], bg: number[] } | null} */
+  let appearance = null;
 
   /** @type {Array<(event: { message: any }) => void>} */
   const handlers = [];

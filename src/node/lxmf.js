@@ -32,6 +32,7 @@ import { LXMessage, LXMFConstants, LXMRouter } from "../../vendor/lxmf.js";
 // M2 live-test finding)
 import { fromHex, toHex } from "../../vendor/reticulum-core.js";
 import {
+  appearanceFields,
   chunkText,
   contentFields,
   deriveAspectHash,
@@ -56,6 +57,9 @@ const PROPAGATION_SYNC_INTERVAL_MS = 300_000;
  *   once at boot from the RNS storage; the LXMRouter and the mesh plane
  *   share it).
  * @param {string} options.name - Announce display name.
+ * @param {{ icon: string, fg: number[], bg: number[] } | null} [options.appearance]
+ *   The Companion's avatar appearance, riding every outbound message
+ *   (work document #61).
  * @param {string | null} [options.ownerContact] - The owner's
  *   `lxmf.delivery` destination hash (hex); the one-shot hello world goes
  *   here at boot. NULL for unclaimed mode.
@@ -64,6 +68,7 @@ const PROPAGATION_SYNC_INTERVAL_MS = 300_000;
  *   identityHash: string,
  *   identity: any,
  *   deliveryHash: string,
+ *   setAppearance: (appearance: { icon: string, fg: number[], bg: number[] } | null) => void,
  *   sendText: (destinationHex: string, text: string, options?: {title?: string}) => Promise<void>,
  *   sendReaction: (destinationHex: string, targetMessageId: Uint8Array, emoji: string) => Promise<void>,
  *   verifySender: (message: any) => Promise<"verified"|"unknown"|"invalid">,
@@ -77,8 +82,12 @@ export async function startLxmfPlane({
   identity,
   name,
   ownerContact = null,
+  appearance = null,
   log = () => {},
 }) {
+  /** The Companion's avatar appearance, riding every outbound message
+   * (work document #61). */
+  let planeAppearance = appearance;
   if (!rns) throw new Error("LXMF plane requires a started Reticulum instance");
   if (!identity) throw new Error("LXMF plane requires the Companion identity");
 
@@ -346,7 +355,13 @@ export async function startLxmfPlane({
         sourceHash: /** @type {Uint8Array} */ (deliveryDest.destinationHash),
         destinationHash: fromHex(destinationHex),
         content,
-        fields: contentFields(),
+        fields: (() => {
+          const merged = contentFields();
+          for (const [k, v] of appearanceFields(planeAppearance)) {
+            merged.set(k, v);
+          }
+          return merged;
+        })(),
         ...(i === 0 && sendOptions.title ? { title: sendOptions.title } : {}),
       });
       await sendWithRetry(message);
@@ -411,6 +426,15 @@ export async function startLxmfPlane({
     identityHash: toHex(identity.identityHash),
     identity,
     deliveryHash,
+    /**
+     * Sets the Companion's avatar appearance (work document #61) —
+     * attached to every outbound message from now on.
+     *
+     * @param {{ icon: string, fg: number[], bg: number[] } | null} value
+     */
+    setAppearance(value) {
+      planeAppearance = value;
+    },
     sendText,
     sendReaction,
     verifySender,
