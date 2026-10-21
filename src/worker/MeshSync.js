@@ -615,6 +615,11 @@ export async function createMeshSync({
    * destination. The pi thread addresses it. */
   /** @type {{ identityHash: string, destinationHash: string } | null} */
   let agentContact = null;
+  /** The send timestamp of the hello that produced the current agent
+   * mapping: the latest-timestamped verified hello wins, so queued
+   * introductions from earlier Companion eras (identities since
+   * re-keyed) never shadow the live one. */
+  let agentHelloAt = 0;
   /** Pushes received before the node was configured, replayed after. */
   /** @type {Uint8Array[]} */
   const pendingPushes = [];
@@ -1753,23 +1758,28 @@ export async function createMeshSync({
         // The agent introduction (work document #44's bootstrap): the
         // Companion greets its configured owner with the "Companion
         // hello" title — that verified, granted sender IS the agent.
-        // Announce-derived contact mapping cannot make this distinction
-        if (
-          message.title === "Companion hello" &&
-          identityKey !== agentContact?.identityHash &&
-          isGranted(identityKey)
-        ) {
-          agentContact = {
-            identityHash: identityKey,
-            destinationHash: await deriveDeliveryHash(identityKey),
-          };
-          console.info(`LXMF: agent introduced ${identityKey}`);
-          postMessage({ kind: "chat-agent", identityHash: identityKey });
-          // The mapping landed after the last reachability broadcast: the
-          // Glass's map has no entry for the agent's key yet and would
-          // render the agent offline until some unrelated peer event —
-          // re-broadcast the current states under the new key
-          postPeerReachability();
+        // Announce-derived contact mapping cannot make this distinction.
+        //
+        // The LATEST-timestamped hello wins: propagation sync delivers
+        // hellos queued by EARLIER Companion eras (identities since
+        // re-keyed), and an older introduction must never shadow the
+        // live Companion's own greeting
+        if (message.title === "Companion hello" && isGranted(identityKey)) {
+          const sentAt = (message.timestamp ?? 0) * 1000;
+          if (sentAt > agentHelloAt) {
+            agentHelloAt = sentAt;
+            agentContact = {
+              identityHash: identityKey,
+              destinationHash: await deriveDeliveryHash(identityKey),
+            };
+            console.info(`LXMF: agent introduced ${identityKey}`);
+            postMessage({ kind: "chat-agent", identityHash: identityKey });
+            // The mapping landed after the last reachability broadcast: the
+            // Glass's map has no entry for the agent's key yet and would
+            // render the agent offline until some unrelated peer event —
+            // re-broadcast the current states under the new key
+            postPeerReachability();
+          }
         }
         // The reaction rides first: the peer's processing signal (the
         // bridge's 🤔 on a prompt) is packet proof for the user — the
