@@ -57,7 +57,7 @@ import { createMeshTelemetry } from "./MeshTelemetry.js";
 import { progress } from "./Progress.js";
 
 /** How long the joiner waits for the pushed grant to authorize it. */
-const GRANT_WAIT_MS = 30_000;
+const GRANT_WAIT_MS = 90_000;
 
 /** How long a provider start may take before the stall is surfaced. */
 const PROVIDER_CONNECT_TIMEOUT_MS = 30_000;
@@ -2548,6 +2548,31 @@ export async function createMeshSync({
         });
       }
       postPeerReachability();
+      // The announce is the fast path for EVERY granted peer without a
+      // live link — not only boot-time dial failures: when the owner
+      // reloads, its fresh announce must re-establish the link
+      // immediately instead of waiting out the redial tick (work
+      // document #47: the announce is the fast path; the tick is the
+      // patient fallback)
+      if (
+        announcedPeerHash &&
+        isGranted(announcedPeerHash) &&
+        !onlineIdentities.has(announcedPeerHash)
+      ) {
+        provider
+          .dialHash?.(remoteHex, announcedPeerHash)
+          .then((/** @type {any} */ established) => {
+            if (established) {
+              failedDials.delete(remoteHex);
+              peerDialState.set(announcedPeerHash, {
+                attempts: 0,
+                lastDialAt: Date.now(),
+              });
+            }
+            postPeerReachability();
+          })
+          .catch(() => {});
+      }
       // The announce just refreshed the path table: retry a direct dial
       // that failed at start, when the path may still have pointed at the
       // peer's previous session (work document #34). The retry's done
