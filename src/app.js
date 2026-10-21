@@ -214,6 +214,34 @@ let peerReachability = {};
  * entry keys the agent thread with it; "__agent__" stands in before
  * discovery (a thread the worker cannot address yet). */
 let agentHash = "";
+/** The device's own avatar appearance (work document #61): emoji + colors,
+ * device-local (the same rule as the peer aliases) and attached to every
+ * outbound LXMF message so peers render the custom avatar. */
+let selfAppearance =
+  /** @type {{ icon: string, fg: number[], bg: number[] } | null} */ (
+    (() => {
+      try {
+        const raw = localStorage.getItem("noflo-appearance");
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })()
+  );
+/** Peers' announced appearances (work document #61): identity hash → the
+ * emoji + colors their messages carry, rendered in place of the identicon. */
+const peerAppearances =
+  /** @type {Record<string, { icon: string, fg: number[], bg: number[] }>} */ (
+    (() => {
+      try {
+        return JSON.parse(
+          localStorage.getItem("noflo-peer-appearances") ?? "{}",
+        );
+      } catch {
+        return {};
+      }
+    })()
+  );
 /** The peer aliases (work document #61): device-local human-readable names
  * for peers, replacing the identity hash display. Stored in the mesh
  * storage; the Collaborators panel renders them. */
@@ -644,7 +672,11 @@ const echoHandlers = createEchoHandlers({
           ? "system"
           : "assistant"
         : "peer";
-    panelChat(identityHash, { text: String(data?.text ?? ""), role });
+    panelChat(identityHash, {
+      text: String(data?.text ?? ""),
+      role,
+      messageId: String(data?.messageId ?? ""),
+    });
     if (role === "assistant" || role === "system") {
       // The reply landed: the processing signal is answered
       const panel = /** @type {any} */ (
@@ -666,6 +698,35 @@ const echoHandlers = createEchoHandlers({
       panel?.failThread?.(identityHash, String(data?.error ?? "send failed"));
     }
   },
+  chatAppearance: (data) => {
+    // The sender's avatar appearance (work document #61): device-local
+    // rendering state, persisted next to the peer aliases
+    const identityHash = String(data?.identityHash ?? "");
+    const icon = String(data?.icon ?? "");
+    if (!identityHash || !icon) return;
+    peerAppearances[identityHash] = {
+      icon,
+      fg: [
+        Number(data?.fg?.[0] ?? 255),
+        Number(data?.fg?.[1] ?? 255),
+        Number(data?.fg?.[2] ?? 255),
+      ],
+      bg: [
+        Number(data?.bg?.[0] ?? 26),
+        Number(data?.bg?.[1] ?? 35),
+        Number(data?.bg?.[2] ?? 126),
+      ],
+    };
+    try {
+      localStorage.setItem(
+        "noflo-peer-appearances",
+        JSON.stringify(peerAppearances),
+      );
+    } catch {
+      // localStorage failures are non-fatal (quota, private browsing)
+    }
+    refreshSyncPanel();
+  },
   chatAgent: (data) => {
     // The agent's LXMF contact (work document #42): the roster's agent
     // entry maps to the discovered identity from now on
@@ -675,14 +736,22 @@ const echoHandlers = createEchoHandlers({
     refreshSyncPanel();
   },
   chatReaction: (data) => {
-    // The sender's processing signal (work document #42): the thinking
-    // indicator shows in the thread until the reply lands
     const identityHash = String(data?.identityHash ?? "");
     if (!identityHash) return;
     const panel = /** @type {any} */ (
       document.getElementById("collaborators-panel")
     );
-    panel?.setThinking?.(identityHash, true);
+    if (String(data?.emoji ?? "") === "🤔") {
+      // The agent's processing signal (work document #42): the thinking
+      // indicator shows in the thread until the reply lands
+      panel?.setThinking?.(identityHash, true);
+      return;
+    }
+    // Any other reaction renders on the reacted-to message
+    panel?.addReaction?.(identityHash, {
+      target: String(data?.target ?? ""),
+      emoji: String(data?.emoji ?? ""),
+    });
   },
   chatHistory: (data) => {
     // The persisted threads (work document #61): history restores with
@@ -696,6 +765,7 @@ const echoHandlers = createEchoHandlers({
         identityHash: String(thread.identityHash ?? ""),
         messages: (thread.messages ?? []).map((/** @type {any} */ m) => ({
           text: String(m.text ?? ""),
+          messageId: String(m.id ?? ""),
           role:
             m.direction === "out"
               ? "human"
@@ -800,7 +870,7 @@ async function recoverIdentityOnMainThread() {
  * identity hash.
  *
  * @param {string} identityHash
- * @param {{ text: string, role: string }} message
+ * @param {{ text: string, role: string, messageId?: string }} message
  */
 function panelChat(identityHash, message) {
   const panel = /** @type {any} */ (
@@ -1735,6 +1805,7 @@ function refreshSyncPanel() {
         name: peerAliases[meshIdentityHash] ?? "You",
         presence: "online",
         self: true,
+        appearance: selfAppearance ?? undefined,
       });
       seenIdentities.add(meshIdentityHash);
     }
@@ -1762,6 +1833,7 @@ function refreshSyncPanel() {
         identityHash,
         name: peerAliases[identityHash] ?? identityHash.slice(0, 8),
         presence: "online",
+        appearance: peerAppearances[identityHash] ?? undefined,
       });
     }
     for (const request of joinRequests) {
@@ -3035,6 +3107,23 @@ async function init() {
   const collaboratorsPanel = /** @type {any} */ (
     document.getElementById("collaborators-panel")
   );
+  on(collaboratorsPanel, "set-appearance", (e) => {
+    // The avatar editor's result (work document #61): device-local state
+    // + the worker attaches it to every outbound LXMF message
+    const appearance = /** @type {any} */ (e.detail?.appearance ?? null);
+    selfAppearance = appearance;
+    try {
+      localStorage.setItem("noflo-appearance", JSON.stringify(appearance));
+    } catch {
+      // localStorage failures are non-fatal (quota, private browsing)
+    }
+    supervisor?.send({
+      type: "MESH",
+      command: "setAppearance",
+      payload: appearance,
+    });
+    refreshSyncPanel();
+  });
   on(collaboratorsPanel, "set-alias", (e) => {
     const { identityHash, alias } = e.detail;
     if (!identityHash) return;

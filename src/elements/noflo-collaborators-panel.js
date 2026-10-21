@@ -95,6 +95,10 @@ export function identiconSvg(hashHex, size = 36) {
  *   agent's status line reads AGENT instead of the presence word.
  * @property {string} [role] The Dacar role, when known.
  * @property {boolean} [self] True for the user's own avatar.
+ * @property {{ icon: string, fg: number[], bg: number[] }} [appearance]
+ *   The participant's avatar appearance (work document #61): emoji +
+ *   colors, announced with their messages. Renders in place of the
+ *   identicon when known.
  */
 
 export class NofloCollaboratorsPanel extends HTMLElement {
@@ -103,8 +107,17 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     /** @type {Collaborator[]} The roster: self first, then members, then pending. */
     this._collaborators = [];
-    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number, status?: 'sending' | 'delivered' | 'failed', error?: string }>, unread: number, thinking?: boolean }>} The per-identity chat threads. */
+    /** @type {Map<string, { messages: Array<{ text: string, role: string, time: number, status?: 'sending' | 'delivered' | 'failed', error?: string, messageId?: string }>, unread: number, thinking?: boolean }>} The per-identity chat threads. */
     this._threads = new Map();
+    /** @type {Map<string, Map<string, string>>} The per-thread reactions:
+     * thread key → LXMF message id (hex) → the reaction emoji. */
+    this._reactions = new Map();
+    /** Whether the appearance editor is open (the self avatar's click
+     * surface, work document #61). */
+    this._editingAppearance = false;
+    /** @type {{ icon: string, fgHex: string, bgHex: string } | null} The
+     * appearance editor's in-progress draft. */
+    this._selfAppearanceDraft = null;
     /** @type {string | null} The identity hash whose thread is open. */
     this._openThread = null;
     /** @type {string} The pending draft's text. */
@@ -140,7 +153,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
    */
   /**
    * @param {string} identityHash
-   * @param {{ text: string, role: string, status?: 'sending' | 'delivered' | 'failed', error?: string, time?: number }} message
+   * @param {{ text: string, role: string, status?: 'sending' | 'delivered' | 'failed', error?: string, time?: number, messageId?: string }} message
    */
   addThreadMessage(identityHash, message) {
     let thread = this._threads.get(identityHash);
@@ -177,6 +190,40 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       });
     }
     this.render();
+  }
+
+  /**
+   * Renders an incoming reaction on the reacted-to message (work document
+   * #61). The target is the LXMF message id; when no stored message
+   * carries it (e.g. the reaction raced the message), it falls back to
+   * the thread's latest incoming message.
+   *
+   * @param {string} identityHash
+   * @param {{ target?: string, emoji: string }} reaction
+   */
+  addReaction(identityHash, reaction) {
+    let thread = this._threads.get(identityHash);
+    if (!thread) {
+      thread = { messages: [], unread: 0 };
+      this._threads.set(identityHash, thread);
+    }
+    let reactions = this._reactions.get(identityHash);
+    if (!reactions) {
+      reactions = new Map();
+      this._reactions.set(identityHash, reactions);
+    }
+    let target = reaction.target
+      ? thread.messages.find((m) => m.messageId === reaction.target)
+      : null;
+    if (!target) {
+      target = [...thread.messages].reverse().find((m) => m.role !== "human");
+    }
+    if (!target?.messageId) return;
+    reactions.set(target.messageId, reaction.emoji);
+    this.render();
+    if (this._openThread === identityHash) {
+      this._scrollToBottom(identityHash);
+    }
   }
 
   /**
@@ -243,12 +290,17 @@ export class NofloCollaboratorsPanel extends HTMLElement {
   /**
    * @param {string} identityHash
    */
-  _scrollToBottom(identityHash) {
+  _scrollToBottom(identityHash, smooth = false) {
     if (this._openThread !== identityHash) return;
     const scroll = /** @type {HTMLElement | null} */ (
       this.shadowRoot?.querySelector(`[data-thread-scroll="${identityHash}"]`)
     );
-    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    if (scroll) {
+      scroll.scrollTo({
+        top: scroll.scrollHeight,
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
   }
 
   render() {
@@ -262,6 +314,23 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     );
     const focusThread = focusedInput?.getAttribute("data-thread-input") ?? null;
     const caretAt = focusedInput?.selectionStart ?? null;
+    // The thread scroll survives the same way: anchored to the latest
+    // message when the reader is at the bottom, the exact offset preserved
+    // while they are scrolled up reading history (work document #61)
+    const openScroll = this._openThread
+      ? /** @type {HTMLElement | null} */ (
+          this.shadowRoot?.querySelector(
+            `[data-thread-scroll="${this._openThread}"]`,
+          )
+        )
+      : null;
+    const anchoredToBottom = openScroll
+      ? openScroll.scrollHeight -
+          openScroll.scrollTop -
+          openScroll.clientHeight <
+        24
+      : true;
+    const scrollOffset = openScroll?.scrollTop ?? 0;
     const self = this._collaborators.find((c) => c.self);
     const members = this._collaborators.filter(
       (c) => !c.self && c.presence !== "requested" && c.presence !== "invited",
@@ -275,15 +344,20 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       const presence = c.presence ?? "offline";
       const thread = this._threads.get(c.identityHash);
       const unread = thread?.unread ?? 0;
-      const status =
-        c.kind === "agent"
-          ? `<span class="avatar-status agent ${presence}">${presence === "online" ? "AGENT" : "AGENT · OFFLINE"}</span>`
-          : `<span class="avatar-status ${presence}">${presence}</span>`;
+      // Presence rides the ring color (the container's presence class);
+      // the only text under an avatar is the agent KIND chip — a kind,
+      // not a status (work document #61: agents are participants
+      // distinguished by kind)
+      const kindChip =
+        c.kind === "agent" ? `<span class="avatar-kind">AGENT</span>` : "";
+      const iconMarkup = c.appearance?.icon
+        ? `<div class="avatar-emoji" style="color: rgb(${c.appearance.fg.join(",")}); background: rgb(${c.appearance.bg.join(",")})">${escapeHtml(c.appearance.icon)}</div>`
+        : identiconSvg(c.identityHash, 36);
       return `<div class="avatar ${presence}" data-identity="${escapeHtml(c.identityHash)}" title="${escapeHtml(c.name ?? c.identityHash)}">
-        <div class="avatar-ring">${identiconSvg(c.identityHash, 36)}</div>
+        <div class="avatar-ring">${iconMarkup}</div>
         ${unread > 0 ? `<span class="unread">${unread}</span>` : ""}
         <span class="avatar-name ${c.self ? "" : "editable"}" data-alias-for="${escapeHtml(c.identityHash)}" title="${c.self ? "" : "Click to rename"}">${escapeHtml(c.name ?? c.identityHash.slice(0, 8))}</span>
-        ${status}
+        ${kindChip}
       </div>`;
     };
 
@@ -376,20 +450,59 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .avatar-name.editable:hover {
           color: var(--ui-accent, rgb(90, 200, 250));
         }
-        .avatar-status {
+        .avatar-emoji {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+        }
+        .appearance-editor {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          font-size: 10px;
+          color: var(--ui-muted, #889);
+          padding: 6px 0;
+        }
+        .appearance-editor input[type="color"] {
+          width: 24px;
+          height: 20px;
+          padding: 0;
+          border: 1px solid var(--ui-border, #333);
+          background: transparent;
+          cursor: pointer;
+        }
+        .appearance-editor input[data-appearance-icon] {
+          width: 40px;
+          font-size: 14px;
+          text-align: center;
+          background: transparent;
+          border: 1px solid var(--ui-border, #333);
+          color: inherit;
+          border-radius: 3px;
+        }
+        .appearance-editor button {
+          font-size: 10px;
+          background: transparent;
+          border: 1px solid var(--ui-border, #333);
+          color: inherit;
+          border-radius: 3px;
+          cursor: pointer;
+          padding: 2px 6px;
+        }
+        /* the agent kind chip rides the activity semantic (an agent is an
+           active participant); presence itself rides the ring color */
+        .avatar-kind {
           font-size: 8px;
           text-transform: uppercase;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.08em;
+          color: var(--ui-age-activity, #4aa3df);
+          font-weight: 600;
+          text-align: center;
         }
-        /* the agent marker rides the activity semantic (an agent is an
-           active participant); offline agents keep the muted word */
-        .avatar-status.agent { color: var(--ui-age-activity, #4aa3df); font-weight: 600; }
-        .avatar-status.agent.offline { color: var(--ui-muted, #889); font-weight: 400; }
-        .avatar-status.active { color: var(--ui-age-activity, #4aa3df); }
-        .avatar-status.online { color: var(--ui-age-calm, #7ee3a0); }
-        .avatar-status.offline { color: var(--ui-muted, #889); }
-        .avatar-status.requested,
-        .avatar-status.invited { color: var(--ui-age-attention, #e3a17e); }
         .add-tile {
           display: flex;
           align-items: center;
@@ -416,6 +529,25 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           flex-direction: column;
           gap: 4px;
           padding: 4px 0;
+        }
+        .thread-day {
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--ui-muted, #889);
+          text-align: center;
+          padding: 4px 0 2px;
+        }
+        .msg-time {
+          display: block;
+          font-size: 8px;
+          color: var(--ui-muted, #889);
+          margin-top: 2px;
+        }
+        .msg-reaction {
+          display: inline-block;
+          margin-left: 6px;
+          font-size: 11px;
         }
         .thread-msg {
           font-size: 11px;
@@ -471,6 +603,17 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         ${pendingAvatars}
         <div class="add-tile" data-action="add-user" title="Add a collaborator">+</div>
       </div>
+      ${
+        this._editingAppearance
+          ? `<div class="appearance-editor">
+        <label>Emoji <input data-appearance-icon value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}" maxlength="8" placeholder="🙂"></label>
+        <label>Text <input data-appearance-fg type="color" value="${escapeHtml(this._selfAppearanceDraft?.fgHex ?? "#ffffff")}"></label>
+        <label>Ring <input data-appearance-bg type="color" value="${escapeHtml(this._selfAppearanceDraft?.bgHex ?? "#1a237e")}"></label>
+        <button data-appearance-apply>Apply</button>
+        <button data-appearance-cancel>Cancel</button>
+      </div>`
+          : ""
+      }
       ${openThread}
     `;
     this._wireThreadInput();
@@ -485,6 +628,19 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           input.value.length,
         );
         input.setSelectionRange(caret, caret);
+      }
+    }
+    // The scroll restore: anchored to the latest message when the reader
+    // was at the bottom, the exact offset preserved while they were
+    // scrolled up reading history
+    if (this._openThread) {
+      const scroll = /** @type {HTMLElement | null} */ (
+        shadow.querySelector(`[data-thread-scroll="${this._openThread}"]`)
+      );
+      if (scroll) {
+        scroll.scrollTop = anchoredToBottom
+          ? scroll.scrollHeight
+          : scrollOffset;
       }
     }
   }
@@ -505,11 +661,35 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       (c) => c.identityHash === identityHash,
     );
     const displayName = collaborator?.name ?? identityHash.slice(0, 8);
+    const reactions = this._reactions.get(identityHash) ?? new Map();
+    /** The last message's local day: date separators render when it flips. */
+    let lastDay = "";
+    const timeLabel = (/** @type {number} */ time) => {
+      const date = new Date(time);
+      return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    };
+    const dayLabel = (/** @type {number} */ time) => {
+      const date = new Date(time);
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - 86_400_000);
+      if (date.toDateString() === today.toDateString()) return "Today";
+      if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+      return date.toLocaleDateString();
+    };
     const messages = (thread?.messages ?? [])
-      .map(
-        (/** @type {any} */ m) =>
-          `<div class="thread-msg ${escapeHtml(m.role)}">${escapeHtml(m.text)}${m.status && m.status !== "delivered" ? `<span class="msg-status ${m.status}">${m.status}</span>` : ""}</div>`,
-      )
+      .map((/** @type {any} */ m) => {
+        const day = new Date(m.time ?? Date.now()).toDateString();
+        const separator =
+          day !== lastDay
+            ? `<div class="thread-day">${dayLabel(m.time ?? Date.now())}</div>`
+            : "";
+        lastDay = day;
+        const chip =
+          m.messageId && reactions.has(m.messageId)
+            ? `<span class="msg-reaction">${reactions.get(m.messageId)}</span>`
+            : "";
+        return `${separator}<div class="thread-msg ${escapeHtml(m.role)}" data-mid="${escapeHtml(m.messageId ?? "")}">${escapeHtml(m.text)}${chip}${m.status && m.status !== "delivered" ? `<span class="msg-status ${m.status}">${m.status}</span>` : ""}<span class="msg-time">${timeLabel(m.time ?? Date.now())}</span></div>`;
+      })
       .join("");
     return `<div class="thread" data-thread="${escapeHtml(identityHash)}">
       <div class="thread-scroll" data-thread-scroll="${escapeHtml(identityHash)}">
@@ -569,8 +749,29 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           (c) => c.identityHash === identityHash,
         )?.self;
         if (isSelf) {
-          // The self avatar opens customization, not a chat thread
-          emit(this, "edit-avatar", { identityHash });
+          // The self avatar opens the appearance editor, not a chat
+          // thread (work document #61: clicking self customizes the
+          // avatar — emoji + colors). The draft starts from the current
+          // appearance
+          if (this._editingAppearance) {
+            this._editingAppearance = false;
+            this._selfAppearanceDraft = null;
+          } else {
+            const appearance = this._collaborators.find(
+              (c) => c.self,
+            )?.appearance;
+            const toHex = (/** @type {number[]} */ rgb) =>
+              `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+            this._selfAppearanceDraft = appearance
+              ? {
+                  icon: appearance.icon,
+                  fgHex: toHex(appearance.fg),
+                  bgHex: toHex(appearance.bg),
+                }
+              : { icon: "", fgHex: "#ffffff", bgHex: "#1a237e" };
+            this._editingAppearance = true;
+          }
+          this.render();
           return;
         }
         if (this._openThread === identityHash) {
@@ -628,6 +829,57 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         emit(this, "chat-send", { identityHash, text });
       });
     }
+    // The appearance editor's wiring (work document #61): the emoji and
+    // colors edit a draft; Apply emits the result for the Glass to persist
+    // device-locally and forward to the mesh layer
+    const iconInput = /** @type {HTMLInputElement | null} */ (
+      shadow.querySelector("[data-appearance-icon]")
+    );
+    if (iconInput) {
+      const fgInput = /** @type {HTMLInputElement | null} */ (
+        shadow.querySelector("[data-appearance-fg]")
+      );
+      const bgInput = /** @type {HTMLInputElement | null} */ (
+        shadow.querySelector("[data-appearance-bg]")
+      );
+      const sync = () => {
+        this._selfAppearanceDraft = {
+          icon: iconInput.value,
+          fgHex: fgInput?.value ?? "#ffffff",
+          bgHex: bgInput?.value ?? "#1a237e",
+        };
+      };
+      iconInput.addEventListener("input", sync);
+      fgInput?.addEventListener("input", sync);
+      bgInput?.addEventListener("input", sync);
+      shadow
+        .querySelector("[data-appearance-apply]")
+        ?.addEventListener("click", () => {
+          const hexToRgb = (/** @type {string} */ hex) => {
+            const bytes = hex.replace("#", "").match(/../g) ?? [];
+            return bytes.map((b) => Number.parseInt(b, 16));
+          };
+          const icon = iconInput.value.trim();
+          if (!icon) return;
+          const appearance = {
+            icon,
+            fg: hexToRgb(fgInput?.value ?? "#ffffff"),
+            bg: hexToRgb(bgInput?.value ?? "#1a237e"),
+          };
+          this._editingAppearance = false;
+          this._selfAppearanceDraft = null;
+          emit(this, "set-appearance", { appearance });
+          this.render();
+        });
+      shadow
+        .querySelector("[data-appearance-cancel]")
+        ?.addEventListener("click", () => {
+          this._editingAppearance = false;
+          this._selfAppearanceDraft = null;
+          this.render();
+        });
+    }
+
     shadow
       .querySelector("[data-action='add-user']")
       ?.addEventListener("click", () => {

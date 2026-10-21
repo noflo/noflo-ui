@@ -192,6 +192,9 @@
  * @property {CustomEvent<void>} open-chat
  * @property {CustomEvent<{ identityHash: string }>} edit-avatar
  *   The self avatar's customization affordance (work document #61)
+ * @property {CustomEvent<{ appearance: { icon: string, fg: number[], bg: number[] } | null }>} set-appearance
+ *   The avatar editor applied an appearance (work document #61): the
+ *   Glass persists it device-locally and forwards it to the mesh layer
  * @property {CustomEvent<void>} add-collaborator
  *   The Collaborators panel's Add user tile (work document #61)
  * @property {CustomEvent<{ identityHash: string, alias: string | null }>} set-alias
