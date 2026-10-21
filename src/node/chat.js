@@ -10,12 +10,15 @@
  * - bridge-level: `/suspend`, `/help`
  * - free text = prompt for the active project
  *
- * Trust (Phase A bootstrap): inbound is admitted only from the configured
- * owner contact, with a verified sender signature — "unknown" (sender
- * identity not yet recalled, e.g. a propagation-synced message) is dropped.
- * The full agent-plane Dacar governance (`noflo-ui:agent:<identity-hash>`
- * resource, `command`/`admin`) replaces this gate per work document #47's
- * permission list.
+ * Trust (Phase A bootstrap): inbound is admitted from the configured
+ * owner contact and — per work document #42's inbound policy — verified
+ * senders holding a project grant (the webapp's user is one such
+ * participant). "unknown" (sender identity not yet recalled, e.g. a
+ * propagation-synced message) is dropped. Every admitted sender is
+ * answered like any other LXMF participant: the reply goes back to
+ * whoever wrote. The full agent-plane Dacar governance
+ * (`noflo-ui:agent:<identity-hash>` resource, `command`/`admin`)
+ * replaces this gate per work document #47's permission list.
  */
 
 import { toHex as coreToHex } from "../../vendor/reticulum-core.js";
@@ -24,11 +27,6 @@ import { messageClaims } from "./claim.js";
 
 export { ChatMessage, parseChatMessage } from "./chat-parse.js";
 
-import { createNetwork, internalSocket } from "../../vendor/noflo.js";
-import {
-  createChatRegistry,
-  wireChatContext,
-} from "../graphs/chat-dispatch.js";
 import { ChatMessage, parseChatMessage } from "./chat-parse.js";
 
 /**
@@ -53,6 +51,10 @@ import { ChatMessage, parseChatMessage } from "./chat-parse.js";
  * @param {Record<string, (argument: string) => Promise<string | void>>} [deps.commands]
  *   Bridge-level commands (e.g. /projects, /switch, /leave) dispatched
  *   before the built-ins; the return value (a string) is the reply.
+ * @param {((identityHash: string) => boolean) | null | undefined} [deps.isParticipant]
+ *   Whether a verified sender's identity hash holds a grant on a shared
+ *   project — the participant admission path (work document #42's inbound
+ *   policy). The webapp's user is one such participant.
  * @param {((message: any) => Promise<string | null>) | null} [deps.senderIdentityHash]
  *   Recalls the sender's Reticulum identity hash (the claim persists it).
  * @param {{ get: (key: string) => Promise<any>, set: (key: string, value: any) => Promise<void> }} deps.state
@@ -61,6 +63,7 @@ import { ChatMessage, parseChatMessage } from "./chat-parse.js";
  *   handleInbound: (event: { message: any }) => Promise<void>,
  *   chatMessage: (sourceHex: string, text: string, triggerMessageId?: Uint8Array | null) => Promise<void>,
  *   reply: (text: string, title?: string) => Promise<void>,
+ *   narrate: (text: string, title?: string) => Promise<void>,
  *   clearReaction: () => void,
  *   setPi: (manager: import("./piManager.js").PiManagerHandle | null) => void,
  *   setOwnerContact: (contact: string) => void,
@@ -75,6 +78,7 @@ export function createChatSurface({
   state,
   claim = null,
   commands = {},
+  isParticipant = null,
   senderIdentityHash = null,
   log = () => {},
 }) {
@@ -83,6 +87,15 @@ export function createChatSurface({
   let queue = Promise.resolve();
   /** The claimed owner's contact; set through `setOwnerContact`. */
   let owner = ownerContact;
+  /** The correspondent the replies go to: the most recent admitted
+   * sender's destination hash (the owner before anyone wrote). Every
+   * admitted sender is an LXMF participant like any other — the answer
+   * goes back to whoever wrote. */
+  let correspondent = ownerContact;
+  /** Admitted project participants' contacts, keyed by identity hash —
+   * narration reaches the owner AND the participants conversing. */
+  /** @type {Map<string, string>} */
+  const participants = new Map();
   /** The active project's pi manager; swapped on project switches. */
   let activePi = pi;
   /** The "thinking" acknowledgement (the pi-lxmf pattern): a reaction to
@@ -98,18 +111,44 @@ export function createChatSurface({
   let claimOpen = claim != null;
 
   /**
-   * Sends a reply to the owner contact.
+   * Sends a reply to the current correspondent — the most recent admitted
+   * sender, or the owner contact before anyone wrote.
    *
    * @param {string} text
    * @param {string} [title]
    * @returns {Promise<void>}
    */
   async function reply(text, title = "Companion") {
-    if (!owner) {
-      log("companion: reply dropped (no owner contact configured)");
+    const target = correspondent ?? owner;
+    if (!target) {
+      log("companion: reply dropped (no correspondent and no owner contact)");
       return;
     }
-    await sendText(owner, text, { title });
+    await sendText(target, text, { title });
+  }
+
+  /**
+   * Broadcasts a narration (pi lifecycle moments) to the owner and every
+   * admitted project participant — each is just another LXMF participant
+   * receiving the same announcement.
+   *
+   * @param {string} text
+   * @param {string} [title]
+   * @returns {Promise<void>}
+   */
+  async function narrate(text, title = "Companion narration") {
+    const targets = new Set();
+    if (owner) targets.add(owner);
+    for (const contact of participants.values()) targets.add(contact);
+    for (const target of targets) {
+      await sendText(target, text, { title }).catch((error) =>
+        log(
+          `companion: narration to ${target.slice(0, 8)} failed: ${
+            error instanceof Error ? error.message : error
+          }`,
+        ),
+      );
+    }
   }
 
   /**
@@ -135,8 +174,8 @@ export function createChatSurface({
    */
   function scheduleReaction(messageId) {
     clearReaction();
-    if (!sendReaction || !owner || !messageId) return;
-    const contact = owner;
+    const contact = correspondent ?? owner;
+    if (!sendReaction || !contact || !messageId) return;
     const send = sendReaction;
     reactionTarget = messageId;
     reactionTimer = setTimeout(() => {
@@ -400,6 +439,7 @@ export function createChatSurface({
       identityHash,
       ownerContact: owner,
       claim: claimOpen && claim ? { code: claim.code } : null,
+      isParticipant,
     });
     if (decision.verdict === "dropped") {
       log(`companion: inbound from ${sourceHex} dropped (${decision.reason})`);
@@ -410,6 +450,16 @@ export function createChatSurface({
       if (claim) await claim.onClaim(identityHash ?? "");
       return;
     }
+    // Every admitted sender is the conversation's correspondent — the
+    // reply goes back to whoever wrote — and participants accumulate so
+    // narration reaches everyone conversing
+    correspondent = sourceHex;
+    if (identityHash && !participants.has(identityHash)) {
+      participants.set(identityHash, sourceHex);
+    }
+    log(
+      `companion: admitted (${decision.admittedAs}) from ${identityHash?.slice(0, 8) ?? sourceHex.slice(0, 8)}: ${text.slice(0, 60)}`,
+    );
     // Serialize: prompts and commands keep order
     const triggerMessageId = /** @type {Uint8Array | null} */ (
       message.messageId ?? null
@@ -431,6 +481,7 @@ export function createChatSurface({
     handleInbound,
     chatMessage,
     reply,
+    narrate,
     /** Cancels a pending run-start reaction (the reply landed). */
     clearReaction,
     /**

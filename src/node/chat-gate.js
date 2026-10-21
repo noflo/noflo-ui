@@ -14,9 +14,10 @@ import { messageClaims } from "./claim.js";
  * @typedef {Object} GateDecision
  * @property {"admitted" | "dropped"} verdict
  * @property {string} [reason] The drop reason, narrated when dropped.
- * @property {"claim" | "owner"} [admittedAs] Which gate path admitted the
- *   message (the claim path wins the Companion; the owner path is the
- *   steady state).
+ * @property {"claim" | "owner" | "participant"} [admittedAs] Which gate
+ *   path admitted the message (the claim path wins the Companion; the
+ *   owner path is the steady state; the participant path admits granted
+ *   project members — the webapp's chat among them).
  */
 
 /**
@@ -25,8 +26,11 @@ import { messageClaims } from "./claim.js";
  * Order matters (work document #47's unclaimed-mode semantics): the
  * claim check runs on every verified sender while the claim is open —
  * the first verified sender of the code wins, and non-code messages are
- * dropped ("otherwise it is inert"). Once claimed, only the owner
- * contact's messages are admitted.
+ * dropped ("otherwise it is inert"). Once claimed, the steady state
+ * admits the owner contact and — per work document #42's inbound policy
+ * ("messages from granted project members trigger actions") — verified
+ * senders holding a project grant. Every admitted sender is treated as
+ * just another LXMF participant: the reply goes back to whoever wrote.
  *
  * @param {object} params
  * @param {string} params.sourceHex - Sender's `lxmf.delivery` hash (hex).
@@ -37,6 +41,10 @@ import { messageClaims } from "./claim.js";
  *   `lxmf.delivery` hash (hex); null while unclaimed.
  * @param {{ code: string } | null} params.claim - The open claim (code);
  *   null once claimed.
+ * @param {((identityHash: string) => boolean) | null} [params.isParticipant] -
+ *   Whether the sender's identity hash holds a grant on a shared project
+ *   (the bridge's grants map). Signature verification happened before the
+ *   gate; this only decides admission.
  * @returns {GateDecision}
  */
 export function evaluateGate({
@@ -45,6 +53,7 @@ export function evaluateGate({
   identityHash,
   ownerContact,
   claim,
+  isParticipant = null,
 }) {
   if (claim) {
     if (!messageClaims(text, claim.code)) {
@@ -61,8 +70,16 @@ export function evaluateGate({
     }
     return { verdict: "admitted", admittedAs: "claim" };
   }
-  if (ownerContact && sourceHex !== ownerContact.toLowerCase()) {
-    return { verdict: "dropped", reason: "not the owner" };
+  if (ownerContact && sourceHex === ownerContact.toLowerCase()) {
+    return { verdict: "admitted", admittedAs: "owner" };
   }
-  return { verdict: "admitted", admittedAs: "owner" };
+  if (isParticipant && identityHash && isParticipant(identityHash)) {
+    return { verdict: "admitted", admittedAs: "participant" };
+  }
+  return {
+    verdict: "dropped",
+    reason: ownerContact
+      ? "not the owner or a project participant"
+      : "no owner configured",
+  };
 }

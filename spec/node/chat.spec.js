@@ -102,6 +102,47 @@ describe("chat command surface (work document #44 M2)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("a granted project participant is admitted; the reply goes to them, not the owner", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "noflo-chat-"));
+    const participantHash = "cc".repeat(32);
+    /** @type {Array<{ to: string, text: string, title: string }>} */
+    const sent = [];
+    const { createPiManager } = await import("../../src/node/piManager.js");
+    const pi = createPiManager({
+      workdir: dir,
+      state: { get: async () => null, set: async () => {} },
+      piBin: process.execPath,
+      spawnFn: (_bin, args, opts) =>
+        spawn(_bin, [STUB_PI, ...args], {
+          ...opts,
+          stdio: ["pipe", "pipe", "pipe"],
+        }),
+      log: () => {},
+    });
+    const surface = createChatSurface({
+      ownerContact: OWNER,
+      sendText: async (to, text, opts = {}) => {
+        sent.push({ to, text, title: opts.title ?? "" });
+      },
+      verifySender: async () => "verified",
+      pi,
+      isParticipant: (identityHash) => identityHash === participantHash,
+      senderIdentityHash: async () => participantHash,
+      state: { get: async () => null, set: async () => {} },
+      log: () => {},
+    });
+    await surface.handleInbound(inbound(OTHER, "hello from the browser"));
+    assert.equal(pi.isRunning(), true, "the participant's prompt reached pi");
+    await surface.reply("acknowledged", "pi");
+    assert.equal(sent.at(-1)?.to, OTHER, "the reply addresses the participant");
+    await surface.narrate("pi started");
+    const targets = new Set(sent.map((entry) => entry.to));
+    assert.ok(targets.has(OWNER), "narration reaches the owner");
+    assert.ok(targets.has(OTHER), "narration reaches the participant");
+    pi.stop();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("unverified senders are dropped even when the hash matches", async () => {
     const dir = mkdtempSync(path.join(tmpdir(), "noflo-chat-"));
     /** @type {string[]} */
