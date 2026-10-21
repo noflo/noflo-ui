@@ -32,6 +32,7 @@ __export(constants_exports, {
   AM_OPUS_RT_HDX: () => AM_OPUS_RT_HDX,
   AM_OPUS_STANDARD: () => AM_OPUS_STANDARD,
   APP_NAME: () => APP_NAME,
+  AUTOPEER_MAXDEPTH: () => AUTOPEER_MAXDEPTH,
   COMMENT_FOR: () => COMMENT_FOR,
   CONTINUATION_OF: () => CONTINUATION_OF,
   DEFAULT_SYNC_STRATEGY: () => DEFAULT_SYNC_STRATEGY,
@@ -63,7 +64,9 @@ __export(constants_exports, {
   FIELD_THREAD: () => FIELD_THREAD,
   FIELD_TICKET: () => FIELD_TICKET,
   LXMF_OVERHEAD: () => LXMF_OVERHEAD,
+  MAX_INBOUND_SYNCS: () => MAX_INBOUND_SYNCS,
   MAX_PEERING_COST: () => MAX_PEERING_COST,
+  MAX_PEERS: () => MAX_PEERS,
   MESSAGE_GET_PATH: () => MESSAGE_GET_PATH,
   OFFER_REQUEST_PATH: () => OFFER_REQUEST_PATH,
   PAPER_MDU: () => PAPER_MDU,
@@ -74,6 +77,7 @@ __export(constants_exports, {
   PEER_ERROR_NO_ACCESS: () => PEER_ERROR_NO_ACCESS,
   PEER_ERROR_NO_IDENTITY: () => PEER_ERROR_NO_IDENTITY,
   PEER_ERROR_THROTTLED: () => PEER_ERROR_THROTTLED,
+  PEER_MAX_UNREACHABLE_SECS: () => PEER_MAX_UNREACHABLE_SECS,
   PN_META_AUTH_BAND: () => PN_META_AUTH_BAND,
   PN_META_CUSTOM: () => PN_META_CUSTOM,
   PN_META_NAME: () => PN_META_NAME,
@@ -81,6 +85,9 @@ __export(constants_exports, {
   PN_META_SYNC_THROTTLE: () => PN_META_SYNC_THROTTLE,
   PN_META_UTIL_PRESSURE: () => PN_META_UTIL_PRESSURE,
   PN_META_VERSION: () => PN_META_VERSION,
+  PN_STAMP_THROTTLE_SECS: () => PN_STAMP_THROTTLE_SECS,
+  PROCESSED_PRUNE_INTERVAL_SECS: () => PROCESSED_PRUNE_INTERVAL_SECS,
+  PROCESSED_TID_TTL_SECS: () => PROCESSED_TID_TTL_SECS,
   PROPAGATION_COST: () => PROPAGATION_COST,
   PROPAGATION_COST_FLEX: () => PROPAGATION_COST_FLEX,
   PROPAGATION_COST_MIN: () => PROPAGATION_COST_MIN,
@@ -92,8 +99,12 @@ __export(constants_exports, {
   RENDERER_MARKDOWN: () => RENDERER_MARKDOWN,
   RENDERER_MICRON: () => RENDERER_MICRON,
   RENDERER_PLAIN: () => RENDERER_PLAIN,
+  RESOURCE_TRANSFER_TIMEOUT_MS: () => RESOURCE_TRANSFER_TIMEOUT_MS,
+  ROTATION_AR_MAX: () => ROTATION_AR_MAX,
+  ROTATION_HEADROOM_PCT: () => ROTATION_HEADROOM_PCT,
   SF_COMPRESSION: () => SF_COMPRESSION,
   STAMP_SIZE: () => STAMP_SIZE,
+  SYNC_BACKOFF_STEP_SECS: () => SYNC_BACKOFF_STEP_SECS,
   SYNC_LIMIT: () => SYNC_LIMIT,
   SYNC_STRATEGY_LAZY: () => SYNC_STRATEGY_LAZY,
   SYNC_STRATEGY_PERSISTENT: () => SYNC_STRATEGY_PERSISTENT,
@@ -115,6 +126,9 @@ var PAPER_MDU = Math.floor(
 );
 var OFFER_REQUEST_PATH = "/offer";
 var MESSAGE_GET_PATH = "/get";
+var PROCESSED_TID_TTL_SECS = 30 * 24 * 60 * 60 * 6;
+var PROCESSED_PRUNE_INTERVAL_SECS = 300;
+var RESOURCE_TRANSFER_TIMEOUT_MS = 6e4;
 var PROPAGATION_LIMIT = 256;
 var SYNC_LIMIT = 10240;
 var DELIVERY_LIMIT = 1e3;
@@ -132,6 +146,14 @@ var PEER_ERROR_INVALID_KEY = 243;
 var PEER_ERROR_INVALID_DATA = 244;
 var PEER_ERROR_INVALID_STAMP = 245;
 var PEER_ERROR_THROTTLED = 246;
+var MAX_INBOUND_SYNCS = 3;
+var SYNC_BACKOFF_STEP_SECS = 12 * 60;
+var PN_STAMP_THROTTLE_SECS = 180;
+var MAX_PEERS = 20;
+var AUTOPEER_MAXDEPTH = 4;
+var ROTATION_HEADROOM_PCT = 10;
+var ROTATION_AR_MAX = 0.5;
+var PEER_MAX_UNREACHABLE_SECS = 14 * 24 * 60 * 60;
 var TransferState = Object.freeze({
   IDLE: 0,
   PATH_REQUESTED: 1,
@@ -1217,6 +1239,9 @@ var LXMPeer = class {
     this.link = null;
     this.state = PeerState.IDLE;
     this.lastOffer = [];
+    this.nextSyncAttempt = 0;
+    this.syncBackoff = 0;
+    this.transferTimeoutMs = RESOURCE_TRANSFER_TIMEOUT_MS;
     this.offered = 0;
     this.outgoing = 0;
     this.incoming = 0;
@@ -1291,6 +1316,25 @@ var LXMPeer = class {
    * @returns {Promise<boolean>}
    */
   async sync() {
+    const nowSecs = Date.now() / 1e3;
+    if (nowSecs < this.nextSyncAttempt) {
+      log(
+        "LXMF",
+        `Postponing sync with peer ${this.id} for ${Math.round(
+          this.nextSyncAttempt - nowSecs
+        )}s (backoff ${this.syncBackoff}s)`,
+        LogLevel.DEBUG
+      );
+      return false;
+    }
+    if (this.state !== PeerState.IDLE) {
+      log(
+        "LXMF",
+        `Postponing sync with peer ${this.id}: a sync is already in progress`,
+        LogLevel.DEBUG
+      );
+      return false;
+    }
     if (!this.peeringKeyReady()) {
       if (!await this.generatePeeringKey() || !this.peeringKeyReady()) {
         log(
@@ -1326,81 +1370,118 @@ var LXMPeer = class {
       this.router.rns
     );
     this.state = PeerState.LINK_ESTABLISHING;
-    this.link = await peerDest.createLink();
-    this.link.bz2 = this.router.rns.compressionProvider || void 0;
-    await this.link.identify(this.router.identity);
-    this.state = PeerState.LINK_READY;
-    const offeredIds = [];
-    let cumulative = 24;
-    const perMessageOverhead = 16;
-    for (const u of unhandled) {
-      const transferSize = u.size + perMessageOverhead;
-      if (this.propagationTransferLimit != null && transferSize > this.propagationTransferLimit * 1e3) {
-        store.markHandledForPeer(u.transientId, this.destinationHash);
-        continue;
+    try {
+      this.syncBackoff += SYNC_BACKOFF_STEP_SECS;
+      this.nextSyncAttempt = Date.now() / 1e3 + this.syncBackoff;
+      this.link = await peerDest.createLink();
+      this.link.bz2 = this.router.rns.compressionProvider || void 0;
+      await this.link.identify(this.router.identity);
+      this.state = PeerState.LINK_READY;
+      this.syncBackoff = 0;
+      this.nextSyncAttempt = 0;
+      const offeredIds = [];
+      let cumulative = 24;
+      const perMessageOverhead = 16;
+      for (const u of unhandled) {
+        const transferSize = u.size + perMessageOverhead;
+        if (this.propagationTransferLimit != null && transferSize > this.propagationTransferLimit * 1e3) {
+          store.markHandledForPeer(u.transientId, this.destinationHash);
+          continue;
+        }
+        if (this.propagationSyncLimit != null && cumulative + transferSize >= this.propagationSyncLimit * 1e3) {
+          continue;
+        }
+        cumulative += transferSize;
+        offeredIds.push(u.transientId);
       }
-      if (this.propagationSyncLimit != null && cumulative + transferSize >= this.propagationSyncLimit * 1e3) {
-        continue;
+      if (offeredIds.length === 0) {
+        this._teardown();
+        return false;
       }
-      cumulative += transferSize;
-      offeredIds.push(u.transientId);
-    }
-    if (offeredIds.length === 0) {
-      this._teardown();
-      return false;
-    }
-    const peeringKey = (
-      /** @type {[Uint8Array, number]} */
-      this.peeringKey
-    );
-    const offer = [peeringKey[0], offeredIds];
-    this.lastOffer = offeredIds;
-    this.state = PeerState.REQUEST_SENT;
-    log(
-      "LXMF",
-      `Offering ${offeredIds.length} message(s) to peer ${this.id}`,
-      LogLevel.DEBUG
-    );
-    const response = await this.link.request(OFFER_REQUEST_PATH, offer);
-    const wanted = this._interpretOfferResponse(response, store);
-    if (wanted.length === 0) {
+      const peeringKey = (
+        /** @type {[Uint8Array, number]} */
+        this.peeringKey
+      );
+      const offer = [peeringKey[0], offeredIds];
+      this.lastOffer = offeredIds;
+      this.state = PeerState.REQUEST_SENT;
       log(
         "LXMF",
-        `Peer ${this.id} did not request any messages; sync complete`,
+        `Offering ${offeredIds.length} message(s) to peer ${this.id}`,
         LogLevel.DEBUG
       );
+      const response = await this.link.request(OFFER_REQUEST_PATH, offer);
+      if (response === PEER_ERROR_THROTTLED) {
+        log(
+          "LXMF",
+          `Peer ${this.id} is throttling syncs; postponing for ${PN_STAMP_THROTTLE_SECS}s`,
+          LogLevel.DEBUG
+        );
+        this.nextSyncAttempt = Date.now() / 1e3 + PN_STAMP_THROTTLE_SECS;
+        this._teardown();
+        return false;
+      }
+      const wanted = this._interpretOfferResponse(response, store);
+      if (wanted.length === 0) {
+        log(
+          "LXMF",
+          `Peer ${this.id} did not request any messages; sync complete`,
+          LogLevel.DEBUG
+        );
+        this.offered += offeredIds.length;
+        this._teardown();
+        return false;
+      }
+      const lxmfList = [];
+      for (const tid of wanted) {
+        const entry = store.get(tid);
+        if (entry) lxmfList.push(concat(entry.lxmfData, entry.stampData));
+      }
+      const container = packPropagationContainer(lxmfList);
+      this.state = PeerState.RESOURCE_TRANSFERRING;
+      const resource = new Resource({
+        data: container,
+        link: this.link,
+        bz2: this.link.bz2
+      });
+      await resource.advertise();
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(
+            new Error(
+              `LXMF peer transfer timed out after ${this.transferTimeoutMs}ms`
+            )
+          );
+        }, this.transferTimeoutMs);
+        resource.whenComplete().then(
+          (value) => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          (error) => {
+            clearTimeout(timer);
+            reject(error);
+          }
+        );
+      });
+      for (const tid of wanted) {
+        store.markHandledForPeer(tid, this.destinationHash);
+      }
       this.offered += offeredIds.length;
+      this.outgoing += wanted.length;
+      this.alive = true;
+      this.lastHeard = Date.now() / 1e3;
+      log(
+        "LXMF",
+        `Transferred ${wanted.length} message(s) to peer ${this.id}`,
+        LogLevel.DEBUG
+      );
       this._teardown();
-      return false;
+      return true;
+    } catch (err) {
+      this._teardown();
+      throw err;
     }
-    const lxmfList = [];
-    for (const tid of wanted) {
-      const entry = store.get(tid);
-      if (entry) lxmfList.push(concat(entry.lxmfData, entry.stampData));
-    }
-    const container = packPropagationContainer(lxmfList);
-    this.state = PeerState.RESOURCE_TRANSFERRING;
-    const resource = new Resource({
-      data: container,
-      link: this.link,
-      bz2: this.link.bz2
-    });
-    await resource.advertise();
-    await resource.whenComplete();
-    for (const tid of wanted) {
-      store.markHandledForPeer(tid, this.destinationHash);
-    }
-    this.offered += offeredIds.length;
-    this.outgoing += wanted.length;
-    this.alive = true;
-    this.lastHeard = Date.now() / 1e3;
-    log(
-      "LXMF",
-      `Transferred ${wanted.length} message(s) to peer ${this.id}`,
-      LogLevel.DEBUG
-    );
-    this._teardown();
-    return true;
   }
   /**
    * Interprets an `/offer` response (`LXMPeer.offer_response`):
@@ -1465,7 +1546,7 @@ var LXMPeer = class {
 };
 
 // node_modules/@reticulum/lxmf/src/propagation_node.js
-import { Destination as Destination2, DestType as DestType2, toHex as toHex3 } from "./reticulum-core.js";
+import { Destination as Destination2, DestType as DestType2, LogLevel as LogLevel2, log as log2, toHex as toHex3 } from "./reticulum-core.js";
 var DESTINATION_LENGTH2 = 16;
 var PropagationNode = class {
   /**
@@ -1481,6 +1562,16 @@ var PropagationNode = class {
     this.perTransferLimitKb = options.perTransferLimitKb ?? PROPAGATION_LIMIT;
     this.perSyncLimitKb = options.perSyncLimitKb ?? SYNC_LIMIT;
     this.peeringCost = options.peeringCost ?? PEERING_COST;
+    this.maxInboundSyncs = options.maxInboundSyncs ?? MAX_INBOUND_SYNCS;
+    this.stampThrottleSecs = options.stampThrottleSecs ?? PN_STAMP_THROTTLE_SECS;
+    this.sequentialValidation = options.sequentialValidation ?? true;
+    this.staticPeerHashes = new Set(
+      (options.staticPeerHashes ?? []).map((h) => toHex3(h))
+    );
+    this.ingestFilter = options.ingestFilter ?? null;
+    this.throttledPeers = /* @__PURE__ */ new Map();
+    this.inboundSyncs = /* @__PURE__ */ new Map();
+    this.validatingCount = 0;
     this.name = options.name ?? null;
     this.nodeState = options.nodeState ?? true;
     this.identityAllowed = options.identityAllowed ?? (() => true);
@@ -1490,12 +1581,45 @@ var PropagationNode = class {
     this.onStored = options.onStored ?? (() => {
     });
     this.getLocalIdentityHash = options.getLocalIdentityHash ?? (() => new Uint8Array(0));
-    this.locallyProcessed = /* @__PURE__ */ new Set();
-    this.locallyDelivered = /* @__PURE__ */ new Set();
+    this.locallyProcessed = /* @__PURE__ */ new Map();
+    this.locallyDelivered = /* @__PURE__ */ new Map();
+    this._lastDedupPrune = 0;
   }
   /** Minimum accepted stamp value = max(0, cost − flexibility). */
   minAcceptedCost() {
     return Math.max(0, this.stampCost - this.stampCostFlexibility);
+  }
+  /**
+   * Marks an inbound peer-sync transfer as in flight (Python
+   * `propagation_resources_transferring`). The owning router calls this when
+   * a transfer born of an accepted offer begins, and {@link endInboundSync}
+   * when it concludes. While {@link maxInboundSyncs} transfers are in
+   * flight, `/offer` replies `ERROR_THROTTLED`.
+   * @param {string} key hex(resource hash)
+   * @returns {void}
+   */
+  beginInboundSync(key) {
+    this.inboundSyncs.set(key, Date.now() / 1e3);
+  }
+  /**
+   * Marks an inbound peer-sync transfer concluded.
+   * @param {string} key hex(resource hash)
+   * @returns {void}
+   */
+  endInboundSync(key) {
+    this.inboundSyncs.delete(key);
+  }
+  /**
+   * Throttles a peer identity for {@link stampThrottleSecs} — used when a
+   * transferred batch contained invalid stamps (Python `throttled_peers`).
+   * @param {string} remoteHex hex(identityHash) of the offender
+   * @returns {void}
+   */
+  throttlePeer(remoteHex) {
+    this.throttledPeers.set(
+      remoteHex,
+      Date.now() / 1e3 + this.stampThrottleSecs
+    );
   }
   /**
    * Builds the `lxmf.propagation` announce app_data advertising this node's
@@ -1517,14 +1641,39 @@ var PropagationNode = class {
     });
   }
   /**
-   * Periodic maintenance — prunes aged entries (when `messageTtlSecs` is set)
-   * and re-runs capacity eviction. A runner calls this hourly (the Python
-   * reference runs the same cull from its job loop).
+   * Periodic maintenance — prunes aged entries (when `messageTtlSecs` is set),
+   * re-runs capacity eviction, and TTL-prunes the dedup caches. A runner
+   * calls this hourly (the Python reference runs the same cull from its job
+   * loop).
    *
-   * @returns {{ aged: number }}
+   * @returns {{ aged: number, dedupPruned: number }}
    */
   tickMaintenance() {
-    return this.store.prune();
+    const { aged } = this.store.prune();
+    const dedupPruned = this._pruneDedupCaches();
+    return { aged, dedupPruned };
+  }
+  /**
+   * Drops dedup-cache (locally processed / delivered) entries older than
+   * {@link PROCESSED_TID_TTL_SECS} (the Python reference's `MESSAGE_EXPIRY *
+   * 6` cleanup). Called from {@link tickMaintenance} and lazily from
+   * {@link ingestBlobs}, so the caches stay bounded even without a driver.
+   *
+   * @param {number} [now] Epoch seconds; defaults to now.
+   * @returns {number} count of pruned entries.
+   */
+  _pruneDedupCaches(now = Date.now() / 1e3) {
+    this._lastDedupPrune = now;
+    let pruned = 0;
+    for (const cache of [this.locallyProcessed, this.locallyDelivered]) {
+      for (const [key, timestamp] of cache) {
+        if (now > timestamp + PROCESSED_TID_TTL_SECS) {
+          cache.delete(key);
+          pruned++;
+        }
+      }
+    }
+    return pruned;
   }
   /**
    * Ingests a list of propagation blobs received in a submit/sync Resource
@@ -1538,30 +1687,77 @@ var PropagationNode = class {
    * @param {Uint8Array[]} transientList
    * @returns {Promise<{stored: number, delivered: number, rejected: number, storedIds: Uint8Array[]}>}
    */
-  async ingestBlobs(transientList) {
+  /**
+   * Ingests a list of propagation blobs received in a submit/sync Resource
+   * container (LXMRouter.propagation_resource_concluded → lxmf_propagation).
+   *
+   * @param {Uint8Array[]} transientList
+   * @param {object} [options]
+   * @param {"peer-sync"|"submission"} [options.origin="submission"] Where the
+   *   blobs came from: `"peer-sync"` for offer-born peer-sync transfers
+   *   (mirrored copies — subject to {@link PropagationNodeOptions.ingestFilter}),
+   *   `"submission"` for direct submissions to this node (always kept — this
+   *   node is their origin custodian, and the only copy).
+   * @returns {Promise<{stored: number, delivered: number, rejected: number, dropped: number, storedIds: Uint8Array[]}>}
+   */
+  async ingestBlobs(transientList, { origin = "submission" } = {}) {
+    const now = Date.now() / 1e3;
+    if (now - this._lastDedupPrune >= PROCESSED_PRUNE_INTERVAL_SECS) {
+      this._pruneDedupCaches(now);
+    }
+    this.validatingCount++;
+    try {
+      return await this._ingestBlobsInner(transientList, origin);
+    } finally {
+      this.validatingCount--;
+    }
+  }
+  /**
+   * The body of {@link ingestBlobs}, run under the sequential-validation
+   * counter.
+   * @param {Uint8Array[]} transientList
+   * @param {"peer-sync"|"submission"} origin
+   * @returns {Promise<{stored: number, delivered: number, rejected: number, dropped: number, storedIds: Uint8Array[]}>}
+   * @private
+   */
+  async _ingestBlobsInner(transientList, origin) {
+    const now = Date.now() / 1e3;
     const minCost = this.minAcceptedCost();
     const validated = await validatePnStamps(transientList, minCost);
     const rejected = transientList.length - validated.length;
     let stored = 0;
     let delivered = 0;
+    let dropped = 0;
     const storedIds = [];
     for (const v of validated) {
       const key = toHex3(v.transientId);
       if (this.store.has(v.transientId) || this.locallyProcessed.has(key)) {
         continue;
       }
-      this.locallyProcessed.add(key);
+      this.locallyProcessed.set(key, now);
       const destinationHash = v.lxmfData.subarray(0, DESTINATION_LENGTH2);
       const deliveryDest = this.getDeliveryDestination(destinationHash);
       if (deliveryDest) {
         const msg = await Message.fromPropagationData(v.lxmfData, deliveryDest);
         if (msg) {
-          this.locallyDelivered.add(key);
+          this.locallyDelivered.set(key, now);
           delivered++;
           await this.onLocalDelivery(msg, v.transientId);
           continue;
         }
         continue;
+      }
+      if (this.ingestFilter && origin === "peer-sync") {
+        const keep = await this.ingestFilter({
+          transientId: v.transientId,
+          destinationHash,
+          size: v.lxmfData.length + v.stampData.length,
+          stampValue: v.stampValue
+        });
+        if (keep === false) {
+          dropped++;
+          continue;
+        }
       }
       this.store.add({
         transientId: v.transientId,
@@ -1578,7 +1774,7 @@ var PropagationNode = class {
       stored++;
     }
     if (storedIds.length > 0) this.onStored(storedIds);
-    return { stored, delivered, rejected, storedIds };
+    return { stored, delivered, rejected, dropped, storedIds };
   }
   /**
    * Handles a `/get` REQUEST (LXMRouter.message_get_request).
@@ -1659,7 +1855,7 @@ var PropagationNode = class {
    * @returns {Promise<boolean|Uint8Array[]|number>} the offer response, or a
    *   peer-error code.
    */
-  async handleOfferRequest(remoteIdentity, data) {
+  async handleOfferRequest(remoteIdentity, data, link = null) {
     if (!remoteIdentity) return PEER_ERROR_NO_IDENTITY;
     if (!this.identityAllowed(remoteIdentity)) return PEER_ERROR_NO_ACCESS;
     if (!Array.isArray(data) || data.length < 2) return PEER_ERROR_INVALID_DATA;
@@ -1674,21 +1870,58 @@ var PropagationNode = class {
     );
     if (!await validatePeeringKey(peeringId, peeringKey, this.peeringCost))
       return PEER_ERROR_INVALID_KEY;
+    const remoteDest = await Destination2.OUT(
+      APP_NAME + ".propagation",
+      DestType2.SINGLE,
+      remoteIdentity,
+      null
+    );
+    const remoteHex = toHex3(
+      /** @type {Uint8Array} */
+      remoteDest.destinationHash
+    );
+    const bypass = this.staticPeerHashes.has(remoteHex);
+    const nowSecs = Date.now() / 1e3;
+    const throttleUntil = this.throttledPeers.get(remoteHex);
+    if (throttleUntil !== void 0) {
+      if (nowSecs < throttleUntil) return PEER_ERROR_THROTTLED;
+      this.throttledPeers.delete(remoteHex);
+    }
+    if (!bypass) {
+      if (this.sequentialValidation && this.validatingCount > 0) {
+        log2(
+          "PropagationNode",
+          `Offer postponed: already validating ${this.validatingCount} stamp batch(es)`
+        );
+        return PEER_ERROR_THROTTLED;
+      }
+      if (this.maxInboundSyncs > 0 && this.inboundSyncs.size >= this.maxInboundSyncs) {
+        log2(
+          "PropagationNode",
+          `Offer postponed: ${this.inboundSyncs.size} sync transfer(s) already in flight`
+        );
+        return PEER_ERROR_THROTTLED;
+      }
+    }
     const offered = data[1];
     const wanted = [];
     for (const tid of offered) {
-      if (!this.store.has(tid)) wanted.push(tid);
+      if (this.store.has(tid) || this.locallyProcessed.has(toHex3(tid))) {
+        continue;
+      }
+      wanted.push(tid);
     }
     if (wanted.length === 0) return false;
+    if (link) link._rfedInboundSync = true;
     if (wanted.length === offered.length) return true;
     return wanted;
   }
   /**
    * Builds the `responseGenerator` for `registerRequestHandler("/offer", …)`.
-   * @returns {(path: string, data: any, requestId: Uint8Array, remoteIdentity: import("@reticulum/core").Identity|null, requestedAt: number) => Promise<boolean|Uint8Array[]|number>}
+   * @returns {function(string, any, Uint8Array, import("@reticulum/core").Identity|null, number, import("@reticulum/core").Link): Promise<boolean|Uint8Array[]|number>} The §11 response generator.
    */
   getOfferRequestHandler() {
-    return async (_path, data, _requestId, remoteIdentity) => this.handleOfferRequest(remoteIdentity, data);
+    return async (_path, data, _requestId, remoteIdentity, _requestedAt, link) => this.handleOfferRequest(remoteIdentity, data, link);
   }
 };
 
@@ -1701,8 +1934,8 @@ import {
   Identity as Identity2,
   Link,
   LinkStatus,
-  LogLevel as LogLevel2,
-  log as log2,
+  LogLevel as LogLevel3,
+  log as log3,
   Packet,
   PacketReceipt,
   PacketType,
@@ -1712,18 +1945,29 @@ import {
   UnknownIdentityError,
   warnIfFragmented
 } from "./reticulum-core.js";
+import { setStamper } from "./reticulum-core.js";
 var DIRECT_LINK_TIMEOUT_MS = 1e4;
 var PATH_REQUEST_WAIT_MS = 7e3;
-var RESOURCE_TRANSFER_TIMEOUT_MS = 6e4;
 var DELIVERED_MESSAGE_CACHE_MAX = 4096;
+var MAX_PARKED_MESSAGES = 128;
 var LXMRouter = class extends EventTarget {
   /**
    * Creates an LXMF router bound to the given identity and Reticulum instance.
    * @param {import("@reticulum/core").Identity} identity
    * @param {import("@reticulum/core").Reticulum} rnsCore - The Reticulum instance
+   * @param {Object} [options]
+   * @param {import("@reticulum/core/src/utils/stamper.js").StamperEngine} [options.stampEngine]
+   *   Optional proof-of-work stamp engine to install process-wide (work doc
+   *   #45). The engine swap is global: it replaces the WebCrypto default for
+   *   every stamp operation in the process (message stamp generation, propagation
+   *   blob validation, peering), which is what a busy propagation node or heavy
+   *   sender wants. Platform packages ship ready-made engines — e.g.
+   *   `nodeStamper` from `@reticulum/node` — and omitting the option keeps the
+   *   browser-safe WebCrypto default.
    */
-  constructor(identity, rnsCore) {
+  constructor(identity, rnsCore, options = {}) {
     super();
+    if (options.stampEngine) setStamper(options.stampEngine);
     this.identity = identity;
     this.rns = rnsCore;
     warnIfFragmented("LXMF", CORE_INSTANCE_TOKEN, rnsCore.coreInstanceToken);
@@ -1741,8 +1985,13 @@ var LXMRouter = class extends EventTarget {
     this.displayName = null;
     this.stampCost = null;
     this.processedTransientIds = /* @__PURE__ */ new Map();
+    this._lastProcessedPrune = 0;
+    this._peerSyncRunning = false;
     this.locallyDeliveredMessageIds = /* @__PURE__ */ new Map();
     this.peers = /* @__PURE__ */ new Map();
+    this.maxPeers = MAX_PEERS;
+    this.staticPeers = /* @__PURE__ */ new Set();
+    this.autopeerMaxDepth = AUTOPEER_MAXDEPTH;
     this.autopeerEnabled = false;
     this.autopeerMaxPeeringCost = MAX_PEERING_COST;
   }
@@ -1750,14 +1999,14 @@ var LXMRouter = class extends EventTarget {
    * Initializes the router and registers the LXMF delivery destination.
    */
   async init() {
-    log2("ROUTER", "Initializing...");
+    log3("ROUTER", "Initializing...");
     const deliveryDest = await Destination3.IN(
       "lxmf.delivery",
       DestType3.SINGLE,
       this.identity,
       this.rns
     );
-    log2("ROUTER", `deliveryDest set: ${deliveryDest.name}`);
+    log3("ROUTER", `deliveryDest set: ${deliveryDest.name}`);
     this.deliveryDest = deliveryDest;
     this.rns.transport.bindLocalDestination(deliveryDest);
     this.rns.registerDestination(deliveryDest);
@@ -1766,7 +2015,7 @@ var LXMRouter = class extends EventTarget {
     this.dispatchEvent(
       new CustomEvent("ready", { detail: { destination: deliveryDest } })
     );
-    log2("ROUTER", "init complete.");
+    log3("ROUTER", "init complete.");
   }
   /**
    * Announces the `lxmf.delivery` destination with the given display name.
@@ -1843,10 +2092,24 @@ var LXMRouter = class extends EventTarget {
    *
    * @param {number} [maxPeeringCost] Max advertised peering cost to auto-peer
    *   at (default {@link MAX_PEERING_COST}).
+   * @param {object} [options]
+   * @param {number} [options.maxPeers] Override the peer-table cap (default
+   *   {@link MAX_PEERS}).
+   * @param {number} [options.autopeerMaxDepth] Max announce hop count to
+   *   auto-peer at (default {@link AUTOPEER_MAXDEPTH}).
+   * @param {Uint8Array[]} [options.staticPeers] Peered destination hashes
+   *   protected from rotation and culling (Python `static_peers`).
    */
-  enableAutopeer(maxPeeringCost = MAX_PEERING_COST) {
+  enableAutopeer(maxPeeringCost = MAX_PEERING_COST, options = {}) {
     this.autopeerEnabled = true;
     this.autopeerMaxPeeringCost = maxPeeringCost;
+    if (options.maxPeers != null) this.maxPeers = options.maxPeers;
+    if (options.autopeerMaxDepth != null) {
+      this.autopeerMaxDepth = options.autopeerMaxDepth;
+    }
+    for (const hash of options.staticPeers ?? []) {
+      this.staticPeers.add(toHex4(hash));
+    }
   }
   /**
    * Enables the propagation-node role (§5.3): creates the `lxmf.propagation`
@@ -1911,7 +2174,8 @@ var LXMRouter = class extends EventTarget {
         try {
           const link = await /** @type {any} */
           propDest.acceptLink(
-            event.detail.packet
+            event.detail.packet,
+            event.detail.receivingInterface ?? null
           );
           link.bz2 = this.rns.compressionProvider || void 0;
           link.maxResourceSize = node.perSyncLimitKb * 1e3;
@@ -1920,32 +2184,67 @@ var LXMRouter = class extends EventTarget {
               /** @type {any} */
               resEvent.detail.resource
             );
+            const isSyncTransfer = (
+              /** @type {any} */
+              link._rfedInboundSync === true
+            );
+            const syncKey = isSyncTransfer ? toHex4(
+              /** @type {Uint8Array} */
+              resource.hash
+            ) : null;
+            if (syncKey) node.beginInboundSync(syncKey);
+            const fail = async (err) => {
+              log3(
+                "LXMF",
+                `Propagation resource transfer failed: ${err}`,
+                LogLevel3.ERROR
+              );
+            };
             resource.whenComplete().then(async () => {
               const container = unpackPropagationContainer(
                 /** @type {Uint8Array} */
                 resource.data
               );
               if (container) {
-                const res = await node.ingestBlobs(container.messages);
-                log2(
+                const res = await node.ingestBlobs(container.messages, {
+                  // Offer-born transfers are mirrored copies (subject to
+                  // the ingest filter); unprompted client submits are
+                  // origin custody — always kept.
+                  origin: (
+                    /** @type {any} */
+                    link._rfedInboundSync === true ? "peer-sync" : "submission"
+                  )
+                });
+                log3(
                   "LXMF",
                   `Propagation submit ingested: ${res.stored} stored, ${res.delivered} delivered, ${res.rejected} rejected`,
-                  LogLevel2.DEBUG
+                  LogLevel3.DEBUG
                 );
+                if (res.rejected > 0 && syncKey && link.remoteIdentity?.identityHash) {
+                  const peerDest = await Destination3.OUT(
+                    "lxmf.propagation",
+                    DestType3.SINGLE,
+                    link.remoteIdentity,
+                    null
+                  );
+                  node.throttlePeer(
+                    toHex4(
+                      /** @type {Uint8Array} */
+                      peerDest.destinationHash
+                    )
+                  );
+                  await link.teardown();
+                }
               }
-            }).catch((err) => {
-              log2(
-                "LXMF",
-                `Propagation resource transfer failed: ${err}`,
-                LogLevel2.ERROR
-              );
+            }).catch(fail).finally(() => {
+              if (syncKey) node.endInboundSync(syncKey);
             });
           });
         } catch (e) {
-          log2(
+          log3(
             "LXMF",
             `Failed to accept propagation link: ${e}`,
-            LogLevel2.ERROR
+            LogLevel3.ERROR
           );
         }
       }
@@ -1986,10 +2285,10 @@ var LXMRouter = class extends EventTarget {
    */
   peer(destinationHash, config) {
     if (config.peeringCost > MAX_PEERING_COST) {
-      log2(
+      log3(
         "LXMF",
         `Not peering with ${toHex4(destinationHash)}: peering cost ${config.peeringCost} > max ${MAX_PEERING_COST}`,
-        LogLevel2.NOTICE
+        LogLevel3.NOTICE
       );
       this.unpeer(destinationHash);
       return null;
@@ -2001,6 +2300,14 @@ var LXMRouter = class extends EventTarget {
       peer = /** @type {LXMPeer} */
       this.peers.get(key);
     } else {
+      if (this.peers.size >= this.maxPeers) {
+        log3(
+          "LXMF",
+          `Max peers reached (${this.maxPeers}), not peering with ${key} \u2014 run rotatePeers() to make headroom`,
+          LogLevel3.DEBUG
+        );
+        return null;
+      }
       peer = new LXMPeer(this, destinationHash.slice(), DEFAULT_SYNC_STRATEGY);
       this.peers.set(key, peer);
       isNewPeer = true;
@@ -2019,15 +2326,15 @@ var LXMRouter = class extends EventTarget {
       if (store) {
         const count = store.markAllUnhandledForPeer(destinationHash);
         if (count > 0) {
-          log2(
+          log3(
             "LXMF",
             `Queued ${count} stored message(s) for distribution to new peer ${toHex4(destinationHash)}`,
-            LogLevel2.DEBUG
+            LogLevel3.DEBUG
           );
         }
       }
     }
-    log2("LXMF", `Peered with ${toHex4(destinationHash)}`, LogLevel2.NOTICE);
+    log3("LXMF", `Peered with ${toHex4(destinationHash)}`, LogLevel3.NOTICE);
     return peer;
   }
   /**
@@ -2037,24 +2344,108 @@ var LXMRouter = class extends EventTarget {
   unpeer(destinationHash) {
     const removed = this.peers.delete(toHex4(destinationHash));
     if (removed)
-      log2(
+      log3(
         "LXMF",
         `Broke peering with ${toHex4(destinationHash)}`,
-        LogLevel2.NOTICE
+        LogLevel3.NOTICE
       );
   }
   /**
    * Runs one outbound sync pass against every peered node. Resolves when all
    * peers have completed (or postponed) their sync.
+   *
+   * Overlapping passes skip: drivers call this on an interval, and a pass can
+   * legitimately outlive one interval (a slow transfer, a backlog of peers).
+   * Running two passes concurrently would sync the same peer over two links
+   * at once — the second pass is a no-op instead.
    * @returns {Promise<void>}
    */
   async syncPeers() {
-    for (const peer of this.peers.values()) {
-      try {
-        await peer.sync();
-      } catch (err) {
-        log2("LXMF", `Sync with peer ${peer.id} failed: ${err}`, LogLevel2.ERROR);
+    if (this._peerSyncRunning) return;
+    this._peerSyncRunning = true;
+    try {
+      const nowSecs = Date.now() / 1e3;
+      for (const [key, peer] of [...this.peers]) {
+        if (!this.staticPeers.has(key) && nowSecs > peer.lastHeard + PEER_MAX_UNREACHABLE_SECS) {
+          log3(
+            "LXMF",
+            `Unpeering unreachable peer ${key} (not heard for ${Math.round((nowSecs - peer.lastHeard) / 3600)}h)`,
+            LogLevel3.INFO
+          );
+          this.unpeer(
+            /** @type {Uint8Array} */
+            peer.destinationHash
+          );
+        }
       }
+      this.rotatePeers();
+      for (const peer of this.peers.values()) {
+        try {
+          await peer.sync();
+        } catch (err) {
+          log3(
+            "LXMF",
+            `Sync with peer ${peer.id} failed: ${err}`,
+            LogLevel3.ERROR
+          );
+        }
+      }
+    } finally {
+      this._peerSyncRunning = false;
+    }
+  }
+  /**
+   * Peer rotation (Python `LXMRouter.rotate_peers`): when the peer table is
+   * at or over {@link maxPeers}, drop just enough of the least-useful peers
+   * to restore {@link ROTATION_HEADROOM_PCT} headroom. Candidates are
+   * non-static, IDLE peers: unreachable ones first, then peers that have
+   * been offered messages but accepted none at a rate below
+   * {@link ROTATION_AR_MAX}. Peers with nothing offered yet are spared, as
+   * are static peers and peers still mid-sync.
+   * @returns {number} count of peers dropped.
+   */
+  rotatePeers() {
+    try {
+      if (this.peers.size <= this.maxPeers) return 0;
+      const headroom = Math.max(
+        1,
+        Math.floor(this.maxPeers * ROTATION_HEADROOM_PCT / 100)
+      );
+      const requiredDrops = this.peers.size - (this.maxPeers - headroom);
+      if (this.peers.size - requiredDrops <= 1) return 0;
+      const unresponsive = [];
+      const waiting = [];
+      for (const [key, peer] of this.peers) {
+        if (this.staticPeers.has(key)) continue;
+        if (peer.state !== PeerState.IDLE) continue;
+        if (!peer.alive) {
+          unresponsive.push(peer);
+        } else if (peer.offered > 0) {
+          waiting.push(peer);
+        }
+      }
+      const dropPool = unresponsive.length > 0 ? [...unresponsive, ...waiting] : waiting;
+      if (dropPool.length === 0) return 0;
+      const sorted = dropPool.map((peer) => ({
+        peer,
+        acceptanceRate: peer.offered === 0 ? 0 : peer.outgoing / peer.offered
+      })).sort((a, b) => a.acceptanceRate - b.acceptanceRate);
+      let dropped = 0;
+      for (const { peer, acceptanceRate } of sorted) {
+        if (dropped >= requiredDrops) break;
+        if (acceptanceRate >= ROTATION_AR_MAX) break;
+        log3(
+          "LXMF",
+          `Rotating out peer ${peer.id} (acceptance rate ${(acceptanceRate * 100).toFixed(1)}%, ${peer.outgoing}/${peer.offered})`,
+          LogLevel3.DEBUG
+        );
+        this.unpeer(peer.destinationHash);
+        dropped++;
+      }
+      return dropped;
+    } catch (e) {
+      log3("LXMF", `Peer rotation failed: ${e}`, LogLevel3.ERROR);
+      return 0;
     }
   }
   /**
@@ -2305,6 +2696,52 @@ var LXMRouter = class extends EventTarget {
     }
   }
   /**
+   * Records a transient id as locally processed (sync dedup, matching the
+   * Python reference's locally_processed_transient_ids), lazily pruning
+   * expired entries so the map stays bounded on long-running nodes even when
+   * no driver calls {@link tickMaintenance}.
+   * @param {string} tidHex
+   * @private
+   */
+  _rememberProcessedTransientId(tidHex) {
+    const now = Date.now() / 1e3;
+    if (now - this._lastProcessedPrune >= PROCESSED_PRUNE_INTERVAL_SECS) {
+      this._pruneProcessedTransientIds(now);
+    }
+    this.processedTransientIds.set(tidHex, now);
+  }
+  /**
+   * Drops processed-transient-id entries older than
+   * {@link PROCESSED_TID_TTL_SECS} (the Python reference's
+   * `MESSAGE_EXPIRY * 6` cleanup). Entries past the TTL can no longer
+   * collide with a live message; without the sweep the dedup map grows
+   * without bound over a node's lifetime.
+   * @param {number} [now] Epoch seconds; defaults to now.
+   * @returns {number} count of pruned entries.
+   * @private
+   */
+  _pruneProcessedTransientIds(now = Date.now() / 1e3) {
+    this._lastProcessedPrune = now;
+    let pruned = 0;
+    for (const [tidHex, timestamp] of this.processedTransientIds) {
+      if (now > timestamp + PROCESSED_TID_TTL_SECS) {
+        this.processedTransientIds.delete(tidHex);
+        pruned++;
+      }
+    }
+    return pruned;
+  }
+  /**
+   * Periodic router maintenance (the Python reference's jobs-loop cleanup):
+   * prunes aged entries from the processed-transient-id dedup map. A runner
+   * calls this on its maintenance interval; the insert path also prunes
+   * lazily, so calling this is an optimization, not a requirement.
+   * @returns {{ processed: number }} count of pruned processed-id entries.
+   */
+  tickMaintenance() {
+    return { processed: this._pruneProcessedTransientIds() };
+  }
+  /**
    * Downloads messages addressed to `identity` from the configured propagation
    * node (LXMRouter.request_messages_from_propagation_node).
    *
@@ -2356,7 +2793,7 @@ var LXMRouter = class extends EventTarget {
       const tidHex = toHex4(tid);
       if (this.processedTransientIds.has(tidHex)) continue;
       const dispatched = await this._ingestPropagationData(lxmfData);
-      this.processedTransientIds.set(tidHex, Date.now() / 1e3);
+      this._rememberProcessedTransientId(tidHex);
       receivedIds.push(tid);
       if (dispatched) {
         received++;
@@ -2427,10 +2864,10 @@ var LXMRouter = class extends EventTarget {
         try {
           await this._processIncomingMessage(plaintext, null, expectedDestHash);
         } catch (e) {
-          log2(
+          log3(
             "LXMF",
             `[!] Failed to process single-packet LXMF message: ${e}`,
-            LogLevel2.ERROR
+            LogLevel3.ERROR
           );
         }
       }
@@ -2438,18 +2875,19 @@ var LXMRouter = class extends EventTarget {
     this.deliveryDest.addEventListener(
       "link_request",
       async (event) => {
-        log2("LXMF", "[*] Incoming LXMF Link Request");
+        log3("LXMF", "[*] Incoming LXMF Link Request");
         try {
           const link = await /** @type {any} */
           this.deliveryDest.acceptLink(
-            event.detail.packet
+            event.detail.packet,
+            event.detail.receivingInterface ?? null
           );
           link.bz2 = this.rns.compressionProvider || void 0;
           this._attachLinkMessageListeners(link);
           const linkHex = toHex4(link.linkId);
           this.pendingLinks.set(linkHex, true);
           const timer = setTimeout(() => {
-            log2("LXMF", `Timeout waiting for link ${linkHex} to identify`);
+            log3("LXMF", `Timeout waiting for link ${linkHex} to identify`);
             this.pendingLinks.delete(linkHex);
             this.processPendingMessages(link.linkId);
           }, 1e4);
@@ -2464,7 +2902,7 @@ var LXMRouter = class extends EventTarget {
                 const identityHash = await Identity2.truncatedHash(
                   peerIdentity.publicKey
                 );
-                log2(
+                log3(
                   "LXMF",
                   `Received LINKIDENTIFY for ${toHex4(identityHash)} (${linkHex})`
                 );
@@ -2490,19 +2928,19 @@ var LXMRouter = class extends EventTarget {
                 this.pendingLinks.delete(linkHex);
                 this.processPendingMessages(link.linkId);
               } catch (e) {
-                log2(
+                log3(
                   "ROUTER",
                   `Failed to derive LXMF destination for peer from link: ${e}`,
-                  LogLevel2.ERROR
+                  LogLevel3.ERROR
                 );
               }
             }
           );
         } catch (e) {
-          log2(
+          log3(
             "LXMF",
             `[!] Failed to respond to LXMF link request: ${e}`,
-            LogLevel2.ERROR
+            LogLevel3.ERROR
           );
         }
       }
@@ -2522,8 +2960,12 @@ var LXMRouter = class extends EventTarget {
         })
       );
       if (this.autopeerEnabled && this.propagationNode) {
+        const hops = (
+          /** @type {CustomEvent} */
+          event.detail?.packet?.hops ?? 0
+        );
         const pn = parsePropagationNodeAppData(appData);
-        if (pn && pn.nodeState && pn.peeringCost <= this.autopeerMaxPeeringCost && !this.peers.has(toHex4(destinationHash))) {
+        if (pn && pn.nodeState && hops <= this.autopeerMaxDepth && pn.peeringCost <= this.autopeerMaxPeeringCost && !this.peers.has(toHex4(destinationHash))) {
           this.peer(destinationHash, {
             stampCost: pn.stampCost,
             stampCostFlexibility: pn.stampCostFlexibility,
@@ -2531,18 +2973,18 @@ var LXMRouter = class extends EventTarget {
             perTransferLimitKb: pn.perTransferLimitKb,
             perSyncLimitKb: pn.perSyncLimitKb
           });
-          log2(
+          log3(
             "LXMF",
             `Auto-peered with propagation node ${toHex4(destinationHash)} (peering cost ${pn.peeringCost})`,
-            LogLevel2.NOTICE
+            LogLevel3.NOTICE
           );
         }
       }
       this.processAllPendingMessages().catch((e) => {
-        log2(
+        log3(
           "LXMF",
           `Re-processing parked messages failed: ${e}`,
-          LogLevel2.DEBUG
+          LogLevel3.DEBUG
         );
       });
     });
@@ -2560,14 +3002,20 @@ var LXMRouter = class extends EventTarget {
     }
     const linkHex = linkId ? toHex4(linkId) : null;
     const message = await Message.deserialize(wireData, expectedDestHash);
-    log2("LXMF", `Incoming message from source ${toHex4(message.sourceHash)}`);
+    log3("LXMF", `Incoming message from source ${toHex4(message.sourceHash)}`);
     const senderIdentity = await this.rns.transport.recallIdentity(
       message.sourceHash
     );
     if (!senderIdentity) {
-      const alreadyParked = this.pendingMessages.has(linkId);
-      this.pendingMessages.set(linkId, wireData);
-      log2(
+      const key = this._pendingMessageKey(linkId);
+      const bucket = this.pendingMessages.get(key) ?? [];
+      const alreadyParked = bucket.some(
+        (entry) => toHex4(entry.sourceHash) === toHex4(message.sourceHash)
+      );
+      bucket.push({ wireData, linkId, sourceHash: message.sourceHash });
+      this.pendingMessages.set(key, bucket);
+      this._capParkedMessages();
+      log3(
         "LXMF",
         `Identity unknown for ${toHex4(message.sourceHash)}; requesting path`
       );
@@ -2575,12 +3023,22 @@ var LXMRouter = class extends EventTarget {
         try {
           await this.rns?.transport?.requestPath(message.sourceHash);
         } catch (e) {
-          log2("LXMF", `Failed to request path: ${e}`, LogLevel2.WARNING);
+          log3("LXMF", `Failed to request path: ${e}`, LogLevel3.WARNING);
         }
       }
       return;
     }
-    this.pendingMessages.delete(linkId);
+    const parkedKey = this._pendingMessageKey(linkId);
+    const parkedBucket = this.pendingMessages.get(parkedKey);
+    if (parkedBucket) {
+      const idx = parkedBucket.findIndex(
+        (entry) => entry.wireData === wireData
+      );
+      if (idx !== -1) {
+        parkedBucket.splice(idx, 1);
+        if (parkedBucket.length === 0) this.pendingMessages.delete(parkedKey);
+      }
+    }
     if (!await message.verifySignature(senderIdentity)) {
       throw new Error(
         "Invalid LXMF message signature: Cryptographic proof failed."
@@ -2621,12 +3079,12 @@ var LXMRouter = class extends EventTarget {
     if (message.messageId && message.messageId.length > 0) {
       const messageIdHex = toHex4(message.messageId);
       if (this.locallyDeliveredMessageIds.has(messageIdHex)) {
-        log2(
+        log3(
           "LXMF",
           `Ignored already received message ${messageIdHex} from ${toHex4(
             message.sourceHash
           )}`,
-          LogLevel2.DEBUG
+          LogLevel3.DEBUG
         );
         return false;
       }
@@ -2643,6 +3101,36 @@ var LXMRouter = class extends EventTarget {
     return true;
   }
   /**
+   * Map key for a parked-message bucket: hex(link_id), or `"opportunistic"`
+   * for linkless delivery.
+   * @param {Uint8Array|null} linkId
+   * @returns {string}
+   * @private
+   */
+  _pendingMessageKey(linkId) {
+    return linkId ? toHex4(linkId) : "opportunistic";
+  }
+  /**
+   * Enforces {@link MAX_PARKED_MESSAGES} across every bucket, dropping the
+   * oldest parked messages first (bucket insertion order, then order within
+   * the bucket).
+   * @private
+   */
+  _capParkedMessages() {
+    let total = 0;
+    for (const bucket of this.pendingMessages.values()) {
+      total += bucket.length;
+    }
+    for (const [key, bucket] of this.pendingMessages) {
+      while (bucket.length > 0 && total > MAX_PARKED_MESSAGES) {
+        bucket.shift();
+        total--;
+      }
+      if (bucket.length === 0) this.pendingMessages.delete(key);
+      if (total <= MAX_PARKED_MESSAGES) break;
+    }
+  }
+  /**
    * Call this when a new Identity is cached (e.g., in your IDENTIFY handler).
    * It checks if any parked messages are now ready for processing.
    *
@@ -2650,18 +3138,35 @@ var LXMRouter = class extends EventTarget {
    * @param {Uint8Array|null} linkId
    */
   async processPendingMessages(linkId) {
+    const key = this._pendingMessageKey(linkId);
     const hashHex = linkId ? toHex4(linkId) : "opportunistic";
     const expectedDestHash = this.deliveryDest?.destinationHash;
     if (!expectedDestHash) {
       return;
     }
-    if (this.pendingMessages.has(linkId)) {
-      log2(
+    const bucket = this.pendingMessages.get(key);
+    if (bucket && bucket.length > 0) {
+      log3(
         "LXMF",
         `Identity acquired. Re-processing parked message for ${hashHex}`
       );
-      const wireData = this.pendingMessages.get(linkId);
-      await this._processIncomingMessage(wireData, linkId, expectedDestHash);
+      const entries = [...bucket];
+      this.pendingMessages.delete(key);
+      for (const entry of entries) {
+        try {
+          await this._processIncomingMessage(
+            entry.wireData,
+            entry.linkId,
+            expectedDestHash
+          );
+        } catch (e) {
+          log3(
+            "LXMF",
+            `Re-processing parked message failed: ${e}`,
+            LogLevel3.ERROR
+          );
+        }
+      }
     }
   }
   /**
@@ -2681,16 +3186,23 @@ var LXMRouter = class extends EventTarget {
     if (!expectedDestHash || this.pendingMessages.size === 0) {
       return;
     }
-    for (const linkId of [...this.pendingMessages.keys()]) {
-      const wireData = this.pendingMessages.get(linkId);
-      if (!wireData) continue;
+    const entries = [];
+    for (const bucket of this.pendingMessages.values()) {
+      entries.push(...bucket);
+    }
+    this.pendingMessages.clear();
+    for (const entry of entries) {
       try {
-        await this._processIncomingMessage(wireData, linkId, expectedDestHash);
+        await this._processIncomingMessage(
+          entry.wireData,
+          entry.linkId,
+          expectedDestHash
+        );
       } catch (e) {
-        log2(
+        log3(
           "LXMF",
           `Re-processing parked message failed: ${e}`,
-          LogLevel2.DEBUG
+          LogLevel3.DEBUG
         );
       }
     }
@@ -2721,16 +3233,16 @@ var LXMRouter = class extends EventTarget {
     const transientId = await Message.transientIdFromPropagationData(paperData);
     const transientHex = toHex4(transientId);
     if (this.processedTransientIds.has(transientHex)) {
-      log2("LXMF", `Paper message ${transientHex} already ingested; ignoring.`);
+      log3("LXMF", `Paper message ${transientHex} already ingested; ignoring.`);
       return null;
     }
-    this.processedTransientIds.set(transientHex, Date.now() / 1e3);
+    this._rememberProcessedTransientId(transientHex);
     const message = await Message.fromPaperData(paperData, this.deliveryDest);
     if (!message) {
-      log2("LXMF", "Paper URI not addressed to this node (decryption failed).");
+      log3("LXMF", "Paper URI not addressed to this node (decryption failed).");
       return null;
     }
-    log2("LXMF", `Ingested paper message from ${toHex4(message.sourceHash)}`);
+    log3("LXMF", `Ingested paper message from ${toHex4(message.sourceHash)}`);
     const senderIdentity = await this.rns.transport.recallIdentity(
       message.sourceHash
     );
@@ -2787,8 +3299,8 @@ var LXMRouter = class extends EventTarget {
       timeoutMs = 3e4
     } = options;
     const { messageId, wireData } = await message.serialize(senderIdentity);
-    log2("LXMF", `DEBUG: Sending LXMF Message ID: ${toHex4(messageId)}`);
-    log2("LXMF", `DEBUG: Sending to ${toHex4(message.destinationHash)}`);
+    log3("LXMF", `DEBUG: Sending LXMF Message ID: ${toHex4(messageId)}`);
+    log3("LXMF", `DEBUG: Sending to ${toHex4(message.destinationHash)}`);
     let linkDeliveryError = null;
     let targetLinkId = explicitLinkId;
     if (!targetLinkId) {
@@ -2820,10 +3332,10 @@ var LXMRouter = class extends EventTarget {
         );
         return;
       } catch (err) {
-        log2(
+        log3(
           "LXMF",
           `Direct link send failed: ${err}; evaluating fallback`,
-          LogLevel2.DEBUG
+          LogLevel3.DEBUG
         );
         linkDeliveryError = err;
       }
@@ -2844,10 +3356,10 @@ var LXMRouter = class extends EventTarget {
         });
         return;
       } catch (err) {
-        log2(
+        log3(
           "LXMF",
           `Opportunistic delivery failed: ${err}; evaluating fallback`,
-          LogLevel2.DEBUG
+          LogLevel3.DEBUG
         );
         opportunisticError = err;
       }
@@ -3012,10 +3524,10 @@ var LXMRouter = class extends EventTarget {
     }
     if (typeof transport.requestPath !== "function") return false;
     const destHex = toHex4(destinationHash);
-    log2(
+    log3(
       "LXMF",
       `No usable path to ${destHex}; requesting before DIRECT link`,
-      LogLevel2.DEBUG
+      LogLevel3.DEBUG
     );
     try {
       await transport.requestPath(destinationHash);
@@ -3076,10 +3588,10 @@ var LXMRouter = class extends EventTarget {
       }
     }
     if (!peerIdentity) {
-      log2(
+      log3(
         "LXMF",
         `Cannot establish DIRECT link: identity unknown for ${destHex}`,
-        LogLevel2.DEBUG
+        LogLevel3.DEBUG
       );
       return null;
     }
@@ -3105,17 +3617,17 @@ var LXMRouter = class extends EventTarget {
         }
       });
       this.directLinks.set(destHex, link);
-      log2(
+      log3(
         "LXMF",
         `Established DIRECT delivery link to ${destHex}`,
-        LogLevel2.DEBUG
+        LogLevel3.DEBUG
       );
       return link;
     } catch (e) {
-      log2(
+      log3(
         "LXMF",
         `DIRECT link to ${destHex} failed, falling back to opportunistic: ${e}`,
-        LogLevel2.WARNING
+        LogLevel3.WARNING
       );
       const transport = (
         /** @type {any} */
@@ -3144,13 +3656,27 @@ var LXMRouter = class extends EventTarget {
   _attachLinkMessageListeners(link) {
     const expectedDestHash = this.deliveryDest?.destinationHash;
     if (!expectedDestHash) return;
+    const parkedKey = toHex4(link.linkId);
+    link.addEventListener("statuschange", (ev) => {
+      if (ev.detail?.status === LinkStatus.CLOSED) {
+        this.pendingMessages.delete(parkedKey);
+      }
+    });
     link.addEventListener("data", async (pktEvent) => {
-      await this._processIncomingMessage(
-        /** @type {any} */
-        pktEvent.detail.packet.payload,
-        pktEvent.detail.link,
-        expectedDestHash
-      );
+      try {
+        await this._processIncomingMessage(
+          /** @type {any} */
+          pktEvent.detail.packet.payload,
+          pktEvent.detail.link,
+          expectedDestHash
+        );
+      } catch (err) {
+        log3(
+          "LXMF",
+          `[!] Failed to process LXMF message over link: ${err}`,
+          LogLevel3.ERROR
+        );
+      }
     });
     link.addEventListener("resource", (resEvent) => {
       const resource = (
@@ -3165,10 +3691,10 @@ var LXMRouter = class extends EventTarget {
           expectedDestHash
         );
       }).catch((err) => {
-        log2(
+        log3(
           "LXMF",
           `Incoming LXMF resource transfer failed: ${err}`,
-          LogLevel2.ERROR
+          LogLevel3.ERROR
         );
       });
     });

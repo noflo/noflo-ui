@@ -2048,9 +2048,25 @@ var Resource = class _Resource extends EventTarget {
   static HEADER_MAX_SIZE = 35;
   /** Initial receiver request window (§10.10). */
   static WINDOW = 4;
-  /** Default window cap used for the collision-guard span (§10.10 WINDOW_MAX_SLOW). */
+  /** Floor the request window shrinks to under losses (§10.10). */
+  static WINDOW_MIN = 2;
+  /** Request-window ceiling on slow links (§10.10). */
   static WINDOW_MAX_SLOW = 10;
-  /** Constants in the advertisement-size formula `HASHMAP_MAX_LEN = (MDU-134)/4`. */
+  /** Request-window ceiling on very slow links (§10.10). */
+  static WINDOW_MAX_VERY_SLOW = 4;
+  /** Request-window ceiling on fast links (§10.10). */
+  static WINDOW_MAX_FAST = 75;
+  /** How far the window may drift above the floor before the floor creeps. */
+  static WINDOW_FLEXIBILITY = 4;
+  /** Consecutive fast windows before the ceiling escalates to fast. */
+  static FAST_RATE_THRESHOLD = _Resource.WINDOW_MAX_SLOW - _Resource.WINDOW - 2;
+  /** Consecutive very-slow windows before the ceiling drops to very slow. */
+  static VERY_SLOW_RATE_THRESHOLD = 2;
+  /** Window rate (bytes/s) considered fast enough for the large window. */
+  static RATE_FAST = 50 * 1e3 / 8;
+  /** Window rate (bytes/s) considered very slow. */
+  static RATE_VERY_SLOW = 2 * 1e3 / 8;
+  /** Collision-guard span uses the slow-link window cap (§10.10). */
   static HASHMAP_FIXED_OVERHEAD = 134;
   /** Cap on advertised transfer/logical size at accept time (§10.4 bomb defense). */
   static DEFAULT_MAX_SIZE = 32 * 1024 * 1024;
@@ -2063,8 +2079,6 @@ var Resource = class _Resource extends EventTarget {
    * (219 → sdu 183 → ~183k parts for 32 MiB) still fits, with headroom.
    */
   static DEFAULT_MAX_PARTS = 262144;
-  /** Receiver request window during a transfer. */
-  window = _Resource.WINDOW;
   /** Max encodable metadata size: 3-byte length prefix limits it to 16 MiB-1. */
   static METADATA_MAX_SIZE = 16777215;
   /**
@@ -2081,6 +2095,44 @@ var Resource = class _Resource extends EventTarget {
    * per-segment `t`/`d` caps bound each transfer, this bounds their sum.
    */
   static DEFAULT_MAX_TOTAL_SIZE = 256 * 1024 * 1024;
+  /** Receiver request window during a transfer. */
+  window = _Resource.WINDOW;
+  /** Ceiling the request window grows toward (fast links earn the large one). */
+  windowMax = _Resource.WINDOW_MAX_SLOW;
+  /** Floor the request window shrinks to under losses. */
+  windowMin = _Resource.WINDOW_MIN;
+  /** How far the window may drift above the floor before the floor creeps. */
+  windowFlexibility = _Resource.WINDOW_FLEXIBILITY;
+  /** Consecutive fast windows observed (escalates the ceiling). */
+  fastRateRounds = 0;
+  /** Consecutive very-slow windows observed (drops the ceiling). */
+  verySlowRateRounds = 0;
+  /** Epoch ms the current window's RESOURCE_REQ went out. */
+  reqSentAt = 0;
+  /** Part bytes received within the current window. */
+  reqWindowRxd = 0;
+  /**
+   * Watchdog constants mirroring the Python reference's `Resource`
+   * (`MAX_RETRIES`, `PART_TIMEOUT_FACTOR`, `PER_RETRY_DELAY`,
+   * `SENDER_GRACE_TIME`, `PROCESSING_GRACE`, `RETRY_GRACE_TIME`,
+   * `PROOF_TIMEOUT_FACTOR`). The JS watchdog ticks from the link's 1 Hz
+   * watchdog instead of a per-resource thread; the semantics — bounded
+   * stalls, bounded retries, then a failing cancel that drops the transfer
+   * buffers — are the same.
+   */
+  static MAX_RETRIES = 16;
+  /** Multiplier on the expected part-transfer time before a receiver retry. */
+  static PART_TIMEOUT_FACTOR = 4;
+  /** Extra per-retry wait (seconds), applied cumulatively (receiver). */
+  static PER_RETRY_DELAY = 0.5;
+  /** Sender grace over the whole request window (seconds). */
+  static SENDER_GRACE_TIME = 10;
+  /** Grace over the advertisement timeout (seconds). */
+  static PROCESSING_GRACE = 1;
+  /** Grace over the part-stall timeout (seconds). */
+  static RETRY_GRACE_TIME = 0.25;
+  /** Multiplier on RTT when waiting for the final proof (vs a full req/resp). */
+  static PROOF_TIMEOUT_FACTOR = 3;
   /**
    * @param {Object} options
    * @param {Uint8Array|undefined} [options.data] - Sender-side payload.
@@ -2143,6 +2195,10 @@ var Resource = class _Resource extends EventTarget {
     this.uncompressedSize = 0;
     this.outstanding = 0;
     this._prepared = false;
+    this.retriesLeft = _Resource.MAX_RETRIES;
+    this.lastActivity = Date.now();
+    this.advSentAt = 0;
+    this._gotPartRequests = false;
   }
   /**
    * Maximum part body size. Parts are raw slices of the already-encrypted
@@ -2193,6 +2249,7 @@ var Resource = class _Resource extends EventTarget {
       this.segmentIndex = 1;
       this.totalSegments = Math.floor((plaintext.length - 1) / _Resource.MAX_EFFICIENT_SIZE) + 1;
       this._fullPlaintext = plaintext;
+      this.data = void 0;
       await this._prepareSegment();
       this._prepared = true;
       return;
@@ -2216,6 +2273,7 @@ var Resource = class _Resource extends EventTarget {
       }
     }
     await this._buildIntegrityAndParts(plaintext, body);
+    this.data = void 0;
     this._prepared = true;
   }
   /**
@@ -2426,6 +2484,9 @@ var Resource = class _Resource extends EventTarget {
     });
     this.link._registerOutgoingResource(this);
     await this.link.send(packet);
+    this.advSentAt = Date.now();
+    this.lastActivity = this.advSentAt;
+    this._gotPartRequests = false;
     log(
       "Resource",
       `Advertised ${this.totalParts} parts (${this.totalSize}B)` + (this.split ? ` segment ${this.segmentIndex}/${this.totalSegments}` : "") + ` h=${toHex(
@@ -2444,6 +2505,8 @@ var Resource = class _Resource extends EventTarget {
    */
   async handleRequest(body) {
     const { requested, exhausted, lastMapHash } = this._parseRequest(body);
+    this._gotPartRequests = true;
+    this.lastActivity = Date.now();
     for (const mh of requested) {
       const idx = this._findPartByMapHash(mh);
       if (idx < 0) {
@@ -2536,6 +2599,7 @@ var Resource = class _Resource extends EventTarget {
       );
       this.segmentIndex++;
       await this._prepareSegment();
+      this.retriesLeft = _Resource.MAX_RETRIES;
       this.status = ResourceStatus.QUEUED;
       await this._advertiseSegment();
       this.status = ResourceStatus.ADVERTISED;
@@ -2667,6 +2731,7 @@ var Resource = class _Resource extends EventTarget {
     }
     const resource = new _Resource({ link, bz2: options.bz2 });
     resource.status = ResourceStatus.TRANSFERRING;
+    if (link.lastResourceWindow) resource.window = link.lastResourceWindow;
     resource.totalSize = adv.t;
     resource.uncompressedSize = adv.d;
     resource.totalParts = adv.n;
@@ -2685,6 +2750,7 @@ var Resource = class _Resource extends EventTarget {
     resource.hashmap = _Resource._splitHashmap(adv.m);
     resource.receivedCount = 0;
     resource.outstanding = 0;
+    resource.lastActivity = Date.now();
     link._registerIncomingResource(resource);
     log(
       "Resource",
@@ -2729,7 +2795,41 @@ var Resource = class _Resource extends EventTarget {
     }
     if (!exhausted && requested.length === 0) return;
     this.outstanding = requested.length;
+    this.reqSentAt = Date.now();
+    this.reqWindowRxd = 0;
     await this._sendRequest(requested, exhausted, exhausted ? lastKnown : null);
+  }
+  /**
+   * Receiver: the request window drained while the transfer is healthy —
+   * grow the window toward its ceiling and probe the achieved transfer rate
+   * to pick that ceiling (Python `Resource.receive_part` window adaptation).
+   * Fast links escalate the ceiling to the large fast window (75 parts per
+   * round-trip vs the initial 4 — a ~19× drain-rate difference that decides
+   * whether concurrent transfers pile up on a busy node); very slow links
+   * are pinned to the small window.
+   * @param {number} nowMs Epoch ms of the drain.
+   * @private
+   */
+  _onWindowDrained(nowMs) {
+    if (this.window < this.windowMax) {
+      this.window++;
+      if (this.window - this.windowMin > this.windowFlexibility - 1) {
+        this.windowMin++;
+      }
+    }
+    const elapsedSecs = (nowMs - this.reqSentAt) / 1e3;
+    const rate = elapsedSecs > 0 ? this.reqWindowRxd / elapsedSecs : Infinity;
+    if (rate > _Resource.RATE_FAST && this.fastRateRounds < _Resource.FAST_RATE_THRESHOLD) {
+      this.fastRateRounds++;
+      if (this.fastRateRounds === _Resource.FAST_RATE_THRESHOLD) {
+        this.windowMax = _Resource.WINDOW_MAX_FAST;
+      }
+    } else if (this.fastRateRounds === 0 && rate < _Resource.RATE_VERY_SLOW && this.verySlowRateRounds < _Resource.VERY_SLOW_RATE_THRESHOLD) {
+      this.verySlowRateRounds++;
+      if (this.verySlowRateRounds === _Resource.VERY_SLOW_RATE_THRESHOLD) {
+        this.windowMax = _Resource.WINDOW_MAX_VERY_SLOW;
+      }
+    }
   }
   /**
    * Sends a RESOURCE_REQ (§10.5).
@@ -2777,6 +2877,8 @@ var Resource = class _Resource extends EventTarget {
         this.parts[i] = chunk;
         this.receivedCount++;
         if (this.outstanding > 0) this.outstanding--;
+        this.lastActivity = Date.now();
+        this.reqWindowRxd += chunk.length;
         this.dispatchEvent(
           new CustomEvent("progress", {
             detail: {
@@ -2789,6 +2891,7 @@ var Resource = class _Resource extends EventTarget {
         if (this.receivedCount >= this.totalParts) {
           await this.assemble();
         } else if (this.outstanding <= 0) {
+          this._onWindowDrained(Date.now());
           await this.requestNext();
         }
         return true;
@@ -2808,6 +2911,7 @@ var Resource = class _Resource extends EventTarget {
     const segment = decoded[1];
     if (!(segment instanceof Uint8Array)) return;
     for (const mh of _Resource._splitHashmap(segment)) this.hashmap.push(mh);
+    this.lastActivity = Date.now();
     log(
       "Resource",
       `Applied HMU (${this.hashmap.length} map_hashes known) for ${toHex(resourceHash.subarray(0, 8))}\u2026`,
@@ -2886,6 +2990,7 @@ var Resource = class _Resource extends EventTarget {
         /** @type {Uint8Array} */
         this.hash
       );
+      if (this.link) this.link.lastResourceWindow = this.window;
       log("Resource", "Incoming resource COMPLETE", LogLevel.DEBUG);
       this.dispatchEvent(
         new CustomEvent("complete", {
@@ -2937,6 +3042,9 @@ var Resource = class _Resource extends EventTarget {
    */
   async cancel() {
     if (this.status === ResourceStatus.COMPLETE) return;
+    if (this.status === ResourceStatus.FAILED || this.status === ResourceStatus.CORRUPT || this.status === ResourceStatus.REJECTED) {
+      return;
+    }
     const wasSending = this.parts.length > 0 && this._prepared && this.hashmap.length > 0;
     if (wasSending && this.status !== ResourceStatus.NONE) {
       const payload = concatBytes(
@@ -3003,7 +3111,7 @@ var Resource = class _Resource extends EventTarget {
    */
   whenComplete() {
     return new Promise((resolve, reject) => {
-      const onComplete = (e) => {
+      const onComplete = () => {
         this.removeEventListener("complete", onComplete);
         this.removeEventListener("failed", onFailed);
         resolve(this);
@@ -3021,8 +3129,152 @@ var Resource = class _Resource extends EventTarget {
       this.addEventListener("failed", onFailed);
     });
   }
-  /** @param {string} reason @private */
+  /**
+   * Called by the link when it transitions to CLOSED: the transfer can never
+   * complete, so the resource fails and drops its transfer buffers. Without
+   * this a torn-down link is retained by its own resource maps, and the
+   * buffers (encrypted payload slices on the sender, accumulated received
+   * parts on the receiver) leak for the lifetime of the object — which
+   * compounds into multi-GB heap growth when links fail in a storm (the
+   * lille-oe OOM of 2026-10-17).
+   * @param {string} [reason]
+   * @returns {void}
+   * @internal
+   */
+  _linkClosed(reason = "Link closed") {
+    if (this.status === ResourceStatus.COMPLETE || this.status === ResourceStatus.FAILED || this.status === ResourceStatus.CORRUPT || this.status === ResourceStatus.REJECTED) {
+      return;
+    }
+    this.status = ResourceStatus.FAILED;
+    this._setFailed(reason);
+  }
+  /**
+   * One watchdog step, driven by the owning link's 1 Hz watchdog tick while
+   * the transfer is registered on it (Python `Resource.__watchdog_job`
+   * parity — there it runs as a per-resource thread instead).
+   *
+   * Sender side: an advertisement nobody requested is retried a bounded
+   * number of times, then cancelled; a transfer whose part requests dried up
+   * is cancelled after the whole retry window (`rtt × traffic-timeout ×
+   * max-retries + grace`) elapses with no activity — this also bounds the
+   * final proof wait, which Python tightens with `PROOF_TIMEOUT_FACTOR`
+   * (the tighter bound only speeds recovery; the max window already covers
+   * it).
+   *
+   * Receiver side: a part stall longer than `PART_TIMEOUT_FACTOR` × the
+   * expected transfer time re-requests the missing parts (resetting the
+   * window); exhausted retries cancel the transfer. Without this, a stalled
+   * peer on a keepalive-sustained link — alive at the link layer, wedged at
+   * the application layer — held its half-received parts (receiver) or its
+   * full payload and encrypted part slices (sender) forever: links whose
+   * endpoints keep answering keepalives never go stale, so nothing else
+   * would ever release the buffers. Each retried sync cycle then
+   * accumulated another stalled transfer, compounding into multi-GB heap
+   * growth during sync-failure storms.
+   *
+   * @param {number} nowMs Current epoch ms (injected for testability).
+   * @returns {void}
+   * @internal
+   */
+  _watchdogTick(nowMs) {
+    const rttSecs = Math.max(this.link?.rtt ?? 0, 0.5);
+    const trafficTimeout = rttSecs * 6;
+    const lastActivitySecs = this.lastActivity / 1e3;
+    if (this.status === ResourceStatus.ADVERTISED) {
+      if (!this._gotPartRequests) {
+        const advTimeout = this.advSentAt / 1e3 + trafficTimeout + _Resource.PROCESSING_GRACE;
+        if (nowMs / 1e3 >= advTimeout) {
+          if (this.retriesLeft > 0) {
+            this.retriesLeft--;
+            log(
+              "Resource",
+              "No part requests received, retrying resource advertisement",
+              LogLevel.DEBUG
+            );
+            this._advertiseSegment().catch((e) => {
+              log(
+                "Resource",
+                `Advertisement retry failed, cancelling: ${e}`,
+                LogLevel.DEBUG
+              );
+              this._watchdogCancel("Advertisement retry failed");
+            });
+          } else {
+            this._watchdogCancel(
+              "Resource transfer timed out after sending advertisement"
+            );
+          }
+        }
+      } else {
+        const maxExtraWait = _Resource.MAX_RETRIES * (_Resource.MAX_RETRIES + 1) / 2 * _Resource.PER_RETRY_DELAY;
+        const maxWaitSecs = trafficTimeout * _Resource.MAX_RETRIES + _Resource.SENDER_GRACE_TIME + maxExtraWait;
+        if (lastActivitySecs + maxWaitSecs <= nowMs / 1e3) {
+          this._watchdogCancel("Resource timed out waiting for part requests");
+        }
+      }
+      return;
+    }
+    if (this.status === ResourceStatus.TRANSFERRING) {
+      const retriesUsed = _Resource.MAX_RETRIES - this.retriesLeft;
+      const expectedSecs = trafficTimeout + this.outstanding * rttSecs * _Resource.PROOF_TIMEOUT_FACTOR;
+      const stallTimeoutSecs = lastActivitySecs + _Resource.PART_TIMEOUT_FACTOR * expectedSecs + _Resource.RETRY_GRACE_TIME + retriesUsed * _Resource.PER_RETRY_DELAY;
+      if (nowMs / 1e3 >= stallTimeoutSecs) {
+        if (this.retriesLeft > 0) {
+          this.retriesLeft--;
+          log(
+            "Resource",
+            `Timed out waiting for ${this.outstanding} part(s), requesting retry`,
+            LogLevel.DEBUG
+          );
+          if (this.window > this.windowMin) {
+            this.window--;
+            if (this.windowMax > this.windowMin) {
+              this.windowMax--;
+              if (this.windowMax - this.window > this.windowFlexibility - 1) {
+                this.windowMax--;
+              }
+            }
+          }
+          this.outstanding = 0;
+          this.lastActivity = nowMs;
+          this.requestNext().catch(() => {
+          });
+        } else {
+          this._watchdogCancel("Resource part requests timed out");
+        }
+      }
+    }
+  }
+  /**
+   * Watchdog cancel: fails the resource (dropping its transfer buffers via
+   * the shared failure path). Fire-and-forget — the §10.9 ICL a sender
+   * cancel emits is best-effort, exactly like every other cancel here.
+   * @param {string} reason
+   * @private
+   */
+  _watchdogCancel(reason) {
+    log("Resource", reason, LogLevel.DEBUG);
+    this.cancel().catch(() => {
+    });
+  }
+  /**
+   * Marks the resource failed: unregisters it from its link's transfer map,
+   * drops the transfer buffers (the encrypted part slices on the sender, the
+   * accumulated received parts on the receiver — and the sender's payload:
+   * nothing can complete once failed), and emits `failed` so
+   * `whenComplete()` waiters observe it. Without the unregister, a
+   * cancelled/rejected/corrupt resource stayed pinned in the link's map
+   * until the link itself closed — and links whose endpoints keep answering
+   * keepalives never close.
+   * @param {string} reason @private
+   */
   _setFailed(reason) {
+    if (this.link && this.hash) {
+      this.link._unregisterIncomingResource(this.hash);
+      this.link._unregisterOutgoingResource(this.hash);
+    }
+    this.parts = [];
+    this.data = void 0;
     this.dispatchEvent(
       new CustomEvent("failed", { detail: { resource: this, reason } })
     );
@@ -4213,6 +4465,8 @@ var Link = class _Link extends EventTarget {
   requestTimeMs = 0;
   /** @type {ReturnType<typeof setInterval> | null} */
   _watchdogTimer = null;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  _establishmentTimer = null;
   /** @type {Promise<void>} */
   _rxQueue = Promise.resolve();
   /** Pending outgoing resource payloads keyed by hex hash (RESOURCE_ADV/REQ). */
@@ -4221,7 +4475,15 @@ var Link = class _Link extends EventTarget {
    * Initiator-side pending REQUESTs keyed by hex(request_id)
    * (PROTOCOL-SPEC.md §11.5). Each entry resolves/rejects its returned Promise
    * when the matching RESPONSE arrives or the timeout fires.
-   * @type {Map<string, {resolve: Function, reject: Function, onMetadata: ((metadata: any) => void)|undefined, onProgress: ((info: any) => void)|undefined, timer: ReturnType<typeof setTimeout>}>}
+   *
+   * `handedOut` tracks whether `request()` has returned the response promise
+   * to a caller yet. Between registering the entry and returning the promise,
+   * `request()` is still awaiting the transmit — during that window nobody
+   * holds the promise, so settling it with a rejection would surface as an
+   * unhandled rejection and crash the process. Unheld entries are settled
+   * quietly instead (see `_failPendingRequest`), and `request()` rethrows the
+   * recorded error once the transmit settles.
+   * @type {Map<string, {resolve: Function, reject: Function, onMetadata: ((metadata: any) => void)|undefined, onProgress: ((info: any) => void)|undefined, timer: ReturnType<typeof setTimeout>, handedOut: boolean, settledQuietly: boolean, settleError: Error|null, settledSignal: Promise<undefined>, signalSettled: ((value: undefined) => void)|undefined}>}
    */
   pendingRequests = /* @__PURE__ */ new Map();
   /**
@@ -4308,6 +4570,8 @@ var Link = class _Link extends EventTarget {
     this._pendingLinkProofs = /* @__PURE__ */ new Map();
     this.expectedHops = null;
     this.rebalanced = null;
+    this.attachedInterface = null;
+    this.lastResourceWindow = null;
   }
   /**
    * The current link status.
@@ -4366,12 +4630,23 @@ var Link = class _Link extends EventTarget {
         })
       );
       if (newStatus === LinkStatus.ACTIVE) {
+        this._clearEstablishmentTimeout();
         this._startWatchdog();
       } else if (newStatus === LinkStatus.CLOSED) {
+        this._clearEstablishmentTimeout();
         this._stopWatchdog();
         this._channel?._shutdown();
         if (this.transport) this.transport.removeLink(this.linkId);
         this._rejectPendingRequests("Link closed before RESPONSE arrived");
+        this._pendingLinkProofs.clear();
+        for (const resource of this.outgoingResources.values()) {
+          resource._linkClosed?.();
+        }
+        this.outgoingResources.clear();
+        for (const resource of this.incomingResources.values()) {
+          resource._linkClosed?.();
+        }
+        this.incomingResources.clear();
         const dh = this.destination?.destinationHash;
         if (oldStatus !== LinkStatus.ACTIVE && dh && typeof this.transport?.expirePath === "function") {
           this.transport.expirePath(dh);
@@ -4417,6 +4692,48 @@ var Link = class _Link extends EventTarget {
       return this.transport.establishmentTimeout(dh) * 1e3;
     }
     return 15e3;
+  }
+  /**
+   * Arms the establishment expiry (Python `Link.establishment_timeout`
+   * parity): if the handshake has not completed within the transport's
+   * establishment timeout, the link is closed locally with TIMEOUT. Without
+   * this, handshake-phase links that never complete stay registered in the
+   * transport's activeLinks forever — every failed establishment leaks the
+   * link object and its ephemeral key material. Both sides arm it: the
+   * initiator waiting for the LRPROOF and the responder waiting for the
+   * LRRTT. No LINKCLOSE is sent — the peer never confirmed the handshake,
+   * and the reference only closes locally on establishment timeout.
+   * @returns {void}
+   * @private
+   */
+  _armEstablishmentTimeout() {
+    if (this._establishmentTimer) return;
+    const timeoutSecs = this.transport && typeof this.transport.establishmentTimeout === "function" ? this.transport.establishmentTimeout(
+      this.destination?.destinationHash ?? this.linkId
+    ) : 15;
+    const timer = setTimeout(() => {
+      this._establishmentTimer = null;
+      if (this.status !== LinkStatus.HANDSHAKE) return;
+      log(
+        "Link",
+        `Link establishment timed out for ${toHex(this.linkId)}`,
+        LogLevel.DEBUG
+      );
+      this.teardownReason = LinkTeardownReason.TIMEOUT;
+      this.status = LinkStatus.CLOSED;
+      this.dispatchEvent(
+        new CustomEvent("close", { detail: { link: this.linkId } })
+      );
+    }, timeoutSecs * 1e3);
+    timer?.unref?.();
+    this._establishmentTimer = timer;
+  }
+  /** @private */
+  _clearEstablishmentTimeout() {
+    if (this._establishmentTimer) {
+      clearTimeout(this._establishmentTimer);
+      this._establishmentTimer = null;
+    }
   }
   /**
    * Resolves once the Link reaches ACTIVE status (immediately if it already
@@ -4520,6 +4837,7 @@ var Link = class _Link extends EventTarget {
     link.requestTimeMs = Date.now();
     link.expectedHops = destination.destinationHash && typeof transport.hopsTo === "function" ? transport.hopsTo(destination.destinationHash) : null;
     link.status = LinkStatus.HANDSHAKE;
+    link._armEstablishmentTimeout();
     await link._sendRaw(packet);
     return link;
   }
@@ -4536,9 +4854,14 @@ var Link = class _Link extends EventTarget {
    * @param {import("../core/destination.js").Destination} destination - IN destination whose identity is this node's.
    * @param {import("../transport/transport.js").TransportCore} transport
    * @param {Packet} requestPacket - The incoming LINKREQUEST (with `raw` populated).
+   * @param {import("../interfaces/base.js").Interface | null} [receivingInterface] -
+   *   The interface the LINKREQUEST arrived on. Captured as the link's return
+   *   path ({@link Link.attachedInterface}), so responder→initiator traffic
+   *   flows back over it regardless of the node's default interface. Matches
+   *   the reference's `link.attached_interface = packet.receiving_interface`.
    * @returns {Promise<Link>}
    */
-  static async accept(destination, transport, requestPacket) {
+  static async accept(destination, transport, requestPacket, receivingInterface = null) {
     const linkId = await linkIdFromLrPacket(requestPacket);
     const data = requestPacket.payload;
     const initiatorX25519Pub = data.subarray(0, 32);
@@ -4567,8 +4890,10 @@ var Link = class _Link extends EventTarget {
     await link._deriveKeys(initiatorX25519Pub);
     link.requestTimeMs = Date.now();
     link.expectedHops = requestPacket.hops;
+    link.attachedInterface = receivingInterface;
     link.status = LinkStatus.HANDSHAKE;
     transport.addLink(linkId, link);
+    link._armEstablishmentTimeout();
     await link._sendLRProof();
     return link;
   }
@@ -4688,11 +5013,20 @@ var Link = class _Link extends EventTarget {
    */
   async send(packet) {
     const outbound = await this._prepareOutboundPacket(packet);
+    let pendingProofKey = null;
     if (outbound.packetType === PacketType.DATA && outbound.contextByte === ContextType.NONE) {
       const hash = await outbound.getHash();
-      this._pendingLinkProofs.set(toHex(hash), hash);
+      pendingProofKey = toHex(hash);
+      this._pendingLinkProofs.set(pendingProofKey, hash);
     }
-    await this.transport.sendPacket(outbound);
+    try {
+      await this.transport.sendPacket(outbound);
+    } catch (err) {
+      if (pendingProofKey !== null) {
+        this._pendingLinkProofs.delete(pendingProofKey);
+      }
+      throw err;
+    }
     return outbound;
   }
   /**
@@ -4764,9 +5098,13 @@ var Link = class _Link extends EventTarget {
    * Initiator: validate the responder's LRPROOF, derive session keys, send
    * LRRTT, and transition to ACTIVE.
    * @param {Packet} packet
+   * @param {import("../interfaces/base.js").Interface | null} [receivingInterface] -
+   *   Interface the LRPROOF arrived on; captured as {@link Link.attachedInterface}
+   *   once validated (reference `Link.py` sets `attached_interface` at proof
+   *   validation), so initiator→responder traffic returns over it.
    * @private
    */
-  async _handleLRPROOF(packet) {
+  async _handleLRPROOF(packet, receivingInterface = null) {
     if (!this.destination?.identity) {
       throw new Error(
         "Initiator LRPROOF validation requires the responder identity."
@@ -4824,6 +5162,7 @@ var Link = class _Link extends EventTarget {
     this.mtu = confirmedMtu;
     this.rtt = (Date.now() - this.requestTimeMs) / 1e3;
     this._updateKeepalive();
+    if (receivingInterface) this.attachedInterface = receivingInterface;
     await this._sendLRRTT();
     this.status = LinkStatus.ACTIVE;
     this.dispatchEvent(
@@ -5054,7 +5393,11 @@ var Link = class _Link extends EventTarget {
    */
   async teardown() {
     if (this.status === LinkStatus.CLOSED) return;
-    await this._sendLinkClose();
+    try {
+      await this._sendLinkClose();
+    } catch (err) {
+      log("Link", `Teardown close send failed: ${err}`, LogLevel.WARNING);
+    }
     this.teardownReason = this.initiator ? LinkTeardownReason.INITIATOR_CLOSED : LinkTeardownReason.DESTINATION_CLOSED;
     this.status = LinkStatus.CLOSED;
     this.dispatchEvent(
@@ -5205,7 +5548,7 @@ var Link = class _Link extends EventTarget {
     if (packedRequest.length > this.mdu) {
       const requestId2 = await Identity.truncatedHash(packedRequest);
       const requestIdHex2 = toHex(requestId2);
-      const responsePromise2 = this._registerPendingRequest(
+      const { promise: responsePromise2, entry: entry2 } = this._registerPendingRequest(
         requestIdHex2,
         path,
         timeout,
@@ -5232,7 +5575,19 @@ var Link = class _Link extends EventTarget {
           });
         });
       }
-      await resource.advertise();
+      try {
+        await Promise.race([resource.advertise(), entry2.settledSignal]);
+      } catch (err) {
+        this._discardPendingRequest(requestIdHex2);
+        throw err;
+      }
+      if (entry2.settledQuietly) {
+        throw (
+          /** @type {Error} */
+          entry2.settleError
+        );
+      }
+      entry2.handedOut = true;
       return responsePromise2;
     }
     const reqPacket = new Packet({
@@ -5245,44 +5600,137 @@ var Link = class _Link extends EventTarget {
     const outbound = await this._prepareOutboundPacket(reqPacket);
     const requestId = await Identity.truncatedHash(outbound.getHashablePart());
     const requestIdHex = toHex(requestId);
-    const responsePromise = this._registerPendingRequest(
+    const { promise: responsePromise, entry } = this._registerPendingRequest(
       requestIdHex,
       path,
       timeout,
       options.onMetadata,
       options.onProgress
     );
-    await this.transport.sendPacket(outbound);
+    try {
+      await Promise.race([
+        this.transport.sendPacket(outbound),
+        entry.settledSignal
+      ]);
+    } catch (err) {
+      this._discardPendingRequest(requestIdHex);
+      throw err;
+    }
+    if (entry.settledQuietly) {
+      throw (
+        /** @type {Error} */
+        entry.settleError
+      );
+    }
+    entry.handedOut = true;
     return responsePromise;
   }
   /**
    * Registers a pending REQUEST entry keyed by hex request_id and returns the
-   * Promise the caller awaits. Registered BEFORE transmit so a same-tick
-   * (loopback) response still finds its entry.
+   * response promise the caller awaits plus the entry itself. Registered
+   * BEFORE transmit so a same-tick (loopback) response still finds its entry.
+   *
+   * The caller must set `entry.handedOut = true` once it returns `promise` to
+   * its caller; until then the entry is settled quietly instead of rejected
+   * (see `_failPendingRequest`) so no rejection is ever created without a
+   * holder.
    * @param {string} requestIdHex
    * @param {string} path
    * @param {number} timeoutMs
    * @param {(metadata: any) => void} [onMetadata]
    * @param {(info: any) => void} [onProgress]
-   * @returns {Promise<any>}
+   * @returns {{ promise: Promise<any>, entry: {resolve: Function, reject: Function, onMetadata: ((metadata: any) => void)|undefined, onProgress: ((info: any) => void)|undefined, timer: ReturnType<typeof setTimeout>, handedOut: boolean, settledQuietly: boolean, settleError: Error|null, settledSignal: Promise<undefined>, signalSettled: ((value: undefined) => void)|undefined}}}
    * @private
    */
   _registerPendingRequest(requestIdHex, path, timeoutMs, onMetadata, onProgress) {
-    return new Promise((resolve, reject) => {
-      const entry = {
-        resolve,
-        reject,
-        onMetadata,
-        onProgress,
-        timer: setTimeout(() => {
-          this.pendingRequests.delete(requestIdHex);
-          reject(
-            new Error(`REQUEST to ${path} timed out after ${timeoutMs}ms`)
-          );
-        }, timeoutMs)
-      };
-      this.pendingRequests.set(requestIdHex, entry);
+    let entryResolve = () => {
+    };
+    let entryReject = () => {
+    };
+    const promise = new Promise((resolve, reject) => {
+      entryResolve = resolve;
+      entryReject = reject;
     });
+    let signalSettled = () => {
+    };
+    const settledSignal = new Promise((resolve) => {
+      signalSettled = resolve;
+    });
+    const entry = {
+      resolve: entryResolve,
+      reject: entryReject,
+      onMetadata,
+      onProgress,
+      handedOut: false,
+      settledQuietly: false,
+      settleError: null,
+      settledSignal,
+      signalSettled,
+      timer: setTimeout(() => {
+        const timeoutError = new Error(
+          `REQUEST to ${path} timed out after ${timeoutMs}ms`
+        );
+        this._failPendingRequest(requestIdHex, timeoutError);
+      }, timeoutMs)
+    };
+    this.pendingRequests.set(requestIdHex, entry);
+    return { promise, entry };
+  }
+  /**
+   * Settles and removes a pending REQUEST entry with an error.
+   *
+   * When the response promise has been handed out to a caller, it is rejected
+   * with `error` (the caller observes the failure). When it has NOT —
+   * `request()` is still awaiting the transmit, so nobody holds the promise —
+   * rejecting it would surface as an unhandled rejection and crash the
+   * process under Node's default `--unhandled-rejections=throw`. The entry is
+   * then settled quietly instead, and `error` is recorded so `request()` can
+   * rethrow it to the caller once the transmit settles.
+   * @param {string} requestIdHex
+   * @param {Error} error
+   * @returns {void}
+   * @private
+   */
+  _failPendingRequest(requestIdHex, error) {
+    const entry = this.pendingRequests.get(requestIdHex);
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    this.pendingRequests.delete(requestIdHex);
+    for (const resource of [...this.incomingResources.values()]) {
+      if (resource.isResponse && resource.requestId && toHex(resource.requestId) === requestIdHex) {
+        resource.cancel().catch(() => {
+        });
+      }
+    }
+    entry.signalSettled?.(void 0);
+    if (entry.handedOut) {
+      entry.reject(error);
+    } else {
+      entry.settledQuietly = true;
+      entry.settleError = error;
+      entry.resolve(void 0);
+    }
+  }
+  /**
+   * Removes a pending REQUEST entry after a synchronous `request()` failure
+   * (e.g. the transport refusing to send because the link is gone). The entry
+   * was registered before transmit so a same-tick loopback response finds it;
+   * if the transmit itself throws, the caller gets the thrown error and never
+   * sees `responsePromise`, so the entry's timeout timer would later reject a
+   * promise nobody holds — an unhandled rejection that crashes the process
+   * (Node's default `--unhandled-rejections=throw`). The promise is settled
+   * with `undefined` (never observed) rather than rejected for that reason.
+   * @param {string} requestIdHex
+   * @returns {void}
+   * @private
+   */
+  _discardPendingRequest(requestIdHex) {
+    const entry = this.pendingRequests.get(requestIdHex);
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    this.pendingRequests.delete(requestIdHex);
+    entry.signalSettled?.(void 0);
+    entry.resolve(void 0);
   }
   /**
    * Default REQUEST response timeout (PROTOCOL-SPEC.md §11.5):
@@ -5414,7 +5862,12 @@ var Link = class _Link extends EventTarget {
         data,
         requestId,
         this.remoteIdentity ?? null,
-        requestTime
+        requestTime,
+        // The link the REQUEST arrived on (Python's link_id) — lets
+        // destination-scoped services mark the link, e.g. an LXMF
+        // propagation node flagging a peer-sync transfer for its
+        // inbound-sync admission count.
+        this
       );
     } catch (err) {
       log(
@@ -5553,6 +6006,7 @@ var Link = class _Link extends EventTarget {
       clearTimeout(entry.timer);
       this.pendingRequests.delete(toHex(requestId2));
       if (entry.onMetadata) entry.onMetadata(resource.metadata);
+      entry.signalSettled?.(void 0);
       entry.resolve(resource.data);
       return;
     }
@@ -5609,6 +6063,7 @@ var Link = class _Link extends EventTarget {
     }
     clearTimeout(entry.timer);
     this.pendingRequests.delete(toHex(requestId));
+    entry.signalSettled?.(void 0);
     entry.resolve(response);
   }
   /**
@@ -5641,10 +6096,8 @@ var Link = class _Link extends EventTarget {
    * @private
    */
   _rejectPendingRequests(reason) {
-    for (const [id, entry] of this.pendingRequests) {
-      clearTimeout(entry.timer);
-      this.pendingRequests.delete(id);
-      entry.reject(new Error(reason));
+    for (const [id] of this.pendingRequests) {
+      this._failPendingRequest(id, new Error(reason));
     }
   }
   // -----------------------------------------------------------------------
@@ -5760,12 +6213,7 @@ var Link = class _Link extends EventTarget {
       this.failedSplitResources.add(key);
       log("Link", `Split resource ${key} failed: ${err}`, LogLevel.ERROR);
       if (segment.requestId) {
-        const entry = this.pendingRequests.get(toHex(segment.requestId));
-        if (entry) {
-          clearTimeout(entry.timer);
-          this.pendingRequests.delete(toHex(segment.requestId));
-          entry.reject(err);
-        }
+        this._failPendingRequest(toHex(segment.requestId), err);
       }
     });
   }
@@ -5804,9 +6252,14 @@ var Link = class _Link extends EventTarget {
   /**
    * Queues and processes an inbound packet addressed to this link.
    * @param {Packet} packet
+   * @param {import("../interfaces/base.js").Interface | null} [receivingInterface] -
+   *   Interface the packet arrived on. On the initiator side the LRPROOF's
+   *   arrival interface becomes {@link Link.attachedInterface} (the reference
+   *   sets `attached_interface` at proof validation), pinning the return
+   *   path for the rest of the link's lifetime.
    */
-  async receive(packet) {
-    this._rxQueue = this._rxQueue.then(() => this._processPacket(packet)).catch((err) => {
+  async receive(packet, receivingInterface = null) {
+    this._rxQueue = this._rxQueue.then(() => this._processPacket(packet, receivingInterface)).catch((err) => {
       log("Link", `Error processing packet: ${err}`, LogLevel.ERROR);
     });
     await this._rxQueue;
@@ -5815,9 +6268,10 @@ var Link = class _Link extends EventTarget {
    * Handles a single inbound packet after handshake completion: verifies
    * proofs, decrypts Token-encrypted packets, and dispatches by context.
    * @param {Packet} packet
+   * @param {import("../interfaces/base.js").Interface | null} [receivingInterface]
    * @private
    */
-  async _processPacket(packet) {
+  async _processPacket(packet, receivingInterface = null) {
     log(
       "Link",
       `Processing ${getEnumName(PacketType, packet.packetType)} packet (ctx ${getEnumName(ContextType, packet.contextByte)}) for link ${toHex(this.linkId)}`,
@@ -5825,7 +6279,7 @@ var Link = class _Link extends EventTarget {
     );
     this.lastInboundTime = Date.now();
     if (packet.packetType === PacketType.PROOF && packet.contextByte === ContextType.LRPROOF) {
-      if (this.initiator) await this._handleLRPROOF(packet);
+      if (this.initiator) await this._handleLRPROOF(packet, receivingInterface);
       return;
     }
     const unencrypted = isLinkPacketUnencrypted(
@@ -6005,6 +6459,20 @@ var Link = class _Link extends EventTarget {
   _watchdogJob() {
     log("Link", `Watchdog tick for ${toHex(this.linkId)}`, LogLevel.EXTREME);
     const now = Date.now();
+    for (const resource of this.outgoingResources.values()) {
+      try {
+        resource._watchdogTick?.(now);
+      } catch (e) {
+        log("Link", `Resource watchdog tick failed: ${e}`, LogLevel.ERROR);
+      }
+    }
+    for (const resource of this.incomingResources.values()) {
+      try {
+        resource._watchdogTick?.(now);
+      } catch (e) {
+        log("Link", `Resource watchdog tick failed: ${e}`, LogLevel.ERROR);
+      }
+    }
     if (now >= this.lastInboundTime + this.staleTime * 1e3) {
       this._sendLinkClose().catch(
         (e) => log("Link", `Stale teardown send failed: ${e}`, LogLevel.ERROR)
@@ -6830,7 +7298,7 @@ var Destination = class _Destination extends EventTarget {
       case PacketType.LINKREQUEST:
         this.dispatchEvent(
           new CustomEvent("link_request", {
-            detail: { packet, transport: receivingInterface }
+            detail: { packet, receivingInterface }
           })
         );
         break;
@@ -6839,10 +7307,11 @@ var Destination = class _Destination extends EventTarget {
   /**
    * Accepts an incoming LINKREQUEST and returns the established {@link Link}.
    * @param {import('./packet.js').Packet} packet
+   * @param {import('../interfaces/base.js').Interface | null} [receivingInterface]
    * @returns {Promise<import("../transport/link.js").Link>}
    */
-  async acceptLink(packet) {
-    return await this.respondToLinkRequest(packet);
+  async acceptLink(packet, receivingInterface = null) {
+    return await this.respondToLinkRequest(packet, receivingInterface);
   }
   /**
    * Registers a server-side REQUEST handler for a path string
@@ -6974,9 +7443,13 @@ var Destination = class _Destination extends EventTarget {
    * LRPROOF, and registers the link with the transport.
    *
    * @param {import('../core/packet.js').Packet} requestPacket
+   * @param {import('../interfaces/base.js').Interface | null} [receivingInterface] -
+   *   Interface the LINKREQUEST arrived on; captured as the link's return
+   *   path (`Link.attachedInterface`). Callers should pass what they got from
+   *   the `link_request` event (its `detail.receivingInterface` field).
    * @returns {Promise<import('../transport/link.js').Link>}
    */
-  async respondToLinkRequest(requestPacket) {
+  async respondToLinkRequest(requestPacket, receivingInterface = null) {
     if (!this.interfaceLayer || !this.interfaceLayer.transport) {
       throw new Error(
         "Destination not bound to an RNS instance with a transport."
@@ -6985,7 +7458,8 @@ var Destination = class _Destination extends EventTarget {
     const link = await Link.accept(
       this,
       this.interfaceLayer.transport,
-      requestPacket
+      requestPacket,
+      receivingInterface
     );
     log(
       "Destination",
@@ -7853,7 +8327,14 @@ var WORKBLOCK_EXPAND_ROUNDS = 3e3;
 var WORKBLOCK_EXPAND_ROUNDS_PN = 1e3;
 var WORKBLOCK_EXPAND_ROUNDS_PEERING = 25;
 var STAMP_SIZE = 32;
-async function fullHash(data) {
+function bigIntFromBytesBE(bytes) {
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return hex.length === 0 ? 0n : BigInt(`0x${hex}`);
+}
+async function webCryptoFullHash(data) {
   const digest = await crypto.subtle.digest(
     "SHA-256",
     /** @type {any} */
@@ -7861,14 +8342,14 @@ async function fullHash(data) {
   );
   return new Uint8Array(digest);
 }
-async function stampWorkblock(material, expandRounds = WORKBLOCK_EXPAND_ROUNDS) {
+async function webCryptoStampWorkblock(material, expandRounds = WORKBLOCK_EXPAND_ROUNDS) {
   const chunks = [];
   for (let n = 0; n < expandRounds; n++) {
     const counter = msgpackUint(n);
     const saltInput = new Uint8Array(material.length + counter.length);
     saltInput.set(material, 0);
     saltInput.set(counter, material.length);
-    const salt = await fullHash(saltInput);
+    const salt = await webCryptoFullHash(saltInput);
     const derived = await hkdf(material, salt, new Uint8Array(0), 256);
     chunks.push(derived);
   }
@@ -7882,20 +8363,13 @@ async function stampWorkblock(material, expandRounds = WORKBLOCK_EXPAND_ROUNDS) 
   }
   return workblock;
 }
-function bigIntFromBytesBE(bytes) {
-  let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += bytes[i].toString(16).padStart(2, "0");
-  }
-  return hex.length === 0 ? 0n : BigInt(`0x${hex}`);
-}
-async function stampValue(workblock, stamp) {
+async function webCryptoStampValue(workblock, stamp) {
   const material = new Uint8Array(workblock.length + stamp.length);
   material.set(workblock, 0);
   material.set(stamp, workblock.length);
-  const hash = await fullHash(material);
-  let value = 0;
+  const hash = await webCryptoFullHash(material);
   const bits = 256;
+  let value = 0;
   let i = bigIntFromBytesBE(hash);
   const highBit = 1n << BigInt(bits - 1);
   while ((i & highBit) === 0n) {
@@ -7904,24 +8378,69 @@ async function stampValue(workblock, stamp) {
   }
   return value;
 }
-async function stampValid(stamp, targetCost, workblock) {
+async function webCryptoStampValid(stamp, targetCost, workblock) {
   const material = new Uint8Array(workblock.length + stamp.length);
   material.set(workblock, 0);
   material.set(stamp, workblock.length);
-  const result = await fullHash(material);
+  const result = await webCryptoFullHash(material);
   const target = 1n << BigInt(256 - targetCost);
   return bigIntFromBytesBE(result) <= target;
 }
-async function generateStamp(messageId, stampCost, expandRounds = WORKBLOCK_EXPAND_ROUNDS) {
-  const workblock = await stampWorkblock(messageId, expandRounds);
+async function webCryptoGenerateStamp(messageId, stampCost, expandRounds = WORKBLOCK_EXPAND_ROUNDS) {
+  const workblock = await webCryptoStampWorkblock(messageId, expandRounds);
   const stamp = new Uint8Array(STAMP_SIZE);
   while (true) {
     crypto.getRandomValues(stamp);
-    if (await stampValid(stamp, stampCost, workblock)) {
-      const value = await stampValue(workblock, stamp);
+    if (await webCryptoStampValid(stamp, stampCost, workblock)) {
+      const value = await webCryptoStampValue(workblock, stamp);
       return [stamp, value];
     }
   }
+}
+var webCryptoEngine = {
+  fullHash: webCryptoFullHash,
+  stampWorkblock: webCryptoStampWorkblock,
+  stampValid: webCryptoStampValid,
+  stampValue: webCryptoStampValue,
+  generateStamp: webCryptoGenerateStamp
+};
+var engine = webCryptoEngine;
+function getStamper() {
+  return engine;
+}
+function setStamper(next) {
+  if (next === null) {
+    engine = webCryptoEngine;
+    return;
+  }
+  if (typeof next !== "object" || next === null || typeof next.fullHash !== "function" || typeof next.stampWorkblock !== "function" || typeof next.stampValid !== "function" || typeof next.stampValue !== "function" || typeof next.generateStamp !== "function") {
+    throw new TypeError(
+      "Stamper engine must provide fullHash, stampWorkblock, stampValid, stampValue and generateStamp functions"
+    );
+  }
+  engine = next;
+}
+function fullHash(data) {
+  return engine.fullHash(data);
+}
+function stampWorkblock(material, expandRounds) {
+  return engine.stampWorkblock(
+    material,
+    expandRounds === void 0 ? WORKBLOCK_EXPAND_ROUNDS : expandRounds
+  );
+}
+function stampValue(workblock, stamp) {
+  return engine.stampValue(workblock, stamp);
+}
+function stampValid(stamp, targetCost, workblock) {
+  return engine.stampValid(stamp, targetCost, workblock);
+}
+function generateStamp(messageId, stampCost, expandRounds) {
+  return engine.generateStamp(
+    messageId,
+    stampCost,
+    expandRounds === void 0 ? WORKBLOCK_EXPAND_ROUNDS : expandRounds
+  );
 }
 
 // node_modules/@reticulum/core/src/transport/discovery.js
@@ -9023,7 +9542,9 @@ var TransportCore = class _TransportCore extends EventTarget {
     refreshPacketWriter();
     iface.addEventListener("connected", refreshPacketWriter);
     iface.addEventListener("packet", (event) => {
-      return this._routeIncomingPacket(event.detail.packet, iface);
+      this._routeIncomingPacket(event.detail.packet, iface).catch(
+        (err) => log("Transport", `Ingress processing failed: ${err}`, LogLevel.ERROR)
+      );
     });
     iface.addEventListener("closed", () => this.removeInterface(iface));
     iface.addEventListener(
@@ -9329,7 +9850,7 @@ var TransportCore = class _TransportCore extends EventTarget {
     if (this.activeLinks.has(destHex)) {
       log("Transport", `Packet to LINK ${destHex}`);
       const link = this.activeLinks.get(destHex);
-      await link.receive(packet);
+      await link.receive(packet, receivingInterface);
       return;
     }
     log(
@@ -9739,8 +10260,17 @@ var TransportCore = class _TransportCore extends EventTarget {
       this.routingTable.expireRoute(packet.destinationHash);
       route = void 0;
     }
+    const egress = route?.interface ?? this.defaultInterface;
+    if (route && !egress?._packetWriter) {
+      log(
+        "Transport",
+        `Expiring path to ${destHex}: no usable egress interface`,
+        LogLevel.DEBUG
+      );
+      this.routingTable.expireRoute(packet.destinationHash);
+      route = void 0;
+    }
     if (route) {
-      const iface = route.interface ?? this.defaultInterface;
       if (route.hops > 1 && packet.headerType === HeaderType.HEADER_1) {
         const injected = new Packet({
           headerType: HeaderType.HEADER_2,
@@ -9754,11 +10284,16 @@ var TransportCore = class _TransportCore extends EventTarget {
           payload: packet.payload,
           transportId: route.nextHop
         });
-        await this._transmit(iface, injected);
+        await this._transmit(egress, injected);
       } else {
-        await this._transmit(iface, packet);
+        await this._transmit(egress, packet);
       }
       route.timestamp = Date.now();
+    } else if (packet.destinationType === DestType.LINK && this.activeLinks.get(destHex)?.attachedInterface) {
+      await this._transmit(
+        this.activeLinks.get(destHex).attachedInterface,
+        packet
+      );
     } else if (this.defaultInterface && this.defaultInterface._packetWriter) {
       await this.defaultInterface._packetWriter.write(packet);
     } else {
@@ -10015,7 +10550,17 @@ var TransportCore = class _TransportCore extends EventTarget {
   async _sweepTick() {
     for (const iface of this.interfaces) {
       if (typeof iface.processHeldAnnounces !== "function") continue;
-      const packet = iface.processHeldAnnounces();
+      let packet = null;
+      try {
+        packet = iface.processHeldAnnounces();
+      } catch (e) {
+        log(
+          "Transport",
+          `Held-announce processing failed on ${iface.name}: ${e}`,
+          LogLevel.ERROR
+        );
+        continue;
+      }
       if (packet) {
         log(
           "Transport",
@@ -10067,7 +10612,9 @@ var TransportCore = class _TransportCore extends EventTarget {
   _ensureSweep() {
     if (this._sweepTimer) return;
     const timer = setInterval(() => {
-      this._sweepTick();
+      this._sweepTick().catch(
+        (err) => log("Transport", `Maintenance sweep failed: ${err}`, LogLevel.ERROR)
+      );
     }, 5e3);
     timer?.unref?.();
     this._sweepTimer = timer;
@@ -12422,9 +12969,14 @@ var WebRTCSignaling = class extends EventTarget {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await waitForIceGathering(pc, this.iceGatheringTimeoutMs);
-    const answerPromise = this._receiveSDP(link, SDP_TYPE_ANSWER);
-    await this._sendSDP(link, SDP_TYPE_OFFER, pc.localDescription.sdp);
-    const answerSdp = await answerPromise;
+    const answer = this._receiveSDP(link, SDP_TYPE_ANSWER);
+    try {
+      await this._sendSDP(link, SDP_TYPE_OFFER, pc.localDescription.sdp);
+    } catch (err) {
+      answer.cancel();
+      throw err;
+    }
+    const answerSdp = await answer.promise;
     await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
     await waitForChannelOpen(channel, this.channelOpenTimeoutMs);
     return this._adoptChannel(channel, pc, peerDestinationHash, link);
@@ -12444,7 +12996,10 @@ var WebRTCSignaling = class extends EventTarget {
     this._requirePeerConnectionFactory();
     const packet = event.detail?.packet;
     if (!packet || !this.destination) return;
-    const link = await this.destination.acceptLink(packet);
+    const link = await this.destination.acceptLink(
+      packet,
+      event.detail?.receivingInterface ?? null
+    );
     link.maxResourceSize = MAX_SDP_SIZE;
     link.bz2 = void 0;
     const onResource = (resEvent) => {
@@ -12537,61 +13092,84 @@ var WebRTCSignaling = class extends EventTarget {
    * Awaits a single SDP Resource of the expected type on the link. Registered
    * before the matching SDP is sent so a loopback/same-tick responder can't
    * drop its resource before the listener attaches.
+   *
+   * Returns the waiter split into its `promise` and a `cancel()` settle so a
+   * caller whose send fails after arming (see {@link WebRTCSignaling#_connectOnce})
+   * can settle the waiter instead of leaving its timeout to reject a promise
+   * nobody holds — an unhandled rejection that crashes the process.
    * @param {import("../transport/link.js").Link} link
    * @param {number} expectedType
-   * @returns {Promise<string>} The SDP string.
+   * @returns {{ promise: Promise<string>, cancel: () => void }} `cancel()` is
+   *   idempotent; after it runs the promise resolves (never rejects) and the
+   *   timeout timer and resource listener are released.
    * @private
    */
   _receiveSDP(link, expectedType) {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const onResource = (resEvent) => {
-        const resource = resEvent.detail?.resource;
-        if (!resource || settled) return;
-        resource.whenComplete().then((res) => {
-          if (settled) return;
-          const parsed = this._parseSDP(
-            /** @type {Uint8Array} */
-            res.data
+    let settled = false;
+    let settleResolve;
+    let settleReject;
+    const promise = new Promise((resolve, reject) => {
+      settleResolve = resolve;
+      settleReject = reject;
+    });
+    const onResource = (resEvent) => {
+      const resource = resEvent.detail?.resource;
+      if (!resource || settled) return;
+      resource.whenComplete().then((res) => {
+        if (settled) return;
+        const parsed = this._parseSDP(
+          /** @type {Uint8Array} */
+          res.data
+        );
+        if (!parsed) {
+          settled = true;
+          cleanup();
+          settleReject(new Error("Received malformed SDP resource"));
+          return;
+        }
+        if (parsed.type !== expectedType) {
+          settled = true;
+          cleanup();
+          settleReject(
+            new Error(
+              `Expected SDP type ${expectedType}, got ${parsed.type}`
+            )
           );
-          if (!parsed) {
-            settled = true;
-            cleanup();
-            reject(new Error("Received malformed SDP resource"));
-            return;
-          }
-          if (parsed.type !== expectedType) {
-            settled = true;
-            cleanup();
-            reject(
-              new Error(
-                `Expected SDP type ${expectedType}, got ${parsed.type}`
-              )
-            );
-            return;
-          }
-          settled = true;
-          cleanup();
-          resolve(parsed.sdp);
-        }).catch((e) => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(e);
-        });
-      };
-      const cleanup = () => {
-        link.removeEventListener("resource", onResource);
-        clearTimeout(timer);
-      };
-      const timer = setTimeout(() => {
+          return;
+        }
+        settled = true;
+        cleanup();
+        settleResolve(parsed.sdp);
+      }).catch((e) => {
         if (settled) return;
         settled = true;
         cleanup();
-        reject(new Error("Timed out waiting for SDP answer"));
-      }, this.answerTimeoutMs);
-      link.addEventListener("resource", onResource);
-    });
+        settleReject(e);
+      });
+    };
+    const cleanup = () => {
+      link.removeEventListener("resource", onResource);
+      clearTimeout(timer);
+    };
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      settleReject(new Error("Timed out waiting for SDP answer"));
+    }, this.answerTimeoutMs);
+    link.addEventListener("resource", onResource);
+    return {
+      promise,
+      cancel: () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        settleResolve(
+          /** @type {any} */
+          void 0
+        );
+      }
+    };
   }
   /**
    * Parses a framed SDP Resource payload.
@@ -13097,7 +13675,15 @@ var WebSocketClientInterface = class extends Interface {
           }
           const bytes = new Uint8Array(event.data);
           if (framing === "kiss") {
-            controller.enqueue(bytes);
+            try {
+              controller.enqueue(bytes);
+            } catch (e) {
+              log(
+                "WebSocket",
+                `Dropping inbound frame: inbound stream no longer accepting (${e})`,
+                LogLevel.DEBUG
+              );
+            }
             return;
           }
           try {
@@ -13294,9 +13880,11 @@ export {
   generateDiscoveryStamp,
   generateStamp,
   getLogLevel,
+  getStamper,
   isHostname,
   isIpAddress,
   log,
+  msgpackUint,
   openDuplex,
   openReadable,
   openWritable,
@@ -13304,6 +13892,7 @@ export {
   parseLogLevel,
   sanitizeName as sanitizeDiscoveryName,
   setLogLevel,
+  setStamper,
   stampValid,
   stampValue,
   stampWorkblock,
