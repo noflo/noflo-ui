@@ -461,39 +461,58 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           justify-content: center;
           font-size: 20px;
         }
+        /* the editor wears the same surface as the threads: opaque panel
+           background, hairline border, the same radius and padding */
         .appearance-editor {
+          margin-top: 6px;
+          padding: 8px 10px;
+          background: var(--ui-bg, rgb(20, 27, 35));
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 6px;
           display: flex;
-          gap: 6px;
+          gap: 10px;
           align-items: center;
+          flex-wrap: wrap;
           font-size: 10px;
           color: var(--ui-muted, #889);
-          padding: 6px 0;
         }
-        .appearance-editor input[type="color"] {
-          width: 24px;
-          height: 20px;
-          padding: 0;
-          border: 1px solid var(--ui-border, #333);
-          background: transparent;
-          cursor: pointer;
+        .appearance-editor label {
+          display: flex;
+          gap: 4px;
+          align-items: center;
         }
-        .appearance-editor input[data-appearance-icon] {
-          width: 40px;
-          font-size: 14px;
+        .appearance-editor input[type="text"] {
+          width: 44px;
+          font-size: 16px;
           text-align: center;
           background: transparent;
-          border: 1px solid var(--ui-border, #333);
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
           color: inherit;
-          border-radius: 3px;
+          border-radius: 4px;
+          padding: 2px 4px;
+        }
+        .appearance-editor input[type="color"] {
+          width: 28px;
+          height: 24px;
+          padding: 0;
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 4px;
+          background: transparent;
+          cursor: pointer;
         }
         .appearance-editor button {
           font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
           background: transparent;
-          border: 1px solid var(--ui-border, #333);
-          color: inherit;
-          border-radius: 3px;
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          color: var(--ui-accent, rgb(90, 200, 250));
+          border-radius: 4px;
           cursor: pointer;
-          padding: 2px 6px;
+          padding: 3px 8px;
+        }
+        .appearance-editor button[data-appearance-cancel] {
+          color: var(--ui-muted, #889);
         }
         /* the agent kind chip rides the activity semantic (an agent is an
            active participant); presence itself rides the ring color */
@@ -613,7 +632,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       ${
         this._editingAppearance
           ? `<div class="appearance-editor">
-        <label>Emoji <input data-appearance-icon value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}" maxlength="8" placeholder="🙂"></label>
+        <label>Emoji <input data-appearance-icon type="text" value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}" maxlength="8" placeholder="🙂"></label>
         <label>Text <input data-appearance-fg type="color" value="${escapeHtml(this._selfAppearanceDraft?.fgHex ?? "#ffffff")}"></label>
         <label>Ring <input data-appearance-bg type="color" value="${escapeHtml(this._selfAppearanceDraft?.bgHex ?? "#1a237e")}"></label>
         <button data-appearance-apply>Apply</button>
