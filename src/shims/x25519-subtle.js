@@ -84,6 +84,38 @@ export async function hasNativeX25519() {
 }
 
 /**
+ * Exports a polyfill-managed X25519 key (the switch's exportKey case,
+ * factored out so the intercept's key-kind routing can reach it directly).
+ *
+ * @param {any[]} args The exportKey arguments: (format, key).
+ * @returns {Promise<any>}
+ */
+async function exportPolyfillKey(args) {
+  const key = asX25519Key(args[1]);
+  if (!key) throw new Error("X25519 polyfill: no key to export");
+  if (!key.extractable) {
+    throw new DOMException("key is not extractable", "InvalidAccessError");
+  }
+  // "jwk" returns a proper JWK object: the identity's persistence path
+  // (work document #21's reload round-trip) reads `jwk.x` — raw bytes here
+  // made the reload read undefined.length
+  if (args[0] === "jwk") {
+    return Promise.resolve({
+      kty: "OKP",
+      crv: "X25519",
+      x: bytesToBase64Url(key.publicBytes),
+      key_ops: [...key.usages],
+      ext: key.extractable,
+    });
+  }
+  const bytes = args[0] === "pkcs8" ? key.privateBytes : key.publicBytes;
+  if (!bytes) {
+    throw new Error("X25519 polyfill: no key material to export");
+  }
+  return Promise.resolve(bytes.slice());
+}
+
+/**
  * Installs the X25519 polyfill by shadowing `crypto.subtle` with a proxy.
  * Only X25519 operations are intercepted; all other algorithms delegate to
  * the native implementation. Does nothing when the runtime already supports
@@ -103,7 +135,18 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
     // the first argument is the algorithm; for importKey it is the format
     // with the algorithm second; for exportKey the format is first and the
     // key second.
+    //
+    // Key-taking operations route by the KEY's kind, not the global
+    // support flag: a polyfill key object must take the polyfill path even
+    // after native support is confirmed — the native implementation cannot
+    // operate on polyfill key objects, and keys created before the boot
+    // probe completes are polyfill objects on fully-native runtimes too
+    // (the bridge loaded its identity before the probe resolved; the
+    // flag then flipped and native exportKey crashed on the polyfill
+    // object — the link responder's "not of type CryptoKey", work
+    // document #67).
     let isX25519 = false;
+    let polyfillKey = false;
     if (
       operation === "generateKey" ||
       operation === "deriveBits" ||
@@ -115,13 +158,31 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
       // sits at index 2, not 1
       isX25519 = args[2]?.name === "X25519";
     } else if (operation === "exportKey") {
-      isX25519 = Boolean(asX25519Key(args[1]));
+      // Pure key-kind routing: a polyfill key takes the polyfill export
+      // (the native implementation cannot read it); anything else is a
+      // native CryptoKey by construction — native export works regardless
+      // of the probe state
+      if (asX25519Key(algorithmOrKey)) {
+        return exportPolyfillKey(args);
+      }
+      return /** @type {any} */ (target)[operation](...args);
+    }
+    if (operation === "deriveBits" || operation === "deriveKey") {
+      polyfillKey = Boolean(asX25519Key(algorithmOrKey));
+      isX25519 = isX25519 || polyfillKey;
     }
     if (!isX25519) {
       return /** @type {any} */ (target)[operation](...args);
     }
-    if (nativeX25519Supported === true) {
-      // Full native support confirmed after boot: use the real thing
+    if (!polyfillKey && nativeX25519Supported !== null) {
+      // The probe resolved and the key is a native CryptoKey (or the
+      // runtime lacks X25519 and no native key can exist): use the real
+      // thing
+      return /** @type {any} */ (target)[operation](...args);
+    }
+    if (!polyfillKey) {
+      // Probe still in flight, but the key is a native CryptoKey — native
+      // support demonstrably exists
       return /** @type {any} */ (target)[operation](...args);
     }
 
@@ -187,33 +248,8 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
           usages,
         });
       }
-      case "exportKey": {
-        const key = asX25519Key(args[1]);
-        if (!key) throw new Error("X25519 polyfill: no key to export");
-        if (!key.extractable) {
-          throw new DOMException(
-            "key is not extractable",
-            "InvalidAccessError",
-          );
-        }
-        // "jwk" returns a proper JWK object: the identity's persistence
-        // path (work document #21's reload round-trip) reads `jwk.x` —
-        // raw bytes here made the reload read undefined.length
-        if (args[0] === "jwk") {
-          return Promise.resolve({
-            kty: "OKP",
-            crv: "X25519",
-            x: bytesToBase64Url(key.publicBytes),
-            key_ops: [...key.usages],
-            ext: key.extractable,
-          });
-        }
-        const bytes = args[0] === "pkcs8" ? key.privateBytes : key.publicBytes;
-        if (!bytes) {
-          throw new Error("X25519 polyfill: no key material to export");
-        }
-        return Promise.resolve(bytes.slice());
-      }
+      case "exportKey":
+        return exportPolyfillKey(args);
       case "deriveBits": {
         const peerPublic = formatOrAlgorithm?.public;
         const peerKey = asX25519Key(peerPublic);
