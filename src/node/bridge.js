@@ -524,34 +524,39 @@ async function main() {
     // The mesh start is async: let the transport come up before the knock
     await new Promise((resolve) => setTimeout(resolve, 1500));
     if (config.seedInvite) {
-      // Seed invites join the active project (the knock is idempotent:
-      // an already-granted project re-answers the handoff)
-      engine.handle({
-        type: "MESH",
-        command: "join",
-        payload: { invite: config.seedInvite },
-      });
+      /**
+       * Joins — but never re-knocks a project this device is already
+       * bound to: the binding + grant persist across restarts, and a
+       * bound device knocking again would make the host surface a join
+       * request for its own participant (the live finding behind the
+       * duplicate join requests on restart).
+       *
+       * @returns {Promise<void>}
+       */
+      const attemptJoin = async () => {
+        try {
+          const binding = await meshStorage.get(`dacar-node:${projectId}`);
+          if (binding) {
+            return;
+          }
+        } catch {
+          // A storage read failure must not skip the join: knock
+        }
+        console.log("bridge  seed join: no binding yet — knocking");
+        engine.handle({
+          type: "MESH",
+          command: "join",
+          payload: { invite: config.seedInvite },
+        });
+      };
+      await attemptJoin();
       // The seed join retries until the welcome handoff lands: an
       // always-on daemon must recover from "the host was offline at boot"
       // without an operator, and a missed host announce starves the first
       // knock's path request. Re-knocking is safe — the host remembers
       // its decision — and the binding's arrival is the success signal
       const joinRetry = setInterval(() => {
-        meshStorage
-          .get(`dacar-node:${projectId}`)
-          .then((binding) => {
-            if (binding) {
-              clearInterval(joinRetry);
-              return;
-            }
-            console.log("bridge  seed join: no binding yet — re-knocking");
-            engine.handle({
-              type: "MESH",
-              command: "join",
-              payload: { invite: config.seedInvite },
-            });
-          })
-          .catch(() => {});
+        attemptJoin().catch(() => {});
       }, 120_000);
       if (joinRetry.unref) joinRetry.unref();
     }
