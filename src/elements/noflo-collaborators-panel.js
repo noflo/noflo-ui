@@ -90,7 +90,9 @@ export function identiconSvg(hashHex, size = 36) {
  * @property {string} identityHash The 32-hex identity hash.
  * @property {string} [name] The announced display name (#38), when known.
  * @property {string} [presence] The presence state driving the border.
- *   The presence state driving the border.
+ * @property {"agent" | "human"} [kind] What the participant is (work
+ *   document #61: agents are participants distinguished by kind) — the
+ *   agent's status line reads AGENT instead of the presence word.
  * @property {string} [role] The Dacar role, when known.
  * @property {boolean} [self] True for the user's own avatar.
  */
@@ -273,11 +275,15 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       const presence = c.presence ?? "offline";
       const thread = this._threads.get(c.identityHash);
       const unread = thread?.unread ?? 0;
+      const status =
+        c.kind === "agent"
+          ? `<span class="avatar-status agent ${presence}">${presence === "online" ? "AGENT" : "AGENT · OFFLINE"}</span>`
+          : `<span class="avatar-status ${presence}">${presence}</span>`;
       return `<div class="avatar ${presence}" data-identity="${escapeHtml(c.identityHash)}" title="${escapeHtml(c.name ?? c.identityHash)}">
         <div class="avatar-ring">${identiconSvg(c.identityHash, 36)}</div>
         ${unread > 0 ? `<span class="unread">${unread}</span>` : ""}
         <span class="avatar-name ${c.self ? "" : "editable"}" data-alias-for="${escapeHtml(c.identityHash)}" title="${c.self ? "" : "Click to rename"}">${escapeHtml(c.name ?? c.identityHash.slice(0, 8))}</span>
-        <span class="avatar-status ${presence}">${presence}</span>
+        ${status}
       </div>`;
     };
 
@@ -375,6 +381,10 @@ export class NofloCollaboratorsPanel extends HTMLElement {
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
+        /* the agent marker rides the activity semantic (an agent is an
+           active participant); offline agents keep the muted word */
+        .avatar-status.agent { color: var(--ui-age-activity, #4aa3df); font-weight: 600; }
+        .avatar-status.agent.offline { color: var(--ui-muted, #889); font-weight: 400; }
         .avatar-status.active { color: var(--ui-age-activity, #4aa3df); }
         .avatar-status.online { color: var(--ui-age-calm, #7ee3a0); }
         .avatar-status.offline { color: var(--ui-muted, #889); }

@@ -1746,6 +1746,7 @@ function refreshSyncPanel() {
       roster.push({
         identityHash: agentHash,
         name: "pi",
+        kind: "agent",
         presence:
           peerReachability[agentHash] === "online" ? "online" : "offline",
       });

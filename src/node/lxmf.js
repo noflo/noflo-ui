@@ -142,6 +142,39 @@ export async function startLxmfPlane({
   };
   /** @type {any} */ (lxmf).addEventListener("message", onMessageEvent);
 
+  // ---- The one-shot hello world, delivered when deliverable -------------
+  // The greeting fires once, but boot races the transport: the owner's
+  // identity may not be reachable and no propagation node may be selected
+  // yet. The pending hello retries on exactly the two events that make it
+  // deliverable — an announce making the owner known, or a propagation
+  // node being selected — and never repeats after delivery. This is a
+  // deferred first attempt, not a resend: propagation store-and-forward
+  // is what carries messages to absent recipients
+  /** @type {string | null} */
+  let pendingHello = null;
+  const attemptHello = async () => {
+    if (!pendingHello || !ownerContact) return;
+    const text = pendingHello;
+    try {
+      await sendText(ownerContact, text, { title: "Companion hello" });
+      pendingHello = null;
+      log("companion: hello delivered to the owner");
+    } catch {
+      // Still undeliverable: the retry hooks fire on the next event
+    }
+  };
+  const onPeerLearned = (/** @type {any} */ event) => {
+    const identity = event?.detail?.identity;
+    if (!identity?.identityHash || !ownerContact) return;
+    deriveAspectHash(toHex(identity.identityHash))
+      .then((deliveryHash) => {
+        if (deliveryHash !== ownerContact.toLowerCase()) return;
+        return attemptHello();
+      })
+      .catch(() => {});
+  };
+  /** @type {any} */ (lxmf).addEventListener("peer", onPeerLearned);
+
   // ---- Propagation node discovery (work document #67) ------------------
   // No node runs here. Every announce whose destination hash derives from
   // `lxmf.propagation` on the announcing identity marks a propagation
@@ -169,6 +202,9 @@ export async function startLxmfPlane({
     propagationNodeHex = candidateHex;
     /** @type {any} */ (lxmf).setOutboundPropagationNode(fromHex(candidateHex));
     log(`companion: propagation node ${candidateHex} selected`);
+    // A selected node makes the pending hello deliverable (store-and-
+    // forward): the deferred first attempt fires
+    attemptHello();
   };
   const onAnnounce = (/** @type {any} */ event) => {
     const detail = event?.detail ?? {};
