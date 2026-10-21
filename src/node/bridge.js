@@ -583,6 +583,21 @@ async function main() {
         } catch {
           // A storage read failure must not skip the join: knock
         }
+        // Re-assert the configuration before waiting: the mesh-config echo
+        // is edge-triggered (one per configure), and a listener registered
+        // after the boot's echo would wait on an event that never repeats.
+        // The re-send is idempotent and fires a fresh echo for the
+        // identity confirmation below
+        engine.handle({
+          type: "MESH",
+          command: "configure",
+          payload: {
+            ...meshConfig,
+            enabled: true,
+            joinedViaInvite: true,
+            identity: identityBase64,
+          },
+        });
         // The join must not race the identity switch: wait until the mesh
         // plane confirms it runs the process identity, then knock
         const confirmed = await whenMeshIdentityConfirmed(30_000);

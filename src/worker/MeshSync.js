@@ -1765,6 +1765,11 @@ export async function createMeshSync({
           };
           console.info(`LXMF: agent introduced ${identityKey}`);
           postMessage({ kind: "chat-agent", identityHash: identityKey });
+          // The mapping landed after the last reachability broadcast: the
+          // Glass's map has no entry for the agent's key yet and would
+          // render the agent offline until some unrelated peer event —
+          // re-broadcast the current states under the new key
+          postPeerReachability();
         }
         // The reaction rides first: the peer's processing signal (the
         // bridge's 🤔 on a prompt) is packet proof for the user — the
