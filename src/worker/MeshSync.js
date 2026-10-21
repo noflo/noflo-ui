@@ -2824,10 +2824,18 @@ export async function createMeshSync({
     if (sharedRns) {
       const rns = sharedRns;
       sharedRns = null;
-      await Promise.race([
-        rns.stop(),
-        new Promise((resolve) => setTimeout(resolve, 2_500)),
-      ]).catch(() => {});
+      // A process-owned instance is RELEASED, never stopped: its owner (the
+      // bridge) manages its lifetime, and other planes — the LXMF router,
+      // the hub — ride the same instance. Stopping it here killed every
+      // interface on every rebind, stranding the join's link requests and
+      // the LXMF plane with paths pointing at dead interfaces (work
+      // document #67's lifecycle ownership rule)
+      if (!injectedRns) {
+        await Promise.race([
+          rns.stop(),
+          new Promise((resolve) => setTimeout(resolve, 2_500)),
+        ]).catch(() => {});
+      }
     }
     // Release the wallet's connection so a factory reset's deleteDatabase
     // is never blocked by it
