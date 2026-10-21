@@ -12,6 +12,27 @@
  */
 
 import { emit } from "../events.js";
+import "./noflo-icon-picker.js";
+import icons from "../../vendor/fontawesome-icons.js";
+
+/** Renders an avatar icon monochrome: FontAwesome names render as glyphs
+ * in the foreground color on the background color; emoji characters fall
+ * back to the platform rendering (they carry their own colors).
+ *
+ * @param {string} icon The icon string: an FontAwesome name or an emoji.
+ * @param {number[]} fg The foreground RGB triple.
+ * @param {number[]} bg The background RGB triple.
+ * @returns {string} The avatar icon markup.
+ */
+function faGlyph(icon, fg, bg) {
+  const map = /** @type {any} */ (icons)();
+  const glyph = map[icon];
+  const style = `color: rgb(${fg.join(",")}); background: rgb(${bg.join(",")})`;
+  if (glyph !== undefined) {
+    return `<div class="avatar-glyph" style="${style}"><i class="fa" aria-hidden="true">${glyph}</i></div>`;
+  }
+  return `<div class="avatar-glyph" style="${style}">${escapeHtml(icon)}</div>`;
+}
 
 /**
  * @param {any} value
@@ -352,8 +373,9 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       // distinguished by kind)
       const kindChip =
         c.kind === "agent" ? `<span class="avatar-kind">AGENT</span>` : "";
-      const iconMarkup = c.appearance?.icon
-        ? `<div class="avatar-emoji" style="color: rgb(${c.appearance.fg.join(",")}); background: rgb(${c.appearance.bg.join(",")})">${escapeHtml(c.appearance.icon)}</div>`
+      const appearance = c.appearance;
+      const iconMarkup = appearance?.icon
+        ? faGlyph(appearance.icon, appearance.fg, appearance.bg)
         : identiconSvg(c.identityHash, 36);
       return `<div class="avatar ${presence}" data-identity="${escapeHtml(c.identityHash)}" title="${escapeHtml(c.name ?? c.identityHash)}">
         <div class="avatar-ring">${iconMarkup}</div>
@@ -452,14 +474,19 @@ export class NofloCollaboratorsPanel extends HTMLElement {
         .avatar-name.editable:hover {
           color: var(--ui-accent, rgb(90, 200, 250));
         }
-        .avatar-emoji {
+        .fa {
+          font-family: "Font Awesome 7 Free";
+          font-weight: 900;
+          font-style: normal;
+        }
+        .avatar-glyph {
           width: 100%;
           height: 100%;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 18px;
         }
         /* the editor wears the same surface as the threads: opaque panel
            background, hairline border, the same radius and padding */
@@ -632,7 +659,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
       ${
         this._editingAppearance
           ? `<div class="appearance-editor">
-        <label>Emoji <input data-appearance-icon type="text" value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}" maxlength="8" placeholder="🙂"></label>
+        <noflo-icon-picker data-appearance-picker value="${escapeHtml(this._selfAppearanceDraft?.icon ?? "")}"></noflo-icon-picker>
         <label>Text <input data-appearance-fg type="color" value="${escapeHtml(this._selfAppearanceDraft?.fgHex ?? "#ffffff")}"></label>
         <label>Ring <input data-appearance-bg type="color" value="${escapeHtml(this._selfAppearanceDraft?.bgHex ?? "#1a237e")}"></label>
         <button data-appearance-apply>Apply</button>
@@ -870,26 +897,23 @@ export class NofloCollaboratorsPanel extends HTMLElement {
     // The appearance editor's wiring (work document #61): the emoji and
     // colors edit a draft; Apply emits the result for the Glass to persist
     // device-locally and forward to the mesh layer
-    const iconInput = /** @type {HTMLInputElement | null} */ (
-      shadow.querySelector("[data-appearance-icon]")
+    const picker = /** @type {any} */ (
+      shadow.querySelector("[data-appearance-picker]")
     );
-    if (iconInput) {
+    if (picker) {
       const fgInput = /** @type {HTMLInputElement | null} */ (
         shadow.querySelector("[data-appearance-fg]")
       );
       const bgInput = /** @type {HTMLInputElement | null} */ (
         shadow.querySelector("[data-appearance-bg]")
       );
-      const sync = () => {
+      picker.addEventListener("icon-change", (/** @type {any} */ e) => {
         this._selfAppearanceDraft = {
-          icon: iconInput.value,
+          icon: String(e.detail?.icon ?? ""),
           fgHex: fgInput?.value ?? "#ffffff",
           bgHex: bgInput?.value ?? "#1a237e",
         };
-      };
-      iconInput.addEventListener("input", sync);
-      fgInput?.addEventListener("input", sync);
-      bgInput?.addEventListener("input", sync);
+      });
       shadow
         .querySelector("[data-appearance-apply]")
         ?.addEventListener("click", () => {
@@ -897,7 +921,7 @@ export class NofloCollaboratorsPanel extends HTMLElement {
             const bytes = hex.replace("#", "").match(/../g) ?? [];
             return bytes.map((b) => Number.parseInt(b, 16));
           };
-          const icon = iconInput.value.trim();
+          const icon = this._selfAppearanceDraft?.icon ?? "";
           if (!icon) return;
           const appearance = {
             icon,

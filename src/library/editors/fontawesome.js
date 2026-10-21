@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import "../../elements/noflo-icon-picker.js";
 import icons from "../../../vendor/fontawesome-icons.js";
 import Jedison from "../../../vendor/jedison.js";
 
@@ -52,6 +53,20 @@ export class FontAwesomeEditor extends Jedison.EditorString {
       console.log(this.input);
       this.updateIconPreview();
     });
+
+    // 6. The dedicated picker (work document #61): a searchable glyph grid
+    // with an emoji fallback. A pick drives the same value path the text
+    // input uses, so the Yjs round-trip holds
+    this.picker = document.createElement("noflo-icon-picker");
+    this.picker.value = this.instance.value ?? "";
+    this.picker.addEventListener("icon-change", (event) => {
+      const icon = event.detail?.icon ?? "";
+      this.input.value = icon;
+      this.input.dispatchEvent(new Event("input", { bubbles: true }));
+      this.updateIconPreview();
+    });
+    this.control.container.appendChild(this.picker);
+
     this.updateIconPreview();
   }
 
