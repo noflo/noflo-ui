@@ -1923,6 +1923,21 @@ export async function createMeshSync({
     if (lxmfLayer) {
       lxmfLayer.setAppearance(lxmfAppearance);
     }
+    // Publish: announces cannot carry the appearance (the lxmf.delivery
+    // app_data format is fixed per the LXMF spec — work document #44
+    // update #1), so it travels as a message field. An appearance-only
+    // message to every conversed peer publishes the edit immediately;
+    // store-and-forward covers the offline ones. Empty content: noflo-ui
+    // peers read the field before the text check, so no bubble renders
+    if (!lxmfStore || !lxmfLayer) return;
+    const peers = await lxmfStore.peers().catch(() => []);
+    for (const peer of peers) {
+      const destinationHash = await deriveDeliveryHash(peer).catch(() => null);
+      if (!destinationHash) continue;
+      lxmfLayer
+        .sendText(destinationHash, "", { appearance: lxmfAppearance })
+        .catch(() => {});
+    }
   }
 
   /**
