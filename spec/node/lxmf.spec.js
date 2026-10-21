@@ -6,7 +6,7 @@ import {
   chunkText,
   contentFields,
   isUnknownIdentityError,
-} from "../../src/node/lxmf.js";
+} from "../../src/lxmf/protocol.js";
 
 describe("LXMF layer primitives (work document #44 M2)", () => {
   it("contentFields signals Markdown rendering", () => {
@@ -54,7 +54,7 @@ describe("LXMF layer primitives (work document #44 M2)", () => {
 
 describe("deriveDeliveryHash", () => {
   it("matches the Destination math for lxmf.delivery SINGLE destinations", async () => {
-    const { deriveDeliveryHash } = await import("../../src/node/lxmf.js");
+    const { deriveDeliveryHash } = await import("../../src/lxmf/protocol.js");
     const { Destination } = await import("@reticulum/core");
     // A real identity: derive the destination through the library and
     // through the pure function — they must agree
