@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   createX25519SubtleProxy,
   probeX25519Support,
+  setNativeX25519SupportedForTesting,
 } from "../../src/shims/x25519-subtle.js";
 
 const hexToBytes = (/** @type {string} */ hex) =>
@@ -75,6 +76,82 @@ describe("the polyfill's identity round-trip (work document #47's runtime child)
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("the shim's routing table (work document #67's shim finding)", () => {
+  const SCALAR = hexToBytes(
+    "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+  );
+  /** Imports a polyfill-managed X25519 private key through the proxy. */
+  const importPolyfillKey = async (proxied, supported) => {
+    setNativeX25519SupportedForTesting(supported);
+    return proxied.importKey("pkcs8", SCALAR, { name: "X25519" }, true, [
+      "deriveKey",
+      "deriveBits",
+    ]);
+  };
+
+  it("serves X25519 through the polyfill on runtimes without native support (WebKit)", async () => {
+    const proxied = createX25519SubtleProxy(
+      /** @type {any} */ (globalThis.crypto).subtle,
+    );
+    try {
+      const key = await importPolyfillKey(proxied, false);
+      assert.equal(key.type, "private", "the polyfill imported the key");
+      assert.equal(
+        key instanceof CryptoKey,
+        false,
+        "the key is a polyfill object, not a native CryptoKey",
+      );
+      // The identity restore path: the polyfill key derives and exports
+      const peerPub = hexToBytes(
+        "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+      );
+      const bits = await proxied.deriveBits(
+        { name: "X25519", public: peerPub },
+        key,
+        256,
+      );
+      assert.equal(bits.byteLength, 32, "the polyfill derived the secret");
+      const raw = await proxied.exportKey("raw", key);
+      assert.equal(
+        bytesToHex(raw),
+        "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+        "the raw export is the public key",
+      );
+      const pkcs8 = await proxied.exportKey("pkcs8", key);
+      assert.equal(
+        bytesToHex(pkcs8.slice(-32)),
+        bytesToHex(SCALAR),
+        "the pkcs8 export carries the private scalar (the identity restore path)",
+      );
+    } finally {
+      setNativeX25519SupportedForTesting(null);
+    }
+  });
+
+  it("a polyfill key exports through the polyfill even after native support is confirmed", async () => {
+    const proxied = createX25519SubtleProxy(
+      /** @type {any} */ (globalThis.crypto).subtle,
+    );
+    try {
+      // The key is created while the probe is unresolved (the boot race):
+      // a polyfill object on a runtime that later confirms native support
+      const key = await importPolyfillKey(proxied, null);
+      setNativeX25519SupportedForTesting(true);
+      // Pre-fix, this routed to the native exportKey, which rejected the
+      // polyfill key object with "not of type CryptoKey" — the bridge's
+      // link responder crash
+      const raw = await proxied.exportKey("raw", key);
+      assert.equal(
+        bytesToHex(raw),
+        "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+        "the polyfill key exports its public key",
+      );
+    } finally {
+      setNativeX25519SupportedForTesting(null);
     }
   });
 });

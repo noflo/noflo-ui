@@ -71,6 +71,18 @@ export async function probeX25519Support() {
   nativeX25519Supported = await hasNativeX25519();
 }
 
+/**
+ * Test-only: pins the probe result so the routing table can be exercised
+ * for runtimes this process does not emulate (WebKit's "no native X25519"
+ * path, and the boot-race ordering). Tests must restore the probe result
+ * afterwards — the routing reads this on every operation.
+ *
+ * @param {boolean | null} supported
+ */
+export function setNativeX25519SupportedForTesting(supported) {
+  nativeX25519Supported = supported;
+}
+
 export async function hasNativeX25519() {
   try {
     await crypto.subtle.generateKey({ name: "X25519" }, true, [
@@ -142,16 +154,11 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
     // operate on polyfill key objects, and keys created before the boot
     // probe completes are polyfill objects on fully-native runtimes too
     // (the bridge loaded its identity before the probe resolved; the
-    // flag then flipped and native exportKey crashed on the polyfill
-    // object — the link responder's "not of type CryptoKey", work
-    // document #67).
+    // flipped flag then crashed native exportKey on the polyfill object —
+    // the link responder's "not of type CryptoKey", work document #67).
     let isX25519 = false;
     let polyfillKey = false;
-    if (
-      operation === "generateKey" ||
-      operation === "deriveBits" ||
-      operation === "deriveKey"
-    ) {
+    if (operation === "generateKey") {
       isX25519 = formatOrAlgorithm?.name === "X25519";
     } else if (operation === "importKey") {
       // importKey args are (format, keyData, algorithm, ...): the algorithm
@@ -166,26 +173,21 @@ export function createX25519SubtleProxy(/** @type {any} */ nativeSubtle) {
         return exportPolyfillKey(args);
       }
       return /** @type {any} */ (target)[operation](...args);
-    }
-    if (operation === "deriveBits" || operation === "deriveKey") {
+    } else if (operation === "deriveBits" || operation === "deriveKey") {
       polyfillKey = Boolean(asX25519Key(algorithmOrKey));
       isX25519 = isX25519 || polyfillKey;
     }
     if (!isX25519) {
       return /** @type {any} */ (target)[operation](...args);
     }
-    if (!polyfillKey && nativeX25519Supported !== null) {
-      // The probe resolved and the key is a native CryptoKey (or the
-      // runtime lacks X25519 and no native key can exist): use the real
-      // thing
+    if (polyfillKey) {
+      // The polyfill handles its own keys, whatever the probe says
+    } else if (nativeX25519Supported === true) {
+      // Full native support confirmed after boot: use the real thing
       return /** @type {any} */ (target)[operation](...args);
     }
-    if (!polyfillKey) {
-      // Probe still in flight, but the key is a native CryptoKey — native
-      // support demonstrably exists
-      return /** @type {any} */ (target)[operation](...args);
-    }
-
+    // Native support absent (WebKit) or still being probed: the polyfill
+    // is the implementation on this runtime
     switch (operation) {
       case "generateKey": {
         const { x25519 } = await curves();
