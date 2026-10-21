@@ -68,7 +68,6 @@ export class NofloIconPicker extends HTMLElement {
       name.toLowerCase().includes(this._filter.toLowerCase()),
     );
     const glyphs = names
-      .slice(0, 120)
       .map(
         (name) =>
           `<button class="glyph${name === this._value ? " picked" : ""}" data-icon="${escapeHtml(name)}" title="${escapeHtml(name)}"><i class="fa" aria-hidden="true">${iconMap()[name]}</i></button>`,
@@ -177,7 +176,6 @@ export class NofloIconPicker extends HTMLElement {
         );
         grid.innerHTML =
           names
-            .slice(0, 120)
             .map(
               (name) =>
                 `<button class="glyph${name === this._value ? " picked" : ""}" data-icon="${escapeHtml(name)}" title="${escapeHtml(name)}"><i class="fa" aria-hidden="true">${iconMap()[name]}</i></button>`,
