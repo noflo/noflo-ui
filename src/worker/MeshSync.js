@@ -854,6 +854,37 @@ export async function createMeshSync({
       localBinding = null;
       return null;
     }
+    // A creator's first boot has empty trust state: no grants-map entries
+    // and no wallet grants. A device whose storage lost its binding but
+    // whose project already carries trust state — in the restored
+    // document or the wallet — is a participant with lost state, never a
+    // creator. Self-assigning the anchor here would hijack the project's
+    // trust root (the live finding behind the Companion's mesh-storage
+    // re-key: the bridge self-granted and refused its own project's
+    // peers). Recovery is explicit: re-grant the device, or factory
+    // reset and re-invite.
+    const existingGrants = doc.getMap?.("grants");
+    const walletGrants = await listWalletGrants(walletStorage).catch(() => []);
+    const projectWalletGrants = walletGrants.filter(
+      (/** @type {any} */ record) => record.projectId === projectId,
+    );
+    if (
+      (existingGrants && existingGrants.size > 0) ||
+      projectWalletGrants.length > 0
+    ) {
+      // Stay online without a binding: the deny-closed state surfaces the
+      // host's join flow, and the bootstrap handoff restores the binding
+      // when the device re-joins. Killing the mesh here (identityError)
+      // would block the recovery path itself
+      localBinding = null;
+      postMessage(
+        progress("dacar.binding", "restore", "failed", {
+          error:
+            "Trust binding lost but the project already has grants — not re-anchoring. Re-join via an invite to restore the binding.",
+        }),
+      );
+      return null;
+    }
     const binding = {
       projectId,
       anchorHash: identityHash,
