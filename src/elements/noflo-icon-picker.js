@@ -1,13 +1,12 @@
 /**
  * @file The icon picker (work document #61): a dedicated element for
- * choosing an avatar icon — a searchable grid of FontAwesome glyphs plus
- * an emoji fallback, since the LXMF appearance field carries a plain
- * string whose cross-client rendering differs (Sideband reads a Material
- * Design name; noflo-ui renders FontAwesome names and emoji characters
- * directly).
+ * choosing an avatar icon — a searchable grid of FontAwesome glyphs. The
+ * LXMF appearance field carries a plain string whose cross-client
+ * rendering differs (Sideband reads a Material Design name), so the
+ * picker is FontAwesome-only: monochrome glyphs render natively here,
+ * and the string degrades gracefully in clients whose icon font differs.
  *
- * Emits `icon-change` with `{ icon }` when a glyph is picked or an emoji
- * submitted. Integrations: the appearance editor in the Collaborators
+ * Emits `icon-change` with `{ icon }` when a glyph is picked. Integrations: the appearance editor in the Collaborators
  * panel and the Jedison FontAwesome editor (work document #57's schema
  * format) mount this element.
  *
@@ -40,7 +39,7 @@ export class NofloIconPicker extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    /** The picked icon value: an FontAwesome name or an emoji string. */
+    /** The picked icon value: an FontAwesome name. */
     this._value = "";
     /** @type {string} The filter text. */
     this._filter = "";
@@ -130,37 +129,17 @@ export class NofloIconPicker extends HTMLElement {
           border-color: var(--ui-accent, rgb(90, 200, 250));
           color: var(--ui-accent, rgb(90, 200, 250));
         }
-        .emoji {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
-        .emoji input {
-          flex: 1;
-          font-size: 14px;
-          text-align: center;
-          background: transparent;
-          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
-          color: inherit;
-          border-radius: 4px;
-          padding: 2px 4px;
-        }
+
       </style>
       <div class="picker">
         <input class="filter" placeholder="Filter icons…" value="${escapeHtml(this._filter)}">
         <div class="grid">${glyphs || '<div class="empty">no icons match</div>'}</div>
-        <div class="emoji">
-          <span>or emoji</span>
-          <input class="emoji-input" placeholder="🙂" value="${escapeHtml(
-            iconMap()[this._value] ? "" : this._value,
-          )}">
-        </div>
       </div>
     `;
     this._wire();
   }
 
-  /** Wires the filter, the glyph clicks, and the emoji submission. */
+  /** Wires the filter and the glyph clicks. */
   _wire() {
     const shadow = /** @type {ShadowRoot} */ (this.shadowRoot);
     const filter = /** @type {HTMLInputElement | null} */ (
@@ -185,23 +164,6 @@ export class NofloIconPicker extends HTMLElement {
       }
     });
     this._wireGlyphs();
-    const emojiInput = /** @type {HTMLInputElement | null} */ (
-      shadow.querySelector(".emoji-input")
-    );
-    emojiInput?.addEventListener("keydown", (/** @type {any} */ e) => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      const emoji = emojiInput.value.trim();
-      if (!emoji) return;
-      this._value = emoji;
-      this.dispatchEvent(
-        new CustomEvent("icon-change", {
-          detail: { icon: emoji },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-    });
   }
 
   /** Wires the glyph grid's pick clicks. */
