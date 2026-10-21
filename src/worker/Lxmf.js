@@ -41,12 +41,14 @@ import {
  * @param {(msg: string) => void} [options.log]
  * @returns {Promise<{
  *   deliveryHash: string,
- *   sendText: (destinationHex: string, text: string, options?: {title?: string}) => Promise<any[]>,
+ *   sendText: (destinationHex: string, text: string, options?: {title?: string, appearance?: { icon: string, fg: number[], bg: number[] } | null}) => Promise<any[]>,
  *   recallSenderIdentityHash: (message: any) => Promise<string | null>,
  *   verifySender: (message: any) => Promise<boolean>,
  *   recallOrSolicit: (destinationHex: string) => Promise<any>,
  *   discoverContacts: () => Promise<number>,
  *   decodeReaction: (message: any) => { target: string, emoji: string } | null,
+ *   decodeAppearance: (message: any) => { icon: string, fg: number[], bg: number[] } | null,
+ *   setAppearance: (appearance: { icon: string, fg: number[], bg: number[] } | null) => void,
  *   syncFromPropagationNode: () => Promise<{ received?: number }>,
  *   onMessage: (handler: (event: { message: any }) => void) => void,
  *   onContact: (handler: (contact: { identityHash: string, destinationHash: string }) => void) => void,
@@ -87,8 +89,17 @@ export async function createLxmfLayer({
    * @param {{title?: string}} [sendOptions]
    * @returns {Promise<any[]>}
    */
+  /**
+   * @param {string} destinationHex
+   * @param {string} text
+   * @param {{title?: string, appearance?: { icon: string, fg: number[], bg: number[] } | null}} [sendOptions]
+   */
   async function sendText(destinationHex, text, sendOptions = {}) {
     const chunks = chunkText(text);
+    const fields = contentFields();
+    for (const [k, v] of appearanceFields(sendOptions.appearance ?? null)) {
+      fields.set(k, v);
+    }
     /** @type {any[]} */
     const sent = [];
     for (let i = 0; i < chunks.length; i++) {
@@ -101,7 +112,7 @@ export async function createLxmfLayer({
         sourceHash: /** @type {Uint8Array} */ (deliveryDest.destinationHash),
         destinationHash: fromHex(destinationHex),
         content,
-        fields: contentFields(),
+        fields,
         ...(i === 0 && sendOptions.title ? { title: sendOptions.title } : {}),
       });
       try {
@@ -235,6 +246,65 @@ export async function createLxmfLayer({
       target: toHex(target),
       emoji: new TextDecoder().decode(emoji),
     };
+  }
+
+  /**
+   * Decodes the sender's avatar appearance (FIELD_ICON_APPEARANCE, work
+   * document #61): the emoji + colors peers render for this sender. The
+   * wire value is `[icon(str), fg(bin 3), bg(bin 3)]` — the colors are
+   * msgpack bin, not int arrays (Sideband reads them by index).
+   *
+   * @param {any} message
+   * @returns {{ icon: string, fg: number[], bg: number[] } | null}
+   */
+  function decodeAppearance(message) {
+    const field = message?.fields?.get?.(LXMFConstants.FIELD_ICON_APPEARANCE);
+    if (!field || !Array.isArray(field) || field.length < 3) return null;
+    const [icon, fg, bg] = field;
+    if (
+      typeof icon !== "string" ||
+      !(fg instanceof Uint8Array) ||
+      !(bg instanceof Uint8Array)
+    ) {
+      return null;
+    }
+    return { icon, fg: [...fg], bg: [...bg] };
+  }
+
+  /**
+   * Builds the fields Map carrying the device's avatar appearance, when
+   * one is configured — merged into every outbound message so peers
+   * render the custom avatar (the signalk-reticulum pattern: the field
+   * travels inside messages; the announce app_data cannot carry it).
+   *
+   * @param {{ icon: string, fg: number[], bg: number[] } | null} appearance
+   * @returns {Map<number, any>} The merged fields map (empty when no
+   *   appearance is configured).
+   */
+  function appearanceFields(appearance) {
+    const fields = new Map();
+    if (!appearance?.icon) return fields;
+    fields.set(LXMFConstants.FIELD_ICON_APPEARANCE, [
+      appearance.icon,
+      Uint8Array.from(appearance.fg),
+      Uint8Array.from(appearance.bg),
+    ]);
+    return fields;
+  }
+
+  /** The device's avatar appearance, riding every outbound message when
+   * configured (set by the Glass's avatar editor via the mesh layer). */
+  let appearance = null;
+
+  /**
+   * Sets the device's avatar appearance (emoji + colors) — attached to
+   * every outbound message so peers render the custom avatar. Null clears
+   * it.
+   *
+   * @param {{ icon: string, fg: number[], bg: number[] } | null} value
+   */
+  function setAppearance(value) {
+    appearance = value;
   }
 
   /**
@@ -377,6 +447,8 @@ export async function createLxmfLayer({
     recallOrSolicit,
     discoverContacts,
     decodeReaction,
+    decodeAppearance,
+    setAppearance,
     syncFromPropagationNode,
     /**
      * Subscribes to inbound messages.

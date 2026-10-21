@@ -229,6 +229,9 @@ async function defaultCreateProvider(
  * @property {(payload: { text: string, identityHash?: string }) => Promise<boolean>} sendChat
  *   Sends a chat message over LXMF (work document #42 Phase A'); the ack
  *   rides `chat-ack`, inbound replies ride `chat-message`.
+ * @property {(payload: any) => Promise<void>} setAppearance Sets the
+ *   device's avatar appearance (emoji + colors, work document #61),
+ *   persisted device-locally and attached to every outbound LXMF message.
  * @property {{ identityHash: string, destinationHash: string } | null} agentContact
  *   The agent's LXMF contact once discovered — the granted peer heard
  *   announcing an `lxmf.delivery` destination (work document #42).
@@ -586,6 +589,12 @@ export async function createMeshSync({
   /** The identity hashes currently holding a transport link, maintained
    * by the provider's peers handler (the reachability surface reads it). */
   const onlineIdentities = new Set();
+  /** Last-heard timestamps per peer identity (the peer's most recent
+   * transport announce or link activity) — the "last seen" IM clients
+   * show for offline contacts (work document #61). Any announce updates
+   * the map; the reachability surface reports it. */
+  /** @type {Map<string, number>} */
+  const lastHeard = new Map();
   /** Per-peer dial bookkeeping (work document #47): offline peers are the
    * default scenario, so redials back off per peer instead of churning. */
   /** @type {Map<string, { attempts: number, lastDialAt: number }>} */
@@ -1438,6 +1447,8 @@ export async function createMeshSync({
     if (!grants) return;
     /** @type {Record<string, "online" | "offline">} */
     const states = {};
+    /** @type {Record<string, number>} */
+    const lastSeen = {};
     for (const entry of grants.values()) {
       const plain = entry.toJSON();
       if (plain.revoked !== null || !plain.authorization) continue;
@@ -1446,8 +1457,14 @@ export async function createMeshSync({
         continue;
       }
       states[peerHash] = online.has(peerHash) ? "online" : "offline";
+      // Last heard: the peer's most recent announce or link activity —
+      // the "last seen" an IM client shows for offline contacts (work
+      // document #61)
+      if (lastHeard.has(peerHash)) {
+        lastSeen[peerHash] = /** @type {number} */ (lastHeard.get(peerHash));
+      }
     }
-    postMessage({ kind: "mesh-peer-reachability", states });
+    postMessage({ kind: "mesh-peer-reachability", states, lastSeen });
   }
 
   /**
@@ -1643,12 +1660,27 @@ export async function createMeshSync({
     isPeer: (identityHash) => isGranted(identityHash),
   });
 
+  /** Attaches the mesh layer's transport-level listeners to a Reticulum
+   * instance: the last-heard tap (every announce names an identity — the
+   * peer's presence surface, work document #61).
+   *
+   * @param {any} rns
+   */
+  function attachMeshLayerListeners(rns) {
+    rns.transport.addEventListener("announce", (/** @type {any} */ event) => {
+      const identity = event?.detail?.identity;
+      if (!identity?.identityHash) return;
+      lastHeard.set(toHex(identity.identityHash), Date.now());
+    });
+  }
+
   async function ensureReticulum() {
     if (sharedRns) return sharedRns;
     if (injectedRns) {
       // Process-owned: interfaces were attached by the owner already
       sharedRns = injectedRns;
       meshTelemetry.attach(sharedRns);
+      attachMeshLayerListeners(sharedRns);
       return sharedRns;
     }
     const { Reticulum } = await import("../../vendor/reticulum-core.js");
@@ -1667,6 +1699,7 @@ export async function createMeshSync({
     }
     sharedRns = rns;
     meshTelemetry.attach(sharedRns);
+    attachMeshLayerListeners(sharedRns);
     return rns;
   }
 
@@ -1692,6 +1725,19 @@ export async function createMeshSync({
    *
    * @param {any} identity The device's mesh identity.
    * @param {any} rns The shared Reticulum instance.
+   */
+  /** The device's avatar appearance (emoji + colors), device-local state
+   * persisted in the mesh storage and attached to every outbound LXMF
+   * message (work document #61's appearance support). */
+  /** @type {{ icon: string, fg: number[], bg: number[] } | null} */
+  let lxmfAppearance = null;
+
+  /**
+   * Starts the LXMF layer once the transport and identity exist.
+   *
+   * @param {any} identity The device's mesh identity.
+   * @param {any} rns The shared Reticulum instance.
+   * @returns {Promise<void>}
    */
   async function ensureLxmf(identity, rns) {
     if (lxmfLayer) return;
@@ -1790,8 +1836,19 @@ export async function createMeshSync({
             kind: "chat-reaction",
             identityHash: identityKey,
             emoji: reaction.emoji,
+            target: reaction.target,
           });
           return;
+        }
+        // The sender's avatar appearance (work document #61's FIELD_ICON_
+        // APPEARANCE): the emoji + colors peers render for this sender
+        const appearance = layer.decodeAppearance(message);
+        if (appearance) {
+          postMessage({
+            kind: "chat-appearance",
+            identityHash: identityKey,
+            ...appearance,
+          });
         }
         const text =
           typeof message.content === "string"
@@ -1805,6 +1862,7 @@ export async function createMeshSync({
           kind: "chat-message",
           identityHash: identityKey,
           text,
+          messageId: message.messageId ? toHex(message.messageId) : undefined,
           ...(message.title ? { title: message.title } : {}),
         });
       } catch (err) {
@@ -1822,6 +1880,49 @@ export async function createMeshSync({
       // and prompts went to a bystander)
     });
     lxmfLayer = layer;
+    // The device's appearance is device-local state: restore it so
+    // outbound messages carry it from the first send
+    try {
+      const storedAppearance = await storage.get("lxmf-appearance");
+      if (storedAppearance?.icon) {
+        lxmfAppearance = storedAppearance;
+        lxmfLayer.setAppearance(storedAppearance);
+      }
+    } catch {
+      // No stored appearance: messages go out without the field
+    }
+  }
+
+  /**
+   * Sets the device's avatar appearance and persists it device-locally.
+   *
+   * @param {any} payload `{ icon: string, fg: number[], bg: number[] }` or
+   *   null to clear.
+   */
+  async function setAppearance(payload) {
+    const icon = String(payload?.icon ?? "");
+    if (!icon) {
+      lxmfAppearance = null;
+      await storage.set("lxmf-appearance", null).catch(() => {});
+      return;
+    }
+    lxmfAppearance = {
+      icon,
+      fg: [
+        Number(payload?.fg?.[0] ?? 255),
+        Number(payload?.fg?.[1] ?? 255),
+        Number(payload?.fg?.[2] ?? 255),
+      ],
+      bg: [
+        Number(payload?.bg?.[0] ?? 26),
+        Number(payload?.bg?.[1] ?? 35),
+        Number(payload?.bg?.[2] ?? 126),
+      ],
+    };
+    await storage.set("lxmf-appearance", lxmfAppearance).catch(() => {});
+    if (lxmfLayer) {
+      lxmfLayer.setAppearance(lxmfAppearance);
+    }
   }
 
   /**
@@ -1927,7 +2028,9 @@ export async function createMeshSync({
       if (!destinationHash) {
         throw new Error("the agent's LXMF address has not been announced yet");
       }
-      const sent = await lxmfLayer.sendText(destinationHash, text);
+      const sent = await lxmfLayer.sendText(destinationHash, text, {
+        appearance: lxmfAppearance,
+      });
       // The outbound side persists too — the thread history includes what
       // the user said, sealed like the inbound
       const peerHash =
@@ -2973,6 +3076,17 @@ export async function createMeshSync({
      */
     sendChat(payload) {
       return sendChat(payload);
+    },
+    /**
+     * Sets the device's avatar appearance (work document #61): emoji +
+     * colors, attached to every outbound LXMF message, persisted
+     * device-locally.
+     *
+     * @param {any} payload `{ icon: string, fg: number[], bg: number[] }`
+     *   or null to clear.
+     */
+    async setAppearance(payload) {
+      await setAppearance(payload);
     },
     /**
      * The agent's LXMF contact once discovered (null before): the granted

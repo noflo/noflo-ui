@@ -601,6 +601,8 @@
  * @property {string} identityHash The sender's Reticulum identity hash.
  * @property {string} text The message text.
  * @property {string} [title] The LXMF message's subject, when set.
+ * @property {string} [messageId] The LXMF message id (hex) — the target
+ *   incoming reactions reference (work document #61).
  */
 
 /**
@@ -625,6 +627,9 @@
  * @property {'chat-reaction'} kind
  * @property {string} identityHash The reactor's Reticulum identity hash.
  * @property {string} emoji The reaction emoji.
+ * @property {string} [target] The LXMF message id (hex) the reaction
+ *   replies to — the thread renders it on that message (work document
+ *   #61).
  */
 
 /**
@@ -635,6 +640,20 @@
  * @typedef {Object} ChatHistoryEcho
  * @property {'chat-history'} kind
  * @property {Array<{ identityHash: string, messages: Array<{ id: string, direction: 'in' | 'out', text: string, title: string, time: number }> }>} threads
+ */
+
+/**
+ * Appendix A extension (work document #61): a sender's avatar appearance
+ * arrived — the emoji + colors peers render for that sender
+ * (FIELD_ICON_APPEARANCE). The Glass stores it per identity and renders
+ * it in place of the identicon.
+ *
+ * @typedef {Object} ChatAppearanceEcho
+ * @property {'chat-appearance'} kind
+ * @property {string} identityHash The sender's Reticulum identity hash.
+ * @property {string} icon The Material Design icon name.
+ * @property {number[]} fg The foreground RGB triple.
+ * @property {number[]} bg The background RGB triple.
  */
 
 /**
@@ -900,6 +919,7 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "runtimeDisconnect" },
   { type: "MESH", command: "runtimeSchemas" },
   { type: "MESH", command: "chat" },
+  { type: "MESH", command: "setAppearance" },
 ];
 
 /**
@@ -924,6 +944,7 @@ export const MESH_COMMANDS = [
   "runtimeDisconnect",
   "runtimeSchemas",
   "chat",
+  "setAppearance",
 ];
 
 // ---- Engine -> Glass (EngineUIMessage) ------------------------------------
@@ -1317,6 +1338,7 @@ export const MESH_COMMANDS = [
   | ChatMessageEcho
   | ChatAckEcho
   | ChatReactionEcho
+  | ChatAppearanceEcho
   | ChatAgentEcho
   | ChatHistoryEcho
  *   | RuntimeOpRejectedEcho
@@ -1375,6 +1397,7 @@ export const ECHO_MESSAGES = [
   { kind: "chat-message" },
   { kind: "chat-ack" },
   { kind: "chat-reaction" },
+  { kind: "chat-appearance" },
   { kind: "chat-agent" },
   { kind: "chat-history" },
   { kind: "runtime-op-rejected" },

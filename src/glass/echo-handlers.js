@@ -85,6 +85,9 @@ function formatBytes(bytes) {
  *   signal (the bridge's 🤔 on a prompt).
  * @property {(payload: any) => void} [chatAgent] The agent's LXMF contact
  *   was discovered (work document #42): the agent thread maps to it.
+ * @property {(payload: any) => void} [chatAppearance] A sender's avatar
+ *   appearance arrived (work document #61): the panel renders it in place
+ *   of the identicon.
  * @property {(payload: any) => void} [chatHistory] The persisted thread
  *   history restored (work document #61): the threads rebuild.
  * @property {(payload: any) => void} [implementationRequested] A component's
@@ -227,6 +230,11 @@ export function createEchoHandlers(deps) {
       // The agent's LXMF contact (work document #42): the agent thread
       // maps to it
       deps.chatAgent?.(data);
+    },
+    "kind:chat-appearance": (data) => {
+      // The sender's avatar appearance (work document #61): the panel
+      // renders it in place of the identicon
+      deps.chatAppearance?.(data);
     },
     "kind:chat-history": (data) => {
       // The persisted threads (work document #61): history restores at

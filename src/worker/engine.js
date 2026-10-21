@@ -649,6 +649,10 @@ export async function startEngine(io, options = {}) {
     // command sends over LXMF — the browser is an LXMF participant, and
     // the destination derives from the target's identity hash
     chat: (/** @type {any} */ payload) => mesh?.sendChat?.(payload),
+    // The appearance capability (work document #61): the Glass's avatar
+    // editor persists the device's emoji + colors through the mesh layer
+    setAppearance: (/** @type {any} */ payload) =>
+      mesh?.setAppearance?.(payload),
   };
   const meshGraph = createMeshGraph();
   const meshNetwork = await createNetwork(meshGraph, {

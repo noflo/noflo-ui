@@ -36,6 +36,7 @@ import * as RuntimeDisconnect from "../components/mesh/RuntimeDisconnect.js";
 import * as RuntimeDiscover from "../components/mesh/RuntimeDiscover.js";
 import * as RuntimeRun from "../components/mesh/RuntimeRun.js";
 import * as RuntimeSchemas from "../components/mesh/RuntimeSchemas.js";
+import * as SetAppearance from "../components/mesh/SetAppearance.js";
 import * as Status from "../components/mesh/Status.js";
 import * as Stop from "../components/mesh/Stop.js";
 
@@ -67,6 +68,7 @@ export function createMeshRegistry() {
       "mesh/join": Join,
       "mesh/resolveRequest": ResolveRequest,
       "mesh/route": Route,
+      "mesh/setAppearance": SetAppearance,
       "mesh/runtimeConnect": RuntimeConnect,
       "mesh/runtimeDeploy": RuntimeDeploy,
       "mesh/runtimeDisconnect": RuntimeDisconnect,
@@ -108,6 +110,7 @@ export function createMeshGraph() {
     "runtimeDiscover",
     "runtimeRun",
     "runtimeSchemas",
+    "setAppearance",
     "status",
     "stop",
   ];
@@ -160,6 +163,7 @@ export function wireMeshContext(network, context) {
     "runtimediscover",
     "runtimerun",
     "runtimeschemas",
+    "setappearance",
     "status",
     "stop",
   ];
