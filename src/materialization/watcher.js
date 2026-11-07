@@ -130,6 +130,19 @@ export function createMaterializer(options) {
       return;
     }
 
+    if (path.startsWith("guides/")) {
+      // Flavor-owned guides (work document #66): the registry is the
+      // authority — regenerate, never ingest. A human edit (or a
+      // deletion) re-projects the generated form on the next event; the
+      // CRDT never learns the divergence
+      const generated = docToFileTree(doc, options)[path];
+      if (generated !== undefined && content !== base) {
+        await fs.writeFile(path, generated);
+        snapshot[path] = generated;
+      }
+      return;
+    }
+
     if (path.startsWith("graphs/") && path.endsWith(".graph.json")) {
       const graphId = path
         .slice("graphs/".length, -".graph.json".length)

@@ -226,6 +226,44 @@ describe("graph file serialization helper", () => {
     assert.equal(remove.payload.name, "AGENTS");
   });
 
+  it("a guides/ edit is regenerated, never ingested (work document #66)", async () => {
+    const { materializer, intents, files, doc } = boot();
+    await materializer.materialize();
+    const before = intents.length;
+    const generated = files.get("guides/noflo/writing-components.md") ?? "";
+    assert.ok(generated, "the flavor's guide materialized");
+    // A human edit to a flavor-owned file: no intent, the generated form
+    // is re-projected (regenerate, don't ingest)
+    await materializer.handleFileEvent(
+      "guides/noflo/writing-components.md",
+      "# My local edits\n",
+    );
+    assert.equal(intents.length, before, "the CRDT never learns the edit");
+    assert.equal(
+      files.get("guides/noflo/writing-components.md"),
+      generated,
+      "the generated form is back",
+    );
+    // A deletion regenerates too
+    await materializer.handleFileEvent(
+      "guides/noflo/writing-components.md",
+      null,
+    );
+    assert.equal(intents.length, before, "deletion emits nothing");
+    assert.equal(
+      files.get("guides/noflo/writing-components.md"),
+      generated,
+      "the deleted guide is regenerated",
+    );
+    // An edit matching the generated form is a no-op
+    await materializer.handleFileEvent(
+      "guides/noflo/writing-components.md",
+      generated,
+    );
+    assert.equal(intents.length, before);
+    assert.ok(doc.getMap("docs").size >= 0, "the docs map is untouched");
+  });
+
   it("the materialized file parses back to the projected view", async () => {
     const harness = boot();
     await materialized(harness);

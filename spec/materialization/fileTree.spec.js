@@ -53,10 +53,12 @@ describe("Y.Doc → file tree (work document #43)", () => {
         "components/fs/ReadFile.json",
         "graphs/Pipeline.graph.json",
         "graphs/main.graph.json",
+        "guides/noflo/getting-a-runtime.md",
+        "guides/noflo/writing-components.md",
         "package.json",
         "project.json",
       ],
-      "graphs are flat; the subgraph component (main/Pipeline) is defined by its graph file, not a component entry",
+      "graphs are flat; the subgraph component (main/Pipeline) is defined by its graph file, not a component entry; the flavor's bundled guides ride every project",
     );
   });
 
@@ -92,6 +94,29 @@ describe("Y.Doc → file tree (work document #43)", () => {
     setDocText(ensureDoc(doc, "AGENTS"), "# Conventions\nKeep graphs flat.\n");
     const tree = docToFileTree(doc);
     assert.equal(tree["docs/AGENTS.md"], "# Conventions\nKeep graphs flat.\n");
+  });
+
+  it("the flavor's guides materialize under guides/<flavor>/ (work document #66)", () => {
+    const doc = createProjectDoc("p");
+    seed(doc);
+    const tree = docToFileTree(doc);
+    assert.match(
+      tree["guides/noflo/writing-components.md"],
+      /# Writing NoFlo components|## The shape/,
+      "the authoring guide rides the project",
+    );
+    assert.match(
+      tree["guides/noflo/getting-a-runtime.md"],
+      /runtime/,
+      "the deployment guide rides the project",
+    );
+    // The guides are flavor-owned, not project docs: they never enter the
+    // CRDT's docs map, so a materialization is stable across runs
+    const again = docToFileTree(doc);
+    assert.equal(
+      again["guides/noflo/writing-components.md"],
+      tree["guides/noflo/writing-components.md"],
+    );
   });
 
   it("COMPONENTS.md references components with ports and datatypes", () => {

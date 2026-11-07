@@ -204,6 +204,17 @@ export function docToFileTree(doc, options = {}) {
     tree[`docs/${name}.md`] = `${entry.content ?? ""}`;
   }
 
+  // The flavor's bundled guides (work document #66): flavor-owned files
+  // the app regenerates from the registry, materialized for offline and
+  // human consumption under guides/<flavor>/. They never round-trip into
+  // the project's collaboratively-edited docs map — the reverse path
+  // regenerates, never ingests
+  for (const docEntry of /** @type {any} */ (flavor.docs ?? [])) {
+    tree[`guides/${flavor.id}/${docEntry.id}.md`] = String(
+      docEntry.markdown ?? "",
+    );
+  }
+
   // Test suites: each materializes as its fbp-spec YAML file under specs/
   // (work document #43) — the `test` script's runner consumes them. A
   // suite whose topic is a project graph targets `graph:`, everything else
