@@ -323,7 +323,8 @@ describe("context chip project explorer (work document #63)", () => {
     const shadow = {
       querySelector: (s) =>
         el.shadowRoot?.querySelector(s) ??
-        el.panelShadow?.querySelector(s) ?? null,
+        el.panelShadow?.querySelector(s) ??
+        null,
     };
     shadow
       .querySelector('[data-segment-toggle="explorer"]')
