@@ -199,9 +199,13 @@
  *   The Collaborators panel's Add user tile (work document #61)
  * @property {CustomEvent<{ identityHash: string, alias: string | null }>} set-alias
  *   The Collaborators panel's alias edit saved (work document #61)
- *   The Collaborators panel's Add user tile (work document #61)
- *   The Runtime corner's Agent chip opened the chat panel
- *   The chat panel sent a message to the agent (work document #47 item 3)
+ * @property {CustomEvent<{ docId: string }>} guide-open
+ *   A guide doc was selected from a discovery surface — the explorer's
+ *   Guides section or the Runtime corner's empty-state entries (work
+ *   document #66). The app routes it through the router, so the guide is
+ *   deep-linkable.
+ * @property {CustomEvent<void>} guide-close
+ *   The guide reader's dismissal (work document #66)
  * @property {CustomEvent<{ nodeId: string, component: string, edgeId: string, src: any, tgt: any, x: number, y: number }>} node-splice-attempt
  * @property {CustomEvent<{ theme: string }>} appearance-theme
  * @property {CustomEvent<void>} mesh-close

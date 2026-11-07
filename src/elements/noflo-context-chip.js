@@ -76,8 +76,19 @@ export class FlowContextChip extends FlowCornerElement {
    * @param {string[]} options.schemas
    * @param {string[]} options.specs
    * @param {Array<{ id: string, title: string }>} options.workDocs
+   * @param {Array<{ id: string, title: string }>} [options.guides] The
+   *   flavor's bundled docs (work document #66) — app-level, so the
+   *   section survives an empty project.
    */
-  setContents({ projectName, graphs, components, schemas, specs, workDocs }) {
+  setContents({
+    projectName,
+    graphs,
+    components,
+    schemas,
+    specs,
+    workDocs,
+    guides,
+  }) {
     this._projectName = projectName ?? "";
     /** @type {Array<any>} */
     const sections = [];
@@ -138,6 +149,18 @@ export class FlowContextChip extends FlowCornerElement {
         name: doc.title,
         id: doc.id,
         kind: "doc",
+      })),
+    });
+    // The flavor's bundled guides (work document #66): app-level reading,
+    // routed like every other screen kind
+    sections.push({
+      id: "guides",
+      label: "Guides",
+      icon: "book",
+      entries: (guides ?? []).map((doc) => ({
+        name: doc.title,
+        id: doc.id,
+        kind: "guide",
       })),
     });
     this._sections = sections;
@@ -392,10 +415,18 @@ export class FlowContextChip extends FlowCornerElement {
     const nested = (entry.graphs ?? [])
       .map((/** @type {any} */ child) => this.entryHtml(child))
       .join("");
+    const rowIcon =
+      /** @type {Record<string, string>} */ ({
+        graph: "diagram-project",
+        component: "cube",
+        schema: "code",
+        doc: "file-lines",
+        guide: "book",
+      })[entry.kind] ?? "diagram-project";
     const row =
       entry.kind === "spec"
         ? `<span class="tree-row inert">${icon("flask")}<span class="grow">${escapeHtml(entry.name)}</span></span>`
-        : `<span class="tree-row" data-navigate="${escapeHtml(entry.kind)}" data-navigate-id="${escapeHtml(entry.id)}" role="button" tabindex="0">${icon("diagram-project")}<span class="grow">${escapeHtml(entry.name)}</span></span>`;
+        : `<span class="tree-row" data-navigate="${escapeHtml(entry.kind)}" data-navigate-id="${escapeHtml(entry.id)}" role="button" tabindex="0">${icon(rowIcon)}<span class="grow">${escapeHtml(entry.name)}</span></span>`;
     return `
       <div class="tree-entry${entry.subgraph ? " nested" : ""}${active ? " active" : ""}">
         ${row}

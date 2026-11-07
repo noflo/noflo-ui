@@ -14,6 +14,7 @@
 import icons from "../../vendor/fontawesome-icons.js";
 import { emit } from "../events.js";
 import { telemetryBus } from "../glass/telemetryBus.js";
+import { flavorDocs } from "../library/runtimeinfo/index.js";
 import { FlowCornerElement } from "./corner-element.js";
 import "./noflo-telemetry-log.js";
 
@@ -268,7 +269,35 @@ export class FlowRuntimeCorner extends FlowCornerElement {
           <button class="secondary" data-action="collapse" title="Collapse">▾</button>
         </div>
         <div class="hint">A runtime announces itself on the mesh when it starts. Connect to deploy and observe flows.</div>
-        ${rows || '<div class="hint">No runtimes discovered on the mesh yet.</div>'}
+        ${rows || this.runtimeZeroHtml()}
+      </div>
+    `;
+  }
+
+  /**
+   * The runtime-zero surface (work document #66): an empty population is
+   * where deployment docs surface first — "no runtimes found, here's how
+   * to get one" beats an empty list. The entries open the flavor's
+   * deployment guides through the app's guide route.
+   *
+   * @returns {string}
+   */
+  runtimeZeroHtml() {
+    // Phase 1 serves the bundled noflo flavor; per-runtime flavors join
+    // when the population carries runtime types
+    const deployment = flavorDocs("noflo").filter(
+      (doc) => doc.category === "deployment",
+    );
+    const entries = deployment
+      .map(
+        (doc) =>
+          `<button class="guide-link" data-guide-open="${escapeHtml(doc.id)}" title="${escapeHtml(doc.title)}">${icon("book")}<span>${escapeHtml(doc.title)}</span></button>`,
+      )
+      .join("");
+    return `
+      <div class="runtime-zero">
+        <div class="hint">No runtimes discovered on the mesh yet.</div>
+        ${entries}
       </div>
     `;
   }
@@ -370,6 +399,24 @@ export class FlowRuntimeCorner extends FlowCornerElement {
         .badge.offline { background: color-mix(in srgb, var(--ui-age-offline) 25%, transparent); color: var(--ui-age-offline); }
         /* The FBP protocol stream's accordion (work document #63 M3) */
         .telemetry-slot { margin-top: 4px; }
+        /* The runtime-zero surface's guide entries (work document #66) */
+        .runtime-zero { display: flex; flex-direction: column; gap: 4px; }
+        .guide-link {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          color: var(--ui-data, #7bc4e0);
+          border: 1px solid var(--ui-panel-border, rgb(58, 63, 72));
+          border-radius: 4px;
+          padding: 6px 10px;
+          font-size: 12px;
+          font-family: inherit;
+          text-align: left;
+          min-height: var(--ui-target, 44px);
+          cursor: pointer;
+        }
+        .guide-link .fa { color: color-mix(in srgb, var(--ui-data, #7bc4e0) 70%, transparent); }
     `;
   }
 
@@ -398,6 +445,15 @@ export class FlowRuntimeCorner extends FlowCornerElement {
           this.expanded = false;
           this.render();
         });
+      // The runtime-zero surface's deployment guides (work document #66)
+      for (const button of shadow.querySelectorAll("[data-guide-open]")) {
+        button.addEventListener("click", (/** @type {any} */ event) => {
+          event.stopPropagation();
+          emit(this, "guide-open", {
+            docId: String(button.getAttribute("data-guide-open") ?? ""),
+          });
+        });
+      }
       // Expansion asks the Engine for a fresh runtime discovery (work
       // document #59): a quiet mesh still shows its cached population, and
       // the request rides the expansion transition, not every render

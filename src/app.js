@@ -46,6 +46,7 @@ import {
 import { FlowProjectCorner } from "./elements/noflo-project-corner.js";
 import { FlowRuntimeCorner } from "./elements/noflo-runtime-corner.js";
 import "./elements/noflo-schema-view.js";
+import "./elements/noflo-guide-view.js";
 import "./elements/noflo-collaborators-panel.js";
 
 import "./elements/noflo-schema-form.js";
@@ -94,7 +95,7 @@ import {
   syncLibraryFromRegistry,
 } from "./library/LibraryManager.js";
 import { routeName as displayRouteName } from "./library/routes.js";
-import { getFlavor } from "./library/runtimeinfo/index.js";
+import { flavorDocs, getFlavor } from "./library/runtimeinfo/index.js";
 import { codeScaffold } from "./library/scaffold.js";
 import { buildSignatureSchema } from "./library/schema.js";
 import { schemaCache } from "./library/schemaCache.js";
@@ -1068,11 +1069,26 @@ function openWorkDoc(docId, editing = false) {
 }
 
 /**
- * Opens the schema view (work document #57 update #1): the mirror's
- * record binds as the collaborative buffer; the meta-schema gate lives in
- * the view.
+ * Opens the guide reader (work document #66): the bundled flavor docs'
+ * read-only surface. Guides are app-level state — the open needs no
+ * mirror, so the view activates immediately.
  *
- * @param {string} name
+ * @param {string} docId
+ */
+function openGuideView(docId) {
+  const view = /** @type {any} */ (document.getElementById("guide-view"));
+  if (!view) return;
+  // Phase 1 serves the bundled noflo flavor; the project's own runtime
+  // field resolves here when it exists (work document #66's keying)
+  view.open({ flavor: getFlavor("noflo"), docId });
+  updateContextChip();
+}
+
+/**
+ * Opens the schema editor view (work document #57): the schema's
+ * top-level editing surface.
+ *
+ * @param {string} name The `ns/name` identifier.
  */
 function openSchemaView(name) {
   const view = /** @type {any} */ (document.getElementById("schema-view"));
@@ -1552,6 +1568,12 @@ function refreshProjectExplorer() {
       title: String(/** @type {any} */ (record)?.get?.("title") ?? id),
     }),
   );
+  // The flavor's bundled guides (work document #66): app-level entries,
+  // present regardless of what the project holds
+  const guides = flavorDocs("noflo").map((doc) => ({
+    id: doc.id,
+    title: doc.title,
+  }));
   contextChip.setContents({
     projectName: String(mirrorDoc.getMap("metadata").get("name") ?? "Project"),
     graphs,
@@ -1559,6 +1581,7 @@ function refreshProjectExplorer() {
     schemas,
     specs,
     workDocs,
+    guides,
   });
   const route = router?.route();
   contextChip.setActive(
@@ -2693,6 +2716,12 @@ function activateScreen(
     }
     return;
   }
+  if (screen.kind === "guide") {
+    const appElement = document.getElementById("app");
+    if (appElement) appElement.style.display = "none";
+    openGuideView(screen.id ?? "");
+    return;
+  }
   if (screen.kind === "component") {
     const appElement = document.getElementById("app");
     if (appElement) appElement.style.display = "none";
@@ -2746,6 +2775,16 @@ async function init() {
     "schema",
     (() => {
       const view = /** @type {any} */ (document.getElementById("schema-view"));
+      return {
+        close: () => view?.close(),
+        isOpen: () => Boolean(view && !view.hidden),
+      };
+    })(),
+  );
+  screenRegistry.set(
+    "guide",
+    (() => {
+      const view = /** @type {any} */ (document.getElementById("guide-view"));
       return {
         close: () => view?.close(),
         isOpen: () => Boolean(view && !view.hidden),
@@ -3097,6 +3136,10 @@ async function init() {
       payload: { destinationHash: e.detail.destinationHash },
     });
   });
+  // The runtime-zero surface's deployment guides (work document #66)
+  on(runtimeCorner, "guide-open", (e) => {
+    router?.navigate({ kind: "guide", id: e.detail.docId });
+  });
   // Deploy + observe (work document #59 Phase A): the deploy targets the
   // active graph — the corner addresses the runtime, the Glass knows what
   // is on the canvas
@@ -3314,6 +3357,21 @@ async function init() {
   });
   on(schemaView, "schema-close", () => {
     router?.navigate({ kind: "graph", id: activeGraphId });
+  });
+  // The guide reader (work document #66): doc selections route (the URL
+  // addresses the doc), Close returns to the graph
+  const guideView = /** @type {any} */ (document.getElementById("guide-view"));
+  on(guideView, "guide-open", (e) => {
+    router?.navigate({ kind: "guide", id: e.detail.docId });
+  });
+  on(guideView, "guide-close", () => {
+    router?.navigate({ kind: "graph", id: activeGraphId });
+  });
+  // The discovery surfaces' guide entries ride the same route (work
+  // document #66): the explorer's Guides section and the Runtime corner's
+  // runtime-zero entries
+  on(contextChip, "guide-open", (e) => {
+    router?.navigate({ kind: "guide", id: e.detail.docId });
   });
   // The component view (work document #62): the actions ride the
   // sketch → specify → implement ladder. Save applies the rename-fork

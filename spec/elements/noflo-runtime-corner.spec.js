@@ -457,4 +457,42 @@ describe("runtime corner FBP protocol stream (work document #63 M3)", () => {
     );
     el.remove();
   });
+
+  it("the runtime-zero surface offers the deployment guides (work document #66)", () => {
+    const el = makeElement();
+    el.setVisible(true);
+    el.setRuntimes([]);
+    el.expanded = true;
+    el.render();
+    const panel = el.panelShadow.querySelector(".panel");
+    assert.ok(panel, "the panel opens");
+    assert.match(
+      panel.textContent ?? "",
+      /No runtimes discovered/,
+      "the empty state stays",
+    );
+    const entries = [...panel.querySelectorAll("[data-guide-open]")];
+    assert.ok(entries.length > 0, "the deployment guides surface");
+    assert.match(
+      entries[0].textContent ?? "",
+      /Getting a runtime/,
+      "the deployment doc is the entry",
+    );
+    /** @type {any[]} */
+    const events = [];
+    el.addEventListener("guide-open", (/** @type {any} */ e) =>
+      events.push(e.detail.docId),
+    );
+    entries[0].dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(events, [entries[0].getAttribute("data-guide-open")]);
+    // A discovered runtime replaces the empty state: the guides yield
+    feedRuntime(el);
+    el.render();
+    const populated = el.panelShadow.querySelector(".panel");
+    assert.ok(
+      !(/** @type {any} */ (populated)?.querySelector("[data-guide-open]")),
+      "the runtime-zero surface yields to the population",
+    );
+    el.remove();
+  });
 });

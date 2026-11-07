@@ -196,6 +196,10 @@ describe("context chip project explorer (work document #63)", () => {
       schemas: ["ui/point"],
       specs: ["main-test"],
       workDocs: [{ id: "d1", title: "Design notes" }],
+      guides: [
+        { id: "writing-components", title: "Writing NoFlo components" },
+        { id: "getting-a-runtime", title: "Getting a runtime" },
+      ],
     });
     return el;
   }
@@ -258,7 +262,8 @@ describe("context chip project explorer (work document #63)", () => {
     )?.shadowRoot?.querySelector(".explorer");
     assert.ok(tree, "the tree survives the label cycle");
     // main + nested helper + Repeat + ui/point + the inert spec + Notes
-    assert.equal(tree.querySelectorAll(".tree-row").length, 6, "the rows stay");
+    // + the two bundled guides (work document #66)
+    assert.equal(tree.querySelectorAll(".tree-row").length, 8, "the rows stay");
     el.remove();
   });
 
@@ -310,6 +315,40 @@ describe("context chip project explorer (work document #63)", () => {
       !shadow.querySelector('[data-navigate="spec"]'),
       "specs stay inert until their runner lands (#16)",
     );
+    el.remove();
+  });
+
+  it("the Guides section lists the flavor's bundled docs and routes them (work document #66)", async () => {
+    const el = await makeWithTree();
+    const shadow = {
+      querySelector: (s) =>
+        el.shadowRoot?.querySelector(s) ??
+        el.panelShadow?.querySelector(s) ?? null,
+    };
+    shadow
+      .querySelector('[data-segment-toggle="explorer"]')
+      ?.dispatchEvent(new Event("click", { bubbles: true }));
+    const tree = /** @type {any} */ (
+      el._panelPortal
+    )?.shadowRoot?.querySelector(".explorer");
+    assert.ok(tree, "the tree opens");
+    assert.match(tree.textContent ?? "", /Guides/, "the section renders");
+    assert.match(
+      tree.textContent ?? "",
+      /Getting a runtime/,
+      "the bundled doc titles list",
+    );
+    /** @type {any[]} */
+    const navigations = [];
+    el.addEventListener("explorer-navigate", (/** @type {any} */ e) =>
+      navigations.push({ kind: e.detail.kind, id: e.detail.id }),
+    );
+    const guideRow = tree.querySelector('[data-navigate="guide"]');
+    assert.ok(guideRow, "guide rows navigate");
+    guideRow.dispatchEvent(new Event("click", { bubbles: true }));
+    assert.deepEqual(navigations, [
+      { kind: "guide", id: "writing-components" },
+    ]);
     el.remove();
   });
 });
