@@ -1670,14 +1670,6 @@ async function openComponentView(componentName) {
     mirrorDoc.getMap("registry").get(componentName)
   );
   const plain = entry?.toJSON() ?? {};
-  console.log(
-    "DBG openComponentView:",
-    componentName,
-    "entry:",
-    entry ? "yes" : "no",
-    "plain inports:",
-    JSON.stringify(plain.inports ?? []),
-  );
   const isSubgraph = mirrorDoc.getMap("graphs").has(componentName);
   const implementationMeta = /** @type {any} */ (
     mirrorDoc.getMap("components").get(componentName)
