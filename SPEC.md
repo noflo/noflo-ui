@@ -474,7 +474,7 @@ type EngineUIMessage =
   | { kind: 'y-sync'; update: Uint8Array }
   | { kind: 'y-update'; update: Uint8Array }
   | { kind: 'awareness'; states: Array<Record<string, any>> }
-  | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; interfaceSchemas?: Record<string, any> }
+  | { kind: 'mesh-config'; config: Record<string, any>; identityHash: string; identityError?: string; room?: Record<string, any>; joinRequests?: Array<Record<string, any>>; grantInterfaces?: Record<string, any> }
   | { kind: 'runtime-discovered'; runtimes: Array<{ destinationHash: string; nodeName: string; protocolVersion: number; lastSeen: number }> }
   | { kind: 'runtime-connection'; destinationHash: string; state: 'connected' | 'disconnected' | 'error'; nodeName: string | null; capabilityMask?: number; capabilities?: string[]; protocolVersion?: number; error?: string }
   | { kind: 'runtime-deploy'; destinationHash: string; graphId: string; state: 'deploying' | 'deployed' | 'error'; ops?: number; skipped?: number; error?: string }

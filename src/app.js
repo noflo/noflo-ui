@@ -155,7 +155,7 @@ let joinRequests =
 /** Last generated invite URI, reported by the Engine. */
 let meshInviteUri = "";
 /** JSON Schemas per mesh interface type, for the settings dialog. */
-let meshInterfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+let meshGrantInterfaces = /** @type {{ [type: string]: any }} */ ({});
 /** Interfaces the mesh layer attached by default (work document #47's
  * legibility): the settings dialog renders them read-only. */
 let meshRuntimeInterfaces =
@@ -533,7 +533,7 @@ const echoHandlers = createEchoHandlers({
   ingestMeshConfig: (data) => {
     meshConfig = data.config ?? null;
     meshIdentityHash = data.identityHash ?? "";
-    meshInterfaceSchemas = data.interfaceSchemas ?? {};
+    meshGrantInterfaces = data.grantInterfaces ?? {};
     meshRuntimeInterfaces = data.runtimeInterfaces ?? null;
     joinRequests = data.joinRequests ?? joinRequests;
     // The engine's identity state is authoritative: recovered or still
@@ -1507,7 +1507,7 @@ function openMeshSettings() {
     recoverIdentityOnMainThread();
   }
   supervisor?.send({ type: "MESH", command: "status" });
-  dialog.open(meshConfig, meshIdentityHash, meshInterfaceSchemas, meshError);
+  dialog.open(meshConfig, meshIdentityHash, meshGrantInterfaces, meshError);
   dialog.setDacarState(dacarState);
 }
 
@@ -1523,7 +1523,7 @@ function refreshMeshSettings() {
   if (meshConfig) {
     dialog._config = meshConfig;
     dialog._identityHash = meshIdentityHash;
-    dialog._interfaceSchemas = meshInterfaceSchemas;
+    dialog._grantInterfaces = meshGrantInterfaces;
     dialog._runtimeInterfaces = meshRuntimeInterfaces;
     dialog._meshError = meshError;
     dialog.render();

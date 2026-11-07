@@ -8,7 +8,7 @@
  * slotted container, since Jedison needs real DOM to render into.
  *
  * The element is a pure view: it receives the current state via
- * `open(config, identityHash, interfaceSchemas, meshError)` plus live Dacar
+ * `open(config, identityHash, grantInterfaces, meshError)` plus live Dacar
  * updates (`setDacarState`) and reports intent through events
  * (`mesh-configure`, `mesh-grant`, `mesh-revoke`, `mesh-factory-reset`,
  * `mesh-close`). Live sync state — status, peers, join requests, invites,
@@ -67,7 +67,7 @@ export class FlowMeshSettings extends HTMLElement {
     this._dacarState = /** @type {any} */ (null);
     this._identityHash = "";
     /** JSON Schemas per interface type, from the Engine's mesh-config. */
-    this._interfaceSchemas = /** @type {{ [type: string]: any }} */ ({});
+    this._grantInterfaces = /** @type {{ [type: string]: any }} */ ({});
     /** Interfaces the mesh layer attached by default (read-only in the
      * settings dialog — work document #47's legibility). */
     this._runtimeInterfaces =
@@ -90,15 +90,16 @@ export class FlowMeshSettings extends HTMLElement {
    * @param {any} config Engine mesh configuration (null for observer tabs;
    *   the form then renders read-only).
    * @param {string} identityHash Hex identity hash for display.
-   * @param {{ [type: string]: any }} interfaceSchemas JSON Schemas per
-   *   interface type.
+   * @param {{ [type: string]: any }} grantInterfaces JSON Schemas per
+   *   grant-interface type (work document #57's rename — the word
+   *   "interface" means one thing in this codebase).
    * @param {string} meshError Engine mesh error (e.g. WebCrypto without
    *   Ed25519): when set, mesh sync cannot run on this browser.
    */
-  open(config, identityHash, interfaceSchemas = {}, meshError = "") {
+  open(config, identityHash, grantInterfaces = {}, meshError = "") {
     this._config = config;
     this._identityHash = identityHash ?? "";
-    this._interfaceSchemas = interfaceSchemas ?? {};
+    this._grantInterfaces = grantInterfaces ?? {};
     this._meshError = meshError;
     this._open = true;
     // The dialog element may sit hidden in the page shell; visibility is
@@ -517,7 +518,7 @@ export class FlowMeshSettings extends HTMLElement {
         </div>
         ${this.runtimeInterfacesHtml(editable)}
         <div id="interface-form-host" class="iface-form-host" hidden></div>
-        ${editable ? (Object.keys(this._interfaceSchemas).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
+        ${editable ? (Object.keys(this._grantInterfaces).length > 0 ? `<button class="secondary" data-action="add-interface" style="margin-top: 8px">Add interface</button>` : `<div class="hint">Interface schemas are loading&hellip;</div>`) : `<div class="hint">Observer tab: configuration is Engine-owned and editable only in the leader tab.</div>`}
         ${this.trustAnchorHtml()}
         <h3>Access grants (Dacar)</h3>
         <div id="grant-list">
@@ -556,7 +557,7 @@ export class FlowMeshSettings extends HTMLElement {
    * The schema comes from the interface type itself (@reticulum/core
    * `getConfigurationSchema()`), delivered by the Engine.
    *
-   * @param {string} type Interface type key into _interfaceSchemas
+   * @param {string} type Interface type key into _grantInterfaces
    * @param {any} options Existing options to prefill, or null for a new one
    * @param {(data: any) => void} onValid Called with the form data on Save
    */
@@ -567,7 +568,7 @@ export class FlowMeshSettings extends HTMLElement {
       )
     );
     if (!host) return;
-    const schema = /** @type {any} */ (this._interfaceSchemas)[type] ?? null;
+    const schema = /** @type {any} */ (this._grantInterfaces)[type] ?? null;
     if (!schema) {
       host.textContent = `No configuration schema available for ${type}`;
       host.hidden = false;
@@ -671,7 +672,7 @@ export class FlowMeshSettings extends HTMLElement {
       .querySelector('[data-action="add-interface"]')
       ?.addEventListener("click", () => {
         const type =
-          Object.keys(/** @type {any} */ (this._interfaceSchemas))[0] ??
+          Object.keys(/** @type {any} */ (this._grantInterfaces))[0] ??
           "websocket";
         this.openInterfaceForm(type, null, (options) => {
           const iface = {

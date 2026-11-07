@@ -462,7 +462,7 @@ export async function startEngine(io, options = {}) {
       joinRequests: mesh.joinRequests,
       // Interface configuration schemas come from the interface classes
       // themselves; the settings UI renders forms from them
-      interfaceSchemas: {
+      grantInterfaces: {
         websocket: WebSocketClientInterface.getConfigurationSchema(),
       },
       // Interfaces the mesh layer attached by default (work document

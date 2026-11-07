@@ -1086,7 +1086,9 @@ export const MESH_COMMANDS = [
  * @property {string} [identityError]
  * @property {Record<string, any>} [room]
  * @property {Array<Record<string, any>>} [joinRequests]
- * @property {Record<string, any>} [interfaceSchemas]
+ * @property {Record<string, any>} [grantInterfaces] The grant
+ *   interfaces' configuration schemas (work document #57's rename — these
+ *   are Dacar grant interfaces, unrelated to schema interfaces)
  */
 
 /**
