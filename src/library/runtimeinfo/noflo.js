@@ -77,6 +77,152 @@ ${consume}
 `;
 }
 
+/**
+ * @typedef {Object} FlavorDoc
+ * @property {string} id Stable document id (the route id and the
+ *   materialized file name).
+ * @property {string} title Display title.
+ * @property {"authoring" | "deployment"} category
+ *   authoring — how to write components for this runtime; deployment —
+ *   how to get a runtime and deploy a project onto it (work document #66).
+ * @property {string} markdown The bundled document body.
+ */
+
+/**
+ * The NoFlo flavor's bundled documentation (work document #66): the
+ * authoring and deployment guides, first-party text bundled with the app
+ * so off-grid readers get the same truth the templates and the
+ * materializer carry. `helpurl` stays a supplement for online readers —
+ * never the primary carrier.
+ *
+ * @type {FlavorDoc[]}
+ */
+const nofloDocs = [
+  {
+    id: "writing-components",
+    title: "Writing NoFlo components",
+    category: "authoring",
+    markdown: `A NoFlo component is a function from inports to outports: packets
+arrive on inports, the component's process function decides when to act,
+and results leave as packets on outports. The graph wires components into
+networks; the component itself never knows its neighbors.
+
+## The shape
+
+A component module is an ES module with one named export, \`getComponent\`,
+returning the configured component:
+
+
+    import { Component } from "@noflo/noflo";
+
+    export function getComponent() {
+      const c = new Component({
+        description: "Splits a string into words",
+        icon: "filter",
+        inPorts: {
+          in: { datatype: "string" },
+        },
+        outPorts: {
+          out: { datatype: "string" },
+        },
+      });
+
+      c.process((input, output) => {
+        if (!input.hasData("in")) return;
+        const text = input.getData("in");
+        for (const word of text.split(/\\s+/)) {
+          output.send({ out: word });
+        }
+        output.done();
+      });
+
+      return c;
+    }
+
+## Ports
+
+Declare every port the component speaks on. The datatype is the coarse
+type contract (\`string\`, \`number\`, \`boolean\`, \`object\`, \`array\`,
+\`all\` for anything); the editor's wiring guidance and the component
+picker both read it. A port may be \`required: true\` (the network waits
+for it before firing) and \`addressable: true\` (an array port — callers
+target a specific index).
+
+The signature declared here is the component's public interface: the
+canvas renders ports from it, the type checking uses it, and the
+materialized \`components/<name>.json\` pins it. Keep the signature and
+the process body in agreement.
+
+## The process function
+
+The \`process\` callback runs when input is available. Check
+\`input.hasData(port)\` before reading; return without acting when a
+needed port has nothing yet — the runtime calls again when it does. Send
+with \`output.send({ port: value })\` (repeatable, in order), and always
+finish with \`output.done()\` — the network's completion bookkeeping
+depends on it. Errors go to \`output.error(err)\`, never thrown.
+
+## Starting out
+
+"Implement in code" on a component generates this exact idiom with your
+declared ports as a working stub: it consumes what arrives and completes
+without sending. The component loads and participates in a network as it
+is — replace the marked body with the implementation when you are ready.
+
+\`helpurl\` supplement: the NoFlo documentation at
+https://noflojs.org/docs/ covers the Process API in depth.
+`,
+  },
+  {
+    id: "getting-a-runtime",
+    title: "Getting a runtime",
+    category: "deployment",
+    markdown: `A runtime executes a project's graphs: it joins the mesh as an FBP
+Protocol 2.0 participant, announces itself when it starts, and evaluates
+the project's Dacar grants like any other replica. The Runtime corner
+lists every runtime it hears; connect to one to deploy the active graph,
+run it, and observe its processes.
+
+## The Companion's on-demand runtime
+
+A Companion hosting this project can start a runtime for it: one
+sandboxed Node.js subprocess per project, carrying the project's own
+identity and its Dacar binding. It announces on the mesh under the
+\`fbp.runtime\` aspect and appears in the Runtime corner like any other
+runtime. This is the intended path for projects with a Companion
+participant — no extra install, the trust bootstrap is automatic.
+
+## A standalone NoFlo runtime
+
+Any mesh device can run a standalone NoFlo runtime:
+
+
+    npm install -g @noflo/nodejs
+    noflo-nodejs --mesh --name "workshop"
+
+Grant it in the sync panel's wallet like any collaborator — the runtime
+is another replica, and its capabilities are the roles you grant it.
+
+## The browser runtime
+
+Projects whose components run in the browser can execute on the in-browser
+runtime — no separate process at all. Deployment stays flavor-specific:
+firmware targets (MicroFlo and friends) follow the same Runtime corner
+flow, with the advertised capability mask degrading the affordances the
+corner offers (observe-only runtimes show process counts without run
+controls).
+
+## After connect
+
+Connect resolves the runtime's advertised capabilities. Deploy sends the
+active graph as graph operations — entity ids carry over, so a redeploy
+converges onto the same network instead of duplicating it. Run starts the
+network; the process listing and run state observe it live. Each run
+records a flowtrace with the project.
+`,
+  },
+];
+
 /** The NoFlo flavor descriptor (work document #66). */
 export const nofloFlavor = {
   id: "noflo",
@@ -104,6 +250,6 @@ export const nofloFlavor = {
     testScript: "fbp-spec specs/",
     componentCodeExt: "js",
   },
-  docs: [],
+  docs: nofloDocs,
   examples: {},
 };

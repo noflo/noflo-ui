@@ -63,6 +63,31 @@ export function getFlavor(typeId) {
 }
 
 /**
+ * Returns the flavor's bundled documentation (work document #66): the
+ * authoring and deployment guides, in declaration order.
+ *
+ * @param {string} typeId The runtime type id (aliased onto flavors).
+ * @returns {import("./noflo.js").FlavorDoc[]} The bundled docs; empty for
+ *   flavors that carry none.
+ */
+export function flavorDocs(typeId) {
+  return getFlavor(typeId).docs ?? [];
+}
+
+/**
+ * Returns one bundled doc by id, or null — a miss is a defined outcome,
+ * never an error (the route may point at a doc a flavor no longer ships).
+ *
+ * @param {string} typeId The runtime type id (aliased onto flavors).
+ * @param {string} docId The doc's stable id.
+ * @returns {import("./noflo.js").FlavorDoc | null}
+ */
+export function flavorDoc(typeId, docId) {
+  const id = String(docId ?? "");
+  return flavorDocs(typeId).find((doc) => doc.id === id) ?? null;
+}
+
+/**
  * Derives a code-safe identifier from a component's local name: PascalCase
  * over the alphanumeric runs — the class-name form languages with nominal
  * types need ("Parse", "MyWidget"). The namespace is deliberately not part

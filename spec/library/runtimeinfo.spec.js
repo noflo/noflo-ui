@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  flavorDoc,
+  flavorDocs,
   getFlavor,
   identifierFrom,
   resolveFlavorId,
@@ -78,6 +80,43 @@ describe("the runtime flavor registry (work document #66)", () => {
       codeScaffold("mylib/Parse", { runtime: "somefbp", signature: SIGNATURE }),
       null,
     );
+  });
+
+  it("the flavor carries bundled authoring and deployment docs", () => {
+    const docs = flavorDocs("noflo");
+    assert.ok(docs.length >= 2, "authoring and deployment are both present");
+    assert.ok(
+      docs.some(
+        (doc) =>
+          doc.category === "authoring" && doc.id && doc.title && doc.markdown,
+      ),
+      "the authoring doc is complete",
+    );
+    assert.ok(
+      docs.some((doc) => doc.category === "deployment"),
+      "the deployment doc is present",
+    );
+    // Ids are the stable keys the routes and the materialized file names use
+    for (const doc of docs) {
+      assert.match(doc.id, /^[a-z0-9-]+$/, "file-safe ids");
+    }
+  });
+
+  it("flavorDoc resolves by id; a miss is null, never an error", () => {
+    assert.equal(
+      flavorDoc("noflo", "writing-components")?.category,
+      "authoring",
+    );
+    assert.equal(
+      flavorDoc("noflo", "getting-a-runtime")?.category,
+      "deployment",
+    );
+    assert.equal(flavorDoc("noflo", "no-such-doc"), null);
+    assert.equal(flavorDoc("noflo", ""), null);
+  });
+
+  it("flavors without docs carry an empty list", () => {
+    assert.deepEqual(flavorDocs("somefbp"), []);
   });
 });
 
