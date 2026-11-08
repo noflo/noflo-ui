@@ -71,6 +71,7 @@ import {
   removeProject,
   setActiveProject,
 } from "./projects.js";
+import { createRuntimeCommand } from "./runtimeCommand.js";
 import { createRuntimeManager } from "./runtimeManager.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
@@ -824,6 +825,10 @@ async function main() {
           removeProject(stateDir, name);
           return `left ${name} — the workdir on disk was not touched; /projects and /switch pick up another one`;
         },
+        // The on-demand runtime's command surface (work document #47
+        // item 3): the manager is provisioned per project at startProject
+        runtime: (argument) =>
+          createRuntimeCommand(active?.runtimeManager ?? null)(argument),
       }),
     claim: claimCode
       ? {

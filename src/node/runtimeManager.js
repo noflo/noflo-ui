@@ -73,6 +73,7 @@ function realPathFor(target) {
  * @param {(message: string) => void} [options.log] The narration channel.
  * @returns {{
  *   status: () => RuntimeStatus,
+ *   destinationHash: () => string,
  *   start: () => Promise<void>,
  *   stop: () => Promise<void>,
  *   events: EventTarget,
@@ -94,6 +95,8 @@ export function createRuntimeManager({
   /** The ready-line awaiter, resolved once the child announces itself. */
   /** @type {((value?: void | PromiseLike<void>) => void) | null} */
   let readyResolve = null;
+  /** The destination hash the child announced itself under. */
+  let destinationHash = "";
   const events = new EventTarget();
   /** @type {(type: string, detail: any) => void} */
   const emit = (type, detail) => {
@@ -160,6 +163,9 @@ export function createRuntimeManager({
             }
           }
           if (/ready destinationHash=/.test(line) && readyResolve) {
+            destinationHash = String(
+              line.split("destinationHash=")[1] ?? "",
+            ).trim();
             readyResolve();
             readyResolve = null;
           }
@@ -170,6 +176,7 @@ export function createRuntimeManager({
 
   return {
     status: () => status,
+    destinationHash: () => destinationHash,
 
     /**
      * Spawns the sandboxed child and waits for its ready line.

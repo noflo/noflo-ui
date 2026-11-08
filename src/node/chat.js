@@ -393,6 +393,7 @@ export function createChatSurface({
             "- `/projects` — list the registered projects",
             "- `/switch [n]` — switch active project",
             "- `/leave` — drop the active project (workdir untouched)",
+            "- `/runtime [start|stop|status]` — the project's on-demand runtime",
           ].join("\n"),
         );
         return;
