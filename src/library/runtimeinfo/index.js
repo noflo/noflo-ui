@@ -10,10 +10,31 @@
  * collapse onto them through the alias table.
  */
 
+import { microfloFlavor } from "./microflo.js";
 import { nofloFlavor } from "./noflo.js";
 
+/**
+ * @typedef {Object} FlavorDescriptor
+ * @property {string} id
+ * @property {string} shortname
+ * @property {string} icon
+ * @property {string} description
+ * @property {string} [helpurl]
+ * @property {Array<{ id: string, label: string, ext: string }>} languages
+ * @property {string} preferredLanguage
+ * @property {Record<string, (component: any) => string>} templates
+ * @property {{ manifest: string | null, dependencies: Record<string, string>, graphFormat: string, testDir: string | null, testScript: string | null, componentCodeExt: string }} materialization
+ * @property {import("./noflo.js").FlavorDoc[]} docs
+ * @property {Record<string, any>} examples
+ */
+
 /** The bundled flavors, keyed by id. */
-const BUNDLED = new Map([["noflo", nofloFlavor]]);
+const BUNDLED = new Map(
+  /** @type {Array<[string, FlavorDescriptor]>} */ ([
+    ["noflo", nofloFlavor],
+    ["microflo", microfloFlavor],
+  ]),
+);
 
 /**
  * The legacy platform-qualified runtime types collapse onto flavors: every
@@ -26,6 +47,7 @@ export function resolveFlavorId(typeId) {
   const id = String(typeId ?? "").trim();
   if (BUNDLED.has(id)) return id;
   if (id.startsWith("noflo-") || id === "noflo") return "noflo";
+  if (id.startsWith("microflo-") || id === "microflo") return "microflo";
   return id;
 }
 

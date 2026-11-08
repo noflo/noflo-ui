@@ -113,6 +113,25 @@ describe("Y.Doc → file tree (work document #43)", () => {
     );
   });
 
+  it("a microflo project materializes the flavor's own shape (work document #66)", () => {
+    const doc = createProjectDoc("p");
+    doc.getMap("metadata").set("runtime", "microflo");
+    seed(doc);
+    const tree = docToFileTree(doc);
+    assert.ok(!("package.json" in tree), "no npm manifest — directory scan");
+    assert.ok(
+      "components/fs/ReadFile.hpp" in tree,
+      "the code extension is the flavor's hpp",
+    );
+    assert.ok(
+      "guides/microflo/writing-microflo-components.md" in tree,
+      "the flavor's own guides ride the project",
+    );
+    // Graphs and signatures are the app's shared shapes
+    assert.ok("graphs/main.graph.json" in tree);
+    assert.ok("components/fs/ReadFile.json" in tree);
+  });
+
   it("the flavor's guides materialize under guides/<flavor>/ (work document #66)", () => {
     const doc = createProjectDoc("p");
     seed(doc);

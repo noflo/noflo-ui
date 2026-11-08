@@ -118,6 +118,85 @@ describe("the runtime flavor registry (work document #66)", () => {
   it("flavors without docs carry an empty list", () => {
     assert.deepEqual(flavorDocs("somefbp"), []);
   });
+
+  it("the MicroFlo flavor is the second family — the consumers need no change", () => {
+    // The legacy alias collapses like noflo's (work document #66's keying)
+    assert.equal(getFlavor("microflo").id, "microflo");
+    assert.equal(getFlavor("microflo-arduino").id, "microflo");
+    const microflo = getFlavor("microflo");
+    assert.equal(microflo.preferredLanguage, "cpp");
+    assert.equal(
+      microflo.materialization.manifest,
+      null,
+      "directory scan, no manifest",
+    );
+    assert.equal(microflo.materialization.componentCodeExt, "hpp");
+    assert.ok(
+      flavorDocs("microflo").some((doc) => doc.category === "authoring"),
+    );
+    assert.ok(
+      flavorDocs("microflo").some((doc) => doc.category === "deployment"),
+    );
+  });
+
+  it("the MicroFlo template renders the declarec form with the right base", () => {
+    const scaffold = codeScaffold("mcu/Parse", {
+      runtime: "microflo",
+      signature: {
+        description: "Turns a byte into a boolean",
+        inports: [{ name: "in", type: "byte" }],
+        outports: [{ name: "out", type: "boolean" }],
+      },
+    });
+    assert.ok(scaffold, "the microflo flavor carries the cpp template");
+    assert.equal(scaffold.language, "cpp");
+    assert.match(scaffold.code, /\/\* microflo_component yaml/);
+    assert.match(scaffold.code, /name: Parse/);
+    assert.match(
+      scaffold.code,
+      /type: byte/,
+      "the signature's datatype renders as-is",
+    );
+    assert.match(scaffold.code, /class Parse : public SingleOutputComponent/);
+    assert.match(scaffold.code, /process\(Packet in, MicroFlo::PortId port\)/);
+    assert.match(scaffold.code, /in\.isData\(\)/);
+    // The class-name form is the identifier (C++ is nominally typed)
+    assert.ok(
+      !scaffold.code.includes("mcu/"),
+      "the namespace stays out of the class name",
+    );
+  });
+
+  it("the MicroFlo template handles the zero and multi-outport bases", () => {
+    const none = codeScaffold("mcu/Sink", {
+      runtime: "microflo",
+      signature: {
+        description: "Drops",
+        inports: [{ name: "in", type: "all" }],
+        outports: [],
+      },
+    });
+    assert.match(none.code, /Sink\(\) : Component\(0, 0\)/);
+    const two = codeScaffold("mcu/Split", {
+      runtime: "microflo",
+      signature: {
+        description: "Splits",
+        inports: [{ name: "in", type: "all" }],
+        outports: [
+          { name: "a", type: "all" },
+          { name: "b", type: "all" },
+        ],
+      },
+    });
+    assert.match(two.code, /Split\(\) : Component\(connections, 2\)/);
+    assert.match(two.code, /Connection connections\[2\];/);
+    // The connections field lives inside the class body
+    const brace = two.code.indexOf("};");
+    assert.ok(
+      two.code.indexOf("private:") < brace,
+      "the field closes inside the class",
+    );
+  });
 });
 
 describe("the language registry (work document #66)", () => {
