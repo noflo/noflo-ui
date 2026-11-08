@@ -400,4 +400,91 @@ describe("runtime bridge (work document #59)", () => {
     run = echoes.filter((echo) => echo.kind === "runtime-run").pop();
     assert.equal(run.state, "stopped");
   });
+
+  it("writes schemas over 0x2a and reports what went out (work document #57)", async () => {
+    const { transport } = mockReticulum();
+    /** @type {any[]} */
+    const echoes = [];
+    const client = mockClient();
+    const bridge = createRuntimeBridge({
+      getReticulum: () => ({ transport }),
+      getIdentity: async () => ({ identityHash: "feed" }),
+      projectGraph: () => null,
+      postMessage: (echo) => echoes.push(echo),
+      establishLink: async () => ({
+        link: {},
+        auth: { protocolVersion: 2, capabilityMask: 0xff },
+        client,
+      }),
+    });
+    bridge.attach();
+    announce(transport, 0xcc, "runtime-two");
+    await bridge.connect(hexOf(0xcc));
+
+    const digestA = "a".repeat(64);
+    const digestB = "b".repeat(64);
+    await bridge.writeSchemas(hexOf(0xcc), [
+      { digest: digestA, body: { type: "string" } },
+      { digest: digestB, body: { type: "number" } },
+    ]);
+    const written = echoes.find(
+      (echo) => echo.kind === "runtime-schemas-written",
+    );
+    assert.ok(written, "the write echoes");
+    assert.equal(written.destinationHash, hexOf(0xcc));
+    assert.equal(written.written, 2);
+    assert.deepEqual(written.digests, [digestA, digestB]);
+    // The frames encode as 0x2a writes: msgpack's fixarray header leads,
+    // the opcode is the first element (the connect's auth frame is in the
+    // capture too — filter by opcode)
+    const writes = client.sentFrames.filter(
+      (/** @type {Uint8Array} */ frame) => frame[1] === 0x2a,
+    );
+    assert.equal(writes.length, 2);
+    assert.equal(writes[0][1], 0x2a, "the opcode rides as the first element");
+  });
+
+  it("the write echo is the honest record: skips and misses never inflate it", async () => {
+    const { transport } = mockReticulum();
+    /** @type {any[]} */
+    const echoes = [];
+    const client = mockClient();
+    const bridge = createRuntimeBridge({
+      getReticulum: () => ({ transport }),
+      getIdentity: async () => ({ identityHash: "feed" }),
+      projectGraph: () => null,
+      postMessage: (echo) => echoes.push(echo),
+      establishLink: async () => ({
+        link: {},
+        auth: { protocolVersion: 2, capabilityMask: 0xff },
+        client,
+      }),
+    });
+    bridge.attach();
+    announce(transport, 0xcc, "runtime-two");
+    await bridge.connect(hexOf(0xcc));
+
+    // A digest the protocol refuses (not 64-hex) is skipped, the good
+    // one still goes — the echo carries exactly what went out
+    await bridge.writeSchemas(hexOf(0xcc), [
+      { digest: "nothex", body: { type: "string" } },
+      { digest: "c".repeat(64), body: { type: "boolean" } },
+    ]);
+    const written = echoes.find(
+      (echo) => echo.kind === "runtime-schemas-written",
+    );
+    assert.equal(written.written, 1, "only the well-formed frame went out");
+    assert.deepEqual(written.digests, ["c".repeat(64)]);
+
+    // An unknown destination echoes written: 0 — never an assumption
+    await bridge.writeSchemas("f".repeat(32), [
+      { digest: "d".repeat(64), body: { type: "string" } },
+    ]);
+    const miss = echoes
+      .filter((echo) => echo.kind === "runtime-schemas-written")
+      .pop();
+    assert.equal(miss.destinationHash, "f".repeat(32));
+    assert.equal(miss.written, 0);
+    assert.deepEqual(miss.digests, []);
+  });
 });

@@ -64,7 +64,11 @@ import "./elements/noflo-mesh-settings.js";
 import { createEchoHandlers, echoKey } from "./glass/echo-handlers.js";
 import { trackInputState } from "./glass/input-state.js";
 import "./elements/noflo-selection-pills.js";
-import { CATALOGS } from "../vendor/fbp-protocol.js";
+import {
+  CATALOGS,
+  collectSchemaRefs,
+  digestSchema,
+} from "../vendor/fbp-protocol.js";
 import { emit, on } from "./events.js";
 import {
   compatibleComponents,
@@ -621,6 +625,14 @@ const echoHandlers = createEchoHandlers({
         resolve?.();
       }
     }
+  },
+  runtimeSchemasWritten: (destinationHash, digests) => {
+    // The write fan-out's confirmation (work document #57): the digests
+    // that went out to that runtime. Delivery itself is fire-and-forget —
+    // the runtime's digest verification is the authority on first use
+    console.debug(
+      `[runtime] schema write → ${destinationHash.slice(0, 12)} (${digests.length})`,
+    );
   },
   reloadIntoFreshBoot: () => {
     location.reload();
@@ -2020,6 +2032,90 @@ async function fetchRuntimeSchemas(digests) {
 }
 
 /**
+ * The connected runtimes the `0x2a` schema write may target (work
+ * document #57's write direction): the runtime's capability policy gates
+ * the wire under `component.write`, so the Glass pushes only to
+ * connections advertising it (or the coarse all-relations grant) —
+ * capability-gated affordances, never "it's a runtime".
+ *
+ * @returns {string[]} Destination hashes.
+ */
+function writableRuntimeDestinations() {
+  const targets = [];
+  for (const [hash, connection] of runtimeConnections.entries()) {
+    if (connection.state !== "connected") continue;
+    const capabilities = /** @type {any} */ (connection).capabilities ?? [];
+    if (
+      capabilities.includes("all") ||
+      capabilities.includes("component.write")
+    ) {
+      targets.push(hash);
+    }
+  }
+  return targets;
+}
+
+/**
+ * The `0x2a` write order for one schema body (work document #57):
+ * bodies before references — each `$ref` in the closure resolves through
+ * the schema cache (authored bodies and foreign pins alike) and writes
+ * first, so a runtime consuming the root's references finds them present.
+ * A ref the cache cannot resolve is skipped: the wire accepts dangling
+ * references, and the consumer's closure-completeness check is the
+ * authority. The root's digest computes fresh — the body is the save's
+ * own, digest-addressed by construction.
+ *
+ * @param {any} body The saved schema body (parsed).
+ * @returns {Promise<Array<{ digest: string, body: any }>>}
+ */
+async function schemaWriteClosure(body) {
+  /** @type {Array<{ digest: string, body: any }>} */
+  const ordered = [];
+  const seen = new Set();
+  async function visit(/** @type {any} */ schemaBody) {
+    const digest = await digestSchema(schemaBody);
+    if (seen.has(digest)) return;
+    seen.add(digest);
+    for (const ref of collectSchemaRefs(schemaBody)) {
+      const referenced = await schemaCache().getRef(ref);
+      if (referenced) await visit(referenced);
+    }
+    ordered.push({ digest, body: schemaBody });
+  }
+  await visit(body);
+  return ordered;
+}
+
+/**
+ * Pushes a saved schema to every connected, writable runtime (work
+ * document #57): fire-and-forget `0x2a` frames, the write confirmation
+ * echo the honest record. Nothing awaits delivery — the CRDT save is the
+ * authority; the pushes are the live-programming fan-out.
+ *
+ * @param {any} body The saved schema body (parsed).
+ */
+async function pushSchemaToRuntimes(body) {
+  const destinations = writableRuntimeDestinations();
+  if (destinations.length === 0) return;
+  let closure;
+  try {
+    closure = await schemaWriteClosure(body);
+  } catch (error) {
+    // The digest computation failing (a non-serializable body cannot
+    // happen past the meta-schema gate, but never crash the Glass)
+    console.warn("[schema] write closure failed:", error);
+    return;
+  }
+  for (const hash of destinations) {
+    supervisor?.send({
+      type: "MESH",
+      command: "runtimeWriteSchemas",
+      payload: { destinationHash: hash, schemas: closure },
+    });
+  }
+}
+
+/**
  * Opens the graph properties editor (work document #64): a schema-driven
  * form over the graph's metadata — the display name (the rename rides
  * inside, the standalone graph rename retired) and the description now,
@@ -3346,6 +3442,15 @@ async function init() {
       command: "setSchema",
       payload: { name: e.detail.name, body: e.detail.body },
     });
+    // The live-programming fan-out (work document #57): the saved body
+    // pushes to every connected, writable runtime over `0x2a` — bodies
+    // before references
+    try {
+      const parsed = JSON.parse(e.detail.body);
+      pushSchemaToRuntimes(parsed);
+    } catch {
+      // The view's gate already refused invalid JSON; unreachable here
+    }
   });
   on(schemaView, "schema-close", () => {
     router?.navigate({ kind: "graph", id: activeGraphId });

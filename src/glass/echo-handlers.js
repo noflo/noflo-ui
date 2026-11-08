@@ -78,6 +78,9 @@ function publishRngit(emitTelemetry, message, status, tone = "ok") {
  * @property {(destinationHash: string, schemas: Array<{ digest: string, body: any }>) => void} [runtimeSchemasFetched]
  *   The runtime-schemas echo arrived (work document #57): the Glass's
  *   schema cache ingests the digest-verified bodies.
+ * @property {(destinationHash: string, digests: string[]) => void} [runtimeSchemasWritten]
+ *   The runtime-schemas-written echo arrived (work document #57's write
+ *   direction): the digests that actually went out over `0x2a`.
  * @property {(stream: string, entry: { message: string, status?: string, tone?: "ok" | "fail" | "" }) => void} [emitTelemetry]
  *   Publish a legible telemetry entry on the Glass's bus (work document
  *   #63): the fan-out point for the wires layer.
@@ -318,6 +321,16 @@ export function createEchoHandlers(deps) {
       // The digest-verified bodies (work document #57): the Glass's
       // schema cache ingests — foreign pins resolve from here onward
       deps.runtimeSchemasFetched?.(data.destinationHash, data.schemas ?? []);
+    },
+    "kind:runtime-schemas-written": (data) => {
+      // The write direction's honest record (work document #57): the
+      // digests that went out, never an assumption of delivery — the wire
+      // is fire-and-forget, the runtime's digest verification is the
+      // authority on first use
+      deps.runtimeSchemasWritten?.(data.destinationHash, data.digests ?? []);
+      console.debug(
+        `[echo] runtime-schemas-written ${data.destinationHash?.slice(0, 12) ?? ""} ${data.written ?? 0}`,
+      );
     },
     "kind:mesh-telemetry": (data) => {
       // The Reticulum stream (work document #63 M2): mesh presence,

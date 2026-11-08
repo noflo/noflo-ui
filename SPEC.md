@@ -342,6 +342,7 @@ type UIWorkerMessage =
   | { type: 'MESH'; command: 'runtimeDisconnect'; payload: { destinationHash: string } }
   | { type: 'MESH'; command: 'chat'; payload: { text: string } }
   | { type: 'MESH'; command: 'runtimeSchemas'; payload: { destinationHash: string; digests: string[] } };
+  | { type: 'MESH'; command: 'runtimeWriteSchemas'; payload: { destinationHash: string; schemas: Array<{ digest: string; body: any }> } };
 
 // Tombstone-revoke a grant (work document #21). Grants are minted born-verified
 // through `MESH grant` (work document #27); the intent only ever revokes.
@@ -483,6 +484,7 @@ type EngineUIMessage =
   | { kind: 'chat-response'; text: string; role: 'assistant' | 'system' }
   | { kind: 'runtime-op-rejected'; destinationHash: string; rejectedCmd: number | null; detail: any }
   | { kind: 'runtime-schemas'; destinationHash: string; schemas: Array<{ digest: string; body: any }> }
+  | { kind: 'runtime-schemas-written'; destinationHash: string; written: number; digests: string[] }
   | { kind: 'runtime-telemetry'; destinationHash: string; direction: 'in' | 'out'; message: string; status: 'TX' | 'RX'; time: number; tone?: 'ok' | 'fail' | '' }
   | { kind: 'mesh-telemetry'; category: 'announce' | 'interface' | 'peer'; message: string; status: string; time: number; tone?: 'ok' | 'fail' | ''; detail?: Record<string, any> }
   | { kind: 'mesh-status'; connected?: boolean; synced?: boolean; peers?: number; error?: string }

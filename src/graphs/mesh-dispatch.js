@@ -36,6 +36,7 @@ import * as RuntimeDisconnect from "../components/mesh/RuntimeDisconnect.js";
 import * as RuntimeDiscover from "../components/mesh/RuntimeDiscover.js";
 import * as RuntimeRun from "../components/mesh/RuntimeRun.js";
 import * as RuntimeSchemas from "../components/mesh/RuntimeSchemas.js";
+import * as RuntimeWriteSchemas from "../components/mesh/RuntimeWriteSchemas.js";
 import * as SetAppearance from "../components/mesh/SetAppearance.js";
 import * as Status from "../components/mesh/Status.js";
 import * as Stop from "../components/mesh/Stop.js";
@@ -74,6 +75,7 @@ export function createMeshRegistry() {
       "mesh/runtimeDisconnect": RuntimeDisconnect,
       "mesh/runtimeDiscover": RuntimeDiscover,
       "mesh/runtimeSchemas": RuntimeSchemas,
+      "mesh/runtimeWriteSchemas": RuntimeWriteSchemas,
       "mesh/runtimeRun": RuntimeRun,
       "mesh/chat": Chat,
       "mesh/stop": Stop,
@@ -110,6 +112,7 @@ export function createMeshGraph() {
     "runtimeDiscover",
     "runtimeRun",
     "runtimeSchemas",
+    "runtimeWriteSchemas",
     "setAppearance",
     "status",
     "stop",

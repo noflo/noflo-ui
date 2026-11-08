@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import * as Repeat from "@noflo/core/components/Repeat.js";
 import { GraphModel } from "@noflo/graph";
 import { ComponentLoader } from "@noflo/noflo";
-import { assembleRuntime, bindReticulum } from "@noflo/runtime";
+import { assembleRuntime, bindReticulum, SchemaTable } from "@noflo/runtime";
 import { DacarCapabilityPolicy } from "@noflo/runtime/dacar";
 import { Identity, Reticulum as PackageReticulum } from "@reticulum/core";
 import {
@@ -175,6 +175,9 @@ async function bootRuntime({ port, anchorHashHex, anchorPubkeyHex, saltHex }) {
     capabilityPolicy,
     capabilities: 0xff,
     autostart: false,
+    // The runtime's own schema protocol (work document #57): the empty
+    // table holds what clients write over 0x2a and serves over 0x28
+    schemaTable: new SchemaTable(),
   });
   /** @type {any} */
   let binding = null;
@@ -352,6 +355,40 @@ describe("runtime bridge E2E against a live @noflo/runtime (work document #59)",
       assert.ok(processes.entries.a, "the listing carries the deployed nodes");
       assert.equal(processes.entries.a.component, "core/Repeat");
       assert.ok(processes.entries.b, "both nodes listed");
+
+      // The schema write direction (work document #57): 0x2a is fire-and-
+      // forget — the written echo is what the bridge sent; the round trip
+      // closes when the runtime serves the body back over 0x28/0x29
+      const { digestSchema } = await import("../../vendor/fbp-protocol.js");
+      const body = {
+        $id: "urn:noflo:e2e/roundtrip",
+        type: "object",
+        properties: { x: { type: "number" } },
+      };
+      const digest = await digestSchema(body);
+      await bridge.writeSchemas(hash, [{ digest, body }]);
+      const written = echoes.find(
+        (echo) => echo.kind === "runtime-schemas-written",
+      );
+      assert.ok(written, "the write echoes");
+      assert.deepEqual(written.digests, [digest]);
+
+      await bridge.fetchSchemas(hash, [digest]);
+      const fetched = await waitFor(
+        () =>
+          echoes.find(
+            (echo) =>
+              echo.kind === "runtime-schemas" &&
+              echo.schemas?.some((schema) => schema.digest === digest),
+          ),
+        10_000,
+        "the schema served back over 0x28/0x29",
+      );
+      assert.deepEqual(
+        fetched.schemas.find((schema) => schema.digest === digest).body,
+        body,
+        "the body round-trips byte-faithful",
+      );
     } finally {
       await bridge.stop().catch(() => {});
       await host.stop();

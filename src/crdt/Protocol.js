@@ -702,6 +702,20 @@
  */
 
 /**
+ * Appendix A extension (work document #57's write direction): pushes
+ * schema bodies to a connected runtime over `0x2a` — fire-and-forget on
+ * the wire (no reply frame; writes are content-addressed and idempotent,
+ * confirmed by the runtime's own digest verification on first use). The
+ * bodies ride in bodies-before-references order; what went out echoes as
+ * `runtime-schemas-written`.
+ *
+ * @typedef {Object} MeshRuntimeWriteSchemasMessage
+ * @property {'MESH'} type
+ * @property {'runtimeWriteSchemas'} command
+ * @property {{ destinationHash: string, schemas: Array<{ digest: string, body: any }> }} payload
+ */
+
+/**
  * Appendix A extension (work document #23): turn nodes into a subgraph.
  * The engine creates the child graph, moves the nodes into it, exports the
  * boundary connections as ports, replaces the nodes with a single subgraph
@@ -828,6 +842,7 @@
  *   | MeshRuntimeDisconnectMessage
   | MeshChatMessage
  *   | MeshRuntimeSchemasMessage
+ *   | MeshRuntimeWriteSchemasMessage
  *   | MeshPlainMessage} UIWorkerMessage
  */
 
@@ -918,6 +933,7 @@ export const UI_MESSAGES = [
   { type: "MESH", command: "runtimeRun" },
   { type: "MESH", command: "runtimeDisconnect" },
   { type: "MESH", command: "runtimeSchemas" },
+  { type: "MESH", command: "runtimeWriteSchemas" },
   { type: "MESH", command: "chat" },
   { type: "MESH", command: "setAppearance" },
 ];
@@ -943,6 +959,7 @@ export const MESH_COMMANDS = [
   "runtimeRun",
   "runtimeDisconnect",
   "runtimeSchemas",
+  "runtimeWriteSchemas",
   "chat",
   "setAppearance",
 ];
@@ -1236,6 +1253,19 @@ export const MESH_COMMANDS = [
  */
 
 /**
+ * The `0x2a` write direction's confirmation echo (work document #57):
+ * the digests the bridge actually sent — a skipped frame (protocol-
+ * refused, unknown runtime) is absent from the list, so the echo is the
+ * honest record, never an assumption.
+ *
+ * @typedef {Object} RuntimeSchemasWrittenEcho
+ * @property {'runtime-schemas-written'} kind
+ * @property {string} destinationHash Hex destination hash.
+ * @property {number} written How many frames went out.
+ * @property {string[]} digests The sent digests, in send order.
+ */
+
+/**
  * Reticulum telemetry (work document #63 M2): one legible mesh event per
  * echo — the announce stream and the interface lifecycle, over state the
  * Engine already holds for discovery. Link-level telemetry lives in the
@@ -1346,6 +1376,7 @@ export const MESH_COMMANDS = [
  *   | RuntimeOpRejectedEcho
  *   | RuntimeTelemetryEcho
  *   | RuntimeSchemasEcho
+ *   | RuntimeSchemasWrittenEcho
  *   | MeshTelemetryEcho
  *   | MeshDacarEcho
  *   | MeshInviteEcho
@@ -1405,6 +1436,7 @@ export const ECHO_MESSAGES = [
   { kind: "runtime-op-rejected" },
   { kind: "runtime-telemetry" },
   { kind: "runtime-schemas" },
+  { kind: "runtime-schemas-written" },
   { kind: "mesh-telemetry" },
   { kind: "mesh-dacar" },
   { kind: "mesh-invite" },

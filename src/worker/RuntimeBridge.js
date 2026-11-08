@@ -17,7 +17,11 @@
  */
 
 import * as fbpProtocol from "../../vendor/fbp-protocol.js";
-import { CAPABILITY, RUN_ACTION } from "../../vendor/fbp-protocol.js";
+import {
+  CAPABILITY,
+  encodeSchemaWrite,
+  RUN_ACTION,
+} from "../../vendor/fbp-protocol.js";
 
 /**
  * The wire's opcode names, derived from the protocol package's constants:
@@ -159,6 +163,7 @@ const RUN_STATE = {
  *   deploy: (destinationHashHex: string, graphId: string) => Promise<void>,
  *   run: (destinationHashHex: string, action: 'start' | 'stop') => Promise<void>,
  *   fetchSchemas: (destinationHashHex: string, digests: string[]) => Promise<void>,
+ *   writeSchemas: (destinationHashHex: string, schemas: Array<{ digest: string, body: any }>) => Promise<void>,
  *   stop: () => Promise<void>,
  * }}
  */
@@ -694,9 +699,59 @@ export function createRuntimeBridge({
   }
 
   /**
+   * Waits for one frame of a given opcode on the client's inbound stream:
+   * the request-reply matched by opcode, not by queue order. The client's
+   * own FIFO reply queue consumes stale unsolicited frames — a running
+   * network's flowtrace chunks interleave with replies — so a queued
+   * `nextFrame()` cannot be trusted under live telemetry. An upstream
+   * finding (work document #53's feedback loop): the client's schema
+   * fetch is unusable against a running network until the reply path
+   * matches by opcode.
+   *
+   * @param {any} client
+   * @param {number} opcode
+   * @param {number} timeoutMs
+   * @returns {Promise<any>} The decoded frame.
+   */
+  function waitForFrame(client, opcode, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      /**
+       * @param {any} event
+       */
+      const listener = (event) => {
+        const payload = event.detail?.payload;
+        if (!payload) return;
+        let decoded = null;
+        try {
+          decoded = fbpProtocol.decodeFrame(payload);
+        } catch {
+          // Not a decodable frame; the wait continues.
+        }
+        if (decoded?.cmd === opcode) {
+          cleanup();
+          resolve(decoded);
+        }
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(
+          new Error(`no ${opcode.toString(16)} frame within ${timeoutMs}ms`),
+        );
+      }, timeoutMs);
+      function cleanup() {
+        clearTimeout(timer);
+        client.removeEventListener("frame", listener);
+      }
+      client.addEventListener("frame", listener);
+    });
+  }
+
+  /**
    * Fetches schema bodies from a connected runtime over `0x28`/`0x29`
    * (work document #57): the runtime digest-verifies before serving;
-   * the bodies echo for the Glass's schema cache.
+   * the bodies echo for the Glass's schema cache. The reply is matched
+   * by opcode (see {@link waitForFrame}) — the client's own fetch rides
+   * the FIFO queue and cannot be trusted against a running network.
    *
    * @param {string} destinationHashHex
    * @param {string[]} digests
@@ -713,11 +768,20 @@ export function createRuntimeBridge({
       return;
     }
     try {
-      await client.schemas.fetch(digests);
+      const wait = waitForFrame(client, fbpProtocol.CMD_SCHEMA_RES, 10_000);
+      await client.send(
+        fbpProtocol.encodeSchemaReq(
+          digests.map((digest) => fromHex(digest)),
+          true,
+        ),
+      );
+      const reply = await wait;
       const schemas = [];
       for (const digest of digests) {
-        const body = client.schemas.body(digest);
-        if (body) schemas.push({ digest, body });
+        const body = reply.bodies?.[digest];
+        if (body && typeof body !== "string") {
+          schemas.push({ digest, body });
+        }
       }
       postMessage({
         kind: "runtime-schemas",
@@ -736,6 +800,44 @@ export function createRuntimeBridge({
     }
   }
 
+  /**
+   * Writes schema bodies to a connected runtime over `0x2a` (work
+   * document #57's write direction): fire-and-forget per the wire — no
+   * reply frame — confirmed by the echo's digest list. A frame the
+   * protocol refuses (an oversized body, a malformed digest) is skipped
+   * and logged, never silently swallowed: the echo reports exactly what
+   * went out.
+   *
+   * @param {string} destinationHashHex
+   * @param {Array<{ digest: string, body: any }>} schemas The bodies in
+   *   bodies-before-references order (the Glass's closure computation's
+   *   job; the wire accepts dangling refs).
+   */
+  async function writeSchemas(destinationHashHex, schemas) {
+    const connection = connections.get(destinationHashHex);
+    const client = connection?.client;
+    /** @type {string[]} */
+    const digests = [];
+    if (client) {
+      for (const schema of schemas ?? []) {
+        try {
+          await client.send(encodeSchemaWrite(schema.digest, schema.body));
+          digests.push(schema.digest);
+        } catch (/** @type {any} */ err) {
+          console.warn(
+            `[runtime] schema write skipped (${String(schema.digest ?? "").slice(0, 12)}): ${err?.message ?? err}`,
+          );
+        }
+      }
+    }
+    postMessage({
+      kind: "runtime-schemas-written",
+      destinationHash: destinationHashHex,
+      written: digests.length,
+      digests,
+    });
+  }
+
   return {
     attach,
     report,
@@ -744,6 +846,7 @@ export function createRuntimeBridge({
     deploy,
     run,
     fetchSchemas,
+    writeSchemas,
     stop,
   };
 }
