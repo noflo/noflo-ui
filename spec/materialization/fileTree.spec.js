@@ -96,6 +96,23 @@ describe("Y.Doc → file tree (work document #43)", () => {
     assert.equal(tree["docs/AGENTS.md"], "# Conventions\nKeep graphs flat.\n");
   });
 
+  it("a flavor without a package manifest materializes none (work document #66)", () => {
+    const doc = createProjectDoc("p");
+    doc.getMap("metadata").set("runtime", "somefbp");
+    seed(doc);
+    const tree = docToFileTree(doc);
+    assert.ok(
+      !("package.json" in tree),
+      "the npm manifest is the flavor's choice, not a universal",
+    );
+    assert.ok("project.json" in tree, "the app-level manifest stays");
+    // The component-code extension falls back to the flavor's own
+    assert.ok(
+      "components/fs/ReadFile.txt" in tree,
+      "the generic flavor's code extension applies",
+    );
+  });
+
   it("the flavor's guides materialize under guides/<flavor>/ (work document #66)", () => {
     const doc = createProjectDoc("p");
     seed(doc);

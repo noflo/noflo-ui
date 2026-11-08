@@ -104,12 +104,18 @@ function sorted(value) {
  */
 export function docToFileTree(doc, options = {}) {
   const metadata = sorted(doc.getMap("metadata").toJSON());
+  // The project's flavor (work document #66): the whole materialization
+  // shape reads from the descriptor — manifest form, dependency defaults,
+  // test script, component-code extension. The NoFlo output is unchanged;
+  // other families materialize their own shape
+  const flavor = getFlavor(String(metadata.runtime ?? "noflo"));
+  const materialization = /** @type {any} */ (flavor.materialization ?? {});
   // The dependency list (work document #43): the metadata declarations
-  // merge over the generator's noflo default — the platform's 2.x line;
-  // a declared `noflo` entry overrides it. Keys sort for the canonical
+  // merge over the generator's flavor default — the platform's 2.x line
+  // for NoFlo; a declared entry overrides it. Keys sort for the canonical
   // round-trip stability.
   const dependencies = sorted({
-    "@noflo/noflo": "^2.0.0-alpha.12",
+    ...(materialization.dependencies ?? {}),
     ...(metadata.dependencies ?? {}),
   });
   /** @type {Record<string, string>} */
@@ -117,7 +123,12 @@ export function docToFileTree(doc, options = {}) {
     "project.json":
       JSON.stringify({ ...metadata, format: "noflo-ui-project" }, null, 2) +
       "\n",
-    "package.json":
+  };
+  // The manifest is the flavor's own shape (work document #66): a flavor
+  // without one (a firmware target whose components are found by
+  // directory scan) materializes none
+  if (materialization.manifest === "package.json") {
+    tree["package.json"] =
       JSON.stringify(
         {
           name: String(metadata.name ?? "noflo-project")
@@ -127,15 +138,15 @@ export function docToFileTree(doc, options = {}) {
           description: String(metadata.description ?? ""),
           private: true,
           type: "module",
-          scripts: {
-            test: "fbp-spec specs/",
-          },
+          scripts: materialization.testScript
+            ? { test: materialization.testScript }
+            : {},
           dependencies,
         },
         null,
         2,
-      ) + "\n",
-  };
+      ) + "\n";
+  }
 
   const graphIds = options.graphId
     ? [options.graphId]
@@ -156,15 +167,17 @@ export function docToFileTree(doc, options = {}) {
   const names = [
     ...new Set([...components.keys(), ...registry.keys()].sort()),
   ].filter((name) => !materializedGraphIds.has(name));
-  // The project's flavor (work document #66): the materialization shape —
-  // extensions, manifest — reads from the descriptor; the NoFlo output is
-  // unchanged
-  const flavor = getFlavor(String(metadata.runtime ?? "noflo"));
+  // The component-code extension: the record's declared implementation
+  // language through the flavor, else the flavor's own code extension
   const codeExt = (/** @type {any} */ component) => {
     const language = /** @type {any} */ (
       component?.get("metadata")?.get("implementation")
     )?.language;
-    return fileExtensionFor(flavor, language, "js");
+    return fileExtensionFor(
+      flavor,
+      language,
+      String(materialization.componentCodeExt ?? "txt"),
+    );
   };
   for (const name of names) {
     const component = components.get(name);
