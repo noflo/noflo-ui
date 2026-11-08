@@ -6,6 +6,8 @@ import {
   addNode,
   createGraph,
   createProjectDoc,
+  ensureComponent,
+  setComponentCode,
   setComponentSignature,
 } from "../../src/crdt/ProjectDoc.js";
 import { serializeGraph } from "../../src/materialization/canonical.js";
@@ -224,6 +226,48 @@ describe("graph file serialization helper", () => {
     const remove = intents.at(-1);
     assert.equal(remove.command, "removeDoc");
     assert.equal(remove.payload.name, "AGENTS");
+  });
+
+  it("the component-code extensions follow the project's flavor (work document #66)", async () => {
+    const harness = boot();
+    harness.doc.getMap("metadata").set("runtime", "microflo");
+    // A code buffer exists: the hpp file materializes, and the
+    // echo-suppression re-event below reads the written file
+    const component = ensureComponent(harness.doc, "fs/ReadFile");
+    setComponentCode(component, "// stub\n");
+    await harness.materializer.materialize();
+    const before = harness.intents.length;
+    // A .hpp edit ingests on a MicroFlo project: setComponentCode with the
+    // extension stripped
+    await harness.materializer.handleFileEvent(
+      "components/fs/ReadFile.hpp",
+      "/* microflo_component yaml\nname: ReadFile\nmicroflo_component */\nclass ReadFile : public SingleOutputComponent {}\n",
+    );
+    const intent = harness.intents.at(-1);
+    assert.equal(intent.command, "setComponentCode");
+    assert.equal(intent.payload.component, "fs/ReadFile");
+    assert.match(intent.payload.code, /microflo_component/);
+    // The flavor's extensions gate: a .js file is not component code here
+    const after = harness.intents.length;
+    await harness.materializer.handleFileEvent(
+      "components/fs/ReadFile.js",
+      "export function getComponent() {}\n",
+    );
+    assert.equal(
+      harness.intents.length,
+      after,
+      "a foreign extension never ingests",
+    );
+    // The snapshot learned the hpp edit: the echo's own re-event (the
+    // snapshot's content) stays silent
+    const ingested =
+      harness.materializer.snapshot()["components/fs/ReadFile.hpp"];
+
+    await harness.materializer.handleFileEvent(
+      "components/fs/ReadFile.hpp",
+      ingested,
+    );
+    assert.equal(harness.intents.length, after);
   });
 
   it("a guides/ edit is regenerated, never ingested (work document #66)", async () => {

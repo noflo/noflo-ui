@@ -14,6 +14,7 @@
  *   the file back — never silently accepted.
  */
 
+import { getFlavor } from "../library/runtimeinfo/index.js";
 import {
   diffCode,
   diffGraphFile,
@@ -185,30 +186,49 @@ export function createMaterializer(options) {
       return;
     }
 
-    if (
-      path.startsWith("components/") &&
-      (path.endsWith(".js") || path.endsWith(".ts"))
-    ) {
-      const componentName = path.slice("components/".length, -".js".length);
-      if (content === null) {
-        // Component removal is an editor act (the signature, the code,
-        // and the request pointer leave together) — a deleted file is
-        // diagnosed, never silently ignored (work document #43)
-        onDiagnostic(
-          path,
-          "component file deletion is not propagated — remove the component in the editor",
-        );
+    if (path.startsWith("components/")) {
+      // The component-code extensions are the project flavor's own (work
+      // document #66): a NoFlo project ingests .js/.ts, a MicroFlo one
+      // .hpp/.cpp — the signature JSON below stays universal
+      const flavor = getFlavor(
+        String(doc.getMap("metadata").get("runtime") ?? "noflo"),
+      );
+      const fileBase = path.slice("components/".length);
+      const extensions = [
+        ...new Set([
+          .../** @type {any} */ ((flavor).languages ?? []).map(
+            (/** @type {any} */ l) => String(l.ext ?? ""),
+          ),
+          String(
+            /** @type {any} */ (flavor).materialization?.componentCodeExt ?? "",
+          ),
+        ]),
+      ].filter(Boolean);
+      const ext = extensions.find((candidate) =>
+        fileBase.endsWith(`.${candidate}`),
+      );
+      if (ext) {
+        const componentName = fileBase.slice(0, -(ext.length + 1));
+        if (content === null) {
+          // Component removal is an editor act (the signature, the code,
+          // and the request pointer leave together) — a deleted file is
+          // diagnosed, never silently ignored (work document #43)
+          onDiagnostic(
+            path,
+            "component file deletion is not propagated — remove the component in the editor",
+          );
+          return;
+        }
+        const intent = diffCode(base, content);
+        if (intent === null) return;
+        emitIntent({
+          type: "INTENT",
+          command: "setComponentCode",
+          payload: { component: componentName, code: intent },
+        });
+        snapshot[path] = content;
         return;
       }
-      const intent = diffCode(base, content);
-      if (intent === null) return;
-      emitIntent({
-        type: "INTENT",
-        command: "setComponentCode",
-        payload: { component: componentName, code: intent },
-      });
-      snapshot[path] = content;
-      return;
     }
 
     if (path.startsWith("docs/") && path.endsWith(".md")) {
